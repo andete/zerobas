@@ -649,7 +649,7 @@ hbl_answer:                                 ;    else a PRINTED `load error`
 ; A / HL / DE / BC and CF cross both ways (D-XSLOTABI); Z does NOT, so every test
 ; here re-derives its flag from A or CF after the call-back. Each helper may
 ; RAISE, which is safe from a call-back (main page 1 is mapped; the unwind resets
-; SP and discards this frame) -- the precedent is hk_dget's eval_int16_checked.
+; SP and discards this frame) -- the precedent is hk_dget's record call-backs.
 ;   in   FN_RESUME = the cursor just past the LSET / RSET token
 ;   out  FN_RESUME = the resume cursor; CF = 1 (claimed)
 hk_lrset:
@@ -1395,48 +1395,8 @@ hk_mki:
                 ld      a,(FACTYP)
                 cp      2
                 jr      z,hkmi_done         ; an INTEGER: main's DE is already right
-                ld      hl,0
-                ld      a,(FAC)
-                and     $7F
-                sub     $40                 ; A = integer digits of the value
-                jr      c,hkmi_store        ; |x| < 1 (zero included): 0
-                jr      z,hkmi_store
-                cp      6
-                jr      nc,hkmi_ovf         ; 6+ integer digits: out of range
-                ld      b,a                 ; B = digits to take
-                ld      de,FAC+1
-                ld      c,0                 ; bit 0 clear = high nibble next
-hkmi_dig:
-                ld      a,(de)
-                bit     0,c
-                jr      nz,hkmi_lo
-                rrca
-                rrca
-                rrca
-                rrca
-                jr      hkmi_nib
-hkmi_lo:
-                inc     de                  ; low nibble: this byte is done
-hkmi_nib:
-                and     $0F
-                push    de
-                ld      d,h
-                ld      e,l                 ; HL = HL*10 + digit, carry = past 65535
-                add     hl,hl
-                jr      c,hkmi_ovfp
-                add     hl,hl
-                jr      c,hkmi_ovfp
-                add     hl,de
-                jr      c,hkmi_ovfp
-                add     hl,hl
-                jr      c,hkmi_ovfp
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                jr      c,hkmi_ovfp
-                pop     de
-                inc     c
-                djnz    hkmi_dig
+                call    fac_mag             ; HL = |x| truncated, CF = past 65535
+                jr      c,hkmi_ovf
                 ld      a,(FAC)
                 rla                         ; CF = the sign
                 jr      c,hkmi_neg
@@ -1463,8 +1423,6 @@ hkmi_store:
 hkmi_done:
                 scf                         ; claimed
                 ret
-hkmi_ovfp:
-                pop     de
 hkmi_ovf:
                 ld      a,(FPERR)
                 or      a
@@ -1474,6 +1432,62 @@ hkmi_ovf:
 hkmi_zero:
                 ld      hl,0
                 jr      hkmi_store
+
+; fac_mag -- HL = |FAC| TRUNCATED toward zero, for a FLOAT FAC (FACTYP 4 / 8):
+; the integer digits of FAC's BCD (sign|exp-64, then two digits a byte, high
+; nibble first). CF = 1 when the magnitude passes 65535 (6+ integer digits, or a
+; carry out of HL*10+d); |x| < 1 (zero included) is HL = 0, CF = 0. Split out of
+; hk_mki (D-RECBIG, 2026-11-04) for GET / PUT's record number (rnd_parse), which
+; takes the same digits and a different range. Clobbers A, BC, DE.
+fac_mag:
+                ld      hl,0
+                ld      a,(FAC)
+                and     $7F
+                sub     $41                 ; A = integer digits - 1
+                jr      c,fmg_zero          ; |x| < 1 (zero included): 0
+                cp      5
+                ccf
+                ret     c                   ; 6+ integer digits: out of range
+                inc     a
+                ld      b,a                 ; B = digits to take
+                ld      de,FAC+1
+                ld      c,0                 ; bit 0 clear = high nibble next
+fmg_dig:
+                ld      a,(de)
+                bit     0,c
+                jr      nz,fmg_lo
+                rrca
+                rrca
+                rrca
+                rrca
+                jr      fmg_nib
+fmg_lo:
+                inc     de                  ; low nibble: this byte is done
+fmg_nib:
+                and     $0F
+                push    de
+                ld      d,h
+                ld      e,l                 ; HL = HL*10 + digit, carry = past 65535
+                add     hl,hl
+                jr      c,fmg_ovf
+                add     hl,hl
+                jr      c,fmg_ovf
+                add     hl,de
+                jr      c,fmg_ovf
+                add     hl,hl
+                jr      c,fmg_ovf
+                ld      e,a
+                ld      d,0
+                add     hl,de
+fmg_ovf:
+                pop     de
+                ret     c
+                inc     c
+                djnz    fmg_dig
+                ret                         ; CF = 0
+fmg_zero:
+                xor     a                   ; CF = 0
+                ret
 
 ; --- hkc_body: COPY's sector loop, IN THIS ROM ------------------------------
 ; 📍 SITED IN THE $5602..$5FE4 FILL with hkc_resolve (D-DSKFLOCAL, 2026-09-29):
@@ -2528,8 +2542,9 @@ hoc_dout:
 ; hk_frnd -- OPEN "f" AS #n (no FOR clause: RANDOM) -- H_FOPEN, FOPEN_SEL_RAND.
 ; FCH_ACTIVE is the channel being opened (OPEN stores it), DISK_FCB_NAME the parsed
 ; 8.3 name. The sub-ROM's fat_rand_open, moved: LOC := 0 (D-LOC: the CF-3300
-; reads 0 before any GET / PUT), find the file -- or create it (no truncation:
-; RANDOM keeps an existing file). The record (block+9) is NOT touched.
+; reads 0 before any GET / PUT -- dout_open's zeroed +33..35 since D-RECBIG,
+; 2026-11-04; it was a separate FCH_RECNOS[ch] store), find the file -- or create
+; it (no truncation: RANDOM keeps an existing file). The record (block+9) is NOT touched.
 ; 📏 D-FLDDESC (2026-10-17): this space-filled the record (fld_fill_record's 512 B,
 ; then the block's FCH_RECMAX), and the CF-3300 never does -- a fielded B$ still
 ; reads `  Z` after CLOSE and a re-OPEN (scratchpad/flddesc_run.out r8), a FRESH
@@ -2541,12 +2556,6 @@ hk_frnd:
                 ei
                 call    dout_open           ; IX = the row: the name, the block, mounted
                 jp      c, hfm_fail
-                ld      a, (FCH_ACTIVE)
-                call    rnd_recno           ; HL = &FCH_RECNOS[ch]
-                xor     a
-                ld      (hl), a
-                inc     hl
-                ld      (hl), a             ; LOC = 0
                 ld      hl, DISK_FCB_NAME
                 call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
                 jr      c, hfr_make
@@ -2594,15 +2603,19 @@ hk_dget:
                 cp      ','
                 jr      nz, hdg_next
                 inc     hl
-                ld      ix, eval_int16_checked
-                call    calbak              ; DE = the record (D-RECLENERR: a string
-                ld      (FN_RESUME), hl     ; is 13 there, as before)
+                ld      ix, eval
+                call    calbak              ; FAC = the record (DE = it, an int)
+                ld      (FN_RESUME), hl
+                call    rnd_parse           ; DE = the record, by the CF-3300's rule
                 jr      hdg_have
 hdg_next:
                 ; ✅ D-RECAUTO: NO RECORD NUMBER MEANS THE NEXT ONE -- LOC + 1. The
-                ; CF-3300's disk FCB already holds it (+33 = 2 after `GET#1,2`).
+                ; CF-3300's disk FCB already holds it (+33 = 2 after `GET#1,2`),
+                ; and so does ours since D-RECBIG (rnd_loc): the row's +33..34.
                 ld      a, c
-                call    rnd_recno
+                call    dout_row            ; HL = channel C's row
+                ld      de, 33
+                add     hl, de
                 ld      e, (hl)
                 inc     hl
                 ld      d, (hl)
@@ -2648,10 +2661,8 @@ hdg_raise:
                 ld      ix, raise_error     ; A = the code; never returns
                 jp      calbak
 
-; rnd_recno -- HL = &FCH_RECNOS[A], the word LOC reads. rnd_tab -- HL = DE + 2*A.
-; Clobbers A, DE.
-rnd_recno:
-                ld      de, FCH_RECNOS
+
+; rnd_tab -- HL = DE + 2*A. Clobbers A.
 rnd_tab:
                 add     a, a
                 ld      l, a
@@ -2659,16 +2670,18 @@ rnd_tab:
                 add     hl, de
                 ret
 
-; rnd_loc -- D-LOC: FCH_RECNOS[FCH_ACTIVE] := GP_RECNO, written only by a GET /
-; PUT that reaches the record (a GET refused past EOF leaves LOC, as the CF-3300
-; does). Clobbers A, DE, HL.
+; rnd_loc -- D-LOC: LOC := GP_RECNO, written only by a GET / PUT that reaches the
+; record (a GET refused past EOF leaves LOC, as the CF-3300 does). 🏗️ D-RECBIG
+; (2026-11-04): LOC is the ROW's random record, +33..34 (+35 stays the 0 dout_open
+; wrote) -- where the CF-3300's FCB keeps it (+33 = 2 after `GET#1,2`) -- read
+; UNSIGNED by main's LOC through H_CHIN op 8 (din_lofloc) and by D-RECAUTO's bare
+; form (hdg_next). It was the word FCH_RECNOS[ch] (rnd_recno, gone), which main's
+; LOC read as a SIGNED int: record 65535 printed -1. FCH_RECNOS ($EE7D, 32 B) has
+; no reader or writer left. IX = the row. Clobbers DE.
 rnd_loc:
-                ld      a, (FCH_ACTIVE)
-                call    rnd_recno
                 ld      de, (GP_RECNO)
-                ld      (hl), e
-                inc     hl
-                ld      (hl), d
+                ld      (ix+33), e
+                ld      (ix+34), d
                 ret
 
 ; frnd_calc -- split GP_RECNO into GP_SEC (the file sector) and GP_WITHIN (the

@@ -264,12 +264,13 @@ REQUIRED_DISK_RAM = [
     # written from this ROM.)
     # S10.D (2026-10-15): RANDOM files -- OPEN / GET / PUT / CLOSE -- run in
     # disk.rom (hk_frnd / hk_dget). The per-channel tables stay MAIN's (OPEN's
-    # LEN= parse writes FCH_RECLENS, LOC reads FCH_RECNOS) and the record engine's
+    # LEN= parse writes FCH_RECLENS) and the record engine's
     # scratch cells are main's GP_* block, which nothing in main reads any more.
     # 🎯 NOT ALIASED, COPY_SRC's argument: disk.rom has no cells of these names,
     # one address serves the one consumer, and a sysvar move reaches it by regen.
     "FCH_RECLENS",              # [ch] word: the record length, OPEN's LEN= (default 256)
-    "FCH_RECNOS",               # [ch] word: the last GET / PUT's record -- LOC
+    # (FCH_RECNOS -- gone, D-RECBIG 2026-11-04: LOC is the FCB row's +33..34 now,
+    # disk.rom's rnd_loc, read unsigned through H_CHIN op 8; nothing uses the cell.)
     "GP_RECNO",                 # the record number, 1-based
     "GP_SEC",                   # the record's file sector
     "GP_WITHIN",                # its offset in that sector
@@ -402,7 +403,12 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # S10.D: GET / PUT's `, recno` is parsed in disk.rom's hk_dget, as the CF-3300's
     # disk ROM parses it (scratchpad/dget_run*.out) -- HL = the cursor in, DE = the
     # record and HL past it out; it may RAISE (13, 6), which is safe from here.
+    # (D-RECBIG, 2026-11-04: the record is `eval` + check_expr_errors now, and
+    # disk.rom's rnd_parse applies the CF-3300's domain -- truncated, 1..65535,
+    # negatives wrapping -- which no int16 converter can; eval_int16_checked stays
+    # for hk_dget's other user below.)
     "eval_int16_checked",
+    "check_expr_errors",        # a pending evaluator error (13, 11, ...) raised
     # D-DISKREST slice 3 (2026-10-20): DSKI$ / DSKO$'s `d,s` is parsed in hk_dsk.
     "eval_byte_arg",            # the drive: A = E (0..255, else ERR 5)
     "skip_comma",               # A = the next non-blank byte (Z does not cross)

@@ -19491,7 +19491,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - File names longer than six characters: zerobas truncates; the
         references are unmeasured.
 
-- [ ] 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
+- [ ] 🟡 **FIXED TO 65535 2026-11-04 (above: 🙋 the rest)** 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
       REGRESSION: BOTH AGREED ON 2026-09-10 (D-RECBIG, found 2026-10-09).**
       🎚️ TIER 6 — `GET #` / `PUT #` with a record number above 32767
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -19504,6 +19504,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference: `PUT #1,-1` is record 65535 there (`neg`: `LOF` 524280, `LOC`
       65535), and zerobas gave NO READING within 60 s on that case — measure
       what it does. Add a gated row for each.
+      📏 **THE RULE, MEASURED 2026-11-04 (CF-3300, PUT and GET alike):** truncate toward zero; 1..
+      used as is and WIDER than 16 bits (65536, 70000, 100000 write that record; 1000000 is Disk
+      full); -32767..-1 wrap to n + 65536; -32768 and below Overflow; 0 Illegal function call.
+      ✅ **FIXED UP TO 65535 (2026-11-04):** disk/kernel.asm hk_dget parses with `eval` +
+      `rnd_parse` (disk/fat.asm) by that rule; the record lives in the FCB row's +33..35, where the
+      CF-3300 keeps it; LOC on a random channel reads it UNSIGNED (it printed -1 after record
+      65535; the CF-3300 65535). Gate `make recbig-acceptance` (probes/disk/disk_probe_recbig.py, 19
+      rows CF-3300 vs zerobas DISK): 19/19 ([`recbig_gate_after.out`](scratchpad/recbig_gate_after.out));
+      knife K-RB1 (HEAD's parse) 6 rows RED, K-RB2 (LOC's store cut) 3 RED
+      ([`recbig_knife.out`](scratchpad/recbig_knife.out)). Disk ROM 753 -> 706 B free on 2026-11-04,
+      main / sub unchanged. Docs: GET.md, PUT.md, LOC.md, concepts/files-and-devices.md.
+      "No reading" on HEAD was SLOW, not a hang: extending to record 32767 takes zerobas ~35 s, to
+      65535 ~71 s; the CF-3300 2-3 frames -- a TIER 5 item (D-RECSLOW below).
+      🙋 **FOR JOOST:** (1) records 65536 and up are still Overflow -- the record cell GP_RECNO is
+      16-bit; widening costs 1 B of RAM (could come from FCH_RECNOS) + ~30-50 B of disk ROM (24-bit
+      accumulate / recno-1 x reclen saturating to Disk full / 3-byte LOC); (2) FCH_RECNOS (32 B at
+      $EE7D) now has no reader or writer -- reclaim it? (3) removing loc_rand left 11 B more in
+      front of the $6CF3 pin (1499 -> 1510).
+      - [ ] 🐌 **D-RECSLOW: extending a random file far is ~1000x slower than the CF-3300**
+        (found 2026-11-04 by D-RECBIG). 🎚️ TIER 5 — on-par speed. 🤖 **AUTONOMOUS** (speed is
+        paused for ROM space; filed): `PUT #1,32767` on a fresh LEN=1 file: zerobas 1763 frames,
+        the CF-3300 2; `PUT #1,65535` ~3550 vs 3. Not diagnosed.
 
 - [x] ✅ **FIXED 2026-11-04** 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
       PRINTS `Unprintable error` (D-NODISKERRTXT, found 2026-10-09).**

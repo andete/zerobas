@@ -105,15 +105,24 @@ The one rung not yet proven is **RAM usage**.
   written became the disk ROM's, `LOC` and `LOF` on them read as on the
   CF-3300; before, zerobas reported the size at `OPEN` for both
   ([`applof_run.out`](../../scratchpad/applof_run.out)).
+- **Record 65535 read as −1** (fixed 2026-11-04, D-RECBIG): the record number
+  was read as a signed integer, so after `PUT #1,-1` (record 65535) `LOC(1)`
+  printed −1, and after `PUT #1,40000` −25536. The CF-3300 prints 65535 and
+  40000. The record number now lives where the CF-3300 keeps it, in the
+  channel's file control block, and is read unsigned. `make
+  recbig-acceptance` covers it.
 
 ## Where it lives
 
-- `ev_ff_loc` in [basic/expr.asm](../../basic/expr.asm): a random channel
-  reads its own record number; any other open channel falls through to
-  `LOF`'s code.
-- The per-channel record numbers (`FCH_RECNOS`) are written by `GET` and
-  `PUT` in the random-file engine, which runs in the disk ROM (`hk_dget` in
-  [disk/kernel.asm](../../disk/kernel.asm), since S10.D).
+- `ev_ff_loc` in [basic/expr.asm](../../basic/expr.asm): a random or an
+  output channel asks the disk ROM for its file control block's record
+  number (`din_lofloc` in [disk/fat.asm](../../disk/fat.asm)); any other open
+  channel falls through to `LOF`'s code.
+- A random channel's record number is written by `GET` and `PUT` in the
+  random-file engine, which runs in the disk ROM (`rnd_loc`, called from
+  `hk_dget`'s engine in [disk/kernel.asm](../../disk/kernel.asm)), into the
+  channel's file control block (since 2026-11-04; it was a separate table,
+  `FCH_RECNOS`, before).
 
 ## Related concepts
 
@@ -125,5 +134,6 @@ The one rung not yet proven is **RAM usage**.
   a `PUT` of record 4, and two random channels at once, against the CF-3300.
 - `make kwsweep` — the everyday row and the error rows for {13, 52, 59}.
 - `make dout-acceptance` — `LOC` and `LOF` while writing and appending.
+- `make recbig-acceptance` — `LOC` after records 32768 to 65535.
 - `make nodisk-acceptance` — the diskless answer, error 59.
 - `make kwram` — the RAM-usage comparison.

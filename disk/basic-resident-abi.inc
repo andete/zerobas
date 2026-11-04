@@ -62,7 +62,6 @@ DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
 DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
 FCH_RECLENS equ 0EE4DH   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
-FCH_RECNOS equ 0EE7DH   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number
 GP_RECNO equ 0F079H   ; DISK-ONLY: record number, 1-based (2 B)
 GP_SEC equ 0F07BH   ; DISK-ONLY: file logical-sector index of the record (2)
 GP_WITHIN equ 0F07DH   ; DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B)
@@ -91,15 +90,15 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
-parse_disk_fcb equ 06398H
+parse_disk_fcb equ 0638DH
 eval equ 04AB6H
 fch_check equ 06EDAH
-fch_mode_class equ 04F87H
+fch_mode_class equ 04F7CH
 field_item equ 072F6H
 tgt_store_desc equ 04738H
 req_letter equ 040E6H
 var_str_type equ 046C2H
-tgt_parse_req equ 052A3H
+tgt_parse_req equ 05298H
 tgt_desc equ 04772H
 skip_eq equ 042C0H
 req_operand equ 04129H
@@ -108,10 +107,11 @@ type_mismatch_error equ 042F4H
 stmt_error equ 042E6H
 lrset_finish equ 0706FH
 fch_ctx_addr equ 06E5EH
-disk_error equ 0665CH
+disk_error equ 06651H
 read_line equ 045DAH
 fch_close_all equ 06F1EH
 eval_int16_checked equ 0452EH
+check_expr_errors equ 0440AH
 eval_byte_arg equ 04542H
 skip_comma equ 042BAH
 raise_error equ 0430FH

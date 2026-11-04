@@ -1516,14 +1516,14 @@ ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 ; (`GET #1,3` / `GET #1,7` -> 0,3,7; `PUT #1,4` -> 0,4,0); on a
                 ; SEQUENTIAL channel it is constant at the FILE SIZE across reads
                 ; (26,26,26) -- i.e. LOF's value. So: mode 4 (RANDOM) reads the
-                ; per-channel FCH_RECNOS word; any other open mode falls into
+                ; row's random record (op 8, D-RECBIG); any other open mode falls into
                 ; ev_ff_lof below. Same channel checks as LOF; the closed/device
                 ; faces are LOF's, unmeasured for LOC and stated as such.
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52, as LOF
                 call    fch_modes_ptr       ; HL = &FCH_MODES[E]
                 ld      a,(hl)
                 cp      4                   ; RANDOM (basic/files.asm: mode = 4)
-                jr      z,loc_rand
+                jr      z,loc_op            ; D-RECBIG: op 8 too, below
                 ; S10.B increment 2: a disk OUTPUT/APPEND channel (DOUT_MODE) is
                 ; the CF-3300's FCB, and LOC is its random record -- the bytes in
                 ; whole records written -- which is NOT LOF on an APPEND channel
@@ -1534,17 +1534,15 @@ ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 ; LOF's cell, whatever this arm had tested (sub/lofu32.asm).
                 cp      DOUT_MODE
                 jr      nz,ev_ff_lof_checked ; sequential/device: LOC == LOF
+                ; D-RECBIG (2026-11-04): RANDOM joins here. Its LOC is the row's
+                ; random record too (+33..34, written by disk.rom's rnd_loc), read
+                ; UNSIGNED: the old loc_rand arm returned FCH_RECNOS[E] as a signed
+                ; int, so record 65535 (`PUT #1,-1`) printed -1 where the CF-3300
+                ; prints 65535. LOC is a double there at every value
+                ; (`LOC(1)+CSNG(1/3)` reads 5.333333), as lof_nz makes it.
+loc_op:
                 ld      c,8                 ; H_CHIN op 8: LOC
                 jr      ev_ff_field
-loc_rand:
-                ld      hl,FCH_RECNOS
-                ld      d,0
-                add     hl,de
-                add     hl,de               ; HL = &FCH_RECNOS[E]
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = the record number (int result)
-                ret
 ; --- ev_ff_varptrch: VARPTR(#n) -- the address of channel n's FCB ------------
 ; D-VARPTRCH (2026-09-30). Both references answer the address of the channel's
 ; 265 B FCB (9 header + the 256 B record), strided 265 apart; this tree answered

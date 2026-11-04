@@ -178,12 +178,15 @@ def run():
         # LOF / LOC read the row through H_CHIN ops 6 / 8, so those cells are no
         # longer excluded and a write to them is now a clobber this guard reports).
         # Every legitimate target is excluded by address, wherever it falls.
+        # (FCH_RECNOS was one until D-RECBIG, 2026-11-04: LOC is the row's
+        # +33..34 now, inside the row's 50 B below, so a write there is a clobber.)
         legit = set()
-        for name, width in (("FCH_RECNOS", 32),):
-            for k in range(width):
-                legit.add(s[name] - (fwbuf + SECSIZE) + k)
         for k in range(50):
             legit.add(ROW - (fwbuf + SECSIZE) + k)
+        # D-RECBIG: LOC is the row's random record, +33..34, written by rnd_loc.
+        loc = bytes(m.peek(ROW + 33, 2))
+        report(f"{tag}: LOC = the record (row +33..34)",
+               loc[0] | loc[1] << 8 == recno, f"read {loc[0] | loc[1] << 8}")
         got_guard = bytes(m.peek(fwbuf + SECSIZE, GUARD))
         clob = [i for i, b in enumerate(got_guard) if b != 0xA5 and i not in legit]
         report(f"{tag}: nothing written above FWBUF+512", not clob,

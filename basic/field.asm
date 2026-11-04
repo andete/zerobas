@@ -97,9 +97,10 @@
 ;     FCH_RECLENS[ch] and NOT a constant 256 -- row r.mid FIELDs a width of 200
 ;     into a LEN=64 record and the CF-3300 refuses it, which no default-256 row
 ;     could ever separate (docs/spec-basic-fldwidth.md §6.5 addendum).
-;   * record numbers: any int16 above 0 (D-PUTU32 lifted the old 1..255; numbers
-;     above 32767 are D-RECBIG, open); a bare GET/PUT (no record number) takes the
-;     NEXT record -- the channel's last one (LOC, FCH_RECNOS) + 1 (D-RECAUTO).
+;   * record numbers: truncated, 1..65535, -32767..-1 wrapping to n + 65536 (D-RECBIG,
+;     disk/kernel.asm rnd_parse); the CF-3300 also takes 65536 and up, which a
+;     16-bit record cell cannot -- Overflow here; a bare GET/PUT (no record number) takes the
+;     NEXT record -- the channel's last one (LOC, the FCB row's +33) + 1 (D-RECAUTO).
 ;   * sparse / out-of-order PUT (writing record M before some earlier record exists)
 ;     leaves the skipped records' bytes undefined; in-order writes are well-defined.
 
@@ -239,7 +240,8 @@ lrset_store:
 ; enter the hook first, so the disk side raises them. So MAIN keeps exactly what
 ; comes before that cell -- the PUT SPRITE split, `#n`, the channel number's
 ; 5 / 59 / 52 and the mode class's 59 / 58 / 61 -- and crosses. disk/kernel.asm
-; hk_dget does the rest: the `, recno` parse (a call-back into eval_int16_checked),
+; hk_dget does the rest: the `, recno` parse (call-backs into eval and
+; check_expr_errors, then rnd_parse's domain -- D-RECBIG),
 ; record 0 -> 5, the bare form's NEXT record (D-RECAUTO), making the channel live
 ; (a call-back into fch_select, AFTER the evaluator: `GET #1,LOF(2)` selects
 ; channel 2 on the way), the EOF bound (55, D-GETEOF), LOC (D-LOC), the offset

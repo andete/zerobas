@@ -6,11 +6,12 @@ SPDX-License-Identifier: 0BSD
 
 # `PUT` — write a record to a random-access file (and `PUT SPRITE`)
 
-> **Status (2026-10-11):** `PUT` starts two statements: `PUT #`, documented
+> **Status (2026-11-04):** `PUT` starts two statements: `PUT #`, documented
 > here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). One recorded
-> difference for `PUT #`: record numbers above 32767 (below, an open TIER 6
-> item). A `PUT` without a record number writes the next record, as on the
-> CF-3300, since 2026-10-09.
+> difference for `PUT #`: record numbers of 65536 and up (below). Record
+> numbers 32768 to 65535 and negative ones work as on the CF-3300 since
+> 2026-11-04. A `PUT` without a record number writes the next record, as on
+> the CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -48,9 +49,13 @@ The `#` may be left out. The file must have been opened for random access:
   directory still shows the old size. This is how the CF-3300 does it, and
   Joost ruled on 2026-09-27 to follow it (*"faithful: stamp at CLOSE"*),
   knowingly giving up the safety of a directory that is always up to date.
-- **A fractional record number is truncated**: 2.7 is record 2.
+- **A fractional record number is truncated**: 2.7 is record 2, 1.99 is
+  record 1.
+- **A negative record number counts back from 65536**: `PUT #1,-1` writes
+  record 65535, `-2` record 65534, `-32767` record 32769. `-32768` and below
+  are `Overflow`.
 - **`LOC(1)` is the record number of the last `GET` or `PUT`**, and 0 straight
-  after `OPEN`.
+  after `OPEN`. It is never negative: after `PUT #1,-1` it is 65535.
 - **Without a record number** `PUT` writes the record after the last one read
   or written on that channel (`LOC` + 1), so `PUT #1` in a loop writes records
   1, 2, 3, …
@@ -65,9 +70,10 @@ The `#` may be left out. The file must have been opened for random access:
 | a channel number above `MAXFILES` | 52 `Bad file number` |
 | channel `#256` or `#-1` | 5 `Illegal function call` |
 | record number 0 | 5 `Illegal function call` |
+| record number −32768 or below | 6 `Overflow` |
 | a string as the record number | 13 `Type mismatch` |
 
-All agree between the two machines, except record numbers above 32767
+All agree between the two machines, except record numbers of 65536 and up
 (*Differences*).
 
 ## Example
@@ -95,16 +101,26 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
-
-- **Record numbers above 32767** (D-RECBIG, open, TIER 6). The CF-3300 takes
-  the record number like an address, 0 to 65535: `PUT #1,32768` at `LEN=1`
-  writes record 32768, and `PUT #1,-1` writes record 65535. zerobas says
-  `Overflow` for 32768 — a regression: both agreed on 2026-09-10, and a
-  change on 2026-10-07 made the record number a checked integer. For −1
-  zerobas gave no reading within a minute; that case is still to be measured.
+- **Record numbers of 65536 and up** (D-RECBIG). The CF-3300 takes them:
+  at `LEN=1`, `PUT #1,70000` writes record 70000 and `PUT #1,100000` record
+  100000; only the size of the disk stops it (`PUT #1,1000000` is
+  `Disk full`). zerobas keeps a record number in 16 bits, so it says
+  `Overflow` for 65536 and up. Measured on 2026-11-04 on a fresh 720 KB
+  disk.
 
 ## What we found, and how
+
+- **`PUT #1,32768` was `Overflow`, and `PUT #1,-1` was read as an ordinary
+  number** (fixed 2026-11-04, D-RECBIG). The CF-3300 writes record 32768,
+  and reads −1 as record 65535. Both machines had agreed on 32768 on
+  2026-09-10 ([`getput_run.out`](../../scratchpad/getput_run.out)); a change
+  on 2026-10-07 made the record number a checked integer (−32768 to 32767),
+  and no test held the old rows, so nothing noticed. The rule was then
+  measured case by case on the CF-3300: truncated, 1 and up as is, −32767 to
+  −1 counted back from 65536, −32768 and below `Overflow`, 0 `Illegal
+  function call`. The same day **`LOC` showed record 65535 as −1**: it was
+  read as a signed integer. It now prints 65535, as on the CF-3300. `make
+  recbig-acceptance` covers both.
 
 - **A `PUT #` whose disk had gone printed `load error` and went on** (fixed
   2026-10-11, with D-GETEJECT). The CF-3300 raises `Disk offline` (70) in the
@@ -137,7 +153,8 @@ All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
 
 `ex_put` in [basic/field.asm](../../basic/field.asm) parses `#n` and checks
 the channel; the record number and the record engine are the disk ROM's
-(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D); the
+(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D; the
+record number's range is `rnd_parse` in [disk/fat.asm](../../disk/fat.asm)); the
 directory entry is written by `CLOSE` (`hk_chclose`, same file).
 
 ## Related concepts
@@ -149,3 +166,5 @@ directory entry is written by `CLOSE` (`hk_chclose`, same file).
 - `make kwsweep` — the everyday row (`puthash`) and the error rows.
 - `make diskbasic-acceptance` — the random-file round trips.
 - `make putdir-acceptance` — when the directory entry changes (at `CLOSE`).
+- `make recbig-acceptance` — the record number's range: fractions, 32768 to
+  65535, negative numbers, −32768, 0, a string, and `LOC` afterwards.

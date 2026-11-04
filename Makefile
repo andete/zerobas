@@ -2435,6 +2435,13 @@ readflt-acceptance: repack-machine
 recauto-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_recauto.py
 
+# --- recbig-acceptance: GET # / PUT #'s record-number domain (D-RECBIG) ---------
+# Truncated; 1..65535; -32767..-1 wrap to n + 65536; -32768.. Overflow; 0 Illegal
+# function call; LOC unsigned -- as on the CF-3300. (65536 and up: the kept
+# divergence, the record is 16-bit here; not a row.)
+recbig-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_recbig.py
+
 # --- ampb-acceptance: `&B` binary numbers read when the line runs (D-AMPB) ----
 # `PRINT &B101` is 5 on the VG-8020 (the crunch keeps `&B…` as text there too);
 # it was Syntax error here. Value, bare `&B`, stop at a non-binary byte, Overflow.

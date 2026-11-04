@@ -6,10 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # `GET` — read a record from a random-access file
 
-> **Status (2026-10-11):** `GET` has one statement, `GET #`, documented here.
-> One recorded difference: record numbers above 32767 (below, an open TIER 6
-> item). A `GET` without a record number reads the next record, as on the
-> CF-3300, since 2026-10-09.
+> **Status (2026-11-04):** `GET` has one statement, `GET #`, documented here.
+> One recorded difference: record numbers of 65536 and up (below). Record
+> numbers 32768 to 65535 and negative ones work as on the CF-3300 since
+> 2026-11-04. A `GET` without a record number reads the next record, as on
+> the CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -36,9 +37,13 @@ The `#` may be left out. The file must have been opened for random access:
   `OPEN` (1 to 256; 256 when `LEN=` is left out).
 - **A record that starts inside the file is read**, even when it runs past
   the end. One that starts at or past the end is `Input past end` (error 55).
-- **A fractional record number is truncated**: 2.7 is record 2.
+- **A fractional record number is truncated**: 2.7 is record 2, 1.99 is
+  record 1.
+- **A negative record number counts back from 65536**, as for
+  [`PUT`](PUT.md): `GET #1,-2` reads record 65534. `-32768` and below are
+  `Overflow`.
 - **`LOC(1)` is the record number of the last `GET` or `PUT`** on the channel,
-  and 0 straight after `OPEN`.
+  and 0 straight after `OPEN`. It is never negative.
 - **Without a record number** `GET` reads the record after the last one read
   or written on that channel (`LOC` + 1): the first bare `GET` after `OPEN`
   reads record 1. A `GET` refused past the end does not move it on.
@@ -53,10 +58,12 @@ The `#` may be left out. The file must have been opened for random access:
 | a channel number above `MAXFILES` | 52 `Bad file number` |
 | channel `#256` or `#-1` | 5 `Illegal function call` |
 | record number 0 | 5 `Illegal function call` |
+| record number −32768 or below | 6 `Overflow` |
 | a string as the record number | 13 `Type mismatch` |
 | the record starts at or past the end of the file | 55 `Input past end` |
 
-All agree between the two machines. A disk read error during `GET` prints a
+All agree between the two machines, except record numbers of 65536 and up
+(*Differences*). A disk read error during `GET` prints a
 message without raising an error that `ON ERROR` could catch; that is part of
 an open item (D-LOADERRRET).
 
@@ -85,11 +92,20 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A record number above 32767** (D-RECBIG, open, TIER 6) is `Overflow` here;
-the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
+**A record number of 65536 or more** (D-RECBIG) is `Overflow` here. The
+CF-3300 reads it: in a file of 70000 one-byte records, `GET #1,65536` and
+`GET #1,70000` read those records, and `GET #1,70001` is `Input past end`
+(measured 2026-11-04). zerobas keeps a record number in 16 bits. See
 [`PUT`](PUT.md).
 
 ## What we found, and how
+
+- **`GET #1,32768` was `Overflow`, and `GET #1,-32768` read record 32768**
+  (fixed 2026-11-04, D-RECBIG). `GET` and `PUT` read the record number the
+  same way, on both machines, and the fix was one change for both: see
+  [`PUT`](PUT.md). On the CF-3300, in a file of 65535 records, `GET #1,40000`
+  reads record 40000, `GET #1,-2` record 65534 and `GET #1,-32768` is
+  `Overflow`; zerobas now agrees. `make recbig-acceptance` covers it.
 
 - **A `GET` whose disk had gone answered a blank record** (fixed 2026-10-11,
   D-GETEJECT). With the disk taken out between `OPEN` and `GET`, the CF-3300
@@ -125,7 +141,8 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 
 `ex_get` in [basic/field.asm](../../basic/field.asm) parses `#n` and checks
 the channel; the record number and the record engine are the disk ROM's
-(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D), as on
+(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D; the
+record number's range is `rnd_parse` in [disk/fat.asm](../../disk/fat.asm)), as on
 the CF-3300, whose disk ROM parses the record number itself. The record is
 read into the channel's own block, at `VARPTR(#n)+9`, where `FIELD`'s
 variables point (D-FLDDESC, 2026-10-17).
@@ -139,3 +156,4 @@ variables point (D-FLDDESC, 2026-10-17).
 - `make kwsweep` — the everyday row (`getkw`) and the error rows.
 - `make diskbasic-acceptance` — the random-file round trips, including the
   two-record `FIELD` / `LSET` / `RSET` case.
+- `make recbig-acceptance` — the record number's range, for `GET` and `PUT`.

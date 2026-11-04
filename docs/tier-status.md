@@ -118,7 +118,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `ERR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.83× error-code T6✓ | knife ✓ · 1/1 forms |
 | `ERROR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 1.1× raise T6✓ | knife ✓ · 1/1 forms |
 | `EXP` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.2× exponential T5 2.6× exponential T6✓ | knife ✓ · 1/1 forms |
-| `FIELD` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.42× bind-buffer T5 0.47× bind-buffer T6✓ | knife ✓ · 1/1 forms |
+| `FIELD` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.41× bind-buffer T5 0.47× bind-buffer T6✓ | knife ✓ · 1/1 forms |
 | `FILES` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.22× pattern T5 0.28× pattern T6✓ | knife ✓ · 2/2 forms |
 | `FIX` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.2× truncate T5 0.91× truncate T6✓ | knife ✓ · 1/1 forms |
 | `FN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× string-valued T5 ~ T6✓ | knife ✓ · 2/2 forms · 1 open, worst TIER 6 (T-1738AC) |
@@ -291,7 +291,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `DEF` | TIER 6 | 🤖 | an array element written as a formal, which the call rejects. | T-2C79A1 |
 | `DEF`, `FN` | TIER 6 | 🤖 | `DEF FN` formals aliasing | T-1738AC |
 | `DSKI$` | TIER 6 | 🤖 | neither shape arises on an intact disk. | T-3799F7 |
-| `GET`, `PUT` | TIER 6 | 🤖 | `GET #` / `PUT #` with a record number above 32767 | T-C084FB |
+| `GET`, `PUT` | TIER 6 | 🤖 | `GET #` / `PUT #` with a record number above 32767 | T-5F940A |
 | `LPRINT` | TIER 6 | 🤖 | what the printer gets on an error path. | T-27D028 |
 | `ON`, `STOP` | TIER 6 | 🤖 | when a held-back trap event is dispatched | T-1C15AD |
 | `PLAY` | TIER 6 | 🔁 | `PLAY(n)` transient | T-06346A |

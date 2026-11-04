@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
-* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 122 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -147,7 +147,6 @@ second one is the question a per-component map cannot answer.
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC3` | 2 B | `disk` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |

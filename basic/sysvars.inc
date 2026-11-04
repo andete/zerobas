@@ -4225,6 +4225,10 @@ FCH_RECLENS     equ     $EE4D   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF
                                 ; claim; the band below was ASKED of the machine.
 FCH_RECNOS      equ     $EE7D   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number
                                 ; of the last GET/PUT
+                                ; ⚠️ UNUSED SINCE D-RECBIG (2026-11-04): LOC is the
+                                ; FCB row's +33..34 (disk/kernel.asm rnd_loc). The
+                                ; cell is kept where it is -- reclaiming its 32 B
+                                ; is a RAM-layout decision, not taken here.
                                 ; 🔴 THE RANGE IS SPELLED OUT BECAUSE "32 B"
                                 ; ALONE WAS NOT ENOUGH (D-RAMGATE, 2026-09-21):
                                 ; `(word` appears later in this same comment and
