@@ -1394,6 +1394,10 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-USRDEF (2026-11-04): an unset USR is Illegal function call (USRTAB = $475A).
+usrdef-acceptance: repack-machine
+	python3 probes/basic/basic_probe_usrdef.py --gate
+
 # D-TANBIG (2026-11-04): SIN / COS / TAN reduce the angle the VG-8020's way.
 tanbig-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_tanbig.py --gate \

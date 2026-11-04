@@ -423,6 +423,15 @@ tsr_put:
                 ldir
                 ret
 
+; --- usr_fcerr: $475A, the published "Illegal function call" entry ----------
+; D-USRDEF (2026-11-04): the address every USRTAB vector holds at power-on on the
+; VG-8020 (read with PEEK: 475A x 10), so an un-DEF'd USR raises ERR 5 there; and
+; machine code may call it to raise the error. Pinned; nothing falls into the pad.
+                ds      $475A - $, $00
+usr_fcerr:
+                ld      a,5                 ; Illegal function call
+                jp      raise_error
+
 ; --- tgt_store_str: the STRSCR field -> the resolved target -----------------
 ; in:  BC = key (scalar targets only), STRSCR = [len][bytes], (TGT_ADDR).
 ; Clobbers everything -- every caller already guards its text cursor on the

@@ -36,11 +36,17 @@
 ; language reference; tokens from Table 2.20; USRTAB from C-BIOS sysvars. No
 ; disassembly.
 
-; --- clear_usrtab: zero the 10 USR vectors at boot --------------------------
-; Makes an un-DEF'd USR reliably read 0 (so usr_call can refuse to jump to a
-; stray address — jumping to $0000 would reset the machine). Called from init.
+; --- clear_usrtab: the 10 USR vectors at boot ------------------------------
+; 🎯 D-USRDEF (2026-11-04): EVERY VECTOR POINTS AT $475A, the published "Illegal
+; function call" entry (usr_fcerr, basic/vars.asm), exactly as the VG-8020 holds
+; them at power-on -- all ten read 475A with PEEK, CLEAR and NEW keep them, and
+; `USR(0)` / `USR9(1)` / `USR("A")` with no DEFUSR are ERR 5 there
+; (scratchpad/usrdef_run.out). They were zeroed here, which usr_call refused to
+; jump through, so an unset USR quietly returned its own argument. A vector set
+; to 0 by `DEFUSR=0` is still refused (a $0000 jump resets the MSX). Called from
+; init.
 clear_usrtab:
-                ; D-DEFFN rides the one boot-time zeroer that was already here.
+                ; D-DEFFN rides the one boot-time pass that was already here.
                 ; FN_FEND is the "an FN call is in progress" gate EVERY scalar
                 ; reference consults (sub/arrays.asm scv_find), so power-on RAM
                 ; garbage in it would make ordinary variables resolve against
@@ -49,18 +55,14 @@ clear_usrtab:
                 ld      a,low FN_PAREA
                 ld      (FN_FEND),a
                 ld      hl,USRTAB
-                ld      b,20                ; 10 vectors * 2 bytes
-                xor     a
-; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
-; zf_lp and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
-; REGION question -- is this label reached from a tenant whose mapping
-; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
-; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
-; `equ` (it resolves addresses from the sym, not from the source form).
-; ⚠️ ENTERED BY FALLTHROUGH, so this cannot become an `equ` -- a `jp`
-; has to stay in its place. tools/dupspan_indep.py calls it SAFE-JP.
+                ld      b,10
 cut_lp:
-                jp      zf_lp
+                ld      (hl),low usr_fcerr
+                inc     hl
+                ld      (hl),high usr_fcerr
+                inc     hl
+                djnz    cut_lp
+                ret
 
 ; --- ex_def: DEF USR[n] = <addr> -------------------------------------------
 ; HL -> the DEF token. `DEF USR` (USR is its own token, $DD) stores a machine-

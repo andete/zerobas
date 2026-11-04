@@ -1,0 +1,10 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   tab   [475A 475A 475A 475A 475A 475A 475A 475A | 475A 475A OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   u0    [E 5  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   u9    [E 5  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   ustr  [E 5  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   uand  [E 5  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   dset  [ 0  0 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   clr   [475A | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   new   [C000 | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 8 miss, 8 stored
+refcache: 0 hit, 8 miss, 8 stored

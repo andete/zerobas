@@ -1135,13 +1135,23 @@ item — do **one item per session** to keep context lean.
       before and after D-PRSTRFN). Not yet known whether it is the error routine
       or the handler's `LPRINT` that ends the line.
 
-- [ ] 🔍 **`USR(0)` WITH NO `DEFUSR` IS ILLEGAL FUNCTION CALL ON THE VG-8020 AND 0 HERE
+- [x] 🔍 **`USR(0)` WITH NO `DEFUSR` IS ILLEGAL FUNCTION CALL ON THE VG-8020 AND 0 HERE
       (D-USRDEF, found 2026-10-30).**
       🎚️ TIER 6 — an error a program only meets by forgetting DEFUSR.
       🤖 **AUTONOMOUS** — measure what `USRTAB` holds at power-on on both machines
       (`PEEK(&HF39A)`, a RAM read) and what each `USR0..9` does unset.
       [`prstrfn_op_measure.out`](scratchpad/prstrfn_op_measure.out) row I:
       `LPRINT USR(0) AND 0` is ERR 5 on the VG-8020 and prints `0` here.
+      ✅ **FIXED 2026-11-04.** Measured ([`usrdef_run.out`](scratchpad/usrdef_run.out)): the VG-8020's
+      ten USRTAB words are all $475A at power-on (CLEAR and NEW keep them; DEFUSR=0 stores 0);
+      `USR(0)`, `USR9(1)`, `USR("A")`, `LPRINT USR(0) AND 0` are ERR 5. zerobas had 0 x 10 and
+      usr_call's refusal returned the argument. 🔮 "all ten one address, ours 0" HIT.
+      basic/usr.asm clear_usrtab fills $475A; basic/vars.asm usr_fcerr (`ld a,5 / jp
+      raise_error`) pinned AT $475A -- the published FCERR address, so machine code calling it
+      works too; 11 B of the $4EF8 pad (27 -> 16), 5 B of the $6CF3 pad. Gate
+      usrdef-acceptance (probes/basic/basic_probe_usrdef.py, 8 rows) 8/8
+      ([`usrdef_gate.out`](scratchpad/usrdef_gate.out)); knife (HEAD's usr / vars) 6 DIVERGE, the
+      two DEFUSR rows agree ([`usrdef_knife.out`](scratchpad/usrdef_knife.out)). Docs: USR.md.
 
 - [x] 🔴 **`PRINT INKEY$=""` READ TWO KEYS: A STRING ITEM WITH A RELOP AFTER IT WAS
       EVALUATED TWICE (D-PRSTR2X, found 2026-10-30 by the program ladder's L2_keys).**
@@ -9090,7 +9100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11581 (T-6FE392)8 (T-529ABE)` from `TODO.md:17263 (T-529ABE)`: a
+      `TODO.md:11591 (T-6FE392)8 (T-529ABE)` from `TODO.md:17273 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12050,7 +12060,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17263 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

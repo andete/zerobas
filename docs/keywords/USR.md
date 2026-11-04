@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `USR` and `DEF USR` — call a machine-code routine
 
-> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known difference.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -32,6 +32,9 @@ USR[<n>](<argument>)
 
 - **The ten addresses live in the published `USRTAB` cells** (`&HF39A`, two
   bytes each).
+- **Before any `DEFUSR`, every slot holds `&H475A`**, the published entry that
+  raises `Illegal function call`, so `USR(0)` or `USR9(1)` on a fresh machine is
+  error 5. `CLEAR` and `NEW` leave the slots as they are.
 - **How the routine receives its argument** (the MSX convention, measured on
   the VG-8020): the argument is in `DAC`, the number accumulator at `&HF7F6`,
   and its type in `VALTYP` (`&HF663`: 2 integer, 4 single, 8 double). An
@@ -94,6 +97,15 @@ None known.
 The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 
 ## What we found, and how
+
+- **A `USR` with no `DEFUSR` returned its own argument** (fixed 2026-11-04,
+  D-USRDEF). On the VG-8020 all ten `USRTAB` slots read `&H475A` at power-on
+  (with `PEEK`), and an unset `USR` is `Illegal function call`. zerobas
+  started them at 0 and refused to jump through 0, so `USR(0)` printed 0 and
+  `USR("A")` printed `A`. The slots now start at `&H475A`, where zerobas has
+  the same error entry ([`usrdef_run.out`](../../scratchpad/usrdef_run.out),
+  [`usrdef_gate.out`](../../scratchpad/usrdef_gate.out)). A slot set to 0 with
+  `DEFUSR=0` is still refused rather than jumped to.
 
 - **A routine could not hand back a string** (fixed 2026-11-01,
   D-USRSTRRES). On the VG-8020 a routine that leaves the type at 3 makes
@@ -158,6 +170,8 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 - `make kwsweep` — `DEF USR` and `USR` for slot 0 and a numbered slot, each
   calling a one-byte routine that returns its argument, and the error rows.
 - `make unit-test` — the entry state a routine sees, and the returned value.
+- `make usrdef-acceptance` — `USRTAB` at power-on, after `CLEAR` and `NEW`,
+  and an unset `USR`.
 - `make catusr-acceptance` — the evaluation count.
 - `make usrstr-acceptance` — a string argument, and a string result in a
   numeric place (D-USRSTR).
