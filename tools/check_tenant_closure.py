@@ -56,6 +56,19 @@ Three modes:
   sub/basic-resident-abi.inc's ceiling check already relies on) + RAM are fine.
 
     python3 tools/check_tenant_closure.py --page1 build/sub.sym sub/sub.asm
+
+  🔴 D-P1CLOSURE (2026-11-04): both tenant walks used to seed from the table
+  rows up to the FIRST retired `ret / nop / nop` -- page 1 stopped at index 13,
+  page 0 at index 11, and every tenant after was never walked. The scrape now
+  reads each table to its end (table_rows; a malformed row is a failure, and
+  the row count is checked against the assembled symbols), and the rule set
+  carries the NAMED allowances those tenants need, each with a negative
+  selftest arm: (a) BIOS_RAM_ROUTINES (CLPRIM) and, page 1 only, PAGE1_HOOKS
+  (H_ERRP); (b) p0cb / p1cb IX targets, `ld de,p0_X / ret` continuations and
+  call-back arguments, judged per SITE (classify_abi_site); (c) page 0: a
+  direct main page-1 call the build ASSERTS (`IF p0_X < $4000` + `db`) and
+  whose main body is walked for rst / low-region callees; (d) page 1: a direct
+  call to a p0cb-section main routine whose main body closes below $4000.
 """
 from __future__ import annotations
 import os
@@ -255,26 +268,255 @@ def data_targets(seen, data, universe):
 
 _ABI_INC = os.path.join("sub", "basic-resident-abi.inc")
 
+# ---------------------------------------------------------------------------
+# D-P1CLOSURE (2026-11-04): the NAMED allowances the whole-table walk needs.
+# Each is narrow and each has a negative selftest arm. None is a blanket: an
+# ABI / RAM / main-page-1 name that matches none of them stays an escape.
+# ---------------------------------------------------------------------------
 
-def _abi_data_hole(seen, data):
-    """The one hole build_datagraph's label-only rule leaves, made CHECKABLE.
+RAMBASE = 0xC000
 
-    Main-ROM routines enter the sub build as `equ` addresses via
-    sub/basic-resident-abi.inc, so they are VALUES to the label-only rule and a
-    DATA reference to one would be silently unclassified. That is stated as a
-    coverage limit in docs/spec-rom-region-promote-input.md §3.3 -- and stated
-    with a measurement, "empty today", which is only worth something if the tree
-    keeps re-measuring it. This returns the ABI names a walked span mentions
-    non-transfer; a non-empty result means the exemption stopped being true and
-    the case needs classifying by hand, not that the gate should widen."""
-    if not os.path.exists(_ABI_INC):
-        return set()
-    abi = {m.group(1) for line in open(_ABI_INC)
-           if (m := _INC_SYM.match(line))}
-    hit = set()
-    for n in seen:
-        hit |= (data.get(n, set()) & abi)
-    return hit
+# (a) BIOS RAM routines a tenant may transfer to. The MSX work area is page 3,
+# mapped under every tenant of either page. Keyed by NAME with its documented
+# address, so an `equ` that drifts (or a different name at $F38C) is not
+# covered. CLPRIM: the BIOS's RAM inter-slot call primitive, the tail of p0cb /
+# p1cb (sub/sub.asm) -- `jp CLPRIM` with A = the new primary slot register.
+BIOS_RAM_ROUTINES = {"CLPRIM": 0xF38C}
+
+# (a') MSX hooks a PAGE-1 tenant may call, by name and documented address. A
+# hook is 5 bytes of page-3 RAM, a bare `ret` or a CALLF (`rst $30`) into the
+# slot that claimed it -- which needs BIOS page 0, mapped under a page-1
+# tenant and NOT under a page-0 one (there `rst $30` lands in the sub ROM), so
+# this list is page 1 only. H_ERRP: sub/errmsg.asm (errmsg_tenant, index 22)
+# offers a code it does not host to the disk ROM (D-DISKERR).
+PAGE1_HOOKS = {"H_ERRP": 0xFEFD}
+
+# (b) the call-back routines. `ld ix,p0_X` hands one of these a MAIN address,
+# which it reaches with main mapped (CLPRIM), so p0_X is an IX TARGET, not a
+# callee and not a byte this tenant reads.
+CALLBACKS = ("p0cb", "p1cb")
+_CB_XFER = re.compile(r'^(?:call|jp)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?'
+                      r'(p0cb|p1cb)$', re.I)
+_LD_IX = re.compile(r'^ld\s+ix\s*,\s*([A-Za-z_]\w*)$', re.I)
+_LD_DH = re.compile(r'^ld\s+(de|hl)\s*,\s*([A-Za-z_]\w*)$', re.I)
+_DIRECT = re.compile(r'^(?:call|jp)\s+(?:(?:nz|z|nc|c|p|m|pe|po)\s*,\s*)?'
+                     r'([A-Za-z_]\w*)$', re.I)
+# (c) `IF <name> < $4000` + `db <error>`: the build refuses to assemble if a
+# main routine a page-0 tenant calls DIRECTLY leaves main page 1.
+_ASSERT_P1 = re.compile(r'^\s*IF\s+([A-Za-z_]\w*)\s*<\s*(?:\$4000|4000[hH]|0x4000)\s*$',
+                        re.I)
+
+
+def abi_names(path=_ABI_INC):
+    """{name: is_callback_target} for every `equ` in a resident-ABI include --
+    True for the p0cb section (the `p0_*` names), False for the code seeds."""
+    out, cb = {}, False
+    if not os.path.exists(path):
+        return out
+    for line in open(path):
+        if line.startswith("; --- page-0 call-back (p0cb) targets"):
+            cb = True
+        if (m := _INC_SYM.match(line)):
+            out[m.group(1)] = cb
+    return out
+
+
+def asserted_page1(files):
+    """Names the build ASSERTS stay at or above $4000: an `IF name < $4000`
+    whose next code line is a `db` (the deliberate assemble error). An IF with
+    any other body is not an assert and does not count."""
+    out = {}
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        lines = [ln.split(';', 1)[0] for ln in open(f, errors="replace")]
+        for i, code in enumerate(lines):
+            m = _ASSERT_P1.match(code)
+            if not m:
+                continue
+            nxt = next((c.strip() for c in lines[i + 1:] if c.strip()), "")
+            if re.match(r'db\b', nxt, re.I):
+                out[m.group(1)] = f"{f}:{i + 1}"
+    return out
+
+
+def _code_lines(f):
+    return [ln.split(';', 1)[0].strip() for ln in open(f, errors="replace")]
+
+
+def _forward(lines, i, labels, hops=4, limit=40):
+    """Instructions on the forward path from line i+1: label-only lines are
+    stepped over (fallthrough), an unconditional `jr/jp L` to a label in the
+    same file is followed (at most `hops` times). Ends at any other terminator
+    (it is yielded first). Yields (line_index, code)."""
+    j, n = i + 1, 0
+    while j < len(lines) and n < limit:
+        code = lines[j]
+        m = _LBL.match(code)
+        if m:
+            code = code[m.end():].strip()
+        if not code:
+            j += 1
+            continue
+        n += 1
+        yield j, code
+        if _is_terminator(code):
+            t = re.match(r'^(?:jp|jr)\s+([A-Za-z_]\w*)$', code, re.I)
+            if t and t.group(1) in labels and hops > 0:
+                hops -= 1
+                j = labels[t.group(1)] + 1
+                lb = _LBL.match(lines[labels[t.group(1)]])
+                rest = lines[labels[t.group(1)]][lb.end():].strip()
+                if rest:                           # `label: insn` on one line
+                    n += 1
+                    yield j - 1, rest
+                    if _is_terminator(rest):
+                        return
+                continue
+            return
+        j += 1
+
+
+def _ix_reaches_callback(lines, i, labels):
+    """(b) the IX loaded at line i is the one a p0cb / p1cb transfer consumes:
+    one is reached on the forward path before IX is overwritten. `push ix` /
+    `pop ix` nest (sub2/filestmt.asm's focas_buf calls p0cb once in between
+    with a different IX, then once with this one)."""
+    depth = 0
+    for _, code in _forward(lines, i, labels):
+        low = code.lower()
+        if re.match(r'^push\s+ix$', low):
+            depth += 1
+        elif re.match(r'^pop\s+ix$', low):
+            depth -= 1
+            if depth < 0:
+                return False
+        elif depth == 0 and _CB_XFER.match(code):
+            return True
+        elif depth == 0 and re.match(r'^(ld\s+ix\s*,|ex\s+\(sp\)\s*,\s*ix|inc\s+ix|dec\s+ix|add\s+ix)', low):
+            return False
+        if _is_terminator(code) and not re.match(r'^(?:jp|jr)\s+[A-Za-z_]\w*$', code, re.I):
+            return False
+    return False
+
+
+def classify_abi_site(lines, i, name, labels, abi, asserted):
+    """Why the ABI name `name`, mentioned NOT as a transfer target on line i,
+    is allowed -- or None (an escape the gate reports). Three shapes:
+
+      IX   `ld ix,p0_X` whose IX a p0cb / p1cb transfer consumes (b).
+      CONT `ld de,p0_X` + an unconditional `ret`: a CONTINUATION -- the
+           tenant returns it to main's stub, which jumps there with main mapped.
+      ARG  `ld de|hl,p0_X` + the main callee that reads it, next: either an IX
+           shape above (the call-back runs main with main mapped) or a direct
+           `call` the build asserts is main page 1 (c). The bytes are read by
+           MAIN code, never by this tenant.
+    Only p0cb-section names qualify; a code-seed ABI name never does."""
+    if not abi.get(name):
+        return None
+    code = lines[i]
+    m = _LBL.match(code)
+    if m:
+        code = code[m.end():].strip()
+    if (mi := _LD_IX.match(code)) and mi.group(1) == name:
+        return "IX target of p0cb/p1cb" if _ix_reaches_callback(lines, i, labels) else None
+    md = _LD_DH.match(code)
+    if not md or md.group(2) != name:
+        return None
+    j, nxt = next(_forward(lines, i, labels, hops=0, limit=1), (None, ""))
+    if md.group(1).lower() == "de" and nxt.lower() == "ret":
+        return "continuation (ld de / ret)"
+    if (mi := _LD_IX.match(nxt)) and abi.get(mi.group(1)) \
+            and _ix_reaches_callback(lines, j, labels):
+        return f"argument of call-back {mi.group(1)}"
+    if (mc := _DIRECT.match(nxt)) and mc.group(1) in asserted:
+        return f"argument of asserted direct call {mc.group(1)}"
+    return None
+
+
+def abi_data_escapes(seen, files, abi, asserted):
+    """Every non-transfer mention of a resident-ABI name in a walked span that
+    classify_abi_site does not allow, as (name, file, line). Line-level, so an
+    allowed `ld ix,p0_X` elsewhere cannot excuse a bare `ld hl,p0_X` here."""
+    out, allowed = [], 0
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        lines = _code_lines(f)
+        labels = {}
+        for k, c in enumerate(lines):
+            if (m := _LBL.match(c)):
+                labels.setdefault(m.group(1), k)
+        for k, c in enumerate(lines):
+            if (m := _LBL.match(c)) and m.group(1) in seen:
+                j = k
+                while j < len(lines):
+                    code = lines[j]
+                    xfer = {x.group(1) for x in _XFER.finditer(code)}
+                    for t in _IDENT.finditer(code):
+                        g = t.group(0)
+                        if g in abi and g not in xfer:
+                            if classify_abi_site(lines, j, g, labels, abi, asserted):
+                                allowed += 1
+                            else:
+                                out.append((g, f, j + 1))
+                    if j > k and _is_terminator(code):
+                        break
+                    j += 1
+    return sorted(set(out)), allowed
+
+
+def main_closure(name, graph):
+    seen, stack = set(), [name]
+    while stack:
+        n = stack.pop()
+        if n in seen:
+            continue
+        seen.add(n)
+        stack.extend(graph.get(n, ()))
+    return seen
+
+
+def direct_main_call_ok(n, page, main_syms, main_graph, abi, asserted):
+    """(c) / (d): may a tenant of `page` CALL the main routine `n` (a p0cb-
+    section ABI name, main's routine without the p0_ prefix) DIRECTLY?
+
+      page 0: only if the build asserts `n` stays >= $4000, and main's closure
+              of it (basic/*.asm, rst edges included) stays in main page 1 on
+              this build with every exported member asserted too -- the lever-A
+              question ("walk its body for rst before allowing it"), asked.
+      page 1: main's closure of it stays < $4000 (or RAM): page 1 is switched
+              out under a page-1 tenant.
+    Returns (ok, why)."""
+    if not abi.get(n) or not n.startswith("p0_"):
+        return False, "not a p0cb-section main routine"
+    if main_syms is None:
+        return False, "no main symbol file to walk the main body against"
+    body = n[3:]
+    if body not in main_graph:
+        return False, f"main routine {body} not found in basic/*.asm"
+    clo = main_closure(body, main_graph)
+    if page == 0:
+        if n not in asserted:
+            return False, f"no `IF {n} < $4000` assert in the build"
+        for m in sorted(clo):
+            a = main_syms.get(m)
+            if a is None or not (PAGE1 <= a < 0x8000):
+                return False, (f"main closure member {m} "
+                               f"{'unplaced' if a is None else f'= {a:04X}'} "
+                               f"is not main page 1 (rst / low region / BIOS)")
+            if "p0_" + m in abi and "p0_" + m not in asserted:
+                return False, f"closure member {m} is exported but not asserted"
+        return True, f"asserted at {asserted[n]}; closure {len(clo)} labels, all main page 1"
+    for m in sorted(clo):
+        a = main_syms.get(m)
+        if a is None or (PAGE1 <= a < RAMBASE):
+            return False, (f"main closure member {m} "
+                           f"{'unplaced' if a is None else f'= {a:04X}'} "
+                           f"is main page 1 (switched out)")
+    return True, f"closure {len(clo)} labels, all < $4000 or RAM"
+
+
 
 
 def seeds_from_inc(inc_path):
@@ -335,28 +577,99 @@ def collect_sources(top, seen=None, incdir=None):
     return seen
 
 
-def _table_seeds(sub_asm, table_label):
-    """The entry-table tenants: the `jp <tenant>` run right after `table_label:`
-    (comment-only continuation lines are skipped; the run ends at the first
-    non-jp code line). Shared by the page-0 (sub_p0_table) and page-1
-    (sub_p1_table) entry tables."""
-    seeds, in_table = [], False
+class TableError(Exception):
+    """An entry-table row that is neither a live `jp <tenant>` nor the retired
+    `ret / nop / nop` shape. A malformed row is a FAILURE, never a skip."""
+
+
+_RETIRED = ("ret", "nop", "nop")
+
+
+def table_rows(sub_asm, table_label):
+    """Every row of the entry table at `table_label`, to its DECLARED END.
+
+    🔴 D-P1CLOSURE (2026-11-04): this used to stop at the first code line that
+    was not a `jp`, and both tables carry RETIRED rows (`ret / nop / nop`, kept
+    so later indexes stay put). Page 1 stopped at index 13 and page 0 at index
+    11, so every tenant appended after a retirement -- 21 page-1 rows and 7
+    page-0 rows -- was never closure-checked, and both gates printed OK.
+
+    The table's end is the NEXT `label:` in the file (sub_p0_ping /
+    sub_p1_ping today): the table is a run of 3-byte rows with no label of its
+    own inside it, and check_page0 / check_page1_tenant cross-check the row
+    count against the assembled symbols (end label - table label == 3 * rows),
+    so a row this scrape mis-counts is a failure too.
+
+    Returns [(index, tenant_or_None, line_no)] -- None for a retired row.
+    Raises TableError on any other shape, on a row whose comment names a
+    different `index N` than its position, and on a table with no end label."""
     pat = re.compile(r'^\s*' + re.escape(table_label) + r':')
-    for line in open(sub_asm):
-        code = line.split(';', 1)[0]
+    rows, in_table, retired, end = [], False, [], None
+    for ln, line in enumerate(open(sub_asm), 1):
+        code, _, comment = line.partition(';')
         if not in_table:
             if pat.match(code):
                 in_table = True
             continue
+        if _LBL.match(code):
+            end = _LBL.match(code).group(1)
+            break
         s = code.strip()
         if not s:
             continue                              # comment-only / blank -> skip
+        idx = len(rows)
+        named = re.search(r'\bindex\s+(\d+)\b', comment)
+        if retired:
+            want = _RETIRED[len(retired)]
+            if s.lower() != want:
+                raise TableError(f"{sub_asm}:{ln}: {table_label} row {idx} "
+                                 f"starts the retired shape `ret / nop / nop` "
+                                 f"but has `{s}` where `{want}` belongs")
+            retired.append(ln)
+            if len(retired) == 3:
+                rows.append((idx, None, retired[0]))
+                retired = []
+            continue
+        if named and int(named.group(1)) != idx:
+            raise TableError(f"{sub_asm}:{ln}: {table_label} row {idx} is "
+                             f"commented `index {named.group(1)}` -- the scrape "
+                             f"and the table disagree on where it is")
         m = re.match(r'jp\s+([A-Za-z_]\w*)$', s)
         if m:
-            seeds.append(m.group(1))
+            rows.append((idx, m.group(1), ln))
+        elif s.lower() == "ret":
+            retired = [ln]
         else:
-            break                                 # first non-jp -> table ended
-    return seeds
+            raise TableError(f"{sub_asm}:{ln}: {table_label} row {idx} is "
+                             f"`{s}` -- neither `jp <tenant>` nor a retired "
+                             f"`ret / nop / nop`")
+    if retired:
+        raise TableError(f"{sub_asm}:{retired[0]}: {table_label} ends inside a "
+                         f"retired row ({len(retired)} of 3 lines)")
+    if not in_table or end is None:
+        raise TableError(f"{sub_asm}: {table_label} not found, or no label "
+                         f"after it to end the table")
+    return rows, end
+
+
+def check_table_extent(syms, table_label, end_label, rows):
+    """The assembled cross-check: 3 bytes per row, end label right after."""
+    a, b = syms.get(table_label), syms.get(end_label)
+    if a is None or b is None:
+        return (f"{table_label} / {end_label} missing from the symbol file -- "
+                f"cannot confirm the scraped row count")
+    if b - a != 3 * len(rows):
+        return (f"{table_label} ${a:04X} .. {end_label} ${b:04X} is "
+                f"{b - a} B, but the scrape found {len(rows)} rows "
+                f"({3 * len(rows)} B)")
+    return None
+
+
+def _table_seeds(sub_asm, table_label):
+    """The LIVE tenants of an entry table, every row to its end (retired rows
+    skipped -- see table_rows)."""
+    rows, _ = table_rows(sub_asm, table_label)
+    return [t for _, t, _ in rows if t]
 
 
 def page0_seeds(sub_asm):
@@ -478,11 +791,143 @@ def rst_sites(files):
     return out
 
 
-def check_page0(argv) -> int:
-    sub_sym, sub_asm = argv[0], argv[1]
+def tenant_closure(page, sub_sym, sub_asm, abi_path=_ABI_INC,
+                   main_sym=None, main_files=None):
+    """The shared walk behind --page0 and --page1. Returns
+    (seeds, rows, seen, dref, escapes, allowed); raises TableError on a
+    malformed entry table.
+
+    page 0 -- a page-0 tenant runs with slot-0 page 0 (BIOS + low region +
+    ISR) switched out and main page 1 mapped. Fine: sub-local page-0 code,
+    RAM, main page 1 as DATA. Escapes: a main routine < $4000, a sub-local
+    label >= $4000, and -- since MAKING ROOM lever A (2026-09-25), because main
+    code may `rst $10` and an rst under a page-0 tenant lands in the SUB ROM's
+    $0010 -- any main page-1 CALLEE, except (c) below.
+
+    page 1 -- the mirror: main page 1 is switched out, main page 0 (BIOS + low
+    region) and RAM stay mapped. Escapes: a sub-local label < $4000, a main
+    routine >= $4000.
+
+    D-P1CLOSURE's named allowances (see their definitions above): (a)
+    BIOS_RAM_ROUTINES as callees; (b) p0cb / p1cb IX targets, continuations and
+    call-back arguments, per SITE (classify_abi_site); (c) page 0: a direct
+    main page-1 call the build asserts and whose main body is walked; (d) page
+    1: a direct call to a p0cb-section main routine whose main body closes
+    below $4000 -- a BIOS / low-region callee was always fine here."""
     syms = load_syms(sub_sym)
+    if main_sym is None:
+        cand = os.path.join(os.path.dirname(sub_sym), "basic-reloc.sym")
+        main_sym = cand if os.path.exists(cand) else None
+    main_syms = load_syms(main_sym) if main_sym else None
+    main_graph = build_callgraph(main_files if main_files is not None
+                                 else sorted(glob.glob("basic/*.asm")))
     sources = collect_sources(sub_asm)
-    rst = rst_sites(sources)
+    graph = build_callgraph(sources)
+    sub_local = set(graph)                        # every label DEFINED in the sub image
+    sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
+    table = 'sub_p0_table' if page == 0 else 'sub_p1_table'
+    rows, end = table_rows(sub_asm, table)
+    escapes = []
+    ext = check_table_extent(syms, table, end, rows)
+    if ext:
+        escapes.append((table, syms.get(table, 0), "TABLE: " + ext))
+    seeds = [t for _, t, _ in rows if t]
+
+    seen = set()
+    stack = list(seeds)
+    while stack:
+        n = stack.pop()
+        if n in seen:
+            continue
+        seen.add(n)
+        stack.extend(c for c in graph.get(n, ()) if c not in seen)
+
+    abi = abi_names(abi_path)
+    asserted = asserted_page1(sources)
+    dref = data_targets(seen, build_datagraph(sources), sub_local)
+    bad, allowed = abi_data_escapes(seen, sources, abi, asserted)
+    for n, f, ln in bad:
+        escapes.append((n, syms.get(n, abi_sym_value(n, abi_path)),
+                        f"resident-ABI name DATA-referenced at {f}:{ln} in no "
+                        f"allowed shape (IX target / continuation / call-back "
+                        f"argument) -- classify by hand"))
+
+    for n in sorted(seen) + sorted(dref):
+        addr = syms.get(n)
+        if addr is None:
+            continue                              # constant / not a placed label
+        how = "called" if n in seen else "DATA-referenced"
+        if n in sub_local:
+            if page == 0 and addr >= PAGE1:
+                escapes.append((n, addr, f"sub page-1 (own $4000+ island, unmapped "
+                                         f"during a page-0 call), {how}"))
+            if page == 1 and addr < PAGE1:
+                escapes.append((n, addr, f"sub page-0 (own island, unmapped "
+                                         f"during a page-1 call), {how}"))
+            continue
+        if how == "called" and n in BIOS_RAM_ROUTINES:
+            if addr == BIOS_RAM_ROUTINES[n]:
+                allowed += 1
+                continue                          # (a)
+            escapes.append((n, addr, f"named BIOS RAM routine at the wrong "
+                                     f"address (documented "
+                                     f"{BIOS_RAM_ROUTINES[n]:04X}), called"))
+            continue
+        if page == 1 and how == "called" and n in PAGE1_HOOKS:
+            if addr == PAGE1_HOOKS[n]:
+                allowed += 1
+                continue                          # (a')
+            escapes.append((n, addr, f"named hook at the wrong address "
+                                     f"(documented {PAGE1_HOOKS[n]:04X}), called"))
+            continue
+        if page == 0:
+            if addr < PAGE1:
+                where = ("main low region $2781-$3FFF" if addr >= LOWREGION
+                         else "main BIOS < $2781")
+                escapes.append((n, addr,
+                                f"{where} (switched out under a page-0 call), {how}"))
+            elif how == "called":
+                ok, why = direct_main_call_ok(n, 0, main_syms, main_graph,
+                                              abi, asserted)
+                if ok:
+                    allowed += 1
+                else:
+                    escapes.append((n, addr, "main page-1 routine CALLED from a "
+                                             "page-0 tenant -- main code may "
+                                             "`rst $10`, which would land in the "
+                                             "sub ROM's own $0010 (" + why + ")"))
+        else:
+            if addr >= PAGE1:
+                escapes.append((n, addr, f"main-BASIC page-1 (switched out under "
+                                         f"a page-1 call), {how}"))
+            elif how == "called" and abi.get(n):
+                ok, why = direct_main_call_ok(n, 1, main_syms, main_graph,
+                                              abi, asserted)
+                if ok:
+                    allowed += 1
+                else:
+                    escapes.append((n, addr, "main routine CALLED DIRECTLY from a "
+                                             "page-1 tenant whose main body leaves "
+                                             "page 0 (" + why + ")"))
+    return seeds, rows, seen, dref, escapes, allowed
+
+
+def abi_sym_value(name, abi_path=_ABI_INC):
+    if os.path.exists(abi_path):
+        for line in open(abi_path):
+            m = re.match(r'^\s*' + re.escape(name) + r'\s+equ\s+([0-9A-Fa-f]+)H', line, re.I)
+            if m:
+                return int(m.group(1), 16)
+    return 0
+
+
+def _row_summary(rows):
+    return ", ".join(f"{i}:{t}" if t else f"{i}:retired" for i, t, _ in rows)
+
+
+def _run_page(argv, page) -> int:
+    sub_sym, sub_asm = argv[0], argv[1]
+    rst = rst_sites(collect_sources(sub_asm)) if page == 0 else []
     if rst:
         print("FAIL: `rst` in the sub build -- a page-0 tenant's rst lands in the "
               "SUB-ROM's own vector, not main's (main `rst $10` is CHRGTR, "
@@ -490,161 +935,47 @@ def check_page0(argv) -> int:
         for f, i, arg in rst:
             print(f"  {f}:{i}  rst {arg}", file=sys.stderr)
         return 1
-    graph = build_callgraph(sources)
-    sub_local = set(graph)                        # every label DEFINED in the sub image
-    sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
-    seeds = page0_seeds(sub_asm)
+    try:
+        seeds, rows, seen, dref, escapes, allowed = tenant_closure(page, sub_sym, sub_asm)
+    except TableError as e:
+        print(f"FAIL: malformed entry table -- {e}", file=sys.stderr)
+        return 1
     if not seeds:
-        print(f"FAIL: no page-0 seeds found (sub_p0_table) in {sub_asm}",
-              file=sys.stderr)
+        print(f"FAIL: no page-{page} seeds found in {sub_asm}", file=sys.stderr)
         return 1
-
-    seen = set()
-    stack = list(seeds)
-    while stack:
-        n = stack.pop()
-        if n in seen:
-            continue
-        seen.add(n)
-        stack.extend(c for c in graph.get(n, ()) if c not in seen)
-
-    # Classify every callee reached from the page-0 tenants. Sub-local page-0
-    # code + RAM are fine (main page-1 as DATA only -- the lever-A rule below
-    # refuses it as a callee); escapes are (a) an external/main import
-    # < $4000 (main low region / BIOS, paged out), or (b) a sub-local label
-    # >= $4000 (the sub's OWN page 1, not mapped during a page-0 call).
-    dref = data_targets(seen, build_datagraph(sources), sub_local)
-    bad = _abi_data_hole(seen, build_datagraph(sources))
-    if bad:
-        print(f"FAIL: a page-0 tenant DATA-references resident-ABI symbol(s) "
-              f"{sorted(bad)}. Those arrive as `equ` addresses, so the "
-              f"label-only rule in build_datagraph cannot classify them "
-              f"(docs/spec-rom-region-promote-input.md §3.3 records this hole as "
-              f"CHECKED EMPTY). It is no longer empty — classify by hand.",
-              file=sys.stderr)
-        return 1
-
-    escapes = []
-    for n in sorted(seen) + sorted(dref):
-        addr = syms.get(n)
-        if addr is None:
-            continue                              # constant / not a placed label
-        how = "called" if n in seen else "DATA-referenced"
-        if n in sub_local:
-            if addr >= PAGE1:
-                escapes.append((n, addr, f"sub page-1 (own $4000+ island, unmapped "
-                                         f"during a page-0 call), {how}"))
-        elif addr < PAGE1:
-            where = ("main low region $2781-$3FFF" if addr >= LOWREGION
-                     else "main BIOS < $2781")
-            escapes.append((n, addr,
-                            f"{where} (switched out under a page-0 call), {how}"))
-
-    # 🔁 MAKING ROOM lever A (2026-09-25): main code now uses `rst $10`
-    # (CHRGTR), and an rst jumps into PAGE 0 -- which, under a page-0 tenant, is
-    # the SUB ROM. So a main page-1 routine is no longer a safe callee just
-    # because it is mapped: it is safe only if nothing it runs is an `rst`, and
-    # this walk cannot see main's bodies. Measured EMPTY when the vector was
-    # taken (no page-0 tenant calls main at all); refuse the first one, so that
-    # whoever adds it walks the main body for `rst` first.
-    for n in sorted(seen):
-        addr = syms.get(n)
-        if addr is not None and n not in sub_local and addr >= PAGE1:
-            escapes.append((n, addr, "main page-1 routine CALLED from a page-0 "
-                                     "tenant -- main code may `rst $10`, which "
-                                     "would land in the sub ROM's own $0010; "
-                                     "walk its body for rst before allowing it"))
-
     if escapes:
-        print("FAIL: page-0 escapes — a page-0 tenant runs with slot-0 page 0 "
-              "(BIOS + low region + ISR) switched out, so these callees crash "
-              "when reached. Keep them sub-local (page 0); since lever A "
-              "(2026-09-25) a main page-1 callee is refused too, because main "
-              "code may `rst`:", file=sys.stderr)
+        if page == 0:
+            print("FAIL: page-0 escapes — a page-0 tenant runs with slot-0 page 0 "
+                  "(BIOS + low region + ISR) switched out, so these callees crash "
+                  "when reached. Keep them sub-local (page 0), or reach main "
+                  "through p0cb:", file=sys.stderr)
+        else:
+            print("FAIL: page-1 escapes — a page-1 tenant runs with slot-0 page 1 "
+                  "(main BASIC) switched out, so these callees crash when reached. "
+                  "Keep them sub-local (page 1), call only main routines below "
+                  "$4000 (BIOS / the reclaimed low region), or reach main "
+                  "through p1cb:", file=sys.stderr)
         for n, a, why in escapes:
             print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
         return 1
-    print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-0 "
-          f"tenants ({', '.join(seeds)}), + {len(dref)} data-referenced label(s); "
-          f"every callee is sub-local page-0 (data targets may also be main "
-          f"page-1 or RAM). No low-region/BIOS escape, no main callee.")
+    print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-{page} "
+          f"tenants, every table row walked ({_row_summary(rows)}), + {len(dref)} "
+          f"data-referenced label(s), {allowed} site(s) passed by a named "
+          f"allowance (CLPRIM / H_ERRP / p0cb-p1cb IX / continuation / call-back arg / "
+          f"asserted direct call). No escape.")
     return 0
+
+
+def check_page0(argv) -> int:
+    return _run_page(argv, 0)
 
 
 def check_page1_tenant(argv) -> int:
-    """The MIRROR of check_page0: walk the SUB call graph from the page-1
-    entry-table tenants and fail on any callee that would be switched out while
-    a page-1 tenant runs (docs/spec-evict-call-format.md §6 — added because the
-    default check_page1 above only audits the resident-ABI IMPORT LIST, so a
-    tenant that imports nothing there, like format_tenant, was never actually
-    walked). Every main-BASIC page-1 tenant so far (fp_sqrt..fp_rnd) also passes
-    this: their resident-ABI callees are all < $4000 (checked separately by
-    check_resident_abi.py / the default mode above), and they call no main
-    page-1 routine, so this is a strictly ADDITIONAL, not conflicting, gate."""
-    sub_sym, sub_asm = argv[0], argv[1]
-    syms = load_syms(sub_sym)
-    sources = collect_sources(sub_asm)
-    graph = build_callgraph(sources)
-    sub_local = set(graph)                        # every label DEFINED in the sub image
-    sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
-    seeds = page1_seeds(sub_asm)
-    if not seeds:
-        print(f"FAIL: no page-1 seeds found (sub_p1_table) in {sub_asm}",
-              file=sys.stderr)
-        return 1
-
-    seen = set()
-    stack = list(seeds)
-    while stack:
-        n = stack.pop()
-        if n in seen:
-            continue
-        seen.add(n)
-        stack.extend(c for c in graph.get(n, ()) if c not in seen)
-
-    # Classify every callee reached from the page-1 tenants. Sub-local page-1
-    # code + ANY main routine < $4000 (BIOS + the reclaimed low region, both
-    # stay mapped while a page-1 tenant runs) + RAM are fine; escapes are
-    # (a) a sub-local label < $4000 (the sub's OWN page-0 island, not mapped
-    # during a page-1 call), or (b) an external/main import >= $4000
-    # (main-BASIC page 1, switched out under a page-1 call).
-    dref = data_targets(seen, build_datagraph(sources), sub_local)
-    bad = _abi_data_hole(seen, build_datagraph(sources))
-    if bad:
-        print(f"FAIL: a page-1 tenant DATA-references resident-ABI symbol(s) "
-              f"{sorted(bad)}, which arrive as `equ` addresses and cannot be "
-              f"classified by the label-only rule "
-              f"(docs/spec-rom-region-promote-input.md §3.3, CHECKED EMPTY — no "
-              f"longer). Classify by hand.", file=sys.stderr)
-        return 1
-
-    escapes = []
-    for n in sorted(seen) + sorted(dref):
-        addr = syms.get(n)
-        if addr is None:
-            continue                              # constant / not a placed label
-        how = "called" if n in seen else "DATA-referenced"
-        if n in sub_local:
-            if addr < PAGE1:
-                escapes.append((n, addr, f"sub page-0 (own island, unmapped "
-                                         f"during a page-1 call), {how}"))
-        elif addr >= PAGE1:
-            escapes.append((n, addr, f"main-BASIC page-1 (switched out under "
-                                     f"a page-1 call), {how}"))
-
-    if escapes:
-        print("FAIL: page-1 escapes — a page-1 tenant runs with slot-0 page 1 "
-              "(main BASIC) switched out, so these callees crash when reached. "
-              "Keep them sub-local (page 1) or call only main routines below "
-              "$4000 (BIOS / the reclaimed low region):", file=sys.stderr)
-        for n, a, why in escapes:
-            print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
-        return 1
-    print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-1 "
-          f"tenants ({', '.join(seeds)}), + {len(dref)} data-referenced label(s); "
-          f"every callee and data target is sub-local page-1, main "
-          f"low-region/BIOS (< ${PAGE1:04X}), or RAM. No main-page-1 escape.")
-    return 0
+    """The MIRROR of check_page0 (docs/spec-evict-call-format.md §6 -- added
+    because the default check_page1 only audits the resident-ABI IMPORT LIST,
+    so a tenant that imports nothing there, like format_tenant, was never
+    walked)."""
+    return _run_page(argv, 1)
 
 
 def selftest() -> int:
@@ -725,8 +1056,208 @@ def selftest() -> int:
             f"fewer than the {len(base)} labels it starts from",
             len(found) < len(base))
     os.remove(tmp)
+    _selftest_tables(arm, probe_tmp)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
+
+
+def _selftest_tables(arm, probe_tmp):
+    """D-P1CLOSURE arms: the whole-table walk and each named allowance, every
+    one with its NEGATIVE. A planted mini sub ROM (table + tenants + ABI include
+    + symbols) and a planted mini main (basic/*.asm stand-in + its symbols)."""
+    d = probe_tmp.tmp("closure_tables")
+    os.makedirs(d, exist_ok=True)
+    abi = os.path.join(d, "abi.inc")
+    with open(abi, "w") as fh:
+        fh.write("code_seed equ 01000H\n"
+                 "; --- page-0 call-back (p0cb) targets: planted ---\n"
+                 "p0_lowfn equ 02800H\n"
+                 "p0_hifn equ 05000H\n"
+                 "p0_hirst equ 05100H\n"
+                 "p0_hicalls_low equ 05200H\n"
+                 "p0_lowfn_calls_hi equ 02900H\n"
+                 "p0_hidata equ 05300H\n")
+    main_asm = os.path.join(d, "main.asm")
+    with open(main_asm, "w") as fh:
+        fh.write("lowfn:\n ret\n"
+                 "hifn:\n ret\n"
+                 "hirst:\n rst $10\n ret\n"
+                 "hicalls_low:\n call lowfn\n ret\n"
+                 "lowfn_calls_hi:\n call hifn\n ret\n")
+    main_sym = os.path.join(d, "main.sym")
+    with open(main_sym, "w") as fh:
+        for n, a in (("lowfn", 0x2800), ("hifn", 0x5000), ("hirst", 0x5100),
+                     ("hicalls_low", 0x5200), ("lowfn_calls_hi", 0x2900),
+                     ("chrgtr", 0x0160)):
+            fh.write(f"{n}\tEQU 0{a:04X}H\n")
+
+    def scenario(page, rows, body, syms, asserts=""):
+        """rows: table lines; body: tenant code. Returns the escapes, or the
+        TableError text."""
+        tab = "sub_p0_table" if page == 0 else "sub_p1_table"
+        asm = os.path.join(d, "sub.asm")
+        with open(asm, "w") as fh:
+            fh.write(asserts + tab + ":\n" + rows + "tab_end:\n" + body)
+        sym = os.path.join(d, "sub.sym")
+        base = 0x0040 if page == 0 else 0x4010
+        nrows = sum(1 for ln in rows.splitlines()
+                    if ln.split(";")[0].strip()
+                    and ln.split(";")[0].strip().lower() not in ("nop",))
+        allsyms = {tab: base, "tab_end": base + 3 * nrows}
+        allsyms.update(syms)
+        with open(sym, "w") as fh:
+            for n, a in allsyms.items():
+                fh.write(f"{n}\tEQU 0{a:04X}H\n")
+        try:
+            out = tenant_closure(page, sym, asm, abi_path=abi,
+                                 main_sym=main_sym, main_files=[main_asm])
+        except TableError as e:
+            return "TableError: " + str(e)
+        return out
+
+    def names(r):
+        return set() if isinstance(r, str) else {n for n, _, _ in r[4]}
+
+    def seeds(r):
+        return [] if isinstance(r, str) else r[0]
+
+    P1 = 0x5000          # a sub-local page-1 address
+    P0 = 0x1000          # a sub-local page-0 address
+    retired_rows = (" jp ta ; index 0\n ret ; index 1: RETIRED\n nop\n nop\n"
+                    " jp tb ; index 2\n")
+
+    # --- the scrape --------------------------------------------------------
+    r = scenario(1, retired_rows, "ta:\n ret\ntb:\n ret\n", {"ta": P1, "tb": P1 + 1})
+    arm("W1 a tenant row AFTER a retired row is walked (the old blind spot: "
+        "the scrape stopped at the first non-jp)", seeds(r) == ["ta", "tb"])
+    arm("W2 ...and the same table, clean, has no escape", names(r) == set())
+    r = scenario(1, retired_rows, "ta:\n ret\ntb:\n call lowlocal\n ret\n"
+                 "lowlocal:\n ret\n", {"ta": P1, "tb": P1 + 1, "lowlocal": P0})
+    arm("W3 a forbidden call in the tenant after the retired row is RED "
+        "(page 1 -> the sub's own page 0)", "lowlocal" in names(r))
+    r = scenario(1, " jp ta\n ret\n nop\n ld a,1\n jp tb\n",
+                 "ta:\n ret\ntb:\n ret\n", {"ta": P1, "tb": P1 + 1})
+    arm("W4 a malformed retired row (`ret / nop / ld a,1`) is a FAILURE, not "
+        "a skip", isinstance(r, str) and "retired shape" in r)
+    r = scenario(1, " jp ta\n ld a,1\n", "ta:\n ret\n", {"ta": P1})
+    arm("W5 a row that is neither `jp` nor `ret` is a FAILURE",
+        isinstance(r, str) and "neither" in r)
+    r = scenario(1, " jp ta ; index 0\n jp tb ; index 2\n",
+                 "ta:\n ret\ntb:\n ret\n", {"ta": P1, "tb": P1 + 1})
+    arm("W6 a row whose comment names another index is a FAILURE",
+        isinstance(r, str) and "index 2" in r)
+    r = scenario(1, " jp ta\n jp tb\n", "ta:\n ret\ntb:\n ret\n",
+                 {"ta": P1, "tb": P1 + 1, "tab_end": 0x4010 + 9})
+    arm("W7 a table whose assembled size disagrees with the scrape is RED",
+        "sub_p1_table" in names(r))
+
+    # --- (a) CLPRIM ---------------------------------------------------------
+    r = scenario(1, " jp ta\n", "ta:\n jp CLPRIM\n", {"ta": P1, "CLPRIM": 0xF38C})
+    arm("A1 `jp CLPRIM` at $F38C is allowed", names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n jp CLPRIM\n", {"ta": P1, "CLPRIM": 0xF38D})
+    arm("A2 NEG: CLPRIM equ'd to a different address is RED", "CLPRIM" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n call OTHERRAM\n ret\n",
+                 {"ta": P1, "OTHERRAM": 0xF400})
+    arm("A3 NEG: any other RAM callee is still RED (no blanket RAM rule)",
+        "OTHERRAM" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n call H_ERRP\n ret\n",
+                 {"ta": P1, "H_ERRP": 0xFEFD})
+    arm("A4 page 1 may call H_ERRP ($FEFD)", names(r) == set())
+    r = scenario(0, " jp ta\n", "ta:\n call H_ERRP\n ret\n",
+                 {"ta": P0, "H_ERRP": 0xFEFD})
+    arm("A5 NEG: page 0 may NOT (its CALLF `rst $30` lands in the sub ROM)",
+        "H_ERRP" in names(r))
+
+    # --- (b) p0cb / p1cb IX targets, continuations, arguments ---------------
+    cb = "p1cb:\n jp CLPRIM\n"
+    cbs = {"p1cb": P1 + 0x100, "CLPRIM": 0xF38C}
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n call p1cb\n ret\n" + cb,
+                 {"ta": P1, **cbs})
+    arm("B1 `ld ix,p0_X / call p1cb` is an IX target, allowed", names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n jr tb\ntb:\n push ix\n"
+                 " ld ix,p0_lowfn\n call p1cb\n pop ix\n jp p1cb\n" + cb,
+                 {"ta": P1, "tb": P1 + 1, **cbs})
+    arm("B2 ...through a `jr` and a nested push/pop ix (focas_buf's shape)",
+        names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n ret\n", {"ta": P1})
+    arm("B3 NEG: `ld ix,p0_X` that no call-back consumes is RED",
+        "p0_hifn" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n ld ix,p0_hifn\n ld ix,p0_lowfn\n"
+                 " call p1cb\n ret\n" + cb, {"ta": P1, **cbs})
+    arm("B4 NEG: an IX overwritten before the call-back is RED",
+        "p0_hifn" in names(r) and "p0_lowfn" not in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n ld hl,p0_hidata\n ld a,(hl)\n ret\n",
+                 {"ta": P1})
+    arm("B5 NEG: a tenant READING a p0_ address itself is RED",
+        "p0_hidata" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n ld de,p0_hifn\n ret\n", {"ta": P1})
+    arm("B6 `ld de,p0_X / ret` is a continuation, allowed", names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld de,p0_hifn\n nop\n ret\n", {"ta": P1})
+    arm("B7 NEG: `ld de,p0_X / nop / ret` is not that shape, RED",
+        "p0_hifn" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n ld de,p0_hidata\n ld ix,p0_hifn\n"
+                 " call p1cb\n ret\n" + cb, {"ta": P1, **cbs})
+    arm("B8 `ld de,p0_D / ld ix,p0_F / call p1cb` (main reads D), allowed",
+        names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n ld de,code_seed\n ret\n", {"ta": P1})
+    arm("B9 NEG: a CODE-SEED ABI name in a continuation shape is still RED "
+        "(only the p0cb section qualifies)", "code_seed" in names(r))
+
+    # --- (c) page 0: direct main page-1 calls need the build's assert -------
+    ok_assert = "    IF p0_hifn < $4000\n db HIFN_LEFT_PAGE_1\n    ENDIF\n"
+    r = scenario(0, " jp ta\n", "ta:\n call p0_hifn\n ret\n",
+                 {"ta": P0, "p0_hifn": 0x5000}, asserts=ok_assert)
+    arm("C1 page 0: a direct call the build asserts >= $4000 is allowed",
+        names(r) == set())
+    r = scenario(0, " jp ta\n", "ta:\n call p0_hifn\n ret\n",
+                 {"ta": P0, "p0_hifn": 0x5000})
+    arm("C2 NEG: the same call WITHOUT the assert is RED", "p0_hifn" in names(r))
+    r = scenario(0, " jp ta\n", "ta:\n call p0_hifn\n ret\n",
+                 {"ta": P0, "p0_hifn": 0x5000},
+                 asserts="    IF p0_hifn < $4000\n nop\n    ENDIF\n")
+    arm("C3 NEG: an IF whose body is not a `db` error is not an assert, RED",
+        "p0_hifn" in names(r))
+    r = scenario(0, " jp ta\n", "ta:\n call p0_hirst\n ret\n",
+                 {"ta": P0, "p0_hirst": 0x5100},
+                 asserts="    IF p0_hirst < $4000\n db X\n    ENDIF\n")
+    arm("C4 NEG: asserted, but main's body does `rst $10` (lever A), RED",
+        "p0_hirst" in names(r))
+    r = scenario(0, " jp ta\n", "ta:\n call p0_hicalls_low\n ret\n",
+                 {"ta": P0, "p0_hicalls_low": 0x5200},
+                 asserts="    IF p0_hicalls_low < $4000\n db X\n    ENDIF\n")
+    arm("C5 NEG: asserted, but main's body calls the low region, RED",
+        "p0_hicalls_low" in names(r))
+    r = scenario(0, " jp ta\n", "ta:\n call p0_lowfn\n ret\n",
+                 {"ta": P0, "p0_lowfn": 0x2800})
+    arm("C6 NEG: page 0 calling the main LOW region directly (no p0cb) is RED",
+        "p0_lowfn" in names(r))
+
+    # --- (d) page 1: BIOS / low-region calls ---------------------------------
+    r = scenario(1, " jp ta\n", "ta:\n call CHPUT\n ret\n",
+                 {"ta": P1, "CHPUT": 0x00A2})
+    arm("D1 page 1: a direct BIOS call is allowed (page 0 is main/BIOS)",
+        names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n call p0_lowfn\n ret\n",
+                 {"ta": P1, "p0_lowfn": 0x2800})
+    arm("D2 page 1: a direct low-region p0_ call whose main body stays low",
+        names(r) == set())
+    r = scenario(1, " jp ta\n", "ta:\n call p0_lowfn_calls_hi\n ret\n",
+                 {"ta": P1, "p0_lowfn_calls_hi": 0x2900})
+    arm("D3 NEG: ...but one whose main body calls main page 1 is RED",
+        "p0_lowfn_calls_hi" in names(r))
+    r = scenario(1, " jp ta\n", "ta:\n call p0_hifn\n ret\n",
+                 {"ta": P1, "p0_hifn": 0x5000})
+    arm("D4 NEG: page 1 calling main page 1 directly is RED", "p0_hifn" in names(r))
+
+    # --- the live tree: the scrape reaches each table's end -----------------
+    if os.path.exists("sub/sub.asm") and os.path.exists("build/sub.sym"):
+        ls = load_syms("build/sub.sym")
+        for tab in ("sub_p0_table", "sub_p1_table"):
+            rows, end = table_rows("sub/sub.asm", tab)
+            ret = sum(1 for _, t, _ in rows if t is None)
+            arm(f"L2 live {tab}: {len(rows)} rows ({ret} retired) to {end}, "
+                f"and the assembled size agrees",
+                ret >= 1 and check_table_extent(ls, tab, end, rows) is None)
 
 
 def main() -> int:

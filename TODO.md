@@ -748,7 +748,7 @@ item — do **one item per session** to keep context lean.
       poke, all four sides) -- 6/6 after ([`curgeo_after.out`](scratchpad/curgeo_after.out)),
       knifed back to the old geometry 4 rows RED
       ([`curgeo_knife.out`](scratchpad/curgeo_knife.out)). Docs: docs/concepts/screen-editor.md.
-      - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
+      - [x] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
         closure-checked. 🤖 **AUTONOMOUS** -- walk the whole table (skip retired rows), and
@@ -761,6 +761,18 @@ item — do **one item per session** to keep context lean.
         file_tenant: 70 labels, no rst, outside callees only CLPRIM (RAM) and two direct main
         page-1 calls. The fixed gate must accept CLPRIM, p0cb / p1cb IX targets and asserted
         direct page-1 calls (keystr's pchar / print_crlf too).
+        ✅ **FIXED 2026-11-04 (tools/check_tenant_closure.py only).** The scrape reads each table to
+        the next label, accepts only `jp <tenant>` or the exact retired `ret / nop / nop`, checks
+        each row's index comment, and the row count against the built symbols (page 0 20 rows,
+        page 1 35). The hole was bigger than filed: page 1 had skipped ALL 21 rows from 14 to 34.
+        Named allowances, each with a RED negative arm: CLPRIM at $F38C (RAM, by name AND
+        address); H_ERRP via CALLF on page 1 only (errmsg's disk-ROM offer); `p0_*` names judged per
+        site -- an IX target consumed by p0cb / p1cb, a DE continuation, a call-back argument; a
+        direct page-0 -> main page-1 call only behind an `IF name < $4000` assert, with main's
+        code behind it walked to stay in page 1; a page-1 direct `p0_*` call only when main's
+        code stays below $4000. Selftest W1-W7 / A1-A5 / B1-B9 / C1-C6 / D1-D4 / L2 green; each rule
+        broken in a temp copy reddens its arm. Real tree: page 0 18 tenants, page 1 34, NO
+        escape ([`p1closure.out`](scratchpad/p1closure.out)).
       - [ ] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
         🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
         `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
@@ -9041,7 +9053,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11532 (T-6FE392)8 (T-529ABE)` from `TODO.md:17214 (T-529ABE)`: a
+      `TODO.md:11544 (T-6FE392)8 (T-529ABE)` from `TODO.md:17226 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12001,7 +12013,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17226 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

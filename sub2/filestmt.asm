@@ -117,8 +117,9 @@ fs_open:
                                             ; terminated copy in STRSCR
                 ; device dispatch, on the STAGED copy (so `OPEN A$` with A$="CAS:X"
                 ; reaches the tape arm as the literal does). The names are main's
-                ; data: main's dev_cmp reads (DE) with main's page 0 mapped, and the
-                ; strings sit in main page 1.
+                ; data in main page 1, and dev_cmp (main page 1 too) is called
+                ; DIRECTLY from this sub page-0 tenant -- main's page 1 is mapped
+                ; here, and the build asserts dev_cmp / upcase stay above $4000.
                 ld      de,p0_dev_lpt
                 call    p0_dev_cmp          ; Z + HL past the prefix iff it matched
                 jp      z,fo_dev_lpt
