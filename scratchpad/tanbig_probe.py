@@ -32,6 +32,18 @@ CASES = {'e1E10': 'X=1E10:PRINT SIN(X);COS(X):PRINT TAN(X)',
          'e1D30': 'X=1D30:PRINT SIN(X);COS(X):PRINT TAN(X)'}
 CASES2 = {"e"+e: f"X={e}:PRINT SIN(X);COS(X):PRINT TAN(X)"
           for e in ["1E11", "1E12", "2E13", "3E13", "5E13", "7E13"]}
+# D-TANBIG model (2026-11-04): the sign rule of COS, and small/ordinary angles.
+CASES3 = {"s12345": "X#=12345.678#:PRINT SIN(X#);COS(X#):PRINT SIN(-X#);COS(-X#)",
+          "s1000": "X=1000:PRINT SIN(X);COS(X):PRINT TAN(X);TAN(-X)",
+          "s.5": "X=.5:PRINT SIN(X);COS(X):PRINT COS(-X);TAN(X)",
+          "s1": "X=1:PRINT SIN(X);COS(X):PRINT COS(-X);TAN(X)",
+          "sm1E12": "X=-1E12:PRINT SIN(X);COS(X)",
+          "sm3E12": "X=-3E12:PRINT COS(X);TAN(X)",
+          "shpi": "X#=1.5707963267949#:PRINT COS(X#):PRINT TAN(X#)",
+          "sm1E13": "X=-1E13:PRINT SIN(X);COS(X):PRINT TAN(X)"}
+if "--signs" in sys.argv:
+    sys.argv.remove("--signs")
+    CASES = CASES3
 if "--bisect" in sys.argv:
     sys.argv.remove("--bisect")
     CASES = CASES2

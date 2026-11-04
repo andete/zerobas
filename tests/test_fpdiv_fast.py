@@ -23,7 +23,8 @@ one-digit-divisor binary shortcut) and must change nothing a caller can see:
       200000 across all cores).
   V2  the same, end to end through eval(): `X/Y` for every int/single/double
       pairing (token literals, negatives in parentheses), and SQR / EXP / LOG /
-      SIN / COS / TAN / ATN / `^` -- the sub-ROM math tenants that call fp_div --
+      ATN / `^` -- the sub-ROM math tenants that call fp_div (SIN / COS / TAN
+      left the comparison with D-TANBIG, their reduction changed on purpose) --
       compared on FAC, FACTYP, FPERR, DE and the same RAM window.
   V3  the new quotient is the true quotient: for normalised inputs the decoded
       FAC equals the exact quotient truncated to 15 digits and rounded half-up
@@ -525,6 +526,12 @@ def eval_corpus(r, per_div, per_fn):
             kind = r.choice(["single", "double"])
             if kind == "single":
                 x = (x[0], x[1], x[2][:6] + [0] * 9)
+            # D-TANBIG (2026-11-04) changed the SIN/COS/TAN tenants ON PURPOSE (the
+            # reference's reduction), so the OLD image is no oracle for them: the
+            # draws are kept so ATN / ^ see the same inputs, the rows are not
+            # compared. fp_div through a tenant stays covered by SQR/EXP/LOG/ATN/^.
+            if name in ("SIN", "COS", "TAN"):
+                continue
             out.append((name, bytes([0xFF, tok]) + b"(" + lit(x, kind) + b")"))
     for _ in range(per_fn):
         x = rnd_rec(r, None, -2, 3, neg=0.2)
@@ -625,7 +632,7 @@ def run():
           f"{', '.join(names[a] for a in sorted(seen_dead))}")
 
     # ---------------------------------------------------------------- V2
-    print("# --- V2: through eval(): typed '/', SQR/EXP/LOG/SIN/COS/TAN/ATN, '^' ---")
+    print("# --- V2: through eval(): typed '/', SQR/EXP/LOG/ATN, '^' ---")
     per_div, per_fn = (300, 120) if full else (25, 6)
     corpus = eval_corpus(r, per_div, per_fn)
     by = {}

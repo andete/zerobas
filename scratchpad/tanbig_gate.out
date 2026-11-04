@@ -1,0 +1,18 @@
+ok   ctrl  SIN(0)                             vg8020='[0]'  zbnd='[0]'
+ok   q13   SIN(1E13);COS(1E13)                vg8020='[0 .95105651629516]'  zbnd='[0 .95105651629516]'
+ok   q50   SIN(5E13);COS(5E13)                vg8020='[0 .95105651629516]'  zbnd='[0 .95105651629516]'
+ok   c70   SIN(7E13);COS(7E13)                vg8020='[0 0]'  zbnd='[0 0]'
+ok   t70   TAN(7E13)                          vg8020='<Overflow>'  zbnd='<Overflow>'
+ok   t38   TAN(1E38)                          vg8020='<Overflow>'  zbnd='<Overflow>'
+ok   tm38  TAN(-1E38)                         vg8020='<Overflow>'  zbnd='<Overflow>'
+ok   td30  TAN(1D30)                          vg8020='<Overflow>'  zbnd='<Overflow>'
+ok   m3e12 COS(-3E12);TAN(-3E12)              vg8020='[-.30901699437495 -3.0776835371752]'  zbnd='[-.30901699437495 -3.0776835371752]'
+ok   o1k   SIN(1000);COS(1000)                vg8020='[.82687954054849 .56237907626647]'  zbnd='[.82687954054849 .56237907626647]'
+ok   ohp   COS(1.5707963267949#)              vg8020='[-6.2831853071796E-14]'  zbnd='[-6.2831853071796E-14]'
+ok   thp   TAN(1.5707963267949#)              vg8020='[-15915494309189]'  zbnd='[-15915494309189]'
+ok   oh5   SIN(.5);COS(.5);TAN(.5)            vg8020='[.47942553860422 .87758256189037 .54630248984381]'  zbnd='[.47942553860422 .87758256189037 .54630248984381]'
+ok   oc12  COS(12345.678#)                    vg8020='[.71011935887441]'  zbnd='[.71011935887441]'
+ok   om12  COS(-12345.678#)                   vg8020='[.71011935887441]'  zbnd='[.71011935887441]'
+tanbig: 0 row(s) diverge from the vg8020
+refcache: 26 hit, 4 miss, 13 of the hits were ZEROBAS readings, 4 stored
+refcache: 26 hit, 4 miss, 13 of the hits were ZEROBAS readings, 4 stored

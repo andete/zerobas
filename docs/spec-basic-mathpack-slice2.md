@@ -1058,6 +1058,16 @@ COS=SIN(x+π/2), §1.2), then 2e RND (LCG capture campaign).
 
 ## 14. Slice 2d implementation contract — `SIN` + `COS` + `TAN` (concrete, implementation-ready)
 
+> ⚠️ **The range reduction in this section is SUPERSEDED (D-TANBIG, 2026-11-04).**
+> Joost ruled to adopt the VG-8020's own reduction once it was shown to be
+> black-box: turns t = round14(|x|·round14(1/2π)); SIN = sin(2π·frac t) with
+> x's sign; COS = sin(2π·frac round14(0.25 − t)); TAN = SIN/COS, a COS of exactly
+> 0 being Overflow. The model ([`tanbig_model.py`](../scratchpad/tanbig_model.py))
+> fits all 19 measured rows. The Cody-Waite split, the 1.57E14 floor and the
+> accuracy envelope below describe the first build, not the shipped one; the
+> polynomials (§14.3) are unchanged. `sub/fp_sin.asm`'s header has the shipped
+> algorithm.
+
 **Status: 🟢 CONTRACT 2026-07-14** — the ratified §5/§8 slicing's fourth cut, the
 trig cluster. Written against the live code (fp_exp.asm as the reduction template,
 fp_pow.asm for the tenant-to-tenant / stashing precedent, expr.asm `evmc_atn` for the

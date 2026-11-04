@@ -19522,6 +19522,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       accumulate / recno-1 x reclen saturating to Disk full / 3-byte LOC); (2) FCH_RECNOS (32 B at
       $EE7D) now has no reader or writer -- reclaim it? (3) removing loc_rand left 11 B more in
       front of the $6CF3 pin (1499 -> 1510).
+      🏗️ **JOOST 2026-11-04: (1) "Widen"; (2) "Reclaim".** ➡️ NEXT: 24-bit record numbers by the
+      measured rule (65536.. write that record, 1000000 Disk full, LOC 3-byte), the 1 B from
+      FCH_RECNOS, the rest of FCH_RECNOS freed in docs/ram-map.md.
       - [ ] 🐌 **D-RECSLOW: extending a random file far is ~1000x slower than the CF-3300**
         (found 2026-11-04 by D-RECBIG). 🎚️ TIER 5 — on-par speed. 🤖 **AUTONOMOUS** (speed is
         paused for ROM space; filed): `PUT #1,32767` on a fresh LEN=1 file: zerobas 1763 frames,
@@ -19963,7 +19966,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `se-empty` alone FAILs (zb `2 2 K`), all five restored ([`stringempty_knife.out`](scratchpad/stringempty_knife.out)).
       Docs: STRING$.md.
 
-- [ ] 🔴 **`TAN(1E38)` OVERFLOWS ON THE REFERENCE AND RETURNS A VALUE HERE
+- [x] 🔴 **`TAN(1E38)` OVERFLOWS ON THE REFERENCE AND RETURNS A VALUE HERE
       (D-TANBIG, found 2026-09-27 by the T6 enumeration).**
       🎚️ TIER 6 — `TAN` of a huge argument
       🤖 **AUTONOMOUS** — the reference settles it; measure the edge first.
@@ -20008,6 +20011,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bug-for-bug principle (numerics never "more accurate") now disagree on a measured,
       clean-room-reachable fact. Adopt the reference's reduction for SIN/COS/TAN
       (sub/fp_sin.asm, sub-ROM page 1; also closes D-TANBIG), or keep the accurate one?
+      🏗️ **JOOST 2026-11-04: "Adopt reference".** ✅ **FIXED 2026-11-04.** Measured first: the COS
+      rule above was WRONG in its sign -- `COS(12345.678#)` = `COS(-12345.678#)` = .71011935887441
+      and `COS(1.5707963267949#)` = -6.2831853071796E-14 = -2pi*1E-14 pointed at TURNS: the
+      shipped rule is t = r14(|x|*r14(1/2pi)), SIN = +-sin(2pi*frac t), COS =
+      sin(2pi*frac r14(0.25 - t)), TAN = SIN/COS with COS exactly 0 -> Overflow; 19/19 rows
+      ([`tanbig_signs.out`](scratchpad/tanbig_signs.out)). 🔮 the signed-COS prediction MISSED,
+      the rest hit. sub/fp_sin.asm: tn_turns / cs_turns / sn_kernel (q = 4*frac, r = (q-n)*HALF_PI,
+      own polys unchanged), TAN runs the kernel twice with x stashed 18 B on the stack;
+      math-coeffs.inc INV_TWO_PI + HALF_PI replace TWO_OVER_PI / SIN_C1 / SIN_C2. Sub page 1:
+      123 B free after; sub2/frelive.asm fl_costtab straddled a page (assert) -> page carry
+      restored. All rows ([`tanbig_after.out`](scratchpad/tanbig_after.out)): every error edge and
+      quantised value identical; ordinary angles within 1-2 units of the 14th digit (the
+      polynomial). Gate `make tanbig-acceptance` (probes/basic/basic_probe_tanbig.py, 15 rows,
+      exact): 15/15 ([`tanbig_gate.out`](scratchpad/tanbig_gate.out)); a first run had one row
+      `<NO OUTPUT>` on BOTH sides (a 41-char echo wrapped) -- split, and the gate now refuses an
+      unread reference row. Knife (HEAD's fp_sin.asm + math-coeffs.inc): 14/15 RED, ctrl stays
+      ([`tanbig_knife.out`](scratchpad/tanbig_knife.out)). tests/test_fpdiv_fast.py no longer
+      compares SIN/COS/TAN against the pre-D-DIVPACK image (changed on purpose). Docs: SIN.md,
+      COS.md, TAN.md, concepts/numbers.md, spec-basic-mathpack-slice2.md §14 (superseded note).
+      Residual, TIER 6, not filed as work: the last 1-2 digits are the polynomial's.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

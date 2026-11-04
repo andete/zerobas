@@ -6,11 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `TAN` — the tangent of an angle
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. Three
-> recorded differences: the last printed digits and meaningless huge angles
-> (both deliberate), and `TAN(1E38)`, which is an error on the VG-8020 and a
-> number here (open).
+> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: the last digit or two of a result. `TAN(1E38)` is `Overflow` on
+> both machines since D-TANBIG.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -20,8 +19,8 @@ SPDX-License-Identifier: 0BSD
 `SIN(x)/COS(x)`. The answer has 14 significant digits. It shares its
 calculation with [`SIN`](SIN.md) and [`COS`](COS.md), and the `SIN` page has
 the longer story. zerobas raises the same errors as the Philips VG-8020 in
-every case we have measured but one, and its digits are closer to the true
-value.
+every case we have measured, and reduces the angle as the reference does;
+only the last digit or two of a result can differ.
 
 ## Syntax
 
@@ -47,7 +46,7 @@ One argument, always.
 |---|---|
 | `TAN(0)` | 0 |
 | `INT(TAN(1)*1000)` | 1557 |
-| `TAN(1E38)` | error 6, `Overflow`, on the VG-8020 — a number here (see *Differences*) |
+| `TAN(1E38)` | error 6, `Overflow` — the reduced cosine is exactly 0 |
 | `TAN("A")` | error 13, `Type mismatch` |
 | `TAN()`, `TAN(1,1)` | error 2, `Syntax error` |
 
@@ -73,25 +72,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**1. `TAN(1E38)` is `Overflow` on the VG-8020 and a number here** (open,
-D-TANBIG, a TIER 6 item in [TODO.md](../../TODO.md)). Found on 2026-09-27 when
-the reference's error set was measured. `SIN(1E38)` and `COS(1E38)` raise no
-error on either machine, so it is `TAN`'s own path. The filing suspects the
-reference's `SIN/COS` division overflowing after its rough reduction of the
-angle; that is not measured. The next step is to find the smallest angle at
-which the reference starts to raise the error. Until this is fixed, `TAN` cannot reach "every error".
+**1. The last digit or two can differ.** `TAN` is `SIN(x)/COS(x)` on both
+machines, from the same reduction (see [`SIN`](SIN.md)), so large angles give
+the reference's answer. The sine and cosine approximations, and the division,
+can move the last digit or two: `TAN(1000)` is `1.4703241557953` on the
+VG-8020 and `1.4703241557954` on zerobas.
 
-**2. The last digits can differ, and zerobas is closer to the true value.**
-The VG-8020 computes `SIN(x)/COS(x)` from its own sine and cosine and inherits
-their error, up to 12 units in the 14th digit in ordinary use and far more
-near `π/2` and for large angles. zerobas's tangent stays within a few units in
-the well-behaved range. The approach — be accurate and record the difference —
-was signed off by Joost on 2026-07-13; details on the [`SIN`](SIN.md) page.
-
-**3. Huge angles.** From about 1E13 on, an angle held in 14 digits no longer
-says which turn of the circle it is in. zerobas returns a meaningless finite
-value up to about 1.57E14 and 0 beyond that; see [`SIN`](SIN.md) for the
-VG-8020's behaviour there.
+**2. `TAN` is `Overflow` where the cosine is exactly 0** (fixed 2026-11-04,
+D-TANBIG). From `7E13` on, and for `1E38`, the reduced sine and cosine are
+both 0 and the VG-8020 stops with `Overflow`. zerobas used to return a number
+there and now gives the same error.
 
 **RAM usage** is not proven yet either: `TAN` uses the same amount of free
 memory on both machines, but the two write different work-area cells along
@@ -113,6 +103,13 @@ cells of its own for the calculation.
 - **Measuring the reference's error set found `TAN(1E38)`** (D-KWT6,
   2026-09-27). Wrong type, no argument and an extra argument agreed; the huge
   angle did not ([`t6enum_b2.out`](../../scratchpad/t6enum_b2.out)).
+- **The error led to the reference's whole reduction** (D-TANBIG,
+  2026-11-04). Bisecting the error found it between `5E13` and `7E13`, and
+  the sine and cosine quantised in steps from `1E12`. One black-box rule fits
+  all 19 measured rows, `SIN(1000)` and `COS(π/2)` included
+  ([`tanbig_model.py`](../../scratchpad/tanbig_model.py),
+  [`tanbig_signs.out`](../../scratchpad/tanbig_signs.out)); zerobas now uses it
+  ([`tanbig_after.out`](../../scratchpad/tanbig_after.out)).
 
 ## Where it lives
 
@@ -120,7 +117,7 @@ cells of its own for the calculation.
   [basic/expr.asm](../../basic/expr.asm) through `evmc_total_tab` in
   [basic/islands.asm](../../basic/islands.asm).
 - Sub-ROM: `fp_tan` in [sub/fp_sin.asm](../../sub/fp_sin.asm) divides the sine
-  by the cosine from the shared `sincos_kernel`.
+  by the cosine, each from its own run of the shared `sn_kernel`.
 - The design notes are in
   [spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §14.
 

@@ -5554,17 +5554,17 @@ SUBROM_IDX_POW       equ 5      ; fp_pow tenant (math pack slice 2c, sub/
                                 ; §13.2/§13.5. Main-ROM stub is basic/
                                 ; float-arith.asm `combine_pow`.
 SUBROM_IDX_SIN       equ 6      ; fp_sin tenant (math pack slice 2d, sub/
-                                ; fp_sin.asm): the shared sincos_kernel +
+                                ; fp_sin.asm): the shared sn_kernel +
                                 ; SIN's own quadrant-select, docs/spec-basic-
                                 ; mathpack-slice2.md §14.4/§14.5/§14.6.
                                 ; Main-ROM stub is basic/expr.asm `evmc_sin`.
 SUBROM_IDX_COS       equ 7      ; fp_cos tenant (math pack slice 2d, sub/
-                                ; fp_sin.asm, same sincos_kernel), docs/spec-
+                                ; fp_sin.asm, same sn_kernel), docs/spec-
                                 ; basic-mathpack-slice2.md §14.4/§14.6.
                                 ; Main-ROM stub is basic/expr.asm `evmc_cos`.
 SUBROM_IDX_TAN       equ 8      ; fp_tan tenant (math pack slice 2d, sub/
                                 ; fp_sin.asm): SIN(x)/COS(x) over the same
-                                ; sincos_kernel, docs/spec-basic-mathpack-
+                                ; sn_kernel, docs/spec-basic-mathpack-
                                 ; slice2.md §14.4/§14.6. Main-ROM stub is
                                 ; basic/expr.asm `evmc_tan`.
 SUBROM_IDX_RND       equ 9      ; fp_rnd tenant (math pack slice 2e, sub/

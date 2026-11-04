@@ -9,8 +9,8 @@ SPDX-License-Identifier: 0BSD
 > **Status (2026-10-09):** number types, literals, arithmetic, conversions and
 > printed output agree with the VG-8020 in every measured case, apart from
 > deliberate last-digit differences where zerobas is the more accurate side
-> (long divisors, `SQR` and the other maths functions). Open: `TAN(1E38)`
-> (TIER 6, below).
+> (long divisors, `SQR`, `EXP`, `LOG`, `ATN`); `SIN`, `COS` and `TAN` reduce
+> the angle as the reference does and differ only in the last digit or two.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -190,7 +190,8 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   and [`LOG`](../keywords/LOG.md) stay within two units of the true value
   (the VG-8020 is 330 units off at `EXP(-50)`), [`SIN`](../keywords/SIN.md),
   [`COS`](../keywords/COS.md) and [`TAN`](../keywords/TAN.md) reduce the angle
-  with more digits, and [`ATN`](../keywords/ATN.md) differs by one unit either
+  exactly as the reference does and differ only in the last digit or two
+  (since 2026-11-04), and [`ATN`](../keywords/ATN.md) differs by one unit either
   way. `EXP` of a large negative argument is 0 here where the VG-8020 says
   `Overflow` (between about −149.7 and −297, and `EXP(-1E30)`).
 - **`READ` of a number** (fixed 2026-10-09, D-READFLT): `DATA 1.5`, `2E3` and
@@ -198,7 +199,7 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   `READ` parsed integers only. It now uses the same number reader as
   [`INPUT`](../keywords/INPUT.md) and `VAL`
   ([`readflt_after.out`](../../scratchpad/readflt_after.out)).
-- **Open, `TAN(1E38)`**: `Overflow` on the VG-8020, a number here (D-TANBIG, TIER 6).
+- **`TAN(1E38)`** (fixed 2026-11-04, D-TANBIG): `Overflow` on both machines.
 - **RAM usage** is not proven: same free memory used, different work-area
   cells written.
 

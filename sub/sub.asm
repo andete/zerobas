@@ -528,13 +528,13 @@ sub_p1_table:
                                                 ;   stub is basic/float-arith.asm
                                                 ;   `combine_pow`.
                 jp      mw_sin                  ; index 6 (SUBROM_IDX_SIN): SIN(x)'s
-                                                ;   sincos_kernel + quadrant-select
+                                                ;   sn_kernel + quadrant-select
                                                 ;   (math pack slice 2d, docs/spec-
                                                 ;   basic-mathpack-slice2.md §14).
                                                 ;   Main-ROM stub is basic/expr.asm
                                                 ;   `evmc_sin`.
                 jp      mw_cos                  ; index 7 (SUBROM_IDX_COS): COS(x),
-                                                ;   same sincos_kernel (math pack
+                                                ;   same sn_kernel (math pack
                                                 ;   slice 2d, §14). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_cos`.
                 jp      mw_tan                  ; index 8 (SUBROM_IDX_TAN): TAN(x) =
@@ -845,9 +845,9 @@ sub_p1_ping:
 
 ; fp_sin (math pack slice 2d, docs/spec-basic-mathpack-slice2.md §14): the
 ; SIXTH/SEVENTH/EIGHTH page-1 tenants (fp_sin/fp_cos/fp_tan, one body file
-; sharing the sincos_kernel). Reuses fp_atan.asm's fat_copy18/fp_poly_horner
+; sharing sn_kernel). Reuses fp_atan.asm's fat_copy18/fp_poly_horner
 ; directly (same assembly unit) and math-coeffs.inc's SIN_COEF/COS_COEF/
-; TWO_OVER_PI/SIN_C1/SIN_C2 records (already included above). Same
+; INV_TWO_PI/HALF_PI records (already included above). Same
 ; resident-ABI surface subset as the other page-1 tenants; no new
 ; math-coeffs.inc constants beyond what's already emitted.
                 include "fp_sin.asm"

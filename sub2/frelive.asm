@@ -511,6 +511,9 @@ fl_cost:
                 ld      hl,fl_costtab
                 add     a,l
                 ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; carry into H: the table may straddle
                 ld      a,(hl)
                 pop     hl
                 bit     7,a
@@ -522,9 +525,6 @@ fl_cost:
 ; subscript, FRE, / ^, concatenation. Bit 7: + the left operand's width.
 fl_costtab:
                 db      0, $80+8, $80+10, 8, 6, 6, 10, 18, 10, $80+8, 2
-    IF (high fl_costtab) != (high ($ - 1))
-                db      FL_COSTTAB_STRADDLES_A_PAGE
-    ENDIF
 
 ; fl_cost_sub: DE -= the cost of entry BC. fl_sub: DE -= A. Both keep BC, HL.
 fl_cost_sub:

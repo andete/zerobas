@@ -374,15 +374,11 @@ COS_COEF:       db 7                ; term count (c[6]..c[0]) -- C(u)=cos(sqrt u
                 db 000h            ; sign  (+)
                 dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
                 db 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   ; dig[0..13], guard=0
-TWO_OVER_PI:  ; 2/pi (n := nearest-int(x*2/pi))
+INV_TWO_PI:  ; 1/(2pi), 14 digits (turns t := |x|*this)
                 db 000h            ; sign  (+)
                 dw 0              ; dexp  (value = d0.d1.. x 10^(dexp-1))
-                db 6, 3, 6, 6, 1, 9, 7, 7, 2, 3, 6, 7, 5, 8, 0   ; dig[0..13], guard=0
-SIN_C1:  ; pi/2 hi split, 5 sig 1.5708 (n*C1 EXACT, |n|<=1e9)
+                db 1, 5, 9, 1, 5, 4, 9, 4, 3, 0, 9, 1, 9, 0, 0   ; dig[0..13], guard=0
+HALF_PI:  ; pi/2, 14 digits (r := (q - n)*this)
                 db 000h            ; sign  (+)
                 dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
-                db 1, 5, 7, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   ; dig[0..13], guard=0
-SIN_C2:  ; pi/2 lo split (pi/2 - C1)
-                db 080h            ; sign  (-)
-                dw 65531          ; dexp  (value = d0.d1.. x 10^(dexp-1))
-                db 3, 6, 7, 3, 2, 0, 5, 1, 0, 3, 3, 8, 0, 8, 0   ; dig[0..13], guard=0
+                db 1, 5, 7, 0, 7, 9, 6, 3, 2, 6, 7, 9, 4, 9, 0   ; dig[0..13], guard=0

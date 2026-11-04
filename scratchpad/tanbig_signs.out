@@ -1,0 +1,9 @@
+Philips_VG_8020                s12345   X#=12345.678#:PRINT SIN(X#);COS(X#):PRINT SIN(-X#);COS(-X#) [-.70408131359367  .71011935887441 |  .70408131359367  .71011935887441 | OK | color   auto    goto    list    run]
+Philips_VG_8020                s1000    X=1000:PRINT SIN(X);COS(X):PRINT TAN(X);TAN(-X) [ .82687954054849  .56237907626647 |  1.4703241557953 -1.4703241557953 | OK | color   auto    goto    list    run]
+Philips_VG_8020                s.5      X=.5:PRINT SIN(X);COS(X):PRINT COS(-X);TAN(X) [ .47942553860422  .87758256189037 |  .87758256189037  .54630248984381 | OK | color   auto    goto    list    run]
+Philips_VG_8020                s1       X=1:PRINT SIN(X);COS(X):PRINT COS(-X);TAN(X) [ .84147098480792  .54030230586811 |  .54030230586811  1.5574077246549 | OK | color   auto    goto    list    run]
+Philips_VG_8020                sm1E12   X=-1E12:PRINT SIN(X);COS(X) [ .58778525229247  .80901699437495 | OK | color   auto    goto    list    run]
+Philips_VG_8020                sm3E12   X=-3E12:PRINT COS(X);TAN(X) [-.30901699437495 -3.0776835371752 | OK | color   auto    goto    list    run]
+Philips_VG_8020                shpi     X#=1.5707963267949#:PRINT COS(X#):PRINT TAN(X#) [-6.2831853071796E-14 | -15915494309189 | OK | color   auto    goto    list    run]
+Philips_VG_8020                sm1E13   X=-1E13:PRINT SIN(X);COS(X):PRINT TAN(X) [ 0  .95105651629516 |  0 | OK | color   auto    goto    list    run]
+refcache: 0 hit, 8 miss, 8 stored

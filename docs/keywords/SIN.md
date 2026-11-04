@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `SIN` — the sine of an angle
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences, both deliberate: the last printed digits, and meaningless huge
-> angles (below).
+> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: the last digit or two of a result; huge angles give the
+> reference's answers since D-TANBIG (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -18,9 +18,10 @@ SPDX-License-Identifier: 0BSD
 `SIN(x)` returns the sine of the angle `x`, given in **radians** (a full turn
 is 2π, about 6.2832). The answer lies between −1 and 1 and has 14 significant
 digits. zerobas raises the same errors as the Philips VG-8020 in every case we
-have measured; the last digits of a result can differ, because zerobas
-computes a more accurate sine than the reference does. [`COS`](COS.md) and
-[`TAN`](TAN.md) share the same calculation and the same differences.
+have measured, and reduces the angle exactly as the reference does, so large
+angles give the reference's answers too; only the last digit or two of a
+result can differ. [`COS`](COS.md) and [`TAN`](TAN.md) share the same
+calculation and the same differences.
 
 ## Syntax
 
@@ -71,22 +72,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**1. The last digits can differ, and zerobas is closer to the true value.**
-The VG-8020's sine is an approximation that is up to 4 units high in the
-14th digit, and it reduces large angles with a stored π of about 13
-digits, so its error grows with the angle: `SIN(1000)` prints
-`.82687954054849` where the true value is `.82687954053200` — wrong from the
-11th digit. zerobas reduces the angle with more digits and stays within about
-1 unit in the 14th digit for ordinary angles. Copying the reference's digits
-would need its internal constants, which can only be read from its ROM — and
-this project never does that. Be accurate and record the difference: that
-approach was signed off by Joost on 2026-07-13
-([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §2, §14).
+**1. The last digit or two can differ.** Both machines first turn the angle
+into a number of turns, `x` times 1/2π rounded to 14 digits, and keep only
+its fraction. zerobas does this the same way, so it gives the reference's
+answer even where that answer is far from the true sine: `SIN(1000)` prints
+`.82687954054849` on both, where the true value is `.82687954053200`. What
+remains different is the final approximation of the sine itself, which can
+move the last one or two digits: `SIN(1E10)` is `-.48725012572533` on the
+VG-8020 and `-.48725012572534` on zerobas.
 
-**2. Huge angles.** From about 1E13 on, a 14-digit number cannot even say
-which turn of the circle it is in, so no answer means anything. The VG-8020
-returns 0 there. zerobas returns a value between −1 and 1 up to about
-1.57E14, and 0 beyond that (`COS` gives 1 there, `TAN` 0).
+**2. Huge angles.** From 1E13 on, the number of turns has no fraction digit
+left, and both machines return 0. Until 2026-11-04 zerobas was more accurate
+here on purpose and returned other values; it now follows the reference
+(D-TANBIG).
 
 The one rung not yet proven is **RAM usage**: `SIN` uses the same amount of
 free memory on both machines, but the two write different work-area cells
@@ -120,9 +118,9 @@ scratch cells of its own for the calculation.
   [basic/expr.asm](../../basic/expr.asm) through the small table
   `evmc_total_tab` in [basic/islands.asm](../../basic/islands.asm).
 - Sub-ROM: `fp_sin` in [sub/fp_sin.asm](../../sub/fp_sin.asm). One shared
-  routine, `sincos_kernel`, reduces the angle and computes both sine and
-  cosine with this project's own polynomials; `fp_sin`, `fp_cos` and `fp_tan`
-  pick from its result.
+  routine, `sn_kernel`, turns a number of turns into a sine with this
+  project's own polynomials, after `tn_turns` has reduced the angle the
+  reference's way; `fp_sin` and `fp_cos` run it once, `fp_tan` twice.
 - The design notes are in
   [spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §14.
 

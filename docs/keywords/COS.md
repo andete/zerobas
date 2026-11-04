@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `COS` — the cosine of an angle
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences, both deliberate: the last printed digits, and meaningless huge
-> angles (below).
+> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: the last digit or two of a result; huge angles give the
+> reference's answers since D-TANBIG (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -19,8 +19,8 @@ SPDX-License-Identifier: 0BSD
 lies between −1 and 1 and has 14 significant digits. It shares its calculation
 with [`SIN`](SIN.md) and [`TAN`](TAN.md), and the `SIN` page has the longer
 story. zerobas raises the same errors as the Philips VG-8020 in every case we
-have measured; the last digits of a result can differ, because zerobas's
-cosine is the more accurate one.
+have measured, and reduces the angle as the reference does; only the last
+digit or two of a result can differ.
 
 ## Syntax
 
@@ -68,19 +68,18 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**1. The last digits can differ, and zerobas is closer to the true value.**
-The VG-8020's cosine behaves as if it were the sine of `π/2 − x`, and near
-`π/2`, where the cosine itself is close to 0, that costs it most of its
-digits: at `COS(1.5707)` its answer is wrong from roughly the 10th significant
-digit. zerobas reduces the angle with more digits and stays within about
-1E-14 of the true value, near `π/2` included. The approach — be accurate and record the difference rather
-than imitate digits that can only be recovered from the reference's ROM — was
-signed off by Joost on 2026-07-13; details on the [`SIN`](SIN.md) page.
+**1. The last digit or two can differ.** Both machines compute the cosine
+as the sine of a quarter turn minus the angle's number of turns, rounded to 14
+digits first. zerobas does the same, so it gives the reference's answer
+where that answer is far from the true cosine: `COS(1.5707963267949#)` is
+`-6.2831853071796E-14` on both. Only the final approximation can move the
+last digit or two: `COS(1E10)` is `.87326245480993` on the VG-8020 and
+`.87326245480992` on zerobas.
 
-**2. Huge angles.** From about 1E13 on, an angle held in 14 digits no longer
-says which turn of the circle it is in, so no answer means anything. The
-VG-8020 was measured returning 0 for `COS` from about 1E14. zerobas returns a
-value between −1 and 1 up to about 1.57E14, and exactly 1 beyond that.
+**2. Huge angles.** Both machines give `.95105651629516` for `COS(1E13)` up
+to `COS(5E13)`, and 0 from `7E13` on. Until 2026-11-04 zerobas was more
+accurate here on purpose and gave 1; it now follows the reference
+(D-TANBIG).
 
 The one rung not yet proven is **RAM usage**: `COS` uses the same amount of
 free memory on both machines, but the two write different work-area cells
@@ -118,7 +117,7 @@ scratch cells of its own for the calculation.
   [basic/expr.asm](../../basic/expr.asm) through `evmc_total_tab` in
   [basic/islands.asm](../../basic/islands.asm).
 - Sub-ROM: `fp_cos` in [sub/fp_sin.asm](../../sub/fp_sin.asm), which picks
-  its answer from the shared `sincos_kernel`.
+  its answer from the shared `sn_kernel`.
 
 ## Related concepts
 

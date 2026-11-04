@@ -8,146 +8,57 @@
 ; reference ROM's own coefficients. Agreement with the reference is a black-box
 ; characterization result, not a copied one.
 ; ---------------------------------------------------------------------------
-; fp_sin -- math pack slice 2d: SIN(x)/COS(x)/TAN(x) (docs/spec-basic-
-; mathpack-slice2.md §14). ONE shared reduction (sincos_kernel) produces BOTH
-; sv=sin(r) and cv=cos(r) for a range-reduced r; SIN/COS/TAN differ only in a
-; final quadrant-select (sc_select) -- no second reduction, no re-run, no
-; stack stash (the fp_pow y-stash problem, §13.5, is sidestepped entirely
-; because the whole SIN/COS/TAN cluster shares ONE input, unlike POW's x AND
-; y). Reduction: n := round(a*2/pi) (a=|x|, add-0.5-then-truncate, §14.5 step
-; 3 -- avoids a digit-carry loop); r := a - n*SIN_C1 - n*SIN_C2 (2-part
-; Cody-Waite split, SIN_C1 exactly 5 sig digits so n*C1 is EXACT for
-; |n|<=1e9, §14.3); sin(r)=r*S(r^2), cos(r)=C(r^2) via two OWN decimal-
-; minimax deg-6 Horner polys (S(u)=sin(sqrt u)/sqrt u, C(u)=cos(sqrt u),
-; tools/gen_math_coeffs.py -- never the MSX ROM's own coefficients).
+; fp_sin -- math pack slice 2d: SIN(x)/COS(x)/TAN(x). Both polynomials are this
+; project's own (tools/gen_math_coeffs.py); the RANGE REDUCTION is the
+; reference's, measured black-box (D-TANBIG, 2026-11-04 -- Joost: adopt it):
 ;
-; ACCURACY (§14.2; the sim ENVELOPE was pre-proven by tools/sim_math_chain.py
-; BEFORE this asm was written, 24cb6f2, and the slice-2d adversarial review
-; RE-VERIFIED every bound under real-core semantics -- note the sim's
-; exact-then-round op model differs from the real core by <=1 ulp on ~23% of
-; the trig battery, WITHIN these bounds; the on-hardware gate is the per-input
-; arbiter): SIN/COS worst abs error 1.0E-14 (~1 ulp), 100%
-; correctly-rounded on the moderate battery (|x|<=~1000); large-|x| abs error
-; grows ~|x|*1E-14 (n*C2 rounding, the ONLY reduction error given the exact
-; n*C1) but stays 3-6 orders better than the reference's own weak ~13-digit
-; pi (SIN(1000) 1649 ulp, SIN(1E5) 2.9M ulp off truth). TAN=SIN/COS
-; bit-for-bit (§1.2); worst 11 ulp (band edge |sin| or |cos|~=0.1) in the
-; well-conditioned 0.1<=|tan|<=10 band, captured (not asserted tight) near
-; pi/2 and beyond the exact-n reduction range. Documented bounded deviation,
-; ATN/EXP/LOG-shape gate (truth-bound + informational reference report; no
-; per-input never-worse claim -- academic here, the reference is 3-6 orders
-; worse everywhere it matters, §14.1/§14.2).
+;   t   := round14(|x| * INV_TWO_PI)          INV_TWO_PI = round14(1/(2pi))
+;   SIN := sin(2pi * frac(t)), x's sign       (SIN odd)
+;   COS := sin(2pi * frac(round14(0.25 - t))) (COS even; the 0.25 - t is
+;                                              rounded BEFORE the fraction)
+;   TAN := SIN / COS, and a COS of exactly 0 is Overflow (FPERR 1)
+;
+; scratchpad/tanbig_model.py fits all 19 measured VG-8020 rows with it (1E10..
+; 1E38, the 5E13/7E13 TAN-Overflow edge, both signs, SIN(1000), COS(pi/2)'s
+; -6.2831853071796E-14). It REPLACES slice 2d's own 2-part Cody-Waite reduction,
+; which was 3-6 orders more accurate on large angles and therefore answered
+; every one of them differently from the reference (the 07-13 "be accurate"
+; sign-off assumed the reference's constants could only be read from its ROM;
+; they are two 14-digit roundings). What still differs is the polynomial: up
+; to ~2 units in the 14th digit, the reference's own coefficients being out of
+; reach by construction.
+;
+; sn_kernel turns a turns value s into sin(2pi*s): q := 4*frac|s| in [0,4),
+; n := round(q), r := (q - n)*HALF_PI in [-pi/4, pi/4], sin(r) = r*S(r^2),
+; cos(r) = C(r^2) (own deg-6 decimal-minimax polys), then sc_select(n & 3, plus
+; 2 for a negative s). A |s| >= 1E13 has no fraction digit left -> 0 directly.
+; SIN and COS each run it once; TAN runs it twice (x waits on the stack).
 ;
 ; HOME: the sub-ROM PAGE-1 island (sub/sub.asm), dispatched from
 ; evmc_sin/evmc_cos/evmc_tan (basic/expr.asm) via subrom_call/
-; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_{SIN,COS,TAN}. Sixth/seventh/eighth page-1
-; tenants (after fp_sqrt/fp_atan/fp_exp/fp_log/fp_pow); reuses fp_sqrt.asm's
-; record copy (fat_copy18, the cpy_* entries -- D-CPY18) and fp_atan.asm's
-; fp_poly_horner directly (same assembly unit, sub/sub.asm includes both
-; before this file) and math-coeffs.inc's
-; SIN_COEF/COS_COEF/TWO_OVER_PI/SIN_C1/SIN_C2 records (already emitted +
-; committed, §14.3). Resident-ABI surface is the SAME SUBSET every prior
-; page-1 tenant uses (fp_add/fp_sub/fp_mul/fp_div/dig15_iszero/
-; arga_pack_fac/widen_fac_to/widen_uint_to) -- no new page-0 relocation
-; (§14.9; fp_cmp is NOT needed here, unlike fp_atan/fp_pow's reduction
-; compares -- the round-half-then-truncate n-extraction needs no fp_cmp at
-; all, same "hand-extracted from the widened record's own dexp/digit fields"
-; idiom fp_exp's n8 extraction uses).
+; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_{SIN,COS,TAN}. Reuses fp_sqrt.asm's record
+; copies (fat_copy18, the cpy_* entries, fsq_mk_small), fp_atan.asm's
+; fp_poly_horner and math-coeffs.inc's SIN_COEF/COS_COEF/INV_TWO_PI/HALF_PI.
+; Resident-ABI surface: fp_add/fp_sub/fp_mul/fp_div/dig15_iszero/
+; arga_pack_fac/widen_fac_to/widen_uint_to.
 ;
-; sincos_kernel/fp_sin/fp_cos/fp_tan are TOTAL functions over all x (§6/§14.1
-; "no domain check"): every path ends in a plain `ret`, no status byte in A
-; (subrom_call's own A-not-preserved-across-CALSLT lesson -- only CF is
-; reliable, and it only ever signals "sub-ROM absent"). COMPUTE-ONLY: leaves
-; FAC correct but does NOT touch FACTYP/DE -- those are each evmc_* stub's
-; job, exactly as for fp_sqrt/fp_atan/fp_exp/fp_log/fp_pow.
+; Every path ends in a plain `ret`, no status byte in A (subrom_call's
+; A-not-preserved-across-CALSLT lesson); the one error, TAN's Overflow, is the
+; deferred FPERR the caller raises. COMPUTE-ONLY: FAC correct, FACTYP/DE are
+; each evmc_* stub's job.
 ;
-; ALGORITHM -- sincos_kernel (§14.5, input ARGA=widened x -> sets sv=MATH_A,
-; cv=MATH_R, quad=MATH_J; MATH_N is UNTOUCHED by the kernel, reserved for the
-; wrappers' own x-sign stash):
-;   1. a := |x| (MATH_A := ARGA, sign forced 0).
-;   2. q := a*TWO_OVER_PI (fp_mul, widen -> ARGA).
-;   3. q' := q+0.5 (fp_add against an inline-built 0.5 record, widen ->
-;      ARGA); round(q)=floor(q') for q>=0. Read dexp' (signed low byte, safe
-;      per widen_fac_to's +-64 guarantee):
-;        dexp'<=0 (q' in [0.5,1), n=0) -> quad:=0, r:=a directly (the
-;          reduction is skipped entirely -- n*C1=n*C2=0 exactly, so
-;          computing it through fp_mul/fp_sub would be a no-op at best and,
-;          per fp_exp's own step-8 "canonical zero has dexp=0" alignment
-;          gotcha, a LATENT correctness risk at worst if a's own dexp is far
-;          from 0 -- skipping is both faster and safer);
-;        dexp'>=15 (the units digit falls off the 14-digit array, |x| >=
-;          ~1.57E14, x meaningless) -> FLOOR: sv:=0.0, cv:=1.0, quad:=0,
-;          `ret` immediately (closest to the reference's own 0-return,
-;          finite, no 0/0 -- our floor sits further out than the reference's
-;          own 1E13, so we are never worse there, §14.1);
-;        1<=dexp'<=14 -> quad := (dexp'==1 ? d[0] : 2*d[dexp'-2]+d[dexp'-1])
-;          & 3 (10==2 mod 4; AND 3 on an unpacked 0-9 digit byte IS mod 4,
-;          a binary-encoding property, not a decimal one), read BEFORE the
-;          truncation below (indices dexp'-1/dexp'-2 are always < dexp', so
-;          truncation never touches them); nf := q' with dig[dexp'..13]+
-;          guard zeroed in place (a pure suffix-zero truncation -- the +0.5
-;          already rounded, no separate round-up needed), copied to MATH_T.
-;   4. Reduce (skipped on the dexp'<=0 fast path above): r := a - nf*SIN_C1
-;      (fp_mul, widen, ARGB; ARGA:=a from MATH_A; fp_sub, widen -> MATH_R
-;      temp); r := r - nf*SIN_C2 (fp_mul, widen, ARGB; ARGA:=r from MATH_R;
-;      fp_sub, widen -> ARGA). nf*SIN_C1 is EXACT (SIN_C1 is 5 sig digits,
-;      |nf|<=1E9 by construction -- §14.3); nf now dead (MATH_T free).
-;   5. u := r*r: copy r(ARGA)->MATH_A (a retired), copy->ARGB, fp_mul (ARGA
-;      still r) -> u, widen -> HORNER_G (=MATH_T).
-;   6. sv := r*S(u): S := fp_poly_horner(HORNER_G, SIN_COEF) (HORNER_G=u
-;      preserved across the call, per fp_poly_horner's own contract), widen,
-;      ARGB:=S; ARGA:=MATH_A(r); fp_mul -> sv=r*S, widen; store sv->MATH_A
-;      (r retired).
-;   7. cv := C(u): C := fp_poly_horner(HORNER_G, COS_COEF) (the SAME u --
-;      HORNER_G was never touched by step 6's own Horner call, so both S and
-;      C see the identical reduced point, the whole point of the shared
-;      kernel), widen; store cv->MATH_R. `ret`.
+; ZERO-SAFE PACK: arga_pack_fac requires a nonzero ARGA_DIG (round_and_
+; finalize's precondition, bypassed when it is called directly), and SIN(0),
+; COS(pi/2-ish) and every |s| >= 1E13 hand it an exact 0 -- packed directly that
+; is a non-canonical "$40" lead byte (fp_pow's `0.5^2000` class). fsc_pack_arga
+; guards both SIN and COS; TAN ends in fp_div, a round_and_finalize consumer
+; that already carries the guard.
 ;
-; sc_select(q, target) -- shared quadrant-select helper (§14.6): source :=
-; (q&1==0) ? MATH_A(sv) : MATH_R(cv); fat_copy18 source->target (ARGA or
-; ARGB, caller's choice); if q&2 -> flip target's sign byte (exact fp
-; negate, no renormalisation needed -- the record stays canonical). fp_sin
-; uses qq=quad+0 -> ARGA/FAC (+ reapplies the ORIGINAL x-sign, SIN odd);
-; fp_cos uses qq=(quad+1)&3 -> ARGA/FAC (no x-sign, COS even); fp_tan uses
-; BOTH qq=quad+0 -> ARGA(sinv) and qq=(quad+1)&3 -> ARGB(cosv), then fp_div,
-; then reapplies the x-sign (TAN odd: SIN odd / COS even).
-;
-; DEVIATION found live (this implementation's own pass, the fp_pow-
-; precedent class of self-caught contract gap, NOT in the literal §14.6
-; pseudocode): arga_pack_fac's own header requires the caller to have
-; "already verified ... ARGA_DIG isn't the all-zero case" (round_and_
-; finalize's precondition, bypassed when arga_pack_fac is called directly).
-; sc_select's straight fat_copy18 into ARGA does NOT establish that --
-; SIN(0)=0 hits this LIVE: at x=0 the kernel's own dexp'<=0 fast path forces
-; quad:=0, so fp_sin's sc_select(qq=0) selects sv=MATH_A=0.0 EXACTLY (r=a=0,
-; so step 6's r*S(u) took fp_mul's own zero-product fast path) and copies
-; that all-zero record straight into ARGA -- calling arga_pack_fac on it
-; directly would pack a non-canonical "$40" lead byte (the SAME bug class
-; fp_pow's `0.5^2000` finding hit, fp_pow.asm's fpw_done comment) instead of
-; the FAC:=0 the zero convention needs. Fixed by fsc_pack_arga (below), a
-; shared zero-safe pack tail for fp_sin/fp_cos (mirroring fp_pow's own
-; dig15_iszero-guarded fpw_done shape) applied DEFENSIVELY to BOTH (COS(0)
-; itself is safe -- qq=1 selects cv=1.0, never sv -- but COS can select sv
-; in odd quadrants for OTHER x, and a coincidental exact-zero r is not
-; provably impossible for an engineered test input, so the guard costs a
-; few bytes and closes the whole class rather than one instance). fp_tan
-; needs NO such guard: it goes through fp_div, which is a round_and_finalize
-; consumer and so already carries the dig15_iszero guard on its OWN result
-; path (round_and_finalize's own header). TAN's final x-sign reapplication
-; is inlined directly on FAC's own lead byte (flt_neg's exact shape, basic/
-; float.asm) rather than importing flt_neg itself -- flt_neg is main-ROM-
-; only and NOT in the resident-ABI surface, and FAC is a plain RAM address
-; (not a call target), so no new relocation is needed to read/write it
-; directly (§14.9).
-;
-; RAM (§14.7 -- NO new claims beyond the slice-2a/2b/2c MATH_*/HORNER_* and
-; SQR-precedent SQRT_* aliases, basic/sysvars.inc): the kernel reuses
-; MATH_A/MATH_T/HORNER_G/MATH_R/HORNER_ACC exactly as EXP/LOG/ATN do; MATH_J
-; (=SQRT_POW10) holds quad; MATH_N (=SQRT_K+SQRT_ITER, 2B) holds the
-; wrapper's x-sign byte (the kernel leaves it completely untouched -- the
-; whole point of NOT keeping it in a register across the `call
-; sincos_kernel`). SQR/ATN/EXP/LOG/POW/SIN/COS/TAN never run concurrently
-; (one factor at a time, every prior slice's own argument).
+; RAM: no claims beyond the MATH_*/HORNER_*/SQRT_* aliases (basic/sysvars.inc):
+; MATH_A/MATH_T/HORNER_G/MATH_R/HORNER_ACC as EXP/LOG/ATN use them; MATH_J
+; (=SQRT_POW10) holds quad; MATH_N (=SQRT_K) the wrapper's x-sign byte, which
+; sn_kernel never touches. TAN's 18-byte x stash is on the stack, as
+; mathwrap's own MW_HOST save is -- the MW_HOST area has no 18 B left.
 ;
 ; CANONICAL-OPERAND DISCIPLINE (fp_sqrt/fp_atan/fp_exp/fp_pow's hard-won
 ; lesson, reused verbatim): every fp_add/fp_sub/fp_mul/fp_div operand is
@@ -209,247 +120,226 @@ fsc_pack_zero:
                 ld      (FAC),a
                 ret
 
-; --- sincos_kernel: ARGA (an already-widened FPNUM: the caller's x, ---------
-; dig[14]=0 fresh per widen_rhs_operand's contract) -> sv->MATH_A, cv->
-; MATH_R, quad(0..3)->MATH_J. COMPUTE-ONLY, plain `ret` on every path; MATH_N
-; is never touched (reserved for the wrappers' own x-sign stash, see this
-; file's header). Works on a=|x| -- the wrappers own the x-sign.
-sincos_kernel:
-                ; --- step 1: a := |x| ---------------------------------------
-                call    cpy_arga_y  ; MATH_A := x (persistent)
+; --- tn_turns: ARGA (widened x) -> ARGA := t = |x|*INV_TWO_PI, canonical ---
+; (D-TANBIG). The reference's own first step, rounded to 14 digits by fp_mul
+; exactly as it rounds: every later quantisation the reference shows (SIN 0
+; from 1E13, COS 0 from 7E13) is this product losing its fraction digits.
+tn_turns:
                 xor     a
-                ld      (MATH_A+FPNUM_SIGN),a   ; MATH_A := |x| = a
+                ld      (ARGA+FPNUM_SIGN),a ; ARGA := |x|
+                ld      hl,INV_TWO_PI
+                call    cpy_argb            ; ARGB := 1/(2pi)
+                call    fp_mul              ; FAC/ARGA := |x|/(2pi) = t
+                jp      widen_to_arga       ; tail
 
-                ; --- step 2: q := a*TWO_OVER_PI -----------------------------
-                call    cpy_y_arga  ; ARGA := a
-                ld      hl,TWO_OVER_PI
-                call    cpy_argb    ; ARGB := TWO_OVER_PI
-                call    fp_mul              ; FAC/ARGA := a*TWO_OVER_PI = q
-                call    widen_to_arga       ; ARGA := q, canonical
+; --- cs_turns: ARGA (widened x) -> ARGA := 0.25 - t, canonical ---------------
+; COS(x) = SIN-in-turns of a quarter turn minus t, the 14-digit difference
+; taken BEFORE the fraction (that rounding is what makes COS(1E13) .951 and
+; COS(7E13) 0 on the reference). COS is even: tn_turns already took |x|.
+cs_turns:
+                call    tn_turns            ; ARGA := t
+                ld      hl,ARGA
+                call    cpy_argb            ; ARGB := t
+                ld      hl,ARGA
+                ld      de,0
+                ld      a,2
+                call    fsq_mk_small        ; ARGA := 0.2
+                ld      a,5
+                ld      (ARGA+FPNUM_DIG+1),a    ; ARGA := 0.25
+                call    fp_sub              ; FAC/ARGA := 0.25 - t
+                jp      widen_to_arga       ; tail
 
-                ; --- step 3: q' := q+0.5; round(q)=floor(q') for q>=0 -------
-                ld      hl,ARGB
-                ld      de,0                ; dexp 0
-                ld      a,5                 ; dig[0] := 5 (value 5*10^-1=0.5)
-                call    fsq_mk_small        ; ARGB := 0.5 (sign 0, dig[1..14] 0)
-                call    fp_add              ; FAC/ARGA := q+0.5 = q'
-                call    widen_to_arga       ; ARGA := q', canonical (dexp in
-                                            ; -64..63, widen_fac_to's own
-                                            ; guarantee -- safe signed-byte
-                                            ; read below)
-                ld      a,(ARGA+FPNUM_DEXP) ; dexp' (low byte)
+; --- sn_kernel: ARGA (widened turns s, either sign) -> ARGA := sin(2pi*s) ---
+; COMPUTE-ONLY; the caller packs (fsc_pack_arga) or divides (fp_tan). MATH_N
+; is never touched (the wrappers' x-sign stash).
+;   1. quad := 2 if s<0 (sin(-2pi*a) = sin(2pi*a + pi)); a := |s|.
+;   2. a >= 1E13 (dexp >= 14): every digit is an integer digit -> 0.
+;   3. f := a - int(a) (int = a with dig[dexp..14] zeroed; a<1 -> f = a).
+;   4. q := 4f in [0,4); n := floor(q+0.5) in 0..4; quad := (quad+n)&3.
+;   5. r := (q-n)*HALF_PI in [-pi/4, pi/4]; sv = r*S(r^2), cv = C(r^2).
+;   6. ARGA := sc_select(quad): sin(n*pi/2 + r).
+sn_kernel:
+                ld      a,(ARGA+FPNUM_SIGN)
+                rlca
+                add     a,a                 ; $80 -> 2, 0 -> 0
+                ld      (MATH_J),a          ; quad := 2 for a negative s
+                xor     a
+                ld      (ARGA+FPNUM_SIGN),a ; ARGA := a = |s|
+
+                ; --- steps 2-3: f := frac(a) --------------------------------
+                ld      a,(ARGA+FPNUM_DEXP) ; dexp (low byte; widen's +-64)
                 or      a
-                jp      m,sck_dexp_le0      ; dexp'<0 -> the <=0 fast path
-                jr      z,sck_dexp_le0      ; dexp'==0 -> ditto
-                cp      15
-                jp      p,sck_floor         ; dexp'-15>=0 <=> dexp'>=15
-
-                ; --- 1<=dexp'<=14: quad, then truncate nf in place ----------
-                ld      b,a                 ; B := dexp' (survives both the
-                                            ; quad calc and the truncation
-                                            ; below)
-                cp      1
-                jr      z,sck_quad_single
-                ; dexp'>=2: quad := (2*d[dexp'-2]+d[dexp'-1]) & 3
-                push    bc                  ; protect B(dexp') across the
-                                            ; digit-array walk (C is scratch)
-                ld      hl,ARGA+FPNUM_DIG
+                jp      m,snk_have_f        ; a < 0.1: f = a
+                jr      z,snk_have_f        ; a < 1 (or a = 0): f = a
+                cp      14
+                jp      p,snk_zero          ; a >= 1E13: an integer
+                push    af
+                ld      hl,ARGA
+                call    cpy_argb            ; ARGB := a
+                pop     af
                 ld      e,a
                 ld      d,0
-                add     hl,de
-                dec     hl                  ; HL -> dig[dexp'-1]
-                ld      a,(hl)
-                ld      c,a                 ; C := d[dexp'-1]
-                dec     hl                  ; HL -> dig[dexp'-2]
-                ld      a,(hl)
-                add     a,a                 ; A := 2*d[dexp'-2]
-                add     a,c                 ; A += d[dexp'-1]
-                and     3
-                pop     bc
-                jr      sck_quad_done
-sck_quad_single:
-                ld      a,(ARGA+FPNUM_DIG)  ; dexp'==1: quad := d[0]&3
-                and     3
-sck_quad_done:
-                ld      (MATH_J),a          ; quad
-                ; truncate: zero dig[dexp'..13]+guard (15-dexp' bytes),
-                ; leaving nf = q' with only its integer part
-                ld      a,b                 ; A := dexp' (reload, B untouched
-                                            ; by the quad calc above)
-                ld      hl,ARGA+FPNUM_DIG
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; HL -> dig[dexp']
-                ld      a,15
-                sub     b
-                ld      b,a                 ; B := 15-dexp' (bytes to zero)
+                ld      hl,ARGB+FPNUM_DIG
+                add     hl,de               ; HL -> dig[dexp]
+                neg
+                add     a,15
+                ld      b,a                 ; B := 15-dexp (digits + guard)
                 xor     a
-sck_trunc_zero:
+snk_trunc:
                 ld      (hl),a
                 inc     hl
-                djnz    sck_trunc_zero
-                call    cpy_arga_x    ; MATH_T := nf (persistent)
-                jr      sck_reduce
-sck_dexp_le0:
-                ; q' in [0.5,1), n=0 -- skip the reduction entirely (n*C1=
-                ; n*C2=0 exactly; see this file's header for why skipping,
-                ; not computing, is the safe choice here)
-                xor     a
-                ld      (MATH_J),a          ; quad := 0
-                call    cpy_y_arga  ; ARGA := a (r = a directly)
-                jr      sck_have_r
-sck_floor:
-                ; dexp'>=15: |x|>=~1.57E14, x meaningless -- FLOOR
-                ld      hl,MATH_A
-                xor     a
+                djnz    snk_trunc           ; ARGB := int(a)
+                call    fp_sub              ; FAC/ARGA := a - int(a) = f
+                call    widen_to_arga
+snk_have_f:
+                ; --- step 4: q := 4f; n; quad ------------------------------
+                ld      hl,ARGB
+                ld      de,1
+                ld      a,4
+                call    fsq_mk_small        ; ARGB := 4
+                call    fp_mul              ; FAC/ARGA := 4f = q
+                call    widen_to_arga
+                call    cpy_arga_y          ; MATH_A := q
+                ld      hl,ARGB
                 ld      de,0
-                call    widen_uint_to       ; MATH_A := 0.0 (sv)
-                ld      hl,MATH_R
-                call    one_to_hl           ; MATH_R := 1.0 (cv)
-                xor     a
-                ld      (MATH_J),a          ; quad := 0
-                ret
-
-                ; --- step 4: reduce: r := a - nf*SIN_C1 - nf*SIN_C2 ---------
-sck_reduce:
-                call    cpy_x_arga  ; ARGA := nf
-                ld      hl,SIN_C1
-                call    cpy_argb    ; ARGB := SIN_C1
-                call    fp_mul              ; FAC/ARGA := nf*SIN_C1 (EXACT,
-                                            ; §14.3)
+                ld      a,5
+                call    fsq_mk_small        ; ARGB := 0.5
+                call    fp_add              ; FAC/ARGA := q + 0.5 = q'
                 call    widen_to_arga
-                call    cpy_argb    ; ARGB := nf*SIN_C1
-                call    cpy_y_arga  ; ARGA := a
-                call    fp_sub              ; FAC/ARGA := a - nf*C1 = r1
+                ld      a,(ARGA+FPNUM_DEXP)
+                dec     a
+                ld      a,0
+                jr      nz,snk_n            ; q' < 1: n = 0
+                ld      a,(ARGA+FPNUM_DIG)  ; q' in [1,4.5): n = its units digit
+snk_n:
+                push    af                  ; n (cpy_y_arga's ldir takes BC)
+                ld      hl,MATH_J
+                add     a,(hl)
+                and     3
+                ld      (hl),a              ; quad := (quad + n) & 3
+                call    cpy_y_arga          ; ARGA := q
+                pop     af
+                or      a
+                jr      z,snk_have_d        ; n = 0: d = q
+                ld      hl,ARGB
+                ld      de,1
+                call    fsq_mk_small        ; ARGB := n (A = n)
+                call    fp_sub              ; FAC/ARGA := q - n = d (exact)
                 call    widen_to_arga
-                call    cpy_to_r    ; MATH_R := r1 (temporary)
-
-                call    cpy_x_arga  ; ARGA := nf (still intact)
-                ld      hl,SIN_C2
-                call    cpy_argb    ; ARGB := SIN_C2
-                call    fp_mul              ; FAC/ARGA := nf*SIN_C2
+snk_have_d:
+                ; --- step 5: r := d*HALF_PI --------------------------------
+                ld      hl,HALF_PI
+                call    cpy_argb
+                call    fp_mul              ; FAC/ARGA := r
                 call    widen_to_arga
-                call    cpy_argb    ; ARGB := nf*SIN_C2
-                call    cpy_r_arga  ; ARGA := r1
-                call    fp_sub              ; FAC/ARGA := r1 - nf*C2 = r2 = r
-                call    widen_to_arga       ; ARGA := r, canonical (nf now
-                                            ; dead, MATH_T free)
-sck_have_r:
-                ; --- step 5: u := r*r ---------------------------------------
-                call    cpy_arga_y  ; MATH_A := r (a retired)
+                call    cpy_arga_y          ; MATH_A := r
                 ld      hl,ARGA
-                call    cpy_argb    ; ARGB := r (ARGA still r)
+                call    cpy_argb            ; ARGB := r (ARGA still r)
                 call    fp_mul              ; FAC/ARGA := r*r = u
                 call    widen_to_arga
-                call    cpy_to_x    ; HORNER_G := u (=MATH_T)
-
-                ; --- step 6: sv := r*S(u) -----------------------------------
+                call    cpy_to_x            ; HORNER_G := u (=MATH_T)
                 ld      hl,SIN_COEF
                 call    fp_poly_horner      ; FAC/ARGA := S(u); HORNER_G(u)
                                             ; preserved across the call
                 call    widen_to_arga
-                call    cpy_argb    ; ARGB := S
-                call    cpy_y_arga  ; ARGA := r
+                call    cpy_argb            ; ARGB := S
+                call    cpy_y_arga          ; ARGA := r
                 call    fp_mul              ; FAC/ARGA := r*S = sv
                 call    widen_to_arga
-                call    cpy_to_y    ; MATH_A := sv (r retired)
-
-                ; --- step 7: cv := C(u) -------------------------------------
+                call    cpy_to_y            ; MATH_A := sv (r retired)
                 ld      hl,COS_COEF
-                call    fp_poly_horner      ; FAC/ARGA := C(u); SAME u as
-                                            ; step 6 (HORNER_G untouched by
-                                            ; fp_poly_horner, its own
-                                            ; contract) -- the whole point of
-                                            ; the shared kernel
+                call    fp_poly_horner      ; FAC/ARGA := C(u), the SAME u
                 call    widen_to_arga
-                jp      cpy_to_r    ; MATH_R := cv (tail: a bare ldir copy)
-                ; [MATH_A=sv, MATH_R=cv, MATH_J=quad]
+                call    cpy_to_r            ; MATH_R := cv
+                ; --- step 6: select -----------------------------------------
+                ld      a,(MATH_J)
+                ld      hl,ARGA
+                jp      sc_select           ; tail: ARGA := sin(n*pi/2 + r)
+snk_zero:
+                ld      hl,ARGA
+                xor     a
+                ld      de,0
+                jp      widen_uint_to       ; tail: ARGA := 0.0
 
-; --- fp_sin: ARGA (widened x) -> FAC (double, sv/cv-derived, sign-corrected)
-; SIN is odd: the kernel works on a=|x|, so the ORIGINAL x-sign is saved
-; before the kernel runs (which overwrites ARGA) and reapplied at the end.
+; --- fp_sin: ARGA (widened x) -> FAC. SIN is odd: the kernel sees t = |x|/2pi
+; and the ORIGINAL x-sign is reapplied at the end.
 fp_sin:
                 ld      a,(ARGA+FPNUM_SIGN)
-                ld      (MATH_N),a          ; save x-sign BEFORE the kernel
-                                            ; clobbers ARGA
-                call    sincos_kernel       ; sv->MATH_A, cv->MATH_R,
-                                            ; quad->MATH_J
-                ld      a,(MATH_J)
-                and     3                   ; qq := (quad+0)&3
-                ld      hl,ARGA
-                call    sc_select           ; ARGA := sv or cv per qq
-                                            ; (quadrant sign-flip already
-                                            ; applied by sc_select itself)
-                ld      a,(MATH_N)
-                or      a
-                jr      z,fsin_pack
-                ld      a,(ARGA+FPNUM_SIGN)
-                xor     $80
-                ld      (ARGA+FPNUM_SIGN),a ; reapply the ORIGINAL x-sign
-                                            ; (SIN is odd)
-fsin_pack:
-                jp      fsc_pack_arga       ; tail: FAC := signed result
-                                            ; (zero-safe, see header)
+                ld      (MATH_N),a          ; save x-sign BEFORE tn_turns
+                                            ; clears it
+                call    tn_turns
+                call    sn_kernel           ; ARGA := sin(2pi*t)
+                call    fs_resign           ; ... with x's sign
+                jp      fsc_pack_arga       ; tail (zero-safe, see header)
 
-; --- fp_cos: ARGA (widened x) -> FAC (double). COS is even: COS(|x|)=COS(x),
-; no x-sign handling needed at all.
-fp_cos:
-                call    sincos_kernel
-                ld      a,(MATH_J)
-                add     a,1
-                and     3                   ; qq := (quad+1)&3
-                ld      hl,ARGA
-                call    sc_select           ; ARGA := sv or cv per qq
-                jp      fsc_pack_arga
-
-; --- fp_tan: ARGA (widened x) -> FAC (double). TAN(x) = SIN(x)/COS(x)
-; bit-for-bit (§1.2): sc_select both sinv (qq=quad+0) and cosv (qq=
-; (quad+1)&3) from the SAME kernel call, then fp_div. TAN is odd (SIN odd /
-; COS even): the ORIGINAL x-sign is saved before the kernel and reapplied to
-; FAC's own lead byte at the end -- inlined directly (flt_neg's exact shape,
-; basic/float.asm) rather than importing flt_neg itself, which is main-ROM-
-; only and NOT in the resident-ABI surface; FAC is a plain RAM address, not
-; a call target, so reading/writing it directly needs no new relocation.
-fp_tan:
-                ld      a,(ARGA+FPNUM_SIGN)
-                ld      (MATH_N),a          ; save x-sign BEFORE the kernel
-                call    sincos_kernel
-                ld      a,(MATH_J)
-                and     3                   ; qq := quad+0
-                ld      hl,ARGA
-                call    sc_select           ; ARGA := sinv
-                ld      a,(MATH_J)
-                add     a,1
-                and     3                   ; qq := (quad+1)&3
-                ld      hl,ARGB
-                call    sc_select           ; ARGB := cosv
-                call    fp_div              ; FAC/ARGA := sinv/cosv,
-                                            ; correctly rounded.
-                                            ; round_and_finalize's OWN
-                                            ; dig15_iszero guard already
-                                            ; makes this zero-safe (unlike
-                                            ; arga_pack_fac) -- TAN needs no
-                                            ; fsc_pack_arga-style fix.
-                                            ; cosv->0 near pi/2: fp_div's own
-                                            ; divisor-zero path (FPERR:=2,
-                                            ; FAC:=0) is the tenant's
-                                            ; disposition there -- the
-                                            ; characterized reference shows a
-                                            ; large FINITE instead (not an
-                                            ; error), but only a tiny-nonzero
-                                            ; cosv (not an exact 0) is known
-                                            ; to occur (§14.10 point 2); not
-                                            ; guarded further per the
-                                            ; contract's own instruction
-                                            ; ("add a guard only if a live
-                                            ; probe surfaces one").
+; --- fs_resign: flip ARGA's sign when the saved x-sign (MATH_N) is negative.
+fs_resign:
                 ld      a,(MATH_N)
                 or      a
                 ret     z
-                ld      a,(FAC)
-                or      a
-                ret     z                   ; value-0 lead byte exempt (same
-                                            ; flt_neg discipline)
+                ld      a,(ARGA+FPNUM_SIGN)
                 xor     $80
-                ld      (FAC),a             ; reapply the ORIGINAL x-sign
+                ld      (ARGA+FPNUM_SIGN),a
+                ret
+
+; --- fp_cos: ARGA (widened x) -> FAC. COS(x) = sin(2pi*(0.25 - t)).
+fp_cos:
+                call    cs_turns
+                call    sn_kernel
+                jp      fsc_pack_arga
+
+; --- fp_tan: ARGA (widened x) -> FAC. TAN(x) = SIN(x)/COS(x), each by its own
+; reduction exactly as the reference computes them (D-TANBIG): two kernel
+; runs, so x waits on the stack (18 B, mathwrap's own reserve shape) while
+; the first one owns every MATH_* cell. A COS of exactly 0 is Overflow, as on
+; the VG-8020 (TAN(1E38): SIN 0, COS 0, ERR 6) -- FPERR 1, raised by the
+; caller like every other deferred numeric error.
+fp_tan:
+                ld      a,(ARGA+FPNUM_SIGN)
+                ld      (MATH_N),a          ; save x-sign
+                ld      hl,-FPNUM_SIZE
+                add     hl,sp
+                ld      sp,hl               ; 18 B reserved
+                ex      de,hl
+                ld      hl,ARGA
+                call    fat_copy18          ; stack := x
+                call    tn_turns
+                call    sn_kernel
+                call    fs_resign           ; ARGA := SIN(x)
+                call    ftn_swap            ; stack := SIN(x), ARGA := x
+                call    cs_turns
+                call    sn_kernel           ; ARGA := COS(x)
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      z,ftn_ovf
+                ld      hl,ARGA
+                call    cpy_argb            ; ARGB := COS(x)
+                call    ftn_swap            ; ARGA := SIN(x)
+                ld      hl,FPNUM_SIZE
+                add     hl,sp
+                ld      sp,hl               ; release
+                jp      fp_div              ; tail: FAC := SIN/COS
+ftn_ovf:
+                ld      a,1
+                ld      (FPERR),a           ; Overflow
+                ld      hl,FPNUM_SIZE
+                add     hl,sp
+                ld      sp,hl               ; release
+                ret
+
+; --- ftn_swap: exchange ARGA with fp_tan's 18 stack bytes (at SP+2 here).
+ftn_swap:
+                ld      hl,2
+                add     hl,sp
+                ld      de,ARGA
+                ld      b,FPNUM_SIZE
+fsw_lp:
+                ld      a,(de)
+                ld      c,(hl)
+                ld      (hl),a
+                ld      a,c
+                ld      (de),a
+                inc     hl
+                inc     de
+                djnz    fsw_lp
                 ret

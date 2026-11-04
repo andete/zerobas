@@ -249,7 +249,8 @@ def fit_log():
     return chosen, G
 
 # ---- slice 2d: SIN + COS (docs/spec-basic-mathpack-slice2.md §14) -----------
-# Argument reduction (DECIMAL-native, pre-proven by tools/sim_math_chain.py
+# ⚠️ HISTORICAL (superseded by D-TANBIG, see below the split): the slice-2d
+# argument reduction as first built (DECIMAL-native, pre-proven by tools/sim_math_chain.py
 # BEFORE this generator was extended -- the §12/§13 process): n := round(x*2/pi)
 # kept as an EXACT-integer FPNUM; r := x - n*(pi/2) via a 2-part Cody-Waite
 # split of pi/2 = C1 + C2, C1 = pi/2 rounded to 5 significant digits (1.5708,
@@ -263,10 +264,13 @@ def fit_log():
 # ANY integer n, so a wrong nearest-n just puts r at the OTHER pi/4 edge (still
 # in the poly domain) with the matching quadrant -- value stays correct.
 HALFPI = PI / 2
-SIN_C1 = round14(HALFPI).quantize(D("1e-4"), rounding=decimal.ROUND_HALF_UP)  # 1.5708
-SIN_C2 = round14(HALFPI - SIN_C1)
-TWO_OVER_PI = 2 / PI
-SIN_N_MAX = 999999999                  # |n| bound for the n*C1-exact invariant
+# D-TANBIG (2026-11-04, Joost: adopt the reference's reduction): the split
+# above is SUPERSEDED. The VG-8020's reduction is black-box (scratchpad/
+# tanbig_model.py, 19/19 measured rows): turns t = round14(|x| * round14(1/2pi)),
+# SIN = sin(2pi*frac t), COS = sin(2pi*frac round14(0.25 - t)). The tenant then
+# takes q = 4*frac, n = nearest-int(q), r = (q - n) * HALF_PI for the polys.
+INV_TWO_PI = round14(1 / (2 * PI))
+HALF_PI = round14(HALFPI)
 
 def sin_over_arg_of_u(u):
     """S(u) = sin(sqrt u)/sqrt u = sum_{k>=0} (-u)^k/(2k+1)!, exact to prec.
@@ -325,14 +329,10 @@ def fit_cos():
 
 def check_2d_invariants(sin_coeffs, cos_coeffs):
     """The exactness preconditions the §14 asm design RELIES on."""
-    # C1 = pi/2 to 5 significant digits (1.5708), trailing zeros -> n*C1 EXACT
-    # in 14 digits for |n| <= 10^9. Verify the digit count and the product.
-    assert SIN_C1 == HALFPI.quantize(D("1e-4"), rounding=decimal.ROUND_HALF_UP)
-    assert SIN_C1 == D("1.5708"), SIN_C1
-    assert (SIN_N_MAX * SIN_C1) == round14(SIN_N_MAX * SIN_C1), "n*C1 not exact"
-    # C2 is the tiny residual (|C2| < 1e-5), C1+C2 ~ pi/2 to ~19 digits.
-    assert abs(SIN_C2) < D("1e-5")
-    assert abs((SIN_C1 + SIN_C2) - HALFPI) < D("1e-18"), "C1+C2 too coarse"
+    # The two reduction constants are the 14-digit roundings the measured
+    # reference rows fit (D-TANBIG): any other rounding moves SIN(1000).
+    assert INV_TWO_PI == D("0.15915494309190"), INV_TWO_PI
+    assert HALF_PI == D("1.5707963267949"), HALF_PI
     # SIN(0)=0 (r=0 -> r*S=0) and COS(0)=1 (C(0)=c0) exactness: c0 rounds to 1.
     assert round14(sin_coeffs[0]) == 1, "SIN S-c0 must round to exactly 1"
     assert round14(cos_coeffs[0]) == 1, "COS C-c0 must round to exactly 1"
@@ -510,9 +510,8 @@ if __name__ == "__main__":
     emit_coef_table(out, "COS_COEF", deg_c, coeffs_c,
                     " -- C(u)=cos(sqrt u), cos(r)=C(r^2)")
     for name, v, cm in [
-            ("TWO_OVER_PI", TWO_OVER_PI, "; 2/pi (n := nearest-int(x*2/pi))"),
-            ("SIN_C1", SIN_C1, "; pi/2 hi split, 5 sig 1.5708 (n*C1 EXACT, |n|<=1e9)"),
-            ("SIN_C2", SIN_C2, "; pi/2 lo split (pi/2 - C1)")]:
+            ("INV_TWO_PI", INV_TWO_PI, "; 1/(2pi), 14 digits (turns t := |x|*this)"),
+            ("HALF_PI", HALF_PI, "; pi/2, 14 digits (r := (q - n)*this)")]:
         rec, _ = emit_record(name, v)
         rec = rec.replace("\n", f"  {cm}\n", 1)
         out.append(rec)

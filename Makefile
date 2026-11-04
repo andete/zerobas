@@ -1394,6 +1394,11 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-TANBIG (2026-11-04): SIN / COS / TAN reduce the angle the VG-8020's way.
+tanbig-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_tanbig.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # D-POSDUMMY (2026-11-04): POS / LPOS take a dummy of either type (VG-8020).
 posdummy-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_posdummy.py --gate \
