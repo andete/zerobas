@@ -4942,13 +4942,22 @@ item — do **one item per session** to keep context lean.
       DE $000F against HL unchanged / DE 0; CLRSPR (Demonia's log) A $0F BC $0080
       DE $570F HL $1B80 against A 0 BC 0 DE $0FD1 HL $3800. A matches everywhere.
 
-- [ ] 🔍 **D-GRPTAB — `TAB(` AND `SPC(` IN A `PRINT #` TO `GRP:` ARE UNMEASURED
+- [x] 🔍 **D-GRPTAB — `TAB(` AND `SPC(` IN A `PRINT #` TO `GRP:` ARE UNMEASURED
       (filed 2026-10-12, from D-OPENGRP's close)**
       🎚️ TIER 6 — an edge of a device almost nobody aligns with TAB.
       🤖 **AUTONOMOUS** — zerobas's `exp_tab` reads the text cursor CSRX for any
       channel; GRP:'s comma zone turned out to count from column 0 instead
       (D-OPENGRP round 5), so TAB may well differ. Measure on the VG-8020 with
       CSRX moved (`POKE &HF3DD,11`), as the comma row had to be.
+      ✅ **NO DIVERGENCE -- STALE SINCE D-LPRTAB (2026-11-01), closed 2026-11-05.** Measured
+      ([`grptab_probe.py`](scratchpad/grptab_probe.py) -> [`grptab_run.out`](scratchpad/grptab_run.out),
+      CSRX poked to 11 on every TAB row): TAB(5) / TAB(20) / a TAB behind the head / from a
+      PSET x of 40 / after a CR, and SPC(3), read the same graphic cursor on the VG-8020 and
+      zerobas, 7/7. A CSRX rule would read x=16 on tab5; both read 56. D-LPRTAB had already
+      moved exp_tab off CSRX for every device and added opengrp-acceptance's `tab` case with
+      this very CSRX=11 separation -- this item predates it and nobody closed it. 🔮 "VG-8020
+      counts TAB from column 0, zerobas from CSRX" -- the reference half's x MISSED (56, not
+      48), the zerobas half MISSED (it agrees).
 
 - [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
       REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
@@ -9111,7 +9120,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11602 (T-6FE392)8 (T-529ABE)` from `TODO.md:17284 (T-529ABE)`: a
+      `TODO.md:11611 (T-6FE392)8 (T-529ABE)` from `TODO.md:17293 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12071,7 +12080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17284 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
