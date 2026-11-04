@@ -1,0 +1,36 @@
+Philips_VG PLAY "XYZ"      | Illegal function call
+Philips_VG PLAY "Y"        | Illegal function call
+Philips_VG PLAY "Z"        | Illegal function call
+Philips_VG PLAY "X"        | Illegal function call
+Philips_VG PLAY "XYZ;"     | Type mismatch
+Philips_VG PLAY "XA$;"     | [OK]
+Philips_VG PLAY "CY"       | Illegal function call
+Philips_VG PLAY "CZ"       | Illegal function call
+Philips_VG PLAY "C XYZ"    | Illegal function call
+Philips_VG PLAY "W"        | Illegal function call
+Philips_VG PLAY "Q"        | Illegal function call
+Philips_VG PLAY "H"        | Illegal function call
+C-BIOS_MSX PLAY "XYZ"      | Illegal function call
+C-BIOS_MSX PLAY "Y"        | Illegal function call
+C-BIOS_MSX PLAY "Z"        | Illegal function call
+C-BIOS_MSX PLAY "X"        | Illegal function call
+C-BIOS_MSX PLAY "XYZ;"     | Type mismatch
+C-BIOS_MSX PLAY "XA$;"     | [OK]
+C-BIOS_MSX PLAY "CY"       | Illegal function call
+C-BIOS_MSX PLAY "CZ"       | Illegal function call
+C-BIOS_MSX PLAY "C XYZ"    | Illegal function call
+C-BIOS_MSX PLAY "W"        | Illegal function call
+C-BIOS_MSX PLAY "Q"        | Illegal function call
+C-BIOS_MSX PLAY "H"        | Illegal function call
+Philips_VG A$="XY"+"Z":PLAY A$:PRINT "[OK]"   | Illegal function call
+Philips_VG A$="XYZ":PLAY A$:PRINT "[OK]"      | Illegal function call
+Philips_VG A$="Y":PLAY A$:PRINT "[OK]"        | Illegal function call
+Philips_VG A$="C"+"Y":PLAY A$:PRINT "[OK]"    | Illegal function call
+Philips_VG A$="C":PLAY A$+"Y":PRINT "[OK]"    | Illegal function call
+Philips_VG A$="CDE":PLAY A$:PRINT "[OK]"      | [OK]
+C-BIOS_MSX A$="XY"+"Z":PLAY A$:PRINT "[OK]"   | Illegal function call
+C-BIOS_MSX A$="XYZ":PLAY A$:PRINT "[OK]"      | Illegal function call
+C-BIOS_MSX A$="Y":PLAY A$:PRINT "[OK]"        | Illegal function call
+C-BIOS_MSX A$="C"+"Y":PLAY A$:PRINT "[OK]"    | Illegal function call
+C-BIOS_MSX A$="C":PLAY A$+"Y":PRINT "[OK]"    | Illegal function call
+C-BIOS_MSX A$="CDE":PLAY A$:PRINT "[OK]"      | [OK]

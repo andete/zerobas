@@ -4564,6 +4564,13 @@ item — do **one item per session** to keep context lean.
       (🎚️ TIER 6, found 2026-10-15 by D-AVTAK). `A$="XY"+"Z":PLAY A$` -> `Illegal
       function call` there, nothing here. X is MML's execute-substring and Y is
       not a command; which character the reference refuses is unmeasured.
+      ✅ **NO LONGER REPRODUCES (re-measured 2026-11-04,
+      [`playxyz_20261104.out`](scratchpad/playxyz_20261104.out)).** 18 rows, VG-8020 and zerobas
+      NODISK agree on every one: `"XYZ"`, `"X"`, `"Y"`, `"Z"`, `"W"`, `"Q"`, `"H"`, `"CY"`, `"C XYZ"`
+      -> `Illegal function call`; `"XYZ;"` -> `Type mismatch`; `"XA$;"` plays; and the variable /
+      concatenated forms (`A$="XY"+"Z":PLAY A$`, `PLAY A$+"Y"`) -> 5 on both. 🔮 "the VG-8020
+      raises 5 for X without `;`": HIT; "zerobas still plays it": MISS -- a later PLAY change
+      already closed it.
       🔴 **The class lesson:** ANY layout change in page 0 / page 1 can break a
       game that hard-codes an internal address where zerobas's code worked by
       luck; no gate can hold third-party tapes, so the 51-tape run on
@@ -9074,7 +9081,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11565 (T-6FE392)8 (T-529ABE)` from `TODO.md:17247 (T-529ABE)`: a
+      `TODO.md:11572 (T-6FE392)8 (T-529ABE)` from `TODO.md:17254 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12034,7 +12041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17247 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17254 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
