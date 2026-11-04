@@ -37,6 +37,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import diskcorpus_run as D  # noqa: E402  (screen_text, mode_of)
 import omsx_preflight  # noqa: E402
+import probe_refcache  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX", shutil.which("openmsx") or "/opt/homebrew/bin/openmsx")
 REF, ZB = "Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"
@@ -87,16 +88,24 @@ def run_one(machine, cas, times):
         open(tcl, "w").write("\n".join(lines) + "\n")
         cmd = [OMSX, "-machine", machine,
                "-command", "set renderer none; set sound_driver null", "-script", tcl]
-        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL, start_new_session=True)
-        deadline = time.time() + 60 + times[-1] * 2
-        while proc.poll() is None and time.time() < deadline:
-            time.sleep(0.2)
-        if proc.poll() is None:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            time.sleep(1)
+        def run():
+            proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL, start_new_session=True)
+            deadline = time.time() + 60 + times[-1] * 2
+            while proc.poll() is None and time.time() < deadline:
+                time.sleep(0.2)
             if proc.poll() is None:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                time.sleep(1)
+                if proc.poll() is None:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                return "TIMEOUT"
+            return "OK"
+        # D-REFBYPASS (2026-11-04): through the reference store -- the VG-8020's
+        # reading of a tape is a constant, so a re-run boots only the machine whose
+        # ROM moved. The tape is keyed by its bytes; a watchdog kill is never stored.
+        probe_refcache.cached_run(cmd, [out], run, media=[cas],
+                                  ok=lambda v: v != "TIMEOUT")
         caps = {}
         if os.path.exists(out):
             for ln in open(out):
@@ -152,12 +161,14 @@ def main():
     ap.add_argument("--dir", default=os.environ.get("TAPECORPUS_DIR"))
     ap.add_argument("--only", default="")
     ap.add_argument("--times", default="60,180,300,420")
-    ap.add_argument("--out", default="/tmp/tapecorpus.json")
+    # not /tmp, which is wiped (2026-11-04)
+    ap.add_argument("--out", default=os.path.expanduser("~/.cache/zerobas/tapecorpus.json"))
     ap.add_argument("--resume", action="store_true")
     # Joost 2026-11-01 (D-BASICINT / D-BASICPUB scope): does a title run on OTHER
     # MSX models at all? --ref puts another machine in the reference's place.
     ap.add_argument("--ref", default=REF)
     a = ap.parse_args()
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     if not a.dir or not os.path.isdir(a.dir):
         sys.exit("give the collection with TAPECORPUS_DIR or --dir")
     times = [float(x) for x in a.times.split(",")]
@@ -198,6 +209,7 @@ def main():
         json.dump({"times": times, "results": results, "tally": tally}, open(a.out, "w"),
                   indent=1)
     print("TALLY", json.dumps(tally, sort_keys=True))
+    print(probe_refcache.summary())
 
 
 if __name__ == "__main__":
