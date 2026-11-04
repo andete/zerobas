@@ -1394,6 +1394,10 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-LPTERRNL (2026-11-05): an error ends a partial printer line, trapped or not.
+lpterrnl-acceptance: repack-machine
+	python3 probes/basic/basic_probe_lpterrnl.py --gate
+
 # D-USRDEF (2026-11-04): an unset USR is Illegal function call (USRTAB = $475A).
 usrdef-acceptance: repack-machine
 	python3 probes/basic/basic_probe_usrdef.py --gate

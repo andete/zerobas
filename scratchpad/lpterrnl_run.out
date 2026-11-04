@@ -1,0 +1,14 @@
+vg8020  inlp    A[\r\nE 11 \r\n
+vg8020  after   A[\r\nE 11 \r\n
+vg8020  quiet   A[\r\nZ\r\n
+vg8020  quiet2  A[\r\nZ\r\n
+vg8020  untrap  A[\r\n
+vg8020  ctrl    A[Z\r\n
+zb      inlp    A[E 11 \r\n
+zb      after   A[E 11 \r\n
+zb      quiet   A[Z\r\n
+zb      quiet2  A[Z\r\n
+zb      untrap  A[\r\n
+zb      ctrl    A[Z\r\n
+refcache: 0 hit, 2 miss, 2 stored
+refcache: 0 hit, 2 miss, 2 stored

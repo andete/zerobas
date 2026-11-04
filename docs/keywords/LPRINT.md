@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LPRINT` — print to the printer
 
-> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -46,7 +46,9 @@ All measured with a printer attached, on both reference machines:
 - **It does not end the program line.** `LPRINT "A":B=9` runs the `B=9`, and
   the statement after an `LPRINT` prints to the screen again.
 - **A line left open with `;` is finished when BASIC returns to the prompt**,
-  so the printer does get its carriage return (see [`LPOS`](LPOS.md)).
+  so the printer does get its carriage return (see [`LPOS`](LPOS.md)). **An
+  error finishes it too**, trapped or not: after `LPRINT "A[";1/0` the printer
+  gets `A[`, a new line, and then whatever the `ON ERROR` handler prints.
 - **There is no `#channel` form.** `LPRINT #1,"A"` is `Syntax error` and
   prints nothing. To print to a numbered channel, open `"LPT:"` with
   [`OPEN`](OPEN.md) and use `PRINT #`.
@@ -96,6 +98,15 @@ The rungs not yet proven are **RAM usage**, which has not been compared for
 
 ## What we found, and how
 
+- **A trapped error left the printer line open** (fixed 2026-11-05,
+  D-LPTERRNL, found 2026-10-30). On the VG-8020 an error ends a partial
+  printer line before anything else happens, whether it comes inside the
+  `LPRINT` or in a later statement, and whether `ON ERROR` traps it or not.
+  zerobas ended the line only on the way back to the prompt, so a handler's
+  `LPRINT "E";ERR` was glued on: `A[E 11` instead of `A[`, then `E 11`
+  ([`lpterrnl_run.out`](../../scratchpad/lpterrnl_run.out),
+  [`lpterrnl_gate.out`](../../scratchpad/lpterrnl_gate.out)).
+
 - **`TAB` in an `LPRINT` counted from the screen cursor** (fixed 2026-11-01,
   D-LPRTAB). `LPRINT "CP 2 ADA";TAB(12);T` sent 12 spaces where both
   reference machines send 4, because the screen cursor was still at
@@ -137,3 +148,5 @@ the printer and then runs `PRINT`'s own item loop. The printer sink is
   `#1`), and the `scr-` rows check what reaches the screen.
 - `make kwsweep` — the everyday row and the `Type mismatch` row, both with a
   printer plugged in.
+- `make lpterrnl-acceptance` — the printer log after an error inside and after
+  an `LPRINT`, trapped and not.

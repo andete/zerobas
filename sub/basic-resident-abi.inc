@@ -34,7 +34,7 @@ p0_outdo equ 00177H   ; main's outdo
 p0_bp_ret equ 066BBH   ; main's bp_ret
 p0_skip_spaces equ 042CFH   ; main's skip_spaces
 p0_exec_stmt equ 04136H   ; main's exec_stmt
-p0_gb_illegal equ 04550H   ; main's gb_illegal
+p0_gb_illegal equ 04553H   ; main's gb_illegal
 p0_eval_addr equ 02E9DH   ; main's eval_addr
 p0_ztrap_entry equ 05D37H   ; main's ztrap_entry
 p0_skip_comma equ 042BAH   ; main's skip_comma
@@ -62,7 +62,7 @@ p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 028D9H   ; main's skipsp_test
 p0_upcase equ 042C6H   ; main's upcase
 p0_eval equ 04AC1H   ; main's eval
-p0_eval_byte_arg equ 04542H   ; main's eval_byte_arg
+p0_eval_byte_arg equ 04545H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042D6H   ; main's stmt_bare_end
 p0_mxf_require_end equ 03D53H   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
@@ -92,10 +92,10 @@ p0_cas_ascii_finish equ 06599H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 0642EH   ; main's cas_capture_name
 p0_cas_name_cut equ 03D7AH   ; main's cas_name_cut
 p0_req_comma equ 02D97H   ; main's req_comma
-p0_check_expr_errors equ 0440AH   ; main's check_expr_errors
+p0_check_expr_errors equ 0440DH   ; main's check_expr_errors
 p0_key_drain equ 05A98H   ; main's key_drain
 p0_req_operand equ 04129H   ; main's req_operand
-p0_eval_byte_checked equ 04536H   ; main's eval_byte_checked
+p0_eval_byte_checked equ 04539H   ; main's eval_byte_checked
 p0_spr_tenant equ 0611EH   ; main's spr_tenant
 p0_key_repaint equ 05A78H   ; main's key_repaint
 p0_key_op equ 05A8AH   ; main's key_op
@@ -107,7 +107,7 @@ p0_print_msg equ 07662H   ; main's print_msg
 p0_err_verify equ 06489H   ; main's err_verify
 p0_exa_loop equ 076DEH   ; main's exa_loop
 p0_le_call_op equ 06E64H   ; main's le_call_op
-p0_print_string equ 045D3H   ; main's print_string
+p0_print_string equ 045D6H   ; main's print_string
 p0_list_num equ 062A3H   ; main's list_num
 p0_print_in_hl equ 07638H   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

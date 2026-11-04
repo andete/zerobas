@@ -1345,6 +1345,13 @@ set_errflg:
                 ret
 raise_error:
                 call    set_errflg          ; D-HERRO: the hook, then ERR
+                ; 🖨️ D-LPTERRNL (2026-11-05): AN ERROR ENDS A PARTIAL PRINTER LINE,
+                ; trapped or not. On the VG-8020 `LPRINT "A[";1/0` (or `LPRINT "A[";`
+                ; then an error in a later statement) puts CR/LF on the printer
+                ; before the handler's own output, and before an `LPRINT "Z"` after
+                ; a quiet RESUME (scratchpad/lpterrnl_run.out). repl's R-LP16 flush
+                ; covered only the untrapped case, at the prompt. A is reloaded below.
+                call    lpt_flush
                 ; D-DEFFN: A FAULT INSIDE AN FN BODY MUST NOT LEAVE THE SHADOW
                 ; FRAME STANDING. Nothing unwinds fn_leave -- the trap path
                 ; resets SP outright -- so a stale FN_FEND would leave every

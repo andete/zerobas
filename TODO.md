@@ -1125,7 +1125,7 @@ item — do **one item per session** to keep context lean.
       (three programs; each run must END, a TIMEOUT fails); knives K-C / K-L
       ([`resnextend_knife.out`](scratchpad/resnextend_knife.out)).
 
-- [ ] 🔍 **AN ERROR INSIDE `LPRINT` STARTS A NEW PRINTER LINE ON THE VG-8020, NOT HERE
+- [x] 🔍 **AN ERROR INSIDE `LPRINT` STARTS A NEW PRINTER LINE ON THE VG-8020, NOT HERE
       (D-LPTERRNL, found 2026-10-30).**
       🎚️ TIER 6 — what the printer gets on an error path.
       🤖 **AUTONOMOUS** — measure. `LPRINT "A [";:LPRINT CHR$(65) AND 1` with a
@@ -1134,6 +1134,17 @@ item — do **one item per session** to keep context lean.
       ([`prstrfn_op_measure.out`](scratchpad/prstrfn_op_measure.out), the same
       before and after D-PRSTRFN). Not yet known whether it is the error routine
       or the handler's `LPRINT` that ends the line.
+      ✅ **FIXED 2026-11-05.** Measured ([`lpterrnl_run.out`](scratchpad/lpterrnl_run.out)): it is the
+      ERROR, not the handler -- with a handler that only RESUMEs, the next `LPRINT "Z"` still
+      starts a new line on the VG-8020, and an error in a LATER statement (`LPRINT "A[";:X=1/0`)
+      does the same. zerobas flushed only at the prompt (repl's R-LP16), so its untrapped row
+      already agreed. 🔮 "every error case ends the line on the VG-8020, zerobas never" -- HIT
+      on the reference, MISSED on zerobas's untrapped row (it agreed). basic/interp.asm
+      raise_error calls lpt_flush first: 3 B, out of the 6 B pad in front of the $475A pin
+      (raise_error sits below it) -- 3 B of slack left there. Gate lpterrnl-acceptance
+      (probes/basic/basic_probe_lpterrnl.py, 6 rows) 6/6 ([`lpterrnl_gate.out`](scratchpad/lpterrnl_gate.out));
+      knife (HEAD's interp.asm) 4 DIVERGE, untrap and ctrl agree ([`lpterrnl_knife.out`](scratchpad/lpterrnl_knife.out)).
+      Docs: LPRINT.md.
 
 - [x] 🔍 **`USR(0)` WITH NO `DEFUSR` IS ILLEGAL FUNCTION CALL ON THE VG-8020 AND 0 HERE
       (D-USRDEF, found 2026-10-30).**
@@ -9100,7 +9111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11591 (T-6FE392)8 (T-529ABE)` from `TODO.md:17273 (T-529ABE)`: a
+      `TODO.md:11602 (T-6FE392)8 (T-529ABE)` from `TODO.md:17284 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12060,7 +12071,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17284 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
