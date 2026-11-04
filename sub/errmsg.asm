@@ -58,6 +58,22 @@
 ; Clobbers everything; CALSLT does anyway.
 errmsg_tenant:
                 ld      a,(ERRFLG)
+                ; D-NODISKERRTXT (2026-11-04): 60.. are the DISK ROM's codes. Their
+                ; texts are in em_table below (the CF-3300's), but a machine with no
+                ; disk ROM must answer `Unprintable error` for them, as the VG-8020
+                ; does -- the diskless build printed `Bad FAT` .. `File already
+                ; exists`. No disk ROM leaves H_ERRP a bare `ret` ($C9; RAM, read
+                ; only), so a code >= 60 then skips the table for the offer below.
+                ; (Moving the six texts into the disk ROM was measured first and does
+                ; not fit: its largest hole is 82 B, the texts 90 B.)
+                cp      60
+                jr      c,em_scan0
+                ld      c,a
+                ld      a,(H_ERRP)
+                cp      $C9
+                ld      a,c
+                jr      z,em_offer          ; no disk ROM: not ours to print
+em_scan0:
                 ld      hl,em_table
                 ld      b,EM_ROWS
 em_scan:
@@ -77,6 +93,7 @@ em_scan:
                 ; future disk code lives there, and main page 1 pays nothing.
                 ; A is still ERRFLG: the walk's `cp (hl)`, `ld r,(hl)`, `inc` and
                 ; `djnz` never write it. hk_errp reads A only.
+em_offer:
                 or      a                   ; CF clear = not handled
                 call    H_ERRP
                 ret     c                   ; the disk ROM printed it

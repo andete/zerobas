@@ -7,8 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `ERROR` — raise an error on purpose
 
 > **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: the diskless build prints disk messages for codes 60–64 (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. No recorded
+> difference since 2026-11-04 (disk codes on the diskless build, below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -91,17 +91,18 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Codes 60 to 64 on a machine without a disk** (D-NODISKERRTXT, found
-2026-10-09, open, TIER 6). The VG-8020 has no disk messages, so `ERROR 60`
-to `ERROR 64` print `Unprintable error`; zerobas's diskless build prints the
-CF-3300's texts (`Bad FAT`, `Bad file mode`, `Bad drive name`, `Bad sector
-number`, `File still open`)
-([`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)).
-
 The other rung not yet proven is **RAM usage**: the RAM comparison has not yet
 been able to rate `ERROR`'s test programs.
 
 ## What we found, and how
+
+- **The diskless build printed disk texts** (fixed 2026-11-04, D-NODISKERRTXT).
+  `ERROR 60` to `65` printed `Bad FAT` .. `File already exists` on the diskless
+  build, because the sub-ROM keeps those six texts for both builds. The VG-8020
+  prints `Unprintable error` for every code from 60 up. zerobas now uses those
+  texts only when a disk ROM is present (it has claimed the error-print hook);
+  66 and up already came from the disk ROM itself. The disk build is unchanged:
+  it still prints the CF-3300's texts.
 
 - **The error hook was never called** (fixed 2026-10-27, D-HERRO): machine
   code hooked into `H.ERRO` (`&HFFB1`) now sees every error, `ERROR` included,
@@ -160,6 +161,8 @@ live in the sub-ROM, [sub/errmsg.asm](../../sub/errmsg.asm).
 - `make error-acceptance` and `make error-trap-acceptance` — the abort, the
   ` in <line>` suffix, trapping, and the message-table bounds (25 has a
   message, 26 does not).
+- `make errtxt60-acceptance` — `ERROR 59` to `70` on the diskless build
+  against the VG-8020, and on the disk build against the CF-3300.
 - `make msgexact-gate` — every message's text against both references.
 - `make kwsweep` — the everyday rows (`ERROR 7`, `ERROR 53`) and one row for
   each error a malformed `ERROR` can raise (2, 5, 6, 13, 24).

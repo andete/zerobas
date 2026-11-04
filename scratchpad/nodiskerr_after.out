@@ -1,0 +1,12 @@
+ERROR 59  ok zbnd='File not OPEN' vg8020='File not OPEN'  |  ok zb='File not OPEN' cf3300='File not OPEN'
+ERROR 60  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Bad FAT' cf3300='Bad FAT'
+ERROR 61  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Bad file mode' cf3300='Bad file mode'
+ERROR 62  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Bad drive name' cf3300='Bad drive name'
+ERROR 63  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Bad sector number' cf3300='Bad sector number'
+ERROR 64  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='File still open' cf3300='File still open'
+ERROR 65  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='File already exists' cf3300='File already exists'
+ERROR 66  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Disk full' cf3300='Disk full'
+ERROR 70  ok zbnd='Unprintable error' vg8020='Unprintable error'  |  ok zb='Disk offline' cf3300='Disk offline'
+nodiskerr: 0 cell(s) diverge
+refcache: 9 hit, 27 miss, 27 stored
+refcache: 9 hit, 27 miss, 27 stored

@@ -1399,6 +1399,12 @@ posdummy-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_posdummy.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-NODISKERRTXT (2026-11-04): ERROR 60.. -- disk texts only with a disk ROM.
+# (NOT nodiskerr-acceptance: that is D-DISKERR's, below -- a same-named target
+# silently overrode it once, caught by run_gates' accounting.)
+errtxt60-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_errtxt60.py --gate
+
 # --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
 # The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
 # function, so it is calibrated against HEX$/OCT$ -- the family members already
@@ -4427,7 +4433,7 @@ clean:
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime kwram sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
-        curgeo-characterize curgeo-acceptance expwrap-acceptance posdummy-acceptance \
+        curgeo-characterize curgeo-acceptance expwrap-acceptance posdummy-acceptance errtxt60-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \
         str-domain-characterize str-domain-acceptance \

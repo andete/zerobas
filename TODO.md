@@ -19505,7 +19505,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       65535), and zerobas gave NO READING within 60 s on that case — measure
       what it does. Add a gated row for each.
 
-- [ ] 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
+- [x] ✅ **FIXED 2026-11-04** 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
       PRINTS `Unprintable error` (D-NODISKERRTXT, found 2026-10-09).**
       🎚️ TIER 6 — `ERROR` with a disk error code on a diskless machine
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -19515,6 +19515,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       mode`, `Bad drive name`, `Bad sector number`, `File still open` (the
       CF-3300's texts, which the sub-ROM holds for both targets). A diskless
       build should not have them; nodisk-acceptance has no `ERROR 60+` row.
+      📏 **WIDENED 2026-11-04:** the VG-8020 prints `Unprintable error` for every code 60..73 (and
+      255); zerobas NODISK diverged on 60..65 (65 `File already exists` too) -- 66.. already went
+      through the disk ROM's H_ERRP hook. ✅ sub/errmsg.asm errmsg_tenant: a code >= 60 skips the
+      sub table when no disk ROM has claimed H_ERRP (the cell a bare `ret`, $C9) and takes the
+      offer path, i.e. `Unprintable error`; +13 B sub page 1 (163 -> 150 on 2026-11-04). Moving the
+      six texts into the disk ROM was tried first: its largest hole is 82 B, the texts 90 B -- not
+      without scattering them. Gate `make errtxt60-acceptance`
+      (probes/basic/basic_probe_errtxt60.py, TWO pairs: NODISK vs VG-8020, DISK vs CF-3300 with a
+      disk): 18/18 after ([`nodiskerr_after.out`](scratchpad/nodiskerr_after.out)); knifed back to
+      HEAD's errmsg.asm the six NODISK cells 60..65 RED, the disk pair green
+      ([`nodiskerr_knife.out`](scratchpad/nodiskerr_knife.out)). Docs: ERROR.md.
 
 - [x] ✅ **DONE 2026-10-27 (D-DSKIB)** 🔴 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
       for drive B: and strike a key when ready` (D-DSKIB, found 2026-10-09).**
