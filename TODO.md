@@ -773,11 +773,23 @@ item — do **one item per session** to keep context lean.
         code stays below $4000. Selftest W1-W7 / A1-A5 / B1-B9 / C1-C6 / D1-D4 / L2 green; each rule
         broken in a temp copy reddens its arm. Real tree: page 0 18 tenants, page 1 34, NO
         escape ([`p1closure.out`](scratchpad/p1closure.out)).
-      - [ ] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
+      - [x] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
         🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
         `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
         running value of 6554..9999 wraps below 9999 (6554 * 10 = 65540 -> 4). Measure first:
         type `PRINT 1E65540` and `A=1E65540` on zerobas and both references.
+        ✅ **MEASURED AND FIXED 2026-11-04.** VG-8020: `1E65540`, `1E65536`, `1E-65540`, `1D65540`,
+        `-1E65540` and `A=1E65540` are all `Overflow`, like `1E64` / `1E99999` / `1E-99`; `1E-65` is 0.
+        zerobas printed `10000` / `1` / `1E-04` / `10000` / `-10000` for the first five (the
+        exponent's x10 wrapped mod 65536) and agreed on every edge. 🔮 "references Overflow,
+        zerobas 1E+04" -- HIT (zerobas printed it as `10000`). sub/tkfloat.asm tke_dloop now
+        saturates BEFORE the multiply (DE > 999 -> 9999; +8 B sub page 0). Gate `make
+        expwrap-acceptance` (probes/basic/basic_probe_expwrap.py: a control, 5 wrap rows, 4
+        edges; VG-8020, zerobas DISK and NODISK): 10/10 after
+        ([`expwrap_after.out`](scratchpad/expwrap_after.out)); knifed back to HEAD's loop, the 5
+        wrap rows RED and the edges green ([`expwrap_knife.out`](scratchpad/expwrap_knife.out)).
+        Docs: docs/concepts/numbers.md. (The CF-3300 needs a boot disk; not run -- the VG-8020
+        is the preferred reference.)
       - [x] ✅ **D-MULHANG (2026-11-03): NOT A HANG -- lvfix's disk rows were read 2.5 s after
         `RUN`, and the run takes ~3 s.** `ary_mul16_checked`'s reorder leaves every register
         and flag as before, yet lvfix's f.ary2d (`INPUT #1,A$(1,1)` after `DIM A$(2,2)`) read
@@ -9062,7 +9074,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11553 (T-6FE392)8 (T-529ABE)` from `TODO.md:17235 (T-529ABE)`: a
+      `TODO.md:11565 (T-6FE392)8 (T-529ABE)` from `TODO.md:17247 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12022,7 +12034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17235 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17247 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

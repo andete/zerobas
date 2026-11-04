@@ -1388,6 +1388,12 @@ curgeo-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_curgeo.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-EXPWRAP (2026-11-04): an exponent whose digits run past 9999 (`1E65540`)
+# is Overflow on the VG-8020; the tokeniser's x10 accumulator used to wrap.
+expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_expwrap.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
 # The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
 # function, so it is calibrated against HEX$/OCT$ -- the family members already
@@ -4416,7 +4422,7 @@ clean:
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime kwram sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
-        curgeo-characterize curgeo-acceptance \
+        curgeo-characterize curgeo-acceptance expwrap-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \
         str-domain-characterize str-domain-acceptance \

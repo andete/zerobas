@@ -204,6 +204,13 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **An exponent whose digits run past 9999 wrapped** (fixed 2026-11-04,
+  D-EXPWRAP). The tokeniser builds an exponent digit by digit, times ten each
+  time, and stops at 9999, which is Overflow (or 0 for a negative exponent past
+  the range). The times-ten was 16-bit, so a long run of digits wrapped below
+  the stop: `PRINT 1E65540` printed `10000`, `1E65536` printed `1` and
+  `1E-65540` printed `1E-04`. On the VG-8020 every one of them is `Overflow`.
+  zerobas now stops as soon as the next digit would pass 9999.
 - **A number's stored bytes broke `RESUME NEXT`** (fixed 2026-10-09,
   D-RESNEXTOVF). A number in a program line is kept as a prefix byte and its
   value bytes (`1E62` is `1D 7F 10 00 00`, `58` is `0F 3A`). The search for
@@ -271,4 +278,6 @@ early section there disagrees with this page, this page is current.
 - `make math-acceptance` — the conversion and maths functions, scored against
   the true value where zerobas deliberately differs.
 - `make prnumwrap-acceptance` — a number at the end of a line.
+- `make expwrap-acceptance` — exponent digits past 9999 (`1E65540`) and the
+  range edges around them, against the VG-8020.
 - `make kwsweep` — an everyday row and the error rows per numeric keyword.

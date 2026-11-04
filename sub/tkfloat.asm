@@ -546,11 +546,21 @@ tke_dloop:
                 ld      c,a                 ;  loads A -- see tkf_scan_digits)
                 pop     af                  ; accept: commit the blank run
                 push    hl                  ; save source cursor
-                call    tkf_mul10           ; DE = DE_old*10 + digit (mod 65536)
+                ; D-EXPWRAP (2026-11-04): saturate BEFORE the multiply. DE is at
+                ; most 9999 here, so DE > 999 already makes DE*10+digit exceed the
+                ; clamp -- and DE*10 is mod 65536, so a running 6554..9999 used to
+                ; WRAP below it: `1E65540` crunched as 1E4, `1E65536` as 1E0,
+                ; `1E-65540` as 1E-4, where the VG-8020 raises Overflow for all.
+                ld      hl,999
+                or      a
+                sbc     hl,de               ; CF <=> DE > 999
+                jr      c,tke_dsat
+                call    tkf_mul10           ; DE = DE_old*10 + digit (< 10000)
                 ld      hl,9999
                 or      a
                 sbc     hl,de               ; CF <=> DE > 9999
                 jr      nc,tke_dnext
+tke_dsat:
                 ld      de,9999             ; saturate
 tke_dnext:
                 pop     hl                  ; restore source cursor
