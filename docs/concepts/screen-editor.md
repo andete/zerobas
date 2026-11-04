@@ -106,7 +106,10 @@ The details that make these keys work as a unit:
   F10, and while SHIFT is held at the prompt the bottom row shows F6 to F10
   too. The texts, `KEY n,text` and the function-key line are on
   [`KEY`](../keywords/KEY.md).
-- **The cursor is a block**: the character under it, drawn inverted.
+- **The cursor is a block**: the character under it, drawn inverted. It is
+  drawn in the name table that is on the screen, even after a program has
+  `POKE`d `TXTNAM` or `T32NAM` to point somewhere else without a `SCREEN`
+  statement.
 
 ### Around the edges
 
@@ -192,6 +195,14 @@ The editing keys cannot be typed by that checker; the gates below cover them.
 - **Two predictions missed the good way** on 2026-10-06: SHIFT+F1 to F5 were
   expected to fail and already worked (D-EDFKEY), and cursor keys inside a
   long `INPUT` answer were expected to diverge and agreed (D-EDINPUTCSR).
+- **The cursor followed the wrong table after a `POKE`** (2026-11-04, D-CURGEO).
+  With `TXTNAM` `POKE`d to `&H1000` in `SCREEN 0` (or `T32NAM` to `&H1400` in
+  `SCREEN 1`) and no `SCREEN` statement, the VG-8020 and the CF-3300 both keep
+  drawing the cursor, and `PRINT`, in the table on the screen (the one `NAMBAS`
+  names); the `POKE`d table stays clean. zerobas drew the cursor in the
+  `POKE`d table instead, so no cursor showed and a stray character 255 landed
+  in memory nobody displays. The cursor now takes its cell from the same
+  arithmetic every line-editor read uses, which also saved 33 bytes.
 
 ## How zerobas does it
 
@@ -247,6 +258,9 @@ disagree with this page, this page is current.
   VG-8020.
 - `make linemax-acceptance` — the 254-character limit.
 - `make keyshift-acceptance` — the function-key line while SHIFT is held.
+- `make curgeo-acceptance` — which name table the cursor (and `PRINT`) uses
+  after a `POKE`d `TXTNAM` / `T32NAM`, in `SCREEN 0` and `SCREEN 1`, on the
+  VG-8020, the CF-3300 and both zerobas builds.
 - Insert mode, DEL, BS, HOME and the cursor have no `make` target; the probes
   that measured them are [`insmode_probe.py`](../../scratchpad/insmode_probe.py),
   [`insbottom_probe.py`](../../scratchpad/insbottom_probe.py),

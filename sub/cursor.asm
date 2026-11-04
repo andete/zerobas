@@ -21,10 +21,21 @@
 ; (txt_mode), so any other mode here draws nothing rather than guess a layout.
 ; PAGE 1 because it calls the BIOS VRAM entries, which live in page 0.
 ;
+; 🔴 THE CELL IS NAMBAS-BASED, NOT TXTNAM/T32NAM (D-CURGEO, measured 2026-11-04,
+; probes/basic/basic_probe_curgeo.py, `make curgeo-acceptance`). POKE TXTNAM to
+; $1000 (SCREEN 0) or T32NAM to $1400 (SCREEN 1) without a SCREEN statement and
+; BOTH references -- VG-8020 and CF-3300 -- go on drawing the cursor (and PRINT)
+; in the table NAMBAS names, the one on screen; the POKEd table stays clean.
+; This tenant used to compute the cell from TXTNAM/T32NAM, so after that POKE it
+; showed NO cursor and wrote a stray $FF into a table nobody displays. It now
+; takes the cell from rl_vaddr (basic/edscreen.asm, the same arithmetic every
+; line-editor read uses) -- a fidelity fix that also gave sub page 1 33 B.
+; The PATTERN base is still TXTCGP/T32CGP; the probe does not measure that half.
+;
 ; Clean room (PROVENANCE.md): the behaviour was measured on the reference's VRAM
 ; and work-area RAM only -- no reference ROM byte was read or disassembled. The
-; table-base cells (TXTNAM/TXTCGP/T32NAM/T32CGP) are the published MSX work
-; area; the border rule is C-BIOS's own (a BSD peer this project patches).
+; table-base cells (NAMBAS/TXTCGP/T32CGP) are the published MSX work area; the
+; border rule is C-BIOS's own (a BSD peer this project patches).
 cursor_tenant:
                 ld      a,e
                 or      a
@@ -35,40 +46,18 @@ cursor_tenant:
                 ld      a,(SCRMOD)
                 cp      2
                 ret     nc                  ; not a text mode: no cursor
-                ; name base, pattern base and row pitch for the mode
-                ld      hl,(TXTNAM)
+                ; the pattern base for the mode; the CELL is NAMBAS-based (header)
                 ld      de,(TXTCGP)
-                ld      c,40
                 or      a
                 jr      z,ct_geom
-                ld      hl,(T32NAM)
                 ld      de,(T32CGP)
-                ld      c,32
 ct_geom:
                 push    de                  ; [cgp]
-                ; + (CSRY-1) * pitch
-                ld      a,(CSRY)
-                dec     a
-                ld      b,0
-                jr      z,ct_row_done
-ct_row:
-                add     hl,bc
-                dec     a
-                jr      nz,ct_row
-ct_row_done:
-                ; + the left border, (pitch - LINLEN + 1) / 2 (C-BIOS's own rule)
-                ld      a,(LINLEN)
-                neg
-                add     a,c
-                inc     a
-                srl     a
-                ld      c,a
-                add     hl,bc
-                ; + CSRX - 1
-                ld      a,(CSRX)
-                dec     a
-                ld      c,a
-                add     hl,bc               ; HL = the cursor cell
+                call    ek_getcsr           ; B = CSRY, C = CSRX (sub2/edctrl.asm)
+                call    rl_vaddr            ; HL = NAMBAS + (row-1)*pitch + border +
+                                            ; (col-1) -- the cell the line editor
+                                            ; reads (basic/edscreen.asm; clobbers
+                                            ; A, B, DE)
                 ld      (CSR_ADDR),hl
                 call    RDVRM               ; A = the character under the cursor
                 ld      (CSR_CHAR),a

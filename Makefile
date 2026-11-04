@@ -1372,6 +1372,22 @@ cursor-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cursor.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-CURGEO: the block cursor's NAME TABLE after a POKEd TXTNAM / T32NAM -------
+# Measured 2026-11-04: POKE TXTNAM ($F3B3) to $1000 in SCREEN 0, or T32NAM ($F3BD)
+# to $1400 in SCREEN 1, without a SCREEN statement, and the VG-8020 and the CF-3300
+# both keep drawing the cursor (and PRINT) in the NAMBAS table -- the one on screen.
+# sub/cursor.asm took the cell from TXTNAM/T32NAM until then (no visible cursor, a
+# stray $FF in an undisplayed table). Six rows x four sides (both references, the
+# DISK and NODISK zerobas); the CF-3300 needs a FAT12 disk in A, as lvfix's does.
+#   make curgeo-characterize ONLY=s0.poke SIDES=zb,vg8020
+curgeo-characterize: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_curgeo.py \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
+curgeo-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_curgeo.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
 # The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
 # function, so it is calibrated against HEX$/OCT$ -- the family members already
@@ -4400,6 +4416,7 @@ clean:
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime kwram sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
+        curgeo-characterize curgeo-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \
         str-domain-characterize str-domain-acceptance \

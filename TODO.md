@@ -737,6 +737,17 @@ item — do **one item per session** to keep context lean.
       ($FD0B) is unused but kept -- freeing a RAM cell is Joost's ruling; (3) nothing tests p0cb
       in isolation now (p0cb_selftest left with sub2); (4) the closure gates' blind spots,
       D-P1CLOSURE below.
+      ✅ **D-CURGEO (2026-11-04): THE HELD CURSOR CARVE WAS A FIDELITY FIX, MEASURED** (Joost
+      2026-11-03: "measure first"). Both references draw the cursor (and PRINT) through NAMBAS:
+      a POKEd TXTNAM / T32NAM without SCREEN changes nothing visible. zerobas drew the cursor's
+      $FF at TXTNAM / T32NAM + offset -- no visible cursor, and a stray $FF in VRAM nobody
+      displays (a program aiming TXTNAM at a live table would get it written there).
+      sub/cursor.asm now finds the cell through ek_getcsr + rl_vaddr (NAMBAS): the references'
+      behaviour, and 33 B (sub page 1 130 -> 163 B free on 2026-11-04). Gate:
+      `make curgeo-acceptance` (probes/basic/basic_probe_curgeo.py; SCREEN 0 / 1, control +
+      poke, all four sides) -- 6/6 after ([`curgeo_after.out`](scratchpad/curgeo_after.out)),
+      knifed back to the old geometry 4 rows RED
+      ([`curgeo_knife.out`](scratchpad/curgeo_knife.out)). Docs: docs/concepts/screen-editor.md.
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -9030,7 +9041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11521 (T-6FE392)8 (T-529ABE)` from `TODO.md:17203 (T-529ABE)`: a
+      `TODO.md:11532 (T-6FE392)8 (T-529ABE)` from `TODO.md:17214 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11990,7 +12001,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17203 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
