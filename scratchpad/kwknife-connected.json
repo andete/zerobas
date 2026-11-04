@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "47f1e4e7 70e02a61 f82756e8 76a393e6",
+ "rom_fingerprint": "3948f187 70e02a61 f82756e8 78fe297c",
  "rows": {
   "ABS": {
    "connected": true,
@@ -858,11 +858,11 @@
   "LPOS": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "lposkw",
    "subject": "LPOS",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "LPRINT": {
@@ -1136,11 +1136,11 @@
   "POS": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "pos",
    "subject": "POS",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "PRESET": {
@@ -2100,7 +2100,7 @@
   "LPOS": {
    "connected": true,
    "rows": {
-    "lposkw": "MISSING"
+    "lposkw": "DIVERGENT"
    }
   },
   "LPRINT": {
@@ -2309,7 +2309,7 @@
   "POS": {
    "connected": true,
    "rows": {
-    "pos": "MISSING"
+    "pos": "DIVERGENT"
    }
   },
   "PRESET": {
@@ -2591,5 +2591,5 @@
    }
   }
  },
- "written": "2026-11-04 15:30:54"
+ "written": "2026-11-04 16:35:07"
 }

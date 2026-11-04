@@ -1,0 +1,12 @@
+ok   ctrl  POS(0)     vg8020='[1]'  zb='[1]'  zbnd='[1]'
+ok   s1    POS("A")   vg8020='[1]'  zb='[1]'  zbnd='[1]'
+ok   s2    LPOS("A")  vg8020='[0]'  zb='[0]'  zbnd='[0]'
+ok   s3    POS(A$)    vg8020='[1]'  zb='[1]'  zbnd='[1]'
+ok   s4    POS(""+"") vg8020='[1]'  zb='[1]'  zbnd='[1]'
+ok   s5    LPOS(A$+"B") vg8020='[0]'  zb='[0]'  zbnd='[0]'
+ok   e1    POS(1/0)   vg8020='<Division by zero>'  zb='<Division by zero>'  zbnd='<Division by zero>'
+ok   e2    POS(CHR$(300)) vg8020='<Illegal function call>'  zb='<Illegal function call>'  zbnd='<Illegal function call>'
+ok   n1    POS(-1)    vg8020='[1]'  zb='[1]'  zbnd='[1]'
+posdummy: 0 row(s) diverge from the vg8020
+refcache: 7 hit, 20 miss, 20 stored
+refcache: 7 hit, 20 miss, 20 stored

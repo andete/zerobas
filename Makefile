@@ -1394,6 +1394,11 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-POSDUMMY (2026-11-04): POS / LPOS take a dummy of either type (VG-8020).
+posdummy-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_posdummy.py --gate \
+	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
+
 # --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
 # The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
 # function, so it is calibrated against HEX$/OCT$ -- the family members already
@@ -4422,7 +4427,7 @@ clean:
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime kwram sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
-        curgeo-characterize curgeo-acceptance expwrap-acceptance \
+        curgeo-characterize curgeo-acceptance expwrap-acceptance posdummy-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \
         str-domain-characterize str-domain-acceptance \

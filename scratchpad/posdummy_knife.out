@@ -1,0 +1,12 @@
+ok   ctrl  POS(0)     vg8020='[1]'  zb='[1]'  zbnd='[1]'
+DIFF s1    POS("A")   vg8020='[1]'  zb='<Type mismatch>'  zbnd='<Type mismatch>'
+DIFF s2    LPOS("A")  vg8020='[0]'  zb='<Type mismatch>'  zbnd='<Type mismatch>'
+DIFF s3    POS(A$)    vg8020='[1]'  zb='<Type mismatch>'  zbnd='<Type mismatch>'
+DIFF s4    POS(""+"") vg8020='[1]'  zb='<Type mismatch>'  zbnd='<Type mismatch>'
+DIFF s5    LPOS(A$+"B") vg8020='[0]'  zb='<Type mismatch>'  zbnd='<Type mismatch>'
+ok   e1    POS(1/0)   vg8020='<Division by zero>'  zb='<Division by zero>'  zbnd='<Division by zero>'
+ok   e2    POS(CHR$(300)) vg8020='<Illegal function call>'  zb='<Illegal function call>'  zbnd='<Illegal function call>'
+ok   n1    POS(-1)    vg8020='[1]'  zb='[1]'  zbnd='[1]'
+posdummy: 5 row(s) diverge from the vg8020
+refcache: 16 hit, 11 miss, 7 of the hits were ZEROBAS readings, 11 stored
+refcache: 16 hit, 11 miss, 7 of the hits were ZEROBAS readings, 11 stored

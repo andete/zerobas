@@ -19840,13 +19840,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `disk/disk.asm` / `disk/init.asm` headers (BASIC via `bdos_entry`).
         The OPEN keyword page vs TODO on the same-file-two-spellings item's owner.
 
-- [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
+- [x] ✅ **FIXED 2026-11-04** 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
       REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**
       🎚️ TIER 6 — `POS`/`LPOS` with a string dummy argument
       🤖 **AUTONOMOUS** — the reference settles it.
       `scratchpad/t6enum_b5.out`: VG-8020 prints a value (`OK`), zerobas `(13,
       20)`. The argument is a DUMMY on the reference and its type is not checked.
       Not a T6 blocker (the reference raises nothing there), but a divergence.
+      📏 **MEASURED 2026-11-04 (VG-8020):** the dummy is EVALUATED -- `POS(1/0)` Division by zero,
+      `POS(CHR$(300))` Illegal function call -- and its TYPE is not checked: `POS("A")`, `POS(A$)`,
+      `POS(""+"")`, `LPOS("A")` answer like `POS(0)`. 🔮 "evaluated, type ignored": HIT. ✅ basic/expr.asm:
+      POS / LPOS leave the set's numeric parse for `ev_ff_posany`, FRE's shape (str_eval_ix, else
+      ev_logic on the same text), then their reads; +37 B from the $4EF8 pin's pad (64 -> 27 B on
+      2026-11-04). Gate `make posdummy-acceptance` (probes/basic/basic_probe_posdummy.py): 9/9
+      after ([`posdummy_after.out`](scratchpad/posdummy_after.out)); knifed back to HEAD's expr.asm the
+      five string rows RED, control / error / numeric rows green
+      ([`posdummy_knife.out`](scratchpad/posdummy_knife.out)). Docs: POS.md, LPOS.md.
 
 - [x] ✅ **AN EXTRA ARGUMENT TO `MID$` IS `Type mismatch` HERE AND `Syntax error`
       ON THE REFERENCE — `MID$("AB",1,1,1)` AND `MID$(5,1)="X"` (D-MIDEXTRA,

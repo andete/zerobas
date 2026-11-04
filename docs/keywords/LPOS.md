@@ -74,16 +74,15 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`LPOS("A")` is `Type mismatch` here and accepted on the VG-8020**
-(D-POSDUMMY, found 2026-09-27, filed in [TODO.md](../../TODO.md) as a TIER 6
-item, together with `POS("A")`). The reference does not check the dummy's
-type. Because the reference raises nothing there, it does not hold back the
-"every error" rung.
-
 The other rung not yet proven is **RAM usage**, which has not been compared
 for `LPOS` yet.
 
 ## What we found, and how
+
+- **The dummy may be a string** (fixed 2026-11-04, D-POSDUMMY, together with
+  `POS`). `LPOS("A")` and `LPOS(A$+"B")` print the printer column on the VG-8020;
+  zerobas said `Type mismatch`. The argument is still evaluated, so an error
+  inside it raises.
 
 - **`LPOS` arrived on 2026-08-06** (D-LPTVERB), with `LPRINT`, after 38 rows
   were measured on both reference machines
@@ -117,6 +116,7 @@ printer moves it, padding included. The return-to-prompt flush is in
 
 ## Tests that cover it
 
+- `make posdummy-acceptance` — `LPOS("A")` and `LPOS(A$+"B")` against the VG-8020.
 - `make lptverb-acceptance` — the `lps-` rows: at rest, after 3, 10 and 14
   characters, after a completed line, the flush, and the dummy values.
 - `make kwsweep` — the everyday row (with a printer plugged in) and the error

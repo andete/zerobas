@@ -81,18 +81,20 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`POS("A")` is `Type mismatch` here and accepted on the VG-8020**, which
-prints the column as usual (D-POSDUMMY, found 2026-09-27, filed in
-[TODO.md](../../TODO.md) as a TIER 6 item). On the reference the argument
-really is a dummy, and its type is not checked either. `LPOS("A")` has the
-same difference. The reference raises nothing there, so it does not hold
-back the "every error" rung, whose set is {2}.
-
 The other rung not yet proven is **RAM usage**: `POS` moves free memory the
 same way on both machines, but the set of documented work-area cells each one
 writes is not the same.
 
 ## What we found, and how
+
+- **The dummy may be a string** (fixed 2026-11-04, D-POSDUMMY). The argument is
+  evaluated -- an error inside it still raises, so `POS(1/0)` is `Division by
+  zero` and `POS(CHR$(300))` is `Illegal function call` -- but its type is not
+  checked: on the VG-8020 `POS("A")`, `POS(A$)` and `POS(""+"")` print the
+  column like `POS(0)`. zerobas said `Type mismatch` for every string form,
+  because the argument went through the numeric parse the other functions of
+  its group use. It now reads a string first and falls back to a number, the
+  way `FRE` does.
 
 - **`POS(0)` read the screen cursor, so `CLS` and `SCREEN` reset it** (fixed
   2026-10-30, D-POSTTY). The VG-8020 reads BASIC's print column instead, which
@@ -123,6 +125,8 @@ and deliberately left out of the range-check chain.
 
 ## Tests that cover it
 
+- `make posdummy-acceptance` — a string dummy (`POS("A")`, `POS(A$)`,
+  `LPOS("A")`), an error inside the argument, and `POS(-1)`, against the VG-8020.
 - `make postty-acceptance` — `POS(0)` after `CLS`, `SCREEN` and `WIDTH`
   (D-POSTTY).
 - `make cursor-acceptance` — the column at line start, after text, with the

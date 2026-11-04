@@ -1090,6 +1090,10 @@ ev_f_ff:
                 jp      z,ev_ff_cvd
                 cp      FRE_TOKEN           ; $8F -> FRE (EITHER type: not in the set)
                 jp      z,ev_ff_fre
+                cp      POS_TOKEN           ; D-POSDUMMY: POS / LPOS take a dummy of
+                jp      z,ev_ff_posany      ; EITHER type too -- they leave the set's
+                cp      LPOS_TOKEN          ; numeric parse here (their argtab bytes
+                jp      z,ev_ff_posany      ; stay: the table is pinned data)
                 ld      hl,ev_ff_argtab
                 ld      bc,ev_ff_argtab_len
                 cpir
@@ -1230,10 +1234,6 @@ ev_ff_ckdone:
                 ; below push ev_ff_dskf out of jr range, so it takes a jp here
                 ; rather than the jr it used before those rows existed.
                 jp      z,ev_ff_dskf
-                cp      POS_TOKEN
-                jr      z,ev_ff_pos
-                cp      LPOS_TOKEN
-                jr      z,ev_ff_lpos
     IF I1_RESIDENT
                 cp      STICK_TOKEN
                 jr      z,ev_ff_stick
@@ -1252,6 +1252,34 @@ ev_ff_ckdone:
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
                 ret
+ev_ff_posany:
+                ; D-POSDUMMY (2026-11-04): the dummy is EVALUATED but its TYPE is not
+                ; checked. Measured on the VG-8020: POS("A"), POS(A$), POS(""+"") and
+                ; LPOS("A") answer like POS(0); POS(1/0) is Division by zero and
+                ; POS(CHR$(300)) Illegal function call -- an error INSIDE the argument
+                ; still raises. zerobas said Type mismatch for every string form,
+                ; because the argument went through the set's numeric ev_logic.
+                ; FRE's shape: try a string, else re-read the same text as numeric.
+                ld      c,a                 ; C = selector
+                push    bc
+                call    ixsp_open           ; D-IXSP: '(' required (bare POS -> 2)
+                push    ix                  ; guard the cursor for the numeric retry
+                call    str_eval_ix         ; a STRING argument?
+                jr      nc,epa_num
+                pop     ix                  ; drop the guard; take str_eval's cursor
+                push    hl
+                pop     ix
+                jr      epa_close
+epa_num:
+                pop     ix                  ; the same text, as a number (DISCARDED)
+                call    ev_logic
+epa_close:
+                call    evsp_close          ; D-EVSPCLOSE
+                inc     ix
+                pop     bc
+                ld      a,c
+                cp      POS_TOKEN
+                jr      nz,ev_ff_lpos
 ev_ff_pos:                                 ; POS(n): the cursor COLUMN, 0-based.
                 ; MEASURED: the argument is parsed and then DISCARDED -- POS(0),
                 ; POS(1), POS(99), POS(-1) and POS(1+1) all give the same answer, so

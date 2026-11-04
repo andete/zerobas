@@ -141,7 +141,7 @@ gosuboom-acceptance biosregs-acceptance
 ramfree-acceptance txtceil-acceptance
 runline-acceptance keystr-acceptance loc-acceptance dskio-acceptance copy-acceptance screditor-acceptance nodiskerr-acceptance parennest-acceptance
 diskascii-acceptance
-cursor-acceptance curgeo-acceptance expwrap-acceptance time-acceptance namspc-acceptance arrdim-acceptance
+cursor-acceptance curgeo-acceptance expwrap-acceptance posdummy-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 asciidigit-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
 perf-pin-check
