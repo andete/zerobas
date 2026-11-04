@@ -92,23 +92,12 @@ sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
                 or      a                   ; CF=0: call completed (A = tenant's result)
                 ret
 
-; subrom2_call (D-SUB2 c, 2026-10-12): subrom_call into the SECOND sub ROM,
-; zerobas-sub2 in slot 3-3 (sub2/sub2.asm). Same contract -- IX = the entry
-; (the SAME table bases, SUBROM_ENTRY_BASE_P0 / _P1: the ROM is chosen by the
-; slot, never by the address), HL/DE pass through, IY survives (D-PLAYIY), CALSLT
-; clobbers the rest, CF=1 without calling when the ROM is absent (SUBSLOT2 = 0).
-; It joins
-; subrom_call AFTER that one's slot load, so ROM 1's path is unchanged by a
-; single T-state. 8 B, low: a sub page-1 tenant may call it too (the low
-; region is visible from every context that runs main code).
-; as sc_call
-; z80flow: inline
-subrom2_call:
-                ld      a,(SUBSLOT2)
-                or      a
-                scf
-                ret     z                   ; absent -> CF=1, no call
-                jr      sr_slot
+; (subrom2_call -- subrom_call into the SECOND sub ROM, zerobas-sub2 in slot 3-3,
+; joining at sr_slot with SUBSLOT2's id (D-SUB2 c, 2026-10-12) -- is GONE with
+; D-SUB2RETIRE step 2e, 2026-11-04: its last caller, ex_sub2 (OPEN / CLOSE / MERGE
+; / MAXFILES), calls zerobas-sub's page 0 now (ex_file, SUBROM_IDX_FILESTMT). 8 B
+; of the low region back. sub2 itself is still placed and discovered (SUBSLOT2);
+; only the injected probes reach it.)
 
 ; subrom_absent_error: defensive statement abort for a sub-ROM-backed statement in
 ; a build without the sub-ROM (never reached on the merged machine, which always

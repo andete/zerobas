@@ -1,8 +1,9 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
-; filestmt.asm -- zerobas-sub2 PAGE 0: the file-channel STATEMENTS OPEN, CLOSE,
-; MERGE and MAXFILES (D-P0CB slice C1, docs/spec-sub2-p0cb.md §5). Moved out of
-; main page 1 (basic/files.asm, basic/grpdev.asm) on 2026-10-21. The channel
+; filestmt.asm -- zerobas-sub PAGE 0 (since D-SUB2RETIRE step 2e, 2026-11-04;
+; zerobas-sub2's page 0 before that): the file-channel STATEMENTS OPEN, CLOSE,
+; MERGE and MAXFILES (D-P0CB slice C1, docs/spec-sub2-p0cb.md §5 and §7). Moved out
+; of main page 1 (basic/files.asm, basic/grpdev.asm) on 2026-10-21. The channel
 ; MACHINERY stays in main -- fch_check_d / fch_check_nz, fch_modes_ptr,
 ; fch_do_close_ch / fch_close_all, fopen_cross and the disk.rom crossing, every
 ; cassette routine, fname_expr / pdfcb_resume / dev_cmp (shared with the other
@@ -10,21 +11,19 @@
 ; the main image by tests/test_open_len.py) and the device-name strings, which
 ; main's dev_cmp reads. Only what these four statements alone reach moved.
 ;
-; Entered as zerobas-sub2's page-0 index 3 (SUB2_IDX_TRAPS -- trap_tenant's row
-; until D-SUB2RETIRE step 2c took the trap statements back to main, after which
-; it forwarded nothing but these): main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
-; (basic/program.asm), so C = the statement token (exec_stmt hands every
-; handler A = its token -- tests/test_stmt_dispatch.py asserts it). Main sends
-; no other token here: SCREEN / COLOR / WIDTH / KEY and DELETE / AUTO / RENUM
-; (sub2/scrstmt.asm, sub2/pgmedit.asm) were forwarded on from here until
-; D-SUB2RETIRE step 2d (2026-11-04) moved them to the sub ROM's page 1, and the
-; SAVE / LOAD family (sub2/loadsave.asm, D-P0CB slice C2) went there in step 2a
-; (2026-11-03) -- both with their own copies of the shared tails below.
+; Entered as zerobas-sub's page-0 index SUBROM_IDX_FILESTMT (19) from main's
+; ex_file (basic/program.asm) through subrom_call: main's four entry labels share
+; ONE byte, `ld c,a` in front of it, so C = the statement token (exec_stmt hands
+; every handler A = its token -- tests/test_stmt_dispatch.py asserts it). Main
+; sends no other token here. (It was zerobas-sub2's page-0 index 3,
+; SUB2_IDX_TRAPS, until step 2e; SCREEN / COLOR / WIDTH / KEY, DELETE / AUTO /
+; RENUM and the SAVE / LOAD family were forwarded on from it until steps 2d / 2a
+; moved them to the sub ROM's page 1 with their own copies of the tails below.)
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
 ;        C  = the statement token
 ;   out  DE = the main address to continue at, HL = what it expects (below)
-; ex_sub2 then does `push de / ret` with the stack exactly as the statement was
-; entered. The continuations, and what each takes:
+; ex_file then does `push de / ret` (exs_tail) with the stack exactly as the
+; statement was entered. The continuations, and what each takes:
 ;   exec_stmt      HL = the cursor          (main's `jp exec_stmt` / `jp pop_exec`
 ;                                            / `jp dc_finish`, which was ed_done)
 ;   clr_wipe       HL = the cursor          (MAXFILES' CLEAR, then exec_stmt)
@@ -35,13 +34,22 @@
 ; No continuation is ever reached through p0cb: execution must not go on INSIDE
 ; this CALSLT.
 ;
-; Every other main routine is reached through p0cb (sub2/p0cb.asm) with its
-; `p0_` alias from basic-resident-abi.inc; `rst $10` is this ROM's RST 10h
-; (main's CHRGTR). A raise reached through p0cb never returns -- raise_error
-; resets SP and runs main's error path with main's page 0 mapped -- exactly as
-; the `jp` it replaces never returned; a frame this code pushed is discarded by
-; the same unwind. No hook (H_xxxx) is called from here: the hooked crossings
-; are inside fopen_cross / fch_do_close_ch, which run in main.
+; WHAT IS MAPPED: this page is the SUB ROM's (slot 3-2), main's PAGE 1 stays
+; mapped, main's page 0 (the BIOS, the low region, $0038) does not. So:
+;   * a main routine that is a page-1 LEAF is called directly: dev_cmp (-> main's
+;     upcase) and fch_modes_ptr, each read for rst / low-region reach and pinned
+;     >= $4000 by asserts in sub/sub.asm;
+;   * a leaf this page already has is called locally: skip_spaces
+;     (sub/readdata.asm) and upcase (sub/tkfloat.asm), the same bodies as main's;
+;   * every other main routine is reached through this page's p0cb (sub/sub.asm,
+;     sub2/p0cb.asm's body) with its `p0_` alias from basic-resident-abi.inc, and
+;     main's CHRGTR through fs_chrgtr below -- no `rst`, which the sub build's
+;     closure gate refuses (an rst here would land in THIS ROM's $0010).
+; A raise reached through p0cb never returns -- raise_error resets SP and runs
+; main's error path with main's page 0 mapped -- exactly as the `jp` it replaces
+; never returned; a frame this code pushed is discarded by the same unwind. No
+; hook (H_xxxx) is called from here: the hooked crossings are inside fopen_cross
+; / fch_do_close_ch, which run in main.
 ; The code is otherwise main's, statement for statement, and each arm keeps the
 ; original's order of checks, so the errors and their order are the ones the
 ; OPEN / CLOSE / MERGE / MAXFILES rows already pin. The history behind each
@@ -49,10 +57,8 @@
 ; is the measured rule each one encodes.
 
 ; --- the dispatch -------------------------------------------------------------
-file_tenant:                                ; index 3: C = the token (main's ex_sub2)
-                ld      a,c                 ; A = C (trap_tenant's head did this
-                                            ; until D-SUB2RETIRE step 2c took the
-                                            ; trap statements back to main)
+file_tenant:                                ; index 19: C = the token (main's ex_file)
+                ld      a,c                 ; A = C
                 cp      OPEN_TOKEN
                 jr      z,fs_open
                 cp      CLOSE_TOKEN
@@ -60,13 +66,7 @@ file_tenant:                                ; index 3: C = the token (main's ex_
                 cp      MERGE_TOKEN
                 jp      z,fs_merge
                 jp      fs_maxfiles         ; MAX_TOKEN: the only other token main
-                                            ; sends here. SCREEN / COLOR / WIDTH / KEY
-                                            ; and DELETE / AUTO / RENUM (scr_tenant)
-                                            ; were forwarded on from here until
-                                            ; D-SUB2RETIRE step 2d moved them to the
-                                            ; sub ROM's page 1 (main's ex_scr), as the
-                                            ; SAVE / LOAD family (ls_tenant) went in
-                                            ; step 2a (main's ex_ls)
+                                            ; sends here
 
 ; --- the shared tails -------------------------------------------------------------
 ; The plain raises are `ld a,N` into fs_raise: main's gb_illegal (5), pdf_badname
@@ -99,6 +99,13 @@ fs_disk_error:                              ; main's `jp disk_error`: a continua
 fs_end_line:                                ; main's `jp end_line_end`: a continuation
                 ld      de,p0_end_line_end  ; (MERGE's; pgmedit.asm's until step 2d,
                 ret                         ; loadsave's ls_end_line until step 2a)
+; fs_chrgtr -- main's CHRGTR (`rst $10` in main) through p0cb: CHRGTR calls the
+; H.CHRG hook first, so it runs with main's page 0 mapped, as it always did (sub2's
+; RST 10h vector did the same). IX is NOT saved, unlike sub2's s2_chrgtr: none of
+; the five sites holds anything in it. A, F, HL out as CHRGTR's; AF' clobbered.
+fs_chrgtr:
+                ld      ix,p0_chrgtr
+                jp      p0cb
 
 ; ===========================================================================
 ; OPEN "name" [FOR INPUT|OUTPUT|APPEND] AS [#]n [LEN=r]   (main's ex_open/do_open)
@@ -113,13 +120,13 @@ fs_open:
                 ; data: main's dev_cmp reads (DE) with main's page 0 mapped, and the
                 ; strings sit in main page 1.
                 ld      de,p0_dev_lpt
-                call    fs_devcmp           ; Z + HL past the prefix iff it matched
+                call    p0_dev_cmp          ; Z + HL past the prefix iff it matched
                 jp      z,fo_dev_lpt
                 ld      de,p0_dev_crt
-                call    fs_devcmp
+                call    p0_dev_cmp
                 jp      z,fo_dev_crt
                 ld      de,p0_dev_grp       ; D-OPENGRP: the graphics screen
-                call    fs_devcmp
+                call    p0_dev_cmp
                 jp      z,fo_dev_grp
                 call    fs_iscas            ; CAS:, or no disk at all
                 jp      z,fo_dev_cas
@@ -134,12 +141,12 @@ fs_open:
                 cpir                        ; Z iff a '?' is among the 11
                 jr      z,fs_badname        ; 56
                 pop     hl
-                call    s2_skip_spaces
+                call    skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,fo_random        ; no FOR clause -> RANDOM (OPEN..AS #n)
                 inc     hl
                 ; INPUT ($85); OUTPUT = OUT + PUT; APPEND = "APP" + END (crunched)
-                call    s2_skip_spaces
+                call    skip_spaces
                 cp      INPUT_TOKEN
                 jr      z,fo_input
                 cp      OUT_TOKEN
@@ -294,10 +301,10 @@ fodv_fn:                                    ; skip the rest of the name to its q
                 cp      '"'
                 jr      nz,fodv_fn
                 ld      hl,(FN_RESUME)      ; resume in the program text
-                call    s2_skip_spaces
+                call    skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,fodv_as          ; no FOR clause -> OUTPUT (measured)
-                rst     $10                 ; this ROM's RST 10h -> main's CHRGTR
+                call    fs_chrgtr           ; main's CHRGTR, through p0cb
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT
                 jr      nz,fodv_notout      ; INPUT: Syntax error; 56 on GRP:
                 call    fs_put
@@ -337,10 +344,10 @@ fodv_notout:                                ; FOR not followed by OUTPUT
 ; validated in full before any tape I/O. Entry: HL past "CAS:" in the staged copy.
 fo_dev_cas:
                 call    fs_cascut           ; HL back in the program text
-                call    s2_skip_spaces
+                call    skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,focas_nofor      ; CAS: needs FOR (no RANDOM cassette)
-                rst     $10
+                call    fs_chrgtr
                 cp      INPUT_TOKEN
                 jr      z,focas_in
                 cp      OUT_TOKEN
@@ -405,26 +412,31 @@ focas_ioerr:                                ; not an $EA file: `load error`, whi
                 ld      de,p0_load_error
                 ret
 
-; fs_devcmp -- main's dev_cmp (HL = the string, DE = a device name in main):
-; Z + HL past the prefix iff it matched; clobbers A, C, DE.
-fs_devcmp:
-                ld      ix,p0_dev_cmp
-                jp      p0cb
+; main's dev_cmp (HL = the string, DE = a device name in main): Z + HL past the
+; prefix iff it matched; clobbers A, C, DE. CALLED DIRECTLY (`call p0_dev_cmp`), not
+; through p0cb (D-SUB2RETIRE step 2e): main's PAGE 1 is mapped under this page-0
+; tenant, and dev_cmp is a page-1 leaf whose one callee, main's upcase, is a
+; page-1 leaf too -- no rst, no low-region or BIOS call (read 2026-11-04). The
+; asserts beside basic-resident-abi.inc's include in sub/sub.asm refuse a build
+; that moves either of them below $4000, where this page's own bytes would run
+; instead (there, not here: the p0_ names are forward references in page 0, and
+; pasmo 0.5.3 reads a forward alias as 0 -- D-PASMO053).
 ; fs_iscas -- OPEN's and MERGE's shared "is it the tape?": Z (HL past "CAS:" when
 ; named) -> the cassette arm; NZ -> the disk arm. On a diskless machine the
 ; cassette is the default device and a `d:` name raises 56 inside nodisk_dev
 ; (D-NODISKOPEN / D-NODISKVERBS).
 fs_iscas:
                 ld      de,p0_dev_cas
-                call    fs_devcmp
+                call    p0_dev_cmp
                 ret     z
                 ld      ix,p0_nodisk_dev
                 jp      p0cb
-; fs_modes_e -- main's fch_modes_ptr on channel E: HL = &FCH_MODES[E] (A, HL only)
+; fs_modes_e -- main's fch_modes_ptr on channel E: HL = &FCH_MODES[E] (A, HL only).
+; A DIRECT jump, as dev_cmp above: fch_modes_ptr is a main page-1 leaf (an add on
+; FCH_MODES, no call at all), mapped under this page-0 tenant.
 fs_modes_e:
                 ld      a,e
-                ld      ix,p0_fch_modes_ptr
-                jp      p0cb
+                jp      p0_fch_modes_ptr    ; (asserted page 1 in sub/sub.asm)
 ; fs_put -- HL on OUT: require PUT after it (OUTPUT = OUT + PUT), HL past both
 fs_put:
                 inc     hl
@@ -466,7 +478,8 @@ fsc_ev:
 fo_as_term:
                 call    fo_parse_as_chan
 fo_term:
-                call    s2_skipsp_test
+                call    skip_spaces
+                or      a                   ; Z iff the terminator (0)
                 ret     z
                 cp      COLON
                 ret     z
@@ -480,18 +493,16 @@ fo_term:
 ; channel 0, and 5 to `AS #256` / `AS #-1` (D-BADFNUM); a channel already open
 ; is 54 (D-OPENBUSY), checked here before any file work, for every OPEN form.
 fo_parse_as_chan:
-                call    s2_skip_spaces
-                ld      ix,p0_upcase
-                call    p0cb
+                call    skip_spaces
+                call    upcase              ; this page's own (sub/tkfloat.asm)
                 cp      'A'
                 jp      nz,fs_syntax
                 inc     hl
                 ld      a,(hl)
-                ld      ix,p0_upcase
-                call    p0cb
+                call    upcase
                 cp      'S'
                 jp      nz,fs_syntax
-                rst     $10
+                call    fs_chrgtr
                 call    fs_chan             ; DE = the channel; Z <=> channel 0
                 jp      z,fs_bfn            ; OPEN's channel-0 exception -> ERR 52
                 ld      ix,p0_fch_check_nz
@@ -517,7 +528,7 @@ fs_close:
                 call    p0cb                ; D-BAREEND: Z iff the statement ends here
                 jr      z,fc_all
 fc_listloop:
-                call    s2_skip_spaces
+                call    skip_spaces
                 call    fs_chan             ; DE = the channel; Z <=> channel 0
                 push    hl                  ; guard the cursor (push keeps the flags)
                 jr      z,fc_done           ; channel 0 -> the one lenient no-op
@@ -532,7 +543,8 @@ fc_listloop:
                 call    p0cb                ; flush (if OUTPUT) + mark closed
 fc_done:
                 pop     hl
-                call    s2_skip_comma       ; Z iff `,`
+                call    skip_spaces
+                cp      ','                 ; Z iff `,`
                 jp      nz,fs_exec          ; the list ends: main's dc_finish (exec_stmt)
                 inc     hl                  ; consume ',' and parse the next channel
                 jr      fc_listloop
@@ -555,7 +567,7 @@ fs_maxfiles:
                 ld      a,(hl)
                 cp      FILES_TOKEN         ; require FILES
                 jp      nz,fs_syntax        ; bare MAX is not a statement
-                rst     $10                 ; past FILES
+                call    fs_chrgtr           ; past FILES
                 cp      EQ_TOKEN
                 jp      nz,fs_syntax
                 inc     hl
@@ -584,7 +596,7 @@ fs_maxfiles:
 ; A non-numbered line is 57, untrapped (D-CASDIRECT). MERGE RETURNS TO COMMAND
 ; LEVEL (D-MERGERET): its continuation is end_line_end, in both arms.
 fs_merge:
-                rst     $10                 ; past the MERGE token
+                call    fs_chrgtr           ; past the MERGE token
                 or      a
                 ld      ix,p0_loc_missing   ; bare MERGE -> ERR 24 (measured)
                 jp      z,p0cb

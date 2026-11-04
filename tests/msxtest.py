@@ -356,13 +356,41 @@ class Machine:
                 r.sp = sp_keep
             return p1cb
 
+        def p0cb_for(mach):
+            """D-SUB2RETIRE step 2e: the sub ROM's PAGE-0 call back into main
+            (sub/sub.asm p0cb, sub2's p0cb's bytes): main's page 0 mapped back for
+            one call through CLPRIM. Run IX in the CALLER's own machine on the
+            tenant's SP, registers over and back and RAM both ways, as p1cb_for."""
+            def p0cb(s0m):
+                c, r = s0m.cpu, mach.cpu
+                sp_keep = r.sp
+                mach.mem[RAM_LO:0x10000] = s0m.mem[RAM_LO:0x10000]
+                r.a, r.f, r.bc, r.de, r.hl, r.ix, r.iy = c.a, c.f, c.bc, c.de, c.hl, c.ix, c.iy
+                r.sp = c.sp                         # one RAM, one stack
+                mach.call(c.ix, keep_sp=True)
+                s0m.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]
+                c.a, c.f, c.bc, c.de, c.hl, c.ix = r.a, r.f, r.bc, r.de, r.hl, r.ix
+                r.sp = sp_keep
+            return p0cb
+
         def bridge(mach):
             cpu = mach.cpu
             if cpu.ix < 0x4000:
                 sub0.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]  # args/scratch in
+                # D-SUB2RETIRE step 2e: main's PAGE 1 stays mapped under a page-0
+                # tenant on the machine, and filestmt (index 19) calls two of its
+                # leaves directly -- so the island borrows the caller's page 1, with
+                # its traps, and traps the page's own p0cb (the call back to main).
+                if "p0cb" in sub_sym:
+                    sub0.mem[0x4000:0x8000] = mach.mem[0x4000:0x8000]
+                    sub0.traps = {a: fn for a, fn in mach.traps.items()
+                                  if 0x4000 <= a < 0x8000}
+                    sub0.traps[sub_sym["p0cb"]] = p0cb_for(mach)
+                sub_sp = cpu.sp                    # p0cb's nested run moves mach's SP
                 sub0.cpu.sp = cpu.sp                                  # the CALLER's stack
                 sub0.call(cpu.ix, keep_sp=True, hl=cpu.hl, de=cpu.de, bc=cpu.bc)
                 copy_back(mach.mem, sub0.mem)                         # results back
+                cpu.sp = sub_sp
                 res = sub0.cpu
             else:
                 sub1 = object.__new__(Machine)     # page-1 half over the CALLER's own image

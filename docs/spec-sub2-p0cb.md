@@ -163,3 +163,25 @@ shared tail (`exs_tail`: `push de / ret`), as ls_tenant's do. BEEP's `ei` across
 its delay now lands on main's $0038 (page 0 is main's under a page-1 tenant), where
 htimi_guard serves the frame with main's page 1 mapped back (D-GCDI2). sub2 keeps
 index 1 as a retired `ret / nop / nop` row; file_tenant forwards nothing any more.
+
+## 7. Step 2e: slice C1 in the sub ROM's PAGE 0, with that ROM's own `p0cb` (2026-11-04)
+
+sub2/filestmt.asm (OPEN / CLOSE / MERGE / MAXFILES) is zerobas-sub's page-0
+tenant `SUBROM_IDX_FILESTMT` (19) now; main's `ex_file` (basic/program.asm, the
+four rows' shared `ld c,a`) is a plain `subrom_call` into it and shares
+`exs_tail`. A page-0 tenant of the sub ROM sees what one of sub2 saw -- main's
+page 1 mapped, main's page 0 not -- so the sub ROM's page 0 carries its own
+`p0cb` (sub/sub.asm, §2's bytes and contract exactly, 9 B). The moved code:
+
+- reaches main through `p0cb` as before, except two page-1 LEAVES it calls
+  directly because they are mapped: `dev_cmp` (-> main's `upcase`) and
+  `fch_modes_ptr`. Asserts beside the resident-ABI include in sub/sub.asm refuse
+  a build that moves either below $4000.
+- uses this page's own `skip_spaces` (sub/readdata.asm) and `upcase`
+  (sub/tkfloat.asm) where sub2 had local copies or a crossing;
+- has no `rst`: the five `rst $10` sites are `call fs_chrgtr`, a 7 B shim
+  through `p0cb` to main's CHRGTR (no IX save -- no site holds anything in it).
+
+sub2's index 3 is a retired `ret / nop / nop` row and main's `subrom2_call`
+went with its last caller; sub2 keeps its ping and the p0cb self-test until
+step 2f retires the ROM.

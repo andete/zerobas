@@ -20,13 +20,13 @@ arga_pack_fac equ 0331CH
 widen_fac_to equ 036AAH
 widen_uint_to equ 03946H
 flt_to_int16 equ 03042H
-vars_reset equ 03B70H
+vars_reset equ 03B68H
 penderr_set equ 02827H
 flt_fmt equ 02F80H
-rl_vpeek equ 03A65H
-rl_vpoke equ 03A70H
-rl_vaddr equ 03A7DH
-rl_lastrow equ 03AA4H
+rl_vpeek equ 03A5DH
+rl_vpoke equ 03A68H
+rl_vaddr equ 03A75H
+rl_lastrow equ 03A9CH
 
 ; --- page-0 call-back (p0cb) targets: zerobas-sub2 page 0 reaches these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00160H   ; main's chrgtr
@@ -38,7 +38,7 @@ p0_gb_illegal equ 04550H   ; main's gb_illegal
 p0_eval_addr equ 02E9DH   ; main's eval_addr
 p0_ztrap_entry equ 05D35H   ; main's ztrap_entry
 p0_skip_comma equ 042BAH   ; main's skip_comma
-p0_ex_key_stmt equ 03EBFH   ; main's ex_key_stmt
+p0_ex_key_stmt equ 03EB7H   ; main's ex_key_stmt
 p0_stmt_error equ 042E6H   ; main's stmt_error
 p0_raise_error equ 0430FH   ; main's raise_error
 p0_pdf_badname equ 027B7H   ; main's pdf_badname
@@ -64,7 +64,7 @@ p0_upcase equ 042C6H   ; main's upcase
 p0_eval equ 04AC1H   ; main's eval
 p0_eval_byte_arg equ 04542H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042D6H   ; main's stmt_bare_end
-p0_mxf_require_end equ 03D5BH   ; main's mxf_require_end
+p0_mxf_require_end equ 03D53H   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
 p0_fch_check_d equ 06ECFH   ; main's fch_check_d
 p0_fch_check_nz equ 06EE0H   ; main's fch_check_nz
@@ -74,7 +74,7 @@ p0_fch_do_close_ch equ 06EEAH   ; main's fch_do_close_ch
 p0_fch_close_all equ 06F1EH   ; main's fch_close_all
 p0_fopen_cross equ 06622H   ; main's fopen_cross
 p0_fatprim_op equ 06372H   ; main's fatprim_op
-p0_cas_capture_cut equ 03D7FH   ; main's cas_capture_cut
+p0_cas_capture_cut equ 03D77H   ; main's cas_capture_cut
 p0_cas_open_match equ 0645AH   ; main's cas_open_match
 p0_cas_bufp_set equ 06469H   ; main's cas_bufp_set
 p0_cas_ascii_setup equ 064A7H   ; main's cas_ascii_setup
@@ -86,11 +86,11 @@ p0_run_prog_top equ 06425H   ; main's run_prog_top
 p0_disk_prog_load equ 064E5H   ; main's disk_prog_load
 p0_sv_tenant equ 065FDH   ; main's sv_tenant
 p0_bload_cont equ 0637FH   ; main's bload_cont
-p0_fch_park equ 03A61H   ; main's fch_park
+p0_fch_park equ 03A59H   ; main's fch_park
 p0_list_all equ 06267H   ; main's list_all
 p0_cas_ascii_finish equ 06597H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 0642CH   ; main's cas_capture_name
-p0_cas_name_cut equ 03D82H   ; main's cas_name_cut
+p0_cas_name_cut equ 03D7AH   ; main's cas_name_cut
 p0_req_comma equ 02D97H   ; main's req_comma
 p0_check_expr_errors equ 0440AH   ; main's check_expr_errors
 p0_key_drain equ 05A96H   ; main's key_drain

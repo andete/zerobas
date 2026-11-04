@@ -432,11 +432,12 @@ df_notfound:
 ; APPEND since S10.B, RANDOM since S10.D, INPUT since S10.C. What is left of
 ; "layered on fat.asm" is the header above, kept as history.
 
-; --- OPEN: zerobas-sub2 page 0 since D-P0CB slice C1 (2026-10-21) -----------
+; --- OPEN: a sub-ROM page-0 tenant since D-P0CB slice C1 (2026-10-21) -------
 ; ex_open / do_open and every arm only OPEN reaches (the disk modes, LPT: /
 ; CRT: / GRP:, CAS:, the AS clause, the header stamp) are fo_* in
-; sub2/filestmt.asm; main's ex_open is one shared byte in front of ex_sub2
-; (basic/program.asm). What stays here is what other verbs or disk.rom also
+; sub2/filestmt.asm -- zerobas-sub2's page 0 until D-SUB2RETIRE step 2e
+; (2026-11-04), zerobas-sub's page 0 (SUBROM_IDX_FILESTMT) since; main's ex_open
+; is one shared byte in front of ex_file (basic/program.asm). What stays here is what other verbs or disk.rom also
 ; reach: fname_expr, pdfcb_resume, dev_cmp and the device names, fopen_cross,
 ; the fch_* channel helpers -- and oo_parse_reclen, which tests/test_open_len.py
 ; drives on the main image.
@@ -1717,9 +1718,10 @@ ex_name:
                 jp      z,stmt_error        ; 4 = no `AS` -> Syntax error
                 jr      kill_status         ; 0 not found / 1 renamed / 2 I-O
 
-; --- MAXFILES = n: zerobas-sub2 page 0 since D-P0CB slice C1 (2026-10-21) --
-; ex_maxfiles is fs_maxfiles in sub2/filestmt.asm; it hands clr_wipe back to
-; main's ex_sub2 as its continuation. The domain notes (D-MFDOM, D-MAXFTAIL)
+; --- MAXFILES = n: a sub-ROM page-0 tenant since D-P0CB slice C1 (2026-10-21) --
+; ex_maxfiles is fs_maxfiles in sub2/filestmt.asm (zerobas-sub's page 0 since
+; D-SUB2RETIRE step 2e); it hands clr_wipe back to main's ex_file as its
+; continuation. The domain notes (D-MFDOM, D-MAXFTAIL)
 ; travelled with it; basic/PROVENANCE.md §MAXFILES is unchanged.
 
 ; --- MERGE "name" / MERGE "CAS:name": zerobas-sub2 page 0 since D-P0CB slice C1

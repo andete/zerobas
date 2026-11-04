@@ -711,6 +711,19 @@ item — do **one item per session** to keep context lean.
       data label, the step-1 quirk). Targets: beep, editverb, width, screenerr, keystr,
       keyrepaint, key-trap, rg7, lnblank all pass. ➡️ Left in sub2: filestmt (OPEN / CLOSE /
       MERGE / MAXFILES) and p0cb's helpers -- step 2e, into sub page 0 (1155 B free).
+      ✅ **STEP 2e (2026-11-04): FILESTMT (OPEN / CLOSE / MERGE / MAXFILES) LIVES IN THE SUB ROM's
+      PAGE 0** (SUBROM_IDX_FILESTMT 19), with its own 9 B `p0cb` copy (page 0 := main through
+      CLPRIM, sub2's contract); `rst $10` sites call a local `fs_chrgtr`; dev_cmp and
+      fch_modes_ptr are called DIRECTLY in main page 1 (asserted to stay above $4000); the skip
+      / upcase helpers are the sub ROM's own. main's ex_sub2 is ex_file through subrom_call, and
+      `subrom2_call` is deleted (its last caller). sub2 now holds only the ping, p0cb, its
+      selftest and the RST vectors. 📏 2026-11-04: sub page 0 1155 -> 229 B free, main low
+      region 270 -> 278, sub2 page 0 15214 -> 16145 ([`s2e_reloc.out`](scratchpad/s2e_reloc.out)).
+      Contract-diff: no breaks ([`s2e_contract.out`](scratchpad/s2e_contract.out); she_table is
+      strheap's dispatch table read as code). 17 targets pass (nodiskopen, opengrp, clearclose,
+      badfnum, fcbhdr, casdirect, cas-ascii, nodisk, nodiskverbs, eofcas, fcb0, lvfix, dskmsg,
+      diskascii, castail, dout, sub2). ➡️ **STEP 2f: delete sub2** -- its ROM, slot 3-3 in the
+      machine configs, its probes / tests / docs.
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -718,6 +731,12 @@ item — do **one item per session** to keep context lean.
         teach the gate p1cb's IX-target class (the 46 `p0_*` names) and CLPRIM ($F38C, RAM).
         Run by hand with ls_tenant + p1cb as seeds on 2026-11-03: no call into sub page 0,
         sub2 or main page 1.
+        🔴 **AND THE PAGE-0 WALK HAS THE SAME HOLE (found 2026-11-04 by step 2e):** its seed
+        scrape stops at index 11's retired `ret`, so indexes 13-19 (lrsetst, deffn, pusign,
+        puemit, lofu32, keystr, filestmt) were never closure-checked. A seeded walk from
+        file_tenant: 70 labels, no rst, outside callees only CLPRIM (RAM) and two direct main
+        page-1 calls. The fixed gate must accept CLPRIM, p0cb / p1cb IX targets and asserted
+        direct page-1 calls (keystr's pchar / print_crlf too).
       - [ ] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
         🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
         `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
@@ -8998,7 +9017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11489 (T-6FE392)8 (T-529ABE)` from `TODO.md:17171 (T-529ABE)`: a
+      `TODO.md:11508 (T-6FE392)8 (T-529ABE)` from `TODO.md:17190 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11958,7 +11977,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17190 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

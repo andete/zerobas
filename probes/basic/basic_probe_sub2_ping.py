@@ -24,9 +24,9 @@ $8B: sub2 carries "Z2" precisely so that a second ROM cannot capture it --
 and it would: marked "ZB", discovery records 3-3, $8F (knife K-2B2).
 
 D-SUB2 (c) adds MAIN's side: SUBSLOT2 ($F14B) must read $8F (try_sub_slot
-records the "Z2" ROM there), and a fifth call goes through main's own
-`subrom2_call` (its address read from build/basic-reloc.sym) with ix=$4010 --
-it must reach ROM 2's page-1 ping ($C3 -> $C104) on its own slot lookup.
+records the "Z2" ROM there). (A fifth call went through main's own
+`subrom2_call` with ix=$4010 until D-SUB2RETIRE step 2e, 2026-11-04, retired
+that wrapper with its last caller: no main code calls zerobas-sub2 any more.)
 
 A 12 s safety net captures anyway if a CALSLT hangs, so the gate FAILS cleanly.
 Clean room: own ROMs, RAM cells, CALSLT (a published BIOS entry).
@@ -60,21 +60,11 @@ def _sub_sym(name):
 
 
 SUB_PING, SUBSLOT, SUBSLOT2 = _sub_sym("SUB_PING"), _sub_sym("SUBSLOT"), _sub_sym("SUBSLOT2")
-MAIN_CELL = 0xC104
 STUB = 0xC000
 CALLS = ((0x8B, 0x0040, 0xC100, 0xC0, "3-2 page 0 (zerobas-sub) "),
          (0x8B, 0x4010, 0xC101, 0xC1, "3-2 page 1 (zerobas-sub) "),
          (0x8F, 0x0040, 0xC102, 0xC2, "3-3 page 0 (zerobas-sub2)"),
          (0x8F, 0x4010, 0xC103, 0xC3, "3-3 page 1 (zerobas-sub2)"))
-
-
-def main_sym(name: str) -> int:
-    """An address from the build's .sym (the merged ROM's BASIC is that image)."""
-    for ln in open(os.path.join(REPO, "build", "basic-reloc.sym")):
-        f = ln.split()
-        if len(f) >= 3 and f[0] == name and f[1].upper() == "EQU":
-            return int(f[2].rstrip("Hh"), 16)
-    sys.exit(f"{name} not in build/basic-reloc.sym -- build first (make basic-reloc)")
 
 
 def stub() -> tuple[bytes, int]:
@@ -86,13 +76,6 @@ def stub() -> tuple[bytes, int]:
                     0xCD, 0x1C, 0x00,                             # call CALSLT
                     0x3A, SUB_PING & 0xFF, SUB_PING >> 8,         # ld a,(SUB_PING)
                     0x32, cell & 0xFF, cell >> 8])                # ld (cell),a
-    sr2 = main_sym("subrom2_call")
-    b += bytes([0xAF, 0x32, SUB_PING & 0xFF, SUB_PING >> 8,       # xor a / ld (SUB_PING),a
-                0xDD, 0x21, 0x10, 0x40,                           # ld ix,$4010
-                0xCD, sr2 & 0xFF, sr2 >> 8,                       # call subrom2_call
-                0xF3,                                             # di (it EIs on return)
-                0x3A, SUB_PING & 0xFF, SUB_PING >> 8,             # ld a,(SUB_PING)
-                0x32, MAIN_CELL & 0xFF, MAIN_CELL >> 8])          # ld (MAIN_CELL),a
     halt = STUB + len(b)
     b.append(0x76)                                          # halt (the capture bp)
     return bytes(b), halt
@@ -103,7 +86,7 @@ def run(machine: str) -> dict | None:
     fd, out = tempfile.mkstemp(suffix=".txt", prefix="sub2ping_")
     os.close(fd)
     os.unlink(out)
-    cells = [c for _, _, c, _, _ in CALLS] + [SUBSLOT, SUBSLOT2, MAIN_CELL]
+    cells = [c for _, _, c, _, _ in CALLS] + [SUBSLOT, SUBSLOT2]
     lines = [
         "set throttle off",
         "proc __hex {addr} { binary scan [debug read_block memory $addr 1] H* h; return $h }",
@@ -115,7 +98,7 @@ def run(machine: str) -> dict | None:
         "}",
         "after time 8.0 {",
         f"  debug write_block memory {STUB} [binary format H* {{{code.hex()}}}]",
-        *[f"  debug write memory {c} 0x00" for _, _, c, _, _ in CALLS + ((0, 0, MAIN_CELL, 0, ""),)],
+        *[f"  debug write memory {c} 0x00" for _, _, c, _, _ in CALLS],
         f"  debug set_bp {halt} {{}} {{ __cap }}",
         f"  reg PC {STUB}",
         "}",
@@ -171,11 +154,6 @@ def main() -> int:
         ok &= good
         print(f"{m:30s} discovery: SUBSLOT2 ${s2:02X} (expect $8F, ROM 2 in 3-3): "
               f"{'PASS' if good else 'FAIL'}")
-        mc = res.get(MAIN_CELL)
-        good = mc == 0xC3
-        ok &= good
-        print(f"{m:30s} main's subrom2_call ix=$4010 -> SUB_PING ${mc:02X} "
-              f"(expect $C3): {'PASS' if good else 'FAIL'}")
     print("-------------------")
     print("sub2 ping gate:", "PASS" if ok else "FAIL")
     return 0 if ok else 1

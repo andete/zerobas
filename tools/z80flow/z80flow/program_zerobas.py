@@ -10,7 +10,7 @@ Facts taken from zerobas's source comments / build tool, not inferred:
     (tools/build_mainrom.py ISLAND_RANGES);
   * sr_inl0/sr_inl1/sc_inl0/sc_inl1 take ONE inline byte after their call
     (basic/subromcall.asm, D-STUBINL) -- used only to CROSS-CHECK the inference;
-  * subrom_call / subrom2_call / sc_call and the four inline stubs are the
+  * subrom_call / sc_call and the four inline stubs are the
     sub-ROM tenant call wrappers (far calls by IX);
   * p0cb (sub2/p0cb.asm) is sub2's call back into main, through CLPRIM; it lives
     in the sub2 image, which v0 does not analyse.
@@ -25,7 +25,7 @@ ZEROBAS_LO, ZEROBAS_HI = 0x2781, 0x7FFF
 HEADER = (0x4000, 0x400F)
 ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE))
 INLINE_STUBS = {"sr_inl0": 1, "sr_inl1": 1, "sc_inl0": 1, "sc_inl1": 1}
-SUBROM_WRAPPERS = ["subrom_call", "subrom2_call", "sc_call", "sr_slot",
+SUBROM_WRAPPERS = ["subrom_call", "sc_call", "sr_slot",
                    "sr_inl0", "sr_inl1", "sc_inl0", "sc_inl1"]
 FAR_CONVENTIONS_LATER = {"p0cb": "sub2 page 0: IX = main address, via CLPRIM ($F38C); sub2 image, not analysed in v0"}
 
@@ -164,17 +164,20 @@ def add_subroms(p, zerobas_dir, byname, whole_image):
     # sub2's call-back into main (sub2/p0cb.asm, docs/spec-sub2-p0cb.md:
     # "HL / DE / BC / A / F cross in BOTH directions; IX is consumed"; it
     # parks the caller's AF in AF', so AF' does not survive)
-    cb = p.resolve("sub2p0:p0cb")
-    if cb is not None:
-        def back(vals, site):
-            ix, = vals
-            return list(ix) if ix else None      # main code, or a hook cell called through
-        af_alt = REAL & ~m("A", "B", "C", "D", "E", "H", "L", "IXH", "IXL", "IYH", "IYL",
-                            "B'", "C'", "D'", "E'", "H'", "L'") & ~ALLF      # A' and F'
-        p.far_calls[cb] = FarCall("p0cb", ("IX",), back, kill=af_alt, gen=m("IXH", "IXL"))
+    # D-SUB2RETIRE step 2e (2026-11-04): zerobas-sub's page 0 has the same p0cb
+    # (sub/sub.asm, for sub2/filestmt.asm), with the same contract.
+    def back(vals, site):
+        ix, = vals
+        return list(ix) if ix else None          # main code, or a hook cell called through
+    af_alt = REAL & ~m("A", "B", "C", "D", "E", "H", "L", "IXH", "IXL", "IYH", "IYL",
+                        "B'", "C'", "D'", "E'", "H'", "L'") & ~ALLF          # A' and F'
+    for where in ("sub2p0:p0cb", "subp0:p0cb"):
+        cb = p.resolve(where)
+        if cb is not None:
+            p.far_calls[cb] = FarCall("p0cb", ("IX",), back, kill=af_alt, gen=m("IXH", "IXL"))
     p.notes.append("build/sub.rom and build/sub2.rom are mapped as contexts sub/sub2 p0/p1 (each tenant "
                    "page with the main page it sees); their .sym labels are roots; CALSLT with a constant "
-                   "IX and IYH from SUBSLOT/SUBSLOT2, and sub2's p0cb with a constant IX, are followed into "
+                   "IX and IYH from SUBSLOT/SUBSLOT2, and either ROM's page-0 p0cb with a constant IX, are followed into "
                    "the routine they reach.")
 
 

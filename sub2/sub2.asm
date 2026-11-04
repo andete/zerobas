@@ -82,20 +82,16 @@ sub2_p0_table:
                                                 ;   its slot so index 2 / 3 stay put.
                 jp      p0cb_selftest           ; index 2 (SUB2_IDX_P0TEST): the
                                                 ;   page-0 call-back, proven (D-P0CB)
-                jp      file_tenant             ; index 3 (SUB2_IDX_TRAPS): OPEN /
-                                                ;   CLOSE / MERGE / MAXFILES by token
-                                                ;   (slice C1, filestmt.asm). (The SAVE /
-                                                ;   LOAD family, slice C2, and its tape
-                                                ;   reader: zerobas-sub page 1 since
-                                                ;   D-SUB2RETIRE, SUBROM_IDX_LOADSAVE;
-                                                ;   SCREEN / COLOR / WIDTH / KEY, slice
-                                                ;   D, and DELETE / AUTO / RENUM there
-                                                ;   since step 2d, SUBROM_IDX_SCRSTMT.)
-                                                ;   The event-trap statements (slice B,
-                                                ;   trap_tenant, which forwarded tokens
-                                                ;   here) are main's low region again
-                                                ;   since D-SUB2RETIRE step 2c: the row
-                                                ;   keeps its index and its name.
+                ret                             ; index 3: RETIRED. It was file_tenant
+                nop                             ;   (OPEN / CLOSE / MERGE / MAXFILES,
+                nop                             ;   sub2/filestmt.asm, D-P0CB slice C1;
+                                                ;   trap_tenant's row before D-SUB2RETIRE
+                                                ;   step 2c), which moved to zerobas-
+                                                ;   sub's page 0 (SUBROM_IDX_FILESTMT)
+                                                ;   with D-SUB2RETIRE step 2e. Every
+                                                ;   statement this ROM ran lives in main
+                                                ;   or zerobas-sub now; what is left is
+                                                ;   the ping and the p0cb self-test.
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -115,7 +111,9 @@ sub2_p0_ping:
                 ; (sub2/trapstmt.asm -- the event-trap statements, D-P0CB slice B -- went
                 ; back to main's low region with D-SUB2RETIRE step 2c, 2026-11-04:
                 ; basic/trapstmt.asm.)
-                include "sub2/filestmt.asm"
+                ; (sub2/filestmt.asm -- OPEN / CLOSE / MERGE / MAXFILES, D-P0CB slice
+                ; C1 -- moved to zerobas-sub's page 0 with D-SUB2RETIRE step 2e,
+                ; 2026-11-04: SUBROM_IDX_FILESTMT, with that ROM's own p0cb.)
                 ; (sub2/loadsave.asm -- the SAVE / LOAD family, D-P0CB slice C2 -- and
                 ; sub2/tapeprog.asm, its tape program reader, moved to zerobas-sub's
                 ; page 1 with D-SUB2RETIRE's p1cb slice, 2026-11-03: SUBROM_IDX_LOADSAVE.)

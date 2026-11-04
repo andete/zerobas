@@ -242,6 +242,13 @@ sub_p0_table:
                                                 ;   measured defaults at cold boot
                                                 ;   (D-KEYSTR). RAM in, RAM out;
                                                 ;   pchar/print_crlf are page 1.
+                jp      file_tenant             ; index 19 (SUBROM_IDX_FILESTMT): OPEN /
+                                                ;   CLOSE / MERGE / MAXFILES by token
+                                                ;   (sub2/filestmt.asm, D-P0CB slice
+                                                ;   C1), main's ex_file. Calls main
+                                                ;   back through p0cb (below). From
+                                                ;   zerobas-sub2's page-0 index 3 with
+                                                ;   D-SUB2RETIRE step 2e, 2026-11-04.
 
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
@@ -382,6 +389,36 @@ tokenise_ei:
                 include "lofu32.asm"
 ; --- KEY n,"str" / KEY LIST / function-key defaults (D-KEYSTR) ----------------
                 include "keystr.asm"
+
+; --- p0cb (D-SUB2RETIRE step 2e, 2026-11-04): the call back into MAIN from this
+; page -- zerobas-sub2's p0cb (sub2/p0cb.asm, docs/spec-sub2-p0cb.md §2), the
+; same bytes, for the first page-0 tenant of THIS ROM that calls main. While a
+; page-0 tenant runs, main's page 0 (the BIOS, the low region, $0038) is switched
+; out -- this ROM is there -- and only main's page 1 stays mapped. p0cb maps
+; main's page 0 back for one call, through the BIOS's RAM primitive CLPRIM
+; ($F38C; no new RAM, Joost 2026-10-21), so its contract is sub2's exactly:
+;   in   IX = a main address (either page); A, F, BC, DE, HL = the callee's inputs
+;   out  the callee's A, F, BC, DE, HL; IX = whatever the callee left; AF'
+;        clobbered; IY and the alternates untouched. A callee that RAISES never
+;        returns (raise_error resets SP and runs main's error path with main's
+;        page 0 already mapped; slot 3's page-0 secondary field is left on this
+;        ROM, harmless while the primary register says slot 0).
+;   interrupts: unchanged both ways (CLPRIM has no di / ei). One while the callee
+;        runs takes main's $0038; one back in THIS page takes this ROM's $0038
+;        -> SUB_INT_RAM, which restores the interrupted tenant's live slot.
+;   stack: 6 B (its call, the old $A8, CLPRIM's call).
+; Main is slot 0, unexpanded on both repack machines, so "page 0 := main" is
+; clearing bits 0-1 of the primary register. Sited HERE (after keystr, before
+; the tenant that uses it) because page 0 is where its callers are; p1cb is the
+; page-1 twin (below, in page 1).
+p0cb:
+                ex      af,af'              ; the caller's AF -> AF' (the callee gets it)
+                in      a,($A8)
+                push    af                  ; the live primary slots: CLPRIM restores them
+                and     $FC                 ; page 0 := slot 0, main
+                jp      CLPRIM              ; ...whose `ret` returns to OUR caller
+; --- OPEN / CLOSE / MERGE / MAXFILES (index 19, D-SUB2RETIRE step 2e) ---------
+                include "sub2/filestmt.asm"
 
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the
@@ -757,6 +794,19 @@ sub_p1_ping:
 ; sub.rom) forces a regen, and `make subrom-abi-check` is a standing strong
 ; consistency gate (re-diffs the shipped sub.rom against a fresh regen).
                 include "basic-resident-abi.inc"
+; D-SUB2RETIRE step 2e: sub2/filestmt.asm (page 0, index 19) CALLS these main
+; routines DIRECTLY, not through p0cb, because main's page 1 is mapped under a
+; page-0 tenant and each is a page-1 leaf (dev_cmp -> upcase; fch_modes_ptr).
+; Here, not in that file: the p0_ names are forward references in page 0.
+    IF p0_dev_cmp < $4000
+                db      FILESTMT_DIRECT_DEV_CMP_LEFT_MAIN_PAGE_1__USE_P0CB
+    ENDIF
+    IF p0_upcase < $4000
+                db      FILESTMT_DIRECT_DEV_CMP_CALLS_UPCASE_BELOW_4000__USE_P0CB
+    ENDIF
+    IF p0_fch_modes_ptr < $4000
+                db      FILESTMT_DIRECT_FCH_MODES_PTR_LEFT_MAIN_PAGE_1__USE_P0CB
+    ENDIF
 
                 include "mathwrap.asm"          ; D-WSZERO S14e: the table's nine math
                                                 ; entries save / restore their scratch

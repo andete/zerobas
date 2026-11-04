@@ -5113,12 +5113,10 @@ CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address 
 SUB2_IDX_P0TEST equ     2       ; zerobas-sub2 PAGE-0 index: p0cb_selftest (D-P0CB,
                                 ; docs/spec-sub2-p0cb.md): the page-0 call-back proven by
                                 ; injection (probes/basic/basic_probe_sub2_p0cb.py)
-SUB2_IDX_TRAPS  equ     3       ; zerobas-sub2 PAGE-0 index: file_tenant -- OPEN / CLOSE /
-                                ; MERGE / MAXFILES and on by token (sub2/filestmt.asm), entered
-                                ; from main's ex_sub2 with HL = cursor, C = the token. The
-                                ; name is the row's first tenant's, trap_tenant (D-P0CB
-                                ; slice B), whose trap statements are main's low region
-                                ; again since D-SUB2RETIRE step 2c (basic/trapstmt.asm)
+; (SUB2_IDX_TRAPS 3, zerobas-sub2's page-0 index for trap_tenant (D-P0CB slice B)
+; and then file_tenant, is RETIRED by D-SUB2RETIRE step 2e, 2026-11-04: OPEN /
+; CLOSE / MERGE / MAXFILES are SUBROM_IDX_FILESTMT 19 on zerobas-sub's page 0 now;
+; sub2's row 3 is `ret / nop / nop`.)
 CLPRIM          equ     $F38C   ; MSX work area: the BIOS's RAM inter-slot call primitive,
                                 ; copied there at boot (C-BIOS src/slot.asm m_clprim);
                                 ; zerobas-sub2's p0cb calls main through it (D-P0CB) (14)
@@ -5621,6 +5619,13 @@ SUBROM_IDX_KEYSTR    equ 18     ; keystr_tenant (sub/keystr.asm): KEY n,"str",
                                 ; defaults at cold boot (D-KEYSTR). PAGE 0: RAM
                                 ; in, RAM out; its only calls, pchar and
                                 ; print_crlf, are main page 1. Op in KEYARG.
+SUBROM_IDX_FILESTMT  equ 19     ; file_tenant (sub2/filestmt.asm): OPEN / CLOSE /
+                                ; MERGE / MAXFILES (D-P0CB slice C1), C = the
+                                ; token, HL = the cursor; DE / HL out = the main
+                                ; continuation (main's ex_file). PAGE 0, calling
+                                ; main back through the sub ROM's own p0cb. From
+                                ; zerobas-sub2's page-0 index 3 (SUB2_IDX_TRAPS)
+                                ; with D-SUB2RETIRE step 2e, 2026-11-04.
 SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's / LOC's
                                 ; 32-bit DE:HL (S10.E: was FAT_FILESIZE) -> ARGA as
                                 ; an unpacked FPNUM, for ev_ff_lof to pack as a

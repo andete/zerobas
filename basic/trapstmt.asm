@@ -25,7 +25,7 @@
 ; ex_ff_stmt reaches ex_strig_stmt / ex_interval, with HL where those stubs got it
 ; and the stack as the statement entered (exec_stmt's contract). ex_key_stmt is a
 ; CONTINUATION: sub2's scr_key (sub2/scrstmt.asm) returns it in DE with HL on the
-; `(`, and main's ex_sub2 does `push de / ret` off sub2's CALSLT frame.
+; `(`, and main's exs_tail does `push de / ret` off the tenant's CALSLT frame.
 ;
 ; CLEAN-ROOM: own-design (basic/PROVENANCE.md); the statement forms and their
 ; errors are the black-box measurements the trap specs cite (docs/spec-traps-*.md).
@@ -188,7 +188,7 @@ tt_px:          jp      pop_exec
 
 ; --- KEY(n) ON | OFF | STOP -------------------------------------------------------
 ; A CONTINUATION: sub2's scr_key (sub2/scrstmt.asm) peeks the `(` after KEY and
-; returns here in DE with HL on it, off its CALSLT frame (main's ex_sub2 does the
+; returns here in DE with HL on it, off its CALSLT frame (main's exs_tail does the
 ; `push de / ret`), so the stack is the statement's own.
 ; NOT under TRAPS_T3, although its only way in is: tools/gen_resident_abi.py
 ; exports it to sub2 as p0_ex_key_stmt and REFUSES a missing name, so a T3-off

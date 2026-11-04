@@ -248,7 +248,8 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/basic-resident-abi.inc \
              sub2/grpprt.asm sub2/edctrl.asm sub2/frelive.asm \
              sub2/loadsave.asm sub2/tapeprog.asm \
-             sub2/scrstmt.asm sub2/pgmedit.asm sub/beep.asm
+             sub2/scrstmt.asm sub2/pgmedit.asm sub/beep.asm \
+             sub2/filestmt.asm
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
@@ -295,7 +296,7 @@ sub: $(SUB_ROM)
 # or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
 SUB2_SRC  := sub2/sub2.asm
 SUB2_PARTS := sub/equates.inc basic/sysvars.inc \
-              sub2/p0cb.asm sub2/filestmt.asm \
+              sub2/p0cb.asm \
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym

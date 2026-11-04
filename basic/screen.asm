@@ -87,12 +87,12 @@ key_op:
 ; --- key_drain: KEY LIST / KEY n,"text"'s CONTINUATION (D-P0CB slice D) ---------
 ; sub2's scr_key (sub2/scrstmt.asm) parses and sets KEYARG (255 = LIST, else the
 ; key number, with the text staged in STRSCR), then returns this address in DE;
-; ex_sub2 jumps here with HL = the cursor and the stack as the statement entered.
+; exs_tail jumps here with HL = the cursor and the stack as the statement entered.
 ; The keystr tenant leaves its render window printable after EVERY op -- KEY
 ; LIST's ten lines, or a lone NUL for a store -- so the drain is unconditional;
 ; 🪟 D-DETOKBUF: through detok_emit's windowed loop (KEY LIST's ~200 B do not fit
 ; one buffer). It runs HERE, not through p0cb, so the print loop is not nested
-; under sub2's CALSLT frame. No IX guard: ex_sub2's CALSLT has already spent it.
+; under sub2's CALSLT frame. No IX guard: ex_scr's CALSLT has already spent it.
 key_drain:
                 push    hl
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR

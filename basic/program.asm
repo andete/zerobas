@@ -1352,13 +1352,13 @@ err_mem         equ     err_mem_arr
 ; What STAYS here is AUTO's modal LOOP, below: it waits on the keyboard
 ; (rl_loop) and stores every line it reads (dispatch_line), so it must not run
 ; nested under sub2's CALSLT frame (D-BLOADSTK's rule). The tenant parses, sets
-; RL_AUTO and returns exa_loop as its continuation, which ex_sub2 jumps to with
+; RL_AUTO and returns exa_loop as its continuation, which exs_tail jumps to with
 ; the stack exactly as the statement entered.
 
 ; --- exa_loop: AUTO's modal loop, a CONTINUATION (D-EDITVERB) -------------------
 ; docs/spec-basic-editverb.md §3.3, measured in
 ; docs/editverb-msx1-characterization.md §3. Entered from sub2's pe_auto (sub2/
-; pgmedit.asm) through ex_sub2, with AU_NUM / AU_INC parsed (le_auto) and RL_AUTO
+; pgmedit.asm) through exs_tail, with AU_NUM / AU_INC parsed (le_auto) and RL_AUTO
 ; = 1; HL is not read. The loop is here because it drives read_line,
 ; dispatch_line, find_line_bc, list_num and CHPUT -- and blocks on the keyboard.
 ;
@@ -3102,13 +3102,14 @@ oe_reraise:
 ; (ex_on_stop .. ex_key_stmt), so ex_on / ex_ff_stmt reach them directly and the
 ; stubs are gone. The trap MACHINERY -- check_traps, set_state, ztrap_entry, the
 ; ISR side -- never left.
-; --- OPEN / CLOSE / MERGE / MAXFILES: zerobas-sub2 page 0 (D-P0CB slice C1) -----
+; --- OPEN / CLOSE / MERGE / MAXFILES: a sub-ROM page-0 tenant (D-P0CB slice C1) --
 ; ~1 KB of basic/files.asm (and OPEN "GRP:"'s arm, basic/grpdev.asm) is
 ; sub2/filestmt.asm's since 2026-10-21. The four stmt_table rows land on ONE byte:
 ; exec_stmt enters every handler with A = its token (tests/test_stmt_dispatch.py
-; asserts it), so `ld c,a` hands the token over and sub2's file_tenant
-; dispatches on it (it took trap_tenant's index 3 when the trap statements came
-; back to main, D-SUB2RETIRE step 2c). The continuations
+; asserts it), so `ld c,a` hands the token over and file_tenant dispatches on
+; it. 🏗️ D-SUB2RETIRE step 2e (2026-11-04): file_tenant is zerobas-sub's PAGE-0
+; tenant SUBROM_IDX_FILESTMT now (it was zerobas-sub2's index 3), calling main
+; back through that ROM's own p0cb, so ex_file is a plain subrom_call. The continuations
 ; it hands back in DE: exec_stmt, clr_wipe (MAXFILES), end_line_end (MERGE), and
 ; disk_error / load_error, which print and RETURN to the statement's caller --
 ; which is why they are continuations, never p0cb calls.
@@ -3118,7 +3119,7 @@ oe_reraise:
 ; slice, 2026-11-03): that file -- with the tape reader it calls -- is zerobas-sub's
 ; PAGE-1 tenant SUBROM_IDX_LOADSAVE now, calling main back through p1cb, so the six
 ; rows land on their own `ld c,a` in front of ex_ls (below), a subrom_call that
-; shares ex_sub2's tail. RUN <name> joins ex_ls from do_run (basic/cload.asm) with
+; shares exs_tail. RUN <name> joins ex_ls from do_run (basic/cload.asm) with
 ; C = RUN_TOKEN; bare RUN and RUN <line> stay there. The
 ; loaders and writers themselves stay in main (do_tape_prog's real-time TAPIN
 ; loop, disk_prog_load, sv_tenant, bload_sub) and are called back through p0cb;
@@ -3130,7 +3131,7 @@ oe_reraise:
 ; 🏗️ D-SUB2RETIRE step 2d (2026-11-04): that file -- with pgmedit.asm behind it --
 ; is zerobas-sub's PAGE-1 tenant SUBROM_IDX_SCRSTMT now, calling main back
 ; through p1cb, so their seven rows land on their own `ld c,a` in front of a
-; subrom_call (ex_scr's, below) that shares ex_sub2's tail. KEY(n) ON|OFF|STOP
+; subrom_call (ex_scr's, below) that shares exs_tail. KEY(n) ON|OFF|STOP
 ; comes too, as KEY_TOKEN, and goes back out as the continuation ex_key_stmt.
 ; What stays in main: CLS, key_repaint (CLS and the prompt share it), key_op
 ; (the keystr tenant's inline-byte call) and the continuation key_drain (KEY
@@ -3166,16 +3167,16 @@ ex_close:
 ex_merge:
 ex_maxfiles:
                 ld      c,a                 ; C = the statement token
-ex_sub2:
-                ld      ix,SUBROM_ENTRY_BASE_P0+3*SUB2_IDX_TRAPS
-                call    subrom2_call        ; HL / C in; DE / HL out
+ex_file:
+                ld      ix,SUBROM_ENTRY_BASE_P0+3*SUBROM_IDX_FILESTMT
+                call    subrom_call         ; HL / C in; DE / HL out
 exs_tail:
                 jp      c,subrom_absent_error
                 push    de
                 ; DE = the tenant's continuation: every `ld de,p0_X / ret` exit of
-                ; file_tenant (sub2/filestmt.asm; sub2.sym: p0_X = main's X), of ls_tenant
+                ; file_tenant (sub2/filestmt.asm; sub.sym: p0_X = main's X), of ls_tenant
                 ; (sub2/loadsave.asm + tapeprog.asm) and of scr_tenant (sub2/scrstmt.asm +
-                ; pgmedit.asm) -- those two in sub.sym since D-SUB2RETIRE 2a / 2d;
+                ; pgmedit.asm) -- all three in sub.sym since D-SUB2RETIRE 2e / 2a / 2d;
                 ; ex_key_stmt is scr_key's KEY(n) exit (basic/trapstmt.asm, D-SUB2RETIRE 2c)
                 ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop ex_key_stmt
                 ret                         ; -> the continuation, HL = its cursor

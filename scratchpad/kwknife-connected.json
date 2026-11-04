@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "6010976e 271adfad 3ecf75d5 a7659f2b 1673b416",
+ "rom_fingerprint": "795ce870 a981d36f 3ecf75d5 0ffbcff6 22e93659",
  "rows": {
   "ABS": {
    "connected": true,
@@ -458,11 +458,11 @@
   "EOF": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "eof",
    "subject": "EOF",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "EQV": {
@@ -818,11 +818,11 @@
   "LOC": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "loc",
    "subject": "LOC",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "LOCATE": {
@@ -838,11 +838,11 @@
   "LOF": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "lof",
    "subject": "LOF",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "LOG": {
@@ -1839,7 +1839,7 @@
   "EOF": {
    "connected": true,
    "rows": {
-    "eof": "MISSING"
+    "eof": "DIVERGENT"
    }
   },
   "EQV": {
@@ -2076,7 +2076,7 @@
   "LOC": {
    "connected": true,
    "rows": {
-    "loc": "MISSING"
+    "loc": "DIVERGENT"
    }
   },
   "LOCATE": {
@@ -2088,7 +2088,7 @@
   "LOF": {
    "connected": true,
    "rows": {
-    "lof": "MISSING"
+    "lof": "DIVERGENT"
    }
   },
   "LOG": {
@@ -2591,5 +2591,5 @@
    }
   }
  },
- "written": "2026-11-04 08:48:54"
+ "written": "2026-11-04 10:15:35"
 }
