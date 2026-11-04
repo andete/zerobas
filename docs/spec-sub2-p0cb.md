@@ -148,3 +148,18 @@ sub build, so the moved `rst $10`s are `call p0_chrgtr` (direct) and the one
 `rst $18` is `ld ix,p0_outdo / call p1cb`. The tape reader's TAPION / TAPIN /
 TAPIOF are plain BIOS calls again (main's original 256 T per byte, not p0cb's
 +136 T), and its `tok_payload` is the sub ROM's own (casmatch.asm's include).
+
+**Step 2d (2026-11-04): slice D, the edit verbs and BEEP follow.** sub2/scrstmt.asm
+(SCREEN / COLOR / WIDTH / KEY) with sub2/pgmedit.asm behind it (DELETE / AUTO /
+RENUM) is `SUBROM_IDX_SCRSTMT` (33; main's `ex_scr`, the seven rows' shared
+`ld c,a`), and sub/beep.asm is `SUBROM_IDX_BEEP` (34; main's ex_beep). The same
+rules as loadsave: every `ld ix,p0_X / call p0cb` is `call p1cb`, the one `rst $10`
+is `call p0_chrgtr`, the error / continuation tails are loadsave.asm's `ls_*`
+(`ls_pop_exec`, `ls_trsyntax` and `ls_raise` were added for them) and the comma
+skip is a local `scr_skip_comma` over lineedit's `ldr_skipsp`. The DE
+continuations -- `exec_stmt`, `key_drain`, `exa_loop`, `end_line_end` and KEY(n)'s
+`ex_key_stmt` -- leave through subrom_call's CALSLT unchanged and land in ex_sub2's
+shared tail (`exs_tail`: `push de / ret`), as ls_tenant's do. BEEP's `ei` across
+its delay now lands on main's $0038 (page 0 is main's under a page-1 tenant), where
+htimi_guard serves the frame with main's page 1 mapped back (D-GCDI2). sub2 keeps
+index 1 as a retired `ret / nop / nop` row; file_tenant forwards nothing any more.

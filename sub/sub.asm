@@ -722,6 +722,15 @@ sub_p1_table:
                                                 ;   sub2/loadsave.asm + tapeprog.asm),
                                                 ;   C = the token. From sub2's page 0
                                                 ;   (D-SUB2RETIRE, the p1cb slice).
+                jp      scr_tenant              ; index 33 (SUBROM_IDX_SCRSTMT): SCREEN /
+                                                ;   COLOR / WIDTH / KEY (D-P0CB slice D;
+                                                ;   sub2/scrstmt.asm) and DELETE / AUTO /
+                                                ;   RENUM (sub2/pgmedit.asm), C = the
+                                                ;   token. From sub2's page 0
+                                                ;   (D-SUB2RETIRE step 2d).
+                jp      beep_tenant             ; index 34 (SUBROM_IDX_BEEP): the BEEP
+                                                ;   body (sub/beep.asm). From sub2's
+                                                ;   page 0 (SUB2_IDX_BEEP; step 2d).
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
@@ -961,6 +970,13 @@ p1cb:
 ; call back into main is p1cb's (above).
                 include "sub2/loadsave.asm"
                 include "sub2/tapeprog.asm"
+; scr_tenant (index 33): SCREEN / COLOR / WIDTH / KEY, with DELETE / AUTO / RENUM
+; behind it, and beep_tenant (index 34): BEEP's body (D-SUB2RETIRE step 2d, all
+; three from zerobas-sub2's page 0; the files keep their paths). Calls back into
+; main are p1cb's; the shared statement tails are loadsave.asm's ls_*.
+                include "sub2/scrstmt.asm"
+                include "sub2/pgmedit.asm"
+                include "beep.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same

@@ -68,7 +68,8 @@
 ; The shared tails ls_syntax (stmt_error, ERR 2), ls_illegal (gb_illegal, ERR 5),
 ; ls_dio (dpl_dio, ERR 19), ls_fail_ifc (ERR 5), ls_exec and ls_disk_error are
 ; this file's own copies of sub2/filestmt.asm's fs_* (a page-1 tenant cannot
-; reach sub2).
+; reach sub2); ls_pop_exec, ls_trsyntax and ls_raise joined them for scrstmt.asm
+; and pgmedit.asm (D-SUB2RETIRE step 2d).
 ; The code is otherwise main's, statement for statement, and each arm keeps the
 ; original's order of checks, so the errors and their order are the ones the
 ; save / load / tape gates already pin. The history behind each check is in git
@@ -736,7 +737,11 @@ ltpn_fill:
                 ret
 
 ; --- the shared tails (sub2/filestmt.asm's fs_*, copied: a page-1 tenant cannot
-; reach sub2) ---------------------------------------------------------------------
+; reach sub2). Since D-SUB2RETIRE step 2d they serve this page's other statement
+; tenants too: sub2/scrstmt.asm and sub2/pgmedit.asm (ls_pop_exec, ls_trsyntax,
+; ls_raise and ls_end_line are theirs). -----------------------------------------
+ls_pop_exec:                                ; main's `jp pop_exec` (scrstmt.asm's)
+                pop     hl
 ls_exec:                                    ; main's `jp exec_stmt`
                 ld      de,p0_exec_stmt
                 ret
@@ -752,8 +757,12 @@ ls_illegal:                                 ; gb_illegal: ERR 5
 ls_dio:                                     ; dpl_dio: motor off, ERR 19
                 ld      ix,p0_dpl_dio
                 jp      p1cb
+ls_trsyntax:                                ; pl_syntax (trap_syntax): a TRAPPABLE
+                ld      a,2                 ; ERR 2 -- scrstmt.asm's SCREEN arity
+                jr      ls_raise            ; (sub2/filestmt.asm's fs_trsyntax until 2d)
 ls_fail_ifc:                                ; SAVE "GRP:": ERR 5 (fs's fo_fail_ifc)
                 ld      e,5
                 ld      a,e
-                ld      ix,p0_raise_error
+ls_raise:                                   ; A = the ERR code (sub2/pgmedit.asm's;
+                ld      ix,p0_raise_error   ; sub2/filestmt.asm's fs_raise until 2d)
                 jp      p1cb

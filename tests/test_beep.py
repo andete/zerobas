@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: 0BSD
 """Unit test: the BEEP body (`beep_tenant`), no emulator.
 
-BEEP's body moved OUT of the main ROM into the page-0 sub-ROM tenant
-sub/beep.asm when it was carved to fund input-devices slice I1
+BEEP's body moved OUT of the main ROM into the sub-ROM tenant sub/beep.asm
+(page 0 then; zerobas-sub's page 1 since D-SUB2RETIRE step 2d) when it was carved to fund input-devices slice I1
 (docs/spec-basic-input-devices.md §7). The resident `ex_beep` is now just a
 CALSLT stub, which this flat host harness cannot follow -- so the test assembles
 the sub image and calls `beep_tenant` directly, the same way test_play_parse.py
@@ -43,9 +43,9 @@ SYM = tp("zb_beep_sub.sym")
 
 
 def build():
-    # zerobas-sub2 since D-TOKOVF (2026-10-12): BEEP's tenant moved from
-    # zerobas-sub page 0 to zerobas-sub2 page 0 to fund the crunch bound.
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub2/sub2.asm", ROM, SYM],
+    # zerobas-sub2 page 0 from D-TOKOVF (2026-10-12) to D-SUB2RETIRE step 2d
+    # (2026-11-04), which moved BEEP's tenant to zerobas-sub's PAGE 1.
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", ROM, SYM],
                    cwd=ROOT, check=True, capture_output=True)
 
 
@@ -63,7 +63,7 @@ def run():
     def beep_outs(cur_r7=0xB8):
         """Run ex_beep for `BEEP`; return the PSG-port ($A0/$A1) OUT log. io_in
         returns cur_r7 for the register-7 read-back."""
-        m = Machine(ROM, SYM, rom_base=0x0000)      # the sub image, page-0 tenant
+        m = Machine(ROM, SYM, rom_base=0x0000)      # the sub image, page-1 tenant
         m.cpu.io_in = lambda port: cur_r7          # only IN in the path is $A2 (R7 read)
         log = m.record_out()
         m.call("beep_tenant")                      # no arguments to marshal

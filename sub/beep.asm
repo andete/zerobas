@@ -1,8 +1,17 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; beep.asm -- BEEP as a PAGE-0 sub-ROM tenant (SUBROM_IDX_BEEP).
-; docs/spec-basic-input-devices.md §7 (the I1 funding carve).
+; beep.asm -- BEEP as a sub-ROM tenant: zerobas-sub PAGE 1, SUBROM_IDX_BEEP (34).
+; docs/spec-basic-input-devices.md §7 (the I1 funding carve). Its homes: zerobas-sub
+; page 0 (index 11, retired), zerobas-sub2 page 0 (SUB2_IDX_BEEP, D-TOKOVF,
+; retired), and since D-SUB2RETIRE step 2d (2026-11-04) zerobas-sub's page 1. The
+; body is unchanged byte for byte through every move (tests/test_beep.py pins the
+; PSG write order; the delay loop is the same instructions, so the same cycles).
+; PAGE 1 IS AS CLEAN AS PAGE 0 FOR IT: it calls nothing -- port I/O and a counted
+; loop -- so neither island's privilege matters. Its `ei` across the delay is safe
+; here too: while a page-1 tenant runs, page 0 is main's, so an interrupt takes
+; main's own $0038, and htimi_guard (basic/subromcall.asm, D-GCDI2) serves the
+; frame with main's page 1 mapped back and gives this page back after.
 ;
 ; Clean-room: own design -- direct PSG port I/O against the public register
 ; documentation, with the audible result black-box checked on the VG-8020.

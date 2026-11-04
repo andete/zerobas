@@ -7,11 +7,13 @@ bypass by calling internals directly:
   - PRINT  (ex_print + exp_* + print_number) — captured CHPUT stream
   - GOTO   (ex_goto, the bare statement form)
   - CLEAR  (ex_clear / clr_himem — records HIMEM)
-  - WIDTH  (ex_width -> zerobas-sub2's scr_width since D-P0CB slice D —
+  - WIDTH  (ex_width -> scr_width, sub2/scrstmt.asm: zerobas-sub2 page 0 from
+             D-P0CB slice D, zerobas-sub page 1 since D-SUB2RETIRE step 2d —
              sets LINLEN, re-inits via CHGMOD)
-  - DELETE / RENUM / AUTO  (their statement heads -> zerobas-sub2's
-             sub2/pgmedit.asm since D-P0CB, 2026-10-24, calling the sub ROM's
-             lineedit tenant back through p0cb; AUTO's loop stays main's exa_loop)
+  - DELETE / RENUM / AUTO  (their statement heads -> sub2/pgmedit.asm since
+             D-P0CB, 2026-10-24 -- zerobas-sub page 1 since D-SUB2RETIRE step 2d
+             -- calling the sub ROM's lineedit tenant back through p1cb; AUTO's
+             loop stays main's exa_loop)
 
 Method: store a small program, run it through run_prog (so each statement goes
 through exec -> exec_stmt -> the handler), trap BREAKX (never pressed) and the
@@ -193,18 +195,19 @@ def run():
 
     # --- WIDTH n (ex_width sets LINLEN) --------------------------------------
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
-    m.mem[m.sym["SUBSLOT2"]] = 0x8F        # D-P0CB slice D: WIDTH runs in sub2
-                                            # (3-3); the harness bridges it once
-                                            # SUBSLOT2 says the ROM is there
+    m.mem[m.sym["SUBSLOT2"]] = 0x8F        # sub2 present (3-3); WIDTH ran there
+                                            # until D-SUB2RETIRE step 2d (sub page 1
+                                            # now), the seed is harmless
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
 
-    # --- DELETE / RENUM / AUTO: their heads run in sub2 (D-P0CB, 2026-10-24) --
-    # sub2/pgmedit.asm, reached through ex_sub2, calling main's le_call_op back
-    # through p0cb -- which reaches the lineedit tenant through the ROM-1 bridge.
+    # --- DELETE / RENUM / AUTO: their heads run in a sub-ROM tenant (D-P0CB) --
+    # sub2/pgmedit.asm (zerobas-sub page 1 since D-SUB2RETIRE step 2d), reached
+    # through ex_scr, calling main's le_call_op back through p1cb -- which reaches
+    # the lineedit tenant through the ROM-1 bridge again (nested).
     # The oracle is the measured rules the code encodes (docs/spec-basic-delete.md
     # R-D2 / R-D8, docs/spec-basic-editverb.md R-RN8 / R-RN9 / R-AU6 / R-AU8),
-    # not the ROM's own output. A raise inside p0cb would leave the nested
+    # not the ROM's own output. A raise inside p1cb would leave the nested
     # harness call's stack band (raise_error resets SP), so it is trapped there.
     class Raised(Exception):
         pass

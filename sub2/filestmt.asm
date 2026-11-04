@@ -14,11 +14,12 @@
 ; until D-SUB2RETIRE step 2c took the trap statements back to main, after which
 ; it forwarded nothing but these): main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm), so C = the statement token (exec_stmt hands every
-; handler A = its token -- tests/test_stmt_dispatch.py asserts it). A token that
-; is none of the four goes on to scr_tenant (sub2/scrstmt.asm, slice D: SCREEN /
-; COLOR / WIDTH / KEY, which use this file's shared tails too). The SAVE / LOAD
-; family (sub2/loadsave.asm, D-P0CB slice C2) sat between until D-SUB2RETIRE's
-; p1cb slice (2026-11-03) moved it to the sub ROM's page 1, with its own tails.
+; handler A = its token -- tests/test_stmt_dispatch.py asserts it). Main sends
+; no other token here: SCREEN / COLOR / WIDTH / KEY and DELETE / AUTO / RENUM
+; (sub2/scrstmt.asm, sub2/pgmedit.asm) were forwarded on from here until
+; D-SUB2RETIRE step 2d (2026-11-04) moved them to the sub ROM's page 1, and the
+; SAVE / LOAD family (sub2/loadsave.asm, D-P0CB slice C2) went there in step 2a
+; (2026-11-03) -- both with their own copies of the shared tails below.
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
 ;        C  = the statement token
 ;   out  DE = the main address to continue at, HL = what it expects (below)
@@ -58,14 +59,14 @@ file_tenant:                                ; index 3: C = the token (main's ex_
                 jp      z,fs_close
                 cp      MERGE_TOKEN
                 jp      z,fs_merge
-                cp      MAX_TOKEN
-                jp      z,fs_maxfiles
-                jp      scr_tenant          ; SCREEN / COLOR / WIDTH / KEY and on
-                                            ; (sub2/scrstmt.asm). SAVE / LOAD's family
-                                            ; (ls_tenant, D-P0CB slice C2) was the
-                                            ; stop between until D-SUB2RETIRE moved
-                                            ; it to the sub ROM's page 1: main's ex_ls
-                                            ; reaches it there, never through here
+                jp      fs_maxfiles         ; MAX_TOKEN: the only other token main
+                                            ; sends here. SCREEN / COLOR / WIDTH / KEY
+                                            ; and DELETE / AUTO / RENUM (scr_tenant)
+                                            ; were forwarded on from here until
+                                            ; D-SUB2RETIRE step 2d moved them to the
+                                            ; sub ROM's page 1 (main's ex_scr), as the
+                                            ; SAVE / LOAD family (ls_tenant) went in
+                                            ; step 2a (main's ex_ls)
 
 ; --- the shared tails -------------------------------------------------------------
 ; The plain raises are `ld a,N` into fs_raise: main's gb_illegal (5), pdf_badname
@@ -82,12 +83,9 @@ fs_badname:                                 ; pdf_badname: ERR 56
 fs_bfn:                                     ; oo_fail_bfn: ERR 52
                 ld      a,52
                 jr      fs_raise
-fs_trsyntax:                                ; pl_syntax (trap_syntax): a TRAPPABLE
-                ld      a,2                 ; ERR 2 -- scrstmt.asm's SCREEN arity
-                jr      fs_raise            ; (trapstmt.asm's tt_syntax until step 2c)
 fs_illegal:                                 ; gb_illegal: ERR 5 (also LEN= out of
                 ld      a,5                 ; 1..256, D-RECLEN2)
-fs_raise:                                   ; A = the ERR code (sub2/pgmedit.asm's)
+fs_raise:                                   ; A = the ERR code
                 ld      ix,p0_raise_error
                 jp      p0cb
 fs_pop_exec:                                ; main's `jp pop_exec`
@@ -99,8 +97,8 @@ fs_disk_error:                              ; main's `jp disk_error`: a continua
                 ld      de,p0_disk_error
                 ret
 fs_end_line:                                ; main's `jp end_line_end`: a continuation
-                ld      de,p0_end_line_end  ; (sub2/pgmedit.asm's and MERGE's; loadsave's
-                ret                         ; ls_end_line until D-SUB2RETIRE)
+                ld      de,p0_end_line_end  ; (MERGE's; pgmedit.asm's until step 2d,
+                ret                         ; loadsave's ls_end_line until step 2a)
 
 ; ===========================================================================
 ; OPEN "name" [FOR INPUT|OUTPUT|APPEND] AS [#]n [LEN=r]   (main's ex_open/do_open)

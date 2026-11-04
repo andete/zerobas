@@ -74,20 +74,23 @@ SUB2_PING_P1    equ     $C3 ; written to SUB_PING by the page-1 ping (ROM 1 writ
 ; --- Page-0 entry table (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
 sub2_p0_table:
                 jp      sub2_p0_ping            ; index 0: round-trip ping
-                jp      beep_tenant             ; index 1 (SUB2_IDX_BEEP): the BEEP
-                                                ;   body (sub/beep.asm), moved from
-                                                ;   zerobas-sub page 0 by D-TOKOVF
+                ret                             ; index 1: RETIRED. It was BEEP's body
+                nop                             ;   (sub/beep.asm, SUB2_IDX_BEEP, from
+                nop                             ;   D-TOKOVF), which moved to zerobas-
+                                                ;   sub's page 1 (SUBROM_IDX_BEEP) with
+                                                ;   D-SUB2RETIRE step 2d; the row keeps
+                                                ;   its slot so index 2 / 3 stay put.
                 jp      p0cb_selftest           ; index 2 (SUB2_IDX_P0TEST): the
                                                 ;   page-0 call-back, proven (D-P0CB)
                 jp      file_tenant             ; index 3 (SUB2_IDX_TRAPS): OPEN /
                                                 ;   CLOSE / MERGE / MAXFILES by token
-                                                ;   (slice C1, filestmt.asm),
-                                                ;   SCREEN / COLOR / WIDTH / KEY (slice
-                                                ;   D, scrstmt.asm), DELETE / AUTO /
-                                                ;   RENUM (pgmedit.asm). (The SAVE /
+                                                ;   (slice C1, filestmt.asm). (The SAVE /
                                                 ;   LOAD family, slice C2, and its tape
                                                 ;   reader: zerobas-sub page 1 since
-                                                ;   D-SUB2RETIRE, SUBROM_IDX_LOADSAVE.)
+                                                ;   D-SUB2RETIRE, SUBROM_IDX_LOADSAVE;
+                                                ;   SCREEN / COLOR / WIDTH / KEY, slice
+                                                ;   D, and DELETE / AUTO / RENUM there
+                                                ;   since step 2d, SUBROM_IDX_SCRSTMT.)
                                                 ;   The event-trap statements (slice B,
                                                 ;   trap_tenant, which forwarded tokens
                                                 ;   here) are main's low region again
@@ -102,10 +105,8 @@ sub2_p0_ping:
                 ld      (SUB_PING),a
                 ret
 
-; --- BEEP (D-TOKOVF, 2026-10-12): direct PSG port I/O and a busy-wait, no BIOS
-; and no sub-local helper, so it runs here unchanged. Its `ei` lands on this
-; ROM's own $0038 -> SUB_INT_RAM, which returns to 3-3 (step (a) above).
-                include "beep.asm"
+; (BEEP -- sub/beep.asm, here from D-TOKOVF 2026-10-12 as index 1 -- moved to
+; zerobas-sub's page 1 with D-SUB2RETIRE step 2d, 2026-11-04: SUBROM_IDX_BEEP.)
 ; --- p0cb (D-P0CB): the call back into main with main's page 0 mapped, through
 ; the BIOS's RAM CLPRIM -- no RAM of this project's own. Its targets come from
 ; basic-resident-abi.inc's p0cb class (tools/gen_resident_abi.py), which page 1
@@ -118,8 +119,9 @@ sub2_p0_ping:
                 ; (sub2/loadsave.asm -- the SAVE / LOAD family, D-P0CB slice C2 -- and
                 ; sub2/tapeprog.asm, its tape program reader, moved to zerobas-sub's
                 ; page 1 with D-SUB2RETIRE's p1cb slice, 2026-11-03: SUBROM_IDX_LOADSAVE.)
-                include "sub2/scrstmt.asm"      ; D-P0CB slice D: SCREEN / COLOR / WIDTH / KEY
-                include "sub2/pgmedit.asm"      ; D-P0CB: DELETE / AUTO / RENUM
+                ; (sub2/scrstmt.asm -- SCREEN / COLOR / WIDTH / KEY, D-P0CB slice D -- and
+                ; sub2/pgmedit.asm -- DELETE / AUTO / RENUM -- moved to zerobas-sub's
+                ; page 1 with D-SUB2RETIRE step 2d, 2026-11-04: SUBROM_IDX_SCRSTMT.)
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END
 ; (tools/check_sub_walls.py --sub2, a step of `make basic-reloc`).

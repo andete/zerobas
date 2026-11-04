@@ -11,9 +11,10 @@ Entry convention: each handler is entered with HL ON its own keyword token
 and A = that token (exec_stmt's contract; tests/test_stmt_dispatch.py).
 exec_stmt dispatches directly to ex_screen / ex_color / ex_cls / ex_key
 without the intermediary `inc hl` wrapper used by ex_poke. Since D-P0CB slice D
-SCREEN / COLOR / KEY run in zerobas-sub2's page 0 (sub2/scrstmt.asm): their
-labels are ex_open's shared `ld c,a` byte in front of ex_sub2, and msxtest's
-sub2 bridge (with p0cb back into main) runs the tenant once SUBSLOT2 is seeded.
+SCREEN / COLOR / KEY run in a sub-ROM tenant (sub2/scrstmt.asm): zerobas-sub2's
+page 0 until D-SUB2RETIRE step 2d, zerobas-sub's PAGE 1 since. Their labels are
+one shared `ld c,a` byte in front of ex_scr's subrom_call, and msxtest's sub-ROM
+bridge (with p1cb back into main) runs the tenant.
 CLS (ex_cls, basic/screen.asm) stayed in main.
 
 So the token buffer layout for each verb is:
@@ -102,12 +103,13 @@ def run():
     build()
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym
-    # 🚚 D-P0CB slice D (2026-10-24): SCREEN / COLOR / WIDTH / KEY run in
-    # zerobas-sub2's page 0 (sub2/scrstmt.asm). The handler labels are one shared
-    # byte, `ld c,a`, in front of ex_sub2: they take the TOKEN in A, as exec_stmt
-    # hands it (tests/test_stmt_dispatch.py), so each call below passes it. And
-    # the harness bridges sub2 only when SUBSLOT2 says the ROM is there -- the
-    # boot's job (subrom-boot.asm), seeded here; $8F = slot 3-3. CLS stayed main's.
+    # 🚚 D-P0CB slice D (2026-10-24): SCREEN / COLOR / WIDTH / KEY run in a
+    # sub-ROM tenant (sub2/scrstmt.asm; zerobas-sub's page 1 since D-SUB2RETIRE
+    # step 2d). The handler labels are one shared byte, `ld c,a`, in front of
+    # ex_scr: they take the TOKEN in A, as exec_stmt hands it
+    # (tests/test_stmt_dispatch.py), so each call below passes it. SUBSLOT2 (the
+    # sub2 bridge's presence flag, $8F = slot 3-3) is still seeded -- harmless now
+    # that these no longer reach sub2. CLS stayed main's.
     m.mem[s["SUBSLOT2"]] = 0x8F
 
     fails = 0

@@ -3126,15 +3126,19 @@ oe_reraise:
 ; own `ret`).
 ; --- and SCREEN / COLOR / WIDTH / KEY (D-P0CB slice D, 2026-10-24) -------------
 ; basic/screen.asm's four handlers (and SCREEN's sprite-size arms from
-; graphics.asm, COLOR's helpers from main's low region) are sub2/scrstmt.asm's;
-; their rows land on the same byte and ls_tenant forwards the token on. KEY(n)
-; ON|OFF|STOP comes too, as KEY_TOKEN. What stays in main: CLS, key_repaint
-; (CLS and the prompt share it), key_op (the keystr tenant's inline-byte call)
-; and the continuation key_drain (KEY LIST's print loop, off sub2's frame).
+; graphics.asm, COLOR's helpers from main's low region) are sub2/scrstmt.asm's.
+; 🏗️ D-SUB2RETIRE step 2d (2026-11-04): that file -- with pgmedit.asm behind it --
+; is zerobas-sub's PAGE-1 tenant SUBROM_IDX_SCRSTMT now, calling main back
+; through p1cb, so their seven rows land on their own `ld c,a` in front of a
+; subrom_call (ex_scr's, below) that shares ex_sub2's tail. KEY(n) ON|OFF|STOP
+; comes too, as KEY_TOKEN, and goes back out as the continuation ex_key_stmt.
+; What stays in main: CLS, key_repaint (CLS and the prompt share it), key_op
+; (the keystr tenant's inline-byte call) and the continuation key_drain (KEY
+; LIST's print loop, off the tenant's frame).
 ; --- and DELETE / AUTO / RENUM (D-P0CB, 2026-10-24) -----------------------------
 ; Their statement halves are sub2/pgmedit.asm's (scr_tenant forwards the token);
 ; the engines stay the sub ROM's lineedit tenant, through le_call_op. AUTO's modal
-; loop stays here as the continuation exa_loop (above), off sub2's frame.
+; loop stays here as the continuation exa_loop (above), off the tenant's frame.
 ex_save:
 ex_csave:
 ex_bsave:
@@ -3153,6 +3157,10 @@ ex_screen:
 ex_color:
 ex_width:
 ex_key:
+                ld      c,a                 ; C = the statement token
+                ld      ix,SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SCRSTMT
+                call    subrom_call         ; HL / C in; DE / HL out (ex_scr's call)
+                jr      exs_tail            ; the same absent test and continuation
 ex_open:
 ex_close:
 ex_merge:
@@ -3164,9 +3172,10 @@ ex_sub2:
 exs_tail:
                 jp      c,subrom_absent_error
                 push    de
-                ; DE = the tenant's continuation: every `ld de,p0_X / ret` exit of the tenants
-                ; file_tenant reaches (filestmt, scrstmt, pgmedit; sub2.sym: p0_X = main's X) and of
-                ; ls_tenant (sub2/loadsave.asm + tapeprog.asm, in sub.sym since D-SUB2RETIRE);
+                ; DE = the tenant's continuation: every `ld de,p0_X / ret` exit of
+                ; file_tenant (sub2/filestmt.asm; sub2.sym: p0_X = main's X), of ls_tenant
+                ; (sub2/loadsave.asm + tapeprog.asm) and of scr_tenant (sub2/scrstmt.asm +
+                ; pgmedit.asm) -- those two in sub.sym since D-SUB2RETIRE 2a / 2d;
                 ; ex_key_stmt is scr_key's KEY(n) exit (basic/trapstmt.asm, D-SUB2RETIRE 2c)
                 ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop ex_key_stmt
                 ret                         ; -> the continuation, HL = its cursor

@@ -1,8 +1,11 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
-; pgmedit.asm -- zerobas-sub2 PAGE 0: the STATEMENT halves of the program-editing
-; verbs DELETE, RENUM and AUTO (D-P0CB, docs/spec-sub2-p0cb.md §5). Moved out of
-; main page 1 on 2026-10-24: ex_delete's marshalling head (basic/field.asm, a pin
+; pgmedit.asm -- zerobas-sub PAGE 1: the STATEMENT halves of the program-editing
+; verbs DELETE, RENUM and AUTO (D-P0CB, docs/spec-sub2-p0cb.md §5). In zerobas-sub2's
+; page 0 from 2026-10-24 until D-SUB2RETIRE step 2d (2026-11-04) moved it, with
+; sub2/scrstmt.asm, to zerobas-sub's page 1 (SUBROM_IDX_SCRSTMT; the file keeps its
+; sub2/ path), calling main back through p1cb (docs/spec-sub2-p0cb.md §6). Moved out
+; of main page 1 on 2026-10-24: ex_delete's marshalling head (basic/field.asm, a pin
 ; refill in front of $72D4), ex_renum whole -- its report loop included -- and
 ; ex_auto's argument head (basic/program.asm).
 ;
@@ -10,40 +13,41 @@
 ; validations, the delete walk, the renumbering passes and AUTO's argument parse
 ; are the sub ROM's lineedit tenant (sub/lineedit.asm le_delrange / le_renum /
 ; le_renum_next / le_auto), reached through main's le_call_op exactly as before
-; -- now a p0cb call, so that tenant runs one CALSLT deeper (below).
+; -- now a p1cb call, so that tenant runs one CALSLT deeper (below).
 ;
-; WHAT STAYS IN MAIN, and is reached through p0cb:
+; WHAT STAYS IN MAIN, and is reached through p1cb:
 ;   le_call_op       the lineedit tenant's call (LIST and the line store use it)
 ;   print_string / list_num / print_in_hl   RENUM's report (shared everywhere;
 ;                    print_in_hl is the error abort's " in <HL>" + CRLF, whose
 ;                    in_msg is the text the report's " in " always was)
 ;   rn_undefined     DATA in main's page-0 islands, read by print_string
-;                    while p0cb has main's page 0 mapped -- this ROM's page 0
-;                    could not hold them (it is switched OUT during the call)
-; and as CONTINUATIONS (returned in DE, never p0cb'd):
+;                    (main's page 0 is mapped while a page-1 tenant runs; in
+;                    sub2's page 0 they were reached because p0cb mapped it)
+; and as CONTINUATIONS (returned in DE, never p1cb'd):
 ;   end_line_end     DELETE and RENUM end the line and the run (R-D8, R-RN16)
 ;   exa_loop         AUTO's modal loop: it blocks on the keyboard (rl_loop) and
 ;                    stores every line it reads (dispatch_line), so it runs in
 ;                    main at the statement's own SP, OFF this tenant's CALSLT
 ;                    frame (the D-BLOADSTK rule: nothing long runs nested here)
 ;
-; Entered through file_tenant (sub2/filestmt.asm, index 3) ->
-; scr_tenant (sub2/scrstmt.asm), which forwards every token but KEY here. Main's
-; three entry labels share ex_open's ONE byte, `ld c,a` in front of ex_sub2
+; Entered through scr_tenant (sub2/scrstmt.asm, zerobas-sub page-1 index
+; SUBROM_IDX_SCRSTMT), which forwards every token but its own four here. Main's
+; three entry labels share ex_screen's ONE byte, `ld c,a` in front of ex_scr
 ; (basic/program.asm): exec_stmt hands a handler A = its token
 ; (tests/test_stmt_dispatch.py asserts it).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
 ;        A = C = the token
 ;   out  DE = the main continuation (above); HL is not read by either
-; A raise reached through p0cb never returns (raise_error resets SP and runs
-; main's error path with main's page 0 mapped), exactly as the `jp raise_error`
-; it replaces never returned. fs_raise (A = the ERR code) and fs_end_line (the
-; end_line_end continuation) are sub2/filestmt.asm's.
+; A raise reached through p1cb never returns (raise_error resets SP and runs
+; main's error path with main's pages mapped), exactly as the `jp raise_error`
+; it replaces never returned. ls_raise (A = the ERR code) and ls_end_line (the
+; end_line_end continuation) are sub2/loadsave.asm's (sub2/filestmt.asm's fs_*
+; until step 2d: a page-1 tenant cannot reach sub2).
 ;
-; 📏 STACK, counted from the statement's SP (S, ex_sub2's entry). This tenant runs
-; at S-14 (scrstmt.asm's header: ex_sub2's call, sr_slot's push iy, C-BIOS's
-; CALSLT frame of 10) and a p0cb adds 6 (its call, the old $A8, clprim's call),
-; so a main routine p0cb'd from here is ENTERED at S-20, where main's ex_* entered
+; 📏 STACK, counted from the statement's SP (S, ex_scr's entry). This tenant runs
+; at S-14 (scrstmt.asm's header: ex_scr's call, sr_slot's push iy, C-BIOS's
+; CALSLT frame of 10) and a p1cb adds 6 (its call, the old $A8, clprim's call),
+; so a main routine p1cb'd from here is ENTERED at S-20, where main's ex_* entered
 ; it at S-2 (its own `call`): 18 B deeper. le_call_op then runs the lineedit
 ; tenant 16 B below its entry (sc_inl1's call, sc_call's `call subrom_call`,
 ; sr_slot's push iy, the CALSLT frame). So:
@@ -52,15 +56,16 @@
 ;                    per report round trip, the passes inside it)
 ;   RENUM's report   print_string / list_num / print_in_hl entered at S-20, was
 ;                    S-2: 18 B deeper (print_in_hl's own `push hl` 2 B more)
-;   AUTO's loop      exa_loop at S, as before (a continuation, after ex_sub2's
+;   AUTO's loop      exa_loop at S, as before (a continuation, after exs_tail's
 ;                    `push de / ret`): read_line and dispatch_line at their old depth
 ; RENUM's whole verb runs nested here, report loop included: it ends the run
 ; (R-RN16), a tape loader has no reason to run it, and its loop is bounded by the
 ; program's dangling references -- it waits on nothing.
 ; ⏱ INTERRUPTS: the tenant enters under sr_slot's DI; the first nested
 ; le_call_op comes back through sr_slot's `ei`, so the report prints and the
-; tenant returns with interrupts ON (an interrupt here takes this ROM's $0038 ->
-; SUB_INT_RAM, D-SUB2EI) -- the same state main's ex_* reached after the call.
+; tenant returns with interrupts ON (an interrupt here takes main's $0038, and
+; htimi_guard serves the frame with main's page 1 mapped back, D-GCDI2) -- the
+; same state main's ex_* reached after the call.
 ;
 ; The code is otherwise main's, statement for statement: the same LE_OP order,
 ; the same status decoding, CONTVALID cleared on a succeeding DELETE only, and
@@ -99,7 +104,7 @@ pe_renum:
                 ld      a,LE_OP_RENUM
 per_call:
                 ld      ix,p0_le_call_op
-                call    p0cb                ; A = LE_STATUS, Z = ok
+                call    p1cb                ; A = LE_STATUS, Z = ok
                 ; R-RN16: done -> the run stops, exactly as DELETE and LIST do.
                 ; ⚠️ CONTVALID IS DELIBERATELY NOT CLEARED AND vars_reset IS
                 ; DELIBERATELY NOT RUN -- R-RN17, measured on both references with
@@ -108,20 +113,20 @@ per_call:
                 ; RENUM is not a program EDIT in the sense DELETE is: no byte
                 ; changes length, so nothing the variables or the CONT point
                 ; address has moved.
-                jp      z,fs_end_line       ; 0 = the whole renumbering is done
+                jp      z,ls_end_line       ; 0 = the whole renumbering is done
                 cp      1                   ; A IS LE_STATUS (le_call_op's own
-                jp      nz,fs_raise         ; `ld a,(LE_STATUS)`): >= 2 is the ERR
+                jp      nz,ls_raise         ; `ld a,(LE_STATUS)`): >= 2 is the ERR
                                             ; CODE ITSELF -- 2 for R-RN14/R-RN15,
                                             ; 5 for R-RN11/12/13; raises
                 ld      hl,p0_rn_undefined  ; 1 = report one dangling reference
                 ld      ix,p0_print_string
-                call    p0cb
+                call    p1cb
                 ld      de,(RN_TGT)
                 ld      ix,p0_list_num
-                call    p0cb                ; the target, bare unsigned decimal
+                call    p1cb                ; the target, bare unsigned decimal
                 ld      hl,(RN_LINE)        ; R-RN8: the containing line's OLD
                 ld      ix,p0_print_in_hl   ; number -- `in 1`, not `in 10`: main's
-                call    p0cb                ; " in <HL>" + CRLF (the error abort's)
+                call    p1cb                ; " in <HL>" + CRLF (the error abort's)
                 ld      a,LE_OP_RENUM_NEXT
                 jr      per_call
 
@@ -145,8 +150,8 @@ pe_delete:
                 ; sysvars.inc): 0 = ok, 2 = R-D6 trailing junk, 5 = R-D2 (the high
                 ; end names no stored line) or R-D4 (lo > hi).
                 ld      ix,p0_le_call_op
-                call    p0cb                ; A = LE_STATUS, Z = ok
-                jp      nz,fs_raise         ; A = the ERR code; never returns
+                call    p1cb                ; A = LE_STATUS, Z = ok
+                jp      nz,ls_raise         ; A = the ERR code; never returns
                 ; R-D7: a SUCCEEDING delete is a program EDIT. The tenant has
                 ; already run relink + vars_reset (its own tail, exactly as
                 ; store_line's op does); CONTVALID is the resident half, cleared
@@ -157,7 +162,7 @@ pe_delete:
                 ; loop tests ENDFLAG immediately after `exec` returns and BEFORE it
                 ; dereferences CURLINE, which matters here: the text this
                 ; statement just memmoved is where CURLINE points.
-                jp      fs_end_line         ; main's `jp end_line_end`
+                jp      ls_end_line         ; main's `jp end_line_end`
 
 ; ===========================================================================
 ; AUTO [<start>][,<inc>]   (main's ex_auto head, D-EDITVERB)
@@ -170,10 +175,10 @@ pe_auto:
                 ld      (RN_PTR),hl         ; the statement cursor, on the token
                 ld      a,LE_OP_AUTO
                 ld      ix,p0_le_call_op
-                call    p0cb                ; A = LE_STATUS, Z = ok.
+                call    p1cb                ; A = LE_STATUS, Z = ok.
                                             ; 2 = R-AU9 trailing junk, 5 = R-AU5
                                             ; (increment 0, which is also what bare
-                jp      nz,fs_raise         ; `AUTO ,` reduces to)
+                jp      nz,ls_raise         ; `AUTO ,` reduces to)
                 inc     a                   ; -> 1: read_line polls from here on
                 ld      (RL_AUTO),a
                 ld      de,p0_exa_loop      ; the loop, in main (a continuation)

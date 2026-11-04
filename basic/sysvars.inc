@@ -5107,9 +5107,9 @@ CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address 
 ; (SUB2_IDX_GRPPRT 1 / EDCTRL 2 / FRELIVE 3, zerobas-sub2's page-1 indexes, are
 ; RETIRED by D-SUB2RETIRE 2026-11-03: those tenants are SUBROM_IDX_GRPPRT 29 /
 ; EDCTRL 30 / FRELIVE 31 on zerobas-sub's page 1 now. sub2 page 1 is empty.)
-SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
-                                ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
-                                ; no result, cannot fail, so nothing marshals.
+; (SUB2_IDX_BEEP 1, zerobas-sub2's page-0 index for beep_tenant since D-TOKOVF, is
+; RETIRED by D-SUB2RETIRE step 2d, 2026-11-04: BEEP is SUBROM_IDX_BEEP 34 on
+; zerobas-sub's page 1 now; sub2's row 1 is `ret / nop / nop`.)
 SUB2_IDX_P0TEST equ     2       ; zerobas-sub2 PAGE-0 index: p0cb_selftest (D-P0CB,
                                 ; docs/spec-sub2-p0cb.md): the page-0 call-back proven by
                                 ; injection (probes/basic/basic_probe_sub2_p0cb.py)
@@ -5659,7 +5659,9 @@ SUBROM_IDX_READVAL   equ 10     ; readdata_tenant (sub/readdata.asm): the READ/D
                                 ; own index 10 is FORMAT; the two spaces are separate).
                                 ; Result rides back in RDV_ST/RDV_VAL.
                                 ; (page-0 index 11 is RETIRED: BEEP's body moved to
-                                ; zerobas-sub2 page 0, SUB2_IDX_BEEP -- D-TOKOVF.)
+                                ; zerobas-sub2 page 0, SUB2_IDX_BEEP -- D-TOKOVF;
+                                ; zerobas-sub page 1, SUBROM_IDX_BEEP, since
+                                ; D-SUB2RETIRE step 2d.)
                                 ; (page-0 index 12 is RETIRED: fld_lookup_tenant,
                                 ; sub/fldlook.asm, SUBROM_IDX_FLDLOOK -- the FIELDed-
                                 ; variable READ hook's record-slice copy into
@@ -5825,6 +5827,18 @@ SUBROM_IDX_LOADSAVE  equ 32     ; ls_tenant (sub2/loadsave.asm + sub2/tapeprog.a
                                 ; continuation (main's ex_ls). PAGE 1, calling
                                 ; main back through p1cb (sub/sub.asm). From
                                 ; zerobas-sub2's page 0 (D-SUB2RETIRE, 2026-11-03).
+SUBROM_IDX_SCRSTMT   equ 33     ; scr_tenant (sub2/scrstmt.asm + sub2/pgmedit.asm):
+                                ; SCREEN / COLOR / WIDTH / KEY (D-P0CB slice D)
+                                ; and DELETE / AUTO / RENUM, C = the token, HL =
+                                ; the cursor; DE / HL out = the main continuation
+                                ; (main's ex_scr). PAGE 1, calling main back
+                                ; through p1cb. From zerobas-sub2's page 0
+                                ; (D-SUB2RETIRE step 2d, 2026-11-04).
+SUBROM_IDX_BEEP      equ 34     ; beep_tenant (sub/beep.asm): BEEP's body, direct
+                                ; PSG I/O and a counted delay; nothing in, nothing
+                                ; out (main's ex_beep, basic/sound.asm). PAGE 1.
+                                ; From zerobas-sub2's page 0 index 1 (SUB2_IDX_BEEP,
+                                ; D-TOKOVF) with D-SUB2RETIRE step 2d, 2026-11-04.
 ; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
 ; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
 ; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave

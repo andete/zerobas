@@ -700,6 +700,17 @@ item — do **one item per session** to keep context lean.
       Contract-diff: every category 0 ([`s2c_contract.out`](scratchpad/s2c_contract.out)); the
       moved arms compared by hand lose IX / AF' clobbers. Trap suites stop / strig / key /
       sprite / interval all pass.
+      ✅ **STEP 2d (2026-11-04): SCRSTMT, PGMEDIT AND BEEP LIVE IN THE SUB ROM's PAGE 1**
+      (SUBROM_IDX_SCRSTMT 33, SUBROM_IDX_BEEP 34), through p1cb exactly as step 2a: main's seven
+      ex_delete .. ex_key labels and ex_beep reach them through subrom_call; sub2's beep row is
+      retired in place; file_tenant serves MAXFILES only. They share loadsave's tails (`ls_*`,
+      plus ls_pop_exec / ls_trsyntax / ls_raise) and lineedit's ldr_skipsp. 📏 2026-11-04: sub
+      page 1 834 -> 130 B free, sub2 page 0 14521 -> 15214, main page 1 411 -> 401
+      ([`s2d_reloc.out`](scratchpad/s2d_reloc.out)). Contract-diff: no breaks
+      ([`s2d_contract.out`](scratchpad/s2d_contract.out); fl_sbtyp is frelive's offset-reached
+      data label, the step-1 quirk). Targets: beep, editverb, width, screenerr, keystr,
+      keyrepaint, key-trap, rg7, lnblank all pass. ➡️ Left in sub2: filestmt (OPEN / CLOSE /
+      MERGE / MAXFILES) and p0cb's helpers -- step 2e, into sub page 0 (1155 B free).
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -8987,7 +8998,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11478 (T-6FE392)8 (T-529ABE)` from `TODO.md:17160 (T-529ABE)`: a
+      `TODO.md:11489 (T-6FE392)8 (T-529ABE)` from `TODO.md:17171 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11947,7 +11958,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17160 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

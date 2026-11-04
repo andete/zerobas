@@ -1,56 +1,65 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
-; scrstmt.asm -- zerobas-sub2 PAGE 0: the screen-setup STATEMENTS SCREEN, COLOR,
+; scrstmt.asm -- zerobas-sub PAGE 1: the screen-setup STATEMENTS SCREEN, COLOR,
 ; WIDTH and KEY (D-P0CB slice D, docs/spec-sub2-p0cb.md §5). Moved out of main
-; on 2026-10-24: ex_screen / ex_color / ex_width / ex_key from main page 1
-; (basic/screen.asm), SCREEN's sprite-size arms (spr_mode_save, spr_mode_restore,
-; spr_extra_arg, sea_click) from main page 1 (basic/graphics.asm), and COLOR's
-; three helpers (clr_eval, clr_prep, clr_commit) from main's LOW region
-; (basic/main.asm). KEY(n) ON|OFF|STOP -- the trap form -- was already slice B's
-; (sub2/trapstmt.asm tt_key); KEY's peek for `(` jumped there directly until
-; D-SUB2RETIRE step 2c took the trap arms back to main's low region, and now
-; returns main's ex_key_stmt (basic/trapstmt.asm) as a CONTINUATION.
+; on 2026-10-24 into zerobas-sub2's page 0: ex_screen / ex_color / ex_width /
+; ex_key from main page 1 (basic/screen.asm), SCREEN's sprite-size arms
+; (spr_mode_save, spr_mode_restore, spr_extra_arg, sea_click) from main page 1
+; (basic/graphics.asm), and COLOR's three helpers (clr_eval, clr_prep,
+; clr_commit) from main's LOW region (basic/main.asm). 🏗️ D-SUB2RETIRE step 2d
+; (2026-11-04): this file -- with sub2/pgmedit.asm, its tail -- is zerobas-sub's
+; PAGE-1 tenant SUBROM_IDX_SCRSTMT now (sub/sub.asm), calling main back through
+; p1cb (docs/spec-sub2-p0cb.md §6) exactly as loadsave does; the file keeps its
+; sub2/ path. KEY(n) ON|OFF|STOP -- the trap form -- is main's ex_key_stmt
+; (basic/trapstmt.asm), returned as a CONTINUATION.
 ;
-; WHAT STAYS IN MAIN, and is reached through p0cb:
+; WHAT STAYS IN MAIN, and is reached through p1cb:
 ;   key_repaint      shared with CLS (cls_keyline) and the prompt's txt_mode
 ;                    (basic/repl.asm); SCREEN and WIDTH call it.
 ;   key_op           key_repaint's tail given a name (A = the KEYOP_* op): the
 ;                    keystr tenant is reached through an INLINE-byte call
-;                    (sc_inl0), which a p0cb'd caller cannot hand over -- IX is
-;                    p0cb's target. KEY ON / OFF paint and blank through it.
+;                    (sc_inl0), which a p1cb'd caller cannot hand over -- IX is
+;                    p1cb's target. KEY ON / OFF paint and blank through it.
 ;   spr_tenant       shared with the sprite statements (basic/graphics.asm).
-;   CHGMOD / CHGCLR / ERAFNK / DSPFNK   the BIOS, by its fixed jump-table address.
+;   CHGMOD / CHGCLR / ERAFNK / DSPFNK   the BIOS, by its fixed jump-table address
+;                    -- mapped here already (page 0 is main's while a page-1
+;                    tenant runs), but called through p1cb all the same, so they
+;                    run with main's page 1 mapped as they always did (a hook the
+;                    BIOS calls may point there).
+;   chrgtr           main's low-region CHRGTR, called DIRECTLY (`call p0_chrgtr`,
+;                    as loadsave does): `rst $10` is refused in the sub build
+;                    (check_tenant_closure.py), and the low region is mapped.
 ;   ex_cls           CLS is not part of this slice.
-; and as a CONTINUATION (returned in DE, never p0cb'd):
+; and as a CONTINUATION (returned in DE, never p1cb'd):
 ;   key_drain        KEY LIST / KEY n,"str": the keystr tenant's render drained
 ;                    through detok_emit's windowed print loop. It runs in main,
 ;                    OFF this tenant's CALSLT frame (the D-BLOADSTK rule: nothing
 ;                    long runs nested under this ROM's frame), with KEYARG set
 ;                    here and HL = the cursor.
 ;
-; Entered through file_tenant (sub2/filestmt.asm, index 3), which forwards every token it does not own here (through
-; sub2/loadsave.asm's ls_tenant until D-SUB2RETIRE moved that to the sub ROM);
-; a token that is none of these four goes on to pe_tenant
-; (sub2/pgmedit.asm: DELETE / AUTO / RENUM, D-P0CB 2026-10-24). Main's four entry labels share ex_open's ONE byte, `ld c,a`
-; in front of ex_sub2 (basic/program.asm): exec_stmt hands a handler A = its
-; token (tests/test_stmt_dispatch.py asserts it).
+; Entered as zerobas-sub's page-1 index SUBROM_IDX_SCRSTMT from main's ex_scr
+; (basic/program.asm): main's seven entry labels (these four and DELETE / AUTO /
+; RENUM) share ONE byte, `ld c,a` in front of it -- exec_stmt hands a handler
+; A = its token (tests/test_stmt_dispatch.py asserts it). A token that is none
+; of these four goes on to pe_tenant (sub2/pgmedit.asm: DELETE / AUTO / RENUM).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
-;        A = C = the token
+;        C = the token (A = the slot id, subrom_call's)
 ;   out  DE = the main address to continue at, HL = what it expects:
 ;          exec_stmt    HL = the cursor (main's `jp exec_stmt` / `jp pop_exec`)
 ;          key_drain    HL = the cursor, KEYARG = the op
 ;          ex_key_stmt  HL on KEY(n)'s `(` (main's trap arm, basic/trapstmt.asm)
-; ex_sub2 then does `push de / ret` with the stack exactly as the statement was
-; entered. No continuation is ever reached through p0cb.
+; ex_scr then does `push de / ret` (ex_sub2's tail, exs_tail) with the stack
+; exactly as the statement was entered. No continuation is ever reached through
+; p1cb.
 ;
-; Every other main routine is reached through p0cb (sub2/p0cb.asm) with its `p0_`
-; alias from basic-resident-abi.inc; `rst $10` is this ROM's RST 10h (main's
-; CHRGTR). A raise reached through p0cb never returns -- raise_error resets SP and
-; runs main's error path with main's page 0 mapped -- exactly as the `jp` it
-; replaces never returned; a frame this code pushed is discarded by the same
-; unwind. The shared tails fs_illegal (gb_illegal, ERR 5), fs_exec and
-; fs_pop_exec are sub2/filestmt.asm's, and so is fs_trsyntax (pl_syntax, a
-; trappable ERR 2; sub2/trapstmt.asm's tt_syntax until D-SUB2RETIRE step 2c).
+; Every other main routine is reached through p1cb (sub/sub.asm) with its `p0_`
+; alias from basic-resident-abi.inc. A raise reached through p1cb never returns
+; -- raise_error resets SP and runs main's error path with main's pages mapped --
+; exactly as the `jp` it replaces never returned; a frame this code pushed is
+; discarded by the same unwind. The shared tails ls_illegal (gb_illegal, ERR 5),
+; ls_exec, ls_pop_exec and ls_trsyntax (pl_syntax, a trappable ERR 2) are
+; sub2/loadsave.asm's (sub2/filestmt.asm's fs_* until step 2d: a page-1 tenant
+; cannot reach sub2).
 ; The code is otherwise main's, statement for statement, and each arm keeps the
 ; original's order of checks and of side effects (CHGMOD before the trailing
 ; SCREEN arguments are evaluated; COLOR's shadow published only after every way
@@ -59,16 +68,17 @@
 ; basic/graphics.asm and basic/main.asm before D-P0CB slice D); what is kept here
 ; is the measured rule each one encodes.
 ;
-; 📏 STACK: this tenant runs 14 B below the statement's SP -- ex_sub2's `call
-; subrom2_call` (2), sr_slot's `push iy` (2) and C-BIOS's CALSLT frame (10: its
+; 📏 STACK: this tenant runs 14 B below the statement's SP -- ex_scr's `call
+; subrom_call` (2), sr_slot's `push iy` (2) and C-BIOS's CALSLT frame (10: its
 ; call, the saved slot pair, calslt_restore, the old $A8, clprim's call) -- and a
-; p0cb adds 6 (its call, the old $A8, clprim's call). So CHGMOD / CHGCLR / ERAFNK
+; p1cb adds 6 (its call, the old $A8, clprim's call). So CHGMOD / CHGCLR / ERAFNK
 ; / DSPFNK, entered with the cursor parked, run 22 B below the statement's SP where
 ; main's ran 4 B below it: 18 B deeper, for the length of one BIOS call. Nothing
 ; long runs here: KEY LIST's print loop is key_drain's, in main, off this frame.
 
 ; --- the dispatch -------------------------------------------------------------
-scr_tenant:                                 ; A = C = the token (file_tenant's tail)
+scr_tenant:                                 ; index 33: C = the token (main's ex_scr)
+                ld      a,c                 ; A = C (file_tenant's head did this in sub2)
                 cp      SCREEN_TOKEN
                 jp      z,scr_screen
                 cp      COLOR_TOKEN
@@ -90,7 +100,7 @@ scr_key:
                 ; on BOTH references. stmt_bare_end does the `inc hl` past the KEY
                 ; token itself, then skips spaces: Z iff the statement ends.
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past KEY; Z iff it ends; A = the byte
+                call    p1cb                ; past KEY; Z iff it ends; A = the byte
                 jp      z,scr_missing
     IF TRAPS_T3
                 cp      '('                 ; KEY(n) ON|OFF|STOP -- tested AHEAD of
@@ -114,16 +124,16 @@ sck_nparen:
                 jr      sck_drain
 sck_store:
                 ld      ix,p0_eval_byte_arg
-                call    p0cb                ; A = n, 0..255 (ERR 6 / ERR 5 outside)
+                call    p1cb                ; A = n, 0..255 (ERR 6 / ERR 5 outside)
                 dec     a                   ; 1..10 -> 0..9; KEY 0, wraps to 255
                 cp      10
-                jp      nc,fs_illegal       ; KEY 0, / KEY 11, -> ERR 5 (measured)
+                jp      nc,ls_illegal       ; KEY 0, / KEY 11, -> ERR 5 (measured)
                 inc     a                   ; A = n again (the flags are not read)
                 push    af                  ; [n] across the string's evaluation
                 ld      ix,p0_req_comma
-                call    p0cb                ; KEY n without `,`: ERR 2; CONSUMES it
+                call    p1cb                ; KEY n without `,`: ERR 2; CONSUMES it
                 ld      ix,p0_fname_expr
-                call    p0cb                ; STRSCR+1 := the bytes, `"`-terminated;
+                call    p1cb                ; STRSCR+1 := the bytes, `"`-terminated;
                                             ; FN_RESUME set. It does NOT write the
                                             ; length byte (parse_disk_fcb stops on
                                             ; the quote), so stage the TRUE length
@@ -161,7 +171,7 @@ sck_fnk:                                    ; A = the new CNSDFG, IX = the BIOS 
                 inc     hl                  ; past OFF / ON
                 push    hl
                 push    af
-                call    p0cb                ; ERAFNK / DSPFNK
+                call    p1cb                ; ERAFNK / DSPFNK
                 pop     af
                 ld      c,a                 ; C = 0 / $FF (= -1)
                 add     a,CON_ROWS          ; 24: all rows / 23: reserve the bottom one
@@ -172,14 +182,23 @@ sck_fnk:                                    ; A = the new CNSDFG, IX = the BIOS 
                 sub     c                   ; BLANK / PAINT (= BLANK + 1)
 sck_op:
                 ld      ix,p0_key_op
-                call    p0cb                ; KEYARG := A; the keystr tenant (no drain:
+                call    p1cb                ; KEYARG := A; the keystr tenant (no drain:
                                             ; these ops leave DETOKBUF a lone NUL)
-                jp      fs_pop_exec         ; main's `jp pop_exec`
+                jp      ls_pop_exec         ; main's `jp pop_exec`
 
 ; --- the shared tail: Missing operand (ERR 24) ---------------------------------
 scr_missing:                                ; loc_missing (= g8_missing): ERR 24
                 ld      ix,p0_loc_missing
-                jp      p0cb                ; raises; never returns
+                jp      p1cb                ; raises; never returns
+
+; scr_skip_comma -- a LOCAL copy of main's skip_comma (sub2/p0cb.asm's
+; s2_skip_comma until step 2d): Z iff `,` is next, HL past blanks, A = (HL); BC,
+; DE, IX kept. The blank skip is lineedit's ldr_skipsp (sub/lineedit.asm, this
+; page's own clone of main's skip_spaces).
+scr_skip_comma:
+                call    ldr_skipsp
+                cp      ','
+                ret
 
 ; ===========================================================================
 ; SCREEN <mode>[,<sprite>][,<click>][,<baud>][,<printer>]   (main's ex_screen)
@@ -191,7 +210,7 @@ scr_screen:
     ENDIF
                 inc     hl                  ; past the SCREEN token
                 ld      ix,p0_req_operand
-                call    p0cb                ; bare `SCREEN` / `SCREEN :` -> ERR 24 (an
+                call    p1cb                ; bare `SCREEN` / `SCREEN :` -> ERR 24 (an
                                             ; argument list that ends where a value
                                             ; was required, D-SCRERR spec §2.1)
                 cp      ','                 ; "SCREEN ,x" -> mode omitted
@@ -202,9 +221,9 @@ scr_screen:
                 ; outside 0..255; it TRUNCATES (`SCREEN 1.6` -> 1). Why the checked
                 ; leaf and not eval_byte_arg: spec-basic-screenerr.md §8.
                 ld      ix,p0_eval_byte_checked
-                call    p0cb                ; A = E = the mode, 0..255, or aborts
+                call    p1cb                ; A = E = the mode, 0..255, or aborts
                 cp      4
-                jp      nc,fs_illegal       ; an MSX1 has modes 0..3 -> ERR 5 (`4` is
+                jp      nc,ls_illegal       ; an MSX1 has modes 0..3 -> ERR 5 (`4` is
                                             ; a valid BYTE: its own test)
                 push    hl                  ; A = mode -> switch the VDP mode
     IF G7_RESIDENT
@@ -212,18 +231,18 @@ scr_screen:
                 call    scs_mode_save       ; G7: keep the sprite size + the attribute x
                 pop     af                  ; bytes across CHGMOD (spec G7 §5)
                 ld      ix,CHGMOD
-                call    p0cb
+                call    p1cb
                 call    scs_mode_restore
     ELSE
                 ld      ix,CHGMOD
-                call    p0cb
+                call    p1cb
     ENDIF
                 ld      ix,p0_key_repaint
-                call    p0cb                ; D-KEYCLS: a text mode gets its key line
+                call    p1cb                ; D-KEYCLS: a text mode gets its key line
                 pop     hl
 scs_extra:                                  ; the trailing arguments
-                call    s2_skip_comma       ; (sub2/p0cb.asm's local copy)
-                jp      nz,fs_exec          ; no comma -> done (the ONLY legal way
+                call    scr_skip_comma      ; (the local copy, below)
+                jp      nz,ls_exec          ; no comma -> done (the ONLY legal way
                                             ; out of this loop)
                 inc     hl                  ; past the comma
     IF G7_RESIDENT
@@ -240,17 +259,17 @@ scs_extra:                                  ; the trailing arguments
                 ; fires here, before req_operand. GFX_SARGN counts TRAILING slots
                 ; (1 = sprite size .. 4 = printer): 5 is a 6th argument.
                 cp      5
-                jp      nc,fs_trsyntax      ; ERR 2 (pl_syntax)
+                jp      nc,ls_trsyntax      ; ERR 2 (pl_syntax)
     ENDIF
                 ld      ix,p0_req_operand
-                call    p0cb                ; a comma PROMISED an argument: ERR 24 at
+                call    p1cb                ; a comma PROMISED an argument: ERR 24 at
                                             ; `SCREEN 2,` / `SCREEN 2,:` / `SCREEN ,`
                 cp      ','                 ; an omitted argument (",,")
                 jr      z,scs_extra
                 ; D-SCRERR: the trailing arguments are CHECKED BYTES as well --
                 ; `SCREEN 1,,70000` is ERR 6 and `SCREEN 1,,300` ERR 5 on both.
                 ld      ix,p0_eval_byte_checked
-                call    p0cb                ; DE = the argument (D=0, E=byte)
+                call    p1cb                ; DE = the argument (D=0, E=byte)
     IF G7_RESIDENT
                 push    hl
                 call    scs_extra_arg       ; G7: slot 1 the sprite size, 2 the key
@@ -277,7 +296,7 @@ scs_mode_restore:
                                             ; re-apply the size bits to VDP register 1
 scs_spr:                                    ; A = the op
                 ld      ix,p0_spr_tenant
-                jp      p0cb                ; raises the tenant's ERR code, else returns
+                jp      p1cb                ; raises the tenant's ERR code, else returns
 
 ; scs_extra_arg: one evaluated trailing SCREEN argument (DE = its value; main's
 ; spr_extra_arg). GFX_SARGN = the slot, maintained at each comma above.
@@ -302,7 +321,7 @@ scs_extra_arg:
 scs_bound:
                 ld      a,e
                 cp      c
-                jp      nc,fs_illegal       ; ERR 5 -- out of this slot's domain
+                jp      nc,ls_illegal       ; ERR 5 -- out of this slot's domain
                 dec     c
                 dec     c                   ; 4 -> 2 (size), 2 -> 0 (baud)
                 ret     z                   ; baud is validated and then IGNORED
@@ -328,7 +347,7 @@ scr_color:
                 ld      (CLR_SAVE),hl       ; published back unchanged
                 pop     hl
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past COLOR; Z iff the statement ends
+                call    p1cb                ; past COLOR; Z iff the statement ends
                 ; D-BAREFORM: a BARE `COLOR` is `Missing operand` (ERR 24 on both
                 ; references), NOT a re-apply.
                 jp      z,scr_missing
@@ -337,21 +356,21 @@ scr_color:
                 call    scc_eval            ; DE = foreground, VALIDATED 0..15
                 ld      a,e
                 ld      (CLR_SAVE),a        ; D-PARTIAL: the SHADOW, not the sysvar
-                call    s2_skip_comma
+                call    scr_skip_comma
                 jr      nz,scc_apply
 scc_bg:
-                rst     $10                 ; past the comma; Z at the statement's
+                call    p0_chrgtr           ; past the comma; Z at the statement's
                 jr      z,scc_apply         ; end (00 or ':', CHRGTR's contract)
                 cp      ','                 ; "COLOR fg,,border" -> bg omitted
                 jr      z,scc_bd
                 call    scc_eval            ; DE = background, VALIDATED 0..15
                 ld      a,e
                 ld      (CLR_SAVE+1),a      ; D-PARTIAL: the SHADOW, not the sysvar
-                call    s2_skip_comma
+                call    scr_skip_comma
                 jr      nz,scc_apply
 scc_bd:
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past the comma; Z iff the statement ends
+                call    p1cb                ; past the comma; Z iff the statement ends
                 ; D-OMITARG: a TRAILING COMMA is `Missing operand` -- `COLOR 15,4,`
                 ; and `COLOR ,,` are ERR 24 on both references.
                 jp      z,scr_missing
@@ -364,7 +383,7 @@ scc_apply:
                 ; `COLOR 7,"A"`: eval yields 0 with TMISMATCH pending, which passes
                 ; the 0..15 test -- ask before acting (as at ev_ff_arg), not after.
                 ld      ix,p0_check_expr_errors
-                call    p0cb                ; TMISMATCH -> ERR 13, before any store
+                call    p1cb                ; TMISMATCH -> ERR 13, before any store
                 push    hl
                 ld      hl,(CLR_SAVE)       ; (main's clr_commit) publish the shadow:
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
@@ -374,8 +393,8 @@ scc_apply:
                 ld      (ATRBYT),a
                 ld      a,(SCRMOD)          ; CHGCLR wants the current screen mode
                 ld      ix,CHGCLR
-                call    p0cb
-                jp      fs_pop_exec         ; main's `jp pop_exec`
+                call    p1cb
+                jp      ls_pop_exec         ; main's `jp pop_exec`
 
 ; scc_eval (main's clr_eval): evaluate a COLOR component and require 0..15.
 ; out: E = the value, D = 0. Anything else raises and does not return.
@@ -385,14 +404,14 @@ scc_apply:
 ; references, where eval leaves the error pending with a junk -1.
 scc_eval:
                 ld      ix,p0_eval
-                call    p0cb
+                call    p1cb
                 ld      ix,p0_check_expr_errors
-                call    p0cb
+                call    p1cb
                 ld      a,e                 ; 16..255 has a bit in $F0, and the
                 and     $F0                 ; HIGH byte joins the test (256 has a
                 or      d                   ; low byte of 0 and must NOT pass)
                 ret     z                   ; 0..15 -> good (E = it, D = 0)
-                jp      fs_illegal          ; ERR 5 Illegal function call
+                jp      ls_illegal          ; ERR 5 Illegal function call
 
 ; ===========================================================================
 ; WIDTH <columns>   (main's ex_width)
@@ -402,14 +421,14 @@ scc_eval:
 ; re-inits the screen so the new width is programmed into the VDP.
 scr_width:
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past WIDTH; Z iff the statement ends
+                call    p1cb                ; past WIDTH; Z iff the statement ends
                 jp      z,scr_missing       ; bare WIDTH -> ERR 24
                 ; D-EVALCHK: eval + the deferred-error check + the byte coercion,
                 ; in that ORDER: `WIDTH 70000+0*(1/0)` is Division by zero on both
                 ; references (the expression's error wins), `WIDTH "40"` Type
                 ; mismatch, then ERR 6 past int16, ERR 5 at 256..
                 ld      ix,p0_eval_byte_checked
-                call    p0cb                ; A = the width
+                call    p1cb                ; A = the width
                 ld      b,a
                 dec     a                   ; C = width - 1: `WIDTH 0` wraps to 255,
                 ld      c,a                 ; so ONE test refuses it and too-wide
@@ -425,24 +444,24 @@ scr_width:
                 ld      a,32-1
 scw_bound:
                 cp      c
-                jp      c,fs_illegal        ; width-1 > max-1, or `WIDTH 0` -> ERR 5
+                jp      c,ls_illegal        ; width-1 > max-1, or `WIDTH 0` -> ERR 5
                 ; D-WIDTHKEEP: a WIDTH to the width ALREADY IN FORCE is a no-op on
                 ; the VG-8020 (the screen and the cursor are kept). Tested against
                 ; LINLEN, not the per-mode cell; nothing at all is written.
                 ld      a,(LINLEN)
                 cp      b
-                jp      z,fs_exec           ; HL = the cursor
+                jp      z,ls_exec           ; HL = the cursor
                 ld      a,b
                 ld      (LINLEN),a
                 ld      (de),a              ; the mode's per-mode default
                 ld      a,(SCRMOD)
                 push    hl
                 ld      ix,CHGMOD
-                call    p0cb                ; re-init the screen at the new width
+                call    p1cb                ; re-init the screen at the new width
                 xor     a                   ; D-POSTTY: and BASIC's print column with it
                 ld      (TTYPOS),a          ; (POS(0) is 0 after WIDTH on the VG-8020,
                                             ; where CLS and SCREEN leave it alone --
                                             ; scratchpad/screencsr_measure.out)
                 ld      ix,p0_key_repaint
-                call    p0cb                ; D-KEYCLS: the re-init cleared row 23
-                jp      fs_pop_exec         ; main's `jp pop_exec`
+                call    p1cb                ; D-KEYCLS: the re-init cleared row 23
+                jp      ls_pop_exec         ; main's `jp pop_exec`

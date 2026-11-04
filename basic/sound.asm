@@ -166,7 +166,7 @@ ex_beep:
                 ; window (accepted edge)" note above -- there is no longer a drain
                 ; to fight.
                 call    psg_silence
-                ; The body is a PAGE-0 sub-ROM tenant (sub/beep.asm,
+                ; The body is a sub-ROM tenant (sub/beep.asm, PAGE 1 since step 2d;
                 ; docs/spec-basic-input-devices.md §7): the 71 B it occupied here
                 ; is what funds input-devices slice I1. The carve is clean because
                 ; the body is direct PSG port I/O plus a busy-wait -- no BIOS, no
@@ -175,12 +175,13 @@ ex_beep:
                 ; BEEP takes no argument, returns no result, and cannot fail.
                 ; HL (the statement cursor) is guarded across the CALSLT.
                 inc     hl                  ; past the BEEP token
-                ; D-TOKOVF: the body lives in zerobas-sub2 page 0 now (its 71 B
-                ; funded the crunch bound in zerobas-sub); there is no inline
-                ; stub for ROM 2, so this is the open-coded form (+3 B here).
+                ; D-TOKOVF put the body in zerobas-sub2 page 0 (its 71 B funded the
+                ; crunch bound in zerobas-sub); D-SUB2RETIRE step 2d (2026-11-04)
+                ; moved it to zerobas-sub's PAGE 1 (SUBROM_IDX_BEEP). The open-coded
+                ; form stays: the absent test is the site's own.
                 push    hl
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUB2_IDX_BEEP
-                call    subrom2_call
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BEEP
+                call    subrom_call
                 pop     hl
                 jp      c,subrom_absent_error
                 jp      exec_stmt           ; chain the next statement (HL preserved)
