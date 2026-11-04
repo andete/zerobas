@@ -159,7 +159,7 @@ def run():
         m.poke(fwbuf + SECSIZE, b"\xA5" * GUARD)          # the overrun witness
         m.poke(s["FCH_ACTIVE"], CHAN)
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
-        m.poke_w(s["GP_RECNO"], recno)
+        m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))   # k = n - 1, as hk_dget leaves it (D-RECBIG)
         set_size(m, 0)
         m.poke(REC, rec_bytes(recno, reclen))
         model_put(want, recno, reclen)
@@ -183,10 +183,12 @@ def run():
         legit = set()
         for k in range(50):
             legit.add(ROW - (fwbuf + SECSIZE) + k)
-        # D-RECBIG: LOC is the row's random record, +33..34, written by rnd_loc.
-        loc = bytes(m.peek(ROW + 33, 2))
-        report(f"{tag}: LOC = the record (row +33..34)",
-               loc[0] | loc[1] << 8 == recno, f"read {loc[0] | loc[1] << 8}")
+        # D-RECBIG: LOC is the row's random record, +33..36. hk_dget sets it to
+        # n - 1 before the I/O and to n after it succeeds (the CF-3300's rule); the
+        # engine itself must leave the k it was handed.
+        loc = int.from_bytes(bytes(m.peek(ROW + 33, 4)), "little")
+        report(f"{tag}: the row's k = n - 1 left as handed (row +33..36)",
+               loc == recno - 1, f"read {loc}")
         got_guard = bytes(m.peek(fwbuf + SECSIZE, GUARD))
         clob = [i for i, b in enumerate(got_guard) if b != 0xA5 and i not in legit]
         report(f"{tag}: nothing written above FWBUF+512", not clob,
@@ -212,7 +214,7 @@ def run():
     m.poke_w(s["FCH_RECLENS"] + CHAN * 2, 100)
     set_size(m, 0)
     for recno in (5, 7, 6):
-        m.poke_w(s["GP_RECNO"], recno)
+        m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))   # k = n - 1, as hk_dget leaves it (D-RECBIG)
         m.poke(REC, rec_bytes(recno, 100))
         m.call("fat_rand_put", ix=ROW)
         model_put(want, recno, 100)
@@ -244,7 +246,7 @@ def run():
         s = m.sym
         m.poke(s["FCH_ACTIVE"], CHAN)
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
-        m.poke_w(s["GP_RECNO"], recno)
+        m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))   # k = n - 1, as hk_dget leaves it (D-RECBIG)
         set_size(m, 0xFFFF)                       # far past the record: never EOF
         m.poke(REC, b"\x00" * reclen)
         m.call("fat_rand_get", ix=ROW)

@@ -79,13 +79,16 @@ def run():
         print(f"{'PASS' if ok else 'FAIL'}  {label:42} -> {got!r}" + ("" if ok else f"   want {want!r}"))
 
     CHAN = 1
+    ROW = 0xD000                # a channel FCB row (frnd_calc's IX)
     m.poke(s["FCH_ACTIVE"], CHAN)
 
     def geom(reclen, recno):
         # seed FCH_RECLENS[CHAN] = reclen (word), the record number, and run frnd_calc
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
-        m.poke_w(s["GP_RECNO"], recno)
-        m.call("frnd_calc")
+        # D-RECBIG (2026-11-04): frnd_calc reads k = recno - 1 from the channel's
+        # FCB row (+33..36, IX), where hk_dget leaves it before the I/O
+        m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))
+        m.call("frnd_calc", ix=ROW)
         sec = m.mem[s["GP_SEC"]] | (m.mem[s["GP_SEC"] + 1] << 8)
         within = m.mem[s["GP_WITHIN"]] | (m.mem[s["GP_WITHIN"] + 1] << 8)
         return sec, within

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
+* **basic** — 68 declared addresses in this project's own workspace `$E000..$F37F` (67 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
 * **disk** — 122 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -146,7 +146,8 @@ second one is the question a per-component map cannot answer.
 | `$EE77` | 2 B | `disk` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
-| `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
+| `$EE7D` | 4 B | `basic` | `GP_RECNO` | DISK-ONLY: 4 B ($EE7D..$EE80): GET / PUT's record number, |  |
+| `$EE7D` | 4 B | `disk` | `GP_RECNO` | DISK-ONLY: 4 B ($EE7D..$EE80): GET / PUT's record number, |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC3` | 2 B | `disk` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
@@ -188,8 +189,6 @@ second one is the question a per-component map cannot answer.
 | `$F019` | 2 B | `basic` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F019` | 2 B | `disk` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F022` | 1 B | `disk` | `DSK_CURDRV` | D-DSKIB: the logical drive the one physical drive holds now -- 0 A:, 1 B: (1 B) |  |
-| `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
-| `$F079` | 2 B | `disk` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F07B` | 2 B | `basic` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |
 | `$F07B` | 2 B | `disk` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |
 | `$F07D` | 2 B | `basic` | `GP_WITHIN` | DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B) |  |

@@ -1,0 +1,9 @@
+ZB w1e10    PUT #1,1E10      LEN=1   [ERR 6 0 ]
+ZB w2p32    PUT #1,4294967296# LEN=1   [ERR 6 0 ]
+ZB w1e9     PUT #1,1E9       LEN=1   [ERR 66 999999999 ]
+ZB s5get9   PUT #1,5:GET #1,9 LEN=1   [ERR 55 8 ]
+ZB s1e9     PUT #1,1:PUT #1,1E9 LEN=1   [ERR 66 999999999 ]
+ZB w65536   PUT #1,65536     LEN=1   [ 65536 65536 ]
+ZB w70000   PUT #1,70000     LEN=1   [ 70000 70000 ]
+refcache: 0 hit, 7 miss, 7 stored
+refcache: 0 hit, 7 miss, 7 stored

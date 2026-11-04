@@ -1,0 +1,12 @@
+CF w65536   PUT #1,65536     LEN=1   [ 65536 65536 ]
+CF w70000   PUT #1,70000     LEN=1   [ 70000 70000 ]
+CF w100000  PUT #1,100000    LEN=1   [ 100000 100000 ]
+CF w1e6     PUT #1,1000000   LEN=1   [ERR 66 999999 ]
+CF w2p24m   PUT #1,16777215  LEN=1   [ERR 66 16777214 ]
+CF w2p24    PUT #1,16777216  LEN=1   [ERR 66 16777215 ]
+CF w1e10    PUT #1,1E10      LEN=1   [ERR 6 0 ]
+CF w1e30    PUT #1,1E30      LEN=1   [ERR 6 0 ]
+CF l2000    PUT #1,2000      LEN=256 [ 512000 2000 ]
+CF l3000    PUT #1,3000      LEN=256 [ERR 66 2999 ]
+refcache: 0 hit, 10 miss, 10 stored
+refcache: 0 hit, 10 miss, 10 stored

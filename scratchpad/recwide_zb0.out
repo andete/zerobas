@@ -1,0 +1,5 @@
+ZB l3000    PUT #1,3000      LEN=256 None
+ZB s5get9   PUT #1,5:GET #1,9 LEN=1   [ERR 55 5 ]
+ZB l2000    PUT #1,2000      LEN=256 None
+refcache: 0 hit, 3 miss, 3 stored
+refcache: 0 hit, 3 miss, 3 stored

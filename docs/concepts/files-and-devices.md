@@ -176,9 +176,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   them as one file; zerobas says 54. Joost ruled on 2026-09-27 to fold this
   into D-FCBSHAPE; the MSX block has no name field, so copying the reference
   would cost 165 bytes of the disk machine's RAM. Open.
-- **Record numbers of 65536 and up** (D-RECBIG) are `Overflow` here; the
-  CF-3300 accepts them, up to what the disk holds. 32768 to 65535, and
-  negative numbers counted back from 65536, agree since 2026-11-04.
+- **Record number 4294967295** (D-RECBIG): `PUT #1,4294967295#` succeeds on
+  the CF-3300, whose free-space check wraps there; zerobas says `Disk full`.
+  Every other record number, 1 to 4294967295 and negative ones counted back
+  from 65536, agrees since 2026-11-04.
 - **Text after a closing quote** in `INPUT #` (D-INPQUOTE2, TIER 6, open):
   `CD` in `"AB"CD` goes to the next read there and is dropped here.
 - **`OPEN "CRT:" FOR INPUT`** is `Syntax error` here; on the CF-3300 the

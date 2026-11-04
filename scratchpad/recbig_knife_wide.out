@@ -1,0 +1,9 @@
+ROW p65536 CF=[ 65536 65536 ] ZB=[ERR 6 0 ] DIVERGES
+ROW p1e9 CF=[ERR 66 999999999 ] ZB=[ERR 6 0 ] DIVERGES
+ROW p1e10 CF=[ERR 6 0 ] ZB=[ERR 6 0 ] SAME
+ROW p2p32 CF=[ERR 6 0 ] ZB=[ERR 6 0 ] SAME
+ROW f1e9 CF=[ERR 66 999999999 ] ZB=[ERR 6 1 ] DIVERGES
+ROW f5get9 CF=[ERR 55 8 ] ZB=[ERR 55 5 ] DIVERGES
+
+FAIL: GET # / PUT # record-number domain (2/6)
+refcache: 6 hit, 6 miss, 6 stored

@@ -1,0 +1,8 @@
+CF w1e8     PUT #1,1E8       LEN=1   [ERR 66 99999999 ]
+CF w1e9     PUT #1,1E9       LEN=1   [ERR 66 999999999 ]
+CF w2p32m   PUT #1,4294967295# LEN=1   [ 4294967295 4294967295 ]
+CF w2p32    PUT #1,4294967296# LEN=1   [ERR 6 0 ]
+CF s1full   PUT #1,1:PUT #1,1000000 LEN=1   [ERR 66 999999 ]
+CF s5get9   PUT #1,5:GET #1,9 LEN=1   [ERR 55 8 ]
+refcache: 0 hit, 6 miss, 6 stored
+refcache: 0 hit, 6 miss, 6 stored

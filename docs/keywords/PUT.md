@@ -8,9 +8,9 @@ SPDX-License-Identifier: 0BSD
 
 > **Status (2026-11-04):** `PUT` starts two statements: `PUT #`, documented
 > here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). One recorded
-> difference for `PUT #`: record numbers of 65536 and up (below). Record
-> numbers 32768 to 65535 and negative ones work as on the CF-3300 since
-> 2026-11-04. A `PUT` without a record number writes the next record, as on
+> difference for `PUT #`: the single record 4294967295 (below). Record
+> numbers follow the CF-3300 across the rest of its range since 2026-11-04.
+> A `PUT` without a record number writes the next record, as on
 > the CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -70,11 +70,11 @@ The `#` may be left out. The file must have been opened for random access:
 | a channel number above `MAXFILES` | 52 `Bad file number` |
 | channel `#256` or `#-1` | 5 `Illegal function call` |
 | record number 0 | 5 `Illegal function call` |
-| record number −32768 or below | 6 `Overflow` |
+| record number −32768 or below, or 4294967296 or above | 6 `Overflow` |
 | a string as the record number | 13 `Type mismatch` |
+| the record would not fit on the disk | 66 `Disk full` |
 
-All agree between the two machines, except record numbers of 65536 and up
-(*Differences*).
+All agree between the two machines, except the one case in *Differences*.
 
 ## Example
 
@@ -101,15 +101,26 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **Record numbers of 65536 and up** (D-RECBIG). The CF-3300 takes them:
-  at `LEN=1`, `PUT #1,70000` writes record 70000 and `PUT #1,100000` record
-  100000; only the size of the disk stops it (`PUT #1,1000000` is
-  `Disk full`). zerobas keeps a record number in 16 bits, so it says
-  `Overflow` for 65536 and up. Measured on 2026-11-04 on a fresh 720 KB
-  disk.
+- **`PUT #1,4294967295#` succeeds on the CF-3300** and reports a file of
+  4294967295 bytes, which no disk holds: its check of the free space wraps
+  at that one value. zerobas says `Disk full`, as the CF-3300 does for every
+  other record past the end of the disk (`PUT #1,1E9`). Measured on
+  2026-11-04 ([`recwide_cf2.out`](../../scratchpad/recwide_cf2.out)).
 
 ## What we found, and how
 
+- **Record numbers stopped at 65535** (fixed 2026-11-04, D-RECBIG, Joost:
+  "Widen"). The CF-3300's record number is 32 bits: `PUT #1,65536` writes
+  that record, `PUT #1,1E9` is `Disk full`, and 4294967296 is the first
+  `Overflow`. zerobas kept it in 16 bits and said `Overflow` from 65536; it
+  now keeps it in the channel's file control block as the CF-3300 does
+  ([`recwide_cf.out`](../../scratchpad/recwide_cf.out),
+  [`recwide_cf2.out`](../../scratchpad/recwide_cf2.out),
+  [`recbig_gate_wide.out`](../../scratchpad/recbig_gate_wide.out)).
+  Measuring it found that **a failed `GET` or `PUT` sets `LOC` to one below
+  the record it asked for**: `PUT #1,1:PUT #1,1E9` leaves `LOC(1)` at
+  999999999, and `PUT #1,5:GET #1,9` at 8. zerobas left `LOC` alone on a
+  refused `GET`; it now follows the CF-3300.
 - **`PUT #1,32768` was `Overflow`, and `PUT #1,-1` was read as an ordinary
   number** (fixed 2026-11-04, D-RECBIG). The CF-3300 writes record 32768,
   and reads −1 as record 65535. Both machines had agreed on 32768 on

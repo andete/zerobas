@@ -1,0 +1,3 @@
+CF s1e9     PUT #1,1:PUT #1,1E9 LEN=1   [ERR 66 999999999 ]
+refcache: 0 hit, 1 miss, 1 stored
+refcache: 0 hit, 1 miss, 1 stored

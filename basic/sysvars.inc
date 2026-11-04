@@ -4107,7 +4107,6 @@ FLD_END         equ     $F019   ; DISK-ONLY: FIELD: the end of the channel's rec
 ; disk/basic-resident-abi.inc -- one consumer, no disk-side twin, so the address
 ; is published unaliased (COPY_SRC's precedent). They stay declared HERE so the
 ; RAM map has one owner for them and a sysvar move reaches disk.rom by regen.
-GP_RECNO        equ     $F079   ; DISK-ONLY: record number, 1-based (2 B)
 GP_SEC          equ     $F07B   ; DISK-ONLY: file logical-sector index of the record (2)
 GP_WITHIN       equ     $F07D   ; DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B)
 GP_CLUS         equ     $F07F   ; DISK-ONLY: current cluster during the chain walk (2)
@@ -4223,34 +4222,14 @@ FCH_RECLENS     equ     $EE4D   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF
                                 ; \U0001f534 STALE SINCE D-DEFFN: $EA9C..$EB00 is FN_PAREA
                                 ; (tools/ram_map.py). A comment claiming free RAM is a
                                 ; claim; the band below was ASKED of the machine.
-FCH_RECNOS      equ     $EE7D   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number
-                                ; of the last GET/PUT
-                                ; ⚠️ UNUSED SINCE D-RECBIG (2026-11-04): LOC is the
-                                ; FCB row's +33..34 (disk/kernel.asm rnd_loc). The
-                                ; cell is kept where it is -- reclaiming its 32 B
-                                ; is a RAM-layout decision, not taken here.
-                                ; 🔴 THE RANGE IS SPELLED OUT BECAUSE "32 B"
-                                ; ALONE WAS NOT ENOUGH (D-RAMGATE, 2026-09-21):
-                                ; `(word` appears later in this same comment and
-                                ; `tools/ram_map.py`'s R2 rule deliberately lets
-                                ; `word` beat a byte count -- right for a POINTER
-                                ; to an N-byte thing, wrong here. The map read
-                                ; this cell as 2 B and reported the 50 B of real
-                                ; free space above it as an 80 B run.
-                                ; (word, 1-based, 0 = none yet) -- what LOC(#n) reads on a
-                                ; RANDOM channel (D-LOC). Written beside GP_RECNO in
-                                ; basic/field.asm; a single global there was right for
-                                ; ONE open random file and wrong with two.
-                                ; ⚠️ THIS LINE READ "$EA39..$EAFF free" UNTIL
-                                ; D-FORVAR, AND IT WAS ONE BYTE STALE: D-LPTVERB
-                                ; took $EA39 for LPTPOS and never updated it. A
-                                ; comment claiming free RAM is a claim like any
-                                ; other, and this one was measured before it was
-                                ; spent. D-FORVAR then took $EA3A..$EA92 for the
-                                ; relocated FOR stack (see FOR_STK above).
-                                ; (D-EDITVERB took $EA30..$EA38: the RENUM
-                                ; round-trip cells RN_PTR/RN_NEW/RN_OLD/RN_INC
-                                ; and read_line's RL_AUTO mode flag)
+GP_RECNO        equ     $EE7D   ; DISK-ONLY: 4 B ($EE7D..$EE80): GET / PUT's record number,
+                                ; 1-based, 32 bits (D-RECBIG 2026-11-04: the CF-3300's
+                                ; record is 1 .. 2^32-1). Written by disk.rom's
+                                ; rnd_parse / hk_dget, read nowhere else. Its place
+                                ; was FCH_RECNOS (32 B, the per-channel record LOC
+                                ; read until D-RECBIG moved LOC into the FCB row's
+                                ; +33..36); the other 28 B and GP_RECNO's old $F079
+                                ; word are free since 2026-11-04 (Joost: "Reclaim").
 GP_RECLEN       equ     $F09A   ; DISK-ONLY: active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     WSTX   ; OPEN scratch: channel # stashed across the LEN= eval (1)
                                 ; D-WSZERO S14f: WSTX: set after the name's terminator, held across LEN= (was $F09C)

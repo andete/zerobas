@@ -70,17 +70,13 @@ bdos_seqwrite:
 
 ; rnd_parse -- the record number's domain (D-RECBIG, 2026-11-04), measured on the
 ; CF-3300 for PUT and GET alike (TODO D-RECBIG): the value is TRUNCATED toward
-; zero (1.99 -> 1, 65536.5 -> 65536); 1.. is that record; -32767..-1 WRAP to
-; n + 65536 (-1 -> 65535, -32767 -> 32769); -32768 and below are Overflow; 0 is
-; hk_dget's 5. ⚠️ The reference's positive side is WIDER than 16 bits (70000 and
-; 100000 are records there, 16777216 is Disk full); the record is a 16-bit cell
-; here (GP_RECNO, the row's +33..34), so 65536 and up stay Overflow -- the kept
-; divergence. D-RECLENERR's eval_int16_checked made 32768..65535 Overflow too,
-; which they were not before it (09-10's putdomain run agreed on 32768 / 65535).
+; zero (1.99 -> 1, 65536.5 -> 65536); 1 .. 2^32-1 is that record (4294967296 is
+; Overflow; 1E9 is a record, and Disk full); -32767..-1 WRAP to n + 65536 (-1 ->
+; 65535, -32767 -> 32769); -32768 and below are Overflow; 0 is hk_dget's 5.
 ;   in   the evaluator's result: FAC / FACTYP, DE = an int's value
-;   out  DE = the record 0..65535
+;   out  GP_RECNO (4 B) = the record 0 .. 2^32-1
 ;   raises 13 (a string) and a pending evaluator error through check_expr_errors,
-;        6 out of the domain. Clobbers A, BC, HL, IX.
+;        6 out of the domain. Clobbers A, BC, DE, HL, IX and the alternate set.
 ; 📍 Sited in the pad in front of the $4720 pin: the $5602..$5E10 fill that holds
 ; hk_dget (disk/kernel.asm) is full. DE crosses calbak intact (D-XSLOTABI).
 rnd_parse:
@@ -92,28 +88,37 @@ rnd_parse:
                 ld      a, d                ; an int: -32767..-1 IS n + 65536
                 xor     $80
                 or      e
-                ret     nz                  ; -32768 falls into Overflow
+                jr      z, rnp_ovf          ; -32768 falls into Overflow
+                ex      de, hl
+                ld      de, 0
+rnp_store:
+                ld      (GP_RECNO), hl
+                ld      (GP_RECNO+2), de
+                ret
 rnp_ovf:
                 ld      a, 6
                 jp      hdg_raise
-rnp_flt:
-                call    fac_mag             ; HL = |x| truncated, CF = past 65535
-                jr      c, rnp_ovf
-                ex      de, hl
-                ld      a, (FAC)
-                rla
-                ret     nc                  ; positive: as is
-                bit     7, d
-                jr      nz, rnp_ovf         ; -32768 and below
-                xor     a
-                sub     e
-                ld      e, a
-                sbc     a, a
-                sub     d
-                ld      d, a                ; DE = 65536 - |x|
-                ret
                 ds      $4720 - $, $00      ; pad up to the pinned canonical entry
 k_4720:         jp      wrabs_body          ; $4720: BDOS $30 WRABS canonical entry (M26)
+; rnd_parse's float half, past the pin: the pad in front of $4720 holds the rest.
+rnp_flt:
+                call    fac_mag32           ; DE:HL = |x| truncated, CF = past 2^32-1
+                jr      c, rnp_ovf
+                ld      a, (FAC)
+                rla
+                jr      nc, rnp_store       ; positive: as is
+                ld      a, d
+                or      e
+                jr      nz, rnp_ovf
+                bit     7, h
+                jr      nz, rnp_ovf         ; -32768 and below
+                xor     a
+                sub     l
+                ld      l, a
+                sbc     a, a
+                sub     h
+                ld      h, a                ; HL = 65536 - |x| (DE = 0)
+                jr      rnp_store
 
 ; --- FAT12 layer (disk/PROVENANCE.md §FAT12 layer) -------------------------
 ; Read-only FAT12 on top of the DSKIO sector reader. Sources: Microsoft FAT
@@ -454,10 +459,12 @@ fwd_ok:
 ;        CF = 1 a read failed (D-GETEJECT: the code pending, hk_dget raises it)
 fat_rand_get:
                 call    frnd_calc           ; A:HL = the offset; the pass cursor
+                jr      c, frg_past         ; past any disk
                 call    rnd_cmp
+                jr      c, frg_pass         ; starts before EOF
+frg_past:
                 ld      a, 55
-                jp      nc, hdg_raise       ; starts at or past EOF
-                call    rnd_loc             ; LOC
+                jp      hdg_raise           ; starts at or past EOF
 frg_pass:
                 call    frnd_locate
                 jp      c, frg_eofchk       ; past the chain -- or a FAILED READ
@@ -563,7 +570,8 @@ dll_loc:
                 ld      l, (ix+33)
                 ld      h, (ix+34)
                 ld      e, (ix+35)
-                ld      d, 0                ; DE:HL = the random record
+                ld      d, (ix+36)          ; DE:HL = the random record (32 bits,
+                                            ; D-RECBIG; dout_open zeroes +36)
                 ret
 
 ; hk_chin -- H_CHIN ($FE8A): the live INPUT channel's text, the reference's way.

@@ -269,7 +269,7 @@ REQUIRED_DISK_RAM = [
     # 🎯 NOT ALIASED, COPY_SRC's argument: disk.rom has no cells of these names,
     # one address serves the one consumer, and a sysvar move reaches it by regen.
     "FCH_RECLENS",              # [ch] word: the record length, OPEN's LEN= (default 256)
-    # (FCH_RECNOS -- gone, D-RECBIG 2026-11-04: LOC is the FCB row's +33..34 now,
+    # (FCH_RECNOS -- gone, D-RECBIG 2026-11-04: LOC is the FCB row's +33..36 now,
     # disk.rom's rnd_loc, read unsigned through H_CHIN op 8; nothing uses the cell.)
     "GP_RECNO",                 # the record number, 1-based
     "GP_SEC",                   # the record's file sector

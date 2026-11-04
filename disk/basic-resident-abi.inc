@@ -62,7 +62,7 @@ DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
 DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
 FCH_RECLENS equ 0EE4DH   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
-GP_RECNO equ 0F079H   ; DISK-ONLY: record number, 1-based (2 B)
+GP_RECNO equ 0EE7DH   ; DISK-ONLY: 4 B ($EE7D..$EE80): GET / PUT's record number,
 GP_SEC equ 0F07BH   ; DISK-ONLY: file logical-sector index of the record (2)
 GP_WITHIN equ 0F07DH   ; DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B)
 GP_CLUS equ 0F07FH   ; DISK-ONLY: current cluster during the chain walk (2)

@@ -286,8 +286,9 @@ def run():
     # 🎯 WHAT THESE ROWS PIN. LOF / LOC read a MIRROR in main until S10.E
     # (FAT_FILESIZE / FWR_BYTES, kept by disk.rom's dout_mirror and the sub-ROM's
     # t_fch_load); now main asks H_CHIN and gets DE:HL. So: the row's own +16..19
-    # (LOF, all 32 bits) and +33..35 (LOC, high byte 0 -- +36 is poisoned, the
-    # FCB's fourth random-record byte must not leak in), in every disk mode; the
+    # (LOF, all 32 bits) and +33..36 (LOC, all 32 bits since D-RECBIG 2026-11-04:
+    # the CF-3300's record is 1 .. 2^32-1, and +36 carries its top byte -- planted
+    # NONZERO here so a reader that dropped it goes red), in every disk mode; the
     # row is FCH_ACTIVE's (two channels, different values); and the op is a pure
     # read -- no sector, no DISKOP_ERR clear (it is not a read's code), row and
     # record untouched. The DOUT value is the case the mirror got WRONG in main:
@@ -301,7 +302,7 @@ def run():
         sym = r.s
         r.m.poke(r.row + 16, size.to_bytes(4, "little"))
         r.m.poke(r.row + 33, rr.to_bytes(3, "little"))
-        r.m.poke(r.row + 36, 0xFF)                 # poison: not part of LOC
+        r.m.poke(r.row + 36, 0x12)                 # LOC's top byte (D-RECBIG)
         # a SECOND channel, live instead: its row must be the one read
         r2 = row_addr(sym, 2)
         r.m.poke(r2, bytes(sym["FCH_STATESZ"]))
@@ -317,7 +318,8 @@ def run():
         tag = f"mode {mode}, size {size}, RR {rr}"
         report(f"op 6 LOF ({tag}): the row's +16..19, 32 bits", vals[6] == size,
                f"got {vals[6]}")
-        report(f"op 8 LOC ({tag}): the row's +33..35, high byte 0", vals[8] == rr,
+        report(f"op 8 LOC ({tag}): the row's +33..36, 32 bits",
+               vals[8] == rr | 0x12 << 24,
                f"got {vals[8]:#x}")
         report(f"... a pure read: no sector, DISKOP_ERR kept, row + record unchanged",
                not r.reads and r.m.mem[sym["DISKOP_ERR"]] == 0x99 and after == before,

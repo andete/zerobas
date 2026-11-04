@@ -7,9 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `GET` — read a record from a random-access file
 
 > **Status (2026-11-04):** `GET` has one statement, `GET #`, documented here.
-> One recorded difference: record numbers of 65536 and up (below). Record
-> numbers 32768 to 65535 and negative ones work as on the CF-3300 since
-> 2026-11-04. A `GET` without a record number reads the next record, as on
+> No recorded difference: record numbers follow the CF-3300 across its whole
+> range, 1 to 4294967295, since 2026-11-04. A `GET` without a record number reads the next record, as on
 > the CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -43,10 +42,12 @@ The `#` may be left out. The file must have been opened for random access:
   [`PUT`](PUT.md): `GET #1,-2` reads record 65534. `-32768` and below are
   `Overflow`.
 - **`LOC(1)` is the record number of the last `GET` or `PUT`** on the channel,
-  and 0 straight after `OPEN`. It is never negative.
+  and 0 straight after `OPEN`. It is never negative. A `GET` or `PUT` that
+  fails leaves it one below the record it asked for: after `PUT #1,5`,
+  `GET #1,9` is `Input past end` and `LOC(1)` is 8.
 - **Without a record number** `GET` reads the record after the last one read
   or written on that channel (`LOC` + 1): the first bare `GET` after `OPEN`
-  reads record 1. A `GET` refused past the end does not move it on.
+  reads record 1. After a refused `GET` it asks for that same record again.
 
 ### Errors
 
@@ -58,12 +59,11 @@ The `#` may be left out. The file must have been opened for random access:
 | a channel number above `MAXFILES` | 52 `Bad file number` |
 | channel `#256` or `#-1` | 5 `Illegal function call` |
 | record number 0 | 5 `Illegal function call` |
-| record number −32768 or below | 6 `Overflow` |
+| record number −32768 or below, or 4294967296 or above | 6 `Overflow` |
 | a string as the record number | 13 `Type mismatch` |
 | the record starts at or past the end of the file | 55 `Input past end` |
 
-All agree between the two machines, except record numbers of 65536 and up
-(*Differences*). A disk read error during `GET` prints a
+All agree between the two machines. A disk read error during `GET` prints a
 message without raising an error that `ON ERROR` could catch; that is part of
 an open item (D-LOADERRRET).
 
@@ -92,14 +92,23 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A record number of 65536 or more** (D-RECBIG) is `Overflow` here. The
-CF-3300 reads it: in a file of 70000 one-byte records, `GET #1,65536` and
-`GET #1,70000` read those records, and `GET #1,70001` is `Input past end`
-(measured 2026-11-04). zerobas keeps a record number in 16 bits. See
-[`PUT`](PUT.md).
+None known for `GET #` since 2026-11-04, when record numbers of 65536 and up
+started to work (*What we found*).
 
 ## What we found, and how
 
+- **Record numbers stopped at 65535** (fixed 2026-11-04, D-RECBIG, Joost:
+  "Widen"). The CF-3300's record number is 32 bits: `PUT #1,65536` writes
+  that record, `PUT #1,1E9` is `Disk full`, and 4294967296 is the first
+  `Overflow`. zerobas kept it in 16 bits and said `Overflow` from 65536; it
+  now keeps it in the channel's file control block as the CF-3300 does
+  ([`recwide_cf.out`](../../scratchpad/recwide_cf.out),
+  [`recwide_cf2.out`](../../scratchpad/recwide_cf2.out),
+  [`recbig_gate_wide.out`](../../scratchpad/recbig_gate_wide.out)).
+  Measuring it found that **a failed `GET` or `PUT` sets `LOC` to one below
+  the record it asked for**: `PUT #1,1:PUT #1,1E9` leaves `LOC(1)` at
+  999999999, and `PUT #1,5:GET #1,9` at 8. zerobas left `LOC` alone on a
+  refused `GET`; it now follows the CF-3300.
 - **`GET #1,32768` was `Overflow`, and `GET #1,-32768` read record 32768**
   (fixed 2026-11-04, D-RECBIG). `GET` and `PUT` read the record number the
   same way, on both machines, and the fix was one change for both: see

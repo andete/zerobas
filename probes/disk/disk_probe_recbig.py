@@ -14,10 +14,14 @@ moved the parse to the int16 converter, and printed LOC 65535 as -1.
             GET #1,n; print LOF;LOC
   p1 is the control (record 1 has always agreed).
 
-⚠️ NOT A ROW, THE KEPT DIVERGENCE: the CF-3300 takes 65536 and up too (70000,
-100000 are records there; 16777216 is Disk full -- the disk's capacity). The
-record is a 16-bit cell in zerobas (GP_RECNO, the FCB row's +33..34), so those
-stay Overflow here until the record is widened (a decision, not this gate's).
+WIDENED 2026-11-04 (Joost: "Widen"): the record is 32 bits on the CF-3300 --
+65536 and up are records, 1E9 is one (Disk full), 4294967296 is Overflow -- and
+LOC after a FAILED GET / PUT is n - 1 (f1e9: LOC 999999999 after `PUT 1`;
+f5get9: GET past EOF, LOC 8). Rows p65536 .. f5get9.
+⚠️ KEPT, NOT ROWS: `PUT #1,4294967295#` SUCCEEDS on the CF-3300 (LOF 4294967295
+-- its free-space check wraps); zerobas says Disk full. And a record whose byte
+offset is under 2^24 but past the disk (PUT #1,1000000 at LEN=1) is Disk full on
+both, but zerobas extends the chain until the disk is full first (D-RECSLOW).
 
 Each row prints `ROW <name> CF=[...] ZB=[...] <verdict>`, a fresh copy of
 disk/test720.dsk per case and side.
@@ -32,7 +36,9 @@ import probe_tmp                                    # noqa: E402
 
 OPEN = '20 OPEN "R.DAT" AS #1 LEN=1:FIELD #1,1 AS A$:LSET A$="X"'
 PUTS = {"p1": "1", "p1.99": "1.99", "p2.5": "2.5", "p32768": "32768",
-        "p65535": "65535", "p40000!": "40000!", "m1": "-1", "m2": "-2",
+        "p65535": "65535", "p40000!": "40000!", "p65536": "65536", "p1e9": "1E9",
+        "p1e10": "1E10", "p2p32": "4294967296#", "f1e9": "1:PUT #1,1E9",
+        "f5get9": "5:GET #1,9", "m1": "-1", "m2": "-2",
         "m32767": "-32767", "m32768": "-32768", "m32769": "-32769", "p0": "0",
         "pstr": '"A"'}
 GETS = {"g2.5": "2.5", "g40000": "40000", "gm2": "-2", "gm32767": "-32767",

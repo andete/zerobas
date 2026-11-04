@@ -32,7 +32,9 @@ One argument: the channel number.
 
 - **Random-access file** (`OPEN ... AS #n LEN=r`): 0 right after the `OPEN`,
   then the record number of the last `GET` or `PUT` — `GET #1,3` makes it 3,
-  `GET #1,7` makes it 7, `PUT #1,4` makes it 4.
+  `GET #1,7` makes it 7, `PUT #1,4` makes it 4. A `GET` or `PUT` that fails
+  leaves it one below the record asked for (`GET #1,9` past the end of a
+  5-record file: 8), and it runs to 4294967295.
 - **Each channel has its own**: with two random files open, each `LOC`
   follows its own channel's `GET`s and `PUT`s.
 - **File open for input**: the file's size, the same before any read and
@@ -110,7 +112,9 @@ The one rung not yet proven is **RAM usage**.
   printed −1, and after `PUT #1,40000` −25536. The CF-3300 prints 65535 and
   40000. The record number now lives where the CF-3300 keeps it, in the
   channel's file control block, and is read unsigned. `make
-  recbig-acceptance` covers it.
+  recbig-acceptance` covers it. The same day the record number grew to the
+  CF-3300's 32 bits, and a failed `GET` started to set `LOC` as the CF-3300
+  does (see [`GET`](GET.md)).
 
 ## Where it lives
 
@@ -134,6 +138,6 @@ The one rung not yet proven is **RAM usage**.
   a `PUT` of record 4, and two random channels at once, against the CF-3300.
 - `make kwsweep` — the everyday row and the error rows for {13, 52, 59}.
 - `make dout-acceptance` — `LOC` and `LOF` while writing and appending.
-- `make recbig-acceptance` — `LOC` after records 32768 to 65535.
+- `make recbig-acceptance` — `LOC` after records 32768 to 65535, 65536, and a failed `GET` or `PUT`.
 - `make nodisk-acceptance` — the diskless answer, error 59.
 - `make kwram` — the RAM-usage comparison.

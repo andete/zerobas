@@ -19491,7 +19491,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - File names longer than six characters: zerobas truncates; the
         references are unmeasured.
 
-- [ ] 🟡 **FIXED TO 65535 2026-11-04 (above: 🙋 the rest)** 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
+- [x] ✅ **FIXED 2026-11-04, WIDENED TO 32 BITS THE SAME DAY** 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
       REGRESSION: BOTH AGREED ON 2026-09-10 (D-RECBIG, found 2026-10-09).**
       🎚️ TIER 6 — `GET #` / `PUT #` with a record number above 32767
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -19522,9 +19522,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       accumulate / recno-1 x reclen saturating to Disk full / 3-byte LOC); (2) FCH_RECNOS (32 B at
       $EE7D) now has no reader or writer -- reclaim it? (3) removing loc_rand left 11 B more in
       front of the $6CF3 pin (1499 -> 1510).
-      🏗️ **JOOST 2026-11-04: (1) "Widen"; (2) "Reclaim".** ➡️ NEXT: 24-bit record numbers by the
-      measured rule (65536.. write that record, 1000000 Disk full, LOC 3-byte), the 1 B from
-      FCH_RECNOS, the rest of FCH_RECNOS freed in docs/ram-map.md.
+      🏗️ **JOOST 2026-11-04: (1) "Widen"; (2) "Reclaim".** ✅ **DONE 2026-11-04.** Measured first
+      ([`recwide_probe.py`](scratchpad/recwide_probe.py) -> [`recwide_cf.out`](scratchpad/recwide_cf.out),
+      [`recwide_cf2.out`](scratchpad/recwide_cf2.out), [`recwide_cf3.out`](scratchpad/recwide_cf3.out)): the
+      record is **32 bits**, not 24 -- 1E9 is Disk full with LOC 999999999, 4294967296 Overflow,
+      and `PUT #1,4294967295#` even SUCCEEDS (LOF 4294967295: its free-space check wraps; KEPT,
+      zerobas says Disk full). 🔮 "1E10 / 1E30 Overflow, 16777216 Disk full" hit; "the record is
+      24-bit" missed. 🔴 NEW, SAME SLICE: **a FAILED GET / PUT leaves LOC at n - 1** (`PUT 1:PUT
+      1E9` -> 999999999, not 1; `PUT 5:GET 9` -> 55 with LOC 8, zerobas said 5 -- D-LOC's "a GET
+      refused past EOF leaves LOC" agreed only where the old LOC was n - 1). Shipped: GP_RECNO is
+      4 B at $EE7D (FCH_RECNOS's place; its other 28 B and the old $F079 word free); disk.rom
+      fac_mag32 (32-bit truncation, alternate-set digit cursor; fac_mag wraps it for MKI$),
+      rnd_parse to 2^32-1, hk_dget sets LOC := n - 1 before the I/O and n after, frnd_off (k *
+      reclen, CF past 2^24 -> PUT's 66 / GET's 55 without walking the chain), LOC reads +36.
+      The $5602..$5E10 fill overran by 98 B: rnd_loc / fac_mag / frnd_pass_len / frnd_off /
+      rnd_tab moved to the holes before $53A7 / $543C / $55DB, rnd_parse's float half past the
+      $4720 pin, frp_full before $5FE5. Disk ROM free (runs >= 16 B) 706 -> 540 B -- MORE than the
+      30-50 B quoted to Joost (32 bits, the LOC rule and the moves). Gate recbig-acceptance 25/25
+      ([`recbig_gate_wide.out`](scratchpad/recbig_gate_wide.out)); knife (HEAD's kernel / fat /
+      sysvars) 4 RED, the two Overflow rows stay ([`recbig_knife_wide.out`](scratchpad/recbig_knife_wide.out)).
+      Docs: GET, PUT, LOC, concepts/files-and-devices; ram-map.md regenerated.
+      Residual (D-RECSLOW, TIER 5): a record whose offset is under 2^24 but past the disk
+      (PUT #1,1000000 at LEN=1) walks the chain until the disk is full before saying 66.
       - [ ] 🐌 **D-RECSLOW: extending a random file far is ~1000x slower than the CF-3300**
         (found 2026-11-04 by D-RECBIG). 🎚️ TIER 5 — on-par speed. 🤖 **AUTONOMOUS** (speed is
         paused for ROM space; filed): `PUT #1,32767` on a fresh LEN=1 file: zerobas 1763 frames,
