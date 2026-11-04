@@ -31,6 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_preflight  # noqa: E402
+import probe_refcache  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX", shutil.which("openmsx") or "/opt/homebrew/bin/openmsx")
 REF, ZB = "National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"
@@ -67,7 +68,7 @@ def run_one(machine: str, image: str, times: list[float], typed: str | None = No
     open(tcl, "w").write("\n".join(lines) + "\n")
     cmd = [OMSX, "-machine", machine, "-diska", dsk, "-command",
            "set renderer none; set sound_driver null", "-script", tcl]
-    try:
+    def run():
         proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         deadline = time.time() + 30 + times[-1] * 2
@@ -78,6 +79,16 @@ def run_one(machine: str, image: str, times: list[float], typed: str | None = No
             time.sleep(1)
             if proc.poll() is None:
                 os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "OK"
+    try:
+        # D-REFBYPASS (2026-11-04, Joost: "Cache it, then re-run"): the launch goes
+        # through the reference store -- the CF-3300's reading of an image is a
+        # constant, so a re-run boots only the machine whose ROM moved. The disk is
+        # keyed by its bytes (a fresh /tmp copy per run); it is an INPUT only here,
+        # the corpus never reads it back. A watchdog kill is never stored.
+        probe_refcache.cached_run(cmd, [out], run, media=[dsk],
+                                  ok=lambda v: v != "TIMEOUT")
         caps = {}
         if os.path.exists(out):
             for ln in open(out):
@@ -217,7 +228,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--only", default="")
     ap.add_argument("--times", default="20,45")
-    ap.add_argument("--out", default="/tmp/diskcorpus.json")
+    # not /tmp: the 2026-10-21 run's JSON was lost there, and --reuse-ref / the
+    # zerobas-only re-run need it (2026-11-04)
+    ap.add_argument("--out", default=os.path.expanduser("~/.cache/zerobas/diskcorpus.json"))
     ap.add_argument("--resume", action="store_true", help="keep --out's rows, run the rest")
     ap.add_argument("--reuse-ref", metavar="PREV_JSON",
                     help="run ZEROBAS ONLY, against the reference rows a previous --out holds "
@@ -226,6 +239,7 @@ def main() -> int:
                     help="with --reuse-ref: only the images whose PREVIOUS class is in this "
                          "comma list (e.g. ZB-NOBOOT,ZB-ONLY,FILES-DIFF,FILES-EMPTY)")
     a = ap.parse_args()
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     if not a.dir or not os.path.isdir(a.dir):
         sys.exit("give the collection with DISKCORPUS_DIR or --dir")
     if os.path.basename(os.path.normpath(a.dir)).lower() == "my_disks":
@@ -273,6 +287,7 @@ def main() -> int:
               flush=True)
         json.dump({"times": times, "results": results, "tally": tally}, open(a.out, "w"), indent=1)
     print("TALLY", json.dumps(tally, sort_keys=True))
+    print(probe_refcache.summary())
     return 0
 
 

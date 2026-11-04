@@ -3247,6 +3247,15 @@ item — do **one item per session** to keep context lean.
       | FILES-DIFF | 9 | mostly NOISE (the banners' version numbers, 32- vs 40-column wrapping); real candidates: no-waste.dsk (zerobas lists none), facdemo3.di2 (1 against 41), kq.dsk (two missing at the end) |
       | ZB-ONLY | 6 | zerobas runs a program where the CF-3300 sits in direct mode (BREAKER: zerobas at line 10) -- read each |
       | FILES-EMPTY | 1 | |
+      📏 **RE-RUN 2026-11-04, CACHED** ([`diskcorpus_20261104.out`](scratchpad/diskcorpus_20261104.out); Joost: *"Cache
+      it, then re-run"*): diskcorpus_run.py's launches now go through the reference store
+      (`cached_run`, the disk keyed by its bytes) and its JSON lives in ~/.cache/zerobas, not /tmp
+      (the 10-21 one was lost there). 143 images in 123 s: **BOTH-RUN 118 (was 92), ZB-NOBOOT 1
+      (was 27)**, FILES-SAME 11, FILES-DIFF 8, ZB-ONLY 4, FILES-EMPTY 1. Every non-match is a filed
+      one: ZB-NOBOOT is GAUNT (closed 10-27, written for RAM in slot 3-2); ZB-ONLY are BREAKER
+      (MSX2), TestameB and calculus (the CF-3300 crashes, 10-23) and ss-final (flips run to run);
+      FILES-DIFF are mostly one listing line apart. 🔮 "close to 10-21 minus the 18 D-BOOTDATE
+      disks" -- MISSED: 26 of the 27 ZB-NOBOOT now boot.
       🔴 **CLASS A (18 of the 27 ZB-NOBOOT): the CF-3300 reaches MSX-DOS's `Enter date` and
       zerobas BASIC** -- including disks whose root directory holds NO system file at all
       (empty.dsk has no entries; almost_real.dsk's "directory" is art text). zerobas reads
@@ -9053,7 +9062,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11544 (T-6FE392)8 (T-529ABE)` from `TODO.md:17226 (T-529ABE)`: a
+      `TODO.md:11553 (T-6FE392)8 (T-529ABE)` from `TODO.md:17235 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12013,7 +12022,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17226 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17235 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
