@@ -247,6 +247,20 @@ item — do **one item per session** to keep context lean.
       D-PLAYQUEUE saw.
       (4) Two side findings filed on their own: a bare `R` is a QUARTER rest whatever `L` says
       (D-PLAYBARER), and `R.` is error 5 (D-PLAYRDOT).
+      ✅ **CROSS-CHECKED ON THE CF-3300 (Joost 2026-11-05: "perhaps cross-check against the
+      3300"), all five programs three-way** ([`playrate_measure_3way.out`](scratchpad/playrate_measure_3way.out),
+      [`playrate_grid_3way.out`](scratchpad/playrate_grid_3way.out),
+      [`playrate_rest_3way.out`](scratchpad/playrate_rest_3way.out),
+      [`playrate_dots_3way.out`](scratchpad/playrate_dots_3way.out),
+      [`playrate_dots2_3way.out`](scratchpad/playrate_dots2_3way.out)). The CF-3300 is a 60 Hz
+      machine, so its tempo frames are 14400 / tl (T120 quarter 30, T255 quarter 14), and
+      every row fits the same rule in ITS frames: **max(frames, 5)** after the dots (T255 L64
+      16 notes 94 - 13 = 81 = 16 x 5 + 1; T32 L64 7 a note, above the floor; T200 L16. 4 + 2 =
+      6). The floor is 5 FRAMES on both, not a time. A bare `R` is a quarter (T120: 486 = 16
+      x 30 + 1 + A), `R.` is ERR 5, the music starts at PLAY's return (A a jiffy or two longer
+      than the VG-8020's). 🔴 The first three-way run TIMED OUT on the CF-3300 in every program
+      -- a disk machine waits at boot without run_programs' `@DISK` (date answer + disk); the
+      probe now adds `1 REM @DISK` for that machine only.
       ➡️ **NEXT (asked 2026-11-05):** the faithful build is the floor itself -- pt_getframes'
       minimum 1 becomes 5 (tests/mml_ref.py note_frames with it); (3) is a smaller follow-up.
 
@@ -9189,7 +9203,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11680 (T-6FE392)8 (T-529ABE)` from `TODO.md:17366 (T-529ABE)`: a
+      `TODO.md:11694 (T-6FE392)8 (T-529ABE)` from `TODO.md:17380 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12149,7 +12163,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17380 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
