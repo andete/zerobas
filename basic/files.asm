@@ -723,6 +723,61 @@ arf_addr:
                 xor     a
                 ld      (ARY_ERR),a         ; A 0, Z, CF clear: ary_engine_call's OK exit
                 ret
+; moved here from basic/vars.asm (2026-11-05, D-TRAPCOST round 4: room in front of $4EF8)
+; --- var_load_fac: BC=key, A=type -> FAC set, FACTYP=type, DE=int16 fast ----
+; path (§9.4/§10.3 discipline: same sticky-FACTYP + flt_int_result contract
+; ev_f_float uses for literals). An unset variable reads back as 0 (MSX auto-
+; init). Clobbers A, B, C, D, E, H, L.
+var_load_fac:
+                push    af                  ; stash the target type across the call
+                call    var_find_typed      ; BC,A -> CF/HL
+                jr      c,vlf_found
+                pop     af                  ; A = target type (unset -> zero value)
+                ld      (FACTYP),a
+                cp      2
+                jp     z,vlf_unset_int
+                ; lead byte 0 -> float zero, DE = 0: C4 (2026-10-03) shares expr.asm's
+                ; ecpst_zero tail (`xor a / ld (FAC),a / jp ret_de0`) -- one jp below.
+                ; 🔴 D-FACZERO DELIBERATELY DOES *NOT* CALL fac_zero_mantissa HERE,
+                ; AND ITS OWN KNIFE IS WHY. K-FZ3 removed the call that used to sit
+                ; on this line and moved ZERO rows -- including `z.unset` /
+                ; `z.dunset`, added specifically to witness it. The reason is that
+                ; `A!=B!` on an unset B! does not hand FAC's bytes to the store: it
+                ; RE-PACKS through widen_rhs_operand + round_single_and_pack, whose
+                ; own zero exit is already canonical. So the call was 3 bytes no row
+                ; could defend, and this project does not ship guards like that.
+                ; ⚠️ IT COMES BACK THE DAY A CONSUMER READS FAC WITHOUT RE-PACKING,
+                ; and `MKS$`/`MKD$` are exactly that consumer -- see
+                ; docs/spec-basic-faczero.md §5.
+                jp      ecpst_zero
+; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
+; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
+; escaping relative jump, not entered by fallthrough, same ROM region).
+; The NAME and every call site survive; un-alias here for a distinct face.
+; (vlf_unset_int = vptr_none: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
+vlf_found:
+                pop     af                  ; A = type (== the entry's own stored type)
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> value field (entry+3)
+; vlf_value: A = type (2/4/8), HL = a value field -> FACTYP = A, DE = the int16
+; (type 2) or FAC = the float + flt_to_int16's DE. ev_f_arr (arrays.asm) joins
+; here with an array element's address (D-REREAD batch 6).
+vlf_value:
+                ld      (FACTYP),a
+                cp      2
+                jr      z,vlf_found_int
+                ld      c,a                 ; C = byte count (4 single / 8 double)
+                ld      b,0
+                ld      de,FAC
+                ldir                        ; HL = value field (source), DE = FAC
+                jp      flt_to_int16        ; DE = int16 fast path (tail call)
+vlf_found_int:
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ret
+
 ; 📌 D-BASICINT PIN $6CF3 (2026-10-15): games (Harry Fox) drop BLOAD,R's return
 ; address and `jp $6CF3`, the reference's continuation, which then runs the rest
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row

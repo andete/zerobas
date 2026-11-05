@@ -61,7 +61,7 @@ p0_nodisk_dev equ 0280AH   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 028D9H   ; main's skipsp_test
 p0_upcase equ 042CAH   ; main's upcase
-p0_eval equ 04ABBH   ; main's eval
+p0_eval equ 04A97H   ; main's eval
 p0_eval_byte_arg equ 04549H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042DAH   ; main's stmt_bare_end
 p0_mxf_require_end equ 03DA6H   ; main's mxf_require_end

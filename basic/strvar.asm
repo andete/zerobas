@@ -76,6 +76,14 @@ str_eval:
                 jp      str_concat_tail     ; low region: append `+ operand` terms
 str_eval_one:
                 ld      a,(hl)
+                ; 🐌 D-TRAPCOST round 4 (2026-11-05): a NAME goes straight to the `$`
+                ; test -- it is the commonest operand (every numeric variable comes
+                ; through here first) and walked the 11 compares below to reach it.
+                cp      'Z'+1
+                jr      nc,seo_chain
+                cp      'A'
+                jr      nc,seo_name
+seo_chain:
                 cp      '"'
                 jp      z,str_eval_lit      ; repack: str_eval_lit is in the low
                                             ; region (str-engine.asm) — out of jr
@@ -113,6 +121,7 @@ str_eval_one:
                                             ; had 4 B and this pair is 5.
                 call    is_letter           ; a `$`-suffixed variable?
                 jr      nc,str_eval_no
+seo_name:
                 call    var_str_type        ; A=1 / CF set iff a string name
                 jr      nc,str_eval_no      ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.

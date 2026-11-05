@@ -17247,6 +17247,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the profile is flat now (ev_f, exec_stmt, ev_logic, dcc_fast_lp, nx_pack / nx_pki
       each 3-13 %), and str_eval_one still scans every numeric name once for nothing
       before ev_f scans it again.
+      📏 **ROUND 4 (2026-11-05): 54 -> 50 FRAMES PER 100 CALLS** ([`trapcost_cost5.out`](scratchpad/trapcost_cost5.out),
+      🔮 "~50" HIT; model 35262 -> 32632 T/pass). (8) ev_f (basic/expr.asm) sends a NAME
+      (`A`..`Z`) to ev_f_var and a one-digit token ($11..$1A) to ev_f_digit before its ~25-
+      compare chain ([`trapcost4_prof1.out`](scratchpad/trapcost4_prof1.out): 🔮 -1500..-1900 ->
+      -1841 HIT). (9) str_eval_one (basic/strvar.asm) sends a name straight to its `$` test
+      ([`trapcost4_prof2.out`](scratchpad/trapcost4_prof2.out): 🔮 ~-600 -> -789). The $4EF8 pad
+      held 4 B after (8): var_load_fac / vlf_value (44 B, absolute jp / call only) moved from
+      basic/vars.asm into the $6CF3 pad to make room. ➡️ NEXT: 32632 vs ~24570 T/pass -- the
+      double name scan itself (str_eval_one's var_str_type, then ev_f's var_name_key).
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

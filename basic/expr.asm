@@ -494,6 +494,19 @@ ev_f_pos:                                   ; unary '+' (D-UNARYPLUS; its notes 
 ev_f:
                 call    stk_guard           ; D-STACKFLOOR: no recursion below the floor
                 call    ev_sp
+                ; 🐌 D-TRAPCOST round 4 (2026-11-05): a NAME (`A`..`Z`, upper case in
+                ; the crunched text) and a one-digit token ($11..$1A) are the commonest
+                ; factors, and each walked the ~25 compares below first (~450 T a
+                ; variable). Neither range meets any value the chain tests.
+                cp      'Z'+1
+                jr      nc,eff_chain        ; tokens, lower case: the chain
+                cp      'A'
+                jp      nc,ev_f_var
+                cp      INT_DIGIT_BASE+10
+                jr      nc,eff_chain
+                cp      INT_DIGIT_BASE
+                jp      nc,ev_f_digit
+eff_chain:
                 ; empty parenthesised/argument expression: a factor can never
                 ; begin with a closing ')' or a ',' (ev_f is reached only where a
                 ; factor is REQUIRED -- expression start, or right after '(' /
