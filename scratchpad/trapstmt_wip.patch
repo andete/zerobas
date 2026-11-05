@@ -1,0 +1,248 @@
+diff --git a/basic/interp.asm b/basic/interp.asm
+index 6739296c..804d3a5d 100644
+--- a/basic/interp.asm
++++ b/basic/interp.asm
+@@ -621,6 +621,15 @@ exec_stmt:
+                                             ; token buffer) -- clobbering it made every
+                                             ; statement dispatch on $E3D4 -> syntax error
+                                             ; (Fable review 2026-07-16). DE is dead on entry.
++                ; 🪤 D-TRAPSTMT (2026-11-05): A TRAP IS DISPATCHED BETWEEN STATEMENTS,
++                ; not only between lines: on the VG-8020 an ON INTERVAL=1 handler
++                ; lands at every statement boundary of a long line; here it landed at
++                ; the line's end only (scratchpad/trapstmt_run.out). One RAM load in
++                ; the no-trap case, BEFORE skipsp_test so A needs no saving;
++                ; es_trap (basic/traps.asm) may not return.
++                ld      a,(TRAPPEND)
++                or      a
++                call    nz,es_trap
+                 call    skipsp_test ; leading spaces are skipped (spec §5)
+                 ret     z                   ; end of line -> back to the prompt
+                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+diff --git a/basic/program.asm b/basic/program.asm
+index 03f941db..44838bd4 100644
+--- a/basic/program.asm
++++ b/basic/program.asm
+@@ -629,13 +629,10 @@ rp_trapchk:                                 ; interrupt-trap dispatch point (T1)
+                 ; conservative reading -- preserve today's behaviour -- wins
+                 ; until it is characterized. Same reason rp_break skips the STOP
+                 ; trap's latch arm in direct mode.
+-                ld      a,(DIRECTF)
+-                or      a
+-                jr      nz,rp_run
+-                ld      a,(TRAPPEND)
+-                or      a
+-                call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
+-                jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
++                ; 🪤 D-TRAPSTMT (2026-11-05): THE TEST MOVED TO exec_stmt, which every
++                ; statement of the line -- the first one included -- passes through
++                ; (es_trap, basic/traps.asm, keeps the direct-mode rule above). Kept
++                ; here, it would count a deferred `X ON` twice at a line start.
+ rp_run:
+                 call    exec                ; run line (may set flags or hand off)
+                 ld      a,(ENDFLAG)
+diff --git a/basic/traps.asm b/basic/traps.asm
+index 4bc84060..aa989330 100644
+--- a/basic/traps.asm
++++ b/basic/traps.asm
+@@ -72,8 +72,107 @@ htimi_service:
+ ; only A, which event_poll's own entry `push af` has already saved.
+ trap_pend:
+                 ld      a,1
++tpd_set:
+                 ld      (TRAPPEND),a
+                 ret
++; trap_pend_late: TRAPPEND := 2, one statement of grace (D-TRAPLATCHWHEN,
++; 2026-11-05). On the VG-8020 an event held back by `INTERVAL STOP` fires after
++; the statement that FOLLOWS `INTERVAL ON`: `INTERVAL ON:C=C+1:C=C+1` -> the
++; handler sees C=1; `INTERVAL ON:GOTO 50` / `:REM` -> 0, that statement being
++; the one (scratchpad/traplatchwhen_run.out, _run2.out). es_trap counts it down.
++trap_pend_late:
++                ld      a,2
++                jr      tpd_set
++
++; 📍 D-TRAPSTMT (2026-11-05): tgt_store_ref .. tsr_put (basic/vars.asm's string
++; target stores) live here, past the $4EF8 pin: they left the span in front of
++; the $475A pin so exec_stmt's trap hook fits, and the span behind it is full.
++; --- tgt_store_ref: a READ string, BY REFERENCE (D-READREF, 2026-10-07) -----
++; in:  BC = key (scalar targets only), DE = the item's first byte IN THE PROGRAM
++;      TEXT, STRSCR[0] = its length, (TGT_ADDR).
++; The descriptor [len][ptr] is written straight into the target: no heap body.
++; Both references charge a READ string nothing -- 9 x 40-char DATA rows READ into
++; A$() leave FRE("") at 200 on the VG-8020, and ran out of string space at the
++; fifth here (probes/basic/basic_probe_readref.py; Vleermuis, a 1989 type-in,
++; died on it). Joost's ruling 2026-09-27: point at the program text. The heap's
++; GC already leaves a descriptor that points outside [FRETOP,C) alone; MID$
++; copies such a body out before writing (sub/strheap.asm sh_mid_store); an edit,
++; NEW or LOAD clears the variables (row `edit`), so none can dangle.
++tgt_store_ref:
++                ld      hl,RVDESC
++                ld      a,(STRSCR)
++                ld      (hl),a
++                inc     hl
++                or      a
++                jr      nz,tsr_ptr
++                ld      d,a
++                ld      e,a                 ; length 0 -> ptr 0, the heap's convention
++tsr_ptr:
++                ld      (hl),e
++                inc     hl
++                ld      (hl),d
++tgt_store_desc:                             ; D-LITREF: RVDESC already filled
++                ld      de,(TGT_ADDR)
++                ld      a,d
++                or      e
++                jr      nz,tsr_put          ; an array element: DE = its descriptor
++                ; D-NGRAM (2026-10-10): the scalar's slot through var_alloc_or_find
++                ; (type 1, the `$` unifier) instead of its open-coded twin -- 15 B.
++                ; Its contract is CF + HL = the entry / NC on OOM with FPERR set; no
++                ; caller of tgt_store_desc / _ref reads the flags (FPERR is the
++                ; signal: str-engine's `xor a`, ex_read's check_expr_errors).
++                ld      a,1
++                call    var_alloc_or_find
++                ret     nc
++                ld      de,3
++                add     hl,de
++                ex      de,hl               ; DE -> the scalar's descriptor
++tsr_put:
++                ld      hl,RVDESC
++                ld      bc,3
++                ldir
++                ret
++
++; es_trap: exec_stmt's statement-boundary trap test (D-TRAPSTMT, 2026-11-05).
++;   IN:  TRAPPEND != 0, HL = the statement about to run (spaces not yet skipped;
++;        exec_stmt skips them next anyway, so HL may come back past them).
++;   OUT: returns -- nothing fired (BC, DE kept: a handler's entry contract; A, F
++;        free: exec_stmt reloads A); or does NOT return: a trap fired, its GOSUB
++;        frame resumes at HL, and exec leaves as a GOTO to the handler line
++;        (GOTOTGT / GOTOFLAG, which rp_run hands to rp_goto) -- the run loop's
++;        own `call exec` return is the word under es_trap's.
++;   An end of line or a `:` is not a statement: ex_sep re-enters exec_stmt past
++;   the `:`, and the next line's first statement comes back here. Direct mode
++;   never dispatches (rp_trapchk's rule, moved with it).
++es_trap:
++                call    skipsp_test         ; A = the first non-space, Z = end of line
++                ret     z
++                cp      COLON
++                ret     z
++                ld      a,(TRAPPEND)
++                dec     a
++                jr      nz,tpd_set          ; 2 -> 1: this statement runs first
++                ld      a,(DIRECTF)
++                or      a
++                ret     nz
++                push    bc
++                push    de
++                push    hl
++                call    check_traps         ; CF=1 -> fired, CURLINE = the handler
++                jr      c,est_fired
++                pop     hl
++                pop     de
++                pop     bc
++                ret
++est_fired:
++                ld      hl,(CURLINE)
++                ld      (GOTOTGT),hl
++                ld      a,1
++                ld      (GOTOFLAG),a
++                ld      hl,8                ; hl de bc and es_trap's return are
++                add     hl,sp               ; dropped; the word under them is rp_run's
++                ld      sp,hl               ; `call exec` return (exec_stmt runs at
++                ret                         ; handler depth)
+ 
+ event_poll:
+                 push    af                  ; register-transparent on ALL paths (the
+@@ -555,5 +654,13 @@ trap_return_check:
+                 inc     (hl)                ; one more trap ON (inc keeps CF)
+                 rla                         ; CF = PENDING: re-latched in the handler?
+                 ret     nc
+-                jp      trap_pend           ; yes -> fire again at the next boundary
++                jp      trap_pend_late      ; yes -> fire again after ONE statement.
++                ; ⚠️ A KEPT DIVERGENCE, ON PURPOSE (D-TRAPSTMT, 2026-11-05). The
++                ; VG-8020 gives no grace here: a handler that outlasts a frame under
++                ; ON INTERVAL=1 livelocks it (scratchpad/trapstmt_slow.out: no output
++                ; in 60 s). zerobas runs the same handler in 0.96 frames against the
++                ; VG-8020's 0.39 (trapstmt_cost.out), so without the grace an
++                ; ordinary `H(M)=H(M)+1:RETURN` handler hung a program the reference
++                ; runs. With it, the main line advances one statement per dispatch
++                ; where zerobas is too slow, and nothing changes where it is not.
+ 
+diff --git a/basic/trapstmt.asm b/basic/trapstmt.asm
+index e0e85e5a..2e8beb49 100644
+--- a/basic/trapstmt.asm
++++ b/basic/trapstmt.asm
+@@ -94,7 +94,8 @@ ex_interval:
+                 ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
+                 call    set_state           ; (preserves HL)
+                 bit     7,(hl)
+-                call    nz,trap_pend        ; make check_traps look once more
++                call    nz,trap_pend_late   ; make check_traps look once more -- AFTER
++                                            ; the next statement (D-TRAPLATCHWHEN)
+                 jp      pop_exec
+ 
+ ; --- ON INTERVAL = <expr> GOSUB [<line>] -----------------------------------------
+diff --git a/basic/vars.asm b/basic/vars.asm
+index 7085a4a6..1115a78c 100644
+--- a/basic/vars.asm
++++ b/basic/vars.asm
+@@ -377,52 +377,6 @@ tsn_ary:
+                                             ; is a one-row knife rather than a no-op).
+                 jp      ary_store_write     ; array: element := DE, coerced
+ 
+-; --- tgt_store_ref: a READ string, BY REFERENCE (D-READREF, 2026-10-07) -----
+-; in:  BC = key (scalar targets only), DE = the item's first byte IN THE PROGRAM
+-;      TEXT, STRSCR[0] = its length, (TGT_ADDR).
+-; The descriptor [len][ptr] is written straight into the target: no heap body.
+-; Both references charge a READ string nothing -- 9 x 40-char DATA rows READ into
+-; A$() leave FRE("") at 200 on the VG-8020, and ran out of string space at the
+-; fifth here (probes/basic/basic_probe_readref.py; Vleermuis, a 1989 type-in,
+-; died on it). Joost's ruling 2026-09-27: point at the program text. The heap's
+-; GC already leaves a descriptor that points outside [FRETOP,C) alone; MID$
+-; copies such a body out before writing (sub/strheap.asm sh_mid_store); an edit,
+-; NEW or LOAD clears the variables (row `edit`), so none can dangle.
+-tgt_store_ref:
+-                ld      hl,RVDESC
+-                ld      a,(STRSCR)
+-                ld      (hl),a
+-                inc     hl
+-                or      a
+-                jr      nz,tsr_ptr
+-                ld      d,a
+-                ld      e,a                 ; length 0 -> ptr 0, the heap's convention
+-tsr_ptr:
+-                ld      (hl),e
+-                inc     hl
+-                ld      (hl),d
+-tgt_store_desc:                             ; D-LITREF: RVDESC already filled
+-                ld      de,(TGT_ADDR)
+-                ld      a,d
+-                or      e
+-                jr      nz,tsr_put          ; an array element: DE = its descriptor
+-                ; D-NGRAM (2026-10-10): the scalar's slot through var_alloc_or_find
+-                ; (type 1, the `$` unifier) instead of its open-coded twin -- 15 B.
+-                ; Its contract is CF + HL = the entry / NC on OOM with FPERR set; no
+-                ; caller of tgt_store_desc / _ref reads the flags (FPERR is the
+-                ; signal: str-engine's `xor a`, ex_read's check_expr_errors).
+-                ld      a,1
+-                call    var_alloc_or_find
+-                ret     nc
+-                ld      de,3
+-                add     hl,de
+-                ex      de,hl               ; DE -> the scalar's descriptor
+-tsr_put:
+-                ld      hl,RVDESC
+-                ld      bc,3
+-                ldir
+-                ret
+-
+ ; --- usr_fcerr: $475A, the published "Illegal function call" entry ----------
+ ; D-USRDEF (2026-11-04): the address every USRTAB vector holds at power-on on the
+ ; VG-8020 (read with PEEK: 475A x 10), so an un-DEF'd USR raises ERR 5 there; and
+@@ -432,6 +386,7 @@ usr_fcerr:
+                 ld      a,5                 ; Illegal function call
+                 jp      raise_error
+ 
++
+ ; --- tgt_store_str: the STRSCR field -> the resolved target -----------------
+ ; in:  BC = key (scalar targets only), STRSCR = [len][bytes], (TGT_ADDR).
+ ; Clobbers everything -- every caller already guards its text cursor on the

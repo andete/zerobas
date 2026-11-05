@@ -19494,6 +19494,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-TRAPLATCHWHEN's one-statement deferral after `X ON`. Measure a NON-latched event
       mid-line too (an interval that falls due during a long line) before relying on the
       latched rows alone.
+      📏 **MEASURED + BUILT + BACKED OUT, 2026-11-05 -- BLOCKED ON D-TRAPCOST (TIER 5).**
+      Non-latched ([`trapstmt_probe.py`](scratchpad/trapstmt_probe.py) -> [`trapstmt_run.out`](scratchpad/trapstmt_run.out),
+      ON INTERVAL=1, markers M=1..9 between a line's statements, the handler counts H(M)):
+      VG-8020 `0 32 37 42 29 28 40 41 40 163` -- every statement boundary; zerobas `0 .. 0
+      1547` -- the line's end only. 🔮 HIT. The fix was built (the WIP is
+      [`trapstmt_wip.patch`](scratchpad/trapstmt_wip.patch)): a TRAPPEND test in exec_stmt
+      before skipsp_test (3 instructions), es_trap beside check_traps (skips `:` and the
+      end of line, counts a TRAPPEND of 2 down, leaves exec as a GOTO to the handler with
+      the GOSUB frame resuming mid-line), trap_pend_late for `INTERVAL ON`, rp_trapchk's
+      line test removed, tgt_store_ref .. tsr_put moved past $4EF8 for room. It reproduced
+      every D-TRAPLATCHWHEN row (1 / 1 / 1 / 0 / 0). 🔴 **AND IT HUNG THE ROUND-1 PROGRAM**:
+      the handler `H(M)=H(M)+1:RETURN` costs 0.96 frames here against 0.39 on the VG-8020
+      ([`trapstmt_cost.out`](scratchpad/trapstmt_cost.out), 100 GOSUBs), so with ON
+      INTERVAL=1 the event has re-latched by RETURN and the resumed statement never runs.
+      The VG-8020 does the same with a handler that outlasts a frame -- no grace after
+      RETURN ([`trapstmt_slow.out`](scratchpad/trapstmt_slow.out): no output in 60 s). A
+      one-statement grace after the trap's RETURN unhung it ([`trapstmt_slow_after.out`](scratchpad/trapstmt_slow_after.out))
+      but left the round-1 program at ONE STATEMENT PER FRAME (still no output in 60 s,
+      [`trapstmt_after.out`](scratchpad/trapstmt_after.out)) where line-level dispatch gave
+      it a line. That trades this TIER 6 item for a TIER 2 / 5 regression, so it is NOT
+      shipped. ➡️ Make the trap path fast first (D-TRAPCOST), then apply the patch and
+      re-measure round 1 -- if a handler then fits a frame as on the reference, the grace
+      after RETURN can go too.
+
+- [ ] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
+      2026-11-05 by D-TRAPSTMT)**
+      🎚️ TIER 5 — on-par speed: `GOSUB` / `RETURN` + an array increment, and the trap
+      dispatch around it.
+      🤖 **AUTONOMOUS** — measure where the frames go first.
+      📏 [`trapstmt_cost.out`](scratchpad/trapstmt_cost.out): 100 x `GOSUB 100` with `100
+      H(M)=H(M)+1:RETURN` (DIM H(9), M=3) -- VG-8020 39 frames, zerobas 96. A trap fire adds
+      check_traps, gosub_push's ctl_alloc + ctl_reloc (the machine stack MOVED under the new
+      frame) and trap_return_check on top. It blocks D-TRAPSTMT: statement-level dispatch
+      livelocks or crawls under ON INTERVAL=1 while one handler costs a frame here.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER
