@@ -1206,6 +1206,59 @@ fcmp_b_zero:
 ; decides whether that means FPERR or plain silence). Does NOT check
 ; FACTYP==2 (every caller gates that itself). Clobbers A, B, C, D, E, H, L.
 domain_convert_core:
+                ; 🐌 D-TRAPCOST (2026-11-05): A 1..4-DIGIT INTEGER PART IS READ STRAIGHT
+                ; FROM THE PACKED BYTES. Every subscript and every int fast path lands
+                ; here with a small value, and the full unpack below cost ~1430 T a
+                ; call -- seven calls, 17 % of `GOSUB 100` / `H(M)=H(M)+1:RETURN`
+                ; (scratchpad/trapcost_trace.out). dexp 1..4 is <= 9999: in every
+                ; domain, never a wrap, so the answer is the first dexp digits
+                ; (truncated, as dig_to_word below) with the sign -- the slow path's
+                ; own dcc_word / dcc_neg result. Zero, |x| < 1 and dexp >= 5 fall
+                ; through. CVT (= ARGB) and WSRC are left alone here; neither is
+                ; read after a conversion.
+                ld      a,(FAC)
+                and     $7F
+                sub     65                  ; dexp - 1 (zero / |x|<1 wrap high)
+                cp      4
+                jr      nc,dcc_full
+                inc     a
+                ld      b,a                 ; B = dexp 1..4
+                ld      a,(FAC+1)
+                ld      h,a
+                ld      a,(FAC+2)
+                ld      l,a                 ; HL = digits 0|1|2|3, digit 0 on top
+                ld      de,0
+dcc_fast_lp:
+                push    hl
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                add     hl,hl
+                add     hl,de
+                add     hl,hl
+                ex      de,hl               ; DE *= 10
+                pop     hl
+                ld      a,h
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F                 ; A = the top digit
+                add     a,e
+                ld      e,a
+                adc     a,d
+                sub     e
+                ld      d,a                 ; DE += it
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl               ; next digit to the top
+                djnz    dcc_fast_lp
+                ld      a,(FAC)
+                or      a                   ; CF = 0
+                ret     p
+                jr      dcc_neg
+dcc_full:
                 ; 💰 D-REREAD batch 4 (2026-10-31, -44 B low region): dcc_bound5
                 ; folded in, one dig_to_word tail for every dexp 1..5, the bound
                 ; verdict straight from dig15_cmp's `cp 4` CF, the wrap test as

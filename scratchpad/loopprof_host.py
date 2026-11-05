@@ -78,6 +78,8 @@ CASES = {
     "b": ("A=I*7 body", "10 FOR I=1 TO 40:A=I*7:NEXT"),
     "c": ("empty I% loop", "10 FOR I%=1 TO 40:NEXT"),
     "d": ("empty default-type loop", "10 FOR I=1 TO 40:NEXT"),
+    # D-TRAPCOST (2026-11-05): the GOSUB / RETURN round trip a trap handler rides on
+    "e": ("GOSUB + H(M)=H(M)+1:RETURN", "10 DIM H(9):M=3:FOR I=1 TO 40:GOSUB 100:NEXT:END\n100 H(M)=H(M)+1:RETURN"),
 }
 
 
@@ -399,7 +401,9 @@ def main():
         report(p, k, label, text, a.passes, a.top, a.trace)
         res[k] = p.machine_t
     print("\n=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===")
-    ticks = {"a": (70, 137), "b": (98, None), "c": (8, 39), "d": (24, 32)}
+    ticks = {"a": (70, 137), "b": (98, None), "c": (8, 39), "d": (24, 32),
+             # e: trapstmt_cost.out measured 100 passes (VG 39, zb 96); x3 for the 300 scale
+             "e": (117, 288)}
     for k, t in res.items():
         vg, zb = ticks[k]
         fit = f"implies {300 * t / zb:.0f} usable T/tick" if zb else "zb ticks not measured"

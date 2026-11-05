@@ -840,17 +840,42 @@ ARY_AUTODIM_BOUNDS:
 ; walk pointer, still live across this call inside its loop -- survives
 ; unchanged, the same discipline evmc_sqr uses for the text cursor across
 ; subrom_call. Clobbers A,B,C,H,L (+DE, the output).
+; 🐌 D-TRAPCOST (2026-11-05): every caller passes a SMALL multiplier in DE (a
+; subscript, bound+1, an element size), and one element access ran three full
+; 16-step loops -- ~14 % of `GOSUB 100` / `H(M)=H(M)+1:RETURN`
+; (scratchpad/trapcost_prof.out). The acc is 0 until the first 1 bit, so
+; every leading 0 bit of the multiplier can be skipped without shifting it: a
+; zero high byte skips eight at once, then single bits until the first 1,
+; which loads the acc with the multiplicand outright.
 ary_mul16_checked:
                 push    ix                  ; save the caller's IX
                 ld      b,h
                 ld      c,l                 ; BC = multiplicand (operand 1, HL)
+                ld      a,d
+                or      a
+                ld      a,16
+                jr      nz,amc_set
+                ld      d,e
+                ld      e,0                 ; multiplier <<= 8: eight 0 bits gone
+                ld      a,8
+amc_set:
                 push    de
                 pop     ix                  ; IX = multiplier (operand 2, DE),
                                             ; consumed by the left-shift below
                 ld      hl,0
                 ld      d,h
                 ld      e,l                 ; DE:HL = 0 (32-bit acc; DE=hi, HL=lo)
-                ld      a,16
+amc_skip:
+                add     ix,ix               ; leading bit out
+                jr      c,amc_first
+                dec     a
+                jr      nz,amc_skip
+                jr      amc_done            ; multiplier 0: the product is 0
+amc_first:
+                ld      h,b
+                ld      l,c                 ; acc = multiplicand (0 << 1 + BC)
+                dec     a
+                jr      z,amc_done
 amc_lp:
                 add     hl,hl               ; acc <<= 1 (both arms shift first;
                 rl      e                   ; IX and DE:HL are independent, so the
@@ -864,6 +889,7 @@ amc_lp:
 amc_next:
                 dec     a
                 jr      nz,amc_lp
+amc_done:
                 ; DE:HL = the true 32-bit product (DE=high, HL=low)
                 ld      a,d
                 or      e                   ; A=0 iff DE(high)==0 -> no overflow;

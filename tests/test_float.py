@@ -340,6 +340,31 @@ def run_f2(m, s, ck):
             ckf(f"fac_to_int_strict({value})", cpu.de & 0xFFFF, want & 0xFFFF)
             ckf(f"fac_to_int_strict({value}) FPERR", err, 0)
 
+    # D-TRAPCOST (2026-11-05): domain_convert_core reads a 1..4-digit integer part
+    # straight from the packed bytes. Sweep that window and its edges in both
+    # domains -- each digit count, fractions, negatives, the 9999.x / 10000 seam,
+    # and the |x| < 1 / zero fall-throughs -- against plain truncation.
+    import random
+    rng = random.Random(20261105)
+    sweep = ["0", "0.5", "-0.99", "1", "-1", "9", "9.99", "10", "-10.5", "99.5",
+             "100", "999.999", "1000", "-1234.5", "9999", "9999.99999999", "-9999.9",
+             "10000", "-10000.5", "12345", "3", "3.0000000000001"]
+    for _ in range(120):                    # inside the strict domain: |x| < 32768
+        k = rng.randrange(0, 5)
+        sweep.append(str(D(rng.randrange(-32767 * 10 ** k, 32767 * 10 ** k)) / D(10) ** k))
+    for conv in ("fac_to_int_strict", "fac_to_int_addr"):
+        bad = []
+        for t in sweep:
+            value = D(t)
+            _poke_fac_from_decimal(m, s, value)
+            m.poke(FPERR, 0)
+            cpu = m.call(conv)
+            if m.peek(FPERR)[0]:
+                bad.append((t, "FPERR"))
+            elif cpu.de & 0xFFFF != int(value) & 0xFFFF:
+                bad.append((t, cpu.de))
+        ckf(f"{conv} truncation sweep ({len(sweep)} values, first bad {bad[:2]})", len(bad), 0)
+
     print("# --- F2: fac_to_int_addr (spec §10.3, address domain + wrap) ---")
     ADDR_CASES = [
         (D("2.9"), 2), (D("-2.5"), -2), (D("32767.5"), 32767),

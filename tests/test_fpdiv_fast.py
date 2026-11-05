@@ -29,7 +29,7 @@ one-digit-divisor binary shortcut) and must change nothing a caller can see:
   V3  the new quotient is the true quotient: for normalised inputs the decoded
       FAC equals the exact quotient truncated to 15 digits and rounded half-up
       (an oracle independent of both images).
-  K   knives: a difference planted on the new side only (DE, a FAC byte, an ARGB
+  K   knives: a difference planted on the new side only (DE, a FAC byte, an ARGA
       byte, a guest cell) must be reported, or the differential is blind.
   V4  T-states (host-counted, M1 waits included, sub-ROM tenant steps included)
       for the rows the item names, before and after; the new must be cheaper.
@@ -182,6 +182,14 @@ def dead_set(sym):
     # pop_lhs_and_probe's caller-return stash: D-REREAD batch 6 (2026-10-31) carries
     # that address down the frame in HL instead, so PLF_RA2 is no longer written.
     d |= set(range(sym["PLF_RA2"], sym["PLF_RA2"] + 2))
+    # CVT (= ARGB) and WSRC: domain_convert_core's own unpack target and source
+    # pointer. fp_div and every tenant end in fac_dbl_int16, whose conversion
+    # always overwrote both, so ARGB here was only ever the quotient a second time
+    # (FAC already holds it). D-TRAPCOST (2026-11-05) reads a 1..4-digit integer
+    # part straight from FAC's packed bytes and writes neither; every reader of
+    # ARGB widens an operand into it first.
+    d |= set(range(sym["CVT"], sym["CVT"] + 18))
+    d |= set(range(sym["WSRC"], sym["WSRC"] + 2))
     return d
 
 
@@ -566,7 +574,8 @@ def run():
     s0 = pair.s
     knives = [("register E", lambda m: setattr(m.cpu, "e", m.cpu.e ^ 1)),
               ("FAC+7", lambda m: m.poke(s0["FAC"] + 7, m.peek(s0["FAC"] + 7)[0] ^ 1)),
-              ("ARGB+9", lambda m: m.poke(s0["ARGB"] + 9, m.peek(s0["ARGB"] + 9)[0] ^ 1)),
+              # ARGB is DEAD after the conversion (dead_set); ARGA is still compared
+              ("ARGA+9", lambda m: m.poke(s0["ARGA"] + 9, m.peek(s0["ARGA"] + 9)[0] ^ 1)),
               ("DIVPAD+14 (FP_OPMODE)", lambda m: m.poke(s0["DIVPAD"] + 14,
                                                          m.peek(s0["DIVPAD"] + 14)[0] ^ 1))]
     for label, plant in knives:
@@ -628,6 +637,9 @@ def run():
             names[s[k] + i] = f"{k}+{i}"
     for k in ("FP_LHSVAL", "FP_SHIFTAMT", "MUL_CARRY", "FP_RSIGN"):
         names[s[k]] = k
+    for i in range(18):
+        names[s["CVT"] + i] = f"CVT+{i}"
+    names[s["WSRC"]], names[s["WSRC"] + 1] = "WSRC", "WSRC+1"
     print(f"      RAM that differed, all inside fp_div's own scratch / dead cells: "
           f"{', '.join(names[a] for a in sorted(seen_dead))}")
 

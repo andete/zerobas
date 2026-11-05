@@ -19599,6 +19599,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ▶️ **SPEED PAUSE LIFTED (Joost 2026-11-05, entirely, no byte floor)** -- the 2026-10-20
       pause ("pause working on speed and work on rom space first") is over; TIER 5 ranks above
       TIER 6 again, and this item is the first one picked.
+      📏 **ROUND 1 (2026-11-05): 96 -> 77 FRAMES PER 100 CALLS (VG-8020 39).** Host profile
+      first ([`loopprof_host.py`](scratchpad/loopprof_host.py) case (e) ->
+      [`trapcost_prof.out`](scratchpad/trapcost_prof.out), model 62669 T/pass = 298 ticks/300
+      vs measured 288): the GOSUB / RETURN machinery itself is small (gosub_push + ctl_alloc
+      + ret_frame ~3 %); the BODY is the cost. Two shared-code fixes, both value-identical:
+      (1) `ary_mul16_checked` (sub/arrays.asm) skips the multiplier's leading 0 bits -- three
+      16-step loops per element access, ~14 % ([`trapcost_prof2.out`](scratchpad/trapcost_prof2.out),
+      🔮 "-5000 T" -> -4924 HIT); (2) `domain_convert_core` (basic/float-arith.asm) reads a
+      1..4-digit integer part from FAC's packed bytes -- seven full unpacks per pass, 17 %
+      ([`trapcost_trace.out`](scratchpad/trapcost_trace.out), 🔮 "~50500 T/pass" -> 50216 HIT;
+      `A=I+7` 29116 -> 22621 T/pass on the way). Machine:
+      [`trapcost_cost2.out`](scratchpad/trapcost_cost2.out) 77 frames (🔮 "~80" HIT). Gates:
+      tests/test_arrays.py sweeps the multiply (565 pairs), tests/test_float.py the converter
+      (142 values x 2 domains; a planted `sub 64` turns 11 rows red); tests/test_fpdiv_fast.py
+      now names CVT (= ARGB) and WSRC DEAD after the conversion -- the old code always
+      overwrote them there, so they only ever repeated FAC. Cost: sub page 0 23 B, low region
+      58 B. ➡️ NEXT: the rest is name scanning (is_letter / upcase 23 calls, var_str_type,
+      var_name_key) and 5 sub-ROM crossings a pass (scalar + array lookups); D-TRAPSTMT needs a
+      handler well inside one frame.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER

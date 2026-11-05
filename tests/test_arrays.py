@@ -1026,6 +1026,30 @@ def run():
           f"[len] and the true [len][ptr_lo] as a bogus out-of-range ptr, "
           f"which sg_inrange rejects -> N would read 0)")
 
+    # D-TRAPCOST (2026-11-05): ary_mul16_checked skips the multiplier's leading 0
+    # bits (a whole zero high byte, then single bits). Its contract is unchanged
+    # -- DE = low 16 bits of HL*DE, CF iff the product needs more -- so sweep the
+    # edges the skip creates: multiplier 0, 1, a lone top bit in either byte,
+    # 255/256, all ones, against multiplicands 0, 1, small, and big.
+    import random
+    rng = random.Random(20261105)
+    mults = [0, 1, 2, 3, 7, 8, 11, 127, 128, 255, 256, 257, 0x7FFF, 0x8000, 0xFFFF]
+    cands = [0, 1, 2, 10, 255, 256, 4095, 4096, 0x7FFF, 0x8000, 0xFFFF]
+    pairs = [(a, b) for a in cands for b in mults]
+    pairs += [(rng.randrange(65536), rng.randrange(65536)) for _ in range(300)]
+    pairs += [(rng.randrange(65536), rng.randrange(16)) for _ in range(100)]
+    bad = []
+    for hl, de in pairs:
+        cpu = m.call("ary_mul16_checked", hl=hl, de=de, ix=0x1234)
+        p = hl * de
+        got = (cpu.d << 8 | cpu.e, carry(cpu), cpu.ix)
+        if got != (p & 0xFFFF, p > 0xFFFF, 0x1234):
+            bad.append((hl, de, got))
+    ok_mul = not bad
+    fails += not ok_mul
+    print(f"{'PASS' if ok_mul else 'FAIL'} ary_mul16_checked: {len(pairs)} pairs "
+          f"(DE = low 16 of HL*DE, CF = overflow, IX kept){'' if ok_mul else ' first bad ' + repr(bad[:3])}")
+
     print()
     print("ALL PASS -- arrays slice-1+2+4b+4c split (sub/arrays.asm)" if not fails
           else f"{fails} CASE(S) FAILED")
