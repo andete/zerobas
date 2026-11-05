@@ -19574,6 +19574,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the consumer as D-TEMPPOL's are) -- every string expression passes there, so it is
       FULL-gated, and D-FNSTR9 is to be re-measured after it (its `"1"+""` actuals are
       literals too).
+      ⚠️ **READ BEFORE BUILDING (2026-11-05): A TEMP ENTRY IS ASSUMED TO OWN A HEAP BODY.**
+      sub/strheap.asm says so outright (sh_src_is_temp: "UNIQUELY OWNED ... FIXED-ADDRESS"),
+      and two users act on it: sh_append (op 2) extends a temp's body IN PLACE
+      (D-CONCATPEAK), and she_snap_keep (op 16) hands a temp to str_set_key as-is. A temp
+      whose ptr is the PROGRAM TEXT would let the first `"AB"+X$` append into the program
+      itself. So the literal's slot needs either (a) every in-place mutator to refuse a
+      text-backed temp (ptr outside [FRETOP, C)) and copy instead, or (b) a counted
+      placeholder released by the literal's consumer -- which the release-by-STRPTR-identity
+      rule (D-TEMPPOL) does not support today, and keeping it to the statement's end is the
+      first-cut failure D-ADDR29 TEMPST already recorded. (a) is the shape; list every
+      op that writes through a temp's ptr before touching str_eval_lit.
 
 - [ ] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
       2026-11-05 by D-TRAPSTMT)**
