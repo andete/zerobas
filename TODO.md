@@ -19596,8 +19596,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       check_traps, gosub_push's ctl_alloc + ctl_reloc (the machine stack MOVED under the new
       frame) and trap_return_check on top. It blocks D-TRAPSTMT: statement-level dispatch
       livelocks or crawls under ON INTERVAL=1 while one handler costs a frame here.
-      ⏸️ **WAITS ON JOOST'S 2026-10-20 SPEED PAUSE** ("pause working on speed and work on
-      rom space first") -- a TIER 5 slice; not picked until he lifts it.
+      ▶️ **SPEED PAUSE LIFTED (Joost 2026-11-05, entirely, no byte floor)** -- the 2026-10-20
+      pause ("pause working on speed and work on rom space first") is over; TIER 5 ranks above
+      TIER 6 again, and this item is the first one picked.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER
@@ -19700,7 +19701,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`recwide_cf2.out`](scratchpad/recwide_cf2.out), [`recwide_cf3.out`](scratchpad/recwide_cf3.out)): the
       record is **32 bits**, not 24 -- 1E9 is Disk full with LOC 999999999, 4294967296 Overflow,
       and `PUT #1,4294967295#` even SUCCEEDS (LOF 4294967295: its free-space check wraps; KEPT,
-      zerobas says Disk full). 🔮 "1E10 / 1E30 Overflow, 16777216 Disk full" hit; "the record is
+      zerobas says Disk full -- 🏗️ **JOOST 2026-11-05: keep the better behaviour**, *"such a rare
+      corner case I see no practical way it'll ever happen"*). 🔮 "1E10 / 1E30 Overflow, 16777216 Disk full" hit; "the record is
       24-bit" missed. 🔴 NEW, SAME SLICE: **a FAILED GET / PUT leaves LOC at n - 1** (`PUT 1:PUT
       1E9` -> 999999999, not 1; `PUT 5:GET 9` -> 55 with LOC 8, zerobas said 5 -- D-LOC's "a GET
       refused past EOF leaves LOC" agreed only where the old LOC was n - 1). Shipped: GP_RECNO is

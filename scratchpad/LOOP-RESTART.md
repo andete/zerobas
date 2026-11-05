@@ -4,6 +4,13 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🟢 RULINGS 2026-11-05 — READ FIRST (they amend the tables below)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| speed pause LIFTED | offered lift now / lift with a ~256 B main-page-1 floor / lift at a D-ROMSIZE step; picked **"1"** (lift now, no floor) | TIER 5 back in plain tier order, ABOVE tier 6. First: D-TRAPCOST, then D-TRAPSTMT (`scratchpad/trapstmt_wip.patch`), D-RECSLOW. The 10-20 / 10-21 ROM-space rulings (interleave, keep the fast GC, pin pads are free space, no new RAM for the page-0 call-back) still hold |
+| `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
+
 ## 🟢 STATE AS OF 2026-10-31 — THE CURRENT ONE (the 2026-10-28 section below and every RULINGS table it points to still hold)
 
 - **z80flow LANDED (Joost, 383475d9 / be177f0f) — THE LOOP NOW USES IT (wired in 2026-10-31):**
