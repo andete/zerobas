@@ -19464,6 +19464,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (both 1 later). zerobas re-raises TRAPPEND at `INTERVAL ON` (spec T5 §6.1)
       so the next statement boundary dispatches; the reference apparently waits
       (for the next interrupt?). Pin it with a frame-accurate row before changing.
+      📏 **MEASURED 2026-11-05 -- THE REFERENCE DOES NOT WAIT FOR AN INTERRUPT; IT RUNS ONE MORE
+      STATEMENT** ([`traplatchwhen_probe.py`](scratchpad/traplatchwhen_probe.py) ->
+      [`traplatchwhen_run.out`](scratchpad/traplatchwhen_run.out), [`traplatchwhen_run2.out`](scratchpad/traplatchwhen_run2.out);
+      the handler records C = statements run since `INTERVAL ON` and E = TIME frames):
+      VG-8020 `INTERVAL ON` ending line 40 -> D 1 E 0 (line 50's `C=C+1` ran first), also
+      synced to just after an interrupt; `INTERVAL ON:C=C+1:C=C+1:..` -> 1; `INTERVAL ON:GOTO
+      50` -> 0 and `INTERVAL ON:REM X` -> 0 (the GOTO / REM IS the one statement). zerobas:
+      0 / 0 / **4** / 0 / 0. 🔮 "waits for the next interrupt (E 1)" MISSED. So the rule: a
+      latched event fires at the statement boundary AFTER the statement that follows
+      `X ON`. ⚠️ The `mid` row exposed a WIDER divergence, filed below as D-TRAPSTMT: zerobas
+      dispatches traps only at LINE boundaries. Fix them together (the one-statement rule
+      needs statement-level dispatch to be expressible at all).
+
+- [ ] 🔴 **D-TRAPSTMT — ZEROBAS DISPATCHES INTERRUPT TRAPS AT LINE BOUNDARIES, THE VG-8020
+      AT STATEMENT BOUNDARIES (found 2026-11-05 by D-TRAPLATCHWHEN's `mid` row)**
+      🎚️ TIER 6 — when a trap event is dispatched (a handler runs at the end of a
+      multi-statement line instead of between its statements).
+      🤖 **AUTONOMOUS** — a run-loop change, FULL-gated.
+      📏 `40 C=0:T0=TIME:INTERVAL ON:C=C+1:C=C+1:C=C+1:C=C+1` with an event latched: the
+      VG-8020's handler sees C=1, zerobas's C=4 -- every statement of the line ran
+      ([`traplatchwhen_run2.out`](scratchpad/traplatchwhen_run2.out) `mid`). The specs already
+      say "statement boundary" (docs/spec-basic-interrupt-traps.md, spec-traps-t5-interval.md
+      §6.1); the code checks TRAPPEND once per LINE (basic/program.asm rp_trapchk, before
+      `call exec`, which runs the whole line through exec_stmt's chain).
+      ➡️ Shape: a TRAPPEND test in exec_stmt (run mode only; one RAM load per statement --
+      price it against the tier-5 pins), leaving exec with the mid-line text pointer as the
+      trap GOSUB's return point (check_traps' frame: read what it records first), plus
+      D-TRAPLATCHWHEN's one-statement deferral after `X ON`. Measure a NON-latched event
+      mid-line too (an interval that falls due during a long line) before relying on the
+      latched rows alone.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER
