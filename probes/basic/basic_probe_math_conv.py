@@ -421,6 +421,19 @@ SIN_ABS_TOL = D("3E-14")          # abs-error bound over the moderate battery
                                   # (|x|<=~1000 -- the sim's own scoping)
 SIN_CR_FLOOR = 27                 # correctly-rounded (abs<=1 ulp) floor over
 COS_CR_FLOOR = 30                 # |val|>=.1 inputs -- drift tripwire
+# 🏗️ D-TANBIG (Joost 2026-11-04: "Adopt reference"): SIN / COS / TAN reduce the
+# angle the VG-8020's way, so the oracle for every trig row is the REFERENCE, not
+# mathematical truth -- near a multiple of pi the reference itself is ~1E-13 off
+# truth (sin(3.1415926535898) = -1.2566E-13, truth -2.07E-14). What remains is the
+# polynomial: "within 1-2 units of the 14th digit" (TODO.md D-TANBIG). The truth
+# bounds above stay as REPORTS; these are what a row must meet. 🔴 This gate is a
+# daily sweep (not in FULL), so it went red a day after D-TANBIG shipped and was
+# rebased on 2026-11-05 (scratchpad/math_red.out: 50 rows, each within one unit of
+# the reference's 14th digit, 28 of them equal).
+TRIG_REF_ABS = D("4E-14")         # SIN / COS: |zb - ref| (bounded in [-1,1])
+TRIG_REF_ULP = 2                  # TAN: ulps of the reference's 14 digits
+SIN_REF_EQ_FLOOR = 24             # SIN / COS rows EQUAL to the reference --
+COS_REF_EQ_FLOOR = 25             # drift tripwires, from the 2026-11-05 run (24/42, 25/42)
                                   # (ATN_EXACT_FLOOR "measured-1" precedent):
                                   # measured on THIS probe's own hardware
                                   # battery 2026-07-14, SIN 28/28 (100%), COS
@@ -1516,6 +1529,13 @@ _COS_PURE_RE = re.compile(r"^cos\((-?[0-9.eEdD+-]+)\)$")
 _TAN_PURE_RE = re.compile(r"^tan\((-?[0-9.eEdD+-]+)\)$")
 
 
+def _trig_kind(expr: str):
+    """'sin' / 'cos' / 'tan' if the expression calls one (D-TANBIG's reference
+    oracle), else None."""
+    m = re.search(r"\b(sin|cos|tan)\(", expr.lower())
+    return m.group(1) if m else None
+
+
 def _sin_arg(expr: str):
     """Return the Decimal argument if `expr` is a pure `sin(x)` call
     (x a bare numeric literal), else None."""
@@ -1674,6 +1694,20 @@ def main() -> int:
             return (ref_span is None and zb_span is None
                     and bool(zb_tail) and "error" in zb_tail.lower()
                     and bool(ref_tail) and "error" in ref_tail.lower())
+        trig = _trig_kind(expr)
+        if trig and expr not in SPAN_ONLY:
+            # D-TANBIG: the reference is the oracle (see TRIG_REF_ABS) -- the
+            # huge-angle TRIG_FLOOR rows too: their designed 0 / 1 / 0 floor was
+            # replaced by the reference's own 0 / 0 / Overflow (both agree).
+            if ref_span is None or zb_span is None:
+                return ref_span is None and zb_span is None and ref_tail == zb_tail
+            zb_val, ref_val = parse_basic_number(zb_span), parse_basic_number(ref_span)
+            if zb_val is None or ref_val is None:
+                return False
+            if trig == "tan":
+                d = ulp_dist(zb_val, ref_val)
+                return d is not None and d <= TRIG_REF_ULP
+            return abs(zb_val - ref_val) <= TRIG_REF_ABS
         if expr in _MATH_FACTYP_LEAK_TRUTH:
             zb_val = parse_basic_number(zb_span)
             if zb_val is None:
@@ -1809,6 +1843,7 @@ def main() -> int:
     pow_worst = D(0); pow_exact = 0; pow_total = 0   # POW accuracy summary
     pow_ref_deviations = []  # (expr, x, y, ref_val, truth) -- informational
     sin_zb_by_x = {}         # Decimal(x) -> zb_val, for the accuracy summary
+    trig_ref_by_x = {}       # ("SIN"|"COS", x) -> the reference value (D-TANBIG)
     cos_zb_by_x = {}         # + oddness/evenness cross-check below
     sin_ref_deviations = []  # (expr, x, ref_val, truth) -- informational
     cos_ref_deviations = []
@@ -1881,6 +1916,7 @@ def main() -> int:
             if zb_val is not None:
                 sin_zb_by_x[sin_x] = zb_val
             ref_val = parse_basic_number(ref_span)
+            trig_ref_by_x[("SIN", sin_x)] = ref_val
             truth = truth_sin14(sin_x)
             if ref_val is not None and ref_val != truth:
                 sin_ref_deviations.append((expr, sin_x, ref_val, truth))
@@ -1890,6 +1926,7 @@ def main() -> int:
             if zb_val is not None:
                 cos_zb_by_x[cos_x] = zb_val
             ref_val = parse_basic_number(ref_span)
+            trig_ref_by_x[("COS", cos_x)] = ref_val
             truth = truth_cos14(cos_x)
             if ref_val is not None and ref_val != truth:
                 cos_ref_deviations.append((expr, cos_x, ref_val, truth))
@@ -2120,10 +2157,14 @@ def main() -> int:
             print(f"  worst abs error {worst_abs:.2e} @ x={worst_x}; "
                   f"correctly-rounded (abs<=1 ulp, |val|>=.1) {cr}/{tot} "
                   f"({pct:.1f}%).")
-            if cr < floor:
-                print(f"FAIL  {name} correctly-rounded count {cr} < floor "
-                      f"{floor} -- uniform accuracy regression (all still "
-                      "within the abs bound but the exact-count collapsed).")
+            # D-TANBIG: the truth count is a REPORT now; the tripwire is the
+            # count EQUAL to the reference (TRIG_REF_ABS's header).
+            eq = sum(1 for x, v in zb_by_x.items() if trig_ref_by_x.get((name, x)) == v)
+            eq_floor = SIN_REF_EQ_FLOOR if name == "SIN" else COS_REF_EQ_FLOOR
+            print(f"  equal to the reference: {eq}/{len(zb_by_x)} (floor {eq_floor})")
+            if eq_floor is not None and eq < eq_floor:
+                print(f"FAIL  {name} rows equal to the reference {eq} < floor "
+                      f"{eq_floor} -- the polynomial drifted off the reference.")
                 ok = False
             print(f"  DOCUMENTED bounded deviation (§14.2, same framework as "
                   "ATN/EXP/LOG's own): the reduction+minimax-Horner chain is "
@@ -2216,14 +2257,11 @@ def main() -> int:
           "POW's positive-y integer path is REFERENCE-IDENTICAL BIT-FOR-BIT "
           "(§13.2), and its neg-y/frac/grammar-outlier rows hold their own "
           f"per-row truth-bound caps (documented bounded deviation, §13.2); "
-          f"SIN/COS are within {SIN_ABS_TOL} absolute of truth over their "
-          "broad battery and TAN within "
-          f"{TAN_MAX_ULP} ulp over its well-conditioned band (documented "
-          "bounded deviation, §14.2 -- the reference is 3-6 orders worse "
-          "here via its own weak stored pi), oddness/evenness hold exactly, "
-          "and the near-pi/2/large-|x| rows are pinned to captured-zerobas "
-          "(§14.8); "
-          "every reference ROM's own bias is documented above, never asserted "
+          "SIN/COS/TAN follow the reference's angle reduction (D-TANBIG, "
+          "Joost 2026-11-04 'Adopt reference'): SIN/COS within "
+          f"{TRIG_REF_ABS} of the reference, TAN within {TRIG_REF_ULP} ulp of "
+          "it, every error edge identical, oddness/evenness exact; the other "
+          "functions' reference bias is documented above, never asserted "
           "against" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1

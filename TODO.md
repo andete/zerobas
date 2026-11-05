@@ -20512,6 +20512,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       compares SIN/COS/TAN against the pre-D-DIVPACK image (changed on purpose). Docs: SIN.md,
       COS.md, TAN.md, concepts/numbers.md, spec-basic-mathpack-slice2.md §14 (superseded note).
       Residual, TIER 6, not filed as work: the last 1-2 digits are the polynomial's.
+      🔴 **AND THE DAILY `math-acceptance` WENT RED A DAY LATER (2026-11-05)** -- it is a sweep
+      suite, not in FULL, so this slice's FULL never ran it. 55 rows: every SIN / COS / TAN row
+      was asserted against MATHEMATICAL TRUTH, and the reference's reduction is ~1E-13 off
+      truth near multiples of pi (sin(3.1415926535898): reference -1.2566E-13, truth
+      -2.07E-14), plus the huge-angle rows pinned to the old designed floor (COS 1, TAN 0 where
+      both machines now say 0 / Overflow). Each failing row was within one unit of the
+      reference's 14th digit, 28 of 50 equal ([`math_red.out`](scratchpad/math_red.out)).
+      Rebased on the ruling: every trig row (the FACTYP-leak and huge-angle rows too) is
+      checked against the REFERENCE -- SIN / COS within 4E-14, TAN within 2 ulp, an error on
+      both sides equal -- and the correctly-rounded-vs-truth floors became "rows EQUAL to the
+      reference" floors (SIN 24/42, COS 25/42) ([`math_rebase.out`](scratchpad/math_rebase.out)).
+      Not caused by today's work: the same 55 failed with D-DBLNORM's fp_add change removed.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

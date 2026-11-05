@@ -1,0 +1,6 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: probe/tool change: probes/basic/basic_probe_math_conv.py
+  hours since the last full green: 0.6 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 14 daily suites are due (last green 25 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  emulator suites (1): math-acceptance
