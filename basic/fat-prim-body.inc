@@ -662,8 +662,8 @@ fat_alloc_cluster:
                                             ; DE = 0 would scan nothing and say "full"
                 ld      (FAT_WRTMP), de
                 ; FAT_FATSEC tracks which FAT sector is in FAT_MBUF; -1 = none loaded.
-                ld      hl, $FFFF
-                ld      (FAT_WRTMP2), hl    ; cached-sector = none
+                call    fac_cacheinit       ; 🐌 D-RECSLOW: HL = $FFFF, or (FAT_FATSEC)
+                ld      (FAT_WRTMP2), hl    ; when FAT_MBUF is dirty (disk/fat.asm)
                 ; 🏗️ D-FATENG: M30's per-operation allocation hint, DISK-SIDE ONLY.
                 ; disk/fat.asm scans from FAT_ALLOCHINT instead of restarting at 2
                 ; every time; the hint is reset to 2 by fat_mount_tail
@@ -716,6 +716,10 @@ fac_loop:
                 sbc     hl, de
                 pop     hl
                 jr      z, fac_have_sec     ; already loaded -> no re-read
+                push    hl
+                call    fac_flushdirty      ; 🐌 D-RECSLOW: a dirty buffer goes out
+                pop     hl                  ; before another sector replaces it
+                jr      c, fac_rderr
                 ld      (FAT_WRTMP2), hl    ; remember the new cached sector
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
@@ -783,7 +787,9 @@ fac_entry_from_wbuf:
                 ld      a, (hl)
                 jr      fac_comb
 fac_straddle:
-                ; read the next FAT sector into FAT_MBUF and cache it.
+                ; read the next FAT sector into FAT_MBUF and cache it -- a dirty
+                ; buffer written out first (🐌 D-RECSLOW; B0 is already taken).
+                call    fac_flushdirty
                 ld      hl, (FAT_FATSEC)
                 inc     hl
                 ld      (FAT_FATSEC), hl
@@ -986,9 +992,13 @@ fwe_finish:
                 ; writes this sector with both entries). Then it is DIRTY (2), and
                 ; the next write of this buffer -- or fat_write_fat_entry_hot, before
                 ; it loads another sector -- takes it out.
+                ; 🐌 D-RECSLOW (2026-11-05): FAT_DEFER is two bits now -- bit 0 "the
+                ; caller asks this write to wait", bit 1 "FAT_MBUF is dirty" -- so a
+                ; held sector can take a second deferred patch (frnd_locate's
+                ; extension: 3 -> 2); W3a's 1 -> 2 and 2 -> write are unchanged.
                 ld      a, (FAT_DEFER)
-                dec     a
-                jp      nz, fat_write_buf_allfats   ; 0 or 2: write now (it clears)
+                rrca
+                jp      nc, fat_write_buf_allfats   ; no request: write now (it clears)
                 ld      a, 2
                 ld      (FAT_DEFER), a
                 or      a                   ; Cy = 0

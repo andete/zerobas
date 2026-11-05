@@ -136,6 +136,14 @@ are. Each of W3b and W4 needs a cross-call cache and an audit of every user of
 a shared buffer (38 for `FAT_MBUF`, more for `FAT_DBUF`) to save 8–18 more.
 Pick them up if speed or D-FDCDI asks again.
 
+**W3b-within-one-call — built 2026-11-05 for D-RECSLOW.** A random `PUT` that
+extends the chain (frnd_locate's frl_ext) holds the FAT sector across every mark
+and link of that one call and writes it once at the end. `FAT_DEFER` became two
+bits (bit 0 "this write may wait", bit 1 "dirty"); `fat_alloc_cluster` scans a
+dirty buffer as cached and writes it out before loading another sector. Nothing
+outlives the call, so no other `FAT_MBUF` user is affected. `PUT #1,32767` at
+`LEN=1`: 451 FDC commands to 16 (`recslow_fdc_after.out`).
+
 **W3b — the FAT written at CLOSE, as the CF-3300 does.** Mark-used and link
 only change `FAT_MBUF` (dirty flag). The dirty sector is written to both copies
 when another FAT sector is needed, at `CLOSE`, and before any operation that

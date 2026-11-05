@@ -15,6 +15,35 @@
 ; `sub a` yields exactly A=$00 / F=$42 ($42 = Z|N: 0-0 sets Z+N, clears S/H/PV/C); the
 ; following loads do not disturb the flags, so the exit AF is exact. Inputs ignored
 ; (the kernel passes AF=C340 BC=0000 DE=DC80 HL=D606 IX=F195 IY=C0AB; none consumed).
+; 🐌 D-RECSLOW (2026-11-05): frnd_locate's chain EXTENSION, with the FAT sector HELD
+; in FAT_MBUF -- every mark and link a deferred patch (FAT_DEFER bit 0), the sector
+; written to both FAT copies only when the scan or a link needs another one, and
+; once at the end (frl_xdone, the $4FB8 fill). It was a read + two writes per mark
+; and per link, ~6 FDC commands a cluster: `PUT #1,32767` at LEN=1 issued 451
+; where the CF-3300 issues none before CLOSE (scratchpad/recslow_fdc.out). No state
+; outlives the call (frl_flush on every exit), so no other FAT_MBUF user sees a
+; dirty buffer. No frnd_next past the first new cluster: a fresh cluster's
+; successor is the chain's end, and a read would overwrite the held sector.
+; in: GP_CLUS = the chain's last cluster, GP_CLIDX = clusters still to add - 1.
+frl_ext:
+                call    frl_defer
+                call    fat_alloc_cluster   ; HL = the new cluster, its EOC deferred
+                jp      c, frl_xfail
+                push    hl
+                ld      de, (GP_CLUS)
+                ex      de, hl              ; HL = the last cluster, DE = the new one
+                call    frl_defer
+                call    fat_write_fat_entry_hot ; link it (the scan left FAT_MBUF/FATSEC)
+                pop     hl
+                jp      c, frl_xfail
+                ld      (GP_CLUS), hl
+                ld      hl, (GP_CLIDX)
+                ld      a, h
+                or      l
+                dec     hl                  ; (`dec` / `ld` keep Z)
+                ld      (GP_CLIDX), hl
+                jr      nz, frl_ext
+                jp      frl_xdone
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
 ; 📌 In the $4E4E..$4EDE fill (check_disk_walls, 2026-10-21).
@@ -214,6 +243,27 @@ fmd_tab:        db      2, 112, low 720,  high 720,  2  ; $F8 1 side, 80 tracks,
 ; (sfirst_body/snext_body/dirscan_match) live in the free tail; clean-room -- our
 ; own fat_mount/fat_find root-dir walk + published SFIRST/SNEXT contract. See
 ; docs/tier2-m19-spec.md.
+; 🐌 D-RECSLOW: frl_ext's exits and helpers (it is in the $4E20 fill above).
+frl_xdone:
+                call    frl_flush
+                ret     c
+                jp      frl_walked
+frl_xfail:
+                push    af                  ; the failure (CF, the code pending)
+                call    frl_flush           ; what was claimed and linked reaches the
+                pop     af                  ; disk, as before (a full disk fills first)
+                ret
+frl_defer:                                  ; FAT_DEFER bit 0; A only -- frl_ext
+                ld      a, (FAT_DEFER)      ; holds the link's clusters in HL / DE
+                or      1                   ; across it (an `ld hl` here sent the
+                ld      (FAT_DEFER), a      ; link to a garbage cluster: the host
+                ret                         ; rig scratchpad/recslow_host.py)
+frl_flush:
+                ld      a, (FAT_DEFER)
+                and     2
+                jp      nz, fat_write_buf_allfats   ; dirty: out (it clears the flag)
+                ld      (FAT_DEFER), a      ; clean: drop a request (A = 0, CF = 0)
+                ret
                 ds      $4FB8 - $, $00  ; pad up to the pinned $4FB8 SFIRST entry
 sfirst:
                 jp      sfirst_body     ; -> free-tail: find FIRST matching dir entry (M19)
@@ -6696,26 +6746,8 @@ dfo_done:
 
 ; --- S10.D: two RANDOM record-engine helpers (disk/kernel.asm hk_dget), at the
 ; end of this corridor; frnd_locate (in the $77BB fill) calls both.
-; frl_alloc -- GET (GP_FLAGS 0): CF = 1, past the end. PUT: a new cluster in HL
-; (marked end-of-chain), CF = 1 disk full (66 pending) / I/O.
-frl_alloc:
-                ld      a, (GP_FLAGS)
-                or      a
-                scf
-                ret     z
-                jp      fat_alloc_cluster
-; frnd_next -- HL = the cluster after HL. The FAT sector goes into FAT_MBUF, never
-; FAT_DBUF, which held the record until D-FLDDESC (it is the block's +9 now; the
-; choice stands): fat_read_fat_sector + fac_entry_from_wbuf,
-; the two halves this ROM's allocator already uses (the sub-ROM carried a private
-; 75 B copy of them). CF = 1 the read failed.
-frnd_next:
-                call    fat_read_fat_sector
-                ret     c
-                call    fac_entry_from_wbuf ; DE = the 12-bit entry
-                ex      de, hl
-                or      a
-                ret
+; (frl_alloc and frnd_next moved to disk/fat.asm's $46CB fill by D-RECSLOW: this
+; region's 2 B of slack could not take the FAT scan's new calls.)
 
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
@@ -7144,15 +7176,22 @@ frl_have:
                 ld      a, h
                 adc     a, $F0              ; CF iff HL >= $0FF8: the end of the chain
                 jr      nc, frl_have        ; a real cluster
-                call    frl_alloc           ; the chain ends: extend it (PUT) or stop
-                ret     c
-                push    hl
-                ld      de, (GP_CLUS)
-                ex      de, hl              ; HL = the last cluster, DE = the new one
-                call    fat_write_fat_entry ; link it
-                pop     hl
-                ret     c
-                jr      frl_have
+                ; 🐌 D-RECSLOW (2026-11-05): the chain ends -- extend it by GP_CLIDX + 1
+                ; clusters with the FAT sector HELD in FAT_MBUF: every mark and link is
+                ; a deferred patch (FAT_DEFER bit 0), and the sector goes to both FAT
+                ; copies only when the scan or a link needs another one, and once at the
+                ; end. It was a read + two writes per mark and per link, ~6 commands a
+                ; cluster: `PUT #1,32767` at LEN=1 issued 451 FDC commands where the
+                ; CF-3300 issues none before CLOSE (scratchpad/recslow_fdc.out). No state
+                ; outlives this call (frl_flush on every exit), so no other FAT_MBUF user
+                ; can see a dirty buffer. No frnd_next after the first new cluster: a
+                ; fresh cluster's successor is the end of the chain, and a read would
+                ; overwrite the held sector.
+                ld      a, (GP_FLAGS)
+                or      a
+                scf
+                ret     z                   ; GET: past the end
+                jp      frl_ext             ; PUT: disk/kernel.asm's $4E20 fill
 frl_walked:
                 ld      hl, (GP_CLUS)
                 ld      a, (GP_SECINCL)

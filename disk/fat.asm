@@ -65,6 +65,28 @@ dst_put:
 k_46BA:         jp      rdabs_body          ; $46BA: BDOS $2F RDABS canonical entry (M26)
                 ds      $46C8 - $, $00      ; anchor the canonical address
                 jp      k_46C8              ; $46C8: COMMAND.COM-load kernel veneer
+; 📍 D-RECSLOW: from disk/kernel.asm's $75A5 region (no room there).
+; frl_alloc -- GET (GP_FLAGS 0): CF = 1, past the end. PUT: a new cluster in HL
+; (marked end-of-chain), CF = 1 disk full (66 pending) / I/O.
+frl_alloc:
+                ld      a, (GP_FLAGS)
+                or      a
+                scf
+                ret     z
+                jp      fat_alloc_cluster
+; frnd_next -- HL = the cluster after HL. The FAT sector goes into FAT_MBUF, never
+; FAT_DBUF, which held the record until D-FLDDESC (it is the block's +9 now; the
+; choice stands): fat_read_fat_sector + fac_entry_from_wbuf,
+; the two halves this ROM's allocator already uses (the sub-ROM carried a private
+; 75 B copy of them). CF = 1 the read failed.
+frnd_next:
+                call    fat_read_fat_sector
+                ret     c
+                call    fac_entry_from_wbuf ; DE = the 12-bit entry
+                ex      de, hl
+                or      a
+                ret
+
                 ds      $46E6 - $, $00      ; pad to bdos_create_failpop (net-zero)
 bdos_create_failpop:
                 pop     hl
@@ -225,6 +247,21 @@ k_4788:         jp      rdrnd_body          ; $4788: BDOS $21 RDRND canonical en
                                             ; $4793 is $22 WRRND's own separate dispatch,
                                             ; same pad corridor, RDABS-shape)
 k_4793:         jp      wrrnd_body          ; $4793: BDOS $22 WRRND canonical entry (M26)
+; 🐌 D-RECSLOW (2026-11-05): fat_alloc_cluster's two dirty-buffer pieces
+; (basic/fat-prim-body.inc), here because the body's region has no room. FAT_DEFER
+; bit 1 = FAT_MBUF holds a patched sector not yet on disk (frnd_locate's extension).
+fac_cacheinit:                              ; HL = the scan's cached sector at entry
+                ld      hl, $FFFF
+                ld      a, (FAT_DEFER)
+                and     2
+                ret     z                   ; clean: none cached, read on first use
+                ld      hl, (FAT_FATSEC)    ; dirty: it IS the newest copy
+                ret
+fac_flushdirty:                             ; a dirty buffer to both FATs (CF = I/O)
+                ld      a, (FAT_DEFER)
+                and     2
+                ret     z
+                jp      fat_write_buf_allfats
                 ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
                 ds      $47B9 - $, $00      ; pad remainder (net-zero: anchors the 3b relocation below)
@@ -275,8 +312,9 @@ fat_write_fat_entry_hot:
                 jp      z, fwe_have         ; already loaded: no read
                 push    hl
                 ld      a, (FAT_DEFER)      ; D-WCACHE W3a: a deferred write of the
-                cp      2                   ; sector we are about to replace goes
-                call    z, fat_write_buf_allfats    ; out FIRST (it clears the flag)
+                and     2                   ; sector we are about to replace goes
+                call    nz, fat_write_buf_allfats   ; out FIRST (it clears the flag;
+                                            ; bit 1 = dirty since D-RECSLOW)
                 pop     hl
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
