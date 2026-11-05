@@ -167,3 +167,41 @@ inventing an XFAIL mechanism to hold one finding is how a battery learns to lie.
 They are recorded here with their measured reference values and reproduce on
 demand from the tracked scout. **Adding them to `CASES`/`WANT` is step 1 of
 whichever fix is chosen** — the rows exist, the oracle is banked.
+
+## 7. Build plan (2026-11-05) — the ruled pool route, as two passes
+
+Joost ruled the pool route on 2026-09-27; the divergence was re-measured on
+today's ROM before building ([`fnalias_today.out`](../scratchpad/fnalias_today.out):
+503 / 903 on both references, 505 / 909 here, controls equal). Since D-FNPOOL
+(2026-09-11) the CALLER's saved prefix already lives in the pool (`FNF_SAVE` /
+`FNF_RESTORE`); what still aliases is that the callee's slots are opened and
+filled ONE BY ONE while the next actual is evaluated (`dfn_formal` →
+`dfn_actual` → request 2 store, `basic/deffn.asm` `fn_st`).
+
+**The shape:** split the tenant's loop into two passes over the same two lists.
+
+1. **Evaluate.** For each formal / actual pair: request 1 (evaluate, in the
+   CALLER's scope — no slot of the callee is open yet), then a new request
+   that COERCES the value to the formal's type and appends it to a pool temp
+   block `[type][value]` (int 2, single 4, double 8, string a descriptor).
+   The delimiter checks (`dfn_delim`) and the arity errors happen here, as
+   today.
+2. **Bind.** Re-walk the formals: open each slot (key, type, `FN_FEND`), and
+   a second new request copies the temp's value in (`var_store_fac` from a
+   loaded FAC, or `str_set_key`). Free the temp block. Then the body, as now.
+
+**The hazard to design around first: GC.** A string actual parked in a pool
+temp is not a root, and evaluating the NEXT actual may collect. Two candidate
+roots: (a) `str_snapshot_to_temp` onto the temp-descriptor stack (already
+walked) — but nine string actuals may exceed its depth, so measure the
+reference's limit for `FNA$(A$,B$,...,I$)` first; (b) make the temp block a
+pool frame `sg_walk_fnframe` also walks (the FNSP chain already does this for
+saved prefixes). (b) is the faithful one if (a) shows a ceiling.
+
+**Error paths:** a fault in pass 1 leaves a temp block on the pool;
+`raise_error`'s guarded `FNF_UNWIND` must free it, so the temp block goes on
+the FNSP chain like the saved prefix.
+
+**Rows:** step 1 is the one §6 deferred — add `o.alias`, `o.alias.ctl`,
+`o.aliasnest`, `o.aliasnest.ctl` to `basic_probe_deffn.py` WITH the fix, plus
+a nine-string-formal row and a row whose second actual collects.
