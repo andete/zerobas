@@ -347,6 +347,9 @@ ndd_tape:
 ; crossing a direct call. LAST in the region, after every low-region pin, so no
 ; existing label moves; ex_on / ex_ff_stmt in page 1 reach it by `jp`.
                 include "basic/trapstmt.asm"
+; var_find_typed's no-FN-call walk (D-TRAPCOST): after trapstmt for the same
+; reason -- every low-region pin is already behind it.
+                include "basic/varfind.asm"
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

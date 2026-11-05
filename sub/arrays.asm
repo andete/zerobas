@@ -846,8 +846,16 @@ ARY_AUTODIM_BOUNDS:
 ; (scratchpad/trapcost_prof.out). The acc is 0 until the first 1 bit, so
 ; every leading 0 bit of the multiplier can be skipped without shifting it: a
 ; zero high byte skips eight at once, then single bits until the first 1,
-; which loads the acc with the multiplicand outright.
+; which loads the acc with the multiplicand outright. And a multiplicand of 1
+; (the first subscript's MULT) answers DE as it stands.
 ary_mul16_checked:
+                ld      a,h
+                or      a
+                jr      nz,amc_go
+                ld      a,l
+                cp      1
+                ret     z                   ; HL = 1: DE = DE * 1; `cp 1` on 1 = no CF
+amc_go:
                 push    ix                  ; save the caller's IX
                 ld      b,h
                 ld      c,l                 ; BC = multiplicand (operand 1, HL)
@@ -1467,11 +1475,16 @@ aryr_inrange:
                 ld      (iy+0),l
                 ld      (iy+1),h            ; OFFSET += subscript*MULT
                 pop     de                  ; [BND1] = bound_k+1
+                ld      a,(iy+5)
+                or      a                   ; 🐌 D-TRAPCOST: the LAST subscript's MULT
+                jr      z,aryr_mult_done    ; is never read (aryr_loop_done takes OFFSET
+                                            ; and ELSIZE), so its multiply is skipped
                 ld      l,(iy+2)
                 ld      h,(iy+3)            ; HL = MULT (old) again
                 call    ary_mul16_checked   ; DE = MULT*(bound_k+1) (trusted to fit)
                 ld      (iy+2),e
                 ld      (iy+3),d            ; MULT updated
+aryr_mult_done:
                 pop     hl                  ; [BND] advanced bounds cursor restored
                 jr      aryr_lp
 aryr_loop_done:

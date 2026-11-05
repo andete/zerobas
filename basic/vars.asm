@@ -594,7 +594,10 @@ tgt_desc_fix:
 ;                  reference through a scalar produced a phantom "syntax
 ;                  error": the cursor IX was silently trashed by
 ;                  ary_engine_call's own `ld ix,SUBROM_ENTRY_BASE_P0+...`).
-var_find_typed:
+; 🐌 D-TRAPCOST (2026-11-05): the label itself and its no-FN-call walk live in
+; basic/varfind.asm, at the low region's end (this file sits in front of the $475A
+; pin with ~3 B to spare); the tenant dispatch below is its FN-call-live arm.
+vft_engine:
                 ld      (ARY_KEY),bc
                 ld      (ARY_TYPE),a
                 ld      a,4                 ; op = SCALAR_FIND

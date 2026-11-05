@@ -343,6 +343,39 @@ def run():
     fails += not ok_cross
     print(f"{'PASS' if ok_cross else 'FAIL'}  keyed store + for_get('A') interop: DE={cpu_cross.de:#06x}")
 
+    # D-TRAPCOST (2026-11-05): var_find_typed walks [PRGEND+2, ARYTAB) in the main
+    # ROM when no FN call is live (basic/varfind.asm). A hand-built chain: the same
+    # name at three types (each a distinct key), a STRING entry (stride 6, not 4),
+    # names sharing name0, then lookups that must land on each entry's base, and
+    # misses that must not land anywhere -- including a key whose name matches an
+    # entry under another type.
+    base = 0xA000
+    m.poke_w(s["PRGEND"], base - 2)
+    m.poke(s["FN_FEND"], s["FN_PAREA"] & 0xFF)
+    chain = [(b"A", 0, 2), (b"A", 0, 8), (b"S", ord("X"), 1), (b"A", 0, 4),
+             (b"A", ord("B"), 2), (b"Z", 0, 8)]
+    at, addr = {}, base
+    for n0, n1, ty in chain:
+        width = 3 + (3 if ty == 1 else ty)
+        m.poke(addr, bytes([n0[0], n1, ty]) + bytes(range(1, width - 2)))
+        at[(n0[0], n1, ty)] = addr
+        addr += width
+    m.poke_w(s["ARYTAB"], addr)
+    bad = []
+    for (n0, n1, ty), want in at.items():
+        cpu = m.call("var_find_typed", b=n0, c=n1, a=ty)
+        if not carry(cpu) or cpu.hl != want:
+            bad.append(((chr(n0), n1, ty), carry(cpu), hex(cpu.hl), hex(want)))
+    for n0, n1, ty in ((ord("S"), ord("X"), 2), (ord("A"), ord("B"), 8),
+                       (ord("Q"), 0, 2), (ord("Z"), 0, 4)):
+        cpu = m.call("var_find_typed", b=n0, c=n1, a=ty)
+        if carry(cpu):
+            bad.append(("phantom", chr(n0), n1, ty, hex(cpu.hl)))
+    ok_walk = not bad
+    fails += not ok_walk
+    print(f"{'PASS' if ok_walk else 'FAIL'}  var_find_typed main-ROM walk: {len(at)} hits, "
+          f"4 misses over a mixed chain (string stride 6){'' if ok_walk else ' ' + repr(bad[:3])}")
+
     print()
     print("ALL PASS — vars.asm scalar store + type detection" if not fails
           else f"{fails} CASE(S) FAILED")

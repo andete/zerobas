@@ -19618,6 +19618,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       58 B. ➡️ NEXT: the rest is name scanning (is_letter / upcase 23 calls, var_str_type,
       var_name_key) and 5 sub-ROM crossings a pass (scalar + array lookups); D-TRAPSTMT needs a
       handler well inside one frame.
+      📏 **ROUND 2 (2026-11-05): 77 -> 66 FRAMES PER 100 CALLS** ([`trapcost_cost3.out`](scratchpad/trapcost_cost3.out),
+      🔮 "68" HIT). (3) `ary_mul16_checked` answers HL = 1 at once and `ary_resolve` skips the
+      LAST subscript's MULT update, which nothing reads ([`trapcost_prof5.out`](scratchpad/trapcost_prof5.out),
+      🔮 "~47900 T/pass" -> 47814 HIT; a planted always-skip turns 10 test_arrays rows red);
+      (4) `var_find_typed` walks the scalar chain IN MAIN when no FN call is live
+      (basic/varfind.asm, low region's end; it cost 60 B there on 2026-11-05, and the $475A
+      pin left vars.asm no room) -- a
+      ~370 T walk had paid ~1500 T of sub-ROM crossing ([`trapcost_prof6.out`](scratchpad/trapcost_prof6.out),
+      🔮 "~43500" -> 42943 HIT). tests/test_vars.py walks a hand-built mixed chain (a planted
+      numeric stride for a string entry runs away). Side effect worth noting: the EMPTY
+      `FOR I=1 TO 40:NEXT` loop models 4965 T/pass against the VG-8020's ~5040 -- on par.
+      ➡️ NEXT: case (e) 42943 vs ~24570 T/pass. Name scanning (is_letter / upcase / var_str_type /
+      var_name_key / str_eval_ix ~9 %), the two array resolves through the sub ROM (~2 x 3000 T
+      + 2 crossings), widen_and_finalize on the store.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER
