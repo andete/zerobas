@@ -1,0 +1,25 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 -u probes/basic/basic_probe_pustype.py
+/Users/joost/projects/zerobas/probes/basic/basic_probe_pustype.py:3: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  A string field (`!`, `&`, `\..\`) given a number was Syntax error here and Type
+scratchpad/pustype2_measure.bas
+  Philips_VG_8020                ENDED t=32.8  19 rows
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=31.8  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=31.8  SAME
+scratchpad/pustype_measure.bas
+  Philips_VG_8020                ENDED t=30.5  7 rows
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=28.9  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=28.9  SAME
+scratchpad/resnexteol_measure.bas
+  Philips_VG_8020                ENDED t=32.8  25 rows
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=31.5  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=31.5  SAME
+
+PASS: PRINT USING raises the references' type errors, at once

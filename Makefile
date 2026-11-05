@@ -2641,6 +2641,11 @@ playarr-acceptance: repack-machine
 prstr2x-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_prstr2x.py
 
+# --- pustype-acceptance: PRINT USING with a value of the wrong type (D-PUSTYPE) ---
+# Value kinds, field kinds and RESUME NEXT after an end-of-line error; vs the VG-8020.
+pustype-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_pustype.py
+
 # --- concat3-acceptance: the free string space a `+` chain needs (D-CONCAT3) ---
 # The 3-term threshold and six chain shapes, both targets vs the VG-8020.
 concat3-acceptance: repack-machine

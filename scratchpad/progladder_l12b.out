@@ -1,0 +1,6 @@
+L3_quiz
+  Philips_VG_8020                ENDED t=29.6  lpt 10 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=33.9  SAME  x1.15 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=33.9  SAME  x1.15 time
+
+PASS: 1 program(s), 0 divergent run(s)

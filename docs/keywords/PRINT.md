@@ -78,6 +78,8 @@ same statement for the printer.
 | `PRINT USING "##",5` (`,` instead of `;`) | error 2 |
 | `PRINT USING` with `;` and a field, but no value | error 24 |
 | `PRINT USING "abc";5` (no field in the format) | error 5 |
+| a string field (`!`, `&`, `\  \`) given a number | error 13; the value is worked out first, so `PRINT USING "!";1/0` is error 11 |
+| a number field given a string (`PRINT USING "##";"AB"`) | error 13, at once |
 | a number field more than 24 columns wide, e.g. 25 `#` | error 5 |
 
 None of the `PRINT USING` errors above prints anything first, except the last:
@@ -136,6 +138,18 @@ trailing separator) have not been measured on the reference. **RAM usage**:
 the set of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
+
+- **A field given the wrong kind of value** (fixed 2026-11-05, D-PUSTYPE /
+  D-RESNEXTEOL; found by program-ladder tests). A string field given a number
+  was `Syntax error` here and `Type mismatch` on both references, which also
+  work the value out first (`PRINT USING "!";1/0` is `Division by zero`). A
+  number field given a string raised `Type mismatch` only at the start of the
+  next statement: at the end of a line that was already the next line, so `ERL`
+  named the wrong line and `RESUME NEXT` skipped that line's first statement.
+  Both now raise at once, as on the VG-8020
+  ([readings](../../scratchpad/pustype2_measure.out),
+  [`RESUME NEXT`](../../scratchpad/resnexteol_measure.out)); gate
+  `pustype-acceptance`.
 
 - **`PRINT` kept its own list of which items are strings, and it had drifted**
   (fixed 2026-10-30, D-PRSTRFN; found by rereading the code). `PRINT INPUT$(1)`

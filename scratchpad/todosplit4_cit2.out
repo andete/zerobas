@@ -1,0 +1,8 @@
+selftest: GREEN control passes and a planted drift goes RED on TODO.md:5478 (T-6443D1); NOT-A-CITATION suppresses 1 citation(s) there and nothing else; D-CITESUBJ fires on two docs naming different blocks and not on agreement ✅
+todo-citations: 65 citation(s) into TODO.md / docs/TODO-done.md across 26 file(s)
+   54 verified against the block id
+    9 link targets agreeing with their label
+    2 id-less (line existence only -- NOT verified):
+        tools/pick_gates.py:487 -> TODO.md:12236
+        tools/pick_gates.py:488 -> TODO.md:12238
+    0 sentence(s) naming MORE THAN ONE block (D-CITESUBJ: at most one can be right)

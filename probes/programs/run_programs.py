@@ -149,6 +149,12 @@ proc __poll {} {
   after time 0.1 __poll
 }
 after time 0.5 __poll
+# D-LADFAST (2026-11-05): a program that runs AND ends between two 0.1 s polls was
+# never seen leaving direct mode, so phase 2 never began and the run TIMED OUT
+# (`PRINT "HI":ST$=1` with answers queued: zerobas loads and fails that fast, the
+# VG-8020 does not). A write of a line number's high byte (< $FF) to CURLIN starts
+# phase 2 the moment it happens; RAM only, no ROM byte read.
+debug set_watchpoint write_mem 0xF41D {$::wp_last_value != 0xFF} {if {$::__ph == 1} {set ::__ph 2}}
 """
 
 

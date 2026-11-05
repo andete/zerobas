@@ -113,6 +113,13 @@ been able to rate `RESUME`'s test programs.
 
 ## What we found, and how
 
+- **`RESUME NEXT` skipped a statement after a `PRINT USING` type error at the
+  end of a line** (fixed 2026-11-05, D-RESNEXTEOL; see
+  [`PRINT`](PRINT.md)). The error surfaced only once the next line had begun,
+  so `ERL` named that line and `RESUME NEXT` went past its first statement.
+  Six other errors raised at a line's end were already right and are the
+  controls ([readings](../../scratchpad/resnexteol_measure.out)).
+
 - **`RESUME NEXT` after the last statement never stopped** (fixed 2026-10-30,
   D-RESNEXTDIRECT). After an error on a program's last line, or in a line
   typed at the prompt while a program's `ON ERROR GOTO` was still set,

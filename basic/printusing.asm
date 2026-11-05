@@ -284,6 +284,13 @@ pu_emit_tail:
 ; number on overflow. HL = token cursor (guarded across div10). Clobbers everything.
 pu_do_number:
                 call    eval                ; DE = value; HL advanced
+                ; 🔴 D-RESNEXTEOL (2026-11-05): raise the value's deferred fault HERE.
+                ; A string in a numeric field (`PRINT USING "##";"AB"`) was left
+                ; pending and surfaced at the next statement boundary -- at a line's
+                ; end that is INSIDE the next line, so ERL named the wrong line and
+                ; RESUME NEXT skipped that line's first statement. Both references
+                ; raise it at once (scratchpad/resnexteol_measure.out).
+                call    check_expr_errors
                 push    hl                  ; guard the token cursor
                 ; --- D-PUNUM: route by TYPE ------------------------------------
                 ; The integer path is already right for FACTYP==2 (32767 and
@@ -397,7 +404,17 @@ pfi_done:
 ; pchar preserves all registers, so the B/C/HL loop counters survive each emit.
 pu_do_string:
                 call    str_eval            ; STRPTR -> the value [len][bytes]
-                jp      nc,stmt_error       ; a string field needs a string value
+                jr      c,pus_isstr
+                ; 🔴 D-PUSTYPE (2026-11-05): NOT Syntax error. A string field (`!`,
+                ; `&`, `\..\`) given a number is Type mismatch (13) on both
+                ; references, and the value is EVALUATED first, so its own fault
+                ; wins: `PRINT USING "!";1/0` is Division by zero (11)
+                ; (scratchpad/pustype2_measure.out). str_eval declined with HL at
+                ; the operand (an absent one never reaches here: ERR 24 already).
+                call    eval                ; the ONE evaluation; a raise stops here
+                call    check_expr_errors   ; a deferred fault of the value first
+                jp      type_mismatch_error
+pus_isstr:
                 push    hl                  ; guard the token cursor
                 ld      a,(PU_TYPE)
                 cp      1

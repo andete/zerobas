@@ -1,0 +1,10 @@
+10 REM D-PUSTYPE: which error a PRINT USING field of the wrong type raises
+20 ON ERROR GOTO 90:CLS
+30 FOR I=1 TO 7:READ F$,K:E=0
+40 IF K=1 THEN PRINT USING F$;"AB";5
+50 IF K=2 THEN PRINT USING F$;5;"AB"
+60 IF K=3 THEN PRINT USING F$;5
+70 IF K=4 THEN PRINT USING F$;"AB"
+80 LPRINT I;E;F$:NEXT:END
+90 E=ERR:RESUME NEXT
+100 DATA "\\ \\",1,"## ##",2,"\\",3,"##",4,"!",3,"&",3,"\  \ ##",1
