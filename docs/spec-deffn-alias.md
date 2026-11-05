@@ -205,3 +205,18 @@ the FNSP chain like the saved prefix.
 **Rows:** step 1 is the one §6 deferred — add `o.alias`, `o.alias.ctl`,
 `o.aliasnest`, `o.aliasnest.ctl` to `basic_probe_deffn.py` WITH the fix, plus
 a nine-string-formal row and a row whose second actual collects.
+
+### 7.1 Answered 2026-11-05: the reference parks string actuals on TEMPST — route (a)
+
+[`fnstrtemp_probe.py`](../scratchpad/fnstrtemp_probe.py) →
+[`fnstrtemp_run.out`](../scratchpad/fnstrtemp_run.out): `FNA$` with nine
+string formals, every actual a temporary (`"1"+""`), inside k pending
+`MID$("Z",1)+(` temporaries. **VG-8020: k=0 answers `19`, k=1 is already
+`String formula too complex`** — nine parked actuals plus one pending
+temporary (plus the body's own) pass its 10-deep stack. The control (no FN)
+fails only at k=10. So route (a), snapshotting each string actual onto the
+temp-descriptor stack, IS the reference's shape, ceiling included.
+🔮 "not parked, fails near k=10" MISSED. Two divergences surfaced on the way,
+filed in TODO as D-FNSTR9 (zerobas fails the k=0 call outright) and D-TEMPD10
+(the no-FN control: zerobas still answers at k=10).
+

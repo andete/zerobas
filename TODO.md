@@ -19545,6 +19545,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       re-measure round 1 -- if a handler then fits a frame as on the reference, the grace
       after RETURN can go too.
 
+- [ ] 🔴 **D-FNSTR9 — A `DEF FN` CALL WITH NINE TEMPORARY STRING ACTUALS IS `String formula
+      too complex` HERE AND ANSWERS ON THE VG-8020 (found 2026-11-05 by the D-FNALIAS plan)**
+      🎚️ TIER 6 — `DEF FN` with many string arguments built from expressions.
+      🤖 **AUTONOMOUS** — measured; fix it inside D-FNALIAS's two-pass build (§7.1).
+      📏 [`fnstrtemp_run.out`](scratchpad/fnstrtemp_run.out): `DEF FNA$(A$,..,I$)=A$+I$`,
+      `X$=FNA$("1"+"",..,"9"+"")` -> VG-8020 `19`, zerobas ERR 16. With one pending
+      `MID$("Z",1)+(` around it the VG-8020 is ERR 16 too -- it parks the actuals on its
+      10-deep TEMPST, so the ceiling is real, zerobas's is just one call lower.
+
+- [ ] 🔴 **D-TEMPD10 — TEN NESTED PENDING STRING TEMPORARIES ARE `String formula too
+      complex` ON THE VG-8020 AND ANSWER HERE (found 2026-11-05 by the D-FNALIAS plan)**
+      🎚️ TIER 6 — which of an error and a value a deep string expression gets.
+      🤖 **AUTONOMOUS** — measured.
+      📏 [`fnstrtemp_run.out`](scratchpad/fnstrtemp_run.out) `ctl` row: `X$=MID$("Z",1)+(` x k
+      around `"19"` -- both answer k=0..9; at k=10 the VG-8020 is ERR 16 and zerobas prints
+      `ZZZZZZZZZZ19`. D-ADDR29 TEMPST measured "10 pending, the 11th errs" with a different
+      expression shape; this one errs one level earlier there. Read which temporaries the
+      reference counts before moving zerobas's limit.
+
 - [ ] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
       2026-11-05 by D-TRAPSTMT)**
       🎚️ TIER 5 — on-par speed: `GOSUB` / `RETURN` + an array increment, and the trap

@@ -1,0 +1,6 @@
+Philips_VG_8 FN  k0=<19>  k1=<E 16 >  k2=<E 16 >  k5=<E 16 >  k8=<E 16 >  k9=<E 16 >  k10=<E 16 >
+Philips_VG_8 ctl k0=<19>  k1=<Z19>  k2=<ZZ19>  k5=<ZZZZZ19>  k8=<ZZZZZZZZ19>  k9=<ZZZZZZZZZ19>  k10=<E 16 >
+C-BIOS_MSX1_ FN  k0=<E 16 >  k1=<E 16 >  k2=<E 16 >  k5=<E 16 >  k8=<E 16 >  k9=<E 16 >  k10=<E 16 >
+C-BIOS_MSX1_ ctl k0=<19>  k1=<Z19>  k2=<ZZ19>  k5=<ZZZZZ19>  k8=<ZZZZZZZZ19>  k9=<ZZZZZZZZZ19>  k10=<ZZZZZZZZZZ19>
+refcache: 0 hit, 28 miss, 28 stored
+refcache: 0 hit, 28 miss, 28 stored
