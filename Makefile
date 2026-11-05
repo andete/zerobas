@@ -1394,6 +1394,10 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-INPQUOTE2 console half (2026-11-05): junk after a typed closing quote is ?Redo.
+inpredo-acceptance: repack-machine
+	python3 probes/basic/basic_probe_inpredo.py
+
 # D-INPQUOTE2 (2026-11-05): a STRING INPUT # field's quotes, and what it leaves.
 inpquote-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_inpquote.py $(ONLY)

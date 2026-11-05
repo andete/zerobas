@@ -1,0 +1,10 @@
+ROW '"AB"CD'   VG=[XY| 2 ] +Redo ZB=[XY| 2 ] +Redo SAME
+ROW '"AB"  '   VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB" ,CD' VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB",CD'  VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB" CD'  VG=[XY| 2 ] +Redo ZB=[XY| 2 ] +Redo SAME
+ROW '"AB""'    VG=[XY| 2 ] +Redo ZB=[XY| 2 ] +Redo SAME
+ROW '"AB'      VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+refcache: 0 hit, 14 miss, 14 stored
+PASS: console quote rows (0 diverge)
+refcache: 0 hit, 14 miss, 14 stored

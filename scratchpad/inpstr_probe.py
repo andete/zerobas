@@ -31,6 +31,10 @@ FILE = [("num", '5'), ("lead", '"  AB"'), ("trail", '"AB  "'), ("embed", '"A B"'
         ("qlead", '"  "+' + Q + '+"AB"+' + Q)]
 TYPED = ["  AB", "AB  ", "  AB  ", "A B", '"  AB  "', '"A,B"', "  AB  ,CD",
          '"AB"CD', '  "AB"', '"AB', 'A"B"']
+# D-INPQUOTE2's console half (2026-11-05): what may follow a closing quote
+TYPED2 = ['"AB"CD', '"AB"  ', '"AB" ,CD', '"AB",CD', '"AB" CD', '"AB""']
+if "console2" in sys.argv:
+    TYPED = TYPED2
 
 
 def show_lines(first):
@@ -80,7 +84,7 @@ def main():
     if "file" in which:
         print("FILE: PRINT #1,<w>:PRINT #1,\"NX\" then INPUT #1,A$ and LINE INPUT #1,R$ -> [A$ with _ | LEN | R$ ERR]")
         run(("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"), file_cases(), True)
-    if "console" in which:
+    if "console" in which or "console2" in which:
         print("CONSOLE: INPUT A$ typed -> [A$ with _ | LEN]")
         run(("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"), console_cases(), False)
     return 0

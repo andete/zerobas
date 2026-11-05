@@ -1,0 +1,10 @@
+ROW '"AB"CD'   VG=[XY| 2 ] +Redo ZB=[AB| 2 ] DIVERGES
+ROW '"AB"  '   VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB" ,CD' VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB",CD'  VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+ROW '"AB" CD'  VG=[XY| 2 ] +Redo ZB=[AB| 2 ] DIVERGES
+ROW '"AB""'    VG=[XY| 2 ] +Redo ZB=[AB| 2 ] DIVERGES
+ROW '"AB'      VG=[AB| 2 ] ZB=[AB| 2 ] SAME
+refcache: 7 hit, 7 miss, 7 stored
+FAIL: console quote rows (3 diverge)
+refcache: 7 hit, 7 miss, 7 stored

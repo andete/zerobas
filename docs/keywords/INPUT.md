@@ -8,8 +8,8 @@ SPDX-License-Identifier: 0BSD
 
 > **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded difference: text typed after a closing quote at the console
-> (below); in a file it agrees since 2026-11-05.
+> recorded difference: text after a closing quote read from a cassette file
+> (below); at the console and from a disk file it agrees since 2026-11-05.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -110,11 +110,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Text typed after a closing quote.** Typed at an `INPUT A$`, `"AB"CD` is
-`?Redo from start` on the VG-8020; zerobas takes `AB`. Measured on 2026-09-30
-([`inpquote_run.out`](../../scratchpad/inpquote_run.out)) and filed as a
-TIER 6 item, D-INPQUOTE2. The same edge in a file (`INPUT #`) agrees since
-2026-11-05.
+**Text after a closing quote in a cassette file.** From a disk file, and
+typed at the console, it is handled as on the references since 2026-11-05
+(*What we found*). A cassette file still drops what follows the quote, which
+is unmeasured on the references (D-INPQUOTE2, TIER 6).
 
 **Every error** is not yet proven: the full set of errors `INPUT` can raise
 has not been listed and compared yet. **RAM usage** is not proven either: the
@@ -122,6 +121,15 @@ RAM comparison has rows only for the file form `INPUT #`, none yet for the
 keyboard form.
 
 ## What we found, and how
+
+- **Text typed after a closing quote was accepted** (fixed 2026-11-05,
+  D-INPQUOTE2). At an `INPUT A$`, blanks or a comma may follow a closing
+  quote on the VG-8020 (`"AB"  ` and `"AB" ,CD` read `AB`); anything else --
+  `"AB"CD`, `"AB" CD`, `"AB""` -- is `?Redo from start`, and the question is
+  asked again. zerobas took `AB` and dropped the rest
+  ([`inpquote_console.out`](../../scratchpad/inpquote_console.out),
+  [`inpredo_gate.out`](../../scratchpad/inpredo_gate.out); each redo row is
+  read by typing a second answer, so a machine that hung could not pass).
 
 - **`INPUT #` dropped what followed a closing quote** (fixed 2026-11-05,
   D-INPQUOTE2). On the CF-3300, after a quoted field such as `"AB"CD`, `CD`
@@ -218,6 +226,8 @@ keyboard form.
 
 - `make prstrfn-acceptance` — `INPUT$(n)` as a bare `PRINT` item, alone, after
   a string, joined with `+` and compared (D-PRSTRFN).
+- `make inpredo-acceptance` — what may follow a closing quote typed at the
+  console.
 - `make inputcont-acceptance` — `?? ` for missing values, the prompt after a
   `?Redo`, and a `,` after the prompt (D-INPUTCONT, D-INPUTCOMMA).
 - `make casrbrk-acceptance` — `LINE INPUT #` from tape broken with Ctrl-STOP.

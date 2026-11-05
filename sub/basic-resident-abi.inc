@@ -48,7 +48,7 @@ p0_dpl_direct equ 06508H   ; main's dpl_direct
 p0_df_notfound equ 06671H   ; main's df_notfound
 p0_loc_missing equ 06231H   ; main's loc_missing
 p0_clr_wipe equ 053ABH   ; main's clr_wipe
-p0_end_line_end equ 06FB6H   ; main's end_line_end
+p0_end_line_end equ 06FC8H   ; main's end_line_end
 p0_disk_error equ 0665EH   ; main's disk_error
 p0_load_error equ 063EBH   ; main's load_error
 p0_dev_lpt equ 06D0FH   ; main's dev_lpt
@@ -66,12 +66,12 @@ p0_eval_byte_arg equ 04545H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042D6H   ; main's stmt_bare_end
 p0_mxf_require_end equ 03D53H   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
-p0_fch_check_d equ 06ECFH   ; main's fch_check_d
-p0_fch_check_nz equ 06EE0H   ; main's fch_check_nz
+p0_fch_check_d equ 06EE1H   ; main's fch_check_d
+p0_fch_check_nz equ 06EF2H   ; main's fch_check_nz
 p0_fch_modes_ptr equ 06543H   ; main's fch_modes_ptr
-p0_fch_ctx_addr equ 06E5EH   ; main's fch_ctx_addr
-p0_fch_do_close_ch equ 06EEAH   ; main's fch_do_close_ch
-p0_fch_close_all equ 06F1EH   ; main's fch_close_all
+p0_fch_ctx_addr equ 06E70H   ; main's fch_ctx_addr
+p0_fch_do_close_ch equ 06EFCH   ; main's fch_do_close_ch
+p0_fch_close_all equ 06F30H   ; main's fch_close_all
 p0_fopen_cross equ 06624H   ; main's fopen_cross
 p0_fatprim_op equ 06374H   ; main's fatprim_op
 p0_cas_capture_cut equ 03D77H   ; main's cas_capture_cut
@@ -80,8 +80,8 @@ p0_cas_bufp_set equ 0646BH   ; main's cas_bufp_set
 p0_cas_ascii_setup equ 064A9H   ; main's cas_ascii_setup
 p0_cas_write_ea_header equ 06576H   ; main's cas_write_ea_header
 p0_cas_ascii_drive equ 064B0H   ; main's cas_ascii_drive
-p0_dsk_aopen equ 06F8EH   ; main's dsk_aopen
-p0_dsk_ascii_drive equ 06FA2H   ; main's dsk_ascii_drive
+p0_dsk_aopen equ 06FA0H   ; main's dsk_aopen
+p0_dsk_ascii_drive equ 06FB4H   ; main's dsk_ascii_drive
 p0_run_prog_top equ 06427H   ; main's run_prog_top
 p0_disk_prog_load equ 064E7H   ; main's disk_prog_load
 p0_sv_tenant equ 065FFH   ; main's sv_tenant
@@ -106,7 +106,7 @@ p0_dpl_oom equ 06515H   ; main's dpl_oom
 p0_print_msg equ 07662H   ; main's print_msg
 p0_err_verify equ 06489H   ; main's err_verify
 p0_exa_loop equ 076DEH   ; main's exa_loop
-p0_le_call_op equ 06E64H   ; main's le_call_op
+p0_le_call_op equ 06E76H   ; main's le_call_op
 p0_print_string equ 045D6H   ; main's print_string
 p0_list_num equ 062A3H   ; main's list_num
 p0_print_in_hl equ 07638H   ; main's print_in_hl

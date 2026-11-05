@@ -1131,7 +1131,22 @@ ris_quoted:
                 jr      z,ris_qhit
                 cp      '"'
                 jr      z,ris_keep          ; inside: data
-                jr      ris_lp              ; past the closing quote: dropped
+                ; past the closing quote, and not the comma. 🎯 D-INPQUOTE2
+                ; (2026-11-05): TYPED AT THE CONSOLE, ANYTHING BUT A BLANK IS
+                ; `?Redo from start` on the VG-8020 -- `"AB"CD`, `"AB" CD`, `"AB""`
+                ; -- while `"AB"  ` and `"AB" ,CD` read AB
+                ; (scratchpad/inpquote_console.out). A disk file never comes here
+                ; (H_CHIN op 5, disk.rom din_str); a cassette keeps dropping it.
+                ld      a,c
+                cp      ' '
+                jr      z,ris_lp
+                ld      hl,(ARL_GETBYTE)
+                ld      de,linebuf_getbyte
+                or      a
+                sbc     hl,de
+                jr      nz,ris_lp           ; a cassette: dropped, as before
+                pop     af                  ; our return: both console callers hold
+                jp      inpc_redo3          ; [varstart][textcur][key] -> ?Redo
 ris_qhit:
                 cp      ','
                 jp      z,ris_done          ; past it, the comma ends the field

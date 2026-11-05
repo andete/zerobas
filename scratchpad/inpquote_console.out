@@ -1,0 +1,9 @@
+CONSOLE: INPUT A$ typed -> [A$ with _ | LEN]
+case                  Philips_VG_8020       C-BIOS_MSX1_EU_REPAC
+✗ '"AB"CD'                   NO READING                   [AB| 2 ]
+  '"AB"  '                     [AB| 2 ]                   [AB| 2 ]
+  '"AB" ,CD'                   [AB| 2 ]                   [AB| 2 ]
+  '"AB",CD'                    [AB| 2 ]                   [AB| 2 ]
+✗ '"AB" CD'                  NO READING                   [AB| 2 ]
+✗ '"AB""'                    NO READING                   [AB| 2 ]
+refcache: 0 hit, 12 miss, 12 stored

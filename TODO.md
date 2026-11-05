@@ -19262,7 +19262,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (probes/disk/disk_probe_inpquote.py) 14/14 ([`inpquote2_gate.out`](scratchpad/inpquote2_gate.out));
       knife (HEAD's kernel / fat / driver / input / files) exactly qjunk, qjunkc, qopen
       DIVERGE ([`inpquote2_knife.out`](scratchpad/inpquote2_knife.out)). 🔮 "all 14 agree"
-      HIT. ➡️ OPEN: the console's `?Redo from start` and the cassette (a CAL_* peek).
+      HIT. ➡️ OPEN: the cassette (a CAL_* peek).
+      ✅ **CONSOLE HALF FIXED 2026-11-05.** Measured ([`inpquote_console.out`](scratchpad/inpquote_console.out)):
+      blanks and a comma may follow a typed closing quote (`"AB"  `, `"AB" ,CD`, `"AB",CD`
+      read AB); `"AB"CD`, `"AB" CD`, `"AB""` give no reading -- 🔮 "blanks / comma fine, any
+      other byte ?Redo" HIT. basic/files.asm ris_quoted: past the closing quote a non-blank
+      from linebuf_getbyte unwinds to inpc_redo3 (both console callers hold [varstart]
+      [textcur][key]); a cassette still drops it. +18 B of the $72D4 pad. Gate
+      inpredo-acceptance (probes/basic/basic_probe_inpredo.py): ⚠️ every row types a SECOND
+      answer, XY, so a redo row reads `[XY| 2 ] +Redo` and a hang cannot agree with it --
+      the first battery's three agreeing NO READINGs were not evidence. 7/7
+      ([`inpredo_gate.out`](scratchpad/inpredo_gate.out)); knife (HEAD's files.asm) exactly
+      the three redo rows DIVERGE ([`inpredo_knife.out`](scratchpad/inpredo_knife.out)).
 
 
 - [ ] 🔴 **A FILE WHOSE CLUSTER CHAIN POINTS PAST THE VOLUME LOADS AS AN EMPTY

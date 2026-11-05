@@ -1,0 +1,23 @@
+CONSOLE: INPUT A$ typed -> [A$ with _ | LEN]
+case                  Philips_VG_8020       C-BIOS_MSX1_EU_REPAC
+  '"AB"CD'                   NO READING                 NO READING
+  '"AB"  '                     [AB| 2 ]                   [AB| 2 ]
+  '"AB" ,CD'                   [AB| 2 ]                   [AB| 2 ]
+  '"AB",CD'                    [AB| 2 ]                   [AB| 2 ]
+  '"AB" CD'                  NO READING                 NO READING
+  '"AB""'                    NO READING                 NO READING
+refcache: 6 hit, 6 miss, 6 stored
+CONSOLE: INPUT A$ typed -> [A$ with _ | LEN]
+case                  Philips_VG_8020       C-BIOS_MSX1_EU_REPAC
+  '  AB'                       [AB| 2 ]                   [AB| 2 ]
+  'AB  '                       [AB| 2 ]                   [AB| 2 ]
+  '  AB  '                     [AB| 2 ]                   [AB| 2 ]
+  'A B'                       [A_B| 3 ]                  [A_B| 3 ]
+  '"  AB  "'               [__AB__| 6 ]               [__AB__| 6 ]
+  '"A,B"'                     [A,B| 3 ]                  [A,B| 3 ]
+  '  AB  ,CD'                 [AB__| 4 ]                 [AB__| 4 ]
+  '"AB"CD'                   NO READING                 NO READING
+  '  "AB"'                     [AB| 2 ]                   [AB| 2 ]
+  '"AB'                        [AB| 2 ]                   [AB| 2 ]
+  'A"B"'                     [A#B#| 4 ]                 [A#B#| 4 ]
+refcache: 2 hit, 20 miss, 1 of the hits were ZEROBAS readings, 20 stored
