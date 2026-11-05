@@ -225,6 +225,46 @@ item — do **one item per session** to keep context lean.
       reference's PLAY parse rate limiting how fast its queue is filled -- which
       D-PLAYQUEUE's blocking will make visible in the same place. Ask whether to
       reproduce it (an imposed per-note floor) or keep the written tempo.
+      🏗️ **JOOST 2026-11-05: "spend some time measuring"** -- on the plan "measure first; copy
+      the reference's fill RATE if it is a rate" (a per-note floor would be wrong for mixed
+      songs IF the cause were the parse rate).
+      📏 **MEASURED 2026-11-05 -- IT IS A FLOOR, NOT A RATE** (A = TIME at PLAY's return, B = at
+      PLAY(0)=0; [`playrate_measure.out`](scratchpad/playrate_measure.out),
+      [`playrate_grid.out`](scratchpad/playrate_grid.out),
+      [`playrate_rest.out`](scratchpad/playrate_rest.out),
+      [`playrate_dots.out`](scratchpad/playrate_dots.out),
+      [`playrate_dots2.out`](scratchpad/playrate_dots2.out); probe
+      [`playrate_probe.py`](scratchpad/playrate_probe.py)):
+      (1) 🔮 "short notes queued behind long ones play at tempo" -- MISS: 4 x L4 then 8 x L64
+      in one string is 93 = 48 + 45, the short notes as slow as alone. Not a fill rate.
+      (2) Every note AND every explicitly-lengthed rest plays **max(frames, 5)**, frames from
+      the tempo, length and dots as before (the floor after the dots: `T200L16C.` 3 -> 5):
+      B - A = 5n + 1 over 1..16 notes, T32..T255, L8..L64, N, V0, dotted; above 5 the tempo
+      rules (T120 L16 6, T255 R2 23). MML characters and queue bytes do not matter (`O4C`,
+      `C64`, an M per note: the same).
+      (3) The music starts when the PLAY statement RETURNS: A is 2..11 jiffies (0.3-0.7 a
+      note, tempo-dependent in a way not modelled), zerobas 0-2. This is the "a little later"
+      D-PLAYQUEUE saw.
+      (4) Two side findings filed on their own: a bare `R` is a QUARTER rest whatever `L` says
+      (D-PLAYBARER), and `R.` is error 5 (D-PLAYRDOT).
+      ➡️ **NEXT (asked 2026-11-05):** the faithful build is the floor itself -- pt_getframes'
+      minimum 1 becomes 5 (tests/mml_ref.py note_frames with it); (3) is a smaller follow-up.
+
+- [ ] 🎵 **A BARE `R` IS A QUARTER REST ON THE VG-8020 WHATEVER `L` SAYS; HERE IT TAKES `L`'S
+      LENGTH (D-PLAYBARER, found 2026-11-05 by D-PLAYRATE's measurements).**
+      🎚️ TIER 1 — happy path: a tune written `L8CDRE` rests a quarter on the reference and an
+      eighth here, so its rhythm differs.
+      🤖 **AUTONOMOUS** — measured ([`playrate_rest.out`](scratchpad/playrate_rest.out),
+      [`playrate_dots2.out`](scratchpad/playrate_dots2.out)): 8 bare `R` at T120 take 203
+      jiffies under L8 and L4 alike (= 8 x `R4`); 16 bare `R` under L16 405 (= 16 x R4); an
+      explicit `R16` follows its own length (102). zerobas: 98 under L8 (8 eighths).
+
+- [ ] 🎵 **`R.` (A BARE REST WITH A DOT) IS ERROR 5 ON THE VG-8020; ZEROBAS PLAYS IT
+      (D-PLAYRDOT, found 2026-11-05 by D-PLAYRATE's measurements).**
+      🎚️ TIER 6 — every error.
+      🤖 **AUTONOMOUS** — `PLAY "T120R."` -> `ERR 5` on the VG-8020, no error here
+      ([`playrate_dots2.out`](scratchpad/playrate_dots2.out)). Unmeasured: `R4.` and
+      `L8R.` -- measure them with the fix.
 
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
@@ -9149,7 +9189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11640 (T-6FE392)8 (T-529ABE)` from `TODO.md:17326 (T-529ABE)`: a
+      `TODO.md:11680 (T-6FE392)8 (T-529ABE)` from `TODO.md:17366 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12109,7 +12149,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17326 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
