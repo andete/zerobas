@@ -1,0 +1,52 @@
+10 REM ** MATRIX LAB - linear equations in double precision **
+15 REM values print rounded: the 14th digit of a division differs by design (numbers.md)
+20 REM Gauss-Jordan with partial pivoting on a 4x4 system, the determinant,
+30 REM the inverse checked by multiplying back, then ERASE and a second size
+35 CLS:ON ERROR GOTO 900
+40 DEFDBL A-H,O-Z:DEFINT I-N
+50 N=4:DIM A(4,8),X(4)
+60 FOR I=1 TO N:FOR J=1 TO N:READ A(I,J):NEXT:READ A(I,N+1):NEXT
+70 DATA 2,1,-1,3,5
+80 DATA 4,-6,0,1,-2
+90 DATA -2,7,2,-4,9
+100 DATA 1,1,1,1,4
+110 GOSUB 500:LPRINT "CP 1 DET";DT
+120 FOR I=1 TO N:LPRINT "CP 2";I;X(I):NEXT
+130 REM residual: A*X-B with the original rows (re-read)
+140 RESTORE 70:R=0
+150 FOR I=1 TO N:S=0:FOR J=1 TO N:READ C:S=S+C*X(J):NEXT:READ B:R=R+ABS(S-B):NEXT
+160 LPRINT "CP 3 RESIDUAL SMALL";-(R<1E-8)
+170 REM the inverse: [A | I] through the same elimination
+180 RESTORE 70:FOR I=1 TO N:FOR J=1 TO N:READ A(I,J):NEXT:READ B:FOR J=1 TO N:A(I,N+J)=-(I=J):NEXT:NEXT
+190 M=2*N:GOSUB 600
+200 E=0
+230 REM multiply back: original row I times inverse column K
+240 FOR I=1 TO N:FOR K=1 TO N:S=0:RESTORE 70:FOR Q=1 TO (I-1)*5:READ D:NEXT
+250 FOR J=1 TO N:READ C:S=S+C*A(J,N+K):NEXT:E=E+ABS(S+(I=K)):NEXT:NEXT
+260 LPRINT "CP 4 INVERSE OK";-(E<1E-8)
+270 PRINT USING "##.##########";A(1,5);A(2,6)
+280 LPRINT "CP 5";A(1,5);A(4,8)
+290 ERASE A,X:N=3:DIM A(3,6),X(3)
+300 FOR I=1 TO N:FOR J=1 TO N:A(I,J)=1/(I+J-1):NEXT:A(I,N+1)=1:NEXT
+310 GOSUB 500:LPRINT "CP 6 HILBERT DET";CINT(DT*1E7)
+320 FOR I=1 TO N:LPRINT "CP 7";I;CINT(X(I)*1000)/1000;CINT(X(I));FIX(-X(I)/7);INT(-X(I)/7):NEXT
+330 SWAP X(1),X(3):LPRINT "CP 8";CINT(X(1));CINT(X(3));SGN(X(2));CINT(X(1)^2);CINT(SQR(X(3)^2)*100)
+340 LPRINT "CP 9 SINGLE";CSNG(X(1)/7);CDBL(1/3!);1/3#
+350 PRINT "DONE":END
+500 REM solve A(1..N,1..N+1) -> X(), DT
+510 DT=1:M=N+1:GOSUB 600
+520 FOR I=1 TO N:X(I)=A(I,N+1):NEXT:RETURN
+600 REM Gauss-Jordan on columns 1..N of an N x M matrix; DT multiplied by pivots
+610 FOR K=1 TO N
+620 P=K:IF K=N THEN 640
+625 FOR I=K+1 TO N:IF ABS(A(I,K))>ABS(A(P,K)) THEN P=I
+630 NEXT I
+640 IF P<>K THEN FOR J=1 TO M:SWAP A(K,J),A(P,J):NEXT:DT=-DT
+650 PV=A(K,K):DT=DT*PV
+660 FOR J=1 TO M:A(K,J)=A(K,J)/PV:NEXT
+670 FOR I=1 TO N:IF I=K THEN 700
+680 F=A(I,K):IF F=0 THEN 700
+690 FOR J=1 TO M:A(I,J)=A(I,J)-F*A(K,J):NEXT
+700 NEXT I
+710 NEXT K:RETURN
+900 LPRINT "CP E";ERR;ERL:RESUME NEXT

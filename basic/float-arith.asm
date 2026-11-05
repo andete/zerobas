@@ -694,7 +694,25 @@ fzt_a0:
 ; --- fp_add: ARGA + ARGB -> ARGA -> round_and_finalize. No pre-check (spec: -
 ; "only genuine result overflow observed" for add/sub); round_and_finalize's
 ; own bound check catches it. Clobbers A, B, C, D, E, H, L.
+; 🔴 D-DBLNORM (2026-11-05): A ZERO OPERAND RETURNS THE OTHER ONE. A zero unpacks
+; with dexp 0, and the alignment below took the LARGER dexp -- so `Y+0` with Y =
+; 1E-13 shifted Y's digits twelve places right to dexp 0, and the same-sign path
+; (no left-normalise: two normalised non-zero operands never need one) packed the
+; result UNNORMALISED: it printed `.0000000000001`, compared as if it were ~0.1
+; (`R<1E-8` false), and a small operand LOST its low digits. The VG-8020 returns Y
+; exactly (scratchpad/dblnorm3_measure.out). Found by the program ladder's
+; L4_matrix (a residual summed from R=0).
 fp_add:
+                call    argb_dig_iszero
+                jp      z,round_and_finalize    ; x + 0 = x
+                call    arga_dig_iszero
+                jr      nz,fpa_go
+                ld      hl,ARGB
+                ld      de,ARGA
+                ld      bc,FPNUM_SIZE
+                ldir                            ; 0 + y = y (fp_sub's flip included)
+                jp      round_and_finalize
+fpa_go:
                 ; align: diff = dexpA - dexpB (range -126..126, fits in a
                 ; signed byte since each dexp is -63..63 — H after sbc is
                 ; pure sign-extension, so testing H's sign bit alone decides

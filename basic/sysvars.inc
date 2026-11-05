@@ -533,6 +533,17 @@ CSRSW           equ     $FCA9   ; cursor display: 0 = off, 1 = on
 ; (Until 2026-07-29 this had an ELSE branch for the lean 16 KB cart, which had no
 ; sub-ROM for the floor derivation to live in. That build is retired.)
 CLEARPOOL       equ     1
+; D-CONCAT3 (2026-11-05): the APPEND op for the 2nd and later `+` of one chain --
+; the tenant's sh_append, minus the in-place extension (sub/strheap.asm, op 22). The
+; references allocate every later step's whole body while the previous one is live:
+; `T$=T$+L$+" "` needs 199 free on the VG-8020 and the CF-3300 and needed 100 here
+; (scratchpad/concat3_measure.out). Op 22 sits in the CLEARPOOL rows, so a
+; CLEARPOOL=0 build keeps op 2 (the old charge) and stays buildable.
+    IF CLEARPOOL
+SH_OP_APPEND2   equ     22
+    ELSE
+SH_OP_APPEND2   equ     2
+    ENDIF
 ; FPERR code a STRING-HEAP allocation failure defers through (basic/str-engine.asm
 ; str_temp_alloc / str_snapshot_to_temp / sct_append_err / shx_finish /
 ; str_heap_oom_error, all reached from SH_ERR=1). With the partition ON, a heap

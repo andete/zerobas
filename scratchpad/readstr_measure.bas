@@ -1,0 +1,10 @@
+10 REM D-READSTR: string space a READ string, a literal and a concatenation take (FRE(""))
+20 CLEAR 200:F0=FRE("")
+30 READ L$:F1=FRE("")
+40 A$="LITERAL TEXT":F2=FRE("")
+50 B$=L$:F3=FRE("")
+60 T$=L$+" ":F4=FRE("")
+70 T$=T$+L$+" ":F5=FRE("")
+80 READ M$:F6=FRE("")
+90 LPRINT F0;F0-F1;F1-F2;F2-F3;F3-F4;F4-F5;F5-F6;LEN(T$)
+100 DATA "the quick brown fox jumps over the lazy dog while",ABCDEF

@@ -161,6 +161,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A chain of `+` needed less string space here than on a real MSX**
+  (fixed 2026-11-05, D-CONCAT3; found by a program-ladder text formatter that
+  ran out of string space on the VG-8020 and not here). For each `+` after the
+  first, the VG-8020 and the CF-3300 build the whole new string while the
+  previous partial result is still held, so `T$=T$+L$+" "` with a 50-character
+  `T$` needs 199 free bytes there. zerobas grew one string in place and needed
+  100, so a program that stops with `Out of string space` on the real machine
+  kept going here. Six chain shapes now need exactly the references' amounts
+  ([readings](../../scratchpad/concat_chain.out)); the gate is
+  `concat3-acceptance`.
+
 - **A real program found the biggest one.** *Vleermuis*, a 1989 type-in
   game that the project loads on both machines from a cassette image
   ([`scratchpad/vleermuis/`](../../scratchpad/vleermuis/), see the

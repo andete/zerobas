@@ -307,6 +307,52 @@ item — do **one item per session** to keep context lean.
       4-5, T32 / T64 / T255 10); the CF-3300's a jiffy or two longer. Measure what A follows
       (notes, characters, the tempo command, the voice count) before building anything.
 
+- [x] 🔴 **ADDING ZERO TO A SMALL DOUBLE PACKED AN UNNORMALISED RESULT: `R=0:R=R+1E-13` PRINTED
+      `.0000000000001` AND `R<1E-8` WAS FALSE (D-DBLNORM, found 2026-11-05 by the program
+      ladder's L4_matrix).**
+      🎚️ TIER 1 — a wrong answer from ordinary arithmetic (a sum started from 0).
+      🤖 **AUTONOMOUS** — measured on the VG-8020 (VARPTR bytes of the result:
+      [`dblnorm_measure.out`](scratchpad/dblnorm_measure.out),
+      [`dblnorm2_measure.out`](scratchpad/dblnorm2_measure.out),
+      [`dblnorm3_measure.out`](scratchpad/dblnorm3_measure.out)): `0+Y`, `Y+0`, `0#+Y`,
+      `CDBL(0)+Y`, `(Y-Y)+Y` all gave exponent byte 64 with a zero leading digit here (52 /
+      16 there); ABS, unary minus and a plain difference were fine. `.001+0` packed as
+      `.00100...` at exponent 64 and printed `.001` against `1E-03`. Cause: a zero unpacks
+      with dexp 0, fp_add aligned to the LARGER dexp and the same-sign path never
+      left-normalises -- so a small operand was shifted right (a 14-digit one LOST digits).
+      ✅ **FIXED 2026-11-05:** fp_add (basic/float-arith.asm) returns the other operand
+      when either is zero (+25 B low region). tests/test_float.py: 8 rows checking value
+      AND a normalised FAC (decode_fac reads an unnormalised FAC as the same number, so the
+      leading digit is checked too); removing the shortcut turns 5 red. After: all 15 rows
+      byte-equal ([`dblnorm3_after.out`](scratchpad/dblnorm3_after.out)). Docs: numbers.md.
+
+- [x] 🧵 **A `+` CHAIN NEEDED LESS STRING SPACE HERE THAN ON EITHER REFERENCE:
+      `T$=T$+L$+" "` NEEDED 100 FREE BYTES, 199 ON THE VG-8020 AND THE CF-3300 (D-CONCAT3,
+      found 2026-11-05 by the program ladder's L3_wrap).**
+      🎚️ TIER 3 — common errors: `Out of string space` under the default `CLEAR 200`.
+      🤖 **AUTONOMOUS** — measured by padding string space down to the threshold
+      ([`concat3_measure.out`](scratchpad/concat3_measure.out)): 2-term 99 on all three, 3-term
+      199 / 199 / 100. The references build each LATER step's whole body while the
+      previous partial result is live; sh_append extended the first step's snapshot in
+      place for every step (D-CONCATPEAK, which matched the 2-term case exactly).
+      ✅ **FIXED 2026-11-05:** str_concat_tail (basic/str-engine.asm) keeps an op word
+      under [R]: 2 for the first `+`, SH_OP_APPEND2 (22) after; op 22 is sh_append minus the
+      in-place extension (sub/strheap.asm, the realloc path the references' model is).
+      +10 B low region, +2 B table. Six shapes now equal on all three machines -- 4 terms,
+      a function first, one in the middle, a literal first, an unassigned chain in LEN(),
+      the 2-term control ([`concat_chain.out`](scratchpad/concat_chain.out)). Gate
+      `concat3-acceptance`. Docs: strings-and-string-space.md.
+
+- [ ] 🔧 **THE GATE PICKER PLANNED NO `PLAY` SUITE FOR A CHANGE TO sub/playparse.asm
+      (D-PICKPLAY, found 2026-11-05 by D-PLAYRATE's commit).**
+      🎚️ APPARATUS — a ROM change inside a sub-ROM tenant can reach zero of the suites that
+      exercise it: `make gates-plan` listed six unrelated emulator suites ("no enclosing ex_
+      handler: canary only") and none of playeq / playarr / playqueue / play / play-trace,
+      which were then run by hand (all green).
+      🤖 **AUTONOMOUS** — the picker and its selftest are ours. ➡️ Map a tenant source file to the keyword
+      whose handler calls it (sub/playparse.asm -> PLAY) and plan that keyword's suites, the
+      way an ex_ handler change already does; selftest it like D-PLANDATA's P16.
+
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
       🎚️ BUDGET — ROM space toward the reference; the space every later tier spends.
@@ -1645,6 +1691,13 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L3_wrap + L4_matrix (2026-11-05): SAME after two fixes they FOUND** -- a text
+      formatter (MID$= title case, INSTR from a start, wrap and justify, word counts with
+      SWAP sorting, HEX$ / OCT$ / BIN$) found D-CONCAT3 (TIER 3), and a double-precision
+      Gauss-Jordan solver (ERASE / re-DIM, SWAP rows, CINT / FIX / INT of negatives) found
+      D-DBLNORM (TIER 1, a wrong comparison). Values print rounded where the 14th digit of a
+      division differs by ruling (numbers.md). Before / after:
+      [`progladder_l10.out`](scratchpad/progladder_l10.out).
       ✅ **L5_chain (2026-11-01, `@DISK`): SAME in printer and screen** -- a program that
       writes three more as text files (PRINT # with CHR$(34) quoting), then `RUN "P2.BAS"`
       (variables cleared: `A` reads 0 in part two), DEFINT / `\` in the loaded part, a
@@ -4094,6 +4147,10 @@ item — do **one item per session** to keep context lean.
       | real, already filed | Chuckie Egg (zerobas black), Space Shuttle (blue screen), BMX Simulator | D-SLOT3EXP ($FFFF written from game code), parked "Later" 2026-10-27 |
       🔮 Sorcery predicted as timing: hit (best 0). No NEW defect: every non-timing title lands on
       an existing item (font, slot 3) or on speed.
+      🏁 **TIER-1 WORK DONE (2026-11-05):** Joost closed the font item (D-BIOSINT) and slot 3
+      (D-SLOT3EXP) as WON'T FIX the same day, so the non-timing titles are known
+      differences; Space (zerobas printed further) is speed, now TIER 5 work (the pause
+      was lifted). What stays here is the corpus run itself, re-run on every ROM change.
       📼 **THE TAPE RUN, REBUILT AND TRACKED (2026-10-22):** the one-off harness and its
       pick_martos (51) lived in a lost session scratchpad, and the standing rule below (re-run
       ALL the tapes after a page-0 / page-1 layout change) was overdue -- D-DISKREST, D-P0CB
@@ -9230,7 +9287,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11721 (T-6FE392)8 (T-529ABE)` from `TODO.md:17407 (T-529ABE)`: a
+      `TODO.md:11778 (T-6FE392)8 (T-529ABE)` from `TODO.md:17464 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12190,7 +12247,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17407 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17464 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

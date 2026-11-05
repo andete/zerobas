@@ -205,6 +205,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Adding zero to a small double could give a wrong answer** (fixed
+  2026-11-05, D-DBLNORM; found by a program-ladder test, a matrix solver whose
+  error total started from `R=0`). `R=0:R=R+1E-13` printed `.0000000000001`,
+  and `R<1E-8` was **false**. The addition lined both numbers up to the larger
+  exponent, and a zero counted as exponent 0, so the small number was shifted
+  twelve places down and stored with leading zero digits. A 14-digit number
+  such as `1.2345678901234E-5` lost its last five digits the same way. Adding or
+  subtracting zero now returns the other number unchanged, as on the VG-8020
+  ([readings](../../scratchpad/dblnorm3_measure.out),
+  [after](../../scratchpad/dblnorm3_after.out)).
+
 - **An exponent whose digits run past 9999 wrapped** (fixed 2026-11-04,
   D-EXPWRAP). The tokeniser builds an exponent digit by digit, times ten each
   time, and stops at 9999, which is Overflow (or 0 for a negative exponent past

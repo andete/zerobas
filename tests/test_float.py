@@ -266,6 +266,25 @@ def run_f2(m, s, ck):
         got, err = do_op(routine, a, b)
         ckf(f"{routine}({a},{b})", got, want)
         ckf(f"{routine}({a},{b}) FPERR", err, 0)
+    # D-DBLNORM (2026-11-05): a ZERO operand returns the other one. A zero unpacked
+    # with dexp 0 and the alignment shifted a small operand's digits to it: Y+0 with
+    # Y = 1E-13 packed UNNORMALISED (FAC+1 = 0) and a 14-digit small operand lost its
+    # low digits. decode_fac reads an unnormalised FAC as the same number, so the
+    # leading digit is checked too.
+    FAC = s["FAC"]
+    for routine, a, b, want in [
+            ("fp_add", D("1E-13"), D("0"), D("1E-13")),
+            ("fp_add", D("0"), D("1E-13"), D("1E-13")),
+            ("fp_add", D("1.2345678901234E-5"), D("0"), D("1.2345678901234E-5")),
+            ("fp_add", D("0"), D("1.2345678901234E-5"), D("1.2345678901234E-5")),
+            ("fp_add", D("0.001"), D("0"), D("0.001")),
+            ("fp_sub", D("0"), D("1.5E-10"), D("-1.5E-10")),
+            ("fp_sub", D("1.5E-10"), D("0"), D("1.5E-10")),
+            ("fp_add", D("0"), D("0"), D("0"))]:
+        got, err = do_op(routine, a, b)
+        lead = m.peek(FAC + 1)[0]
+        ckf(f"D-DBLNORM {routine}({a},{b}) value, normalised",
+            (got, err, lead >= 0x10 or want == 0), (want, 0, True))
 
     print("# --- F2: fp_add/fp_sub overflow (spec §10.2) ---")
     got, err = do_op("fp_add", D("9E+62"), D("9E+62"))

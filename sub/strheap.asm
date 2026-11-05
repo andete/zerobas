@@ -136,7 +136,7 @@ she_dispatch:
                 ; and every op reaches its handler in the same time). No handler
                 ; reads HL / DE / BC on entry -- each loads its own arguments from
                 ; SH_* -- so clobbering HL / DE here is free. Main only ever writes
-                ; ops 0..21; the table has no range check, as the chain had none
+                ; ops 0..22; the table has no range check, as the chain had none
                 ; (its fall-through sent any other value to VAL, op 13).
                 push    hl
                 pop     iy                  ; IY = the parameter block (sh_go's HL),
@@ -151,8 +151,8 @@ she_dispatch:
                 inc     hl
                 ld      h,(hl)
                 ld      l,a
-                ; HL = she_table[(iy+SHB_OP)], 22 rows with CLEARPOOL = 1
-                ; z80flow: table she_table 22
+                ; HL = she_table[(iy+SHB_OP)], 23 rows with CLEARPOOL = 1
+                ; z80flow: table she_table 23
                 jp      (hl)
 she_table:
                 dw      she_alloc           ; 0  ALLOC
@@ -178,6 +178,7 @@ she_table:
                 dw      sh_val_scr          ; 19 D-INPNUM: VAL-parse the STRSCR field
                 dw      sh_ctl_reset        ; 20 D-CTLPOOL: derive the pool's top
                 dw      she_snap_slice      ; 21 D-SLICEOOM: a slice's source
+                dw      sh_append           ; 22 D-CONCAT3: APPEND, a later `+` of a chain
     ENDIF
 ; --- the parameter block (D-WSZERO S16, 2026-10-16) -------------------------
 ; main's `sh_go` (basic/str-engine.asm) pushes BC, DE, HL and then a word whose
@@ -1716,8 +1717,20 @@ sh_append:
 sap_ok:
                 or      a
                 jr      z,sap_empty         ; total 0 -> R becomes empty
+                ld      b,a
+                ld      a,(iy+SHB_OP)
+                cp      2
+                ld      a,b                 ; A = total again (`ld` keeps the flags)
+                jr      nz,sap_realloc      ; 🔴 D-CONCAT3: op 22, a LATER `+` of one
+                                            ; chain -- the references allocate the whole
+                                            ; new body while the previous one is live
+                                            ; (199 free for `T$=T$+L$+" "`, not 100:
+                                            ; scratchpad/concat3_measure.out), which is
+                                            ; this realloc path; only the FIRST `+`
+                                            ; (op 2) grows its fresh snapshot in place.
                 call    sap_try_extend      ; D-CONCATPEAK: grow R in place if it is
                 jr      c,sap_release       ; the TOP body -- A/C restored if it is not
+sap_realloc:
                 push    af                  ; [total] guard
                 call    heap_alloc          ; A=total -> CF+HL=newbody / CF clear=OOM.
                                             ; May GC; R and Tk are re-read fresh below

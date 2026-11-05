@@ -2641,6 +2641,11 @@ playarr-acceptance: repack-machine
 prstr2x-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_prstr2x.py
 
+# --- concat3-acceptance: the free string space a `+` chain needs (D-CONCAT3) ---
+# The 3-term threshold and six chain shapes, both targets vs the VG-8020.
+concat3-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_concat3.py
+
 # --- playqueue-acceptance: PLAY appends, blocks when full, syncs voices (D-PLAYQUEUE)
 # Queue bytes per MML element, a pending M across PLAY / BEEP, the block points'
 # spacing and the sync. Both targets vs the VG-8020.

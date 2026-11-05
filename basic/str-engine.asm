@@ -791,6 +791,9 @@ str_concat_tail:
                 ret
 sct_go:
                 pop     bc                  ; HL already @ '+' (skip_spaces result)
+                ld      c,2
+                push    bc                  ; [op]: 2 (APPEND) for the first `+` --
+                                            ; D-CONCAT3, every later one SH_OP_APPEND2
                 push    hl                  ; save cursor (@ '+')
                 call    str_snapshot_arg    ; operand 1 -> owned temp R; HL=R, STRPTR=R
                                             ; (R must be a temp we can modify in place --
@@ -814,9 +817,12 @@ sct_loop:
                 pop     de                  ; DE = R (the stable temp slot, modified
                 push    de                  ; in place)              [R]
                 push    bc                  ; [R][cursor]
+                ld      hl,4
+                add     hl,sp
+                ld      a,(hl)              ; A = [op]          [op][R][cursor]
+                ld      (hl),SH_OP_APPEND2  ; the next `+` is a later step
                 ld      hl,(STRPTR)         ; HL = the operand (any stable descriptor)
-                ld      a,2
-                call    sh_go_g             ; op 2 (APPEND): A = ERR (D-DEEPEXPR:
+                call    sh_go_g             ; op 2 / 22 (APPEND): A = ERR (D-DEEPEXPR:
                                             ; a skip's 6 maps to STRLONG below and
                                             ; loses to the 7 already pending; R
                                             ; is untouched)
@@ -827,7 +833,8 @@ sct_cont:
                 cp      PLUS_TOKEN
                 jr      z,sct_loop          ; another '+': HL @ '+', [R] on stack
                 ; no more terms -> result = R
-                pop     de                  ; DE = R                 [ ]
+                pop     de                  ; DE = R                 [op]
+                pop     bc                  ; [ ]
                 ex      de,hl               ; HL = R, DE = cursor
                 ld      (STRPTR),hl         ; STRPTR = R (the result)
                 ex      de,hl               ; HL = cursor
@@ -872,7 +879,8 @@ se2_miss:
                 ld      a,FPERR_MISSOP      ; ERR 24
 se2_arm:
                 call    penderr_set         ; first-error-wins
-                pop     de                  ; DE = R                 [ ]
+                pop     de                  ; DE = R                 [op]
+                pop     bc                  ; [ ]
                 ld      (STRPTR),de         ; the partial result IS the value
                 scf                         ; success-shaped: no re-drive
                 ret
