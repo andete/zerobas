@@ -9,6 +9,8 @@ session and the loop resumes exactly where it stopped.
 | ruling | Joost's words | consequence |
 |---|---|---|
 | speed pause LIFTED | offered lift now / lift with a ~256 B main-page-1 floor / lift at a D-ROMSIZE step; picked **"1"** (lift now, no floor) | TIER 5 back in plain tier order, ABOVE tier 6. First: D-TRAPCOST, then D-TRAPSTMT (`scratchpad/trapstmt_wip.patch`), D-RECSLOW. The 10-20 / 10-21 ROM-space rulings (interleave, keep the fast GC, pin pads are free space, no new RAM for the page-0 call-back) still hold |
+| D-BIOSINT ($2010 font data) | *"D-BIOSINT: won't fix"* | CLOSED won't fix: Loopy Laundry stays a known difference; never re-ask |
+| D-SLOT3EXP ($FFFF in slot 3) | *"D-SLOT3EXP: won't fix"* | CLOSED won't fix: BMX Simulator stays a known difference; never re-ask |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
 ## 🟢 STATE AS OF 2026-11-05 (evening) — THE CURRENT ONE
@@ -2071,7 +2073,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13625 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13629 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

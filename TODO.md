@@ -4780,10 +4780,12 @@ item — do **one item per session** to keep context lean.
       returns, not game calls (D-TAPELOAD's correction note). Demonia's $72E9 /
       $72D4 are real calls, but undocumented: D-BASICINT's class, not this item's.
 
-- [ ] 🔧 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
+- [x] 🔧 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
       $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)** — ✅ **$0D12
       DONE 2026-10-17** (cbios-repack/bios-keyscan.patch #11); OPEN for Loopy
       Laundry's $2010 / $18E8 -- 🙋 **NEEDS-JOOST (2026-10-17): $2010 IS FONT DATA**
+      🚫 **WON'T FIX (Joost 2026-11-05: "D-BIOSINT: won't fix").** Loopy Laundry's $2010 /
+      $18E8 stay a known difference; the $0D12 half shipped. Closed, not parked: do not re-open.
       (see the end of this block).
       🎚️ TIER 1 — happy path: two of the three tapes that still reset (D-TAPELOAD).
       🤖 **AUTONOMOUS** — ✅ RULED (Joost, 2026-10-16): *"yes"*: characterise each
@@ -4875,8 +4877,10 @@ item — do **one item per session** to keep context lean.
       🅿️ **PARKED (Joost, 2026-10-17): "park for now as well, I need to think about
       that".** Do not re-ask; it re-opens when Joost does.
 
-- [ ] 🙋 **D-SLOT3EXP — AN ALL-RAM GAME WRITES $FFFF, WHICH ON ZEROBAS IS SLOT 3's
+- [x] 🙋 **D-SLOT3EXP — AN ALL-RAM GAME WRITES $FFFF, WHICH ON ZEROBAS IS SLOT 3's
       SUB-SLOT REGISTER (BMX Simulator, 2026-10-17)**
+      🚫 **WON'T FIX (Joost 2026-11-05: "D-SLOT3EXP: won't fix").** BMX Simulator stays a known
+      difference; the slot layout is not changed for it. Closed, not parked: do not re-open.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🙋 **NEEDS-JOOST** — 🅿️ PARKED BY RULING (Joost 2026-10-27: *"Later"*) -- re-opens with the ROM-space layout question (space plan R4). The machine's slot layout (a hardware-shape decision).
       📏 Session harness (PCs, SP, A8, slot state, write ADDRESSES; never data):
@@ -9145,7 +9149,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11636 (T-6FE392)8 (T-529ABE)` from `TODO.md:17322 (T-529ABE)`: a
+      `TODO.md:11640 (T-6FE392)8 (T-529ABE)` from `TODO.md:17326 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12105,7 +12109,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17322 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17326 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
