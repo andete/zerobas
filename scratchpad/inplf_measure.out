@@ -1,0 +1,24 @@
+National_CF-3300 ENDED t=50.9
+A 4  0  36 
+B 5  36 
+C 5  4  81 
+D  10 [AB][CD]
+ERR 55  90 
+E 123  0  0 
+F 5  10 
+G [123] 3 
+H 7  8 -1 
+END
+
+C-BIOS_MSX1_EU_REPACK_DISK ENDED t=53.7
+A 4  36  81 
+B 5  36 
+C 4  4  81 
+D  10 [AB][CD]
+ERR 55  90 
+E 1  0  0 
+F 3  50 
+G [123] 3 
+H 7  8 -1 
+END
+

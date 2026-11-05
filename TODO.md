@@ -48,6 +48,21 @@ item — do **one item per session** to keep context lean.
       does not hold the daily suites -- math-acceptance went red the next day, unseen. A math
       tenant change should plan math-acceptance the same way.
 
+- [ ] 📄 **`INPUT#` / `LINE INPUT#` TREAT A LONE LF DIFFERENTLY FROM THE CF-3300 (D-INPLF, found
+      2026-11-05 by the program ladder's L5_files).**
+      🎚️ TIER 6 — data files with a LF that is not part of a CR LF pair (MSX writes CR LF; a
+      CR LF file reads the same on both).
+      🤖 **AUTONOMOUS** — measured, CF-3300 vs zerobas DISK ([`inplf_measure.out`](scratchpad/inplf_measure.out)):
+      (A) INPUT$ stops after a CR, so the next byte is its LF: INPUT# V reads **0** there and
+      the next INPUT# 36 (the LF ends an EMPTY field); here 36 then 81. (E) a number field
+      `1<LF>2<LF>3`: **123** there (the LFs ignored INSIDE a number), 1 here. (F) LINE INPUT#
+      over bare LFs KEEPS them (length 5) there, drops them here (3). (G) a string field over
+      the same bytes `[123]` on both; CR LF LF (H) equal. ➡️ The rule is not yet one rule (a
+      leading LF ends a field, an embedded one is skipped): measure the char classes first --
+      LF before / after spaces, digits, a quote, a comma, in LINE INPUT# -- then fix the
+      sequential reader (seqio tenant). Not a TIER 1 path: L5_files now reads 11 bytes so its
+      INPUT$ does not split a CR LF pair.
+
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
       🎚️ BUDGET — ROM space toward the reference; the space every later tier spends.
@@ -659,6 +674,11 @@ item — do **one item per session** to keep context lean.
       D-DBLNORM (TIER 1, a wrong comparison). Values print rounded where the 14th digit of a
       division differs by ruling (numbers.md). Before / after:
       [`progladder_l10.out`](scratchpad/progladder_l10.out).
+      ✅ **L5_files (2026-11-05, `@DISK`): SAME against the CF-3300** -- two files open at once,
+      LOC / LOF on sequential files, LINE INPUT# in an EOF loop, INPUT$(n,#), NAME, KILL,
+      FILES, and the file errors trapped (53, 54, 52, 61 and friends); it FOUND D-INPLF (TIER 6),
+      and reads 11 bytes now so its INPUT$ does not split a CR LF pair
+      ([`progladder_l14.out`](scratchpad/progladder_l14.out)).
       ✅ **L3_hanoi + L4_sieve (2026-11-05): SAME, first run** -- recursion on GOSUB with a
       hand-made frame stack, DEF FN, MID$= board drawing; a 2000-entry integer sieve,
       AND / OR / XOR / NOT, \ and MOD of negatives, &H / &O / &B, HEX$ / BIN$ / OCT$, trapped
@@ -7566,7 +7586,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9999 (T-6FE392)8 (T-529ABE)` from `TODO.md:15151 (T-529ABE)`: a
+      `TODO.md:10019 (T-6FE392)8 (T-529ABE)` from `TODO.md:15171 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10305,7 +10325,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15151 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
