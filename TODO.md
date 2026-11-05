@@ -214,7 +214,7 @@ item — do **one item per session** to keep context lean.
       [`playphase_after.out`](scratchpad/playphase_after.out)), one jiffy ahead of the
       VG-8020 throughout (inside the gate's total tolerance). Docs: PLAY.md.
 
-- [ ] 🙋 **SHORT NOTES ARE FASTER HERE: THE VG-8020 NEVER PLAYS A NOTE SHORTER THAN ~5
+- [x] 🙋 **SHORT NOTES ARE FASTER HERE: THE VG-8020 NEVER PLAYS A NOTE SHORTER THAN ~5
       JIFFIES (D-PLAYRATE, found 2026-10-31 by L4_music).**
       🎚️ TIER 5 — note timing at fast tempos; long notes agree to a jiffy or two.
       🙋 **NEEDS-JOOST** — matching it means slowing zerobas's MML parse to the
@@ -263,8 +263,16 @@ item — do **one item per session** to keep context lean.
       probe now adds `1 REM @DISK` for that machine only.
       ➡️ **NEXT (asked 2026-11-05):** the faithful build is the floor itself -- pt_getframes'
       minimum 1 becomes 5 (tests/mml_ref.py note_frames with it); (3) is a smaller follow-up.
+      ✅ **FIXED 2026-11-05 (Joost: "go"):** pgf_min (sub/playparse.asm) clamps to 5 after the
+      dots; tests/mml_ref.py note_frames the same; tests/test_play_parse.py's tempo x length x
+      dots sweep now also demands CF clear -- 🔴 the first build left CF SET on the clamp path
+      (`cp 5`), and every floored note unwound the parser silently (status untouched); the
+      sweep compared HL only and passed, the new rest rows caught it. Machine
+      ([`playrate_measure_after.out`](scratchpad/playrate_measure_after.out),
+      [`playrate_rest_after.out`](scratchpad/playrate_rest_after.out)): B - A = 5n + 1 as on
+      the VG-8020 (16 notes 81). (3), the start, is D-PLAYSTART. Docs: PLAY.md.
 
-- [ ] 🎵 **A BARE `R` IS A QUARTER REST ON THE VG-8020 WHATEVER `L` SAYS; HERE IT TAKES `L`'S
+- [x] 🎵 **A BARE `R` IS A QUARTER REST ON THE VG-8020 WHATEVER `L` SAYS; HERE IT TAKES `L`'S
       LENGTH (D-PLAYBARER, found 2026-11-05 by D-PLAYRATE's measurements).**
       🎚️ TIER 1 — happy path: a tune written `L8CDRE` rests a quarter on the reference and an
       eighth here, so its rhythm differs.
@@ -272,13 +280,32 @@ item — do **one item per session** to keep context lean.
       [`playrate_dots2.out`](scratchpad/playrate_dots2.out)): 8 bare `R` at T120 take 203
       jiffies under L8 and L4 alike (= 8 x `R4`); 16 bare `R` under L16 405 (= 16 x R4); an
       explicit `R16` follows its own length (102). zerobas: 98 under L8 (8 eighths).
+      ✅ **FIXED 2026-11-05:** pt_cmd_rest (sub/playparse.asm) gives a bare R length 4; an
+      explicit length (or `=name;`) and its dots as before; N0 keeps L's length
+      (pt_rest_n0, unmeasured). The CF-3300 agrees ([`playrate_dots2_3way.out`](scratchpad/playrate_dots2_3way.out)).
+      Machine: 8 bare R under L8 201 against 203 (the start, D-PLAYSTART)
+      ([`playrate_dots2_after.out`](scratchpad/playrate_dots2_after.out)). Unit rows in
+      tests/test_play_parse.py. Docs: PLAY.md.
 
-- [ ] 🎵 **`R.` (A BARE REST WITH A DOT) IS ERROR 5 ON THE VG-8020; ZEROBAS PLAYS IT
+- [x] 🎵 **`R.` (A BARE REST WITH A DOT) IS ERROR 5 ON THE VG-8020; ZEROBAS PLAYS IT
       (D-PLAYRDOT, found 2026-11-05 by D-PLAYRATE's measurements).**
       🎚️ TIER 6 — every error.
       🤖 **AUTONOMOUS** — `PLAY "T120R."` -> `ERR 5` on the VG-8020, no error here
       ([`playrate_dots2.out`](scratchpad/playrate_dots2.out)). Unmeasured: `R4.` and
       `L8R.` -- measure them with the fix.
+      📏 Measured three-way ([`playrate_rdot.out`](scratchpad/playrate_rdot.out)): `R4.` /
+      `R4..` / `R64.` take their dots, `L8R.` is ERR 5, `R=4;.` was ERR 5 here already.
+      ✅ **FIXED 2026-11-05** with D-PLAYBARER (pt_cmd_rest: a `.` after a bare R is
+      pt_illegal); all six rows agree ([`playrate_rdot_after.out`](scratchpad/playrate_rdot_after.out)).
+
+- [ ] 🎵 **THE VG-8020 STARTS A `PLAY`'S MUSIC WHEN THE STATEMENT RETURNS, A FEW TICKS IN;
+      ZEROBAS STARTS AT ONCE (D-PLAYSTART, split from D-PLAYRATE 2026-11-05).**
+      🎚️ TIER 5 — on-par timing: a song ends 2-11 ticks sooner here; the notes are the same.
+      🤖 **AUTONOMOUS** — measured on both references (A = TIME at PLAY's return, B - A =
+      the music: [`playrate_grid_3way.out`](scratchpad/playrate_grid_3way.out)). A is 2..11 for
+      16 notes, 0.3-0.7 a note, and depends on the tempo in a way not yet modelled (T100-T200
+      4-5, T32 / T64 / T255 10); the CF-3300's a jiffy or two longer. Measure what A follows
+      (notes, characters, the tempo command, the voice count) before building anything.
 
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
@@ -9203,7 +9230,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11694 (T-6FE392)8 (T-529ABE)` from `TODO.md:17380 (T-529ABE)`: a
+      `TODO.md:11721 (T-6FE392)8 (T-529ABE)` from `TODO.md:17407 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12163,7 +12190,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17380 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17407 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

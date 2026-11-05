@@ -1,0 +1,10 @@
+Philips_VG_8020                ENDED t=36.7
+National_CF-3300               ENDED t=41.4
+C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=34.9
+row  Philips_VG_8020 (A ret, B end)  |  National_CF-3300 (A ret, B end)  |  C-BIOS_MSX1_EU_R (A ret, B end)
+   1  1  154  0             |   1  1  182  0             |   1  1  154  0           
+   2  1  22  0              |   2  2  23  0              |   2  0  9  0             
+   3  0  1  5               |   3  1  1  5               |   3  0  19  0            
+   4  1  1  5               |   4  1  1  5               |   4  0  0  5             
+   5  1  89  0              |   5  1  108  0             |   5  1  90  0            
+   6  1  51  0              |   6  1  62  0              |   6  0  50  0            

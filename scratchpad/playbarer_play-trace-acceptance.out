@@ -1,0 +1,28 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_playtrace.py 
+--- PLAY note sequence (differential vs VG-8020) ---
+PASS  scale    v0  ref=[(428, 8), (381, 8), (339, 8), (320, 8), (285, 8), (254, 8)]
+PASS  rest     v0  ref=[(428, 8), (428, 0), (428, 8), (428, 0)]
+PASS  dots     v0  ref=[(428, 8), (285, 8)]
+PASS  multi    v0  ref=[(428, 8), (339, 8)]
+PASS  multi    v1  ref=[(339, 8)]
+PASS  multi    v2  ref=[]
+PASS  octaves  v0  ref=[(1711, 8), (428, 8)]
+
+--- envelope registers (S8 M2000; R11/12/13 + amp $10|vol) ---
+PASS  env       ref=[(8, 2000, 184, 24)]
+
+--- R7 mixer never touched (stays $B8) ---
+PASS  mixer     ref=['0xb8'] zb=['0xb8']
+
+--- DI-safety: PLAY then a tight SIN loop (page-1 tenant) ---
+PASS  di_safety notes-advanced=[(428, 8), (381, 8), (339, 8), (320, 8), (285, 8)]
+
+ALL PASS — the live PLAY servicer matches the VG-8020

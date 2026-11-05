@@ -64,7 +64,7 @@ def note_period(n):
 
 
 def note_frames(tempo, length, dots=0, tie_frames=0):
-    """(tempo 32..255, length 1..64, dots) -> interrupt-frame count (>=1).
+    """(tempo 32..255, length 1..64, dots) -> interrupt-frame count (>=5).
 
     frames = BASE // (tempo*length), floor. Dots (VG-8020-pinned, §1): the FIRST
     dot adds ceil(base/2); each subsequent dot adds floor of the running addend
@@ -79,8 +79,9 @@ def note_frames(tempo, length, dots=0, tie_frames=0):
         for _ in range(dots - 1):
             add //= 2                            # subsequent dots: floor of running addend
             fr += add
-    fr += tie_frames
-    return max(1, fr)
+    # D-PLAYRATE (2026-11-05): a minimum of 5 frames after the dots, on the VG-8020
+    # and the CF-3300 alike (scratchpad/playrate_grid_3way.out); it was 1.
+    return max(5, fr) + tie_frames
 
 
 def emit_period_table():

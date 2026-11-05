@@ -7,9 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `PLAY` — play music in the background
 
 > **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: what `PLAY(n)` reads on the very statement after a `PLAY`
-> (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
+> differences: what `PLAY(n)` reads on the very statement after a `PLAY`, and
+> the music starting a few ticks sooner here (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -41,7 +41,7 @@ leaves that voice alone, so `PLAY "","","C"` plays on the third voice only.
 |---|---|---|
 | `A`–`G` | a note; `#` or `+` raises it, `-` lowers it; a number after it is its length | — |
 | `N` n | a note by number, 1–96 (`N1` is C#1, `N96` is C9) | `N97` |
-| `R` | a rest, with an optional length | `R0` |
+| `R` | a rest; a number after it is its length, and a bare `R` is a quarter whatever `L` says | `R0`, a bare `R.` |
 | `O` n | octave, 1–8 | `O9` |
 | `L` n | default note length, 1–64 (bigger is shorter); a `.` after a length dots it | `L0` |
 | `T` n | tempo, 32–255 | `T31` |
@@ -74,6 +74,11 @@ leaves that voice alone, so `PLAY "","","C"` plays on the third voice only.
   `A(J+1)` is `Syntax error`); out of range, or the wrong number of
   subscripts, is `Subscript out of range` (9); an array never dimensioned
   reads 0.
+- **No note or rest lasts less than 5 ticks of the 50 Hz clock** (60 Hz on a
+  Japanese machine), however fast the tempo and short the length: 16 notes of
+  `T255L64` take 80 ticks, not 16. Above that the tempo rules as written
+  (`T120L16` is 6 ticks a note). The floor applies after the dots, and to
+  notes behind long ones in the queue as much as to notes alone.
 - **The music outlives the program.** A clean `END` leaves it playing, and so
   do `NEW` and a trapped error. An *untrapped* error or `STOP` stops
   it and silences the sound chip; `CONT` does not bring it back. `BEEP` stops
@@ -150,6 +155,11 @@ between (`FOR I=1 TO 1:NEXT` is enough) and both machines agree, which is why
 the example has line 30. Joost ruled on 2026-09-27 to **decline** reproducing
 this window; it stays a stated difference.
 
+**When the music starts.** The VG-8020 starts playing a `PLAY` only once the
+statement has finished reading its string, a few ticks after it began (more for
+a long string); zerobas starts at once. The notes and their lengths are the
+same, so a song ends those few ticks sooner here. Recorded, not yet matched.
+
 The one rung not yet proven is **RAM usage**: the work-area cells written
 differ between the machines, and in the last comparison (2026-10-01) three of
 the ten test programs also showed a different amount of free string space.
@@ -165,6 +175,16 @@ the ten test programs also showed a different amount of free string space.
   and the voices meet at the end of each `PLAY`. Two bugs in the first version
   were caught by the existing tests: `BEEP` lost its place in the line, and
   an envelope note with a new `M` was played at a wrong volume.
+- **Short notes were too short, and a bare `R` took `L`'s length** (fixed
+  2026-11-05, D-PLAYRATE / D-PLAYBARER / D-PLAYRDOT). Eight `T255L64` notes took
+  41 ticks on the VG-8020 and 9 here. Measuring first ruled out the obvious
+  guess, that `PLAY` cannot fill its queue fast enough: short notes queued
+  behind long ones were just as slow. Every note and rest simply lasts at least
+  5 ticks, on the VG-8020 and the CF-3300 alike
+  ([readings](../../scratchpad/playrate_grid_3way.out)). The same programs showed
+  that a bare `R` is a quarter whatever `L` says, and that `R.` is error 5 on
+  both references ([readings](../../scratchpad/playrate_rdot.out)). All three
+  now match ([after](../../scratchpad/playrate_rest_after.out)).
 - **A `PLAY` waiting for room returned a jiffy late every few bars**
   (fixed 2026-11-05, D-PLAYPHASE; found when an interpreter speed-up turned
   the queue test red). Twelve bars `PLAY`ed in a loop return 98 jiffies apart

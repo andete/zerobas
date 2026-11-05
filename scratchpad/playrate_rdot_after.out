@@ -1,0 +1,9 @@
+Philips_VG_8020                ENDED t=36.7
+C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=34.7
+row  Philips_VG_8020 (A ret, B end)  |  C-BIOS_MSX1_EU_R (A ret, B end)
+   1  1  154  0 T120R4.R4.R4.R4.  |   1  1  154  0 T120R4.R4.R4.R4.
+   2  1  22  0 T120R64.R64.R64.R64.  |   2  0  21  0 T120R64.R64.R64.R64.
+   3  0  1  5 T120L8R.      |   3  0  1  5 T120L8R.    
+   4  1  1  5 T120R=4;.     |   4  1  1  5 T120R=4;.   
+   5  1  89  0 T120R4..R4..  |   5  0  89  0 T120R4..R4..
+   6  1  51  0 T120L8CR4C   |   6  0  50  0 T120L8CR4C 

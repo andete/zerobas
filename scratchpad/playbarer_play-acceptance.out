@@ -1,0 +1,43 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_play.py 
+--- PLAY error surface (differential vs VG-8020) ---
+PASS  ok_notes  PLAY"CDEFGAB"          zb=cont    ref=cont    want=cont
+PASS  ok_full   PLAY"O5L8T160V12CDE"   zb=cont    ref=cont    want=cont
+PASS  ok_rest   PLAY"CR4C"             zb=cont    ref=cont    want=cont
+PASS  ok_env    PLAY"S10M2000C"        zb=cont    ref=cont    want=cont
+PASS  ok_three  PLAY"C","E","G"        zb=cont    ref=cont    want=cont
+PASS  ok_emptystr PLAY"","E"             zb=cont    ref=cont    want=cont
+PASS  ok_chain  PLAY"C":?"X"           zb=cont    ref=cont    want=cont
+PASS  badcmd    PLAY"CZ"               zb=ERR5    ref=ERR5    want=ERR5
+PASS  tie_unsup PLAY"C&C"              zb=ERR5    ref=ERR5    want=ERR5
+PASS  oct_hi    PLAY"O9"               zb=ERR5    ref=ERR5    want=ERR5
+PASS  len_zero  PLAY"L0"               zb=ERR5    ref=ERR5    want=ERR5
+PASS  tempo_lo  PLAY"T10"              zb=ERR5    ref=ERR5    want=ERR5
+PASS  vol_hi    PLAY"V16"              zb=ERR5    ref=ERR5    want=ERR5
+PASS  bare_comma PLAY,"E"               zb=ERR2    ref=ERR2    want=ERR2
+PASS  numeric   PLAY 5                 zb=ERR13   ref=ERR13   want=ERR13
+PASS  fn_dom_hi X=PLAY(4)              zb=ERR5    ref=ERR5    want=ERR5
+PASS  fn_dom_neg X=PLAY(-1)             zb=ERR5    ref=ERR5    want=ERR5
+
+--- PLAY(n) FUNCTION values (differential vs VG-8020) ---
+PASS  fn_idle   (idle)                     zb=0 0 0 0     ref=0 0 0 0     want=0 0 0 0
+PASS  fn_v1     PLAY"L1CDEFGAB"            zb=-1 -1 0 0   ref=-1 -1 0 0   want=-1 -1 0 0
+PASS  fn_v2     PLAY "","L1CDEFGAB"        zb=-1 0 -1 0   ref=-1 0 -1 0   want=-1 0 -1 0
+PASS  fn_v3     PLAY "","","L1CDEFGAB"     zb=-1 0 0 -1   ref=-1 0 0 -1   want=-1 0 0 -1
+PASS  fn_trunc  PLAY "","","L1CDEFGAB"     zb=0 -1        ref=0 -1        want=0 -1
+PASS  var_v2    A$="L1CDEFGAB":PLAY "",A$  zb=-1 0 -1 0   ref=-1 0 -1 0   want=-1 0 -1 0
+PASS  var_v3    A$="L1CDEFGAB":PLAY "","",A$ zb=-1 0 0 -1   ref=-1 0 0 -1   want=-1 0 0 -1
+
+--- PLAY -> MUSICF integration (zerobas self-check) ---
+PASS  m_one     PLAY"CDE"              MUSICF zb=1 want=1
+PASS  m_three   PLAY"C","E","G"        MUSICF zb=7 want=7
+PASS  m_two     PLAY"C","E"            MUSICF zb=3 want=3
+
+ALL PASS

@@ -427,8 +427,26 @@ pt_note_amp:
                                             ; alongside bit 4 (measured: S8 default-V -> $18)
 
 ; --- pt_cmd_rest: queue a REST packet (3 B: tag, duration) for the parsed length
+; 🎵 D-PLAYBARER (2026-11-05): a BARE `R` is a QUARTER whatever `L` says, and `R.`
+; is ERR 5 -- both references (scratchpad/playrate_dots2.out, playrate_rest_3way.out,
+; playrate_rdot.out: 8 bare R under L8 = 8 x R4 on the VG-8020 and the CF-3300; an
+; explicit R4. / R64. takes its dots). N0 keeps L's length (pt_rest_n0): unmeasured.
 pt_cmd_rest:
+                call    pt_numeq            ; HL = an explicit length, CF=1
+                jr      c,pcr_len
+                call    pqs_peek
+                jr      c,pcr_q             ; end of the string: a quarter
+                cp      '.'
+                jp      z,pt_illegal        ; `R.`: ERR 5 on both references
+pcr_q:
+                ld      hl,4
+                scf
+pcr_len:
+                call    pt_length_k         ; HL = frames (the explicit length checked)
+                jr      pcr_pkt
+pt_rest_n0:
                 call    pt_length_eq        ; HL = frames
+pcr_pkt:
                 ret     c
                 ld      a,3
                 call    pt_pkt              ; REST: 3 B
@@ -447,7 +465,7 @@ pt_cmd_n:
                 cp      97
                 jp      nc,pt_illegal       ; > 96
                 or      a
-                jr      z,pt_cmd_rest       ; N0 = rest
+                jr      z,pt_rest_n0        ; N0 = rest (L's length)
                 ; 🔴 NO `dec a` HERE: `N n` INDEXES pt_period AT n, NOT n-1.
                 ; Measured on both references (D-KWPLAY 2026-09-15, scratchpad/
                 ; playnote_probe.py): N1 sounds 3228 = pt_period[1] and N96 sounds 13
@@ -599,10 +617,20 @@ pgf_dot:
                 dec     c
                 jr      nz,pgf_dot
 pgf_min:
-                ld      a,h                 ; clamp to a minimum of 1 frame
-                or      l
+                ; 🎵 D-PLAYRATE (2026-11-05): a MINIMUM OF 5 FRAMES, after the dots --
+                ; every note and every rest, on the VG-8020 (50 Hz) and the CF-3300
+                ; (60 Hz) alike: B - A = 5n + 1 for n short notes, T32..T255, L8..L64,
+                ; dotted, N, V0 (scratchpad/playrate_grid_3way.out, playrate_dots_3way.out).
+                ; Not a fill rate: short notes behind long ones are as slow
+                ; (playrate_measure_3way.out row 10). It was a minimum of 1.
+                ld      a,h
+                or      a
                 ret     nz
-                inc     hl
+                ld      a,l
+                cp      5
+                ret     nc
+                ld      l,5
+                or      a                   ; CF = 0: callers read CF as an error (`ret c`)
                 ret
 
 ; --- pt_div16: HL / DE -> HL = quotient (floor). Clobbers A, BC; DE kept -----

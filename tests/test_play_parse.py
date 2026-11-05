@@ -291,6 +291,28 @@ def run():
           q, [note(6 * 12 + 0 - 12, length=8), ("END",)])
     check("PLYCNT counted two PLAYs", m.mem[PLYCNT], 2)
 
+    # D-PLAYBARER / D-PLAYRDOT (2026-11-05): a bare R is a QUARTER whatever L says, R.
+    # is ERR 5; an explicit length takes L's place and its dots; N0 keeps L's length.
+    # Both references (scratchpad/playrate_dots2.out, playrate_rdot.out).
+    q4 = mml_ref.note_frames(120, 4)
+    rest = lambda fr: ("NOTE", 0, 0, fr)
+    m, st = parse([b"L8RR"])
+    check("bare R under L8 is a quarter", (st, decode_queue(m, 0)),
+          (0, [rest(q4), rest(q4), ("END",)]))
+    m, st = parse([b"L16R"])
+    check("bare R under L16 is a quarter", decode_queue(m, 0), [rest(q4), ("END",)])
+    m, st = parse([b"L8R16R4."])
+    check("explicit R16 / R4. take their own length and dots", decode_queue(m, 0),
+          [rest(mml_ref.note_frames(120, 16)), rest(mml_ref.note_frames(120, 4, 1)), ("END",)])
+    m, st = parse([b"L8R."])
+    check("R. is ERR 5", st, 5)
+    m, st = parse([b"L8N0"])
+    check("N0 keeps L's length", decode_queue(m, 0), [rest(mml_ref.note_frames(120, 8)), ("END",)])
+    m, st = parse([b"T255L64CR64"])
+    check("the 5-frame floor: T255 L64 note and R64", decode_queue(m, 0)[1:],
+          [rest(5), ("END",)])
+    check("the 5-frame floor reaches the queue", decode_queue(m, 0)[0][3], 5)
+
     # D-PLAYPHASE (2026-11-05): pt_getframes' tempo*length became a shift-and-add
     # multiply (it was `tempo` repeated adds). Every tempo x length, 0-2 dots,
     # against the oracle -- the multiply is the part a sweep of a few notes misses.
@@ -301,9 +323,9 @@ def run():
             for dots in range(3):
                 cpu = mf.call("pt_getframes", d=tempo, e=length, c=dots, b=0x5A)
                 want = mml_ref.note_frames(tempo, length, dots)
-                if cpu.hl != want or cpu.b != 0x5A:
+                if cpu.hl != want or cpu.b != 0x5A or cpu.f & 1:   # CF set reads as an error
                     bad.append((tempo, length, dots, cpu.hl, want, cpu.b))
-    check("pt_getframes: every tempo 32..255 x length 1..64 x 0..2 dots (B kept)",
+    check("pt_getframes: every tempo 32..255 x length 1..64 x 0..2 dots (B kept, CF clear)",
           bad[:3], [])
 
     print("\n" + (f"{fails} FAILED" if fails else
