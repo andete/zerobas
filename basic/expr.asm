@@ -201,11 +201,17 @@ cl_opnd_lo:
                 call    var_name_key        ; BC = key, HL past the name, VARTYPE
                 ld      a,(VARTYPE)
                 cp      DEFTBL_STR
-                jr      z,clo_probe
+                jr      z,clo_strkey
                 push    hl
                 pop     ix                  ; IX = past the name
                 call    ev_f_keyed
                 jr      cl_after
+clo_strkey:                                 ; round 5b: a STRING name, keyed once too --
+                push    ix                  ; [guard], the probe's own shape below
+                call    str_eval_keyed      ; basic/files.asm (BC = key, HL past the name)
+                jr      c,cl_str
+                pop     ix
+                jr      cl_opnd_hi
 clo_probe:
                 ; string-compare S2: probe the operand for a string before
                 ; committing to the numeric parse. BUG C (Fable, 2026-07-17): a

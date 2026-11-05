@@ -126,6 +126,7 @@ seo_name:
                 jr      nc,str_eval_no      ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
+seo_keyed:                                  ; D-TRAPCOST round 5b: cl_opnd_lo's keyed entry
                 ld      a,(hl)
                 cp      '('
                 jp      z,str_eval_arr      ; string array-element rvalue (arrays

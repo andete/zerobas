@@ -17263,8 +17263,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       tail), a string name takes the old probe ([`trapcost5_prof1.out`](scratchpad/trapcost5_prof1.out)).
       ⚠️ The cost it moves: a STRING variable at an operand's start is now scanned three times
       (var_name_key here, then the probe's var_str_type and var_name_key), one more than before.
-      ➡️ NEXT: hand the key into the probe's string-variable arm to make that once too; then
-      29768 vs ~24570 T/pass.
+      ✅ **ROUND 5b (2026-11-06): a STRING name is keyed once too** -- cl_opnd_lo enters
+      str_eval_one's string-variable arm after ITS var_name_key (seo_keyed, basic/strvar.asm)
+      through str_eval_keyed (basic/files.asm, + the `+` tail); the $4EF8 pad is now 0 B.
+      1000 x `B=-(A$="AB")`: 380 -> 369 frames (🔮 ~-8 -> -11), VG-8020 251
+      ([`strkey_time.out`](scratchpad/strkey_time.out)); string operand forms identical to the
+      VG-8020 ([`strkey_measure.out`](scratchpad/strkey_measure.out)). ➡️ NEXT: 29768 vs ~24570
+      T/pass on case (e); and a string compare is 1.47x the VG-8020 -- profile it (the host rig
+      cannot run the CMP tenant yet: zero passes).
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

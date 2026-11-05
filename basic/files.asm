@@ -738,6 +738,15 @@ ev_f_keyed:
                 ld      a,(VARTYPE)
                 jp      var_load_fac
 
+; --- str_eval_keyed: str_eval for a STRING name cl_opnd_lo has already keyed -----
+; (D-TRAPCOST round 5b). In: BC = key, HL = past the name. str_eval_one's own
+; string-variable arm from just after ITS var_name_key (seo_keyed, basic/strvar.asm),
+; then str_eval's `+` tail -- exactly what str_eval_ix would have done from the name.
+str_eval_keyed:
+                call    seo_keyed
+                ret     nc
+                jp      str_concat_tail
+
 ; moved here from basic/vars.asm (2026-11-05, D-TRAPCOST round 4: room in front of $4EF8)
 ; --- var_load_fac: BC=key, A=type -> FAC set, FACTYP=type, DE=int16 fast ----
 ; path (§9.4/§10.3 discipline: same sticky-FACTYP + flt_int_result contract
