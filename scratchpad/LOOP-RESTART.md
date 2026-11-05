@@ -11,7 +11,20 @@ session and the loop resumes exactly where it stopped.
 | speed pause LIFTED | offered lift now / lift with a ~256 B main-page-1 floor / lift at a D-ROMSIZE step; picked **"1"** (lift now, no floor) | TIER 5 back in plain tier order, ABOVE tier 6. First: D-TRAPCOST, then D-TRAPSTMT (`scratchpad/trapstmt_wip.patch`), D-RECSLOW. The 10-20 / 10-21 ROM-space rulings (interleave, keep the fast GC, pin pads are free space, no new RAM for the page-0 call-back) still hold |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
-## 🟢 STATE AS OF 2026-11-05 (midday) — THE CURRENT ONE (the rulings table above; the 2026-10-31 section below and every table it points to still hold)
+## 🟢 STATE AS OF 2026-11-05 (evening) — THE CURRENT ONE
+
+- **Landed (5366794b, FULL 242/242):** D-TRAPCOST round 3 (66 -> 54 frames per 100 handler
+  calls vs the VG-8020's 39: name scanning as plain compares, `ary_resolve_fast` in the $6CF3
+  pad, `var_alloc_or_find` via the main-ROM walk) and D-PLAYPHASE (a blocked PLAY's window
+  call cost ~a frame, so its return landed a jiffy late by phase; the note-length multiply is
+  shift-and-add now, and pld_go retries when a frame passed).
+- **Lesson:** a gate that reads a TIME after a wait can be green by sub-frame phase; a pure
+  speed-up elsewhere flips it. Vary the surrounding program (a busy delay K, a different
+  statement mix) before believing a timing row -- `scratchpad/playphase_k.py` is the shape.
+- **Next:** D-TRAPCOST stays open (TIER 5): case (e) 35262 vs ~24570 T/pass, a flat profile;
+  str_eval_one scans every numeric name once before ev_f scans it again. Then by tier as below.
+
+## 🟢 STATE AS OF 2026-11-05 (midday) (the rulings table above; the 2026-10-31 section below and every table it points to still hold)
 
 - **Landed today, each FULL-gated and pushed:** D-TRAPCOST rounds 1-2 (cd400289, 03d18806:
   a GOSUB handler 96 -> 66 frames per 100 calls vs the VG-8020's 39 -- the array multiply,
