@@ -629,13 +629,10 @@ rp_trapchk:                                 ; interrupt-trap dispatch point (T1)
                 ; conservative reading -- preserve today's behaviour -- wins
                 ; until it is characterized. Same reason rp_break skips the STOP
                 ; trap's latch arm in direct mode.
-                ld      a,(DIRECTF)
-                or      a
-                jr      nz,rp_run
-                ld      a,(TRAPPEND)
-                or      a
-                call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
-                jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
+                ; 🪤 D-TRAPSTMT (2026-11-05): THE TEST MOVED TO exec_stmt, which every
+                ; statement of the line -- the first one included -- passes through
+                ; (es_trap, basic/traps.asm, keeps the direct-mode rule above). Kept
+                ; here, it would count a deferred `X ON` twice at a line start.
 rp_run:
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)

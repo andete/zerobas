@@ -6,10 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # `ON` — the start of eight different statements
 
-> **Status (2026-10-09):** `ON` has no form of its own; it only ever starts one
+> **Status (2026-11-05):** `ON` has no form of its own; it only ever starts one
 > of the statements below, and each is tracked and documented as that
 > statement. `ON INTERVAL GOSUB`, which has no other page, is covered in full
-> here: every measured form agrees with the VG-8020.
+> here: every measured form agrees with the VG-8020 except one, `INTERVAL STOP`
+> on a timer that is not on (D-TRAPNEVERON, below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -70,7 +71,11 @@ agrees on zerobas
   `INTERVAL ON` with nothing armed is accepted and does nothing.
 - **`INTERVAL STOP` remembers, `INTERVAL OFF` forgets.** While stopped the
   timer keeps running; at most one missed period is held back and fires
-  straight after `INTERVAL ON`, however many periods went by.
+  once `INTERVAL ON` and the statement after it have run, however many
+  periods went by. On the VG-8020 that is only so when the timer was on when
+  `INTERVAL STOP` ran.
+- **The handler runs between two statements**, also in the middle of a line;
+  after its `RETURN` the rest of the line runs.
 - **The period counts from the moment the trap fires**, not from the
   handler's `RETURN`. So a handler that takes longer than the period runs
   again the moment it returns, and the main program never gets another turn —
@@ -115,8 +120,14 @@ the test rather than the count. Run on the VG-8020 and on zerobas on
 
 ## Differences from the reference
 
-None known for `ON INTERVAL GOSUB`. The other `ON` statements' differences, if
-any, are on their pages.
+- **`INTERVAL STOP` on a timer that is not on** (D-TRAPNEVERON, found
+  2026-11-05, open). After `ON INTERVAL=50 GOSUB 100:INTERVAL STOP`, with no
+  `INTERVAL ON` before it, or after `INTERVAL ON:INTERVAL OFF:INTERVAL STOP`,
+  the VG-8020 holds no period back: two periods later `INTERVAL ON` calls
+  nothing. zerobas holds one back and calls the handler
+  ([`trapneveron_run.out`](../../scratchpad/trapneveron_run.out)).
+
+The other `ON` statements' differences, if any, are on their pages.
 
 ## What we found, and how
 
@@ -147,8 +158,16 @@ shared trap machinery (the per-frame poll in
 - [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
 - [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
 
+- **The handler ran only at the end of a line** (fixed 2026-11-05, D-TRAPSTMT).
+  The VG-8020 runs it between any two statements; a held-back period, released
+  by `INTERVAL ON`, ran here at the next boundary and there after one more
+  statement (D-TRAPLATCHWHEN). See
+  [interrupts and traps](../concepts/interrupts-and-traps.md).
+
 ## Tests that cover it
 
 - `make interval-trap-acceptance` — the 149-case `ON INTERVAL` gate.
+- `make trapstmt-acceptance` — where a released period is served: four rows
+  with the handler between a line's statements.
 - `make kwsweep` — the everyday row (an armed, enabled timer fires) and the
   `INTERVAL OFF` row.

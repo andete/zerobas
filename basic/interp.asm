@@ -621,6 +621,15 @@ exec_stmt:
                                             ; token buffer) -- clobbering it made every
                                             ; statement dispatch on $E3D4 -> syntax error
                                             ; (Fable review 2026-07-16). DE is dead on entry.
+                ; 🪤 D-TRAPSTMT (2026-11-05): A TRAP IS DISPATCHED BETWEEN STATEMENTS,
+                ; not only between lines: on the VG-8020 an ON INTERVAL=1 handler
+                ; lands at every statement boundary of a long line; here it landed at
+                ; the line's end only (scratchpad/trapstmt_run.out). One RAM load in
+                ; the no-trap case, BEFORE skipsp_test so A needs no saving;
+                ; es_trap (basic/traps.asm) may not return.
+                ld      a,(TRAPPEND)
+                or      a
+                call    nz,es_trap
                 call    skipsp_test ; leading spaces are skipped (spec §5)
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`

@@ -377,52 +377,6 @@ tsn_ary:
                                             ; is a one-row knife rather than a no-op).
                 jp      ary_store_write     ; array: element := DE, coerced
 
-; --- tgt_store_ref: a READ string, BY REFERENCE (D-READREF, 2026-10-07) -----
-; in:  BC = key (scalar targets only), DE = the item's first byte IN THE PROGRAM
-;      TEXT, STRSCR[0] = its length, (TGT_ADDR).
-; The descriptor [len][ptr] is written straight into the target: no heap body.
-; Both references charge a READ string nothing -- 9 x 40-char DATA rows READ into
-; A$() leave FRE("") at 200 on the VG-8020, and ran out of string space at the
-; fifth here (probes/basic/basic_probe_readref.py; Vleermuis, a 1989 type-in,
-; died on it). Joost's ruling 2026-09-27: point at the program text. The heap's
-; GC already leaves a descriptor that points outside [FRETOP,C) alone; MID$
-; copies such a body out before writing (sub/strheap.asm sh_mid_store); an edit,
-; NEW or LOAD clears the variables (row `edit`), so none can dangle.
-tgt_store_ref:
-                ld      hl,RVDESC
-                ld      a,(STRSCR)
-                ld      (hl),a
-                inc     hl
-                or      a
-                jr      nz,tsr_ptr
-                ld      d,a
-                ld      e,a                 ; length 0 -> ptr 0, the heap's convention
-tsr_ptr:
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-tgt_store_desc:                             ; D-LITREF: RVDESC already filled
-                ld      de,(TGT_ADDR)
-                ld      a,d
-                or      e
-                jr      nz,tsr_put          ; an array element: DE = its descriptor
-                ; D-NGRAM (2026-10-10): the scalar's slot through var_alloc_or_find
-                ; (type 1, the `$` unifier) instead of its open-coded twin -- 15 B.
-                ; Its contract is CF + HL = the entry / NC on OOM with FPERR set; no
-                ; caller of tgt_store_desc / _ref reads the flags (FPERR is the
-                ; signal: str-engine's `xor a`, ex_read's check_expr_errors).
-                ld      a,1
-                call    var_alloc_or_find
-                ret     nc
-                ld      de,3
-                add     hl,de
-                ex      de,hl               ; DE -> the scalar's descriptor
-tsr_put:
-                ld      hl,RVDESC
-                ld      bc,3
-                ldir
-                ret
-
 ; --- usr_fcerr: $475A, the published "Illegal function call" entry ----------
 ; D-USRDEF (2026-11-04): the address every USRTAB vector holds at power-on on the
 ; VG-8020 (read with PEEK: 475A x 10), so an un-DEF'd USR raises ERR 5 there; and
@@ -431,6 +385,7 @@ tsr_put:
 usr_fcerr:
                 ld      a,5                 ; Illegal function call
                 jp      raise_error
+
 
 ; --- tgt_store_str: the STRSCR field -> the resolved target -----------------
 ; in:  BC = key (scalar targets only), STRSCR = [len][bytes], (TGT_ADDR).

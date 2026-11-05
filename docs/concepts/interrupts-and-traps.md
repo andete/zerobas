@@ -6,8 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # Interrupts and traps — what runs between statements
 
-> **Status (2026-10-12):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
-> background `PLAY` match the VG-8020 in every case measured. Open: traps are
+> **Status (2026-11-05):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
+> background `PLAY` match the VG-8020 in every case measured, except that
+> `INTERVAL STOP` holds back a period here even when the timer was never on or
+> was last switched off (D-TRAPNEVERON). Open: traps are
 > not dispatched at the prompt, where the reference has not been measured
 > (D-DIR-3); `PLAY(n)` on the statement right after a `PLAY` (declined by
 > ruling). Keys typed during long disk work are nearly all kept here, where the
@@ -53,8 +55,10 @@ nothing, F3 300. `INTERVAL` is not a keyword on MSX1 — it is typed as `INT`,
   until the matching `… ON`. `ON … GOSUB` with no line number removes the
   handler.
 - **`… OFF` forgets.** An event while the trap is off is lost.
+- **A handler runs between two statements**, never in the middle of one, and
+  not only at the end of a line: after its `RETURN` the rest of the line runs.
 - **`… STOP` differs per trap.** For `INTERVAL` it holds back one missed period,
-  which fires as soon as `INTERVAL ON` runs. For `KEY`, `STRIG` and `SPRITE`
+  which fires once `INTERVAL ON` and the statement after it have run. For `KEY`, `STRIG` and `SPRITE`
   it behaves exactly like `OFF`, measured on the VG-8020: a function key is
   typed normally, a press or collision is not remembered.
 - **A trap is suspended while its own handler runs**, and switched back on by
@@ -158,14 +162,12 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **How soon a held-back event fires** (D-TRAPLATCHWHEN, found 2026-10-09,
-  open, TIER 6). After `INTERVAL STOP` has held a period back, `INTERVAL ON`
-  releases it on both machines, but not at the same moment: in this page's
-  example without line 65's short wait, the `PRINT` on the very next line
-  read 1 on zerobas and still 0 on the VG-8020, which had not yet run the
-  handler ([`traplatch_run.out`](../../scratchpad/traplatch_run.out)). zerobas
-  raises the event at
-  the next statement boundary; when the reference does is not yet pinned.
+- **`INTERVAL STOP` on a timer that is not on** (D-TRAPNEVERON, found
+  2026-11-05, open, TIER 6). The VG-8020 holds a period back only if the timer
+  was on when `INTERVAL STOP` ran: after `ON INTERVAL=50 GOSUB 100:INTERVAL
+  STOP`, or after `INTERVAL ON:INTERVAL OFF:INTERVAL STOP`, two periods later
+  `INTERVAL ON` calls nothing. zerobas holds one back in both cases and calls
+  the handler ([`trapneveron_run.out`](../../scratchpad/trapneveron_run.out)).
 - **Keys typed during long disk work** are nearly all kept here, and the
   CF-3300 loses some (D-FDCDI). Not every one: a key that lands while a
   sector's bytes move can still go, as on the reference -- one in 22 at one of
@@ -183,6 +185,18 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   `Syntax error` instead, deliberately.
 
 ## What we found, and how
+
+- **Traps were served at the end of a line, not between its statements**
+  (fixed 2026-11-05, D-TRAPSTMT and D-TRAPLATCHWHEN). With a timer firing every
+  frame and markers between a line's statements, the VG-8020's handler ran at
+  every statement boundary and zerobas's only at the line's end
+  ([`trapstmt_run.out`](../../scratchpad/trapstmt_run.out)). A held-back period
+  released by `INTERVAL ON` fires after the statement that follows it on the
+  reference; zerobas fired it at the next boundary, or with line-level serving
+  at the line's end. The first fix had to be backed out: a handler as small as
+  `H(M)=H(M)+1:RETURN` took more than a frame here, so under a timer firing
+  every frame the program never moved on. Making handlers cheaper came first
+  (D-TRAPCOST); the gate is `make trapstmt-acceptance`.
 
 - **Storing a typed program line held the interrupt off** (fixed 2026-10-12,
   D-TOKLAG). Each stored line walked the program with interrupts off, for

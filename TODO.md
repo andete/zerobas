@@ -19481,8 +19481,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (see D-CONTPROG's ✅ note). 🔎 usr_undef (`USR` on an un-DEF'd slot) still
       takes errmark_ret0 -- not measured here, not claimed.
 
-- [ ] 🔴 **A TRAP EVENT HELD BACK BY `INTERVAL STOP` FIRES SOONER HERE THAN ON THE
+- [x] 🔴 **A TRAP EVENT HELD BACK BY `INTERVAL STOP` FIRES SOONER HERE THAN ON THE
       VG-8020 AFTER `INTERVAL ON` (D-TRAPLATCHWHEN, found 2026-10-09).**
+      ✅ **FIXED 2026-11-05 WITH D-TRAPSTMT** (trap_pend_late: `INTERVAL ON` sets TRAPPEND
+      to 2, so the statement after it runs first). Gate: `make trapstmt-acceptance`.
       🎚️ TIER 6 — when a held-back trap event is dispatched
       🤖 **AUTONOMOUS** — measure the reference's moment first.
       📏 [`scratchpad/traplatch_run.out`](scratchpad/traplatch_run.out) (the
@@ -19504,8 +19506,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       dispatches traps only at LINE boundaries. Fix them together (the one-statement rule
       needs statement-level dispatch to be expressible at all).
 
-- [ ] 🔴 **D-TRAPSTMT — ZEROBAS DISPATCHES INTERRUPT TRAPS AT LINE BOUNDARIES, THE VG-8020
+- [x] 🔴 **D-TRAPSTMT — ZEROBAS DISPATCHES INTERRUPT TRAPS AT LINE BOUNDARIES, THE VG-8020
       AT STATEMENT BOUNDARIES (found 2026-11-05 by D-TRAPLATCHWHEN's `mid` row)**
+      ✅ **FIXED 2026-11-05 (after D-TRAPCOST rounds 1-2): the backed-out patch re-applied,
+      WITHOUT its grace after RETURN.** Gate `make trapstmt-acceptance`
+      ([`basic_probe_trapstmt.py`](probes/basic/basic_probe_trapstmt.py) ->
+      [`trapstmt2_gate.out`](scratchpad/trapstmt2_gate.out)): an INTERVAL event latched under
+      `INTERVAL STOP` and released mid-line -- `on` / `then` / `for` / `eol` read H B = 1 3 /
+      1 2 / 0 3 / 1 2 on both, 🔮 all four HIT; the unpatched ROM reads 3 3 / 2 2 / 1 3 / 0 2,
+      0/4 ([`trapstmt2_knife.out`](scratchpad/trapstmt2_knife.out)). 🔴 Two fixture misses on
+      the way, both MY fixture: an `ON INTERVAL=1` cut read where the next interrupt fell, and
+      a cut with no `INTERVAL ON` before `INTERVAL STOP` read H=0 on the VG-8020 -- "the handler
+      never ran", which is a NEW divergence (D-TRAPNEVERON, below), not this one. Round 1
+      (the non-latched histogram) completes now with a handler of 0.66 frames
+      ([`trapstmt2_run.out`](scratchpad/trapstmt2_run.out)) and reads the same with and without
+      the one-statement grace after RETURN ([`trapstmt3_nograce.out`](scratchpad/trapstmt3_nograce.out)),
+      and without it a handler that outlasts a frame livelocks as on the reference
+      ([`trapstmt3_slow.out`](scratchpad/trapstmt3_slow.out) NONE, VG-8020 NONE) -- so the
+      grace (a kept divergence) went. Docs: concepts/interrupts-and-traps.md, keywords/ON.md.
+      🔴 **THE FIRST FULL BATTERY CAUGHT A SILENT SPRITE TRAP**: sprite-trap-acceptance 8 FAIL
+      (A_hit cnt 0 vs 57) and programs-acceptance's L4_sprite. The sprite source writes
+      TRAPPEND = $20 (sprtrap-body.inc, "any nonzero is a gate"), and es_trap read every value
+      but 1 as trap_pend_late's countdown -- re-set every frame, it never reached 1. es_trap
+      now defers on exactly 2. The class: a byte documented as a BOOLEAN gate had grown a
+      COUNT, and one writer relied on the boolean reading (grep every writer of a gate byte
+      before giving its values a meaning).
+
+- [ ] 🔴 **D-TRAPNEVERON — `INTERVAL STOP` HOLDS A PERIOD BACK HERE WHEN THE TIMER WAS NOT
+      ON; THE VG-8020 HOLDS NOTHING (found 2026-11-05 by the trapstmt-acceptance fixture)**
+      🎚️ TIER 6 — whether a held-back `INTERVAL` event exists at all.
+      🤖 **AUTONOMOUS** — measured; read where zerobas's INTERVAL counter runs in STOP.
+      📏 [`trapneveron_probe.py`](scratchpad/trapneveron_probe.py) ->
+      [`trapneveron_run.out`](scratchpad/trapneveron_run.out): `10 ON INTERVAL=50 GOSUB
+      100:<arm>:T=TIME:H=-1`, 120 frames, `30 A=0:INTERVAL ON:A=1:A=2:B=A`. VG-8020 `stop`
+      (never ON) -1 2, `on` (ON, STOP) 1 2, `off` (ON, OFF, STOP) -1 2; zerobas 1 2 in all
+      three. 🔮 "stop -1 / on 1 / off -1 on the VG-8020, zerobas latches in `stop`" HIT;
+      "zerobas agrees on `off`" MISSED. So the reference's STOP keeps counting only from ON.
+      Next: does STOP from OFF then ON count a period that ends AFTER the ON (the counter
+      restarting at ON, or carrying)?
       🎚️ TIER 6 — when a trap event is dispatched (a handler runs at the end of a
       multi-statement line instead of between its statements).
       🤖 **AUTONOMOUS** — a run-loop change, FULL-gated.
@@ -19632,6 +19670,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ NEXT: case (e) 42943 vs ~24570 T/pass. Name scanning (is_letter / upcase / var_str_type /
       var_name_key / str_eval_ix ~9 %), the two array resolves through the sub ROM (~2 x 3000 T
       + 2 crossings), widen_and_finalize on the store.
+      🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
+      open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls).
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER

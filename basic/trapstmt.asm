@@ -94,7 +94,8 @@ ex_interval:
                 ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
                 call    set_state           ; (preserves HL)
                 bit     7,(hl)
-                call    nz,trap_pend        ; make check_traps look once more
+                call    nz,trap_pend_late   ; make check_traps look once more -- AFTER
+                                            ; the next statement (D-TRAPLATCHWHEN)
                 jp      pop_exec
 
 ; --- ON INTERVAL = <expr> GOSUB [<line>] -----------------------------------------

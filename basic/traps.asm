@@ -72,8 +72,110 @@ htimi_service:
 ; only A, which event_poll's own entry `push af` has already saved.
 trap_pend:
                 ld      a,1
+tpd_set:
                 ld      (TRAPPEND),a
                 ret
+; trap_pend_late: TRAPPEND := 2, one statement of grace (D-TRAPLATCHWHEN,
+; 2026-11-05). On the VG-8020 an event held back by `INTERVAL STOP` fires after
+; the statement that FOLLOWS `INTERVAL ON`: `INTERVAL ON:C=C+1:C=C+1` -> the
+; handler sees C=1; `INTERVAL ON:GOTO 50` / `:REM` -> 0, that statement being
+; the one (scratchpad/traplatchwhen_run.out, _run2.out). es_trap counts it down.
+trap_pend_late:
+                ld      a,2
+                jr      tpd_set
+
+; 📍 D-TRAPSTMT (2026-11-05): tgt_store_ref .. tsr_put (basic/vars.asm's string
+; target stores) live here, past the $4EF8 pin: they left the span in front of
+; the $475A pin so exec_stmt's trap hook fits, and the span behind it is full.
+; --- tgt_store_ref: a READ string, BY REFERENCE (D-READREF, 2026-10-07) -----
+; in:  BC = key (scalar targets only), DE = the item's first byte IN THE PROGRAM
+;      TEXT, STRSCR[0] = its length, (TGT_ADDR).
+; The descriptor [len][ptr] is written straight into the target: no heap body.
+; Both references charge a READ string nothing -- 9 x 40-char DATA rows READ into
+; A$() leave FRE("") at 200 on the VG-8020, and ran out of string space at the
+; fifth here (probes/basic/basic_probe_readref.py; Vleermuis, a 1989 type-in,
+; died on it). Joost's ruling 2026-09-27: point at the program text. The heap's
+; GC already leaves a descriptor that points outside [FRETOP,C) alone; MID$
+; copies such a body out before writing (sub/strheap.asm sh_mid_store); an edit,
+; NEW or LOAD clears the variables (row `edit`), so none can dangle.
+tgt_store_ref:
+                ld      hl,RVDESC
+                ld      a,(STRSCR)
+                ld      (hl),a
+                inc     hl
+                or      a
+                jr      nz,tsr_ptr
+                ld      d,a
+                ld      e,a                 ; length 0 -> ptr 0, the heap's convention
+tsr_ptr:
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+tgt_store_desc:                             ; D-LITREF: RVDESC already filled
+                ld      de,(TGT_ADDR)
+                ld      a,d
+                or      e
+                jr      nz,tsr_put          ; an array element: DE = its descriptor
+                ; D-NGRAM (2026-10-10): the scalar's slot through var_alloc_or_find
+                ; (type 1, the `$` unifier) instead of its open-coded twin -- 15 B.
+                ; Its contract is CF + HL = the entry / NC on OOM with FPERR set; no
+                ; caller of tgt_store_desc / _ref reads the flags (FPERR is the
+                ; signal: str-engine's `xor a`, ex_read's check_expr_errors).
+                ld      a,1
+                call    var_alloc_or_find
+                ret     nc
+                ld      de,3
+                add     hl,de
+                ex      de,hl               ; DE -> the scalar's descriptor
+tsr_put:
+                ld      hl,RVDESC
+                ld      bc,3
+                ldir
+                ret
+
+; es_trap: exec_stmt's statement-boundary trap test (D-TRAPSTMT, 2026-11-05).
+;   IN:  TRAPPEND != 0, HL = the statement about to run (spaces not yet skipped;
+;        exec_stmt skips them next anyway, so HL may come back past them).
+;   OUT: returns -- nothing fired (BC, DE kept: a handler's entry contract; A, F
+;        free: exec_stmt reloads A); or does NOT return: a trap fired, its GOSUB
+;        frame resumes at HL, and exec leaves as a GOTO to the handler line
+;        (GOTOTGT / GOTOFLAG, which rp_run hands to rp_goto) -- the run loop's
+;        own `call exec` return is the word under es_trap's.
+;   An end of line or a `:` is not a statement: ex_sep re-enters exec_stmt past
+;   the `:`, and the next line's first statement comes back here. Direct mode
+;   never dispatches (rp_trapchk's rule, moved with it).
+es_trap:
+                call    skipsp_test         ; A = the first non-space, Z = end of line
+                ret     z
+                cp      COLON
+                ret     z
+                ld      a,(TRAPPEND)
+                cp      2                   ; ONLY 2 is trap_pend_late's countdown: the
+                jr      nz,est_go           ; sprite source writes $20 (sprtrap-body.inc),
+                dec     a                   ; which a `dec` / `jr nz` read as one more
+                jr      tpd_set             ; deferral, every frame -- it never fired
+est_go:                                     ; (sprite-trap-acceptance, 2026-11-05)
+                ld      a,(DIRECTF)
+                or      a
+                ret     nz
+                push    bc
+                push    de
+                push    hl
+                call    check_traps         ; CF=1 -> fired, CURLINE = the handler
+                jr      c,est_fired
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+est_fired:
+                ld      hl,(CURLINE)
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ld      hl,8                ; hl de bc and es_trap's return are
+                add     hl,sp               ; dropped; the word under them is rp_run's
+                ld      sp,hl               ; `call exec` return (exec_stmt runs at
+                ret                         ; handler depth)
 
 event_poll:
                 push    af                  ; register-transparent on ALL paths (the
@@ -556,4 +658,11 @@ trap_return_check:
                 rla                         ; CF = PENDING: re-latched in the handler?
                 ret     nc
                 jp      trap_pend           ; yes -> fire again at the next boundary
+                ; 🟢 NO GRACE AFTER RETURN, AS ON THE VG-8020 (D-TRAPSTMT, 2026-11-05):
+                ; a handler that outlasts a frame under ON INTERVAL=1 livelocks both
+                ; (scratchpad/trapstmt_slow.out, trapstmt3_slow.out: no output in
+                ; 60 s). The first build needed a one-statement grace here because an
+                ; ordinary `H(M)=H(M)+1:RETURN` took 0.96 frames against the
+                ; reference's 0.39; D-TRAPCOST brought it to 0.66 and the round-1
+                ; program reads the same with or without it (trapstmt3_nograce.out).
 

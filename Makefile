@@ -1406,6 +1406,10 @@ inpquote-acceptance: repack-machine $(DISK_TEST_DSK)
 lpterrnl-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lpterrnl.py --gate
 
+# D-TRAPSTMT (2026-11-05): a trap is dispatched at a statement boundary.
+trapstmt-acceptance: repack-machine
+	python3 probes/basic/basic_probe_trapstmt.py --gate
+
 # D-USRDEF (2026-11-04): an unset USR is Illegal function call (USRTAB = $475A).
 usrdef-acceptance: repack-machine
 	python3 probes/basic/basic_probe_usrdef.py --gate
