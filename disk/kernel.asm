@@ -289,6 +289,35 @@ k_501E:
 ; was $0080 at the observed call site, §4.3). Body = login_body (free tail).
 ; CLEAN-ROOM: published LOGIN online-drive-bitmap contract (map.grauw.nl) +
 ; our own DRVCNT cell; no stock routine internals decoded.
+; din_str -- H_CHIN op 5: ONE STRING INPUT # field into STRSCR = [len][bytes]
+; (D-INPQUOTE2, 2026-11-05), the length byte the counter, with a PEEK -- what
+; main's consume-only reader could not do. Measured on the CF-3300
+; (scratchpad/inpquote_run.out): leading blanks and LFs are shed; an unquoted
+; field ends at a comma or a CR (taken, with its LF); a `"` as the first byte
+; opens a quoted field, inside which CR and LF are DATA; after the closing quote
+; the blanks are eaten and ONE comma, or ONE CR with its LF, with them -- any
+; other byte (`"AB"CD`) belongs to the NEXT read and stays (din_num's dnm_tail,
+; the same rule). out: CF set when the file ended (the caller's seq_end makes
+; that 55 only when nothing was read), as main's reader returned it.
+; 📍 Three pieces in three holes (this, dst_body + dst_put, dst_quoted): no hole
+; held all 70 B. IX = the row.
+din_str:
+                xor     a
+                ld      (STRSCR), a
+dst_lead:
+                call    din_peek
+                ret     c                   ; the end before any byte
+                cp      ' '
+                jr      z, dst_skip
+                cp      $0A
+                jr      z, dst_skip
+                cp      '"'
+                jp      nz, dst_body
+                call    din_take            ; the opening quote
+                jp      dst_quoted
+dst_skip:
+                call    din_take
+                jr      dst_lead
                 ds      $504E - $, $00  ; pad up to the pinned $504E LOGIN entry (M22a)
 k_504E:
                 jp      login_body      ; $504E: BDOS $18 LOGIN canonical entry (M22a)

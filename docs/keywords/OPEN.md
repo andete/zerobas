@@ -165,14 +165,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - **The position byte of an input channel.** On the CF-3300, header +6 of a
   disk input channel counts the bytes read (modulo 256), and an `EOF` call
   moves it on by one; here it stays 0.
-- **Related, filed against `INPUT #`** (TIER 6, D-INPQUOTE2): text after a
-  closing quote, and a quote that is never closed, are read differently. After
-  `"AB"CD` the CF-3300 hands `CD` to the next read; here it is dropped.
+- **Related, `INPUT #`** (fixed 2026-11-05, D-INPQUOTE2): text after a closing
+  quote, and a quote that is never closed, are now read as on the CF-3300 from
+  a disk file -- after `"AB"CD`, `CD` goes to the next read (see
+  [`INPUT`](INPUT.md)).
 
 - **`GRP:` draws zerobas's font, not the VG-8020's** -- the same
   difference as on the text screen, since both use the font of the
   machine's BIOS (C-BIOS here). Where each dot goes and how it is coloured
-  match. Not measured: `TAB(` and `SPC(` in a `PRINT #` to `GRP:`.
+  match. `TAB(` and `SPC(` in a `PRINT #` to `GRP:` agree too (measured
+  2026-11-05, [`grptab_run.out`](../../scratchpad/grptab_run.out)).
 
 **RAM usage** is not yet proven.
 

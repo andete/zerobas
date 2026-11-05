@@ -999,7 +999,7 @@ inp_str:
                                             ; range`, not `Syntax error`
                 push    hl                  ; guard the BASIC text cursor
                 push    bc                  ; guard the variable key across the read
-                call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
+                call    inp_strread         ; fill STRSCR [len][bytes] from the file
                 call    c,seq_end           ; the end: a failed read raises its code,
                                             ; nothing read raises 55 (D-SEQEOF R3)
 inp_got:

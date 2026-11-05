@@ -194,6 +194,16 @@ k_436C:
                                             ; fren_body with FDEL's own FCB, corrupting the
                                             ; target directory entry. See tier2-m26-spec.md
                                             ; sec 2.2.)
+; dst_quoted -- din_str inside the quotes: every byte is data, CR and LF too,
+; until the closing `"`; then din_num's dnm_tail eats what may follow it.
+dst_quoted:
+                call    din_peek
+                ret     c
+                call    din_take
+                cp      '"'
+                jp      z, dnm_tail
+                call    dst_put
+                jr      dst_quoted
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
                 jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)

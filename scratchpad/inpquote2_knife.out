@@ -1,0 +1,17 @@
+ROW num     CF=[5_| 2 |NX 0 ] ZB=[5_| 2 |NX 0 ] SAME
+ROW lead    CF=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+ROW trail   CF=[AB__| 4 |NX 0 ] ZB=[AB__| 4 |NX 0 ] SAME
+ROW embed   CF=[A_B| 3 |NX 0 ] ZB=[A_B| 3 |NX 0 ] SAME
+ROW both    CF=[AB__| 4 |NX 0 ] ZB=[AB__| 4 |NX 0 ] SAME
+ROW quoted  CF=[__AB__| 6 |NX 0 ] ZB=[__AB__| 6 |NX 0 ] SAME
+ROW comma   CF=[AB__| 4 |CD 0 ] ZB=[AB__| 4 |CD 0 ] SAME
+ROW empty   CF=[| 0 |NX 0 ] ZB=[| 0 |NX 0 ] SAME
+ROW qcomma  CF=[A,B| 3 |NX 0 ] ZB=[A,B| 3 |NX 0 ] SAME
+ROW qjunk   CF=[AB| 2 |CD 0 ] ZB=[AB| 2 |NX 0 ] DIVERGES
+ROW qjunkc  CF=[AB| 2 |CD,EF 0 ] ZB=[AB| 2 |EF 0 ] DIVERGES
+ROW qopen   CF=[| 11 | 55 ] ZB=[AB,CD| 5 |NX 0 ] DIVERGES
+ROW qmid    CF=[A#B#| 4 |NX 0 ] ZB=[A#B#| 4 |NX 0 ] SAME
+ROW qlead   CF=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+refcache: 14 hit, 14 miss, 14 stored
+FAIL: INPUT # string fields (3 diverge)
+refcache: 14 hit, 14 miss, 14 stored

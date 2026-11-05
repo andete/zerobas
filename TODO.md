@@ -19251,6 +19251,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reader has not got. The seqio tenant's `sq_numitem` already does exactly this
       for a numeric item, so a disk string item belongs there too. The tape is a
       peek of `CAL_*` (D-EOFCAS's); the console answers `?Redo` instead.
+      ✅ **DISK HALF FIXED 2026-11-05.** S10.C had since moved the disk reader into disk.rom
+      (hk_chin), so the "seqio tenant" above is stale: the string field is now H_CHIN op 5,
+      disk.rom din_str, beside din_num, with din_num's own dnm_tail / dnm_delim for what
+      follows the quote; main's inp_strread routes a DISK channel in field mode there
+      (LINE INPUT # and CAS: keep read_into_strscr). Three pieces in three holes (no hole
+      held 70 B): before $504E, $46BA, $4392. Main low region 414 -> 403 B at $3297; disk
+      free 540 -> 422 B (runs >= 16 B). All 14 file rows agree
+      ([`inpquote2_after.out`](scratchpad/inpquote2_after.out)); gate inpquote-acceptance
+      (probes/disk/disk_probe_inpquote.py) 14/14 ([`inpquote2_gate.out`](scratchpad/inpquote2_gate.out));
+      knife (HEAD's kernel / fat / driver / input / files) exactly qjunk, qjunkc, qopen
+      DIVERGE ([`inpquote2_knife.out`](scratchpad/inpquote2_knife.out)). 🔮 "all 14 agree"
+      HIT. ➡️ OPEN: the console's `?Redo from start` and the cassette (a CAL_* peek).
 
 
 - [ ] 🔴 **A FILE WHOSE CLUSTER CHAIN POINTS PAST THE VOLUME LOADS AS AN EMPTY
@@ -19528,6 +19540,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       check_traps, gosub_push's ctl_alloc + ctl_reloc (the machine stack MOVED under the new
       frame) and trap_return_check on top. It blocks D-TRAPSTMT: statement-level dispatch
       livelocks or crawls under ON INTERVAL=1 while one handler costs a frame here.
+      ⏸️ **WAITS ON JOOST'S 2026-10-20 SPEED PAUSE** ("pause working on speed and work on
+      rom space first") -- a TIER 5 slice; not picked until he lifts it.
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER

@@ -30,6 +30,32 @@ dsl_bcheck:
                 ld      a, 62               ; Bad drive name
                 ld      ix, raise_error
                 jp      calbak              ; raises; never returns
+; dst_body -- din_str's unquoted field (disk/kernel.asm din_str). A comma ends it
+; (taken), a CR ends it with its LF (din_num's dnm_delim), an LF is dropped.
+dst_body:
+                call    din_peek
+                ret     c
+                cp      ','
+                jp      z, dnm_eat          ; take it: the field is done
+                cp      $0D
+                jp      z, dnm_delim        ; the CR, and an LF after it
+                call    din_take
+                cp      $0A
+                call    nz, dst_put
+                jr      dst_body
+; dst_put -- A = a data byte -> STRSCR (a full one is read and dropped).
+dst_put:
+                ld      c, a
+                ld      hl, STRSCR
+                ld      a, (hl)
+                cp      STRMAX
+                ret     nc
+                inc     (hl)
+                ld      e, (hl)
+                ld      d, 0
+                add     hl, de
+                ld      (hl), c
+                ret
                 ds      $46BA - $, $00      ; pure $00 pad (M26, tier2-m26-spec.md
                                             ; §2.4: trace --resync confirmed $46BA is
                                             ; the kernel's real fixed $2F RDABS dispatch
@@ -616,6 +642,8 @@ hk_chin:
                 ld      a, c
                 cp      4
                 jr      z, din_num
+                cp      5
+                jp      z, din_str          ; D-INPQUOTE2: a string field
                 or      a
                 jp      nz, din_peek        ; 2: EOF() is the peek's CF (`jp`: din_num sits between)
                 ; 0: the next byte

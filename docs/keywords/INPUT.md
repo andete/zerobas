@@ -6,9 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `INPUT` — read a typed line into variables
 
-> **Status (2026-10-16):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded difference: text typed after a closing quote (below).
+> recorded difference: text typed after a closing quote at the console
+> (below); in a file it agrees since 2026-11-05.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -112,7 +113,8 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 **Text typed after a closing quote.** Typed at an `INPUT A$`, `"AB"CD` is
 `?Redo from start` on the VG-8020; zerobas takes `AB`. Measured on 2026-09-30
 ([`inpquote_run.out`](../../scratchpad/inpquote_run.out)) and filed as a
-TIER 6 item, D-INPQUOTE2, together with the same edge in files.
+TIER 6 item, D-INPQUOTE2. The same edge in a file (`INPUT #`) agrees since
+2026-11-05.
 
 **Every error** is not yet proven: the full set of errors `INPUT` can raise
 has not been listed and compared yet. **RAM usage** is not proven either: the
@@ -120,6 +122,17 @@ RAM comparison has rows only for the file form `INPUT #`, none yet for the
 keyboard form.
 
 ## What we found, and how
+
+- **`INPUT #` dropped what followed a closing quote** (fixed 2026-11-05,
+  D-INPQUOTE2). On the CF-3300, after a quoted field such as `"AB"CD`, `CD`
+  is left for the next read; only a comma, or a line end, right after the
+  quote (blanks aside) goes with the field. A quote that is never closed reads
+  to the end of the file, line ends included. zerobas threw away the rest of
+  the field, and read an unclosed quote only to the line end. A disk file's
+  field is now read inside the disk ROM, which can look at the next byte
+  without taking it ([`inpquote2_after.out`](../../scratchpad/inpquote2_after.out),
+  [`inpquote2_gate.out`](../../scratchpad/inpquote2_gate.out)). A cassette file
+  keeps the old reading.
 
 - **`PRINT INPUT$(1)` was a `Type mismatch`** (fixed 2026-10-30, D-PRSTRFN).
   `A$=INPUT$(1)` worked, but `PRINT` sorted its items with its own list of

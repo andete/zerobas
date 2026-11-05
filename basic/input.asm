@@ -432,13 +432,23 @@ inu_got:
 ; sq_numitem). A CAS: channel has no peek and keeps the field rule (commas and
 ; CR split; a blank does not).
 inp_numread:
+                ld      a,4
+inp_devread:                                ; A = the H_CHIN op (A survives the test)
                 ld      hl,(ARL_GETBYTE)
                 ld      de,fat_io_seqbyte
                 or      a
                 sbc     hl,de
                 jp      nz,read_into_strscr ; CAS: the field rule (FCH_RDMODE is 0)
-                ld      a,4
                 jp      din_call
+; inp_strread: one STRING INPUT # field -> STRSCR; CF = the end of the file. A
+; DISK channel reads it in disk.rom (H_CHIN op 5, din_str, D-INPQUOTE2 2026-11-05),
+; which can PEEK past a closing quote; a CAS: channel keeps main's reader.
+inp_strread:
+                ld      a,(FCH_RDMODE)
+                or      a
+                jp      nz,read_into_strscr ; LINE INPUT #: a whole line, main's rule
+                ld      a,5
+                jr      inp_devread
 
 ; inp_store: the parsed number -> the resolved target (console INPUT and INPUT #).
 ; in: BC = key, (TGT_ADDR) per tgt_parse, A (the type) / DE / FAC as inp_num leaves them.

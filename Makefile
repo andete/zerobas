@@ -1394,6 +1394,10 @@ expwrap-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_expwrap.py --gate \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
+# D-INPQUOTE2 (2026-11-05): a STRING INPUT # field's quotes, and what it leaves.
+inpquote-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_inpquote.py $(ONLY)
+
 # D-LPTERRNL (2026-11-05): an error ends a partial printer line, trapped or not.
 lpterrnl-acceptance: repack-machine
 	python3 probes/basic/basic_probe_lpterrnl.py --gate

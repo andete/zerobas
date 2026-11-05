@@ -180,8 +180,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   the CF-3300, whose free-space check wraps there; zerobas says `Disk full`.
   Every other record number, 1 to 4294967295 and negative ones counted back
   from 65536, agrees since 2026-11-04.
-- **Text after a closing quote** in `INPUT #` (D-INPQUOTE2, TIER 6, open):
-  `CD` in `"AB"CD` goes to the next read there and is dropped here.
+- **Text after a closing quote** in `INPUT #` from a cassette (D-INPQUOTE2,
+  TIER 6, open): `CD` in `"AB"CD` would be dropped there; from a disk file it
+  goes to the next read, as on the CF-3300, since 2026-11-05.
 - **`OPEN "CRT:" FOR INPUT`** is `Syntax error` here; on the CF-3300 the
   program never came back, and a hang is deliberately not copied (D-DEVBARE,
   2026-08-30).
