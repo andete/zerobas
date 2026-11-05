@@ -1,0 +1,10 @@
+L3_hanoi
+  Philips_VG_8020                ENDED t=38.6  lpt 7 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=44.0  SAME  x1.14 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=44.0  SAME  x1.14 time
+L4_sieve
+  Philips_VG_8020                ENDED t=56.3  lpt 9 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=66.0  SAME  x1.17 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=66.0  SAME  x1.17 time
+
+PASS: 2 program(s), 0 divergent run(s)

@@ -659,6 +659,10 @@ item — do **one item per session** to keep context lean.
       D-DBLNORM (TIER 1, a wrong comparison). Values print rounded where the 14th digit of a
       division differs by ruling (numbers.md). Before / after:
       [`progladder_l10.out`](scratchpad/progladder_l10.out).
+      ✅ **L3_hanoi + L4_sieve (2026-11-05): SAME, first run** -- recursion on GOSUB with a
+      hand-made frame stack, DEF FN, MID$= board drawing; a 2000-entry integer sieve,
+      AND / OR / XOR / NOT, \ and MOD of negatives, &H / &O / &B, HEX$ / BIN$ / OCT$, trapped
+      int16 overflow, CINT / FIX / INT at .5 ([`progladder_l13.out`](scratchpad/progladder_l13.out)).
       ✅ **L2_parts + L3_quiz (2026-11-05): SAME after D-PUSTYPE + D-RESNEXTEOL (which
       L2_parts found through a mis-typed `\\` field of mine) and D-LADFAST (which L3_quiz found)**
       -- parallel record arrays with `!` / `%`, insertion sort, PRINT USING string columns,
@@ -7562,7 +7566,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9995 (T-6FE392)8 (T-529ABE)` from `TODO.md:15147 (T-529ABE)`: a
+      `TODO.md:9999 (T-6FE392)8 (T-529ABE)` from `TODO.md:15151 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10301,7 +10305,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15147 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15151 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
