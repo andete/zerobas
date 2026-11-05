@@ -9120,7 +9120,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11611 (T-6FE392)8 (T-529ABE)` from `TODO.md:17293 (T-529ABE)`: a
+      `TODO.md:11611 (T-6FE392)8 (T-529ABE)` from `TODO.md:17297 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12080,7 +12080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17297 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14451,6 +14451,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE POOL ROUTE.** Evaluate every actual into the control
       pool before binding (`docs/spec-deffn-alias.md`). ⚠️ The 503-vs-505 reading
       quoted to him is 2026-08-27's; re-run it on today's ROM before building.
+      📏 **RE-RUN 2026-11-05 on today's ROM** ([`fnalias_today.out`](scratchpad/fnalias_today.out),
+      scratchpad/deffn_alias_probe.py): `o.alias` VG-8020 503 / CF-3300 503 / zerobas 505,
+      `o.aliasnest` 903 / 903 / 909, both controls equal (507, 907). 🔮 "unchanged since
+      08-27" HIT. The divergence stands; the pool-route build is next.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
