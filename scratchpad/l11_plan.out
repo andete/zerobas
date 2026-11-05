@@ -1,0 +1,7 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: program (data) change: probes/programs/L2_bank.bas probes/programs/L4_rpn.bas
+  hours since the last full green: 0.0 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 14 daily suites are due (last green 25 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  ⏱ kwtime / kwram are due (last measured 25 h ago, 25 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  emulator suites (1): programs-acceptance

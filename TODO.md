@@ -1698,6 +1698,11 @@ item — do **one item per session** to keep context lean.
       D-DBLNORM (TIER 1, a wrong comparison). Values print rounded where the 14th digit of a
       division differs by ruling (numbers.md). Before / after:
       [`progladder_l10.out`](scratchpad/progladder_l10.out).
+      ✅ **L4_rpn + L2_bank (2026-11-05): SAME, first run** -- an RPN calculator (tokenizer
+      with INSTR / MID$ / VAL, an array stack, ON GOTO, trapped Division by zero / Overflow
+      with RESUME to a line) and a single-precision savings ledger (`!` / `%` suffixes, INT
+      cent rounding, PRINT USING with commas, CINT / FIX / INT / STR$)
+      ([`progladder_l11.out`](scratchpad/progladder_l11.out)).
       ✅ **L5_chain (2026-11-01, `@DISK`): SAME in printer and screen** -- a program that
       writes three more as text files (PRINT # with CHR$(34) quoting), then `RUN "P2.BAS"`
       (variables cleared: `A` reads 0 in part two), DEFINT / `\` in the loaded part, a
@@ -9287,7 +9292,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11778 (T-6FE392)8 (T-529ABE)` from `TODO.md:17464 (T-529ABE)`: a
+      `TODO.md:11783 (T-6FE392)8 (T-529ABE)` from `TODO.md:17469 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12247,7 +12252,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17464 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
