@@ -566,16 +566,22 @@ pl_bad:
 ;   note_frames is the oracle. Preserves B (source count); clobbers A, C, DE, HL.
 pt_getframes:
                 push    bc                  ; save B (source count); C = dots
-                ld      a,d                 ; tl = tempo*length
+                ; 🐌 D-PLAYPHASE (2026-11-05): tl = tempo*length by shift-and-add, 8
+                ; steps. It was `tempo` repeated adds -- 120 at T120, ~3000 T a note,
+                ; a third of a PLAY window call, which with them cost about a whole
+                ; frame: the blocked PLAY then noticed room in the frame it appeared
+                ; or the next by sub-frame phase (basic/play.asm, pld_go).
+                ld      a,d                 ; A = tempo
                 ld      hl,0
-                or      a
-                jr      z,pgf_have_tl
-                ld      b,a
                 ld      d,0                 ; DE = length
+                ld      b,8
 pgf_mul:
+                add     hl,hl
+                rla                         ; tempo's next bit, high first
+                jr      nc,pgf_mul0
                 add     hl,de
+pgf_mul0:
                 djnz    pgf_mul
-pgf_have_tl:
                 ex      de,hl               ; DE = tl
                 ld      hl,12000
                 call    pt_div16            ; HL = 12000 / tl  (floor)

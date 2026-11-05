@@ -62,3 +62,19 @@ vft_num:
                 jr      nc,vft_lp
                 inc     h
                 jr      vft_lp
+
+; 🐌 D-TRAPCOST round 3 (2026-11-05): var_alloc_or_find (contract in basic/vars.asm)
+; asks the walk above FIRST. An entry that exists is what op 5 (aeng_scalar_alloc ->
+; scv_alloc -> scv_find, sub/arrays.asm) returns too, shadow included -- the walk
+; hands a live FN call to the same scv_find -- so only a MISS still pays the
+; tenant's find-or-insert. `A=I+7` stored through the sub ROM once per pass.
+var_alloc_or_find:
+                push    af                  ; the type, for the tenant on a miss
+                call    var_find_typed      ; BC kept; CF + HL = the entry
+                jr      nc,vaof_miss
+                pop     af
+                scf
+                ret
+vaof_miss:
+                pop     af
+                jp      vaof_engine

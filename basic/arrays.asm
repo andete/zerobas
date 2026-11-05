@@ -517,7 +517,9 @@ apsub_close:
                 call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,apc_release      ; a subscript expression already failed —
                                             ; first-error-wins, no engine call
-                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
+                call    ary_resolve_fast    ; -> Z ok / NZ: FPERR already mapped+set
+                                            ; (basic/files.asm: a 1-subscript read in
+                                            ; main, the rest via ary_engine_call)
 apc_release:
                 ; Release the whole frame: 2n value words + [KEY] + [TYPE:OP].
                 ; (ARY_NIDX) is the ONLY surviving record of n — SP is unchanged

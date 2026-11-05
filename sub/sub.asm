@@ -424,7 +424,7 @@ p0cb:
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the
 ; interpreter; a page-0 tenant can't reach it, so the tokeniser's identifier path
-; uses this co-located clone. is_letter -> upcase (tkfloat.asm).
+; uses this co-located clone (no upcase call since D-TRAPCOST round 3).
 ;
 ; ⚠️ THE is_ident_cont CLONE THAT USED TO SIT HERE IS GONE, AND THE DEAD-CODE
 ; GATE IS WHY (D-CNAME §3.1, docs/spec-basic-cname.md). basic/vars.asm is NOT
@@ -440,10 +440,9 @@ p0cb:
 ; all three of its callers and is untouched.
 is_letter:
                 push    af
-                call    upcase
-                cp      'A'
-                jr      c,sil_no
-                cp      'Z'+1
+                and     $DF                 ; upcase's verdict (main's is_letter)
+                sub     'A'
+                cp      26
                 jr      nc,sil_no
                 pop     af
                 scf

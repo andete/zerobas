@@ -491,7 +491,9 @@ Per construct, as built: `(` 6 (`call ev_logic` 2 + sentinel 2 + `call ev_f` 2);
 a pending `+ − * / ^` or relational 14 (entry 2 + FACTYP+FAC 10 + lhs 2); a pending
 `AND OR XOR EQV IMP MOD \` 4 (entry 2 + lhs 2); `NOT` 2 (its entry); unary minus 6
 (`call ev_pw` 2 + sentinel 2 + `call ev_f` 2). A plain factor reaches 18 B under
-`eval`'s entry where it reached 20.
+`eval`'s entry where it reached 20 -- 16 B since D-TRAPCOST round 3 (2026-11-05):
+the deepest point was `is_letter`'s nested `call upcase` under `str_eval_one`, and
+`is_letter` no longer calls.
 
 **The typed frame (built 2026-10-20, host-measured; the machine battery is still
 to run).** A pending `+ − * / ^` or relational kept the lhs as DE plus a fixed

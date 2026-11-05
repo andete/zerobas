@@ -118,10 +118,13 @@ pl_dispatch:
                 xor     a
                 ld      (AUDIO_STATUS),a    ; a NEW PLAY (PLAY_MORE would continue one)
 pld_go:
+                ld      a,(JIFFY)
+                push    af                  ; [the frame this window is tried in]
                 push    hl                  ; save the statement cursor -- CALSLT clobbers HL
                 call    sr_inl1             ; D-STUBINL: CF=1 iff the sub-ROM is absent (no call made)
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE)
                 pop     hl                  ; restore cursor so exec_stmt chains the next stmt
+                pop     bc                  ; B = that frame (`pop` keeps CF)
                 jp      c,pl_absent
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)
                 or      a
@@ -135,8 +138,20 @@ pld_go:
                 ; not the tenant (a page-1 tenant must not wait): one frame, then
                 ; the next window. Ctrl-STOP leaves PLAY; the run loop's own check
                 ; at the next statement sees the key still down and breaks.
+                ; 🔴 D-PLAYPHASE (2026-11-05): NOT a bare `halt`. The tick that frees
+                ; room can run DURING the window call, after its room test; a `halt`
+                ; then waited a whole frame more, and the PLAY returned a jiffy late
+                ; -- or not, by where in the frame the interpreter happened to call
+                ; it. playqueue_gate's block points read 98 98 98 on the VG-8020 and,
+                ; after a pure interpreter speed-up, 99 97 98 here
+                ; (scratchpad/trapcost3_playqueue.out). A frame that passed during the
+                ; window means: try again now.
+                ld      a,(JIFFY)
+                cp      b
+                jr      nz,pld_brk
                 ei
                 halt
+pld_brk:
                 push    hl
                 call    BREAKX
                 pop     hl

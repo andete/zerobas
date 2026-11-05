@@ -332,12 +332,14 @@ tokenise:
 ; include, gated.
 
 ; --- is_letter: CF set if A is 'A'..'Z' or 'a'..'z' (A preserved) ----------
+; 🐌 D-TRAPCOST round 3 (2026-11-05): `and $DF` folds the case in place of the
+; `call upcase` -- it maps exactly $61-$7A onto $41-$5A and nothing else into that
+; range (bit 7 is kept), so the verdict is upcase's; 23 calls per handler pass.
 is_letter:
                 push    af
-                call    upcase
-                cp      'A'
-                jr      c,il_no
-                cp      'Z'+1
+                and     $DF
+                sub     'A'
+                cp      26                  ; CF iff 'A'..'Z' / 'a'..'z'
                 jr      nc,il_no
                 pop     af
                 scf

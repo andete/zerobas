@@ -277,7 +277,9 @@ def run():
         sl = {depths[1] - depths[0], depths[2] - depths[1]}
         check(f"{name:6s} holds {want} B per pending level", sl == {want}, f"slopes={sl}")
     _, _, low, _ = ev("1")
-    check("a plain factor reaches 18 B under eval's entry", SP_ENTRY - low == 18,
+    # 16, not 18, since D-TRAPCOST round 3 (2026-11-05): the deepest point was
+    # str_eval_one -> is_letter -> upcase, and is_letter no longer calls upcase.
+    check("a plain factor reaches 16 B under eval's entry", SP_ENTRY - low == 16,
           f"{SP_ENTRY - low}")
 
     # ------------------------------------------------------------------

@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `PLAY` — play music in the background
 
-> **Status (2026-10-31):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: what `PLAY(n)` reads on the very statement after a `PLAY`
 > (below).
@@ -165,6 +165,18 @@ the ten test programs also showed a different amount of free string space.
   and the voices meet at the end of each `PLAY`. Two bugs in the first version
   were caught by the existing tests: `BEEP` lost its place in the line, and
   an envelope note with a new `M` was played at a wrong volume.
+- **A `PLAY` waiting for room returned a jiffy late every few bars**
+  (fixed 2026-11-05, D-PLAYPHASE; found when an interpreter speed-up turned
+  the queue test red). Twelve bars `PLAY`ed in a loop return 98 jiffies apart
+  on the VG-8020; here the gaps ran 97, 98, 99 in turn, and which of them a
+  program saw depended on how its other statements happened to line up with
+  the 50 Hz tick ([readings](../../scratchpad/playphase_k.out)). The waiting
+  `PLAY` re-reads its string each time it tries for room, and that try took
+  about a whole tick, so it noticed the room either in the tick it appeared or
+  the next. The note-length calculation inside that try is now much shorter,
+  and a try that straddles a tick is repeated at once instead of waiting
+  another; the gaps are 98 every time, whatever the program does around the
+  `PLAY` ([readings](../../scratchpad/playphase_k_after.out)).
 - **`BEEP` kept the tempo and the other `PLAY` settings** (fixed 2026-10-31,
   found with D-PLAYQUEUE). After `PLAY "T255L16"` and `BEEP`, a `C` lasted 3
   jiffies here and 27 on the VG-8020, which goes back to its defaults; a

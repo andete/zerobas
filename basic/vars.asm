@@ -76,15 +76,24 @@
 ; `B.5=7` from ERR 2 to ERR 0 -- MSX1's tokeniser charset and its executor
 ; charset really are different charsets (PROVENANCE.md). This skips $20 BEFORE
 ; the same test; `B .5` stays Syntax error.
+; 🐌 D-TRAPCOST round 3 (2026-11-05): the same verdict as skip_spaces + is_letter +
+; the digit test, as plain compares -- skip_spaces is called only ON a space, and
+; each range test leaves CF = "inside" for the `ret c`. ~20 calls per handler pass.
 is_ident_cont:
-                call    skip_spaces         ; A = first non-space, HL on it
-                call    is_letter           ; letter -> CF set, A preserved
-                ret     c
+                ld      a,(hl)
+                cp      ' '
+                call    z,skip_spaces       ; A = first non-space, HL on it
                 cp      '0'
                 jr      c,iic_no
                 cp      '9'+1
-                jr      nc,iic_no
-                scf                          ; digit -> CF set
+                ret     c                   ; digit -> CF set
+                cp      'A'
+                jr      c,iic_no
+                cp      'Z'+1
+                ret     c                   ; upper-case letter -> CF set
+                cp      'a'
+                jr      c,iic_no
+                cp      'z'+1               ; lower-case letter -> CF set
                 ret
 iic_no:
                 or      a                    ; CF clear
@@ -602,7 +611,8 @@ vaof_oom:
                 ret     c
                 jp      fp_runtime_error
 
-var_alloc_or_find:
+vaof_engine:                                ; var_alloc_or_find's tenant arm (the entry
+                                            ; is basic/varfind.asm's, D-TRAPCOST round 3)
                 ld      (ARY_KEY),bc
                 ld      (ARY_TYPE),a
                 ld      a,5                 ; op = SCALAR_ALLOC (find-or-
@@ -768,19 +778,20 @@ vsf_wb_int      equ     asw_wb_int
 ; just the multi-char LET path. Callers guarantee B is a letter (var_name_key
 ; entry requires one; var_str_type guards with is_letter; the shims upcase a
 ; loop/READ variable, always a letter).
+; 🐌 D-TRAPCOST round 3: DEFTBL's 26 bytes sit in one page (guard below), so only
+; L is computed. 8 calls per handler pass.
 deftbl_lookup:
                 push    hl
-                push    de
+                ld      h,high DEFTBL
                 ld      a,b
-                sub     'A'
-                ld      e,a
-                ld      d,0
-                ld      hl,DEFTBL
-                add     hl,de
+                add     a,low DEFTBL - 'A'
+                ld      l,a
                 ld      a,(hl)
-                pop     de
                 pop     hl
                 ret
+    IF (high DEFTBL) != (high (DEFTBL+25))
+                db      DEFTBL_LOOKUP_ASSUMES_DEFTBL_IN_ONE_PAGE
+    ENDIF
 
 ; =============================================================================
 ; §13a fix — the stale-array-element-address bug (docs/spec-basic-arrays-

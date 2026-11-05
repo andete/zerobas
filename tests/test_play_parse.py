@@ -291,6 +291,21 @@ def run():
           q, [note(6 * 12 + 0 - 12, length=8), ("END",)])
     check("PLYCNT counted two PLAYs", m.mem[PLYCNT], 2)
 
+    # D-PLAYPHASE (2026-11-05): pt_getframes' tempo*length became a shift-and-add
+    # multiply (it was `tempo` repeated adds). Every tempo x length, 0-2 dots,
+    # against the oracle -- the multiply is the part a sweep of a few notes misses.
+    mf = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    bad = []
+    for tempo in range(32, 256):
+        for length in range(1, 65):
+            for dots in range(3):
+                cpu = mf.call("pt_getframes", d=tempo, e=length, c=dots, b=0x5A)
+                want = mml_ref.note_frames(tempo, length, dots)
+                if cpu.hl != want or cpu.b != 0x5A:
+                    bad.append((tempo, length, dots, cpu.hl, want, cpu.b))
+    check("pt_getframes: every tempo 32..255 x length 1..64 x 0..2 dots (B kept)",
+          bad[:3], [])
+
     print("\n" + (f"{fails} FAILED" if fails else
                   "ALL PASS — the MML parser tenant builds the queues correctly"))
     return 1 if fails else 0

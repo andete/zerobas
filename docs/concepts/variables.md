@@ -221,7 +221,13 @@ two-character key and resolves its type from the suffix or `deftbl_lookup`;
 `is_ident_cont` skips spaces inside a name. The store is a sub-ROM tenant,
 [sub/arrays.asm](../../sub/arrays.asm), serving simple variables
 (`aeng_scalar_find`, `aeng_scalar_alloc`) and arrays (`ary_resolve` with the
-auto-`DIM`, `aeng_dim`, `aeng_erase`, `ary_alloc`). A new simple variable is
+auto-`DIM`, `aeng_dim`, `aeng_erase`, `ary_alloc`). Three common cases are
+answered in the main ROM without calling the tenant: reading a simple variable and
+storing to one that already exists, while no `FN` call is running (a formal can
+hide a name only then; [basic/varfind.asm](../../basic/varfind.asm)), and reading or writing an element of
+an existing one-dimensional array with a subscript inside its bound
+(`ary_resolve_fast`, [basic/files.asm](../../basic/files.asm)). Every other case, and
+every error, still goes to the tenant. A new simple variable is
 inserted at `ARYTAB` by moving the array block up, after checking it fits.
 `vars_reset` in [basic/arrays.asm](../../basic/arrays.asm) re-anchors the block
 after `RUN`, `NEW`, `CLEAR`, `MAXFILES` and a program edit and writes `VARTAB`;

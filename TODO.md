@@ -189,6 +189,31 @@ item — do **one item per session** to keep context lean.
       K-Z declared a note 6 B to pt_pkt and MISSED: that moved the window's
       bookkeeping, never the bytes in the ring that QUETAB's put pointer shows).
 
+- [x] 🔴 **A BLOCKED `PLAY` RETURNED A JIFFY LATE BY SUB-FRAME PHASE: THE BLOCK POINTS RAN
+      97 / 98 / 99 APART WHERE THE VG-8020 READS 98 EVERY TIME (D-PLAYPHASE, found
+      2026-11-05 by D-TRAPCOST round 3's FULL battery, playqueue-acceptance).**
+      🎚️ TIER 5 — on-par timing of a waiting `PLAY` (the music itself was right).
+      🤖 **AUTONOMOUS** — measured. A pure interpreter speed-up (is_ident_cont /
+      deftbl_lookup, values identical) turned the gate's row `Q` from 98 x8 to
+      99 97 98 ([`trapcost3_playqueue.out`](scratchpad/trapcost3_playqueue.out)). Not the
+      queue: QUETAB put / get read the same at every return on both machines
+      ([`playphase_q.out`](scratchpad/playphase_q.out)); not the playback: the drain's GET
+      steps put each bar at 98 frames on both ([`playdrain.out`](scratchpad/playdrain.out)).
+      The return times did not move with a busy delay between PLAYs but did with the
+      program's statement mix ([`playphase_k.out`](scratchpad/playphase_k.out)): the
+      blocked wait's own poll. One window call (a re-parse of the bar) cost ~65000 T on
+      the host, about a whole frame, so the call noticed room in its frame or the next by
+      phase; ~3000 T a note of it was pt_getframes' tempo*length as `tempo` repeated adds.
+      ✅ **FIXED 2026-11-05:** a shift-and-add multiply (sub/playparse.asm, +2 B sub page 1;
+      tests/test_play_parse.py sweeps every tempo x length x 0-2 dots, a 7-step multiply
+      turns it red) -- the call is ~57600 T modelled -- and pld_go (basic/play.asm)
+      retries at once when a frame passed during the window instead of `halt`ing for
+      another. 🔮 The `halt` change alone was predicted to fix it and did NOT (two of five
+      late bars fixed); the multiply did. Now 98 apart for every delay K and both program
+      shapes ([`playphase_k_after.out`](scratchpad/playphase_k_after.out),
+      [`playphase_after.out`](scratchpad/playphase_after.out)), one jiffy ahead of the
+      VG-8020 throughout (inside the gate's total tolerance). Docs: PLAY.md.
+
 - [ ] 🙋 **SHORT NOTES ARE FASTER HERE: THE VG-8020 NEVER PLAYS A NOTE SHORTER THAN ~5
       JIFFIES (D-PLAYRATE, found 2026-10-31 by L4_music).**
       🎚️ TIER 5 — note timing at fast tempos; long notes agree to a jiffy or two.
@@ -9120,7 +9145,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11611 (T-6FE392)8 (T-529ABE)` from `TODO.md:17297 (T-529ABE)`: a
+      `TODO.md:11636 (T-6FE392)8 (T-529ABE)` from `TODO.md:17322 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12080,7 +12105,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17297 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17322 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -19670,8 +19695,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ NEXT: case (e) 42943 vs ~24570 T/pass. Name scanning (is_letter / upcase / var_str_type /
       var_name_key / str_eval_ix ~9 %), the two array resolves through the sub ROM (~2 x 3000 T
       + 2 crossings), widen_and_finalize on the store.
+      📏 **ROUND 3 (2026-11-05): 66 -> 54 FRAMES PER 100 CALLS** ([`trapcost_cost4.out`](scratchpad/trapcost_cost4.out),
+      🔮 "54-56" HIT; model 42943 -> 35262 T/pass). (5) Name scanning as plain compares:
+      `is_letter` folds case with `and $DF` (no `call upcase`; also the sub ROM's clone),
+      `is_ident_cont` calls skip_spaces only ON a space, `deftbl_lookup` indexes DEFTBL's
+      one page (build guard) ([`trapcost3_prof1.out`](scratchpad/trapcost3_prof1.out) /
+      [`trapcost3_prof2.out`](scratchpad/trapcost3_prof2.out): 🔮 -1300 -> -1083 and -1600
+      -> -1168, both MISSES on the high side). (6) `ary_resolve_fast` (basic/files.asm, the
+      $6CF3 pad, 112 B): a ONE-subscript RESOLVE of an existing array, in range, answered in
+      main; every other case and every error still goes to the tenant
+      ([`trapcost3_prof3.out`](scratchpad/trapcost3_prof3.out), 🔮 ~35100 -> 35262 HIT).
+      (7) `var_alloc_or_find` asks the main-ROM walk first (basic/varfind.asm, 13 B): a store
+      to an existing scalar no longer crosses -- `A=I+7` 18392 -> 16781 T/pass
+      ([`trapcost3_prof4.out`](scratchpad/trapcost3_prof4.out), 🔮 -1300 -> -1611). Gate:
+      tests/test_ary_fast.py (13 in-range reads over 5 arrays against the tenant's
+      formula, 7 fall-throughs, the scalar hit / miss; a planted 2-byte string element turns
+      it red). tests/test_evalslope.py's plain-factor depth 18 -> 16 B (the nested
+      `call upcase` was the deepest point). ➡️ NEXT: case (e) 35262 vs ~24570 T/pass;
+      the profile is flat now (ev_f, exec_stmt, ev_logic, dcc_fast_lp, nx_pack / nx_pki
+      each 3-13 %), and str_eval_one still scans every numeric name once for nothing
+      before ev_f scans it again.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
-      open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls).
+      open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 
 - [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
       `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER

@@ -633,6 +633,96 @@ str_snapshot_ro:
 ; moved to sub2/filestmt.asm, D-P0CB slice C1, 2026-10-21. The CRT: arm used to
 ; run THROUGH the pin below on a `jr` bridge; nothing flows into it now, so the
 ; bridge is a plain pad.)
+;
+; --- ary_resolve_fast: apsub_close's engine call, a ONE-subscript read of an ----
+; array that EXISTS answered here in main. 🐌 D-TRAPCOST round 3 (2026-11-05):
+; the round trip through the sub-ROM tenant (aeng_resolve -> ary_resolve) cost
+; ~3100 T per element access, the walk and the address ~500 T; two of them sit in
+; `H(M)=H(M)+1`. Anything else -- another op, k subscripts, a negative or
+; out-of-range subscript, an array not yet DIMmed (auto-DIM), a descriptor with a
+; different ndim -- goes to ary_engine_call untouched, which raises or allocates
+; exactly as before. The walk is ary_find's (sub/arrays.asm: [name0][name1][type]
+; [ndim][stride:2][bounds][data], name0 0 = the end) and the address is
+; aryr_loop_done's data + subscript * elsize (string 3, numeric = its type).
+; Out: as ary_engine_call's OK exit -- ARY_ADDR, ARY_ERR 0, A 0, Z, CF clear.
+ary_resolve_fast:
+                ld      a,(ARY_NIDX)
+                dec     a
+                ld      hl,ARY_OP
+                or      (hl)                ; Z iff RESOLVE (op 0) of ONE subscript
+                jp      nz,ary_engine_call
+                ld      hl,(ARY_IDXP)
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the subscript
+                bit     7,d
+                jp      nz,ary_engine_call  ; negative: the tenant's Illegal function call
+                ld      bc,(ARY_KEY)        ; B = name0, C = name1 (aeng_resolve's load)
+                ld      hl,(ARYTAB)
+arf_lp:
+                ld      a,(hl)
+                or      a
+                jp      z,ary_engine_call   ; not found: the tenant auto-DIMs it
+                cp      b
+                jr      nz,arf_skip
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                cp      c
+                jr      nz,arf_back2
+                ld      a,(ARY_TYPE)
+                cp      (hl)
+                jr      z,arf_found         ; HL = descriptor + 2
+arf_back2:
+                dec     hl
+                dec     hl
+arf_skip:
+                push    de
+                push    hl
+                ld      de,4
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the cached stride
+                pop     hl
+                add     hl,de               ; the next descriptor
+                pop     de
+                jr      arf_lp
+arf_found:
+                inc     hl
+                ld      a,(hl)              ; ndim
+                dec     a
+                jp      nz,ary_engine_call  ; k dimensions: the tenant's Subscript out of range
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> bounds[0], past the cached stride
+                ld      a,(hl)
+                inc     hl
+                sub     e
+                ld      a,(hl)
+                inc     hl                  ; HL = data start
+                sbc     a,d                 ; CF iff bound < subscript
+                jp      c,ary_engine_call   ; over the bound: the tenant raises it
+                ex      de,hl               ; HL = subscript, DE = data start
+                ld      a,(ARY_TYPE)
+                cp      1
+                jr      nz,arf_num
+                ld      b,h
+                ld      c,l
+                add     hl,hl
+                add     hl,bc               ; a string element: [len][ptr:2]
+                jr      arf_addr
+arf_num:
+                add     hl,hl
+                rrca
+                cp      1
+                jr      nz,arf_num          ; 2 / 4 / 8 bytes: 1 / 2 / 3 doublings
+arf_addr:
+                add     hl,de
+                ld      (ARY_ADDR),hl
+                xor     a
+                ld      (ARY_ERR),a         ; A 0, Z, CF clear: ary_engine_call's OK exit
+                ret
 ; 📌 D-BASICINT PIN $6CF3 (2026-10-15): games (Harry Fox) drop BLOAD,R's return
 ; address and `jp $6CF3`, the reference's continuation, which then runs the rest
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row

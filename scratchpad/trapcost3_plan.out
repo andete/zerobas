@@ -1,0 +1,9 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: disk.rom rebuilt against a regenerated ABI: the disk canary
+  why: ROM change in handler(s): LFILES
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): basic/arrays.asm basic/interp.asm basic/varfind.asm basic/vars.asm sub/sub.asm
+  why: probe/tool change: tests/test_ary_fast.py tests/test_evalslope.py
+  hours since the last full green: 3.0 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (12): cursor-acceptance dskmsg-acceptance error-acceptance keystr-acceptance kwsweep kwtime lnblank-acceptance lptverb-acceptance namspc-acceptance nodisk-acceptance runline-acceptance string-acceptance
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance lnblank-say-acceptance
