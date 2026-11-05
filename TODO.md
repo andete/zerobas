@@ -19563,6 +19563,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ZZZZZZZZZZ19`. D-ADDR29 TEMPST measured "10 pending, the 11th errs" with a different
       expression shape; this one errs one level earlier there. Read which temporaries the
       reference counts before moving zerobas's limit.
+      📏 **MECHANISM MEASURED 2026-11-05** ([`tempd10_run.out`](scratchpad/tempd10_run.out),
+      fnstrtemp_probe.py --inner, k = 9 / 10 nested around three innermost operands):
+      VG-8020 `"19"` 9 ok / 10 ERR 16, `B$` 9 / 10 both ok, `B$+""` 9 ok / 10 ERR 16;
+      zerobas `"19"` both ok, `B$` both ok, `B$+""` 9 ok / 10 ERR 16. 🔮 "a literal costs
+      a slot there" HIT. **The reference gives a string LITERAL operand its own
+      temp descriptor; zerobas's literal (D-LITREF, by reference into the program text)
+      takes none.** Concatenation results count the same on both. ➡️ The fix charges a
+      TEMPST slot per literal operand (a descriptor pointing into the text, released by
+      the consumer as D-TEMPPOL's are) -- every string expression passes there, so it is
+      FULL-gated, and D-FNSTR9 is to be re-measured after it (its `"1"+""` actuals are
+      literals too).
 
 - [ ] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
       2026-11-05 by D-TRAPSTMT)**

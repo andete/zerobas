@@ -30,7 +30,29 @@ def case(k, fn=True):
             '40 PRINT "<";X$;">":END', '90 PRINT "<E";ERR;">":END']
 
 
+def inner_case(k, inner):
+    expr = 'MID$("Z",1)+(' * k + inner + ")" * k
+    return ['10 B$="19"', "20 ON ERROR GOTO 90", f"30 X$={expr}",
+            '40 PRINT "<";X$;">":END', '90 PRINT "<E";ERR;">":END']
+
+
 def main():
+    if "--inner" in sys.argv:       # D-TEMPD10: a literal vs a variable innermost
+        sys.argv.remove("--inner")
+        for m in sys.argv[1:] or MACHINES:
+            for inner in ('"19"', "B$", 'B$+""'):
+                row = []
+                for k in (9, 10):
+                    raw = omsx_repl.run_cases(m, [("direct", ["NEW"] + inner_case(k, inner) + ["RUN"])],
+                                              batch=False, reset=("", "SCREEN 0:WIDTH 40"),
+                                              run_gap=10.0)[0] or ""
+                    flat = raw.replace("\n", "")
+                    run = flat[flat.rfind("RUN") + 3:] if "RUN" in flat else flat
+                    hits = RX.findall(run)
+                    row.append(f"k{k}={hits[-1] if hits else 'NONE'}")
+                print(f"{m[:12]:12s} {inner:8s} " + "  ".join(row), flush=True)
+        print(__import__("probe_refcache").summary())
+        return
     ks = [0, 1, 2, 5, 8, 9, 10]
     for m in sys.argv[1:] or MACHINES:
         for fn in (True, False):
