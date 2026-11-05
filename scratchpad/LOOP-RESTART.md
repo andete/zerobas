@@ -11,7 +11,27 @@ session and the loop resumes exactly where it stopped.
 | speed pause LIFTED | offered lift now / lift with a ~256 B main-page-1 floor / lift at a D-ROMSIZE step; picked **"1"** (lift now, no floor) | TIER 5 back in plain tier order, ABOVE tier 6. First: D-TRAPCOST, then D-TRAPSTMT (`scratchpad/trapstmt_wip.patch`), D-RECSLOW. The 10-20 / 10-21 ROM-space rulings (interleave, keep the fast GC, pin pads are free space, no new RAM for the page-0 call-back) still hold |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
-## 🟢 STATE AS OF 2026-10-31 — THE CURRENT ONE (the 2026-10-28 section below and every RULINGS table it points to still hold)
+## 🟢 STATE AS OF 2026-11-05 (midday) — THE CURRENT ONE (the rulings table above; the 2026-10-31 section below and every table it points to still hold)
+
+- **Landed today, each FULL-gated and pushed:** D-TRAPCOST rounds 1-2 (cd400289, 03d18806:
+  a GOSUB handler 96 -> 66 frames per 100 calls vs the VG-8020's 39 -- the array multiply,
+  domain_convert_core's packed-BCD fast path, the last-subscript MULT skip, and
+  basic/varfind.asm's main-ROM scalar walk); D-TRAPSTMT + D-TRAPLATCHWHEN (6ddc9488:
+  statement-level trap dispatch, NO grace after RETURN, gate `trapstmt-acceptance`);
+  D-RECSLOW (541dcd1e: a far random PUT holds the FAT sector, 1763 -> 54 frames vs 2).
+- **Filed today:** D-TRAPNEVERON (TIER 6: INTERVAL STOP latches here when the timer was not
+  on). D-TRAPCOST stays open as plain TIER 5 (66 vs 39): name scanning and the two array
+  resolves through the sub ROM are what is left (TODO.md, its ROUND 2 ➡️ NEXT).
+- **Lessons worth carrying:** a gate byte documented as BOOLEAN had grown a COUNT and one
+  writer (the sprite source, $20) relied on the boolean reading -- grep every writer before
+  giving a gate byte's values meaning; and the D-RECSLOW corruption was seen only by a HOST
+  rig with nothing trapped but sector I/O and its own FAT decode, not by the emulator count.
+- **Next by tier:** TIER 1's open entries are the standing arcs (D-TAPELOAD's RUNS? triage
+  -- Joost 2026-10-28 "after the deferred work" -- D-DISKRUN, D-PROGLADDER, D-BD2FRAGILE,
+  D-DEFERRSTUDY, D-BASICPUB); then TIER 3/4, then TIER 5 (D-TRAPCOST round 3, the FOR/GOTO
+  interpreter ratio, LOAD), then TIER 6 (D-TRAPNEVERON, D-FNALIAS, D-TEMPD10, D-FNSTR9 ...).
+
+## 🟢 STATE AS OF 2026-10-31 — history since 2026-11-05 (the 2026-10-28 section below and every RULINGS table it points to still hold)
 
 - **z80flow LANDED (Joost, 383475d9 / be177f0f) — THE LOOP NOW USES IT (wired in 2026-10-31):**
   `tools/z80flow` infers every routine's register contract from the build (reads on entry,
