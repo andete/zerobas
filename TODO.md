@@ -17256,6 +17256,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       held 4 B after (8): var_load_fac / vlf_value (44 B, absolute jp / call only) moved from
       basic/vars.asm into the $6CF3 pad to make room. ➡️ NEXT: 32632 vs ~24570 T/pass -- the
       double name scan itself (str_eval_one's var_str_type, then ev_f's var_name_key).
+      📏 **ROUND 5 (2026-11-06): 50 -> 46 FRAMES PER 100 CALLS** ([`trapcost_cost6.out`](scratchpad/trapcost_cost6.out),
+      🔮 "~45" HIT; model 32632 -> 29768 T/pass, 🔮 "~-2000" -> -2864, a MISS on the good
+      side). (10) cl_opnd_lo (basic/expr.asm) scans a NAME once: var_name_key's VARTYPE says
+      string or not, a numeric name goes to ev_f_keyed (basic/files.asm: ev_f's guard + ev_f_var's
+      tail), a string name takes the old probe ([`trapcost5_prof1.out`](scratchpad/trapcost5_prof1.out)).
+      ⚠️ The cost it moves: a STRING variable at an operand's start is now scanned three times
+      (var_name_key here, then the probe's var_str_type and var_name_key), one more than before.
+      ➡️ NEXT: hand the key into the probe's string-variable arm to make that once too; then
+      29768 vs ~24570 T/pass.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

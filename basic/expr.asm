@@ -187,6 +187,26 @@ cl_opnd_lo:
                 call    ev_sp
                 cp      NOT_TOKEN
                 jr      z,cl_not
+                ; 🐌 D-TRAPCOST round 5 (2026-11-05): a NAME is scanned ONCE. The probe
+                ; below (str_eval_ix -> var_str_type) walked it to rule out a string
+                ; and ev_f's var_name_key walked it again; var_name_key's VARTYPE says
+                ; both. A string name takes the probe exactly as before (IX untouched);
+                ; a numeric one goes to ev_f_keyed (basic/files.asm), ev_f_var's tail.
+                cp      'Z'+1
+                jr      nc,clo_probe
+                cp      'A'
+                jr      c,clo_probe
+                push    ix
+                pop     hl
+                call    var_name_key        ; BC = key, HL past the name, VARTYPE
+                ld      a,(VARTYPE)
+                cp      DEFTBL_STR
+                jr      z,clo_probe
+                push    hl
+                pop     ix                  ; IX = past the name
+                call    ev_f_keyed
+                jr      cl_after
+clo_probe:
                 ; string-compare S2: probe the operand for a string before
                 ; committing to the numeric parse. BUG C (Fable, 2026-07-17): a
                 ; slice-4a str_eval sub-path can CALSLT (which loads IX) and then

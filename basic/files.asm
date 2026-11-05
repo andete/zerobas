@@ -723,6 +723,21 @@ arf_addr:
                 xor     a
                 ld      (ARY_ERR),a         ; A 0, Z, CF clear: ary_engine_call's OK exit
                 ret
+; --- ev_f_keyed: ev_f for a NUMERIC name cl_opnd_lo has already keyed ------------
+; (D-TRAPCOST round 5, basic/expr.asm). In: BC = key, IX = past the name,
+; VARTYPE numeric. ev_f's own guard first (it leaves AS the factor on a refusal, so
+; nothing may be pushed before it), then ev_f_var's tail: `(` -> an array element,
+; else the scalar (check_vartype_num is moot: a string name never comes here).
+ev_f_keyed:
+                call    stk_guard           ; HL clobbered, BC kept
+                push    ix
+                pop     hl
+                ld      a,(hl)
+                cp      '('
+                jp      z,ev_f_arr
+                ld      a,(VARTYPE)
+                jp      var_load_fac
+
 ; moved here from basic/vars.asm (2026-11-05, D-TRAPCOST round 4: room in front of $4EF8)
 ; --- var_load_fac: BC=key, A=type -> FAC set, FACTYP=type, DE=int16 fast ----
 ; path (§9.4/§10.3 discipline: same sticky-FACTYP + flt_int_result contract
