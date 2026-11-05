@@ -674,6 +674,13 @@ item — do **one item per session** to keep context lean.
       D-DBLNORM (TIER 1, a wrong comparison). Values print rounded where the 14th digit of a
       division differs by ruling (numbers.md). Before / after:
       [`progladder_l10.out`](scratchpad/progladder_l10.out).
+      ✅ **L4_screen3 + L3_gcload (2026-11-05): SAME** -- SCREEN 3 blocks and SCREEN 2 LINE /
+      CIRCLE (ellipse, arc) / PAINT / DRAW with X and =var; substrings, checksummed through
+      POINT and VPEEK over both screens; a 100-string word list rewritten under CLEAR 1200
+      until the string space gives, FRE("") after each round, ERASE
+      ([`progladder_l15.out`](scratchpad/progladder_l15.out),
+      [`progladder_l15b.out`](scratchpad/progladder_l15b.out) -- the first run stopped on a
+      DRAW error of mine on both machines).
       ✅ **L5_files (2026-11-05, `@DISK`): SAME against the CF-3300** -- two files open at once,
       LOC / LOF on sequential files, LINE INPUT# in an EOF loop, INPUT$(n,#), NAME, KILL,
       FILES, and the file errors trapped (53, 54, 52, 61 and friends); it FOUND D-INPLF (TIER 6),
@@ -7586,7 +7593,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10019 (T-6FE392)8 (T-529ABE)` from `TODO.md:15171 (T-529ABE)`: a
+      `TODO.md:10026 (T-6FE392)8 (T-529ABE)` from `TODO.md:15178 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10325,7 +10332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15171 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15178 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

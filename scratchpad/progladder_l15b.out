@@ -1,0 +1,6 @@
+L4_screen3
+  Philips_VG_8020                ENDED t=76.0  lpt 3 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=75.9  SAME  x1.00 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=75.9  SAME  x1.00 time
+
+PASS: 1 program(s), 0 divergent run(s)

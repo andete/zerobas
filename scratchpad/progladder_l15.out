@@ -1,0 +1,10 @@
+L3_gcload
+  Philips_VG_8020                ENDED t=72.0  lpt 11 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=52.4  SAME  x0.73 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=52.4  SAME  x0.73 time
+L4_screen3
+  Philips_VG_8020                ENDED t=43.8  lpt 1 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=49.2  SAME  x1.12 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=49.3  SAME  x1.13 time
+
+PASS: 2 program(s), 0 divergent run(s)
