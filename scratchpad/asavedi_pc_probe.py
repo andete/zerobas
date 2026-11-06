@@ -20,6 +20,7 @@ name = args[0] if args else "L5_house"
 dump = probe_tmp.tmp("asavedi_samples.txt")
 if os.path.exists(dump):
     os.unlink(dump)
+MINGAP = next((a.split("=")[1] for a in sys.argv if a.startswith("--min=")), "0.15")
 r.GAP_TCL = r.GAP_TCL.replace("set ::__gaps {}", """set ::__gaps {}
 set ::__smp {}
 set ::__df [open {%s} w]
@@ -37,10 +38,11 @@ set ::__stk %d
 set ::__all %d""" % (dump, 1 if "--stack" in sys.argv else 0, 1 if "--all" in sys.argv else 0)).replace(
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }""",
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }
-    if {$g > 0.15 || $::__all} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
+    if {$g > MINGAP || $::__all} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
     """  set ::__jt $t""", """  set ::__jt $t
   if {$::__all && !($run && $::__jrun)} { puts $::__df "GAP 0"; foreach s $::__smp { puts $::__df $s }; flush $::__df }
   set ::__smp {}""")
+r.GAP_TCL = r.GAP_TCL.replace("MINGAP", MINGAP)  # --min=S: dump gaps over S s
 _pp = os.path.join(REPO, "probes", "programs", name + ".bas")
 text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()
 res = r.run(r.DISK_ZB[0], "asavedi", text, gaps=True)

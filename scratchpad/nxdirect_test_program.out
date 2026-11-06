@@ -1,0 +1,60 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+=== new_prog: empty program ===
+PASS  new_prog: RAM[TXTBASE] = 0x0000 end marker (got 0x0000)
+PASS  new_prog: PRGEND = TXTBASE = 0x8001 (got 0x8001)
+PASS  new_prog: TXTTAB = TXTBASE = 0x8001 (got 0x8001)
+PASS  new_prog: chain has 0 lines (got 0)
+PASS  new_prog: CONTVALID = 0 (got 0)
+
+=== new_prog: CONTVALID cleared ===
+PASS  new_prog: CONTVALID cleared to 0 (got 0)
+
+=== store_line: CONTVALID cleared ===
+PASS  store_line: CONTVALID cleared to 0 (got 0)
+
+=== store_line: insert ordering (20, 10, 30 -> chain 10,20,30) ===
+PASS  insert: chain has 3 lines (got 3)
+PASS  insert: line numbers ascending [10,20,30] (got [10, 20, 30])
+PASS  insert: line 10 link_word = 0x8007 (got 0x8007)
+PASS  insert: line 20 link_word = 0x800d (got 0x800d)
+PASS  insert: line 30 link_word = 0x8013 (got 0x8013)
+PASS  insert: first line in RAM is line 10 (got 10)
+PASS  insert: PRGEND = 0x8013 (got 0x8013)
+
+=== store_line: replace existing line ===
+PASS  replace: chain still has 3 lines (got 3)
+PASS  replace: order [10,20,30] preserved (got [10, 20, 30])
+PASS  replace: line 20 body = 1500 (got 1500)
+PASS  replace: line 10 link_word = 0x8007 (got 0x8007)
+PASS  replace: line 20 link_word = 0x800d (got 0x800d)
+PASS  replace: line 30 link_word = 0x8013 (got 0x8013)
+PASS  replace: all 3 lines reachable via chain
+
+=== store_line + delete: remove middle line ===
+PASS  delete: chain has 2 lines after deleting 20 (got 2)
+PASS  delete: remaining lines [10,30] (got [10, 30])
+PASS  delete: line 10 link_word = 0x8007 (got 0x8007)
+PASS  delete: line 30 link_word = 0x800d (got 0x800d)
+PASS  delete: PRGEND = 0x800d (got 0x800d)
+PASS  delete: end marker at PRGEND = $0000 (got 0x00 0x00)
+PASS  delete: deleting non-existent line 99 changes nothing and raises ERR 8 (before=[10, 30], after=[10, 30], raised=[8])
+
+=== relink: standalone (wrong links corrected) ===
+PASS  relink: line 10 link = line20_addr = 0x8007 (got 0x8007)
+PASS  relink: line 20 link = prgend_addr = 0x800d (got 0x800d)
+PASS  relink: end marker at PRGEND still $0000 (got 0x0000)
+PASS  relink: chain walk sees [10,20] after relink (got [10, 20])
+
+=== store_line: `.` (DOT) on an ACCEPTED store ===
+PASS  store_line ok: `.` = 30, the stored line (got 30)
+
+=== store_line: `.` (DOT) on a store REFUSED for out of memory ===
+PASS  store_line OOM: control -- `.` = 99 before the refused store (got 99)
+PASS  store_line OOM: refused with ERR 7 (raise_error saw [7])
+PASS  store_line OOM: nothing stored -- 1 line(s) before, 1 after
+PASS  store_line OOM: `.` = 20, the line number TYPED, with nothing stored (got 20)
+
+=== empty program chain ===
+PASS  empty: chain empty after new_prog (got 0 lines)
+
+ALL PASS — line-link editor matches the documented format

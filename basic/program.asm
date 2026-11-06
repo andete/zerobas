@@ -2229,7 +2229,8 @@ nx_fullcopy:
                 ld      a,(FOR_STEP)        ; (ld: the flags are the limit's)
                 jr      nz,nx_lnoint
                 cp      2
-                jr      z,nx_fast           ; both int16: the int path
+                jp      z,nx_fast           ; both int16: the int path (`jp`: the
+                                            ; NEXT re-entry's re-base, +1 B)
                 call    nx_demote           ; int16 limit, BCD step
                 jr      nx_slow
 nx_lnoint:
@@ -2282,6 +2283,53 @@ nx_again:
                 pop     hl                  ; frame stays on the stack
                 ld      hl,(FOR_LINE)       ; resume at the loop body
                 ld      (CURLINE),hl
+                ; 🐌 D-LOOPPROF (2026-11-06): A CONTINUING NEXT RE-ENTERS exec_stmt
+                ; DIRECTLY, as a statement handler does at a statement's end, instead
+                ; of returning through the run loop (rp_lp's stack re-base, RESUMEFLAG,
+                ; rp_exec's derive_directf / BREAKX / shadow test, `call exec`): ~500 T
+                ; of an empty `%` pass (scratchpad/pctloop_prof.out). The depth is the
+                ; same -- both words this handler pushed are popped here, so `ret`
+                ; would leave from exec_stmt's own entry depth. What the run loop did
+                ; that must still happen: the Ctrl-STOP poll (a press, or the STOP
+                ; shadow still set, takes the old road, where rp_exec breaks / releases
+                ; it exactly as before) and CURLIN for the line now running (DIRECTF
+                ; does not change: the FOR's line is in the same run).
+                call    BREAKX
+                jr      c,nx_again_run      ; Ctrl-STOP: the run loop breaks
+                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+                bit     6,a                 ; ZTS_SHADOW: rp_exec's release logic
+                jr      nz,nx_again_run
+                ; DIRECTF IS RE-DERIVED: a NEXT TYPED at the prompt continues a
+                ; PROGRAM's loop, and the body is program text (typed session
+                ; S3_editclear went red with the plain curlin_pub this had first).
+                call    derive_directf      ; DIRECTF + CURLIN for the FOR's line
+                pop     bc                  ; discard the post-NEXT cursor
+                ; 🔴 AND THE STACK IS RE-BASED HERE, as rp_lp does on every pass
+                ; (D-SPMERGE step 4): that re-base is what reclaims a freed inner
+                ; FOR / GOSUB frame, and without it every inner FOR of a nested loop
+                ; made ctl_alloc RELOCATE the stack under DI -- 372 frame-interrupt
+                ; gaps up to 94 ms in C3_euler (scratchpad/nxdirect_gap_c3.out,
+                ; PC in ctl_reloc). The live block here is exactly two words: the
+                ; return into the run loop (exec's caller) and, at SAVSTK, the
+                ; loop's own anchor word -- checked, and anything else takes the old
+                ; road.
+                ld      hl,2
+                add     hl,sp
+                ld      de,(SAVSTK)
+                or      a
+                sbc     hl,de
+                jr      nz,nx_again_rs      ; not the run loop's layout: old road
+                pop     de                  ; DE = the return into the run loop
+                pop     bc                  ; BC = the anchor word
+                ld      sp,(CSP)            ; the frontier
+                push    bc
+                ld      (SAVSTK),sp
+                push    de
+                ld      hl,(FOR_BODY)
+                jp      exec_stmt
+nx_again_rs:
+                push    bc                  ; (the cursor slot nx_again_run pops)
+nx_again_run:
                 ld      hl,(FOR_BODY)
                 ld      (RESUMEPTR),hl
                 ld      a,1
@@ -2354,7 +2402,8 @@ nx_fcmp:
                 call    cmp16_bits          ; A = 1 <, 2 =, 4 > -- combine_cmp's code
                 ld      b,a
                 call    set_factyp2         ; as combine_cmp leaves FACTYP
-                jr      nx_cmpd
+                jp      nx_cmpd             ; (`jp`: nx_again's direct re-entry put
+                                            ; nx_cmpd past `jr` reach, +1 B)
 nx_fbail:
                 pop     hl                  ; drop [value field]
 nx_fslow:

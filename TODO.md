@@ -16656,6 +16656,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HIT, the default loop the same -208); machine 19 -> 18 ticks, the others 71 / 77 / 24
       ([`loops4_time2.out`](scratchpad/loops4_time2.out)). tests/test_forint.py,
       test_forfast.py green. ➡️ NEXT: the variable's by-name lookup each NEXT.
+      ✅ **THE RUN-LOOP ROUND TRIP (2026-11-06):** a continuing NEXT re-enters exec_stmt
+      directly (nx_again, basic/program.asm), as a handler does at a statement's end, instead
+      of returning through rp_lp / rp_exec / `call exec` -- the Ctrl-STOP poll (and the STOP
+      shadow) still sends it the old road, and CURLIN is published for the FOR's line. Model
+      `%` loop 3159 -> 2826 T/pass; machine ([`loops4_time3.out`](scratchpad/loops4_time3.out)) `%` 18 -> 16, default
+      24 -> 22 -- 🔴 AND THE FULL BATTERY WENT RED TWICE ON IT: (1) S3_editclear -- a NEXT TYPED at
+      the prompt continues a PROGRAM's loop, so DIRECTF must be re-derived (derive_directf, not
+      curlin_pub); (2) C3_euler / C6_wordsort -- 372 frame-interrupt gaps up to 94 ms, PC in
+      ctl_reloc ([`nxdirect_gap_c3.out`](scratchpad/nxdirect_gap_c3.out), asavedi_pc_probe.py gained --min=): rp_lp's stack
+      RE-BASE (D-SPMERGE step 4) is what reclaims a freed inner FOR / GOSUB frame, and skipping it
+      made every inner FOR relocate the stack under DI. The re-entry now re-bases too (the live
+      block is checked to be exactly [loop return][SAVSTK anchor]; anything else takes the old
+      road). The honest figures after both: model `%` 3045 T/pass; machine
+      ([`loops4_time4.out`](scratchpad/loops4_time4.out)) 71 / 78 / **`%` 18 -> 17** / default **24 -> 23** (🔮 ~17 HIT); C3 /
+      C6 SAME with 0 gaps, S3 SAME ([`nxdirect_c3c6.out`](scratchpad/nxdirect_c3c6.out), [`nxdirect_s3.out`](scratchpad/nxdirect_s3.out)).
+      tests/test_forfast / forint / control_flow / statements / traps green.
+      The D-CONCATLIT round-2 design (a combined first-append op) was weighed the same day
+      and deferred: ~6 %, and the snapshot is load-bearing for array elements / RVDESC.
       📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →
       [`loopprof_host.out`](scratchpad/loopprof_host.out): per-routine T on the host Z80
       plus the costs the host skips (1063 T a sub-ROM crossing: `subrom_call` 152 +

@@ -1,0 +1,2367 @@
+ENDED t=299.5 gaps=372 max=0.094
+
+GAP 0.050 s: 50 samples, IFF=0 in 32; CURLIN 0154
+    31  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+
+GAP 0.053 s: 53 samples, IFF=0 in 33; CURLIN 0154
+    32  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~6820  A8=F0  basic-reloc:str_eval_keyed+6 | disk:hkcv_float+5 | sub:svh_id+21
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+
+GAP 0.050 s: 50 samples, IFF=0 in 34; CURLIN 0154
+    33  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.052 s: 52 samples, IFF=0 in 34; CURLIN 0154
+    34  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4C30  A8=F0  basic-reloc:ev_f+7 | disk:fdc_di_save+7 | sub:fexp_p+8
+
+GAP 0.052 s: 52 samples, IFF=0 in 35; CURLIN 0154
+    34  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~7960  A8=F0  basic-reloc:nx_dir+1 | disk:snext_body+4 | sub:ls_bsave+6
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67C0  A8=F0  basic-reloc:arf_lp+11 | disk:rnd_rec+5 | sub:drive_b+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.054 s: 54 samples, IFF=0 in 35; CURLIN 0154
+    34  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+
+GAP 0.051 s: 51 samples, IFF=0 in 35; CURLIN 0154
+    35  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.054 s: 54 samples, IFF=0 in 35; CURLIN 0154
+    35  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~3CD0  A8=F0  basic-reloc:ela_rterr+3 | sub:vars_reset+239
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+
+GAP 0.053 s: 53 samples, IFF=0 in 35; CURLIN 0154
+    35  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.051 s: 51 samples, IFF=0 in 36; CURLIN 0154
+    36  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.053 s: 53 samples, IFF=0 in 37; CURLIN 0154
+    37  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~19B0  A8=F0  basic-reloc:LINENO_ACC_STOP+23 | sub:svp_flt+17
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+
+GAP 0.054 s: 54 samples, IFF=0 in 38; CURLIN 0154
+    37  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~78E0  A8=F0  basic-reloc:nx_have+15 | disk:ga_scanloop+18 | sub:lsv_dev_tail+14
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~36D0  A8=F0  basic-reloc:dcc_zero+2 | sub:ks_eol+23
+
+GAP 0.050 s: 50 samples, IFF=0 in 38; CURLIN 0154
+    37  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1770  A8=F0  sub:sh_oct_build+0
+     1  PC ~19B0  A8=F0  basic-reloc:LINENO_ACC_STOP+23 | sub:svp_flt+17
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+
+GAP 0.055 s: 55 samples, IFF=0 in 37; CURLIN 0154
+    37  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     6  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~46A0  A8=F0  basic-reloc:var_name_key+10 | disk:dst_body+14 | sub:EXP_TCOR+40
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.053 s: 53 samples, IFF=0 in 38; CURLIN 0154
+    38  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3CE0  A8=F0  basic-reloc:ela_rterr+19 | sub:vars_reset+255
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~67C0  A8=F0  basic-reloc:arf_lp+11 | disk:rnd_rec+5 | sub:drive_b+0
+
+GAP 0.051 s: 51 samples, IFF=0 in 39; CURLIN 0154
+    39  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~42B0  A8=F0  basic-reloc:ex_let_str+27 | disk:dskio_next+63 | sub:fsqn_r2_done+10
+     1  PC ~2F70  A8=F0  basic-reloc:ary_engine_call+19 | sub:gfx_spr_xsave+7
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.057 s: 57 samples, IFF=0 in 38; CURLIN 0154
+    38  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4CC0  A8=F0  basic-reloc:ev_f_notword+24 | disk:gdpb_popdone+27 | sub:flog_no_fold+9
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~4AC0  A8=F0  basic-reloc:cl_after_rel+13 | disk:boot_date+17 | sub:fat_r2_done+57
+
+GAP 0.056 s: 56 samples, IFF=0 in 39; CURLIN 0154
+    39  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3750  A8=F0  basic-reloc:widen_int_to+5 | disk:widen_int_to+5 | sub:fs_raise+4
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3D10  A8=F0  basic-reloc:ary_op0_resolve+8 | sub:vars_reset+303
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+
+GAP 0.056 s: 56 samples, IFF=0 in 39; CURLIN 0154
+    39  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+
+GAP 0.053 s: 54 samples, IFF=0 in 40; CURLIN 0154
+    39  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3C50  A8=F0  basic-reloc:apc_release+8 | sub:vars_reset+111
+     1  PC ~3CF0  A8=F0  basic-reloc:ela_rterr+35 | sub:vars_reset+271
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~42B0  A8=F0  basic-reloc:ex_let_str+27 | disk:dskio_next+63 | sub:fsqn_r2_done+10
+
+GAP 0.055 s: 55 samples, IFF=0 in 41; CURLIN 0154
+    40  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~7970  A8=F0  basic-reloc:nx_again+14 | disk:dsm_shr+4 | sub:ls_bsave+22
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+
+GAP 0.056 s: 56 samples, IFF=0 in 40; CURLIN 0154
+    40  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~0170  A8=F0  basic-reloc:cgt_lp+13 | disk:FCH_RECMAX+112 | sub:tei_w+1
+
+GAP 0.057 s: 57 samples, IFF=0 in 40; CURLIN 0154
+    40  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B80  A8=F0  basic-reloc:cl_red_not+11 | disk:bd_sep+0 | sub:fexp_n8widen+18
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~3C50  A8=F0  basic-reloc:apc_release+8 | sub:vars_reset+111
+     1  PC ~3CF0  A8=F0  basic-reloc:ela_rterr+35 | sub:vars_reset+271
+
+GAP 0.051 s: 51 samples, IFF=0 in 41; CURLIN 0154
+    41  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.056 s: 56 samples, IFF=0 in 42; CURLIN 0154
+    41  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4730  A8=F0  basic-reloc:tp_set+2 | disk:rnp_flt+13 | sub:LNK_TBL+58
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.061 s: 61 samples, IFF=0 in 42; CURLIN 0154
+    41  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     3  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1800  A8=F0  sub:sh_mid_store+20
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+
+GAP 0.053 s: 53 samples, IFF=0 in 41; CURLIN 0154
+    41  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~1810  A8=F0  sub:sh_mid_store+36
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.055 s: 55 samples, IFF=0 in 42; CURLIN 0154
+    42  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+     1  PC ~6370  A8=F0  basic-reloc:ex_for+6 | disk:wmr_noadd+38 | sub:bn_fill+4
+
+GAP 0.061 s: 61 samples, IFF=0 in 41; CURLIN 0154
+    42  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+
+GAP 0.056 s: 55 samples, IFF=0 in 42; CURLIN 0154
+    42  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+
+GAP 0.062 s: 62 samples, IFF=0 in 43; CURLIN 0154
+    42  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1780  A8=F0  sub:sh_oct_build+16
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+
+GAP 0.052 s: 52 samples, IFF=0 in 44; CURLIN 0154
+    42  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+
+GAP 0.059 s: 59 samples, IFF=0 in 43; CURLIN 0154
+    43  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+
+GAP 0.062 s: 62 samples, IFF=0 in 43; CURLIN 0154
+    43  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3CC0  A8=F0  basic-reloc:ee_synerr+1 | sub:vars_reset+223
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~7970  A8=F0  basic-reloc:nx_again+14 | disk:dsm_shr+4 | sub:ls_bsave+22
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+
+GAP 0.057 s: 57 samples, IFF=0 in 44; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+
+GAP 0.061 s: 61 samples, IFF=0 in 44; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~67F0  A8=F0  basic-reloc:arf_found+23 | disk:hkdf_done+3 | sub:sv_fail+6
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3090  A8=F0  basic-reloc:c16_eq+1 | sub:g8_rp_r0+12
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+
+GAP 0.056 s: 57 samples, IFF=0 in 45; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+
+GAP 0.061 s: 61 samples, IFF=0 in 44; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~3D00  A8=F0  basic-reloc:ev_f_arr+11 | sub:vars_reset+287
+
+GAP 0.057 s: 58 samples, IFF=0 in 45; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+
+GAP 0.063 s: 62 samples, IFF=0 in 44; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+     1  PC ~3D00  A8=F0  basic-reloc:ev_f_arr+11 | sub:vars_reset+287
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+
+GAP 0.051 s: 52 samples, IFF=0 in 46; CURLIN 0154
+    44  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~1910  A8=F0  sub:sis_zero+3
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~48F0  A8=F0  basic-reloc:str_eval_one+8 | disk:frg_pass+3 | sub:SIN_COEF+92
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.060 s: 60 samples, IFF=0 in 45; CURLIN 0154
+    45  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+
+GAP 0.055 s: 55 samples, IFF=0 in 45; CURLIN 0154
+    45  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1960  A8=F0  sub:sh_val_parse+1
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4720  A8=F0  basic-reloc:tgt_parse+10 | disk:k_4720+0 | sub:LNK_TBL+42
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.064 s: 64 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3BD0  A8=F0  basic-reloc:fre_abort_low+39 | disk:subrom_call+422 | sub:rl_lastrow+187
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+     1  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+
+GAP 0.050 s: 50 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~6810  A8=F0  basic-reloc:ev_f_keyed+8 | disk:hk_cv+20 | sub:svh_id+5
+
+GAP 0.060 s: 60 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4230  A8=F0  basic-reloc:stmt_table+175 | disk:br_enaslt_tmpl+4 | sub:fsqn_loop+15
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4B80  A8=F0  basic-reloc:cl_red_not+11 | disk:bd_sep+0 | sub:fexp_n8widen+18
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+
+GAP 0.059 s: 59 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.066 s: 66 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+
+GAP 0.056 s: 56 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4730  A8=F0  basic-reloc:tp_set+2 | disk:rnp_flt+13 | sub:LNK_TBL+58
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+
+GAP 0.057 s: 57 samples, IFF=0 in 46; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~5290  A8=F0  basic-reloc:evsp_close+6 | disk:hkd_st+1 | sub:GEOM_720K+26
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.065 s: 65 samples, IFF=0 in 47; CURLIN 0154
+    46  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+
+GAP 0.056 s: 56 samples, IFF=0 in 47; CURLIN 0154
+    47  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4CC0  A8=F0  basic-reloc:ev_f_notword+24 | disk:gdpb_popdone+27 | sub:flog_no_fold+9
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3D50  A8=F0  basic-reloc:str_eval_arr+8 | sub:vars_reset+367
+
+GAP 0.067 s: 67 samples, IFF=0 in 48; CURLIN 0154
+    47  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67C0  A8=F0  basic-reloc:arf_lp+11 | disk:rnd_rec+5 | sub:drive_b+0
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.055 s: 54 samples, IFF=0 in 47; CURLIN 0154
+    47  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~48F0  A8=F0  basic-reloc:str_eval_one+8 | disk:frg_pass+3 | sub:SIN_COEF+92
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.066 s: 66 samples, IFF=0 in 48; CURLIN 0154
+    48  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~52B0  A8=F0  basic-reloc:factyp_is2+5 | disk:hkf_ch+14 | sub:GEOM_360K+18
+     1  PC ~37C0  A8=F0  basic-reloc:arga_dig_iszero+4 | disk:widen_int_to+117 | sub:fs_open+89
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+
+GAP 0.057 s: 57 samples, IFF=0 in 48; CURLIN 0154
+    48  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~48E0  A8=F0  basic-reloc:str_eval_ix+4 | disk:fat_rand_get+2 | sub:SIN_COEF+76
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+
+GAP 0.066 s: 65 samples, IFF=0 in 48; CURLIN 0154
+    48  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3BD0  A8=F0  basic-reloc:fre_abort_low+39 | disk:subrom_call+422 | sub:rl_lastrow+187
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+     1  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+
+GAP 0.058 s: 58 samples, IFF=0 in 49; CURLIN 0154
+    48  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     1  PC ~4C50  A8=F0  basic-reloc:eff_chain+15 | disk:fdc_div_loop+0 | sub:fexp_overflow+0
+
+GAP 0.062 s: 62 samples, IFF=0 in 49; CURLIN 0154
+    48  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1770  A8=F0  sub:sh_oct_build+0
+     1  PC ~19B0  A8=F0  basic-reloc:LINENO_ACC_STOP+23 | sub:svp_flt+17
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+
+GAP 0.051 s: 51 samples, IFF=0 in 49; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.063 s: 63 samples, IFF=0 in 49; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3CE0  A8=F0  basic-reloc:ela_rterr+19 | sub:vars_reset+255
+
+GAP 0.056 s: 56 samples, IFF=0 in 49; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4AC0  A8=F0  basic-reloc:cl_after_rel+13 | disk:boot_date+17 | sub:fat_r2_done+57
+
+GAP 0.066 s: 65 samples, IFF=0 in 49; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3CE0  A8=F0  basic-reloc:ela_rterr+19 | sub:vars_reset+255
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+
+GAP 0.058 s: 58 samples, IFF=0 in 49; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~77C0  A8=F0  basic-reloc:ex_ret_under+7 | disk:frnd_locate+5 | sub:lcl_name+7
+     1  PC ~4950  A8=F0  basic-reloc:str_eval_paren+11 | disk:din_lofloc+19 | sub:COS_COEF+61
+
+GAP 0.052 s: 52 samples, IFF=0 in 50; CURLIN 0154
+    50  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3810  A8=F0  basic-reloc:cmul_int+3 | disk:widen_int_to+197 | sub:GFX_SPAT_BASE+16
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+
+GAP 0.065 s: 65 samples, IFF=0 in 50; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1120  A8=F0  basic-reloc:EOC+289 | disk:EOC+289 | sub:svc_ctl+14
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~3D10  A8=F0  basic-reloc:ary_op0_resolve+8 | sub:vars_reset+303
+
+GAP 0.055 s: 56 samples, IFF=0 in 50; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~1900  A8=F0  sub:sis_next+6
+
+GAP 0.069 s: 69 samples, IFF=0 in 50; CURLIN 0154
+    49  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~4CD0  A8=F0  basic-reloc:ev_f_var+11 | disk:gdpb_popdone+43 | sub:flog_no_fold+25
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+
+GAP 0.062 s: 62 samples, IFF=0 in 50; CURLIN 0154
+    50  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~28C0  A8=F0  basic-reloc:lpt_flush+16 | disk:pu_deref_body+93 | sub:gpp_up_done+6
+
+GAP 0.053 s: 53 samples, IFF=0 in 50; CURLIN 0154
+    50  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+
+GAP 0.067 s: 67 samples, IFF=0 in 50; CURLIN 0154
+    50  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~5290  A8=F0  basic-reloc:evsp_close+6 | disk:hkd_st+1 | sub:GEOM_720K+26
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+
+GAP 0.061 s: 61 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+
+GAP 0.053 s: 53 samples, IFF=0 in 51; CURLIN 0154
+    50  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3A90  A8=F0  basic-reloc:htimi_guard+17 | disk:subrom_call+102 | sub:fm_fin+2
+
+GAP 0.067 s: 67 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4C30  A8=F0  basic-reloc:ev_f+7 | disk:fdc_di_save+7 | sub:fexp_p+8
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+
+GAP 0.062 s: 62 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~00B0  A8=F0  basic-reloc:MKD_TOKEN+0 | disk:LPTOUT+11 | sub:MKD_TOKEN+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4CC0  A8=F0  basic-reloc:ev_f_notword+24 | disk:gdpb_popdone+27 | sub:flog_no_fold+9
+
+GAP 0.054 s: 53 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+
+GAP 0.068 s: 68 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+
+GAP 0.064 s: 64 samples, IFF=0 in 52; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3CE0  A8=F0  basic-reloc:ela_rterr+19 | sub:vars_reset+255
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~79B0  A8=F0  basic-reloc:nx_fast+15 | disk:dsm_secloop+25 | sub:lbs_cas+10
+
+GAP 0.056 s: 55 samples, IFF=0 in 51; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~6820  A8=F0  basic-reloc:str_eval_keyed+6 | disk:hkcv_float+5 | sub:svh_id+21
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.071 s: 72 samples, IFF=0 in 53; CURLIN 0154
+    51  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+
+GAP 0.067 s: 67 samples, IFF=0 in 52; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+
+GAP 0.060 s: 59 samples, IFF=0 in 52; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.056 s: 56 samples, IFF=0 in 53; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     1  PC ~4C40  A8=F0  basic-reloc:ev_f+23 | disk:fdc_io_done+6 | sub:fexp_scale+15
+
+GAP 0.072 s: 72 samples, IFF=0 in 53; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     5  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~7970  A8=F0  basic-reloc:nx_again+14 | disk:dsm_shr+4 | sub:ls_bsave+22
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+
+GAP 0.068 s: 68 samples, IFF=0 in 53; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1920  A8=F0  sub:sh_var_store+15
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4CC0  A8=F0  basic-reloc:ev_f_notword+24 | disk:gdpb_popdone+27 | sub:flog_no_fold+9
+
+GAP 0.061 s: 61 samples, IFF=0 in 52; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~78A0  A8=F0  basic-reloc:nx_notletter+6 | disk:install_res_print+1 | sub:lsv_lpt+1
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~65C0  A8=F0  basic-reloc:fch_modes_ptr+4 | disk:wsw_recperclus+2 | sub:p0_fch_modes_ptr+4
+
+GAP 0.058 s: 58 samples, IFF=0 in 53; CURLIN 0154
+    52  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~6820  A8=F0  basic-reloc:str_eval_keyed+6 | disk:hkcv_float+5 | sub:svh_id+21
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~27A0  A8=F0  basic-reloc:ctl_alloc+0 | sub:gfx_paint_read+1
+     1  PC ~5D00  A8=F0  basic-reloc:event_poll+5 | disk:frnd_calc+36 | sub:le_dispatch+27
+
+GAP 0.055 s: 55 samples, IFF=0 in 53; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3820  A8=F0  basic-reloc:cmul_int+19 | disk:widen_int_to+213 | sub:GFX_SPAT_BASE+32
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+
+GAP 0.072 s: 72 samples, IFF=0 in 54; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+
+GAP 0.066 s: 66 samples, IFF=0 in 54; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.063 s: 63 samples, IFF=0 in 54; CURLIN 0154
+    54  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3FA0  A8=F0  basic-reloc:var_alloc_or_find+1 | sub:__MEAS_SUB_P0_END+28
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+
+GAP 0.067 s: 67 samples, IFF=0 in 54; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+
+GAP 0.061 s: 61 samples, IFF=0 in 54; CURLIN 0154
+    53  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+
+GAP 0.067 s: 67 samples, IFF=0 in 55; CURLIN 0154
+    54  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+
+GAP 0.059 s: 58 samples, IFF=0 in 54; CURLIN 0154
+    54  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~48F0  A8=F0  basic-reloc:str_eval_one+8 | disk:frg_pass+3 | sub:SIN_COEF+92
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.069 s: 70 samples, IFF=0 in 55; CURLIN 0154
+    54  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+
+GAP 0.057 s: 57 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     1  PC ~4C40  A8=F0  basic-reloc:ev_f+23 | disk:fdc_io_done+6 | sub:fexp_scale+15
+
+GAP 0.069 s: 69 samples, IFF=0 in 56; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~78E0  A8=F0  basic-reloc:nx_have+15 | disk:ga_scanloop+18 | sub:lsv_dev_tail+14
+
+GAP 0.060 s: 60 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+
+GAP 0.068 s: 68 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+
+GAP 0.060 s: 60 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+
+GAP 0.068 s: 68 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3CD0  A8=F0  basic-reloc:ela_rterr+3 | sub:vars_reset+239
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~4230  A8=F0  basic-reloc:stmt_table+175 | disk:br_enaslt_tmpl+4 | sub:fsqn_loop+15
+     1  PC ~0170  A8=F0  basic-reloc:cgt_lp+13 | disk:FCH_RECMAX+112 | sub:tei_w+1
+     1  PC ~1620  A8=F0  sub:sate_fits+6
+
+GAP 0.061 s: 60 samples, IFF=0 in 56; CURLIN 0154
+    56  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4C60  A8=F0  basic-reloc:eff_chain+31 | disk:fdc_div_nob+2 | sub:fp_log+6
+
+GAP 0.069 s: 68 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+
+GAP 0.062 s: 61 samples, IFF=0 in 55; CURLIN 0154
+    55  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4920  A8=F0  basic-reloc:seo_chain+47 | disk:hk_finp+15 | sub:COS_COEF+13
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.069 s: 69 samples, IFF=0 in 57; CURLIN 0154
+    56  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1910  A8=F0  sub:sis_zero+3
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~37E0  A8=F0  basic-reloc:caddsub_int_check+2 | disk:widen_int_to+149 | sub:fo_random+0
+
+GAP 0.064 s: 64 samples, IFF=0 in 57; CURLIN 0154
+    56  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~4C90  A8=F0  basic-reloc:eff_chain+79 | disk:getdpb+29 | sub:flog_jscan_loop+28
+     1  PC ~3A80  A8=F0  basic-reloc:htimi_guard+1 | disk:subrom_call+86 | sub:fm_reopen+2
+
+GAP 0.069 s: 69 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~4B30  A8=F0  basic-reloc:cl_cmp+19 | disk:bd_parse+1 | sub:fexp_round+2
+     1  PC ~78A0  A8=F0  basic-reloc:nx_notletter+6 | disk:install_res_print+1 | sub:lsv_lpt+1
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+
+GAP 0.066 s: 66 samples, IFF=0 in 56; CURLIN 0154
+    56  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~7970  A8=F0  basic-reloc:nx_again+14 | disk:dsm_shr+4 | sub:ls_bsave+22
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+
+GAP 0.070 s: 70 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~67D0  A8=F0  basic-reloc:arf_skip+5 | disk:hk_dskf+5 | sub:save_tenant+0
+     1  PC ~4840  A8=F0  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+
+GAP 0.069 s: 69 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~7970  A8=F0  basic-reloc:nx_again+14 | disk:dsm_shr+4 | sub:ls_bsave+22
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.060 s: 60 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+
+GAP 0.073 s: 73 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+
+GAP 0.064 s: 64 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.058 s: 58 samples, IFF=0 in 58; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~18E0  A8=F0  sub:sis_outer+1
+
+GAP 0.072 s: 71 samples, IFF=0 in 57; CURLIN 0154
+    57  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+
+GAP 0.063 s: 63 samples, IFF=0 in 58; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~47B0  A8=F0  basic-reloc:vft_engine+19 | disk:fac_flushdirty+13 | sub:NEGLNK_TBL+60
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~2F90  A8=F0  basic-reloc:pop_lhs_and_probe+28 | sub:gsxs_step+0
+     1  PC ~4C80  A8=F0  basic-reloc:eff_chain+63 | disk:getdpb+13 | sub:flog_jscan_loop+12
+
+GAP 0.074 s: 74 samples, IFF=0 in 58; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+
+GAP 0.069 s: 69 samples, IFF=0 in 58; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+     1  PC ~30A0  A8=F0  basic-reloc:c16_lt+0 | sub:g8_rp_notext+6
+     1  PC ~79C0  A8=F0  basic-reloc:nx_fadd+5 | disk:dsm_athl+1 | sub:lbs_cas+26
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+
+GAP 0.064 s: 64 samples, IFF=0 in 59; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~48E0  A8=F0  basic-reloc:str_eval_ix+4 | disk:fat_rand_get+2 | sub:SIN_COEF+76
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~3A80  A8=F0  basic-reloc:htimi_guard+1 | disk:subrom_call+86 | sub:fm_reopen+2
+
+GAP 0.071 s: 71 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     1  PC ~4B30  A8=F0  basic-reloc:cl_cmp+19 | disk:bd_parse+1 | sub:fexp_round+2
+     1  PC ~78A0  A8=F0  basic-reloc:nx_notletter+6 | disk:install_res_print+1 | sub:lsv_lpt+1
+
+GAP 0.070 s: 71 samples, IFF=0 in 59; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4B80  A8=F0  basic-reloc:cl_red_not+11 | disk:bd_sep+0 | sub:fexp_n8widen+18
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+
+GAP 0.066 s: 65 samples, IFF=0 in 58; CURLIN 0154
+    58  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1930  A8=F0  sub:sh_var_store+31
+     1  PC ~48F0  A8=F0  basic-reloc:str_eval_one+8 | disk:frg_pass+3 | sub:SIN_COEF+92
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.072 s: 72 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~3BD0  A8=F0  basic-reloc:fre_abort_low+39 | disk:subrom_call+422 | sub:rl_lastrow+187
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+
+GAP 0.073 s: 73 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+
+GAP 0.066 s: 66 samples, IFF=0 in 60; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4910  A8=F0  basic-reloc:seo_chain+31 | disk:frg_pass+35 | sub:SIN_COEF+124
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~7820  A8=F0  basic-reloc:ary_store_write+3 | disk:frl_walked+16 | sub:ls_save+31
+     1  PC ~5B50  A8=F0  basic-reloc:play_service+5 | disk:dwr_fail+17 | sub:pt_upcase+5
+
+GAP 0.062 s: 62 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~48F0  A8=F0  basic-reloc:str_eval_one+8 | disk:frg_pass+3 | sub:SIN_COEF+92
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.072 s: 72 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+
+GAP 0.071 s: 71 samples, IFF=0 in 59; CURLIN 0154
+    59  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.067 s: 67 samples, IFF=0 in 60; CURLIN 0154
+    60  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~37B0  A8=F0  basic-reloc:xor_sign+10 | disk:widen_int_to+101 | sub:fs_open+73
+     1  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+
+GAP 0.061 s: 60 samples, IFF=0 in 60; CURLIN 0154
+    60  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+
+GAP 0.076 s: 76 samples, IFF=0 in 60; CURLIN 0154
+    60  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+
+GAP 0.071 s: 71 samples, IFF=0 in 61; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     1  PC ~7880  A8=F0  basic-reloc:nx_head+14 | disk:f365_iord_end+6 | sub:lsv_ascii_flag+30
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+
+GAP 0.068 s: 68 samples, IFF=0 in 60; CURLIN 0154
+    60  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4160  A8=F0  basic-reloc:exec+45 | disk:bdt_tramp+0 | sub:fsq_nonneg+21
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+
+GAP 0.065 s: 65 samples, IFF=0 in 60; CURLIN 0154
+    60  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~65C0  A8=F0  basic-reloc:fch_modes_ptr+4 | disk:wsw_recperclus+2 | sub:p0_fch_modes_ptr+4
+
+GAP 0.074 s: 74 samples, IFF=0 in 61; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+
+GAP 0.077 s: 77 samples, IFF=0 in 61; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3CD0  A8=F0  basic-reloc:ela_rterr+3 | sub:vars_reset+239
+     1  PC ~4230  A8=F0  basic-reloc:stmt_table+175 | disk:br_enaslt_tmpl+4 | sub:fsqn_loop+15
+
+GAP 0.071 s: 71 samples, IFF=0 in 61; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~4230  A8=F0  basic-reloc:stmt_table+175 | disk:br_enaslt_tmpl+4 | sub:fsqn_loop+15
+     1  PC ~0170  A8=F0  basic-reloc:cgt_lp+13 | disk:FCH_RECMAX+112 | sub:tei_w+1
+     1  PC ~1620  A8=F0  sub:sate_fits+6
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4CC0  A8=F0  basic-reloc:ev_f_notword+24 | disk:gdpb_popdone+27 | sub:flog_no_fold+9
+
+GAP 0.069 s: 70 samples, IFF=0 in 62; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~37D0  A8=F0  basic-reloc:caddsub_go+9 | disk:widen_int_to+133 | sub:fo_app_seq+1
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.067 s: 67 samples, IFF=0 in 61; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+
+GAP 0.062 s: 62 samples, IFF=0 in 62; CURLIN 0154
+    62  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+
+GAP 0.078 s: 78 samples, IFF=0 in 62; CURLIN 0154
+    61  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1120  A8=F0  basic-reloc:EOC+289 | disk:EOC+289 | sub:svc_ctl+14
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+
+GAP 0.075 s: 74 samples, IFF=0 in 62; CURLIN 0154
+    62  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~37D0  A8=F0  basic-reloc:caddsub_go+9 | disk:widen_int_to+133 | sub:fo_app_seq+1
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.074 s: 74 samples, IFF=0 in 62; CURLIN 0154
+    62  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~37C0  A8=F0  basic-reloc:arga_dig_iszero+4 | disk:widen_int_to+117 | sub:fs_open+89
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+
+GAP 0.070 s: 70 samples, IFF=0 in 63; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~6370  A8=F0  basic-reloc:ex_for+6 | disk:wmr_noadd+38 | sub:bn_fill+4
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~2F70  A8=F0  basic-reloc:ary_engine_call+19 | sub:gfx_spr_xsave+7
+     1  PC ~4C80  A8=F0  basic-reloc:eff_chain+63 | disk:getdpb+13 | sub:flog_jscan_loop+12
+
+GAP 0.069 s: 69 samples, IFF=0 in 63; CURLIN 0154
+    62  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+
+GAP 0.068 s: 68 samples, IFF=0 in 63; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~2F90  A8=F0  basic-reloc:pop_lhs_and_probe+28 | sub:gsxs_step+0
+     1  PC ~4CA0  A8=F0  basic-reloc:eff_chain+95 | disk:gdpb_pc_loop+4 | sub:flog_jscan_done+2
+
+GAP 0.064 s: 64 samples, IFF=0 in 63; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+
+GAP 0.064 s: 64 samples, IFF=0 in 63; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+
+GAP 0.076 s: 76 samples, IFF=0 in 63; CURLIN 0154
+    62  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+
+GAP 0.079 s: 79 samples, IFF=0 in 64; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+
+GAP 0.076 s: 76 samples, IFF=0 in 63; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+
+GAP 0.076 s: 76 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.077 s: 77 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~FF40  A8=F0  basic-reloc:H_MAIN+52 | disk:H_ERRP+67 | sub:H_MAIN+52
+     1  PC ~7950  A8=F0  basic-reloc:nx_slow+32 | disk:sfirst_body+7 | sub:ls_flag_a+16
+
+GAP 0.074 s: 74 samples, IFF=0 in 64; CURLIN 0154
+    63  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~4160  A8=F0  basic-reloc:exec+45 | disk:bdt_tramp+0 | sub:fsq_nonneg+21
+     1  PC ~48E0  A8=F0  basic-reloc:str_eval_ix+4 | disk:fat_rand_get+2 | sub:SIN_COEF+76
+
+GAP 0.075 s: 75 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+
+GAP 0.075 s: 75 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.073 s: 73 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~30A0  A8=F0  basic-reloc:c16_lt+0 | sub:g8_rp_notext+6
+     1  PC ~79C0  A8=F0  basic-reloc:nx_fadd+5 | disk:dsm_athl+1 | sub:lbs_cas+26
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+
+GAP 0.074 s: 74 samples, IFF=0 in 64; CURLIN 0154
+    64  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4730  A8=F0  basic-reloc:tp_set+2 | disk:rnp_flt+13 | sub:LNK_TBL+58
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+
+GAP 0.076 s: 75 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~78E0  A8=F0  basic-reloc:nx_have+15 | disk:ga_scanloop+18 | sub:lsv_dev_tail+14
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4B00  A8=F0  basic-reloc:clo_probe+0 | disk:bl_key+13 | sub:fp_exp+6
+     1  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+
+GAP 0.074 s: 74 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3750  A8=F0  basic-reloc:widen_int_to+5 | disk:widen_int_to+5 | sub:fs_raise+4
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~28C0  A8=F0  basic-reloc:lpt_flush+16 | disk:pu_deref_body+93 | sub:gpp_up_done+6
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+
+GAP 0.075 s: 75 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~77E0  A8=F0  basic-reloc:var_store_at+1 | disk:frl_div+25 | sub:ls_bload+0
+
+GAP 0.077 s: 77 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3D10  A8=F0  basic-reloc:ary_op0_resolve+8 | sub:vars_reset+303
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~7990  A8=F0  basic-reloc:nx_end+1 | disk:dsm_shr2+17 | sub:lbs_set_exec+2
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+
+GAP 0.076 s: 76 samples, IFF=0 in 66; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+     1  PC ~79A0  A8=F0  basic-reloc:nx_end+17 | disk:dsm_secloop+9 | sub:lbs_open+14
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.078 s: 78 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3D00  A8=F0  basic-reloc:ev_f_arr+11 | sub:vars_reset+287
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4CD0  A8=F0  basic-reloc:ev_f_var+11 | disk:gdpb_popdone+43 | sub:flog_no_fold+25
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.080 s: 80 samples, IFF=0 in 66; CURLIN 0154
+    66  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~37C0  A8=F0  basic-reloc:arga_dig_iszero+4 | disk:widen_int_to+117 | sub:fs_open+89
+
+GAP 0.079 s: 78 samples, IFF=0 in 65; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~46D0  A8=F0  basic-reloc:vnk_pct+3 | disk:frl_alloc+5 | sub:EXP_TCOR+88
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     1  PC ~3D50  A8=F0  basic-reloc:str_eval_arr+8 | sub:vars_reset+367
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.082 s: 82 samples, IFF=0 in 66; CURLIN 0154
+    65  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+
+GAP 0.079 s: 78 samples, IFF=0 in 66; CURLIN 0154
+    66  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~52B0  A8=F0  basic-reloc:factyp_is2+5 | disk:hkf_ch+14 | sub:GEOM_360K+18
+     1  PC ~37C0  A8=F0  basic-reloc:arga_dig_iszero+4 | disk:widen_int_to+117 | sub:fs_open+89
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+
+GAP 0.079 s: 79 samples, IFF=0 in 67; CURLIN 0154
+    66  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+
+GAP 0.083 s: 83 samples, IFF=0 in 68; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1900  A8=F0  sub:sis_next+6
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.080 s: 79 samples, IFF=0 in 66; CURLIN 0154
+    66  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3C60  A8=F0  basic-reloc:vnk_paren+2 | sub:vars_reset+127
+
+GAP 0.080 s: 80 samples, IFF=0 in 67; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4830  A8=F0  basic-reloc:deftbl_lookup+8 | disk:fat_dir_start+6 | sub:LOG_BP+44
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+
+GAP 0.083 s: 83 samples, IFF=0 in 67; CURLIN 0154
+    66  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+
+GAP 0.080 s: 79 samples, IFF=0 in 67; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3C10  A8=F0  basic-reloc:apsub_lp+9 | disk:subrom_call+486 | sub:vars_reset+47
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.080 s: 80 samples, IFF=0 in 67; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~4840  A8=F0  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.071 s: 71 samples, IFF=0 in 68; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     1  PC ~4C40  A8=F0  basic-reloc:ev_f+23 | disk:fdc_io_done+6 | sub:fexp_scale+15
+
+GAP 0.075 s: 75 samples, IFF=0 in 68; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~3A90  A8=F0  basic-reloc:htimi_guard+17 | disk:subrom_call+102 | sub:fm_fin+2
+
+GAP 0.076 s: 76 samples, IFF=0 in 67; CURLIN 0154
+    67  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3C60  A8=F0  basic-reloc:vnk_paren+2 | sub:vars_reset+127
+     1  PC ~40E0  A8=F0  basic-reloc:il_no+0 | disk:set_ramad+3 | sub:mw_jpix+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4920  A8=F0  basic-reloc:seo_chain+47 | disk:hk_finp+15 | sub:COS_COEF+13
+
+GAP 0.081 s: 80 samples, IFF=0 in 68; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+
+GAP 0.081 s: 81 samples, IFF=0 in 68; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67C0  A8=F0  basic-reloc:arf_lp+11 | disk:rnd_rec+5 | sub:drive_b+0
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~36D0  A8=F0  basic-reloc:dcc_zero+2 | sub:ks_eol+23
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+
+GAP 0.084 s: 84 samples, IFF=0 in 68; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~3BE0  A8=F0  basic-reloc:fperr_test+4 | disk:subrom_call+438 | sub:rl_lastrow+203
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~7990  A8=F0  basic-reloc:nx_end+1 | disk:dsm_shr2+17 | sub:lbs_set_exec+2
+
+GAP 0.081 s: 81 samples, IFF=0 in 68; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3D10  A8=F0  basic-reloc:ary_op0_resolve+8 | sub:vars_reset+303
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~7870  A8=F0  basic-reloc:nx_comma+0 | disk:wa_seg_set_tmpl+10 | sub:lsv_ascii_flag+14
+     1  PC ~79D0  A8=F0  basic-reloc:nx_fcmp+0 | disk:dsm_entloop+13 | sub:ls_sv_tenant+6
+
+GAP 0.073 s: 73 samples, IFF=0 in 69; CURLIN 0154
+    68  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~4C40  A8=F0  basic-reloc:ev_f+23 | disk:fdc_io_done+6 | sub:fexp_scale+15
+     1  PC ~65D0  A8=F0  basic-reloc:ctl_reloc+11 | disk:wsw_divdone+1 | sub:cbp_carry+10
+
+GAP 0.075 s: 75 samples, IFF=0 in 69; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~7990  A8=F0  basic-reloc:nx_end+1 | disk:dsm_shr2+17 | sub:lbs_set_exec+2
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.081 s: 81 samples, IFF=0 in 69; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+
+GAP 0.082 s: 81 samples, IFF=0 in 69; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3FA0  A8=F0  basic-reloc:var_alloc_or_find+1 | sub:__MEAS_SUB_P0_END+28
+
+GAP 0.085 s: 86 samples, IFF=0 in 71; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~4B20  A8=F0  basic-reloc:cl_cmp+3 | disk:bl_bs+11 | sub:fexp_magloop+2
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1910  A8=F0  sub:sis_zero+3
+     1  PC ~6800  A8=F0  basic-reloc:arf_addr+1 | disk:hk_cv+4 | sub:sv_hdr+2
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.071 s: 71 samples, IFF=0 in 69; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~27B0  A8=F0  basic-reloc:ctl_alloc+16 | sub:gprd_g2+4
+
+GAP 0.077 s: 78 samples, IFF=0 in 70; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~7990  A8=F0  basic-reloc:nx_end+1 | disk:dsm_shr2+17 | sub:lbs_set_exec+2
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+
+GAP 0.084 s: 83 samples, IFF=0 in 69; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4CD0  A8=F0  basic-reloc:ev_f_var+11 | disk:gdpb_popdone+43 | sub:flog_no_fold+25
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+
+GAP 0.083 s: 83 samples, IFF=0 in 70; CURLIN 0154
+    70  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67F0  A8=F0  basic-reloc:arf_found+23 | disk:hkdf_done+3 | sub:sv_fail+6
+     1  PC ~3C50  A8=F0  basic-reloc:apc_release+8 | sub:vars_reset+111
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~7950  A8=F0  basic-reloc:nx_slow+32 | disk:sfirst_body+7 | sub:ls_flag_a+16
+     1  PC ~79D0  A8=F0  basic-reloc:nx_fcmp+0 | disk:dsm_entloop+13 | sub:ls_sv_tenant+6
+
+GAP 0.083 s: 83 samples, IFF=0 in 70; CURLIN 0154
+    69  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     3  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~4C10  A8=F0  basic-reloc:relop_bit+13 | disk:br_cf_bios_tmpl+2 | sub:fexp_no_tcor+53
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.077 s: 77 samples, IFF=0 in 71; CURLIN 0154
+    70  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~28D0  A8=F0  basic-reloc:curlin_pub+12 | disk:pu_deref_body+109 | sub:gfx_paint_row+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+
+GAP 0.083 s: 83 samples, IFF=0 in 70; CURLIN 0154
+    70  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.083 s: 84 samples, IFF=0 in 71; CURLIN 0154
+    70  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67F0  A8=F0  basic-reloc:arf_found+23 | disk:hkdf_done+3 | sub:sv_fail+6
+     1  PC ~3C50  A8=F0  basic-reloc:apc_release+8 | sub:vars_reset+111
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~7950  A8=F0  basic-reloc:nx_slow+32 | disk:sfirst_body+7 | sub:ls_flag_a+16
+
+GAP 0.074 s: 74 samples, IFF=0 in 70; CURLIN 0154
+    70  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~7820  A8=F0  basic-reloc:ary_store_write+3 | disk:frl_walked+16 | sub:ls_save+31
+
+GAP 0.079 s: 78 samples, IFF=0 in 71; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.086 s: 86 samples, IFF=0 in 71; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~6790  A8=F0  basic-reloc:str_snapshot_ro+22 | disk:hk_mkfloat+10 | sub:is_disk+17
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+
+GAP 0.084 s: 84 samples, IFF=0 in 71; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+
+GAP 0.078 s: 78 samples, IFF=0 in 71; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.086 s: 86 samples, IFF=0 in 72; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~46C0  A8=F0  basic-reloc:vnk_suffix+11 | disk:k_46BA+6 | sub:EXP_TCOR+72
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.085 s: 84 samples, IFF=0 in 71; CURLIN 0154
+    71  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~46D0  A8=F0  basic-reloc:vnk_pct+3 | disk:frl_alloc+5 | sub:EXP_TCOR+88
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     1  PC ~3D50  A8=F0  basic-reloc:str_eval_arr+8 | sub:vars_reset+367
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.080 s: 79 samples, IFF=0 in 72; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~3810  A8=F0  basic-reloc:cmul_int+3 | disk:widen_int_to+197 | sub:GFX_SPAT_BASE+16
+     1  PC ~4D70  A8=F0  basic-reloc:ev_f_byte+0 | disk:ffb_rcok+57 | sub:flog_no_e1+12
+
+GAP 0.085 s: 85 samples, IFF=0 in 72; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~67D0  A8=F0  basic-reloc:arf_skip+5 | disk:hk_dskf+5 | sub:save_tenant+0
+     1  PC ~4840  A8=F0  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+
+GAP 0.074 s: 73 samples, IFF=0 in 72; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+
+GAP 0.082 s: 83 samples, IFF=0 in 73; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~48E0  A8=F0  basic-reloc:str_eval_ix+4 | disk:fat_rand_get+2 | sub:SIN_COEF+76
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+
+GAP 0.085 s: 85 samples, IFF=0 in 73; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~3C00  A8=F0  basic-reloc:ary_reset+6 | disk:subrom_call+470 | sub:vars_reset+31
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+
+GAP 0.077 s: 77 samples, IFF=0 in 73; CURLIN 0154
+    72  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1780  A8=F0  sub:sh_oct_build+16
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.083 s: 83 samples, IFF=0 in 73; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~52B0  A8=F0  basic-reloc:factyp_is2+5 | disk:hkf_ch+14 | sub:GEOM_360K+18
+     1  PC ~37C0  A8=F0  basic-reloc:arga_dig_iszero+4 | disk:widen_int_to+117 | sub:fs_open+89
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~48E0  A8=F0  basic-reloc:str_eval_ix+4 | disk:fat_rand_get+2 | sub:SIN_COEF+76
+
+GAP 0.089 s: 89 samples, IFF=0 in 73; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B90  A8=F0  basic-reloc:cl_shift+6 | disk:bd_small+3 | sub:fexp_n8widen+34
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+
+GAP 0.079 s: 79 samples, IFF=0 in 73; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4CD0  A8=F0  basic-reloc:ev_f_var+11 | disk:gdpb_popdone+43 | sub:flog_no_fold+25
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.089 s: 88 samples, IFF=0 in 73; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4B80  A8=F0  basic-reloc:cl_red_not+11 | disk:bd_sep+0 | sub:fexp_n8widen+18
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+
+GAP 0.079 s: 79 samples, IFF=0 in 74; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~5CF0  A8=F0  basic-reloc:est_fired+6 | disk:frnd_calc+20 | sub:le_dispatch+11
+
+GAP 0.086 s: 85 samples, IFF=0 in 73; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4730  A8=F0  basic-reloc:tp_set+2 | disk:rnp_flt+13 | sub:LNK_TBL+58
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.076 s: 76 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+
+GAP 0.086 s: 86 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~6830  A8=F0  basic-reloc:var_load_fac+15 | disk:hke_lp+11 | sub:tape_name_emit+8
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.087 s: 87 samples, IFF=0 in 74; CURLIN 0154
+    73  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~4700  A8=F0  basic-reloc:vst_suffix+15 | disk:rnd_parse+15 | sub:LNK_TBL+10
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4730  A8=F0  basic-reloc:tp_set+2 | disk:rnp_flt+13 | sub:LNK_TBL+58
+
+GAP 0.084 s: 84 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~48D0  A8=F0  basic-reloc:cv_deftbl+14 | disk:fwd_n2+1 | sub:SIN_COEF+60
+
+GAP 0.087 s: 87 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+
+GAP 0.083 s: 82 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.088 s: 88 samples, IFF=0 in 76; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1950  A8=F0  sub:svs_ok+0
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~3C30  A8=F0  basic-reloc:apsub_close+19 | sub:vars_reset+79
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~78E0  A8=F0  basic-reloc:nx_have+15 | disk:ga_scanloop+18 | sub:lsv_dev_tail+14
+
+GAP 0.082 s: 82 samples, IFF=0 in 75; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~52A0  A8=F0  basic-reloc:ixsp_paren+1 | disk:tgt_parse_req+8 | sub:GEOM_360K+2
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+
+GAP 0.088 s: 87 samples, IFF=0 in 74; CURLIN 0154
+    74  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     2  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~78B0  A8=F0  basic-reloc:nx_bound+0 | disk:curdrv_body+1 | sub:lsv_list+11
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+
+GAP 0.082 s: 82 samples, IFF=0 in 75; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~7840  A8=F0  basic-reloc:sst_go+2 | disk:k_607B+0 | sub:ls_save+63
+
+GAP 0.088 s: 88 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4AF0  A8=F0  basic-reloc:cl_opnd_lo+31 | disk:bd_line+2 | sub:fexp_tbl18addr+3
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+     1  PC ~6370  A8=F0  basic-reloc:ex_for+6 | disk:wmr_noadd+38 | sub:bn_fill+4
+
+GAP 0.083 s: 82 samples, IFF=0 in 75; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1930  A8=F0  sub:sh_var_store+31
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~77E0  A8=F0  basic-reloc:var_store_at+1 | disk:frl_div+25 | sub:ls_bload+0
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.089 s: 89 samples, IFF=0 in 76; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67F0  A8=F0  basic-reloc:arf_found+23 | disk:hkdf_done+3 | sub:sv_fail+6
+     1  PC ~3C50  A8=F0  basic-reloc:apc_release+8 | sub:vars_reset+111
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~7950  A8=F0  basic-reloc:nx_slow+32 | disk:sfirst_body+7 | sub:ls_flag_a+16
+     1  PC ~79D0  A8=F0  basic-reloc:nx_fcmp+0 | disk:dsm_entloop+13 | sub:ls_sv_tenant+6
+
+GAP 0.084 s: 84 samples, IFF=0 in 76; CURLIN 0154
+    75  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~19B0  A8=F0  basic-reloc:LINENO_ACC_STOP+23 | sub:svp_flt+17
+     1  PC ~1120  A8=F0  basic-reloc:EOC+289 | disk:EOC+289 | sub:svc_ctl+14
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~6820  A8=F0  basic-reloc:str_eval_keyed+6 | disk:hkcv_float+5 | sub:svh_id+21
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+
+GAP 0.089 s: 88 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~42C0  A8=F0  basic-reloc:skip_comma+2 | disk:skip_comma+2 | sub:p0_skip_comma+2
+     1  PC ~3C20  A8=F0  basic-reloc:apsub_close+3 | disk:subrom_call+502 | sub:vars_reset+63
+     1  PC ~37D0  A8=F0  basic-reloc:caddsub_go+9 | disk:widen_int_to+133 | sub:fo_app_seq+1
+     1  PC ~78D0  A8=F0  basic-reloc:nx_cmp+8 | disk:ga_scanloop+2 | sub:lsv_grp+9
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.086 s: 85 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1930  A8=F0  sub:sh_var_store+31
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~4900  A8=F0  basic-reloc:seo_chain+15 | disk:frg_pass+19 | sub:SIN_COEF+108
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+
+GAP 0.089 s: 89 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~67B0  A8=F0  basic-reloc:ary_resolve_fast+24 | disk:hkm_copy+5 | sub:parse_disk_fcb+15
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+     1  PC ~79F0  A8=F0  basic-reloc:nx_fint+0 | disk:dsm_skip+23 | sub:lo4_have+17
+
+GAP 0.088 s: 88 samples, IFF=0 in 77; CURLIN 0154
+    77  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~46B0  A8=F0  basic-reloc:vnk_more+3 | disk:dst_put+6 | sub:EXP_TCOR+56
+     1  PC ~78C0  A8=F0  basic-reloc:nx_scan+4 | disk:getalloc_body+8 | sub:lsv_list+27
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~4B30  A8=F0  basic-reloc:cl_cmp+19 | disk:bd_parse+1 | sub:fexp_round+2
+
+GAP 0.078 s: 78 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~36D0  A8=F0  basic-reloc:dcc_zero+2 | sub:ks_eol+23
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.092 s: 91 samples, IFF=0 in 76; CURLIN 0154
+    76  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+     1  PC ~4710  A8=F0  basic-reloc:vst_no+2 | disk:rnp_store+7 | sub:LNK_TBL+26
+     1  PC ~77D0  A8=F0  basic-reloc:for_key+4 | disk:frl_div+9 | sub:lcl_noname+0
+
+GAP 0.085 s: 85 samples, IFF=0 in 77; CURLIN 0154
+    77  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4AC0  A8=F0  basic-reloc:cl_after_rel+13 | disk:boot_date+17 | sub:fat_r2_done+57
+     1  PC ~3800  A8=F0  basic-reloc:GFX_SPAT_BASE+0 | disk:widen_int_to+181 | sub:GFX_SPAT_BASE+0
+     1  PC ~4C90  A8=F0  basic-reloc:eff_chain+79 | disk:getdpb+29 | sub:flog_jscan_loop+28
+
+GAP 0.090 s: 90 samples, IFF=0 in 77; CURLIN 0154
+    77  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~3D10  A8=F0  basic-reloc:ary_op0_resolve+8 | sub:vars_reset+303
+     1  PC ~4130  A8=F0  basic-reloc:req_operand+10 | disk:req_operand+10 | sub:one_to_argb+0
+     1  PC ~7990  A8=F0  basic-reloc:nx_end+1 | disk:dsm_shr2+17 | sub:lbs_set_exec+2
+
+GAP 0.089 s: 89 samples, IFF=0 in 77; CURLIN 0154
+    77  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+     1  PC ~79B0  A8=F0  basic-reloc:nx_fast+15 | disk:dsm_secloop+25 | sub:lbs_cas+10
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.080 s: 80 samples, IFF=0 in 77; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~2FA0  A8=F0  basic-reloc:plap_int+4 | sub:gfx_spr_size_apply+9
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+
+GAP 0.094 s: 93 samples, IFF=0 in 77; CURLIN 0154
+    77  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~1980  A8=F0  sub:svp_sp+4
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+
+GAP 0.085 s: 85 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+     1  PC ~3090  A8=F0  basic-reloc:c16_eq+1 | sub:g8_rp_r0+12
+     1  PC ~79B0  A8=F0  basic-reloc:nx_fast+15 | disk:dsm_secloop+25 | sub:lbs_cas+10
+     1  PC ~4B80  A8=F0  basic-reloc:cl_red_not+11 | disk:bd_sep+0 | sub:fexp_n8widen+18
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4670  A8=F0  basic-reloc:txt_mode+3 | disk:bdos_close_write+12 | sub:POW8_TBL+136
+
+GAP 0.080 s: 80 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~77E0  A8=F0  basic-reloc:var_store_at+1 | disk:frl_div+25 | sub:ls_bload+0
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+
+GAP 0.094 s: 94 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~4AD0  A8=F0  basic-reloc:ev_logic+2 | disk:bd_ask+13 | sub:fat_no_break+7
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+7 | disk:ffb_noround+13 | sub:flog_not_negone+5
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+
+GAP 0.086 s: 86 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~4680  A8=F0  basic-reloc:is_ident_cont+7 | disk:bdos_create+2 | sub:EXP_TCOR+8
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~7810  A8=F0  basic-reloc:vsa_int+0 | disk:frl_walked+0 | sub:ls_save+15
+
+GAP 0.081 s: 80 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4AE0  A8=F0  basic-reloc:cl_opnd_lo+15 | disk:bd_puts+5 | sub:fat_no_break+23
+
+GAP 0.091 s: 92 samples, IFF=0 in 79; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~3BD0  A8=F0  basic-reloc:fre_abort_low+39 | disk:subrom_call+422 | sub:rl_lastrow+187
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~7900  A8=F0  basic-reloc:nx_have+47 | disk:ga_scanloop+50 | sub:lsv_cas+21
+
+GAP 0.088 s: 87 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4690  A8=F0  basic-reloc:is_ident_cont+23 | disk:dsl_bcheck+15 | sub:EXP_TCOR+24
+     1  PC ~0160  A8=F0  basic-reloc:chrgtr+0 | disk:FCH_RECMAX+96 | sub:p0_chrgtr+0
+     1  PC ~40D0  A8=F0  basic-reloc:tokenise+1 | disk:page0_ram_in+45 | sub:mw_body+23
+     1  PC ~4150  A8=F0  basic-reloc:exec+29 | disk:bwt_loop+3 | sub:fsq_nonneg+5
+     1  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4CD0  A8=F0  basic-reloc:ev_f_var+11 | disk:gdpb_popdone+43 | sub:flog_no_fold+25
+
+GAP 0.083 s: 83 samples, IFF=0 in 78; CURLIN 0154
+    78  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~4D20  A8=F0  basic-reloc:ev_f_missop+13 | disk:ffb_shift+9 | sub:flog_no_fold+105
+     1  PC ~27A0  A8=F0  basic-reloc:ctl_alloc+0 | sub:gfx_paint_read+1
+
+GAP 0.092 s: 92 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~67C0  A8=F0  basic-reloc:arf_lp+11 | disk:rnd_rec+5 | sub:drive_b+0
+     1  PC ~67E0  A8=F0  basic-reloc:arf_found+7 | disk:hk_dskf+21 | sub:svt_go+3
+     1  PC ~36D0  A8=F0  basic-reloc:dcc_zero+2 | sub:ks_eol+23
+     1  PC ~3080  A8=F0  basic-reloc:flt_to_int16+1 | sub:flt_to_int16+1
+
+GAP 0.091 s: 91 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~1990  A8=F0  sub:svp_sign+6
+     1  PC ~1970  A8=F0  sub:svp_body+8
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+     1  PC ~79A0  A8=F0  basic-reloc:nx_end+17 | disk:dsm_secloop+9 | sub:lbs_open+14
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80
+
+GAP 0.084 s: 84 samples, IFF=0 in 80; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~4900  A8=F0  basic-reloc:seo_chain+15 | disk:frg_pass+19 | sub:SIN_COEF+108
+     1  PC ~2FB0  A8=F0  basic-reloc:m32_lp+3 | sub:gfx_vdp_wr+1
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~5D00  A8=F0  basic-reloc:event_poll+5 | disk:frnd_calc+36 | sub:le_dispatch+27
+
+GAP 0.080 s: 80 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     1  PC ~6840  A8=F0  basic-reloc:vlf_value+9 | disk:hke_no+1 | sub:tne_loop+13
+
+GAP 0.093 s: 92 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     4  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~4A80  A8=F0  basic-reloc:trace_line+10 | disk:dfl_done+2 | sub:fat_r1_done+75
+     1  PC ~3750  A8=F0  basic-reloc:widen_int_to+5 | disk:widen_int_to+5 | sub:fs_raise+4
+     1  PC ~4140  A8=F0  basic-reloc:exec+13 | disk:sr_store+7 | sub:uint_pos+2
+     1  PC ~46E0  A8=F0  basic-reloc:rl_vst+0 | disk:frnd_next+12 | sub:EXP_TCOR+104
+     1  PC ~28C0  A8=F0  basic-reloc:lpt_flush+16 | disk:pu_deref_body+93 | sub:gpp_up_done+6
+
+GAP 0.089 s: 89 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~3F70  A8=F0  basic-reloc:var_find_typed+13 | sub:p0_ex_key_stmt+64
+     2  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~3F60  A8=F0  basic-reloc:tt_onoff+6 | sub:p0_ex_key_stmt+48
+     1  PC ~46F0  A8=F0  basic-reloc:vst_walk+7 | disk:bdos_seqwrite+2 | sub:EXP_TCOR+120
+     1  PC ~4820  A8=F0  basic-reloc:vsf_wb_copy+3 | disk:fwba_loop+11 | sub:LOG_BP+28
+     1  PC ~42D0  A8=F0  basic-reloc:bl_upcase+6 | disk:dskio_ok+4 | sub:p0_upcase+6
+     1  PC ~4910  A8=F0  basic-reloc:seo_chain+31 | disk:frg_pass+35 | sub:SIN_COEF+124
+
+GAP 0.086 s: 85 samples, IFF=0 in 79; CURLIN 0154
+    79  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     2  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+     1  PC ~1940  A8=F0  sub:svs_copy+15
+     1  PC ~4B10  A8=F0  basic-reloc:cl_after_tok+1 | disk:bl_key+29 | sub:fp_exp+22
+     1  PC ~4C20  A8=F0  basic-reloc:ev_sp+3 | disk:br2_end+2 | sub:fexp_no_tcor+69
+     1  PC ~65C0  A8=F0  basic-reloc:fch_modes_ptr+4 | disk:wsw_recperclus+2 | sub:p0_fch_modes_ptr+4
+
+GAP 0.093 s: 93 samples, IFF=0 in 80; CURLIN 0154
+    80  PC ~65E0  A8=F0  basic-reloc:ctl_reloc+27 | disk:setrnd_body+11 | sub:cbp_mul+0
+     3  PC ~3F90  A8=F0  basic-reloc:vft_skip+0 | sub:__MEAS_SUB_P0_END+12
+     1  PC ~63C0  A8=F0  basic-reloc:ef_havestep+20 | disk:wm16_lp+0 | sub:bn_done+5
+     1  PC ~3C40  A8=F0  basic-reloc:apsub_close+35 | sub:vars_reset+95
+     1  PC ~67A0  A8=F0  basic-reloc:ary_resolve_fast+8 | disk:hkm_wide+4 | sub:isd_disk+11
+     1  PC ~4A90  A8=F0  basic-reloc:eval+10 | disk:eval+10 | sub:fat_r2_done+9
+     1  PC ~78F0  A8=F0  basic-reloc:nx_have+31 | disk:ga_scanloop+34 | sub:lsv_cas+5
+     1  PC ~3F80  A8=F0  basic-reloc:vft_go+3 | sub:p0_ex_key_stmt+80

@@ -1,0 +1,30 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  PRINT then NEW: got b'A\r\n'
+PASS  PRINT 42: got b' 42 \r\n'
+PASS  PRINT "HI": got b'HI\r\n'
+PASS  PRINT 1;2: got b' 1  2 \r\n'
+PASS  PRINT 1;2;3: got b' 1  2  3 \r\n'
+PASS  PRINT 7;"HI": got b' 7 HI\r\n'
+PASS  PRINT "X";: got b'X'
+PASS  PRINT (bare): got b'\r\n'
+PASS  GOTO skips line 20 (A): got 2
+PASS  CLEAR 200,&HABCD sets HIMEM: got 43981
+PASS  CLEAR ,&HABCD leaves HIMEM alone (Syntax error): got 4660
+PASS  WIDTH 32 sets LINLEN: got 32
+PASS  DELETE 20 removes line 20, keeps 10 and 30, and stops the run (R-D8): got (True, False, True, b'')
+PASS  DELETE 25 (no such high line) raises ERR 5, deletes nothing (R-D2): got (5, True, True)
+PASS  RENUM reports `Undefined line 77 in 1` and renumbers 1 -> 10 (R-RN8/9): got (b'Undefined line 77 in 1\r\n', False, True)
+PASS  AUTO 100,5 prompts `100 ` with RL_AUTO = 1, Ctrl-STOP ends it on a new line (R-AU8): got (b'100 \r\n', 1, 0, b'd\x00', b'\x05\x00', 0)
+PASS  LET X (double) exists before its RHS: got b'-1 \r\n'
+PASS  LET X% exists before its RHS: got b'-1 \r\n'
+PASS  LET X! exists before its RHS: got b'-1 \r\n'
+PASS  the LET keyword, X#: got b'-1 \r\n'
+PASS  LET A$ exists (empty) before its RHS: got b'-1 \r\n'
+PASS  string LET: by reference and by copy, new and existing: got b'ABCQQ 3 \r\n'
+PASS  FOR I exists before its start expression: got b' 1 \r\n'
+PASS  FOR I% exists before its start expression: got b' 1 \r\n'
+PASS  an erroring RHS leaves the new target standing at 0: got b' 0 -1 \r\n'
+PASS  existing targets: value, address, int: got b' 6 -1  6 \r\n'
+PASS  existing targets: the chain is X, P, X% -- one entry each: got [('X', 8), ('P', 8), ('X', 2)]
+
+ALL PASS — PRINT/GOTO/CLEAR/WIDTH match documented statement behaviour

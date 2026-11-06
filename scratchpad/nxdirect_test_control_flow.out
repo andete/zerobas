@@ -1,0 +1,29 @@
+=== FOR/NEXT (named) ===
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  FOR I=1 TO 5 sum: got 15
+
+=== FOR/NEXT (STEP, bare) ===
+PASS  FOR J=10 TO 2 STEP -2 sum: got 30
+
+=== GOTO + IF/THEN ===
+PASS  IF/THEN/GOTO loop: got 5
+
+=== GOSUB/RETURN ===
+PASS  GOSUB/RETURN: got 11
+
+=== READ/DATA/RESTORE ===
+PASS  READ A (1st DATA): got 7
+PASS  READ B (2nd DATA): got 8
+PASS  READ C after RESTORE: got 7
+
+=== ON…GOTO ===
+PASS  ON 2 GOTO -> 2nd target: got 2
+
+=== STOP/CONT ===
+PASS  after STOP (line 30 not run): got 1
+PASS  after CONT (line 30 runs): got 2
+
+=== nested FOR/NEXT ===
+PASS  nested FOR iteration count: got 12
+
+ALL PASS — control-flow executor matches documented BASIC semantics

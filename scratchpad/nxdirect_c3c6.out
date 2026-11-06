@@ -1,0 +1,10 @@
+C3_euler
+  Philips_VG_8020                ENDED t=224.2 gaps=0 max=0  lpt 9 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=279.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=279.4 gaps=0 max=0  SAME
+C6_wordsort
+  Philips_VG_8020                ENDED t=95.8 gaps=0 max=0  lpt 3 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=103.5 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=103.5 gaps=0 max=0  SAME
+
+PASS: 2 program(s), 0 divergent run(s)

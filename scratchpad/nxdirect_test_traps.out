@@ -1,0 +1,73 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  set_state OFF->ON state: got 1
+PASS  set_state OFF->ON keeps PENDING: got 128
+PASS  set_state OFF->ON TRAPENA: got 1
+PASS  set_state ON->STOP state: got 2
+PASS  set_state ON->STOP keeps PENDING: got 128
+PASS  set_state ON->STOP TRAPENA: got 0
+PASS  set_state ON->OFF state: got 0
+PASS  set_state ON->OFF clears PENDING: got 0
+PASS  set_state ON->OFF TRAPENA: got 0
+PASS  set_state STOP->ON TRAPENA: got 1
+PASS  set_state ON->ON TRAPENA unchanged: got 1
+PASS  check_traps fired (CF=1): got True
+PASS  STOP now SERVICING: got 3
+PASS  STOP PENDING cleared: got 0
+PASS  TRAPENA dropped to 0: got 0
+PASS  TRAPSVC bumped to 1: got 1
+PASS  CURLINE = handler: got b'\xa5Z'
+PASS  GSP descended by one GOSUB_FRAME: got 7
+PASS  service record sits under its frame: got 53241
+PASS  service record prevTSP: got 53248
+PASS  service record idx: got 1
+PASS  FSP excludes the service record: got 53238
+PASS  frame resume ptr = STMT: got 40000
+PASS  frame records prevFSP: got 53223
+PASS  frame records gdelta: got 25
+PASS  prevFSP + gdelta = prevGSP: got 53248
+PASS  check_traps NO fire (OFF) CF=0: got False
+PASS  check_traps NO fire (OFF) entry unchanged: got 128
+PASS  check_traps NO fire (OFF) TRAPPEND cleared: got 0
+PASS  check_traps NO fire (suspended) CF=0: got False
+PASS  check_traps NO fire (suspended) entry unchanged: got 130
+PASS  check_traps NO fire (suspended) TRAPPEND cleared: got 0
+PASS  check_traps NO fire (no PENDING) CF=0: got False
+PASS  check_traps NO fire (no PENDING) entry unchanged: got 1
+PASS  check_traps NO fire (no PENDING) TRAPPEND cleared: got 0
+PASS  check_traps NO fire (no handler) CF=0: got False
+PASS  check_traps NO fire (no handler) entry unchanged: got 129
+PASS  check_traps NO fire (no handler) TRAPPEND cleared: got 0
+PASS  return match: SERVICING->ON: got 1
+PASS  return match: TRAPENA +1: got 1
+PASS  return match: TRAPSVC popped: got 0
+PASS  return mismatch: state untouched: got 3
+PASS  return mismatch: TRAPSVC untouched: got 1
+PASS  return match, handler-OFF: stays OFF: got 0
+PASS  return match, handler-OFF: TRAPENA unchanged: got 0
+PASS  return match, handler-OFF: record popped: got 0
+PASS  STRIG fire: CF=1: got True
+PASS  STRIG fire: state SERVICING: got 3
+PASS  STRIG fire: PENDING cleared: got 0
+PASS  STRIG fire: SHADOW PRESERVED: got 64
+PASS  STRIG return: SERVICING->ON: got 1
+PASS  STRIG return: SHADOW PRESERVED: got 64
+PASS  set_state ON->ON: state: got 1
+PASS  set_state ON->ON: SHADOW kept: got 64
+PASS  set_state ON->STOP: state: got 2
+PASS  set_state ON->STOP: SHADOW kept: got 64
+PASS  set_state STOP->ON: state: got 1
+PASS  set_state STOP->ON: SHADOW kept: got 64
+PASS  set_state ON->OFF: state and PENDING cleared: got 0
+PASS  set_state ON->OFF: SHADOW kept: got 64
+PASS  STOP fire: CF=1: got True
+PASS  STOP fire: state SERVICING: got 3
+PASS  STOP fire: SHADOW PRESERVED (was STOPGRACE's job): got 64
+PASS  STOP return: SERVICING->ON: got 1
+PASS  STOP return: SHADOW PRESERVED: got 64
+PASS  STOP set_state ON->ON: SHADOW kept: got 64
+PASS  STOP torn read: a 2nd BREAKX confirms: got [False, True]
+PASS  STOP torn read: SHADOW KEPT (no fresh edge next poll): got 64
+PASS  STOP real release: shadow cleared: got 0
+PASS  STOP no shadow: ONE BREAKX (the common boundary pays no 2nd read): got [False]
+
+ALL PASS

@@ -1,0 +1,18 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# --- I1/I2 differential: the pre-D-FORINT image vs this one ---
+      (p.ovf5 prints 'R 6  30  32765')
+      (p.ovfnext prints '32760 \r\n 32765 \r\nE 6  20  32765 \r\nA 32765 \r\nD 32765')
+PASS  I1 291/291 programs identical (9675 statement boundaries); the int path completed a NEXT in 115 of the 76 + random `%` programs
+# --- I3 host T-states of one NEXT (tenant steps in, CALSLT out) ---
+      FOR I%=1 TO 12                   old    5416 T (2 sub)  new    1964 T (0 sub)    -3452
+      FOR I%=300 TO 312                old    5417 T (2 sub)  new    1965 T (0 sub)    -3452
+      FOR I%=12 TO 1 STEP -1           old    5431 T (2 sub)  new    1979 T (0 sub)    -3452
+      N=12:FOR I%=1 TO N (dbl limit)   old    9994 T (2 sub)  new    2126 T (0 sub)    -7868
+      FOR I%=1 TO 13.7 (BCD limit)     old    9441 T (2 sub)  new    6643 T (0 sub)    -2798
+      FOR I%=1 TO 9 STEP 1.5 (BCD)     old   18871 T (2 sub)  new   13166 T (0 sub)    -5705
+      FOR I=1 TO 12 (float fast)       old    4686 T (1 sub)  new    3513 T (0 sub)    -1173
+      FOR I!=1 TO 12 (float fast)      old    4518 T (1 sub)  new    3345 T (0 sub)    -1173
+      FOR I=1 TO 7 STEP .5 (BCD)       old   18422 T (2 sub)  new   14338 T (0 sub)    -4084
+      FOR I#=.5 TO 12 (BCD)            old   19151 T (2 sub)  new   15126 T (0 sub)    -4025
+
+ALL PASS
