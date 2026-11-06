@@ -1,0 +1,18 @@
+ENDED t=218.4 gaps=22 max=0.037
+samples by CURLIN: {'000A': 44318}
+
+CURLIN 000A: 44318 samples, IFF=0 in 8038
+  11059  PC ~09B0  A8=F3  sub:dk_entry+4
+   9484  PC ~09C0  A8=F3  sub:dk_entry+20
+   4513  PC ~09D0  A8=F3  sub:dk_next+4
+   3651  PC ~09A0  A8=F3  sub:dop_emit+2
+   2967  PC ~4850  A8=FC  basic-reloc:ary_apply_offset_hl_sub+9 | disk:fdq_win+1 | sub:LOG_BP+76
+   1169  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+    612  PC ~7AE0  A8=FC  basic-reloc:exr_lp+2 | disk:frdw_poll+8 | sub:lpn_run+1
+    537  PC ~4880  A8=FC  basic-reloc:str_set_key+4 | disk:fwd_wait+0 | sub:LOG_BP+124
+    515  PC ~4840  A8=FC  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+    468  PC ~7AD0  A8=FC  basic-reloc:npkz_lp+1 | disk:fdc_read_data_body+12 | sub:ls_pcr_noquote+29
+    360  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+0
+    345  PC ~1990  A8=F0  sub:svp_plus+1
+    299  PC ~19A0  A8=FC  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+    298  PC ~70B0  A8=FC  basic-reloc:gp_nochan+6 | disk:fip_store+3 | sub:rsr_lp+1

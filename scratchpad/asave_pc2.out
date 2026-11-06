@@ -1,0 +1,18 @@
+ENDED t=203.5 gaps=15 max=0.036
+samples by CURLIN: {'000A': 29527}
+
+CURLIN 000A: 29527 samples, IFF=0 in 8147
+   8831  PC ~09B0  A8=F3  sub:dk_entry+5
+   3920  PC ~09A0  A8=F3  sub:dop_emit+2
+   3285  PC ~4850  A8=FC  basic-reloc:ary_apply_offset_hl_sub+9 | disk:fdq_win+1 | sub:LOG_BP+76
+   1734  PC ~09C0  A8=F3  sub:dk_entry+21
+    651  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+    612  PC ~7AE0  A8=FC  basic-reloc:exr_lp+2 | disk:frdw_poll+8 | sub:lpn_run+1
+    566  PC ~4840  A8=FC  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+    538  PC ~4880  A8=FC  basic-reloc:str_set_key+4 | disk:fwd_wait+0 | sub:LOG_BP+124
+    475  PC ~7AD0  A8=FC  basic-reloc:npkz_lp+1 | disk:fdc_read_data_body+12 | sub:ls_pcr_noquote+29
+    377  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+8
+    316  PC ~19A0  A8=FC  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+    302  PC ~70B0  A8=FC  basic-reloc:gp_nochan+6 | disk:fip_store+3 | sub:rsr_lp+1
+    286  PC ~2450  A8=F0  sub:gwp_mok+7
+    281  PC ~24F0  A8=F0  sub:gsv_walk+17

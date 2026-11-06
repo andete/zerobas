@@ -578,34 +578,42 @@ detok_kw:
                 push    hl
                 push    bc
                 push    ix
-                ld      ix,kwtable
+                ; 🐌 D-ASAVESPD (2026-11-06): the walk in HL, not IX / IY -- ~140 T an
+                ; entry against ~260. Every token of a LIST / ASCII SAVE scans this
+                ; table; the keyword search was ~65 % of a 150-line `SAVE ,A`
+                ; (scratchpad/asave_pc.out).
+                ld      hl,kwtable
 dk_entry:
-                ld      a,(ix+0)            ; keyword length (0 = end of table)
+                ld      a,(hl)              ; keyword length (0 = end of table)
                 or      a
                 jr      z,dk_none
                 ld      b,a                 ; B = klen
-                push    ix
-                pop     iy
-                inc     iy                  ; IY -> the keyword chars
-                ; advance IX to the [tlen] byte: skip [klen] + klen chars
                 ld      e,a
                 ld      d,0
-                inc     de                  ; DE = 1 + klen
-                add     ix,de               ; IX -> [tlen]
-                ld      a,(ix+0)            ; tlen
+                inc     hl                  ; HL -> the keyword chars
+                add     hl,de               ; HL -> [tlen]
+                ld      a,(hl)              ; tlen
                 cp      1                   ; only single-byte tokens match here
                 jr      nz,dk_next
-                ld      a,(ix+1)            ; the token byte
+                inc     hl
+                ld      a,(hl)              ; the token byte
                 cp      c
-                jr      z,dk_hit
-dk_next:
-                ; skip [tlen] + tlen token bytes -> next entry's [klen]
-                ld      a,(ix+0)
-                ld      e,a
-                ld      d,0
-                inc     de
-                add     ix,de
+                jr      z,dk_hithl
+                inc     hl                  ; -> the next entry's [klen]
                 jr      dk_entry
+dk_next:
+                ; skip [tlen] + tlen token bytes -> next entry's [klen] (D = 0)
+                ld      e,a
+                inc     hl
+                add     hl,de
+                jr      dk_entry
+dk_hithl:
+                ld      e,b
+                inc     e                   ; E = klen + 1 (D = 0)
+                or      a
+                sbc     hl,de               ; HL -> the keyword chars
+                push    hl
+                pop     iy                  ; IY for the print loop (pchar keeps IY)
 dk_hit:
                 ; IY -> klen keyword chars; print B of them.
 dk_print:                                   ; (pchar keeps BC and IY)

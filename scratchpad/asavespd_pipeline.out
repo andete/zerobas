@@ -1,0 +1,8 @@
+all=0
+allfn=0
+VDP BASE CALL MAX ELSE PAD 
+TALLY {"NEAR": 13, "RUNS?": 20, "SAME": 9}
+rc=2
+GATES: 243/244 green
+RED: wall-assertion-check
+GATE TIER RAN: FULL

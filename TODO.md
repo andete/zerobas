@@ -1351,6 +1351,16 @@ item — do **one item per session** to keep context lean.
       a full disk (status 3, copies equal). Knife (no flush before the close): the file
       comes back with a 1-cluster chain. Machine: the 14 KB SAVE 168 FDC commands / 13.0 s
       -> 85 / 7.8 s ([`fdccmd_after.out`](scratchpad/fdccmd_after.out)). Docs: concepts/disk.md.
+      📏 **(2) MEASURED, NOT BUILT (2026-11-06): what the LOAD does between sectors.** The whole
+      tokenised LOAD runs in hk_dpload's line loop (disk/kernel.asm), one fat_io_getbyte per
+      program byte: the TXTMAX check, a call, a 32-bit FREAD_LEFT test and decrement, the
+      store -- ~400-450 T a byte, ~230k T (~64 ms) a sector, so the next sector has long
+      passed. An LDIR run-copy of what is left in the buffer (bounded by the body length,
+      512 - FREAD_OFF, FREAD_LEFT and TXTMAX) would be ~3 ms a sector -- BUT (a) it needs ~60-70
+      B of disk.rom and the largest usable hole is 23 B (a carve first), and (b) even at 3 ms the
+      adjacent sector's gap (~1.7 ms) is missed: catching it needs multi-sector reads into a
+      buffer, which is the 🙋 RAM question above. So LOAD waits on that ruling (or a disk.rom
+      carve for the run-copy alone, worth measuring after).
       ~~🙋 **NEEDS-JOOST**~~ — a far better-posed question than before.
       MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
       §6.6r): two independent runs, every figure identical, three controls green.
@@ -2766,6 +2776,23 @@ item — do **one item per session** to keep context lean.
       each block's lines while the motor is stopped. ➡️ First measurement when picked
       up: the same ASCII program loaded from DISK (LOAD"A:...") on both, and the time
       against the program's line count -- per-line cost vs per-block cost.
+      📏 **MEASURED 2026-11-06 -- AND IT FOUND A BIGGER GAP NEXT TO IT.** A 150-line program
+      of realistic statements ([`asctok_end.bas`](scratchpad/asctok_end.bas)) loaded by the
+      program harness's own ASCII tape: **CF-3300 114.1 s, zerobas 173.9 s (1.5x)**
+      ([`asctok_end.out`](scratchpad/asctok_end.out)); the same program with `SAVE "T.BAS",A`
+      at line 10 ([`asctok_save.bas`](scratchpad/asctok_save.bas)): the SAVE ,A alone **~1.5 s
+      there, ~44.5 s here (~30x)** ([`asctok_time.out`](scratchpad/asctok_time.out)). The FDC
+      log of that SAVE ([`asave_fdc.out`](scratchpad/asave_fdc.out)) holds only 100 commands;
+      1 ms PC samples ([`asave_pc.out`](scratchpad/asave_pc.out)) put ~65 % of it in the
+      detokeniser's keyword search (dk_entry / dk_next, sub ROM): every token walks the
+      whole kwtable, ~150 entries at ~260 T.
+      ✅ **(a) THE WALK, 2026-11-06 (D-ASAVESPD):** detok_kw (basic/detok.inc) walks in HL, not
+      IX / IY (~140 T an entry, no larger); LIST gets it too. The 150-line run 218.4 -> 203.5 s
+      (🔮 ~-16 -> -14.9 HIT; [`asavespd_after.out`](scratchpad/asavespd_after.out)), the
+      SAVE ,A ~44.5 -> ~29.6 s. tests/test_list.py (the round trip) green. ➡️ NEXT: the search
+      is still ~half of it ([`asave_pc2.out`](scratchpad/asave_pc2.out)) -- a token -> entry
+      index (~256 B of sub ROM: page 0 had 170 B free and page 1 ~90 B on 2026-11-06, so a carve first); then the tape
+      load's own 1.5x (the tokeniser between blocks).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7651,7 +7678,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10084 (T-6FE392)8 (T-529ABE)` from `TODO.md:15236 (T-529ABE)`: a
+      `TODO.md:10111 (T-6FE392)8 (T-529ABE)` from `TODO.md:15269 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10390,7 +10417,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15236 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15269 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14809,6 +14836,12 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       each exactly ([`putdir_knives.out`](scratchpad/putdir_knives.out)). Main
       page 1 101 -> 87 B (2026-10-08).
       ➡️ Left: the sector read-modify-write per PUT -- the write cache proper.
+      📏 **RE-MEASURED 2026-11-06: 20 PUTs + CLOSE 10.58 s against the CF-3300's 3.38 (3.1x)**
+      ([`putstopwatch20_1106.out`](scratchpad/putstopwatch20_1106.out)). What is left is the
+      per-PUT read-modify-write of the record's sector: docs/spec-diskwcache.md's W4 (keep the
+      data sector in FAT_DBUF across calls), PARKED there for its audit -- every other
+      FAT_DBUF user (every channel, the mount, the directory work, the BDOS) must flush
+      first. A slice of its own, the audit before any code.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the

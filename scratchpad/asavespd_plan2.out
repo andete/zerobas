@@ -1,0 +1,8 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): basic/detok.inc
+  why: probe/tool change: scratchpad/asavedi_pc_probe.py
+  why: program (data) change: scratchpad/asctok_end.bas scratchpad/asctok_merge.bas scratchpad/asctok_save.bas
+  hours since the last full green: 0.5 (full once a day, at every hand-off, and on a RAM-address move)
+  ⏱ the 14 daily suites are due (last green 32 h ago): run `make gates-sweeps` ALONE, not beside a battery
+  emulator suites (6): cursor-acceptance error-acceptance keystr-acceptance kwsweep runline-acceptance string-acceptance

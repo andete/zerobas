@@ -78,8 +78,9 @@ if "--all" in sys.argv:
     every = [x for _, smp in gaps for x in smp]
     by = collections.Counter(x[3] for x in every)
     print("samples by CURLIN:", dict(by.most_common(6)))
-    want = [x for x in every if x[3] == "000A"]
-    print(f"\nLINE 10 (SAVE + LOAD): {len(want)} samples, IFF=0 in {sum(1 for x in want if x[1] == 0)}")
+    cl = next((a.split("=")[1] for a in sys.argv if a.startswith("--curlin=")), "000A")
+    want = [x for x in every if x[3] == cl]
+    print(f"\nCURLIN {cl}: {len(want)} samples, IFF=0 in {sum(1 for x in want if x[1] == 0)}")
     for (pc, a8), n in collections.Counter((x[0] & 0xFFF0, x[2]) for x in want).most_common(14):
         print(f"  {n:5d}  PC ~{pc:04X}  A8={a8}  {names(pc)}")
     sys.exit(0)
