@@ -17284,6 +17284,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and every 7th to 65535, both signs (the full sweep passed once, 68 s); a 100-at-the-fast-
       path knife turns it red. ➡️ NEXT: 21213 vs ~15750 T/pass -- div10 for the 3..5-digit
       case (powers-of-ten subtraction), the CMP tenant crossings.
+      ✅ **(13) div10 (2026-11-06): a dividend under 256 takes 8 steps, not 16** (basic/float-
+      arith.asm and its sub-ROM clone in sub/detok.asm, +7 B each) -- number printing, STR$,
+      LIST's line numbers and the integer widen divide there. 1000 x `A$=STR$(I MOD 250)`:
+      403 -> 388 frames, VG-8020 379 (🔮 ~-13 -> -15 HIT, [`div10_time.out`](scratchpad/div10_time.out)).
+      tests/test_div10.py: every dividend 0..65535, both copies; a 7-step knife turns it red.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

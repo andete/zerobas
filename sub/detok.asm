@@ -145,6 +145,12 @@ print_string:
 div10:
                 xor     a
                 ld      b,16
+                inc     h
+                dec     h                   ; Z iff H = 0 (D-TRAPCOST: 8 steps
+                jr      nz,sd10_lp          ; for a dividend under 256, as main's)
+                ld      h,l
+                ld      l,a
+                ld      b,8
 sd10_lp:
                 add     hl,hl
                 rla

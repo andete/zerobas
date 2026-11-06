@@ -15,7 +15,7 @@ fp_sub equ 03479H
 fp_mul equ 034A8H
 fp_div equ 03525H
 fp_cmp equ 035E5H
-dig15_iszero equ 030A2H
+dig15_iszero equ 030AAH
 arga_pack_fac equ 0331CH
 widen_fac_to equ 036FDH
 widen_uint_to equ 03999H

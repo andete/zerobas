@@ -111,9 +111,19 @@ c16_gt:
 ; always mapped when it runs; detok.inc keeps a separate sub-side copy) and the
 ; page-1 tenant's page-0-resident float routines.
 ; (its copy stays in print.asm, page 1).
+; 🐌 D-TRAPCOST (2026-11-06): a dividend under 256 takes 8 steps, not 16 -- its
+; quotient fits in L, so HL = L<<8 and eight shifts leave HL = the quotient and
+; A = the remainder exactly as sixteen did (tests/test_div10.py: every dividend).
+; The sub-ROM clone (sub/detok.asm) carries the same lines.
 div10:
                 xor     a
                 ld      b,16
+                inc     h
+                dec     h                   ; Z iff H = 0
+                jr      nz,d10_lp
+                ld      h,l
+                ld      l,a                 ; HL = L<<8 (A = 0)
+                ld      b,8
 d10_lp:
                 add     hl,hl               ; shift dividend left, into quotient
                 rla                         ; A = running remainder<<1 | carry
