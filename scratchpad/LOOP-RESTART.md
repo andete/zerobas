@@ -13,6 +13,14 @@ session and the loop resumes exactly where it stopped.
 | D-SLOT3EXP ($FFFF in slot 3) | *"D-SLOT3EXP: won't fix"* | CLOSED won't fix: BMX Simulator stays a known difference; never re-ask |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
+## 🟢 RULINGS 2026-11-06 — READ FIRST (they amend the tables below)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| FAT buffer in RAM | *"yes, go for the 1.5 KB FAT buffer, if reference does it, so should we"* | the disk build keeps the WHOLE FAT resident (1.5 KB, as the CF-3300's kernel does at `$E595`: one 3-sector DSKIO on the first search, chains followed from RAM) -- LOAD / PUT / file reads stop re-reading FAT sectors; written back on flush; dropped on a media change |
+| COPY TO, 2+ matches | *"we first need to get clarity before we make a decision. When you get back to that, feel free to use a fable agent to explore the issue."* | D-COPYWILD stays 5 for now; WHEN picked up, a Fable agent measures the multi-match cases on the CF-3300 (fixture files copy, fresh files / ON ERROR gave no reading) -- clarity first, then the ruling |
+| gate tiers | *"Note that that is costing precious time to make actual progress."* | run the tier `make gates-plan` picks, no habitual HANDOFF=1; FULL only for code every program runs, the 5th commit, a real hand-off (memory full-battery-is-expensive-use-the-planned-tier) |
+
 ## 🟢 STATE AS OF 2026-11-06 — THE CURRENT ONE
 
 - **Joost 2026-11-06: *"Having typed sessions as integration tests is actually a splendid
@@ -2091,7 +2099,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12051 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12056 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

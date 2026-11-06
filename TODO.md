@@ -1352,6 +1352,11 @@ item — do **one item per session** to keep context lean.
       choice (the TIER 4 rung's rule) -- may LOAD / file reads keep the FAT in a new
       1.5 KB RAM buffer (the disk build's free memory is ahead of the CF-3300's)?** Until
       then (1) waits; (3) and (2) do not need it.
+      🏗️ **RULED (Joost, 2026-11-06): *"yes, go for the 1.5 KB FAT buffer, if reference does it,
+      so should we"*.** The CF-3300's kernel keeps the whole FAT resident (`$E595`, loaded ONCE
+      by a 3-sector DSKIO on the first search -- disk/docs/tier2-m20-spec.md §2.3); the disk
+      build does the same: load on mount, chains from RAM, both copies written back on flush,
+      dropped on a media change. (1) is unblocked.
       ✅ **(3) SAVE'S FAT, FIXED 2026-11-06 (D-SAVEFAT):** a tokenised SAVE is one call, so it
       holds the FAT sector in FAT_MBUF across every cluster and writes it once before the
       close's directory work -- D-RECSLOW's W3b-within-one-call. FAT_DEFER bit 2 = the hold
@@ -7716,7 +7721,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15518 (T-529ABE)`: a
+      `TODO.md:10154 (T-6FE392)8 (T-529ABE)` from `TODO.md:15523 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10460,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15518 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15523 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17054,6 +17059,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
       ~~🙋 **NEEDS-JOOST**~~ — the autonomous half (one match, no match, the destination
       fill) SHIPPED 2026-09-28; ~~only the multi-match ruling (➡️ at the end) is left.~~
+      🏗️ **JOOST 2026-11-06: *"we first need to get clarity before we make a decision. When you
+      get back to that, feel free to use a fable agent to explore the issue."*** -- when picked
+      up: a Fable agent measures the multi-match cases on the CF-3300 (why fixture files copy
+      and freshly written files / an ON ERROR program give no reading), THEN the ruling.
       🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
       multi-match case keeps raising 5; nothing autonomous is left. Re-opens only
       when Joost revisits it. 🅿️ Re-confirmed 2026-10-17: "copy to can remain parked".

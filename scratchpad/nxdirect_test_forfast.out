@@ -6,14 +6,14 @@ PASS? F1 95/95 programs identical at every statement boundary; int path taken in
 PASS  F3 nx_pack over 25538 int16s
 PASS  F3 nx_pki over 1766 packed values
 # --- F4 T-states of an empty NEXT (host: tenant steps in, CALSLT out) ---
-      (a) FOR I=1 TO 300 (default type)            old   11685 T (0 sub calls)  new    3513 T (0 sub calls)    -8173
-      (a') FOR I=1 TO N, N=300 double              old   12009 T (0 sub calls)  new    3675 T (0 sub calls)    -8335
-      (b) STEP .5                                  old   14338 T (0 sub calls)  new   14338 T (0 sub calls)       +0
-      (c) FOR I#=.5 TO 12 (double, fractional)     old   15126 T (0 sub calls)  new   15126 T (0 sub calls)       +0
-      (c') FOR I#=1 TO 12 (double, int-valued)     old   11685 T (0 sub calls)  new    3513 T (0 sub calls)    -8173
-      (d) FOR I%=1 TO 12                           old    4362 T (0 sub calls)  new    1964 T (0 sub calls)    -2398
-      (e) body A=A+.5                              old   13774 T (0 sub calls)  new   13774 T (0 sub calls)       +0
-      (f) FOR I!=1 TO 12 (single)                  old   13375 T (0 sub calls)  new    3345 T (0 sub calls)   -10030
-      (g) FOR I=30000 TO 30012                     old   16354 T (0 sub calls)  new    4193 T (0 sub calls)   -12161
+      (a) FOR I=1 TO 300 (default type)            old   11904 T (0 sub calls)  new    3732 T (0 sub calls)    -8173
+      (a') FOR I=1 TO N, N=300 double              old   12228 T (0 sub calls)  new    3894 T (0 sub calls)    -8335
+      (b) STEP .5                                  old   14557 T (0 sub calls)  new   14557 T (0 sub calls)       +0
+      (c) FOR I#=.5 TO 12 (double, fractional)     old   15345 T (0 sub calls)  new   15345 T (0 sub calls)       +0
+      (c') FOR I#=1 TO 12 (double, int-valued)     old   11904 T (0 sub calls)  new    3732 T (0 sub calls)    -8173
+      (d) FOR I%=1 TO 12                           old    4581 T (0 sub calls)  new    2183 T (0 sub calls)    -2398
+      (e) body A=A+.5                              old   13993 T (0 sub calls)  new   13993 T (0 sub calls)       +0
+      (f) FOR I!=1 TO 12 (single)                  old   13594 T (0 sub calls)  new    3564 T (0 sub calls)   -10030
+      (g) FOR I=30000 TO 30012                     old   16573 T (0 sub calls)  new    4412 T (0 sub calls)   -12161
 
 ALL PASS
