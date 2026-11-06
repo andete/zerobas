@@ -1,0 +1,2 @@
+after FILES (A:): FAT copies at $E595 (1536 B), $EF95 (513 B)
+after FILES "B:": FAT copies at $DF94 (1536 B), $E595 (1536 B), $EF95 (513 B)

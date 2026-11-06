@@ -40,6 +40,7 @@ on another.
 """
 from __future__ import annotations
 
+import glob
 import os
 import re
 import subprocess
@@ -235,6 +236,58 @@ def changed_handlers(path, text=None, hunks=None):
     return kws
 
 
+# 🔧 D-PICKPLAY (2026-11-06): a SUB-ROM TENANT has no `ex_<name>:` of its own, so a
+# change inside one (sub/playparse.asm, sub/fp_sin.asm) planned the canary only --
+# twice, and math-acceptance went red the next day unseen. The keyword is reached
+# through the tenant's INDEX: the file defines a label that an index table jumps to
+# (`jp play_parse_tenant ; index 14 (SUBROM_IDX_PLAY_PARSE)`), and main uses that
+# index either inside a handler (walk up to its `ex_<name>:`) or in a token
+# dispatch row (`db SIN_TOKEN, (... SUBROM_IDX_SIN) & $FF`).
+TENANT_ROW = re.compile(r"^\s*jp\s+(\w+)\s*;.*?\((SUBROM_IDX_\w+)\)", re.M)
+TOKEN_ROW = re.compile(r"\b([A-Z][A-Z0-9]*)_TOKEN\b")
+
+
+def tenant_keywords(path, read=None):
+    """The keywords whose main-ROM code calls a tenant this sub-ROM file defines,
+    or None (unknown) when no index resolves to one."""
+    read = read or _text
+    labels = set(re.findall(r"^([A-Za-z_]\w*):", read(path), re.M))
+    tables = [os.path.relpath(q, ROOT) for q in
+              glob.glob(os.path.join(ROOT, "sub", "*.asm")) + glob.glob(os.path.join(ROOT, "sub2", "*.asm"))]
+    rows = [(m.group(1), m.group(2)) for t in tables for m in TENANT_ROW.finditer(read(t))]
+    idx = {i for lab, i in rows if lab in labels}
+    if not idx and labels:
+        # one hop: the tenant ENTRY lives in another file that calls into this one
+        # (sub/fp_sin.asm's routines behind mw_sin)
+        word = re.compile(r"\b(" + "|".join(sorted(map(re.escape, labels))) + r")\b")
+        for t in tables:
+            if t == path:
+                continue
+            txt = read(t)
+            here = set(re.findall(r"^([A-Za-z_]\w*):", txt, re.M))
+            if word.search(txt):
+                idx |= {i for lab, i in rows if lab in here}
+    if not idx:
+        return None
+    kws = set()
+    for f in sorted(glob.glob(os.path.join(ROOT, "basic", "*.asm"))):
+        rel = os.path.relpath(f, ROOT)
+        lines = read(rel).splitlines()
+        for n, line in enumerate(lines):
+            if not any(re.search(r"\b" + i + r"\b", line) for i in idx):
+                continue
+            tok = TOKEN_ROW.search(line.split(";")[0])
+            if tok:
+                kws.add(tok.group(1))
+                continue
+            for k in range(n, -1, -1):
+                h = HANDLER.match(lines[k])
+                if h:
+                    kws.add(h.group(1).upper())
+                    break
+    return kws or None
+
+
 def _text(p):
     try:
         return open(os.path.join(ROOT, p), errors="replace").read()
@@ -321,6 +374,8 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
     for f in rom:
         if f.endswith(".asm"):
             h = handlers_of(f)
+            if h is None and f.startswith(("sub/", "sub2/")):
+                h = tenant_keywords(f, read)     # D-PICKPLAY: through the tenant index
             if h is None:
                 unknown.append(f)        # ⏱ SCOPED with the canary since 2026-10-13
             else:
@@ -435,6 +490,15 @@ def selftest():
     arm("P16 a new ladder program -> SCOPED with programs-acceptance only (the "
         "catcopy probe IMPORTS the runner but does not run the ladder)",
         m == "SCOPED" and e == ["programs-acceptance"])
+    # D-PICKPLAY: a sub-ROM tenant file reaches its keyword through the index
+    arm("P18 sub/playparse.asm -> PLAY (index row + ex_play's use of the index)",
+        tenant_keywords("sub/playparse.asm") == {"PLAY"})
+    arm("P18b sub/fp_sin.asm -> SIN among the math words (one hop through "
+        "mathwrap's mw_sin; a TOKEN dispatch row, not an ex_ handler)",
+        "SIN" in (tenant_keywords("sub/fp_sin.asm") or set()))
+    arm("P18c NEGATIVE: the string heap (no ex_ / token use of its index) stays "
+        "unknown -> the canary, as before",
+        tenant_keywords("sub/strheap.asm") is None)
     fs = dict(fl, **{"sessions-acceptance": {"probes/programs/run_sessions.py",
                                              "probes/programs/run_programs.py"}})
     os_ = dict(ow, **{"sessions-acceptance": {"probes/programs/run_sessions.py"}})

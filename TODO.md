@@ -49,7 +49,7 @@ item — do **one item per session** to keep context lean.
       grid's T32/T255 10s were 16-note rows near the queue's edge). docs/keywords/PLAY.md: the
       difference removed, a What-we-found entry added.
 
-- [ ] 🔧 **THE GATE PICKER PLANNED NO `PLAY` SUITE FOR A CHANGE TO sub/playparse.asm
+- [x] 🔧 **THE GATE PICKER PLANNED NO `PLAY` SUITE FOR A CHANGE TO sub/playparse.asm
       (D-PICKPLAY, found 2026-11-05 by D-PLAYRATE's commit).**
       🎚️ APPARATUS — a ROM change inside a sub-ROM tenant can reach zero of the suites that
       exercise it: `make gates-plan` listed six unrelated emulator suites ("no enclosing ex_
@@ -61,6 +61,14 @@ item — do **one item per session** to keep context lean.
       📏 **A SECOND INSTANCE (2026-11-05):** D-TANBIG changed sub/fp_sin.asm and ran FULL, which
       does not hold the daily suites -- math-acceptance went red the next day, unseen. A math
       tenant change should plan math-acceptance the same way.
+      ✅ **FIXED 2026-11-06.** tools/pick_gates.py `tenant_keywords()`: a sub-ROM file's labels
+      are matched against the index tables (`jp <label> ; index N (SUBROM_IDX_X)` in sub/*.asm,
+      sub2/*.asm) -- one hop too, when the entry lives in a file that calls into this one
+      (mw_sin in sub/mathwrap.asm -> sub/fp_sin.asm) -- and main's uses of that index name
+      the keyword: inside an `ex_<name>:` handler, or on a `db <NAME>_TOKEN, ...` dispatch
+      row. playparse -> PLAY; fp_sin -> SIN COS TAN ATN RND; the string heap (used by
+      everything, no handler / token row) stays unknown -> the canary, as before. Selftest
+      arms P18 / P18b / P18c green.
 
 - [ ] 📄 **`INPUT#` / `LINE INPUT#` TREAT A LONE LF DIFFERENTLY FROM THE CF-3300 (D-INPLF, found
       2026-11-05 by the program ladder's L5_files).**
@@ -1376,6 +1384,49 @@ item — do **one item per session** to keep context lean.
       by a 3-sector DSKIO on the first search -- disk/docs/tier2-m20-spec.md §2.3); the disk
       build does the same: load on mount, chains from RAM, both copies written back on flush,
       dropped on a media change. (1) is unblocked.
+      ⏸️ **(1) BUILT AND PARKED 2026-11-06 (D-FATRES slice 1) -- THE FULL BATTERY WENT RED 236/245,
+      NOT SHIPPED. The ROM work is saved as [`fatres_wip.patch`](scratchpad/fatres_wip.patch).** Three blockers, each
+      a red gate: (i) **DI gaps** -- programs-acceptance: frame-interrupt gaps up to 0.34 s in five
+      ladder programs; the reload is a multi-sector DSKIO with interrupts masked, and after any
+      write it waits ~a revolution for sector 1 -- the load must take the D-FDCDI windows (or
+      run in pieces); (ii) **a correctness red** -- wrblkalt-acceptance: two FCBs alternating
+      block / random I/O no longer persist as written (most likely FATRES read stale while a
+      FAT_DEFER write is still held -- the old path read FAT_MBUF / the disk; every chain read
+      must see the deferred entry, or a deferral must drop FATRES_OK); (iii) **MSX-DOS** --
+      dosmode, dosdate, strout, dosbasic, p1dta, p1vec, callsystem: FATRES ($DE8D..$E48C) is
+      inside $C000-$DFFF, which MSX-DOS uses WHILE BOOTING, before DOS_F346 says so -- the
+      gate needs a condition true from the first DOS load (BASENT_REQ's DOS_TRY / a boot-path
+      flag), measured. What follows is the measured design and its numbers, kept for the re-do.
+      Measured first where the CF-3300
+      keeps it (RAM only): the whole 1536 B FAT resident in BOTH boot modes -- drive A at $E595
+      ($E5AA on a CTRL boot), the phantom B: at $DF94 -- kept current after a SAVE
+      ([`fatres_probe.py`](scratchpad/fatres_probe.py) -> [`fatres_probe.out`](scratchpad/fatres_probe.out), [`fatres_b_probe.out`](scratchpad/fatres_b_probe.out)): a normal boot's
+      extra 1558 B is drive B's FAT space (Joost: CTRL boot drops a drive). Joost 2026-11-06:
+      build it in that gap for a NORMAL boot; a CTRL boot keeps the sector path for now.
+      FATRES $DE8D (1536 B, the gap), FATRES_OK $EDBA (disk-owned, every boot mode). A mount
+      KEEPS the copy when the FAT sector 1 it reads anyway equals FATRES (bytes 0..10, 24..511
+      -- fat_media overwrites 11..23; a disk differing only there, or only in a later FAT
+      sector, is taken for the same: accepted); otherwise one multi-sector DSKIO reloads it.
+      Any dskio_write clears it; DRVCNT != 2 (CTRL boot) or DOS_F346 != 0 (MSX-DOS) clears it
+      and never reads it. fat_next_cluster follows the chain from RAM. disk.rom: the code is in
+      seven pad fragments (disk free now 16 usable B + the FDC window). A first cut RELOADED on
+      every mount: LOAD 14 KB 8.94 -> 6.34 s, but small operations doubled (re-reading sector 1
+      waits a revolution); keeping it fixed that. 🔴 Two driver ideas tried on the way (skip the
+      seek-verify on the same track; settle only after a seek) measured NOTHING and were
+      reverted: the FDC log ([`fdccmd_sectmiss.out`](scratchpad/fdccmd_sectmiss.out)) shows the per-sector gap is LOAD's CPU work
+      (~93 ms a sector, byte by byte) plus a lost-data retry every ~4th sector -- see below.
+      **After ([`loadclock_keep.out`](scratchpad/loadclock_keep.out)): LOAD 1 KB 0.75 -> 0.56 s (CF 1.36), 7 KB 4.69 -> 3.28 (2.39),
+      14 KB 8.94 -> 5.54 (2.94).** 🔮 ~6.5 s for the first cut: HIT; the keep version better.
+      Small operations ([`fatres_ops.bas`](scratchpad/fatres_ops.bas), jiffies @50 Hz; [`fatres_ops_head.out`](scratchpad/fatres_ops_head.out) -> [`fatres_ops2.out`](scratchpad/fatres_ops2.out)):
+      20 x OPEN/CLOSE 371 -> 396, 10 x FILES 123 -> 167 (+36 %, unexplained -- FILES does not
+      write), 10 x OPEN/INPUT#/CLOSE 283 -> 298; the CF-3300 32 / 10 / 33 at 60 Hz.
+      tests/test_fat_next_cluster.py 33 checks (keep / reload / gating / write-drop / sector
+      fallback). The work was done by a subagent from a measured brief; reviewed and measured
+      here.
+      ➡️ NEXT: fix (i)-(iii) above, then re-apply; (a) FILES' +36 %; (b) slice 1b / 2 (the scans and the write path from FATRES --
+      frees ROM); (c) **the small-operation gap itself: 14-15x the CF-3300** (it caches far
+      more than the FAT across operations); (d) LOAD's per-sector CPU (~93 ms a 512 B sector,
+      byte by byte) and the lost-data retries -- what remains of LOAD's 1.9x.
       ✅ **(3) SAVE'S FAT, FIXED 2026-11-06 (D-SAVEFAT):** a tokenised SAVE is one call, so it
       holds the FAT sector in FAT_MBUF across every cluster and writes it once before the
       close's directory work -- D-RECSLOW's W3b-within-one-call. FAT_DEFER bit 2 = the hold
@@ -7740,7 +7791,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10173 (T-6FE392)8 (T-529ABE)` from `TODO.md:15542 (T-529ABE)`: a
+      `TODO.md:10224 (T-6FE392)8 (T-529ABE)` from `TODO.md:15593 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10479,7 +10530,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15542 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15593 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
