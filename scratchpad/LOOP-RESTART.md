@@ -13,7 +13,25 @@ session and the loop resumes exactly where it stopped.
 | D-SLOT3EXP ($FFFF in slot 3) | *"D-SLOT3EXP: won't fix"* | CLOSED won't fix: BMX Simulator stays a known difference; never re-ask |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
-## 🟢 STATE AS OF 2026-11-05 (evening) — THE CURRENT ONE
+## 🟢 STATE AS OF 2026-11-06 — THE CURRENT ONE
+
+- **Joost 2026-11-06: *"Having typed sessions as integration tests is actually a splendid
+  idea."*** -> D-SESSIONS (TIER 1, TODO.md): `probes/programs/run_sessions.py`, gate
+  `sessions-acceptance`, sessions `probes/sessions/S1..S9` (editor, STOP/CONT, edit-clear,
+  screen edit, disk, tape search, errors, INPUT, breaks). Each found or confirmed something:
+  D-AUTOOK, D-EDITCLR, D-MERGETOK, D-TAPENEXT, D-STOPINPUT fixed; D-STOPKEY3 filed (TIER 6).
+  A session is typed one line at a time on an IDLE machine (prompt still 0.3 s, or 5 s of
+  stillness for a command, 0.7 s for a numbered line); `--keep=DIR` dumps every snapshot;
+  a `.ses` PATH runs a scratch session outside the gate. Tapes are BUILT ({TAPEASCII}),
+  never recorded in-session (not repeatable -- scratchpad/S6_tape_parked.ses).
+- **Also 2026-11-06:** ASCII tape load 173.9 -> 119.6 s (CF-3300 114.1); the interpreter-ratio
+  item CLOSED on a re-measure (0.68-0.99x the CF-3300 on six of seven rows); D-PLAYSTART and
+  D-T5TWINREM closed; CI was red 5 pushes on a test reading a build product (fixed, memory
+  a-unit-test-reading-a-build-product-is-green-only-locally).
+- **Next:** more sessions (TODO D-SESSIONS ➡️ NEXT), then D-CONCATLIT (TIER 5, profiled), the
+  `%` FOR loop (D-LOOPPROF), the rest of TIER 5, TIER 6.
+
+## 🟢 STATE AS OF 2026-11-05 (evening)
 
 - **Landed (5366794b, FULL 242/242):** D-TRAPCOST round 3 (66 -> 54 frames per 100 handler
   calls vs the VG-8020's 39: name scanning as plain compares, `ary_resolve_fast` in the $6CF3
