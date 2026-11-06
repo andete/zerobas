@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15456 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15471 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15456 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10966,7 +10966,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
       8020) and disk (SAVE / LOAD / MERGE / KILL, the CF-3300 via `# @DISK`).
 
-- [ ] 📼 **D-TAPENEXT -- A TAPE SEARCH THAT FINDS NO HEADER: THE VG-8020 SEARCHES ON, ZEROBAS SAYS
+- [x] 📼 **D-TAPENEXT -- A TAPE SEARCH THAT FINDS NO HEADER: THE VG-8020 SEARCHES ON, ZEROBAS SAYS
       `Device I/O error` AT ONCE (found 2026-11-06 by typed session S6_tape).**
       🎚️ TIER 3 — common errors: what a cassette search does when the file is not (or no
       longer) ahead on the tape -- a wrong name, a tape not rewound -- is the commonest tape
@@ -10993,6 +10993,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       above shows either way: with no matching header ahead, zerobas raises 19 at once where
       the reference keeps searching (until Ctrl-STOP) -- measure on a blank tape and on a tape
       whose only file has another name, both machines.
+      ✅ **FIXED 2026-11-06.** On an ENCODED tape ([`tapenext_b.ses`](scratchpad/tapenext_b.ses), one ASCII file
+      OTHER from cas_encode -- no in-session recording): `LOAD "CAS:PROG1"` and `CLOAD "PROG1"`
+      print `Skip :OTHER` (LOAD) on both, then the VG-8020 waits until Ctrl-STOP and zerobas
+      raised 19 within 8 s ([`tapenext_b.out`](scratchpad/tapenext_b.out)). tapion (tape/tape.asm)
+      no longer fails on a 16-bit flat budget (CAS_FLATMAX ~5 s): every flat timeout (~3 ms
+      of silence) tests Ctrl-STOP through cas_stop (which waits for the release, as the
+      break does) and the wait goes on. The first cut tested STOP only when the budget ran
+      out and missed the 0.2 s press ([`tapenext_b2.out`](scratchpad/tapenext_b2.out)); after:
+      SAME ([`tapenext_b3.out`](scratchpad/tapenext_b3.out)). Committed as session
+      [`S6_tapesearch.ses`](probes/sessions/S6_tapesearch.ses); its tape is BUILT at run time from
+      `S6_other.bas` by a new `{TAPEASCII NAME file.bas}` step (media are never committed --
+      .gitignore `*.cas`). 🔮 Predicted "Skip :OTHER then waits on the VG-8020, 19 here right
+      after": HIT. docs/concepts/cassette.md updated (the "not compared" row is gone).
+      ⚠️ The recorder half ((1) / (2) above) stays apparatus: in-session recordings are not
+      replayable here; the D-TAPINBLK `notape` row goes through the same TAPION wait.
 
 - [ ] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
       (found 2026-11-06 by typed session S2_stopcont).**

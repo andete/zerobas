@@ -22,7 +22,10 @@ after every step.
       {UP}{DOWN}{LEFT}{RIGHT}{INS}{DEL}{BS}{HOME}{CR}{ESC}  inline: that key
       ...{NOCR}        (at the end of a line) type it WITHOUT the RETURN
       {TCL cmd}        an emulator-side action (a blank tape: `cassetteplayer
-                       new {TMP}_t.wav`); {TMP} is the machine's scratch prefix
+                       new {TMP}_t.wav`); {TMP} is the machine's scratch prefix,
+                       {REPO} the repository
+      {TAPEASCII N f.bas}  insert an ASCII tape holding file N, BUILT from
+                       probes/sessions/f.bas (media are never committed)
 
 A step is typed only when the machine is IDLE: the keyboard buffer is empty
 (GETPNT == PUTPNT) and CURLIN has held one value for 0.7 s since the last key.
@@ -48,6 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 sys.path.insert(0, HERE)
+import cas_encode                                    # noqa: E402
 import omsx_preflight                                # noqa: E402
 import probe_tmp                                     # noqa: E402
 from omsx_run import _tcl_dquote                     # noqa: E402
@@ -157,6 +161,7 @@ proc __poll {} {
         }
         W { set ::__waitto [expr {[machine_info time] + $arg}] }
         C { eval $arg }
+        A { eval $arg }
       }
       set ::__lastk [machine_info time]
     }
@@ -186,6 +191,11 @@ def parse(text):
         m = re.fullmatch(r"\{WAIT ([0-9.]+)\}", line.strip())
         if m:
             steps.append(("W", m.group(1), 1))
+        elif line.strip().startswith("{TAPEASCII "):
+            # an ASCII tape BUILT from a .bas beside the session (cas_encode): media
+            # are regenerated, never committed (.gitignore *.cas, PUBLISHING.md)
+            tname, src = line.strip()[1:-1].split()[1:3]
+            steps.append(("A", tname + " " + src, 1))
         elif line.strip().startswith("{TCL ") and line.strip().endswith("}"):
             # an emulator-side action between steps (a blank tape, a rewind):
             # `{TMP}` is this machine's own scratch directory
@@ -225,8 +235,14 @@ def run(machine, name, text):
     def targ(k, a):
         if k == "K":
             return _tcl_dquote(a)
+        if k == "A":
+            tname, src = a.split()
+            cas = f"{tmpd}/{machine}_{tname}.cas"
+            open(cas, "wb").write(cas_encode.build_cas_ascii(
+                tname, open(os.path.join(SESSIONS, src)).read()))
+            return "{cassetteplayer insert " + cas + "}"
         if k == "C":
-            return "{" + a.replace("{TMP}", tmpd + "/" + machine) + "}"
+            return "{" + a.replace("{TMP}", tmpd + "/" + machine).replace("{REPO}", REPO) + "}"
         return a or "-"
     st = " ".join("{" + " ".join((k, targ(k, a), str(i))) + "}" for k, a, i in steps)
     open(tcl, "w").write(TCL.replace("{LOG}", "{" + log + "}").replace("{OUT}", "{" + out + "}")
@@ -273,7 +289,8 @@ def label(steps, n):
     is taken just before idle step n runs, i.e. after idle step n-1."""
     groups = []
     for k, a, f in steps:
-        txt = {"K": a, "S": "{STOP}", "W": "{WAIT %s}" % a, "C": "{TCL %s}" % a}[k]
+        txt = {"K": a, "S": "{STOP}", "W": "{WAIT %s}" % a, "C": "{TCL %s}" % a,
+               "A": "{TAPEASCII %s}" % a}[k]
         if f or not groups:
             groups.append(txt)
         else:

@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # The cassette — files on tape, and how BASIC finds them
 
-> **Status (2026-10-14):** every measured tape behaviour agrees with the
+> **Status (2026-11-06):** every measured tape behaviour agrees with the
 > VG-8020, and with the CF-3300 where a row was run there too: the recorded
 > bytes, the search and its messages, the type filter, Ctrl-STOP while
 > reading and while writing, and since 2026-10-14 a machine-code loader that
@@ -188,9 +188,6 @@ Not compared, or not measured:
   `ON ERROR` handler at once and breaks it if the key is still down about
   0.7 s later; zerobas waits for the key to come up, then runs the handler,
   which that key no longer breaks. A short press reads the same on both.
-- **The end of the tape without Ctrl-STOP.** The references wait on silence.
-  zerobas's `TAPION` gives up after a fixed run of silence, so a dead tape
-  ends the search; no row compares the two.
 - **`SCREEN ,,,2`.** On the reference it copies the 2400-baud timing table
   into the work area's active cassette slots
   ([spec-cassette.md](../../tape/docs/spec-cassette.md), Phase 3); zerobas's
@@ -203,6 +200,14 @@ Not compared, or not measured:
   closed).
 
 ## What we found, and how
+
+- **A search with no file ahead gave up by itself** (fixed 2026-11-06,
+  D-TAPENEXT; found by a typed session). On a tape whose only file has another
+  name, the VG-8020 prints `Skip :OTHER` and then keeps searching until
+  Ctrl-STOP; zerobas stopped after about five seconds of silence with
+  `Device I/O error`. Its `TAPION` now waits for as long as the tape is
+  silent and checks Ctrl-STOP all the while
+  ([session](../../probes/sessions/S6_tapesearch.ses)).
 
 - **Harry Fox asked for a tape name with a dot** (fixed 2026-10-17,
   D-CASDOT). Its loader loaded its first files and then skipped every later

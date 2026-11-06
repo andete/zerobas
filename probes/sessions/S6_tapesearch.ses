@@ -1,0 +1,24 @@
+# S6_tapesearch (D-SESSIONS / D-TAPENEXT, 2026-11-06): a cassette search that finds
+# no matching header ahead. The tape is ENCODED at run time (one ASCII file OTHER
+# from S6_other.bas, probes/lib/cas_encode.py), not recorded in the session -- an in-session recording
+# did not play back repeatably (scratchpad/S6_tape_parked.ses). On the VG-8020 the
+# search shows `Skip :OTHER` and then WAITS until Ctrl-STOP (Device I/O error);
+# zerobas's TAPION used to give up by itself after ~5 s of silence.
+{TAPEASCII OTHER S6_other.bas}
+LOAD "CAS:PROG1"
+{WAIT 8}
+{STOP}
+PRINT "A"
+{TCL cassetteplayer rewind}
+CLOAD "PROG1"
+{WAIT 8}
+{STOP}
+PRINT "B"
+{TCL cassetteplayer eject}
+CLOAD
+{WAIT 8}
+{STOP}
+PRINT "C"
+{TAPEASCII OTHER S6_other.bas}
+LOAD "CAS:OTHER"
+LIST

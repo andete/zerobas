@@ -465,12 +465,12 @@ def test_tapion_lock_and_calibrate(m, fails):
 
 
 def test_tapion_silence_and_dead(m, fails):
-    """tapion tolerates leading silence (the openMSX .cas LONG_SILENCE) but a
-    genuinely dead/flat tape exhausts CAS_FLATMAX and fails (CF=1).
+    """tapion tolerates leading silence (the openMSX .cas LONG_SILENCE), and a
+    genuinely dead/flat tape is WAITED ON until Ctrl-STOP (D-TAPENEXT), which
+    fails it (CF=1).
 
-    Oracle (tape.asm tapion_wait): WAIT for the first real edge, counting flat
-    cas_half timeouts against the 16-bit CAS_FLATMAX budget; silence before the
-    carrier is skipped, a flat that never breaks fails.
+    Oracle (tape.asm tapion_wait): WAIT for the first real edge, testing Ctrl-STOP
+    on every flat cas_half timeout; silence before the carrier is skipped.
     """
     H = 4
     # ~256 flat samples (one cas_half timeout of silence) then a clean leader.
@@ -498,15 +498,39 @@ def test_tapion_silence_and_dead(m, fails):
     print(f"{'PASS' if ok else 'FAIL'}  tapion relocks PAST a CSAVE tail (7 x $00): "
           f"CF={int(carry(cpu))}, LOWLIM={lowlim_t} (want 0, {7 * H} -- the leader's)")
 
-    # Dead tape: the level never flips, so every cas_half times out until the
-    # CAS_FLATMAX budget is exhausted -> failure.
+    # Dead tape. 🔴 D-TAPENEXT (2026-11-06): the VG-8020 WAITS on a silent tape
+    # until Ctrl-STOP (scratchpad/tapenext_b.out); tapion's CAS_FLATMAX budget
+    # used to fail it on its own after ~5 s. Now: with STOP never pressed it is
+    # still waiting after 2M steps (a runaway here IS the wait) ...
     m2 = machine()
     m2.cpu.io_in = lambda port: 0x00
-    cpu = m2.call("tapion", max_steps=5_000_000)
-    ok = carry(cpu)
+    try:
+        m2.call("tapion", max_steps=2_000_000)
+        waited = False
+    except RuntimeError:
+        waited = True
+    fails += not waited
+    print(f"{'PASS' if waited else 'FAIL'}  tapion dead/flat tape, no Ctrl-STOP: "
+          f"still waiting after 2M steps = {waited} (want True)")
+    # ... and Ctrl-STOP pressed (BREAKX CF = 1 on its 50th call, then released)
+    # ends it with CF = 1 -- the caller's Device I/O error.
+    m3 = machine()
+    m3.cpu.io_in = lambda port: 0x00
+    calls = [0]
+
+    def breakx(mm):
+        calls[0] += 1
+        if calls[0] == 50:
+            mm.cpu.f |= 0x01
+        else:
+            mm.cpu.f &= ~0x01
+    m3.trap("BREAKX", breakx)
+    cpu = m3.call("tapion", max_steps=2_000_000)
+    ok = carry(cpu) and calls[0] == 51
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  tapion dead/flat tape: "
-          f"CF={int(carry(cpu))} (want 1 = fail)")
+    print(f"{'PASS' if ok else 'FAIL'}  tapion dead/flat tape, Ctrl-STOP: "
+          f"CF={int(carry(cpu))}, BREAKX calls {calls[0]} (want 1 = fail, 51: the "
+          f"press and its release)")
     return fails
 
 
@@ -631,7 +655,7 @@ def run():
         ("Tier 2: tapoof flush",      test_tapoof_flush),
         ("Tier 2: cas_half",          test_cas_half_counts),
         ("Tier 2: tapion lock + LOWLIM calibration", test_tapion_lock_and_calibrate),
-        ("Tier 2: tapion silence tolerance + dead-tape fail", test_tapion_silence_and_dead),
+        ("Tier 2: tapion silence tolerance + dead-tape wait / Ctrl-STOP", test_tapion_silence_and_dead),
         ("Tier 2: tapin self-calibrated (tapion-derived LOWLIM)", test_tapin_self_calibrated),
         ("Tier 2: tapin no-start-bit timeout", test_tapin_no_start),
         ("Tier 2: tapin decode (hand-set LOWLIM)", test_tapin_decode),

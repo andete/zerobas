@@ -180,10 +180,9 @@ CAS_VERIFY:     equ     128             ; D-TAPLEAD: short halves a lock must be
 ; Leading-silence tolerance. openMSX renders a .cas as audio with ~2 s of silence
 ; before the leader (CasImage.cc LONG_SILENCE), and a real/recorded tape can have
 ; an arbitrary gap before the carrier too. Before measuring, TAPION waits for the
-; first real edge, counting flat timeouts (~256 sample iterations each, ~3 ms)
-; against this 16-bit budget; a genuinely dead tape exhausts it and fails. ~1500
-; covers ~5 s -- generous, and only spent while the signal is actually absent.
-CAS_FLATMAX:    equ     1500
+; first real edge for as long as it takes, testing Ctrl-STOP on every flat timeout
+; (~256 sample iterations each, ~3 ms). (A 16-bit budget, CAS_FLATMAX = 1500, ~5 s,
+; used to fail a dead tape on its own; the reference waits -- D-TAPENEXT.)
 
 CASIN_R14:      equ     14              ; PSG register holding CAS-in on bit 7
 
@@ -510,8 +509,8 @@ tapion:
                 ; stop bits), so a one-shot "wait then skip" latches onto the stop
                 ; bits and then measures across the gap.
                 ;
-                ; So: (1) WAIT for a real edge, counting flat timeouts against a
-                ; 16-bit budget (CAS_FLATMAX) so a dead tape still fails; (2) SKIP
+                ; So: (1) WAIT for a real edge -- until Ctrl-STOP, as the reference
+                ; waits (D-TAPENEXT, below); (2) SKIP
                 ; CAS_SKIP edges to clear the spin-up transient / stray halves; (3)
                 ; MEASURE CAS_RUNLEN clean halves into LOWLIM. A flat during the
                 ; skip OR the measure means we latched onto stop bits / chatter,
@@ -521,21 +520,23 @@ tapion:
                 ; stay lean so their per-half overhead matches TAPIN's (a heavier
                 ; loop biases the counts, and thus LOWLIM).
 tapion_relock:
-                ; D-CASRBRK: NO Ctrl-STOP test here. One was tried (once per lock
-                ; attempt) and its knife moved no row: TAPIN's per-byte test
-                ; catches every break first (scratchpad/casrbrk_knives.out, K-CR2).
-                ld      bc,CAS_FLATMAX  ; 16-bit flat-timeout budget for this attempt
+                ; 🔴 D-TAPENEXT (2026-11-06): A SILENT TAPE IS WAITED ON, NOT FAILED.
+                ; The VG-8020 searches past the last file until Ctrl-STOP (an
+                ; encoded tape holding one other file: `Skip :OTHER`, then nothing
+                ; for 8 s, then STOP -> Device I/O error, scratchpad/tapenext_b.out);
+                ; a 16-bit flat budget (CAS_FLATMAX, ~5 s) used to end the search
+                ; with 19 on its own. Now every flat timeout (~3 ms of silence)
+                ; tests Ctrl-STOP instead -- the first cut tested it only when the
+                ; budget ran out and missed a 0.2 s press (tapenext_b2.out). A
+                ; real edge leaves at once, so the test costs nothing on carrier.
+                ; (D-CASRBRK's "no Ctrl-STOP test here" was about the per-lock test
+                ; it tried, which TAPIN's per-byte test always beat to a break.)
 tapion_wait:
-                push    bc
                 call    cas_half        ; CF set = flat (silence / spin-up)
-                pop     bc
                 jr      nc,tapion_skip0 ; a real edge -> carrier present
-                dec     bc
-                ld      a,b
-                or      c
-                jr      nz,tapion_wait
-                scf                     ; budget exhausted -> no tape, fail
-                ret
+                call    cas_stop        ; CF = Ctrl-STOP (waits for its release)
+                ret     c               ; -> fail: the caller's Device I/O error
+                jr      tapion_wait
 tapion_skip0:
                 ld      b,CAS_SKIP & $FF ; clear the spin-up transient (0 = 256)
 tapion_skip:

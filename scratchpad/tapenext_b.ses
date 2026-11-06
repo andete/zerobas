@@ -1,0 +1,17 @@
+# D-TAPENEXT: a search with no matching header ahead, on an ENCODED tape
+# (built at run time from probes/sessions/S6_other.bas: one ASCII file OTHER) -- not recorded
+{TAPEASCII OTHER S6_other.bas}
+LOAD "CAS:PROG1"
+{WAIT 8}
+{STOP}
+PRINT "A"
+{TCL cassetteplayer rewind}
+CLOAD "PROG1"
+{WAIT 8}
+{STOP}
+PRINT "B"
+{TCL cassetteplayer eject}
+CLOAD
+{WAIT 8}
+{STOP}
+PRINT "C"
