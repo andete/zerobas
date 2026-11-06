@@ -514,6 +514,8 @@ store_line:
                 call    le_call_op          ; A = LE_STATUS, Z = ok
                 ret     z                   ; ok (tenant already relinked +
                                             ; vars_reset)
+                cp      8                   ; D-EDITCLR: a bare number naming no line
+                jp      z,raise_error       ; is ERR 8, trappable (as the VG-8020)
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 jp      err7_mark           ; D-TAILMERGE: ERRMARK := A, then ERR 7 --
                                             ; gosub_stk_over's own tail, verbatim

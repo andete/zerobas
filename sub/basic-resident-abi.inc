@@ -31,7 +31,7 @@ rl_lastrow equ 03B15H
 ; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00160H   ; main's chrgtr
 p0_outdo equ 00177H   ; main's outdo
-p0_bp_ret equ 06734H   ; main's bp_ret
+p0_bp_ret equ 06739H   ; main's bp_ret
 p0_skip_spaces equ 042D3H   ; main's skip_spaces
 p0_exec_stmt equ 04133H   ; main's exec_stmt
 p0_gb_illegal equ 04557H   ; main's gb_illegal
@@ -54,7 +54,7 @@ p0_load_error equ 06464H   ; main's load_error
 p0_dev_lpt equ 06D0FH   ; main's dev_lpt
 p0_dev_crt equ 06D14H   ; main's dev_crt
 p0_dev_grp equ 06D19H   ; main's dev_grp
-p0_dev_cas equ 06740H   ; main's dev_cas
+p0_dev_cas equ 06745H   ; main's dev_cas
 p0_fname_expr equ 06D25H   ; main's fname_expr
 p0_dev_cmp equ 06CF6H   ; main's dev_cmp
 p0_nodisk_dev equ 0280AH   ; main's nodisk_dev
@@ -103,11 +103,11 @@ p0_cas_ascii_load equ 0650FH   ; main's cas_ascii_load
 p0_load_commit_prog equ 064EFH   ; main's load_commit_prog
 p0_dpl_err equ 0657CH   ; main's dpl_err
 p0_dpl_oom equ 0658EH   ; main's dpl_oom
-p0_print_msg equ 07653H   ; main's print_msg
+p0_print_msg equ 07656H   ; main's print_msg
 p0_err_verify equ 06502H   ; main's err_verify
-p0_exa_loop equ 076CFH   ; main's exa_loop
+p0_exa_loop equ 076D2H   ; main's exa_loop
 p0_le_call_op equ 06E76H   ; main's le_call_op
 p0_print_string equ 045DAH   ; main's print_string
 p0_list_num equ 0631CH   ; main's list_num
-p0_print_in_hl equ 07629H   ; main's print_in_hl
+p0_print_in_hl equ 0762CH   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

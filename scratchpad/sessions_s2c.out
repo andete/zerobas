@@ -1,0 +1,96 @@
+== S2_stopcont: 31 steps; Philips_VG_8020: 32 snapshots, last END t=31.0 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (32 snapshots, last END t=28.1 w=40; printer same)
+   first screen difference at snapshot 28, after: 'GOTO 50'
+     !! ref |  LIST 60-
+        zb  |  70 IF Z=0 THEN 70
+     !! ref |  60 PRINT "LOOP DONE"
+        zb  |  80 PRINT "Z=";Z
+     !! ref |  70 IF Z=0 THEN 70
+        zb  |  90 END
+     !! ref |  80 PRINT "Z=";Z
+        zb  |  Ok
+     !! ref |  90 END
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  START
+     !! ref |  RUN
+        zb  |  I= 1
+     !! ref |  START
+        zb  |  Break in 40
+     !! ref |  I= 1
+        zb  |  Ok
+     !! ref |  Break in 40
+        zb  |  CONT
+     !! ref |  Ok
+        zb  |  I= 2
+     !! ref |  CONT
+        zb  |  Break in 40
+     !! ref |  I= 2
+        zb  |  Ok
+     !! ref |  Break in 40
+        zb  |  25 PRINT "EDITED"
+     !! ref |  Ok
+        zb  |  CONT
+     !! ref |  25 PRINT "EDITED"
+        zb  |  Can't CONTINUE
+     !! ref |  CONT
+        zb  |  Ok
+     !! ref |  Can't CONTINUE
+        zb  |  GOTO 50
+     !! ref |  Ok
+        zb  |  EDITED
+     !! ref |  GOTO 50
+        zb  |  I= 1
+     !! ref |  NEXT without FOR in 50
+        zb  |  Break in 40
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (32 snapshots, last END t=28.1 w=40; printer same)
+   first screen difference at snapshot 28, after: 'GOTO 50'
+     !! ref |  LIST 60-
+        zb  |  70 IF Z=0 THEN 70
+     !! ref |  60 PRINT "LOOP DONE"
+        zb  |  80 PRINT "Z=";Z
+     !! ref |  70 IF Z=0 THEN 70
+        zb  |  90 END
+     !! ref |  80 PRINT "Z=";Z
+        zb  |  Ok
+     !! ref |  90 END
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  START
+     !! ref |  RUN
+        zb  |  I= 1
+     !! ref |  START
+        zb  |  Break in 40
+     !! ref |  I= 1
+        zb  |  Ok
+     !! ref |  Break in 40
+        zb  |  CONT
+     !! ref |  Ok
+        zb  |  I= 2
+     !! ref |  CONT
+        zb  |  Break in 40
+     !! ref |  I= 2
+        zb  |  Ok
+     !! ref |  Break in 40
+        zb  |  25 PRINT "EDITED"
+     !! ref |  Ok
+        zb  |  CONT
+     !! ref |  25 PRINT "EDITED"
+        zb  |  Can't CONTINUE
+     !! ref |  CONT
+        zb  |  Ok
+     !! ref |  Can't CONTINUE
+        zb  |  GOTO 50
+     !! ref |  Ok
+        zb  |  EDITED
+     !! ref |  GOTO 50
+        zb  |  I= 1
+     !! ref |  NEXT without FOR in 50
+        zb  |  Break in 40
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF

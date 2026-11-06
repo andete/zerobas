@@ -236,6 +236,14 @@ le_store:
                 jr      le_ok
 le_delete:
                 call    prog_find_del           ; deletes a matching line if present
+                ; 🔴 D-EDITCLR (2026-11-06, typed session scratchpad/editclear_a.ses):
+                ; a BARE NUMBER naming NO line is `Undefined line number` (8) on the
+                ; VG-8020 -- trappable by an ON ERROR still armed -- and it touches
+                ; NOTHING: no relink, no vars_reset (the trap stayed armed, a FOR frame
+                ; survived). zerobas relinked, cleared the variables and said nothing.
+                jr      c,le_ok
+                ld      a,8                     ; LE_STATUS 8: store_line raises it
+                jr      le_st
 le_ok:
                 ; (the `DOT` write moved to le_store's head -- D-DOTGAPS, above)
                 xor     a
@@ -604,9 +612,11 @@ pfd_lp:
                 ld      (SL_SLOT),hl            ; same number -> delete then reuse slot
                 call    delete_at
                 ld      hl,(SL_SLOT)
+                scf                             ; D-EDITCLR: CF = a line was deleted
                 ret
 pfd_here:
                 ld      (SL_SLOT),hl
+                or      a                       ; CF = 0: no line of that number
                 ret
 pfd_next:
                 ld      e,(hl)                  ; reload link (the compare clobbered DE

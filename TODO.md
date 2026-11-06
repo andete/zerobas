@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15361 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15394 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15361 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15394 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10909,10 +10909,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`sessions_s1e.out`](scratchpad/sessions_s1e.out) -> [`sessions_s1f.out`](scratchpad/sessions_s1f.out)
       ALL SAME). 🔮 Predicted "a harness problem and probably one AUTO / RENUM divergence":
       both HIT.
-      ➡️ NEXT sessions: STOP / Ctrl-STOP and CONT (and CONT after an edit), MERGE of an ASCII
+      ✅ **S2_stopcont + S3_editclear (2026-11-06): SAME after the fix they FOUND --**
+      [`S2_stopcont.ses`](probes/sessions/S2_stopcont.ses) (STOP, Ctrl-STOP, CONT, a variable
+      changed between, CONT after an edit, NEW then CONT), [`S3_editclear.ses`](probes/sessions/S3_editclear.ses)
+      (what an edit clears, measured as a scratch session first). **D-EDITCLR:** a stored /
+      deleted line discards the FOR / GOSUB stack on the VG-8020 (`NEXT without FOR`,
+      `RETURN without GOSUB` afterwards); zerobas kept the frames, and their resume pointers
+      point into text the edit MOVED -- `GOTO 50` to a NEXT resumed INSIDE the inserted line 25
+      ([`sessions_s2c.out`](scratchpad/sessions_s2c.out)). dl_store (basic/program.asm) now
+      calls ctl_reset after store_line (in main: the store runs in the lineedit tenant and
+      ctl_reset crosses to the sub ROM). And a bare number naming NO line is ERR 8 there
+      (trapped by a still-armed ON ERROR) and touches nothing; zerobas relinked, cleared the
+      variables and said nothing ([`editclear_a.out`](scratchpad/editclear_a.out)): prog_find_del
+      returns CF = deleted, le_delete reports LE_STATUS 8, store_line raises it. After:
+      S1 / S2 / S3 ALL SAME ([`sessions_s12.out`](scratchpad/sessions_s12.out),
+      [`editclear_a2.out`](scratchpad/editclear_a2.out)); tests/test_program.py pins ERR 8 and the
+      unchanged chain. 🔮 Predicted "all three SAME after the fix": HIT. S2's first form waited
+      on INKEY$ and found D-STOPKEY3 (below) -- a timing-dependent row, so line 70 now waits on
+      a variable set at the prompt.
+      ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
       8020) and disk (SAVE / LOAD / MERGE / KILL, the CF-3300 via `# @DISK`).
+
+- [ ] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
+      (found 2026-11-06 by typed session S2_stopcont).**
+      🎚️ TIER 6 — rare: what INKEY$ reads when the user presses Ctrl-STOP during a program.
+      🤖 **AUTONOMOUS** — measured from RAM, both machines.
+      📏 [`stopkey_probe.py`](scratchpad/stopkey_probe.py) -> [`stopkey_run2.out`](scratchpad/stopkey_run2.out):
+      a write watch on KEYBUF ($FBF0..$FC17) while Ctrl-STOP is held over `10 GOTO 10`: the
+      VG-8020 writes `03` at $FBFF 46 ms in; zerobas (C-BIOS's keyboard interrupt) writes
+      nothing. After the break the buffer is EMPTY on both ([`stopkey_run.out`](scratchpad/stopkey_run.out)),
+      so the reference discards it at the break. Visible effect: `70 A$=INKEY$:IF A$="" THEN
+      70` stopped between its two statements reads A$ = CHR$(3) after CONT (`KEY 3` in
+      [`sessions_s2b.out`](scratchpad/sessions_s2b.out)); where the break lands decides it. ➡️ A C-BIOS repack
+      patch (the keyboard ISR's STOP arm queues $03) plus the buffer cleared at the break;
+      measure first whether STOP alone (no CTRL) queues anything, and what INKEY$ reads under
+      `STOP ON` / `ON STOP GOSUB`.
 
 - [ ] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
       the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**

@@ -1,0 +1,96 @@
+== editclear_a: 30 steps; Philips_VG_8020: 30 snapshots, last END t=28.7 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (30 snapshots, last END t=26.3 w=40; printer same)
+   first screen difference at snapshot 19, after: 'RETURN'
+     !! ref |  Break in 60
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  Break in 60
+     !! ref |  PRINT A;A$;B(3);J;FNA(2)
+        zb  |  Ok
+     !! ref |   5 HI 7  1  4
+        zb  |  PRINT A;A$;B(3);J;FNA(2)
+     !! ref |  Ok
+        zb  |   5 HI 7  1  4
+     !! ref |  200 REM ADDED
+        zb  |  Ok
+     !! ref |  PRINT A;A$;B(3);J
+        zb  |  200 REM ADDED
+     !! ref |   0  0  0
+        zb  |  PRINT A;A$;B(3);J
+     !! ref |  Ok
+        zb  |   0  0  0
+     !! ref |  PRINT FNA(2)
+        zb  |  Ok
+     !! ref |  Undefined user function
+        zb  |  PRINT FNA(2)
+     !! ref |  Ok
+        zb  |  Undefined user function
+     !! ref |  RUN
+        zb  |  Ok
+     !! ref |  Break in 60
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  Break in 60
+     !! ref |  200
+        zb  |  Ok
+     !! ref |  PRINT A;A$;B(3);J
+        zb  |  200
+     !! ref |   0  0  0
+        zb  |  PRINT A;A$;B(3);J
+     !! ref |  Ok
+        zb  |   0  0  0
+     !! ref |  RETURN
+        zb  |  Ok
+     !! ref |  RETURN without GOSUB
+        zb  |  RETURN
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (30 snapshots, last END t=26.3 w=40; printer same)
+   first screen difference at snapshot 19, after: 'RETURN'
+     !! ref |  Break in 60
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  Break in 60
+     !! ref |  PRINT A;A$;B(3);J;FNA(2)
+        zb  |  Ok
+     !! ref |   5 HI 7  1  4
+        zb  |  PRINT A;A$;B(3);J;FNA(2)
+     !! ref |  Ok
+        zb  |   5 HI 7  1  4
+     !! ref |  200 REM ADDED
+        zb  |  Ok
+     !! ref |  PRINT A;A$;B(3);J
+        zb  |  200 REM ADDED
+     !! ref |   0  0  0
+        zb  |  PRINT A;A$;B(3);J
+     !! ref |  Ok
+        zb  |   0  0  0
+     !! ref |  PRINT FNA(2)
+        zb  |  Ok
+     !! ref |  Undefined user function
+        zb  |  PRINT FNA(2)
+     !! ref |  Ok
+        zb  |  Undefined user function
+     !! ref |  RUN
+        zb  |  Ok
+     !! ref |  Break in 60
+        zb  |  RUN
+     !! ref |  Ok
+        zb  |  Break in 60
+     !! ref |  200
+        zb  |  Ok
+     !! ref |  PRINT A;A$;B(3);J
+        zb  |  200
+     !! ref |   0  0  0
+        zb  |  PRINT A;A$;B(3);J
+     !! ref |  Ok
+        zb  |   0  0  0
+     !! ref |  RETURN
+        zb  |  Ok
+     !! ref |  RETURN without GOSUB
+        zb  |  RETURN
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF

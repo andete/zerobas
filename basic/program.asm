@@ -195,6 +195,16 @@ dl_lnok:
                 pop     bc
                 ld      hl,TOKBUF
                 call    store_line          ; OOM raises and never returns here
+                ; 🔴 D-EDITCLR (2026-11-06, found by typed session S2_stopcont): a
+                ; stored or deleted line DISCARDS THE FOR / GOSUB STACK on the
+                ; VG-8020 -- after an edit `NEXT` is `NEXT without FOR` and `RETURN`
+                ; is `RETURN without GOSUB` (scratchpad/editclear_a.ses). zerobas kept
+                ; the frames, and their resume pointers point into text the edit
+                ; MOVED: `GOTO 50` to a NEXT resumed inside the inserted line. Here,
+                ; in main and after the tenant returned, rather than in vars_reset:
+                ; ctl_reset crosses into the sub ROM, and the store runs inside the
+                ; lineedit tenant. (DELETE / RENUM / MERGE are not this path.)
+                call    ctl_reset
 ; D-OKSTORE: the two SILENT exits -- a stored/deleted line, an empty Enter. `res 1`
 ; silences only repl's own 2; a direct command's character keeps its prompt.
 dl_quiet:

@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # Program text — how a typed line becomes a program line
 
-> **Status (2026-10-12):** a typed line is crunched to the same bytes as on the
+> **Status (2026-11-06):** a typed line is crunched to the same bytes as on the
 > VG-8020 and the CF-3300, stored in the same format at the same address, and
 > listed back the same way, in every case measured. No TIER 1–3 item is open.
 > How much program fits in memory is a RAM-usage question (TIER 4), covered on
@@ -43,12 +43,16 @@ otherwise it is executed at once ("direct mode").
   bare `2 0` deletes line 20.
 - **One blank after the number** separates it from the line; any further
   blanks are kept as part of the line. (After line number 0 no blank is taken.)
-- **An empty rest deletes**: the number alone removes that line.
+- **An empty rest deletes**: the number alone removes that line. If there is
+  no line of that number, it is `Undefined line number` (error 8) and nothing
+  else happens.
 - **Storing or deleting prints no prompt**; only a command or an error does.
 
 Every store, replacement or deletion is a **program edit**: all variables are
-cleared, `CONT` can no longer continue, and `.` (the "current line" used by
-`LIST .`, `DELETE .` and others) becomes the number just typed.
+cleared, any `FOR` loops and `GOSUB`s still open are forgotten (a `NEXT` or
+`RETURN` typed afterwards is `NEXT without FOR` / `RETURN without GOSUB`), `ON
+ERROR` is switched off, `CONT` can no longer continue, and `.` (the "current
+line" used by `LIST .`, `DELETE .` and others) becomes the number just typed.
 
 ### Crunching
 
@@ -176,10 +180,20 @@ stored program: 10, low byte first. Run on the VG-8020 and on zerobas on
 ## Differences from the reference
 
 None known in what is stored or listed. Not yet measured on the reference:
-typing the number of a line that does not exist on its own (zerobas stores
-nothing and reports nothing), and the `$0D` form above.
+the `$0D` form above.
 
 ## What we found, and how
+
+- **An edit kept the open `FOR` loops and `GOSUB`s, and a `NEXT` then jumped
+  into the middle of another line** (fixed 2026-11-06, D-EDITCLR; found by a
+  typed session). After a program stopped inside a loop, typing a new line and
+  then `GOTO` to the `NEXT` went on looping here, resuming at an address the
+  new line had moved, so it ran part of the inserted line. On the VG-8020 an
+  edit forgets every open loop and `GOSUB`, and the `NEXT` is
+  `NEXT without FOR`. The same session found that typing the number of a line
+  that does not exist is `Undefined line number` there (and an `ON ERROR`
+  still set catches it), where zerobas cleared the variables and said nothing
+  ([session](../../probes/sessions/S3_editclear.ses)).
 
 - **A moved program start was put back, and a program saved from another start
   loaded as junk** (fixed 2026-10-22, D-TXTTAB and D-LOADBASE). A disk game's
@@ -278,6 +292,9 @@ the token specs [spec-tokenise.md](../../basic/docs/spec-tokenise.md) and
 - `make listflt-acceptance` — how `$1D` / `$1F` constants are listed and
   survive an ASCII save.
 - `make editverb-acceptance` — `RENUM`, `AUTO` and `LLIST`.
+- `make sessions-acceptance` — lines typed at the prompt one at a time, the
+  whole screen compared after each: `AUTO`, `RENUM`, `DELETE`, `STOP` /
+  `CONT`, and what an edit clears ([sessions](../../probes/sessions/)).
 - `make txtceil-acceptance` — a program never outgrows its memory.
 - `make kwsweep` — the crunched bytes of the keyword rows it carries.
 - `tests/test_loadbase.py` (in `make unit-test`) — `NEW` keeps a moved start;

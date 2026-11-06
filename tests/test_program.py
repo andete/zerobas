@@ -450,16 +450,21 @@ def test_delete_line(m, fails):
         print(f"{'PASS' if ok else 'FAIL'}  delete: end marker at PRGEND = $0000 "
               f"(got {end_lo:#04x} {end_hi:#04x})")
 
-    # 4f. Delete a non-existent line is a no-op (chain unchanged)
+    # 4f. Delete a non-existent line: the chain is unchanged AND it is ERR 8
+    #     (D-EDITCLR, 2026-11-06: `Undefined line number` on the VG-8020, measured
+    #     by the typed session scratchpad/editclear_a.ses -- no relink, no reset)
     entries_before = walk_chain(m)
+    raised = []
+    m.trap("raise_error", lambda mm: raised.append(mm.cpu.a))
     call_delete_line(m, lineno=99)
+    m.traps.pop(m.sym["raise_error"], None)
     entries_after = walk_chain(m)
     nos_before = [e['lineno'] for e in entries_before]
     nos_after = [e['lineno'] for e in entries_after]
-    ok = (nos_before == nos_after)
+    ok = (nos_before == nos_after and raised == [8])
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  delete: deleting non-existent line 99 is a no-op "
-          f"(before={nos_before}, after={nos_after})")
+    print(f"{'PASS' if ok else 'FAIL'}  delete: deleting non-existent line 99 changes nothing "
+          f"and raises ERR 8 (before={nos_before}, after={nos_after}, raised={raised})")
 
     return fails
 

@@ -1,0 +1,36 @@
+# S2_stopcont (D-SESSIONS, 2026-11-06): stopping a program and going on -- STOP in
+# the program, Ctrl-STOP while it waits, CONT, a variable inspected and changed
+# between, CONT after an edit (which the reference refuses), and NEW then CONT.
+# Line 70 waits on Z, set at the prompt before the CONT: an INKEY$ wait there made the
+# run depend on where the break landed (D-STOPKEY3: the VG-8020's Ctrl-STOP also puts
+# a ^C in the keyboard buffer, which an INKEY$ just before the break check reads).
+NEW
+10 PRINT "START"
+20 FOR I=1 TO 3
+30 PRINT "I=";I
+40 STOP
+50 NEXT I
+60 PRINT "LOOP DONE"
+70 IF Z=0 THEN 70
+80 PRINT "Z=";Z
+90 END
+RUN
+PRINT I
+CONT
+I=3
+CONT
+{WAIT 1}
+{STOP}
+PRINT "STOPPED AT 70"
+Z=7
+CONT
+LIST 60-
+RUN
+CONT
+25 PRINT "EDITED"
+CONT
+GOTO 50
+CONT
+NEW
+CONT
+PRINT "END"

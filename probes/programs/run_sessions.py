@@ -215,7 +215,10 @@ def main():
     pats = [a for a in sys.argv[1:] if not a.startswith("--")]
     files = sorted(glob.glob(os.path.join(SESSIONS, "S*.ses")))
     if pats:
-        files = [f for f in files if any(p in os.path.basename(f) for p in pats)]
+        # a path to a .ses anywhere (a scratch session, never part of the gate), or
+        # a name substring of the committed ones
+        files = ([p for p in pats if p.endswith(".ses") and os.path.exists(p)] or
+                 [f for f in files if any(p in os.path.basename(f) for p in pats)])
     bad = 0
     for f in files:
         name = os.path.basename(f)[:-4]

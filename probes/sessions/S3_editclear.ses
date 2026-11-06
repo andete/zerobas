@@ -1,0 +1,33 @@
+# S3_editclear (D-SESSIONS, 2026-11-06): what storing or deleting a typed line clears.
+# Measured on the VG-8020: variables, arrays, strings, DEF FN, ON ERROR AND the FOR /
+# GOSUB stack (D-EDITCLR -- zerobas kept the frames, whose resume pointers point into
+# text the edit moved); a bare number naming NO line is ERR 8 and touches nothing (an
+# armed ON ERROR traps it); LIST clears nothing.
+NEW
+10 DEF FNA(X)=X*2
+20 DIM B(5):B(3)=7:A=5:A$="HI":ON ERROR GOTO 100
+30 GOSUB 60
+40 END
+60 FOR J=1 TO 2:STOP
+70 NEXT:RETURN
+100 PRINT "TRAP":RESUME NEXT
+RUN
+PRINT A;A$;B(3);J;FNA(2)
+200 REM ADDED
+PRINT A;A$;B(3);J
+PRINT FNA(2)
+RUN
+200
+PRINT A;A$;B(3);J
+RETURN
+RUN
+200
+NEXT
+RUN
+10 DEF FNA(X)=X*2
+PRINT A;A$;J
+ERROR 5
+RUN
+PRINT A
+LIST 200
+PRINT A
