@@ -9,6 +9,12 @@ never decoded: only VRAM and work-area cells are read.
 SDS_TRANS=1 also logs every distinct transfer of control from RAM ($8000+) into
 $0000-$7FFF (interrupts excluded; PC values only, OUR machine) -- the D-BASICINT
 class's tell: a program calling a fixed BASIC-ROM internal.
+SDS_HOOK=1 timestamps every write to the H.TIMI hook ($FD9F..$FDA3, work area, with
+the value), the first write to $9900 and its first run (no byte of it is read) --
+D-SDSBOOT's race question. Works on the reference too: only RAM writes and the PC.
+SDS_RING=1 (OUR machine only): the last 48 PCs (with page's primary slot) before
+the first PC = $0000. SDS_A8=1: every write to the slot-select port $A8 (time, PC,
+value) until then.
 """
 import os, subprocess, sys, tempfile, shutil
 D = os.environ["DISKCORPUS_DIR"]
@@ -31,6 +37,32 @@ proc __tr {{}} {{
   set ::lastpc $pc
 }}
 if {{[info exists ::env(SDS_TRANS)]}} {{ debug set_condition 1 __tr }}
+set ::ev {{}}
+proc __hk {{}} {{ lappend ::ev "[format %.4f [machine_info time]] HOOK [format %04X $::wp_last_address] := [format %02X $::wp_last_value]" }}
+proc __w99 {{}} {{ if {{![info exists ::w99]}} {{ set ::w99 1; lappend ::ev "[format %.4f [machine_info time]] FIRST WRITE 9900" }} }}
+proc __x99 {{}} {{ if {{![info exists ::x99]}} {{ set ::x99 1; lappend ::ev "[format %.4f [machine_info time]] FIRST RUN 9900 (sp=[format %04X [reg sp]])" }} }}
+set ::ring {{}}
+proc __rg {{}} {{
+  set pc [reg pc]
+  if {{$pc == 0x38 && ![info exists ::i38] && [lindex [get_selected_slot 0] 0] == 3}} {{
+    set ::i38 1
+    lappend ::ev "[format %.4f [machine_info time]] FIRST 0038 WITH PAGE 0 = SLOT 3 after: [join $::ring {{ }}]"
+  }}
+  if {{$pc == 0 && ![info exists ::z0]}} {{
+    set ::z0 1
+    lappend ::ev "[format %.4f [machine_info time]] FIRST PC=0000 after: [join $::ring {{ }}]"
+  }}
+  lappend ::ring "[format %04X $pc]/[format %02X [lindex [get_selected_slot [expr {{$pc >> 14}}]] 0]]"
+  if {{[llength $::ring] > 160}} {{ set ::ring [lrange $::ring end-159 end] }}
+}}
+if {{[info exists ::env(SDS_RING)]}} {{ debug set_condition 1 __rg }}
+proc __a8 {{}} {{ if {{![info exists ::z0]}} {{ lappend ::ev "[format %.4f [machine_info time]] A8 := [format %02X $::wp_last_value] at PC=[format %04X [reg pc]] sp=[format %04X [reg sp]]" }} }}
+if {{[info exists ::env(SDS_A8)]}} {{ debug set_watchpoint write_io 0xA8 1 __a8 }}
+if {{[info exists ::env(SDS_HOOK)]}} {{
+  debug set_watchpoint write_mem {{0xFD9F 0xFDA3}} 1 __hk
+  debug set_watchpoint write_mem 0x9900 1 __w99
+  debug set_bp 0x9900 1 __x99
+}}
 after time {T} {{
  set f [open {{{out}}} w]
  if {{[catch {{
@@ -49,6 +81,7 @@ after time {T} {{
   }}
  }} err]}} {{ puts $f "TCL ERROR: $err" }}
   foreach k [lsort [array names ::tr]] {{ puts $f "TRANS $k t=[format %.2f $::tr($k)]" }}
+  foreach e $::ev {{ puts $f "EV $e" }}
   close $f
   exit
 }}

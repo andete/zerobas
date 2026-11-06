@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15732 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15742 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15742 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11194,14 +11194,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       RAM -> ROM transfer, PC only, our machine): good build ([`sdsboot_good_trans.out`](scratchpad/sdsboot_good_trans.out)) -- the
       program's interrupt handler at $9900 returns into C-BIOS's ISR ($1906, the address the
       $FD9F hook returns to) and the program runs on (PC $4F8B, SCREEN 1); bad build
-      ([`sdsboot_head_trans.out`](scratchpad/sdsboot_head_trans.out)) -- that FIRST $9900 run goes to $0000 instead (also from
-      $8000 / $FFFF), page 3 reads $FF, PC parked in C-BIOS. Reading: a RACE in the disk's
-      loader -- the interrupt hook points at $9900 before its code is ready -- that the
-      CF-3300's speed and zerobas's before ccfceefd both won. Reverting the speed-up would only
-      buy back luck. ➡️ next: when the hook is armed against when $9900's code arrives
-      (watch writes to $FD9F..$FDA3 and $9900, timestamps only), on the CF-3300 and on both
-      zerobas builds; if it is a race, what timing the reference keeps there (a DI window?
-      a disk-read duration?) is the thing to match.
+      ([`sdsboot_head_trans.out`](scratchpad/sdsboot_head_trans.out)) -- execution reaches $0000 at 4.357 s, page 3 reads $FF, PC parked
+      in C-BIOS. ~~Reading: a race in the loader (hook armed before $9900's code)~~ --
+      🔴 **WITHDRAWN THE SAME DAY: the probe's first hook run logged NOTHING about $9900
+      because `"$9900"` inside a Tcl string is a variable substitution -- the handler died
+      silently. A blank observation read as "never happens" [[an-unnamed-outcome-reads-as-no-outcome]].**
+      📏 **WHAT IS ACTUALLY MEASURED** ([`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) with SDS_A8 / SDS_HOOK / SDS_RING;
+      slot writes and PCs of the PROGRAM'S RAM code only on the reference):
+      • zerobas ([`sdsboot_a8_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_a8_C-BIOS_MSX1_EU_REPACK_DISK.out), [`sdsboot_i38_head.out`](scratchpad/sdsboot_i38_head.out)): the program's code at
+        $DDD8 / $DE1C toggles $A8 between $FC and $FF from 4.194 s, runs $9900 at 4.197 s
+        right after setting $FF (all four pages slot 3), and at 4.357 s an interrupt finds
+        page 0 = RAM: $0038 holds $FF, an RST 38 slide through page 1 up to $8000, then $0000.
+      • CF-3300 ([`sdsboot_a8_cf45.out`](scratchpad/sdsboot_a8_cf45.out)): the program's slot code runs from **$DEA5** at 11.75 s
+        ($FF, then $CF / $DF / $EF at 14.2 s), never $DDD8 / $DE1C, and never runs $9900.
+      So zerobas is on a DIFFERENT PATH from well before the crash, in both builds; the
+      11-04 "BOTH-RUN" was that wrong path not crashing, and ccfceefd's speed only moved
+      where an interrupt lands in the all-RAM window. ➡️ next: where the two boots part --
+      the same three watches from t = 0 (the boot sector's DSKIO calls and slot switches,
+      timestamps; the RAM PCs only), CF-3300 against zerobas.
       ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found

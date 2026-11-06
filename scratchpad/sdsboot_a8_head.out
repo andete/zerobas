@@ -1,0 +1,173 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=108B
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|......................V0.29.....|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+EV 0.0001 A8 := F0 at PC=0D30 sp=FFFF
+EV 0.0078 A8 := E0 at PC=0D30 sp=FFFF
+EV 0.0141 A8 := D0 at PC=0D30 sp=FFFF
+EV 0.0203 A8 := C0 at PC=0D30 sp=FFFF
+EV 0.0266 A8 := B0 at PC=0D30 sp=FFFF
+EV 0.0272 A8 := A0 at PC=0D30 sp=FFFF
+EV 0.0278 A8 := 90 at PC=0D30 sp=FFFF
+EV 0.0284 A8 := 80 at PC=0D30 sp=FFFF
+EV 0.0290 A8 := 70 at PC=0D30 sp=FFFF
+EV 0.0295 A8 := 60 at PC=0D30 sp=FFFF
+EV 0.0301 A8 := 50 at PC=0D30 sp=FFFF
+EV 0.0307 A8 := 40 at PC=0D30 sp=FFFF
+EV 0.0313 A8 := 30 at PC=0D30 sp=FFFF
+EV 0.0319 A8 := 20 at PC=0D30 sp=FFFF
+EV 0.0325 A8 := 10 at PC=0D30 sp=FFFF
+EV 0.0330 A8 := 00 at PC=0D30 sp=FFFF
+EV 0.0336 A8 := F0 at PC=0D80 sp=FFFF
+EV 0.0597 A8 := 30 at PC=104D sp=F2FE
+EV 0.0598 A8 := F0 at PC=107E sp=F2FE
+EV 0.0598 A8 := 70 at PC=104D sp=F2FE
+EV 0.0599 A8 := F0 at PC=107E sp=F2FE
+EV 0.0599 A8 := B0 at PC=104D sp=F2FE
+EV 0.0599 A8 := F0 at PC=107E sp=F2FE
+EV 0.0600 A8 := F0 at PC=104D sp=F2FE
+EV 0.0600 A8 := F0 at PC=107E sp=F2FE
+EV 0.1031 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1031 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1033 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1033 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1035 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1035 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1037 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1037 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1039 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1039 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1041 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1041 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1043 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1043 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1045 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1045 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1047 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1047 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1049 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1049 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1051 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1051 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1053 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1054 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1055 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1056 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1058 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1058 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1060 A8 := C0 at PC=F380 sp=F2F0
+EV 0.1060 A8 := F0 at PC=F389 sp=F2F0
+EV 0.1062 A8 := C0 at PC=F38C sp=F2F8
+EV 0.1902 A8 := F0 at PC=F394 sp=F2FA
+EV 2.6344 A8 := F0 at PC=F380 sp=F2EC
+EV 2.6344 A8 := F0 at PC=F389 sp=F2EC
+EV 2.6346 A8 := F0 at PC=F380 sp=F2EA
+EV 2.6346 A8 := F0 at PC=F389 sp=F2EA
+EV 2.6431 A8 := F0 at PC=F380 sp=F2EA
+EV 2.6431 A8 := F0 at PC=F389 sp=F2EA
+EV 2.6432 A8 := F0 at PC=F380 sp=F2E8
+EV 2.6432 A8 := F0 at PC=F389 sp=F2E8
+EV 2.6434 A8 := F0 at PC=F38C sp=F2EE
+EV 2.6450 A8 := D0 at PC=F380 sp=F2DA
+EV 2.6450 A8 := F0 at PC=F389 sp=F2DA
+EV 2.6452 A8 := F4 at PC=F380 sp=F2DE
+EV 2.6452 A8 := F0 at PC=F389 sp=F2DE
+EV 2.6454 A8 := E0 at PC=F380 sp=F2DA
+EV 2.6454 A8 := F0 at PC=F389 sp=F2DA
+EV 2.6456 A8 := F8 at PC=F380 sp=F2DE
+EV 2.6456 A8 := F0 at PC=F389 sp=F2DE
+EV 2.6458 A8 := F0 at PC=24EB sp=F2D8
+EV 2.6458 A8 := F0 at PC=250B sp=F2D8
+EV 2.6460 A8 := F0 at PC=F380 sp=F2D8
+EV 2.6460 A8 := F0 at PC=F389 sp=F2D8
+EV 2.6460 A8 := F0 at PC=2526 sp=F2D8
+EV 2.6460 A8 := F0 at PC=252D sp=F2D8
+EV 2.6461 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6462 A8 := F0 at PC=250B sp=F2DC
+EV 2.6463 A8 := FC at PC=F380 sp=F2DC
+EV 2.6463 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6464 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6464 A8 := F0 at PC=252D sp=F2DC
+EV 2.6465 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6465 A8 := F0 at PC=250B sp=F2DC
+EV 2.6466 A8 := F3 at PC=F380 sp=F2DC
+EV 2.6466 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6467 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6467 A8 := F0 at PC=252D sp=F2DC
+EV 2.6468 A8 := F0 at PC=24EB sp=F2D8
+EV 2.6469 A8 := F0 at PC=250B sp=F2D8
+EV 2.6470 A8 := F0 at PC=F380 sp=F2D8
+EV 2.6470 A8 := F0 at PC=F389 sp=F2D8
+EV 2.6471 A8 := F0 at PC=2526 sp=F2D8
+EV 2.6471 A8 := F0 at PC=252D sp=F2D8
+EV 2.6472 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6472 A8 := F0 at PC=250B sp=F2DC
+EV 2.6473 A8 := FC at PC=F380 sp=F2DC
+EV 2.6474 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6474 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6474 A8 := F0 at PC=252D sp=F2DC
+EV 2.6475 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6475 A8 := F0 at PC=250B sp=F2DC
+EV 2.6477 A8 := FC at PC=F380 sp=F2DC
+EV 2.6477 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6477 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6477 A8 := F0 at PC=252D sp=F2DC
+EV 2.6478 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6479 A8 := F0 at PC=250B sp=F2DC
+EV 2.6480 A8 := FC at PC=F380 sp=F2DC
+EV 2.6480 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6480 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6480 A8 := F0 at PC=252D sp=F2DC
+EV 2.6481 A8 := F0 at PC=24EB sp=F2DC
+EV 2.6482 A8 := F0 at PC=250B sp=F2DC
+EV 2.6483 A8 := FC at PC=F380 sp=F2DC
+EV 2.6483 A8 := F0 at PC=F389 sp=F2DC
+EV 2.6484 A8 := F0 at PC=2526 sp=F2DC
+EV 2.6484 A8 := F0 at PC=252D sp=F2DC
+EV 2.6485 A8 := F0 at PC=24EB sp=F2E2
+EV 2.6485 A8 := F0 at PC=250B sp=F2E2
+EV 2.6486 A8 := FC at PC=F38C sp=F2DE
+EV 2.6749 A8 := FF at PC=40BD sp=F2DA
+EV 2.6776 A8 := FC at PC=7CFF sp=F2D4
+EV 2.6841 A8 := FF at PC=7D37 sp=F2D4
+EV 4.1945 A8 := FC at PC=DDD8 sp=DCF2
+EV 4.1947 A8 := C0 at PC=24B7 sp=DCF2
+EV 4.1947 A8 := FC at PC=24C4 sp=DCF2
+EV 4.1947 A8 := FC at PC=24DA sp=DCF6
+EV 4.1948 A8 := FF at PC=DE1C sp=DCF6
+EV 4.1949 A8 := FC at PC=DDD8 sp=DCF2
+EV 4.1951 A8 := C0 at PC=24B7 sp=DCF2
+EV 4.1951 A8 := FC at PC=24C4 sp=DCF2
+EV 4.1951 A8 := FC at PC=24DA sp=DCF6
+EV 4.1952 A8 := FF at PC=DE1C sp=DCF6
+EV 4.1953 A8 := FC at PC=DDD8 sp=DCF2
+EV 4.1954 A8 := FC at PC=F380 sp=DCF0
+EV 4.1955 A8 := FC at PC=F389 sp=DCF0
+EV 4.1955 A8 := FF at PC=DE1C sp=DCF6
+EV 4.1956 A8 := FC at PC=DDD8 sp=DCF2
+EV 4.1958 A8 := FC at PC=F380 sp=DCF0
+EV 4.1958 A8 := FC at PC=F389 sp=DCF0
+EV 4.1958 A8 := FF at PC=DE1C sp=DCF6
+EV 4.3566 FIRST PC=0000 after: 0038/03 7FE9/03 0038/03 7FEA/03 0038/03 7FEB/03 0038/03 7FEC/03 0038/03 7FED/03 0038/03 7FEE/03 0038/03 7FEF/03 0038/03 7FF0/03 0038/03 7FF1/03 0038/03 7FF2/03 0038/03 7FF3/03 0038/03 7FF4/03 0038/03 7FF5/03 0038/03 7FF6/03 0038/03 7FF7/03 0038/03 7FF8/03 0038/03 7FF9/03 0038/03 7FFA/03 0038/03 7FFB/03 0038/03 7FFC/03 0038/03 7FFD/03 0038/03 7FFE/03 0038/03 7FFF/03 0038/03 8000/03
+

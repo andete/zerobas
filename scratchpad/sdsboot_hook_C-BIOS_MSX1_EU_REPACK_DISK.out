@@ -1,0 +1,58 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=0BB9
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 0.0072 FIRST WRITE 9900
+EV 0.0503 HOOK FD9F := 00
+EV 0.0503 HOOK FDA0 := 00
+EV 0.0503 HOOK FDA1 := 00
+EV 0.0503 HOOK FDA2 := 00
+EV 0.0503 HOOK FDA3 := 00
+EV 0.0551 HOOK FD9F := C9
+EV 0.0551 HOOK FDA0 := C9
+EV 0.0551 HOOK FDA1 := C9
+EV 0.0551 HOOK FDA2 := C9
+EV 0.0551 HOOK FDA3 := C9
+EV 4.1966 FIRST RUN 9900 (sp=DCFC)
+EV 5.5290 HOOK FD9F := 00
+EV 5.5290 HOOK FDA0 := 00
+EV 5.5290 HOOK FDA1 := 00
+EV 5.5290 HOOK FDA2 := 00
+EV 5.5290 HOOK FDA3 := 00
+EV 5.5338 HOOK FD9F := C9
+EV 5.5338 HOOK FDA0 := C9
+EV 5.5338 HOOK FDA1 := C9
+EV 5.5338 HOOK FDA2 := C9
+EV 5.5338 HOOK FDA3 := C9
+EV 8.3359 HOOK FDA3 := DD
+EV 8.3359 HOOK FDA2 := AF
+EV 8.3359 HOOK FDA1 := DD
+EV 8.3359 HOOK FDA0 := AF
+EV 8.3359 HOOK FD9F := DD
+EV 16.0947 HOOK FDA3 := 40
+EV 16.0947 HOOK FDA2 := 01
+EV 16.1175 HOOK FDA1 := 40
+EV 16.1175 HOOK FDA0 := 01
+EV 16.1403 HOOK FD9F := 40
+
