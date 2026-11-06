@@ -962,19 +962,14 @@ for_set_typed:
 ; STR_EMPTY (a len-0 descriptor) on a miss, so the caller always has a
 ; printable/copyable value. Clobbers A, B, C, D, E, H, L.
 str_get_key:
-                ld      (ARY_KEY),bc
+                ; 🐌 D-TRAPCOST (2026-11-06): the MAIN-ROM walk (basic/varfind.asm),
+                ; as numeric reads since round 2 -- it hands a live FN call to the
+                ; same tenant find (op 4) this used, so a formal still shadows.
                 ld      a,1                 ; type=1 -- the `$` unifier
                                             ; (var_str_type; A/A%/A!/A#/A$
                                             ; are five distinct entries)
-                ld      (ARY_TYPE),a
-                ld      a,4                 ; op = SCALAR_FIND
-                ld      (ARY_OP),a
-                call    ary_engine_call     ; find never errors (ARY_ERR
-                                            ; always 0 for op=4)
-                ld      hl,(ARY_ADDR)
-                ld      a,h
-                or      l
-                jr      z,sgk_empty         ; ARY_ADDR=0 -> unset -> STR_EMPTY
+                call    var_find_typed      ; CF + HL = the entry / CF clear: unset
+                jr      nc,sgk_empty        ; unset -> STR_EMPTY
                 ld      de,3
                 add     hl,de               ; HL -> descriptor (entry+3, past
                                             ; [name0][name1][type] -- ONE

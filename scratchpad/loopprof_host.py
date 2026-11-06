@@ -78,6 +78,9 @@ CASES = {
     "b": ("A=I*7 body", "10 FOR I=1 TO 40:A=I*7:NEXT"),
     "c": ("empty I% loop", "10 FOR I%=1 TO 40:NEXT"),
     "d": ("empty default-type loop", "10 FOR I=1 TO 40:NEXT"),
+    # D-TRAPCOST (2026-11-06): a string variable at an operand's start, compared,
+    # the result stored into a default-type (double) variable
+    "s": ("string compare body", "10 A$=\"AB\":FOR I=1 TO 40:B=-(A$=\"AB\"):NEXT"),
     # D-TRAPCOST (2026-11-05): the GOSUB / RETURN round trip a trap handler rides on
     "e": ("GOSUB + H(M)=H(M)+1:RETURN", "10 DIM H(9):M=3:FOR I=1 TO 40:GOSUB 100:NEXT:END\n100 H(M)=H(M)+1:RETURN"),
 }
@@ -315,6 +318,11 @@ class Prof:
         # cold boot's clear_usrtab (basic/usr.asm) sets the "no FN call" gate; the
         # harness never boots, and FN_FEND = 0 walks fn_shadow_find round a page
         m.poke(s["FN_FEND"], s["FN_PAREA"] & 0xFF)
+        # the string pool: RUN's heap_reset derives it from HIMEM and the CLEAR
+        # size; unseeded, the first heap temporary is Out of string space and the
+        # run counts ZERO passes (case s, 2026-11-06)
+        m.poke_w(s["HIMEM"], s["TXTMAX"])
+        m.poke_w(s["POOLSIZE"], 200)
         m.call("new_prog")
         rows = []
         for ln in text.strip().splitlines():
@@ -340,6 +348,10 @@ class Prof:
 def report(p, key, label, text, n, top, trace=False):
     out = p.run(text, skip=4, n=n)
     pt = p.pass_t
+    if not pt:
+        print(f"=== ({key}) {label}: NO PASSES -- the program printed {out!r} ===")
+        p.machine_t = None
+        return None
     tot = sum(pt) / len(pt)
     print(f"\n=== ({key}) {label}: `{text[3:]}` ===")
     print(f"T per pass (M1 incl.): mean {tot:.0f}, min {min(pt)}, max {max(pt)} over {len(pt)} passes"
@@ -403,8 +415,12 @@ def main():
     print("\n=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===")
     ticks = {"a": (70, 137), "b": (98, None), "c": (8, 39), "d": (24, 32),
              # e: trapstmt_cost.out measured 100 passes (VG 39, zb 96); x3 for the 300 scale
-             "e": (117, 288)}
+             "e": (117, 288),
+             # s: strkey_time.bas, 1000 passes (VG 251, zb 332 on 2026-11-06); x0.3
+             "s": (75, 100)}
     for k, t in res.items():
+        if t is None or k not in ticks:
+            continue
         vg, zb = ticks[k]
         fit = f"implies {300 * t / zb:.0f} usable T/tick" if zb else "zb ticks not measured"
         print(f"  ({k}) model {t:6.0f} T/pass -> {300 * t / USABLE_T_PER_TICK:5.0f} ticks; measured zb "

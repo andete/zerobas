@@ -15,7 +15,7 @@ widen_fac_to equ 036FDH
 round_single_and_pack equ 0339BH
 round_and_finalize equ 0334AH
 pu_deref_body equ 02863H
-subrom_call equ 03A04H
+subrom_call equ 03A2AH
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
@@ -91,7 +91,7 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
 parse_disk_fcb equ 06413H
-eval equ 04A97H
+eval equ 04A86H
 fch_check equ 06EECH
 fch_mode_class equ 04F7CH
 field_item equ 072F6H
@@ -102,7 +102,7 @@ tgt_parse_req equ 05298H
 tgt_desc equ 0477DH
 skip_eq equ 042C4H
 req_operand equ 04126H
-str_eval equ 048F2H
+str_eval equ 048E1H
 type_mismatch_error equ 042F8H
 stmt_error equ 042EAH
 lrset_finish equ 07081H

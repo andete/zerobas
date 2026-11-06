@@ -2239,6 +2239,43 @@ widen_uint_to:
                 ld      (hl),a              ; sign
                 inc     hl                  ; HL -> dexp lo (dexp hi is 0 already)
                 ex      de,hl               ; HL = magnitude, DE -> dexp lo
+                ; 🐌 D-TRAPCOST (2026-11-06): a magnitude under 100 needs no division.
+                ; div10 is a 16-step binary divide (~850 T a digit), and the integers a
+                ; program stores into a default-type variable are mostly small -- a
+                ; comparison's -1, a flag, a counter. Tens by subtracting 10, at most
+                ; nine times; the digits land exactly where the loop below puts them.
+                ld      a,h
+                or      a
+                jr      nz,wu_slow
+                ld      a,l
+                cp      100
+                jr      nc,wu_slow
+wu_tens:
+                cp      10
+                jr      c,wu_small          ; A = ones, B = tens (B = 0 after zero_fill)
+                sub     10
+                inc     b
+                jr      wu_tens
+wu_small:
+                ex      de,hl               ; HL -> dexp lo
+                ld      c,a                 ; C = ones
+                ld      a,b
+                or      a
+                jr      z,wu_one
+                ld      (hl),2              ; dexp 2: tens, ones
+                inc     hl
+                inc     hl
+                ld      (hl),b
+                inc     hl
+                ld      (hl),c
+                ret
+wu_one:
+                ld      (hl),1              ; dexp 1: one digit
+                inc     hl
+                inc     hl
+                ld      (hl),c
+                ret
+wu_slow:
                 ld      c,b                 ; C = digit count := 0 (B = 0 after zero_fill;
                                             ; not B itself: div10 clobbers it)
 wu_digloop:

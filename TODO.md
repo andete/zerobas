@@ -17271,6 +17271,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       VG-8020 ([`strkey_measure.out`](scratchpad/strkey_measure.out)). ➡️ NEXT: 29768 vs ~24570
       T/pass on case (e); and a string compare is 1.47x the VG-8020 -- profile it (the host rig
       cannot run the CMP tenant yet: zero passes).
+      ✅ **THE STRING-COMPARE LOOP (2026-11-06): 369 -> 332 frames per 1000 (VG-8020 251)**
+      ([`strcmp_time2.out`](scratchpad/strcmp_time2.out), 🔮 ~331 HIT). The rig could not run it
+      because it never seeded the string pool (`Out of string space`, zero passes) -- fixed in
+      loopprof_host.py (HIMEM / POOLSIZE seeded, a no-pass run says so, case (s) with its
+      measured ticks); its model reads 21213 T/pass against the measured 100 ticks / 300.
+      (11) str_get_key (basic/vars.asm) uses the main-ROM walk like numeric reads (one sub-ROM
+      crossing less a string read; 🔮 -1500 -> -1538 HIT; 17 B back to the $4EF8 pad).
+      (12) widen_uint_to (basic/float-arith.asm) builds a magnitude under 100 without div10 (a
+      16-step divide, ~850 T a digit) -- every small integer stored into a default-type
+      variable (🔮 -800 -> -850 HIT; +38 B low region). tests/test_float.py: magnitudes 0..1099
+      and every 7th to 65535, both signs (the full sweep passed once, 68 s); a 100-at-the-fast-
+      path knife turns it red. ➡️ NEXT: 21213 vs ~15750 T/pass -- div10 for the 3..5-digit
+      case (powers-of-ten subtraction), the CMP tenant crossings.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

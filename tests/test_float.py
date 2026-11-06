@@ -271,6 +271,29 @@ def run_f2(m, s, ck):
     # Y = 1E-13 packed UNNORMALISED (FAC+1 = 0) and a 14-digit small operand lost its
     # low digits. decode_fac reads an unnormalised FAC as the same number, so the
     # leading digit is checked too.
+    # D-TRAPCOST (2026-11-06): widen_uint_to builds a magnitude under 100 without
+    # div10. Every magnitude 0..1099 and every 7th to 65535, both signs (the full
+    # sweep passed once, 68 s): the FPNUM record (sign, dexp,
+    # all 15 digits) must be the decimal digits of n -- the fast path and the loop
+    # side by side, and their boundary at 99 / 100.
+    WREC = 0xC400
+    bad = []
+    for mag in list(range(1100)) + list(range(1100, 65536, 7)) + [65535]:
+        for sign in (0, 0x80):
+            m.call("widen_uint_to", hl=WREC, a=sign, de=mag)
+            rec = m.peek(WREC, 18)
+            if mag == 0:
+                want = bytes(18)
+            else:
+                ds = [int(c) for c in str(mag)]
+                want = bytes([sign, len(ds), 0] + ds + [0] * (15 - len(ds)))
+            if rec != want:
+                bad.append((mag, sign, rec.hex()))
+                break
+        if len(bad) > 3:
+            break
+    ckf("widen_uint_to: magnitudes 0..1099 + every 7th to 65535, both signs", bad[:3], [])
+
     FAC = s["FAC"]
     for routine, a, b, want in [
             ("fp_add", D("1E-13"), D("0"), D("1E-13")),
