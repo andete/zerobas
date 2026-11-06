@@ -1,0 +1,17 @@
+L5_chain
+  National_CF-3300               ENDED t=35.4 gaps=39 max=0.223  lpt 5 lines
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=33.9 gaps=24 max=0.099  SAME
+L5_files
+  National_CF-3300               ENDED t=37.8 gaps=38 max=0.223  lpt 21 lines
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=38.0 gaps=25 max=0.138  SAME
+L5_house
+  National_CF-3300               ENDED t=48.9 gaps=69 max=0.223  lpt 17 lines
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=61.5 gaps=55 max=0.173  SAME
+L5_journal
+  National_CF-3300               ENDED t=50.1 gaps=65 max=0.223  lpt 21 lines
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=54.4 gaps=38 max=0.136  SAME
+L5_stock
+  National_CF-3300               ENDED t=49.6 gaps=34 max=0.223  lpt 20 lines
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=62.4 gaps=26 max=0.149  SAME
+
+PASS: 5 program(s), 0 divergent run(s)

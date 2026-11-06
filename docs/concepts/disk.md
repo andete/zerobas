@@ -390,6 +390,11 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   again, and so did every sector `BLOAD` / `BSAVE` moved
   ([readings](../../scratchpad/verbclock_after.out),
   [`BLOAD`/`BSAVE`](../../scratchpad/verbclock_bldi.out)).
+  Text programs followed on 2026-11-06 (D-ASAVEDI): `SAVE "F",A` turned each line
+  back into text with interrupts off, and `RUN "F"` / `MERGE "F"` of a text
+  program opened and read the file with them off, so the clock lost up to 450 ms
+  at a time where the CF-3300 loses at most 223. Now under 180 ms in every
+  disk test program ([readings](../../scratchpad/asavedi_gate2.out)).
 - **SHIFT at power-on did nothing here** (fixed 2026-10-10, D-BOOTKEYS, raised by
   Joost). Measured first on the CF-3300 — SHIFT: no Disk BASIC, `HIMEM`
   `&HF380`; CTRL: one drive. zerobas's disk ROM now reads the key before

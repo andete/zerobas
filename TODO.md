@@ -522,7 +522,7 @@ item — do **one item per session** to keep context lean.
       ary_engine (scalar lookups share it, the hot path). Only into page 1 unless a low
       label's forced set allows it; nothing a tenant calls back into.
 
-- [ ] ⏱️ **ASCII PROGRAM FILES ON DISK -- `SAVE ...,A`, `RUN "file"` / `MERGE` of a text
+- [x] ⏱️ **ASCII PROGRAM FILES ON DISK -- `SAVE ...,A`, `RUN "file"` / `MERGE` of a text
       program -- HOLD THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: UP TO ~450 MS AGAINST
       ITS 223 MS (D-ASAVEDI, found 2026-11-01 by the program ladder's L5_house and L5_chain).**
       🎚️ TIER 5 — timing parity, D-DISKDI's class: frames missed during a disk transfer
@@ -558,6 +558,17 @@ item — do **one item per session** to keep context lean.
       screen gets the same. L5_house max hole 450 -> 173 ms (CF-3300 223), its KNOWN_GAPS
       entry removed ([`asavedi_gate.out`](scratchpad/asavedi_gate.out)). ➡️ OPEN: the disk
       half -- fdc_rd_blk's multi-sector DI (L5_chain stays in KNOWN_GAPS under that name).
+      ✅ **THE DISK HALF FIXED THE SAME DAY:** the probe's stack samples
+      ([`asavedi_pc_chain2.out`](scratchpad/asavedi_pc_chain2.out)) named the caller --
+      ascii_load -> dsk_aopen -> H_FOPEN -> disk.rom's hk_aopen, arriving DI through CLPRIM,
+      so FDC_IFF read 0 and every sector of the open's directory / FAT reads ran masked (not a
+      multi-sector transfer). hk_aopen and hk_agetb (disk/kernel.asm) take the interrupts back
+      at entry, D-HOOKDI's pattern (+2 B, disk.rom still exact). L5_chain 258 -> 99 ms
+      ([`asavedi_pc_chain3.out`](scratchpad/asavedi_pc_chain3.out)); all five disk rungs inside
+      the CF-3300's 223 ms (max 173), KNOWN_GAPS EMPTY ([`asavedi_gate2.out`](scratchpad/asavedi_gate2.out)).
+      A scan found ten more hk_* entries without an `ei` first; D-HOOKDI (2026-10-10) had
+      measured the verbs behind most of them clean (concepts/disk.md), so they are not filed
+      as defects -- the ladder's gap gate is what would show one. Docs: concepts/disk.md.
 
 - [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
       (D-BD2FRAGILE, 2026-10-31).**
@@ -7606,7 +7617,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10039 (T-6FE392)8 (T-529ABE)` from `TODO.md:15191 (T-529ABE)`: a
+      `TODO.md:10050 (T-6FE392)8 (T-529ABE)` from `TODO.md:15202 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10345,7 +10356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15202 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

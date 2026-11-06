@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.join(REPO, "probes", "programs"))
 import run_programs as r  # noqa: E402
 import probe_tmp  # noqa: E402
 
-name = sys.argv[1] if len(sys.argv) > 1 else "L5_house"
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+name = args[0] if args else "L5_house"
 dump = probe_tmp.tmp("asavedi_samples.txt")
 if os.path.exists(dump):
     os.unlink(dump)
@@ -23,10 +24,16 @@ r.GAP_TCL = r.GAP_TCL.replace("set ::__gaps {}", """set ::__gaps {}
 set ::__smp {}
 set ::__df [open {%s} w]
 proc __samp {} {
-  lappend ::__smp "[format %%04X [reg PC]] [reg iff] [format %%02X [debug read ioports 0xA8]] [format %%04X [__rd16 0xF41C]]"
+  set st ""
+  if {[info exists ::__stk] && $::__stk} {
+    set sp [reg SP]
+    for {set k 0} {$k < 12} {incr k} { append st " [format %%04X [__rd16 [expr {($sp + 2*$k) & 0xFFFF}]]]" }
+  }
+  lappend ::__smp "[format %%04X [reg PC]] [reg iff] [format %%02X [debug read ioports 0xA8]] [format %%04X [__rd16 0xF41C]]$st"
   after time 0.001 __samp
 }
-after time 1 __samp""" % dump).replace(
+after time 1 __samp
+set ::__stk %d""" % (dump, 1 if "--stack" in sys.argv else 0)).replace(
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }""",
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }
     if {$g > 0.15} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
@@ -62,11 +69,17 @@ for line in open(dump):
         cur = (float(line.split()[1]), [])
         gaps.append(cur)
     elif cur:
-        pc, iff, a8, cl = line.split()
-        cur[1].append((int(pc, 16), int(iff), a8, cl))
+        f = line.split()
+        pc, iff, a8, cl = f[:4]
+        cur[1].append((int(pc, 16), int(iff), a8, cl, f[4:]))
 for g, smp in gaps:
     di = sum(1 for s in smp if s[1] == 0)
     hist = collections.Counter((s[0] & 0xFFF0, s[2]) for s in smp)
     print(f"\nGAP {g:.3f} s: {len(smp)} samples, IFF=0 in {di}; CURLIN {smp[0][3] if smp else '?'}")
     for (pc, a8), n in hist.most_common(8):
         print(f"  {n:4d}  PC ~{pc:04X}  A8={a8}  {names(pc)}")
+    if smp and smp[len(smp) // 2][4]:
+        print("  stack at the middle sample (each word named against our builds):")
+        for w in smp[len(smp) // 2][4]:
+            a = int(w, 16)
+            print(f"    {w}  {names(a)}")

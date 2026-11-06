@@ -265,9 +265,9 @@ KNOWN_GAPS = {
     # handler ran under DI.
     # L5_house's entry closed 2026-11-06 (D-ASAVEDI: the detokeniser tenant runs with
     # interrupts live now; its SAVE ,A holes were all there, scratchpad/asavedi_pc.out).
-    "L5_chain": "D-ASAVEDI's disk half: RUN \"P2.BAS\" / MERGE of a text program hold "
-                "the frame off 258 / 233 ms inside disk.rom's fdc_rd_blk (CF-3300 <= 223 ms "
-                "over the whole run; scratchpad/asavedi_pc_chain.out)",
+    # L5_chain's entry closed the same day: disk.rom's hk_aopen / hk_agetb take the
+    # interrupts back at entry (D-HOOKDI's class) -- its RUN / MERGE holes were the
+    # ASCII open and refills run fully masked (scratchpad/asavedi_pc_chain3.out).
 }
 
 

@@ -3258,6 +3258,10 @@ sav_full:
 ; (main's FAT primitives marshal through the same cell) and pre-setting it is
 ; what made `NAME ... AS ...` answer Syntax error at an empty drive (§6.6an).
 hk_aopen:
+                ei                          ; D-ASAVEDI (2026-11-06): the hook arrives DI
+                                            ; (D-HOOKDI's class) -- the open's directory /
+                                            ; FAT reads then ran fully masked: 258 ms on
+                                            ; RUN "P2.BAS" (scratchpad/asavedi_pc_chain2.out)
                 call    fat_mount
                 jr      c,hka_io            ; 3: mount / I-O
                 call    fat_io_find
@@ -3288,6 +3292,8 @@ hka_io:
 ; Main's dsk_agetbyte turns the pair back into the `A = byte, CF = EOF` contract
 ; ARL_GETBYTE's other sources already honour.
 hk_agetb:
+                ei                          ; D-ASAVEDI: a refill is sector I/O (hk_chin's
+                                            ; reason, disk/fat.asm)
                 call    fat_io_getbyte      ; A = byte, CF set = EOF
                 ld      c,a
                 ld      a,1                 ; 1 = EOF
