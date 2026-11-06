@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15700 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15707 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15700 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15707 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11142,6 +11142,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       edited line, DELETE, RENUM and NEW. 🔮 Predicted "a divergence in RENUM's Undefined line
       report or DELETE's error for a missing line": MISSED -- both agree; the one difference
       was CONT after CLEAR, which I had predicted would agree.
+      ✅ **S13_datafile (2026-11-06): SAME** ([`S13_datafile.ses`](probes/sessions/S13_datafile.ses), [`sessions_S13_datafile.out`](scratchpad/sessions_S13_datafile.out), the
+      CF-3300): a data file written at the prompt (OPEN / PRINT # / CLOSE), read back by a
+      typed EOF loop, extended with APPEND, read by LINE INPUT #, and the errors on the way
+      (EOF after the last line, PRINT # to a closed channel, a second OPEN of #1, KILL of an
+      open file, OPEN of a missing file). Checked the screens are not a shared failure:
+      ANNA / BERT / CAROL listed, `File already open` / `File still open` / `File not found`
+      where expected. 🔮 Predicted "one divergence in an error message or EOF": MISSED.
       ➡️ NEXT sessions: LIST while typing; then tape (CSAVE / CLOAD, the VG-8020, parked on
       the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
 

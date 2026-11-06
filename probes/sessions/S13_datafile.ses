@@ -1,0 +1,38 @@
+# @DISK
+# S13_datafile (D-SESSIONS, 2026-11-06): a data file the way a user keeps one -- written
+# from the prompt with OPEN / PRINT # / CLOSE, read back by a typed program that loops on
+# EOF, extended with APPEND, read by LINE INPUT #, and the errors a user meets on the way:
+# reading past the end, a file not open, a second OPEN of an open channel, KILL of an
+# open file, OPEN of a missing file for input. CF-3300 + the DISK target.
+NEW
+OPEN "NAMES.DAT" FOR OUTPUT AS #1
+PRINT #1,"ANNA";",";23
+PRINT #1,"BERT";",";41
+CLOSE #1
+10 OPEN "NAMES.DAT" FOR INPUT AS #1
+20 IF EOF(1) THEN 60
+30 INPUT #1,N$,A
+40 PRINT N$;" IS";A
+50 GOTO 20
+60 CLOSE #1
+RUN
+OPEN "NAMES.DAT" FOR APPEND AS #1
+PRINT #1,"CAROL, 35"
+CLOSE
+OPEN "NAMES.DAT" FOR INPUT AS #1
+LINE INPUT #1,L$:PRINT L$
+LINE INPUT #1,L$:PRINT L$
+LINE INPUT #1,L$:PRINT L$
+LINE INPUT #1,L$
+PRINT EOF(1)
+CLOSE
+PRINT #1,"X"
+OPEN "NAMES.DAT" FOR INPUT AS #1
+OPEN "OTHER.DAT" FOR OUTPUT AS #1
+KILL "NAMES.DAT"
+CLOSE
+OPEN "NOFILE.DAT" FOR INPUT AS #1
+FILES
+RUN
+KILL "NAMES.DAT"
+FILES
