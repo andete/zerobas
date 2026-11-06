@@ -1,0 +1,91 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# --- str_cmp_bits: the unsigned-byte comparator (§2 D-3) ---
+PASS  str_cmp_bits(b'AB',b'AB') = 2 (want 2, BC preserved)
+PASS  str_cmp_bits(b'AB',b'ABC') = 1 (want 1, BC preserved)
+PASS  str_cmp_bits(b'ABC',b'AB') = 4 (want 4, BC preserved)
+PASS  str_cmp_bits(b'A',b'a') = 1 (want 1, BC preserved)
+PASS  str_cmp_bits(b'a',b'A') = 4 (want 4, BC preserved)
+PASS  str_cmp_bits(b'ABD',b'ABC') = 4 (want 4, BC preserved)
+PASS  str_cmp_bits(b'ABC',b'ABD') = 1 (want 1, BC preserved)
+PASS  str_cmp_bits(b'',b'A') = 1 (want 1, BC preserved)
+PASS  str_cmp_bits(b'A',b'') = 4 (want 4, BC preserved)
+PASS  str_cmp_bits(b'',b'') = 2 (want 2, BC preserved)
+# --- full ev_rel path (eval): literals, all six operators ---
+PASS  "AB"="AB" = 65535 (want 65535)
+PASS  "AB"<>"AB" = 0 (want 0)
+PASS  "AB"<"ABC" = 65535 (want 65535)
+PASS  "AB">"ABC" = 0 (want 0)
+PASS  "AB"<="ABC" = 65535 (want 65535)
+PASS  "AB">="ABC" = 0 (want 0)
+PASS  "A"<"a" = 65535 (want 65535)
+PASS  "ABD">"ABC" = 65535 (want 65535)
+PASS  ""<"A" = 65535 (want 65535)
+PASS  ""="" = 65535 (want 65535)
+# --- compound-form merge (<=, >=, <>) on an EQUAL pair ---
+PASS  "A"<="A" (equal -> true) = 65535 (want 65535)
+PASS  "A">="A" (equal -> true) = 65535 (want 65535)
+PASS  "A"<>"A" (equal -> false) = 0 (want 0)
+# --- compound-form merge on an ORDERED pair ---
+PASS  "B"<="A" (false) = 0 (want 0)
+PASS  "B">="A" (true) = 65535 (want 65535)
+# --- D-RELSPACE: spaces after a compound relop, before a string RHS ---
+PASS  "A"<= "B" (no type mismatch) = 65535 (want 65535)
+PASS  "A"<= "B": FPERR clean
+PASS  "A">= "B" (no type mismatch) = 0 (want 0)
+PASS  "A">= "B": FPERR clean
+PASS  "A"<>  "B" (no type mismatch) = 65535 (want 65535)
+PASS  "A"<>  "B": FPERR clean
+PASS  "A"< = "B" (no type mismatch) = 65535 (want 65535)
+PASS  "A"< = "B": FPERR clean
+PASS  "A"< "B" (no type mismatch) = 65535 (want 65535)
+PASS  "A"< "B": FPERR clean
+# --- string VARIABLE operands ---
+PASS  A$<B$  A$=AB B$=ABC = 65535 (want 65535)
+PASS  A$=B$  A$=AB B$=ABC = 0 (want 0)
+# --- concat / nested-function operands (spec nest) ---
+PASS  "A"+"B"="AB" = 65535 (want 65535)
+PASS  LEFT$("HELLO",3)="HEL" = 65535 (want 65535)
+PASS  A$+B$="HELLO" = 65535 (want 65535)
+# --- boolean composition above ev_rel (AND/OR/NOT) ---
+PASS  ("A"="A") AND ("B"="B") = 65535 (want 65535)
+PASS  ("A"="A") AND ("B"="C") = 0 (want 0)
+PASS  NOT ("A"="B") = 65535 (want 65535)
+# --- D-2 type mismatch: the comparator's own signal ---
+PASS  "A"<5  (string LHS, numeric RHS): DE=0, ERRMARK=$DD, FPERR=10
+PASS  5<"A"  (numeric LHS, string RHS): DE=0, ERRMARK=$DD, FPERR=10
+PASS  A$<9  (string variable LHS): DE=0, ERRMARK=$DD, FPERR=10
+PASS  9=A$  (string variable RHS): DE=0, ERRMARK=$DD, FPERR=10
+PASS  A$  (bare string, no relop, in numeric context): DE=0, ERRMARK=$DD, FPERR=10
+PASS  "A"="A" leaves ERRMARK/FPERR clear (control)  DE=0xffff ERRMARK=0 FPERR=0
+# --- statement-level abort (ex_if / ex_let / PRINT-item) ---
+PASS  IF A$<5 THEN ...  prints 'Type mismatch'  got b'Type mismatch in 20\r\n'
+PASS  IF A$<5 THEN ...  the THEN clause did not run (T stays 0)  T=0
+PASS  IF A$<5 THEN ...  the RUN aborts, the NEXT line does NOT run (U stays 0)  U=0
+PASS  R=A$<5:U=88  prints 'Type mismatch'  got b'Type mismatch in 20\r\n'
+PASS  R=A$<5:U=88  R was not assigned  R=0
+PASS  R=A$<5:U=88  the rest of the SAME line did not run (U stays 0)  U=0
+PASS  R=A$<5:U=88  the RUN aborts, the NEXT stored line does NOT run (V stays 0)  V=0
+PASS  PRINT (A$<5)  prints 'Type mismatch' (no numeric item)  got b'Type mismatch in 20\r\n'
+PASS  IF A$="HI" THEN T=99 (valid) -> no mismatch message  got b''
+PASS  IF A$="HI" THEN T=99 (valid) -> T=99 (THEN ran)  T=99
+# --- S2 (print-unparen-compare): unparenthesized PRINT-lead comparisons, all three leads ---
+PASS  PRINT A$="YES"  (var lead, true) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT A$="NO"  (var lead, false) -> " 0 "  got b' 0 \r\n'
+PASS  PRINT A$<B$  (var lead, var RHS, ordering) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT A$<=B$  (var lead, compound form <=, equal) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT A$<>B$  (var lead, compound form <>, equal -> false) -> " 0 "  got b' 0 \r\n'
+PASS  PRINT "YES"=A$  (literal lead, var RHS) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT "a"<"b"  (literal lead, literal RHS) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT LEFT$(A$,1)="H"  (function lead) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT A$+B$="HELLO"  (concat-chain lead) -> "-1 "  got b'-1 \r\n'
+PASS  PRINT A$<5  (bare, unparenthesized) prints 'Type mismatch', NOT A$'s value  got b'Type mismatch in 20\r\n'
+PASS  PRINT A$<5:PRINT "AFTER"  the trailing PRINT does not run  got b'Type mismatch in 20\r\n'
+# --- S2 regression watch: plain PRINT items unchanged when NO relop follows (no re-parse; the S5 STRMAX-clamp lesson) ---
+PASS  PRINT A$  (plain var, no relop) -> "HI"  got b'HI\r\n'
+PASS  PRINT "lit"  (plain literal, no relop) -> "lit"  got b'lit\r\n'
+PASS  PRINT "a"+"b"  (literal concat, no relop) -> "ab"  got b'ab\r\n'
+PASS  PRINT LEFT$(A$,1)  (plain function, no relop) -> "H"  got b'H\r\n'
+PASS  PRINT A$;":";B$  (multi-item, stack-balance regression) -> "AB:CD"  got b'AB:CD\r\n'
+PASS  PRINT A$;B$<C$  (comparison after ";" is a fresh item) -> "X-1 "  got b'X-1 \r\n'
+
+ALL PASS — string-compare S2 (comparator + type mismatch)

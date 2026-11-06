@@ -1,0 +1,12 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  str_set/get_key 'A'='HELLO': len=5, bytes=b'HELLO'
+PASS  str_get_key unset → empty descriptor (len=0, HL=0x487b, STR_EMPTY=0x487b)
+PASS  str_set_key round-trips STRMAX=255: stored len=255, intact=True
+PASS  str_eval '"HELLO"': CF=1, STRPTR=0xf698(RVDESC), body@0xc101(TOKBUF+1=0xc101, no copy), len=5, bytes=b'HELLO'
+PASS  str_eval A$='WORLD': CF=1, len=5, bytes=b'WORLD'
+PASS  str_eval non-string 'A': CF=0
+PASS  print_strval emits b'HELLO': got b'HELLO'
+PASS  print_strval empty string emits nothing (got [])
+PASS  A$='HELLO', B$='WORLD' distinct: A$=b'HELLO', B$=b'WORLD'
+
+ALL PASS — strvar.asm string-value layer

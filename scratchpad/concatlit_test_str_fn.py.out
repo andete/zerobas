@@ -1,0 +1,58 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# STRMAX = 255
+# --- Group A: HEX$ (unsigned-16 hex text, no leading zeros) ---
+PASS  HEX$(0) = b'0' (want b'0') CF=1
+PASS  HEX$(255) = b'FF' (want b'FF') CF=1
+PASS  HEX$(65535) = b'FFFF' (want b'FFFF') CF=1
+PASS  HEX$(-1) = b'FFFF' (want b'FFFF') CF=1
+PASS  HEX$(16) = b'10' (want b'10') CF=1
+PASS  HEX$(4096) = b'1000' (want b'1000') CF=1
+PASS  HEX$(1) = b'1' (want b'1') CF=1
+# --- Group A: OCT$ (unsigned-16 octal text, no leading zeros) ---
+PASS  OCT$(8) = b'10' (want b'10') CF=1
+PASS  OCT$(-1) = b'177777' (want b'177777') CF=1
+PASS  OCT$(0) = b'0' (want b'0') CF=1
+PASS  OCT$(7) = b'7' (want b'7') CF=1
+PASS  OCT$(64) = b'100' (want b'100') CF=1
+# --- Group A: SPACE$ ---
+PASS  SPACE$(0) = b'' (want b'') CF=1
+PASS  SPACE$(3) = b'   ' (want b'   ') CF=1
+PASS  SPACE$(255) = b'                                                                                                                                                                                                                                                               ' (want b'                                                                                                                                                                                                                                                               ') CF=1
+PASS  SPACE$(2) fills exactly 2 (no heap overrun) len=2 below_has_space=False
+# --- Group B: STRING$ (numeric code / string first byte / clamp) ---
+PASS  STRING$(3,65)  (numeric code) = b'AAA' (want b'AAA') CF=1
+PASS  STRING$(3,"*")  (string fill) = b'***' (want b'***') CF=1
+PASS  STRING$(3,"abc")  (first byte) = b'aaa' (want b'aaa') CF=1
+PASS  STRING$(0,65) = b'' (want b'') CF=1
+PASS  STRING$(255,88) = b'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' (want b'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') CF=1
+PASS  STRING$(3,"") empty x$ -> error -> CF clear (rejected) CF=0
+PASS  STRING$(4,A$)  A$="Q" = b'QQQQ' (want b'QQQQ') CF=1
+# --- Group B: STRING$ composes with concat ---
+PASS  "["+STRING$(3,45)+"]" = b'[---]' (want b'[---]') CF=1
+# --- Group C: INSTR (2-arg form, default p=1) ---
+PASS  INSTR("HELLO","LL") = 3 (want 3)
+PASS  INSTR("HELLO","H") = 1 (want 1)
+PASS  INSTR("HELLO","O") = 5 (want 5)
+PASS  INSTR("HELLO","X")  not found = 0 (want 0)
+PASS  INSTR("HELLO","HELLO!")  needle longer = 0 (want 0)
+PASS  INSTR("HELLO","")  empty needle -> p(=1) = 1 (want 1)
+PASS  INSTR("","")  both empty -> 1 = 1 (want 1)
+PASS  INSTR("","X")  empty haystack = 0 (want 0)
+# --- Group C: INSTR (3-arg form, explicit p) ---
+PASS  INSTR(2,"HELLO","L")  p mid = 3 (want 3)
+PASS  INSTR(4,"HELLO","L")  p mid, 2nd L = 4 (want 4)
+PASS  INSTR(5,"HELLO","L")  p past last L = 0 (want 0)
+PASS  INSTR(9,"HELLO","H")  p past end = 0 (want 0)
+PASS  INSTR(6,"HELLO","")  empty needle, p at len+1 = 6 (want 6)
+PASS  INSTR(9,"HELLO","")  empty needle, p past len+1 clamps = 6 (want 6)
+PASS  INSTR(1,"HELLO","HELLO")  full match = 1 (want 1)
+# --- Group C: INSTR overlapping matches ---
+PASS  INSTR("AAAA","AA")  first = 1 (want 1)
+PASS  INSTR(2,"AAAA","AA")  overlap from p=2 = 2 (want 2)
+PASS  INSTR(3,"AAAA","AA")  overlap from p=3 = 3 (want 3)
+PASS  INSTR(4,"AAAA","AA")  no room left = 0 (want 0)
+# --- Group C: INSTR with variable / concat operands ---
+PASS  INSTR(A$,B$)  A$=HELLO B$=LL = 3 (want 3)
+PASS  INSTR("X"+A$,B$)  concat lhs = 4 (want 4)
+
+ALL PASS — string-functions S2 (HEX$/OCT$/SPACE$/STRING$/INSTR)

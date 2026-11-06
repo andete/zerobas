@@ -694,6 +694,27 @@ sta_overflow:
 ; with `CLEAR n` it was a second full charge against the user's pool.
 ; 4 bytes of low region, all of it this entry head: the tail is shared.
 str_snapshot_keep:
+                ; 🐌 D-CONCATLIT (2026-11-06): a source that is ALREADY a temp entry
+                ; is answered HERE, without the sub-ROM crossing (~1000 T on the
+                ; machine) whose only work was the same range test (sub/strheap.asm
+                ; sh_hl_is_temp, [TEMPPOOL, TEMPBASE)) and `xor a`: every string
+                ; assignment from an expression (`A$="AB"+"CD"` -- let_ref) paid it
+                ; (scratchpad/concatlit_trace.out). Out as op 16's as-is arm: HL =
+                ; the source (= STRPTR, republished), A = 0, Z set.
+                ld      hl,(STRPTR)
+                ld      de,TEMPPOOL
+                or      a
+                sbc     hl,de
+                jr      c,ssk_cross         ; below the pool
+                ld      hl,(STRPTR)
+                ld      de,TEMPBASE
+                or      a
+                sbc     hl,de
+                jr      nc,ssk_cross        ; at / above its end
+                ld      hl,(STRPTR)
+                xor     a                   ; ERR 0, Z
+                ret
+ssk_cross:
                 ld      a,16                ; op = 16 (SNAPSHOT-UNLESS-TEMP)
                 jr      sst_op
     ENDIF

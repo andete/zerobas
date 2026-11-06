@@ -1,0 +1,42 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# --- LEN / ASC / VAL (string -> number) ---
+PASS  LEN("HELLO") = 5 (want 5)
+PASS  LEN("") = 0 (want 0)
+PASS  LEN(A$)  A$="HI" = 2 (want 2)
+PASS  LEN("A"+"BC") = 3 (want 3)
+PASS  ASC("A") = 65 (want 65)
+PASS  ASC("Z") = 90 (want 90)
+PASS  VAL("123") = 123 (want 123)
+PASS  VAL("-45") = 65491 (want 65491)
+PASS  VAL("+9") = 9 (want 9)
+PASS  VAL("  7") = 7 (want 7)
+PASS  VAL("12AB") = 12 (want 12)
+PASS  VAL("ABC") = 0 (want 0)
+PASS  VAL("30000") = 30000 (want 30000)
+# --- CHR$ / STR$ (number -> string) ---
+PASS  CHR$(65) = b'A' (want b'A') CF=1
+PASS  CHR$(90) = b'Z' (want b'Z') CF=1
+PASS  STR$(5) = b' 5' (want b' 5') CF=1
+PASS  STR$(-3) = b'-3' (want b'-3') CF=1
+PASS  STR$(0) = b' 0' (want b' 0') CF=1
+PASS  STR$(12345) = b' 12345' (want b' 12345') CF=1
+# --- LEFT$ / RIGHT$ / MID$ (substring) ---
+PASS  LEFT$("HELLO",3) = b'HEL' (want b'HEL') CF=1
+PASS  LEFT$("HI",9) = b'HI' (want b'HI') CF=1
+PASS  LEFT$("HI",0) = b'' (want b'') CF=1
+PASS  RIGHT$("HELLO",2) = b'LO' (want b'LO') CF=1
+PASS  RIGHT$("HI",9) = b'HI' (want b'HI') CF=1
+PASS  RIGHT$("HELLO",0) = b'' (want b'') CF=1
+PASS  MID$("HELLO",2,3) = b'ELL' (want b'ELL') CF=1
+PASS  MID$("HELLO",2) = b'ELLO' (want b'ELLO') CF=1
+PASS  MID$("HELLO",3,99) = b'LLO' (want b'LLO') CF=1
+PASS  MID$("HELLO",9,2) = b'' (want b'') CF=1
+PASS  MID$("HELLO",1,2) = b'HE' (want b'HE') CF=1
+# --- composition (verbs + concat, the ring under pressure) ---
+PASS  LEFT$(A$+B$,3)  (spec nest) = b'HEL' (want b'HEL') CF=1
+PASS  "X"+CHR$(89)+"Z" = b'XYZ' (want b'XYZ') CF=1
+PASS  "N="+STR$(5) = b'N= 5' (want b'N= 5') CF=1
+PASS  MID$("ABCDEF",2,3)+"!" = b'BCD!' (want b'BCD!') CF=1
+PASS  LEN(LEFT$("HELLO",3)) = 3 (want 3)
+
+ALL PASS — string engine S4 (verbs)

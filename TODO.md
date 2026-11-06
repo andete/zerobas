@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15510 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15518 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15510 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15518 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11078,6 +11078,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and the store. ➡️ The lever to try first: answer "already a temp" on the MAIN side
       (the temp-descriptor stack's address range) before crossing; then whether a literal
       needs its snapshot at all.
+      ✅ **ROUND 1 (2026-11-06): the temp test on the main side.** str_snapshot_keep
+      (basic/str-engine.asm) answers a source that is ALREADY a temp entry ([TEMPPOOL,
+      TEMPBASE), the tenant's own sh_hl_is_temp test) without the crossing -- op 16's as-is
+      arm (HL = the source, A = 0, Z). Model 19743 -> 18050 T/pass, 4 -> 3 crossings; the
+      machine row `c.str` **153 -> 141 jiffies (CF-3300 122, 1.25x -> 1.16x)** (🔮 ~141 HIT;
+      [`interpspeed_concat.out`](scratchpad/interpspeed_concat.out)), the other six rows within
+      a jiffy. tests/test_str_engine / str_fn / str_verbs / strvar / str_compare green.
+      ➡️ NEXT: the first literal's snapshot (a heap temp copy of "AB" so `+` can extend it).
 
 - [x] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**

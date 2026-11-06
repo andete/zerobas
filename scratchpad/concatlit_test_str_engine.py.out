@@ -1,0 +1,15 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# repack build: STRMAX=255, temp stack [0xf67a,0xf698)
+PASS  STRMAX widened to 255 in the repack build
+PASS  "AB"+"CD": CF=1 len=4 bytes=b'ABCD' @temp
+PASS  "A"+"B"+"C": CF=1 len=3 bytes=b'ABC' @temp
+PASS  A$+B$+C$ (HE+LL+O): CF=1 len=5 bytes=b'HELLO' @temp
+PASS  A$+"!": CF=1 len=3 bytes=b'HI!' @temp
+PASS  "XY" (single operand): CF=1 len=2 bytes=b'XY' @RVDESC
+PASS  200+200 raises String too long (no clamp): CF=1 len=200 FPERR=13 (want 13) R-intact=True
+PASS  exactly 255 chars is LEGAL: CF=1 len=255 FPERR=0 (want 0)
+PASS  ""+"Z": CF=1 len=1 bytes=b'Z' @temp
+PASS  "Z"+"": CF=1 len=1 bytes=b'Z' @temp
+PASS  A$+A$+A$+A$+A$+A$: CF=1 len=12 bytes=b'XXXXXXXXXXXX' @temp
+
+ALL PASS — string engine S3 (+ concat)
