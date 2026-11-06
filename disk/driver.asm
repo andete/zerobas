@@ -327,6 +327,23 @@ fdc_st_loop:
 dsl_text_1:     db      "Insert diskette for drive ",0
 dsl_text_2:     db      ":",13,10,"and strike a key when ready"
 dsl_text_nl:    db      13,10,0
+; 📍 D-COPYALL (2026-11-06): MOVED HERE from the $5602..$5E10 fill, which COPY's
+; every-match walk outgrew by 56 B; entered only by call / jp, so it can live
+; in any hole.
+; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B -- or, since S10.D,
+; a RANDOM one, and since S10.C an INPUT one (the same FCB row): its name is the
+; FCB's +1..11, no sector to read. CF=1 a match.
+hoc_dout:
+                push    bc
+                ld      a, b
+                call    dout_row
+                inc     hl                  ; the FCB's name
+                ld      de, DISK_FCB_NAME
+                call    hoc_cmp             ; Z = it matches the pattern, CASE KEPT
+                pop     bc
+                scf
+                ret     z
+                jp      hoc_next
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
 ; dta_put -- store A at (RDBLK_DST) and advance it: the block reads' one store.
@@ -531,6 +548,24 @@ bdos_seqread:
 ; address pinned black-box (ret=$D88A dispatcher class, DE=IY=$DA40 kernel FCB
 ; pointer). bsr_have is NOT itself a canonical address (only $4558/$456F are);
 ; shifting it by 2 bytes here is safe (M15 SS7.3 free-fall convention).
+; 📍 D-COPYALL (2026-11-06): MOVED HERE from the $5602..$5E10 fill, which COPY's
+; every-match walk outgrew by 56 B; entered only by call / jp, so it can live
+; in any hole.
+; --- hk_ochk: OPEN's same-file check (D-OPENSAME, FOPEN_SEL_OCHK) ----------
+; The CF-3300 refuses a second OPEN of one file with `File already open` (54)
+; in every mode -- OUTPUT, INPUT, RANDOM, APPEND-then-INPUT -- and the refused
+; OPEN leaves the first channel's data intact (scratchpad/opensame_before.out,
+; oracle). Main asks before it claims the channel: DISKOP_STATUS non-zero back
+; means "open elsewhere". The walk is hkk_open_check, the one KILL / NAME /
+; COPY already use (Joost's rule 3: no private copy). A mount failure answers
+; 0 -- say nothing -- so OPEN's own path meets and reports the same drive.
+hk_ochk:
+                call    fat_mount           ; LOCAL, for hkk_open_check's reads
+                ld      a,0                 ; (flags kept)
+                jp      c,hdl_answer        ; no mount: nothing to say
+                call    hkk_open_check      ; CF=1: an open file matches
+                sbc     a,a                 ; $FF open / 0 not
+                jp      hdl_answer          ; stores it, disarms, claims
                 ds      $456F - $, $00      ; pad up to the pinned $456F FCLOSE-finaliser entry
 k_456F:
                 jp      bdos_close          ; $456F: BDOS $10 FCLOSE canonical entry (M24 slice A)

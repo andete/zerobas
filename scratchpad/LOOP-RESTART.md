@@ -19,6 +19,7 @@ session and the loop resumes exactly where it stopped.
 |---|---|---|
 | FAT buffer in RAM | *"yes, go for the 1.5 KB FAT buffer, if reference does it, so should we"* | the disk build keeps the WHOLE FAT resident (1.5 KB, as the CF-3300's kernel does at `$E595`: one 3-sector DSKIO on the first search, chains followed from RAM) -- LOAD / PUT / file reads stop re-reading FAT sectors; written back on flush; dropped on a media change |
 | COPY TO, 2+ matches | *"we first need to get clarity before we make a decision. When you get back to that, feel free to use a fable agent to explore the issue."* | D-COPYWILD stays 5 for now; WHEN picked up, a Fable agent measures the multi-match cases on the CF-3300 (fixture files copy, fresh files / ON ERROR gave no reading) -- clarity first, then the ruling |
+| COPY TO, 2+ matches (RULED) | *"b, copy every match like the reference"* | D-COPYALL: after the Fable agent's 30-case measurement (copymulti_run1..4.out) every match is copied by a live directory walk, trailing self-copy 5 included -- SHIPPED 2026-11-06 |
 | gate tiers | *"Note that that is costing precious time to make actual progress."* | run the tier `make gates-plan` picks, no habitual HANDOFF=1; FULL only for code every program runs, the 5th commit, a real hand-off (memory full-battery-is-expensive-use-the-planned-tier) |
 
 ## 🟢 STATE AS OF 2026-11-06 — THE CURRENT ONE

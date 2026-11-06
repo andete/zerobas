@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `COPY` — copy a file on the disk
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: a wildcard that matches several files (below).
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓.
+> No recorded difference since 2026-11-06 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -17,8 +17,8 @@ SPDX-License-Identifier: 0BSD
 `COPY "source" TO "destination"` makes a byte-for-byte copy of a file on the
 disk, under a new name. It is a Disk BASIC statement: the reference is the
 National CF-3300. zerobas copies the same bytes, gives the copy the same name
-and date, and raises the same errors in every case we have measured, except
-one wildcard case that is a deliberate decision.
+and date, and raises the same errors in every case we have measured,
+wildcards that match several files included.
 
 ## Syntax
 
@@ -39,8 +39,20 @@ the wildcards `?` and `*`; so may the destination.
   current date.
 - **A `?` in the destination is filled from the source's name**, even when the
   source has no wildcard: `COPY "HI.TXT" TO "X?.TXT"` makes `XI.TXT`.
-- **A wildcard source that matches exactly one file** copies that file:
-  `COPY "HI.*" TO "H2.*"` makes `H2.TXT`.
+- **A wildcard source copies every file it matches**, one after another in
+  the order of the disk's directory: `COPY "*.BIN" TO "*.BAK"` makes
+  `TEST.BAK` and `PROG.BAK`. Each destination name is built from the source's:
+  a fixed character stays, `?` takes the source's character at that place and
+  `*` the rest of the name or extension. A `?` in the source also matches a
+  blank place, so `PROG?.BAS` finds `PROG.BAS` too.
+- **A plain destination is written once per match**, so after
+  `COPY "*.BAS" TO "Z.TXT"` it holds the last file copied.
+- **The directory is read as it changes.** A copy that the pattern also
+  matches is met again later, and copying it onto itself is
+  `Illegal function call` (error 5) — after every real copy is made:
+  `COPY "*.BAS" TO "Z.BAS"` copies three files into `Z.BAS` and then stops
+  with error 5. If the copy lands in an earlier free place in the directory
+  (after a `KILL`), it is not met again and there is no error.
 - **The rest of the line runs** after `COPY`: `COPY "A" TO "B":PRINT "done"`.
 - **Without a disk system** (a diskless MSX such as the VG-8020) `COPY` is
   `Illegal function call` (error 5).
@@ -53,7 +65,7 @@ the wildcards `?` and `*`; so may the destination.
 | a wildcard source matches nothing | 53 `File not found` |
 | copying a file onto itself | 5 `Illegal function call` |
 | no `TO` part (`COPY "HI.TXT"`) | 5 `Illegal function call` — but 53 if the source does not exist either, because the source is looked up first |
-| a wildcard source matches two or more files | 5 `Illegal function call` (see *Differences*) |
+| a wildcard copy meets a file it has just made, whose name the source matches | 5 `Illegal function call`, after the other copies |
 | the source or the destination is open (`OPEN`), under the same spelling | 64 `File still open` |
 | a number instead of a name (`COPY 5 TO "B"`) | 13 `Type mismatch` |
 | no disk in the drive | 70 `Disk offline` |
@@ -90,17 +102,26 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A wildcard source that matches two or more files is always error 5 here.**
-On the CF-3300 the result is not consistent: copying `*.BAS` to a plain name
-is error 5, `PROG*.BAS` to `Q*.BAS` over the disk's own files returns without
-an error, and with two freshly written files, or inside an `ON ERROR`
-program, the machine never comes back. Why those cases differ has not been
-measured, and what the CF-3300 writes when it does return has not been read
-back. Joost ruled on 2026-10-09: *"stay error 5 for now"*.
+None recorded. The one that stood until 2026-11-06 is under *What we found*.
 
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
+
+- **A wildcard that matched several files was always error 5** (fixed
+  2026-11-06, D-COPYALL). It had been left that way on purpose, because the
+  CF-3300 seemed inconsistent: some cases returned, some never did. A careful
+  measurement of 30 cases showed it was consistent all along. It copies every
+  match, and the cases that "never came back" had simply not finished when our
+  probe looked, 8 seconds after `RUN`. The error 5 it sometimes gives comes at
+  the end, when the copying meets its own new file. Joost then ruled: *"copy
+  every match like the reference"*. zerobas now gives the same files and the
+  same messages in 28 of the 29 cases; the 29th differs only in how the
+  screen scrolled
+  ([`copymulti_probe.py`](../../scratchpad/copymulti_probe.py),
+  [`copymulti_run1.out`](../../scratchpad/copymulti_run1.out),
+  [`copyall_zb.out`](../../scratchpad/copyall_zb.out),
+  [`copyall_cmp.out`](../../scratchpad/copyall_cmp.out)).
 
 - **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
   2026-10-27 for an exact match that costs no more memory than the reference).
@@ -133,8 +154,8 @@ The one rung not yet proven is **RAM usage**.
   `?` in the destination is filled from the source even when the source is a
   plain name. zerobas had made a file literally named `H?.TXT`. On the same day
   an early claim that "two or more matches never complete" turned out to be
-  partly our probe reading its own typed text; the corrected picture is the
-  one under *Differences*.
+  partly our probe reading its own typed text; the whole picture came on
+  2026-11-06 (the first entry above).
 - **`COPY` without `TO` on a missing file was 5, not 53** (fixed 2026-09-29,
   D-NOASTO): the CF-3300 looks the source up before it notices the missing
   `TO`.
@@ -147,7 +168,7 @@ The one rung not yet proven is **RAM usage**.
   statement to the disk ROM through the `H_COPY` hook and turns its answer into
   a BASIC error.
 - Disk ROM, [disk/kernel.asm](../../disk/kernel.asm): `hk_copy` reads the two
-  names and checks for open files; `hkc_resolve` counts wildcard matches;
+  names and checks for open files; `hkc_resolve` walks the directory and copies every wildcard match;
   `hkc_body` does the copy, sector by sector.
 - The 2026-09-11 design notes are in
   [spec-basic-copy.md](../spec-basic-copy.md); where they disagree with this
@@ -160,7 +181,8 @@ The one rung not yet proven is **RAM usage**.
 ## Tests that cover it
 
 - `make copy-acceptance` — plain, overwrite, large, blanks, string-variable
-  and wildcard copies, each copy's bytes read back from the disk image.
+  and wildcard copies, several matches included, each copy's bytes read back
+  from the disk image.
 - `make kwsweep` — the everyday row and the error rows (13, 53, 64).
 - `make nodisk-acceptance` — error 5 on a diskless machine.
 - `make kwram` — the RAM-usage comparison.

@@ -22,6 +22,14 @@ wrote nothing, or wrote the wrong clusters, cannot pass.
     c.wmid    COPY"T?ST.BIN"TO"T3.BIN"       T3.BIN == TEST.BIN
     c.wnone   COPY"Z*.TXT"TO"C*.TXT"         -> ERR 53
     c.fill    COPY"TEST.BIN"TO"X???.BIN"     XEST.BIN == TEST.BIN
+  D-COPYALL (2026-11-06, Joost: "copy every match like the reference"): TWO OR MORE
+  matches copy EVERY match, walking the directory live (scratchpad/copymulti_run1..4.out,
+  30 cases on the CF-3300). c.wild's ERR 5 is the walk meeting its own Z.BAS -- a
+  self-copy -- AFTER three copies, so it now also checks Z.BAS == PROG3.BAS (the last):
+    c.wmany   COPY"*.BIN"TO"*.BAK"           TEST.BAK == TEST.BIN and PROG.BAK == PROG.BIN
+    c.wplain  COPY"*.BAS"TO"Z.TXT"           Z.TXT == PROG3.BAS (rewritten per match, last wins)
+    c.wslot   KILL"HI.TXT":COPY"*.BAS"TO"Z.BAS"  OK, no error: Z.BAS takes the freed slot
+              BEFORE the walk's cursor and is never revisited; Z.BAS == PROG3.BAS
 Faces and contents were measured on the CF-3300 first (scratchpad/copyverb_probe.py
 and the 2026-09-11 rows in the spec); --survey shows that column.
 """
@@ -58,16 +66,21 @@ CASES = [
     ("c.var",     ['15 A$="PROG.BAS":B$="N3.BAS"', '20 COPY A$ TO B$', '30 PRINT"[c.var OK]":END'],       ("N3      BAS", "PROG    BAS")),
     ("c.missing", ['20 COPY"NOPE.BAS"TO"NEW.BAS"', '30 PRINT"[c.missing OK]":END'],                     None),
     ("c.self",    ['20 COPY"PROG.BAS"TO"PROG.BAS"', '30 PRINT"[c.self OK]":END'],                       ("PROG    BAS", "PROG    BAS")),
-    ("c.wild",    ['20 COPY"*.BAS"TO"Z.BAS"', '30 PRINT"[c.wild OK]":END'],                             None),
+    ("c.wild",    ['20 COPY"*.BAS"TO"Z.BAS"', '30 PRINT"[c.wild OK]":END'],                             ("Z       BAS", "PROG3   BAS")),
     ("c.nodest",  ['20 COPY"PROG.BAS"', '30 PRINT"[c.nodest OK]":END'],                                 None),
     ("c.wild1",   ['20 COPY"HI.*"TO"H2.*"', '30 PRINT"[c.wild1 OK]":END'],                              ("H2      TXT", "HI      TXT")),
     ("c.wmid",    ['20 COPY"T?ST.BIN"TO"T3.BIN"', '30 PRINT"[c.wmid OK]":END'],                         ("T3      BIN", "TEST    BIN")),
     ("c.wnone",   ['20 COPY"Z*.TXT"TO"C*.TXT"', '30 PRINT"[c.wnone OK]":END'],                          None),
     ("c.fill",    ['20 COPY"TEST.BIN"TO"X???.BIN"', '30 PRINT"[c.fill OK]":END'],                       ("XEST    BIN", "TEST    BIN")),
+    ("c.wmany",   ['20 COPY"*.BIN"TO"*.BAK"', '30 PRINT"[c.wmany OK]":END'],
+                  [("TEST    BAK", "TEST    BIN"), ("PROG    BAK", "PROG    BIN")]),
+    ("c.wplain",  ['20 COPY"*.BAS"TO"Z.TXT"', '30 PRINT"[c.wplain OK]":END'],                       ("Z       TXT", "PROG3   BAS")),
+    ("c.wslot",   ['20 KILL"HI.TXT":COPY"*.BAS"TO"Z.BAS"', '30 PRINT"[c.wslot OK]":END'],           ("Z       BAS", "PROG3   BAS")),
 ]
 EXPECT = {"c.plain": "OK", "c.big": "OK", "c.exist": "OK", "c.var": "OK",
           "c.missing": "ERR 53", "c.self": "ERR 5", "c.wild": "ERR 5", "c.nodest": "ERR 5",
-          "c.wild1": "OK", "c.wmid": "OK", "c.wnone": "ERR 53", "c.fill": "OK"}
+          "c.wild1": "OK", "c.wmid": "OK", "c.wnone": "ERR 53", "c.fill": "OK",
+          "c.wmany": "OK", "c.wplain": "OK", "c.wslot": "OK"}
 
 def fence(tag, cap):
     """The printed `[tag ...]`, never the typed echo (an echo carries `";`)."""
@@ -89,10 +102,14 @@ def read(side, cfg):
                                   reset=cfg["reset"], diska=probe_sides.diska(side, dsk), run_gap=45.0)[0]
         faces[tag] = fence(tag, cap)
         if chk:
-            dst, src = chk
             img = open(dsk, "rb").read()
-            got, want = fat12_read(img, dst), fat12_read(fixture, src)
-            files[tag] = (got == want and got is not None, len(got) if got is not None else None, len(want))
+            same, ns, ms = True, [], []
+            for dst, src in (chk if isinstance(chk, list) else [chk]):
+                got, want = fat12_read(img, dst), fat12_read(fixture, src)
+                same = same and got is not None and got == want
+                ns.append(len(got) if got is not None else None); ms.append(len(want))
+            n1 = ns[0] if len(ns) == 1 else ns
+            files[tag] = (same, n1, ms[0] if len(ms) == 1 else ms)
     return faces, files
 
 def main() -> int:

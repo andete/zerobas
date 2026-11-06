@@ -293,8 +293,10 @@ def main():
     ap.add_argument("--dense", action="store_true", help="observe every 0.5 s for the first 30 s")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("-v", action="store_true")
+    ap.add_argument("--machine", default="National_CF-3300", help="D-COPYALL: e.g. C-BIOS_MSX1_EU_REPACK_DISK for zerobas")
     ap.add_argument("cases", nargs="*")
     a = ap.parse_args()
+    globals()["MACHINE"] = a.machine
     if a.list:
         for k, v in CASES.items():
             print(f"{k:16} {v}")

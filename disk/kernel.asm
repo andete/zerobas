@@ -328,6 +328,16 @@ snext:
 ; RDABS/M26-style, no relocation needed. Body = fsize_body (free tail): a real
 ; GET FILE SIZE (fat_mount + fat_find, ceil(size/128) -> copy+33..35); the prior
 ; stub returned a constant A=L=$03 for every input and never searched at all.
+; 📍 D-COPYALL (2026-11-06): MOVED HERE from the $5602..$5E10 fill, which COPY's
+; every-match walk outgrew by 56 B; entered only by call / jp, so it can live
+; in any hole.
+; hkc_body's result tails (A = hk_copy's status).
+hkc_io:         ld      a,2                 ; mount / full / I-O -> load_error
+                ret
+hkc_ill:        ld      a,3                 ; refused -> ERR 5
+                ret
+hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
+                ret
                 ds      $501E - $, $00  ; pad up to the pinned $501E FSIZE entry (M28)
 k_501E:
                 jp      fsize_body      ; $501E: BDOS $23 FSIZE canonical entry (M28)
@@ -1532,6 +1542,18 @@ k_55DB:
                 ds      $55E6 - $, $00  ; pad up to the pinned $55E6 STIME entry (M22a)
 k_55E6:
                 jp      stime_body      ; $55E6: BDOS $2D STIME canonical entry (M22a)
+; 📍 D-COPYALL (2026-11-06): MOVED HERE from the $5602..$5E10 fill, which COPY's
+; every-match walk outgrew by 56 B; entered only by call / jp, so it can live
+; in any hole.
+; dout_row -- A = channel -> HL = its engine row. Clobbers A, DE.
+dout_row:
+                ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
+                ld      de, FCH_STATESZ
+drw_lp:
+                add     hl, de
+                dec     a
+                jr      nz, drw_lp
+                ret
                 ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
 k_55FF:
                 jp      verify_body     ; $55FF: BDOS $2E VERIFY canonical entry (M22a)
@@ -1706,8 +1728,10 @@ fmg_ovf:
 ;   out: A = 0 source not found (ERR 53) / 1 copied / 2 mount, full or I-O
 ;        (load_error) / 3 refused (ERR 5)
 ;
-; The order is forced and each step says by what: mount; refuse a self-copy and a
-; wildcard source (both measured, both ERR 5); `fat_find` the SOURCE FIRST --
+; The order is forced and each step says by what: mount; hand a wildcard source
+; to hkc_resolve, which runs this same path once per match (D-COPYALL; it used
+; to be refused with ERR 5); refuse a self-copy (measured, ERR 5); `fat_find`
+; the SOURCE FIRST --
 ; it records the entry location in FWR_DIRSEC/FWR_DIROFF, which the destination's
 ; create must own afterwards -- and stash its first cluster and size, because the
 ; destination's delete and create clobber FAT_FIRSTCLUS/FAT_FILESIZE through
@@ -1725,9 +1749,12 @@ hkc_body:
                 jp      c,hkc_io            ; A = 2
                 ; 🟢 D-COPYWILD (2026-09-28): a '?' SOURCE is RESOLVED, no longer
                 ; refused. Measured on the CF-3300 (scratchpad/copywild_run6.out):
-                ; ONE match copies (`A1.*` / `A1.T?T`), NO match is 53. Two or more
-                ; stay ERR 5 -- the reference never returns there, and what to do
-                ; instead is Joost's ruling (TODO D-COPYWILD).
+                ; ONE match copies (`A1.*` / `A1.T?T`), NO match is 53.
+                ; 🟢 D-COPYALL (2026-11-06, Joost: "copy every match like the
+                ; reference"): two or more copy EVERY match -- hkc_resolve walks the
+                ; directory live (scratchpad/copymulti_run1..4.out). The old line here
+                ; said "the reference never returns there"; it did, ~10 s later, and
+                ; the probe had stopped looking at 8 s.
                 ld      hl,COPY_SRC
                 ld      b,11
 hkc_wild:       ld      a,(hl)
@@ -1847,99 +1874,128 @@ hkc_fin:        call    fat_dir_update      ; true size + first cluster
                 jp      c,hkc_io
                 ld      a,1                 ; copied
                 ret
-hkc_io:         ld      a,2                 ; mount / full / I-O -> load_error
-                ret
-hkc_ill:        ld      a,3                 ; refused -> ERR 5
-                ret
-hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
-                ret
 
-; hkc_resolve -- D-COPYWILD: COUNT the root entries the '?' source matches
-; (fat_find's own walk and name_cmp, which honours '?'), then:
-;   0 -> hkc_nf (53) / 2+ -> hkc_ill (5, pending Joost) / exactly 1 -> the real
-;   name replaces the pattern in COPY_SRC and the copy goes on at hkc_fill.
-; The count lives in COPY_LEFT, COPY's own cell, which hkc_body sets only AFTER
-; this returns; the one match is fetched again with fat_find, whose HL is the
-; entry on return -- so no scratch RAM is added.
+; hkc_resolve -- D-COPYALL (2026-11-06): copy EVERY root entry the '?' source
+; matches, the way the CF-3300 does (scratchpad/copymulti_run1..4.out, Fable
+; agent, 30 cases; Joost's ruling of the same day). The reference walks the root
+; directory in slot order and copies each match through the ordinary one-file
+; path; the walk is LIVE, so a destination appended AFTER the cursor is visited
+; again, and when its name also matches the source pattern the per-position fill
+; maps it onto itself -- the self-copy refusal, `Illegal function call`, AFTER
+; every real copy (`*.BAS` -> `Z.BAS`, `*.*` -> `N*.*`). A destination that lands
+; in a freed slot BEFORE the cursor is never revisited and the same statement
+; ends without an error (copymulti_run4.out sm_slot). Both fall out of this walk
+; with no special case: it re-reads the directory from the top after each copy
+; and takes the first match at or after `next`.
+; No new RAM: the two patterns, the cursor and the found flag live in a 24-byte
+; frame on the stack for the length of the statement.
+;   frame +0..10 the source pattern, +11..21 the destination pattern (as typed,
+;   restored before each copy: hkc_fill fills it in place), +22 next slot, +23 1
+;   once anything matched (0 at the end -> 53, A = 0).
+; Out (to hk_copy, via the frame-freeing ret): A = 0 no match / 1 all copied /
+; 2 mount, full or I-O / 3 refused (ERR 5) -- hkc_body's own contract.
 ; 📍 SITED IN THE $5602..$5FE4 FILL, not beside hkc_body: the tail region after
 ; runtime.asm reached the ROM's end with D-NOASTO (an empty disk.rom), and code
-; placed above `ds $5FE5 - $` shifts nothing downstream. Entered by `jp`,
-; left by `jp`, so it can live anywhere.
+; placed above `ds $5FE5 - $` shifts nothing downstream. Entered by `jp`, so it
+; returns straight to hkc_body's caller.
 hkc_resolve:
+                ld      hl,-24
+                add     hl,sp
+                ld      sp,hl               ; SP = the frame
+                ex      de,hl
+                ld      hl,COPY_SRC
+                ld      bc,11
+                ldir                        ; +0: the source pattern
+                ld      hl,DISK_FCB_NAME
+                ld      c,11
+                ldir                        ; +11: the destination pattern
                 xor     a
-                ld      (COPY_LEFT),a       ; the match count
-                call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
-hkr_sec:        ld      hl,(FAT_DIRREM)
+                ld      (de),a              ; +22: next slot = 0
+                inc     de
+                ld      (de),a              ; +23: nothing matched yet
+hkm_walk:       call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
+                ld      c,0                 ; C = the slot index of HL's entry
+hkm_sec:        ld      hl,(FAT_DIRREM)
                 ld      a,h
                 or      l
-                jr      z,hkr_end           ; every root sector scanned
+                jp      z,hkm_end           ; every root sector scanned
+                push    bc
                 ld      de,(FAT_DIRSEC)
                 ld      hl,FAT_DBUF
                 call    read_sector
-                jp      c,hkc_io
+                pop     bc
+                jr      c,hkm_io
                 ld      hl,FAT_DBUF
                 ld      b,16                ; 512 / 32 entries per sector
-hkr_ent:        ld      a,(hl)
+hkm_ent:        ld      a,(hl)
                 or      a
-                jr      z,hkr_end           ; $00 = end of directory
+                jp      z,hkm_end           ; $00 = end of directory
                 cp      $E5
-                jr      z,hkr_next          ; deleted entry
+                jr      z,hkm_next          ; deleted entry
                 push    hl
-                ld      de,11
-                add     hl,de
-                ld      a,(hl)              ; attribute byte (+11)
+                ld      hl,22+2             ; frame +22, past the pushed HL
+                add     hl,sp
+                ld      a,c
+                cp      (hl)
                 pop     hl
-                and     $18                 ; volume label / directory: skip
-                jr      nz,hkr_next
+                jr      c,hkm_next          ; before the cursor: already visited
                 push    bc
                 push    hl
-                ld      de,COPY_SRC
-                call    name_cmp            ; trashes A, BC, DE, HL
+                ld      hl,4                ; the frame, past BC and HL
+                add     hl,sp
+                ex      de,hl               ; DE = the source pattern
                 pop     hl
-                pop     bc
-                jr      nz,hkr_next
-                ld      a,(COPY_LEFT)
-                inc     a
-                ld      (COPY_LEFT),a
-hkr_next:       ld      de,32
+                push    hl
+                call    name_cmp            ; trashes A, BC, DE, HL
+                ld      a,(hl)              ; on a MATCH name_cmp has walked all 11
+                pop     hl                  ; bytes: HL = the attribute (+11); the
+                pop     bc                  ; flags are name_cmp's
+                jr      nz,hkm_next
+                and     $18                 ; volume label / directory: skip
+                jr      z,hkm_hit
+hkm_next:       ld      de,32
                 add     hl,de
-                djnz    hkr_ent
+                inc     c
+                djnz    hkm_ent
                 ld      hl,(FAT_DIRSEC)
                 inc     hl
                 ld      (FAT_DIRSEC),hl
                 ld      hl,(FAT_DIRREM)
                 dec     hl
                 ld      (FAT_DIRREM),hl
-                jr      hkr_sec
-hkr_end:        ld      a,(COPY_LEFT)
-                or      a
-                jp      z,hkc_nf            ; no match -> 53
-                dec     a
-                jp      nz,hkc_ill          ; two or more -> 5
-                ld      hl,COPY_SRC
-                call    fat_find            ; the one match; HL = its entry
-                jp      c,hkc_io
+                jr      hkm_sec
+hkm_hit:        ld      a,c                 ; SP = the frame again
+                inc     a
+                push    hl
+                ld      hl,22+2
+                add     hl,sp
+                ld      (hl),a              ; next = this slot + 1
+                inc     hl
+                ld      (hl),1              ; something matched
+                pop     hl
                 ld      de,COPY_SRC
                 ld      bc,11
-                ldir                        ; its real name replaces the pattern
-                jp      hkc_fill
+                ldir                        ; the entry's real name is the source
+                ld      hl,11
+                add     hl,sp
+                ld      de,DISK_FCB_NAME
+                ld      c,11                ; (B = 0 after the ldir)
+                ldir                        ; the destination pattern, afresh
+                call    hkc_fill            ; ONE copy: A = 1 ok / 2 / 3 / 0
+                dec     a
+                jp      z,hkm_walk          ; copied: on from the next slot
+                inc     a
+                jr      hkm_out             ; the first failure ends the statement
+hkm_io:         ld      a,2
+                jr      hkm_out
+hkm_end:        ld      hl,23
+                add     hl,sp
+                ld      a,(hl)              ; 1 = copied, 0 = no match -> 53
+hkm_out:        ld      hl,24
+                add     hl,sp
+                ld      sp,hl               ; free the frame (A, flags aside, kept)
+                ret
 
-; --- hk_ochk: OPEN's same-file check (D-OPENSAME, FOPEN_SEL_OCHK) ----------
-; The CF-3300 refuses a second OPEN of one file with `File already open` (54)
-; in every mode -- OUTPUT, INPUT, RANDOM, APPEND-then-INPUT -- and the refused
-; OPEN leaves the first channel's data intact (scratchpad/opensame_before.out,
-; oracle). Main asks before it claims the channel: DISKOP_STATUS non-zero back
-; means "open elsewhere". The walk is hkk_open_check, the one KILL / NAME /
-; COPY already use (Joost's rule 3: no private copy). A mount failure answers
-; 0 -- say nothing -- so OPEN's own path meets and reports the same drive.
-; 📍 In the $5602..$5FE4 fill for hkc_resolve's reason; entered by `jp`.
-hk_ochk:
-                call    fat_mount           ; LOCAL, for hkk_open_check's reads
-                ld      a,0                 ; (flags kept)
-                jp      c,hdl_answer        ; no mount: nothing to say
-                call    hkk_open_check      ; CF=1: an open file matches
-                sbc     a,a                 ; $FF open / 0 not
-                jp      hdl_answer          ; stores it, disarms, claims
 
 ; close_read -- FCLOSE of a file opened by FOPEN (D-CLOSESTAMP, 2026-10-01). Here,
 ; in the hole before the $5FE5 pin, because the one after $75A5 is full. The
@@ -2041,15 +2097,6 @@ DOUT_DIROFF     equ     DOUT_FLG+8      ; and its offset in it
 ; ops a statement were the cause (TODO S10.B). Safe: the ISR is page 0's, and
 ; htimi_guard skips main's timer work while page 1 is not main.
 
-; dout_row -- A = channel -> HL = its engine row. Clobbers A, DE.
-dout_row:
-                ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
-                ld      de, FCH_STATESZ
-drw_lp:
-                add     hl, de
-                dec     a
-                jr      nz, drw_lp
-                ret
 
 ; dout_live -- IX = the live channel's row. Clobbers A, DE, HL.
 dout_live:
@@ -2695,20 +2742,6 @@ wfs_geom:
                 ret
 
 
-; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B -- or, since S10.D,
-; a RANDOM one, and since S10.C an INPUT one (the same FCB row): its name is the
-; FCB's +1..11, no sector to read. CF=1 a match.
-hoc_dout:
-                push    bc
-                ld      a, b
-                call    dout_row
-                inc     hl                  ; the FCB's name
-                ld      de, DISK_FCB_NAME
-                call    hoc_cmp             ; Z = it matches the pattern, CASE KEPT
-                pop     bc
-                scf
-                ret     z
-                jp      hoc_next
 
 ; ===== S10.D (2026-10-15): a RANDOM channel is the same FCB row, and its record
 ; I/O runs HERE ==============================================================

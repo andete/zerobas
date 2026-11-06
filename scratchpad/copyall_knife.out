@@ -1,0 +1,17 @@
+  ok   c.plain   zb='OK'       bytes=same(16/16)       want='OK'
+  ok   c.big     zb='OK'       bytes=same(2048/2048)   want='OK'
+  ok   c.exist   zb='OK'       bytes=same(26/26)       want='OK'
+  ok   c.var     zb='OK'       bytes=same(16/16)       want='OK'
+  ok   c.missing zb='ERR 53'                           want='ERR 53'
+  ok   c.self    zb='ERR 5'    bytes=same(16/16)       want='ERR 5'
+  DIFF c.wild    zb='ERR 5'    bytes=DIFFER(None/15)   want='ERR 5'
+  ok   c.nodest  zb='ERR 5'                            want='ERR 5'
+  ok   c.wild1   zb='OK'       bytes=same(26/26)       want='OK'
+  ok   c.wmid    zb='OK'       bytes=same(2048/2048)   want='OK'
+  ok   c.wnone   zb='ERR 53'                           want='ERR 53'
+  ok   c.fill    zb='OK'       bytes=same(2048/2048)   want='OK'
+  DIFF c.wmany   zb='ERR 5'    bytes=DIFFER([None, None]/[2048, 57]) want='OK'
+  DIFF c.wplain  zb='ERR 5'    bytes=DIFFER(None/15)   want='OK'
+  DIFF c.wslot   zb='ERR 5'    bytes=DIFFER(None/15)   want='OK'
+15 rows, 4 diverge: ['c.wild', 'c.wmany', 'c.wplain', 'c.wslot']
+refcache: 0 hit, 15 miss, 15 stored

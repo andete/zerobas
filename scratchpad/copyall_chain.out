@@ -1,0 +1,11 @@
+all=0
+allfn=0
+tape=0
+tiers=0
+ M docs/gapsweep-2026-08-21.md
+GATE TIER: SCOPED
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): disk/driver.asm disk/kernel.asm
+  why: probe/tool change: probes/disk/diskbasic_probe_copy.py scratchpad/copyall_cmp.py scratchpad/copymulti_probe.py
+rc=0
+GATES: 58/58 green
+GATE TIER RAN: SCOPED (7 emulator suites)

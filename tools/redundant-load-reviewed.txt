@@ -25,6 +25,7 @@
 #                    flag), so the load is the caller's first sight of (ptr).
 
 fch_modes_ptr    POINTER  returns HL = FCH_MODES + A; the load reads the mode byte
+name_cmp         POINTER  on a MATCH (Z) returns HL = the directory entry + 11, the attribute byte -- name_cmp walks all 11 name bytes; the load reads it (disk/kernel.asm hkc_resolve, D-COPYALL 2026-11-06)
 pu_deref_body    POINTER  returns HL = RVDESC / the body pointer it just built
 pnt_digstart     POINTER  returns HL = PU_NUM, or PU_NUM+1 past a `-` (sub/punum.asm); the load reads the first digit (2026-10-29, D-PUNEGLEAD)
 ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state

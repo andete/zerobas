@@ -1,0 +1,33 @@
+fx_prompt_star   SAME
+fx_prog_star     SAME
+fx_onerr_star    SAME
+fr_prompt_star   SAME
+fr_prog_star     SAME
+fr_onerr_star    SAME
+fr_split         SAME
+fx_prompt_plain  SAME
+fx_onerr_plain   SAME
+fx_prog_plain    SAME
+fr_prompt_plain  SAME
+fr_onerr_plain   SAME
+fx_prompt_quest  SAME
+fr_prompt_quest  SAME
+fr_onerr_quest   SAME
+fx_prompt_bin    SAME
+fx_prompt_all    SAME
+fr3_prompt_star  SAME
+fr_open_star     SAME
+fr_one_star      SAME
+fx_one_star      SAME
+sm_plain_other   SAME
+sm_grow          SAME
+sm_grow_onerr    NO REF
+sm_fresh_inside  SAME
+q_blank          SAME
+open_other       SAME
+sm_slot          SAME
+sm_slot_grow     SAME
+w_star_orig      DIFF dir=ok screen=X
+    ref: ['#1,"X1":CLOSE:OPEN "A2.TXT" FOR OUTPUT', 'AS #1:PRINT #1,"X2":CLOSE', '30 COPY "A*.TXT" TO "C*.TXT"', '40 OPEN "C1.TXT" FOR INPUT AS #1:INPUT', '#1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT AS', '#1:INPUT #1,B$:CLOSE:PRINT CHR$(91);"";', 'A$;"|";B$;"OK]":END', '90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;', '"]":END', 'RUN', '[X1|X2OK]']
+    zb : ['NT #1,"X1":CLOSE:OPEN "A2.TXT" FOR OU', 'TPUT AS #1:PRINT #1,"X2":CLOSE', '30 COPY "A*.TXT" TO "C*.TXT"', '40 OPEN "C1.TXT" FOR INPUT AS #1:INPU', 'T #1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT', 'AS #1:INPUT #1,B$:CLOSE:PRINT CHR$(9', '1);"";A$;"|";B$;"OK]":END', '90 PRINT CHR$(91);"";A$;"|";B$;ERR;ER', 'L;"]":END', 'RUN', '[X1|X2OK]']
+SAME 28 DIFF 1

@@ -17145,8 +17145,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       suspect (the row's `MAXFILES=2` clearing the screen before the capture
       window) is now the first.
 
-- [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
-      found 2026-09-28).**
+- [x] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
+      found 2026-09-28).** ✅ **CLOSED 2026-11-06 by D-COPYALL (below in this block).**
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
       ~~🙋 **NEEDS-JOOST**~~ — the autonomous half (one match, no match, the destination
       fill) SHIPPED 2026-09-28; ~~only the multi-match ruling (➡️ at the end) is left.~~
@@ -17178,8 +17178,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🙋 **THE RULING NOW HAS ITS FACTS (asked 2026-11-06):** (a) keep 5 for 2+ matches, or
       (b) copy every match like the CF-3300, including the live-walk trailing 5 when the
       destination matches the source pattern.
-      🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
-      multi-match case keeps raising 5; nothing autonomous is left. Re-opens only
+      🏗️ **RULED (Joost, 2026-11-06): *"b, copy every match like the reference"*.**
+      ✅ **D-COPYALL SHIPPED 2026-11-06.** `hkc_resolve` (disk/kernel.asm) walks the root
+      directory: the first match at or after a cursor gets its real name as the source, the
+      typed destination pattern is restored, and the ordinary one-file path (`hkc_fill`) copies
+      it; then the walk re-reads the directory from the top. Live, so the reference's trailing
+      self-copy 5 and the freed-slot no-error case fall out with no special case. No new RAM:
+      both patterns and the cursor live in a 24-byte stack frame. 📍 The `$5602..$5E10` fill
+      (pinned by D-DISKRUN) overflowed by 56 B -- disk.rom assembled EMPTY -- so `hk_ochk`,
+      `hoc_dout`, `dout_row` and COPY's three result tails moved into holes in driver.asm /
+      kernel.asm, and the walk tests the attribute byte where `name_cmp` leaves HL (-6 B);
+      disk.rom 262 -> 176 B free. 📏 All 30 of the agent's cases re-run on zerobas
+      ([`copyall_zb.out`](scratchpad/copyall_zb.out), compared by
+      [`copyall_cmp.py`](scratchpad/copyall_cmp.py) -> [`copyall_cmp.out`](scratchpad/copyall_cmp.out)):
+      28/29 SAME (directory, sizes, bytes and screen text), the 29th (`w_star_orig`) same files
+      and result, only scrolled one line further (the probe sets no WIDTH: 37 vs 39 columns);
+      🔮 predicted >= 28 with `sm_slot` the likeliest miss: HIT, and `sm_slot` agrees.
+      ✅ **GATED:** copy-acceptance rows `c.wmany` (`*.BIN` -> `*.BAK`, two copies), `c.wplain`
+      (`*.BAS` -> `Z.TXT` = PROG3), `c.wslot` (KILL first: no error) and a byte check on
+      `c.wild` (Z.BAS = PROG3 before the 5) -- 15/15 agree, the CF-3300 column too
+      ([`copyall_survey.out`](scratchpad/copyall_survey.out)). Knife: HEAD's kernel.asm +
+      driver.asm (disk ROM `9c4d9824` -> `7ee6b38b`, restored) turns exactly those four
+      DIVERGENT, and `c.wild`'s FACE stays OK under it -- only the byte check sees it
+      ([`copyall_knife.out`](scratchpad/copyall_knife.out)).
+      ~~🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
+      multi-match case keeps raising 5; nothing autonomous is left.~~ (superseded 2026-11-06) Re-opens only
       when Joost revisits it. 🅿️ Re-confirmed 2026-10-17: "copy to can remain parked".
       📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
