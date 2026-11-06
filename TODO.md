@@ -1317,6 +1317,24 @@ item — do **one item per session** to keep context lean.
       [`loadclock_after.out`](scratchpad/loadclock_after.out)) — inside T2's 10×.
       What is left here is S10.C (OPEN's channels into disk.rom), ruled *"defer
       to later"* on 2026-10-09, and the speed.
+      📏 **RE-MEASURED 2026-11-06** ([`loadclock_1106.out`](scratchpad/loadclock_1106.out)): 14 KB
+      **8.94 s here against the CF-3300's 2.94 s** (1 KB: 0.75 against 1.36 -- the fixed cost
+      is LOWER here; ~310 ms an extra sector against ~60). **WHERE IT GOES** -- every FDC
+      command stamped in emulated time ([`fdccmd_probe.py`](scratchpad/fdccmd_probe.py) ->
+      [`fdccmd_run.out`](scratchpad/fdccmd_run.out), a 14 KB program SAVEd then LOADed,
+      [`loadspeed_prog.bas`](scratchpad/loadspeed_prog.bas); and 1 ms PC samples,
+      [`loadspeed_pc.out`](scratchpad/loadspeed_pc.out): the time is in fdq_win /
+      frdw_poll, WAITING for sectors): (1) **LOAD re-reads FAT sector 2 before every
+      cluster** -- fat_next_cluster (basic/fat-prim-body.inc) reads the FAT sector into
+      FAT_DBUF on EVERY call, there is no read cache; 47 reads for a 29-sector file, ~20 of
+      them the same FAT sector, each a rotational wait. (2) **Adjacent data sectors land
+      ~113 ms apart** (one passes every ~22 ms): the processing between them misses the
+      next. (3) **SAVE rewrites BOTH FAT copies per cluster**, and a FAT sector written right
+      after it was read costs a full revolution (~200 ms) -- D-RECSLOW's class (W3b).
+      Every command is preceded by a seek-verify (1C), cheap (~1 ms) on the same track.
+      ➡️ NEXT: (1) a FAT READ cache in FAT_MBUF (tag, invalidated on mount / any FAT write /
+      a raw DSKO$), proved by a host rig that decodes the image itself (test_rand_extend's
+      shape); then (3); then (2).
       ~~🙋 **NEEDS-JOOST**~~ — a far better-posed question than before.
       MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
       §6.6r): two independent runs, every figure identical, three controls green.
@@ -7617,7 +7635,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10050 (T-6FE392)8 (T-529ABE)` from `TODO.md:15202 (T-529ABE)`: a
+      `TODO.md:10068 (T-6FE392)8 (T-529ABE)` from `TODO.md:15220 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10356,7 +10374,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15202 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

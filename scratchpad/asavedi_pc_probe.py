@@ -33,13 +33,15 @@ proc __samp {} {
   after time 0.001 __samp
 }
 after time 1 __samp
-set ::__stk %d""" % (dump, 1 if "--stack" in sys.argv else 0)).replace(
+set ::__stk %d
+set ::__all %d""" % (dump, 1 if "--stack" in sys.argv else 0, 1 if "--all" in sys.argv else 0)).replace(
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }""",
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }
-    if {$g > 0.15} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
+    if {$g > 0.15 || $::__all} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
     """  set ::__jt $t""", """  set ::__jt $t
   set ::__smp {}""")
-text = open(os.path.join(REPO, "probes", "programs", name + ".bas")).read()
+_pp = os.path.join(REPO, "probes", "programs", name + ".bas")
+text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()
 res = r.run(r.DISK_ZB[0], "asavedi", text, gaps=True)
 print(res[0])
 syms = []
@@ -72,6 +74,15 @@ for line in open(dump):
         f = line.split()
         pc, iff, a8, cl = f[:4]
         cur[1].append((int(pc, 16), int(iff), a8, cl, f[4:]))
+if "--all" in sys.argv:
+    every = [x for _, smp in gaps for x in smp]
+    by = collections.Counter(x[3] for x in every)
+    print("samples by CURLIN:", dict(by.most_common(6)))
+    want = [x for x in every if x[3] == "000A"]
+    print(f"\nLINE 10 (SAVE + LOAD): {len(want)} samples, IFF=0 in {sum(1 for x in want if x[1] == 0)}")
+    for (pc, a8), n in collections.Counter((x[0] & 0xFFF0, x[2]) for x in want).most_common(14):
+        print(f"  {n:5d}  PC ~{pc:04X}  A8={a8}  {names(pc)}")
+    sys.exit(0)
 for g, smp in gaps:
     di = sum(1 for s in smp if s[1] == 0)
     hist = collections.Counter((s[0] & 0xFFF0, s[2]) for s in smp)

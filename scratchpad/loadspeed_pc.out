@@ -1,0 +1,18 @@
+ENDED t=206.8 gaps=51 max=0.037
+samples by CURLIN: {'000A': 21206}
+
+LINE 10 (SAVE + LOAD): 21206 samples, IFF=0 in 13686
+   5293  PC ~4850  A8=FC  basic-reloc:ary_apply_offset_hl_sub+9 | disk:fdq_win+1 | sub:LOG_BP+76
+   3467  PC ~7AE0  A8=FC  basic-reloc:exr_lp+2 | disk:frdw_poll+8 | sub:lpn_run+1
+   2626  PC ~7AD0  A8=FC  basic-reloc:npkz_lp+1 | disk:fdc_read_data_body+12 | sub:ls_pcr_noquote+29
+    911  PC ~4840  A8=FC  basic-reloc:ary_apply_offset+3 | disk:fat_rootsecs+9 | sub:LOG_BP+60
+    889  PC ~4880  A8=FC  basic-reloc:str_set_key+4 | disk:fwd_wait+0 | sub:LOG_BP+124
+    785  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+    679  PC ~19A0  A8=FC  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+    598  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+    503  PC ~7050  A8=FC  basic-reloc:brom_screen+13 | disk:fig_have+12 | sub:rl_shift_right+4
+    375  PC ~70C0  A8=FC  basic-reloc:gp_nochan+22 | disk:fwr_bytes_inc+5 | sub:rsr_move+6
+    374  PC ~70B0  A8=FC  basic-reloc:gp_nochan+6 | disk:fip_store+6 | sub:rsr_lp+1
+    336  PC ~7020  A8=FC  basic-reloc:try_text_slot+19 | disk:fat_io_find+28 | sub:rl_crlf+10
+    334  PC ~7060  A8=FC  basic-reloc:brom_run+13 | disk:fig_have+28 | sub:rl_shift_right+20
+    320  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
