@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15394 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15401 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15394 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15401 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10927,6 +10927,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unchanged chain. 🔮 Predicted "all three SAME after the fix": HIT. S2's first form waited
       on INKEY$ and found D-STOPKEY3 (below) -- a timing-dependent row, so line 70 now waits on
       a variable set at the prompt.
+      ✅ **S4_screenedit (2026-11-06): SAME** ([`S4_screenedit.ses`](probes/sessions/S4_screenedit.ses),
+      [`sessions_s4b.out`](scratchpad/sessions_s4b.out)): cursor up onto LISTed lines, overtype, INS,
+      a line copied by changing its number, BS inside a typed command. The runner gained
+      inline key names ({UP} {INS} {DEL} {BS} ... and {NOCR}); its first run was apparatus (the
+      prompt row with text typed over it read `ZB        NEW`; mapped like the bare prompt).
+      🔮 Predicted "a screen-editor divergence (INS or the cursor after RETURN)": MISSED --
+      D-SCREDIT's work holds.
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-

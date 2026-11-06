@@ -1,0 +1,28 @@
+# S4_screenedit (D-SESSIONS, 2026-11-06): editing ON THE SCREEN, as users did --
+# LIST, cursor up onto a listed line, overtype / insert / delete characters,
+# RETURN stores the line under the cursor; change a line NUMBER on screen to copy
+# a line; cursor-left + BS inside a typed command. The {DEL} step lands on the
+# `LIST` row and overtypes it (a Syntax error on both machines): kept, because the
+# editor's handling of that is compared too -- it is not the edit its name suggests.
+NEW
+10 PRINT "ALPHA"
+20 PRINT "BETA"
+30 PRINT "GAMMA"
+LIST
+{UP}{UP}{UP}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}OMEG{NOCR}
+{CR}{DOWN}{DOWN}{NOCR}
+LIST
+RUN
+LIST 20
+{UP}{UP}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{INS}NEW {NOCR}
+{CR}
+LIST
+{UP}{UP}{UP}{UP}4{NOCR}
+{CR}
+LIST
+{UP}{UP}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{RIGHT}{DEL}{DEL}{NOCR}
+{CR}
+LIST
+RUN
+PRINT "ABC";{LEFT}{LEFT}{LEFT}{LEFT}{BS}{NOCR}
+{CR}

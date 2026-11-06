@@ -19,6 +19,8 @@ after every step.
                        bit 1, STOP row 7 bit 4)
       {CTRLC}          Ctrl-C ($03) into the keyboard buffer -- ends AUTO
       {WAIT 2}         let 2 emulated seconds pass before the next step
+      {UP}{DOWN}{LEFT}{RIGHT}{INS}{DEL}{BS}{HOME}{CR}{ESC}  inline: that key
+      ...{NOCR}        (at the end of a line) type it WITHOUT the RETURN
 
 A step is typed only when the machine is IDLE: the keyboard buffer is empty
 (GETPNT == PUTPNT) and CURLIN has held one value for 0.7 s since the last key.
@@ -126,6 +128,12 @@ after time 0.5 __poll
 """
 
 
+# inline key names: the screen editor's control codes (MSX2 Technical Handbook,
+# the CHGET codes of the cursor / edit keys)
+KEYS = {"UP": "\x1e", "DOWN": "\x1f", "RIGHT": "\x1c", "LEFT": "\x1d", "INS": "\x12",
+        "DEL": "\x7f", "BS": "\x08", "HOME": "\x0b", "CR": "\r", "ESC": "\x1b"}
+
+
 def parse(text):
     """-> (disk, steps): steps are (kind, arg, idle) tuples."""
     # a CLS first, never compared: the boot banner differs by design (zerobas
@@ -143,7 +151,13 @@ def parse(text):
         elif line.strip() == "{CTRLC}":
             steps.append(("K", "\x03", 1))
         else:
-            s = line + "\r"
+            s = line
+            nocr = s.endswith("{NOCR}")
+            if nocr:
+                s = s[:-len("{NOCR}")]
+            for k, v in KEYS.items():
+                s = s.replace("{%s}" % k, v)
+            s += "" if nocr else "\r"
             for i in range(0, len(s), CHUNK):
                 steps.append(("K", s[i:i + CHUNK], 1 if i == 0 else 0))
     return disk, steps
@@ -187,7 +201,10 @@ def run(machine, name, text):
             rows = [scr[i:i + w].replace("\xff", " ").rstrip(" \0") for i in range(0, min(len(scr), 24 * w), w)]
             # the prompt: zerobas prints `ZB` where the reference prints `Ok` (the
             # row carries the WIDTH 37 margin, so compare it trimmed)
-            rows = [r.replace("ZB", "Ok") if r.strip() == "ZB" else r for r in rows]
+            # (also when the screen editor has typed over the rest of that row:
+            # `ZB        NEW` is the prompt row with text written into it)
+            rows = [r.replace("ZB", "Ok", 1) if r.strip() == "ZB" or r.strip().startswith("ZB ")
+                    else r for r in rows]
             while rows and not rows[-1]:
                 rows.pop()
             snaps.append((head.split()[0], head, rows))
@@ -208,7 +225,11 @@ def label(steps, n):
         return "(boot)"
     if n - 2 >= len(groups):
         return "(end)"
-    return groups[n - 2].replace("\r", "").replace("\x03", "{CTRLC}")
+    t = groups[n - 2].replace("\r", "").replace("\x03", "{CTRLC}")
+    for k, v in KEYS.items():
+        if v != "\r":
+            t = t.replace(v, "{%s}" % k)
+    return t
 
 
 def main():
