@@ -1,0 +1,27 @@
+# S7_errors (D-SESSIONS, 2026-11-06): the errors a user meets AT THE PROMPT --
+# typos, an unknown word, a missing quote, a syntax error inside a RUNning
+# program (and what the screen offers afterwards), ERR / ERL in direct mode,
+# RESUME and CONT with nothing to resume, GOTO a missing line, division by zero
+# and overflow in direct mode, NEXT without FOR, Type mismatch.
+NEW
+PRNT "HELLO"
+PRINT "UNCLOSED
+PRINT ERR;ERL
+10 PRINT "A"
+20 PRIMT "B"
+30 PRINT "C"
+RUN
+PRINT ERR;ERL
+LIST
+20 PRINT "B"
+RUN
+RESUME
+CONT
+GOTO 99
+PRINT 1/0
+PRINT 2^1000
+NEXT
+A$=5
+PRINT ERR;ERL
+X=SQR(-1)
+PRINT "STILL HERE"

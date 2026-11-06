@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15471 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15476 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15476 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10961,6 +10961,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([`sessions_s6d.out`](scratchpad/sessions_s6d.out), [`sessions_s6f.out`](scratchpad/sessions_s6f.out),
       [`sessions_s6g.out`](scratchpad/sessions_s6g.out)). Not committed as a gate row: a session
       that is not repeatable on the reference measures the recorder. D-TAPENEXT carries it.
+      ✅ **S7_errors (2026-11-06): SAME** ([`S7_errors.ses`](probes/sessions/S7_errors.ses), [`sessions_s7.out`](scratchpad/sessions_s7.out)):
+      typos at the prompt, an unclosed quote, a syntax error inside a RUN and the line fixed
+      by retyping, ERR / ERL in direct mode, RESUME / CONT with nothing to resume, GOTO a
+      missing line, 1/0, 2^1000, NEXT, `A$=5`, SQR(-1). 🔮 Predicted "a divergence in what
+      follows a program syntax error": MISSED -- the error paths hold.
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
