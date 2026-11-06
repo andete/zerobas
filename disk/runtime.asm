@@ -129,7 +129,7 @@ conout_body:
                 jr      nz, conout_not_dispatch
                 pop     hl                  ; restore caller's HL
                 pop     af                  ; restore caller's AF for dirio_in_body
-                jp      dirio_in_body
+                jr      dirio_in_body
 ; M22b slice 2 (TAB expansion + $F237 logical-column bookkeeping). The per-char emit
 ; (conout_emit_e) is RELOCATED above the FDC hole $7FB8-$7FBF (it doesn't fit below);
 ; conout_tab stays HERE, below the hole (jr-reachable), and calls up. This emit tail is

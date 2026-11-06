@@ -1929,7 +1929,7 @@ hkm_sec:        ld      hl,(FAT_DIRREM)
                 ld      b,16                ; 512 / 32 entries per sector
 hkm_ent:        ld      a,(hl)
                 or      a
-                jp      z,hkm_end           ; $00 = end of directory
+                jr      z,hkm_end           ; $00 = end of directory
                 cp      $E5
                 jr      z,hkm_next          ; deleted entry
                 push    hl
@@ -2542,7 +2542,7 @@ dwr_len:
                 ld      (FWR_BUFLEN), hl
                 call    fat_flush_data_sector
                 pop     bc                  ; BC = the count
-                jp      c, dwr_fail
+                jr      c, dwr_fail
                 bit     0, (ix+34)
                 jr      nz, dwr_keep        ; the sector is complete: move on
                 ld      hl, FWR_SECIDX
@@ -3265,7 +3265,7 @@ sav_fits:
                 ld      de,2
                 add     hl,de               ; HL = marker + image - 1 (the image is
                                             ; TXTBASE..PRGEND+1), CF = bit 16
-                jp      fat_fits            ; A = 0 fits, $FF does not
+                jr      fat_fits            ; A = 0 fits, $FF does not
 sav_full:
                 call    fat_io_close        ; the marker alone, stamped
                 jp      c,sv_load_error     ; its code is already pending
@@ -3436,7 +3436,7 @@ hsy_end:
                 or      a
                 jr      z,hsy_ok
                 cp      ':'
-                jp      nz,hsy_syn
+                jr      nz,hsy_syn
 hsy_ok:
                 ; D-F346 (Joost 2026-10-23: "if you boot into basic and not into dos
                 ; first, if you do poke &hf346,1 you can do call system"): the CF-3300
@@ -3446,7 +3446,7 @@ hsy_ok:
                 ld      a,(DOS_F346)
                 or      a
                 ld      a,5                 ; MSX-DOS never booted: Illegal function call
-                jp      z,hsy_err
+                jr      z,hsy_err
                 ld      ix,fch_close_all
                 call    calbak              ; close every file, as the CF-3300 does
                 di                          ; D-HOOKDI: calbak returns EI now; the
@@ -3725,13 +3725,13 @@ fsize_body:
                 push    ix
                 pop     de
                 call    fat_mount
-                jp      c, fsize_miss
+                jr      c, fsize_miss
                 push    ix
                 pop     de
                 inc     de                  ; DE -> copy+1 (11-byte 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found -> FAT_FILESIZE set
-                jp      c, fsize_miss
+                jr      c, fsize_miss
                 ; r0..r2 := ceil(FAT_FILESIZE / 128) = (size + 127) >> 7, 24-bit.
                 ld      hl, (FAT_FILESIZE)
                 ld      de, (FAT_FILESIZE + 2)
@@ -3855,7 +3855,7 @@ wrblk_loop:
                 ld      hl, (WRBLK_CNT)
                 ld      a, h
                 or      l
-                jp      z, wrblk_loop_done
+                jr      z, wrblk_loop_done
                 ld      a, (WRBLK_REC + 2)
                 ld      b, a
                 ld      a, (WRBLK_REC + 1)
@@ -3907,7 +3907,7 @@ wrblk_off_nc:
                 or      a
                 sbc     hl, bc
                 ld      (WRBLK_CNT), hl     ; remaining -= chunk
-                jp      wrblk_loop
+                jr      wrblk_loop
 wrblk_loop_done:
                 ; new_RR := RR_start + HL_requested (24-bit + 16-bit)
                 ld      a, (ix+33)
@@ -3927,10 +3927,10 @@ wrblk_loop_done:
                 call    wrblk_set_wrfirst
                 call    wrblk_fcb_keep      ; D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
                 call    fat_dir_update
-                jp      c, wrblk_ioerr2
+                jr      c, wrblk_ioerr2
                 xor     a
                 ld      hl, (WRBLK_REQ)
-                jp      wrblk_finish
+                jr      wrblk_finish
 wrblk_zero_path:
                 ; HL_requested == 0: compute target := RR (unchanged) * RS, then either
                 ; grow-or-hold (target >= old size) or shrink (target < old size). RR
@@ -3960,18 +3960,18 @@ wzp_decided:
 wzp_shrink:
                 call    wrblk_shrink        ; frees the tail chain + EOF-marks; sets
                                             ; BDOS_WRBYTES itself (not via wrblk_size_max)
-                jp      c, wrblk_ioerr2
+                jr      c, wrblk_ioerr2
                 call    wrblk_set_wrfirst
 wzp_dirupdate:
                 call    fat_dir_update
-                jp      c, wrblk_ioerr2
+                jr      c, wrblk_ioerr2
                 xor     a
                 ld      hl, (WRBLK_REQ)     ; = 0
-                jp      wrblk_finish
+                jr      wrblk_finish
 wrblk_full:
                 ld      a, 1                ; disk-full path ([C]-only, not black-box-provoked)
                 ld      hl, (WRBLK_REQ)
-                jp      wrblk_finish
+                jr      wrblk_finish
 wrblk_ioerr:
 wrblk_ioerr2:
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
@@ -4347,7 +4347,7 @@ wrblk_shrink:
                 or      (hl)
                 inc     hl
                 or      (hl)                ; Z iff target size == 0 (all 4 bytes)
-                jp      z, wshrink_empty
+                jr      z, wshrink_empty
                 ; keep_sectors = ceil(target_size / 512) = (target_size + 511) >> 9
                 ld      hl, (WRBLK_MULACC)
                 ld      de, 511
@@ -4401,7 +4401,7 @@ wshrink_atlast:
                 pop     hl                  ; HL = the keep-cluster
                 ld      de, EOC
                 call    fat_write_fat_entry ; keep-cluster := EOC in every FAT copy
-                jp      c, wshrink_ioerr
+                jr      c, wshrink_ioerr
                 ld      hl, (WRBLK_NEXTCLUS)
                 jr      wshrink_freeloop
 wshrink_empty:
@@ -4426,7 +4426,7 @@ wshrink_freeloop:
                 pop     hl                  ; HL = the cluster to free (restored)
                 ld      de, 0
                 call    fat_write_fat_entry ; mark it free ($000)
-                jp      c, wshrink_ioerr
+                jr      c, wshrink_ioerr
                 ld      hl, (WRBLK_NEXTCLUS)
                 jr      wshrink_freeloop
 wshrink_freedone:
@@ -4504,7 +4504,7 @@ k47b2_rs_ok:
                 pop     ix
                 push    ix                  ; IX = the FCB (k47b2_seek's input)
                 call    k47b2_seek          ; Cy = 1 -> nothing to deliver
-                jp      c, k47b2_eof
+                jr      c, k47b2_eof
 k47b2_pos_done:
                 ; --- step 8: transfer loop (zero-pad variant of rdb_recloop_body) --
                 ; "Partial record" (>=1 byte already copied this record) is recovered
@@ -4929,13 +4929,13 @@ wrrnd_extend:
                 push    ix
                 pop     de
                 call    fat_mount
-                jp      c, wre_ioerr
+                jr      c, wre_ioerr
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
-                jp      c, wre_ioerr
+                jr      c, wre_ioerr
                 call    dir_stamp_date      ; a written file is dated as the CF-3300's
                 ld      de, DIRENT_FILESIZE
                 add     hl, de              ; HL -> dirent+28 (file size field)
@@ -5800,7 +5800,7 @@ hk_dpload:
                 jp      nz,hdl_ascii        ; 2: main re-opens and tokenises
 hdl_line:
                 call    fat_io_getbyte      ; link low
-                jp      c,hdl_ok            ; EOF between lines = normal end
+                jr      c,hdl_ok            ; EOF between lines = normal end
                 push    af                  ; preserve link-low across the read
                 call    fat_io_getbyte      ; link high
                 jr      c,hdl_eof
@@ -5809,7 +5809,7 @@ hdl_line:
                 ld      c,a                 ; BC = saved link word L_n
                 ld      a,b
                 or      c
-                jp      z,hdl_ok            ; $0000 link -> program complete
+                jr      z,hdl_ok            ; $0000 link -> program complete
                 ; body length = L_n - A_n - 4   (A_n = CLINK)
                 ld      hl,(CLINK)
                 ld      (CLINK),bc
@@ -6344,7 +6344,7 @@ hkc_sp:
                 jr      hkc_sp
 hkc_to:
                 cp      TO_TOKEN
-                jp      nz,hkc_noto         ; no `TO` -> ERR 5 (measured), not ERR 2
+                jr      nz,hkc_noto         ; no `TO` -> ERR 5 (measured), not ERR 2
                 inc     hl
                 ld      ix,fname_expr
                 call    calbak              ; DESTINATION name
@@ -6473,7 +6473,7 @@ auto_find:
                 ld      bc,11
                 ldir                        ; DISK_FCB_NAME = "AUTOEXECBAS"
                 pop     hl
-                jp      hk_srcfind
+                jr      hk_srcfind
 ; The upcased 11-byte 8.3 dirent name, no padding needed: "AUTOEXEC" (8) + "BAS"
 ; (3) -- disk/docs/autoexec-bas-spec.md §2. (Main's island copy, autoexec_name,
 ; went with the probe.)
@@ -6578,7 +6578,7 @@ hkf_body:
                 xor     a
                 ld      (DISKOP_STATUS),a
                 call    fat_mount           ; LOCAL primitive body
-                jp      c,hkf_io
+                jr      c,hkf_io
                 call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 df_secloop:
                 ld      hl,(FAT_DIRREM)
@@ -6588,7 +6588,7 @@ df_secloop:
                 ld      de,(FAT_DIRSEC)
                 ld      hl,FAT_DBUF
                 call    read_sector         ; LOCAL primitive body
-                jp      c,hkf_io            ; FDC / DSKIO error
+                jr      c,hkf_io            ; FDC / DSKIO error
                 xor     a
                 ld      (FILES_ENTIDX),a    ; entry 0..15 within this sector
 df_entloop:
@@ -7560,7 +7560,7 @@ setdta_cache_body:
 ;   out (fail-safe): A=0 BC=$0200 DE=0 HL=0
 getalloc_body:
                 call    fat_mount               ; geometry -> FAT_* scratch (SECTOR_BUF)
-                jp      c, ga_fail
+                jr      c, ga_fail
                 call    fat_total_clusters       ; DE = dataClusters + 2 (rawTotal)
                 push    de                       ; stack[0] = rawTotal (stays for the scan)
                 ld      hl, $FFFF
@@ -7575,7 +7575,7 @@ ga_scanloop:
                 or      a
                 sbc     hl, bc                   ; HL = cluster - rawTotal
                 pop     hl                       ; restore cluster
-                jp      z, ga_scandone           ; cluster == rawTotal -> scan complete
+                jr      z, ga_scandone           ; cluster == rawTotal -> scan complete
                 ; fatofs = cluster + (cluster>>1)  (== floor(cluster*3/2), the same
                 ; math fac_loop_body uses -- Microsoft FAT spec §3.2 12-bit packing)
                 push    de                       ; save free counter across the call below
@@ -7604,13 +7604,13 @@ ga_scanloop:
                 or      a
                 sbc     hl, de
                 pop     hl
-                jp      z, ga_havesec            ; already the cached sector -> no re-read
+                jr      z, ga_havesec            ; already the cached sector -> no re-read
                 ld      (FAT_WRTMP2), hl
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
                 ld      hl, WBUF
                 call    read_sector
-                jp      c, ga_rderr
+                jr      c, ga_rderr
 ga_havesec:
                 call    fac_entry_from_wbuf      ; DE = 12-bit entry value (clobbers
                                                  ; AF/BC/DE/HL -- fat.asm's own contract)
@@ -7622,12 +7622,12 @@ ga_havesec:
                 inc     de                       ; entry == $000 -> free, bump counter
 ga_notfree:
                 inc     hl                       ; next cluster
-                jp      ga_scanloop
+                jr      ga_scanloop
 ga_rderr:
                 pop     hl                       ; discard saved cluster
                 pop     de                       ; discard saved free counter
                 pop     hl                       ; discard rawTotal
-                jp      ga_fail
+                jr      ga_fail
 ga_scandone:
                 ex      de, hl                   ; HL := free-cluster count (final)
                 pop     de                       ; DE := rawTotal
@@ -7733,7 +7733,7 @@ dsm_athl:
 dsm_entloop:
                 ld      a, (hl)
                 or      a
-                jp      z, ds_none          ; $00 = end of directory -> exhausted
+                jr      z, ds_none          ; $00 = end of directory -> exhausted
                 cp      $E5
                 jr      z, dsm_skip         ; deleted entry -> skip (no filter else)
                 ld      de, (FAT_NAMEPTR)
@@ -8209,13 +8209,13 @@ fdel_body:
                 push    ix
                 pop     de
                 call    fat_mount
-                jp      c, fdel_miss
+                jr      c, fdel_miss
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB-copy+1 (target 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; FAT_FIRSTCLUS/FAT_FILESIZE set
-                jp      c, fdel_miss
+                jr      c, fdel_miss
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      a, h
                 or      l
@@ -8226,7 +8226,7 @@ fdel_free_loop:
                 ex      (sp), hl            ; stack: [next]; HL := cur
                 ld      de, 0               ; free = $000 (Microsoft FAT spec sec 3.2)
                 call    fat_write_fat_entry ; zero cur's entry in every on-disk FAT copy
-                jp      c, fdel_chain_ioerr
+                jr      c, fdel_chain_ioerr
                 pop     hl                  ; HL := next
                 ld      de, $0FF8           ; >= $0FF8 = end-of-chain (fat_next_cluster's own convention)
                 or      a
@@ -8236,7 +8236,7 @@ fdel_free_loop:
                 jr      fdel_free_loop
 fdel_chain_ioerr:
                 pop     hl                  ; discard the saved "next", keep the stack balanced
-                jp      fdel_ioerr
+                jr      fdel_ioerr
 fdel_relocate:
                 ; SECTOR_BUF now holds FAT-sector content (clobbered by the chain
                 ; walk above, or untouched if this file was zero-length) -- re-run
@@ -8246,12 +8246,12 @@ fdel_relocate:
                 inc     de
                 ex      de, hl
                 call    fat_find
-                jp      c, fdel_miss
+                jr      c, fdel_miss
                 ld      (hl), $E5           ; CP/M delete marker (Microsoft FAT spec sec 3.1)
                 ld      de, (FAT_DIRSEC)
                 ld      hl, SECTOR_BUF
                 call    write_sector
-                jp      c, fdel_ioerr
+                jr      c, fdel_ioerr
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      h, a
@@ -8424,7 +8424,7 @@ rdrnd_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer
                 call    rrnd_position
-                jp      c, rrnd_eof
+                jr      c, rrnd_eof
                 call    bdos_seqread        ; A=$00 record delivered / $01 EOF
                 or      a
                 jr      nz, rrnd_finish     ; EOF from seqread -- pass A through, HL untested
@@ -8442,7 +8442,7 @@ wrrnd_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer
                 call    rrnd_position
-                jp      c, wrrnd_ioerr      ; positioned past EOF -- FAT growth is out of
+                jr      c, wrrnd_ioerr      ; positioned past EOF -- FAT growth is out of
                                             ; scope this milestone (§4 non-goal), same as
                                             ; every other M26 fix
                 ; SECTOR_BUF now holds the target sector (loaded by rrnd_position's seek
@@ -8466,13 +8466,13 @@ wrrnd_body:
                 call    rrnd_sector         ; DE = absolute logical sector to persist
                 ld      hl, SECTOR_BUF
                 call    write_sector
-                jp      c, wrrnd_ioerr
+                jr      c, wrrnd_ioerr
                 push    ix
                 pop     hl
                 call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX3)
                 call    wrrnd_extend        ; M36: grow ix+16..19 + the on-disk dirent if this
                                             ; write landed past the previous end-of-file
-                jp      c, wrrnd_ioerr
+                jr      c, wrrnd_ioerr
                 ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
                 ld      (ix+32), a
                 xor     a

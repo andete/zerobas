@@ -261,7 +261,7 @@ fac_flushdirty:                             ; a dirty buffer to both FATs (CF = 
                 ld      a, (FAT_DEFER)
                 and     2
                 ret     z
-                jp      fat_write_buf_allfats
+                jr      fat_write_buf_allfats
                 ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
                 ds      $47B9 - $, $00      ; pad remainder (net-zero: anchors the 3b relocation below)
@@ -1614,21 +1614,21 @@ fren_body:
                 push    ix
                 pop     de
                 call    fat_mount
-                jp      c, fren_miss
+                jr      c, fren_miss
                 ; --- M35 collision pre-check: new name (FCB+17) must NOT already exist ---
                 push    ix
                 pop     hl
                 ld      bc, 17
                 add     hl, bc              ; HL -> FCB+17 (new 8.3 name, fat_find's contract)
                 call    fat_find            ; Cy=0 -> new name FOUND (collision)
-                jp      nc, fren_miss       ; refuse the rename, stock-matching A=$FF exit
+                jr      nc, fren_miss       ; refuse the rename, stock-matching A=$FF exit
                 ; --- fall through: new name is free; proceed with the OLD-name find + rename ---
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB+1 (old 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
-                jp      c, fren_miss
+                jr      c, fren_miss
                 ex      de, hl              ; DE = &matched dirent (write destination)
                 push    ix
                 pop     hl
@@ -1639,7 +1639,7 @@ fren_body:
                 ld      de, (FAT_DIRSEC)
                 ld      hl, (DBUF_PTR)
                 call    write_sector
-                jp      c, fren_ioerr
+                jr      c, fren_ioerr
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ret
@@ -1679,7 +1679,7 @@ rdabs_body:
                 xor     a                   ; drive ignored (single-drive); Cy=0 = read
                 call    dskio
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
-                jp      c, rdabs_ioerr
+                jr      c, rdabs_ioerr
                 ld      a, b                ; A := original count
                 ld      c, a                ; C := count (pinned exit value)
                 xor     a
@@ -1713,7 +1713,7 @@ wrabs_body:
                 scf                         ; Cy=1 = write direction (MSX2 TH DSKIO)
                 call    dskio
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
-                jp      c, wrabs_ioerr
+                jr      c, wrabs_ioerr
                 ld      a, b                ; A := original count
                 ld      c, a                ; C := count (pinned exit value)
                 xor     a
