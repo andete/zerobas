@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15707 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15732 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15707 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11178,6 +11178,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that covered half the run; breakpoints fixed both. The denominator is these suites'
       calls. ➡️ THE RULE for every later disk.rom move: run `padwatch.py` with `--also=` the
       target pad BEFORE filling it (an entry there refuses the pad).
+
+- [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
+      found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
+      🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
+      🤖 **AUTONOMOUS** — black box on both machines; the software is RUN, never decoded.
+      📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
+      SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
+      🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over
+      the 73 commits since the 11-04 run, first bad = **ccfceefd (D-TRAPCOST, a main-ROM
+      speed-up)**, its `widen_uint_to` fast path for magnitudes under 100: HEAD with that path
+      jumped over boots it (BOTH-RUN). 🔴 **AND IT IS TIMING, NOT A REGISTER CONTRACT:** the fast
+      path made to leave the slow path's exact registers (HL = 0, DE past the digits, A, B = 0,
+      C = N) still fails. [`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) (screen + work area +, with SDS_TRANS=1, every
+      RAM -> ROM transfer, PC only, our machine): good build ([`sdsboot_good_trans.out`](scratchpad/sdsboot_good_trans.out)) -- the
+      program's interrupt handler at $9900 returns into C-BIOS's ISR ($1906, the address the
+      $FD9F hook returns to) and the program runs on (PC $4F8B, SCREEN 1); bad build
+      ([`sdsboot_head_trans.out`](scratchpad/sdsboot_head_trans.out)) -- that FIRST $9900 run goes to $0000 instead (also from
+      $8000 / $FFFF), page 3 reads $FF, PC parked in C-BIOS. Reading: a RACE in the disk's
+      loader -- the interrupt hook points at $9900 before its code is ready -- that the
+      CF-3300's speed and zerobas's before ccfceefd both won. Reverting the speed-up would only
+      buy back luck. ➡️ next: when the hook is armed against when $9900's code arrives
+      (watch writes to $FD9F..$FDA3 and $9900, timestamps only), on the CF-3300 and on both
+      zerobas builds; if it is a race, what timing the reference keeps there (a DI window?
+      a disk-read duration?) is the thing to match.
+      ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
       2026-11-06 by typed session S12_progedit).**
