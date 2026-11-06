@@ -1,0 +1,17 @@
+# D-TAPESEARCH: CLOAD / CLOAD? searching past the files on a tape
+{TCL cassetteplayer new {TMP}_tape.wav}
+NEW
+10 PRINT "ONE"
+CSAVE "PROG1"
+SAVE "CAS:PROG2"
+CSAVE "PROG3"
+{TCL cassetteplayer rewind}
+CLOAD "PROG1"
+CLOAD "PROG3"
+LIST
+{TCL cassetteplayer rewind}
+CLOAD "PROG1"
+CLOAD? "NOSUCH"
+{WAIT 15}
+{STOP}
+PRINT "AFTER"

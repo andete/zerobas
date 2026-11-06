@@ -1,0 +1,25 @@
+# S6_tape (D-SESSIONS, 2026-11-06): a program kept on cassette -- CSAVE, CLOAD,
+# CLOAD? (verify, passing and then failing after an edit), and the `Found:` rows. A blank tape is inserted, and rewound before EVERY read, by the emulator
+# between steps; after the SAVE the recording is EJECTED and the file inserted
+# again for playback (a `rewind` of the tape still in record mode read back
+# nothing, or a Device I/O error, depending on the timing). ⚠️ NO ASCII `SAVE "CAS:"` here: on a tape recorded in the session,
+# after one the VG-8020 found NOTHING on the tape again, not even the file before
+# it (D-TAPENEXT, apparatus first); ASCII tape LOADs are the program ladder's.
+# Nor a SECOND file: neither machine found a BSAVE recorded after the CSAVE (the
+# VG-8020 searches on, zerobas says Device I/O error at once -- D-TAPENEXT).
+{TCL cassetteplayer new {TMP}_tape.wav}
+NEW
+10 PRINT "FROM TAPE"
+20 A=42:PRINT A
+CSAVE "PROG1"
+{TCL cassetteplayer eject}
+{TCL cassetteplayer insert {TMP}_tape.wav}
+NEW
+CLOAD "PROG1"
+LIST
+RUN
+{TCL cassetteplayer rewind}
+CLOAD? "PROG1"
+20 A=43:PRINT A
+{TCL cassetteplayer rewind}
+CLOAD? "PROG1"

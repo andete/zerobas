@@ -21,6 +21,8 @@ after every step.
       {WAIT 2}         let 2 emulated seconds pass before the next step
       {UP}{DOWN}{LEFT}{RIGHT}{INS}{DEL}{BS}{HOME}{CR}{ESC}  inline: that key
       ...{NOCR}        (at the end of a line) type it WITHOUT the RETURN
+      {TCL cmd}        an emulator-side action (a blank tape: `cassetteplayer
+                       new {TMP}_t.wav`); {TMP} is the machine's scratch prefix
 
 A step is typed only when the machine is IDLE: the keyboard buffer is empty
 (GETPNT == PUTPNT) and CURLIN has held one value for 0.7 s since the last key.
@@ -154,6 +156,7 @@ proc __poll {} {
           after time 0.2 { keymatrixup 7 0x10; keymatrixup 6 0x02 }
         }
         W { set ::__waitto [expr {[machine_info time] + $arg}] }
+        C { eval $arg }
       }
       set ::__lastk [machine_info time]
     }
@@ -183,6 +186,10 @@ def parse(text):
         m = re.fullmatch(r"\{WAIT ([0-9.]+)\}", line.strip())
         if m:
             steps.append(("W", m.group(1), 1))
+        elif line.strip().startswith("{TCL ") and line.strip().endswith("}"):
+            # an emulator-side action between steps (a blank tape, a rewind):
+            # `{TMP}` is this machine's own scratch directory
+            steps.append(("C", line.strip()[5:-1], 1))
         elif line.strip() == "{STOP}":
             steps.append(("S", "", 1))
         elif line.strip() == "{CTRLC}":
@@ -213,8 +220,15 @@ def run(machine, name, text):
     for p in (log, out):
         if os.path.exists(p):
             os.unlink(p)
-    st = " ".join("{" + " ".join((k, _tcl_dquote(a) if k == "K" else (a or "-"), str(i))) + "}"
-                  for k, a, i in steps)
+    tmpd = os.path.dirname(probe_tmp.tmp(f"ses_{machine}_{name}.x"))
+
+    def targ(k, a):
+        if k == "K":
+            return _tcl_dquote(a)
+        if k == "C":
+            return "{" + a.replace("{TMP}", tmpd + "/" + machine) + "}"
+        return a or "-"
+    st = " ".join("{" + " ".join((k, targ(k, a), str(i))) + "}" for k, a, i in steps)
     open(tcl, "w").write(TCL.replace("{LOG}", "{" + log + "}").replace("{OUT}", "{" + out + "}")
                          .replace("STEPS", st).replace("KEYPROC", key_proc())
                          .replace("DATEWATCH", rp.DATE_TCL if disk else "")
@@ -259,7 +273,7 @@ def label(steps, n):
     is taken just before idle step n runs, i.e. after idle step n-1."""
     groups = []
     for k, a, f in steps:
-        txt = {"K": a, "S": "{STOP}", "W": "{WAIT %s}" % a}[k]
+        txt = {"K": a, "S": "{STOP}", "W": "{WAIT %s}" % a, "C": "{TCL %s}" % a}[k]
         if f or not groups:
             groups.append(txt)
         else:

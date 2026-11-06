@@ -1,0 +1,94 @@
+== S6_tape: 24 steps; Philips_VG_8020: 23 snapshots, last TIMEOUT t=600.0 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (23 snapshots, last END t=70.2 w=40; printer same)
+   first screen difference at snapshot TIMEOUT, after: 'PRINT PEEK(&HD000);PEEK(&HD001)'
+     !! ref |  CLOAD "PROG1"
+        zb  |  20 A=42:PRINT A
+     !! ref |  Found:PROG1
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |  RUN
+     !! ref |  LIST
+        zb  |  FROM TAPE
+     !! ref |  10 PRINT "FROM TAPE"
+        zb  |   42
+     !! ref |  20 A=42:PRINT A
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |  CLOAD? "PROG1"
+     !! ref |  RUN
+        zb  |  Found:PROG1
+     !! ref |  FROM TAPE
+        zb  |  Ok
+     !! ref |   42
+        zb  |  20 A=43:PRINT A
+     !! ref |  Ok
+        zb  |  CLOAD? "PROG1"
+     !! ref |  CLOAD? "PROG1"
+        zb  |  Found:PROG1
+     !! ref |  Found:PROG1
+        zb  |  Verify error
+        ref |  Ok
+     !! ref |  20 A=43:PRINT A
+        zb  |  POKE &HD000,0:POKE &HD001,0
+     !! ref |  CLOAD? "PROG1"
+        zb  |  Ok
+     !! ref |  Found:PROG1
+        zb  |  BLOAD "CAS:DATA"
+     !! ref |  Verify error
+        zb  |  Device I/O error
+        ref |  Ok
+     !! ref |  POKE &HD000,0:POKE &HD001,0
+        zb  |  PRINT PEEK(&HD000);PEEK(&HD001)
+     !! ref |  Ok
+        zb  |   0  0
+     !! ref |  BLOAD "CAS:DATA"
+        zb  |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (23 snapshots, last END t=70.1 w=40; printer same)
+   first screen difference at snapshot TIMEOUT, after: 'PRINT PEEK(&HD000);PEEK(&HD001)'
+     !! ref |  CLOAD "PROG1"
+        zb  |  20 A=42:PRINT A
+     !! ref |  Found:PROG1
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |  RUN
+     !! ref |  LIST
+        zb  |  FROM TAPE
+     !! ref |  10 PRINT "FROM TAPE"
+        zb  |   42
+     !! ref |  20 A=42:PRINT A
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |  CLOAD? "PROG1"
+     !! ref |  RUN
+        zb  |  Found:PROG1
+     !! ref |  FROM TAPE
+        zb  |  Ok
+     !! ref |   42
+        zb  |  20 A=43:PRINT A
+     !! ref |  Ok
+        zb  |  CLOAD? "PROG1"
+     !! ref |  CLOAD? "PROG1"
+        zb  |  Found:PROG1
+     !! ref |  Found:PROG1
+        zb  |  Verify error
+        ref |  Ok
+     !! ref |  20 A=43:PRINT A
+        zb  |  POKE &HD000,0:POKE &HD001,0
+     !! ref |  CLOAD? "PROG1"
+        zb  |  Ok
+     !! ref |  Found:PROG1
+        zb  |  BLOAD "CAS:DATA"
+     !! ref |  Verify error
+        zb  |  Device I/O error
+        ref |  Ok
+     !! ref |  POKE &HD000,0:POKE &HD001,0
+        zb  |  PRINT PEEK(&HD000);PEEK(&HD001)
+     !! ref |  Ok
+        zb  |   0  0
+     !! ref |  BLOAD "CAS:DATA"
+        zb  |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF

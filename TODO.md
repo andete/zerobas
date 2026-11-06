@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15419 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15456 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15456 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10952,10 +10952,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `MERGE "SUBS"` printed ONCE where the snapshot showed it twice); the function-key row
       is skipped when CNSDFG says it is up (it was always the "last row", so no prompt was
       ever seen). After: S1 / S2 / S4 / S5 ALL SAME ([`sessions_all.out`](scratchpad/sessions_all.out)).
+      ⏸️ **S6_tape PARKED (2026-11-06)** ([`S6_tape_parked.ses`](scratchpad/S6_tape_parked.ses)): CSAVE / CLOAD /
+      CLOAD? on a blank tape inserted by a new `{TCL ...}` step ({TMP} = the machine's
+      scratch prefix). A tape RECORDED in the session does not play back reliably in this
+      harness: in 7 layouts the VG-8020 found PROG1 again in exactly one (CSAVE, BSAVE, then
+      `rewind`); a lone CSAVE then `rewind`, `{WAIT 2}` + `rewind`, or eject + re-insert read
+      nothing there, and zerobas varied between Found and Device I/O error
+      ([`sessions_s6d.out`](scratchpad/sessions_s6d.out), [`sessions_s6f.out`](scratchpad/sessions_s6f.out),
+      [`sessions_s6g.out`](scratchpad/sessions_s6g.out)). Not committed as a gate row: a session
+      that is not repeatable on the reference measures the recorder. D-TAPENEXT carries it.
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
       8020) and disk (SAVE / LOAD / MERGE / KILL, the CF-3300 via `# @DISK`).
+
+- [ ] 📼 **D-TAPENEXT -- A TAPE SEARCH THAT FINDS NO HEADER: THE VG-8020 SEARCHES ON, ZEROBAS SAYS
+      `Device I/O error` AT ONCE (found 2026-11-06 by typed session S6_tape).**
+      🎚️ TIER 3 — common errors: what a cassette search does when the file is not (or no
+      longer) ahead on the tape -- a wrong name, a tape not rewound -- is the commonest tape
+      mistake there is.
+      🤖 **AUTONOMOUS** — the reference settles it; the apparatus question comes first.
+      📏 Scratch sessions on a tape RECORDED in the session (`{TCL cassetteplayer new}`), each
+      machine reading its own recording: [`tapeend_a.ses`](scratchpad/tapeend_a.ses) ->
+      [`tapeend_a.out`](scratchpad/tapeend_a.out), [`sessions_s6b.out`](scratchpad/sessions_s6b.out),
+      [`sessions_s6c.out`](scratchpad/sessions_s6c.out), [`sessions_s6d.out`](scratchpad/sessions_s6d.out):
+      (1) `CLOAD "PROG3"` continuing after `CLOAD "PROG1"`, `BLOAD "CAS:DATA"` after a rewind
+      (the second file), and every read after an ASCII `SAVE "CAS:"` -- the VG-8020 finds
+      NOTHING and searches until the 600 s limit (no `Skip :` row either); zerobas answers
+      `Device I/O error` within the step. (2) After an ASCII `SAVE "CAS:"` the VG-8020 did not
+      find even the FIRST file again (s6c). (3) The first file after a rewind, and an ASCII
+      file second after a CSAVE (MERGE "CAS:PROG2" in s6b), ARE found by both.
+      🔴 **REREAD (same day): most of (1) / (2) is likely the RECORDER, not BASIC.** A lone CSAVE
+      then a rewind read back NOTHING on the VG-8020 either, in three layouts out of four,
+      while one layout (CSAVE, BSAVE, rewind) found PROG1 -- an in-session recording is not
+      repeatable (S6_tape parked, D-SESSIONS). What survives every run: zerobas answers 19 at
+      once where the reference keeps searching.
+      ➡️ FIRST the apparatus: build the same tape with `probes/lib/cas_encode.py` (several files,
+      each type) instead of recording it, and repeat (1); if the reference then finds every
+      file, (1)/(2) were the in-session recording. THEN the real question, which every run
+      above shows either way: with no matching header ahead, zerobas raises 19 at once where
+      the reference keeps searching (until Ctrl-STOP) -- measure on a blank tape and on a tape
+      whose only file has another name, both machines.
 
 - [ ] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
       (found 2026-11-06 by typed session S2_stopcont).**

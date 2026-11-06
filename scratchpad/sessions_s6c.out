@@ -1,0 +1,58 @@
+== S6_tape: 30 steps; Philips_VG_8020: 14 snapshots, last TIMEOUT t=600.0 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (29 snapshots, last END t=117.9 w=40; printer same)
+   first screen difference at snapshot 13, after: 'CLOAD "PROG1"'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 PRINT "FROM TAPE"
+        ref |  20 A=42:PRINT A
+        ref |  CSAVE "PROG1"
+        ref |  Ok
+        ref |  POKE &HD000,65:POKE &HD001,66
+        ref |  Ok
+        ref |  BSAVE "CAS:DATA",&HD000,&HD001
+        ref |  Ok
+        ref |  SAVE "CAS:PROG2"
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  CLOAD "PROG1"
+     !! ref |
+        zb  |  Found:PROG1
+     !! ref |
+        zb  |  Ok
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (29 snapshots, last END t=117.8 w=40; printer same)
+   first screen difference at snapshot 13, after: 'CLOAD "PROG1"'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 PRINT "FROM TAPE"
+        ref |  20 A=42:PRINT A
+        ref |  CSAVE "PROG1"
+        ref |  Ok
+        ref |  POKE &HD000,65:POKE &HD001,66
+        ref |  Ok
+        ref |  BSAVE "CAS:DATA",&HD000,&HD001
+        ref |  Ok
+        ref |  SAVE "CAS:PROG2"
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  CLOAD "PROG1"
+     !! ref |
+        zb  |  Found:PROG1
+     !! ref |
+        zb  |  Ok
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF
