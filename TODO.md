@@ -2807,6 +2807,16 @@ item — do **one item per session** to keep context lean.
       on the VG-8020 ([`relinkslot_measure.out`](scratchpad/relinkslot_measure.out)).
       tests/test_tokenise.py / test_list.py / test_program.py green. **The tape load: CF-3300
       114.1 s, zerobas 138.8 s (1.22x), from 173.9.**
+      ✅ **(c) ROUND 2, 2026-11-06:** re-sampled ([`asctape_pc2.out`](scratchpad/asctape_pc2.out)): the
+      BIOS's own tape reading ~95 s of the 138.8, match_kw still ~24 s. Every kwtable keyword
+      starts with a LETTER (161 of 161 -- tests/test_tokenise.py now asserts it), so match_kw
+      returns "no keyword" at once for a source char outside A..Z (a space, an operator, a
+      quote: the same NC the whole walk reached), and the walk is in HL instead of IX/IY.
+      **138.8 -> 119.6 s against the CF-3300's 114.1 (1.05x)** (🔮 ~123: HIT, 3 s better;
+      [`asctape_pc3.out`](scratchpad/asctape_pc3.out)); what is left is the BIOS reading the
+      tape. tests/test_tokenise.py / test_list.py / test_program.py / test_statements.py
+      green. ➡️ What stays open here: SAVE ,A's detokeniser search (the token -> entry index,
+      a sub-ROM carve first).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7692,7 +7702,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10125 (T-6FE392)8 (T-529ABE)` from `TODO.md:15283 (T-529ABE)`: a
+      `TODO.md:10135 (T-6FE392)8 (T-529ABE)` from `TODO.md:15293 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10431,7 +10441,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

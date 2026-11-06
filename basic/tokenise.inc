@@ -538,70 +538,94 @@ tk_hex_done:
 ;      CF clear -> no match: HL and DE unchanged
 ; Uses IX as the table cursor and IY as the keyword-char walker.
 match_kw:
-                push    iy
                 ; 🐌 D-ASCTAPESPD (2026-11-06): an entry whose FIRST char is not the
                 ; source's is skipped before any setup -- the walk ran the whole
                 ; kwtable with pushes, IX/IY moves and an upcase per entry, ~30 s of a
                 ; 150-line ASCII tape load (scratchpad/asctape_pc.out). C = the
                 ; source's first char upcased, once. (kwtable is in longest-match
                 ; order, not sorted, so the walk cannot stop early.)
+                ; 🐌 ROUND 2 (2026-11-06, scratchpad/asctape_pc2.out: the walk was still
+                ; ~24 s): (1) EVERY kwtable keyword starts with a LETTER (161 of 161;
+                ; tests/test_tokenise.py asserts it), so a source char outside A..Z
+                ; -- a space, an operator, a quote, a paren -- matches nothing and
+                ; returns at once, the same NC the whole walk reached. (2) The walk
+                ; is in HL, not IX: an entry skip is HL += klen, HL += tlen+1.
                 ld      a,(hl)
                 call    upcase
+                cp      'A'
+                jr      c,mk_nolet          ; below 'A': no keyword starts there
+                cp      'Z'+1
+                jr      nc,mk_nolet
                 ld      c,a
-                ld      ix,kwtable
+                push    iy
+                push    hl
+                pop     iy                  ; IY = the source start, kept
+                ld      hl,kwtable
 mk_entry:
-                ld      a,(ix+0)            ; keyword length (0 = end of table)
+                ld      a,(hl)              ; keyword length (0 = end of table)
                 or      a
                 jr      z,mk_none
-                ld      a,(ix+1)            ; its first char (stored uppercase)
-                cp      c
-                jr      nz,mk_skip
-                ld      a,(ix+0)
-                push    hl                  ; remember source start
-                push    ix
-                pop     iy
-                inc     iy                  ; IY -> keyword chars
-                ld      b,a                 ; B = chars to compare
+                ld      b,a                 ; B = klen
+                inc     hl                  ; HL -> its first char (stored uppercase)
+                ld      a,c
+                cp      (hl)
+                jr      z,mk_try
+mk_skip:                                    ; HL -> the first char, B = klen
+                ld      a,b
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL -> the token-length byte
+                ld      a,(hl)
+                inc     a                   ; skip [tlen][tokens]
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL -> the next entry
+                jr      mk_entry
+mk_try:
+                push    hl                  ; [the keyword's first char]
+                push    iy                  ; [source start]
 mk_cmp:
-                ld      a,(hl)              ; source char
-                call    upcase              ; case-fold before comparing
-                cp      (iy+0)              ; keyword char (stored uppercase)
+                ld      a,(iy+0)            ; source char
+                call    upcase              ; case-fold before comparing (keeps B, C)
+                cp      (hl)                ; keyword char (stored uppercase)
                 jr      nz,mk_fail
                 inc     hl
                 inc     iy
                 djnz    mk_cmp
-                ; matched: IY -> token-length byte, HL advanced past keyword
-                pop     bc                  ; discard saved source start
-                ld      a,(iy+0)            ; token length
-                ld      b,a
-                inc     iy                  ; IY -> token bytes
-                ld      c,(iy+0)            ; remember first token byte
+                ; matched: HL -> token-length byte, IY advanced past the keyword
+                pop     bc
+                pop     bc                  ; discard both saves
+                ld      b,(hl)              ; token length
+                inc     hl                  ; HL -> token bytes
+                ld      c,(hl)              ; remember first token byte
 mk_emit:
-                ld      a,(iy+0)
+                ld      a,(hl)
                 ld      (de),a
-                inc     iy
+                inc     hl
                 inc     de
                 djnz    mk_emit
+                push    iy
+                pop     hl                  ; HL = the source past the keyword
                 ld      a,c                 ; A = first token byte
                 pop     iy                  ; restore caller IY
                 scf
                 ret
 mk_fail:
-                pop     hl                  ; restore source start (C is still the
-                                            ; first char: mk_cmp and upcase keep it)
-mk_skip:
-                push    bc
-                ld      c,(ix+0)            ; klen
-                ld      b,0
-                inc     bc                  ; skip [klen][chars]
-                add     ix,bc               ; IX -> token-length byte
-                ld      c,(ix+0)            ; tlen (B is still 0: klen is small)
-                inc     bc                  ; skip [tlen][tokens]
-                add     ix,bc               ; IX -> next entry
-                pop     bc                  ; C = the source's first char
-                jr      mk_entry
+                pop     iy                  ; the source start
+                pop     hl                  ; the keyword's first char
+                dec     hl
+                ld      b,(hl)              ; B = klen again
+                inc     hl
+                jr      mk_skip             ; (C is still the first char: upcase keeps it)
 mk_none:
+                push    iy
+                pop     hl                  ; HL = the source start, unmoved
                 pop     iy                  ; restore caller IY
+mk_nolet:
                 or      a                   ; CF clear (no match)
                 ret
 

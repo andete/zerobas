@@ -132,6 +132,19 @@ def run():
         print(f"{'PASS' if ok else 'FAIL'}  {label:28} -> {got!r} (reach {reach})"
               + ("" if ok else f"   want {want!r}"))
 
+    # D-ASCTAPESPD round 2: match_kw returns "no keyword" at once for a source
+    # char outside A..Z, which is only the same answer as the full walk while
+    # EVERY kwtable keyword starts with a letter. A non-letter keyword added
+    # later must also remove that reject (basic/tokenise.inc match_kw).
+    import re
+    firsts = [m.group(1)[0] for m in (re.match(r'\s+db\s+\d+,\s*"([^"]*)"', ln)
+              for ln in open(os.path.join(ROOT, "basic", "kwtable.inc"))) if m]
+    nonlet = sorted({c for c in firsts if not "A" <= c <= "Z"})
+    ok = len(firsts) > 100 and not nonlet
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  every kwtable keyword starts A..Z -> "
+          f"{len(firsts)} entries, non-letter firsts {nonlet}")
+
     print()
     print("ALL PASS — crunch matches the oracle-validated token format"
           if not fails else f"{fails} CASE(S) FAILED")

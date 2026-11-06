@@ -1,0 +1,18 @@
+ENDED t=119.6 gaps=0 max=0
+samples by CURLIN: {'FFFF': 113120, '0000': 5359}
+
+CURLIN FFFF: 113120 samples, IFF=0 in 85455
+  44155  PC ~0A80  A8=FC  basic-reloc:fperr_to_err+167 | sub:aeng_dim_neglp+31
+  23430  PC ~0A70  A8=FC  basic-reloc:fperr_to_err+151 | sub:aeng_dim_neglp+15
+  14842  PC ~01C0  A8=F0  basic-reloc:rn_undefined+11 | disk:FCH_RECMAX+192 | sub:tksd_advance+2
+   4547  PC ~0A90  A8=FC  basic-reloc:fperr_to_err+183 | sub:aeng_dim_err+3
+   4374  PC ~0B30  A8=FC  basic-reloc:fperr_to_err+343 | sub:fn_shadow_find+2
+   3991  PC ~05A0  A8=F3  sub:mk_entry+5
+   2236  PC ~0AA0  A8=FC  basic-reloc:fperr_to_err+199 | sub:aeng_erase+15
+   1754  PC ~0590  A8=F3  sub:match_kw+10
+    960  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:svp_flt+1
+    911  PC ~05B0  A8=F3  sub:mk_skip+11
+    788  PC ~0B40  A8=FC  basic-reloc:fperr_to_err+359 | sub:fsf_lp+14
+    544  PC ~0B50  A8=FC  basic-reloc:fperr_to_err+375 | sub:fsf_hit+3
+    406  PC ~0AB0  A8=FC  basic-reloc:fperr_to_err+215 | sub:aer_top+3
+    306  PC ~24F0  A8=F0  sub:gsv_keven+5
