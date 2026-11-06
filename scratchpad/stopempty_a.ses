@@ -1,0 +1,10 @@
+# D-STOPINPUT: Ctrl-STOP at an EMPTY prompt, after different commands
+NEW
+PRINT 1
+{STOP}
+10 PRINT "X"
+LIST
+{STOP}
+RUN
+{STOP}
+PRINT 2

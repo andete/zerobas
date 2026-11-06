@@ -1,0 +1,10 @@
+== S10_list: 56 steps; Philips_VG_8020: 57 snapshots, last END t=236.7 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (57 snapshots, last END t=238.8 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     SAME  (57 snapshots, last END t=238.8 w=40; printer same)
+== S8_input: 26 steps; Philips_VG_8020: 27 snapshots, last END t=50.1 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (27 snapshots, last END t=47.8 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     SAME  (27 snapshots, last END t=47.8 w=40; printer same)
+== S9_breaks: 15 steps; Philips_VG_8020: 16 snapshots, last END t=40.8 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (16 snapshots, last END t=38.6 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     SAME  (16 snapshots, last END t=38.6 w=40; printer same)
+ALL SAME

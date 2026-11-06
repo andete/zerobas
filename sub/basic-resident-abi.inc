@@ -108,7 +108,7 @@ p0_print_msg equ 07656H   ; main's print_msg
 p0_err_verify equ 06502H   ; main's err_verify
 p0_exa_loop equ 076D2H   ; main's exa_loop
 p0_le_call_op equ 06E76H   ; main's le_call_op
-p0_print_string equ 045E3H   ; main's print_string
+p0_print_string equ 045DFH   ; main's print_string
 p0_list_num equ 0631CH   ; main's list_num
 p0_print_in_hl equ 0762CH   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

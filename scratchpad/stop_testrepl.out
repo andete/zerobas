@@ -1,0 +1,11 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  type 'HELLO': buf=b'HELLO'
+PASS  'AB' <bs> 'C': buf=b'AC'
+PASS  'AB' <del>: buf=b'AB'
+PASS  <bs> 'X': buf=b'X'
+PASS  'A' <ctrl-A> 'B': buf=b'AB'
+PASS  just Enter: buf=b''
+PASS  'A=1' <left> '2': buf=b'A=2'
+PASS  45 chars, wrapped: buf=b'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+ALL PASS — read_line edits/echoes per the documented editor contract

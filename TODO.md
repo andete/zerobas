@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15495 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15506 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15495 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10979,10 +10979,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       takes read_line's abort to inp_break -- SP back to SAVSTK, do_break at SAVTXT, the
       anchor's `ret`; the REPL's abort path (repl_abort) opens a line without the prompt.
       After: S8 / S9 SAME ([`sessions_s8c.out`](scratchpad/sessions_s8c.out), [`stopinput_a3.out`](scratchpad/stopinput_a3.out)).
-      ⚠️ On the DISK target the press was seen AGAIN by the prompt's read right after the
-      INPUT break (a second `Ok` before repl_abort; [`sessions_s8b.out`](scratchpad/sessions_s8b.out)); it is
-      silent now (an empty aborted line prints nothing) but the double detection is not
-      explained. D-STOPKEY3 (the BIOS's own ^C, INKEY$ = 3) stays open.
+      ✅ **AND TWO MORE ROUNDS THE SAME DAY.** S10_list showed the VG-8020 opens a line on
+      Ctrl-STOP at an EMPTY prompt too (repl_abort's newline is unconditional now); and the
+      DISK target's double detection (a second `Ok`, [`sessions_s8b.out`](scratchpad/sessions_s8b.out); two or three
+      blank lines for one 0.2 s press, [`stopempty_a.out`](scratchpad/stopempty_a.out)) was D-STOPTEAR's torn read:
+      C-BIOS's BREAKX reads the row with interrupts ON, so a longer ISR reads a held key as
+      up -- rl_break now confirms the release with a second read, as rp_exec does. After:
+      S8 / S9 / S10 ALL SAME on both targets ([`sessions_s8910b.out`](scratchpad/sessions_s8910b.out)). The FULL battery then
+      went red on S2_stopcont: the 0.2 s press that BROKE the program was still held when the
+      prompt's read began, which aborted an empty line -- the reference reacts to a PRESS. So
+      every read first waits for the key to be up (rl_release, which rl_break shares); S1 / S2
+      / S8 / S9 / S10 SAME ([`sessions_r4.out`](scratchpad/sessions_r4.out)). D-STOPKEY3 (the
+      BIOS's own ^C, INKEY$ = 3) stays open.
+      ✅ **S10_list (2026-11-06): SAME** ([`S10_list.ses`](probes/sessions/S10_list.ses)): 40 lines through AUTO, LIST
+      forms, LIST ., LLIST, DELETE of a range. (Its {STOP} lands after LIST has finished --
+      the runner waits for idle -- so a break INSIDE a scrolling LIST is not exercised.)
       🔮 Predicted "a divergence in the Redo / Extra messages or CONT after a break in
       INPUT": HIT on the second (it was the break itself).
       ➡️ NEXT sessions: MERGE of an ASCII

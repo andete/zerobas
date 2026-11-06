@@ -1,0 +1,31 @@
+== stopempty_a: 10 steps; Philips_VG_8020: 11 snapshots, last END t=14.7 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (11 snapshots, last END t=12.2 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (11 snapshots, last END t=12.2 w=40; printer same)
+   first screen difference at snapshot 6, after: '10 PRINT "X"'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  PRINT 1
+        ref |   1
+        ref |  Ok
+        ref |
+     !! ref |  10 PRINT "X"
+        zb  |
+     !! ref |
+        zb  |  10 PRINT "X"
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+1 DIFF

@@ -1,0 +1,149 @@
+== S10_list: 56 steps; Philips_VG_8020: 57 snapshots, last END t=236.7 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (57 snapshots, last END t=238.8 w=40; printer same)
+   first screen difference at snapshot 47, after: '{STOP}'
+     !! ref |  210 PRINT "LINE 21":A1=A1+21
+        zb  |  220 PRINT "LINE 22":A2=A2+22
+     !! ref |  220 PRINT "LINE 22":A2=A2+22
+        zb  |  230 PRINT "LINE 23":A3=A3+23
+     !! ref |  230 PRINT "LINE 23":A3=A3+23
+        zb  |  240 PRINT "LINE 24":A4=A4+24
+     !! ref |  240 PRINT "LINE 24":A4=A4+24
+        zb  |  250 PRINT "LINE 25":A0=A0+25
+     !! ref |  250 PRINT "LINE 25":A0=A0+25
+        zb  |  260 PRINT "LINE 26":A1=A1+26
+     !! ref |  260 PRINT "LINE 26":A1=A1+26
+        zb  |  270 PRINT "LINE 27":A2=A2+27
+     !! ref |  270 PRINT "LINE 27":A2=A2+27
+        zb  |  280 PRINT "LINE 28":A3=A3+28
+     !! ref |  280 PRINT "LINE 28":A3=A3+28
+        zb  |  290 PRINT "LINE 29":A4=A4+29
+     !! ref |  290 PRINT "LINE 29":A4=A4+29
+        zb  |  300 PRINT "LINE 30":A0=A0+30
+     !! ref |  300 PRINT "LINE 30":A0=A0+30
+        zb  |  310 PRINT "LINE 31":A1=A1+31
+     !! ref |  310 PRINT "LINE 31":A1=A1+31
+        zb  |  320 PRINT "LINE 32":A2=A2+32
+     !! ref |  320 PRINT "LINE 32":A2=A2+32
+        zb  |  330 PRINT "LINE 33":A3=A3+33
+     !! ref |  330 PRINT "LINE 33":A3=A3+33
+        zb  |  340 PRINT "LINE 34":A4=A4+34
+     !! ref |  340 PRINT "LINE 34":A4=A4+34
+        zb  |  350 PRINT "LINE 35":A0=A0+35
+     !! ref |  350 PRINT "LINE 35":A0=A0+35
+        zb  |  360 PRINT "LINE 36":A1=A1+36
+     !! ref |  360 PRINT "LINE 36":A1=A1+36
+        zb  |  370 PRINT "LINE 37":A2=A2+37
+     !! ref |  370 PRINT "LINE 37":A2=A2+37
+        zb  |  380 PRINT "LINE 38":A3=A3+38
+     !! ref |  380 PRINT "LINE 38":A3=A3+38
+        zb  |  390 PRINT "LINE 39":A4=A4+39
+     !! ref |  390 PRINT "LINE 39":A4=A4+39
+        zb  |  400 PRINT "LINE 40":A0=A0+40
+     !! ref |  400 PRINT "LINE 40":A0=A0+40
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (57 snapshots, last END t=238.8 w=40; printer same)
+   first screen difference at snapshot 47, after: '{STOP}'
+     !! ref |  210 PRINT "LINE 21":A1=A1+21
+        zb  |  220 PRINT "LINE 22":A2=A2+22
+     !! ref |  220 PRINT "LINE 22":A2=A2+22
+        zb  |  230 PRINT "LINE 23":A3=A3+23
+     !! ref |  230 PRINT "LINE 23":A3=A3+23
+        zb  |  240 PRINT "LINE 24":A4=A4+24
+     !! ref |  240 PRINT "LINE 24":A4=A4+24
+        zb  |  250 PRINT "LINE 25":A0=A0+25
+     !! ref |  250 PRINT "LINE 25":A0=A0+25
+        zb  |  260 PRINT "LINE 26":A1=A1+26
+     !! ref |  260 PRINT "LINE 26":A1=A1+26
+        zb  |  270 PRINT "LINE 27":A2=A2+27
+     !! ref |  270 PRINT "LINE 27":A2=A2+27
+        zb  |  280 PRINT "LINE 28":A3=A3+28
+     !! ref |  280 PRINT "LINE 28":A3=A3+28
+        zb  |  290 PRINT "LINE 29":A4=A4+29
+     !! ref |  290 PRINT "LINE 29":A4=A4+29
+        zb  |  300 PRINT "LINE 30":A0=A0+30
+     !! ref |  300 PRINT "LINE 30":A0=A0+30
+        zb  |  310 PRINT "LINE 31":A1=A1+31
+     !! ref |  310 PRINT "LINE 31":A1=A1+31
+        zb  |  320 PRINT "LINE 32":A2=A2+32
+     !! ref |  320 PRINT "LINE 32":A2=A2+32
+        zb  |  330 PRINT "LINE 33":A3=A3+33
+     !! ref |  330 PRINT "LINE 33":A3=A3+33
+        zb  |  340 PRINT "LINE 34":A4=A4+34
+     !! ref |  340 PRINT "LINE 34":A4=A4+34
+        zb  |  350 PRINT "LINE 35":A0=A0+35
+     !! ref |  350 PRINT "LINE 35":A0=A0+35
+        zb  |  360 PRINT "LINE 36":A1=A1+36
+     !! ref |  360 PRINT "LINE 36":A1=A1+36
+        zb  |  370 PRINT "LINE 37":A2=A2+37
+     !! ref |  370 PRINT "LINE 37":A2=A2+37
+        zb  |  380 PRINT "LINE 38":A3=A3+38
+     !! ref |  380 PRINT "LINE 38":A3=A3+38
+        zb  |  390 PRINT "LINE 39":A4=A4+39
+     !! ref |  390 PRINT "LINE 39":A4=A4+39
+        zb  |  400 PRINT "LINE 40":A0=A0+40
+     !! ref |  400 PRINT "LINE 40":A0=A0+40
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+== S8_input: 26 steps; Philips_VG_8020: 27 snapshots, last END t=50.1 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (27 snapshots, last END t=47.8 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (27 snapshots, last END t=47.6 w=40; printer same)
+   first screen difference at snapshot 23, after: '{STOP}'
+     !! ref |  90 INPUT Q
+        zb  |  100 PRINT "Q=";Q
+     !! ref |  100 PRINT "Q=";Q
+        zb  |  110 GOTO 10
+     !! ref |  110 GOTO 10
+        zb  |  RUN
+     !! ref |  RUN
+        zb  |  AGE? TEN
+     !! ref |  AGE? TEN
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  AGE? 12
+     !! ref |  AGE? 12
+        zb  |  A= 12
+     !! ref |  A= 12
+        zb  |  ? 1,2,3
+     !! ref |  ? 1,2,3
+        zb  |  ?Extra ignored
+     !! ref |  ?Extra ignored
+        zb  |   1  2
+     !! ref |   1  2
+        zb  |  NAME? 4
+     !! ref |  NAME? 4
+        zb  |  [4]
+     !! ref |  [4]
+        zb  |  LINE:5
+     !! ref |  LINE:5
+        zb  |  [5]
+     !! ref |  [5]
+        zb  |  ? "SMITH, J"
+     !! ref |  ? "SMITH, J"
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  ?   A, B "C"
+     !! ref |  ?   A, B "C"
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  ?
+     !! ref |  ?
+        zb  |  Break in 90
+     !! ref |  Break in 90
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |
+        ref |
+        ref |  color  auto   goto   list   run
+== S9_breaks: 15 steps; Philips_VG_8020: 16 snapshots, last END t=40.8 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (16 snapshots, last END t=38.6 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     SAME  (16 snapshots, last END t=38.6 w=40; printer same)
+3 DIFF

@@ -90,6 +90,13 @@ def feed(m, keys):
         if st["i"] < len(seq): mm.cpu.f &= ~0x40
         else: mm.cpu.f |= 0x40
 
+    def breakx(mm):
+        """D-STOPINPUT (2026-11-06): read_line polls Ctrl-STOP on EVERY read now
+        (it used to only in AUTO) -- the BIOS entry is not in this image; CF = 0
+        means the key is up."""
+        mm.cpu.f &= ~0x01
+
+    m.trap("BREAKX", breakx)
     m.trap("CHGET", chget)
     m.trap("CHSNS", chsns)
     m.trap("CHPUT", chput)

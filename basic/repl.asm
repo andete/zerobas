@@ -124,11 +124,11 @@ repl_read:
 ; 🔴 D-STOPINPUT (2026-11-06): NO PROMPT. The VG-8020 opens a fresh line and
 ; prints nothing (`PRINT "HALF` + Ctrl-STOP, then the next command on the next
 ; row -- scratchpad/stopinput_a.out); this re-entered `repl` and printed `Ok`.
-; TTYPOS decides the newline, as at repl's own head.
+; The newline is UNCONDITIONAL: on an EMPTY prompt line the VG-8020 still
+; moves down one row (typed session S10_list, a {STOP} after LIST's Ok); a first
+; cut asked TTYPOS and stayed put there.
 repl_abort:
-                ld      a,(TTYPOS)
-                or      a
-                call    nz,print_crlf
+                call    print_crlf
                 jr      repl_read
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
@@ -164,6 +164,13 @@ print_string:
 read_line:
                 ld      hl,LINEBUF
 rl_loop:
+                ; 🔴 D-STOPINPUT round 4 (2026-11-06): a Ctrl-STOP still HELD when the
+                ; read begins is the PREVIOUS press -- typically the one that just broke
+                ; the program (`Break in 70`, typed session S2_stopcont went red: the
+                ; prompt's read saw the same held key and aborted an empty line). The
+                ; reference reacts to a PRESS (its interrupt queues one ^C per press),
+                ; so wait for the key to be up before a press can count.
+                call    rl_release
                 ; D-SCREDIT (docs/spec-basic-screditor.md): the line reader is the
                 ; readline tenant (sub/readline.asm, page 1) -- cursor keys reach
                 ; CHPUT, Enter reads the LOGICAL LINE under the cursor out of VRAM.
@@ -249,11 +256,21 @@ rl_tenant:
                 rla                         ; 1 -> CF clear (Enter); $FF -> CF set (break)
                 ret
 rl_break:                                   ; Ctrl-STOP while a line is read: the
-                call    BREAKX              ; press is CONSUMED first -- wait for the
-                jr      c,rl_break          ; release, or the next read aborts again
+                call    rl_release          ; press is CONSUMED first
                 ld      e,0                 ; then the cursor comes down, CF rides through
                 call    rl_cursor           ; (subrom_call returns CF clear, so
                 scf                         ; set it again)
+                ret
+; rl_release: return once Ctrl-STOP is up -- CONFIRMED by a second read
+; (D-STOPTEAR's rule, basic/program.asm rp_exec): C-BIOS's BREAKX selects the row
+; and reads it with interrupts ON, so an ISR in between reads a HELD key as up. On
+; the DISK target (a longer ISR) one 0.2 s press aborted two or three prompt lines
+; (scratchpad/stopempty_a.out). Clobbers AF.
+rl_release:
+                call    BREAKX
+                jr      c,rl_release
+                call    BREAKX
+                jr      c,rl_release
                 ret
 ; rl_cursor: E = 1 show / 0 remove the line editor's block cursor.
 rl_cursor:
