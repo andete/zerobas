@@ -232,6 +232,7 @@ inpc_print_q:
 ; the first character -- and the [len] byte is written before anything is read.)
 inp_readline:
                 call    read_line           ; LINEBUF <- typed line (clobbers HL,A,B)
+                jr      c,inp_break         ; D-STOPINPUT: Ctrl-C / Ctrl-STOP
                 ld      hl,LINEBUF+255
                 ld      de,LINEBUF+256
                 ld      bc,256
@@ -240,6 +241,20 @@ inp_readline:
                 ld      (INP_CURSOR),hl     ; the read cursor (16-bit)
                 ld      de,linebuf_getbyte
                 ld      (ARL_GETBYTE),de    ; the field splitter reads from LINEBUF
+                ret
+
+; --- inp_break: Ctrl-C or Ctrl-STOP while INPUT waits (D-STOPINPUT) ----------
+; The VG-8020 answers `Break in <line>`, and CONT asks the question AGAIN
+; (scratchpad/stopinput_a.out); zerobas took the ^C as an empty answer and said
+; `?Redo from start`. The break is taken at the INPUT statement's own start
+; (SAVTXT), and from any depth the way the error funnel leaves: SP back to the
+; run loop's anchor (SAVSTK, set in program AND direct mode), do_break's record
+; and message, then the anchor's `ret` -- the loop's own exit (fre_abort_low's
+; argument, basic/arrays.asm).
+inp_break:
+                ld      sp,(SAVSTK)
+                ld      hl,(SAVTXT)         ; CONT re-runs this INPUT
+                call    do_break            ; record, `Break in <line>`, ENDFLAG
                 ret
 
 ; --- inpc_more_input: is there another field to read from LINEBUF? ----------

@@ -1,0 +1,17 @@
+# S9_breaks (D-SESSIONS / D-STOPINPUT, 2026-11-06): Ctrl-C and Ctrl-STOP while INPUT waits
+# (`Break in 10`, CONT asks again) and Ctrl-STOP at the prompt mid-line (the line is
+# abandoned, a fresh line, NO `Ok`) -- the VG-8020; zerobas lost the press.
+NEW
+10 INPUT Q
+20 PRINT "Q=";Q
+RUN
+{CTRLC}
+CONT
+5
+RUN
+12{NOCR}
+{STOP}
+PRINT "AFTER"
+PRINT "HALF{NOCR}
+{STOP}
+PRINT "NEXT"

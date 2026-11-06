@@ -1,0 +1,15 @@
+# D-STOPINPUT: Ctrl-C and Ctrl-STOP while INPUT waits, and Ctrl-STOP at the prompt
+NEW
+10 INPUT Q
+20 PRINT "Q=";Q
+RUN
+{CTRLC}
+CONT
+5
+RUN
+12{NOCR}
+{STOP}
+PRINT "AFTER"
+PRINT "HALF{NOCR}
+{STOP}
+PRINT "NEXT"

@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `INPUT` — read a typed line into variables
 
-> **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. One
 > recorded difference: text after a closing quote read from a cassette file
 > (below); at the console and from a disk file it agrees since 2026-11-05.
@@ -121,6 +121,15 @@ RAM comparison has rows only for the file form `INPUT #`, none yet for the
 keyboard form.
 
 ## What we found, and how
+
+- **Ctrl-STOP while `INPUT` waited did nothing** (fixed 2026-11-06,
+  D-STOPINPUT; found by a typed session). On the VG-8020 Ctrl-STOP or Ctrl-C
+  at an `INPUT` question stops the program with `Break in <line>`, and `CONT`
+  asks the question again. zerobas lost the Ctrl-STOP press, so the next
+  thing typed became the answer, and took Ctrl-C as an empty answer
+  (`?Redo from start`). The same sessions found that Ctrl-STOP at the `Ok`
+  prompt abandons a half-typed line without printing `Ok`
+  ([session](../../probes/sessions/S9_breaks.ses)).
 
 - **Text typed after a closing quote was accepted** (fixed 2026-11-05,
   D-INPQUOTE2). At an `INPUT A$`, blanks or a comma may follow a closing

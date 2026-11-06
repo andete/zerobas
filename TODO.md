@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15476 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15495 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15476 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15495 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10966,6 +10966,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       by retyping, ERR / ERL in direct mode, RESUME / CONT with nothing to resume, GOTO a
       missing line, 1/0, 2^1000, NEXT, `A$=5`, SQR(-1). 🔮 Predicted "a divergence in what
       follows a program syntax error": MISSED -- the error paths hold.
+      ✅ **S8_input + S9_breaks (2026-11-06): SAME after the fix they FOUND --**
+      [`S8_input.ses`](probes/sessions/S8_input.ses) (Redo from start, Extra ignored, a quoted comma, LINE
+      INPUT, Ctrl-STOP during INPUT, CONT), [`S9_breaks.ses`](probes/sessions/S9_breaks.ses). **D-STOPINPUT:** Ctrl-STOP
+      while INPUT waits is `Break in 90` on the VG-8020 (CONT asks again); zerobas LOST the
+      press -- the REPL / INPUT read blocked in CHGET, which never sees Ctrl-STOP -- so the
+      next typed line became the answer; Ctrl-C there was taken as an empty answer
+      (`?Redo from start`); and Ctrl-STOP at the prompt mid-line abandons the line with NO
+      `Ok` there ([`stopinput_a.out`](scratchpad/stopinput_a.out), [`sessions_s8.out`](scratchpad/sessions_s8.out)). Fix: read_line
+      (basic/repl.asm) polls Ctrl-STOP for EVERY caller (rl_poll, AUTO's loop, now
+      unconditional) and rl_break waits for the release; inp_readline (basic/input.asm)
+      takes read_line's abort to inp_break -- SP back to SAVSTK, do_break at SAVTXT, the
+      anchor's `ret`; the REPL's abort path (repl_abort) opens a line without the prompt.
+      After: S8 / S9 SAME ([`sessions_s8c.out`](scratchpad/sessions_s8c.out), [`stopinput_a3.out`](scratchpad/stopinput_a3.out)).
+      ⚠️ On the DISK target the press was seen AGAIN by the prompt's read right after the
+      INPUT break (a second `Ok` before repl_abort; [`sessions_s8b.out`](scratchpad/sessions_s8b.out)); it is
+      silent now (an empty aborted line prints nothing) but the double detection is not
+      explained. D-STOPKEY3 (the BIOS's own ^C, INKEY$ = 3) stays open.
+      🔮 Predicted "a divergence in the Redo / Extra messages or CONT after a break in
+      INPUT": HIT on the second (it was the break itself).
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-

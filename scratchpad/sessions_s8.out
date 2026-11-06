@@ -1,0 +1,100 @@
+== S8_input: 26 steps; Philips_VG_8020: 27 snapshots, last END t=50.1 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (27 snapshots, last END t=55.6 w=40; printer same)
+   first screen difference at snapshot 23, after: '{STOP}'
+     !! ref |  90 INPUT Q
+        zb  |  60 PRINT "[";N$;"]"
+     !! ref |  100 PRINT "Q=";Q
+        zb  |  70 LINE INPUT "LINE:";L$
+     !! ref |  110 GOTO 10
+        zb  |  80 PRINT "[";L$;"]"
+     !! ref |  RUN
+        zb  |  90 INPUT Q
+     !! ref |  AGE? TEN
+        zb  |  100 PRINT "Q=";Q
+     !! ref |  ?Redo from start
+        zb  |  110 GOTO 10
+     !! ref |  AGE? 12
+        zb  |  RUN
+     !! ref |  A= 12
+        zb  |  AGE? TEN
+     !! ref |  ? 1,2,3
+        zb  |  ?Redo from start
+     !! ref |  ?Extra ignored
+        zb  |  AGE? 12
+     !! ref |   1  2
+        zb  |  A= 12
+     !! ref |  NAME? 4
+        zb  |  ? 1,2,3
+     !! ref |  [4]
+        zb  |  ?Extra ignored
+     !! ref |  LINE:5
+        zb  |   1  2
+     !! ref |  [5]
+        zb  |  NAME? 4
+     !! ref |  ? "SMITH, J"
+        zb  |  [4]
+     !! ref |  ?Redo from start
+        zb  |  LINE:5
+     !! ref |  ?   A, B "C"
+        zb  |  [5]
+     !! ref |  ?Redo from start
+        zb  |  ? "SMITH, J"
+     !! ref |  ?
+        zb  |  ?Redo from start
+     !! ref |  Break in 90
+        zb  |  ?   A, B "C"
+     !! ref |  Ok
+        zb  |  ?Redo from start
+     !! ref |
+        zb  |  ?
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (27 snapshots, last END t=55.6 w=40; printer same)
+   first screen difference at snapshot 23, after: '{STOP}'
+     !! ref |  90 INPUT Q
+        zb  |  60 PRINT "[";N$;"]"
+     !! ref |  100 PRINT "Q=";Q
+        zb  |  70 LINE INPUT "LINE:";L$
+     !! ref |  110 GOTO 10
+        zb  |  80 PRINT "[";L$;"]"
+     !! ref |  RUN
+        zb  |  90 INPUT Q
+     !! ref |  AGE? TEN
+        zb  |  100 PRINT "Q=";Q
+     !! ref |  ?Redo from start
+        zb  |  110 GOTO 10
+     !! ref |  AGE? 12
+        zb  |  RUN
+     !! ref |  A= 12
+        zb  |  AGE? TEN
+     !! ref |  ? 1,2,3
+        zb  |  ?Redo from start
+     !! ref |  ?Extra ignored
+        zb  |  AGE? 12
+     !! ref |   1  2
+        zb  |  A= 12
+     !! ref |  NAME? 4
+        zb  |  ? 1,2,3
+     !! ref |  [4]
+        zb  |  ?Extra ignored
+     !! ref |  LINE:5
+        zb  |   1  2
+     !! ref |  [5]
+        zb  |  NAME? 4
+     !! ref |  ? "SMITH, J"
+        zb  |  [4]
+     !! ref |  ?Redo from start
+        zb  |  LINE:5
+     !! ref |  ?   A, B "C"
+        zb  |  [5]
+     !! ref |  ?Redo from start
+        zb  |  ? "SMITH, J"
+     !! ref |  ?
+        zb  |  ?Redo from start
+     !! ref |  Break in 90
+        zb  |  ?   A, B "C"
+     !! ref |  Ok
+        zb  |  ?Redo from start
+     !! ref |
+        zb  |  ?
+        ref |  color  auto   goto   list   run
+2 DIFF

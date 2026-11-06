@@ -1,0 +1,29 @@
+# S8_input (D-SESSIONS, 2026-11-06): a program asking questions, answered at the
+# keyboard -- a number given a word (?Redo from start), too many values (?Extra
+# ignored), too few, an empty answer, a quoted string with a comma, LINE INPUT,
+# a prompt string, and Ctrl-STOP while INPUT waits, then CONT.
+NEW
+10 INPUT "AGE";A
+20 PRINT "A=";A
+30 INPUT X,Y
+40 PRINT X;Y
+50 INPUT "NAME";N$
+60 PRINT "[";N$;"]"
+70 LINE INPUT "LINE:";L$
+80 PRINT "[";L$;"]"
+90 INPUT Q
+100 PRINT "Q=";Q
+110 GOTO 10
+RUN
+TEN
+12
+1,2,3
+4
+5
+"SMITH, J"
+  A, B "C"
+{STOP}
+CONT
+7
+{STOP}
+PRINT A;X;Y;N$;L$

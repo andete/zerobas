@@ -1,0 +1,50 @@
+== S8_input: 26 steps; Philips_VG_8020: 27 snapshots, last END t=50.1 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   SAME  (27 snapshots, last END t=47.8 w=40; printer same)
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (27 snapshots, last END t=47.5 w=40; printer same)
+   first screen difference at snapshot 23, after: '{STOP}'
+     !! ref |  90 INPUT Q
+        zb  |  100 PRINT "Q=";Q
+     !! ref |  100 PRINT "Q=";Q
+        zb  |  110 GOTO 10
+     !! ref |  110 GOTO 10
+        zb  |  RUN
+     !! ref |  RUN
+        zb  |  AGE? TEN
+     !! ref |  AGE? TEN
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  AGE? 12
+     !! ref |  AGE? 12
+        zb  |  A= 12
+     !! ref |  A= 12
+        zb  |  ? 1,2,3
+     !! ref |  ? 1,2,3
+        zb  |  ?Extra ignored
+     !! ref |  ?Extra ignored
+        zb  |   1  2
+     !! ref |   1  2
+        zb  |  NAME? 4
+     !! ref |  NAME? 4
+        zb  |  [4]
+     !! ref |  [4]
+        zb  |  LINE:5
+     !! ref |  LINE:5
+        zb  |  [5]
+     !! ref |  [5]
+        zb  |  ? "SMITH, J"
+     !! ref |  ? "SMITH, J"
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  ?   A, B "C"
+     !! ref |  ?   A, B "C"
+        zb  |  ?Redo from start
+     !! ref |  ?Redo from start
+        zb  |  ?
+     !! ref |  ?
+        zb  |  Break in 90
+     !! ref |  Break in 90
+        zb  |  Ok
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+1 DIFF

@@ -1,0 +1,56 @@
+== stopinput_a: 15 steps; Philips_VG_8020: 16 snapshots, last END t=40.8 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (16 snapshots, last END t=34.0 w=40; printer same)
+   first screen difference at snapshot 15, after: '{STOP}'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 INPUT Q
+        ref |  20 PRINT "Q=";Q
+        ref |  RUN
+        ref |  ?
+        ref |  Break in 10
+        ref |  Ok
+        ref |  CONT
+        ref |  ? 5
+        ref |  Q= 5
+        ref |  Ok
+        ref |  RUN
+        ref |  ? 12
+        ref |  Break in 10
+        ref |  Ok
+        ref |  PRINT "AFTER"
+        ref |  AFTER
+        ref |  Ok
+        ref |  PRINT "HALF
+     !! ref |
+        zb  |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (16 snapshots, last END t=34.0 w=40; printer same)
+   first screen difference at snapshot 15, after: '{STOP}'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 INPUT Q
+        ref |  20 PRINT "Q=";Q
+        ref |  RUN
+        ref |  ?
+        ref |  Break in 10
+        ref |  Ok
+        ref |  CONT
+        ref |  ? 5
+        ref |  Q= 5
+        ref |  Ok
+        ref |  RUN
+        ref |  ? 12
+        ref |  Break in 10
+        ref |  Ok
+        ref |  PRINT "AFTER"
+        ref |  AFTER
+        ref |  Ok
+        ref |  PRINT "HALF
+     !! ref |
+        zb  |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF

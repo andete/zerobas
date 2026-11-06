@@ -106,8 +106,8 @@ repl_read:
                                             ; read -- also after a STORED line,
                                             ; which has no prompt (M alone)
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
-                jr      c,repl              ; CF set = ABORTED (Ctrl-C, D-CTRLC):
-                                            ; discarded unexecuted, and prompted
+                jr      c,repl_abort        ; CF set = ABORTED (Ctrl-C, D-CTRLC;
+                                            ; Ctrl-STOP, D-STOPINPUT): discarded
                 ; D-OKSTORE: the prompt follows only a direct command or an error --
                 ; the protocol and the two cuts that failed are at PRMWANT
                 ; (basic/sysvars.inc). ⚠️ A = 2 HERE BY read_line's CONTRACT (its
@@ -119,6 +119,17 @@ repl_read:
                 or      a
                 jr      z,repl_read         ; a silent line: no prompt
                 jr      repl
+
+; --- repl_abort: a typed line abandoned with Ctrl-C / Ctrl-STOP ------------
+; 🔴 D-STOPINPUT (2026-11-06): NO PROMPT. The VG-8020 opens a fresh line and
+; prints nothing (`PRINT "HALF` + Ctrl-STOP, then the next command on the next
+; row -- scratchpad/stopinput_a.out); this re-entered `repl` and printed `Ok`.
+; TTYPOS decides the newline, as at repl's own head.
+repl_abort:
+                ld      a,(TTYPOS)
+                or      a
+                call    nz,print_crlf
+                jr      repl_read
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
 ; D-REREAD-EDGES: print_dbwin = HL := DB_WIN, then fall in (LIST and PRINT
@@ -192,9 +203,14 @@ rl_wait:
                 ; a key and down while the tenant edits (sub/cursor.asm).
                 ld      e,1
                 call    rl_cursor
-                ld      a,(RL_AUTO)
-                or      a
-                jr      z,rl_get            ; REPL: block in CHGET, as it always did
+                ; 🔴 D-STOPINPUT (2026-11-06, typed session S8_input): EVERY line read
+                ; polls Ctrl-STOP now, not only AUTO's. On the VG-8020 Ctrl-STOP during
+                ; INPUT is `Break in <line>` and at the prompt it abandons the line
+                ; (scratchpad/stopinput_a.out); here the REPL / INPUT blocked in CHGET,
+                ; which never sees the key, so the press was lost and the next typed
+                ; line became INPUT's answer. (The reference's keyboard interrupt also
+                ; queues a ^C -- D-STOPKEY3 -- which its line editor reads as the same
+                ; abort; polling here reaches that abort without the BIOS change.)
 rl_poll:                                    ; R-AU8: an AUTO session may NOT block
                 call    BREAKX              ; CF set = Ctrl-STOP is down
                 jr      c,rl_break
@@ -232,8 +248,10 @@ rl_tenant:
                 jr      z,rl_wait           ; 0: more keys
                 rla                         ; 1 -> CF clear (Enter); $FF -> CF set (break)
                 ret
-rl_break:                                   ; Ctrl-STOP while AUTO polls: the cursor
-                ld      e,0                 ; comes down first, CF rides through
+rl_break:                                   ; Ctrl-STOP while a line is read: the
+                call    BREAKX              ; press is CONSUMED first -- wait for the
+                jr      c,rl_break          ; release, or the next read aborts again
+                ld      e,0                 ; then the cursor comes down, CF rides through
                 call    rl_cursor           ; (subrom_call returns CF clear, so
                 scf                         ; set it again)
                 ret
