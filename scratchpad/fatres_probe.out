@@ -1,0 +1,6 @@
+== National_CF-3300 normal boot: HIMEM $DE77; SAVE changed the FAT on disk: True
+   after FILES: FAT[0..11] = f9 ff ff 03 f0 ff ff ff ff ff ff ff; in RAM at $E595 (matches 1536 of 1536 B), $EF95 (matches 513 of 1536 B)
+   after SAVE: FAT[0..11] = f9 ff ff 03 f0 ff ff ff ff ff ff ff; in RAM at $E595 (matches 1536 of 1536 B), $EF95 (matches 13 of 1536 B)
+== National_CF-3300 CTRL boot: HIMEM $E48D; SAVE changed the FAT on disk: True
+   after FILES: FAT[0..11] = f9 ff ff 03 f0 ff ff ff ff ff ff ff; in RAM at $E5AA (matches 1536 of 1536 B), $EFAA (matches 513 of 1536 B)
+   after SAVE: FAT[0..11] = f9 ff ff 03 f0 ff ff ff ff ff ff ff; in RAM at $E5AA (matches 1536 of 1536 B), $EFAA (matches 13 of 1536 B)

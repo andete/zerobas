@@ -1,0 +1,47 @@
+National_CF-3300 ENDED t=105.7
+ 1 N 5  6 
+ 2 N 5  6 
+ 3 N 56  7 
+ 4 N 5  6 
+ 5 N 5  6 
+ 6 N 5  6 
+ 7 N-5  6 
+ 8 N 5.5  6 
+ 9 N 5  6 
+ 10 S [AB][CD] 2  2 
+ 11 S [AB][CD] 2  2 
+ 12 S [A
+B][CD] 3  2 
+ 13 S [AB][CD] 2  2 
+ 14 S [AB][CD] 2  2 
+ 15 L 3  2 [CD]
+ 16 L 3  2 [CD]
+ 17 L 2  2 [CD]
+ 18 L 2  3 [
+CD]
+ 19 L 6  2 [EF]
+END
+
+C-BIOS_MSX1_EU_REPACK_DISK ENDED t=87.6
+ 1 N 5  6 
+ 2 N 5  6 
+ 3 N 5  7 
+ 4 N 5  6 
+ 5 N 5  6 
+ 6 N 5  6 
+ 7 N 0  6 
+ 8 N 5  6 
+ 9 N 5  6 
+ 10 S [AB][CD] 2  2 
+ 11 S [AB][CD] 2  2 
+ 12 S [A
+B][CD] 3  2 
+ 13 S [AB][CD] 2  2 
+ 14 S [AB][CD] 2  2 
+ 15 L 2  2 [CD]
+ 16 L 2  2 [CD]
+ 17 L 2  2 [CD]
+ 18 L 2  2 [CD]
+ 19 L 4  2 [EF]
+END
+

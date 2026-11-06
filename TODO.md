@@ -76,6 +76,25 @@ item — do **one item per session** to keep context lean.
       LF before / after spaces, digits, a quote, a comma, in LINE INPUT# -- then fix the
       sequential reader (seqio tenant). Not a TIER 1 path: L5_files now reads 11 bytes so its
       INPUT$ does not split a CR LF pair.
+      ✅ **MEASURED AND MOSTLY FIXED 2026-11-06.** A 19-case grid, one char class each
+      ([`inplf_grid.bas`](scratchpad/inplf_grid.bas) -> [`inplf_grid2.out`](scratchpad/inplf_grid2.out); `|` a lone LF, `^` CR, `~` a quote):
+      the CF-3300's rules are (1) an LF INSIDE a number read by INPUT # is skipped (`5|6` 56,
+      `-|5` -5, `5.|5` 5.5; zerobas stored it and ended the number) -- leading / around a comma
+      / after a CR the same on both; (2) an unquoted string FIELD drops it, a quoted one keeps
+      it (both, already); (3) LINE INPUT # KEEPS a lone LF in the line (`|AB` 3, `A|B` 3,
+      `AB||CD` 6), the LF of a CR LF pair is swallowed (`AB^|CD` -> CD), the second of `^||`
+      kept. Fix: disk/fat.asm din_num skips an LF in a number's body; basic/files.asm
+      read_into_strscr keeps an LF in LINE mode when the source is the DISK reader
+      (fat_io_seqbyte -- hk_chin pairs CR LF; the tape source does not, unmeasured, so tape
+      keeps the old rule). After: the grid SAME ([`inplf_after.out`](scratchpad/inplf_after.out)); inplf_measure still differs
+      ONLY in (A) -- INPUT$ took the CR, and the next INPUT # reads an EMPTY field (0) there
+      where zerobas skips the LF (36): the CR state survives INPUT$ on the reference. That
+      residual stays open here. 🔴 The first cut of ris_lf sat in front of ris_keep and the
+      quote arm's `jr z,ris_setq` FELL INTO it: LINE INPUT # from TAPE lost its quotes
+      (castail-acceptance cas2-open `10 PRINTZQ9`, [`inplf_castail.out`](scratchpad/inplf_castail.out) after the move: 47/47).
+      (The grid's first draft wrote `""` in DATA, which MSX does
+      not escape: the CF-3300 said Syntax error in 1020 and zerobas accepted the line --
+      a malformed-DATA difference, not chased.)
 
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
@@ -7721,7 +7740,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10154 (T-6FE392)8 (T-529ABE)` from `TODO.md:15523 (T-529ABE)`: a
+      `TODO.md:10173 (T-6FE392)8 (T-529ABE)` from `TODO.md:15542 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10460,7 +10479,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15523 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15542 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

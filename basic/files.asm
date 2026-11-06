@@ -1242,8 +1242,9 @@ ris_lp:
                                             ; cas_in_getbyte (CAS: input), set by
                                             ; arl_set_src per channel type
                 jp     c,ris_done          ; EOF -> stop
-                cp      $0A                 ; ignore LF entirely
-                jr      z,ris_lp
+                cp      $0A                 ; an LF -- ignored in a FIELD, but
+                jr      z,ris_lf            ; see ris_lf for LINE INPUT # from disk
+ris_notlf:
                 cp      $0D                 ; CR ends the line / field
                 jp     z,ris_done
                 ld      c,a                 ; C = candidate data byte
@@ -1324,7 +1325,28 @@ ris_qhit:
                 ld      a,','               ; the closing quote: now await the comma
 ris_setq:
                 ld      (STRSCR),a
-                jr      ris_lp
+                jp      ris_lp              ; (`jp`: D-INPLF's ris_lf, +1 B)
+; 🔴 D-INPLF (2026-11-06): LINE INPUT # from a DISK channel KEEPS a lone LF in
+; the line, as the CF-3300 does (`A<LF>B` -> 3 characters; `<LF>AB` -> 3; the LF
+; of a CR LF pair is still swallowed by disk.rom's reader, hk_chin's R2 --
+; scratchpad/inplf_grid2.out cases 15-19); this dropped every LF. A FIELD drops
+; it on both (case 11). Tape keeps the old rule: its byte source has no CR LF
+; pairing, and keeping the LF there would start every line with one (unmeasured).
+; ⚠️ SITED AFTER AN UNCONDITIONAL JUMP: its first cut sat in front of ris_keep, and
+; the quote arm's `jr z,ris_setq` FELL INTO it -- LINE INPUT # from tape lost its
+; quotes (castail-acceptance cas2-open: `10 PRINTZQ9`).
+ris_lf:
+                ld      c,a                 ; C = $0A
+                ld      a,(FCH_RDMODE)
+                or      a
+                jp      z,ris_lp            ; a field: ignored
+                ld      hl,(ARL_GETBYTE)
+                ld      de,fat_io_seqbyte
+                or      a
+                sbc     hl,de
+                jp      nz,ris_lp           ; not the disk reader: ignored
+                jr      ris_keep            ; C = $0A, kept
+
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sidr_done,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

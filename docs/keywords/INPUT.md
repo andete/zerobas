@@ -122,6 +122,16 @@ keyboard form.
 
 ## What we found, and how
 
+- **A line feed on its own in a data file was read differently** (fixed
+  2026-11-06, D-INPLF; found by the program ladder). MSX writes a carriage
+  return and a line feed at each line's end, and both machines read that
+  pair the same way. A line feed WITHOUT the carriage return is rare, but the
+  CF-3300 has rules for it: inside a number read by `INPUT #` it is skipped
+  (`5`, line feed, `6` reads 56; zerobas read 5), and `LINE INPUT #` keeps it
+  as a character of the line (zerobas dropped it). Both now match on disk
+  ([readings](../../scratchpad/inplf_grid2.out)). Still different: a line feed
+  read right after `INPUT$` took the carriage return in front of it.
+
 - **Ctrl-STOP while `INPUT` waited did nothing** (fixed 2026-11-06,
   D-STOPINPUT; found by a typed session). On the VG-8020 Ctrl-STOP or Ctrl-C
   at an `INPUT` question stops the program with `Break in <line>`, and `CONT`

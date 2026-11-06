@@ -737,6 +737,11 @@ dnm_body:
                 cp      $0D
                 jr      z, dnm_tail
                 call    din_take            ; A = the byte
+                cp      $0A                 ; 🔴 D-INPLF (2026-11-06): an LF INSIDE a
+                jr      z, dnm_body         ; number is skipped -- `5<LF>6` is 56,
+                                            ; `-<LF>5` -5, `5.<LF>5` 5.5 on the CF-3300
+                                            ; (scratchpad/inplf_grid2.out 3 / 7 / 8);
+                                            ; it was stored and ended the number
                 ld      c, a
                 ld      hl, STRSCR
                 ld      a, (hl)
