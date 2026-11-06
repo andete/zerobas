@@ -243,27 +243,6 @@ conin_body:
                 pop     bc
                 ret
 
-; --- innoe_body / dirin_body - the $544E INNOE / $5462 DIRIN canonical entries
-; (M22a) -- blocking read, NO echo (the published BDOS $08/$07 contract, as
-; distinct from $01 CONIN's echo). Pinned identical at this probe's granularity
-; (tier2-m22-cpmver-spec.md §6.3): dirin_body tail-jumps into innoe_body.
-; B/C/D/E preserved; A := char.
-; CLEAN-ROOM: published INNOE/DIRIN contracts (map.grauw.nl) + CHGET; no oracle bytes.
-innoe_body:
-                push    bc
-                push    de
-                push    hl
-                di
-                call    pg0_mainrom_in
-                call    $009F               ; CHGET: blocking; A := char (no echo)
-                push    af
-                call    pg0_mainrom_out
-                ei
-                pop     af
-                pop     hl
-                pop     de
-                pop     bc
-                ret
 dirin_body:
                 jp      innoe_body
 
@@ -700,6 +679,67 @@ dos_clear_screen:
 ; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
+; hdl_run -- D-LOADRUN (2026-11-06): LOAD's line body, a SECTOR RUN at a time.
+; hk_dpload copied a body byte by byte through fat_io_getbyte (~450 T a byte, ~93 ms
+; a 512 B sector): the drive passes the next sector while LOAD still works on this
+; one, and every sector costs a wait (scratchpad/fdccmd_sectmiss.out). Called after
+; ONE byte went the ordinary way -- which refilled the sector or met the end of the
+; file -- it copies min(body left, bytes left in the sector) with one ldir, when
+; that run also fits the file (FREAD_LEFT, low word: a remainder >= 64 K just fails
+; the subtraction and keeps the byte path) and stays below TXTMAX. Anything else
+; returns with nothing done, so the byte path meets every edge -- end of file,
+; out of memory -- exactly as before.
+;   in: DE = body bytes left; out: DE less the bytes copied. Clobbers A, BC, HL.
+; 📍 Here, before the $7F7C pin: the one disk.rom region with the room (D-DISKJR).
+hdl_run:
+                ld      hl,512
+                ld      bc,(FREAD_OFF)
+                or      a
+                sbc     hl,bc               ; HL = bytes left in the sector
+                sbc     hl,de               ; (CF = 0: OFF <= 512)
+                add     hl,de               ; CF = 1: fewer than the body
+                jr      c,hr_n
+                ld      h,d
+                ld      l,e                 ; HL = n = min(sector, body)
+hr_n:           ld      a,h
+                or      l
+                ret     z
+                push    de                  ; [body]
+                ld      b,h
+                ld      c,l                 ; BC = n
+                ld      hl,(CLPTR)
+                push    hl                  ; [dest]
+                add     hl,bc               ; the run's end
+                ld      de,TXTMAX+1
+                or      a
+                sbc     hl,de
+                jr      nc,hr_pop           ; past TXTMAX: the byte path raises it
+                ld      hl,(FREAD_LEFT)
+                or      a
+                sbc     hl,bc
+                jr      c,hr_pop            ; the file ends first: the byte path
+                ld      (FREAD_LEFT),hl
+                ld      hl,(FREAD_OFF)
+                push    hl
+                add     hl,bc
+                ld      (FREAD_OFF),hl
+                pop     hl
+                ld      de,FAT_DBUF
+                add     hl,de               ; the source
+                pop     de                  ; the destination
+                push    bc                  ; [n]
+                ldir
+                ld      (CLPTR),de
+                pop     bc
+                pop     hl                  ; the body
+                or      a
+                sbc     hl,bc
+                ex      de,hl               ; DE = body - n
+                ret
+hr_pop:         pop     hl
+                pop     de
+                ret
+
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
                 ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).

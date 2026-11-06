@@ -1,0 +1,15 @@
+all=0
+allfn=0
+tape=0
+tiers=0
+ M scratchpad/LOOP-RESTART.md
+ M scratchpad/missop3_probe.py
+ M scratchpad/playop_probe.py
+ M scratchpad/subrom_arch_report.md
+ M scratchpad/subrom_demand_report.md
+GATE TIER: SCOPED
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): disk/driver.asm disk/kernel.asm disk/runtime.asm
+  why: probe/tool change: tests/test_loadrun.py
+rc=0
+GATES: 57/57 green
+GATE TIER RAN: SCOPED (6 emulator suites)

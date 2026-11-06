@@ -1432,6 +1432,20 @@ item — do **one item per session** to keep context lean.
       the FDC loops -- and four entry vectors plus the two jumps into the FDC data bodies kept
       3 B). The bytes collect before each region's pin: `$7F7C` 30 B, `$75A5` 25 B (hdl_body's
       region); disk free 176 -> 228 B.
+      ✅ **D-LOADRUN (2026-11-06): LOAD's line body a SECTOR RUN at a time.** After one body
+      byte goes the ordinary way (refill / EOF), `hdl_run` (disk/runtime.asm, called from
+      hdl_body in disk/kernel.asm) copies min(body left, bytes left in the sector) with one
+      `ldir`, when the run fits the file (FREAD_LEFT) and stays below TXTMAX; anything else
+      returns untouched and the byte path meets the edge as before. 78 B: the $7F7C region
+      took it after `innoe_body`, `wrseq_body` and `install_f365` moved into holes
+      ($75A5 / $44F4 / $5552; wrseq's `jr` out became a `jp`). 📏 ([`loadrun_clock.out`](scratchpad/loadrun_clock.out)
+      against [`loadclock_1106.out`](scratchpad/loadclock_1106.out)): LOAD 1 KB 0.75 -> 0.62 s,
+      7 KB 4.69 -> 3.80, **14 KB 8.94 -> 6.76** (CF-3300 2.94). 🔮 Predicted ~5 s for 14 KB:
+      MISSED -- the per-cluster FAT re-read (blocker (1), the resident FAT) is the rest.
+      tests/test_loadrun.py: the as-built LOAD against the byte path (hdl_run trapped) on a
+      whole file, 17 early ends around sector edges and 4 TXTMAX collisions -- same status,
+      CLPTR and RAM -- plus a two-sided step-budget control (as built finishes, the byte path
+      cannot).
       ➡️ NEXT: fix (i)-(iv) above, then re-apply; (a) FILES' +36 %; (b) slice 1b / 2 (the scans and the write path from FATRES --
       frees ROM); (c) **the small-operation gap itself: 14-15x the CF-3300** (it caches far
       more than the FAT across operations); (d) LOAD's per-sector CPU (~93 ms a 512 B sector,
@@ -7800,7 +7814,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10233 (T-6FE392)8 (T-529ABE)` from `TODO.md:15623 (T-529ABE)`: a
+      `TODO.md:10247 (T-6FE392)8 (T-529ABE)` from `TODO.md:15637 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10539,7 +10553,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15623 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15637 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

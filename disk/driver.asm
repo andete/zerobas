@@ -415,6 +415,64 @@ hdls_tok:
                 ld      e,a
                 jr      hdls_lp
                 include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE)
+; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
+; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.
+; fat_mount_tail — verbatim relocation of disk/fat.asm's fat_mount continuation
+; (from the numFATs*secPerFAT multiply setup through the final `ret`,
+; unchanged). Moved here only because the multiply's `ld hl,0` tail byte
+; collided with the new $477D WRSEQ-worker canonical entry; reached solely by
+; fat_mount's own `jp fat_mount_tail` fall-through (position-free, no
+; external caller). The diversion point had to move one instruction earlier
+; than the collision itself (to `ld b,a`) to leave enough room for the
+; 3-byte veneer to land exactly at $477D (a 3-byte-for-3-byte swap at the
+; collision point alone leaves zero slack).
+; wrseq_body — MSX-DOS-1 kernel per-record sequential-I/O worker entry
+; $477D's body. CORRECTED (M25, tier2-m24-fclose-multicluster-spec.md
+; "UPDATE 2"): the RAM kernel CALLs $477D for EVERY sequential record
+; access -- BOTH BDOS $15 WRSEQ *and* BDOS $14 RDSEQ share this ONE page-1
+; entry (confirmed black-box via `callwatch --in-func 0x14`; no register at
+; entry distinguishes direction -- BC/DE/HL/AF identical in shape between a
+; genuine WRSEQ hit and a RDSEQ hit), so direction is read from OUR OWN
+; BDOS_WRMODE cell instead: nonzero forwards to bdos_seqwrite (unchanged);
+; zero forwards to bdos_seqread. The companion fix in fopen_fill_body
+; (disk/fat.asm) seeds the read-iterator state (fat_open, BDOS_RECIDX,
+; BDOS_BYTESLEFT) that bdos_seqread depends on and that a real kernel-driven
+; FOPEN never populated before -- without it bdos_seqread ran but always
+; reported false EOF.
+; DTA staleness (M21b lesson, see k_47B2 above): the kernel's real SETDTA
+; only ever writes DOS_DTAPTR ($F23D), never our own mini-BDOS's BDOS_DTA
+; cell, so BDOS_DTA must be reseeded from DOS_DTAPTR before EITHER
+; bdos_seqread or bdos_seqwrite consumes it -- both directions need the
+; reseed, not just write. DE (=IY=$DA40 kernel FCB pointer) is not consumed
+; by either -- both are single-open-file global state, same as Tier-1. Exit
+; A=$00/$01/$FF passes straight through from whichever real routine ran.
+; $F306 left untouched (M24 spec §5 item 4: no observed load-bearing exit HL
+; for this entry family -- default to the kernel's own H:=B,L:=A mirror
+; unless the acceptance diff proves otherwise).
+;
+; M33 (tier2-m33-m32-fcb-position-spec.md §2.2) added the RDSEQ FCB position
+; write-back HERE, in the read branch only -- NOT inside bdos_seqread_body,
+; which is a SHARED routine also reached by RRND $21 (rdrnd_body, kernel.asm
+; ~2697, which does its own M26 copy+32:=copy+33 bookkeeping) and by the boot
+; mini-BDOS (driver.asm bdos_entry, which must stay byte-identical). Putting
+; the write-back inside bdos_seqread_body would corrupt those other callers'
+; FCBs / the boot path, so instead the read branch's tail-jump becomes a call
+; + inline write-back + ret. Only on a DELIVERED record (A=$00 on return; on
+; A=$01 EOF, §2.3, skip it -- stock's position stops at/after EOF). Body =
+; wrseq_writeback (free tail): writes copy+32/+12/+28/29/+30 from the fixed
+; FCB-copy base $DA40 (a constant here -- no register to preserve across the
+; call). A is stashed across the write-back and restored before ret so
+; bdos_seqread's pass-through A/HL exit contract is unchanged.
+wrseq_body:
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ld      a, (BDOS_WRMODE)
+                or      a
+                jp      nz, wrseq_body_write ; (`jp`: moved away from it, D-LOADRUN)
+                call    bdos_seqread
+                or      a
+                call    z, wrseq_writeback  ; only on a delivered record (A=$00)
+                ret
                 ds      $44F4 - $, $00      ; pad the rest of the vacated span (net-zero)
 
 ; choice — format-choice string (CHOICE entry point).

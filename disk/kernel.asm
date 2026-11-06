@@ -1424,6 +1424,20 @@ gdate_handler:
                 ; $5552 (scratchpad/sdatemem.out). It was zero padding here, so ours
                 ; NOP-slid into the pinned `jp gtime_body` at $55DB and returned A = 0
                 ; for every date, valid or not.
+; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
+; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.
+; install_f365 — copies f365_iord_tmpl to the fixed address $F365. Lives in the
+; free tail (no budget limit) and is reached by a single 3-byte `call` from
+; build_resident's cramped pre-$41FD path (see init.asm) instead of inlining the
+; ld/ld/ld/ldir sequence there, which overflows that region's canonical-address
+; budget (M15 §7.1/§7.2: verified — an inline second copy there makes 3-pass/
+; symbol-table assembly silently emit an empty object file, no error printed).
+install_f365:
+                ld      hl, f365_iord_tmpl
+                ld      de, F365_STUB
+                ld      bc, f365_iord_end - f365_iord_tmpl
+                ldir
+                ret
                 ds      $5552 - $, $00
 k_5552:         jp      sdate_body
 ; --- D-BDOSBASIC slice 3b: DELETE / RENAME at $F37D (oracle; MSX2 TH BDOS) ------
@@ -5865,7 +5879,8 @@ hdl_body:
                 jr      c,hdl_eof
                 pop     de
                 dec     de
-                jr      hdl_body
+                call    hdl_run             ; D-LOADRUN: the rest of the sector's
+                jr      hdl_body            ; share of this body in one ldir
 
 ; hdl_get_store: read ONE file byte and store it at CLPTR, advancing.
 ;   out CF = EOF (nothing stored) / clear = stored, CLPTR advanced.
@@ -6788,6 +6803,29 @@ dfo_done:
 ; (frl_alloc and frnd_next moved to disk/fat.asm's $46CB fill by D-RECSLOW: this
 ; region's 2 B of slack could not take the FAT scan's new calls.)
 
+; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
+; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.
+; --- innoe_body / dirin_body - the $544E INNOE / $5462 DIRIN canonical entries
+; (M22a) -- blocking read, NO echo (the published BDOS $08/$07 contract, as
+; distinct from $01 CONIN's echo). Pinned identical at this probe's granularity
+; (tier2-m22-cpmver-spec.md §6.3): dirin_body tail-jumps into innoe_body.
+; B/C/D/E preserved; A := char.
+; CLEAN-ROOM: published INNOE/DIRIN contracts (map.grauw.nl) + CHGET; no oracle bytes.
+innoe_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in
+                call    $009F               ; CHGET: blocking; A := char (no echo)
+                push    af
+                call    pg0_mainrom_out
+                ei
+                pop     af
+                pop     hl
+                pop     de
+                pop     bc
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -7402,18 +7440,6 @@ f365_iord_tmpl:
                 ret
 f365_iord_end:
 
-; install_f365 — copies f365_iord_tmpl to the fixed address $F365. Lives in the
-; free tail (no budget limit) and is reached by a single 3-byte `call` from
-; build_resident's cramped pre-$41FD path (see init.asm) instead of inlining the
-; ld/ld/ld/ldir sequence there, which overflows that region's canonical-address
-; budget (M15 §7.1/§7.2: verified — an inline second copy there makes 3-pass/
-; symbol-table assembly silently emit an empty object file, no error printed).
-install_f365:
-                ld      hl, f365_iord_tmpl
-                ld      de, F365_STUB
-                ld      bc, f365_iord_end - f365_iord_tmpl
-                ldir
-                ret
 
 ; install_resident — copy the page-3-resident BLIT and the two HOOK BODIES to
 ; their RAM homes (D-ALIASBITE carve, 2026-09-23). Two LDIRs because the two
@@ -7912,62 +7938,6 @@ rdb_eof:
                 ld      c, l
                 ret
 
-; fat_mount_tail — verbatim relocation of disk/fat.asm's fat_mount continuation
-; (from the numFATs*secPerFAT multiply setup through the final `ret`,
-; unchanged). Moved here only because the multiply's `ld hl,0` tail byte
-; collided with the new $477D WRSEQ-worker canonical entry; reached solely by
-; fat_mount's own `jp fat_mount_tail` fall-through (position-free, no
-; external caller). The diversion point had to move one instruction earlier
-; than the collision itself (to `ld b,a`) to leave enough room for the
-; 3-byte veneer to land exactly at $477D (a 3-byte-for-3-byte swap at the
-; collision point alone leaves zero slack).
-; wrseq_body — MSX-DOS-1 kernel per-record sequential-I/O worker entry
-; $477D's body. CORRECTED (M25, tier2-m24-fclose-multicluster-spec.md
-; "UPDATE 2"): the RAM kernel CALLs $477D for EVERY sequential record
-; access -- BOTH BDOS $15 WRSEQ *and* BDOS $14 RDSEQ share this ONE page-1
-; entry (confirmed black-box via `callwatch --in-func 0x14`; no register at
-; entry distinguishes direction -- BC/DE/HL/AF identical in shape between a
-; genuine WRSEQ hit and a RDSEQ hit), so direction is read from OUR OWN
-; BDOS_WRMODE cell instead: nonzero forwards to bdos_seqwrite (unchanged);
-; zero forwards to bdos_seqread. The companion fix in fopen_fill_body
-; (disk/fat.asm) seeds the read-iterator state (fat_open, BDOS_RECIDX,
-; BDOS_BYTESLEFT) that bdos_seqread depends on and that a real kernel-driven
-; FOPEN never populated before -- without it bdos_seqread ran but always
-; reported false EOF.
-; DTA staleness (M21b lesson, see k_47B2 above): the kernel's real SETDTA
-; only ever writes DOS_DTAPTR ($F23D), never our own mini-BDOS's BDOS_DTA
-; cell, so BDOS_DTA must be reseeded from DOS_DTAPTR before EITHER
-; bdos_seqread or bdos_seqwrite consumes it -- both directions need the
-; reseed, not just write. DE (=IY=$DA40 kernel FCB pointer) is not consumed
-; by either -- both are single-open-file global state, same as Tier-1. Exit
-; A=$00/$01/$FF passes straight through from whichever real routine ran.
-; $F306 left untouched (M24 spec §5 item 4: no observed load-bearing exit HL
-; for this entry family -- default to the kernel's own H:=B,L:=A mirror
-; unless the acceptance diff proves otherwise).
-;
-; M33 (tier2-m33-m32-fcb-position-spec.md §2.2) added the RDSEQ FCB position
-; write-back HERE, in the read branch only -- NOT inside bdos_seqread_body,
-; which is a SHARED routine also reached by RRND $21 (rdrnd_body, kernel.asm
-; ~2697, which does its own M26 copy+32:=copy+33 bookkeeping) and by the boot
-; mini-BDOS (driver.asm bdos_entry, which must stay byte-identical). Putting
-; the write-back inside bdos_seqread_body would corrupt those other callers'
-; FCBs / the boot path, so instead the read branch's tail-jump becomes a call
-; + inline write-back + ret. Only on a DELIVERED record (A=$00 on return; on
-; A=$01 EOF, §2.3, skip it -- stock's position stops at/after EOF). Body =
-; wrseq_writeback (free tail): writes copy+32/+12/+28/29/+30 from the fixed
-; FCB-copy base $DA40 (a constant here -- no register to preserve across the
-; call). A is stashed across the write-back and restored before ret so
-; bdos_seqread's pass-through A/HL exit contract is unchanged.
-wrseq_body:
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
-                ld      a, (BDOS_WRMODE)
-                or      a
-                jr      nz, wrseq_body_write
-                call    bdos_seqread
-                or      a
-                call    z, wrseq_writeback  ; only on a delivered record (A=$00)
-                ret
 wrseq_body_write:
                 ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
                 ; the M33 read-branch FCB-position write-back. M33 advanced the
