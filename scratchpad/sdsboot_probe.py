@@ -14,7 +14,13 @@ the value), the first write to $9900 and its first run (no byte of it is read) -
 D-SDSBOOT's race question. Works on the reference too: only RAM writes and the PC.
 SDS_RING=1 (OUR machine only): the last 48 PCs (with page's primary slot) before
 the first PC = $0000. SDS_A8=1: every write to the slot-select port $A8 (time, PC,
-value) until then.
+value) until then. SDS_BOOT=1: registers, slots and a few work-area cells (DRVINF,
+the RAM slot ids, EXPTBL / SLTTBL, $FFFF) at the boot sector's entry, $C01E.
+SDS_FORCE="af=0x006A,bc=0,0xFB21=2,..." (with SDS_BOOT) overwrites registers / RAM
+there first -- an experiment on OUR machine only.
+SDS_RDSLT=1: every RDSLT ($000C, a published BIOS entry) called from RAM: slot, address
+and the byte it returns (registers only). SDS_BOOTCODE=1: registers at every PC
+$C030..$C056 the boot code runs (RAM; the first 120 hits after 2 s).
 """
 import os, subprocess, sys, tempfile, shutil
 D = os.environ["DISKCORPUS_DIR"]
@@ -52,12 +58,64 @@ proc __rg {{}} {{
     set ::z0 1
     lappend ::ev "[format %.4f [machine_info time]] FIRST PC=0000 after: [join $::ring {{ }}]"
   }}
+  if {{[info exists ::env(SDS_P1)] && ![info exists ::p1e] && $pc >= 0x4000 && $pc < 0x8000 && [machine_info time] > 4.0 && [lindex [get_selected_slot 1] 0] == 3 && [lindex [get_selected_slot 1] 1] == 0}} {{
+    set ::p1e 1
+    lappend ::ev "[format %.4f [machine_info time]] FIRST PC IN PAGE-1 RAM: [format %04X $pc] after: [join [lrange $::ring end-11 end] {{ }}]"
+  }}
   lappend ::ring "[format %04X $pc]/[format %02X [lindex [get_selected_slot [expr {{$pc >> 14}}]] 0]]"
   if {{[llength $::ring] > 160}} {{ set ::ring [lrange $::ring end-159 end] }}
 }}
 if {{[info exists ::env(SDS_RING)]}} {{ debug set_condition 1 __rg }}
-proc __a8 {{}} {{ if {{![info exists ::z0]}} {{ lappend ::ev "[format %.4f [machine_info time]] A8 := [format %02X $::wp_last_value] at PC=[format %04X [reg pc]] sp=[format %04X [reg sp]]" }} }}
+proc __ram38 {{}} {{
+  set b ""
+  for {{set i 0x38}} {{$i < 0x3B}} {{incr i}} {{ append b [format %02X [debug read {{Main RAM}} $i]] }}
+  return $b
+}}
+proc __ff {{}} {{ if {{[catch {{ lappend ::ev "[format %.4f [machine_info time]] AFTER A8=FF from RAM PC: RAM 0038..003A=[__ram38] iff=[reg iff]" }} e]}} {{ lappend ::ev "TCL ERROR __ff: $e" }} }}
+proc __a8 {{}} {{ if {{![info exists ::z0]}} {{ if {{$::wp_last_value == 0xFF && [reg pc] >= 0x8000 && [reg pc] < 0xF300 && ![info exists ::ff1]}} {{ set ::ff1 1; after time 0.0005 __ff }}; lappend ::ev "[format %.4f [machine_info time]] A8 := [format %02X $::wp_last_value] at PC=[format %04X [reg pc]] sp=[format %04X [reg sp]]" }} }}
 if {{[info exists ::env(SDS_A8)]}} {{ debug set_watchpoint write_io 0xA8 1 __a8 }}
+proc __c01e {{}} {{
+  if {{[info exists ::c1e]}} return
+  set ::c1e 1
+  set r ""
+  foreach x {{af bc de hl ix iy sp}} {{ append r " $x=[format %04X [reg $x]]" }}
+  set w ""
+  foreach {{a n}} {{0xF341 3 0xF345 4 0xF347 2 0xF348 1 0xFB21 8 0xF30D 4 0xF3D0 6 0xFCC1 4 0xFFFF 1}} {{
+    set b ""
+    for {{set i 0}} {{$i < $n}} {{incr i}} {{ append b [format %02X [debug read memory [expr {{$a + $i}}]]] }}
+    append w " [format %04X $a]=$b"
+  }}
+  if {{[info exists ::env(SDS_FORCE)]}} {{
+    foreach item [split $::env(SDS_FORCE) ,] {{
+      lassign [split $item =] k v
+      if {{[string match 0x* $k]}} {{ debug write memory $k [expr {{$v}}] }} else {{ reg $k [expr {{$v}}] }}
+    }}
+    lappend ::ev "FORCED $::env(SDS_FORCE)"
+  }}
+  lappend ::ev "[format %.4f [machine_info time]] BOOT C01E $r A8=[format %02X [debug read ioports 0xA8]] slots=[get_selected_slot 0]|[get_selected_slot 1]|[get_selected_slot 2]|[get_selected_slot 3] $w"
+}}
+if {{[info exists ::env(SDS_BOOT)]}} {{ debug set_bp 0xC01E 1 __c01e }}
+proc __rds {{}} {{
+  if {{[catch {{
+    set sp [reg sp]
+    set ret [expr {{[debug read memory $sp] | ([debug read memory [expr {{$sp+1}}]] << 8)}}]
+    if {{$ret >= 0x8000}} {{
+      set ::rdsret $ret
+      lappend ::ev "[format %.4f [machine_info time]] RDSLT slot=[format %02X [reg a]] addr=[format %04X [reg hl]] from=[format %04X $ret]"
+      debug set_bp $ret {{[reg pc] == $::rdsret}} {{ lappend ::ev "    -> A=[format %02X [reg a]]"; debug remove_bp [lindex [debug list_bp] end 0] }}
+    }}
+  }} e]}} {{ lappend ::ev "TCL ERROR __rds: $e" }}
+}}
+proc __bc {{}} {{
+  if {{[catch {{
+    if {{![info exists ::bcn]}} {{ set ::bcn 0 }}
+    if {{[incr ::bcn] <= 120}} {{
+      lappend ::ev "[format %.4f [machine_info time]] PC=[format %04X [reg pc]] af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]]"
+    }}
+  }} e]}} {{ lappend ::ev "TCL ERROR __bc: $e" }}
+}}
+if {{[info exists ::env(SDS_BOOTCODE)]}} {{ for {{set x 0xC01E}} {{$x <= 0xC056}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }} }}
+if {{[info exists ::env(SDS_RDSLT)]}} {{ debug set_bp 0x000C {{[machine_info time] > 9.0 || [string match *REPACK* [machine_info config_name]]}} __rds }}
 if {{[info exists ::env(SDS_HOOK)]}} {{
   debug set_watchpoint write_mem {{0xFD9F 0xFDA3}} 1 __hk
   debug set_watchpoint write_mem 0x9900 1 __w99

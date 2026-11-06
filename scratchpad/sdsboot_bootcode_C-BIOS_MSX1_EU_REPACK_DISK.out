@@ -1,0 +1,101 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=1557
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+TRANS 0000 from 8000 t=4.36
+TRANS 0000 from 9900 t=4.36
+TRANS 0000 from FFFF t=5.48
+TRANS 0002 from FFFF t=8.33
+TRANS 0005 from EFDE t=2.68
+TRANS 000C from C08F t=4.20
+TRANS 000C from C09B t=4.20
+TRANS 000C from DEF5 t=4.20
+TRANS 001C from EFED t=5.28
+TRANS 0024 from C07D t=4.19
+TRANS 0024 from C085 t=4.19
+TRANS 0024 from DEF5 t=4.19
+TRANS 0047 from 802C t=0.14
+TRANS 0047 from 8032 t=0.14
+TRANS 0047 from 8038 t=0.14
+TRANS 0056 from 8026 t=0.14
+TRANS 0056 from 8051 t=0.14
+TRANS 0056 from 8094 t=0.18
+TRANS 005C from 8062 t=0.16
+TRANS 005C from 8074 t=0.17
+TRANS 005C from 8085 t=0.17
+TRANS 005C from 80AA t=0.19
+TRANS 0062 from 801B t=0.13
+TRANS 006F from 8010 t=0.11
+TRANS 00DD from AE00 t=4.37
+TRANS 05C3 from FF39 t=8.33
+TRANS 05C4 from FF39 t=8.33
+TRANS 11BB from FDA4 t=2.60
+TRANS 18FA from FD9A t=0.08
+TRANS 1906 from FD9F t=0.08
+TRANS 2000 from C053 t=4.20
+TRANS 23EC from F38B t=0.10
+TRANS 2467 from F397 t=0.19
+TRANS 38CD from DDDC t=4.62
+TRANS 3AC9 from FD9A t=5.48
+TRANS 4010 from F398 t=2.64
+TRANS 44FF from DEBF t=2.68
+TRANS 44FF from F398 t=5.28
+TRANS 5495 from C01E t=2.67
+TRANS 5FBB from F398 t=2.65
+TRANS 723A from F300 t=4.89
+EV 2.6749 PC=C01E af=E9A8 bc=0001 de=F368 hl=F323 sp=F2D6
+EV 2.6842 PC=C01E af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 2.6842 PC=C01F af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 2.6842 PC=C020 af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 2.6842 PC=C023 af=0045 bc=0000 de=F368 hl=F323 sp=DD00
+EV 2.6842 PC=C026 af=0045 bc=0000 de=C200 hl=F323 sp=DD00
+EV 2.6842 PC=C028 af=0045 bc=001A de=C200 hl=F323 sp=DD00
+EV 2.6843 PC=C02B af=1A4A bc=001A de=C200 hl=F323 sp=DD00
+EV 2.6843 PC=C02E af=1A4A bc=001A de=C200 hl=0200 sp=DD00
+EV 2.6844 PC=C031 af=1A4A bc=001A de=059A hl=0200 sp=DD00
+EV 2.6844 PC=C033 af=1A4A bc=002F de=059A hl=0200 sp=DD00
+EV 3.5722 PC=C036 af=0044 bc=0002 de=4F00 hl=0000 sp=DD00
+EV 4.1941 PC=C039 af=590C bc=0001 de=0000 hl=C9C9 sp=DD00
+EV 4.1941 PC=C03B af=C90C bc=0001 de=0000 hl=C9C9 sp=DD00
+EV 4.1941 PC=C03E af=C90C bc=0001 de=0000 hl=C9C9 sp=DD00
+EV 4.1944 PC=C041 af=C908 bc=0000 de=DD28 hl=DD27 sp=DD00
+EV 4.1944 PC=C044 af=C908 bc=0000 de=DD28 hl=DDAE sp=DD00
+EV 4.1944 PC=C047 af=C908 bc=0000 de=DD28 hl=DDAE sp=DD00
+EV 4.1952 PC=C04A af=FCAC bc=30CF de=FF30 hl=80AE sp=DD00
+EV 4.1959 PC=C04D af=98AC bc=30CF de=0030 hl=0007 sp=DD00
+EV 4.1973 PC=C050 af=0314 bc=302F de=0570 hl=0F00 sp=DD00
+EV 4.1973 PC=C056 af=0314 bc=302F de=0570 hl=0F00 sp=DCFE
+EV 4.1987 PC=C053 af=0314 bc=302F de=0490 hl=2400 sp=DD00
+EV 8.2289 PC=C01E af=E9A8 bc=0001 de=F368 hl=F323 sp=F2D6
+EV 8.2383 PC=C01E af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 8.2384 PC=C01F af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 8.2384 PC=C020 af=0045 bc=0000 de=F368 hl=F323 sp=F2D0
+EV 8.2384 PC=C023 af=0045 bc=0000 de=F368 hl=F323 sp=DD00
+EV 8.2384 PC=C026 af=0045 bc=0000 de=C200 hl=F323 sp=DD00
+EV 8.2384 PC=C028 af=0045 bc=001A de=C200 hl=F323 sp=DD00
+EV 8.2385 PC=C02B af=1A4A bc=001A de=C200 hl=F323 sp=DD00
+EV 8.2385 PC=C02E af=1A4A bc=001A de=C200 hl=0200 sp=DD00
+EV 8.2385 PC=C031 af=1A4A bc=001A de=059A hl=0200 sp=DD00
+EV 8.2385 PC=C033 af=1A4A bc=002F de=059A hl=0200 sp=DD00
+

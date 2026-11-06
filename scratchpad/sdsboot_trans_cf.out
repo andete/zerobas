@@ -1,0 +1,84 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=F00D
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+TRANS 000C from C08F t=11.75
+TRANS 000C from C09B t=11.75
+TRANS 001C from DDD2 t=9.65
+TRANS 0024 from C07D t=11.75
+TRANS 0024 from C085 t=11.75
+TRANS 0024 from EFA0 t=12.68
+TRANS 0024 from EFA9 t=12.68
+TRANS 0024 from F0FB t=13.08
+TRANS 0024 from F103 t=13.08
+TRANS 0030 from F331 t=9.65
+TRANS 0030 from FD9F t=6.92
+TRANS 0030 from FECB t=6.91
+TRANS 0030 from FFA7 t=8.05
+TRANS 003B from DF09 t=9.65
+TRANS 004B from DE94 t=9.65
+TRANS 006F from F398 t=6.92
+TRANS 01C4 from F38B t=1.21
+TRANS 01EC from F38B t=7.24
+TRANS 0247 from F397 t=6.90
+TRANS 0721 from FDC7 t=1.21
+TRANS 08C3 from FDA4 t=1.55
+TRANS 0C4D from FD9A t=1.19
+TRANS 0C56 from FD9F t=1.19
+TRANS 0C56 from FDA3 t=6.92
+TRANS 1462 from FEDF t=1.55
+TRANS 148D from FFAB t=9.44
+TRANS 1B49 from FEE4 t=1.55
+TRANS 4010 from F398 t=8.05
+TRANS 402D from EF98 t=12.68
+TRANS 4558 from F26A t=9.66
+TRANS 46C8 from F270 t=9.66
+TRANS 4919 from F27C t=6.90
+TRANS 4935 from F27F t=8.82
+TRANS 4B02 from FF5C t=1.19
+TRANS 56D3 from F398 t=9.65
+TRANS 56D6 from DDEC t=9.65
+TRANS 576F from F398 t=2.70
+TRANS 5897 from F398 t=6.91
+TRANS 599C from F397 t=7.24
+TRANS 59FE from C01E t=9.44
+TRANS 5E67 from F38B t=7.24
+TRANS 5E79 from F38B t=7.24
+TRANS 5F98 from F367 t=7.24
+TRANS 5FE5 from F367 t=3.85
+TRANS 6050 from F398 t=8.05
+TRANS 607B from DE9A t=10.73
+TRANS 629D from FECB t=1.19
+TRANS 62A4 from FED0 t=1.19
+TRANS 62B2 from FED5 t=1.19
+TRANS 62F3 from FEDA t=1.19
+TRANS 67F1 from FF9D t=1.55
+TRANS 75A5 from F10B t=13.08
+TRANS 760E from FFCF t=9.42
+TRANS 764D from FFD4 t=9.44
+TRANS 77B8 from DDEC t=9.68
+TRANS 77BB from DDEC t=9.66
+TRANS 77BC from DDEC t=9.75
+TRANS 782B from F398 t=6.92
+

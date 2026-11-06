@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15742 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15756 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15742 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11209,9 +11209,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
         ($FF, then $CF / $DF / $EF at 14.2 s), never $DDD8 / $DE1C, and never runs $9900.
       So zerobas is on a DIFFERENT PATH from well before the crash, in both builds; the
       11-04 "BOTH-RUN" was that wrong path not crashing, and ccfceefd's speed only moved
-      where an interrupt lands in the all-RAM window. ➡️ next: where the two boots part --
-      the same three watches from t = 0 (the boot sector's DSKIO calls and slot switches,
-      timestamps; the RAM PCs only), CF-3300 against zerobas.
+      where an interrupt lands in the all-RAM window.
+      ~~➡️ next: where the two boots part~~ -- 📏 **FOUND (2026-11-07): IN BDOS'S RETURN
+      REGISTERS.** Correction first: forcing the CF-3300's boot-entry state (AF, BC, DRVINF,
+      $F30D, $F345) changed nothing, and RAM $0038 holds the same `C9` on both after the
+      all-RAM switch (interrupts off) -- the crash is the boot code JUMPING into page-0 RAM
+      that holds only $FF ($C053 -> $2400 on zerobas; the CF-3300 never reaches $C050).
+      [`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) SDS_BOOTCODE (registers at every PC $C01E..$C056 of the boot
+      code, RAM; [`sdsboot_bootcode_National_CF-3300.out`](scratchpad/sdsboot_bootcode_National_CF-3300.out), [`sdsboot_bootcode_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_bootcode_C-BIOS_MSX1_EU_REPACK_DISK.out)): the boot
+      code calls BDOS ($F37D, C = the function) and the registers that come BACK differ --
+      SETDTA (C = $1A, DE = $C200): CF-3300 A = $08 B = $58 HL = $5808, zerobas A = $1A, HL
+      unchanged; then C = $2F (RDABS, DE = $059A): CF-3300 keeps DE = $059A, F = $42,
+      zerobas DE = $4F00, F = $44; the call after: CF-3300 DE = $000E HL = $0000, zerobas
+      DE = $0000 HL = $C9C9. The spec leaves these undefined; this boot code uses them, and
+      from $C04A on it reads $A8 = $FF (CF) / $FC (zerobas) and takes the other road.
+      ➡️ next: measure those three BDOS functions' EXIT registers on the CF-3300 in isolation
+      (disk_probe_bdos's harness: registers in, registers out) and match the ones a program
+      can see; then re-run SDSNAT1C and the collection.
       ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found

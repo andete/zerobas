@@ -1,0 +1,30 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=F00C
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 11.7502 RDSLT slot=00 addr=0006 from=C092
+EV     -> A=98
+EV 11.7503 RDSLT slot=00 addr=0007 from=C09E
+EV     -> A=98
+

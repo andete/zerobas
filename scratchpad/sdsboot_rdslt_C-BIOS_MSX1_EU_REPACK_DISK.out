@@ -1,0 +1,33 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=1557
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 4.1952 RDSLT slot=00 addr=0006 from=C092
+EV 4.1953 RDSLT slot=00 addr=0006 from=DE0D
+EV     -> A=98
+EV 4.1955 RDSLT slot=00 addr=0007 from=C09E
+EV 4.1957 RDSLT slot=00 addr=0007 from=DE0D
+EV     -> A=98
+EV     -> A=98
+
