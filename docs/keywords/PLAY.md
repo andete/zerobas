@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `PLAY` — play music in the background
 
-> **Status (2026-11-05):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences: what `PLAY(n)` reads on the very statement after a `PLAY`, and
-> the music starting a few ticks sooner here (below).
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: what `PLAY(n)` reads on the very statement after a `PLAY`
+> (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -155,16 +155,21 @@ between (`FOR I=1 TO 1:NEXT` is enough) and both machines agree, which is why
 the example has line 30. Joost ruled on 2026-09-27 to **decline** reproducing
 this window; it stays a stated difference.
 
-**When the music starts.** The VG-8020 starts playing a `PLAY` only once the
-statement has finished reading its string, a few ticks after it began (more for
-a long string); zerobas starts at once. The notes and their lengths are the
-same, so a song ends those few ticks sooner here. Recorded, not yet matched.
-
 The one rung not yet proven is **RAM usage**: the work-area cells written
 differ between the machines, and in the last comparison (2026-10-01) three of
 the ten test programs also showed a different amount of free string space.
 
 ## What we found, and how
+
+- **When the music starts — not a difference after all** (measured
+  2026-11-06, D-PLAYSTART). It looked as if the VG-8020 started a song a few
+  ticks later than zerobas. A grid of `PLAY`s, varying the number of notes,
+  the tempo, the voices and how the lengths are written, timed on the VG-8020,
+  the CF-3300 and zerobas, shows the same rule on all three: the music starts
+  when the statement has finished reading its strings, or as soon as the queue
+  is full, and from there it lasts exactly as long
+  ([readings](../../scratchpad/playstart_grid.out)). What differs is how long
+  the statement takes to read its strings, and that is speed, not behaviour.
 
 - **A `PLAY` while a voice was playing replaced its music** (fixed
   2026-10-31, D-PLAYQUEUE; found by a jukebox test program). A song played

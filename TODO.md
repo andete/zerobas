@@ -26,7 +26,7 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
-- [ ] 🎵 **THE VG-8020 STARTS A `PLAY`'S MUSIC WHEN THE STATEMENT RETURNS, A FEW TICKS IN;
+- [x] 🎵 **THE VG-8020 STARTS A `PLAY`'S MUSIC WHEN THE STATEMENT RETURNS, A FEW TICKS IN;
       ZEROBAS STARTS AT ONCE (D-PLAYSTART, split from D-PLAYRATE 2026-11-05).**
       🎚️ TIER 5 — on-par timing: a song ends 2-11 ticks sooner here; the notes are the same.
       🤖 **AUTONOMOUS** — measured on both references (A = TIME at PLAY's return, B - A =
@@ -34,6 +34,20 @@ item — do **one item per session** to keep context lean.
       16 notes, 0.3-0.7 a note, and depends on the tempo in a way not yet modelled (T100-T200
       4-5, T32 / T64 / T255 10); the CF-3300's a jiffy or two longer. Measure what A follows
       (notes, characters, the tempo command, the voice count) before building anything.
+      ✅ **CLOSED 2026-11-06 -- NOT A DEFECT: BOTH START AT THE SAME POINT.** The measurement
+      ([`playstart_grid.bas`](scratchpad/playstart_grid.bas) ->
+      [`playstart_grid.out`](scratchpad/playstart_grid.out), 30 rows x VG-8020 / CF-3300 /
+      zerobas) shows B - A (the music, from PLAY's return to PLAY(0)=0) IDENTICAL on the
+      VG-8020 and zerobas in every row that fits the queue (8 notes T32..T255: 41 both; 1 note:
+      6 both; T255L4: 89 both). So the music starts at the statement's return (or when the
+      queue fills) on both. A itself is the reference's PARSE time: ~0.4-0.5 tick a note (1 /
+      2 / 4 / 8 / 16 notes: 0 / 1 / 2 / 4 / 6), 2 voices 7, 3 voices 10, tempo nearly
+      irrelevant (3-6 across T32..T255); zerobas parses 8 notes in 1 tick. The "song ends
+      sooner" was zerobas's PLAY returning sooner -- FASTER than par, not a timing
+      divergence. 🔮 Predicted "A grows with notes ~0.6/note, tempo non-monotonic, voices
+      add": notes + voices HIT (0.4-0.5 a note), tempo MISSED (it barely matters; the earlier
+      grid's T32/T255 10s were 16-note rows near the queue's edge). docs/keywords/PLAY.md: the
+      difference removed, a What-we-found entry added.
 
 - [ ] 🔧 **THE GATE PICKER PLANNED NO `PLAY` SUITE FOR A CHANGE TO sub/playparse.asm
       (D-PICKPLAY, found 2026-11-05 by D-PLAYRATE's commit).**
@@ -7702,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10135 (T-6FE392)8 (T-529ABE)` from `TODO.md:15293 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15307 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10441,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15307 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

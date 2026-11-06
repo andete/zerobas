@@ -3,23 +3,23 @@
  "rom_fingerprint": "git=381376af zerobas-main-eu.rom=e80ed9bbd162 sub.rom=5839588e4cf0 disk.rom=51fe3627f700",
  "rows": {
   "onstrig_rig": {
-   "measured": "2026-11-06 04:56:49",
+   "measured": "2026-11-06 05:15:30",
    "verdict": "SUPPORTED"
   },
   "stick_rig": {
-   "measured": "2026-11-06 04:56:49",
+   "measured": "2026-11-06 05:15:30",
    "verdict": "SUPPORTED"
   },
   "stick_rig_b": {
-   "measured": "2026-11-06 04:56:49",
+   "measured": "2026-11-06 05:15:30",
    "verdict": "SUPPORTED"
   },
   "strig_rig": {
-   "measured": "2026-11-06 04:56:49",
+   "measured": "2026-11-06 05:15:30",
    "verdict": "SUPPORTED"
   },
   "strig_rig_b": {
-   "measured": "2026-11-06 04:56:49",
+   "measured": "2026-11-06 05:15:30",
    "verdict": "SUPPORTED"
   }
  }
