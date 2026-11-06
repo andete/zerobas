@@ -273,7 +273,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `COPY`, `TO` | TIER 3 | 🙋 | a wildcard COPY is the ordinary way to copy a set of files. | T-554047 |
 | — | TIER 4 | 🤖 | the rung's own definition; it is the bar every other item at | T-83DBAC |
 | — | TIER 4 | 🤖 | RAM usage: this item is the measurement the RAM rung is | T-169379 |
-| `FOR`, `GOTO` | TIER 5 | 🤖 | the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings | T-706919 |
+| `FOR`, `GOTO` | TIER 5 | 🤖 | ~~the interpreter is 2.5–3.8× slower~~ (2026-11-06: the four D-LOOPPROF loops read 72 / 78 / 19 / 24 ticks here against 70 / 98 / 7 / 24, [`loops4_time.out`](scratchpad/loops4_time.out); the `%` loop is the gap left) (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings | T-706919 |
 | `GOSUB`, `RETURN` | TIER 5 | 🤖 | `GOSUB` / `RETURN` + an array increment, and the trap | T-595C63 |
 | `LOAD` | TIER 5 | 🤖 | on-par speed, on `LOAD`. ⏱ **RE-TAGGED 2026-10-10 FROM TIER 2: | T-3A665D |
 | `LOAD` | TIER 5 | 🔭 | on-par speed, on `LOAD`. | T-084697 |
@@ -283,7 +283,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `REM` | TIER 5 | 🤖 | T5 is a ratio that never ticks, so no level moved, | T-A29296 |
 | `RUN` | TIER 5 | 🤖 | on-par speed of loading an ASCII program from tape (within T2's 10×) | T-8B4AF8 |
 | — | TIER 5 | 🤖 | re-tagged 2026-10-10 from TIER 2 (*"reasonable time; it is | T-206016 |
-| — | TIER 5 | 🤖 | `A=I+7` ×300 is ~137 ticks here against 70. | T-D2BDCA |
+| — | TIER 5 | 🤖 | the `%` FOR loop, 19 ticks against 7 (the rest is level now). | T-D2BDCA |
 | — | TIER 5 | 🤖 | inside T2's 10×, so this is the ratio, not the rung. | T-D2E1F5 |
 | `BLOAD` | TIER 6 | 🤖 | a documented form (BLOAD's `,offset`) colliding with the | T-F9ABAA |
 | `CALL` | TIER 6 | 🤖 | `CALL SYSTEM` after the system file is deleted | T-7ECAB3 |

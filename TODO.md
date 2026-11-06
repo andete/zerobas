@@ -11093,7 +11093,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       whole widen/pack pairs rather than shaving one. That is an arithmetic-core
       change with real rounding risk and the float suites are what would have to
       hold it — a project, not a slice.
-      🎚️ TIER 5 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
+      🎚️ TIER 5 — on-par speed: ~~the interpreter is 2.5–3.8× slower~~ (2026-11-06: the four D-LOOPPROF loops read 72 / 78 / 19 / 24 ticks here against 70 / 98 / 7 / 24, [`loops4_time.out`](scratchpad/loops4_time.out); the `%` loop is the gap left) (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       ⏱ **PER-KEYWORD RATIOS NOW EXIST (D-KWTIME, 2026-09-24, `make kwtime`,
       whole test program vs the VG-8020):** median **1.15×**; the slowest are
       the transcendentals — **`SQR` 8.6×**, `SIN` 5.4×, `COS` 5.2×, `EXP` 3.6×,
@@ -16302,8 +16302,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
-      🎚️ TIER 5 — on-par speed: `A=I+7` ×300 is ~137 ticks here against 70.
+      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 19 ticks against 7 (the rest is level now).
       🤖 **AUTONOMOUS** — each lever is a slice; results must stay byte-identical.
+      📏 **RE-MEASURED 2026-11-06 ON BOTH MACHINES** ([`loops4_time.out`](scratchpad/loops4_time.out),
+      the four cases x300 in TIME ticks, VG-8020 / zerobas): `A=I+7` **70 / 72**, `A=I*7`
+      **98 / 78** (faster here), the empty `%` loop **7 / 19**, the default empty loop
+      **24 / 24**. D-TRAPCOST's rounds (2026-11-05/06) did most of it. What is left is the `%`
+      NEXT: ~3370 T a pass against ~1500, spread thin -- the 25-byte frame copy (~525 T),
+      the loop variable looked up by name every NEXT (~240 T), the statement loop.
+      ✅ **THE FRAME COPY (2026-11-06):** nx_have (basic/program.asm) checks the limit and step
+      types IN the frame and, both int16, copies only the 13 bytes nx_fast / nx_again read; a
+      bail re-copies all 25 (nx_fslow). Model `%` loop 3367 -> 3159 T/pass (🔮 ~-200 -> -208
+      HIT, the default loop the same -208); machine 19 -> 18 ticks, the others 71 / 77 / 24
+      ([`loops4_time2.out`](scratchpad/loops4_time2.out)). tests/test_forint.py,
+      test_forfast.py green. ➡️ NEXT: the variable's by-name lookup each NEXT.
       📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →
       [`loopprof_host.out`](scratchpad/loopprof_host.out): per-routine T on the host Z80
       plus the costs the host skips (1063 T a sub-ROM crossing: `subrom_call` 152 +

@@ -2145,6 +2145,48 @@ nx_cmp:                                     ; `FOR A%` / `NEXT A` is NEXT withou
                 pop     hl                  ; matched -- falls through to nx_have
 nx_have:
                 push    hl                  ; save the frame base (for pop / keep)
+                ; 🐌 D-LOOPPROF (2026-11-06): an int16 limit AND step (the fast path's
+                ; condition, read in the frame itself) copy only the 13 bytes nx_fast
+                ; and nx_again read -- [name0 name1 type][limit type+2][step type+2]
+                ; [line][body] -- not all 25 (~525 T a NEXT in a `%` loop). A bail
+                ; to the general path re-copies the whole frame (nx_fslow).
+                push    hl
+                ld      de,3
+                add     hl,de
+                ld      a,(hl)              ; the limit's type
+                ld      e,9
+                add     hl,de
+                cp      (hl)                ; == the step's type?
+                pop     hl
+                jr      nz,nx_fullcopy
+                cp      2
+                jr      nz,nx_fullcopy
+                ld      de,FOR_CUR
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi
+                ldi                         ; name, type, the limit's type + int16
+                ld      bc,6
+                add     hl,bc
+                ex      de,hl
+                add     hl,bc
+                ex      de,hl
+                ldi
+                ldi
+                ldi                         ; the step's type + int16
+                ld      c,6
+                add     hl,bc
+                ex      de,hl
+                add     hl,bc
+                ex      de,hl
+                ldi
+                ldi
+                ldi
+                ldi                         ; FOR_LINE, FOR_BODY
+                jp      nx_fast
+nx_fullcopy:
                 ld      de,FOR_CUR          ; work on a copy of the frame
                 ld      bc,FOR_FRAME
                 ldir
@@ -2290,6 +2332,11 @@ nx_fcmp:
 nx_fbail:
                 pop     hl                  ; drop [value field]
 nx_fslow:
+                pop     hl                  ; the frame base (nx_have's push) --
+                push    hl                  ; the fast path copied only 13 of its bytes
+                ld      de,FOR_CUR
+                ld      bc,FOR_FRAME
+                ldir
                 call    nx_demote           ; (a `%` loop: nx_demote returns at once)
                 jp      nx_slow
 ; 🐌 D-FORINT (2026-10-20): THE `%` ARM. A `%` loop's variable IS an int16 and its
