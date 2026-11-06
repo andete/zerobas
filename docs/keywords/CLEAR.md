@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CLEAR` — reset the variables, and size the string space
 
-> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: less free memory than the VG-8020 (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -32,6 +32,8 @@ CLEAR [<string space>][,<memory top>]
   it up after the `CLEAR`.
 - **The next `READ` starts from the first `DATA` again.**
 - **The program keeps running** after a `CLEAR` inside it.
+- **A stopped program cannot be continued** after a `CLEAR` typed at the
+  prompt: `CONT` says `Can't CONTINUE`.
 - **`CLEAR n` sets the string space to exactly `n` bytes**: `FRE("")` reads
   `n` afterwards. The size at start-up is 200. A bare `CLEAR`, `NEW` and `RUN`
   keep whatever size was set last.
@@ -97,6 +99,11 @@ That belongs to the **RAM usage** rung, which is not yet proven.
 
 ## What we found, and how
 
+- **`CONT` still continued after a typed `CLEAR`** (fixed 2026-11-06,
+  D-CLEARCONT). Both references answer `Can't CONTINUE`; zerobas went back into
+  the stopped program with its `FOR` loop wiped and stopped at `NEXT without
+  FOR`. Found by a typed session; the details are on the
+  [`CONT`](CONT.md) page.
 - **Something after the last argument was noticed too late** (fixed
   2026-10-24, D-CLEAR3ARG). The VG-8020 checks that the statement ends before
   it looks at the memory-top value: `CLEAR 1,2,3` is `Syntax error`, not

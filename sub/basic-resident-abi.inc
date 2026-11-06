@@ -61,7 +61,7 @@ p0_nodisk_dev equ 0280AH   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 028D9H   ; main's skipsp_test
 p0_upcase equ 042CAH   ; main's upcase
-p0_eval equ 04A86H   ; main's eval
+p0_eval equ 04A8AH   ; main's eval
 p0_eval_byte_arg equ 04549H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042DAH   ; main's stmt_bare_end
 p0_mxf_require_end equ 03DCCH   ; main's mxf_require_end
@@ -104,11 +104,11 @@ p0_cas_ascii_load equ 0650FH   ; main's cas_ascii_load
 p0_load_commit_prog equ 064EFH   ; main's load_commit_prog
 p0_dpl_err equ 0657CH   ; main's dpl_err
 p0_dpl_oom equ 0658EH   ; main's dpl_oom
-p0_print_msg equ 07656H   ; main's print_msg
+p0_print_msg equ 07653H   ; main's print_msg
 p0_err_verify equ 06502H   ; main's err_verify
-p0_exa_loop equ 076D2H   ; main's exa_loop
+p0_exa_loop equ 076CFH   ; main's exa_loop
 p0_le_call_op equ 06E8DH   ; main's le_call_op
 p0_print_string equ 045DFH   ; main's print_string
 p0_list_num equ 0631CH   ; main's list_num
-p0_print_in_hl equ 0762CH   ; main's print_in_hl
+p0_print_in_hl equ 07629H   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

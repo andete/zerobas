@@ -582,6 +582,26 @@ def test_new_prog_invalidates_cont(m, fails):
     return fails
 
 
+def test_clear_vars_invalidates_cont(m, fails):
+    """clear_vars clears CONTVALID -- so CLEAR (and RUN / NEW / boot) end CONT.
+
+    Oracle: measured, not the code -- `CLEAR` typed while a program sits at a
+    STOP, then `CONT`, is `Can't CONTINUE` on the VG-8020 (typed session
+    S12_progedit) and on the CF-3300 (scratchpad/clearcont_cf.ses), while a
+    plain `A=5` between the two leaves CONT live (D-CLEARCONT).
+    """
+    call_new_prog(m)
+    s = m.sym
+    m.poke(s["CONTVALID"], 1)
+    m.call("clear_vars")
+    cv = m.mem[s["CONTVALID"]]
+    ok = (cv == 0)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  clear_vars: CONTVALID cleared to 0 "
+          f"(got {cv})")
+    return fails
+
+
 def test_store_line_invalidates_cont(m, fails):
     """store_line clears CONTVALID.
 
@@ -716,6 +736,7 @@ def run():
 
     m = make_machine()
     print("=== store_line: CONTVALID cleared ===")
+    fails = test_clear_vars_invalidates_cont(m, fails)
     fails = test_store_line_invalidates_cont(m, fails)
     print()
 

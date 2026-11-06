@@ -1,0 +1,56 @@
+== S12_progedit: 43 steps; Philips_VG_8020: 44 snapshots, last END t=41.2 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (44 snapshots, last END t=38.5 w=40; printer same)
+   first screen difference at snapshot 32, after: 'CONT'
+        ref |  60 END
+        ref |  70 PRINT "SEVENTY":RETURN
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 FOR I=1 TO 3
+        ref |  20 PRINT I
+        ref |  30 STOP
+        ref |  40 NEXT
+        ref |  RUN
+        ref |   1
+        ref |  Break in 30
+        ref |  Ok
+        ref |  CONT
+        ref |   2
+        ref |  Break in 30
+        ref |  Ok
+        ref |  CLEAR
+        ref |  Ok
+        ref |  CONT
+     !! ref |  Can't CONTINUE
+        zb  |  NEXT without FOR in 40
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (44 snapshots, last END t=38.6 w=40; printer same)
+   first screen difference at snapshot 32, after: 'CONT'
+        ref |  60 END
+        ref |  70 PRINT "SEVENTY":RETURN
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  10 FOR I=1 TO 3
+        ref |  20 PRINT I
+        ref |  30 STOP
+        ref |  40 NEXT
+        ref |  RUN
+        ref |   1
+        ref |  Break in 30
+        ref |  Ok
+        ref |  CONT
+        ref |   2
+        ref |  Break in 30
+        ref |  Ok
+        ref |  CLEAR
+        ref |  Ok
+        ref |  CONT
+     !! ref |  Can't CONTINUE
+        zb  |  NEXT without FOR in 40
+        ref |  Ok
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF

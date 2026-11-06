@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `CONT` — continue a stopped program
 
-> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓.
-> No recorded difference since 2026-10-24 (below).
+> No recorded difference since 2026-11-06 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -44,7 +44,7 @@ No arguments.
   ran to its end, every further `CONT` returns silently.
 - **What you type in between does not matter**: an ordinary line, a typed
   `STOP`, a typed `END`, even a typed error leave the resume point alone. Only
-  `RUN`, `NEW` and editing the program clear it.
+  `RUN`, `NEW`, `CLEAR` and editing the program clear it.
 - **The rest of the typed line is ignored**: `CONT:PRINT 1` prints nothing
   extra, on the VG-8020 too.
 - **Music stopped by the break does not come back.**
@@ -53,7 +53,7 @@ No arguments.
 
 | situation | error |
 |---|---|
-| nothing to continue: at power-on, after `NEW`, after an edit to the program | 17 `Can't CONTINUE` |
+| nothing to continue: at power-on, after `NEW` or `CLEAR`, after an edit to the program | 17 `Can't CONTINUE` |
 | `CONT` written inside a program, nothing to continue | 17 `Can't CONTINUE in <line>`; an `ON ERROR` handler catches it |
 
 ## Example
@@ -81,12 +81,22 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None recorded. The two that stood until 2026-10-24 are under *What we found*.
+None recorded. The three that stood until 2026-11-06 are under *What we found*.
 
 The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`CONT` after a typed `CLEAR` went back into the program** (fixed
+  2026-11-06, D-CLEARCONT). On the VG-8020 and the CF-3300, `CLEAR` typed while
+  a program sits at a `STOP` ends the resume point: `CONT` says
+  `Can't CONTINUE`. zerobas continued into a program whose `FOR` loop `CLEAR`
+  had just wiped, and stopped with `NEXT without FOR in 40`. Found by the typed
+  session [`S12_progedit.ses`](../../probes/sessions/S12_progedit.ses)
+  ([`sessions_S12_progedit.out`](../../scratchpad/sessions_S12_progedit.out));
+  the CF-3300 run ([`clearcont_cf.ses`](../../scratchpad/clearcont_cf.ses),
+  [`clearcont_cf.out`](../../scratchpad/clearcont_cf.out)) also shows that an
+  ordinary line such as `A=5` between two stops leaves `CONT` working.
 - **`CONT` inside a program said `Can't CONTINUE` and ran on** (fixed
   2026-10-24, D-CONTPROG). On the VG-8020 it is error 17 like any other: an
   `ON ERROR` handler catches it, and without one the program stops with
@@ -135,6 +145,9 @@ exits in [basic/interp.asm](../../basic/interp.asm).
 
 - `make abort-acceptance` — every stop `CONT` can continue from, the typed
   statements that must leave it alone, and the three that clear it.
+- `make sessions-acceptance` — session `S12_progedit`: `CONT` after `CLEAR`,
+  after an edited line, after `DELETE`, after `RENUM` and after `NEW`, typed
+  at the prompt.
 - `make kwsweep` — the everyday row (`STOP`, then `CONT` typed at the prompt)
   and `CONT` with nothing to continue.
 - `make missing-acceptance` — `CONT` inside a program, caught by `ON ERROR`

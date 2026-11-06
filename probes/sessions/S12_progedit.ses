@@ -1,0 +1,46 @@
+# S12_progedit (D-SESSIONS, 2026-11-06): reshaping a program at the prompt --
+# every DELETE form and its errors, RENUM with a reference to a missing line and
+# into an overlap, and what CONT says after NEW, CLEAR, an edited line, a DELETE
+# and a RENUM made while the program was stopped.
+NEW
+10 PRINT "TEN"
+20 GOSUB 70
+30 PRINT "THIRTY"
+40 GOTO 999
+50 PRINT "FIFTY"
+60 END
+70 PRINT "SEVENTY":RETURN
+DELETE 35
+DELETE 60-50
+DELETE
+DELETE -15
+LIST
+DELETE 55-
+LIST
+RENUM
+LIST
+RUN
+RENUM 5,20
+RENUM 100,,0
+LIST
+NEW
+10 FOR I=1 TO 3
+20 PRINT I
+30 STOP
+40 NEXT
+RUN
+CONT
+CLEAR
+CONT
+RUN
+20 PRINT "I=";I
+CONT
+RUN
+DELETE 40
+CONT
+RUN
+RENUM
+CONT
+NEW
+CONT
+LIST

@@ -1142,6 +1142,15 @@ clear_vars:
                 ; same "single hook covering all four" argument the GOSUB/FOR reset
                 ; above and the RND seed below already rest on.
                 call    trap_init
+                ; D-CLEARCONT (2026-11-06, typed session S12_progedit): CLEAR in
+                ; direct mode, then CONT, is `Can't CONTINUE` on the VG-8020 AND
+                ; the CF-3300; zerobas resumed into a wiped FOR stack and said
+                ; `NEXT without FOR`. Every caller of this routine -- cold boot,
+                ; RUN, NEW, CLEAR -- ends the CONT resume point, so it is
+                ; dropped HERE once (RUN's own store went; NEW's stays, because
+                ; LOAD reaches new_prog without passing through here).
+                xor     a
+                ld      (CONTVALID),a
                 ld      hl,DEFTBL           ; F3 S3b: reset every letter's default type
                 ld      b,26                ; to DOUBLE (8) -- DEFINT/SNG/DBL/STR are
                 ld      a,8                 ; re-established by re-running their statements

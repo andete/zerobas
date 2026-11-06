@@ -1,0 +1,10 @@
+all=0
+allfn=0
+tape=0
+refcache: 42 hit, 42 miss, 42 stored
+refcache: 42 hit, 42 miss, 42 stored
+tiers=0
+GATE TIER: SCOPED
+rc=0
+GATES: 58/58 green
+GATE TIER RAN: SCOPED (7 emulator suites)

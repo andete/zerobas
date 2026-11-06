@@ -7791,7 +7791,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10224 (T-6FE392)8 (T-529ABE)` from `TODO.md:15593 (T-529ABE)`: a
+      `TODO.md:10224 (T-6FE392)8 (T-529ABE)` from `TODO.md:15614 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10530,7 +10530,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15593 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15614 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11075,10 +11075,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       KEY definitions (the key row reads `HELLO  LIST` on both), KEY LIST, WIDTH 30 / 20,
       SCREEN 1 and back, LOCATE, COLOR, a SCREEN 2 program returning to the prompt.
       🔮 Predicted "a function-key-row divergence after KEY / WIDTH": MISSED.
-      ➡️ NEXT sessions: MERGE of an ASCII
-      program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
-      while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
-      8020) and disk (SAVE / LOAD / MERGE / KILL, the CF-3300 via `# @DISK`).
+      ✅ **S12_progedit (2026-11-06): ONE DIVERGENCE, FIXED (D-CLEARCONT below), then SAME**
+      ([`S12_progedit.ses`](probes/sessions/S12_progedit.ses), before
+      [`sessions_S12_progedit.out`](scratchpad/sessions_S12_progedit.out), after
+      [`sessions_S12_progedit2.out`](scratchpad/sessions_S12_progedit2.out)): every DELETE form
+      and its errors, RENUM over a `GOTO 999`, RENUM into an overlap, and CONT after CLEAR, an
+      edited line, DELETE, RENUM and NEW. 🔮 Predicted "a divergence in RENUM's Undefined line
+      report or DELETE's error for a missing line": MISSED -- both agree; the one difference
+      was CONT after CLEAR, which I had predicted would agree.
+      ➡️ NEXT sessions: LIST while typing; then tape (CSAVE / CLOAD, the VG-8020, parked on
+      the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
+
+- [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
+      2026-11-06 by typed session S12_progedit).**
+      🎚️ TIER 3 — common errors: `CLEAR` at a `STOP` to free memory, then `CONT`, is a
+      thing users type; the reference refuses it and zerobas ran into a wiped FOR stack.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 VG-8020: `CLEAR` / `CONT` -> `Can't CONTINUE`; zerobas -> `NEXT without FOR in 40`
+      ([`sessions_S12_progedit.out`](scratchpad/sessions_S12_progedit.out)). CF-3300: the
+      same `Can't CONTINUE`, with `A=5` between two stops as the control that leaves CONT
+      live ([`clearcont_cf.ses`](scratchpad/clearcont_cf.ses),
+      [`clearcont_cf.out`](scratchpad/clearcont_cf.out)).
+      ✅ **FIXED 2026-11-06.** `clear_vars` (basic/vars.asm) drops CONTVALID: its callers are
+      exactly cold boot, RUN, NEW and CLEAR, all of which end the resume point. RUN's own store
+      went (+1 B net); NEW's stays because LOAD reaches `new_prog` without `clear_vars`. Row
+      `clear_vars: CONTVALID cleared` in tests/test_program.py; S12 SAME on both targets after.
 
 - [x] 📼 **D-TAPENEXT -- A TAPE SEARCH THAT FINDS NO HEADER: THE VG-8020 SEARCHES ON, ZEROBAS SAYS
       `Device I/O error` AT ONCE (found 2026-11-06 by typed session S6_tape).**

@@ -419,8 +419,8 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                                             ; ceiling note, sub/arrays.asm). NOT
                                             ; redundant: clear_vars does not call
                                             ; vars_reset (§13a-F1) -- this is RUN's.
-                xor     a
-                ld      (CONTVALID),a       ; a fresh RUN has no CONT resume point yet
+                xor     a                   ; (CONTVALID: dropped by clear_vars above,
+                                            ; D-CLEARCONT)
                 ld      h,a                 ; GOTOFLAG and ENDFLAG are adjacent:
                 ld      l,a                 ;  one word store clears both
                 ld      (GOTOFLAG),hl
@@ -1149,7 +1149,7 @@ ex_cont:
                 ; bare CONT re-resumes the same point (cont2_thrice), and after a
                 ; run that has since finished that means "resume past the end and
                 ; run nothing", i.e. a silent Ok, not "Can't CONTINUE". Only RUN,
-                ; NEW and a program edit clear CONTVALID.
+                ; NEW, CLEAR (D-CLEARCONT) and a program edit clear CONTVALID.
                 ; re-arm the run loop's flags and stacks are already intact from
                 ; the suspended run (we never cleared them on break); just point
                 ; the loop at the saved resume position and run.

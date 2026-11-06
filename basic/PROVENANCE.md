@@ -1040,8 +1040,8 @@ the GOSUB/FOR/DATA state, so the suspended run continues with its full context.
 The resume *point* differs by break source: a Ctrl-STOP saves the statement that
 was about to run (so CONT re-runs from there); the `STOP` statement saves the
 position right after the STOP token (so CONT runs the statement after STOP).
-`CONTVALID` is cleared at RUN entry, on a program edit (`store_line`), and on
-`NEW`, so CONT after a clean completion / a STOP-less run / an edit gives
+`CONTVALID` is cleared at RUN entry, on a program edit (`store_line`), on
+`NEW`, and by `CLEAR` (in `clear_vars`, D-CLEARCONT), so CONT after a clean completion / a STOP-less run / an edit gives
 `can't continue`. This three-word layout and the choice of resume points are
 own-design (zerobas's run loop is its own design — not the reference's CONTXT /
 OLDTXT / OLDLIN sysvar set, reproducing which would need a forbidden source);
@@ -1100,7 +1100,7 @@ wrong.
 | Ctrl-STOP poll between statements/lines in the run loop | — | own code (poll point is ours); BREAKX contract is sourced | sourced |
 | CONT resume-state layout: `CONTLINE` ($E0D0), `CONTPTR` ($E0D2), `CONTVALID` ($E0D4) | — | **own design** — minimal resume state in free page-$E0 RAM; NOT the reference's CONTXT/OLDLIN sysvar set | quarantined |
 | Resume points: STOP → after the STOP token; Ctrl-STOP → the statement about to run | — | **own design**; reuses the existing RESUMEFLAG/RESUMEPTR mid-line resume path | quarantined |
-| `CONTVALID` cleared on RUN / `store_line` (edit) / `NEW` → `can't continue` thereafter | — | own code reproducing the language-reference "Can't CONTINUE after edit / no run" behaviour | sourced |
+| `CONTVALID` cleared on RUN / `store_line` (edit) / `NEW` / `CLEAR` → `can't continue` thereafter | — | own code reproducing the language-reference "Can't CONTINUE after edit / no run" behaviour | sourced |
 | `break in <line>` / `can't continue` message wording | — | **own design** lowercase approximation of MSX-BASIC's `Break in <line>` / `Can't CONTINUE` (role + observable text from MSX2 TH message list); not copied from any disassembly | quarantined |
 | `can't continue` error landmark | `$C9` at `ERRMARK` ($E010) | own choice (distinct landmark byte) | sourced |
 
