@@ -233,7 +233,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
 * **Main-bound, unpriced** (ruled YES by Joost, each a slice): DEF FN alias
   pool, String-too-long ownership, CONT line, T6 enumeration per keyword,
   INPUT$ cassette source. Historical slice costs in this tree run 20–100 B of
-  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14812 (T-59C37A)`).
+  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14821 (T-59C37A)`).
 * **Sub-bound**: SCREEN 3 (170–280 B p0), PAINT span-stack re-architect (p0),
   FCBSHAPE S1–S3 (p1), Phase C's C5-LOW/SBH-1 which *need* 181 B of sub p1 to
   *give* 157 B of main. The sub walls (137/94 B) block all of these today.
@@ -265,7 +265,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
   rows are the tape byte readers `cas_in_getbyte` 102 / `cal_getbyte` 90, and a
   tape-block move was refuted on timing (SBH-10, space plan §1).
 * **Dup-span, clone, `jp→jr`, promotion**: all measured shut or renewable at
-  single bytes (`carve-routes-measured-shut` 09-08; `TODO.md:2108 (T-5E5DB1)-4360`).
+  single bytes (`carve-routes-measured-shut` 09-08; `TODO.md:2117 (T-5E5DB1)-4360`).
   Promotion cannot raise the combined budget.
 * **De-eviction is refuted** (smallest tenant body 74 B vs largest stub ~42 B;
   memory `rom-region-structure-review`) — so there is no "bring code back"
@@ -349,7 +349,7 @@ program during the call (`docs/plan-main-rom-space-2026-10.md` §4 R4).
   iteration is the *more* slowed one (3.06×). Conclusion filed there: *"the
   eviction is not what makes this tree slow"*; the 2.5–3.8× lives in resident
   interpreter code (dispatch + expression evaluation, D-INTERPSPEED
-  `TODO.md:8393 (T-C1D0BC)-13560`).
+  `TODO.md:8402 (T-C1D0BC)-13560`).
 * **kwtime rows for tenant-backed functions** (`scratchpad/openwild_kwtime.out`,
   file dated Oct 7, columns `ref ms / zb ms / zb/ref / alone`): `sqr` 39.8 →
   327.6 = **8.23×**, `cos` 5.23×, `exp` 3.67×, `atn` 3.58×, `log` 3.57×;
@@ -395,7 +395,7 @@ block; the memory's `flt_to_int16` "CALSLT-per-factor would wreck the
 interpreter"): the measured data since then says a *single* crossing per
 statement is lost in the noise, but a crossing per *factor* or per *byte*
 would not be (D-LOADRUN: `dpl_*` per-byte path already ~2× its own,
-`TODO.md:2108 (T-5E5DB1)-4337`). The rule stands as a rule about *density* of crossings.
+`TODO.md:2117 (T-5E5DB1)-4337`). The rule stands as a rule about *density* of crossings.
 
 ---
 

@@ -1473,6 +1473,15 @@ item — do **one item per session** to keep context lean.
       the cache off after, in exactly mount + one-per-FAT-sector (+ the straddle) FAT reads
       ([`loadfat_reads.out`](scratchpad/loadfat_reads.out): each read with its caller) where
       it read 12. tests/test_fat_next_cluster.py (the cache off) unchanged and green.
+      📏 **WHAT IS LEFT OF LOAD'S 1.7x, MEASURED 2026-11-06** ([`fdccmd_loadfat.out`](scratchpad/fdccmd_loadfat.out),
+      [`fdccmd_loadseek_gaps.out`](scratchpad/fdccmd_loadseek_gaps.out)): sectors now chain ~30-33 ms apart -- but after EVERY
+      track change two consecutive reads miss their sector by a whole revolution (~229 ms):
+      9 misses in 32 reads, on S02/S03 or S03/S04, shifting by one per track (2-sector
+      clusters on 9-sector tracks). NOT the seek's verify: issuing the read seek without it
+      ($18, an experiment, reverted) changed nothing ([`loadseek_clock.out`](scratchpad/loadseek_clock.out)), and NOT a
+      retry (no restore command in the log). ➡️ next: what the chain does differently there
+      (a cluster boundary next to the track step?) -- disk.rom has no usable room left (82 B,
+      all FDC window), so the fix needs a carve too.
       ➡️ NEXT: fix (i)-(iv) above, then re-apply; (a) FILES' +36 %; (b) slice 1b / 2 (the scans and the write path from FATRES --
       frees ROM); (c) **the small-operation gap itself: 14-15x the CF-3300** (it caches far
       more than the FAT across operations); (d) LOAD's per-sector CPU (~93 ms a 512 B sector,
@@ -7841,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10274 (T-6FE392)8 (T-529ABE)` from `TODO.md:15691 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15700 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10580,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15691 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15700 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

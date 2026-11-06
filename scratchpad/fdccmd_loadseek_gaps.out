@@ -1,0 +1,35 @@
+D-LOADFAT follow-up (2026-11-06): LOAD's per-sector read gaps after D-LOADRUN + D-LOADFAT,
+from scratchpad/fdccmd_loadseek.out (the read seek WITHOUT verify, $18 -- an experiment, reverted;
+loadclock identical to the verify build, scratchpad/loadseek_clock.out).
+S02 -> S08:   84.6 ms
+S08 -> S06:  127.4 ms   <-- MISS (a revolution)
+S06 -> S07:  169.4 ms   <-- MISS (a revolution)
+S07 -> S02:   33.3 ms
+S02 -> S08:   92.0 ms
+S08 -> S09:  137.7 ms   <-- MISS (a revolution)
+S09 -> S01:   34.9 ms
+S01 -> S02:   39.1 ms
+S02 -> S03:  229.5 ms   <-- MISS (a revolution)
+S03 -> S04:  229.6 ms   <-- MISS (a revolution)
+S04 -> S05:   29.6 ms
+S05 -> S06:   33.6 ms
+S06 -> S07:   29.6 ms
+S07 -> S08:   32.5 ms
+S08 -> S09:   29.9 ms
+S09 -> S01:   33.1 ms
+S01 -> S02:   36.9 ms
+S02 -> S03:   32.8 ms
+S03 -> S04:  230.5 ms   <-- MISS (a revolution)
+S04 -> S05:  229.6 ms   <-- MISS (a revolution)
+S05 -> S06:   29.6 ms
+S06 -> S07:   32.8 ms
+S07 -> S08:   30.5 ms
+S08 -> S09:   32.5 ms
+S09 -> S01:   35.2 ms
+S01 -> S02:   39.2 ms
+S02 -> S03:  229.6 ms   <-- MISS (a revolution)
+S03 -> S04:  229.7 ms   <-- MISS (a revolution)
+S04 -> S05:   29.6 ms
+S05 -> S06:   33.7 ms
+S06 -> S07:   29.6 ms
+32 reads, 9 misses
