@@ -1,0 +1,279 @@
+
+##### running fx_onerr_star (watch 120 s) ...
+
+=== fx_onerr_star ===
+  > NEW
+  > 10 ON ERROR GOTO 90
+  > 20 COPY "PROG*.BAS" TO "Q*.BAS"
+  > 30 PRINT CHR$(91);"DONE]":END
+  > 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+  > RUN
+  [    pre] emu=   45.5 pc=0D76 
+  [    pre] emu=   53.5 pc=10D9 
+  [    pre] emu=   61.5 pc=10DC 
+  [    pre] emu=   69.5 pc=0D71 
+  [    pre] emu=   77.5 pc=0D5E 
+  [  typed] emu=   77.7 pc=0D5F 
+  -- last line injected at emu 78.00000335238137
+  [     +2] emu=   80.0 pc=7549 image-changes-since-last-line=0 
+       0| Ok
+       1| NEW
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 COPY "PROG*.BAS" TO "Q*.BAS"
+       5| 30 PRINT CHR$(91);"DONE]":END
+       6| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+       7| RUN
+      23| color   auto    goto    list    run
+  [     +5] emu=   83.0 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+  [    +10] emu=   88.0 pc=0D82 image-changes-since-last-line=0 
+       0| Ok
+       1| NEW
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 COPY "PROG*.BAS" TO "Q*.BAS"
+       5| 30 PRINT CHR$(91);"DONE]":END
+       6| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+       7| RUN
+       8| [DONE]
+       9| Ok
+      10| .
+      23| color   auto    goto    list    run
+  [    +15] emu=   93.0 pc=10DC image-changes-since-last-line=1 (screen unchanged)
+  [    +20] emu=   98.0 pc=0D69 image-changes-since-last-line=1 (screen unchanged)
+  [    +30] emu=  108.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=  123.0 pc=0D7F image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=  138.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  168.0 pc=0D56 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  198.0 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  198.0 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 199.0000022349209
+  [ poke+5] emu=  204.0 pc=0D65 image-changes-since-last-line=1 
+       0| Ok
+       1| NEW
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 COPY "PROG*.BAS" TO "Q*.BAS"
+       5| 30 PRINT CHR$(91);"DONE]":END
+       6| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+       7| RUN
+       8| [DONE]
+       9| Ok
+      11| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  210.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 QROG.BAS          16 B clus=9    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'  <-- NEW
+     # 7 QROG2.BAS         17 B clus=10   b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'  <-- NEW
+     # 8 QROG3.BAS         15 B clus=11   b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 1 times; wall 1s
+
+##### running fr_onerr_star (watch 120 s) ...
+
+=== fr_onerr_star ===
+  > NEW
+  > 10 ON ERROR GOTO 90
+  > 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1,"X1":CLOSE
+  > 30 OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1,"X2":CLOSE
+  > 40 COPY "A*.TXT" TO "C*.TXT"
+  > 50 PRINT CHR$(91);"DONE]":END
+  > 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+  > RUN
+  [    pre] emu=   45.5 pc=0D76 
+  [    pre] emu=   53.5 pc=10D9 
+  [    pre] emu=   69.5 pc=0BA2 
+  [    pre] emu=   85.5 pc=0D6D 
+  [    pre] emu=   93.5 pc=10DC 
+  [    pre] emu=  101.5 pc=0D62 
+  [    pre] emu=  109.5 pc=0B9F 
+  [  typed] emu=  109.7 pc=0D6C 
+  -- last line injected at emu 110.00000027936511
+  [     +2] emu=  112.0 pc=766F image-changes-since-last-line=0 
+       0| Ok
+       1| NEW
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT
+       5|  #1,"X1":CLOSE
+       6| 30 OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT
+       7|  #1,"X2":CLOSE
+       8| 40 COPY "A*.TXT" TO "C*.TXT"
+       9| 50 PRINT CHR$(91);"DONE]":END
+      10| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+      11| RUN
+      23| color   auto    goto    list    run
+  [     +5] emu=  115.0 pc=754D image-changes-since-last-line=0 (screen unchanged)
+  [    +10] emu=  120.0 pc=0D6E image-changes-since-last-line=0 
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT
+       5|  #1,"X1":CLOSE
+       6| 30 OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT
+       7|  #1,"X2":CLOSE
+       8| 40 COPY "A*.TXT" TO "C*.TXT"
+       9| 50 PRINT CHR$(91);"DONE]":END
+      10| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+      11| RUN
+      12| [DONE]
+      13| Ok
+      14| .
+      23| color   auto    goto    list    run
+  [    +15] emu=  125.0 pc=0D69 image-changes-since-last-line=0 (screen unchanged)
+  [    +20] emu=  130.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [    +30] emu=  140.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=  155.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=  170.0 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  200.0 pc=0D7E image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  230.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  230.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 231.0000019555558
+  [ poke+5] emu=  236.0 pc=0D6A image-changes-since-last-line=1 
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT
+       5|  #1,"X1":CLOSE
+       6| 30 OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT
+       7|  #1,"X2":CLOSE
+       8| 40 COPY "A*.TXT" TO "C*.TXT"
+       9| 50 PRINT CHR$(91);"DONE]":END
+      10| 90 PRINT CHR$(91);"E";ERR;ERL;"]":END
+      11| RUN
+      12| [DONE]
+      13| Ok
+      15| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  242.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 A1.TXT             5 B clus=9    b'X1\r\n\x1a'  <-- NEW
+     # 7 A2.TXT             5 B clus=10   b'X2\r\n\x1a'  <-- NEW
+     # 8 C1.TXT             5 B clus=11   b'X1\r\n\x1a'  <-- NEW
+     # 9 C2.TXT             5 B clus=12   b'X2\r\n\x1a'  <-- NEW
+  -- host image changed 1 times; wall 2s
+
+##### running fx_prompt_plain (watch 120 s) ...
+
+=== fx_prompt_plain ===
+  > COPY "*.BAS" TO "Z.BAS"
+  [  typed] emu=   37.7 pc=0D65 
+       0| Ok
+       1| .
+      23| color   auto    goto    list    run
+  -- last line injected at emu 38.0000019555558
+  [     +2] emu=   40.0 pc=7672 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.BAS"
+      23| color   auto    goto    list    run
+  [     +5] emu=   43.0 pc=761B image-changes-since-last-line=0 (screen unchanged)
+  [    +10] emu=   48.0 pc=7684 image-changes-since-last-line=0 (screen unchanged)
+  [    +15] emu=   53.0 pc=0299 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.BAS"
+       2| Illegal function call
+       3| Ok
+       4| .
+      23| color   auto    goto    list    run
+  [    +20] emu=   58.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [    +30] emu=   68.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=   83.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=   98.0 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  128.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  158.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  158.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 159.0000019555558
+  [ poke+5] emu=  164.0 pc=0D71 image-changes-since-last-line=1 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.BAS"
+       2| Illegal function call
+       3| Ok
+       5| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  170.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 Z.BAS             15 B clus=9    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 1 times; wall 1s
+
+##### running fr_prompt_star (watch 120 s) ...
+
+=== fr_prompt_star ===
+  > OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1,"X1":CLOSE
+  > OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1,"X2":CLOSE
+  > COPY "A*.TXT" TO "C*.TXT"
+  [    pre] emu=   53.5 pc=0D68 
+  [    pre] emu=   69.5 pc=0D6A 
+  [  typed] emu=   69.7 pc=0D87 
+  -- last line injected at emu 70.00000279365115
+  [     +2] emu=   72.0 pc=766D image-changes-since-last-line=0 
+       0| Ok
+       1| OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1
+       2| ,"X1":CLOSE
+       3| Ok
+       4| OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1
+       5| ,"X2":CLOSE
+       6| Ok
+       7| COPY "A*.TXT" TO "C*.TXT"
+      23| color   auto    goto    list    run
+  [     +5] emu=   75.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [    +10] emu=   80.0 pc=0D6E image-changes-since-last-line=0 
+       0| Ok
+       1| OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1
+       2| ,"X1":CLOSE
+       3| Ok
+       4| OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1
+       5| ,"X2":CLOSE
+       6| Ok
+       7| COPY "A*.TXT" TO "C*.TXT"
+       8| Ok
+       9| .
+      23| color   auto    goto    list    run
+  [    +15] emu=   85.0 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [    +20] emu=   90.0 pc=0D87 image-changes-since-last-line=0 (screen unchanged)
+  [    +30] emu=  100.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=  115.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=  130.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  160.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  190.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  190.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 191.0000002793651
+  [ poke+5] emu=  196.0 pc=0BA2 image-changes-since-last-line=1 
+       0| Ok
+       1| OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1
+       2| ,"X1":CLOSE
+       3| Ok
+       4| OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1
+       5| ,"X2":CLOSE
+       6| Ok
+       7| COPY "A*.TXT" TO "C*.TXT"
+       8| Ok
+      10| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  202.0 pc=0D7A image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 A1.TXT             5 B clus=9    b'X1\r\n\x1a'  <-- NEW
+     # 7 A2.TXT             5 B clus=10   b'X2\r\n\x1a'  <-- NEW
+     # 8 C1.TXT             5 B clus=11   b'X1\r\n\x1a'  <-- NEW
+     # 9 C2.TXT             5 B clus=12   b'X2\r\n\x1a'  <-- NEW
+  -- host image changed 2 times; wall 1s

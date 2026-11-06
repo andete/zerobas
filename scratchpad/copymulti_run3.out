@@ -1,0 +1,606 @@
+
+##### running w_star_orig (watch 180 s) ...
+
+=== w_star_orig ===
+  > NEW
+  > 10 ON ERROR GOTO 90
+  > 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1,"X1":CLOSE:OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1,"X2":CLOSE
+  > 30 COPY "A*.TXT" TO "C*.TXT"
+  > 40 OPEN "C1.TXT" FOR INPUT AS #1:INPUT #1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT AS #1:INPUT #1,B$:CLOSE:PRINT CHR$(91);"";A$;"|";B$;"OK]":END
+  > 90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;"]":END
+  > RUN
+  [    pre] emu=   45.5 pc=0D76 
+      dir(pre): 6 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15
+  [    pre] emu=   53.5 pc=10D9 
+  [    pre] emu=   77.5 pc=0D5E 
+  [    pre] emu=   85.5 pc=0D82 
+  [    pre] emu=  117.5 pc=0227 
+  [    pre] emu=  133.5 pc=10D9 
+  [  typed] emu=  133.7 pc=0D87 
+  -- last line injected at emu 134.00000307301625
+  [   +0.5] emu=  134.5 pc=7723 image-changes-since-last-line=0 
+       2| Ok
+       3| 10 ON ERROR GOTO 90
+       4| 20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT
+       5|  #1,"X1":CLOSE:OPEN "A2.TXT" FOR OUTPUT
+       6|  AS #1:PRINT #1,"X2":CLOSE
+       7| 30 COPY "A*.TXT" TO "C*.TXT"
+       8| 40 OPEN "C1.TXT" FOR INPUT AS #1:INPUT
+       9| #1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT AS
+      10| #1:INPUT #1,B$:CLOSE:PRINT CHR$(91);"";
+      11| A$;"|";B$;"OK]":END
+      12| 90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;
+      13| "]":END
+      14| RUN
+      23| color   auto    goto    list    run
+  [   +1.0] emu=  135.0 pc=7621 image-changes-since-last-line=0 (screen unchanged)
+  [   +1.5] emu=  135.5 pc=754D image-changes-since-last-line=0 (screen unchanged)
+      dir(+1.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:0
+  [   +2.0] emu=  136.0 pc=766F image-changes-since-last-line=0 (screen unchanged)
+      dir(+2.0): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5
+  [   +2.5] emu=  136.5 pc=7686 image-changes-since-last-line=0 (screen unchanged)
+  [   +3.0] emu=  137.0 pc=7683 image-changes-since-last-line=0 (screen unchanged)
+  [   +3.5] emu=  137.5 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+      dir(+3.5): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:0
+  [   +4.0] emu=  138.0 pc=7674 image-changes-since-last-line=0 (screen unchanged)
+      dir(+4.0): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:5
+  [   +4.5] emu=  138.5 pc=7689 image-changes-since-last-line=0 (screen unchanged)
+  [   +5.0] emu=  139.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +5.5] emu=  139.5 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +6.0] emu=  140.0 pc=766D image-changes-since-last-line=0 (screen unchanged)
+      dir(+6.0): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:5 c1.txt:0
+  [   +6.5] emu=  140.5 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+      dir(+6.5): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:5 c1.txt:5
+  [   +7.0] emu=  141.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +7.5] emu=  141.5 pc=7674 image-changes-since-last-line=0 (screen unchanged)
+      dir(+7.5): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:5 c1.txt:5 c2.txt:0
+  [   +8.0] emu=  142.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +8.5] emu=  142.5 pc=7546 image-changes-since-last-line=1 (screen unchanged)
+      dir(+8.5): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 a1.txt:5 a2.txt:5 c1.txt:5 c2.txt:5
+  [   +9.0] emu=  143.0 pc=766E image-changes-since-last-line=1 (screen unchanged)
+  [   +9.5] emu=  143.5 pc=7672 image-changes-since-last-line=1 (screen unchanged)
+  [  +10.0] emu=  144.0 pc=7620 image-changes-since-last-line=1 (screen unchanged)
+  [  +10.5] emu=  144.5 pc=0BA2 image-changes-since-last-line=1 
+       5|  #1,"X1":CLOSE:OPEN "A2.TXT" FOR OUTPUT
+       6|  AS #1:PRINT #1,"X2":CLOSE
+       7| 30 COPY "A*.TXT" TO "C*.TXT"
+       8| 40 OPEN "C1.TXT" FOR INPUT AS #1:INPUT
+       9| #1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT AS
+      10| #1:INPUT #1,B$:CLOSE:PRINT CHR$(91);"";
+      11| A$;"|";B$;"OK]":END
+      12| 90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;
+      13| "]":END
+      14| RUN
+      15| [X1|X2OK]
+      16| Ok
+      17| .
+      23| color   auto    goto    list    run
+  [  +11.0] emu=  145.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [  +11.5] emu=  145.5 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +12.0] emu=  146.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +12.5] emu=  146.5 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +13.0] emu=  147.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +13.5] emu=  147.5 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [  +14.0] emu=  148.0 pc=0D6C image-changes-since-last-line=1 (screen unchanged)
+  [  +14.5] emu=  148.5 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +15.0] emu=  149.0 pc=0D79 image-changes-since-last-line=1 (screen unchanged)
+  [  +15.5] emu=  149.5 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [  +16.0] emu=  150.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [  +16.5] emu=  150.5 pc=0D7D image-changes-since-last-line=1 (screen unchanged)
+  [  +17.0] emu=  151.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +17.5] emu=  151.5 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +18.0] emu=  152.0 pc=0D7F image-changes-since-last-line=1 (screen unchanged)
+  [  +18.5] emu=  152.5 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +19.0] emu=  153.0 pc=10DC image-changes-since-last-line=1 (screen unchanged)
+  [  +19.5] emu=  153.5 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [  +20.0] emu=  154.0 pc=0BA4 image-changes-since-last-line=1 (screen unchanged)
+  [  +20.5] emu=  154.5 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.0] emu=  155.0 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.5] emu=  155.5 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.0] emu=  156.0 pc=0C86 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.5] emu=  156.5 pc=02AE image-changes-since-last-line=1 (screen unchanged)
+  [  +23.0] emu=  157.0 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.5] emu=  157.5 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [  +24.0] emu=  158.0 pc=0D6B image-changes-since-last-line=1 (screen unchanged)
+  [  +24.5] emu=  158.5 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +25.0] emu=  159.0 pc=0D79 image-changes-since-last-line=1 (screen unchanged)
+  [  +25.5] emu=  159.5 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [  +26.0] emu=  160.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.5] emu=  160.5 pc=0D7A image-changes-since-last-line=1 (screen unchanged)
+  [  +27.0] emu=  161.0 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +27.5] emu=  161.5 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +28.0] emu=  162.0 pc=0D7E image-changes-since-last-line=1 (screen unchanged)
+  [  +28.5] emu=  162.5 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +29.0] emu=  163.0 pc=0D88 image-changes-since-last-line=1 (screen unchanged)
+  [  +29.5] emu=  163.5 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [  +30.0] emu=  164.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=  179.0 pc=0D6C image-changes-since-last-line=2 (screen unchanged)
+  [    +60] emu=  194.0 pc=0D6C image-changes-since-last-line=2 (screen unchanged)
+  [    +90] emu=  224.0 pc=0B9F image-changes-since-last-line=2 (screen unchanged)
+  [   +120] emu=  254.0 pc=0D86 image-changes-since-last-line=2 (screen unchanged)
+  [   +180] emu=  314.0 pc=0D85 image-changes-since-last-line=2 (screen unchanged)
+  [    end] emu=  314.0 pc=0D85 image-changes-since-last-line=2 (screen unchanged)
+  -- Enter injected at emu 315.00000111746044
+  [ poke+5] emu=  320.0 pc=0D6E image-changes-since-last-line=2 
+       5|  #1,"X1":CLOSE:OPEN "A2.TXT" FOR OUTPUT
+       6|  AS #1:PRINT #1,"X2":CLOSE
+       7| 30 COPY "A*.TXT" TO "C*.TXT"
+       8| 40 OPEN "C1.TXT" FOR INPUT AS #1:INPUT
+       9| #1,A$:CLOSE:OPEN "C2.TXT" FOR INPUT AS
+      10| #1:INPUT #1,B$:CLOSE:PRINT CHR$(91);"";
+      11| A$;"|";B$;"OK]":END
+      12| 90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;
+      13| "]":END
+      14| RUN
+      15| [X1|X2OK]
+      16| Ok
+      18| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  326.0 pc=0D65 image-changes-since-last-line=2 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 A1.TXT             5 B clus=9    b'X1\r\n\x1a'  <-- NEW
+     # 7 A2.TXT             5 B clus=10   b'X2\r\n\x1a'  <-- NEW
+     # 8 C1.TXT             5 B clus=11   b'X1\r\n\x1a'  <-- NEW
+     # 9 C2.TXT             5 B clus=12   b'X2\r\n\x1a'  <-- NEW
+  -- host image changed 2 times; wall 3s
+
+##### running sm_plain_other (watch 180 s) ...
+
+=== sm_plain_other ===
+  > COPY "*.BAS" TO "Z.TXT"
+  [  typed] emu=   37.7 pc=0D65 
+       0| Ok
+       1| .
+      23| color   auto    goto    list    run
+      dir(typed): 6 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15
+  -- last line injected at emu 38.0000019555558
+  [   +0.5] emu=   38.5 pc=7722 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.TXT"
+      23| color   auto    goto    list    run
+  [   +1.0] emu=   39.0 pc=7620 image-changes-since-last-line=0 (screen unchanged)
+  [   +1.5] emu=   39.5 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+      dir(+1.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:0
+  [   +2.0] emu=   40.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +2.5] emu=   40.5 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+      dir(+2.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:16
+  [   +3.0] emu=   41.0 pc=7548 image-changes-since-last-line=0 (screen unchanged)
+  [   +3.5] emu=   41.5 pc=7548 image-changes-since-last-line=0 (screen unchanged)
+  [   +4.0] emu=   42.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +4.5] emu=   42.5 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +5.0] emu=   43.0 pc=761B image-changes-since-last-line=0 (screen unchanged)
+      dir(+5.0): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:0
+  [   +5.5] emu=   43.5 pc=766D image-changes-since-last-line=0 (screen unchanged)
+      dir(+5.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:17
+  [   +6.0] emu=   44.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +6.5] emu=   44.5 pc=7548 image-changes-since-last-line=0 (screen unchanged)
+  [   +7.0] emu=   45.0 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+  [   +7.5] emu=   45.5 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +8.0] emu=   46.0 pc=7689 image-changes-since-last-line=0 (screen unchanged)
+  [   +8.5] emu=   46.5 pc=7620 image-changes-since-last-line=0 (screen unchanged)
+      dir(+8.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:0
+  [   +9.0] emu=   47.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +9.5] emu=   47.5 pc=766D image-changes-since-last-line=0 (screen unchanged)
+      dir(+9.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 z.txt:15
+  [  +10.0] emu=   48.0 pc=7684 image-changes-since-last-line=0 (screen unchanged)
+  [  +10.5] emu=   48.5 pc=0D82 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.TXT"
+       2| Ok
+       3| .
+      23| color   auto    goto    list    run
+  [  +11.0] emu=   49.0 pc=10D9 image-changes-since-last-line=0 (screen unchanged)
+  [  +11.5] emu=   49.5 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [  +12.0] emu=   50.0 pc=0D6C image-changes-since-last-line=0 (screen unchanged)
+  [  +12.5] emu=   50.5 pc=0D7D image-changes-since-last-line=0 (screen unchanged)
+  [  +13.0] emu=   51.0 pc=0D6E image-changes-since-last-line=0 (screen unchanged)
+  [  +13.5] emu=   51.5 pc=0D87 image-changes-since-last-line=0 (screen unchanged)
+  [  +14.0] emu=   52.0 pc=0D7E image-changes-since-last-line=0 (screen unchanged)
+  [  +14.5] emu=   52.5 pc=0C80 image-changes-since-last-line=0 (screen unchanged)
+  [  +15.0] emu=   53.0 pc=0299 image-changes-since-last-line=0 (screen unchanged)
+  [  +15.5] emu=   53.5 pc=0D88 image-changes-since-last-line=0 (screen unchanged)
+  [  +16.0] emu=   54.0 pc=0D82 image-changes-since-last-line=0 (screen unchanged)
+  [  +16.5] emu=   54.5 pc=0BA2 image-changes-since-last-line=0 (screen unchanged)
+  [  +17.0] emu=   55.0 pc=10DC image-changes-since-last-line=0 (screen unchanged)
+  [  +17.5] emu=   55.5 pc=0D62 image-changes-since-last-line=0 (screen unchanged)
+  [  +18.0] emu=   56.0 pc=0BA4 image-changes-since-last-line=0 (screen unchanged)
+  [  +18.5] emu=   56.5 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [  +19.0] emu=   57.0 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +19.5] emu=   57.5 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  [  +20.0] emu=   58.0 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +20.5] emu=   58.5 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.0] emu=   59.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.5] emu=   59.5 pc=0D6C image-changes-since-last-line=1 (screen unchanged)
+  [  +22.0] emu=   60.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.5] emu=   60.5 pc=0D7A image-changes-since-last-line=1 (screen unchanged)
+  [  +23.0] emu=   61.0 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [  +23.5] emu=   61.5 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [  +24.0] emu=   62.0 pc=0D7D image-changes-since-last-line=1 (screen unchanged)
+  [  +24.5] emu=   62.5 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +25.0] emu=   63.0 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +25.5] emu=   63.5 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.0] emu=   64.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.5] emu=   64.5 pc=0D56 image-changes-since-last-line=1 (screen unchanged)
+  [  +27.0] emu=   65.0 pc=0D41 image-changes-since-last-line=1 (screen unchanged)
+  [  +27.5] emu=   65.5 pc=024D image-changes-since-last-line=1 (screen unchanged)
+  [  +28.0] emu=   66.0 pc=0216 image-changes-since-last-line=1 (screen unchanged)
+  [  +28.5] emu=   66.5 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +29.0] emu=   67.0 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +29.5] emu=   67.5 pc=0D7F image-changes-since-last-line=1 (screen unchanged)
+  [  +30.0] emu=   68.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=   83.0 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=   98.0 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  128.0 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  158.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [   +180] emu=  218.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  218.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 219.00000307301625
+  [ poke+5] emu=  224.0 pc=0D6D image-changes-since-last-line=1 
+       0| Ok
+       1| COPY "*.BAS" TO "Z.TXT"
+       2| Ok
+       4| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  230.0 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 Z.TXT             15 B clus=9    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 1 times; wall 2s
+
+##### running q_blank (watch 180 s) ...
+
+=== q_blank ===
+  > COPY "PROG?.BAS" TO "Y????.BAS"
+  [  typed] emu=   37.7 pc=0D65 
+       0| Ok
+       1| .
+      23| color   auto    goto    list    run
+      dir(typed): 6 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15
+  -- last line injected at emu 38.0000019555558
+  [   +0.5] emu=   38.5 pc=7725 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "PROG?.BAS" TO "Y????.BAS"
+      23| color   auto    goto    list    run
+  [   +1.0] emu=   39.0 pc=761C image-changes-since-last-line=0 (screen unchanged)
+  [   +1.5] emu=   39.5 pc=7620 image-changes-since-last-line=0 (screen unchanged)
+      dir(+1.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:0
+  [   +2.0] emu=   40.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +2.5] emu=   40.5 pc=7548 image-changes-since-last-line=0 (screen unchanged)
+      dir(+2.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:16
+  [   +3.0] emu=   41.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +3.5] emu=   41.5 pc=7548 image-changes-since-last-line=0 (screen unchanged)
+  [   +4.0] emu=   42.0 pc=761C image-changes-since-last-line=0 (screen unchanged)
+      dir(+4.0): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:16 yrog2.bas:0
+  [   +4.5] emu=   42.5 pc=7674 image-changes-since-last-line=0 (screen unchanged)
+      dir(+4.5): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:16 yrog2.bas:17
+  [   +5.0] emu=   43.0 pc=766D image-changes-since-last-line=0 (screen unchanged)
+  [   +5.5] emu=   43.5 pc=7549 image-changes-since-last-line=0 (screen unchanged)
+  [   +6.0] emu=   44.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +6.5] emu=   44.5 pc=7549 image-changes-since-last-line=0 (screen unchanged)
+      dir(+6.5): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:16 yrog2.bas:17 yrog3.bas:0
+  [   +7.0] emu=   45.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+      dir(+7.0): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 yrog.bas:16 yrog2.bas:17 yrog3.bas:15
+  [   +7.5] emu=   45.5 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +8.0] emu=   46.0 pc=0D85 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "PROG?.BAS" TO "Y????.BAS"
+       2| Ok
+       3| .
+      23| color   auto    goto    list    run
+  [   +8.5] emu=   46.5 pc=0D6E image-changes-since-last-line=0 (screen unchanged)
+  [   +9.0] emu=   47.0 pc=0D85 image-changes-since-last-line=0 (screen unchanged)
+  [   +9.5] emu=   47.5 pc=0D87 image-changes-since-last-line=0 (screen unchanged)
+  [  +10.0] emu=   48.0 pc=10D9 image-changes-since-last-line=0 (screen unchanged)
+  [  +10.5] emu=   48.5 pc=0D65 image-changes-since-last-line=0 (screen unchanged)
+  [  +11.0] emu=   49.0 pc=0D73 image-changes-since-last-line=0 (screen unchanged)
+  [  +11.5] emu=   49.5 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [  +12.0] emu=   50.0 pc=0D68 image-changes-since-last-line=0 (screen unchanged)
+  [  +12.5] emu=   50.5 pc=0D76 image-changes-since-last-line=0 (screen unchanged)
+  [  +13.0] emu=   51.0 pc=0D6C image-changes-since-last-line=0 (screen unchanged)
+  [  +13.5] emu=   51.5 pc=0D5A image-changes-since-last-line=0 (screen unchanged)
+  [  +14.0] emu=   52.0 pc=0D41 image-changes-since-last-line=0 (screen unchanged)
+  [  +14.5] emu=   52.5 pc=0C7D image-changes-since-last-line=0 (screen unchanged)
+  [  +15.0] emu=   53.0 pc=0296 image-changes-since-last-line=0 (screen unchanged)
+  [  +15.5] emu=   53.5 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [  +16.0] emu=   54.0 pc=0D65 image-changes-since-last-line=0 (screen unchanged)
+  [  +16.5] emu=   54.5 pc=0D76 image-changes-since-last-line=0 (screen unchanged)
+  [  +17.0] emu=   55.0 pc=0D6C image-changes-since-last-line=0 (screen unchanged)
+  [  +17.5] emu=   55.5 pc=0D68 image-changes-since-last-line=0 (screen unchanged)
+  [  +18.0] emu=   56.0 pc=0D79 image-changes-since-last-line=0 (screen unchanged)
+  [  +18.5] emu=   56.5 pc=0D6D image-changes-since-last-line=0 (screen unchanged)
+  [  +19.0] emu=   57.0 pc=0D85 image-changes-since-last-line=0 (screen unchanged)
+  [  +19.5] emu=   57.5 pc=0D7D image-changes-since-last-line=0 (screen unchanged)
+  [  +20.0] emu=   58.0 pc=0D6E image-changes-since-last-line=0 (screen unchanged)
+  [  +20.5] emu=   58.5 pc=0D87 image-changes-since-last-line=0 (screen unchanged)
+  [  +21.0] emu=   59.0 pc=0D7E image-changes-since-last-line=0 (screen unchanged)
+  [  +21.5] emu=   59.5 pc=0B9F image-changes-since-last-line=0 (screen unchanged)
+  [  +22.0] emu=   60.0 pc=0D88 image-changes-since-last-line=0 (screen unchanged)
+  [  +22.5] emu=   60.5 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.0] emu=   61.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.5] emu=   61.5 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [  +24.0] emu=   62.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [  +24.5] emu=   62.5 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  [  +25.0] emu=   63.0 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +25.5] emu=   63.5 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.0] emu=   64.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.5] emu=   64.5 pc=0D6B image-changes-since-last-line=1 (screen unchanged)
+  [  +27.0] emu=   65.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +27.5] emu=   65.5 pc=024F image-changes-since-last-line=1 (screen unchanged)
+  [  +28.0] emu=   66.0 pc=0217 image-changes-since-last-line=1 (screen unchanged)
+  [  +28.5] emu=   66.5 pc=0D6C image-changes-since-last-line=1 (screen unchanged)
+  [  +29.0] emu=   67.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +29.5] emu=   67.5 pc=0D7A image-changes-since-last-line=1 (screen unchanged)
+  [  +30.0] emu=   68.0 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=   83.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=   98.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  128.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  158.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [   +180] emu=  218.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  218.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 219.00000083809533
+  [ poke+5] emu=  224.0 pc=0D6A image-changes-since-last-line=1 
+       0| Ok
+       1| COPY "PROG?.BAS" TO "Y????.BAS"
+       2| Ok
+       4| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  230.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 YROG.BAS          16 B clus=9    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'  <-- NEW
+     # 7 YROG2.BAS         17 B clus=10   b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'  <-- NEW
+     # 8 YROG3.BAS         15 B clus=11   b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 1 times; wall 2s
+
+##### running open_other (watch 180 s) ...
+
+=== open_other ===
+  > OPEN "ZZ.TXT" FOR OUTPUT AS #1
+  > COPY "PROG*.BAS" TO "Q*.BAS"
+  [    pre] emu=   45.5 pc=0D86 
+      dir(pre): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0
+  [  typed] emu=   45.7 pc=0D65 
+  -- last line injected at emu 46.00000223492092
+  [   +0.5] emu=   46.5 pc=7722 image-changes-since-last-line=0 
+       0| Ok
+       1| OPEN "ZZ.TXT" FOR OUTPUT AS #1
+       2| Ok
+       3| COPY "PROG*.BAS" TO "Q*.BAS"
+      23| color   auto    goto    list    run
+  [   +1.0] emu=   47.0 pc=7620 image-changes-since-last-line=0 (screen unchanged)
+  [   +1.5] emu=   47.5 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+      dir(+1.5): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:0
+  [   +2.0] emu=   48.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +2.5] emu=   48.5 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+      dir(+2.5): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:16
+  [   +3.0] emu=   49.0 pc=7555 image-changes-since-last-line=0 (screen unchanged)
+  [   +3.5] emu=   49.5 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +4.0] emu=   50.0 pc=7622 image-changes-since-last-line=0 (screen unchanged)
+      dir(+4.0): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:16 qrog2.bas:0
+  [   +4.5] emu=   50.5 pc=766E image-changes-since-last-line=0 (screen unchanged)
+      dir(+4.5): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:16 qrog2.bas:17
+  [   +5.0] emu=   51.0 pc=7546 image-changes-since-last-line=0 (screen unchanged)
+  [   +5.5] emu=   51.5 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +6.0] emu=   52.0 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+      dir(+6.0): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:16 qrog2.bas:17 qrog3.bas:0
+  [   +6.5] emu=   52.5 pc=7672 image-changes-since-last-line=0 (screen unchanged)
+  [   +7.0] emu=   53.0 pc=7549 image-changes-since-last-line=0 (screen unchanged)
+      dir(+7.0): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 zz.txt:0 qrog.bas:16 qrog2.bas:17 qrog3.bas:15
+  [   +7.5] emu=   53.5 pc=7547 image-changes-since-last-line=0 (screen unchanged)
+  [   +8.0] emu=   54.0 pc=766D image-changes-since-last-line=0 (screen unchanged)
+  [   +8.5] emu=   54.5 pc=0D87 image-changes-since-last-line=0 
+       0| Ok
+       1| OPEN "ZZ.TXT" FOR OUTPUT AS #1
+       2| Ok
+       3| COPY "PROG*.BAS" TO "Q*.BAS"
+       4| Ok
+       5| .
+      23| color   auto    goto    list    run
+  [   +9.0] emu=   55.0 pc=0BA2 image-changes-since-last-line=0 (screen unchanged)
+  [   +9.5] emu=   55.5 pc=0BA2 image-changes-since-last-line=0 (screen unchanged)
+  [  +10.0] emu=   56.0 pc=0D73 image-changes-since-last-line=0 (screen unchanged)
+  [  +10.5] emu=   56.5 pc=0D65 image-changes-since-last-line=0 (screen unchanged)
+  [  +11.0] emu=   57.0 pc=0D71 image-changes-since-last-line=0 (screen unchanged)
+  [  +11.5] emu=   57.5 pc=0D6A image-changes-since-last-line=0 (screen unchanged)
+  [  +12.0] emu=   58.0 pc=0D65 image-changes-since-last-line=0 (screen unchanged)
+  [  +12.5] emu=   58.5 pc=0D76 image-changes-since-last-line=0 (screen unchanged)
+  [  +13.0] emu=   59.0 pc=0D6C image-changes-since-last-line=0 (screen unchanged)
+  [  +13.5] emu=   59.5 pc=0D69 image-changes-since-last-line=0 (screen unchanged)
+  [  +14.0] emu=   60.0 pc=0D79 image-changes-since-last-line=0 (screen unchanged)
+  [  +14.5] emu=   60.5 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [  +15.0] emu=   61.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [  +15.5] emu=   61.5 pc=0D7D image-changes-since-last-line=1 (screen unchanged)
+  [  +16.0] emu=   62.0 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +16.5] emu=   62.5 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +17.0] emu=   63.0 pc=0D7E image-changes-since-last-line=1 (screen unchanged)
+  [  +17.5] emu=   63.5 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +18.0] emu=   64.0 pc=0D88 image-changes-since-last-line=1 (screen unchanged)
+  [  +18.5] emu=   64.5 pc=0D60 image-changes-since-last-line=1 (screen unchanged)
+  [  +19.0] emu=   65.0 pc=0D41 image-changes-since-last-line=1 (screen unchanged)
+  [  +19.5] emu=   65.5 pc=024F image-changes-since-last-line=1 (screen unchanged)
+  [  +20.0] emu=   66.0 pc=0217 image-changes-since-last-line=1 (screen unchanged)
+  [  +20.5] emu=   66.5 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.0] emu=   67.0 pc=0D7E image-changes-since-last-line=1 (screen unchanged)
+  [  +21.5] emu=   67.5 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +22.0] emu=   68.0 pc=0D88 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.5] emu=   68.5 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.0] emu=   69.0 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.5] emu=   69.5 pc=10DC image-changes-since-last-line=1 (screen unchanged)
+  [  +24.0] emu=   70.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [  +24.5] emu=   70.5 pc=0BA4 image-changes-since-last-line=1 (screen unchanged)
+  [  +25.0] emu=   71.0 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +25.5] emu=   71.5 pc=0D65 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.0] emu=   72.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  [  +26.5] emu=   72.5 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +27.0] emu=   73.0 pc=0D68 image-changes-since-last-line=1 (screen unchanged)
+  [  +27.5] emu=   73.5 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [  +28.0] emu=   74.0 pc=0D6C image-changes-since-last-line=1 (screen unchanged)
+  [  +28.5] emu=   74.5 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +29.0] emu=   75.0 pc=0D7A image-changes-since-last-line=1 (screen unchanged)
+  [  +29.5] emu=   75.5 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +30.0] emu=   76.0 pc=0D86 image-changes-since-last-line=1 (screen unchanged)
+  [    +45] emu=   91.0 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [    +60] emu=  106.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [    +90] emu=  136.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [   +120] emu=  166.0 pc=0D76 image-changes-since-last-line=1 (screen unchanged)
+  [   +180] emu=  226.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  [    end] emu=  226.0 pc=0D73 image-changes-since-last-line=1 (screen unchanged)
+  -- Enter injected at emu 227.0000016761907
+  [ poke+5] emu=  232.0 pc=0D68 image-changes-since-last-line=1 
+       0| Ok
+       1| OPEN "ZZ.TXT" FOR OUTPUT AS #1
+       2| Ok
+       3| COPY "PROG*.BAS" TO "Q*.BAS"
+       4| Ok
+       6| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  238.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 ZZ.TXT             0 B clus=0    b''  <-- NEW
+     # 7 QROG.BAS          16 B clus=9    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'  <-- NEW
+     # 8 QROG2.BAS         17 B clus=10   b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'  <-- NEW
+     # 9 QROG3.BAS         15 B clus=11   b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 1 times; wall 2s
+
+##### running fx_prompt_all (watch 180 s) ...
+
+=== fx_prompt_all ===
+  > COPY "*.*" TO "N*.*"
+  [  typed] emu=   37.7 pc=0D65 
+       0| Ok
+       1| .
+      23| color   auto    goto    list    run
+      dir(typed): 6 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15
+  -- last line injected at emu 38.0000019555558
+  [   +0.5] emu=   38.5 pc=7723 image-changes-since-last-line=0 
+       0| Ok
+       1| COPY "*.*" TO "N*.*"
+      23| color   auto    goto    list    run
+  [   +1.0] emu=   39.0 pc=7622 image-changes-since-last-line=0 (screen unchanged)
+  [   +1.5] emu=   39.5 pc=7620 image-changes-since-last-line=1 (screen unchanged)
+      dir(+1.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:0
+  [   +2.0] emu=   40.0 pc=766E image-changes-since-last-line=1 (screen unchanged)
+  [   +2.5] emu=   40.5 pc=7672 image-changes-since-last-line=1 (screen unchanged)
+      dir(+2.5): 7 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048
+  [   +3.0] emu=   41.0 pc=7547 image-changes-since-last-line=1 (screen unchanged)
+  [   +3.5] emu=   41.5 pc=766D image-changes-since-last-line=1 (screen unchanged)
+  [   +4.0] emu=   42.0 pc=7674 image-changes-since-last-line=1 (screen unchanged)
+      dir(+4.0): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:0
+  [   +4.5] emu=   42.5 pc=7672 image-changes-since-last-line=1 (screen unchanged)
+      dir(+4.5): 8 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26
+  [   +5.0] emu=   43.0 pc=766E image-changes-since-last-line=1 (screen unchanged)
+  [   +5.5] emu=   43.5 pc=766D image-changes-since-last-line=1 (screen unchanged)
+  [   +6.0] emu=   44.0 pc=7546 image-changes-since-last-line=1 (screen unchanged)
+  [   +6.5] emu=   44.5 pc=7672 image-changes-since-last-line=1 (screen unchanged)
+      dir(+6.5): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:0
+  [   +7.0] emu=   45.0 pc=7673 image-changes-since-last-line=1 (screen unchanged)
+      dir(+7.0): 9 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57
+  [   +7.5] emu=   45.5 pc=766D image-changes-since-last-line=1 (screen unchanged)
+  [   +8.0] emu=   46.0 pc=7686 image-changes-since-last-line=1 (screen unchanged)
+  [   +8.5] emu=   46.5 pc=761B image-changes-since-last-line=1 (screen unchanged)
+      dir(+8.5): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:0
+  [   +9.0] emu=   47.0 pc=7549 image-changes-since-last-line=1 (screen unchanged)
+  [   +9.5] emu=   47.5 pc=7549 image-changes-since-last-line=1 (screen unchanged)
+      dir(+9.5): 10 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:16
+  [  +10.0] emu=   48.0 pc=754D image-changes-since-last-line=1 (screen unchanged)
+  [  +10.5] emu=   48.5 pc=7546 image-changes-since-last-line=1 (screen unchanged)
+  [  +11.0] emu=   49.0 pc=7620 image-changes-since-last-line=1 (screen unchanged)
+      dir(+11.0): 11 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:16 nrog2.bas:0
+  [  +11.5] emu=   49.5 pc=766F image-changes-since-last-line=1 (screen unchanged)
+      dir(+11.5): 11 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:16 nrog2.bas:17
+  [  +12.0] emu=   50.0 pc=7546 image-changes-since-last-line=1 (screen unchanged)
+  [  +12.5] emu=   50.5 pc=7547 image-changes-since-last-line=1 (screen unchanged)
+  [  +13.0] emu=   51.0 pc=7620 image-changes-since-last-line=1 (screen unchanged)
+      dir(+13.0): 12 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:16 nrog2.bas:17 nrog3.bas:0
+  [  +13.5] emu=   51.5 pc=766D image-changes-since-last-line=1 (screen unchanged)
+      dir(+13.5): 12 entries: test.bin:2048 hi.txt:26 prog.bin:57 prog.bas:16 prog2.bas:17 prog3.bas:15 nest.bin:2048 ni.txt:26 nrog.bin:57 nrog.bas:16 nrog2.bas:17 nrog3.bas:15
+  [  +14.0] emu=   52.0 pc=766E image-changes-since-last-line=1 (screen unchanged)
+  [  +14.5] emu=   52.5 pc=7548 image-changes-since-last-line=1 (screen unchanged)
+  [  +15.0] emu=   53.0 pc=0297 image-changes-since-last-line=1 
+       0| Ok
+       1| COPY "*.*" TO "N*.*"
+       2| Illegal function call
+       3| Ok
+       4| .
+      23| color   auto    goto    list    run
+  [  +15.5] emu=   53.5 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +16.0] emu=   54.0 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +16.5] emu=   54.5 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +17.0] emu=   55.0 pc=0D6D image-changes-since-last-line=1 (screen unchanged)
+  [  +17.5] emu=   55.5 pc=0D85 image-changes-since-last-line=1 (screen unchanged)
+  [  +18.0] emu=   56.0 pc=0D7D image-changes-since-last-line=1 (screen unchanged)
+  [  +18.5] emu=   56.5 pc=0D6E image-changes-since-last-line=1 (screen unchanged)
+  [  +19.0] emu=   57.0 pc=0D87 image-changes-since-last-line=1 (screen unchanged)
+  [  +19.5] emu=   57.5 pc=0D7E image-changes-since-last-line=1 (screen unchanged)
+  [  +20.0] emu=   58.0 pc=0B9F image-changes-since-last-line=1 (screen unchanged)
+  [  +20.5] emu=   58.5 pc=0D88 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.0] emu=   59.0 pc=0D82 image-changes-since-last-line=1 (screen unchanged)
+  [  +21.5] emu=   59.5 pc=0BA2 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.0] emu=   60.0 pc=10D9 image-changes-since-last-line=1 (screen unchanged)
+  [  +22.5] emu=   60.5 pc=0D62 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.0] emu=   61.0 pc=0D71 image-changes-since-last-line=1 (screen unchanged)
+  [  +23.5] emu=   61.5 pc=0D6A image-changes-since-last-line=1 (screen unchanged)
+  [  +24.0] emu=   62.0 pc=0D65 image-changes-since-last-line=2 (screen unchanged)
+  [  +24.5] emu=   62.5 pc=0D73 image-changes-since-last-line=2 (screen unchanged)
+  [  +25.0] emu=   63.0 pc=0D6B image-changes-since-last-line=2 (screen unchanged)
+  [  +25.5] emu=   63.5 pc=0D68 image-changes-since-last-line=2 (screen unchanged)
+  [  +26.0] emu=   64.0 pc=0D76 image-changes-since-last-line=2 (screen unchanged)
+  [  +26.5] emu=   64.5 pc=0D60 image-changes-since-last-line=2 (screen unchanged)
+  [  +27.0] emu=   65.0 pc=0D42 image-changes-since-last-line=2 (screen unchanged)
+  [  +27.5] emu=   65.5 pc=024C image-changes-since-last-line=2 (screen unchanged)
+  [  +28.0] emu=   66.0 pc=0217 image-changes-since-last-line=2 (screen unchanged)
+  [  +28.5] emu=   66.5 pc=0D73 image-changes-since-last-line=2 (screen unchanged)
+  [  +29.0] emu=   67.0 pc=0D6A image-changes-since-last-line=2 (screen unchanged)
+  [  +29.5] emu=   67.5 pc=0D68 image-changes-since-last-line=2 (screen unchanged)
+  [  +30.0] emu=   68.0 pc=0D76 image-changes-since-last-line=2 (screen unchanged)
+  [    +45] emu=   83.0 pc=0B9F image-changes-since-last-line=2 (screen unchanged)
+  [    +60] emu=   98.0 pc=0D6A image-changes-since-last-line=2 (screen unchanged)
+  [    +90] emu=  128.0 pc=0D87 image-changes-since-last-line=2 (screen unchanged)
+  [   +120] emu=  158.0 pc=10D9 image-changes-since-last-line=2 (screen unchanged)
+  [   +180] emu=  218.0 pc=0D79 image-changes-since-last-line=2 (screen unchanged)
+  [    end] emu=  218.0 pc=0D79 image-changes-since-last-line=2 (screen unchanged)
+  -- Enter injected at emu 219.00000111746044
+  [ poke+5] emu=  224.0 pc=0BA4 image-changes-since-last-line=2 
+       0| Ok
+       1| COPY "*.*" TO "N*.*"
+       2| Illegal function call
+       3| Ok
+       5| .
+      23| color   auto    goto    list    run
+  [poke+11] emu=  230.0 pc=0D7D image-changes-since-last-line=2 (screen unchanged)
+  -- root directory after the run (host read of the image):
+     # 0 TEST.BIN        2048 B clus=2    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+     # 1 HI.TXT            26 B clus=4    b'Hello from zerobas-disk!'
+     # 2 PROG.BIN          57 B clus=5    b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'
+     # 3 PROG.BAS          16 B clus=6    b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'
+     # 4 PROG2.BAS         17 B clus=7    b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'
+     # 5 PROG3.BAS         15 B clus=8    b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'
+     # 6 NEST.BIN        2048 B clus=9    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'  <-- NEW
+     # 7 NI.TXT            26 B clus=11   b'Hello from zerobas-disk!'  <-- NEW
+     # 8 NROG.BIN          57 B clus=12   b'\xfe\x00\xc01\xc0\x00\xc0>Z2\x00\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18'  <-- NEW
+     # 9 NROG.BAS          16 B clus=13   b'\xff\x0e\x80\n\x00\x98 \x0c\x02\xd0,\x0f{\x00\x00\x00'  <-- NEW
+     #10 NROG2.BAS         17 B clus=14   b'\xff\x0f\x80\n\x00\x98 \x0c\x00\xd1,\x0c{\x00\x00\x00\x00'  <-- NEW
+     #11 NROG3.BAS         15 B clus=15   b'\xff\r\x80\n\x00\x91"[3h]"\x00\x00\x00'  <-- NEW
+  -- host image changed 2 times; wall 2s

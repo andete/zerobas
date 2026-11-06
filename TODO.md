@@ -17154,6 +17154,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       get back to that, feel free to use a fable agent to explore the issue."*** -- when picked
       up: a Fable agent measures the multi-match cases on the CF-3300 (why fixture files copy
       and freshly written files / an ON ERROR program give no reading), THEN the ruling.
+      📏 **CLARITY MEASURED 2026-11-06 (Fable agent, 30 cases, CF-3300,
+      [`copymulti_probe.py`](scratchpad/copymulti_probe.py), runs
+      [`copymulti_run1.out`](scratchpad/copymulti_run1.out) ..
+      [`copymulti_run4.out`](scratchpad/copymulti_run4.out)).** 🔴 **NOTHING HANGS, AND
+      FRESH-vs-FIXTURE AND ON ERROR MAKE NO DIFFERENCE** -- every "no reading" above was
+      `copywild_probe.py` reading the screen 8 s after RUN, while two file writes plus a
+      2-match COPY need ~10 s (`w_star_orig`, the old program verbatim: `[X1|X2OK]` lands at
+      +10.0..10.5 s). What multi-match COPY DOES on the CF-3300: it walks the root directory in
+      slot order and copies EVERY match (~1.5-2.5 s each), filling the destination per position
+      (fixed char stays, `?` takes the source's char, `*` the rest; `?` also matches a BLANK
+      position, so `PROG?.BAS` hits `PROG.BAS`). A PLAIN destination is rewritten once per
+      match, last match wins, no error (`*.BAS` -> `Z.TXT`). The walk is LIVE: a destination
+      appended AFTER the cursor is visited again, and if it matches the source pattern its
+      filled name is itself -> the self-copy raises 5 AFTER all real copies (`*.BAS` ->
+      `Z.BAS`, `*.TXT` -> `C*.TXT`, `*.*` -> `N*.*`: 6 copies, then 5). The separator: `KILL`
+      a file first so the destination takes a freed slot BEFORE the cursor, and the identical
+      `*.BAS` -> `Z.BAS` completes with NO error (`sm_slot`). So copy-acceptance's `c.wild`
+      (ERR 5) agrees FOR THE WRONG REASON: the reference makes three copies first.
+      Side findings: an UNRELATED open channel does not block COPY there (`open_other`);
+      copying a file that is itself open is `File still open`. The internal reason for the
+      trailing 5 is inferred from behaviour only (self-copy predicts all readings).
+      🙋 **THE RULING NOW HAS ITS FACTS (asked 2026-11-06):** (a) keep 5 for 2+ matches, or
+      (b) copy every match like the CF-3300, including the live-walk trailing 5 when the
+      destination matches the source pattern.
       🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
       multi-match case keeps raising 5; nothing autonomous is left. Re-opens only
       when Joost revisits it. 🅿️ Re-confirmed 2026-10-17: "copy to can remain parked".
