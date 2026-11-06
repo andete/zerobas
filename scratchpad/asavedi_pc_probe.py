@@ -39,6 +39,7 @@ set ::__all %d""" % (dump, 1 if "--stack" in sys.argv else 0, 1 if "--all" in sy
     """    if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }
     if {$g > 0.15 || $::__all} { puts $::__df "GAP [format %.3f $g]"; foreach s $::__smp { puts $::__df $s }; flush $::__df }""").replace(
     """  set ::__jt $t""", """  set ::__jt $t
+  if {$::__all && !($run && $::__jrun)} { puts $::__df "GAP 0"; foreach s $::__smp { puts $::__df $s }; flush $::__df }
   set ::__smp {}""")
 _pp = os.path.join(REPO, "probes", "programs", name + ".bas")
 text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()

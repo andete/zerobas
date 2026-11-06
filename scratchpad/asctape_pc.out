@@ -1,4 +1,18 @@
-ENDED t=218.4 gaps=22 max=0.037
-samples by CURLIN: {'000A': 44318}
+ENDED t=173.9 gaps=0 max=0
+samples by CURLIN: {'FFFF': 167294, '0000': 5359}
 
-CURLIN FFFF: 0 samples, IFF=0 in 0
+CURLIN FFFF: 167294 samples, IFF=0 in 86089
+  44137  PC ~0A80  A8=FC  basic-reloc:fperr_to_err+167 | sub:aeng_erase+1
+  23335  PC ~0A70  A8=FC  basic-reloc:fperr_to_err+151 | sub:aeng_dim_neglp+33
+  14808  PC ~01C0  A8=F0  basic-reloc:rn_undefined+11 | disk:FCH_RECMAX+192 | sub:tksd_advance+2
+  13831  PC ~05C0  A8=F3  sub:mk_fail+0
+  13079  PC ~0590  A8=F3  sub:mk_entry+4
+   6468  PC ~5F20  A8=FC  basic-reloc:elg_from_grpac+16 | disk:hk_system+3 | sub:rlb_more+6
+   5965  PC ~5F30  A8=FC  basic-reloc:elg_second+15 | disk:hsy_end+0 | sub:le_tok_skip+10
+   5148  PC ~5F40  A8=FC  basic-reloc:elg_second+31 | disk:hsy_ok+2 | sub:le_tok_skip+26
+   4638  PC ~0A90  A8=FC  basic-reloc:fperr_to_err+183 | sub:aeng_erase+17
+   4510  PC ~5F70  A8=FC  basic-reloc:is_box_kw+10 | disk:hsy_ok+50 | sub:le_tsk_data+5
+   4321  PC ~0B30  A8=FC  basic-reloc:fperr_to_err+343 | sub:fsf_lp+16
+   3562  PC ~0580  A8=F3  sub:tk_hex_done+3
+   3049  PC ~0380  A8=F3  basic-reloc:CLR_HIMEM_MARGIN+216 | sub:tem_lp+6
+   2282  PC ~0AA0  A8=FC  basic-reloc:fperr_to_err+199 | sub:aer_top+5

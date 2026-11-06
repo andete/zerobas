@@ -2793,6 +2793,20 @@ item — do **one item per session** to keep context lean.
       is still ~half of it ([`asave_pc2.out`](scratchpad/asave_pc2.out)) -- a token -> entry
       index (~256 B of sub ROM: page 0 had 170 B free and page 1 ~90 B on 2026-11-06, so a carve first); then the tape
       load's own 1.5x (the tokeniser between blocks).
+      ✅ **(b) THE TAPE LOAD, 2026-11-06:** PC samples over the load ([`asctape_pc.out`](scratchpad/asctape_pc.out),
+      direct mode) found two costs besides the BIOS's tape reading: the tokeniser's match_kw
+      (~30 s) and the line store's relink (~22 s). (1) match_kw (basic/tokenise.inc) rejects a
+      kwtable entry on its FIRST char before any setup (C = the source's first char, upcased
+      once; the table is in longest-match order, so the walk cannot stop early): 173.9 ->
+      162.8 s (🔮 ~-14 -> -11.1, a near miss; [`tokfast_after.out`](scratchpad/tokfast_after.out)).
+      (2) le_store (sub/lineedit.asm) relinks FROM SL_SLOT, not from TXTTAB: nothing before the
+      slot moved and the line before it already points at the slot, so every earlier link is
+      valid -- the token-aware relink per stored line made a load QUADRATIC: 162.8 -> 138.8 s
+      (🔮 ~-22 -> -24 HIT; [`relinkslot_after.out`](scratchpad/relinkslot_after.out)). Out-of-order
+      lines (inserts in the middle, a replace, a delete, a line before all) list identically
+      on the VG-8020 ([`relinkslot_measure.out`](scratchpad/relinkslot_measure.out)).
+      tests/test_tokenise.py / test_list.py / test_program.py green. **The tape load: CF-3300
+      114.1 s, zerobas 138.8 s (1.22x), from 173.9.**
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7678,7 +7692,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10111 (T-6FE392)8 (T-529ABE)` from `TODO.md:15269 (T-529ABE)`: a
+      `TODO.md:10125 (T-6FE392)8 (T-529ABE)` from `TODO.md:15283 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10417,7 +10431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15269 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

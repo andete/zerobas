@@ -539,11 +539,24 @@ tk_hex_done:
 ; Uses IX as the table cursor and IY as the keyword-char walker.
 match_kw:
                 push    iy
+                ; 🐌 D-ASCTAPESPD (2026-11-06): an entry whose FIRST char is not the
+                ; source's is skipped before any setup -- the walk ran the whole
+                ; kwtable with pushes, IX/IY moves and an upcase per entry, ~30 s of a
+                ; 150-line ASCII tape load (scratchpad/asctape_pc.out). C = the
+                ; source's first char upcased, once. (kwtable is in longest-match
+                ; order, not sorted, so the walk cannot stop early.)
+                ld      a,(hl)
+                call    upcase
+                ld      c,a
                 ld      ix,kwtable
 mk_entry:
                 ld      a,(ix+0)            ; keyword length (0 = end of table)
                 or      a
                 jr      z,mk_none
+                ld      a,(ix+1)            ; its first char (stored uppercase)
+                cp      c
+                jr      nz,mk_skip
+                ld      a,(ix+0)
                 push    hl                  ; remember source start
                 push    ix
                 pop     iy
@@ -574,7 +587,10 @@ mk_emit:
                 scf
                 ret
 mk_fail:
-                pop     hl                  ; restore source start
+                pop     hl                  ; restore source start (C is still the
+                                            ; first char: mk_cmp and upcase keep it)
+mk_skip:
+                push    bc
                 ld      c,(ix+0)            ; klen
                 ld      b,0
                 inc     bc                  ; skip [klen][chars]
@@ -582,6 +598,7 @@ mk_fail:
                 ld      c,(ix+0)            ; tlen (B is still 0: klen is small)
                 inc     bc                  ; skip [tlen][tokens]
                 add     ix,bc               ; IX -> next entry
+                pop     bc                  ; C = the source's first char
                 jr      mk_entry
 mk_none:
                 pop     iy                  ; restore caller IY

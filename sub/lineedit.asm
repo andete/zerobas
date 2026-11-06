@@ -240,7 +240,16 @@ le_ok:
                 ; (the `DOT` write moved to le_store's head -- D-DOTGAPS, above)
                 xor     a
                 ld      (LE_STATUS),a           ; 0 = ok
-                jp      relink_body             ; tail: vars_reset; ret
+                ; 🐌 D-ASCTAPESPD (2026-11-06): relink FROM THE SLOT, not from TXTTAB.
+                ; Nothing before SL_SLOT moved, and the line before it already points
+                ; at the slot's address (the new / remaining line is there), so every
+                ; earlier link is valid; relink_body's walk is token-aware (le_skipline)
+                ; and re-scanning the whole program per stored line made a load
+                ; quadratic -- ~22 s of a 150-line ASCII tape load
+                ; (scratchpad/asctape_pc.out). prog_find_del sets SL_SLOT on every
+                ; path here; the other verbs keep the full relink_body.
+                ld      hl,(SL_SLOT)
+                jp      rlb_lp                  ; tail: vars_reset; ret
 le_oom:
                 ld      a,1                     ; 1 = out of memory
 le_st:                                          ; the shared status tail: A -> LE_STATUS
