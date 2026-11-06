@@ -90,7 +90,11 @@ MODULE_DIRS = ("probes/lib", "probes/basic", "probes/disk", "probes/programs", "
 # 10-minute sweep into every plan. (`probes/programs` above: gcdi-acceptance
 # imports run_programs, and the closure could not resolve it.)
 LADDER_DIR, LADDER_RUNNER = "probes/programs/", "probes/programs/run_programs.py"
-DATA_EXT = (".bas",)
+# D-SESSIONS (2026-11-06): the typed sessions are the same shape -- run_sessions.py
+# GLOBS probes/sessions/S*.ses, so a changed session plans its runner's suite.
+LADDERS = ((LADDER_DIR, LADDER_RUNNER),
+           ("probes/sessions/", "probes/programs/run_sessions.py"))
+DATA_EXT = (".bas", ".ses")
 IMPORT = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_]\w*)", re.M)
 # 🔴 D-PLANCHILD (2026-09-27): an acceptance WRAPPER can run its child probes
 # as SUBPROCESSES, by path -- `STRING = os.path.join(HERE, "basic_probe_string.py")`
@@ -342,7 +346,7 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
         if kws and any(mentions(own.get(t, ()), k, read) for k in kws):
             pick.add(t)
         for f in data:   # D-PLANDATA
-            if f.startswith(LADDER_DIR) and LADDER_RUNNER in own.get(t, ()):
+            if any(f.startswith(d) and r in own.get(t, ()) for d, r in LADDERS):
                 pick.add(t)
             elif any(f in (read(g) if read else _text(g)) for g in files):
                 pick.add(t)
@@ -431,6 +435,13 @@ def selftest():
     arm("P16 a new ladder program -> SCOPED with programs-acceptance only (the "
         "catcopy probe IMPORTS the runner but does not run the ladder)",
         m == "SCOPED" and e == ["programs-acceptance"])
+    fs = dict(fl, **{"sessions-acceptance": {"probes/programs/run_sessions.py",
+                                             "probes/programs/run_programs.py"}})
+    os_ = dict(ow, **{"sessions-acceptance": {"probes/programs/run_sessions.py"}})
+    m, r, e, x = plan(["probes/sessions/S9_new.ses"], fs, h_width, 0, read=rdx, own=os_)
+    arm("P16d a new typed session -> SCOPED with sessions-acceptance only (it IMPORTS "
+        "the ladder runner but is not the ladder)",
+        m == "SCOPED" and e == ["sessions-acceptance"])
     m, r, e, x = plan(["scratchpad/catcopy_temp.bas"], fl, h_width, 0, read=rdx, own=ow)
     arm("P16b a .bas a probe names by path -> that suite",
         m == "SCOPED" and e == ["catcopy-acceptance"])

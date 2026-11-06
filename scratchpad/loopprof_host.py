@@ -80,6 +80,8 @@ CASES = {
     "d": ("empty default-type loop", "10 FOR I=1 TO 40:NEXT"),
     # D-TRAPCOST (2026-11-06): a string variable at an operand's start, compared,
     # the result stored into a default-type (double) variable
+    # D-CONCATLIT (2026-11-06): the interpreter-speed row still over the CF-3300 (1.25x)
+    "q": ("literal concat body", "10 FOR I=1 TO 40:A$=\"AB\"+\"CD\":NEXT"),
     "s": ("string compare body", "10 A$=\"AB\":FOR I=1 TO 40:B=-(A$=\"AB\"):NEXT"),
     # D-TRAPCOST (2026-11-05): the GOSUB / RETURN round trip a trap handler rides on
     "e": ("GOSUB + H(M)=H(M)+1:RETURN", "10 DIM H(9):M=3:FOR I=1 TO 40:GOSUB 100:NEXT:END\n100 H(M)=H(M)+1:RETURN"),

@@ -1,0 +1,163 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+
+=== (q) literal concat body: `FOR I=1 TO 40:A$="AB"+"CD":NEXT` ===
+T per pass (M1 incl.): mean 15406, min 15251, max 15437 over 20 passes  [program printed '']
+  by region: main 10539, subp0 4834, hook 33
+  sub-ROM crossings per pass: 4  -> + 4252 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 19743 T (host 15406 + crossings + BREAKX); -> 94 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 strheap_engine: 4/pass
+  trapped calls per pass (0 T on the host): {'BREAKX': 1.0, 'subrom_call': 4.0}
+  -- top by EXCLUSIVE T, per label --
+          803 T   5.2%  exec_stmt
+          680 T   4.4%  sh_go
+          492 T   3.2%  SUB:she_dispatch
+          477 T   3.1%  SUB:she_src
+          461 T   3.0%  nx_have
+          460 T   3.0%  stk_room
+          395 T   2.6%  SUB:sh_temp_push_alloc
+          390 T   2.5%  SUB:sh_hl_is_temp
+          336 T   2.2%  sel_lp
+          315 T   2.0%  SUB:sap_try_extend
+          292 T   1.9%  SUB:sate_fits
+          280 T   1.8%  vft_go
+          247 T   1.6%  npi_tlp
+          245 T   1.6%  npks_lp
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2433 T  15.8%  exec_stmt  (1 calls/pass)
+         1438 T   9.3%  SUB:she_dispatch  (4 calls/pass)
+          852 T   5.5%  str_eval_one  (2 calls/pass)
+          727 T   4.7%  SUB:sap_try_extend  (1 calls/pass)
+          638 T   4.1%  var_find_typed  (2 calls/pass)
+          597 T   3.9%  sh_go_g  (3 calls/pass)
+          564 T   3.7%  nx_pki  (1 calls/pass)
+          559 T   3.6%  nx_pack  (1 calls/pass)
+          481 T   3.1%  str_eval_next  (1 calls/pass)
+          477 T   3.1%  SUB:she_src  (9 calls/pass)
+          460 T   3.0%  stk_room  (4 calls/pass)
+          460 T   3.0%  SUB:sh_src_is_temp  (3 calls/pass)
+          448 T   2.9%  SUB:heap_alloc  (1 calls/pass)
+          395 T   2.6%  SUB:sh_temp_push_alloc  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        15406 T 100.0%  run_prog  (0 calls/pass)
+        14743 T  95.7%  exec_stmt  (1 calls/pass)
+         6160 T  40.0%  str_eval_next  (1 calls/pass)
+         5105 T  33.1%  sh_go_g  (3 calls/pass)
+         4982 T  32.3%  sc_call  (4 calls/pass)
+         4834 T  31.4%  TRAP:subrom_call  (4 calls/pass)
+         4834 T  31.4%  SUB:strheap_engine  (0 calls/pass)
+         4634 T  30.1%  SUB:she_dispatch  (4 calls/pass)
+         3209 T  20.8%  str_snapshot_keep  (2 calls/pass)
+         2457 T  15.9%  let_ref  (1 calls/pass)
+         1173 T   7.6%  ssk_go  (1 calls/pass)
+         1151 T   7.5%  SUB:sap_try_extend  (1 calls/pass)
+         1055 T   6.8%  SUB:sh_temp_push_alloc  (1 calls/pass)
+          958 T   6.2%  str_eval_one  (2 calls/pass)
+          836 T   5.4%  nx_pack  (1 calls/pass)
+          783 T   5.1%  nx_pki  (1 calls/pass)
+          660 T   4.3%  SUB:heap_alloc  (1 calls/pass)
+          638 T   4.1%  var_find_typed  (2 calls/pass)
+  -- calls per pass, caller -> callee --
+      SUB:she_dispatch->SUB:she_src 5, nx_pack->npk_sub 4, exec_stmt->check_fperr_only 4, exec_stmt->skipsp_test 4, skipsp_test->skip_spaces 4, sc_call->TRAP:subrom_call 4, SUB:strheap_engine->SUB:she_dispatch 4, island$0010->hook$FF48 3, sh_go_g->stk_room 3, sh_go_g->sc_call 3, SUB:she_dispatch->SUB:sh_src_is_temp 3, SUB:sh_src_is_temp->SUB:she_src 3, SUB:sap_try_extend->SUB:she_dest 3, var_str_type->is_ident_cont 2, str_eval_next->island$0010 2, str_eval_next->str_eval_one 2, str_eval_one->mk_rvdesc 2, str_eval_next->skip_spaces 2, str_snapshot_keep->sh_go_g 2, SUB:strheap_floor->SUB:strheap_ceiling 2, nx_pki->npi_x10 1.75, run_prog->derive_directf 1, run_prog->TRAP:BREAKX 1, run_prog->exec_stmt 1, exec_stmt->var_str_type 1, var_str_type->upcase 1, exec_stmt->var_name_key 1, var_name_key->upcase 1, var_name_key->is_ident_cont 1, exec_stmt->vaof_oom 1, vaof_oom->var_alloc_or_find 1, var_alloc_or_find->var_find_typed 1, exec_stmt->skip_eq 1, skip_eq->skip_spaces 1, exec_stmt->str_eval_next 1, str_eval_next->str_snapshot_keep 1, SUB:she_dispatch->SUB:sh_temp_push_alloc 1, SUB:sh_temp_push_alloc->SUB:heap_alloc 1, SUB:heap_alloc->SUB:strheap_floor 1, SUB:she_dispatch->SUB:she_putp 1, str_eval_next->sh_go_g 1, SUB:she_dispatch->SUB:she_dest 1, SUB:she_dispatch->SUB:sap_try_extend 1, SUB:sap_try_extend->SUB:strheap_floor 1, SUB:sap_try_extend->SUB:she_src 1, exec_stmt->check_expr_errors_popbc 1, exec_stmt->let_ref 1, let_ref->desc_in_text 1, let_ref->str_snapshot_keep 1, let_ref->ssk_go 1, ssk_go->stk_room 1, ssk_go->sc_call 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->var_find_typed 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95
+  -- call trace of one pass (inclusive T; depth-indented; 'from' = calling label) --
+        island$0010 102 T   (from nx_head)
+          hook$FF48 11 T   (from chrgtr)
+        is_letter 76 T   (from nx_head)
+        var_find_typed 238 T   (from nx_fast)
+        nx_pki 666 T   (from nx_fast)
+          npi_x10 125 T   (from npi_byte)
+        nx_pack 943 T   (from nx_fadd)
+          npk_sub 61 T   (from npk_pos)
+          npk_sub 61 T   (from npk_pos)
+          npk_sub 61 T   (from npk_pos)
+          npk_sub 61 T   (from npk_pos)
+        cmp16_bits 104 T   (from nx_fcmp)
+        set_factyp2 33 T   (from nx_fcmp)
+      derive_directf 181 T   (from rp_exec)
+      TRAP:BREAKX 0 T   (from rp_exec)
+      exec_stmt 14901 T   (from rp_trapchk)
+        check_fperr_only 38 T   (from exec_stmt)
+        skipsp_test 62 T   (from exec_stmt)
+          skip_spaces 28 T   (from skipsp_test)
+        check_fperr_only 38 T   (from exec_stmt)
+        skipsp_test 62 T   (from exec_stmt)
+          skip_spaces 28 T   (from skipsp_test)
+        var_str_type 353 T   (from ex_let)
+          upcase 20 T   (from var_str_type)
+          is_ident_cont 93 T   (from vst_walk)
+          is_ident_cont 64 T   (from vst_walk)
+        var_name_key 278 T   (from ex_let_str)
+          upcase 20 T   (from var_name_key)
+          is_ident_cont 64 T   (from var_name_key)
+        vaof_oom 495 T   (from ex_let_str)
+          var_alloc_or_find 465 T   (from vaof_oom)
+            var_find_typed 400 T   (from var_alloc_or_find)
+        skip_eq 65 T   (from ex_let_str)
+          skip_spaces 28 T   (from skip_eq)
+        str_eval_next 6160 T   (from ex_let_str)
+          island$0010 133 T   (from str_eval_next)
+            hook$FF48 11 T   (from chrgtr)
+          str_eval_one 479 T   (from str_eval)
+            mk_rvdesc 53 T   (from sel_close)
+          skip_spaces 28 T   (from str_concat_tail)
+          str_snapshot_keep 2309 T   (from sct_go)
+            sh_go_g 2212 T   (from sst_op)
+              stk_room 115 T   (from sh_go_g)
+              sc_call 1898 T   (from sh_go)
+                TRAP:subrom_call 1861 T   (from sc_call)
+                    SUB:she_dispatch 1811 T   (from SUB:strheap_engine)
+                      SUB:sh_src_is_temp 213 T   (from SUB:she_snap_keep)
+                        SUB:she_src 53 T   (from SUB:sh_src_is_temp)
+                      SUB:she_src 53 T   (from SUB:she_snapshot)
+                      SUB:sh_temp_push_alloc 1055 T   (from SUB:she_snapshot)
+                        SUB:heap_alloc 660 T   (from SUB:sh_temp_push_alloc)
+                          SUB:strheap_floor 212 T   (from SUB:ha_real)
+                            SUB:strheap_ceiling 138 T   (from SUB:strheap_floor)
+                      SUB:she_putp 53 T   (from SUB:she_snapshot)
+          island$0010 133 T   (from sct_loop)
+            hook$FF48 11 T   (from chrgtr)
+          str_eval_one 479 T   (from sct_loop)
+            mk_rvdesc 53 T   (from sel_close)
+          sh_go_g 2090 T   (from sct_loop)
+            stk_room 115 T   (from sh_go_g)
+            sc_call 1776 T   (from sh_go)
+              TRAP:subrom_call 1739 T   (from sc_call)
+                  SUB:she_dispatch 1689 T   (from SUB:strheap_engine)
+                    SUB:she_dest 53 T   (from SUB:sh_append)
+                    SUB:she_src 53 T   (from SUB:sh_append)
+                    SUB:sap_try_extend 1151 T   (from SUB:sap_ok)
+                      SUB:she_dest 53 T   (from SUB:sap_try_extend)
+                      SUB:strheap_floor 212 T   (from SUB:sap_try_extend)
+                        SUB:strheap_ceiling 138 T   (from SUB:strheap_floor)
+                      SUB:she_dest 53 T   (from SUB:sate_fits)
+                      SUB:she_src 53 T   (from SUB:sate_fits)
+                      SUB:she_dest 53 T   (from SUB:sate_write)
+                    SUB:she_src 53 T   (from SUB:sap_release)
+          skip_spaces 28 T   (from sct_cont)
+        check_expr_errors_popbc 38 T   (from ex_let_str)
+        let_ref 2457 T   (from ex_let_str)
+          desc_in_text 122 T   (from let_ref)
+          str_snapshot_keep 900 T   (from str_set_at)
+            sh_go_g 803 T   (from sst_op)
+              stk_room 115 T   (from sh_go_g)
+              sc_call 489 T   (from sh_go)
+                TRAP:subrom_call 452 T   (from sc_call)
+                    SUB:she_dispatch 402 T   (from SUB:strheap_engine)
+                      SUB:sh_src_is_temp 203 T   (from SUB:she_snap_keep)
+                        SUB:she_src 53 T   (from SUB:sh_src_is_temp)
+          ssk_go 1173 T   (from ssk_store)
+            stk_room 115 T   (from sh_go_g)
+            sc_call 819 T   (from sh_go)
+              TRAP:subrom_call 782 T   (from sc_call)
+                  SUB:she_dispatch 732 T   (from SUB:strheap_engine)
+                    SUB:sh_src_is_temp 203 T   (from SUB:sh_var_store)
+                      SUB:she_src 53 T   (from SUB:sh_src_is_temp)
+                    SUB:she_src 53 T   (from SUB:sh_var_store)
+                    SUB:she_src 53 T   (from SUB:sh_var_store)
+        check_fperr_only 38 T   (from exec_stmt)
+        skipsp_test 62 T   (from exec_stmt)
+          skip_spaces 28 T   (from skipsp_test)
+        check_fperr_only 38 T   (from exec_stmt)
+        skipsp_test 62 T   (from exec_stmt)
+          skip_spaces 28 T   (from skipsp_test)
+
+=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===

@@ -249,10 +249,12 @@ def run():
         mm.cpu.f |= 0x01
     m.trap("rl_loop", ctrl_stop)
     out = run_prog_cap(m, [(10, "AUTO 100,5")])
-    check("AUTO 100,5 prompts `100 ` with RL_AUTO = 1, Ctrl-STOP ends it (R-AU8)",
+    # D-AUTOOK (2026-11-06, typed session S1_editor): the break opens a fresh line
+    # -- the VG-8020 types the next command BELOW the abandoned prompt, no `Ok`
+    check("AUTO 100,5 prompts `100 ` with RL_AUTO = 1, Ctrl-STOP ends it on a new line (R-AU8)",
           (out, seen.get("rl_auto"), m.mem[m.sym["RL_AUTO"]],
-           m.peek(m.sym["AU_NUM"], 2), m.peek(m.sym["AU_INC"], 2)),
-          (b"100 ", 1, 0, bytes([100, 0]), bytes([5, 0])))
+           m.peek(m.sym["AU_NUM"], 2), m.peek(m.sym["AU_INC"], 2), m.mem[m.sym["PRMWANT"]]),
+          (b"100 \r\n", 1, 0, bytes([100, 0]), bytes([5, 0]), 0))
 
     # --- LET / FOR create their SCALAR target BEFORE the right side ----------
     # 🧮 D-LETNEWFIRST (2026-10-19). Measured on the VG-8020

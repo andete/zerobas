@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15307 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15361 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15307 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15361 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10883,8 +10883,62 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Any probe that arms `ON ERROR` before a `CLEAR` reads `<NO OUTPUT>`.
       🏗️ ARC — its own slice, its own knives, per verb (GOSUB/RETURN, FOR/NEXT, traps) plus the CLEAR interaction.
 
-- [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
+- [ ] ⌨️ **D-SESSIONS -- TYPED SESSIONS AS INTEGRATION TESTS: THE PROMPT, NOT A LOADED PROGRAM
+      (started 2026-11-06; Joost: *"Having typed sessions as integration tests is actually a
+      splendid idea."*)**
+      🎚️ TIER 1 — happy path: what a user does AT THE PROMPT (typing lines in, AUTO, RENUM,
+      DELETE, LIST, retyping a line, STOP / CONT, NEW, MERGE) was never exercised end to end:
+      the ladder loads a finished program from tape. 20 of 161 keywords appear in no ladder
+      program (2026-11-06, a substring scan): AUTO CONT DELETE LLIST MERGE NEW RENUM ... and
+      the tape / sector / device verbs.
+      🤖 **AUTONOMOUS** — the reference settles each step.
+      ✅ **THE RUNNER (2026-11-06):** [`run_sessions.py`](probes/programs/run_sessions.py), gate
+      `sessions-acceptance` (Makefile, run_gates, pick_gates P16d: a changed `.ses` plans it).
+      A session `probes/sessions/S<n>_*.ses` is typed one line at a time on an IDLE machine
+      (keyboard buffer empty, CURLIN steady 0.7 s), `{STOP}` / `{CTRLC}` / `{WAIT n}`; the text
+      screen is snapshotted after every step and compared step by step, then the printer log.
+      Its first three runs were apparatus: the boot banner (now a CLS first, never compared),
+      the `ZB` prompt inside the WIDTH 37 margin, and labels of repeated lines.
+      ✅ **S1_editor (2026-11-06): SAME after the fix it FOUND --** [`S1_editor.ses`](probes/sessions/S1_editor.ses):
+      AUTO (ended with Ctrl-C), a line retyped, RUN, RENUM / RENUM 100,,5 / RENUM 1000,110,
+      LLIST, LIST ranges, DELETE, AUTO 200,20, NEW. **D-AUTOOK:** a break out of AUTO printed
+      `Ok` here and NOTHING on the VG-8020 (R-AU8 had said so; editverb's `aut-` rows read the
+      screen from the following LIST's echo, and the `Ok` sat above it). exa_brk
+      (basic/program.asm) now clears PRMWANT and opens a fresh line -- the newline was the
+      second step the session showed ([`sessions_s1c.out`](scratchpad/sessions_s1c.out) ->
+      [`sessions_s1e.out`](scratchpad/sessions_s1e.out) -> [`sessions_s1f.out`](scratchpad/sessions_s1f.out)
+      ALL SAME). 🔮 Predicted "a harness problem and probably one AUTO / RENUM divergence":
+      both HIT.
+      ➡️ NEXT sessions: STOP / Ctrl-STOP and CONT (and CONT after an edit), MERGE of an ASCII
+      program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
+      while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
+      8020) and disk (SAVE / LOAD / MERGE / KILL, the CF-3300 via `# @DISK`).
+
+- [ ] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
+      the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**
+      🎚️ TIER 5 — on-par speed: string concatenation of literals into a variable; the
+      last of the seven interpreter rows still over the CF-3300 (153 vs 122 jiffies).
+      📌 Owns the pin of [`interpspeed_probe.py`](scratchpad/interpspeed_probe.py) since the
+      interpreter-ratio item closed: its `c.str` row is the live divergence.
+      🤖 **AUTONOMOUS** — profile it on the host rig (a `q` case), then the lever.
+      📏 **PROFILED 2026-11-06** ([`concatlit_prof.out`](scratchpad/concatlit_prof.out),
+      [`concatlit_trace.out`](scratchpad/concatlit_trace.out); loopprof_host.py case `q`): model
+      ~19700 T/pass, of which FOUR sub-ROM crossings into the string-heap tenant ~4250 (22 %):
+      the first literal's snapshot (a temp copy, so the `+` can extend it), the append, then
+      let_ref's snapshot-keep -- which crosses only to learn its source is already a temp --
+      and the store. ➡️ The lever to try first: answer "already a temp" on the MAIN side
+      (the temp-descriptor stack's address range) before crossing; then whether a literal
+      needs its snapshot at all.
+
+- [x] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
+      ✅ **CLOSED 2026-11-06 -- RE-MEASURED, THE BAND IS GONE** ([`interpspeed_1106.out`](scratchpad/interpspeed_1106.out),
+      the same seven rows, jiffies, CF-3300 vs zerobas): FOR 1k / 2k / 4k **0.80 / 0.78 / 0.77x**,
+      the GOTO loop **0.99x**, FOR + `I=I+1` **0.84x**, `X=I*2+1` **0.68x** -- zerobas is now at or
+      below the CF-3300's time on six of seven -- and `A$="AB"+"CD"` **1.25x**, the one row
+      still over (now D-CONCATLIT, TIER 5). 🔮 Predicted FOR ~1.0 (MISS on the good side:
+      0.77-0.80), GOTO ~1.3 (0.99), strings ~1.2 (HIT), arith ~1.0 (0.68). The `%` FOR loop
+      (D-LOOPPROF) stays its own item. The history below is kept as the record of how.
       🔴 **THE BAND WAS 2.5–3.1× UNTIL 2026-09-04, AND THE APPARATUS WAS PICKING
       IT.** The seventh row, `FOR I=1 TO 2000:X=I*2+1:NEXT`, read `<NO OUTPUT>`
       at the probe's 60-emulated-second budget and never entered the table below

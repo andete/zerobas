@@ -1,0 +1,36 @@
+# S1_editor (D-SESSIONS, 2026-11-06): writing a little program at the prompt the
+# way a 1980s user did -- AUTO, a typo fixed by retyping the line, RENUM, DELETE,
+# LIST ranges, NEW. Every listing goes to the PRINTER too (LLIST), so it can be
+# compared whole; LIST shows what the screen looked like.
+NEW
+AUTO
+PRINT "TABLE OF SQUARES"
+FOR I=1 TO 5
+PRINT I;I*I
+NEXT I
+GOTO 70
+PRINT "NEVER"
+PRINT "DONE"
+{CTRLC}
+LIST
+30 PRINT I,I*I;" SQ"
+RUN
+RENUM
+LLIST
+RENUM 100,,5
+LLIST
+LIST 110-120
+DELETE 125
+LIST
+RUN
+AUTO 200,20
+REM ADDED BY AUTO
+END
+{CTRLC}
+LLIST
+RENUM 1000,110
+LLIST
+RUN
+NEW
+LIST
+PRINT "EMPTY"

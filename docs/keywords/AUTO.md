@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `AUTO` — number the lines for you while you type
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -38,8 +38,9 @@ AUTO [<start>][,<increment>]
   line is ordinary.
 - **Pressing RETURN on an empty line stores nothing**, and the next number
   comes up anyway.
-- **CTRL+STOP leaves `AUTO`** and returns to command mode, without printing
-  `Ok`.
+- **CTRL+STOP (or CTRL+C) leaves `AUTO`** and returns to command mode,
+  without printing `Ok`: the cursor just moves to a fresh line, where the next
+  command is typed.
 - **`AUTO` ends the line and the program**: in `AUTO 10:B=9`, `B=9` never runs.
   It also works as a program statement.
 - **An increment of 0 is refused**: `AUTO 10,0` and `AUTO ,` are
@@ -66,7 +67,9 @@ typed lines and only CTRL+STOP ends it. Every rule it shows — the start and
 step, the `*` on an existing line, the replaced line, CTRL+STOP — is measured
 on both reference machines and on zerobas by `make editverb-acceptance` (the
 `aut-` rows), and the three forms by `make kwsweep`. The exact screen around
-the CTRL+STOP has not been compared.
+the break is compared, step by step, by a typed session
+(`make sessions-acceptance`, [S1_editor](../../probes/sessions/S1_editor.ses)),
+which ends an `AUTO` with CTRL+C.
 
 ## Differences from the reference
 
@@ -80,6 +83,13 @@ what happens when a line typed during `AUTO` is itself an error (zerobas ends
 the `AUTO` session).
 
 ## What we found, and how
+
+- **Leaving `AUTO` printed an `Ok`** (fixed 2026-11-06, D-AUTOOK; found by the
+  first typed session). On the VG-8020 a CTRL+STOP or CTRL+C at an `AUTO`
+  prompt just opens a fresh line; zerobas printed `Ok` there. The rule had been
+  measured and written down, but the existing test read the screen from the
+  `LIST` typed afterwards, and the extra `Ok` sat above it. The session, which
+  compares the whole screen after every typed line, saw it on its first run.
 
 - **`AUTO` used to be a `Syntax error`.** It got its token on 2026-08-01
   (D-KWGAP4) and its statement on 2026-08-06 (D-EDITVERB).

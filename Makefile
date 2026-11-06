@@ -2564,6 +2564,13 @@ cloadverr-acceptance: repack-machine
 programs-acceptance: repack-machine
 	python3 -u probes/programs/run_programs.py --gaps
 
+# --- sessions-acceptance: typed sessions (D-SESSIONS) -----------------------------
+# Lines TYPED at the prompt one at a time (probes/sessions/S<n>_*.ses) -- AUTO,
+# RENUM, DELETE, LIST, retyping a line, STOP / CONT -- on the VG-8020 and on both
+# zerobas targets; the text screen after every step and the printer log must match.
+sessions-acceptance: repack-machine
+	python3 -u probes/programs/run_sessions.py
+
 # --- gcdi-acceptance: string work keeps the frame interrupt (D-GCDI) -------------
 # A string GC under the sub-ROM tenants' DI missed VBLANKs: TIME ran slow and typed
 # keys were lost. JIFFY watchpoint gaps + a line typed during the churn, vs the VG-8020.

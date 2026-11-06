@@ -1400,7 +1400,7 @@ exa_copy:
                 ex      de,hl               ; HL = read_line's write cursor
                 call    rl_loop             ; the second entry point: HL preset
                 pop     de
-                jr      c,exa_stop          ; R-AU8: Ctrl-STOP ends the session, and
+                jr      c,exa_brk           ; R-AU8: Ctrl-STOP ends the session, and
                                             ; the half-typed line is DISCARDED
                 ; R-AU7: an EMPTY entry stores NOTHING. ⚠️ That is NOT the same as
                 ; storing an empty body -- dispatch_line would read that as the
@@ -1430,8 +1430,24 @@ exa_next:
 exa_ok:
                 ld      (AU_NUM),hl
                 jr      exa_loop
+exa_brk:
+                ; 🔴 D-AUTOOK (2026-11-06, found by the first TYPED SESSION,
+                ; probes/sessions/S1_editor.ses): R-AU8 says a Ctrl-STOP (or Ctrl-C)
+                ; leaves AUTO with NO `Ok`, and zerobas printed one: AUTO is a direct
+                ; command, so D-OKSTORE's PRMWANT still asked for the prompt. The
+                ; editverb rows never saw it -- their readout is anchored on the
+                ; following LIST's echo, and the `Ok` sat above it. A break clears the
+                ; request, so the REPL reads the next line silently (repl_read), as
+                ; the VG-8020 does. The break still OPENS A LINE there: the next
+                ; command is typed below the abandoned `80 ` prompt, not after it
+                ; (the prompt path's TTYPOS newline did that before this fix).
+                call    print_crlf
+                xor     a
+                ld      (PRMWANT),a
+                jr      exa_off
 exa_stop:
                 xor     a
+exa_off:
                 ld      (RL_AUTO),a         ; the prompt blocks again
                 jp      end_line_end        ; R-AU9: AUTO ends the line and the run
 

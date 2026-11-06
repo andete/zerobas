@@ -1,0 +1,74 @@
+== S1_editor: 33 steps; Philips_VG_8020: 34 snapshots, last END t=31.9 w=40
+   C-BIOS_MSX1_EU_REPACK_NODISK   DIFF  (34 snapshots, last END t=29.1 w=40; printer same)
+   first screen difference at snapshot 13, after: 'LIST'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  AUTO
+        ref |  10 PRINT "TABLE OF SQUARES"
+        ref |  20 FOR I=1 TO 5
+        ref |  30 PRINT I;I*I
+        ref |  40 NEXT I
+        ref |  50 GOTO 70
+        ref |  60 PRINT "NEVER"
+        ref |  70 PRINT "DONE"
+     !! ref |  80
+        zb  |  80 LIST
+     !! ref |  LIST
+        zb  |  10 PRINT "TABLE OF SQUARES"
+     !! ref |  10 PRINT "TABLE OF SQUARES"
+        zb  |  20 FOR I=1 TO 5
+     !! ref |  20 FOR I=1 TO 5
+        zb  |  30 PRINT I;I*I
+     !! ref |  30 PRINT I;I*I
+        zb  |  40 NEXT I
+     !! ref |  40 NEXT I
+        zb  |  50 GOTO 70
+     !! ref |  50 GOTO 70
+        zb  |  60 PRINT "NEVER"
+     !! ref |  60 PRINT "NEVER"
+        zb  |  70 PRINT "DONE"
+     !! ref |  70 PRINT "DONE"
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+   C-BIOS_MSX1_EU_REPACK_DISK     DIFF  (34 snapshots, last END t=29.1 w=40; printer same)
+   first screen difference at snapshot 13, after: 'LIST'
+        ref |  Ok
+        ref |  NEW
+        ref |  Ok
+        ref |  AUTO
+        ref |  10 PRINT "TABLE OF SQUARES"
+        ref |  20 FOR I=1 TO 5
+        ref |  30 PRINT I;I*I
+        ref |  40 NEXT I
+        ref |  50 GOTO 70
+        ref |  60 PRINT "NEVER"
+        ref |  70 PRINT "DONE"
+     !! ref |  80
+        zb  |  80 LIST
+     !! ref |  LIST
+        zb  |  10 PRINT "TABLE OF SQUARES"
+     !! ref |  10 PRINT "TABLE OF SQUARES"
+        zb  |  20 FOR I=1 TO 5
+     !! ref |  20 FOR I=1 TO 5
+        zb  |  30 PRINT I;I*I
+     !! ref |  30 PRINT I;I*I
+        zb  |  40 NEXT I
+     !! ref |  40 NEXT I
+        zb  |  50 GOTO 70
+     !! ref |  50 GOTO 70
+        zb  |  60 PRINT "NEVER"
+     !! ref |  60 PRINT "NEVER"
+        zb  |  70 PRINT "DONE"
+     !! ref |  70 PRINT "DONE"
+        zb  |  Ok
+     !! ref |  Ok
+        zb  |
+        ref |
+        ref |
+        ref |  color  auto   goto   list   run
+2 DIFF
