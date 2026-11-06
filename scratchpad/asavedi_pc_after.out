@@ -1,0 +1,11 @@
+ENDED t=61.5 gaps=55 max=0.173
+
+GAP 0.173 s: 173 samples, IFF=0 in 172; CURLIN 001E
+   151  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+     8  PC ~69C0  A8=FC  basic-reloc:vlf_found_int+380 | disk:fm_fatacc+45 | sub:em_field_ovf+13
+     5  PC ~69D0  A8=FC  basic-reloc:vlf_found_int+396 | disk:fm_nob+0 | sub:em_internal+14
+     4  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     2  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~44F0  A8=FC  basic-reloc:tok_skip+37 | disk:tpl_c+20 | sub:EXP_COEF+132
+     1  PC ~2460  A8=F0  sub:gwp_mok+15

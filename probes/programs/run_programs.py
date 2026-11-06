@@ -263,10 +263,11 @@ KNOWN_GAPS = {
     # D-GCDI5 emptied this, then D-LATEINT (2026-10-29) closed L4_errors' entry: an
     # error raised through sub2's p0cb skipped sr_slot's `ei`, and the ON ERROR
     # handler ran under DI.
-    "L5_house": "D-ASAVEDI: SAVE \"Q.BAS\",A holds the frame off up to ~450 ms "
-                "(CF-3300 <= 223 ms over the whole run)",
-    "L5_chain": "D-ASAVEDI: RUN \"P2.BAS\" (an ASCII program) 258 ms, MERGE 233 ms "
-                "(CF-3300 <= 223 ms over the whole run)",
+    # L5_house's entry closed 2026-11-06 (D-ASAVEDI: the detokeniser tenant runs with
+    # interrupts live now; its SAVE ,A holes were all there, scratchpad/asavedi_pc.out).
+    "L5_chain": "D-ASAVEDI's disk half: RUN \"P2.BAS\" / MERGE of a text program hold "
+                "the frame off 258 / 233 ms inside disk.rom's fdc_rd_blk (CF-3300 <= 223 ms "
+                "over the whole run; scratchpad/asavedi_pc_chain.out)",
 }
 
 

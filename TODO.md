@@ -545,6 +545,19 @@ item — do **one item per session** to keep context lean.
       tenants under sr_slot's DI between sector transfers (D-GCDI3 listed "LIST's
       detokeniser" among the DI tenants it never measured). Test: PC samples during a hole,
       then the D-GCDI wrap (`ei / call body / di / ret`). L5_chain is in KNOWN_GAPS too.
+      📏 **MEASURED 2026-11-06, AND THE HYPOTHESIS WAS HALF RIGHT** ([`asavedi_pc_probe.py`](scratchpad/asavedi_pc_probe.py):
+      the ladder harness's own gap watch + 1 ms samples of PC / IFF / A8 / CURLIN, PCs named
+      against our builds only). **L5_house's SAVE ,A holes (161..357 ms) were ALL the
+      detokeniser** -- dk_entry / detok_kw, its keyword search, IFF 0 in ~95 % of samples
+      ([`asavedi_pc.out`](scratchpad/asavedi_pc.out)). **L5_chain's RUN / MERGE holes are NOT
+      the tokeniser** (tokenise_ei has run with interrupts live since D-TYPEBLIND): they sit in
+      disk.rom's fdc_rd_blk, a multi-sector read under one DI (258 ms;
+      [`asavedi_pc_chain.out`](scratchpad/asavedi_pc_chain.out)) -- D-DISKDI's class.
+      ✅ **THE DETOKENISER HALF FIXED 2026-11-06:** dtk_tenant (sub/detok.asm) runs its body with
+      interrupts live, tokenise_ei's wrapper and argument (+5 B sub page 0); LIST to the
+      screen gets the same. L5_house max hole 450 -> 173 ms (CF-3300 223), its KNOWN_GAPS
+      entry removed ([`asavedi_gate.out`](scratchpad/asavedi_gate.out)). ➡️ OPEN: the disk
+      half -- fdc_rd_blk's multi-sector DI (L5_chain stays in KNOWN_GAPS under that name).
 
 - [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
       (D-BD2FRAGILE, 2026-10-31).**
@@ -7593,7 +7606,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10026 (T-6FE392)8 (T-529ABE)` from `TODO.md:15178 (T-529ABE)`: a
+      `TODO.md:10039 (T-6FE392)8 (T-529ABE)` from `TODO.md:15191 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10332,7 +10345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15178 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

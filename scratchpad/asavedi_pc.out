@@ -1,0 +1,91 @@
+ENDED t=61.4 gaps=67 max=0.456
+
+GAP 0.173 s: 173 samples, IFF=0 in 172; CURLIN 001E
+   151  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+     8  PC ~69C0  A8=FC  basic-reloc:vlf_found_int+380 | disk:fm_fatacc+45 | sub:em_field_ovf+13
+     5  PC ~69D0  A8=FC  basic-reloc:vlf_found_int+396 | disk:fm_nob+0 | sub:em_internal+14
+     4  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     2  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     1  PC ~4410  A8=F0  basic-reloc:res_setptr+5 | disk:dsl_text_1+0 | sub:ATAN_COEF+143
+     1  PC ~44F0  A8=FC  basic-reloc:tok_skip+37 | disk:tpl_c+20 | sub:EXP_COEF+132
+     1  PC ~2460  A8=F0  sub:gwp_mok+21
+
+GAP 0.350 s: 349 samples, IFF=0 in 341; CURLIN 00BE
+   129  PC ~09B0  A8=F3  sub:dk_entry+10
+   108  PC ~09C0  A8=F3  sub:dk_entry+26
+    75  PC ~09A0  A8=F3  sub:detok_kw+3
+     4  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+6
+     3  PC ~2440  A8=F0  sub:gfx_circ_wedge_prep+52
+     2  PC ~0740  A8=F3  sub:dt_notdigit+32
+     2  PC ~0990  A8=F3  sub:dop_pow+2
+     2  PC ~0660  A8=F3  sub:dtk_end+0
+
+GAP 0.295 s: 294 samples, IFF=0 in 289; CURLIN 00BE
+    95  PC ~09C0  A8=F3  sub:dk_entry+26
+    90  PC ~09B0  A8=F3  sub:dk_entry+10
+    81  PC ~09A0  A8=F3  sub:detok_kw+3
+     3  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+6
+     3  PC ~0670  A8=F3  sub:pchar+10
+     2  PC ~2520  A8=F0  sub:gsv_have+11
+     2  PC ~09D0  A8=F3  sub:dk_next+10
+     2  PC ~0660  A8=F3  sub:dtk_end+0
+
+GAP 0.299 s: 298 samples, IFF=0 in 289; CURLIN 00BE
+   101  PC ~09B0  A8=F3  sub:dk_entry+10
+    84  PC ~09C0  A8=F3  sub:dk_entry+26
+    79  PC ~09A0  A8=F3  sub:detok_kw+3
+     4  PC ~0960  A8=F3  sub:detok_op+16
+     3  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+6
+     2  PC ~1130  A8=F0  basic-reloc:EOC+305 | disk:EOC+305 | sub:ha_real+2
+     2  PC ~0A00  A8=F3  basic-reloc:fperr_to_err+39 | sub:dk2_entry+22
+     2  PC ~0A10  A8=F3  basic-reloc:fperr_to_err+55 | sub:dk2_next+1
+
+GAP 0.456 s: 455 samples, IFF=0 in 446; CURLIN 00BE
+   161  PC ~09B0  A8=F3  sub:dk_entry+10
+   137  PC ~09C0  A8=F3  sub:dk_entry+26
+   124  PC ~09A0  A8=F3  sub:detok_kw+3
+     3  PC ~0660  A8=F3  sub:dtk_end+0
+     3  PC ~0680  A8=F3  sub:pchar+26
+     2  PC ~1140  A8=F0  basic-reloc:EOC+321 | disk:EOC+321 | sub:ha_real+18
+     2  PC ~0670  A8=F3  sub:pchar+10
+     2  PC ~0960  A8=F3  sub:detok_op+16
+
+GAP 0.161 s: 161 samples, IFF=0 in 152; CURLIN 00BE
+    51  PC ~09C0  A8=F3  sub:dk_entry+26
+    50  PC ~09B0  A8=F3  sub:dk_entry+10
+    32  PC ~09A0  A8=F3  sub:detok_kw+3
+     3  PC ~09E0  A8=F3  basic-reloc:fperr_to_err+7 | sub:dk_none+4
+     2  PC ~19A0  A8=FC  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+     2  PC ~24E0  A8=F0  sub:gsv_keven+5
+     2  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+6
+     2  PC ~0A10  A8=F3  basic-reloc:fperr_to_err+55 | sub:dk2_next+1
+
+GAP 0.204 s: 203 samples, IFF=0 in 192; CURLIN 00BE
+    73  PC ~09B0  A8=F3  sub:dk_entry+10
+    52  PC ~09C0  A8=F3  sub:dk_entry+26
+    46  PC ~09A0  A8=F3  sub:detok_kw+3
+     2  PC ~0170  A8=F0  basic-reloc:cgt_lp+13 | disk:FCH_RECMAX+112 | sub:tei_w+1
+     2  PC ~0660  A8=F3  sub:dtk_end+0
+     2  PC ~06F0  A8=F3  sub:detok+7
+     2  PC ~0680  A8=F3  sub:pchar+26
+     2  PC ~0670  A8=F3  sub:pchar+10
+
+GAP 0.357 s: 357 samples, IFF=0 in 349; CURLIN 00BE
+   130  PC ~09B0  A8=F3  sub:dk_entry+10
+   113  PC ~09C0  A8=F3  sub:dk_entry+26
+    79  PC ~09A0  A8=F3  sub:detok_kw+3
+     4  PC ~09F0  A8=F3  basic-reloc:fperr_to_err+23 | sub:dk2_entry+6
+     3  PC ~09D0  A8=F3  sub:dk_next+10
+     2  PC ~19A0  A8=FC  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+     2  PC ~0680  A8=F3  sub:pchar+26
+     2  PC ~06F0  A8=F3  sub:detok+7
+
+GAP 0.168 s: 167 samples, IFF=0 in 158; CURLIN 00BE
+    52  PC ~09C0  A8=F3  sub:dk_entry+26
+    47  PC ~09B0  A8=F3  sub:dk_entry+10
+    36  PC ~09A0  A8=F3  sub:detok_kw+3
+     3  PC ~0660  A8=F3  sub:dtk_end+0
+     2  PC ~2450  A8=F0  sub:gwp_mok+5
+     2  PC ~24F0  A8=F0  sub:gsv_walk+15
+     2  PC ~5860  A8=F0  basic-reloc:pch_disk+7 | disk:close_read+45 | sub:pa_ok+4
+     2  PC ~0670  A8=F3  sub:pchar+10

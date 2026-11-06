@@ -1,0 +1,46 @@
+ENDED t=33.8 gaps=25 max=0.258
+
+GAP 0.258 s: 257 samples, IFF=0 in 257; CURLIN 00C8
+   230  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+     9  PC ~69C0  A8=FC  basic-reloc:vlf_found_int+380 | disk:fm_fatacc+45 | sub:em_field_ovf+13
+     7  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     4  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     4  PC ~69D0  A8=FC  basic-reloc:vlf_found_int+396 | disk:fm_nob+0 | sub:em_internal+14
+     1  PC ~4260  A8=FC  basic-reloc:exd_step+1 | disk:dskio_keep+0 | sub:fsqn_loop+63
+     1  PC ~69E0  A8=FC  basic-reloc:vlf_found_int+412 | disk:fm_divdone+13 | sub:em_file_open+0
+     1  PC ~6A60  A8=FC  disk:ff_found+34 | sub:em_file_exists+14
+
+GAP 0.162 s: 162 samples, IFF=0 in 159; CURLIN 00C8
+   154  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+     3  PC ~19A0  A8=F0  basic-reloc:LINENO_ACC_STOP+7 | sub:LINENO_ACC_STOP+7
+     2  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     1  PC ~6B60  A8=FC  disk:frs_incluster+13 | sub:em_missing_operand+12
+     1  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     1  PC ~5EC0  A8=FC  basic-reloc:gfx_call_exec+5 | disk:hka_st+2 | sub:delete_at+17
+
+GAP 0.219 s: 219 samples, IFF=0 in 215; CURLIN 0028
+   183  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+    12  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     9  PC ~69C0  A8=FC  basic-reloc:vlf_found_int+380 | disk:fm_fatacc+45 | sub:em_field_ovf+13
+     5  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     4  PC ~69D0  A8=FC  basic-reloc:vlf_found_int+396 | disk:fm_nob+0 | sub:em_internal+14
+     2  PC ~1980  A8=F0  sub:svp_sign+0
+     1  PC ~1990  A8=F0  sub:svp_plus+1
+     1  PC ~6700  A8=F0  basic-reloc:new_prog_quiet+14 | disk:wrseq_wr_writeback+6 | sub:parse_dev+2
+
+GAP 0.201 s: 201 samples, IFF=0 in 201; CURLIN 0028
+   195  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+     2  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     2  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     1  PC ~4320  A8=FC  basic-reloc:raise_error+13 | disk:fdc_rp_nos+3 | sub:fsqn_next+2
+     1  PC ~5DA0  A8=F0  basic-reloc:ep_out+0 | disk:gc_mon+2 | sub:ldr_check+18
+
+GAP 0.232 s: 232 samples, IFF=0 in 220; CURLIN 0028
+   183  PC ~7AF0  A8=FC  basic-reloc:exr_lp+18 | disk:fdc_rd_blk+1 | sub:lpn_flag_end+5
+    13  PC ~7B00  A8=FC  basic-reloc:exr_str+0 | disk:fdc_rd_byte+2 | sub:ls_pcr_bload+8
+     9  PC ~69C0  A8=FC  basic-reloc:vlf_found_int+380 | disk:fm_fatacc+45 | sub:em_field_ovf+13
+     4  PC ~4400  A8=FC  basic-reloc:res_ctx+6 | disk:fdc_wait_ready+2 | sub:ATAN_COEF+127
+     4  PC ~69D0  A8=FC  basic-reloc:vlf_found_int+396 | disk:fm_nob+0 | sub:em_internal+14
+     2  PC ~4170  A8=F0  basic-reloc:es_idx+1 | disk:bdt_tramp+16 | sub:fsq_norm_lp+5
+     1  PC ~5F40  A8=FC  basic-reloc:elg_second+31 | disk:hsy_ok+4 | sub:le_tok_skip+26
+     1  PC ~3BF0  A8=FC  basic-reloc:vars_reset+15 | disk:subrom_call+454 | sub:vars_reset+15

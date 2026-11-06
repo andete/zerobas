@@ -37,7 +37,20 @@
 ; to DETOKBUF via the local pchar below), then 0-terminate the buffer so the
 ; resident drain (list.asm) can stream it through print_string. CALSLT returns to
 ; the caller with page 0 restored.
+; 🔴 D-ASAVEDI (2026-11-06): WITH INTERRUPTS LIVE, as tokenise_ei (sub/sub.asm, whose
+; header is the argument: the page-0 $0038 trampoline, no alternate registers, the
+; ISR saves what it touches). subrom_call enters every page-0 tenant under DI, and
+; an ASCII `SAVE ...,A` runs this line after line: the 1 ms PC samples of every
+; frame-interrupt hole over 150 ms on L5_house sat here (dk_entry / detok_kw, the
+; keyword search) with IFF 0 -- 161..357 ms against the CF-3300's 223 at most
+; (scratchpad/asavedi_pc.out). An abort (DB_SP) unwinds to dtk_body's own frame and
+; returns here, so it still leaves under DI.
 dtk_tenant:
+                ei
+                call    dtk_body
+                di
+                ret
+dtk_body:
                 call    db_begin            ; cursor -> DB_WIN, DB_MORE = 0; DB_SKIP
                                             ; is the resident loop's (D-DETOKBUF)
                 ld      a,1
