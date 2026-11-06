@@ -87,6 +87,9 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
     IF FAT_DEFER + 1 > TXTMAX_NODISK
                 db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
     ENDIF
+    IF FAT_FCACHE + 1 > TXTMAX_NODISK       ; D-LOADFAT: the cache cell is in the block too
+                db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
+    ENDIF
                 include "init.asm"
                 include "pageenv.asm"
                 include "driver.asm"

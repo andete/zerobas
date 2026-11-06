@@ -232,6 +232,16 @@ drc_set:
                 pop     hl
                 pop     de
                 ret
+                ; 🔴 D-LOADFAT (2026-11-06): $4775 IS AN ENTRY, AND THE ZERO PAD WAS ITS CODE.
+                ; MSX-DOS calls the disk ROM at $4775 (return address $D88A, its RAM kernel;
+                ; scratchpad/hole477_probe.py -> hole477_probe.out, our ROM's PC logged for
+                ; every instruction run in $476A..$477D) and the $00 pad ran as NOPs into
+                ; k_477D below. Filling the pad with install_hook broke p1dta-acceptance
+                ; (BDOS SEQRD = $C9, the record unread). Pinned now, with the slide's own
+                ; effect; the bytes below $4775 and between the pins stay EMPTY -- another
+                ; unmeasured entry may land in them.
+                ds      $4775 - $, $00
+k_4775:         jp      wrseq_body          ; $4775: MSX-DOS's entry (measured), = the NOP slide
                 ds      $477D - $, $00      ; pad up to the pinned $477D WRSEQ-worker entry
 k_477D:
                 jp      wrseq_body          ; $477D: BDOS $15 WRSEQ canonical entry (M24 slice B)

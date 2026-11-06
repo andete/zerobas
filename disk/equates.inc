@@ -495,6 +495,12 @@ WBUF            equ     $EAAD   ; write-back FAT/dir sector buffer ($EAAD..$ECAC
 ; saw only its own control POKE); disk.rom's cells end at MBUF_PTR $E5AB, and
 ; BASIC's map keeps $E560..$E5BF for disk.rom.
 FAT_DEFER       equ     $EDB9   ; (1)
+; D-LOADFAT (2026-11-06): LOAD's FAT read cache -- the FAT sector number (low byte)
+; FAT_MBUF holds, 0 = none yet. Consulted and written ONLY while FAT_DEFER's bit 7
+; is set: hk_dpload's tokenised read sets it, a mount zeroes FAT_DEFER and
+; hdl_answer clears the bit, so no other reader -- a channel, the directory work,
+; MSX-DOS -- ever touches this byte.
+FAT_FCACHE      equ     $EDBA   ; (1)
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).

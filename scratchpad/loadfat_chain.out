@@ -1,0 +1,10 @@
+all=0
+allfn=0
+tape=0
+tiers=2
+GATE TIER: FULL
+  why: RAM addresses added or moved: FAT_FCACHE
+rc=2
+GATES: 243/245 green
+RED: todo-marker-check tiers-md-check
+GATE TIER RAN: FULL

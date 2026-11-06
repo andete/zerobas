@@ -480,26 +480,49 @@ fat_next_cluster:
                 ld      hl, (FAT_FATSTART)
                 add     hl, de
                 ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, FAT_DBUF
+                ex      de, hl              ; DE = the FAT sector
+                ; 🐌 D-LOADFAT (2026-11-06): LOAD read this FAT sector into FAT_DBUF
+                ; before EVERY cluster -- a seek to track 0 and a rotational wait
+                ; each time (scratchpad/fdccmd_run.out). While hk_dpload's
+                ; tokenised read has FAT_DEFER's bit 7 set, the sector goes into
+                ; FAT_MBUF instead and is read only when FAT_FCACHE's number
+                ; changes. Off everywhere else, so every other reader is unchanged.
+                ; 🔴 THE SWITCH IS A BIT OF FAT_DEFER, NOT FAT_FCACHE ITSELF: the first
+                ; cut tested FAT_FCACHE (0 = off) and cleared it in fat_mount -- under
+                ; MSX-DOS that byte is not ours, and p1dta-acceptance's BDOS SEQRD
+                ; came back $C9 with the record unread. FAT_DEFER is measured free
+                ; there and already zeroed by every mount; FAT_FCACHE is now written
+                ; only inside a BASIC LOAD.
+                ld      bc, FAT_DBUF
+                ld      a, (FAT_DEFER)
+                rla                         ; bit 7: LOAD's cache is on
+                jr      nc, fnc_read        ; off: as before
+                inc     d
+                dec     d
+                jr      nz, fnc_read        ; sector >= 256: never a FAT one, uncached
+                ld      bc, FAT_MBUF
+                ld      a, (FAT_FCACHE)
+                cp      e
+                jr      z, fnc_have         ; the sector FAT_MBUF already holds
+                ld      a, e
+                ld      (FAT_FCACHE), a     ; (sector 0 is the boot sector: never here)
+fnc_read:       ld      h, b
+                ld      l, c
+                push    bc
                 call    read_sector
-                ; byte0 = buf[byteidx]
+                pop     bc
+fnc_have:       ; byte0 = buf[byteidx]
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FAT_DBUF
-                add     hl, de
+                add     hl, bc
                 ld      a, (hl)
                 ld      (FAT_B0), a
-                ; byte1 = buf[byteidx+1], possibly in the next FAT sector
+                inc     hl
+                ld      a, (hl)             ; byte1 -- unless the entry straddles
                 ld      hl, (FAT_BYTEIDX)
                 ld      de, 511
                 or      a
                 sbc     hl, de
-                jr      z, fnc_straddle
-                ld      hl, (FAT_BYTEIDX)
-                ld      de, FAT_DBUF + 1
-                add     hl, de
-                ld      a, (hl)
-                jr      fnc_combine
+                jr      nz, fnc_combine
 fnc_straddle:
                 ld      hl, (FAT_FATSEC)
                 inc     hl

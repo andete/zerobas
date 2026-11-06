@@ -1,0 +1,10 @@
+D-LOADFAT: every FAT-copy-0 sector read during a disk LOAD of a 13-cluster program,
+with its caller (the nearest symbol below the return address) and the buffer.
+chain from cluster 2:
+    sector 1 -> FAT_DBUF from fat_geom_read
+    sector 1 -> FAT_MBUF from fnc_read
+chain from cluster 338:
+    sector 1 -> FAT_DBUF from fat_geom_read
+    sector 1 -> FAT_MBUF from fnc_read
+    sector 2 -> FAT_DBUF from fnc_straddle
+    sector 2 -> FAT_MBUF from fnc_read

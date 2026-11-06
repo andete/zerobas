@@ -12,6 +12,12 @@ the byte path:
     a sector edge, inside a header) -- FREAD_LEFT bounds the run;
   * a text base so high the program meets TXTMAX inside a body -- the run must
     not write past it, and the byte path raises out of memory where it did.
+D-LOADFAT (2026-11-06) adds LOAD's one-sector FAT read cache (FAT_FCACHE, the FAT
+sector in FAT_MBUF while hk_dpload reads): the program stored from cluster 338, so
+its chain crosses cluster 341 -- the entry that STRADDLES FAT sectors 1 and 2 --
+and the next FAT sector, must load to the exact bytes; and the FAT sectors LOAD
+reads are counted: one read per FAT sector the chain enters (plus the straddle's
+next-sector read), where the uncached walk read one per cluster.
 A two-sided control proves the as-built LOAD is not the byte path by accident: on
 a step budget the byte path cannot meet, the as-built LOAD finishes with the
 program's bytes, and the trapped one runs out.
@@ -90,6 +96,43 @@ def run():
         same = a[:3] == b[:3]
         check(same, f"{label}: status {a[0]} / {b[0]}, CLPTR ${a[1]:04X} / ${b[1]:04X}"
                     f"{'' if a[2] == b[2] else ', RAM DIFFERS'} (as built / byte path)")
+
+    # --- D-LOADFAT: a chain across the FAT-sector edge, and the reads counted ---
+    big = b"\xff" + program(nlines=120)
+    for first, label in ((2, "contiguous from cluster 2"), (338, "from cluster 338, across the straddle")):
+        d = D.Disk()
+        d.next_clus = first
+        d.add_file("P.BAS", big)
+        m = D.machine(d)
+        s = m.sym
+        fatreads = []
+        orig = m.traps[s["read_sector"]]
+
+        def counting(mm, orig=orig, fatreads=fatreads):
+            if D.RESERVED <= mm.cpu.de < D.RESERVED + D.SPF:
+                fatreads.append(mm.cpu.de)
+            orig(mm)
+        m.traps[s["read_sector"]] = counting
+        m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
+        m.poke(s["FOPEN_SEL"], s["FOPEN_SEL_LOAD"])
+        m.poke_w(TXTTAB_CELL, 0x8001)
+        m.call("hk_dpload")
+        end = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
+        nclus = -(-len(big) // (D.SPC * D.SECSIZE))
+        secs = sorted(set((c * 3 // 2) // D.SECSIZE for c in range(first, first + nclus)))
+        ok = (m.mem[s["DISKOP_STATUS"]] == 0 and bytes(m.mem[0x8001:end]) == program(nlines=120)[:-2]
+              and not m.mem[s["FAT_DEFER"]] & 0x80)
+        check(ok, f"{label}: status {m.mem[s['DISKOP_STATUS']]}, {end - 0x8001} B = the program's "
+                  f"bytes, cache off after (FAT_DEFER ${m.mem[s['FAT_DEFER']]:02X})")
+        # fat_mount's own media read (fat_geom_read) is one; then ONE per FAT sector the
+        # chain enters, and one more where an entry straddles two (it is read into
+        # FAT_DBUF, unchanged) -- scratchpad/loadfat_reads.out logged each with its caller
+        straddle = any((c * 3 // 2) % D.SECSIZE == D.SECSIZE - 1 for c in range(first, first + nclus - 1))
+        want = 1 + len(secs) + straddle
+        check(len(fatreads) == want,
+              f"{label}: {len(fatreads)} FAT-sector reads (want {want}: the mount's, one per FAT "
+              f"sector {secs}{', the straddle' if straddle else ''}) for {nclus} clusters -- "
+              f"uncached it read one per cluster boundary, {nclus - 1}")
 
     # the two-sided control: a step budget the byte path cannot meet
     budget = 60_000

@@ -5806,6 +5806,10 @@ hk_dpload:
                 ld      (CLPTR),hl
                 ld      hl,0                ; D-LOADBASE: A_0 (the SAVING machine's
                 ld      (CLINK),hl          ; base) is unknown: 0 = scan line 1
+                ld      l,$80               ; D-LOADFAT: FAT_DEFER = $80, LOAD's FAT
+                ld      (FAT_DEFER),hl      ; cache on; FAT_FCACHE = 0, nothing in
+                                            ; FAT_MBUF yet (the mount just zeroed
+                                            ; FAT_DEFER; hdl_answer clears bit 7)
                 ; first byte selects the format: $FF = tokenised.
                 call    fat_io_getbyte
                 jp      c,hdl_ok            ; D-TRUNCLOAD: EOF here is an empty
@@ -5922,6 +5926,9 @@ hdl_io:
 ; return -- see the header for why it is not A -- and CF=1 says "claimed".
 hdl_answer:
                 ld      (DISKOP_STATUS),a
+                ld      a,(FAT_DEFER)       ; D-LOADFAT: LOAD's FAT cache off; the
+                and     $7F                 ; other bits are a write's (another
+                ld      (FAT_DEFER),a       ; handler may hold one): kept
                 ; 🔴 DISARM THE SELECTOR ON THE WAY OUT. The cell is shared and
                 ; $FE5D is reached by callers that are not this verb (§6.6p);
                 ; leaving it armed means the NEXT such call falls through into a
@@ -5936,20 +5943,6 @@ hdl_answer:
 
 
 
-install_hook:
-                ld      a, $F7              ; +0: RST 30h (CALLF)
-                ld      (hl), a
-                inc     hl
-                ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
-                ld      (hl), a
-                inc     hl
-                ld      (hl), e             ; +2: target lo
-                inc     hl
-                ld      (hl), d             ; +3: target hi
-                inc     hl
-                ld      a, $C9              ; +4: RET
-                ld      (hl), a
-                ret
 
 ; --- calbak: ONE inter-slot call back into main page 1 (MSX2 TH) ------------
 ; D-DISKVERB. IX = the main page-1 target (an address from the GENERATED
@@ -6664,20 +6657,6 @@ hkf_io:
                 ld      (DISKOP_STATUS),a   ; -> main's kill_status does load_error
                 ret
 
-; df_entptr -- HL = FAT_DBUF + FILES_ENTIDX*32 (the current dir entry).
-; Recomputed from RAM each time so the emit path's register clobber is harmless.
-df_entptr:
-                ld      a,(FILES_ENTIDX)
-                ld      l,a
-                ld      h,0
-                add     hl,hl               ; *2
-                add     hl,hl               ; *4
-                add     hl,hl               ; *8
-                add     hl,hl               ; *16
-                add     hl,hl               ; *32
-                ld      de,FAT_DBUF
-                add     hl,de
-                ret
 
 ; df_emit -- print one directory entry's 8.3 name field. HL -> the 32-byte
 ; directory entry (name at +0..10). Clobbers regs; the entry index lives in RAM

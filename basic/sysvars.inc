@@ -3351,6 +3351,9 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 ; +$400); disk.rom's cells end at MBUF_PTR $E9AB, and BASIC's map keeps
 ; $E960..$E9BF for disk.rom.
 FAT_DEFER       equ     $EDB9   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
+; 🐌 D-LOADFAT (2026-11-06): disk.rom's one-sector FAT read cache for LOAD, named here
+; so this map does not hand the byte out (disk/equates.inc; basic never reads it).
+FAT_FCACHE      equ     $EDBA   ; DISK-ONLY: the FAT sector in FAT_MBUF during a LOAD (FAT_DEFER bit 7) (1)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9, above disk.rom's cell block).
 FAT_SECPERCLUS  equ     $EDFD   ; DISK-ONLY: sectors per cluster (byte)

@@ -174,5 +174,21 @@ br_ena_bios_tmpl:
                 ld      hl, $0024           ; ENASLT, pages 1-2
                 jp      BR_GO
 br1_end:
+; 📍 D-LOADFAT (2026-11-06): MOVED HERE from the $607B..$75A5 region, where LOAD's
+; FAT cache needed the room; entered only by call / jp, so it can live in any hole.
+; df_entptr -- HL = FAT_DBUF + FILES_ENTIDX*32 (the current dir entry).
+; Recomputed from RAM each time so the emit path's register clobber is harmless.
+df_entptr:
+                ld      a,(FILES_ENTIDX)
+                ld      l,a
+                ld      h,0
+                add     hl,hl               ; *2
+                add     hl,hl               ; *4
+                add     hl,hl               ; *8
+                add     hl,hl               ; *16
+                add     hl,hl               ; *32
+                ld      de,FAT_DBUF
+                add     hl,de
+                ret
                 ds      $4257 - $, $00      ; net-zero: keep dskio at its canonical offset
 

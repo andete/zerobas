@@ -1446,6 +1446,33 @@ item — do **one item per session** to keep context lean.
       whole file, 17 early ends around sector edges and 4 TXTMAX collisions -- same status,
       CLPTR and RAM -- plus a two-sided step-budget control (as built finishes, the byte path
       cannot).
+      ✅ **D-LOADFAT (2026-11-06): LOAD's FAT sector, read once.** fat_next_cluster read the FAT
+      sector into FAT_DBUF before EVERY cluster. While hk_dpload's tokenised read runs,
+      FAT_DEFER's bit 7 (unused by the write bits 0-2) is set and the FAT sector goes into
+      FAT_MBUF; a one-byte cell, FAT_FCACHE ($EDBA, in both maps + the disk.asm block
+      assert), says which -- read and written ONLY under that bit. Every mount zeroes
+      FAT_DEFER and hdl_answer clears bit 7 (keeping a write's bits), so no channel read, no
+      directory work and no MSX-DOS code sees it on; and the mount LOAD starts with means no
+      deferred write is holding FAT_MBUF. A straddling entry still reads the next sector into
+      FAT_DBUF, as before. 🔴 The first cut made FAT_FCACHE itself the switch and cleared it
+      in fat_mount: p1dta-acceptance went RED (BDOS SEQRD under MSX-DOS = $C9) -- but the
+      bisection showed the cache was innocent: see `$4775` below. The room: `install_hook` /
+      `df_entptr` moved to the $4392 / $4257 holes. 🔴 **AND `$4775` IS AN ENTRY POINT THAT
+      WAS NEVER PINNED.** The first placement put install_hook in the $476A..$477C zero pad,
+      and p1dta went red with the cache forced off too; moving install_hook alone did it, and
+      to another hole it passed. Logging our ROM's PC inside that pad under MSX-DOS
+      ([`hole477_probe.py`](scratchpad/hole477_probe.py) -> [`hole477_probe.out`](scratchpad/hole477_probe.out)): MSX-DOS calls
+      `$4775` (return `$D88A`, its RAM kernel) and the $00 pad ran as NOPs into k_477D's `jp
+      wrseq_body`. Pinned now (`k_4775: jp wrseq_body`, fat.asm -- the slide's own effect);
+      after, one instruction at $4775 ([`hole477_after.out`](scratchpad/hole477_after.out)). The pad below and between
+      the pins stays empty. ➡️ the class is filed as D-PADSLIDE below. 📏
+      ([`loadfat_clock.out`](scratchpad/loadfat_clock.out)): LOAD 7 KB 3.80 -> **2.59 s**,
+      14 KB 6.76 -> **4.92** (CF-3300 2.39 / 2.94); 🔮 ~4.5 for 14 KB: near, a miss by 0.4.
+      tests/test_loadrun.py: a 13-cluster program from cluster 2 and from cluster 338 (its
+      chain crosses the straddling entry 341 and FAT sector 2) loads to the exact bytes with
+      the cache off after, in exactly mount + one-per-FAT-sector (+ the straddle) FAT reads
+      ([`loadfat_reads.out`](scratchpad/loadfat_reads.out): each read with its caller) where
+      it read 12. tests/test_fat_next_cluster.py (the cache off) unchanged and green.
       ➡️ NEXT: fix (i)-(iv) above, then re-apply; (a) FILES' +36 %; (b) slice 1b / 2 (the scans and the write path from FATRES --
       frees ROM); (c) **the small-operation gap itself: 14-15x the CF-3300** (it caches far
       more than the FAT across operations); (d) LOAD's per-sector CPU (~93 ms a 512 B sector,
@@ -7814,7 +7841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10247 (T-6FE392)8 (T-529ABE)` from `TODO.md:15637 (T-529ABE)`: a
+      `TODO.md:10274 (T-6FE392)8 (T-529ABE)` from `TODO.md:15677 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10553,7 +10580,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15637 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15677 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11108,6 +11135,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       was CONT after CLEAR, which I had predicted would agree.
       ➡️ NEXT sessions: LIST while typing; then tape (CSAVE / CLOAD, the VG-8020, parked on
       the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
+
+- [ ] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
+      MSX-DOS ENTERS (found 2026-11-06 by D-LOADFAT).**
+      🎚️ APPARATUS — the disk-ROM carves (D-COPYALL, D-LOADRUN, D-LOADFAT) put routines into
+      `ds $XXXX - $` pads, treating them as free; one of them ($476A..$477C) was MSX-DOS's
+      way to `$4775`, never pinned, and only p1dta-acceptance noticed. Every pad that took
+      code since D-COPYALL ($4462, $44F4, $456F, $501E, $55FF, $75A5, $7F7C regions, $4392,
+      $4257, $5552, $477D) passed the FULL battery's seven MSX-DOS suites, but those suites
+      are the only denominator, and a pad entered by a DOS call no suite makes stays unseen.
+      🤖 **AUTONOMOUS** — the DOS suites settle it.
+      ➡️ run every DOS suite (and CALL SYSTEM, a COM program or two)
+      with `scratchpad/hole477_probe.py`'s watch widened to EVERY remaining `ds` pad of
+      disk.rom; pin each entry found; and make the move tooling refuse a pad that was entered.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
       2026-11-06 by typed session S12_progedit).**

@@ -204,6 +204,22 @@ dst_quoted:
                 jp      z, dnm_tail
                 call    dst_put
                 jr      dst_quoted
+; 📍 D-LOADFAT (2026-11-06): MOVED HERE from the $607B..$75A5 region, where LOAD's
+; FAT cache needed the room; entered only by call / jp, so it can live in any hole.
+install_hook:
+                ld      a, $F7              ; +0: RST 30h (CALLF)
+                ld      (hl), a
+                inc     hl
+                ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
+                ld      (hl), a
+                inc     hl
+                ld      (hl), e             ; +2: target lo
+                inc     hl
+                ld      (hl), d             ; +3: target hi
+                inc     hl
+                ld      a, $C9              ; +4: RET
+                ld      (hl), a
+                ret
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
                 jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)
