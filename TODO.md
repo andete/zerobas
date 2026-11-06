@@ -7841,7 +7841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10274 (T-6FE392)8 (T-529ABE)` from `TODO.md:15677 (T-529ABE)`: a
+      `TODO.md:10274 (T-6FE392)8 (T-529ABE)` from `TODO.md:15691 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10580,7 +10580,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15677 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15691 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11136,7 +11136,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ NEXT sessions: LIST while typing; then tape (CSAVE / CLOAD, the VG-8020, parked on
       the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
 
-- [ ] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
+- [x] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
       MSX-DOS ENTERS (found 2026-11-06 by D-LOADFAT).**
       🎚️ APPARATUS — the disk-ROM carves (D-COPYALL, D-LOADRUN, D-LOADFAT) put routines into
       `ds $XXXX - $` pads, treating them as free; one of them ($476A..$477C) was MSX-DOS's
@@ -11148,6 +11148,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ run every DOS suite (and CALL SYSTEM, a COM program or two)
       with `scratchpad/hole477_probe.py`'s watch widened to EVERY remaining `ds` pad of
       disk.rom; pin each entry found; and make the move tooling refuse a pad that was entered.
+      ✅ **SWEPT 2026-11-06: NO OTHER ENTRY.** [`padwatch.py`](scratchpad/padwatch.py) lists every still-empty pad from the
+      assembler's own addresses (57, 467 B), writes a TEMPORARY openMSX startup script that arms
+      ONLY under an env var and ONLY on zerobas's disk machine (our ROM's PC, never the
+      reference's), sets one native breakpoint per pad byte (counted only while page 1 shows
+      slot 3-1), runs the suites and removes the script. Positive control: `--also=4775-4778`
+      under p1dta catches `$4775` from `$D88A` ([`padwatch_control2.out`](scratchpad/padwatch_control2.out)). Sweep over
+      dosmode, dosdate, strout, dosbasic, p1dta, p1vec, callsystem, bdos, wrblkalt and
+      diskbasic: **all 10 green, 0 instructions in any empty pad**
+      ([`padwatch_sweep.out`](scratchpad/padwatch_sweep.out)). 🔴 Its first cut used a Tcl condition on EVERY instruction and
+      slowed five suites past their wall-clock waits -- zerobas read `None` on dosmode's DIR /
+      MODE rows ([`padwatch_dosmode.out`](scratchpad/padwatch_dosmode.out)) -- a red that was the apparatus, and a "0 entries"
+      that covered half the run; breakpoints fixed both. The denominator is these suites'
+      calls. ➡️ THE RULE for every later disk.rom move: run `padwatch.py` with `--also=` the
+      target pad BEFORE filling it (an entry there refuses the pad).
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
       2026-11-06 by typed session S12_progedit).**
