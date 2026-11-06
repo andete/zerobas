@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15506 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15510 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15510 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10996,6 +10996,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the runner waits for idle -- so a break INSIDE a scrolling LIST is not exercised.)
       🔮 Predicted "a divergence in the Redo / Extra messages or CONT after a break in
       INPUT": HIT on the second (it was the break itself).
+      ✅ **S11_screen (2026-11-06): SAME** ([`S11_screen.ses`](probes/sessions/S11_screen.ses), [`sessions_s11.out`](scratchpad/sessions_s11.out)): KEY OFF / ON,
+      KEY definitions (the key row reads `HELLO  LIST` on both), KEY LIST, WIDTH 30 / 20,
+      SCREEN 1 and back, LOCATE, COLOR, a SCREEN 2 program returning to the prompt.
+      🔮 Predicted "a function-key-row divergence after KEY / WIDTH": MISSED.
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-
