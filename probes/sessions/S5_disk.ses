@@ -1,0 +1,34 @@
+# @DISK
+# S5_disk (D-SESSIONS, 2026-11-06): a program kept on disk the way users did --
+# SAVE (tokenised and ,A), FILES, NEW + LOAD, MERGE of an ASCII file over a typed
+# program, NAME, KILL, LOAD ,R and RUN "file", and the errors a typo gives
+# (a missing file, MERGE of a tokenised file). CF-3300 + the DISK target.
+NEW
+10 PRINT "MAIN PROGRAM"
+20 GOSUB 100
+30 END
+100 PRINT "OLD SUB":RETURN
+SAVE "MAIN"
+SAVE "MAINA",A
+FILES
+NEW
+100 PRINT "NEW SUB":RETURN
+110 RETURN
+SAVE "SUBS",A
+NEW
+LOAD "MAIN"
+LIST
+MERGE "SUBS"
+LIST
+RUN
+MERGE "MAIN"
+LIST
+NAME "SUBS" AS "PARTS"
+FILES
+LOAD "SUBS"
+KILL "MAINA"
+FILES
+LOAD "MAIN",R
+RUN "PARTS"
+LIST
+PRINT "DONE"

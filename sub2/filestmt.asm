@@ -611,12 +611,31 @@ fs_merge:
                 ld      ix,p0_dsk_aopen
                 call    p0cb                ; disk.rom mounts, finds, primes; CF = no
                 jr      c,fm_ioerr
+                ; 🔴 D-MERGETOK (2026-11-06, found by typed session S5_disk): MERGE of
+                ; a TOKENISED file is `Bad file mode` (61) on the CF-3300; zerobas fed
+                ; the binary to the ASCII driver, which failed on its first "line"
+                ; with 57. The first byte decides, as LOAD's does ($FF = tokenised,
+                ; disk.rom hk_dpload); an ASCII file is then re-opened -- the rewind
+                ; ascii_load uses -- because the probe consumed byte 0.
+                ld      ix,p0_dsk_agetbyte
+                call    p0cb                ; A = byte 0, CF = EOF (an empty file)
+                jr      c,fm_reopen
+                cp      BASIC_DISK_ID
+                jr      z,fm_badmode
+fm_reopen:
+                ld      ix,p0_dsk_aopen
+                call    p0cb                ; the rewind
+                jr      c,fm_ioerr
                 ld      ix,p0_dsk_ascii_drive
                 call    p0cb                ; tokenise + store each line; CF = bad line
 fm_fin:                                     ; the tape arm joins here
                 pop     hl
                 jp      nc,fs_end_line      ; back to command level (a continuation)
                 ld      a,57                ; dpl_direct: 57 Direct statement in file
+                jp      fs_raise
+fm_badmode:
+                pop     hl
+                ld      a,61                ; Bad file mode
                 jp      fs_raise
 fm_ioerr:
                 pop     hl

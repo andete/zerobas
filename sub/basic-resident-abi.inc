@@ -82,6 +82,7 @@ p0_cas_write_ea_header equ 065EFH   ; main's cas_write_ea_header
 p0_cas_ascii_drive equ 06529H   ; main's cas_ascii_drive
 p0_dsk_aopen equ 06FA0H   ; main's dsk_aopen
 p0_dsk_ascii_drive equ 06FB4H   ; main's dsk_ascii_drive
+p0_dsk_agetbyte equ 06FA8H   ; main's dsk_agetbyte
 p0_run_prog_top equ 064A0H   ; main's run_prog_top
 p0_disk_prog_load equ 06560H   ; main's disk_prog_load
 p0_sv_tenant equ 06678H   ; main's sv_tenant

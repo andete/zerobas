@@ -7716,7 +7716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15401 (T-529ABE)`: a
+      `TODO.md:10149 (T-6FE392)8 (T-529ABE)` from `TODO.md:15419 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10455,7 +10455,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15401 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10934,6 +10934,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       prompt row with text typed over it read `ZB        NEW`; mapped like the bare prompt).
       🔮 Predicted "a screen-editor divergence (INS or the cursor after RETURN)": MISSED --
       D-SCREDIT's work holds.
+      ✅ **S5_disk (2026-11-06): SAME after the fix it FOUND --** [`S5_disk.ses`](probes/sessions/S5_disk.ses)
+      (`# @DISK`: SAVE, SAVE ,A, FILES, NEW + LOAD, MERGE over a typed program, NAME, KILL,
+      LOAD ,R, RUN "file"; CF-3300 vs the DISK target). **D-MERGETOK:** MERGE of a
+      TOKENISED file is `Bad file mode` (61) on the CF-3300; zerobas fed the binary to the
+      ASCII driver and said `Direct statement in file` (57). fs_merge (sub2/filestmt.asm) reads
+      byte 0 first (`$FF` = tokenised, LOAD's own marker) through a new resident-ABI entry
+      `p0_dsk_agetbyte`, then re-opens -- ascii_load's rewind. (I first wrote 54, which is
+      `File already open`; the next run said so.) 🔮 Predicted "a FILES layout or MERGE-of-a-
+      tokenised-file divergence": HIT on the second. THE RUNNER, five apparatus fixes on the
+      way, each a run that was wrong: a disk session starts in SCREEN 0 / WIDTH 37 (the
+      CF-3300 boots in 32 columns -- a style split ruled to the VG-8020); it waits past the
+      BLIND date RETURNs at 6 / 10 s (one landed in the session); IDLE needs the screen too --
+      a direct command must reach a prompt that has been still for 0.3 s (zerobas's FILES was
+      still reading the directory; the CF-3300's SAVE is silent > 2 s; a read DURING a scroll
+      shows a row twice -- [`mergeecho_trace.py`](scratchpad/mergeecho_trace.py) found
+      `MERGE "SUBS"` printed ONCE where the snapshot showed it twice); the function-key row
+      is skipped when CNSDFG says it is up (it was always the "last row", so no prompt was
+      ever seen). After: S1 / S2 / S4 / S5 ALL SAME ([`sessions_all.out`](scratchpad/sessions_all.out)).
       ➡️ NEXT sessions: MERGE of an ASCII
       program, a line edited by retyping and by the screen editor (cursor up + RETURN), LIST
       while typing, DELETE ranges and errors, NEW then CONT; then tape (CSAVE / CLOAD, the VG-

@@ -505,6 +505,7 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_cas_ascii_drive=cas_ascii_drive",
     "p0_dsk_aopen=dsk_aopen",
     "p0_dsk_ascii_drive=dsk_ascii_drive",
+    "p0_dsk_agetbyte=dsk_agetbyte",   # D-MERGETOK: MERGE reads the format byte first
     # D-P0CB slice C2 (2026-10-21): SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD /
     # RUN <name>, sub2/loadsave.asm. CONTINUATIONS (returned in DE, never p0cb'd):
     "p0_run_prog_top=run_prog_top",   # LOAD ,R / RUN <name>

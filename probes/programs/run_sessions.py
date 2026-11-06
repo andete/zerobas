@@ -86,19 +86,55 @@ set ::__clt 0
 set ::__lastk 0
 set ::__n 0
 set ::__waitto 0
+# IDLE also needs the SCREEN to say so (S5: zerobas's FILES was still reading the
+# directory 0.7 s after the key, CURLIN steady at $FFFF, and the snapshot caught a
+# blank row): the last non-blank row is the prompt (`Ok` / `ZB`), or the screen
+# has not changed for $::__still s (an AUTO number, an INPUT `?`, a program's wait).
+# 🔴 AND THE PROMPT MUST HAVE BEEN STILL FOR 0.3 s: a read DURING a scroll (the
+# copy moves the rows one at a time) shows a row twice -- S5's `MERGE "SUBS"`
+# appeared doubled on zerobas while a CHPUT trace had it printed ONCE
+# (scratchpad/mergeecho_trace.py): the `Ok` was already the last row, the scroll
+# after its CR LF was half done.
+set ::__ls ""
+set ::__lst 0
+proc __atprompt {t w} {
+  set last ""
+  # the function-key line is the bottom row while CNSDFG ($F3DE, published) is
+  # set: skip it, or it is ALWAYS the last non-blank row and no prompt is ever
+  # seen (every command then waited out the stillness fallback)
+  set rows [expr {[debug read memory 0xF3DE] ? 23 : 24}]
+  for {set r 0} {$r < $rows} {incr r} {
+    set row [string trim [string map [list \xff " "] [string range $t [expr {$r * $w}] [expr {$r * $w + $w - 1}]]]]
+    if {$row ne ""} { set last $row }
+  }
+  expr {$last eq "Ok" || $last eq "ZB"}
+}
 proc __idle {} {
+  set w [expr {[debug read memory 0xFCAF] == 1 ? 32 : 40}]
+  set t [__scr]
+  if {$t ne $::__ls} { set ::__ls $t; set ::__lst [machine_info time] }
   expr {[__rd16 0xF3FA] == [__rd16 0xF3F8]
         && [machine_info time] - $::__clt >= 0.7
         && [machine_info time] - $::__lastk >= 0.7
-        && [machine_info time] >= $::__waitto}
+        && [machine_info time] >= $::__waitto
+        && (([__atprompt $t $w] && [machine_info time] - $::__lst >= 0.3)
+            || [machine_info time] - $::__lst >= $::__still)}
 }
+# how long a still screen counts as idle, set per step: a numbered line is stored
+# with no prompt (0.7 s), a direct command must reach the prompt and is given 5 s
+# of stillness only as a fallback (the CF-3300's SAVE keeps the screen still for
+# over 2 s before its Ok)
+set ::__still 0.7
 proc __poll {} {
   set cl [__rd16 0xF41C]
   if {$cl != $::__cl} { set ::__cl $cl; set ::__clt [machine_info time] }
   if {$::__ph == 0} {
     # booted: the prompt (CURLIN = $FFFF) held for 2 s
     if {$cl == 0xFFFF} { incr ::__ff } else { set ::__ff 0 }
-    if {$::__ff >= 20} { set ::__ph 1 }
+    # a disk session waits past the date answers too: run_programs' DATE_TCL types
+    # RETURN at 6 s and 10 s BLINDLY, and on a fast-booting target the second one
+    # landed in the session as a stray empty line (S5's first DIFF)
+    if {$::__ff >= 20 && [machine_info time] > MINSTART} { set ::__ph 1 }
   } elseif {[llength $::__steps] == 0} {
     if {[__idle]} { __snap END; close $::__f; exit }
   } else {
@@ -109,6 +145,7 @@ proc __poll {} {
     if {$go} {
       if {$idle} { __snap [incr ::__n] }
       set ::__steps [lrange $::__steps 1 end]
+      set ::__still [expr {[regexp {^[0-9]} $arg] ? 0.7 : 5.0}]
       switch $kind {
         K { __key $arg }
         S {
@@ -160,6 +197,11 @@ def parse(text):
             s += "" if nocr else "\r"
             for i in range(0, len(s), CHUNK):
                 steps.append(("K", s[i:i + CHUNK], 1 if i == 0 else 0))
+    if disk:
+        # the CF-3300 boots in its 32-column text mode, the DISK target in the
+        # VG-8020's SCREEN 0 / WIDTH 37 -- a STYLE split, ruled to the VG-8020
+        # (Joost 2026-09-04) -- so a disk session starts from the same screen
+        steps[0] = ("K", "SCREEN 0:WIDTH 37:CLS\r", 1)
     return disk, steps
 
 
@@ -176,7 +218,8 @@ def run(machine, name, text):
     open(tcl, "w").write(TCL.replace("{LOG}", "{" + log + "}").replace("{OUT}", "{" + out + "}")
                          .replace("STEPS", st).replace("KEYPROC", key_proc())
                          .replace("DATEWATCH", rp.DATE_TCL if disk else "")
-                         .replace("LIMIT", str(LIMIT)))
+                         .replace("LIMIT", str(LIMIT))
+                         .replace("MINSTART", "10.5" if disk else "0"))
     cmd = [rp.OMSX, "-machine", machine, "-command",
            "set renderer none; set sound_driver null", "-script", tcl]
     if disk:

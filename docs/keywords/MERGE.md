@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `MERGE` — add the lines of a text file to the program
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-06):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -35,9 +35,8 @@ device (`"A:X.BAS"`, `"CAS:X"`).
   and the machine returns to `Ok`; the statements after `MERGE` do not run,
   on the same line or the next. Typed as a command followed by `:` and more
   statements, those do not run either.
-- **The file must be text.** On zerobas a tokenised program file (a plain
-  `SAVE`) is refused with `Syntax error` and nothing is merged; what the
-  CF-3300 does with one has not been measured.
+- **The file must be text.** A tokenised program file (a plain `SAVE`) on
+  disk is refused with `Bad file mode` (error 61) and nothing is merged.
 - **The merged lines land exactly as typed lines would**: they go through the
   same tokeniser, and on both machines `LIST` shows the same result.
 - **On cassette** the tape is searched by name, and only ASCII files count; a
@@ -90,10 +89,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 None known.
 
-The one rung not yet proven is **RAM usage**. Not measured on the reference:
-`MERGE` of a tokenised program file.
+The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
+
+- **`MERGE` of a tokenised file gave the wrong error** (fixed 2026-11-06,
+  D-MERGETOK; found by a typed session). The CF-3300 refuses it with
+  `Bad file mode`; zerobas read the program's bytes as text and stopped on the
+  first "line" with `Direct statement in file`. zerobas now looks at the
+  file's first byte, the same marker `LOAD` uses to tell the two formats apart
+  ([session](../../probes/sessions/S5_disk.ses)).
 
 - **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `MERGE "CAS:AB.C"`
   looks for `AB`, as on the VG-8020
