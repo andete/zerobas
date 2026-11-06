@@ -73,6 +73,26 @@ k_41EF:
                 jp      cpmver_body         ; $41EF: BDOS $0C CPMVER canonical entry (M22a)
                 ds      $41FD - $, $00      ; anchor the canonical address
                 jp      k_41FD              ; $41FD: COMMAND.COM-load kernel veneer
+; 🐌 D-SAVEFAT (2026-11-06), in this hole because the SAVE engine's region had 11 B:
+; a tokenised SAVE is ONE call, so it holds the FAT sector across every cluster's
+; mark and link (bit 2 of FAT_DEFER, set by disk_write_begin) and writes it once --
+; D-RECSLOW's W3b-within-one-call. The mark's fwe_finish turns bit 0 into "dirty",
+; so fdh_rehold re-asserts bit 0 before each mark and link while the hold is on. Any
+; flush ends the hold (frl_flush / fat_write_buf_allfats clear the byte): a
+; FAT-sector change costs speed, never correctness. A only.
+fdh_rehold:
+                ld      a, (FAT_DEFER)
+                bit     2, a
+                ret     z
+                or      1
+                ld      (FAT_DEFER), a
+                ret
+; sdw_end: disk_write_end's close -- the held FAT sector out BEFORE fat_io_close's
+; directory work, which runs through FAT_MBUF (basic/sv-diskwr.inc).
+sdw_end:
+                call    frl_flush
+                ret     c
+                jp      fat_io_close
                 ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)
 
 ; --- D-TPAP1 (2026-10-23): THE PAGE-0 INTER-SLOT ENTRIES, BRIDGED TO THE MAIN BIOS ---

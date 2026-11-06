@@ -59,6 +59,6 @@ disk_putbyte:
 ; entry with the true byte count + first cluster (fat_io_close). On a write error
 ; jumps to sv_load_error. Returns to the caller's caller (the REPL) on success.
 disk_write_end:
-                call    fat_io_close
+                call    sdw_end             ; D-SAVEFAT: the held FAT out, then fat_io_close
                 jr      c,sv_load_error
                 ret                         ; back to the prompt

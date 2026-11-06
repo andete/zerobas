@@ -1332,9 +1332,25 @@ item — do **one item per session** to keep context lean.
       next. (3) **SAVE rewrites BOTH FAT copies per cluster**, and a FAT sector written right
       after it was read costs a full revolution (~200 ms) -- D-RECSLOW's class (W3b).
       Every command is preceded by a seek-verify (1C), cheap (~1 ms) on the same track.
-      ➡️ NEXT: (1) a FAT READ cache in FAT_MBUF (tag, invalidated on mount / any FAT write /
-      a raw DSKO$), proved by a host rig that decodes the image itself (test_rand_extend's
-      shape); then (3); then (2).
+      ➡️ ~~NEXT: (1) a FAT READ cache in FAT_MBUF~~ -- FAT_MBUF is NOT a FAT-only buffer (the
+      directory work goes through it too: 39 sites), and the reference's way is the whole
+      FAT in RAM (1.5 KB for 720 KB). 🙋 **FOR JOOST: a FAT buffer in RAM is a RAM-layout
+      choice (the TIER 4 rung's rule) -- may LOAD / file reads keep the FAT in a new
+      1.5 KB RAM buffer (the disk build's free memory is ahead of the CF-3300's)?** Until
+      then (1) waits; (3) and (2) do not need it.
+      ✅ **(3) SAVE'S FAT, FIXED 2026-11-06 (D-SAVEFAT):** a tokenised SAVE is one call, so it
+      holds the FAT sector in FAT_MBUF across every cluster and writes it once before the
+      close's directory work -- D-RECSLOW's W3b-within-one-call. FAT_DEFER bit 2 = the hold
+      (set after sav_fits, whose free count resets the flag -- the first cut set it before
+      and held nothing); fdh_rehold (disk/pageenv.asm, the $4217 hole) re-asserts bit 0
+      before each mark / link; fwe_finish keeps bit 2 (1 / 3 -> 2 as before); sdw_end flushes
+      before fat_io_close; ffds_undefer flushes a held sector (frl_xfail). An unwound SAVE
+      now leaves no half-linked clusters (the CF-3300 commits its FAT at close). Host rig
+      tests/test_save_fathold.py (sav_disk_write on empty720.dsk, its own FAT12 decode):
+      plain 77 -> 38 sector commands, FAT writes 28 -> 2; the chain across FAT sectors 1 / 2;
+      a full disk (status 3, copies equal). Knife (no flush before the close): the file
+      comes back with a 1-cluster chain. Machine: the 14 KB SAVE 168 FDC commands / 13.0 s
+      -> 85 / 7.8 s ([`fdccmd_after.out`](scratchpad/fdccmd_after.out)). Docs: concepts/disk.md.
       ~~🙋 **NEEDS-JOOST**~~ — a far better-posed question than before.
       MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
       §6.6r): two independent runs, every figure identical, three controls green.
@@ -7635,7 +7651,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10068 (T-6FE392)8 (T-529ABE)` from `TODO.md:15220 (T-529ABE)`: a
+      `TODO.md:10084 (T-6FE392)8 (T-529ABE)` from `TODO.md:15236 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10374,7 +10390,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15236 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

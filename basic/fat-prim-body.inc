@@ -999,8 +999,10 @@ fwe_finish:
                 ld      a, (FAT_DEFER)
                 rrca
                 jp      nc, fat_write_buf_allfats   ; no request: write now (it clears)
-                ld      a, 2
-                ld      (FAT_DEFER), a
+                rlca                        ; A = FAT_DEFER again (bit 0 was 1)
+                and     $FE
+                or      2                   ; request -> dirty; D-SAVEFAT: bit 2 (a
+                ld      (FAT_DEFER), a      ; SAVE's hold) survives -- 1 / 3 -> 2 as before
                 or      a                   ; Cy = 0
                 ret
 fwe_err:
@@ -1214,10 +1216,12 @@ ffds_nopad:
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
                 jr      c, ffds_haveclus    ; room in the current cluster
-                ld      a, 1                ; D-WCACHE W3a: a chain EXTENSION -- the
-                ld      (FAT_DEFER), a      ; link below writes the mark's sector too
+                call    frl_defer           ; D-WCACHE W3a: a chain EXTENSION -- the
+                                            ; link below writes the mark's sector too
+                                            ; (frl_defer ORs bit 0: a SAVE's hold survives)
 ffds_alloc:
                 ; allocate a new cluster (first one, or chain extension).
+                call    fdh_rehold          ; 🐌 D-SAVEFAT: a held SAVE defers this mark
                 call    fat_alloc_cluster
                 jr      c, ffds_undefer     ; disk full / I/O: nothing may stay deferred
                 ; HL = new cluster. Link it: if a previous cluster exists, point it
@@ -1230,6 +1234,7 @@ ffds_alloc:
                 ex      de, hl              ; HL = previous cluster
                 pop     de                  ; DE = new cluster (value to link)
                 push    de
+                call    fdh_rehold          ; D-SAVEFAT: ... and this link
                 call    fat_write_fat_entry_hot ; previous -> new (12-bit link; W2:
                                             ; the allocation just left FAT_MBUF/FATSEC)
                 pop     hl                  ; HL = new cluster
@@ -1270,11 +1275,9 @@ ffds_mul:
                 or      a                   ; Cy = 0 success
                 ret
 ffds_undefer:
-                push    af                  ; the failure (Cy, A)
-                xor     a
-                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the request dies with it
-                pop     af
-                ret
+                jp      frl_xfail           ; D-SAVEFAT: a HELD FAT sector reaches the
+                                            ; disk first (what was linked, as before);
+                                            ; a bare W3a request just dies (disk/kernel.asm)
 
 ; fat_dir_create — find/make a root-directory slot for an 8.3 name and write a
 ; fresh entry; record the slot's sector + offset in FWR_DIRSEC/FWR_DIROFF.

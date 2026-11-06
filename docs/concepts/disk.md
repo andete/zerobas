@@ -395,6 +395,14 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   program opened and read the file with them off, so the clock lost up to 450 ms
   at a time where the CF-3300 loses at most 223. Now under 180 ms in every
   disk test program ([readings](../../scratchpad/asavedi_gate2.out)).
+- **`SAVE` rewrote the FAT for every cluster it wrote** (fixed 2026-11-06,
+  D-SAVEFAT). Both copies of the FAT sector went to the disk again after each
+  cluster, and a sector written just after it was read waits a whole turn of
+  the disk. Now a tokenised `SAVE` keeps the FAT sector in memory for the whole
+  file and writes it once, before the directory entry is finished, as the
+  CF-3300 commits its FAT at the end. A `SAVE` that fails part-way (disk full)
+  leaves no half-linked clusters behind
+  ([before / after](../../scratchpad/fdccmd_after.out)).
 - **SHIFT at power-on did nothing here** (fixed 2026-10-10, D-BOOTKEYS, raised by
   Joost). Measured first on the CF-3300 — SHIFT: no Disk BASIC, `HIMEM`
   `&HF380`; CTRL: one drive. zerobas's disk ROM now reads the key before

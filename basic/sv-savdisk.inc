@@ -42,6 +42,10 @@ sav_disk_write:
                 pop     af
                 or      a
                 jp      nz,sav_full         ; D-SAVEFULLSTAMP: it cannot fit
+                ld      a,4                 ; 🐌 D-SAVEFAT: hold the FAT sector for the
+                ld      (FAT_DEFER),a       ; whole SAVE (fdh_rehold, disk/pageenv.asm) --
+                                            ; HERE, after sav_fits, whose free count
+                                            ; resets the flag
                 ; --- program image: TXTBASE .. PRGEND+1 inclusive ----------
                 ; PRGEND points at the $0000 end-of-program marker (program.asm),
                 ; so the last image byte is PRGEND+1. Walk inclusive.
