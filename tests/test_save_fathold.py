@@ -4,7 +4,8 @@
 every cluster and writes it once.
 
 The disk ROM's SAVE engine (hkds_run -> sav_disk_write: create, one putbyte per
-program byte, close) on the host Z80 against a copy of disk/empty720.dsk, with NOTHING
+program byte, close) on the host Z80 against a freshly generated empty 720 KB volume (tools/make_test_dsk.py
+--empty, the Makefile's disk/empty720.dsk recipe), with NOTHING
 trapped but the sector I/O. The image is then decoded by this file's own FAT12 and
 directory reader, never the ROM's:
 
@@ -30,7 +31,13 @@ sys.path.insert(0, HERE)
 from msxtest import Machine  # noqa: E402
 
 ROM, SYM = tp("save_fathold_disk.rom"), tp("save_fathold_disk.sym")
-IMG = open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()
+# The empty volume is GENERATED here, as the Makefile's $(DISK_EMPTY_DSK) rule makes
+# it: disk/empty720.dsk is a build product, absent on a fresh checkout (CI went red
+# on exactly that, 2026-11-06).
+_EMPTY = tp("save_fathold_empty720.dsk")
+subprocess.run([sys.executable, os.path.join(ROOT, "tools", "make_test_dsk.py"),
+                "--empty", _EMPTY], check=True, capture_output=True)
+IMG = open(_EMPTY, "rb").read()
 SPC, FAT0, FATSECS, NFATS, ROOT0, ROOTSECS, DATA0 = 2, 1, 3, 2, 7, 7, 14
 TXT = 0x8001
 

@@ -128,6 +128,13 @@ NOISE = 0.0005            # 2x one interrupt's service time (~0.25 ms, measured)
 # read 3.93 batched, 3.32 alone). A difference must clear 1% of ITS OWN ROW on
 # each side -- 5x the measured row jitter -- or the reading is `~`.
 NOISE_REL = 0.01
+# ⏱ D-T5TWINREM (2026-11-06): AND A BOUND ON THE RATIO ITSELF. Each difference
+# clearing the floor is not enough: a ratio of two differences carries BOTH
+# sides' jitter, NOISE/dr + NOISE/dz relative. From the pin of 2026-11-06, 24
+# of 198 readings were wider than +-25 % (vpoke: dr 0.84 ms, dz 0.71 ms, +-130 %)
+# -- the "T5 is not stable run to run" the item measured (RESTORE 3.7x -> 1.6x
+# on a change that cannot reach it). Such a reading is `~`, as below the floor.
+T5_UNC = 0.25
 _KWSET = None
 
 
@@ -177,7 +184,12 @@ def twin_bodies(line, word, nth=None):
     extra work heavier on zerobas's side and `abs` read 0.38 alone (its PRINT is
     8.0 vs 8.6 ms). Working on the ALREADY-PACKED lines makes padding unnecessary:
     no line is re-packed, so every number the row names holds. A line left empty
-    becomes `REM` -- an empty numbered line would DELETE the line."""
+    becomes `REM` -- an empty numbered line would DELETE the line.
+    ⏱ D-T5TWINREM (2026-11-06): that `REM` is ONE statement dispatch the twin runs
+    and the row does not, on both sides. Under the old linear dispatch it cost
+    zerobas ~2000 cycles (REM was entry 59) and the reading understated
+    zerobas's cost; since D-STMTIDX it is an indexed dispatch on both machines,
+    so it stays -- and the sheet's T5 legend says the reading includes it."""
     if not word:
         return None
     # ⏱ A ROW MAY DECLARE WHICH OCCURRENCE IS TIMED: `TIMED:<n>` in its note
@@ -222,6 +234,8 @@ def alone(r, z, rt, zt):
     dr, dz = r - rt, z - zt
     if dr <= max(NOISE, NOISE_REL * r) or dz <= max(NOISE, NOISE_REL * z):
         return None
+    if NOISE / dr + NOISE / dz > T5_UNC:
+        return None                 # D-T5TWINREM: the ratio's own band is too wide
     return dz / dr
 
 
@@ -690,6 +704,11 @@ def selftest():
         alone(0.800, 2.269, 0.798, 2.266) is None)
     arm("K20 NEGATIVE: a difference inside interrupt noise gives no reading",
         alone(0.010, 0.012, 0.0099, 0.0118) is None and alone(None, 1, 1, 1) is None)
+    arm("K28 NEGATIVE: two differences that each clear the floor but whose RATIO "
+        "is +-130 % wide (vpoke 2026-11-06: 0.84 / 0.71 ms) -> no reading",
+        alone(0.010, 0.012, 0.00916, 0.01129) is None)
+    arm("K28 POSITIVE: the same row at 10x the differences reads its ratio",
+        alone(0.020, 0.020, 0.0116, 0.0129) is not None)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 

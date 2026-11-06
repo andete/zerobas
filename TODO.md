@@ -16934,7 +16934,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The console's string rule is unmeasured.~~ → D-INPSTR / D-INPQUOTE below.
       ⚠️ Tape (CAS:) numeric items keep the field rule (no peek there).
 
-- [ ] ⏱ **D-T5TWINREM — A T5 "KEYWORD ALONE" READING INCLUDES THE TWIN'S `REM` STAND-IN,
+- [x] ⏱ **D-T5TWINREM — A T5 "KEYWORD ALONE" READING INCLUDES THE TWIN'S `REM` STAND-IN,
       AND THAT STAND-IN'S COST JUST CHANGED UNDER IT (found 2026-10-05 by space plan B-6; MEASURED)**
       🎚️ TIER 5 — on-par speed: T5 is a ratio that never ticks, so no level moved,
       but its readings are what the speed work will rank by.
@@ -16963,6 +16963,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       this is fixed, a slice's speed cost has to be read by timing the rows ALONE
       on both builds (B-10 did: `--only`), never off the sheet's T5 column.
       🤖 **AUTONOMOUS** — apparatus; both sides are measurable.
+      ✅ **CLOSED 2026-11-06, BOTH HALVES.** (1) THE FILLER: since D-STMTIDX the emptied line's
+      `REM` is ONE indexed dispatch on both machines (not the old walk's entry 59), so it
+      stays, and the sheet says so: the T5 legend (tools/tier_table.py -> docs/tier-status.md)
+      now reads "a twin whose line the deletion empties runs one `REM` dispatch in its place
+      on both sides"; `twin_bodies`' docstring records why. (2) THE INSTABILITY: a ratio of
+      two differences carries both sides' jitter, NOISE/dr + NOISE/dz relative; `alone()`
+      (probes/basic/basic_probe_kwtime.py) now declines a reading wider than +-25 %
+      (`T5_UNC`), as it declines one below the floor. 🔮 Predicted 24 of 198 readings would
+      go `~` (computed from the pin): 24 -- vpoke (+-130 %), outkw, swap, locate, sound,
+      waitkw, lprintkw, ongoto, restorekw_b, nextkw, clearkw, let, ifkw ... Selftest arms
+      K28 (negative: vpoke's 0.84 / 0.71 ms -> no reading; positive: the same row at 10x
+      reads). The local pin's `alone` values were recomputed from its stored timings (a
+      derived field); the next kwtime run writes them itself.
 
 - [ ] 🔌 **D-SYNCHR — `RST $08` (SYNCHR) IS STILL C-BIOS'S DEBUG STUB: IT PRINTS "SYNCHR" AND
       RETURNS (found 2026-10-05 by space plan B-12; NOT MEASURED on a machine-code row)**
