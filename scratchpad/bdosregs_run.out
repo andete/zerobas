@@ -1,0 +1,17 @@
+tag       AF   BC   DE   HL   IX   IY
+setdta   in  A=00 BC=001A DE=C200 HL=F323
+   cf3300 800 581A C200 5808 56D3 314
+   zb     1A4A 1A C200 F323 803E 872C   DIFF
+setdta2  in  A=55 BC=001A DE=D200 HL=1234
+   cf3300 800 581A D200 5808 56D3 314
+   zb     1A4A 1A D200 1234 803E 872C   DIFF
+rdabs    in  A=08 BC=582F DE=0001 HL=0100
+   cf3300 42 1 1 0 F195 314
+   zb     None   DIFF
+rdabs0   in  A=00 BC=002F DE=0000 HL=0100
+   cf3300 42 1 0 0 F195 314
+   zb     None   DIFF
+conout   in  A=00 BC=0002 DE=0041 HL=0000
+   cf3300 4144 A702 41 A741 56D3 314
+   zb     4142 202 41 0 803E 872C   DIFF
+refcache: 0 hit, 10 miss, 10 stored

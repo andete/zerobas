@@ -1,0 +1,21 @@
+all=0
+allfn=0
+tape=0
+tiers=0
+rc=0
+GATES: 57/57 green
+GATE TIER RAN: SCOPED (6 emulator suites)
+dos=0
+  dosmode-acceptance: rc=0  
+  dosdate-acceptance: rc=0  
+  strout-acceptance: rc=0  
+  dosbasic-acceptance: rc=0  
+  p1dta-acceptance: rc=0  
+  p1vec-acceptance: rc=0  
+  callsystem-acceptance: rc=0  
+  bdos-acceptance: rc=0  
+  wrblkalt-acceptance: rc=0  
+  diskbasic-acceptance: rc=0  
+script removed: True
+0 instruction(s) executed inside an empty pad
+  no entry into any empty pad

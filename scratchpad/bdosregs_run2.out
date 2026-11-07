@@ -1,0 +1,8 @@
+tag       AF   BC   DE   HL   IX   IY
+rdabsd   in  A=08 BC=582F DE=0001 HL=0100
+   cf3300 42 1 1 0 F195 314
+   zb     44 1 0 0 803E 872C   DIFF
+rdabs5   in  A=08 BC=582F DE=059A HL=0100
+   cf3300 42 1 59A 0 F195 314
+   zb     44 1 4F00 0 803E 872C   DIFF
+refcache: 0 hit, 4 miss, 4 stored

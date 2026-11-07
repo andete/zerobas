@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15756 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15767 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11223,9 +11223,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       zerobas DE = $4F00, F = $44; the call after: CF-3300 DE = $000E HL = $0000, zerobas
       DE = $0000 HL = $C9C9. The spec leaves these undefined; this boot code uses them, and
       from $C04A on it reads $A8 = $FF (CF) / $FC (zerobas) and takes the other road.
-      ➡️ next: measure those three BDOS functions' EXIT registers on the CF-3300 in isolation
-      (disk_probe_bdos's harness: registers in, registers out) and match the ones a program
-      can see; then re-run SDSNAT1C and the collection.
+      ✅ **MEASURED AND ONE FIXED (2026-11-07):** [`bdosregs_probe.py`](scratchpad/bdosregs_probe.py) (a BASIC program POKEs a routine
+      that loads A / BC / DE / HL, calls $F37D and PRINTs every register back; our test code,
+      both machines; [`bdosregs_run.out`](scratchpad/bdosregs_run.out), [`bdosregs_run2.out`](scratchpad/bdosregs_run2.out)): SETDTA returns AF $0800 BC $581A
+      HL $5808 on the CF-3300 whatever goes in (zerobas: AF $1A4A, BC / HL untouched);
+      CONOUT returns BC $A702 HL $A741 there; **RDABS keeps DE (the sector) and leaves F = $42
+      there, where zerobas returned dskio's DE and F = $44.** rdabs_body (disk/fat.asm) now
+      keeps DE and ends with `sub a` (+2 B in the $4E4B region, 7 -> 5): AF / BC / DE / HL
+      all match ([`bdosregs_run3.out`](scratchpad/bdosregs_run3.out)); IX / IY are each machine's internals. 🔮 "RDABS matches,
+      SDSNAT1C gets further but maybe not home": HIT -- the boot code now runs IDENTICAL to
+      the CF-3300's up to $C047 ([`sdsboot_bootcode_zb2.out`](scratchpad/sdsboot_bootcode_zb2.out)), and still does not boot.
+      ➡️ next: the call at $C047 returns A = $FF on the CF-3300 and $FC here (BC / DE differ
+      too) -- a slot computation (the boot code's routines call ENASLT / RDSLT around it):
+      log ENASLT's arguments and the RDSLT / direct reads inside it on both. SETDTA's and
+      CONOUT's leftover registers are not matched (internal values; no reader known).
       ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found

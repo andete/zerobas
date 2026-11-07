@@ -1683,16 +1683,23 @@ fren_ioerr:
 ; internally for its own CHS bookkeeping, so the original count is saved
 ; across the call on the stack, not left in a register.
 rdabs_body:
+                ; 🔴 D-SDSBOOT (2026-11-07): through $F37D the CF-3300 hands DE (the
+                ; sector) back unchanged and leaves F = $42 (Z, N -- a `sub`), where this
+                ; returned dskio's DE and F = $44 (`xor`). SDSNAT1C.DSK's boot code reads
+                ; DE after RDABS and took another road here
+                ; (scratchpad/bdosregs_probe.py -> bdosregs_run2.out).
+                push    de                  ; the sector, handed back as on the CF-3300
                 ld      b, h                ; B := sector count (dskio's own count param)
                 push    bc                  ; preserve original count across the dskio call
                 ld      hl, (DOS_DTAPTR)    ; target = runtime DTA
                 xor     a                   ; drive ignored (single-drive); Cy=0 = read
                 call    dskio
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
+                pop     de                  ; (flags kept: CF is dskio's)
                 jr      c, rdabs_ioerr
                 ld      a, b                ; A := original count
                 ld      c, a                ; C := count (pinned exit value)
-                xor     a
+                sub     a                   ; A = 0, F = $42 as on the CF-3300 (not xor's $44)
                 ld      b, a                ; B := $00 (pinned exit value)
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      h, a
