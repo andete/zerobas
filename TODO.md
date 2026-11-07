@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15991 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:16027 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15991 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16027 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11257,7 +11257,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       pad 6 -> 52 B. (2) ffb_miss and fdel_miss were byte-identical to fren_miss: their five
       callers jump there (fdel's three `jr` became `jp`): $4E4B pad 5 -> 13, $7F7C pad 1 -> 6.
       The FAT / WRBLK unit tests are green (2026-11-07).
-      ➡️ D-FATRES still needs its ~150 B, and the pads are FRAGMENTS (the largest now 52 B).
+      ✅ **THIRD CUT (2026-11-07): 124 B more, from copies the label scan cannot see.** A plain
+      repeated-byte scan over disk.rom ([`diskcarve_ngram.out`](scratchpad/diskcarve_ngram.out), sequences of 12 B or more, label
+      boundaries ignored) found what dupspan_disk could not: (1) pg0_mainrom_in was a 66-byte
+      copy of the bridge template's own page-0 switch (br_mainin_tmpl: EXPTBL into C, then
+      br_p0in_tmpl -- the EXPTBL read before rather than after saving $A8, the same registers
+      clobbered); it is `jp br_mainin_tmpl` now, the template's ROM bytes running in place
+      (straight-line, absolute references only, the page they run in): $7F7C pad 6 -> 74.
+      (2) the 19-instruction FAT12 locate (cluster -> FAT sector, parity, byte index) stood
+      inline in getalloc's scan, fat_have_free_cluster's loop and fat_write_fat_entry_hot:
+      one fat_locate in front of the $75A5 pin, three calls -- $4C29 7 -> 37, $7F7C 74 -> 104,
+      $75A5 52 -> 48 (the helper's 34 B). basic/fat-prim-body.inc keeps its own three copies
+      (the sub ROM assembles it). FAT / WRBLK unit tests green (2026-11-07).
+      📏 **The four cuts together: ~204 B (2026-11-07)**, ~181 B of it free in pads now -- the
+      largest 104 B in front of $7F7C -- against D-FATRES's ~150 B. The ngram scan lists more
+      (the fdc_read_phys / fdc_write_phys prefix 34 B, the getalloc / fat_have_free_cluster
+      scan bodies 60 B, rename / delete tails).
+      📏 Verified on the FULL battery (250/250) + the excluded five; the disk collection
+      ([`diskcorpus_dc5.out`](scratchpad/diskcorpus_dc5.out)) moved two rows, both explained: ss-final (the known interrupt-
+      timing row, D-DISKRUN) and GAUNT -- bisected to the pg0_mainrom_in change, where the
+      screen is IDENTICAL on both builds and only the classifier's one PC sample differed
+      (scratchpad/gaunt_trans_good.out / _bad.out: the same transfers into disk.rom; a 10 T
+      `jp` in the old routine did not flip it, so not timing either). That found the
+      classifier fault D-SDSBOOT's reopening records.
+      ➡️ D-FATRES's room is there now; what blocks it is its own three reds (DI gaps, the
+      FAT_DEFER staleness, MSX-DOS's use of $DE8D..) -- re-apply scratchpad/fatres_wip.patch by
+      hand onto today's tree first. The pads are FRAGMENTS (the largest 104 B).
       Next: the remaining safe groups (dirioin_done / const_notready +7, the `3effc9` tails,
       the `32aefc37c9` group), then a scan for a duplicate disk.rom routine already in the sub
       ROM, then a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
@@ -11265,13 +11290,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       evictions of cold disk code into the sub ROM, as D-ROMSIZE did for main. The rule for every
       pad that takes code: `padwatch.py --also=` it first (D-PADSLIDE).
 
-- [x] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
+- [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
       🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
       🤖 **AUTONOMOUS** — since 2026-11-07; Joost on the BIOS exit registers: *"if it does no
       harm, why not?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07).
-      ✅ **CLOSED 2026-11-07: SDSNAT1C BOOTS AGAIN (ZB-NOBOOT -> BOTH-RUN,** [`sdsone_run3.out`](scratchpad/sdsone_run3.out)**),
-      ON THE CF-3300'S PATH** -- the boot code's register trace equals the CF-3300's on all 60
+      🔴 **REOPENED THE SAME DAY: THE "BOOTS AGAIN" BELOW WAS THE CLASSIFIER, NOT THE MACHINE.**
+      diskcorpus_run.py called a PC at $FD9A (the H.TIMI hook, one interrupt sampled) "the
+      disk's program has the machine"; the stored rows say the CF-3300 ends in SCREEN 2 with
+      a BASIC line running and zerobas in SCREEN 1 with none ([`diskcorpus_rescore.out`](scratchpad/diskcorpus_rescore.out)). The
+      rule is fixed (a PC from $F380 up is the BIOS's own RAM, not a program); re-scored,
+      SDSNAT1C is ZB-NOBOOT. What below STANDS: the bridge fix made the boot code's register
+      trace the CF-3300's for all 60 traced lines (the RDSLT / ENASLT / WRSLT registers are
+      right). ➡️ Next: trace PAST $C0A5 -- where the two machines part after the boot code
+      (a wider SDS_ENASLT window, or SDS_TRANS on both).
+      ~~✅ CLOSED 2026-11-07: SDSNAT1C BOOTS AGAIN (ZB-NOBOOT -> BOTH-RUN,~~ [`sdsone_run3.out`](scratchpad/sdsone_run3.out)~~),
+      ON THE CF-3300'S PATH~~ -- the boot code's register trace equals the CF-3300's on all 60
       lines but the first (HL left by an earlier BDOS call, overwritten at once;
       [`sdsboot_ena_zb5.out`](scratchpad/sdsboot_ena_zb5.out)). The last two splits were our page-3 bridge (the ➡️ at the end):
       br_back (disk/runtime.asm) now hands ENASLT's A, RDSLT's D and WRSLT's D and A back
@@ -11280,9 +11314,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       from D-DISKCARVE's first cut (cpmver / stime / gtime / verify bodies moved to empty pads,
       the dirin / dskrst `jp` veneers removed: callers jump straight to the target).
       📏 Disk collection after ([`diskcorpus_dc.out`](scratchpad/diskcorpus_dc.out), zerobas against the stored reference rows):
-      **TWO rows ZB-NOBOOT -> BOTH-RUN -- SDSNAT1C and GAUNT.DSK** (the same bridge, unmeasured
-      until now), nothing else moved; no ZB-NOBOOT row is left in the collection. 🔮 "one row":
-      MISSED on the good side.
+      ~~TWO rows ZB-NOBOOT -> BOTH-RUN -- SDSNAT1C and GAUNT.DSK~~ -- 🔴 WITHDRAWN (2026-11-07,
+      the same day): both were the classifier counting a PC in the BIOS's RAM hooks as a
+      running program. GAUNT's screen is the identical banner on every build, and it flipped
+      class again on a layout-only carve; re-scored, SDSNAT1C, GAUNT and UR-1 are ZB-NOBOOT
+      and Multiple ZB-ONLY ([`diskcorpus_rescore.out`](scratchpad/diskcorpus_rescore.out)).
       📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
       SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
       🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over

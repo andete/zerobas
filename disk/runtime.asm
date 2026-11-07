@@ -19,53 +19,14 @@
 ; NOTE: on the CF-3300 EXPTBL[0]=$00 (unexpanded), so the primary path is exercised+
 ; validated; the expanded sub-path is spec-derived and NOT reachable here (review queue).
 pg0_mainrom_in:
-                in      a, ($A8)
-                ld      (PG_SV_A8), a       ; save full primary-slot config (restore key)
-                ld      a, (EXPTBL)         ; main-ROM slot id
-                ld      c, a                ; C = slot id
-                and     $03                 ; A = main-ROM primary
-                ld      b, a                ; B = primary
-                ld      a, (PG_SV_A8)
-                and     $FC                 ; clear page-0 primary field
-                or      b                   ; set page-0 primary = main-ROM primary
-                out     ($A8), a            ; main-ROM primary now in page 0 (pages 1/2/3 kept)
-                bit     7, c                ; main-ROM slot expanded?
-                ret     z                   ; unexpanded -> primary switch is enough (CF-3300)
-                ; --- expanded: select the page-0 subslot via the $FFFF/SLTTBL protocol ---
-                ld      a, c
-                rrca
-                rrca
-                and     $03                 ; A = main-ROM subslot S
-                ld      e, a                ; E = S
-                ld      hl, SLTTBL
-                ld      a, b
-                add     a, l                ; SLTTBL aligned, P<4 -> no page crossing
-                ld      l, a                ; HL = &SLTTBL[P]
-                ld      a, (hl)
-                and     $FC                 ; clear page-0 subslot field
-                or      e                   ; merge new page-0 subslot S
-                ld      (hl), a             ; update the SLTTBL[P] mirror
-                ld      e, a                ; E = new secondary value to write to $FFFF
-                ld      a, b                ; primary P -> page-3 field
-                rlca
-                rlca
-                rlca
-                rlca
-                rlca
-                rlca                        ; P << 6
-                ld      d, a                ; D = P in page-3 field
-                ld      a, (PG_SV_A8)
-                and     $3C                 ; keep pages 1/2 ; clear page-0 + page-3 fields
-                or      b                   ; page-0 primary = P
-                or      d                   ; page-3 primary = P (reach P's $FFFF expander)
-                out     ($A8), a
-                ld      a, e
-                ld      ($FFFF), a          ; P's secondary: page-0 subslot = S
-                ld      a, (PG_SV_A8)
-                and     $FC                 ; restore page-3 (& 1/2) primaries; clear page 0
-                or      b                   ; page-0 primary = P (main-ROM, now subslot S)
-                out     ($A8), a
-                ret
+                ; 💰 D-DISKCARVE (2026-11-07): this was a 66-byte copy of the bridge
+                ; template's own page-0 switch (br_mainin_tmpl below: EXPTBL into C, then
+                ; br_p0in_tmpl -- the same steps, EXPTBL read before rather than after
+                ; saving $A8, the same registers clobbered; scratchpad/diskcarve_ngram.out).
+                ; The template's ROM bytes run in place: straight-line code, absolute
+                ; references only (PG_SV_A8, SLTTBL, $FFFF), and this page -- the disk
+                ; ROM -- is the page they sit in.
+                jp      br_mainin_tmpl
 
 ; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
 ; touched, so its page-0 subslot is intact). Clobbers A.

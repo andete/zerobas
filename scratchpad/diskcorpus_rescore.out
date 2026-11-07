@@ -1,0 +1,10 @@
+2026-11-07: scratchpad/diskcorpus_dc5.out's run, RE-SCORED offline from the stored rows with
+state_of's corrected rule (a PC at $F380 and up -- the BIOS's own RAM: hooks, clprim -- is NOT
+"the disk's program has the machine"):
+Multiple.dsk BOTH-RUN -> ZB-ONLY      (CF-3300: banner, PC $FD9A, no line; zerobas: line 10)
+SDSNAT1C.DSK BOTH-RUN -> ZB-NOBOOT    (CF-3300: SCREEN 2, line 0; zerobas: SCREEN 1, PC $FD9A, no line)
+UR-1.dsk BOTH-RUN -> ZB-NOBOOT        (CF-3300: SCREEN 1, line 30; zerobas: banner, PC $FD9A, no line)
+RESCORED TALLY {"BOTH-RUN": 115, "FILES-DIFF": 8, "FILES-EMPTY": 1, "FILES-SAME": 11, "ZB-NOBOOT": 3, "ZB-ONLY": 5}
+(GAUNT.DSK is ZB-NOBOOT in the run itself: its BOTH-RUN in diskcorpus_dc.out / dc3.out was
+the same artifact -- an identical banner screen on both builds, the class flipping on where
+one PC sample landed.)

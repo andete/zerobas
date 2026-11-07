@@ -295,25 +295,7 @@ k_47BE:         jp      wrblk_body          ; $47BE: BDOS $26 WRBLK canonical en
 fat_write_fat_entry_hot:
                 ld      (FAT_WRTMP), de     ; save the value
                 push    hl                  ; save cluster
-                ld      a, l                ; fat_read_fat_sector's arithmetic, copied
-                and     1                   ; so that routine stays byte-identical
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; fatofs >> 9 = FAT sector offset
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = the entry's FAT sector
+                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
                 push    hl                  ; the entry's sector
                 ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
                 or      a

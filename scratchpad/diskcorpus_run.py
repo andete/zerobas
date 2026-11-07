@@ -128,7 +128,13 @@ def state_of(cap) -> str:
     graphics mode: the disk's own program has the machine. PROMPT: direct mode, text
     screen. 🔴 The PC alone cannot tell: a BASIC program runs in the ROM interpreter
     and waits for a key in the BIOS exactly as the prompt does (BREAKER, smoke run)."""
-    if (cap["curlin"] != 0xFFFF or cap["pc"] >= 0x8000
+    # 🔴 2026-11-07: NOT a PC in the BIOS's own RAM ($F380 up: the hooks, CALSLT's
+    # clprim). One interrupt sampled at $FD9A (H.TIMI) read as "the disk's program
+    # has the machine" -- SDSNAT1C, UR-1 (zerobas) and Multiple (CF-3300) were
+    # BOTH-RUN on that alone while the screens said otherwise (SDSNAT1C: SCREEN 2 and
+    # a program there, SCREEN 1 and no line here), and GAUNT flipped class on a
+    # layout-only change with an identical screen.
+    if (cap["curlin"] != 0xFFFF or 0x8000 <= cap["pc"] < 0xF380
             or mode_of(cap["regs"]) not in ("S0", "S1")):
         return "RUNNING"
     return "PROMPT"
@@ -169,7 +175,7 @@ def classify(ref, zb):
 
 def summary_state(curlin, pc, mode) -> str:
     """state_of, from a stored row's summary fields instead of a capture."""
-    if curlin != 0xFFFF or pc >= 0x8000 or mode not in ("S0", "S1"):
+    if curlin != 0xFFFF or 0x8000 <= pc < 0xF380 or mode not in ("S0", "S1"):  # (state_of's rule)
         return "RUNNING"
     return "PROMPT"
 

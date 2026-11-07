@@ -25,7 +25,7 @@ ENASLT ($0024) from RAM (slot, page, A8) and the registers at $C057..$C0A5.
 """
 import os, subprocess, sys, tempfile, shutil
 D = os.environ["DISKCORPUS_DIR"]
-img = os.path.join(D, "SDSNAT1C.DSK")
+img = os.path.join(D, os.environ.get("SDS_IMG", "SDSNAT1C.DSK"))   # SDS_IMG: another image (D-DISKCARVE, GAUNT)
 mach = sys.argv[1] if len(sys.argv) > 1 else "C-BIOS_MSX1_EU_REPACK_DISK"
 T = float(sys.argv[2]) if len(sys.argv) > 2 else 45
 td = tempfile.mkdtemp()

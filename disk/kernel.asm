@@ -4853,25 +4853,7 @@ fhfc_loop:
                 pop     hl
                 jr      nc, fhfc_none       ; scanned past the last cluster -> none free
                 push    hl
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; FAT sector offset = fatofs >> 9
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = absolute FAT sector
+                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
                 ld      de, (FAT_WRTMP2)
                 push    hl
                 or      a
@@ -6831,6 +6813,33 @@ innoe_body:
                 pop     de
                 pop     bc
                 ret
+; fat_locate -- HL = a cluster -> HL = the absolute FAT sector holding its 12-bit entry;
+; FAT_PARITY = cluster & 1, FAT_BYTEIDX = fatofs & $1FF (fatofs = cluster * 3/2, the
+; Microsoft FAT spec's 12-bit packing). Clobbers A, DE. 💰 D-DISKCARVE (2026-11-07): the
+; same 19 instructions stood inline in getalloc's scan, fat_have_free_cluster's loop and
+; fat_write_fat_entry_hot (scratchpad/diskcarve_ngram.out); basic/fat-prim-body.inc keeps
+; its own three copies (the sub ROM assembles that body too).
+fat_locate:
+                ld      a, l
+                and     1
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                   ; DE = cluster >> 1
+                add     hl, de              ; HL = fatofs
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                   ; fatofs >> 9 = the FAT sector offset
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = the absolute FAT sector
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -7611,25 +7620,7 @@ ga_scanloop:
                 ; math fac_loop_body uses -- Microsoft FAT spec §3.2 12-bit packing)
                 push    de                       ; save free counter across the call below
                 push    hl                       ; save cluster (need it after the call)
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                        ; DE = cluster >> 1
-                add     hl, de                   ; HL = fatofs
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a     ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                        ; FAT sector offset = fatofs >> 9
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de                   ; HL = absolute FAT sector for this cluster
+                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
                 ld      de, (FAT_WRTMP2)
                 push    hl
                 or      a
