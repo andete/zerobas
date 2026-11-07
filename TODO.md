@@ -7938,7 +7938,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10371 (T-6FE392)8 (T-529ABE)` from `TODO.md:16122 (T-529ABE)`: a
+      `TODO.md:10371 (T-6FE392)8 (T-529ABE)` from `TODO.md:16129 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10677,7 +10677,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16122 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16129 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11620,6 +11620,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the STOP trap's dispatch, and in the line editor's Ctrl-STOP path (rl_break -- or the
       `$03` reads as a second Ctrl-C after the abort and S2 / S9 would diverge). Re-run
       S2_stopcont / S9_breaks and stopkey_probe after.
+      💰 **PRICED (2026-11-07):** the table half is free -- scode_tbl_otherkeys row 7, bit 4
+      (STOP) is `$00`; make it `$03`, the only `$03` in the rows 6-11 table (rows 0-5's
+      SHIFT+GRAPH table has one too, so the CTRL test must sit in the rows 6-11 arm of
+      key_ascii, not after it). The CTRL test is ~15 B BEFORE the font pad, and island 1
+      ($1AF5..$1BBF) had 5 B free on 2026-11-07: ~10 B of island 1 must move out first
+      (or the test goes after the font, which moves BASIC_ORG $2781 that a dozen tools
+      hard-code). Not started: a TIER 6 corner against an island relocation.
 
 - [x] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
       the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**
