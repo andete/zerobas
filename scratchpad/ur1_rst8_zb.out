@@ -1,0 +1,46 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=18F2
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 33.0321 PC=0008 af=0200 bc=0B0B de=000B hl=0000 sp=DB8D
+EV 33.0322 PC=0008 af=F382 bc=0B0B de=000B hl=0000 sp=DB8B
+EV 33.0322 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB89
+EV 33.0322 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB87
+EV 33.0322 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB85
+EV 33.0323 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB83
+EV 33.0323 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB81
+EV 33.0323 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB7F
+EV 33.0323 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB7D
+EV 33.0324 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB7B
+EV 33.0324 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB79
+EV 33.0324 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB77
+EV 33.0325 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB75
+EV 33.0325 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB73
+EV 33.0325 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB71
+EV 33.0325 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB6F
+EV 33.0326 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB6D
+EV 33.0326 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB6B
+EV 33.0326 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB69
+EV 33.0326 PC=0008 af=F302 bc=0B0B de=000B hl=0000 sp=DB67
+

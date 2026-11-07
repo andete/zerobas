@@ -1,0 +1,27 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=18F2
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 33.0321 PC=8507 af=CB78 bc=000B de=000B hl=000B sp=DB8F stk: FF0B 649D 8036 75AA 40CC FFFF FFFF FFFF
+

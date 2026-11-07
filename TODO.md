@@ -2686,6 +2686,24 @@ item — do **one item per session** to keep context lean.
       [`boot5e10_gate.out`](scratchpad/boot5e10_gate.out)). 🔪 K-MB1 ([`mbpin_knife.py`](scratchpad/mbpin_knife.py)): kernel.asm back to HEAD -> ZB `no AX`,
       DIVERGES, all five restored ([`mbpin_knife.out`](scratchpad/mbpin_knife.out)). Docs: concepts/disk.md.
 
+      📏 **UR-1.dsk, MEASURED 2026-11-07 -- IT DEPENDS ON WHAT THE REFERENCE'S H.READ HL POINTS AT**
+      (sdsboot_probe.py SDS_IMG / SDS_TRANS / SDS_ENTRY / SDS_STACK: PC values, registers and
+      stack words only -- no ROM byte, no game byte; [`ur1_trans_zb.out`](scratchpad/ur1_trans_zb.out), [`ur1_trans_cf90.out`](scratchpad/ur1_trans_cf90.out),
+      [`ur1_8500_cf.out`](scratchpad/ur1_8500_cf.out), [`ur1_8507_cf.out`](scratchpad/ur1_8507_cf.out), [`ur1_8507_zb.out`](scratchpad/ur1_8507_zb.out), [`ur1_rst8_zb.out`](scratchpad/ur1_rst8_zb.out)). Its BLOAD,R code ($8500)
+      installs a handler at $8507 on **H.READ ($FF07, the prompt hook)** and returns. The
+      CF-3300 calls it at each prompt (~24 / 50 / 75 s) with HL = $7685 / $7683 / $7680 and DE =
+      $6FB6 / $7612 / $7346 -- ADDRESSES IN ITS OWN BASIC ROM -- and the handler's `RST 08h`
+      (SYNCHR) on HL succeeds. zerobas calls it with HL = DE = BC = $000B: SYNCHR fails, the
+      error prints the prompt, H.READ calls the handler again, a stack word leaks per round,
+      and the stack runs over the hooks at 33 s (H.TIMI -> $6132, H.ERRO -> $7801, mid-routine
+      here) -- the reset the collection saw. (The "BOTH-RUN" before 2026-11-07 was the
+      classifier, diskcorpus_rescore.out.)
+      🙋 **FOR JOOST:** matching it means H.READ's HL pointing at a byte our ROM holds where the
+      reference's interpreter has a matching byte -- and WHICH byte that is can only be learned
+      from the reference ROM's contents (directly, or by watching which compare succeeds:
+      the same thing), which the clean-room rule forbids. D-BASICINT's ruling covers
+      entry points characterised black-box; this is a data dependency. Leave UR-1 as a known
+      ZB-NOBOOT, or is there a source you would accept for what H.READ's HL points at?
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -7858,7 +7876,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:16042 (T-529ABE)`: a
+      `TODO.md:10309 (T-6FE392)8 (T-529ABE)` from `TODO.md:16060 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10615,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16042 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16060 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

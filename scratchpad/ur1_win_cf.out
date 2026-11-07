@@ -1,0 +1,71 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=77BC
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|           MSX  system          |
+|           version 1.0          |
+|                                |
+|   Copyright 1983 by Microsoft  |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 10.6606 ENASLT slot=00 page=40 from=F59E A8=FC
+EV 16.2921 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F
+EV 16.2921 PC=8503 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 16.2921 PC=8506 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 19.3911 ENASLT slot=83 page=40 from=CD40 A8=F0
+EV 22.6285 ENASLT slot=00 page=40 from=CE82 A8=FC
+EV 24.0214 PC=8507 af=8502 bc=0000 de=6FB6 hl=7685 sp=DB7B
+EV 24.0214 PC=8508 af=8520 bc=0000 de=6FB6 hl=7685 sp=DB7B
+EV 35.7354 ENASLT slot=00 page=40 from=F59E A8=FC
+EV 41.5646 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F
+EV 41.5646 PC=8503 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 41.5646 PC=8506 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 44.4579 ENASLT slot=83 page=40 from=CD40 A8=F0
+EV 48.2948 ENASLT slot=00 page=40 from=CE82 A8=FC
+EV 49.6995 PC=8507 af=8302 bc=0000 de=7612 hl=7683 sp=DB7B
+EV 49.6995 PC=8508 af=8320 bc=0000 de=7612 hl=7683 sp=DB7B
+EV 61.2126 ENASLT slot=00 page=40 from=F59E A8=FC
+EV 67.0418 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F
+EV 67.0418 PC=8503 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 67.0419 PC=8506 af=0002 bc=0300 de=0007 hl=8507 sp=DB8F
+EV 69.9395 ENASLT slot=83 page=40 from=CD40 A8=F0
+EV 73.5774 ENASLT slot=00 page=40 from=CE82 A8=FC
+EV 74.9604 PC=8507 af=8042 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=8508 af=8060 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=8509 af=8060 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=850A af=8080 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=850B af=0044 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=850C af=0045 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=850E af=0045 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=850F af=0040 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=8510 af=0040 bc=0000 de=7346 hl=7680 sp=DB7B
+EV 74.9604 PC=8512 af=0040 bc=0000 de=0046 hl=7680 sp=DB7B
+EV 74.9604 PC=8513 af=0040 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=8514 af=0040 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=8515 af=0040 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=855C af=0040 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=855D af=0042 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=855E af=0042 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=855F af=0044 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=8560 af=0044 bc=0000 de=0046 hl=7600 sp=DB7B
+EV 74.9604 PC=8563 af=0044 bc=0000 de=0046 hl=1E01 sp=DB7B
+EV 74.9604 PC=8564 af=783B bc=0000 de=0046 hl=1E01 sp=DB7B
+EV 74.9604 PC=8566 af=783A bc=0000 de=0046 hl=1E01 sp=DB7B
+EV 74.9604 PC=8567 af=782C bc=0000 de=0046 hl=1E01 sp=DB7B
+EV 74.9604 PC=8569 af=7828 bc=0000 de=0046 hl=1E01 sp=DB7B
+

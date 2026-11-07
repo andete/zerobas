@@ -1,0 +1,29 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=77BC
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|           MSX  system          |
+|           version 1.0          |
+|                                |
+|   Copyright 1983 by Microsoft  |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 16.2921 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F stk: 6CF3 8021 4601 0000 FFFF FFFF FFFF FFFF
+EV 41.5646 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F stk: 6CF3 8021 4601 0000 FFFF FFFF FFFF FFFF
+EV 67.0418 PC=8500 af=0002 bc=0300 de=0007 hl=8500 sp=DB8F stk: 6CF3 8021 4601 0000 FFFF FFFF FFFF FFFF
+

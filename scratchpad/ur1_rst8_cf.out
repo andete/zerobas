@@ -1,0 +1,27 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=77BC
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|           MSX  system          |
+|           version 1.0          |
+|                                |
+|   Copyright 1983 by Microsoft  |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 74.9604 PC=0008 af=7828 bc=0000 de=0046 hl=1E01 sp=DB79
+

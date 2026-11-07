@@ -1,0 +1,29 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=77BC
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|           MSX  system          |
+|           version 1.0          |
+|                                |
+|   Copyright 1983 by Microsoft  |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 24.0214 PC=8507 af=8502 bc=0000 de=6FB6 hl=7685 sp=DB7B stk: FCC8 F300 FCC0 FCAC AB00 0015 6B00 B1A4
+EV 49.6995 PC=8507 af=8302 bc=0000 de=7612 hl=7683 sp=DB7B stk: FCC8 F300 FCC0 FCAC AB00 0015 6B00 B1A4
+EV 74.9604 PC=8507 af=8042 bc=0000 de=7346 hl=7680 sp=DB7B stk: FCC8 F300 FCC0 FCAC AB00 0015 6B00 B1A4
+

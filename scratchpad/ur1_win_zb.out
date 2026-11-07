@@ -1,0 +1,57 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=18F2
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 12.8828 PC=8500 af=0100 bc=0000 de=97FF hl=8500 sp=DB91
+EV 12.8828 PC=8503 af=0100 bc=0000 de=97FF hl=8507 sp=DB91
+EV 12.8828 PC=8506 af=0100 bc=0000 de=97FF hl=8507 sp=DB91
+EV 17.1826 ENASLT slot=83 page=40 from=CD40 A8=F0
+EV 33.0321 PC=8507 af=CB78 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8508 af=0B78 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8509 af=0042 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=850A af=0042 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=850B af=0042 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=850C af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=850D af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=850E af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=850F af=0044 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8510 af=0045 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8512 af=0045 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8513 af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8514 af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8516 af=0040 bc=000B de=000B hl=0016 sp=DB8F
+EV 33.0321 PC=8517 af=0040 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8518 af=0040 bc=000B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8519 af=0040 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8560 af=0040 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8561 af=F5B3 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8562 af=F5B3 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8563 af=F5A4 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8564 af=F5A4 bc=0B0B de=000B hl=000B sp=DB8F
+EV 33.0321 PC=8567 af=F5A4 bc=0B0B de=000B hl=0000 sp=DB8F
+EV 33.0321 PC=8568 af=0202 bc=0B0B de=000B hl=0000 sp=DB8F
+EV 33.0321 PC=856A af=02BB bc=0B0B de=000B hl=0000 sp=DB8F
+EV 33.0321 PC=856B af=0200 bc=0B0B de=000B hl=0000 sp=DB8F
+EV 33.0321 PC=856D af=0200 bc=0B0B de=000B hl=0000 sp=DB8F
+

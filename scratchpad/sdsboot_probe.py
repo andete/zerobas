@@ -31,7 +31,10 @@ T = float(sys.argv[2]) if len(sys.argv) > 2 else 45
 # SDS_LO / SDS_HI: the RAM window SDS_ENASLT logs registers in (default $C057..$C0A5);
 # SDS_CAP: how many hits are kept (default 120). D-SDSBOOT, 2026-11-07: past $C0A5.
 # SDS_BP=0x46BA,0x4E00: registers at OUR ROM's addresses (zerobas machine only -- never
-# a reference ROM address). SDS_PEEK=1 adds the 3 bytes at PC, $A8 and the
+# a reference ROM address). SDS_ENTRY=0x0008 with SDS_AFTER=<s>: registers when PC REACHES
+# a published entry, on EITHER machine (D-BASICINT's rule: registers only, no byte read).
+# SDS_STACK=1 adds the 8 stack words (return addresses; D-BASICINT's measure).
+# SDS_PEEK=1 adds the 3 bytes at PC, $A8 and the
 # secondary register -- zerobas only (never the reference's RAM code, §8.5).
 LO = os.environ.get("SDS_LO", "0xC057"); HI = os.environ.get("SDS_HI", "0xC0A5")
 CAP = int(os.environ.get("SDS_CAP", "120"))
@@ -123,6 +126,11 @@ proc __bc {{}} {{
         set pc [reg pc]
         set xtra " @pc=[format %02X%02X%02X [debug read memory $pc] [debug read memory [expr {{$pc+1}}]] [debug read memory [expr {{$pc+2}}]]] A8=[format %02X [debug read ioports 0xA8]] FFFF=[format %02X [expr {{255 - [debug read memory 0xFFFF]}}]]"
       }}
+      if {{[info exists ::env(SDS_STACK)]}} {{
+        set sp [reg sp]; set w ""
+        for {{set k 0}} {{$k < 8}} {{incr k}} {{ append w " [format %04X [expr {{[debug read memory [expr {{$sp+2*$k}}]] | ([debug read memory [expr {{$sp+2*$k+1}}]] << 8)}}]]" }}
+        append xtra " stk:$w"
+      }}
       lappend ::ev "[format %.4f [machine_info time]] PC=[format %04X [reg pc]] af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]]$xtra"
     }}
   }} e]}} {{ lappend ::ev "TCL ERROR __bc: $e" }}
@@ -138,6 +146,9 @@ proc __ena {{}} {{
 if {{[info exists ::env(SDS_ENASLT)]}} {{
   debug set_bp 0x0024 {{[machine_info time] > 2.0}} __ena
   for {{set x {LO}}} {{$x <= {HI}}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
+}}
+if {{[info exists ::env(SDS_ENTRY)]}} {{
+  foreach x [split $::env(SDS_ENTRY) ,] {{ debug set_bp $x {{[machine_info time] > $::env(SDS_AFTER)}} __bc }}
 }}
 if {{[info exists ::env(SDS_BP)] && [string match *REPACK* [machine_info config_name]]}} {{
   foreach x [split $::env(SDS_BP) ,] {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
