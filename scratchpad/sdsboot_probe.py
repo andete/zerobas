@@ -28,6 +28,13 @@ D = os.environ["DISKCORPUS_DIR"]
 img = os.path.join(D, os.environ.get("SDS_IMG", "SDSNAT1C.DSK"))   # SDS_IMG: another image (D-DISKCARVE, GAUNT)
 mach = sys.argv[1] if len(sys.argv) > 1 else "C-BIOS_MSX1_EU_REPACK_DISK"
 T = float(sys.argv[2]) if len(sys.argv) > 2 else 45
+# SDS_LO / SDS_HI: the RAM window SDS_ENASLT logs registers in (default $C057..$C0A5);
+# SDS_CAP: how many hits are kept (default 120). D-SDSBOOT, 2026-11-07: past $C0A5.
+# SDS_BP=0x46BA,0x4E00: registers at OUR ROM's addresses (zerobas machine only -- never
+# a reference ROM address). SDS_PEEK=1 adds the 3 bytes at PC, $A8 and the
+# secondary register -- zerobas only (never the reference's RAM code, §8.5).
+LO = os.environ.get("SDS_LO", "0xC057"); HI = os.environ.get("SDS_HI", "0xC0A5")
+CAP = int(os.environ.get("SDS_CAP", "120"))
 td = tempfile.mkdtemp()
 dsk = os.path.join(td, "d.dsk"); shutil.copyfile(img, dsk)
 out = os.path.join(td, "o.txt")
@@ -110,8 +117,13 @@ proc __rds {{}} {{
 proc __bc {{}} {{
   if {{[catch {{
     if {{![info exists ::bcn]}} {{ set ::bcn 0 }}
-    if {{[incr ::bcn] <= 120}} {{
-      lappend ::ev "[format %.4f [machine_info time]] PC=[format %04X [reg pc]] af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]]"
+    if {{[incr ::bcn] <= {CAP}}} {{
+      set xtra ""
+      if {{[info exists ::env(SDS_PEEK)] && [string match *REPACK* [machine_info config_name]]}} {{
+        set pc [reg pc]
+        set xtra " @pc=[format %02X%02X%02X [debug read memory $pc] [debug read memory [expr {{$pc+1}}]] [debug read memory [expr {{$pc+2}}]]] A8=[format %02X [debug read ioports 0xA8]] FFFF=[format %02X [expr {{255 - [debug read memory 0xFFFF]}}]]"
+      }}
+      lappend ::ev "[format %.4f [machine_info time]] PC=[format %04X [reg pc]] af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]]$xtra"
     }}
   }} e]}} {{ lappend ::ev "TCL ERROR __bc: $e" }}
 }}
@@ -125,7 +137,10 @@ proc __ena {{}} {{
 }}
 if {{[info exists ::env(SDS_ENASLT)]}} {{
   debug set_bp 0x0024 {{[machine_info time] > 2.0}} __ena
-  for {{set x 0xC057}} {{$x <= 0xC0A5}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
+  for {{set x {LO}}} {{$x <= {HI}}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
+}}
+if {{[info exists ::env(SDS_BP)] && [string match *REPACK* [machine_info config_name]]}} {{
+  foreach x [split $::env(SDS_BP) ,] {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
 }}
 if {{[info exists ::env(SDS_RDSLT)]}} {{ debug set_bp 0x000C {{[machine_info time] > 9.0 || [string match *REPACK* [machine_info config_name]]}} __rds }}
 if {{[info exists ::env(SDS_HOOK)]}} {{

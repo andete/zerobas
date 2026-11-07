@@ -1,0 +1,66 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=108B
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|......................V0.29.....|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+EV 2.6841 PC=0005 af=0314 bc=001A de=C200 hl=F323 sp=DCFE @pc=C3CCDE A8=FF FFFF=04
+EV 2.6843 PC=0005 af=0314 bc=002F de=059A hl=0200 sp=DCFE @pc=C3CCDE A8=FF FFFF=04
+EV 3.5722 PC=0005 af=0314 bc=001A de=C2CA hl=0000 sp=DCFA @pc=C3CCDE A8=FF FFFF=04
+EV 3.5723 PC=0005 af=0314 bc=002F de=000E hl=0100 sp=DCF8 @pc=C3CCDE A8=FF FFFF=04
+EV 4.1959 PC=0005 af=0314 bc=001A de=0200 hl=0007 sp=DCFC @pc=C39898 A8=FF FFFF=00
+EV 4.1966 PC=0005 af=0314 bc=002F de=0570 hl=0F00 sp=DCFC @pc=C39898 A8=FF FFFF=00
+EV 4.1973 PC=0005 af=0314 bc=001A de=2000 hl=0F00 sp=DCFC @pc=C39898 A8=FF FFFF=00
+EV 4.1980 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DCFC @pc=C39898 A8=FF FFFF=00
+EV 4.3566 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD02 @pc=C39898 A8=FF FFFF=00
+EV 4.3573 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD04 @pc=C39898 A8=FF FFFF=00
+EV 4.3579 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD06 @pc=C39898 A8=FF FFFF=00
+EV 4.3586 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD08 @pc=C39898 A8=FF FFFF=00
+EV 4.3593 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD0A @pc=C39898 A8=FF FFFF=00
+EV 4.3600 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD0C @pc=C39898 A8=FF FFFF=00
+EV 4.3607 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD0E @pc=C39898 A8=FF FFFF=00
+EV 4.3613 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD10 @pc=C39898 A8=FF FFFF=00
+EV 4.3620 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD12 @pc=C39898 A8=FF FFFF=00
+EV 4.3627 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD14 @pc=C39898 A8=FF FFFF=00
+EV 4.3634 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD16 @pc=C39898 A8=FF FFFF=00
+EV 4.3640 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD18 @pc=C39898 A8=FF FFFF=00
+EV 4.3647 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD1A @pc=C39898 A8=FF FFFF=00
+EV 4.3654 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD1C @pc=C39898 A8=FF FFFF=00
+EV 4.3661 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD1E @pc=C39898 A8=FF FFFF=00
+EV 4.5759 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD24 @pc=C39898 A8=FF FFFF=00
+EV 4.5766 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD26 @pc=C39898 A8=FF FFFF=00
+EV 4.5772 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD28 @pc=C39898 A8=FF FFFF=00
+EV 4.5779 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD2A @pc=C39898 A8=FF FFFF=00
+EV 4.5786 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD2C @pc=C39898 A8=FF FFFF=00
+EV 4.5793 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD2E @pc=C39898 A8=FF FFFF=00
+EV 4.5800 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD30 @pc=C39898 A8=FF FFFF=00
+EV 4.5807 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD32 @pc=C39898 A8=FF FFFF=00
+EV 4.5813 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD34 @pc=C39898 A8=FF FFFF=00
+EV 4.5820 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD36 @pc=C39898 A8=FF FFFF=00
+EV 4.5827 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD38 @pc=C39898 A8=FF FFFF=00
+EV 4.5834 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD3A @pc=C39898 A8=FF FFFF=00
+EV 4.5841 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD3C @pc=C39898 A8=FF FFFF=00
+EV 4.5848 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD3E @pc=C39898 A8=FF FFFF=00
+EV 4.5855 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD40 @pc=C39898 A8=FF FFFF=00
+EV 4.5861 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD42 @pc=C39898 A8=FF FFFF=00
+EV 4.5868 PC=0005 af=0314 bc=002F de=0490 hl=2400 sp=DD44 @pc=C39898 A8=FF FFFF=00
+

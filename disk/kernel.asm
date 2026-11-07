@@ -58,9 +58,17 @@ frl_ext:
 f37d_tmpl:
                 in      a, ($A8)
                 and     3                   ; page 0's primary slot
-                jp      nz, $0005           ; not the BIOS: MSX-DOS's own entry, or ours
-                                            ; before MSXDOS.SYS (lay_page0_env) -- under
-                                            ; DOS page 1 is the TPA's RAM (D-TPAPTAIL)
+                jp      nz, BR_BDOS         ; not the BIOS: the page-3 BDOS bridge (it pages
+                                            ; this ROM into page 1 and back; D-BOOTREGS).
+                                            ; 🔴 D-SDSBOOT (2026-11-07): this was `jp $0005`,
+                                            ; and a boot code on all-RAM writes its OWN page-0
+                                            ; RAM -- SDSNAT1C copies the BIOS's $0006 / $0007
+                                            ; (the VDP ports, $98 $98) there, so $0005 read
+                                            ; `jp $9898` and every BDOS call after it went
+                                            ; into the weeds (scratchpad/sdsboot_0005_zb.out).
+                                            ; The CF-3300's $F37D does not go through $0005
+                                            ; either. Under DOS page 1 is the TPA's RAM
+                                            ; (D-TPAPTAIL): the bridge restores it after.
                 push    ix
                 push    iy
 f37d_iy:        ld      iy, 0               ; high byte := HOOK_SLOT (install_f37d)

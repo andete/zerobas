@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:16027 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:16042 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16027 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16042 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11290,7 +11290,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       evictions of cold disk code into the sub ROM, as D-ROMSIZE did for main. The rule for every
       pad that takes code: `padwatch.py --also=` it first (D-PADSLIDE).
 
-- [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
+- [x] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
       🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
       🤖 **AUTONOMOUS** — since 2026-11-07; Joost on the BIOS exit registers: *"if it does no
@@ -11302,8 +11302,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rule is fixed (a PC from $F380 up is the BIOS's own RAM, not a program); re-scored,
       SDSNAT1C is ZB-NOBOOT. What below STANDS: the bridge fix made the boot code's register
       trace the CF-3300's for all 60 traced lines (the RDSLT / ENASLT / WRSLT registers are
-      right). ➡️ Next: trace PAST $C0A5 -- where the two machines part after the boot code
-      (a wider SDS_ENASLT window, or SDS_TRANS on both).
+      right).
+      ✅ **CLOSED FOR REAL (2026-11-07, later): THE BOOT CODE'S BDOS CALLS WENT INTO ITS OWN RAM.**
+      Traced past $C0A5 (sdsboot_probe.py SDS_LO / SDS_HI / SDS_BP / SDS_PEEK;
+      [`sdsboot_wide_cf.out`](scratchpad/sdsboot_wide_cf.out), [`sdsboot_wide_zb.out`](scratchpad/sdsboot_wide_zb.out)): the PC sequence is the CF-3300's for all 98
+      of its hits; at $C053 the boot code jumps into the loaded program, which on zerobas
+      crashes and re-boots at 7.39 s. The last BDOS calls before it (SETDTA $0200, RDABS 15
+      sectors, SETDTA $2000, RDABS 36 sectors) NEVER reached rdabs_body here
+      ([`sdsboot_rdabs_zb.out`](scratchpad/sdsboot_rdabs_zb.out), [`sdsboot_bdos_zb.out`](scratchpad/sdsboot_bdos_zb.out)): $F37D's page-3 stub (f37d_tmpl, disk/kernel.asm)
+      sends a call made with page 0 NOT the BIOS to `jp $0005`, and by then $0005 read
+      `jp $9898` ([`sdsboot_0005_zb.out`](scratchpad/sdsboot_0005_zb.out), our own RAM): the boot code had copied the BIOS's
+      $0006 / $0007 -- the VDP ports, the bytes its RDSLT read -- into its own page-0 RAM.
+      The CF-3300's $F37D path does not go through $0005 (its ENASLT calls come from its own
+      high RAM). The stub now jumps to BR_BDOS, the page-3 bridge (same size; the stub still
+      ends exactly at DSK_MEDIA). After: SDSNAT1C ends in SCREEN 2 with BASIC line 0 running
+      at PC $05AE -- the CF-3300: SCREEN 2, line 0, $05B4 ([`sdsone_run4.out`](scratchpad/sdsone_run4.out)); judged by mode and
+      CURLIN this time, not by the class. 🔮 "the trace parts after the boot code": HIT. GAUNT,
+      UR-1 (ZB-NOBOOT) and Multiple (ZB-ONLY) are unchanged by it: their causes are others.
       ~~✅ CLOSED 2026-11-07: SDSNAT1C BOOTS AGAIN (ZB-NOBOOT -> BOTH-RUN,~~ [`sdsone_run3.out`](scratchpad/sdsone_run3.out)~~),
       ON THE CF-3300'S PATH~~ -- the boot code's register trace equals the CF-3300's on all 60
       lines but the first (HL left by an earlier BDOS call, overwritten at once;

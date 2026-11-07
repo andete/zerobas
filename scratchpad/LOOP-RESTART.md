@@ -44,7 +44,9 @@ session and the loop resumes exactly where it stopped.
 - **D-SDSBOOT REOPENED (late the same day):** the bridge fix made the boot code's registers the
   CF-3300's, but the "boots again" was diskcorpus_run.py counting a PC in the H.TIMI hook as a
   running program (fixed: a PC from $F380 up is the BIOS's RAM). SDSNAT1C is ZB-NOBOOT; trace
-  past $C0A5 next. **D-DISKCARVE freed ~204 B**, which D-FATRES's re-do (no longer blocked on
+  past $C0A5 next. -> DONE the same evening: $F37D's stub jumped to $0005, which the boot code
+  had overwritten in its own page-0 RAM; it now jumps to BR_BDOS, and SDSNAT1C runs (SCREEN 2,
+  line 0, as on the CF-3300). **D-DISKCARVE freed ~204 B**, which D-FATRES's re-do (no longer blocked on
   bytes, still on its own three reds) can use -- the earlier note: the D-FATRES re-do (scratchpad/fatres_wip.patch no longer applies:
   its pad fragments were filled since). disk.rom's only free run is the FDC window. ->
   **D-DISKCARVE** (TODO, BUDGET) is the next slice: a disk-ROM jp -> jr / dup-span scan first.
@@ -2130,7 +2132,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12530 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12545 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

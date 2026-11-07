@@ -144,7 +144,7 @@ def run():
 
     # --- slice 2: the $F37D stub (install_f37d) -----------------------------
     for page0, label, want in ((0, "page 0 = the BIOS (a BASIC program)", "calslt"),
-                               (3, "page 0 = RAM (a boot code, MSX-DOS)", "dos")):
+                               (3, "page 0 = RAM (a boot code, MSX-DOS)", "bridge")):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         m.poke(m.addr("HOOK_SLOT"), b"\x87")
         m.call("install_f37d")
@@ -153,16 +153,19 @@ def run():
         m.trap(0x001C, lambda mach: log.append(("calslt", mach.cpu.iy >> 8, mach.cpu.ix,
                                                 mach.cpu.c, mach.cpu.de)))
         m.trap("bdos_entry", lambda mach: log.append(("direct", mach.cpu.c, mach.cpu.de)))
-        # D-TPAPTAIL: with RAM in page 0 the stub takes $0005 -- MSX-DOS's own entry, or
-        # (before MSXDOS.SYS) the JP BR_BDOS lay_page0_env lays there (checked below)
+        # D-SDSBOOT (2026-11-07): with RAM in page 0 the stub takes BR_BDOS, the page-3
+        # bridge -- NOT $0005 (it took $0005 since D-TPAPTAIL): a boot code on all-RAM
+        # may overwrite its own page-0 RAM, and SDSNAT1C copies the BIOS's $0006 / $0007
+        # there (`jp $9898`). $0005 is trapped too: a regression to it reads "dos".
         m.trap(0x0005, lambda mach: log.append(("dos", mach.cpu.c, mach.cpu.de)))
+        m.trap(m.addr("BR_BDOS"), lambda mach: log.append(("bridge", mach.cpu.c, mach.cpu.de)))
         m.cpu.io_in = lambda port, p0=page0: (0xF0 | p0) if port & 0xFF == 0xA8 else 0xFF
         m.call(stub, c=0x11, de=0xD020, ix=0x1234, iy=0x5678)
         if want == "calslt":
             ok = log == [("calslt", 0x87, m.addr("bdos_entry"), 0x11, 0xD020)]
             ok = ok and m.cpu.ix == 0x1234 and m.cpu.iy == 0x5678
         else:
-            ok = log == [("dos", 0x11, 0xD020)]
+            ok = log == [("bridge", 0x11, 0xD020)]
         check(ok, f"$F37D stub, {label}: {log} (want {want}; IX/IY kept "
                   f"{m.cpu.ix:04X}/{m.cpu.iy:04X})")
     # ... and the page-0 table lays $0005 = JP BR_BDOS for the boot (D-TPAPTAIL, D-BOOTREGS)
