@@ -1,0 +1,74 @@
+SCRMOD=255 CURLIN=65535 ERRLIN=65535 ERRFLG=255 PC=18F7
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+TRANS 0030 from FE5D t=3.20
+TRANS 0047 from 802C t=0.14
+TRANS 0047 from 8032 t=0.14
+TRANS 0047 from 8038 t=0.14
+TRANS 004F from F398 t=3.14
+TRANS 0056 from 8026 t=0.13
+TRANS 0056 from 8051 t=0.14
+TRANS 0056 from 8094 t=0.18
+TRANS 005C from 8062 t=0.16
+TRANS 005C from 8074 t=0.17
+TRANS 005C from 8085 t=0.17
+TRANS 005C from 80AA t=0.19
+TRANS 0062 from 801B t=0.13
+TRANS 006F from 8010 t=0.11
+TRANS 0076 from F398 t=3.14
+TRANS 11BB from FDA4 t=2.60
+TRANS 18FA from FD9A t=0.08
+TRANS 1906 from FD9F t=0.08
+TRANS 23E5 from F38B t=0.10
+TRANS 2467 from F397 t=0.19
+TRANS 280A from F398 t=4.02
+TRANS 28D9 from F398 t=4.02
+TRANS 365C from F94F t=3.19
+TRANS 3A9D from FD9F t=3.15
+TRANS 4010 from E8CE t=2.91
+TRANS 4010 from F398 t=2.64
+TRANS 4022 from C067 t=2.90
+TRANS 403D from F398 t=4.02
+TRANS 4043 from F398 t=3.14
+TRANS 4046 from F398 t=4.02
+TRANS 4070 from F398 t=4.02
+TRANS 44FF from DED9 t=2.68
+TRANS 5495 from C01E t=2.67
+TRANS 5FBB from F398 t=2.65
+TRANS 65B8 from F398 t=4.02
+TRANS 66ED from FE61 t=3.42
+TRANS 6768 from FEDA t=3.20
+TRANS 6CF6 from F398 t=4.02
+TRANS 6D1E from F398 t=4.02
+TRANS 6D25 from F398 t=4.02
+TRANS 711A from F398 t=3.20
+TRANS 7759 from F397 t=4.02
+TRANS 7768 from F397 t=4.70
+TRANS 7AB7 from F397 t=4.02
+TRANS 7AC1 from F397 t=4.02
+TRANS 7AE5 from F397 t=4.02
+TRANS 7BD5 from F397 t=4.02
+TRANS 7F7C from F398 t=3.19
+
