@@ -99,25 +99,42 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **An argument that reads a parameter of the function making the call can
-  see the wrong value** (D-FNALIAS, measured 2026-08-27,
-  [spec-deffn-alias.md](../spec-deffn-alias.md)). Both references evaluate
-  every argument in the caller's scope:
-  `DEF FNA(P,Q)=P*100+Q : P=3 : FNA(5,P)` is 503 there and 505 here, and
-  `DEF FNB(X)=FNA(9,X)` with `DEF FNA(X,Q)=X*100+Q` gives `FNB(3)` = 903 there
-  and 909 here — zerobas binds the first parameter before reading the second
-  argument. Joost ruled on 2026-09-09 *"we need to match the reference"*, and
-  on 2026-09-27 chose the route: evaluate every argument into the
-  control-frame pool before binding. Open, TIER 6.
+None known in what a call returns.
 
 The rung not yet proven is **RAM usage**. The free memory now agrees: defining
 and calling a numeric function in the sweep's row costs 22 bytes of `FRE(0)` on
 both machines, a string function 12 (it was 11 and 6 here before D-DEFFNVAR,
 [before](../../scratchpad/rdrndfix_kwram.out),
 [after](../../scratchpad/deffnvar_kwram.out)); the work-area cells each side
-writes still differ, as they do for every keyword.
+writes still differ, as they do for every keyword. A call itself costs what it
+costs on both references (D-FNRAM, 2026-11-07): `FRE(0)` read as the function's
+body is 25 bytes below the free memory before the call, whatever the number and
+type of the arguments, and each level of one function calling another 36 more;
+read as the call's last argument it is 27 bytes below, plus 12 for every
+argument already evaluated
+([`fnram_run.out`](../../scratchpad/fnram_run.out),
+[`fnram_peak.out`](../../scratchpad/fnram_peak.out),
+[after](../../scratchpad/fnram_after2.out)).
 
 ## What we found, and how
+
+- **A call cost a byte less, and its arguments nothing, in `FRE(0)`** (fixed
+  2026-11-07, D-FNRAM). Joost asked whether zerobas matches the reference's RAM
+  here, so it was measured on the VG-8020 and the CF-3300 (they agree): a call
+  is 25 bytes below the free memory before it, zerobas's 24; and while the
+  arguments are being evaluated each one already read costs 12 bytes there,
+  nothing here. zerobas's call now keeps a 14-byte record, as the reference
+  does, and its `FRE(0)` counts the arguments a call is holding
+  ([`fnram_after2.out`](../../scratchpad/fnram_after2.out),
+  [`fnram_gate.out`](../../scratchpad/fnram_gate.out)).
+- **An argument that reads a parameter of the function making the call saw
+  the wrong value** (fixed 2026-11-07, D-FNALIAS, measured 2026-08-27,
+  [spec-deffn-alias.md](../spec-deffn-alias.md)). Both references evaluate
+  every argument in the caller's scope:
+  `DEF FNA(P,Q)=P*100+Q : P=3 : FNA(5,P)` is 503 there and was 505 here, and
+  `DEF FNB(X)=FNA(9,X)` with `DEF FNA(X,Q)=X*100+Q` gives `FNB(3)` = 903 there
+  and was 909 here -- zerobas bound the first parameter before reading the
+  second argument. It now reads every argument before binding any.
 
 - **A parameter written like an array element was left for the call**
   (fixed 2026-11-04, D-DEFFNARY). On both references `DEF FNA(C(1))=…` is an

@@ -560,10 +560,15 @@ fnf_save:
                 push    bc                  ; [size] -- rides the block below
                 inc     bc
                 inc     bc
-                inc     bc                  ; BC = size + 3 = the whole frame
+                inc     bc
+                inc     bc                  ; BC = size + 4 = the whole frame: D-FNRAM,
+                                            ; a frame is 14 B at top level as on both
+                                            ; references (FRE(0) in an FN body,
+                                            ; scratchpad/fnram_run.out), the last byte
+                                            ; a pad nothing reads
                 ld      hl,(CSP)
                 or      a
-                sbc     hl,bc               ; HL = base = CSP - (size + 3)
+                sbc     hl,bc               ; HL = base = CSP - (size + 4)
                 jr      c,fnf_full          ; CSP wrapped: the pool is not live
                 ld      de,(CTLLIM)
                 or      a
@@ -574,7 +579,7 @@ fnf_save:
                 ; ctl_alloc's `CTL_STACK_MARGIN` sits on the frame's base because a
                 ; GOSUB/FOR/trap frame is pushed at a statement boundary, where the
                 ; stack is a few words deep. An FN call is MID-EXPRESSION and it
-                ; RECURSES: `DEF FNA(X)=FNA(X)` costs 13 B of pool and ~50 B of
+                ; RECURSES: `DEF FNA(X)=FNA(X)` costs 14 B of pool and ~50 B of
                 ; machine stack per level, so the stack reaches the arrays long
                 ; before the frontier does. MEASURED (deffn b.recurse): tested at the
                 ; frontier, that row read <NO OUTPUT> where both references answer
@@ -648,7 +653,8 @@ fnf_full:
                 ret
 
 ; --- fnf_restore: the newest frame back into FN_BASE, and the pool with it ---
-; HL ends one past the frame, which IS the `CSP` this call started with.
+; HL ends one past the frame (past its pad byte), which IS the `CSP` this call
+; started with.
 fnf_restore:
                 ld      hl,(FNSP)
                 ld      a,h
@@ -664,6 +670,7 @@ fnf_restore:
                 ld      (FNSP),de
                 ld      de,FN_BASE
                 ldir
+                inc     hl                  ; past the pad (D-FNRAM)
                 ld      (CSP),hl            ; one past the frame = the old CSP
                 ret
 
@@ -686,7 +693,8 @@ fnf_uw_lp:
                 ld      c,(hl)
                 ld      b,0
                 inc     hl
-                add     hl,bc               ; HL = one past THIS frame
+                add     hl,bc
+                inc     hl                  ; HL = one past THIS frame (its pad)
                 ld      (CSP),hl            ; the outermost writes last, and wins
                 ex      de,hl
                 jr      fnf_uw_lp

@@ -86,10 +86,12 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 None known in how `FRE` counts, in the expression shapes that were measured
 (below). Not measured yet, so zerobas follows the same rule as a best guess: a
 `FRE(0)` in the second or third argument of `MID$`, `INSTR` or `STRING$`, in a
-string comparison, in an `FN` call's argument or in the `TO` / `STEP` part of
-`FOR`, and in any statement other than `LET`, `PRINT`, `IF` and `FOR`. A
-`FRE(0)` inside a `DEF FN` definition reads the calling statement's own
-amount, without what the call site holds open.
+string comparison or in the `TO` / `STEP` part of `FOR`, and in any statement
+other than `LET`, `PRINT`, `IF` and `FOR`. A `FRE(0)` inside a `DEF FN`
+definition reads the calling statement's own amount and the call's, without
+what else the call site holds open. In an `FN` call's arguments it was
+measured (D-FNRAM): 27 bytes for the call, and 12 for each argument already
+read, on both references and here.
 
 **The absolute `FRE(0)` figure is not the VG-8020's.** zerobas has its own
 working storage in RAM (`$E000`–`$F37F`) and its own memory ceiling for BASIC,

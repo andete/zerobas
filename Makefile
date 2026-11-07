@@ -1423,6 +1423,11 @@ blds-acceptance: repack-machine
 slotregs-acceptance: repack-machine
 	python3 probes/basic/basic_probe_slotregs.py --gate
 
+# D-FNRAM (2026-11-07): what a DEF FN call costs in FRE(0) -- the body, a nested call,
+# and the actuals parked while the rest are read -- is the VG-8020's.
+fnram-acceptance: repack-machine
+	python3 probes/basic/basic_probe_fnram.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine

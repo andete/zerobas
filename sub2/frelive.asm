@@ -239,6 +239,8 @@ fl_usr_1:
                 ld      b,8
                 jr      fl_needparen
 fl_fn:                                      ; FN <name>: a function, the name's type
+                ld      c,$B0               ; D-FNRAM: its own class (cost 2, and
+                                            ; each actual before the FRE parks 12)
                 call    fl_sp
                 cp      'A'
 fl_bail_c:
@@ -439,10 +441,15 @@ fl_comma:                                   ; inside a bracket: its next argumen
                 ld      a,c                 ; at the top: a new item
                 or      a
                 jr      z,fl_reset
-                jr      fl_expect
+                cp      $B0                 ; D-FNRAM: inside an FN call (or over an
+                jr      c,fl_expect         ; actual already parked there) the actual
+                ld      bc,$00C0            ; just read is PARKED: 12 bytes each on
+                jp      fl_push             ; both references, whatever its type
 fl_close:
                 pop     bc                  ; the bracket this `)` closes
                 ld      a,c
+                cp      $C0                 ; D-FNRAM: the FN call's parked actuals
+                jr      z,fl_close_pk       ; go with it
                 or      a
                 jr      z,fl_bail           ; none: not an expression we follow
                 call    fl_cost_sub
@@ -471,6 +478,10 @@ fl_close_1:
 fl_close_set:
                 ld      (ix+0),b            ; a function's result, a subscript's type
                 jr      fl_to_loop
+
+fl_close_pk:
+                call    fl_cost_sub
+                jr      fl_close
 
 fl_reset:                                   ; a fresh expression: nothing pending
                 ld      sp,ix
@@ -522,9 +533,13 @@ fl_cost:
                 add     a,b
                 ret
 ; by class: sentinel, + - *, relational, integer op, unary, `(`, function,
-; subscript, FRE, / ^, concatenation. Bit 7: + the left operand's width.
+; subscript, FRE, / ^, concatenation, FN call, an FN actual parked. Bit 7: + the
+; left operand's width. The last two MEASURED (D-FNRAM, scratchpad/fnram_peak.out):
+; FRE(0) as an FN call's actual reads 27 + 12 per actual before it, below the
+; free memory before the call, on the VG-8020 and the CF-3300 alike, for single,
+; double and string actuals.
 fl_costtab:
-                db      0, $80+8, $80+10, 8, 6, 6, 10, 18, 10, $80+8, 2
+                db      0, $80+8, $80+10, 8, 6, 6, 10, 18, 10, $80+8, 2, 2, 12
 
 ; fl_cost_sub: DE -= the cost of entry BC. fl_sub: DE -= A. Both keep BC, HL.
 fl_cost_sub:

@@ -37,7 +37,7 @@ costs nothing (`FRE(0)+0` and `0+0+FRE(0)` read like one `+`).
 | an integer operator `MOD \ AND OR XOR EQV IMP` | 8 |
 | a string concatenation `+` | 2 |
 | an array subscript `R(` | 18 |
-| a `DEF FN` call | 14 (zerobas's frame: 13) |
+| a `DEF FN` call | 14 (zerobas's frame: 14 since D-FNRAM, 2026-11-07) |
 
 Width: integer 2, single 4, double 8 bytes — the left operand is kept at its own
 type. And the **statement** sets a base: against a `LET` (which holds its target

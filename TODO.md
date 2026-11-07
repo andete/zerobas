@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15864 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15885 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15864 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15885 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11290,6 +11290,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       interrupt-timing case (D-DISKRUN, 2026-10-23: its outcome hangs on whether an interrupt
       lands inside a BDOS page-1 copy, bisected to 1c884267), and FILES-EMPTY is the CF-3300's
       own outcome there -- both sit at the prompt with an empty FILES.
+
+- [x] 🧮 **D-FNRAM -- A `DEF FN` CALL COST A BYTE LESS THAN THE REFERENCE'S, AND THE ACTUALS IT
+      HOLDS COST NOTHING IN `FRE(0)` (measured and fixed 2026-11-07)**
+      🎚️ TIER 4 — RAM usage (VG-8020): what memory a function call takes.
+      🤖 **AUTONOMOUS** — Joost on D-FNALIAS: *"measure what reference does? we try to match
+      RAM?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07).
+      📏 [`fnram_probe.py`](scratchpad/fnram_probe.py) (BASIC only: FRE(0) before a call against FRE(0) as
+      the body, and as the call's LAST actual; [`fnram_run.out`](scratchpad/fnram_run.out),
+      [`fnram_peak.out`](scratchpad/fnram_peak.out)): on the VG-8020 AND the CF-3300 (identical) a call
+      is 25 bytes for 0..9 formals of any type, each nested level 36, and FRE(0) as an
+      actual reads 27 + 12 per actual already read, single, double, string variable or
+      literal alike. zerobas: 24, 35, and 34 whatever the count. 🔮 "zerobas costs MORE
+      per argument (its 11-B parked entry)": MISSED -- in the body the cost is per CALL on
+      every machine; zerobas's FRE model (sub2/frelive.asm) charged an FN call as a
+      built-in function (10) and the parked actuals nothing, and its frame was 13 B.
+      ✅ **FIXED:** the FN frame is 14 B (a pad byte at its top, sub/deffn.asm: save /
+      restore / unwind) and the FRE model gives an FN call its own class (2) and pushes a
+      parked-actual entry (12) at each comma inside one, popped with the call's `)`. All
+      38 rows SAME ([`fnram_after2.out`](scratchpad/fnram_after2.out)); gate `fnram-acceptance`
+      ([`basic_probe_fnram.py`](probes/basic/basic_probe_fnram.py), 11 rows against the VG-8020). docs/keywords/FN.md
+      and FRE.md updated (FN.md's stale "D-FNALIAS open" Difference moved to What we found).
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
       2026-11-06 by typed session S12_progedit).**
