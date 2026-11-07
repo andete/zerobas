@@ -584,6 +584,8 @@ frs_incluster:
                 sbc     hl, de
                 jr      nc, frs_eof         ; cluster >= $0FF8 = end-of-chain
                 ; sector = firstData + (cluster-2)*secPerClus + clussec
+frs_sector:                                 ; (D-DISKCARVE: disk/kernel.asm's
+                                            ; wroe_have_valid is a `jp` here)
                 ld      hl, (FAT_CURCLUS)
                 ld      de, 2
                 or      a

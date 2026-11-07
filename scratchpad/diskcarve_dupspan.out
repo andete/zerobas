@@ -1,0 +1,119 @@
+  denominator: 973 non-empty spans, 14 of them do not decode cleanly
+  30 byte-identical groups
+
+   32 B x2  nominal  32 B -> NET  +28 B   1910fded5bb4ec193ab8ec5f160019eb21ade8cd4269d83ab8ec3c32b8ecb7c9
+        $62C9 wroe_mul               KEEP       entered by fallthrough from wroe_have_valid: needs `jp`, 32-3
+        $6B7A frs_mul                SAFE-JP    entered by fallthrough from frs_incluster: needs `jp`, 32-3
+        (- 1 B: `jr` callers that must widen to reach $62C9)
+   10 B x3  nominal  20 B -> NET   +0 B   cb3f3806cb3ccb1d18f6
+        $761E ws_ci                  KEEP       relative jump leaves the span (+10 of 10)
+        $76C6 wfk_ci                 UNSAFE     relative jump leaves the span (+10 of 10)
+        $7724 k47b2_ci               UNSAFE     relative jump leaves the span (+10 of 10)
+    3 B x7  nominal  18 B -> NET   -1 B   3effc9
+        $454E bdos_open_err          WORTHLESS  entered by fallthrough from eval_byte_arg; a `jp` costs 0 more than the span
+        $467B bdos_close_err         SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $4B81 bp_bad                 SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $55A5 bbr_fail               KEEP       entered by fallthrough from bbr_failpop; a `jp` costs 0 more than the span
+        $5893 cr_err                 SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $5D5B sd_bad                 SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $7A22 ds_none                SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 16 B: `jr` callers that must widen to reach $55A5)
+    8 B x3  nominal  16 B -> NET  +13 B   af3206f3373effc9
+        $4D86 ffb_miss               SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $4DCD fren_miss              KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $7BE7 fdel_miss              SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 3 B: `jr` callers that must widen to reach $4DCD)
+    8 B x3  nominal  16 B -> NET   +0 B   b7ed4238031318f8
+        $6435 wshrink_divloop        KEEP       relative jump leaves the span (+8 of 8)
+        $65B9 wsw_divloop            UNSAFE     relative jump leaves the span (+8 of 8)
+        $6727 wsww_divloop           UNSAFE     relative jump leaves the span (+8 of 8)
+    8 B x3  nominal  16 B -> NET   +0 B   7efe2020032318f8
+        $72D6 hkn_sp                 KEEP       relative jump leaves the span (+8 of 8)
+        $73A6 hkc_sp                 UNSAFE     relative jump leaves the span (+8 of 8)
+        $746D hkf_sp                 UNSAFE     relative jump leaves the span (+8 of 8)
+    5 B x4  nominal  15 B -> NET   +4 B   32aefc37c9
+        $5EBE hka_st                 SAFE-JP    entered by fallthrough from hk_aopen: needs `jp`, 5-3
+        $5ED5 hkg_st                 SAFE-JP    entered by fallthrough from hk_agetb: needs `jp`, 5-3
+        $67E7 hkdf_bad               SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $7355 hk_claim_status/hkn_done KEEP       entered by fallthrough from hkn_syn: needs `jp`, 5-3
+        (- 5 B: `jr` callers that must widen to reach $7355)
+   13 B x2  nominal  13 B -> NET   +0 B   3ab87fcb4f2006cb4720f51811
+        $4880 fwd_wait               UNSAFE     relative jump leaves the span (+13 of 13)
+        $7ACA fdc_rd_wait            KEEP       relative jump leaves the span (+13 of 13)
+   11 B x2  nominal  11 B -> NET   +0 B   32bc7fcd09443e0232fdef
+        $431D fdc_rp_nos             KEEP       runs off its end — continues into different code
+        $43AF fdc_wp_nos             UNSAFE     runs off its end — continues into different code
+   11 B x2  nominal  11 B -> NET   +0 B   c5cdab6fc138040e0118f5
+        $555C bbd_loop               KEEP       relative jump leaves the span (+11 of 11)
+        $729A hkk_loop               UNSAFE     relative jump leaves the span (+11 of 11)
+   10 B x2  nominal  10 B -> NET   +0 B   3aadecb72004cd5469d8
+        $5BD5 wrblk_fcbstate         KEEP       runs off its end — continues into different code
+        $76D7 k47b2_seek             UNSAFE     runs off its end — continues into different code
+   10 B x2  nominal  10 B -> NET   +7 B   f5cd347dfbf1e1d1c1c9
+        $7D87 dirioin_done           KEEP       entered by fallthrough from dirioin_empty: needs `jp`, 10-3
+        $7DA0 const_notready         SAFE-JP    entered by fallthrough from const_body: needs `jp`, 10-3
+    9 B x2  nominal   9 B -> NET   +0 B   78e68028043e0237c9
+        $48BD fwd_nowin              KEEP       relative jump leaves the span (+9 of 9)
+        $7AFD fdc_rd_nowin           UNSAFE     relative jump leaves the span (+9 of 9)
+    9 B x2  nominal   9 B -> NET   +0 B   78e61028043e0837c9
+        $48C6 fwd_n1                 KEEP       relative jump leaves the span (+9 of 9)
+        $7B06 fdc_rd_n1              UNSAFE     relative jump leaves the span (+9 of 9)
+    9 B x2  nominal   9 B -> NET   +0 B   78e60828043e0437c9
+        $48CF fwd_n2                 KEEP       relative jump leaves the span (+9 of 9)
+        $7B0F fdc_rd_n2              UNSAFE     relative jump leaves the span (+9 of 9)
+    9 B x2  nominal   9 B -> NET   +0 B   8110fd4f0600110000
+        $65B0 wsw_recperclus         KEEP       runs off its end — continues into different code
+        $671E wsww_recperclus        UNSAFE     runs off its end — continues into different code
+    9 B x2  nominal   9 B -> NET   +9 B   fe61d8fe7bd0d620c9
+        $6A76 toupper                KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $737E hkn_up                 SAFE       terminates, no escaping relative jump, no fallthrough entry
+    8 B x2  nominal   8 B -> NET   +7 B   af3206f3373e02c9
+        $4DD5 fren_ioerr             SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $7BEF fdel_ioerr             KEEP       terminates, no escaping relative jump, no fallthrough entry
+        (- 1 B: `jr` callers that must widen to reach $7BEF)
+    8 B x2  nominal   8 B -> NET   +8 B   47af3206f37837c9
+        $4DF5 rdabs_ioerr            KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $4E14 wrabs_ioerr            SAFE       terminates, no escaping relative jump, no fallthrough entry
+    7 B x2  nominal   7 B -> NET   +0 B   3ab87fcb4720f9
+        $4897 fwd_drain              KEEP       runs off its end — continues into different code
+        $7AE1 fdc_rd_drain           UNSAFE     runs off its end — continues into different code
+    7 B x2  nominal   7 B -> NET   +6 B   dd21ea42c36972
+        $523D hklr_syn               KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $5332 hkf_syn                SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 1 B: `jr` callers that must widen to reach $523D)
+    7 B x2  nominal   7 B -> NET   +6 B   dd211343c36972
+        $532B hkf_raise              KEEP       entered by fallthrough from hkf_bfm: needs `jp`, 7-3
+        $5CD4 hdg_raise              SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 1 B: `jr` callers that must widen to reach $532B)
+    3 B x3  nominal   6 B -> NET   +0 B   af1802
+        $51D9 hbl_ok                 KEEP       relative jump leaves the span (+5 of 3)
+        $5EF4 hkfm_360               UNSAFE     relative jump leaves the span (+5 of 3)
+        $6547 k47b2_ok               UNSAFE     relative jump leaves the span (+5 of 3)
+    6 B x2  nominal   6 B -> NET   +0 B   22c6eccd2a48
+        $69D7 fat_find               KEEP       runs off its end — continues into different code
+        $6ED9 fat_dir_create         UNSAFE     runs off its end — continues into different code
+    3 B x3  nominal   6 B -> NET   +0 B   c35573
+        $72A6 hkk_done               WORTHLESS  entered by fallthrough from hkk_end; a `jp` costs 0 more than the span
+        $73F0 hkc_done               KEEP       entered by fallthrough from hkc_ref; a `jp` costs 0 more than the span
+        $7439 hka_done               WORTHLESS  entered by fallthrough from hka_probe; a `jp` costs 0 more than the span
+    4 B x2  nominal   4 B -> NET   +3 B   3e0c37c9
+        $48D8 fwd_n3                 KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $7B18 fdc_rd_n3              SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 1 B: `jr` callers that must widen to reach $48D8)
+    4 B x2  nominal   4 B -> NET   +0 B   af325ef5
+        $49A9 din_num                KEEP       runs off its end — continues into different code
+        $5021 din_str                UNSAFE     runs off its end — continues into different code
+    3 B x2  nominal   3 B -> NET   +3 B   3e01c9
+        $45DA bsr_eof                SAFE       terminates, no escaping relative jump, no fallthrough entry
+        $7B78 bsw_full               KEEP       terminates, no escaping relative jump, no fallthrough entry
+    3 B x2  nominal   3 B -> NET   +2 B   c3f870
+        $5153 bsv_fin                KEEP       terminates, no escaping relative jump, no fallthrough entry
+        $7140 sav_fin                SAFE       terminates, no escaping relative jump, no fallthrough entry
+        (- 1 B: `jr` callers that must widen to reach $5153)
+    3 B x2  nominal   3 B -> NET   +0 B   eb6069
+        $7649 ws_in                  KEEP       runs off its end — continues into different code
+        $7754 k47b2_walk_in          UNSAFE     runs off its end — continues into different code
+
+  nominal 305 B  ->  MEASURED SAFE NET 96 B
+  by REGION, before widening: page-0 low 0 B, page 1 110 B; `jr` widening charged 14 B
+  ⚠️ the widening figure is an ESTIMATE from a byte scan that cannot tell a `jr` opcode from data; the assembler is the authority.

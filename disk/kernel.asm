@@ -4192,35 +4192,13 @@ wroe_have_new:
                 xor     a
                 ld      (FAT_CLUSSEC), a
 wroe_have_valid:
-                ; sector = firstData + (cluster-2)*secPerClus + clussec (identical
-                ; tail shape to fat_read_file_sector/frs_mul_body -- deliberately NOT
-                ; shared/modified, a new parallel routine per the §4 non-goal precedent)
-                ld      hl, (FAT_CURCLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de
-                ex      de, hl              ; DE = cluster - 2
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-wroe_mul:
-                add     hl, de
-                djnz    wroe_mul            ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
-                ld      a, (FAT_CLUSSEC)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl
-                ld      hl, SECTOR_BUF
-                call    read_sector
-                ret     c
-                ld      a, (FAT_CLUSSEC)
-                inc     a
-                ld      (FAT_CLUSSEC), a
-                or      a                   ; Cy = 0 success
-                ret
+                ; 💰 D-DISKCARVE (2026-11-07): this was a 47-byte PARALLEL COPY of the
+                ; shared body's sector computation (basic/fat-prim-body.inc frs_sector:
+                ; firstData + (cluster-2)*secPerClus + clussec, read into the sector
+                ; buffer -- SECTOR_BUF and FAT_DBUF are one address in the disk build,
+                ; and the two were byte-identical, scratchpad/diskcarve_dupspan.out).
+                ; Sharing it frees 44 B in front of the $75A5 pin.
+                jp      frs_sector
 
 ; wrblk_mul_rr_rs — WRBLK_MULACC(32-bit LE, WBUF+500) := RR(24-bit, ix+33..35) *
 ; RS(16-bit, WRBLK_RS). Classic LSB-first shift-add multiply, 24 iterations: a
@@ -8206,13 +8184,13 @@ fdel_body:
                 push    ix
                 pop     de
                 call    fat_mount
-                jr      c, fdel_miss
+                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB-copy+1 (target 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; FAT_FIRSTCLUS/FAT_FILESIZE set
-                jr      c, fdel_miss
+                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      a, h
                 or      l
@@ -8243,7 +8221,7 @@ fdel_relocate:
                 inc     de
                 ex      de, hl
                 call    fat_find
-                jr      c, fdel_miss
+                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
                 ld      (hl), $E5           ; CP/M delete marker (Microsoft FAT spec sec 3.1)
                 ld      de, (FAT_DIRSEC)
                 ld      hl, SECTOR_BUF
@@ -8254,12 +8232,8 @@ fdel_relocate:
                 ld      h, a
                 ld      l, a                ; HL = $0000 on success (pinned exit value)
                 ret
-fdel_miss:
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
-                scf
-                ld      a, $FF              ; not-found (fren_miss convention; untested by BDOSX3)
-                ret
+; (fdel_miss -- byte-identical to disk/fat.asm's fren_miss -- removed by D-DISKCARVE,
+; 2026-11-07: its three callers jump to fren_miss, A = $FF, CF set, $F306 = 0)
 fdel_ioerr:
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule

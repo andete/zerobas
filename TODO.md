@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15979 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15991 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15991 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11248,7 +11248,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ([`padwatch_4ede.out`](scratchpad/padwatch_4ede.out), the ten DOS suites, positive control $4775 caught); the dirin /
       dskrst `jp` veneers removed (their one caller each jumps to the target). The $782B..$7F7C
       region took the bridge fix with 1 B to spare (2026-11-07).
-      ➡️ D-FATRES still needs its ~150 B. First: a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
+      ✅ **SECOND CUT (2026-11-07, after Joost: "if we still need more room in the disk rom, that
+      might be worth spending time on?"): 57 B from duplicate spans.** [`dupspan_disk.py`](scratchpad/dupspan_disk.py) (the main
+      tool pointed at disk.rom: [`diskcarve_dupspan.out`](scratchpad/diskcarve_dupspan.out), 30 byte-identical groups, a measured safe
+      net of 96 B on 2026-11-07, all page 1). (1) disk/kernel.asm's wroe_have_valid was a 47-byte PARALLEL
+      COPY of the shared body's sector computation (basic/fat-prim-body.inc, now labelled
+      frs_sector; SECTOR_BUF = FAT_DBUF in the disk build) -- now `jp frs_sector`: the $75A5
+      pad 6 -> 52 B. (2) ffb_miss and fdel_miss were byte-identical to fren_miss: their five
+      callers jump there (fdel's three `jr` became `jp`): $4E4B pad 5 -> 13, $7F7C pad 1 -> 6.
+      The FAT / WRBLK unit tests are green (2026-11-07).
+      ➡️ D-FATRES still needs its ~150 B, and the pads are FRAGMENTS (the largest now 52 B).
+      Next: the remaining safe groups (dirioin_done / const_notready +7, the `3effc9` tails,
+      the `32aefc37c9` group), then a scan for a duplicate disk.rom routine already in the sub
+      ROM, then a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
       usable only in its own pinned region: rank the regions the two fixes need); then
       evictions of cold disk code into the sub ROM, as D-ROMSIZE did for main. The rule for every
       pad that takes code: `padwatch.py --also=` it first (D-PADSLIDE).

@@ -1482,13 +1482,13 @@ fopen_fill_body:
                 push    ix
                 pop     de
                 call    fat_mount
-                jp      c, ffb_miss
+                jp      c, fren_miss    ; (ffb_miss, a byte-identical copy, is gone: D-DISKCARVE)
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; HL preserved = &matched dirent
-                jp      c, ffb_miss
+                jp      c, fren_miss    ; (ffb_miss, a byte-identical copy, is gone: D-DISKCARVE)
                 call    fcb_dirloc          ; +25 := the entry's index (D-WRBLKSEEK (b))
                 ; date/time (§0.1 addendum, confirmed against the FAT12 dir-entry
                 ; layout on our own test disk): FCB+20/21 := dirent+24/25 (date),
@@ -1590,12 +1590,8 @@ ffb_rcok:
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      hl, 0
                 ret
-ffb_miss:
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
-                scf
-                ld      a, $FF
-                ret
+; (ffb_miss -- byte-identical to fren_miss below -- removed by D-DISKCARVE, 2026-11-07:
+; its two callers jump to fren_miss)
 
 ; fren_body — MSX-DOS-1 kernel FREN ($17) canonical entry $4392's real body
 ; (M26, tier2-m26-spec.md; M35 tier2-m35-m36-tierc-fixes-spec.md §M35 adds the
