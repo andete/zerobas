@@ -159,6 +159,39 @@ covers every channel, the mount, the directory work and the BDOS, so this is
 the widest audit, and it comes last. It saves 1 READ and 1 WRITE per data
 sector.
 
+**W4 FOR `PUT` — THE AUDIT (2026-11-08).** The reference's shape first
+(`scratchpad/fdcput_cf.out`, decoded with the plain WD2793 command bytes): across
+20 `PUT`s of 32 B, the CF-3300 writes a data sector **twice** -- once per 512 B the
+records fill -- and the directory and FAT at `CLOSE`. Zerobas writes the record's
+sector on every `PUT` (`scratchpad/fdcput_zb.out`: 24 writes). And the buffer is not
+`FAT_DBUF`: `fat_rand_put` and `fat_rand_get` (disk/kernel.asm, disk/fat.asm) read
+the record's sector into **`FAT_MBUF`** (`rnd_rd`), overlay or copy the record, and
+`PUT` writes it back.
+
+Every `FAT_MBUF` reference (37, `disk/*.asm` and `basic/*-body.inc`), classified:
+
+| user | how the buffer is filled | with one HELD, DIRTY sector |
+|---|---|---|
+| FAT read / write, the D-LOADFAT cache (`fac_*`, `fwe_*`, `fcf_*`, `fnc_*`) | `read_sector`, then edits in place, then a write | flushed by the `read_sector` that comes first |
+| directory create / stamp (`fdcr_*`, `FWR_DIR*`, kernel `hkc_*`) | `read_sector`, edit, write | the same |
+| `GET` (`fat_rand_get`) | `rnd_rd` -> `read_sector` | a HIT on the held sector: no read |
+| `PUT` (`fat_rand_put`) | `rnd_rd`, or `fill_sec` past the old end | a HIT on the held sector; the write DEFERRED |
+
+No user fills `FAT_MBUF` except through `read_sector`, apart from `PUT`'s own
+`fill_sec`; every in-place edit follows a read. **So the cache sits in ONE place:
+`read_sector` (basic/fat-prim-body.inc) checks a held dirty sector first** -- the
+same sector into `FAT_MBUF` is a hit; anything else writes the held sector out
+first, then reads. Flush points beyond that: `CLOSE` / `END` / `RUN` / `NEW` (the
+channel close, `fdcc_rnd`), MSX-DOS entry, and any WRITE of the held sector from
+another buffer. RAM: a 3-byte tag (sector, dirty) -- in the documented free hole
+`$EFDB..$EFF5` (D-PULONG), not new RAM.
+
+Two things to settle on the CF-3300 BEFORE code: (1) **a disk swapped while a
+sector is held** -- here the next mount's `read_sector` would flush it onto the NEW
+disk; what does the reference do (it holds the same data)? (2) whether its `GET`
+of a held record reads the disk (the `8A` after each `AA` in its log may be a
+verify, or the next record's sector).
+
 Expected for the workload: 64 commands down to about 26 (W1 −5, W2 −10,
 W3 −20 +2, W4 −18 +3). The CF-3300's 32 include its verify reads, which
 zerobas does not do.

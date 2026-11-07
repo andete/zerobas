@@ -8034,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16274 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16279 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16279 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15847,6 +15847,11 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🔮 Predicted "~2-3 data writes": HIT. ➡️ **THE W4 DESIGN IS THE REFERENCE'S:** keep the
       record's sector in the buffer, write it when a PUT / GET needs another sector, and at
       CLOSE -- after the FAT_DBUF audit docs/spec-diskwcache.md asks for.
+      ✅ **THE AUDIT, DONE (2026-11-08, [docs/spec-diskwcache.md](docs/spec-diskwcache.md) "W4 FOR PUT"):** the buffer is
+      FAT_MBUF, not FAT_DBUF; all 37 references fill it through `read_sector` (PUT's own
+      fill_sec apart), so the held sector can be checked in ONE place. ➡️ NEXT: settle on
+      the CF-3300 (1) a disk swapped while a sector is held and (2) what its `8A` after
+      each `AA` is; then build it, tag in the $EFDB..$EFF5 hole.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
