@@ -1,0 +1,12 @@
+ROW plain   VG=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+ROW quoted  VG=[__AB__| 6 |NX 0 ] ZB=[__AB__| 6 |NX 0 ] SAME
+ROW qcomma  VG=[A,B| 3 |NX 0 ] ZB=[A,B| 3 |NX 0 ] SAME
+ROW qjunk   VG=[AB| 2 |CD 0 ] ZB=[AB| 2 |NX 0 ] DIVERGES
+ROW qjunkc  VG=[AB| 2 |CD,EF 0 ] ZB=[AB| 2 |EF 0 ] DIVERGES
+ROW qopen   VG=[| 11 | 55 ] ZB=[AB,CD| 5 |NX 0 ] DIVERGES
+ROW qmid    VG=[A#B#| 4 |NX 0 ] ZB=[A#B#| 4 |NX 0 ] SAME
+ROW qlead   VG=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+ROW qsp     VG=[AB| 2 |CD 0 ] ZB=[AB| 2 |CD 0 ] SAME
+refcache: 0 hit, 18 miss, 18 stored
+FAIL: INPUT # from tape (3 not SAME: ['qjunk', 'qjunkc', 'qopen'])
+refcache: 0 hit, 18 miss, 18 stored

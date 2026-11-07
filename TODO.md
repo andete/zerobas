@@ -17710,6 +17710,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the first battery's three agreeing NO READINGs were not evidence. 7/7
       ([`inpredo_gate.out`](scratchpad/inpredo_gate.out)); knife (HEAD's files.asm) exactly
       the three redo rows DIVERGE ([`inpredo_knife.out`](scratchpad/inpredo_knife.out)).
+      📏 **CASSETTE HALF MEASURED 2026-11-07** ([`inpquote_cas_probe.py`](scratchpad/inpquote_cas_probe.py): each row an encoded tape --
+      cas_encode.build_cas_ascii, CR LF lines, Ctrl-Z end -- read by INPUT #1,A$ then LINE
+      INPUT #1,R$; VG-8020 vs zerobas NODISK; [`inpquote_cas_run.out`](scratchpad/inpquote_cas_run.out)): the tape follows the
+      disk's rules on the VG-8020 -- `"AB"CD` leaves CD for the next read, `"AB"CD,EF` leaves
+      CD,EF, an unclosed `"AB,CD` takes CR/LF as data to the end (11 B, then 55) -- and
+      zerobas diverges on exactly those three (qjunk, qjunkc, qopen); plain, quoted, qcomma,
+      qmid, qlead and `"AB"  ,CD` agree. 🔮 "those three, the rest SAME": HIT.
+      ➡️ **DESIGN (not built -- the put-back is the cost):** read_into_strscr (basic/files.asm)
+      needs (a) inside an open quote on a cassette, CR / LF kept as data (a STRSCR == '"'
+      test before ris_lp's CR / LF arms), and (b) past the closing quote, a non-blank non-comma
+      byte PUT BACK and the field ended. The cassette source is the sub tenant casget_tenant
+      (sub/casmatch.asm): stepping CAL_CNT back works inside a block but NOT across its last
+      byte, whose read refills and swaps the double buffer at once (a step back would re-run
+      the refill and read a FURTHER block). So it is a one-byte pushback cell that
+      cal_getbyte serves first (~25-35 B + 2 B of RAM, map and gate), measured against the
+      tape suites (castail / cas-ascii) before shipping.
 
 
 - [ ] 🔴 **A FILE WHOSE CLUSTER CHAIN POINTS PAST THE VOLUME LOADS AS AN EMPTY
