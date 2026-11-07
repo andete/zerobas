@@ -1,0 +1,27 @@
+== Philips_VG_8020 (hold 0.2 s; program '10 ON STOP GOSUB 100:STOP ON|20 GOTO 20|100 RETURN')
+  RUNNING   t=10.00 CURLIN=0014 pending=-
+  KBWRITE t=10.0463 addr=FBFF val=03
+  RELEASED  t=10.20 CURLIN=0014 pending=-
+  +1        t=10.30 CURLIN=0014 pending=-
+  +2        t=10.40 CURLIN=0014 pending=-
+  +3        t=10.50 CURLIN=0014 pending=-
+  +4        t=10.60 CURLIN=0014 pending=-
+  +5        t=10.70 CURLIN=0014 pending=-
+  +6        t=10.80 CURLIN=0014 pending=-
+  +7        t=10.90 CURLIN=0014 pending=-
+  +8        t=11.00 CURLIN=0014 pending=-
+  +9        t=11.10 CURLIN=0014 pending=-
+  +10       t=11.20 CURLIN=0014 pending=-
+== C-BIOS_MSX1_EU_REPACK_NODISK (hold 0.2 s; program '10 ON STOP GOSUB 100:STOP ON|20 GOTO 20|100 RETURN')
+  RUNNING   t=10.00 CURLIN=0014 pending=-
+  RELEASED  t=10.20 CURLIN=0014 pending=-
+  +1        t=10.30 CURLIN=0014 pending=-
+  +2        t=10.40 CURLIN=0014 pending=-
+  +3        t=10.50 CURLIN=0014 pending=-
+  +4        t=10.60 CURLIN=0014 pending=-
+  +5        t=10.70 CURLIN=0014 pending=-
+  +6        t=10.80 CURLIN=0014 pending=-
+  +7        t=10.90 CURLIN=0014 pending=-
+  +8        t=11.00 CURLIN=0014 pending=-
+  +9        t=11.10 CURLIN=0014 pending=-
+  +10       t=11.20 CURLIN=0014 pending=-

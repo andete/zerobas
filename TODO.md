@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15782 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15797 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15782 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15797 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11326,6 +11326,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       patch (the keyboard ISR's STOP arm queues $03) plus the buffer cleared at the break;
       measure first whether STOP alone (no CTRL) queues anything, and what INKEY$ reads under
       `STOP ON` / `ON STOP GOSUB`.
+      📏 **MEASURED (2026-11-07,** [`stopkey_probe.py`](scratchpad/stopkey_probe.py) gained `--noctrl` and `--prog=`): STOP
+      ALONE queues nothing on either machine, and both keep running ([`stopkey_noctrl.out`](scratchpad/stopkey_noctrl.out)).
+      Under `ON STOP GOSUB 100:STOP ON` the VG-8020 still writes `$03` at 46 ms and has
+      nothing pending 150 ms later -- the trap path drops it, as the break does; zerobas
+      writes nothing ([`stopkey_onstop.out`](scratchpad/stopkey_onstop.out)). A first run whose program was typed as one
+      overlong burst never RAN (CURLIN $FFFF on both) and so measured the PROMPT instead:
+      there too the VG-8020 queues `$03`. So the rule is "Ctrl-STOP always queues ^C; a break
+      or a STOP trap empties the buffer".
+      ➡️ **DESIGN (not built):** C-BIOS's scan never sets INTFLG (zerobas reads the matrix in
+      BREAKX), so the patch goes into `key_ascii` like ctrl-keys.patch: row 7's STOP with CTRL
+      held -> `$03`, without CTRL nothing (bytes before the font pad: island 1 moves, as for
+      patches 4 / 6 / 7). zerobas then needs the buffer emptied at the break (do_break), at
+      the STOP trap's dispatch, and in the line editor's Ctrl-STOP path (rl_break -- or the
+      `$03` reads as a second Ctrl-C after the abort and S2 / S9 would diverge). Re-run
+      S2_stopcont / S9_breaks and stopkey_probe after.
 
 - [ ] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
       the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**
