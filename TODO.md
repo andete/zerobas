@@ -16936,6 +16936,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`loops4_time4.out`](scratchpad/loops4_time4.out)) 71 / 78 / **`%` 18 -> 17** / default **24 -> 23** (🔮 ~17 HIT); C3 /
       C6 SAME with 0 gaps, S3 SAME ([`nxdirect_c3c6.out`](scratchpad/nxdirect_c3c6.out), [`nxdirect_s3.out`](scratchpad/nxdirect_s3.out)).
       tests/test_forfast / forint / control_flow / statements / traps green.
+      ✅ **D-NXCACHE (2026-11-07): NEXT no longer looks its variable up.** ex_for (live copy
+      basic/fat.asm under BASICINT_PINS; program.asm's ELSE copy the same) keeps the loop
+      variable's ENTRY and, for an int16 limit, stores it in the limit slot's spare bytes
+      (FOR_LIM+3..+4); nx_have's fast copy takes those 2 bytes too (13 -> 15) and nx_fast
+      reads the entry instead of calling var_find_typed. Safe for the frame's life: a new
+      scalar is inserted at ARYTAB and only the arrays shift (sub/arrays.asm scv_alloc), and
+      CLEAR / RUN / NEW / a typed line drop every frame. Page 1 285 -> 290 B (the dropped
+      call), the low region's pinned hole took ex_for's +12. 🔴 The first build edited only
+      the ELSE copy: tests/test_forint.py's "int path taken" rows caught it (every NEXT bailed
+      to nx_fslow, the cache read 0). Model ([`loopprof_host.py`](scratchpad/loopprof_host.py) c) 3045 -> 2798 T/pass;
+      **machine ([`loops4_time5.out`](scratchpad/loops4_time5.out), twice): 71 / 78 / 17 / 23 -> 69 / 75 / 13 / 21** (VG-8020 70 /
+      98 / 7 / 24) -- 🔮 predicted `%` 16: MISSED, it is 13 (the machine's lookup costs more
+      than the host model charges). tests/test_forfast / forint / control_flow / statements
+      green.
       The D-CONCATLIT round-2 design (a combined first-append op) was weighed the same day
       and deferred: ~6 %, and the snapshot is load-bearing for array elements / RVDESC.
       📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →

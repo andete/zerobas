@@ -1953,8 +1953,11 @@ ex_for:
                 jp      nz,stmt_error
                 call    inc_eval            ; DE = initial value, HL advanced
                 ex      (sp),hl             ; HL = entry, [cursor]
+                push    hl                  ; [cursor][entry]
                 call    for_set_at          ; var := initial value, through the entry
-                pop     hl
+                pop     de                  ; DE = the entry
+                pop     hl                  ; HL = the cursor
+                push    de                  ; [entry] -- D-NXCACHE: kept for the frame
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
@@ -1980,6 +1983,19 @@ ef_havestep:
                 ld      hl,FOR_STEP
                 call    slot_store          ; the step, typed
                 pop     hl
+                ; 🐌 D-NXCACHE (2026-11-07): the loop variable's ENTRY, cached in the
+                ; int16 limit's spare slot bytes (+3..+4 of FOR_LIM: an int16 uses two
+                ; of the eight) -- nx_fast, which runs only when limit AND step are
+                ; int16, reads it instead of walking the scalar chain every pass. Safe
+                ; for the frame's life: a new scalar is inserted at ARYTAB and shifts
+                ; only the arrays (sub/arrays.asm scv_alloc), and CLEAR / RUN / NEW / a
+                ; typed line drop every frame before anything else can move.
+                pop     de                  ; DE = the entry
+                ld      a,(FOR_LIM)
+                cp      2
+                jr      nz,ef_nocache       ; a float limit uses those bytes
+                ld      (FOR_LIM+3),de
+ef_nocache:
                 ld      (FOR_BODY),hl       ; the resume ptr (loop body)
                 push    hl                  ; D-NXARY: and it rides the stack to the
                                             ; tail below instead of being re-loaded --
@@ -2172,7 +2188,7 @@ nx_cmp:                                     ; `FOR A%` / `NEXT A` is NEXT withou
 nx_have:
                 push    hl                  ; save the frame base (for pop / keep)
                 ; 🐌 D-LOOPPROF (2026-11-06): an int16 limit AND step (the fast path's
-                ; condition, read in the frame itself) copy only the 13 bytes nx_fast
+                ; condition, read in the frame itself) copy only the 15 bytes nx_fast
                 ; and nx_again read -- [name0 name1 type][limit type+2][step type+2]
                 ; [line][body] -- not all 25 (~525 T a NEXT in a `%` loop). A bail
                 ; to the general path re-copies the whole frame (nx_fslow).
@@ -2194,7 +2210,9 @@ nx_have:
                 ldi
                 ldi
                 ldi                         ; name, type, the limit's type + int16
-                ld      bc,6
+                ldi
+                ldi                         ; + the cached entry (D-NXCACHE)
+                ld      bc,4
                 add     hl,bc
                 ex      de,hl
                 add     hl,bc
@@ -2372,11 +2390,8 @@ nx_end:
 ; The frame is unchanged in size: an int16 slot is [2][lo][hi] + 6 unused bytes,
 ; the same 9 B a `%` loop's slots always were.
 nx_fast:
-                ld      bc,(FOR_CUR)
-                ld      a,(FOR_CUR+2)
-                call    var_find_typed      ; HL = the entry (FOR created it)
-                jr      nc,nx_fslow         ; (not found: let the general path say so)
-                inc     hl
+                ld      hl,(FOR_LIM+3)      ; D-NXCACHE: the entry ex_for cached (an
+                inc     hl                  ; int16 limit, which nx_fast requires)
                 inc     hl
                 ld      b,(hl)              ; B = the entry's type = its byte count
                 inc     hl                  ; HL = its value field
@@ -2408,7 +2423,7 @@ nx_fbail:
                 pop     hl                  ; drop [value field]
 nx_fslow:
                 pop     hl                  ; the frame base (nx_have's push) --
-                push    hl                  ; the fast path copied only 13 of its bytes
+                push    hl                  ; the fast path copied only 15 of its bytes
                 ld      de,FOR_CUR
                 ld      bc,FOR_FRAME
                 ldir

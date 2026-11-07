@@ -1,0 +1,7 @@
+all=0
+allfn=0
+tape=0
+refcache: 42 hit, 42 miss, 42 stored
+tiers=0
+rc=0
+GATES: 245/245 green

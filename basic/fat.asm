@@ -270,8 +270,11 @@ ex_for:
                 jp      nz,stmt_error
                 call    inc_eval            ; DE = initial value, HL advanced
                 ex      (sp),hl             ; HL = entry, [cursor]
+                push    hl                  ; [cursor][entry]
                 call    for_set_at          ; var := initial value, through the entry
-                pop     hl
+                pop     de                  ; DE = the entry
+                pop     hl                  ; HL = the cursor
+                push    de                  ; [entry] -- D-NXCACHE: kept for the frame
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
@@ -297,6 +300,16 @@ ef_havestep:
                 ld      hl,FOR_STEP
                 call    slot_store          ; the step, typed
                 pop     hl
+                ; 🐌 D-NXCACHE (2026-11-07): the loop variable's ENTRY, cached in the
+                ; int16 limit's spare slot bytes (FOR_LIM+3..+4) for nx_fast -- see
+                ; program.asm's copy of this routine (the BASICINT_PINS-off build) for
+                ; why the address stays valid for the frame's life.
+                pop     de                  ; DE = the entry
+                ld      a,(FOR_LIM)
+                cp      2
+                jr      nz,ef_nocache       ; a float limit uses those bytes
+                ld      (FOR_LIM+3),de
+ef_nocache:
                 ld      (FOR_BODY),hl       ; the resume ptr (loop body)
                 push    hl                  ; D-NXARY: and it rides the stack to the
                                             ; tail below instead of being re-loaded --
