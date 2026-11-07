@@ -1,0 +1,62 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+
+=== (q) literal concat body: `FOR I=1 TO 40:A$="AB"+"CD":NEXT` ===
+T per pass (M1 incl.): mean 12057, min 11985, max 12102 over 20 passes  [program printed '']
+  by region: main 8999, subp0 3025, hook 33
+  sub-ROM crossings per pass: 2  -> + 2126 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 14268 T (host 12057 + crossings + BREAKX); -> 68 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 strheap_engine: 2/pass
+  trapped calls per pass (0 T on the host): {'BREAKX': 1.0, 'subrom_call': 2.0}
+  -- top by EXCLUSIVE T, per label --
+          803 T   6.7%  exec_stmt
+          497 T   4.1%  nx_have
+          387 T   3.2%  nx_again
+          340 T   2.8%  sh_go
+          336 T   2.8%  sel_lp
+          318 T   2.6%  SUB:she_src
+          277 T   2.3%  str_alias_or_snap
+          251 T   2.1%  SUB:sap_realloc
+          247 T   2.0%  npi_tlp
+          246 T   2.0%  SUB:she_dispatch
+          239 T   2.0%  SUB:sh_var_store
+          237 T   2.0%  cgt_lp
+          230 T   1.9%  stk_room
+          225 T   1.9%  ex_let_str
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2746 T  22.8%  run_prog  (0 calls/pass)
+         1069 T   8.9%  SUB:she_dispatch  (2 calls/pass)
+          852 T   7.1%  str_eval_one  (2 calls/pass)
+          548 T   4.5%  nx_pki  (1 calls/pass)
+          481 T   4.0%  str_eval_next  (1 calls/pass)
+          448 T   3.7%  SUB:heap_alloc  (1 calls/pass)
+          400 T   3.3%  var_find_typed  (1 calls/pass)
+          378 T   3.1%  nx_pack  (1 calls/pass)
+          372 T   3.1%  SUB:sap_copy_clamped  (2 calls/pass)
+          324 T   2.7%  island$0010  (3 calls/pass)
+          318 T   2.6%  SUB:she_src  (6 calls/pass)
+          277 T   2.3%  str_alias_or_snap  (1 calls/pass)
+          262 T   2.2%  let_ref  (1 calls/pass)
+          239 T   2.0%  ssk_go  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        12057 T 100.0%  run_prog  (0 calls/pass)
+         4718 T  39.1%  str_eval_next  (1 calls/pass)
+         3099 T  25.7%  sc_call  (2 calls/pass)
+         3025 T  25.1%  TRAP:subrom_call  (2 calls/pass)
+         3025 T  25.1%  SUB:strheap_engine  (0 calls/pass)
+         2925 T  24.3%  SUB:she_dispatch  (2 calls/pass)
+         2594 T  21.5%  sh_go_g  (1 calls/pass)
+         1706 T  14.1%  let_ref  (1 calls/pass)
+         1173 T   9.7%  ssk_go  (1 calls/pass)
+          958 T   7.9%  str_eval_one  (2 calls/pass)
+          660 T   5.5%  SUB:heap_alloc  (1 calls/pass)
+          548 T   4.5%  nx_pki  (1 calls/pass)
+          495 T   4.1%  vaof_oom  (1 calls/pass)
+          465 T   3.9%  var_alloc_or_find  (1 calls/pass)
+          400 T   3.3%  var_find_typed  (1 calls/pass)
+          391 T   3.2%  str_alias_or_snap  (1 calls/pass)
+          378 T   3.1%  nx_pack  (1 calls/pass)
+          372 T   3.1%  SUB:sap_copy_clamped  (2 calls/pass)
+  -- calls per pass, caller -> callee --
+      SUB:she_dispatch->SUB:she_src 5, run_prog->check_fperr_only 4, run_prog->skipsp_test 4, skipsp_test->skip_spaces 4, island$0010->hook$FF48 3, SUB:she_dispatch->SUB:she_dest 3, var_str_type->is_ident_cont 2, str_eval_next->island$0010 2, str_eval_next->str_eval_one 2, str_eval_one->mk_rvdesc 2, str_eval_next->skip_spaces 2, sc_call->TRAP:subrom_call 2, SUB:strheap_engine->SUB:she_dispatch 2, SUB:she_dispatch->SUB:sap_copy_clamped 2, run_prog->island$0010 1, run_prog->is_letter 1, run_prog->nx_pki 1, run_prog->nx_pack 1, run_prog->cmp16_bits 1, run_prog->set_factyp2 1, run_prog->TRAP:BREAKX 1, run_prog->var_str_type 1, var_str_type->upcase 1, run_prog->var_name_key 1, var_name_key->upcase 1, var_name_key->is_ident_cont 1, run_prog->vaof_oom 1, vaof_oom->var_alloc_or_find 1, var_alloc_or_find->var_find_typed 1, run_prog->skip_eq 1, skip_eq->skip_spaces 1, run_prog->str_eval_next 1, str_eval_next->str_alias_or_snap 1, str_alias_or_snap->desc_in_text 1, str_eval_next->sh_go_g 1, sh_go_g->stk_room 1, sh_go_g->sc_call 1, SUB:she_dispatch->SUB:sap_try_extend 1, SUB:sap_try_extend->SUB:she_dest 1, SUB:she_dispatch->SUB:heap_alloc 1, SUB:heap_alloc->SUB:strheap_floor 1, SUB:strheap_floor->SUB:strheap_ceiling 1, run_prog->check_expr_errors_popbc 1, run_prog->let_ref 1, let_ref->desc_in_text 1, let_ref->str_snapshot_keep 1, let_ref->ssk_go 1, ssk_go->stk_room 1, ssk_go->sc_call 1, SUB:she_dispatch->SUB:sh_src_is_temp 1, SUB:sh_src_is_temp->SUB:she_src 1
+
+=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===

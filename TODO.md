@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15963 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15979 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15963 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11478,7 +11478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `$03` reads as a second Ctrl-C after the abort and S2 / S9 would diverge). Re-run
       S2_stopcont / S9_breaks and stopkey_probe after.
 
-- [ ] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
+- [x] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
       the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**
       🎚️ TIER 5 — on-par speed: string concatenation of literals into a variable; the
       last of the seven interpreter rows still over the CF-3300 (153 vs 122 jiffies).
@@ -11500,7 +11500,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       machine row `c.str` **153 -> 141 jiffies (CF-3300 122, 1.25x -> 1.16x)** (🔮 ~141 HIT;
       [`interpspeed_concat.out`](scratchpad/interpspeed_concat.out)), the other six rows within
       a jiffy. tests/test_str_engine / str_fn / str_verbs / strvar / str_compare green.
-      ➡️ NEXT: the first literal's snapshot (a heap temp copy of "AB" so `+` can extend it).
+      ✅ **CLOSED 2026-11-07, ROUND 2: A LITERAL OPERAND 1 IS AN ALIAS SLOT -- `c.str` 136 -> 116
+      jiffies, 0.95x the CF-3300** ([`interpspeed_catlit2.out`](scratchpad/interpspeed_catlit2.out); every interpreter row is now at or
+      under the reference; 136 was today's re-measure, [`interpspeed_1107.out`](scratchpad/interpspeed_1107.out)). str_concat_tail's
+      operand 1 was snapshotted (a crossing that copied "AB" into a heap body) only so the first
+      `+` could extend it. A body in the PROGRAM TEXT never moves within a statement, so
+      str_alias_or_snap (basic/program.asm, page 1) pushes a temp slot [len][ptr into the text]
+      with no body; the first `+` (op 2) finds R is not the heap's top and takes its realloc
+      path -- ONE allocation of len1 + len2, both copied, R repointed: the same bytes, the same
+      peak and the same temp-slot count, one crossing fewer. The GC visits only in-range heap
+      roots (sg_inrange), as it does for D-LITREF's text pointers. A variable, a temp, the line
+      buffer or a full temp stack take the old snapshot (its overflow is the raise). Model (q)
+      16866 -> 14268 T/pass, 3 -> 2 crossings ([`catlit2_prof.out`](scratchpad/catlit2_prof.out); 🔮 -1700: MISSED on the good
+      side -- the snapshot's body copy and temp push went too). Page 1 took 40 B (2026-11-07).
+      tests/test_str_engine / str_fn / str_verbs / strvar / str_compare green. The round-2 idea
+      deferred on 11-06 (a combined first-append op) was not needed: the deferral's reason --
+      the snapshot is load-bearing for array elements and RVDESC -- does not apply to a text
+      body, which is the only one aliased.
 
 - [x] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**

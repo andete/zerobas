@@ -2622,6 +2622,35 @@ npi_x10:
                 pop     de
                 ret
 
+; --- str_alias_or_snap: str_concat_tail's operand 1 (D-CONCATLIT round 2) -------
+; 🐌 2026-11-07. Operand 1 of `"AB"+...` was SNAPSHOTTED (a sub-ROM crossing that
+; copied "AB" into a fresh heap body) only so the first `+` could append onto it.
+; A body in the PROGRAM TEXT never moves during a statement, so the temp slot can
+; ALIAS it -- [len][ptr into the text], no body -- and the first `+` (op 2) then
+; finds R is not the heap's top body and takes its realloc path: ONE allocation
+; of len1 + len2, both copied, R repointed -- the same bytes and the same peak as
+; snapshot + extend, one crossing fewer. The GC skips a slot whose ptr is below
+; the heap (the offset-temp rule, sub/strheap.asm she_snap_slice). Anything else --
+; a variable, a temp, the line buffer, a full temp stack -- takes str_snapshot_arg
+; as before (its overflow is the raise). out as str_snapshot_arg: HL = R = STRPTR.
+str_alias_or_snap:
+                ld      hl,(STRPTR)
+                call    desc_in_text        ; Z: the body is program text
+                jp      nz,str_snapshot_arg
+                ld      de,(TEMPPT)
+                ld      hl,TEMPBASE-3
+                or      a
+                sbc     hl,de               ; CF iff the slot would pass TEMPBASE
+                jp      c,str_snapshot_arg  ; full: the snapshot raises it
+                ld      hl,(STRPTR)
+                ld      bc,3
+                push    de                  ; [slot]
+                ldir                        ; the slot = op 1's [len][ptr]
+                ld      (TEMPPT),de
+                pop     hl                  ; HL = the slot
+                ld      (STRPTR),hl
+                ret
+
 ; --- nx_pack: HL = an int16, DE -> a variable's value field -------------------
 ; Writes [lead][3 BCD pairs] -- what round_and_finalize / round_single_and_pack
 ; pack for the same exact value, single or double alike (an int16 has at most

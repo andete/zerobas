@@ -816,7 +816,9 @@ sct_go:
                 push    bc                  ; [op]: 2 (APPEND) for the first `+` --
                                             ; D-CONCAT3, every later one SH_OP_APPEND2
                 push    hl                  ; save cursor (@ '+')
-                call    str_snapshot_arg    ; operand 1 -> owned temp R; HL=R, STRPTR=R
+                call    str_alias_or_snap   ; operand 1 -> owned temp R; HL=R, STRPTR=R
+                                            ; (D-CONCATLIT: a program-text literal is an
+                                            ; ALIAS slot, no body -- basic/program.asm)
                                             ; (R must be a temp we can modify in place --
                                             ; never a var slot. 🔁 D-TEMPPOL 2026-09-25:
                                             ; an op1 that is ALREADY a temp is owned by
