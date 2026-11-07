@@ -1,0 +1,10 @@
+2026-11-07 (later): scratchpad/diskcorpus_f37.out's run re-scored offline with is_logo()
+(a screen whose every row is the boot logo's -- "MSX system" / "version 1.0" / "Copyright
+1983 by Microsoft" -- is booting, not running):
+Seedofda.dsk BOTH-RUN -> ZB-ONLY   (ref: logo, S1, CURLIN 0;  zb: blank S1, CURLIN 0, PC $1951)
+UZIX.DSK     BOTH-RUN -> ZB-ONLY   (ref: logo, S1, CURLIN 0;  zb: S2, CURLIN 0, PC $108B)
+quinpl.dsk   BOTH-RUN -> ZB-ONLY   (ref: logo, S1, CURLIN 0;  zb: blank S1, CURLIN 0, PC $18F3)
+RESCORED {"BOTH-RUN": 113, "FILES-DIFF": 8, "FILES-EMPTY": 1, "FILES-SAME": 11, "ZB-NOBOOT": 2, "ZB-ONLY": 8}
+NOT settled by this: a BLANK text screen with CURLIN 0 (zerobas's Seedofda / quinpl rows, the
+CF-3300's GAUNT row) still reads RUNNING -- CURLIN 0 is also the work area before BASIC has
+set it, so these three ZB-ONLY rows may be "neither runs at this sample".

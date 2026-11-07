@@ -122,6 +122,18 @@ def screen_text(cap) -> list[str]:
     return rows
 
 
+LOGO_ROWS = {"MSX", "MSX system", "version 1.0", "Copyright 1983 by Microsoft"}
+
+
+def is_logo(rows) -> bool:
+    """🔴 2026-11-07: a machine still on its BOOT LOGO is not running a program. The
+    CF-3300 sat on its logo (SCREEN 1, CURLIN = 0 -- not $FFFF) for GAUNT.DSK at 15..90 s
+    and was scored RUNNING. True when every non-blank row is one of the logo's rows
+    (spaces collapsed; the logo is drawn in pieces, so a subset counts)."""
+    rows = [" ".join(r.split()) for r in (rows or []) if r.strip()]
+    return bool(rows) and all(r in LOGO_ROWS for r in rows)
+
+
 def state_of(cap) -> str:
     """RUNNING: a BASIC program is executing (the published CURLIN, $F41C, is not
     $FFFF -- both machines keep it there), or the PC is in RAM, or the screen is a
@@ -134,6 +146,8 @@ def state_of(cap) -> str:
     # BOTH-RUN on that alone while the screens said otherwise (SDSNAT1C: SCREEN 2 and
     # a program there, SCREEN 1 and no line here), and GAUNT flipped class on a
     # layout-only change with an identical screen.
+    if is_logo(screen_text(cap)):
+        return "PROMPT"
     if (cap["curlin"] != 0xFFFF or 0x8000 <= cap["pc"] < 0xF380
             or mode_of(cap["regs"]) not in ("S0", "S1")):
         return "RUNNING"
@@ -173,8 +187,10 @@ def classify(ref, zb):
     return ("FILES-SAME" if fr == fz else "FILES-DIFF"), (len(fr), len(fz))
 
 
-def summary_state(curlin, pc, mode) -> str:
+def summary_state(curlin, pc, mode, text=None) -> str:
     """state_of, from a stored row's summary fields instead of a capture."""
+    if is_logo(text):
+        return "PROMPT"
     if curlin != 0xFFFF or 0x8000 <= pc < 0xF380 or mode not in ("S0", "S1"):  # (state_of's rule)
         return "RUNNING"
     return "PROMPT"
@@ -195,7 +211,8 @@ def rerun_zb(a, names, times) -> int:
         if not zb or last is None:
             cls = "ERROR"
         else:
-            sr = summary_state(old["ref_curlin"], old["ref_pc"], old["ref_mode"])
+            sr = summary_state(old["ref_curlin"], old["ref_pc"], old["ref_mode"],
+                               old.get("ref_text"))
             sz = state_of(zb[last])
             if sr == "RUNNING" and sz == "RUNNING":
                 cls = "BOTH-RUN"

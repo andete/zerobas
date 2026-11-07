@@ -2715,8 +2715,13 @@ item — do **one item per session** to keep context lean.
       the boot code's `$4022`. With no MSX1 disk reference that runs it, GAUNT is not a
       divergence to chase here; same standing as UR-1 and BREAKER. 📏 So the collection's
       ZB-NOBOOT rows (2026-11-07) are both disks the CF-3300 cannot run.
-      ➡️ The classifier should judge a reference row by its SCREEN too (a boot logo is not a
-      program): both of today's artifacts read a single cell where the screen said otherwise.
+      ✅ **THE LOGO HALF, DONE (2026-11-07):** diskcorpus_run.py's is_logo() -- every non-blank
+      row one of the boot logo's -- makes a row "booting", not RUNNING, live and in the stored-row
+      re-score. Re-scored ([`diskcorpus_rescore2.out`](scratchpad/diskcorpus_rescore2.out)): Seedofda, UZIX and quinpl BOTH-RUN ->
+      ZB-ONLY (the CF-3300 on its logo at the sample). ➡️ NOT settled: a BLANK text screen
+      with CURLIN 0 still reads RUNNING (zerobas's Seedofda / quinpl rows, the CF-3300's GAUNT
+      row) -- CURLIN 0 is also the work area before BASIC sets it. Settle it with a later
+      sample per row or a published "BASIC is up" cell, not a guess.
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -7889,7 +7894,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10322 (T-6FE392)8 (T-529ABE)` from `TODO.md:16073 (T-529ABE)`: a
+      `TODO.md:10327 (T-6FE392)8 (T-529ABE)` from `TODO.md:16078 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10628,7 +10633,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16073 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16078 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
