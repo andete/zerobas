@@ -631,11 +631,12 @@ dos_clear_screen:
 ; negative `ds` only warns -> a silent empty object).
 ; hdl_direct -- D-LOADDIRECT (2026-11-07): LOAD the way the CF-3300 does. Its read
 ; commands land each FULL sector straight at its final address -- HL steps $200 a
-; command, one command per sector, from ONE multi-sector DSKIO (B counts down) --
-; and only the first sector (the $FF marker's) and the last partial one pass through
-; a buffer (scratchpad/fdccmd_cf1107.out). Ours read every sector into FAT_DBUF and
-; parsed it there. Read this way, ours misses a revolution 11 times in 28 sector
-; gaps, the CF-3300 12 in 26 (scratchpad/fdccmd_direct.out).
+; command, one command per sector -- and only the first sector (the $FF marker's)
+; and the last partial one pass through a buffer (scratchpad/fdccmd_cf1107.out:
+; the `82` / `8A` reads; the `A2` / `AA` run before them is its SAVE). Ours read
+; every sector into FAT_DBUF and parsed it there. Read this way, ours misses a
+; revolution 11 times in 28 sector gaps (scratchpad/fdccmd_direct.out); the
+; CF-3300's LOAD misses 4 of 26.
 ; Entered with the marker read: FAT_DBUF holds the first sector, FREAD_OFF = 1,
 ; FREAD_LEFT = the bytes after the marker, CLPTR = TXTTAB, CLINK = 0.
 ; 🎯 THE SAME ANSWER AS THE STREAM, NOT A NEW READER. When the file ends at or
@@ -677,10 +678,11 @@ hd_rest:        ld      (FREAD_LEFT),hl
                 or      c
                 jp      z,hd_end            ; the marker alone: an empty program
                 ldir
-; ⚠️ ONE DSKIO A SECTOR, ON PURPOSE. The CF-3300 reads the run with ONE multi-sector
-; DSKIO (B counts down from $1B), and D-LOADRUNS (2026-11-07) built exactly that --
-; and measured it SLOWER here (14 KB 3.45 s against 3.07 one call a sector, with the
-; key-scan fix in both, scratchpad/loadclock_keyskip.out / loadclock_ab_persec.out):
+; ⚠️ ONE DSKIO A SECTOR, ON PURPOSE. D-LOADRUNS (2026-11-07) read each run of
+; consecutive clusters with ONE multi-sector DSKIO -- built on a misreading: the
+; "B counts down from $1B" it copied was the CF-3300's SAVE, and its LOAD's DSKIO
+; count is not visible (BC holds $7FBC there). Measured on its own it was SLOWER
+; here (14 KB 3.45 s against 3.07 one call a sector, with the key-scan fix in both, scratchpad/loadclock_keyskip.out / loadclock_ab_persec.out):
 ; our driver's own per-sector path between two sectors is no shorter than this
 ; call's, so the run only moved the FAT walk, it did not remove a miss. What made
 ; the misses was the ~3 ms keyboard-scan interrupt, fixed in C-BIOS (D-KEYSKIP).

@@ -1412,8 +1412,14 @@ item — do **one item per session** to keep context lean.
       STRAIGHT TO ITS FINAL ADDRESS ($8200, $8400, ... -- HL steps $200 per read command,
       one command per sector, ~20 ms apart when the next is caught); the LAST partial sector
       into the buffer again. ~~It misses a revolution only ... 3-4 misses per 14 KB~~ 🔴
-      **WRONG, read off the first few lines: counted over the whole run it misses 12 of 26
-      gaps** (and B counts down from $1B: ONE multi-sector DSKIO, the driver looping).
+      ~~WRONG ... misses 12 of 26 gaps (and B counts down from $1B: ONE multi-sector
+      DSKIO)~~ 🔴🔴 **CORRECTED 2026-11-08: THAT COUNT WAS ITS *SAVE*.** The probe program
+      SAVEs then LOADs, and the `A2` / `AA` run with HL stepping $200 from $8200 (B counting
+      down from $1B) is the WD2793's WRITE SECTOR -- SAVE writing the program straight from
+      memory. The LOAD's READS (`82` / `8A`) also land in place, $8200 .. $B600, so the
+      design above stands; but they miss **4 of 26** gaps (the second LOAD **2 of 26**), and
+      their BC is the driver's register pointer ($7FBC), so whether the LOAD is one DSKIO
+      is NOT visible.
       ➡️ **THE PLAN (no new RAM: the reference's own design):** zerobas's LOAD reads every
       sector into SECTOR_BUF and copies it. Read the full sectors of each contiguous run
       DIRECTLY into the program area -- the first sector (header) and the last partial one
@@ -1439,7 +1445,10 @@ item — do **one item per session** to keep context lean.
       🎯 PREDICTED 14 KB 3.0-3.3 s: **3.28 s -- hit** ([`loadclock_direct.out`](scratchpad/loadclock_direct.out)): **1 KB 0.62 -> 0.57 s
       (CF 1.36), 7 KB 2.59 -> 2.26 (CF 2.39, now FASTER), 14 KB 4.92 -> 3.28 (CF 2.94: 1.67x ->
       1.11x).** FDC log ([`fdccmd_direct.out`](scratchpad/fdccmd_direct.out)): the in-place run is 29 reads in 3.02 s with 11
-      revolutions missed, the CF-3300's 27 in 2.99 s with 12 -- **on par in the data phase**.
+      revolutions missed, ~~the CF-3300's 27 in 2.99 s with 12 -- on par in the data phase~~
+      🔴 **WRONG (corrected 2026-11-08): those 27 were the CF-3300's SAVE writes. Its LOAD
+      reads miss 4 of 26 (1.32 s) -- it catches more sectors than we do; the totals are near
+      par because other phases are faster here.**
       ➡️ **WHAT IS LEFT (filed, TIER 5): the lost-data retries.** The `80` reads from the retry
       site ($7AD9, B = 4) cost a revolution each: two on the LOAD's first FAT read, two in the
       data run. That is D-FDCDI's interrupt window landing at a data start (the ISR runs, the
@@ -8025,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16262 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16274 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10764,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16262 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15828,13 +15837,16 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       [`put20_prog.bas`](scratchpad/put20_prog.bas): OPEN LEN=32, 20 x LSET + PUT, CLOSE**):** zerobas
       ([`fdcput_zb.out`](scratchpad/fdcput_zb.out)) issues 24 write commands (`A0`), 29 reads and 53 seek-verifies --
       about one sector write per PUT. The CF-3300 ([`fdcput_cf.out`](scratchpad/fdcput_cf.out)) issues 48 commands in all:
-      19 x `82`, 14 x `D0`, 8 x `A2`, 3 x `01`, 2 x `AA`, 2 x `8A`. 🔴 **ITS COMMAND BYTES ARE NOT
-      DECODED YET:** in its own LOAD log `A2` / `AA` were the IN-PLACE READS (HL stepping $200
-      into the program area, [`fdccmd_cf1107.out`](scratchpad/fdccmd_cf1107.out)), where a WD2793 `A2` would be a
-      write -- so either the "National" layout maps $7FB8 differently or its driver's
-      command byte means something I have not worked out. Settle that (e.g. a SAVE-only and a
-      LOAD-only run on the CF-3300, compared) BEFORE reading its write count into the W4
-      design.
+      19 x `82`, 14 x `D0`, 8 x `A2`, 3 x `01`, 2 x `AA`, 2 x `8A`. ~~ITS COMMAND BYTES ARE NOT
+      DECODED~~ -- **DECODED 2026-11-08: they are the plain WD2793's** (`8x` read, `Ax` write);
+      the "in-place reads" I matched `A2` against were its SAVE (see D-LOADDIRECT's
+      correction). **THE REFERENCE'S PUT, READ:** across the 20 PUTs it writes a data sector
+      only TWICE (`AA` from its buffer at $ED95, each followed by an `8A` read) -- once per
+      512 B the 32-byte records fill -- and at CLOSE the directory (`A2` $EB95) and the FAT
+      (`A2` $E595 / $E795 / $E995, both copies). Ours writes the record's sector on EVERY PUT.
+      🔮 Predicted "~2-3 data writes": HIT. ➡️ **THE W4 DESIGN IS THE REFERENCE'S:** keep the
+      record's sector in the buffer, write it when a PUT / GET needs another sector, and at
+      CLOSE -- after the FAT_DBUF audit docs/spec-diskwcache.md asks for.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
