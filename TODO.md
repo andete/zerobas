@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15779 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15781 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15779 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15781 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11249,7 +11249,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       -- more rows needed: which of BC / DE / A are functions of the inputs). Close to
       D-BIOSINT ("won't fix": BIOS INTERNALS), but these are the published entries: in scope,
       or does SDSNAT1C stay a ZB-NOBOOT row?
-      ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
+      ✅ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is NOT a regression: ZB-ONLY meant zerobas ran
+      something the CF-3300 does not; FILES-EMPTY means BOTH now sit at the prompt with an empty
+      FILES (scratchpad/diskcorpus_run.py's classes) -- closer to the reference than on 11-04.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
       2026-11-06 by typed session S12_progedit).**
