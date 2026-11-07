@@ -4206,7 +4206,11 @@ wroe_have_valid:
                 ; buffer -- SECTOR_BUF and FAT_DBUF are one address in the disk build,
                 ; and the two were byte-identical, scratchpad/diskcarve_dupspan.out).
                 ; Sharing it frees 44 B in front of the $75A5 pin.
-                jp      frs_sector
+                ; D-LOADDIRECT: the shared body now takes its destination on the
+                ; stack, so this enters at the TOP. The same work: the cluster is
+                ; valid here and FAT_CLUSSEC < FAT_SECPERCLUS (fat_advance or the
+                ; new cluster left it 0), so the body's own checks pass through.
+                jp      fat_read_file_sector
 
 ; wrblk_mul_rr_rs — WRBLK_MULACC(32-bit LE, WBUF+500) := RR(24-bit, ix+33..35) *
 ; RS(16-bit, WRBLK_RS). Classic LSB-first shift-add multiply, 24 iterations: a
@@ -5832,102 +5836,17 @@ hk_dpload:
                                             ; program, not an error
                 cp      BASIC_DISK_ID
                 jp      nz,hdl_ascii        ; 2: main re-opens and tokenises
-hdl_line:
-                call    fat_io_getbyte      ; link low
-                jr      c,hdl_ok            ; EOF between lines = normal end
-                push    af                  ; preserve link-low across the read
-                call    fat_io_getbyte      ; link high
-                jr      c,hdl_eof
-                ld      b,a
-                pop     af
-                ld      c,a                 ; BC = saved link word L_n
-                ld      a,b
-                or      c
-                jr      z,hdl_ok            ; $0000 link -> program complete
-                ; body length = L_n - A_n - 4   (A_n = CLINK)
-                ld      hl,(CLINK)
-                ld      (CLINK),bc
-                ld      a,h                 ; D-LOADBASE: A_n = 0 is the first line --
-                or      l                   ; DE = $FFFF, scan it (flags kept)
-                ld      de,$FFFF
-                jr      z,hdl_len
-                ld      a,c
-                sub     l
-                ld      e,a
-                ld      a,b
-                sbc     a,h
-                ld      d,a
-                dec     de
-                dec     de
-                dec     de
-                dec     de                  ; DE = body length (incl. its $00)
-                ; this line's header (>=4 B) must fit below TXTMAX
-hdl_len:
-                push    de
-                ld      hl,(CLPTR)
-                ld      de,TXTMAX-4
-                or      a
-                sbc     hl,de
-                jr      nc,hdl_oom_pop
-                ; store the saved link word verbatim; relink fixes it later
-                ld      hl,(CLPTR)
-                ld      (hl),c
-                inc     hl
-                ld      (hl),b
-                inc     hl
-                ld      (CLPTR),hl
-                call    hdl_get_store       ; line number, 2 bytes
-                jr      c,hdl_eof
-                call    hdl_get_store
-                jr      c,hdl_eof
-                pop     de                  ; DE = body length
-                ld      a,d                 ; D-LOADBASE: $FFFF -> the first line,
-                and     e                   ; copied up to its own $00
-                inc     a
-                jp      z,hdl_scan          ; (disk/driver.asm's $4465 fill)
-hdl_body:
-                ld      a,d
-                or      e
-                jr      z,hdl_line          ; whole body copied -> next line
-                push    de
-                ld      hl,(CLPTR)
-                ld      de,TXTMAX
-                or      a
-                sbc     hl,de
-                jr      nc,hdl_oom_pop
-                call    hdl_get_store
-                jr      c,hdl_eof
-                pop     de
-                dec     de
-                call    hdl_run             ; D-LOADRUN: the rest of the sector's
-                jr      hdl_body            ; share of this body in one ldir
-
-; hdl_get_store: read ONE file byte and store it at CLPTR, advancing.
-;   out CF = EOF (nothing stored) / clear = stored, CLPTR advanced.
-; D-NGRAM13's shape, carried over with the move: it returns CF and the CALLER
-; raises, because each call site guards exactly one value across the read and
-; folding the drop in here would need a frame fix no row can witness.
-hdl_get_store:
-                call    fat_io_getbyte
-                ret     c
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
-                ret
-
-; hdl_eof: EOF with ONE guarded word on the stack -- three sites guard a 16-bit
-; count (`push de`) and one the link-low byte (`push af`); both are one word and
-; main's load_commit_prog reads neither, so the pop only has to be the right
-; SIZE. D-TRUNCLOAD: a truncated tokenised file is NOT an error -- the reference
-; is silent at all five EOF sites (docs/spec-basic-truncload.md §2).
-hdl_eof:
-                pop     af                  ; drop the guarded word
+                jp      hdl_direct          ; D-LOADDIRECT (disk/runtime.asm): the
+                                            ; whole file in place, then hdl_walk
+; 🗑️ D-LOADDIRECT (2026-11-07): THE BYTE STREAM IS GONE. hdl_line / hdl_len /
+; hdl_body / hdl_get_store parsed the file a byte at a time through
+; fat_io_getbyte, with D-LOADRUN's hdl_run (disk/runtime.asm) and D-LOADBASE's
+; hdl_scan (disk/driver.asm) beside them; hdl_direct + hdl_walk apply the same
+; rules to the file read in place.
 hdl_ok:
                 xor     a                   ; 0: loaded
                 jr      hdl_answer
-hdl_oom_pop:
-                pop     de
+hdl_oom:                                    ; D-LOADDIRECT: the file does not fit
                 ld      a,4                 ; 4: out of memory
                 jr      hdl_answer
 hdl_nf:
@@ -6848,6 +6767,83 @@ fat_locate:
                 ld      hl, (FAT_FATSTART)
                 add     hl, de              ; HL = the absolute FAT sector
                 ret
+; hdl_walk -- D-LOADDIRECT's second half (hdl_direct, disk/runtime.asm, is the
+; first): the stream's line rules applied to the file IN PLACE. HL = the line's
+; start, FREAD_OFF = END. CLPTR ends where hdl_line's last store would have left
+; it: at a line's start for an EOF inside its link or for the $0000 link, at END
+; for any other EOF.
+hdl_walk:
+                ld      (CLPTR),hl          ; an EOF in the link: CLPTR = here
+                ex      de,hl
+                ld      hl,(FREAD_OFF)
+                or      a
+                sbc     hl,de
+                ld      b,h
+                ld      c,l                 ; BC = the bytes left
+                ex      de,hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the link (read before the test:
+                ld      a,b                 ; past END it is never used)
+                or      a
+                jr      nz,hw_link
+                ld      a,c
+                cp      2
+                jr      c,hw_ok             ; fewer than 2 left: EOF in the link
+hw_link:        ld      a,d
+                or      e
+                jr      z,hw_ok             ; the $0000 link: the program's end
+                ld      hl,(CLINK)
+                ld      (CLINK),de
+                ex      de,hl               ; HL = the link, DE = the last one
+                ld      a,d
+                or      e
+                jr      z,hw_scan           ; the first line: scanned (D-LOADBASE)
+                sbc     hl,de               ; (CF = 0) HL = header + body
+                ld      a,h
+                or      a
+                jr      nz,hw_cmp
+                ld      a,l
+                cp      3
+                jr      z,hw_scan           ; a body of $FFFF: scanned, as hdl_line's
+                cp      4
+                jr      c,hw_eof            ; header + body >= 64 KB: past END
+hw_cmp:         ex      de,hl
+                ld      h,b
+                ld      l,c
+                or      a
+                sbc     hl,de
+                jr      c,hw_eof            ; runs past END
+                ld      hl,(CLPTR)
+                add     hl,de
+                jr      hdl_walk
+hw_scan:        ld      hl,-4
+                add     hl,bc
+                jr      nc,hw_eof           ; fewer than 4 left: EOF in the header
+                ld      hl,(CLPTR)
+                ld      de,4
+                add     hl,de               ; past the header
+                ld      de,(FREAD_OFF)
+                ld      c,0                 ; C = constant bytes still to pass
+hw_sl:          or      a
+                sbc     hl,de
+                add     hl,de
+                jr      z,hw_eof            ; END before its $00
+                ld      a,c
+                or      a
+                ld      a,(hl)
+                inc     hl
+                jr      z,hw_tok
+                dec     c                   ; inside a constant: any byte, $00 too
+                jr      hw_sl
+hw_tok:         or      a
+                jr      z,hdl_walk          ; its $00: HL = the next line
+                call    tok_payload
+                ld      c,a
+                jr      hw_sl
+hw_eof:         ld      hl,(FREAD_OFF)
+                ld      (CLPTR),hl          ; any other EOF: everything stored
+hw_ok:          jp      hdl_ok
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

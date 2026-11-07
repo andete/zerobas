@@ -1,26 +1,31 @@
-"""Host test for D-LOADRUN: LOAD copies a line body a SECTOR RUN at a time
-(disk/runtime.asm hdl_run, called from disk/kernel.asm hk_dpload's hdl_body).
+"""Host test for D-LOADDIRECT (2026-11-07), which replaced D-LOADRUN: LOAD reads
+the file IN PLACE, as the CF-3300 does, then walks it there (disk/runtime.asm
+hdl_direct, disk/kernel.asm hdl_walk; hk_dpload hands over after the marker).
 
-hdl_run must change nothing but the speed. Each row runs the disk LOAD twice on
-the same FAT12 model (test_hk_dpbload's): once as built, once with hdl_run
-trapped to return at once -- the byte-by-byte path every LOAD took before -- and
-the two must leave the same status, the same CLPTR and the same bytes in RAM
-from the text base up past TXTMAX. The rows are the edges hdl_run hands back to
-the byte path:
+The CF-3300's read commands land each full sector at its final address -- HL steps
+$200 a command -- and only the first (the $FF marker's) and the last partial sector
+pass through a buffer (scratchpad/fdccmd_cf1107.out). Before this, zerobas parsed
+the file a byte at a time out of the sector buffer (hdl_line / hdl_body, with
+D-LOADRUN's hdl_run and D-LOADBASE's hdl_scan), which the walk replaces.
+
+The walk must give the STREAM'S answer. `stream()` below is that parser's rules,
+transcribed from the removed code: the link-delta body length, the first line (and
+any $FFFF delta) scanned to its $00 over the constants' payloads, every EOF a loaded
+program with CLPTR where the last store left it -- at the line start for an EOF in
+the link (the link-low byte was never stored) or for the $0000 link, else past
+every byte read. Each row compares status, CLPTR and the stored bytes with it:
   * a 3.7 KB (8-sector) program whose bodies (1..250 B) straddle its sector edges;
-  * the same file ENDING EARLY (a directory size cut inside a body, on and around
-    a sector edge, inside a header) -- FREAD_LEFT bounds the run;
-  * a text base so high the program meets TXTMAX inside a body -- the run must
-    not write past it, and the byte path raises out of memory where it did.
-D-LOADFAT (2026-11-06) adds LOAD's one-sector FAT read cache (FAT_FCACHE, the FAT
-sector in FAT_MBUF while hk_dpload reads): the program stored from cluster 338, so
-its chain crosses cluster 341 -- the entry that STRADDLES FAT sectors 1 and 2 --
-and the next FAT sector, must load to the exact bytes; and the FAT sectors LOAD
-reads are counted: one read per FAT sector the chain enters (plus the straddle's
-next-sector read), where the uncached walk read one per cluster.
-A two-sided control proves the as-built LOAD is not the byte path by accident: on
-a step budget the byte path cannot meet, the as-built LOAD finishes with the
-program's bytes, and the trapped one runs out.
+  * the same file ENDING EARLY (a directory size cut inside a body, on and around a
+    sector edge, inside a header);
+  * corrupt links: a $FFFF delta (scanned), a delta under 4 (a 64 KB line: EOF),
+    a delta far past the file's end;
+  * a sector read that FAILS mid-file: an EOF at that sector, as the stream's was;
+  * TXTMAX around the file's end -- the one place the answer CHANGES: a file that
+    ends past TXTMAX is out of memory BEFORE anything is read (the stream loaded
+    up to TXTMAX and then said so; both leave main an empty program, dpl_oom).
+D-LOADFAT's rows stay: a chain across the FAT-sector straddle loads exactly, with
+one FAT read per FAT sector the chain enters. And the design is witnessed directly:
+every full data sector's read lands at its final address, $200 apart.
 """
 import os
 import sys
@@ -31,6 +36,7 @@ import test_hk_dpbload as D  # noqa: E402  (the FAT12 model and the disk build)
 
 TXTTAB_CELL = 0xF676
 BODIES = [1, 7, 250, 33, 128, 200, 5, 90, 250, 250, 17, 64, 3, 180]
+PAYLOAD = {0x0B: 2, 0x0C: 2, 0x0D: 2, 0x0E: 2, 0x0F: 1, 0x1C: 2, 0x1D: 4, 0x1F: 8}
 
 
 def program(base=0x8001, nlines=34):
@@ -46,26 +52,68 @@ def program(base=0x8001, nlines=34):
     return bytes(out) + b"\x00\x00"
 
 
-def machine(data, size, at, run):
+def stream(data, at):
+    """The removed byte parser's answer for `data` (after the marker) stored from
+    `at`, when nothing reaches TXTMAX: (status, CLPTR, the bytes stored)."""
+    n, pos, clink = len(data), 0, 0
+    while True:
+        if pos + 2 > n:
+            return 0, at + pos, data[:pos]
+        link = data[pos] | data[pos + 1] << 8
+        if link == 0:
+            return 0, at + pos, data[:pos]
+        de = 0xFFFF if clink == 0 else (link - clink - 4) & 0xFFFF
+        clink = link
+        if pos + 4 > n:
+            return 0, at + n, data
+        pos += 4
+        if de == 0xFFFF:
+            e = 0
+            while True:
+                if pos >= n:
+                    return 0, at + n, data
+                b = data[pos]
+                pos += 1
+                if e:
+                    e -= 1
+                elif b == 0:
+                    break
+                else:
+                    e = PAYLOAD.get(b, 0)
+        else:
+            if pos + de > n:
+                return 0, at + n, data
+            pos += de
+
+
+def machine(data, size, at, fail=()):
     d = D.Disk()
     d.add_file("P.BAS", data, size)
     m = D.machine(d)
     s = m.sym
+    d.fail_read.update(fail)
     m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
     m.poke(s["FOPEN_SEL"], s["FOPEN_SEL_LOAD"])
     m.poke_w(TXTTAB_CELL, at)
-    if not run:
-        m.trap("hdl_run", lambda mach: None)    # the byte path, as before D-LOADRUN
-    return m
+    return m, d
 
 
-def load(data, size, at, run):
-    m = machine(data, size, at, run)
+def load(data, size, at, fail=()):
+    m, _ = machine(data, size, at, fail)
     s = m.sym
     m.call("hk_dpload")
-    top = s["TXTMAX"] + 16
-    return (m.mem[s["DISKOP_STATUS"]], m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8,
-            bytes(m.mem[at:top]))
+    clptr = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
+    return m.mem[s["DISKOP_STATUS"]], clptr, bytes(m.mem[at:max(at, clptr)])
+
+
+def corrupt(delta):
+    """program() with line 2's link set to line 1's + `delta`."""
+    p = bytearray(program())
+    l1 = p[0] | p[1] << 8
+    off2 = l1 - 0x8001
+    v = (l1 + delta) & 0xFFFF
+    p[off2:off2 + 2] = v.to_bytes(2, "little")
+    return bytes(p)
 
 
 def run():
@@ -82,20 +130,56 @@ def run():
     sym = D.machine(D.Disk()).sym
     txtmax = sym["TXTMAX"]
 
-    rows = [("whole file", img, None, 0x8001)]
-    for cut in (1, 3, 5, 200, 511, 512, 513, 1023, 1024, 1025, 1536, 2047, 2048,
+    rows = [("whole file", img, None, 0x8001, ())]
+    for cut in (1, 2, 3, 5, 200, 511, 512, 513, 1023, 1024, 1025, 1536, 2047, 2048,
                 2600, 3000, n - 3, n - 1):
         if cut < n:
-            rows.append((f"file ends at byte {cut}", img, cut, 0x8001))
-    for room in (300, 700, 1200, 2000):
-        rows.append((f"TXTMAX {room} B above the base", img, None, txtmax - room))
+            rows.append((f"file ends at byte {cut}", img, cut, 0x8001, ()))
+    for delta, what in ((3, "a $FFFF delta: scanned"), (2, "a delta under 4: a 64 KB line"),
+                        (1, "a delta of 1"), (0x3000, "a delta far past the end")):
+        rows.append((f"line 2's link {what}", b"\xff" + corrupt(delta), None, 0x8001, ()))
+    rows.append(("from $C001 (D-LOADBASE: the first line scanned)", b"\xff" + program(0xC001),
+                 None, 0x8001, ()))
+    # a failure on the file's 3rd data sector (the file starts at cluster 2)
+    rows.append(("a read failing on the 3rd sector", img, None, 0x8001, (D.FIRSTDATA + 2,)))
 
-    for label, data, size, at in rows:
-        a = load(data, size, at, run=True)
-        b = load(data, size, at, run=False)
-        same = a[:3] == b[:3]
-        check(same, f"{label}: status {a[0]} / {b[0]}, CLPTR ${a[1]:04X} / ${b[1]:04X}"
-                    f"{'' if a[2] == b[2] else ', RAM DIFFERS'} (as built / byte path)")
+    for label, data, size, at, fail in rows:
+        got = load(data, size, at, fail)
+        body = data[1:size] if size else data[1:]
+        if fail:
+            body = body[:2 * D.SECSIZE - 1]
+        want = stream(body, at)
+        ok = got[0] == want[0] and got[1] == want[1] and got[2] == bytes(want[2][:got[1] - at])
+        check(ok, f"{label}: status {got[0]} / {want[0]}, CLPTR ${got[1]:04X} / ${want[1]:04X}"
+                  f"{'' if got[2] == bytes(want[2][:max(0, got[1] - at)]) else ', BYTES DIFFER'}"
+                  f" (as built / the stream's rules)")
+
+    # TXTMAX: in place iff the file's end is at or below it; else out of memory, nothing read
+    plen = n - 1
+    for room in (plen + 40, plen + 1, plen, plen - 1, plen - 200, 300):
+        at = txtmax - room
+        m, d = machine(img, None, at)
+        s = m.sym
+        reads = []
+        orig = m.traps[s["read_sector"]]
+
+        def counting(mm, orig=orig, reads=reads):
+            reads.append(mm.cpu.de)
+            orig(mm)
+        m.traps[s["read_sector"]] = counting
+        guard = bytes(m.mem[txtmax:txtmax + 16])
+        m.call("hk_dpload")
+        st = m.mem[s["DISKOP_STATUS"]]
+        clptr = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
+        untouched = bytes(m.mem[txtmax:txtmax + 16]) == guard
+        if room >= plen:
+            want = stream(img[1:], at)
+            ok = st == 0 and clptr == want[1] and untouched
+        else:
+            ok = st == 4 and untouched and len(reads) <= 4     # mount, dir, FAT -- no data
+        check(ok, f"the file ends {plen - room:+d} B past TXTMAX: status {st} "
+                  f"({'loaded' if room >= plen else 'out of memory, nothing read'}), "
+                  f"{len(reads)} sector reads, TXTMAX..+16 {'untouched' if untouched else 'WRITTEN'}")
 
     # --- D-LOADFAT: a chain across the FAT-sector edge, and the reads counted ---
     big = b"\xff" + program(nlines=120)
@@ -105,12 +189,14 @@ def run():
         d.add_file("P.BAS", big)
         m = D.machine(d)
         s = m.sym
-        fatreads = []
+        fatreads, dests = [], []
         orig = m.traps[s["read_sector"]]
 
-        def counting(mm, orig=orig, fatreads=fatreads):
+        def counting(mm, orig=orig, fatreads=fatreads, dests=dests):
             if D.RESERVED <= mm.cpu.de < D.RESERVED + D.SPF:
                 fatreads.append(mm.cpu.de)
+            else:
+                dests.append(mm.cpu.hl)
             orig(mm)
         m.traps[s["read_sector"]] = counting
         m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
@@ -124,31 +210,20 @@ def run():
               and not m.mem[s["FAT_DEFER"]] & 0x80)
         check(ok, f"{label}: status {m.mem[s['DISKOP_STATUS']]}, {end - 0x8001} B = the program's "
                   f"bytes, cache off after (FAT_DEFER ${m.mem[s['FAT_DEFER']]:02X})")
-        # fat_mount's own media read (fat_geom_read) is one; then ONE per FAT sector the
-        # chain enters, and one more where an entry straddles two (it is read into
-        # FAT_DBUF, unchanged) -- scratchpad/loadfat_reads.out logged each with its caller
         straddle = any((c * 3 // 2) % D.SECSIZE == D.SECSIZE - 1 for c in range(first, first + nclus - 1))
         want = 1 + len(secs) + straddle
         check(len(fatreads) == want,
               f"{label}: {len(fatreads)} FAT-sector reads (want {want}: the mount's, one per FAT "
-              f"sector {secs}{', the straddle' if straddle else ''}) for {nclus} clusters -- "
-              f"uncached it read one per cluster boundary, {nclus - 1}")
-
-    # the two-sided control: a step budget the byte path cannot meet
-    budget = 60_000
-    m = machine(img, None, 0x8001, run=True)
-    s = m.sym
-    m.call("hk_dpload", max_steps=budget)
-    end = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
-    check(m.mem[s["DISKOP_STATUS"]] == 0 and bytes(m.mem[0x8001:end]) == program()[:-2],
-          f"as built, {budget} steps: status {m.mem[s['DISKOP_STATUS']]}, {end - 0x8001} B "
-          f"stored = the program's {len(program()) - 2}")
-    m = machine(img, None, 0x8001, run=False)
-    try:
-        m.call("hk_dpload", max_steps=budget)
-        check(False, f"byte path, {budget} steps: it finished -- the budget proves nothing")
-    except RuntimeError:
-        check(True, f"byte path, {budget} steps: runs out (the control is live)")
+              f"sector {secs}{', the straddle' if straddle else ''}) for {nclus} clusters")
+        # the design: the data sectors after the first land IN PLACE, $200 apart
+        buf = s["FAT_DBUF"]
+        full = (len(big) - D.SECSIZE) // D.SECSIZE
+        inplace = [h for h in dests if h != buf]
+        want_in = [0x8001 + (D.SECSIZE - 1) + k * D.SECSIZE for k in range(full)]
+        check(inplace == want_in,
+              f"{label}: {len(inplace)} data sectors read in place at "
+              f"${inplace[0] if inplace else 0:04X}..${inplace[-1] if inplace else 0:04X} step $200 "
+              f"(want {len(want_in)}), {len(dests) - len(inplace)} through FAT_DBUF")
     return fails
 
 

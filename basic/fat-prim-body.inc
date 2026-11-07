@@ -566,7 +566,13 @@ fnc_odd:
 ;   out: Cy = 0 ok (FAT_DBUF holds 512 bytes), Cy = 1 end-of-file / error
 ; The caller bounds the true end of file with FAT_FILESIZE; this returns Cy = 1
 ; once the cluster chain reaches an end-of-chain marker.
+; frs_to -- the same, into the 512 bytes at HL (D-LOADDIRECT: LOAD reads its full
+; sectors straight into the program area, as the CF-3300 does,
+; scratchpad/fdccmd_cf1107.out).
 fat_read_file_sector:
+                ld      hl, FAT_DBUF
+frs_to:
+                push    hl                  ; [destination]
                 ld      a, (FAT_CLUSSEC)
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
@@ -584,8 +590,6 @@ frs_incluster:
                 sbc     hl, de
                 jr      nc, frs_eof         ; cluster >= $0FF8 = end-of-chain
                 ; sector = firstData + (cluster-2)*secPerClus + clussec
-frs_sector:                                 ; (D-DISKCARVE: disk/kernel.asm's
-                                            ; wroe_have_valid is a `jp` here)
                 ld      hl, (FAT_CURCLUS)
                 ld      de, 2
                 or      a
@@ -604,7 +608,7 @@ frs_mul:
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl
-                ld      hl, FAT_DBUF
+                pop     hl                  ; the destination
                 call    read_sector
                 ret     c
                 ld      a, (FAT_CLUSSEC)
@@ -613,6 +617,7 @@ frs_mul:
                 or      a                   ; Cy = 0 success
                 ret
 frs_eof:
+                pop     hl
                 scf
                 ret
 

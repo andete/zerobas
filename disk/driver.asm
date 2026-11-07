@@ -401,35 +401,7 @@ install_p1blit:
                 ldir
                 ret
 ; (boot_call0 moved to the kernel's old CALLF-handler hole, D-BOOTREGS.)
-; hdl_scan -- D-LOADBASE: the first line's body up to its $00, passing over each
-; constant's bytes (tok_payload); then link deltas from CLINK = L_1. As ctp_scan
-; in basic/cload.asm: the CF-3300 LOADs a program SAVEd with TXTTAB moved
-; (scratchpad/txttab_saveload.out, txttab_saveload2.out). Sited in this fill
-; because hdl_line's region (disk/kernel.asm) has no room.
-hdl_scan:
-                ld      e,0                 ; E = constant bytes still to pass
-hdls_lp:
-                push    de
-                ld      hl,(CLPTR)
-                ld      de,TXTMAX
-                or      a
-                sbc     hl,de
-                jp      nc,hdl_oom_pop
-                call    hdl_get_store       ; A = the byte, stored
-                jp      c,hdl_eof
-                pop     de
-                ld      d,a                 ; D = the byte
-                ld      a,e
-                or      a
-                jr      z,hdls_tok
-                dec     e                   ; inside a constant: any byte, $00 too
-                jr      hdls_lp
-hdls_tok:
-                or      d
-                jp      z,hdl_line          ; its $00: the first line is done
-                call    tok_payload
-                ld      e,a
-                jr      hdls_lp
+; (hdl_scan, D-LOADBASE's first-line scan, is D-LOADDIRECT's hdl_walk now.)
                 include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE)
 ; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
 ; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.

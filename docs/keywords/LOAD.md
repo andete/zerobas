@@ -6,9 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `LOAD` — replace the program with one from a file
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-07):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known user-visible
-> divergence; one open internal item (below).
+> divergence; one open internal item, and one edge not yet measured on the
+> reference (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -106,9 +107,31 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   more compliant with reference now that is fine"* — the reference's
   behaviour stands, and the earlier ruling is superseded.
 
+- **A program too big for memory is refused before it is read** (since
+  2026-11-07, D-LOADDIRECT). zerobas compares the file's size with the free
+  program space first and, when it does not fit, says `Out of memory` and
+  leaves an empty program without reading the file. Before, it read the
+  program until memory ran out and then said the same thing, so what the user
+  sees is unchanged; the size at which the message starts moved by a couple
+  of bytes. What the CF-3300 does with a file that does not fit has **not been
+  measured** yet.
+
 **RAM usage** is not yet proven.
 
 ## What we found, and how
+
+- **A disk `LOAD` went through a sector buffer, and lost its place on the
+  disk** (fixed 2026-11-07, D-LOADDIRECT). Logging the floppy controller's
+  commands showed how the CF-3300 reads a program: the first sector (which
+  carries the file's type byte) goes to a buffer, then **every full sector goes
+  straight to its final place in the program area**, one read command each, and
+  only the last part-sector passes through the buffer again
+  ([`fdccmd_cf1107.out`](../../scratchpad/fdccmd_cf1107.out)). zerobas read
+  every sector into a buffer and sorted out the lines from there, and that
+  work made it miss the next sector as the disk turned, so the drive had to
+  come round again. It now reads the way the CF-3300 does
+  ([after](../../scratchpad/fdccmd_direct.out)), then checks the lines in place
+  by the same rules as before.
 
 - **A wildcard in a file name loaded the first match, or saved a file named
   with `?`** (fixed 2026-11-07, D-WILDSAVE, found by typed session S14_diskbin).
@@ -191,8 +214,10 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   [sub2/tapeprog.asm](../../sub2/tapeprog.asm), in the sub-ROM's page 1 since
   2026-11-03 (the second sub-ROM's from 2026-10-24), calling main's `TAPIN` for each byte.
 - Disk ROM: `hk_dpload` in [disk/kernel.asm](../../disk/kernel.asm) mounts the
-  disk, finds the file and reads it — the same split as on the CF-3300, whose
-  whole sector loop runs on the disk ROM's side.
+  disk and finds the file; `hdl_direct` in
+  [disk/runtime.asm](../../disk/runtime.asm) reads it into place and
+  `hdl_walk` (disk/kernel.asm) checks its lines there — the same split as on
+  the CF-3300, whose whole sector loop runs on the disk ROM's side.
 - The tape search: [basic/casmatch-body.inc](../../basic/casmatch-body.inc).
 
 ## Related concepts
@@ -209,6 +234,10 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   against the CF-3300.
 - `tests/test_loadbase.py` (in `make unit-test`) — programs saved from `&H8001`,
   `&H9000` and `&HC001` load the same, from disk and from tape.
+- `tests/test_loadrun.py` (in `make unit-test`) — the in-place read: files cut
+  short, damaged line links and a failing sector give the same program as the
+  earlier sector-by-sector reader; a file that does not fit is refused unread;
+  every full sector is read straight to its place.
 - `make diskascii-acceptance` — `LOAD` of an ASCII file, against the CF-3300.
 - `make dskmsg-acceptance` — `File not found` and the other disk messages.
 - `make castail-acceptance`, `make cas-ascii-acceptance`,

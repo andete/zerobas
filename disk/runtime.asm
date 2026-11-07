@@ -629,66 +629,81 @@ dos_clear_screen:
 ; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
-; hdl_run -- D-LOADRUN (2026-11-06): LOAD's line body, a SECTOR RUN at a time.
-; hk_dpload copied a body byte by byte through fat_io_getbyte (~450 T a byte, ~93 ms
-; a 512 B sector): the drive passes the next sector while LOAD still works on this
-; one, and every sector costs a wait (scratchpad/fdccmd_sectmiss.out). Called after
-; ONE byte went the ordinary way -- which refilled the sector or met the end of the
-; file -- it copies min(body left, bytes left in the sector) with one ldir, when
-; that run also fits the file (FREAD_LEFT, low word: a remainder >= 64 K just fails
-; the subtraction and keeps the byte path) and stays below TXTMAX. Anything else
-; returns with nothing done, so the byte path meets every edge -- end of file,
-; out of memory -- exactly as before.
-;   in: DE = body bytes left; out: DE less the bytes copied. Clobbers A, BC, HL.
-; 📍 Here, before the $7F7C pin: the one disk.rom region with the room (D-DISKJR).
-hdl_run:
-                ld      hl,512
-                ld      bc,(FREAD_OFF)
-                or      a
-                sbc     hl,bc               ; HL = bytes left in the sector
-                sbc     hl,de               ; (CF = 0: OFF <= 512)
-                add     hl,de               ; CF = 1: fewer than the body
-                jr      c,hr_n
-                ld      h,d
-                ld      l,e                 ; HL = n = min(sector, body)
-hr_n:           ld      a,h
+; hdl_direct -- D-LOADDIRECT (2026-11-07): LOAD the way the CF-3300 does. Its read
+; commands land each FULL sector straight at its final address -- HL steps $200 a
+; command, one command per sector, from ONE multi-sector DSKIO (B counts down) --
+; and only the first sector (the $FF marker's) and the last partial one pass through
+; a buffer (scratchpad/fdccmd_cf1107.out). Ours read every sector into FAT_DBUF and
+; parsed it there. Read this way, ours misses a revolution 11 times in 28 sector
+; gaps, the CF-3300 12 in 26 (scratchpad/fdccmd_direct.out).
+; Entered with the marker read: FAT_DBUF holds the first sector, FREAD_OFF = 1,
+; FREAD_LEFT = the bytes after the marker, CLPTR = TXTTAB, CLINK = 0.
+; 🎯 THE SAME ANSWER AS THE STREAM, NOT A NEW READER. When the file ends at or
+; below TXTMAX-3, none of hdl_line's TXTMAX tests can fire (the tightest is
+; hdl_len's CLPTR < TXTMAX-4 with two link bytes already read), so the stream's
+; outcome is a function of the bytes alone -- and the walk below applies the
+; stream's own rules to the same bytes in place: link deltas, the first line (and
+; a $FFFF delta) scanned to its $00 over tok_payload, every EOF a loaded program
+; with CLPTR where the stream's last store left it. A file that does not fit takes
+; hdl_line, unchanged. A read that fails is an EOF at that sector, as
+; fat_io_getbyte's is. The only new write is the file's tail past its $0000
+; link, into the free space below TXTMAX.
+hdl_direct:
+                ld      hl,(FREAD_LEFT+2)
+                ld      a,h
                 or      l
-                ret     z
-                push    de                  ; [body]
-                ld      b,h
-                ld      c,l                 ; BC = n
+                jp      nz,hdl_oom          ; 64 KB or more
+                ld      bc,(FREAD_LEFT)
                 ld      hl,(CLPTR)
-                push    hl                  ; [dest]
-                add     hl,bc               ; the run's end
+                add     hl,bc               ; the file's end in memory
+                jp      c,hdl_oom
                 ld      de,TXTMAX+1
-                or      a
                 sbc     hl,de
-                jr      nc,hr_pop           ; past TXTMAX: the byte path raises it
+                jp      nc,hdl_oom          ; past TXTMAX: out of memory, nothing read
+                ; the first sector's rest: min(511, LEFT) from the buffer
                 ld      hl,(FREAD_LEFT)
+                ld      bc,511
                 or      a
                 sbc     hl,bc
-                jr      c,hr_pop            ; the file ends first: the byte path
-                ld      (FREAD_LEFT),hl
-                ld      hl,(FREAD_OFF)
-                push    hl
+                jr      nc,hd_rest
                 add     hl,bc
-                ld      (FREAD_OFF),hl
-                pop     hl
-                ld      de,FAT_DBUF
-                add     hl,de               ; the source
-                pop     de                  ; the destination
-                push    bc                  ; [n]
+                ld      b,h
+                ld      c,l                 ; BC = LEFT, all of it
+                ld      hl,0
+hd_rest:        ld      (FREAD_LEFT),hl
+                ld      hl,FAT_DBUF+1
+                ld      de,(CLPTR)          ; DE = the destination, throughout
+                ld      a,b
+                or      c
+                jr      z,hd_end            ; the marker alone: an empty program
                 ldir
-                ld      (CLPTR),de
-                pop     bc
-                pop     hl                  ; the body
-                or      a
-                sbc     hl,bc
-                ex      de,hl               ; DE = body - n
-                ret
-hr_pop:         pop     hl
+hd_full:        ld      hl,(FREAD_LEFT)     ; every full sector: in place
+                ld      a,h
+                cp      2
+                jr      c,hd_last
+                dec     h
+                dec     h
+                ld      (FREAD_LEFT),hl
+                push    de
+                ex      de,hl
+                call    frs_to
                 pop     de
-                ret
+                jr      c,hd_end            ; an EOF here, as the stream's
+                inc     d
+                inc     d
+                jr      hd_full
+hd_last:        or      l
+                jr      z,hd_end
+                push    de                  ; the partial sector: through the buffer
+                call    fat_read_file_sector
+                pop     de
+                jr      c,hd_end
+                ld      hl,FAT_DBUF
+                ld      bc,(FREAD_LEFT)
+                ldir
+hd_end:         ld      (FREAD_OFF),de      ; END (the stream's cell is free now)
+                ld      hl,(CLPTR)
+                jp      hdl_walk
 
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is

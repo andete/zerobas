@@ -1410,16 +1410,43 @@ item — do **one item per session** to keep context lean.
       ($E795 / $E995); the FIRST data sector into a sector buffer ($ED95) -- it carries the
       $FF header byte, so its 511 B go to $8001..$81FF; then EVERY following full sector
       STRAIGHT TO ITS FINAL ADDRESS ($8200, $8400, ... -- HL steps $200 per read command,
-      one command per sector, ~20 ms apart: each one caught); the LAST partial sector into
-      the buffer again. It misses a revolution only where real work sits between reads:
-      after the buffered first sector and after each track step (`51`) -- 3-4 misses per
-      14 KB, against ~every other sector here.
+      one command per sector, ~20 ms apart when the next is caught); the LAST partial sector
+      into the buffer again. ~~It misses a revolution only ... 3-4 misses per 14 KB~~ 🔴
+      **WRONG, read off the first few lines: counted over the whole run it misses 12 of 26
+      gaps** (and B counts down from $1B: ONE multi-sector DSKIO, the driver looping).
       ➡️ **THE PLAN (no new RAM: the reference's own design):** zerobas's LOAD reads every
       sector into SECTOR_BUF and copies it. Read the full sectors of each contiguous run
       DIRECTLY into the program area -- the first sector (header) and the last partial one
       through the buffer, as the reference does; a run is consecutive sectors of one cluster,
       or of consecutive clusters. Witnesses: loadclock_probe (14 KB 4.92 s now, CF 2.94) and
       fdccmd_probe (the read commands' HL should step $200, as the CF-3300's do).
+      ✅ **D-LOADDIRECT, DONE (2026-11-07).** disk/runtime.asm `hdl_direct` reads the file IN
+      PLACE (the first sector's rest out of FAT_DBUF, every full sector through
+      basic/fat-prim-body.inc's new `frs_to` entry -- one DSKIO a sector -- the last partial
+      one through FAT_DBUF), then disk/kernel.asm `hdl_walk` applies the old stream's rules to
+      the bytes in place; the stream (hdl_line / hdl_body / hdl_get_store, D-LOADRUN's
+      hdl_run, D-LOADBASE's hdl_scan) is gone, and the swap is byte-neutral (disk.rom holes
+      190 B after against 189 before). tests/test_loadrun.py is rewritten: a Python
+      transcription of the stream's rules, checked against BOTH builds -- HEAD's disk.rom
+      agrees on all 25 parse rows (cuts, corrupt links, a $C001 base, a failing sector), so
+      the transcription is the old code's behaviour, not mine -- plus the in-place witness
+      (24 data sectors at $8200..$B000 step $200). **ONE CHANGE, AT TXTMAX:** a file whose end
+      lies past TXTMAX is now `out of memory` with nothing read (the stream read until TXTMAX
+      and then said the same; both leave dpl_oom's empty program). The stream accepted a
+      file up to 2 B longer (its $0000 end link was never stored); the direct read must not
+      write past TXTMAX, the workspace floor, during the read. What the CF-3300 does with a
+      file that does not fit is NOT measured (filed below).
+      🎯 PREDICTED 14 KB 3.0-3.3 s: **3.28 s -- hit** ([`loadclock_direct.out`](scratchpad/loadclock_direct.out)): **1 KB 0.62 -> 0.57 s
+      (CF 1.36), 7 KB 2.59 -> 2.26 (CF 2.39, now FASTER), 14 KB 4.92 -> 3.28 (CF 2.94: 1.67x ->
+      1.11x).** FDC log ([`fdccmd_direct.out`](scratchpad/fdccmd_direct.out)): the in-place run is 29 reads in 3.02 s with 11
+      revolutions missed, the CF-3300's 27 in 2.99 s with 12 -- **on par in the data phase**.
+      ➡️ **WHAT IS LEFT (filed, TIER 5): the lost-data retries.** The `80` reads from the retry
+      site ($7AD9, B = 4) cost a revolution each: two on the LOAD's first FAT read, two in the
+      data run. That is D-FDCDI's interrupt window landing at a data start (the ISR runs, the
+      first DRQ is lost). The CF-3300's log shows none. 🔭 Measure first: how many retries per
+      14 KB over several runs, and whether the window placement or the ISR length decides it.
+      ➡️ **ALSO FILED (TIER 6): LOAD of a file too big for memory on the CF-3300** -- the
+      message, whether the old program survives, whether it reads first.
       ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
@@ -7950,7 +7977,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10383 (T-6FE392)8 (T-529ABE)` from `TODO.md:16141 (T-529ABE)`: a
+      `TODO.md:10410 (T-6FE392)8 (T-529ABE)` from `TODO.md:16168 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10689,7 +10716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16168 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
