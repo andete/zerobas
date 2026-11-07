@@ -1,0 +1,9 @@
+all=0
+allfn=0
+tape=0
+TALLY {"NEAR": 14, "RUNS?": 20, "SAME": 8}
+tiers=0
+marker=0
+rc=0
+GATES: 58/58 green
+GATE TIER RAN: SCOPED (7 emulator suites)

@@ -36,6 +36,21 @@ def prog(tag, c, text):
             '90 PRINT CHR$(91);"' + tag + '";" ERR";ERR;"]":END',
             f"50 DATA {data}", f"60 DATA {txt}", "RUN"]
 
+# RST 28h GETYPR (same date, D-SYNCHR's follow-up): a USR routine does RST 28h and
+# stores F and VALTYP ($F663); called with an int / single / double argument (a string
+# argument to USR is Type mismatch on all three, so it is a row too).
+GCODE = [0xEF, 0xF5, 0xE1, 0x22, 0x10, 0xD1, 0x3A, 0x63, 0xF6, 0x32, 0x12, 0xD1, 0xC9]
+GCASES = [("g.int", "1%"), ("g.sng", "1!"), ("g.dbl", "1#"), ("g.str", '"A"')]
+
+
+def gprog(tag, arg):
+    data = ",".join(str(b) for b in GCODE)
+    return ["10 CLEAR 200,&HCFFF", f"20 FOR I=0 TO {len(GCODE)-1}:READ B:POKE &HD000+I,B:NEXT",
+            "28 ON ERROR GOTO 90", f"30 DEFUSR=&HD000:X=USR({arg})",
+            '40 PRINT CHR$(91);"' + tag + '";" F=";HEX$(PEEK(&HD110));" VT=";PEEK(&HD112);"]":END',
+            '90 PRINT CHR$(91);"' + tag + '";" ERR";ERR;"]":END', f"50 DATA {data}", "RUN"]
+
+
 def fence(tag, cap):
     c = cap or ""; k = len(c)
     while True:
@@ -50,10 +65,11 @@ def main():
     sides = ("vg8020", "cf3300", "zb")
     cfg = probe_sides.sides(*sides)
     bad = []
-    for tag, c, text in CASES:
+    rows = [(tag, prog(tag, c, text)) for tag, c, text in CASES] + [(t, gprog(t, a)) for t, a in GCASES]
+    for tag, lines in rows:
         row = []
         for side in sides:
-            cap = omsx_repl.run_cases(cfg[side]["machine"], [(tag, prog(tag, c, text))], batch=False,
+            cap = omsx_repl.run_cases(cfg[side]["machine"], [(tag, lines)], batch=False,
                                       boot=cfg[side]["boot"], reset=cfg[side]["reset"], run_gap=8.0)[0]
             row.append(fence(tag, cap))
         print(f"{tag:8} vg8020={row[0]!r}  cf3300={row[1]!r}  zb={row[2]!r}", flush=True)
@@ -63,7 +79,7 @@ def main():
             bad.append(f"{tag}: zerobas {row[2]!r}, references {row[0]!r}")
     print(__import__("probe_refcache").summary())
     if gate:
-        print(f"synchr: {len(CASES) - len(bad)}/{len(CASES)} rows agree" + ("" if not bad else "; " + "; ".join(bad)))
+        print(f"synchr: {len(rows) - len(bad)}/{len(rows)} rows agree" + ("" if not bad else "; " + "; ".join(bad)))
         return 1 if bad else 0
     return 0
 

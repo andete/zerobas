@@ -78,3 +78,24 @@ var_alloc_or_find:
 vaof_miss:
                 pop     af
                 jp      vaof_engine
+
+; 📍 In the LOW region, not an island: islands 1, 2 and 3/4 were all full (2026-11-07).
+; getypr -- RST 28h, the PUBLISHED MSX BIOS GETYPR (D-SYNCHR's follow-up, 2026-11-07):
+; the type of the value in DAC, from VALTYP ($F663 = FACTYP), in the FLAGS: integer
+; M, string Z, single PO, double NC. Measured on the VG-8020 and the CF-3300 alike
+; through a USR routine (scratchpad/getypr_probe.py -> getypr_run.out): F = $AD / $01
+; / $04 for an integer / single / double -- every bit of which is the classic
+; `cp 8 / sub 3 / or a / scf` below; C-BIOS's $0028 gave $42 / $02 / $02.
+getypr:
+                ld      a,(FACTYP)
+                cp      8
+                jr      nc,gty_dbl          ; a double: NC
+                sub     3                   ; 2 -> $FF (M), 3 -> 0 (Z), 4 -> 1 (PO)
+                or      a
+                scf
+                ret
+gty_dbl:
+                sub     3
+                or      a                   ; 8 -> 5 (PE), NC
+                ret
+

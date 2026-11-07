@@ -1,0 +1,6 @@
+int  vg8020='F=AD VT= 2'  cf3300='F=AD VT= 2'  zb='F=42 VT= 2'
+sng  vg8020='F=1 VT= 4'  cf3300='F=1 VT= 4'  zb='F=2 VT= 4'
+dbl  vg8020='F=4 VT= 8'  cf3300='F=4 VT= 8'  zb='F=2 VT= 8'
+str  vg8020='ERR 13'  cf3300='ERR 13'  zb='ERR 13'
+refcache: 0 hit, 12 miss, 12 stored
+refcache: 0 hit, 12 miss, 12 stored

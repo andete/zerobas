@@ -74,6 +74,7 @@ ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE))
 PATCH_RANGES = {0x0008: bytes([0xC3, 0xED, 0x10]),     # RST 08h -> synchr (D-SYNCHR)
                 0x0010: bytes([0xC3, 0xFF, 0x10]),     # RST 10h -> chrgtr
                 0x0018: bytes([0xC3, 0x1B, 0x11]),     # RST 18h -> outdo
+                0x0028: bytes([0xC3, 0x27, 0x11]),     # RST 28h -> getypr
                 0x1038: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
                 0x11CF: bytes([0x3A, 0xDD, 0xF3])}     # CHPUT: TTYPOS = CSRX-1 (0-based)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must

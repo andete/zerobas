@@ -1,0 +1,20 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_synchr.py --gate
+match    vg8020='HL=D101 A= 53 F=23'  cf3300='HL=D101 A= 53 F=23'  zb='HL=D101 A= 53 F=23'
+miss     vg8020='ERR 2'  cf3300='ERR 2'  zb='ERR 2'
+space    vg8020='ERR 2'  cf3300='ERR 2'  zb='ERR 2'
+matchsp  vg8020='HL=D102 A= 53 F=23'  cf3300='HL=D102 A= 53 F=23'  zb='HL=D102 A= 53 F=23'
+g.int    vg8020='F=AD VT= 2'  cf3300='F=AD VT= 2'  zb='F=AD VT= 2'
+g.sng    vg8020='F=1 VT= 4'  cf3300='F=1 VT= 4'  zb='F=1 VT= 4'
+g.dbl    vg8020='F=4 VT= 8'  cf3300='F=4 VT= 8'  zb='F=4 VT= 8'
+g.str    vg8020='ERR 13'  cf3300='ERR 13'  zb='ERR 13'
+refcache: 8 hit, 16 miss, 16 stored
+synchr: 8/8 rows agree
+refcache: 8 hit, 16 miss, 16 stored

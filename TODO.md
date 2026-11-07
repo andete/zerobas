@@ -17616,6 +17616,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`synchr_gate.out`](scratchpad/synchr_gate.out)); HEAD's readings in synchr_run.out are the knife. ➡️ Still open from this
       item: `$20` DCOMPR (bios-regs.patch matched it), `$28` GETYPR, `$30` CALLF -- the same
       DEFUSR measurement.
+      ✅ **`$28` GETYPR DONE THE SAME DAY.** [`getypr_probe.py`](scratchpad/getypr_probe.py) (a USR routine: RST 28h, then F and
+      VALTYP $F663 stored) -> [`getypr_run.out`](scratchpad/getypr_run.out): VALTYP was already right (2 / 4 / 8) but C-BIOS's
+      $0028 left F = $42 / $02 / $02 where both references give $AD / $01 / $04 -- exactly
+      the classic `ld a,(VALTYP) / cp 8 / jr nc / sub 3 / or a / scf`. `getypr` is in the
+      LOW region (basic/varfind.asm, +16 B, 72 -> 56: islands 1, 2 and 3/4 were all full);
+      $0028 -> `jp getypr` (PATCH_RANGES). 🔮 "all three match": HIT ([`getypr_after.out`](scratchpad/getypr_after.out));
+      synchr-acceptance gained g.int / g.sng / g.dbl / g.str, 8/8 ([`synchr_gate2.out`](scratchpad/synchr_gate2.out)). zerobas
+      never `rst $28`s itself, so nothing internal moves. ➡️ Left: `$30` CALLF.
 
 - [ ] 🧰 **D-KWTIMESYMRACE — `kwtime` CAN DIE IN 0 s ON `KeyError: 'tokenise'` WHEN ANOTHER BATTERY
       UNIT REWRITES main's .sym (found twice: 2026-10-04 during B-3, 2026-10-05 during B-11; MEASURED)**
