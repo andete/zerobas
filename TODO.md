@@ -17147,6 +17147,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          16-step `div10` + a 15-byte `zero_fill` (~1300).
       🔴 Harness trap found on the way: an unseeded `FN_FEND` makes every host scalar
       lookup walk a 256-byte page (~9000 T); tests/test_forfast.py's F4 now seeds it.
+      ✅ **A SAME-LINE NEXT KEEPS DIRECTF / CURLIN (2026-11-07).** nx_again re-derived DIRECTF and
+      re-published CURLIN every pass; when the loop's line is the line already running (a FOR
+      and its NEXT on one line) both are that line's already, so derive_directf is skipped (C =
+      CURLINE changed). Model `%` loop 2815 -> 2696, default 3693 -> 3574 T/pass
+      ([`nxdd_prof.out`](scratchpad/nxdd_prof.out)); machine ([`loops4_time7.out`](scratchpad/loops4_time7.out)) **66 / 73 / 12 / 20** (from 67 / 75 / 13 / 21;
+      VG-8020 69 / 97 / 7 / 24) -- 🔮 "the `%` loop stays 13": MISSED on the good side, every loop
+      gained a tick. Page 1 took 12 B (2026-11-07). Looked at and DROPPED: skipping nx_have's
+      15-byte frame copy when FOR_CUR already holds that frame -- FOR_CUR is BUFTX, a scratch
+      buffer other statements write, so a cached "this frame" key could be clobbered into a
+      false match.
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

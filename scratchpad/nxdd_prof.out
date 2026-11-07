@@ -1,0 +1,157 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+
+=== (c) empty I% loop: `FOR I%=1 TO 40:NEXT` ===
+T per pass (M1 incl.): mean 2611, min 2611, max 2611 over 20 passes  [program printed '']
+  by region: main 2600, hook 11
+  sub-ROM crossings per pass: 0
+  MACHINE MODEL per pass: 2696 T (host 2611 + crossings + BREAKX); -> 13 TIME ticks per 300 passes at 63000 usable T/tick
+  trapped calls per pass (0 T on the host): {'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+          497 T  19.0%  nx_have
+          416 T  15.9%  exec_stmt
+          387 T  14.8%  nx_again
+          138 T   5.3%  es_idx
+          110 T   4.2%  nx_fadd
+           85 T   3.3%  nx_fcmp
+           81 T   3.1%  nx_fast
+           79 T   3.0%  cgt_lp
+           76 T   2.9%  check_fperr_only
+           68 T   2.6%  skipsp_test
+           57 T   2.2%  nx_head
+           56 T   2.1%  skip_spaces
+           49 T   1.9%  is_letter
+           45 T   1.7%  nx_bound
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2079 T  79.6%  run_prog  (0 calls/pass)
+          108 T   4.1%  island$0010  (1 calls/pass)
+          104 T   4.0%  cmp16_bits  (1 calls/pass)
+           76 T   2.9%  is_letter  (1 calls/pass)
+           76 T   2.9%  check_fperr_only  (2 calls/pass)
+           68 T   2.6%  skipsp_test  (2 calls/pass)
+           56 T   2.1%  skip_spaces  (2 calls/pass)
+           33 T   1.3%  set_factyp2  (1 calls/pass)
+           11 T   0.4%  hook$FF48  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+         2611 T 100.0%  run_prog  (0 calls/pass)
+          124 T   4.7%  skipsp_test  (2 calls/pass)
+          119 T   4.6%  island$0010  (1 calls/pass)
+          104 T   4.0%  cmp16_bits  (1 calls/pass)
+           76 T   2.9%  is_letter  (1 calls/pass)
+           76 T   2.9%  check_fperr_only  (2 calls/pass)
+           56 T   2.1%  skip_spaces  (2 calls/pass)
+           33 T   1.3%  set_factyp2  (1 calls/pass)
+           11 T   0.4%  hook$FF48  (1 calls/pass)
+  -- calls per pass, caller -> callee --
+      run_prog->check_fperr_only 2, run_prog->skipsp_test 2, skipsp_test->skip_spaces 2, run_prog->island$0010 1, island$0010->hook$FF48 1, run_prog->is_letter 1, run_prog->cmp16_bits 1, run_prog->set_factyp2 1, run_prog->TRAP:BREAKX 1
+
+=== (d) empty default-type loop: `FOR I=1 TO 40:NEXT` ===
+T per pass (M1 incl.): mean 3489, min 3417, max 3534 over 20 passes  [program printed '']
+  by region: main 3478, hook 11
+  sub-ROM crossings per pass: 0
+  MACHINE MODEL per pass: 3574 T (host 3489 + crossings + BREAKX); -> 17 TIME ticks per 300 passes at 63000 usable T/tick
+  trapped calls per pass (0 T on the host): {'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+          497 T  14.2%  nx_have
+          416 T  11.9%  exec_stmt
+          387 T  11.1%  nx_again
+          247 T   7.1%  npi_tlp
+          159 T   4.6%  nx_pki
+          138 T   4.0%  es_idx
+          123 T   3.5%  nx_fadd
+          102 T   2.9%  nx_fast
+           96 T   2.8%  npk_put
+           85 T   2.4%  nx_fcmp
+           79 T   2.3%  cgt_lp
+           76 T   2.2%  check_fperr_only
+           71 T   2.0%  nx_pack
+           68 T   1.9%  skipsp_test
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2031 T  58.2%  run_prog  (0 calls/pass)
+          548 T  15.7%  nx_pki  (1 calls/pass)
+          378 T  10.8%  nx_pack  (1 calls/pass)
+          108 T   3.1%  island$0010  (1 calls/pass)
+          104 T   3.0%  cmp16_bits  (1 calls/pass)
+           76 T   2.2%  is_letter  (1 calls/pass)
+           76 T   2.2%  check_fperr_only  (2 calls/pass)
+           68 T   1.9%  skipsp_test  (2 calls/pass)
+           56 T   1.6%  skip_spaces  (2 calls/pass)
+           33 T   0.9%  set_factyp2  (1 calls/pass)
+           11 T   0.3%  hook$FF48  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+         3489 T 100.0%  run_prog  (0 calls/pass)
+          548 T  15.7%  nx_pki  (1 calls/pass)
+          378 T  10.8%  nx_pack  (1 calls/pass)
+          124 T   3.6%  skipsp_test  (2 calls/pass)
+          119 T   3.4%  island$0010  (1 calls/pass)
+          104 T   3.0%  cmp16_bits  (1 calls/pass)
+           76 T   2.2%  is_letter  (1 calls/pass)
+           76 T   2.2%  check_fperr_only  (2 calls/pass)
+           56 T   1.6%  skip_spaces  (2 calls/pass)
+           33 T   0.9%  set_factyp2  (1 calls/pass)
+           11 T   0.3%  hook$FF48  (1 calls/pass)
+  -- calls per pass, caller -> callee --
+      run_prog->check_fperr_only 2, run_prog->skipsp_test 2, skipsp_test->skip_spaces 2, run_prog->island$0010 1, island$0010->hook$FF48 1, run_prog->is_letter 1, run_prog->nx_pki 1, run_prog->nx_pack 1, run_prog->cmp16_bits 1, run_prog->set_factyp2 1, run_prog->TRAP:BREAKX 1
+
+=== (e) GOSUB + H(M)=H(M)+1:RETURN: `DIM H(9):M=3:FOR I=1 TO 40:GOSUB 100:NEXT:END
+100 H(M)=H(M)+1:RETURN` ===
+T per pass (M1 incl.): mean 25924, min 25656, max 26049 over 20 passes  [program printed '']
+  by region: main 25891, hook 33
+  sub-ROM crossings per pass: 0
+  MACHINE MODEL per pass: 26179 T (host 25924 + crossings + BREAKX); -> 125 TIME ticks per 300 passes at 63000 usable T/tick
+  trapped calls per pass (0 T on the host): {'BREAKX': 3.0}
+  -- top by EXCLUSIVE T, per label --
+         1416 T   5.5%  exec_stmt
+         1117 T   4.3%  domain_convert_core
+          732 T   2.8%  vlf_value
+          701 T   2.7%  wsrc_unpack
+          603 T   2.3%  cl_opnd_lo
+          570 T   2.2%  apf_lp
+          526 T   2.0%  apsub_close
+          497 T   1.9%  nx_have
+          494 T   1.9%  npi_tlp
+          484 T   1.9%  ctl_reloc
+          460 T   1.8%  vnk_suffix
+          414 T   1.6%  es_idx
+          387 T   1.5%  nx_again
+          369 T   1.4%  ev_sp
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         3366 T  13.0%  exec_stmt  (2 calls/pass)
+         2428 T   9.4%  ev_logic  (3 calls/pass)
+         1962 T   7.6%  ev_f_keyed  (3 calls/pass)
+         1136 T   4.4%  ary_parse_call  (2 calls/pass)
+         1134 T   4.4%  ary_resolve_fast  (2 calls/pass)
+         1096 T   4.2%  nx_pki  (2 calls/pass)
+         1037 T   4.0%  run_prog  (0 calls/pass)
+         1036 T   4.0%  arga_widen  (1 calls/pass)
+          874 T   3.4%  ctl_alloc  (1 calls/pass)
+          768 T   3.0%  var_name_key  (4 calls/pass)
+          755 T   2.9%  nx_pack  (2 calls/pass)
+          754 T   2.9%  gosub_push  (1 calls/pass)
+          698 T   2.7%  arga_pack_fac  (1 calls/pass)
+          476 T   1.8%  var_find_typed  (2 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        25924 T 100.0%  run_prog  (0 calls/pass)
+        21811 T  84.1%  exec_stmt  (2 calls/pass)
+        20843 T  80.4%  gosub_push  (1 calls/pass)
+        10579 T  40.8%  inc_eval  (3 calls/pass)
+        10227 T  39.4%  ev_logic  (3 calls/pass)
+         7028 T  27.1%  ary_op0_vt  (2 calls/pass)
+         6860 T  26.5%  ary_parse_call  (2 calls/pass)
+         5253 T  20.3%  ev_f_keyed  (3 calls/pass)
+         2974 T  11.5%  ary_store_write  (1 calls/pass)
+         2631 T  10.2%  widen_and_finalize  (1 calls/pass)
+         1376 T   5.3%  var_name_key  (4 calls/pass)
+         1134 T   4.4%  ary_resolve_fast  (2 calls/pass)
+         1096 T   4.2%  nx_pki  (2 calls/pass)
+         1069 T   4.1%  arga_widen  (1 calls/pass)
+         1027 T   4.0%  ctl_alloc  (1 calls/pass)
+          759 T   2.9%  fx_cvt  (1 calls/pass)
+          755 T   2.9%  nx_pack  (2 calls/pass)
+          698 T   2.7%  arga_pack_fac  (1 calls/pass)
+  -- calls per pass, caller -> callee --
+      ev_logic->ev_sp 8, skipsp_test->skip_spaces 7, exec_stmt->check_fperr_only 6, exec_stmt->skipsp_test 5, var_name_key->upcase 4, var_name_key->is_ident_cont 4, var_name_key->deftbl_lookup 4, island$0010->hook$FF48 3, ctl_alloc->ctl_put 3, inc_eval->set_factyp2 3, inc_eval->ev_logic 3, ev_logic->var_name_key 3, ev_logic->ev_f_keyed 3, ev_f_keyed->stk_guard 3, ret_frame->ctl_get 3, run_prog->check_fperr_only 2, run_prog->skipsp_test 2, var_str_type->is_ident_cont 2, ary_op0_vt->ary_parse_call 2, ary_parse_call->inc_eval 2, ev_f_keyed->var_find_typed 2, ary_parse_call->fac_to_int_strict 2, fac_to_int_strict->factyp_is2 2, fac_to_int_strict->domain_convert_core 2, ary_parse_call->skip_comma 2, skip_comma->skip_spaces 2, ary_parse_call->fperr_test 2, ary_parse_call->ary_resolve_fast 2, check_preexp_bounds->cmp16_bits 2, run_prog->island$0010 1.05, run_prog->TRAP:BREAKX 1.05, run_prog->req_lineno 1, req_lineno->is_lref 1, run_prog->skip_stmt_tail 1, skip_stmt_tail->tok_skip_to 1, run_prog->gosub_push 1, gosub_push->ctl_alloc 1, gosub_push->find_line_bc 1, gosub_push->derive_directf 1, gosub_push->TRAP:BREAKX 1, gosub_push->exec_stmt 1, exec_stmt->var_str_type 1, var_str_type->upcase 1, var_str_type->is_letter 1, var_str_type->deftbl_lookup 1, exec_stmt->var_name_key 1, exec_stmt->ary_op0_vt 1, exec_stmt->ary_snapshot_offset 1, exec_stmt->skip_eq 1, skip_eq->skip_spaces 1, exec_stmt->inc_eval 1, ev_f_keyed->ary_op0_vt 1, ev_logic->push_lhs_frame 1, ev_logic->ev_f 1, ev_f->stk_guard 1, ev_f->ev_sp 1, ev_logic->lg_go 1, lg_go->pop_lhs_and_probe 1, ev_logic->fx_cvt 1, fx_cvt->factyp_is2 1, fx_cvt->nx_pki 1, ev_logic->caddsub_int 1, ev_logic->factyp_is2 1, ev_logic->fac_zero_mantissa 1, ev_logic->nx_pack 1, exec_stmt->fperr_test 1, exec_stmt->ary_apply_offset 1, exec_stmt->ary_store_write 1, ary_store_write->widen_and_finalize 1, widen_and_finalize->arga_widen 1, arga_widen->factyp_is2 1, widen_and_finalize->arga_dig_iszero 1, widen_and_finalize->check_preexp_bounds 1, widen_and_finalize->arga_pack_fac 1, exec_stmt->stmt_bare_end 1, stmt_bare_end->island$0010 1, exec_stmt->ret_frame 1, run_prog->derive_directf 1, run_prog->exec_stmt 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95, exec_stmt->TRAP:BREAKX 0.95
+
+=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===
+  (c) model   2696 T/pass ->    13 ticks; measured zb 39 (implies 20738 usable T/tick); VG-8020 8 ticks = ~1680 T/pass
+  (d) model   3574 T/pass ->    17 ticks; measured zb 32 (implies 33502 usable T/tick); VG-8020 24 ticks = ~5040 T/pass
+  (e) model  26179 T/pass ->   125 ticks; measured zb 288 (implies 27270 usable T/tick); VG-8020 117 ticks = ~24570 T/pass

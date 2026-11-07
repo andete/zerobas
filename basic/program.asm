@@ -2300,7 +2300,17 @@ nx_dir:
 nx_again:
                 pop     hl                  ; frame stays on the stack
                 ld      hl,(FOR_LINE)       ; resume at the loop body
+                ld      de,(CURLINE)
                 ld      (CURLINE),hl
+                ; 🐌 D-LOOPPROF (2026-11-07): C = 0 iff the line does not change (a
+                ; FOR and its NEXT on one line): DIRECTF and CURLIN are already that
+                ; line's, published when it was entered -- derive_directf below is
+                ; skipped (~180 T a pass of an empty `FOR I%=1 TO N:NEXT`).
+                or      a
+                sbc     hl,de
+                ld      a,h
+                or      l
+                ld      c,a
                 ; 🐌 D-LOOPPROF (2026-11-06): A CONTINUING NEXT RE-ENTERS exec_stmt
                 ; DIRECTLY, as a statement handler does at a statement's end, instead
                 ; of returning through the run loop (rp_lp's stack re-base, RESUMEFLAG,
@@ -2320,7 +2330,9 @@ nx_again:
                 ; DIRECTF IS RE-DERIVED: a NEXT TYPED at the prompt continues a
                 ; PROGRAM's loop, and the body is program text (typed session
                 ; S3_editclear went red with the plain curlin_pub this had first).
-                call    derive_directf      ; DIRECTF + CURLIN for the FOR's line
+                inc     c
+                dec     c
+                call    nz,derive_directf   ; DIRECTF + CURLIN for the FOR's line
                 pop     bc                  ; discard the post-NEXT cursor
                 ; 🔴 AND THE STACK IS RE-BASED HERE, as rp_lp does on every pass
                 ; (D-SPMERGE step 4): that re-base is what reclaims a freed inner
