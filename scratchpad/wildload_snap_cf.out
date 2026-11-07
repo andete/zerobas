@@ -1,0 +1,451 @@
+=== snapshot 1 after '(boot)'  [1 t=12.4 w=32]
+  MSX BASIC version 1.0
+  Copyright 1983 by Microsoft
+  23430 Bytes free
+  Disk BASIC version 1.0
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color auto  goto  list  run
+=== snapshot 2 after 'SCREEN 0:WIDTH 37:CLS'  [2 t=13.2 w=40]
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 3 after 'NEW'  [3 t=13.9 w=40]
+  Ok
+  NEW
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 4 after '10 PRINT "GOOD"'  [4 t=14.7 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 5 after 'SAVE "GOOD"'  [5 t=18.1 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 6 after 'SAVE "GOODA",A'  [6 t=20.7 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 7 after 'BSAVE "GB.BIN",&H8000,&H8010'  [7 t=23.3 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 8 after 'NEW'  [8 t=24.0 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 9 after 'LOAD "GOO?"'  [9 t=24.7 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 10 after 'LOAD "G*"'  [10 t=25.4 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 11 after 'RUN "G*"'  [11 t=26.1 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+
+
+  color  auto   goto   list   run
+=== snapshot 12 after 'MERGE "GOODA.*"'  [12 t=26.8 w=40]
+  Ok
+  10 PRINT "GOOD"
+  SAVE "GOOD"
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 13 after 'MERGE "G*"'  [13 t=27.5 w=40]
+  Ok
+  SAVE "GOODA",A
+  Ok
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 14 after 'BLOAD "GB.*"'  [14 t=28.2 w=40]
+  BSAVE "GB.BIN",&H8000,&H8010
+  Ok
+  NEW
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+  BLOAD "GB.*"
+  Bad file name
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 15 after 'BLOAD "G?.BIN"'  [15 t=28.9 w=40]
+  Ok
+  LOAD "GOO?"
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+  BLOAD "GB.*"
+  Bad file name
+  Ok
+  BLOAD "G?.BIN"
+  Bad file name
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 16 after 'LIST'  [16 t=29.6 w=40]
+  Bad file name
+  Ok
+  LOAD "G*"
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+  BLOAD "GB.*"
+  Bad file name
+  Ok
+  BLOAD "G?.BIN"
+  Bad file name
+  Ok
+  LIST
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 17 after 'OPEN "GOO?" FOR INPUT AS #1'  [17 t=30.3 w=40]
+  Bad file name
+  Ok
+  RUN "G*"
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+  BLOAD "GB.*"
+  Bad file name
+  Ok
+  BLOAD "G?.BIN"
+  Bad file name
+  Ok
+  LIST
+  Ok
+  OPEN "GOO?" FOR INPUT AS #1
+  Bad file name
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot END after 'FILES "G*"'  [END t=31.8 w=40]
+  Bad file name
+  Ok
+  MERGE "GOODA.*"
+  Bad file name
+  Ok
+  MERGE "G*"
+  Bad file name
+  Ok
+  BLOAD "GB.*"
+  Bad file name
+  Ok
+  BLOAD "G?.BIN"
+  Bad file name
+  Ok
+  LIST
+  Ok
+  OPEN "GOO?" FOR INPUT AS #1
+  Bad file name
+  Ok
+  FILES "G*"
+  GOOD         GOODA
+  Ok
+
+  color  auto   goto   list   run
+=== printer

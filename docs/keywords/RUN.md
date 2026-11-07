@@ -86,6 +86,16 @@ And **RAM usage**.
 
 ## What we found, and how
 
+- **A wildcard in a file name loaded the first match, or saved a file named
+  with `?`** (fixed 2026-11-07, D-WILDSAVE, found by typed session S14_diskbin).
+  On the CF-3300, `SAVE`, `SAVE ,A`, `BSAVE`, `LOAD`, `RUN`, `MERGE` and `BLOAD`
+  with a `*` or `?` in the name are `Bad file name`, even when a file matches;
+  zerobas wrote a file literally named `P???????.BAS`, or loaded the first match.
+  `KILL`, `NAME`, `FILES` and `COPY` take wildcards on both
+  ([`wildsave_snap_cf.out`](../../scratchpad/wildsave_snap_cf.out),
+  [`wildload_snap_cf.out`](../../scratchpad/wildload_snap_cf.out),
+  [after](../../scratchpad/wildsave_after.out)).
+
 - **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `RUN "CAS:AB.C"`
   looks for `AB`, as on the VG-8020
   ([`casname_run6.out`](../../scratchpad/casname_run6.out), row `run`).

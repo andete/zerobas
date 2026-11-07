@@ -309,6 +309,9 @@ fl_bail_nc2:
                 ld      hl,fl_fftab
                 add     a,l
                 ld      l,a
+                adc     a,h                 ; carry into H: the table may straddle a
+                sub     l                   ; page (D-WILDSAVE moved it across one)
+                ld      h,a
                 ld      b,(hl)              ; its result type, 0 = the argument's
                 pop     hl
                 ld      c,$60
@@ -655,9 +658,6 @@ fl_fftab:
                 db      0, 2, 2, 2, 2, 2, 2, 2   ; $A1 FIX STICK STRIG PDL PAD DSKF FPOS CVI
                 db      4, 8, 2, 2, 2, 3, 3, 3   ; $A9 CVS CVD EOF LOC LOF MKI$ MKS$ MKD$
 fl_fftab_n      equ     $ - fl_fftab
-    IF (high fl_fftab) != (high ($ - 1))
-                db      FL_FFTAB_STRADDLES_A_PAGE
-    ENDIF
 ; The single-byte function tokens and pseudo-variables (two parallel rows, so
 ; cpir cannot match a type byte), and their types: bit 7 set = a function, its
 ; `(` must follow. ERL and TIME are a guess (single): no row measured them.

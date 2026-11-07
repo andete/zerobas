@@ -111,6 +111,16 @@ sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
+- **A wildcard in a file name loaded the first match, or saved a file named
+  with `?`** (fixed 2026-11-07, D-WILDSAVE, found by typed session S14_diskbin).
+  On the CF-3300, `SAVE`, `SAVE ,A`, `BSAVE`, `LOAD`, `RUN`, `MERGE` and `BLOAD`
+  with a `*` or `?` in the name are `Bad file name`, even when a file matches;
+  zerobas wrote a file literally named `P???????.BAS`, or loaded the first match.
+  `KILL`, `NAME`, `FILES` and `COPY` take wildcards on both
+  ([`wildsave_snap_cf.out`](../../scratchpad/wildsave_snap_cf.out),
+  [`wildload_snap_cf.out`](../../scratchpad/wildload_snap_cf.out),
+  [after](../../scratchpad/wildsave_after.out)).
+
 - **`SAVE "LPT:"`, `"CRT:"` and `"GRP:"` were `Bad file name`** (fixed
   2026-10-29, D-SAVEDEV). On both references the program stops first; then
   `SAVE "LPT:"` prints the listing on the printer, `SAVE "CRT:"` lists it on

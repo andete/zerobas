@@ -109,8 +109,7 @@ ls_run:                                     ; HL on the first non-space byte
                 ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
                 call    ls_fname_dev        ; Z = "CAS:" (HL past it), else the disk
                 jr      z,lrn_cas
-                ld      ix,p0_pdfcb_resume
-                call    p1cb                ; DISK_FCB; HL resumes in the text
+                call    ls_fcb              ; DISK_FCB; HL resumes in the text
                 call    ls_pcr_load         ; the only '"' is fname_expr's own
                 ld      ix,p0_disk_prog_load
                 call    p1cb                ; CF = failed, already reported
@@ -147,8 +146,7 @@ ls_load:
                 call    do_tape_prog        ; CF = failed, already reported
                 jr      lld_loaded
 lld_disk:
-                ld      ix,p0_pdfcb_resume
-                call    p1cb                ; DISK_FCB; HL resumes in the text
+                call    ls_fcb              ; DISK_FCB; HL resumes in the text
                 call    ls_pcr_load         ; ,R tail only -- no quote in the text
                 ld      ix,p0_disk_prog_load
                 call    p1cb                ; CF = failed, already reported
@@ -268,8 +266,7 @@ ls_save:
                 jp      z,lsv_grp
                 call    ls_fname_cas
                 jp      z,lsv_cas           ; matched "CAS:" -> tape (HL past the prefix)
-                ld      ix,p0_pdfcb_resume
-                call    p1cb                ; DISK_FCB; HL -> the tail
+                call    ls_fcb              ; DISK_FCB; HL -> the tail
                 ld      ix,p0_skip_comma
                 call    p1cb
                 jr      z,lsv_ascii_flag    ; SAVE"name",<flag> -> check for ,A
@@ -419,8 +416,7 @@ ls_bsave:
                 ld      (VRAM_FLAG),a       ; default RAM source; ",S" sets it below
                 call    ls_fname_dev
                 jr      z,lbs_cas           ; matched "CAS:" -> tape (HL past the prefix)
-                ld      ix,p0_pdfcb_resume
-                call    p1cb                ; DISK_FCB; HL -> the tail
+                call    ls_fcb              ; DISK_FCB; HL -> the tail
                 call    ls_comma_eval       ; ,start
                 ld      (CURPTR),de         ; the source walk cursor
                 ld      (EXECPTR),de        ; default exec = start
@@ -759,6 +755,24 @@ ls_exec:                                    ; main's `jp exec_stmt`
 ls_disk_error:                              ; main's `jp disk_error`: a continuation
                 ld      de,p0_disk_error
                 ret
+; ls_fcb -- main's pdfcb_resume (DISK_FCB built, HL resumes in the text), then
+; D-WILDSAVE (2026-11-07, typed session S14_diskbin): a WILDCARD name is `Bad file
+; name` (56) on the CF-3300 for RUN, LOAD, SAVE (and ,A) and BSAVE, before any disk
+; work and even when a file matches (scratchpad/wildsave_snap_cf.out,
+; scratchpad/wildload_snap_cf.out); zerobas made `P???????.BAS` and loaded the first
+; match. KILL, NAME, FILES and COPY take wildcards and call pdfcb_resume directly.
+ls_fcb:
+                ld      ix,p0_pdfcb_resume
+                call    p1cb
+                push    hl
+                ld      hl,DISK_FCB_NAME
+                ld      bc,11
+                ld      a,'?'               ; the parser turns '*' into '?'s
+                cpir
+                pop     hl
+                ret     nz
+                ld      a,56
+                jr      ls_raise
 ls_syntax:                                  ; stmt_error, ERR 2
                 ld      ix,p0_stmt_error
                 jp      p1cb                ; raises; never returns

@@ -211,8 +211,18 @@ isd_disk:
                 ld      a,(hl)
                 or      a
                 ret     nz                  ; 62 / 56: main raises it; nothing is read
-                ld      (hl),FOPEN_SEL_BLOAD ; a disk file, its name built: main loads
-                ret                         ;  it through disk.rom
+                push    hl                  ; D-WILDSAVE: a wildcard name is 56 too, as
+                ld      hl,DISK_FCB_NAME    ; for LOAD (scratchpad/wildload_snap_cf.out:
+                ld      bc,11               ; `BLOAD "GB.*"` with GB.BIN on the disk)
+                ld      a,'?'
+                cpir
+                pop     hl
+                ld      a,56
+                jr      z,bl_wild
+                ld      a,FOPEN_SEL_BLOAD   ; a disk file, its name built: main loads
+bl_wild:                                    ;  it through disk.rom
+                ld      (hl),a
+                ret
 
                 include "basic/pdfcb-body.inc"
 

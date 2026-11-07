@@ -1,0 +1,501 @@
+=== snapshot 1 after '(boot)'  [1 t=10.9 w=40]
+  zerobas version 0.1
+  clean-room MSX1 BASIC
+
+  zerobas Disk BASIC
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 2 after 'SCREEN 0:WIDTH 37:CLS'  [2 t=11.6 w=40]
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 3 after 'NEW'  [3 t=12.3 w=40]
+  Ok
+  NEW
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 4 after '10 PRINT "X"'  [4 t=13.1 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 5 after 'SAVE "P*.BAS"'  [5 t=15.4 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 6 after 'SAVE "P?.BAS"'  [6 t=17.5 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 7 after 'SAVE "Q*",A'  [7 t=19.4 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 8 after 'OPEN "O*.TXT" FOR OUTPUT AS #1'  [8 t=20.2 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 9 after 'OPEN "O?.TXT" FOR APPEND AS #1'  [9 t=21.0 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 10 after 'OPEN "R*.DAT" AS #1'  [10 t=21.7 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 11 after 'BSAVE "B*.BIN",&H8000,&H8010'  [11 t=23.8 w=40]
+  Ok
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+
+
+  color  auto   goto   list   run
+=== snapshot 12 after 'SAVE "GOOD"'  [12 t=25.9 w=40]
+  NEW
+  Ok
+  10 PRINT "X"
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 13 after 'NAME "GOOD" AS "G*"'  [13 t=26.9 w=40]
+  SAVE "P*.BAS"
+  Ok
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 14 after 'NAME "GOOD" AS "G?D"'  [14 t=28.2 w=40]
+  SAVE "P?.BAS"
+  Ok
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 15 after 'NAME "G*" AS "NEW"'  [15 t=29.7 w=40]
+  SAVE "Q*",A
+  Ok
+  OPEN "O*.TXT" FOR OUTPUT AS #1
+  Bad file name
+  Ok
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 16 after 'FILES'  [16 t=30.7 w=40]
+  OPEN "O?.TXT" FOR APPEND AS #1
+  Bad file name
+  Ok
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 17 after 'LOAD "G*"'  [17 t=31.6 w=40]
+  OPEN "R*.DAT" AS #1
+  Bad file name
+  Ok
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+  LOAD "G*"
+  File not found
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 18 after 'LIST'  [18 t=32.3 w=40]
+  BSAVE "B*.BIN",&H8000,&H8010
+  Ok
+  SAVE "GOOD"
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+  LOAD "G*"
+  File not found
+  Ok
+  LIST
+  10 PRINT "X"
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot 19 after 'KILL "G?OD"'  [19 t=33.2 w=40]
+  Ok
+  NAME "GOOD" AS "G*"
+  File already exists
+  Ok
+  NAME "GOOD" AS "G?D"
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+  LOAD "G*"
+  File not found
+  Ok
+  LIST
+  10 PRINT "X"
+  Ok
+  KILL "G?OD"
+  File not found
+  Ok
+
+  color  auto   goto   list   run
+=== snapshot END after 'FILES'  [END t=34.0 w=40]
+  Ok
+  NAME "G*" AS "NEW"
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+  LOAD "G*"
+  File not found
+  Ok
+  LIST
+  10 PRINT "X"
+  Ok
+  KILL "G?OD"
+  File not found
+  Ok
+  FILES
+  P???????.BAS P?      .BAS
+  Q???????     B???????.BIN
+  NEW
+  Ok
+
+  color  auto   goto   list   run
+=== printer

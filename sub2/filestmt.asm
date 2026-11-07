@@ -608,6 +608,11 @@ fs_merge:
                 ld      ix,p0_pdfcb_resume
                 call    p0cb                ; DISK_FCB_NAME; HL resumes in the text
                 push    hl                  ; guard the cursor across the merge
+                ld      hl,DISK_FCB_NAME    ; D-WILDSAVE: a wildcard name is 56 on the
+                ld      bc,11               ; CF-3300, as for OPEN (above) and LOAD
+                ld      a,'?'               ; (scratchpad/wildload_snap_cf.out)
+                cpir
+                jp      z,fs_badname        ; (the raise resets SP)
                 ld      ix,p0_dsk_aopen
                 call    p0cb                ; disk.rom mounts, finds, primes; CF = no
                 jr      c,fm_ioerr

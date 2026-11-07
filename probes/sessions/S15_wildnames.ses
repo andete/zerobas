@@ -1,0 +1,38 @@
+# @DISK
+# S15_wildnames (D-SESSIONS / D-WILDSAVE, 2026-11-07): a wildcard in a file name typed
+# where it does not belong -- SAVE, SAVE ,A, BSAVE, OPEN, LOAD, RUN, MERGE and BLOAD are
+# all `Bad file name` on the CF-3300, even when a file matches; NAME, KILL and FILES
+# take one. CF-3300 + the DISK target.
+NEW
+10 PRINT "X"
+SAVE "P*.BAS"
+SAVE "P?.BAS"
+SAVE "Q*",A
+OPEN "O*.TXT" FOR OUTPUT AS #1
+OPEN "O?.TXT" FOR APPEND AS #1
+OPEN "R*.DAT" AS #1
+BSAVE "B*.BIN",&H8000,&H8010
+SAVE "GOOD"
+NAME "GOOD" AS "G*"
+NAME "GOOD" AS "G?D"
+NAME "G*" AS "NEW"
+FILES
+LOAD "G*"
+LIST
+KILL "G?OD"
+FILES
+10 PRINT "GOOD"
+SAVE "GOOD"
+SAVE "GOODA",A
+BSAVE "GB.BIN",&H8000,&H8010
+NEW
+LOAD "GOO?"
+LOAD "G*"
+RUN "G*"
+MERGE "GOODA.*"
+MERGE "G*"
+BLOAD "GB.*"
+BLOAD "G?.BIN"
+LIST
+OPEN "GOO?" FOR INPUT AS #1
+FILES "G*"

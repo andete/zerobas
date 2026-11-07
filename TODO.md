@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15885 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15927 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15885 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15927 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11157,8 +11157,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       open file, OPEN of a missing file). Checked the screens are not a shared failure:
       ANNA / BERT / CAROL listed, `File already open` / `File still open` / `File not found`
       where expected. 🔮 Predicted "one divergence in an error message or EOF": MISSED.
-      ➡️ NEXT sessions: LIST while typing; then tape (CSAVE / CLOAD, the VG-8020, parked on
-      the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
+      ✅ **S14_diskbin + S15_wildnames (2026-11-07): TWO FINDINGS, ONE FIXED, then SAME**
+      ([`S14_diskbin.ses`](probes/sessions/S14_diskbin.ses), [`S15_wildnames.ses`](probes/sessions/S15_wildnames.ses); before
+      [`sessions_S14_diskbin_hole.out`](scratchpad/sessions_S14_diskbin_hole.out), after [`sessions_S14_diskbin.out`](scratchpad/sessions_S14_diskbin.out),
+      [`sessions_S15_wildnames.out`](scratchpad/sessions_S15_wildnames.out)): BSAVE / BLOAD with an offset, a random file
+      by hand (FIELD, LSET / RSET, PUT, GET, LOC, LOF, GET past the end, FIELD overflow),
+      COPY of a wildcard, FILES patterns, DSKF, MAXFILES. **D-WILDSAVE** (below, fixed) and
+      **D-RECHOLE** (below, filed: an unwritten record's bytes). 🔮 Predicted "one divergence
+      in an error path (GET past the end, the FIELD overflow, the wildcard SAVE)": HIT on
+      the third.
+      ➡️ NEXT sessions: a break INSIDE a scrolling LIST; then tape (CSAVE / CLOAD, the
+      VG-8020, parked on the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
+
+- [x] 💽 **D-WILDSAVE -- A WILDCARD IN A NAME THAT SAVES OR LOADS: `Bad file name` ON THE CF-3300,
+      A FILE CALLED `P???????.BAS` (OR THE FIRST MATCH LOADED) HERE (found and fixed 2026-11-07
+      by typed session S14_diskbin)**
+      🎚️ TIER 3 — common errors: a `*` typed into SAVE or LOAD is an ordinary slip.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`wildsave.ses`](scratchpad/wildsave.ses) / [`wildload.ses`](scratchpad/wildload.ses) (scratch sessions; screens
+      [`wildsave_snap_cf.out`](scratchpad/wildsave_snap_cf.out), [`wildsave_snap_zb.out`](scratchpad/wildsave_snap_zb.out), [`wildload_snap_cf.out`](scratchpad/wildload_snap_cf.out),
+      [`wildload_snap_zb.out`](scratchpad/wildload_snap_zb.out)): on the CF-3300 SAVE, SAVE ,A, BSAVE, LOAD, RUN, MERGE and
+      BLOAD with `*` or `?` are `Bad file name` before any disk work, even when a file
+      matches; OPEN already was here (D-OPENWILD); NAME (both sides), KILL, FILES and COPY
+      take wildcards and agree. zerobas wrote `P???????.BAS`, `Q???????`, `B???????.BIN`
+      and LOAD / RUN / MERGE / BLOAD read the first match (MERGE of a tokenised one: 61).
+      ✅ **FIXED:** sub2/loadsave.asm `ls_fcb` (main's pdfcb_resume, then a `?` in the
+      FCB name raises 56) for RUN / LOAD / SAVE / BSAVE; the same check after MERGE's
+      pdfcb_resume (sub2/filestmt.asm) and in BLOAD's tenant (basic/bload-body.inc, BL_STAT =
+      56). NOT in pdfcb_resume itself: the disk kernel's COPY calls it too, and its first
+      cut there made `COPY "*.DAT" TO "*.BAK"` 56 (S14 caught it). The sub ROM moved, which
+      put sub2/frelive.asm's fl_fftab across a page: its lookup now carries into H (+3 B)
+      and the straddle assertion went. After: both scratch sessions, S14 and S15 SAME
+      ([`wildsave_after.out`](scratchpad/wildsave_after.out)); session S15_wildnames is the gate row. docs/keywords
+      SAVE / LOAD / BSAVE / BLOAD / MERGE / RUN updated.
+
+- [ ] 💽 **D-RECHOLE -- A RANDOM RECORD NEVER WRITTEN READS THE CF-3300'S STALE SECTOR BUFFER, AND
+      BLANKS HERE (found 2026-11-07 by typed session S14_diskbin)**
+      🎚️ TIER 6 — what an undefined read returns.
+      🤖 **AUTONOMOUS** — measured; read the buffer's provenance before deciding.
+      📏 [`sessions_S14_diskbin_hole.out`](scratchpad/sessions_S14_diskbin_hole.out): records 1 and 3 of a 20-byte file PUT,
+      record 2 never; `GET #1,2` gives `'*-` + 5 blanks in the 8-byte field on the CF-3300
+      -- 39 42 45, the LAST three bytes of BLOCK.BIN, BSAVEd just before -- and 8 blanks
+      here. LEN is 8 on both (the session now reads only that). Whether to copy a stale
+      buffer is a question in itself: first measure what fills the hole when nothing was
+      written before (a fresh disk), and whether the sector on disk or the buffer is read.
 
 - [x] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
       MSX-DOS ENTERS (found 2026-11-06 by D-LOADFAT).**

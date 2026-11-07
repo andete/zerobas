@@ -1,0 +1,18 @@
+# @DISK
+# D-WILDSAVE scratch: a wildcard in a name that READS a file, with a match on disk
+NEW
+10 PRINT "GOOD"
+SAVE "GOOD"
+SAVE "GOODA",A
+BSAVE "GB.BIN",&H8000,&H8010
+NEW
+LOAD "GOO?"
+LOAD "G*"
+RUN "G*"
+MERGE "GOODA.*"
+MERGE "G*"
+BLOAD "GB.*"
+BLOAD "G?.BIN"
+LIST
+OPEN "GOO?" FOR INPUT AS #1
+FILES "G*"

@@ -103,6 +103,16 @@ rung requires. **RAM usage** is not yet proven either.
 
 ## What we found, and how
 
+- **A wildcard in a file name loaded the first match, or saved a file named
+  with `?`** (fixed 2026-11-07, D-WILDSAVE, found by typed session S14_diskbin).
+  On the CF-3300, `SAVE`, `SAVE ,A`, `BSAVE`, `LOAD`, `RUN`, `MERGE` and `BLOAD`
+  with a `*` or `?` in the name are `Bad file name`, even when a file matches;
+  zerobas wrote a file literally named `P???????.BAS`, or loaded the first match.
+  `KILL`, `NAME`, `FILES` and `COPY` take wildcards on both
+  ([`wildsave_snap_cf.out`](../../scratchpad/wildsave_snap_cf.out),
+  [`wildload_snap_cf.out`](../../scratchpad/wildload_snap_cf.out),
+  [after](../../scratchpad/wildsave_after.out)).
+
 - **Junk after the arguments wrote the file first** (changed 2026-10-19,
   D-ROMSIZE step 1): `BSAVE "X.BIN",&HD000,&HD0FF 5` saved X.BIN and only then
   raised `Syntax error`; on the CF-3300 the same line is `Syntax error` with no
