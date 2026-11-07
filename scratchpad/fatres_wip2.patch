@@ -1,0 +1,484 @@
+diff --git a/basic/fat-prim-body.inc b/basic/fat-prim-body.inc
+index 5e7588b0..700c32d0 100644
+--- a/basic/fat-prim-body.inc
++++ b/basic/fat-prim-body.inc
+@@ -275,8 +275,9 @@ fm_divdone:
+                 ; (tier2-m30-alloc-hint-spec.md §2/§3.2).
+                 ld      hl, 2
+                 ld      (FAT_ALLOCHINT), hl
+-                or      a                   ; Cy = 0 success
+-                ret
++                call    fat_res_load        ; D-FATRES: the whole FAT, resident (disk/fat.asm)
++                xor     a                   ; Cy = 0 success (A = 0, as before D-FATRES;
++                ret                         ; fat_res_load leaves A / BC / DE / HL any)
+ fat_mount_bad:
+                 scf
+                 ret
+@@ -459,6 +460,13 @@ fat_advance:
+ ; boundary; the high byte is then read from the following FAT sector.
+ ; (Microsoft FAT spec §3.2.)
+ fat_next_cluster:
++                ; 🐌 D-FATRES (2026-11-07): the chain from the RESIDENT FAT when it is
++                ; valid -- FATRES_OK exactly 1: bit 0 valid, bit 7 (foreign code may own
++                ; the RAM) clear -- fat_res_next (disk/kernel.asm) returns the link
++                ; itself; otherwise the sector read below, as before.
++                ld      a, (FATRES_OK)
++                dec     a
++                jp      z, fat_res_next
+                 ld      a, l
+                 and     1
+                 ld      (FAT_PARITY), a     ; cluster parity selects the nibbles
+diff --git a/basic/sysvars.inc b/basic/sysvars.inc
+index cfd78802..ff858e3b 100644
+--- a/basic/sysvars.inc
++++ b/basic/sysvars.inc
+@@ -3351,6 +3351,9 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
+ ; +$400); disk.rom's cells end at MBUF_PTR $E9AB, and BASIC's map keeps
+ ; $E960..$E9BF for disk.rom.
+ FAT_DEFER       equ     $EDB9   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
++; 🐌 D-FATRES (2026-11-07): disk.rom's resident-FAT state, named here so this map does
++; not hand the byte out (disk/equates.inc; bit 0 valid, bit 7 forbidden).
++FATRES_OK       equ     $EDBA   ; DISK-ONLY: disk.rom's FATRES state (1)
+ ; 🐌 D-LOADFAT (2026-11-06): disk.rom's one-sector FAT read cache for LOAD, named here
+ ; so this map does not hand the byte out (disk/equates.inc; basic never reads it).
+ FAT_FCACHE      equ     $EDBA   ; DISK-ONLY: the FAT sector in FAT_MBUF during a LOAD (FAT_DEFER bit 7) (1)
+diff --git a/disk/disk.asm b/disk/disk.asm
+index 2ae7c863..8472f7ca 100644
+--- a/disk/disk.asm
++++ b/disk/disk.asm
+@@ -87,6 +87,9 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
+     IF FAT_DEFER + 1 > TXTMAX_NODISK
+                 db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
+     ENDIF
++    IF FATRES_OK + 1 > TXTMAX_NODISK        ; D-FATRES: the flag is in the block too
++                db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
++    ENDIF
+     IF FAT_FCACHE + 1 > TXTMAX_NODISK       ; D-LOADFAT: the cache cell is in the block too
+                 db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
+     ENDIF
+diff --git a/disk/driver.asm b/disk/driver.asm
+index 33326164..88783986 100644
+--- a/disk/driver.asm
++++ b/disk/driver.asm
+@@ -96,6 +96,9 @@ dskio_err:
+ ; logical sector -> CHS via lsec_chs, and call fdc_write_phys (the write twin of
+ ; fdc_read_phys). On entry Cy = 1 (write direction); registers as for read.
+ dskio_write:
++                ld      a, (FATRES_OK)      ; D-FATRES: ANY write may change the FAT (SAVE,
++                and     $FE                 ; DSKO$, FORMAT, WRABS) -- the resident copy is
++                ld      (FATRES_OK), a      ; untrusted; bit 7 (forbidden) is kept
+                 ld      a, b
+                 or      a
+                 jr      z, dskio_ok     ; zero sectors -> nothing to do
+diff --git a/disk/equates.inc b/disk/equates.inc
+index 0df01fef..780ed123 100644
+--- a/disk/equates.inc
++++ b/disk/equates.inc
+@@ -628,3 +628,14 @@ DISK_HIMEM      equ     $DE77
+ ; the CF-3300's boot HIMEM with CTRL held -- one drive, a smaller disk work
+ ; area (scratchpad/bootkeys_run.out). disk/init.asm set_ramad.
+ CTRL_HIMEM      equ     $E48D   ; NOT-A-CELL: a HIMEM value, stored at boot
++; 🐌 D-FATRES (Joost 2026-11-06: "yes, go for the 1.5 KB FAT buffer, if reference does it,
++; so should we"): the WHOLE FAT of the mounted volume, resident, as the CF-3300 keeps it --
++; drive A's at $E595 and the phantom B:'s at $DF94 (scratchpad/fatres_probe.out,
++; fatres_b_probe.out: RAM only). A normal boot's HIMEM ($DE77) reserves 1558 B more than a
++; CTRL boot's ($E48D): that is the reference's drive-B FAT space, and zerobas (one drive)
++; keeps its ONE resident FAT there. ⚠️ On a CTRL boot (DRVCNT = 1), and under MSX-DOS
++; (DOS_F346 = 255: $C000-$DFFF is DOS's), FATRES is NOT ours -- so FATRES_OK lives in
++; disk-owned RAM valid in EVERY boot mode, and only fat_res_load (the one writer of FATRES,
++; disk/fat.asm) checks the mode: FATRES_OK = 0 whenever the copy is not ours or not valid.
++FATRES_OK       equ     $EDBA   ; D-FATRES: 1 = FATRES holds the mounted volume's FAT (1 B)
++FATRES          equ     $DE8D   ; D-FATRES: the resident FAT, up to 3 sectors (1536 B; normal boot only)
+diff --git a/disk/fat.asm b/disk/fat.asm
+index bd433cd0..c857842c 100644
+--- a/disk/fat.asm
++++ b/disk/fat.asm
+@@ -293,6 +293,9 @@ k_47BE:         jp      wrblk_body          ; $47BE: BDOS $26 WRBLK canonical en
+ ; lives in this fill ($47C1.., free up to $4C29 -- the old "$4919 anchor" was a dead assert,
+ ; deleted 2026-10-15) because the body's region, pinned at $75A5, had no room.
+ fat_write_fat_entry_hot:
++                ld      a, (FATRES_OK)      ; D-FATRES: a changed entry -- possibly HELD by
++                and     $FE                 ; FAT_DEFER, never reaching dskio_write -- makes
++                ld      (FATRES_OK), a      ; the resident copy untrusted (bit 7 kept)
+                 ld      (FAT_WRTMP), de     ; save the value
+                 push    hl                  ; save cluster
+                 call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
+@@ -1176,6 +1179,16 @@ br_cf_bios_tmpl:
+                 ld      hl, BR_CFOP
+                 jp      BR_FRAME
+ br2_end:
++; D-FATRES helpers, past br2's end (not part of the copied template; disk/runtime.asm's
++; block before $7F7C had 9 B too few):
++fres_forbid:                                ; boot_call0's first act (disk/kernel.asm)
++                ld      hl, FATRES_OK
++                set     7, (hl)
++                ret
++fres_off:                                   ; not ours at all: nothing resident
++                xor     a
++                ld      (FATRES_OK), a
++                ret
+ 
+                 ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25
+                 ; - $` lines stood here, commented "anchor canonical address", with NO
+diff --git a/disk/kernel.asm b/disk/kernel.asm
+index b5b23200..3b69bdce 100644
+--- a/disk/kernel.asm
++++ b/disk/kernel.asm
+@@ -360,6 +360,9 @@ br5_end:
+ ; boot_date is D-BOOTDATE's question (it skips a disk with an AUTOEXEC.BAS, as both
+ ; references do) and returns with interrupts masked.
+ bd_step7:
++                xor     a                   ; D-FATRES: a data disk's boot code returned --
++                ld      (FATRES_OK), a      ; allowed again, nothing trusted (the step-6
++                                            ; bridges wrote over the start of FATRES)
+                 call    boot_date
+                 ei                      ; as the step-7 return always did
+                 ret                     ; -> the BIOS boot scan -> BASIC
+@@ -1324,6 +1327,7 @@ lstout_body:
+ ; Sited here (the old CALLF handler's hole) by D-BOOTREGS, whose DE / HL overflowed the
+ ; driver.asm fill it had moved to from init.asm.
+ boot_call0:
++                call    fres_forbid         ; D-FATRES: foreign code from here on
+                 ld      hl, (BASENT_REQ)
+                 push    hl
+                 ld      hl, DOS_TRY
+@@ -3561,6 +3565,10 @@ hsy_rd:
+                 cp      $E9
+                 jr      nz,hsy_syn
+ hsy_boot:
++                push    hl                  ; D-FATRES: foreign code from here on (HL is
++                ld      hl, FATRES_OK       ; the boot protocol's, D-BOOTREGS: kept)
++                set     7, (hl)
++                pop     hl
+                 or      a                   ; Cy = 0: the step-5 call
+                 ; CALL SYSTEM calls the boot sector it just read: code from the disk, in no image;
+                 ; the boot protocol hands it Cy, and DE / HL as on the CF-3300 (D-BOOTREGS)
+@@ -5605,7 +5613,9 @@ fat_bufinit:
+                 ld      (DBUF_PTR), hl
+                 ld      hl, WBUF
+                 ld      (MBUF_PTR), hl
+-                ret
++                xor     a                   ; D-FATRES: every disk INIT (power-on, and a
++                ld      (FATRES_OK), a      ; BASENT restart: the RAM is BASIC's again) --
++                ret                         ; nothing resident, nothing forbidden
+ 
+ ; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
+ ; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the
+@@ -6848,6 +6858,36 @@ fat_locate:
+                 ld      hl, (FAT_FATSTART)
+                 add     hl, de              ; HL = the absolute FAT sector
+                 ret
++; fat_res_next -- D-FATRES (2026-11-07): HL = a cluster -> HL = its FAT12 link from the
++; RESIDENT FAT (FATRES). Entered by `jp` from fat_next_cluster (basic/fat-prim-body.inc)
++; only when FATRES_OK = 1, so its `ret` is that routine's. Even cluster: the word's low
++; 12 bits; odd: the word >> 4. Clobbers A, C, DE (B kept).
++fat_res_next:
++                ld      c, l                ; C bit 0 = the parity
++                ld      e, l
++                ld      d, h
++                srl     d
++                rr      e                   ; DE = cluster >> 1
++                add     hl, de              ; HL = cluster * 3/2
++                ld      de, FATRES
++                add     hl, de              ; HL = &FATRES[offset]
++                ld      a, (hl)
++                inc     hl
++                ld      h, (hl)
++                ld      l, a                ; HL = the 16-bit word there
++                bit     0, c
++                jr      z, frn_even
++                ld      c, 4
++frn_odd:
++                srl     h
++                rr      l
++                dec     c
++                jr      nz, frn_odd         ; odd: the high 12 bits
++frn_even:
++                ld      a, h
++                and     $0F
++                ld      h, a
++                ret
+                 ds      $75A5 - $, $00
+                 jp      k_75A5          ; $75A5
+ 
+diff --git a/disk/runtime.asm b/disk/runtime.asm
+index 560ad5d0..3336d719 100644
+--- a/disk/runtime.asm
++++ b/disk/runtime.asm
+@@ -690,6 +690,92 @@ hr_pop:         pop     hl
+                 pop     de
+                 ret
+ 
++;
++; --- 🐌 D-FATRES (Joost 2026-11-06: "yes, go for the 1.5 KB FAT buffer, if reference does
++; it, so should we"; re-done 2026-11-07 in D-DISKCARVE's room) ------------------------
++; The WHOLE FAT of the mounted volume, resident in FATRES (disk/equates.inc), as the
++; CF-3300 keeps it. FATRES_OK: bit 0 = valid, bit 7 = forbidden (foreign code -- a boot
++; sector's step 5 / 7, CALL SYSTEM -- may own the RAM; set by fres_forbid / hsy_boot,
++; cleared by fat_bufinit at every INIT and by bd_step7 when a data disk's code returned).
++; fat_next_cluster trusts it only when FATRES_OK = 1 exactly; any write drops bit 0
++; (dskio_write, fat_write_fat_entry_hot).
++;
++; fat_res_load -- fat_mount's success tail (basic/fat-prim-body.inc), FAT sector 1 in
++; FAT_DBUF. LOAD ONCE, KEEP IT: a valid resident FAT whose sector 1 equals that one is
++; kept with no DSKIO (re-reading per mount doubled small operations, 2026-11-06); else
++; the whole FAT is read again. Only on a normal boot (DRVCNT = 2) with no MSX-DOS
++; (DOS_F346 = 0 -- adjacent cells: one word load) and nothing forbidden. Clobbers A, BC,
++; DE, HL (fat_mount's `xor a` follows).
++fat_res_load:
++                ld      hl, (DOS_F346)      ; L = DOS_F346, H = DRVCNT
++                dec     h
++                dec     h
++                ld      a, h
++                or      l
++                jp      nz, fres_off        ; a CTRL boot, or MSX-DOS: never ours
++                ld      a, (FATRES_OK)
++                rla
++                ret     c                   ; forbidden: leave it (bit 0 is clear)
++                call    fres_same
++                ret     z                   ; kept: no DSKIO at all
++                xor     a
++                ld      (FATRES_OK), a      ; untrusted until the load completes
++                ld      hl, (FAT_SECPERFAT)
++                ld      a, h
++                or      a
++                ret     nz
++                ld      a, l
++                dec     a
++                cp      3
++                ret     nc                  ; 0, or more than 3 sectors: does not fit
++                ld      b, l                ; B = the FAT's sectors
++                ld      de, (FAT_FATSTART)
++                ld      hl, FATRES
++fres_lp:                                    ; ONE SECTOR PER DSKIO, interrupts open
++                push    bc                  ; between them (the parked build's single
++                push    de                  ; 3-sector DSKIO held them off ~0.34 s)
++                push    hl
++                ld      b, 1
++                xor     a                   ; drive 0, CF = 0: read
++                ld      c, a                ; media 0: the mounted disk's
++                call    dskio_calslt
++                pop     hl
++                pop     de
++                pop     bc
++                ei
++                ret     c                   ; a failed read: stays untrusted
++                inc     de
++                inc     h
++                inc     h                   ; HL += 512
++                djnz    fres_lp
++                ld      hl, FATRES_OK
++                inc     (hl)                ; 0 -> 1: valid
++                ret
++; fres_same -- Z = FATRES_OK is 1 AND FATRES's sector 1 equals FAT_DBUF's, bytes 0..10
++; and 24..511 (fat_media overwrites FAT_DBUF + 11..23 with derived BPB fields: a disk
++; differing only there is taken for the same; one with an identical sector 1 and a
++; different later FAT sector is too -- the reference's own "load once").
++fres_same:
++                ld      a, (FATRES_OK)
++                dec     a
++                ret     nz
++                ld      hl, FAT_DBUF
++                ld      de, FATRES
++                ld      bc, 11
++                call    fres_cmp
++                ret     nz
++                ld      hl, FAT_DBUF + 24
++                ld      de, FATRES + 24
++                ld      bc, 512 - 24
++fres_cmp:                                   ; BC bytes at HL against DE: Z all equal
++                ld      a, (de)
++                inc     de
++                cpi
++                ret     nz
++                jp      pe, fres_cmp
++                ret
++; (fres_forbid and fres_off sit in disk/fat.asm's $4C29 pad: this one had 9 B too few)
++
+                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
+                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
+                 ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).
+diff --git a/tests/test_fat_next_cluster.py b/tests/test_fat_next_cluster.py
+index 5f5ce4b6..e67a9fdc 100644
+--- a/tests/test_fat_next_cluster.py
++++ b/tests/test_fat_next_cluster.py
+@@ -24,6 +24,18 @@ The single chain 2 -> 3 -> 341 -> 682 -> $FFF exercises, in order:
+   341 odd,  STRADDLE (fatofs 511)
+   682 even, STRADDLE (fatofs 1023) — the exact case fat.asm's comment names
+   and returns the $FFF end-of-chain marker at the last hop.
++
++🐌 D-FATRES (2026-11-06): on a normal boot fat_mount loads the WHOLE FAT into
++FATRES (fat_res_load) and fat_next_cluster follows the chain there. The rows
++after the sector-path ones check: the resident path decodes the same chain (and
++two extra entries with every nibble set) WITHOUT calling read_sector, and keeps
++B; FATRES_OK = 0 falls back to the sector path; fat_res_load reads all FAT
++sectors in ONE dskio_calslt (B / DE / HL / C as read_sector's convention), and
++leaves FATRES_OK = 0 on a CTRL boot (DRVCNT = 1), under MSX-DOS (DOS_F346 = 255),
++with a FAT of 0 or > 3 sectors, and on a failed read; dskio_write drops it. A
++resident FAT whose first sector equals the mount's sector 1 (bytes 11..23 are
++fat_media's, not compared) is KEPT with no DSKIO; any other difference, or
++FATRES_OK = 0, reloads it.
+ """
+ 
+ import os
+@@ -58,6 +70,8 @@ CHAIN = [
+     (3, 341),      # odd,  non-straddle
+     (341, 682),    # odd,  straddle (fatofs 341+170 = 511)
+     (682, 0xFFF),  # even, straddle (fatofs 682+341 = 1023), -> end-of-chain
++    (4, 0xABC),    # even, beside a neighbour whose nibble is set (D-FATRES)
++    (5, 0xF5A),    # odd, the shared byte's both nibbles set (D-FATRES)
+ ]
+ 
+ 
+@@ -127,11 +141,151 @@ def run():
+     print(f"{'PASS' if ok else 'FAIL'}  chain walk {walked} "
+           f"{'terminates at' if ok else '!= expected, last'} {cur:#05x}")
+ 
++    fails += run_resident(m, fat)
++
+     print()
+     print("ALL PASS — fat_next_cluster decodes all 4 FAT12 nibble cases"
+           if not fails else f"{fails} CHECK(S) FAILED")
+     return fails
+ 
+ 
++def run_resident(m, fat):
++    """D-FATRES rows: the resident FAT (FATRES / FATRES_OK, disk/equates.inc)."""
++    fails = 0
++
++    def check(ok, msg):
++        nonlocal fails
++        fails += not ok
++        print(f"{'PASS' if ok else 'FAIL'}  {msg}")
++
++    fatres, fatres_ok = m.addr("FATRES"), m.addr("FATRES_OK")
++    reads = []
++    sector_trap = m.traps[m.addr("read_sector")]
++
++    def counting_read_sector(mm):
++        reads.append(mm.cpu.de)
++        sector_trap(mm)
++    m.trap("read_sector", counting_read_sector)
++
++    dskio_calls = []
++    dskio_fail = [False]
++
++    def mock_dskio_calslt(mm):
++        c = mm.cpu
++        dskio_calls.append((c.a, c.bc >> 8, c.bc & 0xFF, c.de, c.hl, c.f & 1))
++        if dskio_fail[0]:
++            c.f |= 0x01
++            return
++        n, rel = c.bc >> 8, c.de - FATSTART
++        mm.poke(c.hl, bytes(fat[rel * SECSIZE:(rel + n) * SECSIZE]).ljust(n * SECSIZE, b"\x00"))
++        c.f &= ~0x01
++    m.trap("dskio_calslt", mock_dskio_calslt)
++
++    def load(drvcnt, f346, secperfat, fail=False, pre=1):
++        dskio_calls.clear()
++        dskio_fail[0] = fail
++        m.poke(m.addr("DRVCNT"), drvcnt)
++        m.poke(m.addr("DOS_F346"), f346)
++        m.poke_w(m.addr("FAT_SECPERFAT"), secperfat)
++        m.poke(fatres_ok, pre)              # a stale 1: fat_res_load must clear it
++        m.call("fat_res_load")
++        return m.peek(fatres_ok)[0]
++
++    # FATRES_OK = 0: the sector path, as before.
++    m.poke(fatres_ok, 0)
++    reads.clear()
++    got = m.call("fat_next_cluster", hl=3).hl & 0xFFFF
++    check(got == 341 and len(reads) == 1,
++          f"FATRES_OK = 0: next(3) = {got:#05x} via the sector path ({len(reads)} read)")
++
++    # fat_res_load: refused in every mode where FATRES is not ours (a stale 1 is
++    # cleared), or does not fit / fails (nothing resident: pre = 0).
++    for drv, f346, spf, fail, pre, why in (
++            (1, 0, 3, False, 1, "CTRL boot (DRVCNT = 1)"),
++            (2, 255, 3, False, 1, "MSX-DOS booted (DOS_F346 = 255)"),
++            (2, 0, 0, False, 0, "FAT of 0 sectors"),
++            (2, 0, 4, False, 0, "FAT of 4 sectors"),
++            (2, 0, 0x103, False, 0, "FAT of $103 sectors"),
++            (2, 0, 3, True, 0, "a failed read")):
++        ok_after = load(drv, f346, spf, fail, pre)
++        want_calls = 1 if fail else 0
++        check(ok_after == 0 and len(dskio_calls) == want_calls,
++              f"fat_res_load, {why}: FATRES_OK = {ok_after}, {len(dskio_calls)} DSKIO call(s)")
++
++    # fat_res_load on a normal boot, nothing resident (d): ONE DSKIO PER SECTOR
++    # (2026-11-07, the DI-gap blocker: interrupts open between them), read_sector's
++    # convention, each into the next 512 B of FATRES.
++    ok_after = load(2, 0, FAT_SECTORS, pre=0)
++    want = [(0, 1, 0, FATSTART + k, fatres + 512 * k, 0) for k in range(FAT_SECTORS)]
++    check(ok_after == 1 and dskio_calls == want,
++          f"fat_res_load, normal boot: FATRES_OK = {ok_after}, DSKIO "
++          f"{dskio_calls} == {want} (A, B, C, DE, HL, CF)")
++    check(m.peek(fatres, FAT_BYTES) == bytes(fat), "FATRES holds the whole FAT")
++
++    # LOAD ONCE, KEEP IT: the mount's FAT sector 1 (FAT_DBUF, as fat_geom_read
++    # leaves it -- fat_media's derived BPB fields over bytes 11..23) against FATRES.
++    dbuf = m.addr("FAT_DBUF")
++
++    def mount_sector(patch=None):
++        sec = bytearray(fat[:SECSIZE])
++        sec[11:24] = bytes(range(0xA0, 0xAD))   # fat_media's fields, never the FAT's
++        if patch is not None:
++            sec[patch] ^= 0x01
++        m.poke(dbuf, bytes(sec))
++
++    for patch, want_ok, want_calls, why in (
++            (None, 1, 0, "(a) same sector 1: kept, no DSKIO"),
++            (0, 1, FAT_SECTORS, "(b) byte 0 differs: full reload"),
++            (10, 1, FAT_SECTORS, "(b) byte 10 differs: full reload"),
++            (24, 1, FAT_SECTORS, "(b) byte 24 differs: full reload"),
++            (511, 1, FAT_SECTORS, "(b) byte 511 differs: full reload"),
++            (11, 1, 0, "(c) byte 11 differs: NOT seen (accepted gap)"),
++            (23, 1, 0, "(c) byte 23 differs: NOT seen (accepted gap)")):
++        load(2, 0, FAT_SECTORS)                 # resident, FATRES_OK = 1
++        mount_sector(patch)
++        ok_after = load(2, 0, FAT_SECTORS, pre=1)
++        calls_ok = len(dskio_calls) == want_calls and all(
++            c[1] == 1 for c in dskio_calls)
++        check(ok_after == want_ok and calls_ok,
++              f"{why}: FATRES_OK = {ok_after}, DSKIO {dskio_calls}")
++    mount_sector()
++    ok_after = load(2, 0, FAT_SECTORS, pre=0)
++    check(ok_after == 1 and len(dskio_calls) == FAT_SECTORS,
++          f"(d) same sector 1 but FATRES_OK = 0: full reload ({len(dskio_calls)} DSKIO)")
++    # bit 7 (2026-11-07): foreign code may own FATRES (a boot sector's step 5 / 7, CALL
++    # SYSTEM) -- no load, no compare, the flag left exactly as it is.
++    ok_after = load(2, 0, FAT_SECTORS, pre=0x80)
++    check(ok_after == 0x80 and not dskio_calls,
++          f"forbidden (bit 7): FATRES_OK = {ok_after:#04x}, {len(dskio_calls)} DSKIO (want $80, none)")
++    # a stale 1 when no longer ours (CALL SYSTEM): cleared even with sector 1 equal.
++    ok_after = load(2, 255, FAT_SECTORS, pre=1)
++    check(ok_after == 0 and not dskio_calls,
++          f"MSX-DOS with a matching sector 1: FATRES_OK = {ok_after}, no DSKIO")
++    load(2, 0, FAT_SECTORS, pre=0)
++
++    # the resident path: every link, no sector read, B kept.
++    for cluster, want_next in CHAIN:
++        reads.clear()
++        cpu = m.call("fat_next_cluster", hl=cluster, bc=0x5A00)
++        got = cpu.hl & 0xFFFF
++        check(got == want_next and not reads and (cpu.bc >> 8) == 0x5A,
++              f"resident next({cluster}) = {got:#05x} (want {want_next:#05x}), "
++              f"{len(reads)} sector read(s), B = {cpu.bc >> 8:#04x}")
++
++    # any disk write drops it (dskio_write, zero sectors: the drop comes first).
++    m.trap("mtoff", lambda mm: None)
++    m.call("dskio_write", bc=0x0000)
++    check(m.peek(fatres_ok)[0] == 0, "dskio_write drops FATRES_OK")
++    # ... bit 0 only: a forbidden bit set by a boot code survives a write (2026-11-07)
++    m.poke(fatres_ok, 0x81)
++    m.call("dskio_write", bc=0x0000)
++    check(m.peek(fatres_ok)[0] == 0x80, "dskio_write keeps bit 7 (forbidden)")
++    reads.clear()
++    got = m.call("fat_next_cluster", hl=2).hl & 0xFFFF
++    check(got == 3 and len(reads) == 1,
++          f"after the drop: next(2) = {got:#05x} via the sector path again")
++    return fails
++
++
+ if __name__ == "__main__":
+     sys.exit(1 if run() else 0)

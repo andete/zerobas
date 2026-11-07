@@ -1384,7 +1384,20 @@ item — do **one item per session** to keep context lean.
       by a 3-sector DSKIO on the first search -- disk/docs/tier2-m20-spec.md §2.3); the disk
       build does the same: load on mount, chains from RAM, both copies written back on flush,
       dropped on a media change. (1) is unblocked.
-      ➡️ **RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room: ~181 B of pads, the largest 104 B
+      ⏸️ **RE-DONE, MEASURED, AND PARKED AGAIN (2026-11-07) -- THE GAIN IS GONE.** Built in
+      D-DISKCARVE's room ([`fatres_wip2.patch`](scratchpad/fatres_wip2.patch): the gate's bit 7, one DSKIO per sector with
+      interrupts open between, a write / FAT-entry write dropping bit 0; tests/test_fat_next_cluster.py
+      green with the per-sector and forbidden-bit rows). **LOAD with it: 1 KB 0.63 s, 7 KB 2.59,
+      14 KB 4.73** ([`loadclock_fatres2.out`](scratchpad/loadclock_fatres2.out)) -- **but today's HEAD WITHOUT it is already 0.62 / 2.59 /
+      4.92** ([`loadclock_head1107.out`](scratchpad/loadclock_head1107.out)): the 11-06 HEAD's 8.94 s has halved through other work since
+      (the 11-06 notes' (2) and (3) and the carves), and the resident FAT now buys -4 % on 14 KB and
+      nothing on 7 KB or 1 KB. Not worth ~140 B of disk.rom and a RAM-ownership gate around
+      MSX-DOS and every boot code; Joost's ruling ALLOWED the buffer, it did not require it.
+      🔮 "~5.5 s": the number was right for the build, the premise (that FATRES is the lever)
+      was stale -- measure HEAD before re-doing a parked speed slice. What is left of the gap to
+      the CF-3300 (4.92 vs 2.94 s on 14 KB, 1.67x; 7 KB 2.59 vs 2.39) is per-sector CPU work and
+      lost-data retries (the 11-06 FDC log), not FAT re-reads.
+      ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
       (a) the RAM gate FIRST: FATRES must not be trusted or written while foreign code can own
@@ -7914,7 +7927,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10347 (T-6FE392)8 (T-529ABE)` from `TODO.md:16098 (T-529ABE)`: a
+      `TODO.md:10360 (T-6FE392)8 (T-529ABE)` from `TODO.md:16111 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10653,7 +10666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16098 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
