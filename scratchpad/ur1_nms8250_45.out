@@ -1,0 +1,173 @@
+SCRMOD=8 CURLIN=30 ERRLIN=0 ERRFLG=0 PC=D0C6
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+|................................|
+TRANS 000C from F398 t=3.41
+TRANS 0018 from F398 t=8.14
+TRANS 001C from DDCD t=9.55
+TRANS 0024 from C039 t=27.76
+TRANS 0024 from C089 t=27.76
+TRANS 0024 from C23D t=22.10
+TRANS 0024 from C26C t=22.22
+TRANS 0024 from CD3D t=18.44
+TRANS 0024 from CE7F t=21.89
+TRANS 0030 from D243 t=38.14
+TRANS 0030 from DE7F t=12.94
+TRANS 0030 from F331 t=9.30
+TRANS 0030 from FD9F t=7.65
+TRANS 0030 from FE4E t=11.20
+TRANS 0030 from FE5D t=10.85
+TRANS 0030 from FE62 t=11.21
+TRANS 0030 from FE76 t=11.19
+TRANS 0030 from FEB2 t=10.85
+TRANS 0030 from FEB7 t=10.85
+TRANS 0030 from FECB t=7.62
+TRANS 0030 from FFA7 t=8.99
+TRANS 003B from DF04 t=9.30
+TRANS 004B from DE8F t=9.30
+TRANS 004F from F397 t=1.55
+TRANS 005F from C12C t=21.91
+TRANS 0090 from F398 t=5.52
+TRANS 00A2 from F398 t=10.83
+TRANS 00C9 from F398 t=4.86
+TRANS 00D1 from F398 t=21.91
+TRANS 0119 from F398 t=8.14
+TRANS 011D from F398 t=10.25
+TRANS 017D from F398 t=5.48
+TRANS 0185 from F398 t=7.62
+TRANS 0189 from F398 t=10.25
+TRANS 0203 from F38B t=1.54
+TRANS 0279 from F38B t=8.15
+TRANS 0314 from F397 t=5.32
+TRANS 0336 from F398 t=1.54
+TRANS 061B from F397 t=10.81
+TRANS 078D from FDC7 t=4.86
+TRANS 07A4 from F397 t=4.86
+TRANS 07F3 from F397 t=3.41
+TRANS 0920 from FDA4 t=5.48
+TRANS 0A14 from F397 t=4.86
+TRANS 0B42 from FDB3 t=10.25
+TRANS 0BFC from FEDF t=5.48
+TRANS 0C4D from FD9A t=1.55
+TRANS 0C56 from FD9F t=1.55
+TRANS 0C56 from FDA3 t=7.65
+TRANS 1417 from FFAB t=9.09
+TRANS 1A89 from F397 t=5.52
+TRANS 1B49 from FEE4 t=5.48
+TRANS 2022 from F397 t=8.14
+TRANS 3426 from F398 t=3.53
+TRANS 3E6F from F397 t=3.53
+TRANS 4010 from F398 t=8.99
+TRANS 4013 from F398 t=9.30
+TRANS 4016 from F398 t=9.55
+TRANS 4022 from C067 t=10.11
+TRANS 4090 from F398 t=38.14
+TRANS 40B4 from F397 t=10.83
+TRANS 4173 from F59F t=10.84
+TRANS 41AB from FF11 t=10.85
+TRANS 41FD from F252 t=14.96
+TRANS 4253 from F398 t=11.20
+TRANS 425D from F255 t=9.30
+TRANS 42BC from FF20 t=10.85
+TRANS 42BF from F258 t=9.55
+TRANS 431A from F25B t=9.55
+TRANS 434B from F25E t=9.63
+TRANS 4356 from FF25 t=10.85
+TRANS 437F from FF2A t=10.85
+TRANS 43A7 from FF2F t=10.85
+TRANS 4411 from F261 t=9.30
+TRANS 4474 from F264 t=10.23
+TRANS 44DE from F267 t=9.30
+TRANS 4556 from F26A t=9.30
+TRANS 4604 from FF3E t=11.21
+TRANS 4649 from FF43 t=10.85
+TRANS 4666 from F398 t=12.94
+TRANS 4669 from FF48 t=3.53
+TRANS 46C8 from F270 t=9.55
+TRANS 4919 from F27C t=7.61
+TRANS 4935 from F27F t=8.99
+TRANS 498C from F282 t=10.87
+TRANS 49B4 from F285 t=10.87
+TRANS 4A39 from F288 t=10.87
+TRANS 4AFF from F398 t=15.73
+TRANS 4B02 from FF5C t=1.54
+TRANS 4B59 from F28E t=10.87
+TRANS 4B72 from F1E1 t=11.20
+TRANS 4BE2 from F1E1 t=11.19
+TRANS 4BE5 from F291 t=11.19
+TRANS 4C25 from F294 t=11.19
+TRANS 4C70 from FF66 t=10.85
+TRANS 4C9A from F297 t=21.85
+TRANS 4DDC from FF70 t=10.85
+TRANS 4E4B from F2A0 t=14.96
+TRANS 4EDE from F2A3 t=10.87
+TRANS 4FE2 from F1E1 t=10.86
+TRANS 5526 from F2B5 t=18.42
+TRANS 5604 from F1F4 t=9.30
+TRANS 56D3 from F398 t=9.30
+TRANS 576F from F398 t=5.34
+TRANS 5897 from F398 t=7.62
+TRANS 599C from F397 t=8.14
+TRANS 59FE from C01E t=9.09
+TRANS 5BAB from DEA2 t=10.24
+TRANS 5BB3 from DEA2 t=10.24
+TRANS 5BDF from F397 t=10.83
+TRANS 5E6C from F38B t=8.15
+TRANS 5E7E from F38B t=8.15
+TRANS 5F9D from F367 t=8.15
+TRANS 5FEA from F367 t=5.52
+TRANS 6055 from F398 t=8.99
+TRANS 6080 from DE95 t=9.30
+TRANS 629D from FECB t=1.54
+TRANS 62A4 from FED0 t=1.54
+TRANS 62B2 from FED5 t=1.54
+TRANS 62F3 from FEDA t=1.54
+TRANS 6317 from F38B t=11.21
+TRANS 6678 from F398 t=10.80
+TRANS 66A4 from F398 t=11.20
+TRANS 66FC from F398 t=10.85
+TRANS 67F1 from FF9D t=10.80
+TRANS 68D0 from F398 t=11.21
+TRANS 6939 from F398 t=11.19
+TRANS 6AA7 from F398 t=12.94
+TRANS 6AFA from F398 t=12.94
+TRANS 6B33 from F38B t=11.21
+TRANS 6B66 from FE67 t=10.85
+TRANS 6B7D from F38B t=11.19
+TRANS 6C1C from F398 t=11.19
+TRANS 6CF3 from 8506 t=15.73
+TRANS 6EF4 from DE84 t=15.73
+TRANS 6EFE from F38B t=15.73
+TRANS 6F18 from FEB6 t=10.85
+TRANS 6F36 from FEBB t=10.85
+TRANS 7321 from F397 t=11.19
+TRANS 7323 from F398 t=10.85
+TRANS 737C from F398 t=10.85
+TRANS 739A from FE7A t=11.20
+TRANS 7528 from FFD4 t=9.09
+TRANS 762E from FFCF t=9.04
+TRANS 7900 from F398 t=7.65
+TRANS 7CED from F398 t=7.62
+TRANS 7D31 from F398 t=10.25
+
