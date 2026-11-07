@@ -8025,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16244 (T-529ABE)`: a
+      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16251 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10764,7 +10764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16244 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16251 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11361,6 +11361,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       CSNG (6 digits must still agree). Two session slips of mine, the same on both
       machines: `(-8)^(1/3)` and `-32768%` raise (Illegal function call, Overflow) and cut
       their line short -- each on its own line now.
+      ✅ **S19_flow (2026-11-07): SAME** ([`S19_flow.ses`](probes/sessions/S19_flow.ses), [`sessions_S19_flow.out`](scratchpad/sessions_S19_flow.out)): DATA /
+      READ / RESTORE <line>, DEF FN with two arguments, FOR with STEP -1 and NEXT J,I, ON X
+      GOSUB / GOTO with X out of range, nested GOSUB, nested IF THEN ELSE, and Out of DATA,
+      RETURN without GOSUB (typed and in a program), NEXT without FOR, Undefined user
+      function. `FOR K=5 TO 1` runs its body ONCE on the VG-8020 (K=6 after); zerobas the
+      same. 🔮 Predicted "one divergence in which line an error names (Out of DATA: the
+      READ's or the DATA's)": MISS -- both name the READ, 100.
       ➡️ NEXT sessions: tape (CSAVE / CLOAD, the VG-8020, parked on the recorder apparatus)
       and more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each

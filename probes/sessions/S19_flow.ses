@@ -1,0 +1,29 @@
+# S19_flow (D-SESSIONS, 2026-11-07): a typed-in listing's control flow -- DATA / READ /
+# RESTORE <line>, ON X GOTO / GOSUB with X out of range, nested GOSUB, DEF FN with two
+# arguments, FOR with a negative STEP, a FOR whose end is passed at the start (it runs ONCE on the VG-8020, K=6 after), NEXT J,I, nested
+# IF THEN ELSE, and the errors on the way (Out of DATA, RETURN without GOSUB, NEXT
+# without FOR, Undefined user function). The VG-8020.
+NEW
+10 DEF FNH(A,B)=SQR(A*A+B*B)
+20 RESTORE 200:READ A,B,N$:PRINT N$;FNH(A,B)
+30 FOR I=3 TO 1 STEP -1:FOR J=1 TO 2:PRINT I*10+J;:NEXT J,I:PRINT
+40 FOR K=5 TO 1:PRINT "NEVER":NEXT:PRINT "K=";K
+50 FOR X=0 TO 3:ON X GOSUB 300,310:NEXT
+60 X=2:ON X GOTO 70,80:PRINT "FELL"
+70 PRINT "SEVENTY"
+80 IF X=2 THEN IF A=3 THEN PRINT "A3" ELSE PRINT "NOT A3" ELSE PRINT "NOT 2"
+90 READ C:PRINT "C";C
+100 READ D:PRINT "D";D
+110 END
+200 DATA 3,4,"HYP"
+210 DATA 99
+300 PRINT "SUB1";:GOSUB 320:RETURN
+310 PRINT "SUB2";:RETURN
+320 PRINT "+";:RETURN
+RUN
+RESTORE 210:READ Z:PRINT Z
+RETURN
+NEXT
+PRINT FNQ(1)
+10 PRINT "X"
+GOTO 300
