@@ -477,7 +477,23 @@ cal_gb_past:
 ; The drained byte is parked in CAL_SAVE across that refill (requirement 1).
 ;   out: A = byte, CF clear; or CF set = no more data at all.
 cal_getbyte:
+                ; 📼 D-INPQUOTE2 (2026-11-07): A PUT-BACK BYTE FIRST. read_into_strscr
+                ; returns the byte after a closing quote on a tape field (the VG-8020
+                ; leaves it for the next read). It rides in two cells this reader
+                ; already owns, so no RAM is added -- a cell for it was tried at $F023
+                ; and that is the DISKLESS FLOOR, program RAM on exactly the machines
+                ; that use tape (ram-map-check's A17 caught it): CAL_NEEDFILL bit 7 =
+                ; held (the cell's own values are 0..2), CAL_SAVE = the byte (it parks a
+                ; byte only INSIDE a drain, never between two reads). A tape open writes
+                ; CAL_NEEDFILL := 0, which drops a stale one.
                 ld      hl,CAL_NEEDFILL
+                bit     7,(hl)
+                jr      z,cgb_tape
+                res     7,(hl)
+                ld      a,(CAL_SAVE)
+                or      a                   ; CF clear: a byte
+                ret
+cgb_tape:
                 ld      a,(hl)
                 cp      2
                 jr      nc,cal_gb_past      ; terminal EOF, latched by a prior drain

@@ -92,7 +92,7 @@ fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
 parse_disk_fcb equ 06460H
 eval equ 04A8AH
-fch_check equ 06F03H
+fch_check equ 06F23H
 fch_mode_class equ 04F7CH
 field_item equ 072F6H
 tgt_store_desc equ 05CEDH
@@ -105,11 +105,11 @@ req_operand equ 04126H
 str_eval equ 048E5H
 type_mismatch_error equ 042F8H
 stmt_error equ 042EAH
-lrset_finish equ 07098H
-fch_ctx_addr equ 06E87H
-disk_error equ 06724H
+lrset_finish equ 070B8H
+fch_ctx_addr equ 06EA7H
+disk_error equ 0672FH
 read_line equ 045E6H
-fch_close_all equ 06F47H
+fch_close_all equ 06F67H
 eval_int16_checked equ 04535H
 check_expr_errors equ 04411H
 eval_byte_arg equ 04549H

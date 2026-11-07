@@ -17663,7 +17663,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       builds a program at import time can lose this race.
       🤖 **AUTONOMOUS** — apparatus.
 
-- [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
+- [x] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**
       🎚️ TIER 6 — every error / edge: a program writes its own quotes AND text
       after them, or leaves one open.
@@ -17726,6 +17726,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the refill and read a FURTHER block). So it is a one-byte pushback cell that
       cal_getbyte serves first (~25-35 B + 2 B of RAM, map and gate), measured against the
       tape suites (castail / cas-ascii) before shipping.
+      ✅ **CASSETTE HALF FIXED THE SAME DAY -- AND WITH NO NEW RAM.** cal_getbyte
+      (basic/cload.asm) serves a held byte first; read_into_strscr (basic/files.asm) keeps
+      CR / LF as data inside an open quote when the source is cas_in_getbyte, and past a
+      closing quote puts the byte back (ris_putback) and ends the field. 🔴 The first build
+      gave the byte its own cell at $F023, a declared FREE-RAM run -- but that run is the
+      DISKLESS FLOOR ([TXTMAX, TXTMAX_NODISK) is program RAM on a machine without a disk,
+      exactly the machines that use tape), and ram-map-check's selftest A17 went red in the
+      FULL battery. It now rides in two cells the tape reader already owns: CAL_NEEDFILL
+      bit 7 = held (its own values are 0..2) and CAL_SAVE = the byte (it parks a byte only
+      inside a drain, never between reads); a tape open writes CAL_NEEDFILL := 0, dropping a
+      stale one. 🔮 "all nine SAME": HIT ([`inpquote_cas_after.out`](scratchpad/inpquote_cas_after.out); the no-RAM build [`inpquote_cas_after2.out`](scratchpad/inpquote_cas_after2.out)); the pre-fix
+      inpquote_cas_run.out is the knife (qjunk / qjunkc / qopen). Gate casquote-acceptance
+      (probes/basic/basic_probe_casquote.py). D-INPQUOTE2 is closed: disk, console and tape.
 
 
 - [ ] 🔴 **A FILE WHOSE CLUSTER CHAIN POINTS PAST THE VOLUME LOADS AS AN EMPTY

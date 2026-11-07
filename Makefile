@@ -1410,6 +1410,10 @@ lpterrnl-acceptance: repack-machine
 trapstmt-acceptance: repack-machine
 	python3 probes/basic/basic_probe_trapstmt.py --gate
 
+# D-INPQUOTE2 (2026-11-07): INPUT # from TAPE -- what follows a closing quote, an unclosed one.
+casquote-acceptance: repack-machine
+	python3 probes/basic/basic_probe_casquote.py
+
 # D-BLDS (2026-11-07): on tape `BLOAD "CAS:X",S` takes S as the offset expression.
 blds-acceptance: repack-machine
 	python3 probes/basic/basic_probe_blds.py --gate

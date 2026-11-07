@@ -1,0 +1,21 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_casquote.py
+ROW plain   VG=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+ROW quoted  VG=[__AB__| 6 |NX 0 ] ZB=[__AB__| 6 |NX 0 ] SAME
+ROW qcomma  VG=[A,B| 3 |NX 0 ] ZB=[A,B| 3 |NX 0 ] SAME
+ROW qjunk   VG=[AB| 2 |CD 0 ] ZB=[AB| 2 |CD 0 ] SAME
+ROW qjunkc  VG=[AB| 2 |CD,EF 0 ] ZB=[AB| 2 |CD,EF 0 ] SAME
+ROW qopen   VG=[| 11 | 55 ] ZB=[| 11 | 55 ] SAME
+ROW qmid    VG=[A#B#| 4 |NX 0 ] ZB=[A#B#| 4 |NX 0 ] SAME
+ROW qlead   VG=[AB| 2 |NX 0 ] ZB=[AB| 2 |NX 0 ] SAME
+ROW qsp     VG=[AB| 2 |CD 0 ] ZB=[AB| 2 |CD 0 ] SAME
+refcache: 18 hit, 0 miss, 9 of the hits were ZEROBAS readings
+PASS: INPUT # from tape (0 not SAME: [])
+refcache: 18 hit, 0 miss, 9 of the hits were ZEROBAS readings

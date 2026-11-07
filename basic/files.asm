@@ -1242,6 +1242,22 @@ ris_lp:
                                             ; cas_in_getbyte (CAS: input), set by
                                             ; arl_set_src per channel type
                 jp     c,ris_done          ; EOF -> stop
+                ; 📼 D-INPQUOTE2 (2026-11-07): INSIDE AN OPEN QUOTE ON TAPE, CR AND LF ARE
+                ; DATA -- the VG-8020 reads `"AB,CD` on through the line ends to the end of
+                ; the file (11 B, then 55; scratchpad/inpquote_cas_run.out qopen). Only a
+                ; cassette reaches this state here: a disk field is disk.rom's din_str,
+                ; the console ends at its CR, line mode never opens a quote.
+                ld      c,a
+                ld      a,(STRSCR)
+                cp      '"'
+                jr      nz,ris_nq
+                ld      hl,(ARL_GETBYTE)
+                ld      de,cas_in_getbyte
+                or      a
+                sbc     hl,de
+                jr      z,ris_quoted        ; A = '"', C = the byte: kept as data
+ris_nq:
+                ld      a,c
                 cp      $0A                 ; an LF -- ignored in a FIELD, but
                 jr      z,ris_lf            ; see ris_lf for LINE INPUT # from disk
 ris_notlf:
@@ -1316,9 +1332,18 @@ ris_quoted:
                 ld      de,linebuf_getbyte
                 or      a
                 sbc     hl,de
-                jr      nz,ris_lp           ; a cassette: dropped, as before
+                jr      nz,ris_putback      ; a cassette (D-INPQUOTE2, below)
                 pop     af                  ; our return: both console callers hold
                 jp      inpc_redo3          ; [varstart][textcur][key] -> ?Redo
+ris_putback:
+                ; 📼 D-INPQUOTE2: on tape the byte after a closing quote is the NEXT
+                ; read's -- `"AB"CD` leaves CD, `"AB"CD,EF` leaves CD,EF on the VG-8020
+                ; (it was dropped here). Put it back, and the field ends.
+                ld      a,c
+                ld      (CAL_SAVE),a        ; the byte, and CAL_NEEDFILL bit 7 = held
+                ld      hl,CAL_NEEDFILL     ; (cal_getbyte, basic/cload.asm)
+                set     7,(hl)
+                jp      ris_done
 ris_qhit:
                 cp      ','
                 jp      z,ris_done          ; past it, the comma ends the field
