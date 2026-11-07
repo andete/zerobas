@@ -1384,6 +1384,20 @@ item — do **one item per session** to keep context lean.
       by a 3-sector DSKIO on the first search -- disk/docs/tier2-m20-spec.md §2.3); the disk
       build does the same: load on mount, chains from RAM, both copies written back on flush,
       dropped on a media change. (1) is unblocked.
+      ➡️ **RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room: ~181 B of pads, the largest 104 B
+      in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
+      re-place by hand, smallest risk first --
+      (a) the RAM gate FIRST, alone: FATRES must not be trusted or written while MSX-DOS can own
+          $DE8D..$E48C -- find a condition true from the first DOS load (BASENT_REQ's DOS_TRY,
+          a boot-path flag), measured with the seven DOS suites green on a build that only
+          clears FATRES_OK on that condition;
+      (b) the staleness rule: every chain read must see a FAT_DEFER-held entry -- simplest is
+          "a deferral drops FATRES_OK" (wrblkalt-acceptance is the witness);
+      (c) the DI gap: load the FAT in per-sector DSKIOs with the D-FDCDI windows between them,
+          not one 3-sector call (programs-acceptance --gaps is the witness);
+      (d) then the code itself into today's pads (fres_read, fat_res_next + frn_tail,
+          fres_same + fres_cmp, the mount hook), each pad padwatch-checked before filling;
+      (e) LOAD timing (loadclock_probe.py) against the 11-06 numbers.
       ⏸️ **(1) BUILT AND PARKED 2026-11-06 (D-FATRES slice 1) -- THE FULL BATTERY WENT RED 236/245,
       NOT SHIPPED. The ROM work is saved as [`fatres_wip.patch`](scratchpad/fatres_wip.patch).** Three blockers, each
       a red gate: (i) **DI gaps** -- programs-acceptance: frame-interrupt gaps up to 0.34 s in five
@@ -7894,7 +7908,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10327 (T-6FE392)8 (T-529ABE)` from `TODO.md:16078 (T-529ABE)`: a
+      `TODO.md:10341 (T-6FE392)8 (T-529ABE)` from `TODO.md:16092 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10633,7 +10647,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16078 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16092 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
