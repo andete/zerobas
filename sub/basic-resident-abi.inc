@@ -29,8 +29,8 @@ rl_vaddr equ 03AEEH
 rl_lastrow equ 03B15H
 
 ; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
-p0_chrgtr equ 00160H   ; main's chrgtr
-p0_outdo equ 00177H   ; main's outdo
+p0_chrgtr equ 00168H   ; main's chrgtr
+p0_outdo equ 0017AH   ; main's outdo
 p0_bp_ret equ 06786H   ; main's bp_ret
 p0_skip_spaces equ 042D3H   ; main's skip_spaces
 p0_exec_stmt equ 04133H   ; main's exec_stmt
@@ -111,4 +111,4 @@ p0_le_call_op equ 06E8DH   ; main's le_call_op
 p0_print_string equ 045DFH   ; main's print_string
 p0_list_num equ 0635AH   ; main's list_num
 p0_print_in_hl equ 07629H   ; main's print_in_hl
-p0_rn_undefined equ 001B5H   ; main's rn_undefined
+p0_rn_undefined equ 001B8H   ; main's rn_undefined

@@ -1,0 +1,6 @@
+match    vg8020='HL=D101 A= 53 F=23'  cf3300='HL=D101 A= 53 F=23'  zb='HL=D101 A= 2 F=0'
+miss     vg8020='ERR 2'  cf3300='ERR 2'  zb='ERR 2'
+space    vg8020='ERR 2'  cf3300='ERR 2'  zb='HL=D101 A= 2 F=0'
+matchsp  vg8020='HL=D102 A= 53 F=23'  cf3300='HL=D102 A= 53 F=23'  zb='HL=D101 A= 2 F=0'
+refcache: 0 hit, 12 miss, 12 stored
+refcache: 0 hit, 12 miss, 12 stored

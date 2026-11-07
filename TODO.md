@@ -17580,7 +17580,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reads). The local pin's `alone` values were recomputed from its stored timings (a
       derived field); the next kwtime run writes them itself.
 
-- [ ] 🔌 **D-SYNCHR — `RST $08` (SYNCHR) IS STILL C-BIOS'S DEBUG STUB: IT PRINTS "SYNCHR" AND
+- [x] 🔌 **D-SYNCHR — `RST $08` (SYNCHR) IS STILL C-BIOS'S DEBUG STUB: IT PRINTS "SYNCHR" AND
       RETURNS (found 2026-10-05 by space plan B-12; NOT MEASURED on a machine-code row)**
       🎚️ TIER 6 — a published BIOS entry that machine-code routines and CALL
       extension ROMs parse with, not a keyword. Re-tier if that surface is in
@@ -17602,6 +17602,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       island, if one has room). Check the other RST vectors (`$20` DCOMPR, `$28`
       GETYPR, `$30` CALLF) the same way.
       🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **FIXED 2026-11-07.** 📏 Measured first ([`synchr_probe.py`](scratchpad/synchr_probe.py) -> [`synchr_run.out`](scratchpad/synchr_run.out); a DEFUSR
+      routine points HL at RAM and does `RST 8 / DB c`): both references alike -- `,5` ->
+      HL+1, A = '5', F = $23; `;` expected -> ERR 2; ` ,` -> ERR 2 (no space skip BEFORE the
+      compare); `, 5` -> HL+2. zerobas's stub diverged on three of the four. `synchr`
+      (basic/islands.asm, island 2) compares, steps the return address past the byte, raises
+      via stmt_error, and falls into chrgtr; `$0008` -> `jp synchr` (tools/build_mainrom.py
+      PATCH_RANGES, was C-BIOS's `jp $10ED`). And **chrgtr itself now runs in the classic
+      order** (`cp ':' / ret nc / cp ' ' / cp '0' / ccf / inc a / dec a`): the references'
+      F = $23 on a digit is exactly that, where ours had the same Z / C contract with other
+      undocumented bits -- and it is 4 B shorter. 🔮 "both rows match, F too": HIT
+      ([`synchr_after.out`](scratchpad/synchr_after.out)). Gate: synchr-acceptance (probes/basic/basic_probe_synchr.py, 4/4,
+      [`synchr_gate.out`](scratchpad/synchr_gate.out)); HEAD's readings in synchr_run.out are the knife. ➡️ Still open from this
+      item: `$20` DCOMPR (bios-regs.patch matched it), `$28` GETYPR, `$30` CALLF -- the same
+      DEFUSR measurement.
 
 - [ ] 🧰 **D-KWTIMESYMRACE — `kwtime` CAN DIE IN 0 s ON `KeyError: 'tokenise'` WHEN ANOTHER BATTERY
       UNIT REWRITES main's .sym (found twice: 2026-10-04 during B-3, 2026-10-05 during B-11; MEASURED)**

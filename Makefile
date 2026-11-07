@@ -1410,6 +1410,11 @@ lpterrnl-acceptance: repack-machine
 trapstmt-acceptance: repack-machine
 	python3 probes/basic/basic_probe_trapstmt.py --gate
 
+# D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
+# and RST 10h CHRGTR leaves the reference's exact flags.
+synchr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_synchr.py --gate
+
 # D-USRDEF (2026-11-04): an unset USR is Illegal function call (USRTAB = $475A).
 usrdef-acceptance: repack-machine
 	python3 probes/basic/basic_probe_usrdef.py --gate

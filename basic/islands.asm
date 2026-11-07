@@ -202,23 +202,38 @@ brk_msg:        db      "Break",0           ; repack: " in " moved into print_in
 ; and it is also exactly zerobas's `inc_skip` plus the flags -- so the 50 internal
 ; `call inc_skip` sites (none reads Z/C before setting them; scratchpad/
 ; rst_scout.py) become 1-byte `rst $10`, and USR machine code gets a real CHRGTR.
+; synchr -- RST 08h, the PUBLISHED MSX BIOS SYNCHR (D-SYNCHR, 2026-11-07): (HL) must
+; equal the byte AFTER the RST, else Syntax error; on a match the return address
+; steps past that byte and it continues AS CHRGTR (no space skip BEFORE the compare,
+; spaces skipped after). Measured on the VG-8020 and the CF-3300, both alike
+; (scratchpad/synchr_probe.py -> synchr_run.out): ",5" -> HL+1, A = '5', F = $23;
+; ";" expected -> ERR 2; " ," -> ERR 2; ", 5" -> HL+2. C-BIOS's $0008 was its debug
+; stub (it printed "SYNCHR" and returned). Falls into chrgtr.
+synchr:
+                ld      a,(hl)
+                ex      (sp),hl             ; HL = the RST's return address
+                cp      (hl)                ; = the expected byte?
+                inc     hl                  ; return PAST it
+                ex      (sp),hl
+                jp      nz,stmt_error       ; no: Syntax error
 chrgtr:
                 call    H_CHRG              ; the published hook (a RET by default)
+                ; D-SYNCHR: the CLASSIC order, so the flags are the reference's to the
+                ; bit (a digit '5' leaves F = $23 on both references -- `inc a / dec a`'s
+                ; S/Z/H/P/N over the carry `ccf` made); was cp ' ' / cp ':' / or a /
+                ; cp '0' / cp '9'+1, the same Z / C contract with other undocumented
+                ; bits, and 4 B longer.
 cgt_lp:
                 inc     hl
                 ld      a,(hl)
+                cp      ':'                 ; ':' and above: NC (Z only on ':')
+                ret     nc
                 cp      ' '
                 jr      z,cgt_lp
-                cp      ':'                 ; end of statement -> Z
-                ret     z
-                or      a                   ; end of line -> Z (and NC)
-                ret     z
-                cp      '0'
-                jr      c,cgt_nd
-                cp      '9'+1               ; a digit -> CF
-                ret     c
-cgt_nd:
-                or      a                   ; anything else: NZ, NC
+                cp      '0'                 ; below '0': CF -> ccf -> NC; a digit: NC -> CF
+                ccf
+                inc     a
+                dec     a                   ; Z on end of line (0), flags as the reference
                 ret
 
 ; outdo -- RST 18h, the PUBLISHED MSX BIOS OUTDO (MAKING ROOM lever A, step 3).
@@ -456,6 +471,9 @@ fperr_to_err:
     IF $ > $09EE
                 db      ISLAND3_OVERRAN_09EE__IT_WOULD_OVERWRITE_THE_TAPE_BODIES
     ENDIF
+
+                org     $0008
+                jp      synchr              ; D-SYNCHR (was C-BIOS's `jp $10ED` debug stub)
 
                 org     $0010
                 jp      chrgtr
