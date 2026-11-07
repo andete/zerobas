@@ -243,23 +243,14 @@ conin_body:
                 pop     bc
                 ret
 
-dirin_body:
-                jp      innoe_body
+; (dirin_body -- gone or moved, D-DISKCARVE 2026-11-07)
 
 ; --- cpmver_body - the $41EF CPMVER canonical entry (M22a) -----------------------
 ; A := $22 (the published CP/M-2.2-compatibility version constant, map.grauw.nl
 ; _CPMVER), B := 0. HL is overwritten by the kernel's own exit mirror regardless
 ; ($F306 stays set — §5.2, the M20 rule inverted for this tier).
-cpmver_body:
-                ld      a, $22
-                ld      b, 0
-                ret
+; (cpmver_body moved to the $4ECF pad, disk/kernel.asm -- D-DISKCARVE)
 
-; --- login_body - the $504E LOGIN canonical entry (M22a) -------------------------
-; A := the online-drive bitmap (1 << DRVCNT) - 1, the published LOGIN contract
-; (map.grauw.nl), derived from our OWN DRVCNT cell ($F347, =2 here) rather than
-; a hardcoded constant. B := 0. Only B (the loop counter, no longer needed once
-; the shift is done) is clobbered besides A/HL — C/D/E (§5.3) are never touched.
 login_body:
                 ld      a, (DRVCNT)         ; DRVCNT = $F347 = logical-drive count
                 ld      b, a                ; B := DRVCNT (loop counter, temporarily)
@@ -281,36 +272,9 @@ login_bits_done:
 ; untouched, matching the pinned oracle (§5.1 r2). Range validation (A:=$FF on
 ; out-of-range input) is unimplemented — the exerciser never sends invalid
 ; input and stock's invalid-path was never observed (§8.2 residual).
-stime_body:
-                xor     a
-                ld      b, h
-                ld      c, l
-                ret
+; (stime_body / gtime_body moved to the $4ECF pad, disk/kernel.asm -- D-DISKCARVE)
 
-; --- gtime_body - the $55DB GTIME canonical entry (M22a) -------------------------
-; A := B := C := D := E := 0 — the oracle's pinned constant 00:00:00
-; (clockless-MSX1 default; deliberately NOT fed by STIME's stored value, which
-; would diverge from the observed oracle, §5.1 r3).
-gtime_body:
-                xor     a
-                ld      b, a
-                ld      c, a
-                ld      d, a
-                ld      e, a
-                ret
-
-; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
-; A := E (the published VERIFY contract: echo the requested on/off flag); B
-; passes through untouched (§5.3). NO-OP SETTER BY DESIGN, and this is the
-; FAITHFUL choice — RESOLVED 2026-07-04 (remaining-spec §5.4, was open): stock
-; MSX-DOS 1 has NO verify-after-write effect (black-box: a VERIFY-on WRABS issues
-; exactly the same single $4010 DSKIO write as a VERIFY-off WRABS, zero read-back —
-; probes/disk/verifyx.asm). So neither persisting E nor coupling a verify-read into
-; the write path is needed; doing so would make ours LESS faithful (extra reads
-; stock never does) and is pointless on the emulator target (writes cannot fail).
-verify_body:
-                ld      a, e
-                ret
+; (verify_body -- gone or moved, D-DISKCARVE 2026-11-07)
 
 ; --- dskrst_body - the $509F DSKRST canonical entry (M22a) -----------------------
 ; Reproduces the pinned $50A9 continuation-stub contract (A=0; (W50A9_WRKB):=0;
@@ -320,8 +284,7 @@ verify_body:
 ; own HL:=$F359 is immaterial here. Real flush semantics are unverifiable (no
 ; dirty buffers at these call sites) — the register contract is the observable
 ; surface (§8.4 residual).
-dskrst_body:
-                jp      w50a9_stub
+; (dskrst_body -- gone or moved, D-DISKCARVE 2026-11-07)
 
 ; --- conin_line_body - the $50E0 CONIN line routine (M13; tier2-conin-spec.md v3) ---
 ; Reimplements the documented BDOS func-$0A buffered-line read, clean-room, from the
@@ -528,6 +491,32 @@ br_back_tmpl:
                 and     $FC
                 or      l
                 out     ($A8), a            ; page 0: DOS's RAM again
+                ; 🔧 D-SDSBOOT (2026-11-07): ENASLT's A is the $A8 it set -- and the BIOS
+                ; set it with page 0 still the BIOS, so the caller would get $FC where
+                ; the CF-3300 returns the final value ($FF with every page RAM: a disk's
+                ; boot code reads it, scratchpad/sdsboot_ena_zb3.out). The bridged
+                ; entry is BR_TGT; RDSLT's and CALSLT's A are left alone.
+                ; RDSLT and WRSLT the same way: their D is the $A8 at entry (and WRSLT's
+                ; A too) -- the CF-3300 hands back the caller's, the bridge's BIOS call
+                ; saw $FC (sdsboot_ena_zb4.out, $C092: DE $FF98 there, $FC98 here).
+                ld      l, a                ; L = the $A8 just written
+                ld      a, (BR_TGT)
+                cp      $24                 ; ENASLT: A
+                jr      z, brb_a
+                cp      $14                 ; WRSLT: D and A
+                jr      z, brb_wr
+                cp      $0C                 ; RDSLT: D
+                jr      nz, brb_keep
+                ld      d, l
+                jr      brb_keep
+brb_wr:
+                ld      d, l
+brb_a:
+                ld      a, l
+                ld      hl, 3
+                add     hl, sp              ; [IFF af][callee af]: +3 = the callee's A
+                ld      (hl), a
+brb_keep:
                 pop     af
                 jp      po, BR_BACK_DI      ; interrupts were off: leave them off
                 pop     af

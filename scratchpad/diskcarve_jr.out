@@ -1,0 +1,12 @@
+convertible ROM sites: 15
+  proposals (unique source match): 9  [page1 9, low 0]
+  skipped no-match: 6   skipped ambiguous: 0
+    $43C9 jp c  -> fdc_wp_fail          disk/driver.asm:260
+    $4506 jp z  -> bdos_seqread         disk/driver.asm:537
+    $461D jp    -> bdos_create          disk/driver.asm:791
+    $48BA jp    -> fdc_write_data_body  disk/fat.asm:491
+    $5465 jp    -> lstout_body          disk/kernel.asm:1213
+    $57C4 jp z  -> hkm_end              disk/kernel.asm:1935
+    $5E10 jp    -> basent_body          disk/kernel.asm:3200
+    $5F28 jp nz -> hsy_syn              disk/kernel.asm:3441
+    $7AFA jp    -> fdc_read_data_body   disk/kernel.asm:8006

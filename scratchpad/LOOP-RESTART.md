@@ -41,8 +41,8 @@ session and the loop resumes exactly where it stopped.
   D-RECHOLE (TIER 6). Measured dead and reverted: the 3..5-digit widen lever.
 - **Interpreter rows now** (scratchpad/interpspeed_1107.out): every row at or under the CF-3300
   but `c.str` 1.11x (D-CONCATLIT).
-- **🔴 TWO ITEMS ARE BLOCKED ON DISK-ROM BYTES** -- D-SDSBOOT's ENASLT-bridge fix (~14 B in the
-  int_h_hiram template) and the D-FATRES re-do (scratchpad/fatres_wip.patch no longer applies:
+- **D-SDSBOOT CLOSED (later the same day): SDSNAT1C boots on the CF-3300's path** -- the bridge
+  fix took D-DISKCARVE's first cut (23 B). **STILL BLOCKED ON DISK-ROM BYTES:** the D-FATRES re-do (scratchpad/fatres_wip.patch no longer applies:
   its pad fragments were filled since). disk.rom's only free run is the FDC window. ->
   **D-DISKCARVE** (TODO, BUDGET) is the next slice: a disk-ROM jp -> jr / dup-span scan first.
 - **Gate note:** `python3 tools/run_gates.py --full` does NOT run the excluded five; run them
@@ -2127,7 +2127,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12447 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12462 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

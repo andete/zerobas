@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15944 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15963 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15944 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15963 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11241,17 +11241,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       window ($7F7F-$7FD0), which code cannot use; the pads D-FATRES used were filled since
       (D-COPYALL, D-LOADRUN, D-LOADFAT). The main ROM's carve tools (jr_mapper, dupspan_indep,
       carve_scout) read only the main image.
-      ➡️ First: a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
+      ✅ **FIRST CUT (2026-11-07): 23 B for D-SDSBOOT's bridge.** [`jr_mapper_disk.py`](scratchpad/jr_mapper_disk.py) (the main
+      mapper pointed at disk.rom: [`diskcarve_jr.out`](scratchpad/diskcarve_jr.out), 9 sites, 1 in the region needed) and the
+      pad roster (57 pads, 478 B, the largest 15): cpmver / stime / gtime (15 B) into the
+      $4ECF pad and verify (2 B) into the $55F4 pad, both empty and never entered
+      ([`padwatch_4ede.out`](scratchpad/padwatch_4ede.out), the ten DOS suites, positive control $4775 caught); the dirin /
+      dskrst `jp` veneers removed (their one caller each jumps to the target). The $782B..$7F7C
+      region took the bridge fix with 1 B to spare (2026-11-07).
+      ➡️ D-FATRES still needs its ~150 B. First: a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
       usable only in its own pinned region: rank the regions the two fixes need); then
       evictions of cold disk code into the sub ROM, as D-ROMSIZE did for main. The rule for every
       pad that takes code: `padwatch.py --also=` it first (D-PADSLIDE).
 
-- [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
+- [x] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
       🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
       🤖 **AUTONOMOUS** — since 2026-11-07; Joost on the BIOS exit registers: *"if it does no
-      harm, why not?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07). Next: the ENASLT
-      bridge's A (the ➡️ at the end), which needs a disk-ROM carve.
+      harm, why not?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07).
+      ✅ **CLOSED 2026-11-07: SDSNAT1C BOOTS AGAIN (ZB-NOBOOT -> BOTH-RUN,** [`sdsone_run3.out`](scratchpad/sdsone_run3.out)**),
+      ON THE CF-3300'S PATH** -- the boot code's register trace equals the CF-3300's on all 60
+      lines but the first (HL left by an earlier BDOS call, overwritten at once;
+      [`sdsboot_ena_zb5.out`](scratchpad/sdsboot_ena_zb5.out)). The last two splits were our page-3 bridge (the ➡️ at the end):
+      br_back (disk/runtime.asm) now hands ENASLT's A, RDSLT's D and WRSLT's D and A back
+      as the FINAL $A8 -- the BIOS computed them with page 0 still the BIOS ($FC where the
+      CF-3300 gives $FF) -- keyed on BR_TGT, so CALSLT / CALLF are untouched. The 26 B came
+      from D-DISKCARVE's first cut (cpmver / stime / gtime / verify bodies moved to empty pads,
+      the dirin / dskrst `jp` veneers removed: callers jump straight to the target).
+      📏 Disk collection after ([`diskcorpus_dc.out`](scratchpad/diskcorpus_dc.out), zerobas against the stored reference rows):
+      **TWO rows ZB-NOBOOT -> BOTH-RUN -- SDSNAT1C and GAUNT.DSK** (the same bridge, unmeasured
+      until now), nothing else moved; no ZB-NOBOOT row is left in the collection. 🔮 "one row":
+      MISSED on the good side.
       📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
       SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
       🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over

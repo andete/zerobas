@@ -114,7 +114,47 @@ install_dos_env:
                 ld      bc, br5_end - br5_tmpl
                 ldir
                 ret
+; 💰 D-DISKCARVE (2026-11-07): three BDOS bodies moved here from disk/runtime.asm's
+; $782B..$7F7C region (15 B), which the int_h_hiram template's ENASLT fix needed
+; (D-SDSBOOT). Entered only by `jp` from the BDOS dispatch; this pad was empty and
+; never entered (scratchpad/padwatch_4ede.out, the ten DOS suites).
+cpmver_body:
+                ld      a, $22
+                ld      b, 0
+                ret
 
+; --- login_body - the $504E LOGIN canonical entry (M22a) -------------------------
+; A := the online-drive bitmap (1 << DRVCNT) - 1, the published LOGIN contract
+; (map.grauw.nl), derived from our OWN DRVCNT cell ($F347, =2 here) rather than
+; a hardcoded constant. B := 0. Only B (the loop counter, no longer needed once
+; the shift is done) is clobbered besides A/HL — C/D/E (§5.3) are never touched.
+stime_body:
+                xor     a
+                ld      b, h
+                ld      c, l
+                ret
+
+; --- gtime_body - the $55DB GTIME canonical entry (M22a) -------------------------
+; A := B := C := D := E := 0 — the oracle's pinned constant 00:00:00
+; (clockless-MSX1 default; deliberately NOT fed by STIME's stored value, which
+; would diverge from the observed oracle, §5.1 r3).
+gtime_body:
+                xor     a
+                ld      b, a
+                ld      c, a
+                ld      d, a
+                ld      e, a
+                ret
+
+; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
+; A := E (the published VERIFY contract: echo the requested on/off flag); B
+; passes through untouched (§5.3). NO-OP SETTER BY DESIGN, and this is the
+; FAITHFUL choice — RESOLVED 2026-07-04 (remaining-spec §5.4, was open): stock
+; MSX-DOS 1 has NO verify-after-write effect (black-box: a VERIFY-on WRABS issues
+; exactly the same single $4010 DSKIO write as a VERIFY-off WRABS, zero read-back —
+; probes/disk/verifyx.asm). So neither persisting E nor coupling a verify-read into
+; the write path is needed; doing so would make ours LESS faithful (extra reads
+; stock never does) and is pointless on the emulator target (writes cannot fail).
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -491,7 +531,8 @@ dsl_cmp:
                 ret
                 ds      $509F - $, $00  ; pad up to the pinned $509F DSKRST entry (M22a)
 k_509F:
-                jp      dskrst_body     ; $509F: BDOS $0D DSKRST canonical entry (M22a)
+                jp      w50a9_stub      ; $509F: BDOS $0D DSKRST canonical entry (M22a; was via
+                                        ; the dskrst_body veneer -- D-DISKCARVE)
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
 w50a9_stub:
                 ld      a, $FF          ; D-F346: MSX-DOS has been booted -- the CF-3300
@@ -1208,7 +1249,8 @@ conout:
 ; frees this slot outright. Body = dirin_body (free tail).
                 ds      $5462 - $, $00  ; pad up to the pinned $5462 DIRIN entry (M22a)
 k_5462:
-                jp      dirin_body      ; $5462: BDOS $07 DIRIN canonical entry (M22a)
+                jp      innoe_body      ; $5462: BDOS $07 DIRIN canonical entry (M22a; was via
+                                        ; the dirin_body veneer -- D-DISKCARVE)
 k_5465:
                 jp      lstout_body     ; $5465: BDOS $05 LSTOUT canonical entry
                                         ; (lands naturally at $5465 = k_5462 + 3 bytes;
@@ -1567,6 +1609,12 @@ drw_lp:
                 add     hl, de
                 dec     a
                 jr      nz, drw_lp
+                ret
+; verify_body -- BDOS $2E VERIFY (M22a): A = E. Moved here from disk/runtime.asm's
+; $782B..$7F7C region (D-DISKCARVE, 2026-11-07); this pad was empty and never
+; entered (scratchpad/padwatch_4ede.out).
+verify_body:
+                ld      a, e
                 ret
                 ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
 k_55FF:
