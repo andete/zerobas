@@ -666,9 +666,20 @@ ls_pcr_bload:
                 ld      de,RUNFLAG
                 cp      'R'
                 jr      z,lpb_flag
-                ld      de,VRAM_FLAG
                 cp      'S'
                 jr      nz,lpb_ofs          ; not a flag: the offset itself
+                ; 📼 D-BLDS (2026-11-07): ON TAPE `,S` IS NOT THE FLAG. The VG-8020 loads
+                ; `BLOAD "CAS:X",S` with S=16 sixteen bytes higher -- `S` is the offset
+                ; EXPRESSION there (a variable named S), as BSAVE's is on tape
+                ; (scratchpad/blds_diag.out); the `,S` VRAM flag is disk-only. So the
+                ; device is asked first: the tape (CAS:, or a bare name with no disk)
+                ; parses `S` as the offset, anything else keeps the flag.
+                push    hl
+                ld      hl,(BL_PTR)         ; the staged name
+                call    ls_fname_cas        ; Z = the tape (DE, A, IX clobbered)
+                pop     hl
+                jr      z,lpb_ofs
+                ld      de,VRAM_FLAG
 lpb_flag:
                 ld      a,1
                 ld      (de),a

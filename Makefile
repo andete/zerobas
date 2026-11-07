@@ -1410,6 +1410,10 @@ lpterrnl-acceptance: repack-machine
 trapstmt-acceptance: repack-machine
 	python3 probes/basic/basic_probe_trapstmt.py --gate
 
+# D-BLDS (2026-11-07): on tape `BLOAD "CAS:X",S` takes S as the offset expression.
+blds-acceptance: repack-machine
+	python3 probes/basic/basic_probe_blds.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine

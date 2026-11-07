@@ -1,0 +1,17 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_blds.py --gate
+== s0   VG-8020  BLOAD"CAS:X",S Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] Ok color auto goto list run 
+== s0   OURS     BLOAD"CAS:X",S Found:X ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] ZB color auto goto list run 
+== s16  VG-8020  BLOAD"CAS:X",S Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 99 5 ] Ok color auto goto list run 
+== s16  OURS     BLOAD"CAS:X",S Found:X ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 99 5 ] ZB color auto goto list run 
+== ctl  VG-8020  BLOAD"CAS:X" Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] Ok color auto goto list run 
+== ctl  OURS     BLOAD"CAS:X" Found:X ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] ZB color auto goto list run 
+blds: 3/3 rows agree
+refcache: 6 hit, 0 miss, 3 of the hits were ZEROBAS readings

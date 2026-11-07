@@ -3689,7 +3689,7 @@ item — do **one item per session** to keep context lean.
       DE $000F against HL unchanged / DE 0; CLRSPR (Demonia's log) A $0F BC $0080
       DE $570F HL $1B80 against A 0 BC 0 DE $0FD1 HL $3800. A matches everywhere.
 
-- [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
+- [x] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
       REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
       🎚️ TIER 6 — a documented form (BLOAD's `,offset`) colliding with the
       disk-only `,S` flag: only a variable literally named S hits it.
@@ -3705,6 +3705,14 @@ item — do **one item per session** to keep context lean.
       for `S`; the tape arm (bload-body.inc) then refuses. A device test there --
       `CAS:` on the staged name, plus the diskless bare name, which is tape too --
       is ~16-20 B of main (page 1 10 B, low 19 B on 2026-10-11).
+      ✅ **FIXED 2026-11-07, AND NOT IN MAIN:** the tail parse has moved to the sub ROM since
+      (sub2/loadsave.asm `ls_pcr_bload`, D-P0CB), and `ls_fname_cas` -- the tape test LOAD
+      and SAVE already use (CAS:, or a bare name with no disk) -- answers it: on the tape `S`
+      falls to the offset expression, anything else keeps the VRAM flag. +10 B, sub page 1
+      80 -> 70. 🔮 "S=0 at its address, S=16 sixteen higher, as the VG-8020": HIT
+      ([`blds_after.out`](scratchpad/blds_after.out)); blds_diag.out is the pre-fix knife (`load error` on both). Gate:
+      blds-acceptance (probes/basic/basic_probe_blds.py, 3/3, [`blds_gate.out`](scratchpad/blds_gate.out); the typed
+      echo `PRINT"[P";..` is fenced out, or two machines printing nothing would agree).
 
 - [ ] 🏗️ **D-PAGE2ISLAND — TENANTS MAPPED INTO PAGE 2 ($8000-$BFFF), FOR AUDITED
       TENANTS ONLY (ruled open 2026-10-11)**
@@ -7850,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15827 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15835 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15827 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
