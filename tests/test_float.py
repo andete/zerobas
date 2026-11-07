@@ -278,7 +278,10 @@ def run_f2(m, s, ck):
     # side by side, and their boundary at 99 / 100.
     WREC = 0xC400
     bad = []
-    for mag in list(range(1100)) + list(range(1100, 65536, 7)) + [65535]:
+    # D-TRAPCOST (2026-11-07): magnitudes >= 100 by powers of ten (wu_tenpow): the
+    # 3 / 4 / 5-digit boundaries and the top digits, which the stride above skips.
+    edges = [999, 1000, 1001, 9990, 9999, 10000, 10001, 19999, 20000, 59999, 60000, 65534]
+    for mag in list(range(1100)) + list(range(1100, 65536, 7)) + edges + [65535]:
         for sign in (0, 0x80):
             m.call("widen_uint_to", hl=WREC, a=sign, de=mag)
             rec = m.peek(WREC, 18)
@@ -292,7 +295,7 @@ def run_f2(m, s, ck):
                 break
         if len(bad) > 3:
             break
-    ckf("widen_uint_to: magnitudes 0..1099 + every 7th to 65535, both signs", bad[:3], [])
+    ckf("widen_uint_to: magnitudes 0..1099 + every 7th to 65535 + the digit-count edges, both signs", bad[:3], [])
 
     FAC = s["FAC"]
     for routine, a, b, want in [

@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15927 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15930 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15927 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15930 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11166,8 +11166,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **D-RECHOLE** (below, filed: an unwritten record's bytes). 🔮 Predicted "one divergence
       in an error path (GET past the end, the FIELD overflow, the wildcard SAVE)": HIT on
       the third.
-      ➡️ NEXT sessions: a break INSIDE a scrolling LIST; then tape (CSAVE / CLOAD, the
-      VG-8020, parked on the recorder apparatus) and more disk (the CF-3300 via `# @DISK`).
+      ➡️ NEXT sessions: tape (CSAVE / CLOAD, the VG-8020, parked on the recorder apparatus)
+      and more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
+      (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
+      machine's LIST speed, so a screen-compared session would read the speed, not the
+      break -- that needs a row that reads the break's outcome without the cut point.
 
 - [x] 💽 **D-WILDSAVE -- A WILDCARD IN A NAME THAT SAVES OR LOADS: `Bad file name` ON THE CF-3300,
       A FILE CALLED `P???????.BAS` (OR THE FIRST MATCH LOADED) HERE (found and fixed 2026-11-07
@@ -18222,6 +18225,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       LIST's line numbers and the integer widen divide there. 1000 x `A$=STR$(I MOD 250)`:
       403 -> 388 frames, VG-8020 379 (🔮 ~-13 -> -15 HIT, [`div10_time.out`](scratchpad/div10_time.out)).
       tests/test_div10.py: every dividend 0..65535, both copies; a 7-step knife turns it red.
+      📏 **(14) THE 3..5-DIGIT WIDEN, MEASURED DEAD (2026-11-07).** widen_uint_to's slow path
+      rebuilt as powers-of-ten subtraction (in the $3297 pad, every resident-ABI address kept;
+      the full 0..65535 sweep byte-identical) changed the host model of cases (a), (b), (e)
+      and a 5-digit (e) by **0 T**: an integer result stored into a variable does not reach
+      widen_uint_to's >= 100 arm on any measured loop (case (e)'s counter stays under 40; a
+      5-digit counter goes through widen_fac_to). Reverted -- 65 B of pad for nothing
+      measured. tests/test_float.py keeps the 999 / 1000 / 9999 / 10000 ... edges it gained.
+      ➡️ So the lever filed above is not where (e)'s time is: re-profile (e) before the next
+      round (its model is 28237 T/pass today).
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 
