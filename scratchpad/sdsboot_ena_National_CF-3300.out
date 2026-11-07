@@ -1,0 +1,94 @@
+SCRMOD=1 CURLIN=0 ERRLIN=0 ERRFLG=0 PC=F00C
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+|                                |
+EV 11.7491 PC=C06A af=C90C bc=0001 de=000E hl=0000 sp=DCFE
+EV 11.7491 PC=C06D af=C90C bc=0001 de=000E hl=DD00 sp=DCFE
+EV 11.7491 PC=C070 af=C90C bc=0001 de=DD01 hl=DD00 sp=DCFE
+EV 11.7491 PC=C073 af=C90C bc=0027 de=DD01 hl=DD00 sp=DCFE
+EV 11.7491 PC=C075 af=C90C bc=0027 de=DD01 hl=DD00 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0026 de=DD02 hl=DD01 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0025 de=DD03 hl=DD02 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0024 de=DD04 hl=DD03 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0023 de=DD05 hl=DD04 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0022 de=DD06 hl=DD05 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0021 de=DD07 hl=DD06 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0020 de=DD08 hl=DD07 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001F de=DD09 hl=DD08 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001E de=DD0A hl=DD09 sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001D de=DD0B hl=DD0A sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001C de=DD0C hl=DD0B sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001B de=DD0D hl=DD0C sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=001A de=DD0E hl=DD0D sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0019 de=DD0F hl=DD0E sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0018 de=DD10 hl=DD0F sp=DCFE
+EV 11.7492 PC=C075 af=C90C bc=0017 de=DD11 hl=DD10 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0016 de=DD12 hl=DD11 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0015 de=DD13 hl=DD12 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0014 de=DD14 hl=DD13 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0013 de=DD15 hl=DD14 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0012 de=DD16 hl=DD15 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0011 de=DD17 hl=DD16 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0010 de=DD18 hl=DD17 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000F de=DD19 hl=DD18 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000E de=DD1A hl=DD19 sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000D de=DD1B hl=DD1A sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000C de=DD1C hl=DD1B sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000B de=DD1D hl=DD1C sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=000A de=DD1E hl=DD1D sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0009 de=DD1F hl=DD1E sp=DCFE
+EV 11.7493 PC=C075 af=C90C bc=0008 de=DD20 hl=DD1F sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0007 de=DD21 hl=DD20 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0006 de=DD22 hl=DD21 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0005 de=DD23 hl=DD22 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0004 de=DD24 hl=DD23 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0003 de=DD25 hl=DD24 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0002 de=DD26 hl=DD25 sp=DCFE
+EV 11.7494 PC=C075 af=C90C bc=0001 de=DD27 hl=DD26 sp=DCFE
+EV 11.7494 PC=C077 af=C908 bc=0000 de=DD28 hl=DD27 sp=DCFE
+EV 11.7494 PC=C078 af=C908 bc=0000 de=DD28 hl=DDAE sp=DCFE
+EV 11.7494 PC=C07B af=8308 bc=0000 de=DD28 hl=DDAE sp=DCFE
+EV 11.7494 PC=C07D af=8308 bc=0000 de=DD28 hl=40AE sp=DCFE
+EV 11.7494 ENASLT slot=83 page=40 from=C080 A8=FF
+EV 11.7498 PC=C080 af=FFAC bc=0CF3 de=FF0C hl=40AE sp=DCFE
+EV 11.7498 PC=C083 af=83AC bc=0CF3 de=FF0C hl=40AE sp=DCFE
+EV 11.7498 PC=C085 af=83AC bc=0CF3 de=FF0C hl=80AE sp=DCFE
+EV 11.7498 ENASLT slot=83 page=80 from=C088 A8=FF
+EV 11.7501 PC=C088 af=FFAC bc=30CF de=FF30 hl=80AE sp=DCFE
+EV 11.7501 PC=C089 af=FFAC bc=30CF de=FF30 hl=80AE sp=DCFE
+EV 11.7501 PC=C08C af=00AC bc=30CF de=FF30 hl=80AE sp=DCFE
+EV 11.7502 PC=C08F af=00AC bc=30CF de=FF30 hl=0006 sp=DCFE
+EV 11.7502 RDSLT slot=00 addr=0006 from=C092
+EV 11.7503 PC=C092 af=98AC bc=00FC de=FF98 hl=0006 sp=DCFE
+EV     -> A=98
+EV 11.7503 PC=C095 af=98AC bc=00FC de=FF98 hl=0006 sp=DCFE
+EV 11.7503 PC=C098 af=00AC bc=00FC de=FF98 hl=0006 sp=DCFE
+EV 11.7503 PC=C09B af=00AC bc=00FC de=FF98 hl=0007 sp=DCFE
+EV 11.7503 RDSLT slot=00 addr=0007 from=C09E
+EV 11.7504 PC=C09E af=98AC bc=00FC de=FF98 hl=0007 sp=DCFE
+EV     -> A=98
+EV 11.7504 PC=C0A1 af=98AC bc=00FC de=FF98 hl=0007 sp=DCFE
+EV 12.6824 ENASLT slot=87 page=80 from=EFA3 A8=FF
+EV 12.6827 ENASLT slot=83 page=40 from=EFAC A8=FF
+

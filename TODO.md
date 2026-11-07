@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15767 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15779 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15779 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11182,7 +11182,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
 - [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
       🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
-      🤖 **AUTONOMOUS** — black box on both machines; the software is RUN, never decoded.
+      🙋 **NEEDS-JOOST** — the remaining split is in the BIOS's exit registers (the 🙋 at the end).
       📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
       SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
       🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over
@@ -11233,10 +11233,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       all match ([`bdosregs_run3.out`](scratchpad/bdosregs_run3.out)); IX / IY are each machine's internals. 🔮 "RDABS matches,
       SDSNAT1C gets further but maybe not home": HIT -- the boot code now runs IDENTICAL to
       the CF-3300's up to $C047 ([`sdsboot_bootcode_zb2.out`](scratchpad/sdsboot_bootcode_zb2.out)), and still does not boot.
-      ➡️ next: the call at $C047 returns A = $FF on the CF-3300 and $FC here (BC / DE differ
-      too) -- a slot computation (the boot code's routines call ENASLT / RDSLT around it):
-      log ENASLT's arguments and the RDSLT / direct reads inside it on both. SETDTA's and
-      CONOUT's leftover registers are not matched (internal values; no reader known).
+      SETDTA's and CONOUT's leftover registers are not matched (internal values; no reader
+      known).
+      📏 **THE NEXT SPLIT IS THE BIOS'S, NOT OURS (2026-11-07,** [`sdsboot_ena_National_CF-3300.out`](scratchpad/sdsboot_ena_National_CF-3300.out),
+      [`sdsboot_ena_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_ena_C-BIOS_MSX1_EU_REPACK_DISK.out); SDS_ENASLT: ENASLT's arguments and the boot code's
+      registers at $C057..$C0A5): the boot code calls ENASLT ($0024, slot $83, pages 1 and 2)
+      and RDSLT ($000C, slot 0, addresses 6 and 7 -- both machines read $98) and then USES
+      registers the published contract calls destroyed: after ENASLT A comes back $FF on the
+      CF-3300 and $FC here; after RDSLT the CF-3300's BIOS leaves BC = $00FC and DE = $FF98
+      (C = the old $A8, E = the byte read, so it seems), the repacked C-BIOS leaves BC / DE
+      untouched ($30CF / $0030). From $C0A1 the CF-3300 goes on to ENASLT $87 / page 2;
+      zerobas returns to $C059 and the path that ends in page-0 RAM.
+      🙋 **FOR JOOST:** matching it means giving C-BIOS's RDSLT / ENASLT the CF-3300's EXIT
+      registers (published entries, values the spec leaves undefined, characterised black-box
+      -- more rows needed: which of BC / DE / A are functions of the inputs). Close to
+      D-BIOSINT ("won't fix": BIOS INTERNALS), but these are the published entries: in scope,
+      or does SDSNAT1C stay a ZB-NOBOOT row?
       ➡️ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is not triaged yet.
 
 - [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found

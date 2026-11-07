@@ -20,7 +20,8 @@ SDS_FORCE="af=0x006A,bc=0,0xFB21=2,..." (with SDS_BOOT) overwrites registers / R
 there first -- an experiment on OUR machine only.
 SDS_RDSLT=1: every RDSLT ($000C, a published BIOS entry) called from RAM: slot, address
 and the byte it returns (registers only). SDS_BOOTCODE=1: registers at every PC
-$C030..$C056 the boot code runs (RAM; the first 120 hits after 2 s).
+$C030..$C056 the boot code runs (RAM; the first 120 hits after 2 s). SDS_ENASLT=1: every
+ENASLT ($0024) from RAM (slot, page, A8) and the registers at $C057..$C0A5.
 """
 import os, subprocess, sys, tempfile, shutil
 D = os.environ["DISKCORPUS_DIR"]
@@ -115,6 +116,17 @@ proc __bc {{}} {{
   }} e]}} {{ lappend ::ev "TCL ERROR __bc: $e" }}
 }}
 if {{[info exists ::env(SDS_BOOTCODE)]}} {{ for {{set x 0xC01E}} {{$x <= 0xC056}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }} }}
+proc __ena {{}} {{
+  if {{[catch {{
+    set sp [reg sp]
+    set ret [expr {{[debug read memory $sp] | ([debug read memory [expr {{$sp+1}}]] << 8)}}]
+    if {{$ret >= 0x8000}} {{ lappend ::ev "[format %.4f [machine_info time]] ENASLT slot=[format %02X [reg a]] page=[format %02X [reg h]] from=[format %04X $ret] A8=[format %02X [debug read ioports 0xA8]]" }}
+  }} e]}} {{ lappend ::ev "TCL ERROR __ena: $e" }}
+}}
+if {{[info exists ::env(SDS_ENASLT)]}} {{
+  debug set_bp 0x0024 {{[machine_info time] > 2.0}} __ena
+  for {{set x 0xC057}} {{$x <= 0xC0A5}} {{incr x}} {{ debug set_bp $x {{[machine_info time] > 2.0}} __bc }}
+}}
 if {{[info exists ::env(SDS_RDSLT)]}} {{ debug set_bp 0x000C {{[machine_info time] > 9.0 || [string match *REPACK* [machine_info config_name]]}} __rds }}
 if {{[info exists ::env(SDS_HOOK)]}} {{
   debug set_watchpoint write_mem {{0xFD9F 0xFDA3}} 1 __hk
