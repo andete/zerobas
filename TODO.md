@@ -8025,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16251 (T-529ABE)`: a
+      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16262 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10764,7 +10764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16251 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16262 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15824,6 +15824,17 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       data sector in FAT_DBUF across calls), PARKED there for its audit -- every other
       FAT_DBUF user (every channel, the mount, the directory work, the BDOS) must flush
       first. A slice of its own, the audit before any code.
+      📏 **THE REFERENCE'S SHAPE, FIRST LOOK (2026-11-07,** fdccmd_probe.py on
+      [`put20_prog.bas`](scratchpad/put20_prog.bas): OPEN LEN=32, 20 x LSET + PUT, CLOSE**):** zerobas
+      ([`fdcput_zb.out`](scratchpad/fdcput_zb.out)) issues 24 write commands (`A0`), 29 reads and 53 seek-verifies --
+      about one sector write per PUT. The CF-3300 ([`fdcput_cf.out`](scratchpad/fdcput_cf.out)) issues 48 commands in all:
+      19 x `82`, 14 x `D0`, 8 x `A2`, 3 x `01`, 2 x `AA`, 2 x `8A`. 🔴 **ITS COMMAND BYTES ARE NOT
+      DECODED YET:** in its own LOAD log `A2` / `AA` were the IN-PLACE READS (HL stepping $200
+      into the program area, [`fdccmd_cf1107.out`](scratchpad/fdccmd_cf1107.out)), where a WD2793 `A2` would be a
+      write -- so either the "National" layout maps $7FB8 differently or its driver's
+      command byte means something I have not worked out. Settle that (e.g. a SAVE-only and a
+      LOAD-only run on the CF-3300, compared) BEFORE reading its write count into the W4
+      design.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
