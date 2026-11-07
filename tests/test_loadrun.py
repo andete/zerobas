@@ -26,6 +26,9 @@ every byte read. Each row compares status, CLPTR and the stored bytes with it:
 D-LOADFAT's rows stay: a chain across the FAT-sector straddle loads exactly, with
 one FAT read per FAT sector the chain enters. And the design is witnessed directly:
 every full data sector's read lands at its final address, $200 apart.
+Fragmented chains (one and three breaks) load exactly, each full sector still at its
+own final address. (D-LOADRUNS read runs of consecutive clusters in one DSKIO, as the
+CF-3300 does; measured slower here and removed -- disk/runtime.asm hd_full.)
 """
 import os
 import sys
@@ -224,6 +227,54 @@ def run():
               f"{label}: {len(inplace)} data sectors read in place at "
               f"${inplace[0] if inplace else 0:04X}..${inplace[-1] if inplace else 0:04X} step $200 "
               f"(want {len(want_in)}), {len(dests) - len(inplace)} through FAT_DBUF")
+    # --- fragmented chains: exact, every full sector at its final address ---
+    def frag_disk(data, moves):
+        """`data` laid out from cluster 2, then each cluster in `moves` relocated
+        (old -> new): its sectors copied, the chain relinked around it."""
+        d = D.Disk()
+        d.add_file("P.BAS", data)
+        nclus = -(-len(data) // (D.SPC * D.SECSIZE))
+        chain = list(range(2, 2 + nclus))
+        for old, new in moves.items():
+            for k in range(D.SPC):
+                d.sec[D.FIRSTDATA + (new - 2) * D.SPC + k] = d.sec.pop(D.FIRSTDATA + (old - 2) * D.SPC + k)
+            d.set_fat(old, 0)
+            chain[chain.index(old)] = new
+        for a, b in zip(chain, chain[1:] + [0xFFF]):
+            d.set_fat(a, b)
+        d.sync_fat()
+        return d, chain
+
+    big = b"\xff" + program(nlines=120)
+    for moves, label in (({}, "a contiguous file"),
+                         ({7: 40, 8: 41}, "two clusters moved away (one gap, rejoined)"),
+                         ({5: 60, 9: 30, 12: 50}, "three scattered clusters")):
+        d, chain = frag_disk(big, moves)
+        m = D.machine(d)
+        s = m.sym
+        dests = []
+        orig = m.traps[s["read_sector"]]
+
+        def logged(mm, orig=orig, dests=dests):
+            if mm.cpu.de >= D.FIRSTDATA:
+                dests.append((mm.cpu.de, mm.cpu.hl))
+            orig(mm)
+        m.traps[s["read_sector"]] = logged
+        m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
+        m.poke(s["FOPEN_SEL"], s["FOPEN_SEL_LOAD"])
+        m.poke_w(TXTTAB_CELL, 0x8001)
+        m.call("hk_dpload")
+        end = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
+        ok = m.mem[s["DISKOP_STATUS"]] == 0 and bytes(m.mem[0x8001:end]) == program(nlines=120)[:-2]
+        # the full sectors after the first: each from its chain position to its own address
+        full = (len(big) - D.SECSIZE) // D.SECSIZE
+        secs = [D.FIRSTDATA + (c - 2) * D.SPC + k for c in chain for k in range(D.SPC)][1:1 + full]
+        want = [(x, 0x8001 + (D.SECSIZE - 1) + k * D.SECSIZE) for k, x in enumerate(secs)]
+        got = [g for g in dests if g[1] != s["FAT_DBUF"]]
+        check(ok and got == want,
+              f"{label}: status {m.mem[s['DISKOP_STATUS']]}, program {'exact' if ok else 'WRONG'}; "
+              f"{len(got)} full sectors each read from its chain position to its own address "
+              f"(want {len(want)})")
     return fails
 
 

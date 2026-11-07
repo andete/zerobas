@@ -1447,6 +1447,42 @@ item — do **one item per session** to keep context lean.
       14 KB over several runs, and whether the window placement or the ISR length decides it.
       ➡️ **ALSO FILED (TIER 6): LOAD of a file too big for memory on the CF-3300** -- the
       message, whether the old program survives, whether it reads first.
+      📏 **MEASURED (2026-11-07, fdccmd_probe.py FDC_DRQ=1: a D row at each command's first
+      data-register read, a J row at each JIFFY write; [`fdcdrq_cf.out`](scratchpad/fdcdrq_cf.out) / [`fdcdrq_zb.out`](scratchpad/fdcdrq_zb.out)).** 🎯 Predicted
+      "the CF-3300 waits masked": **hit -- 0 interrupts in 77 read waits** (its one ISR per
+      sector runs in the gap between commands); ours took interrupts in 34 of 49 waits, one
+      0.1 ms before the data start -- the lost-data source. **AND THE BIGGER LEVER:** our
+      misses alternate exactly -- the next command leaves ~2.6 ms after a transfer ends
+      (caught) inside a cluster, ~6.6 ms after (missed) at a cluster boundary (fat_advance's
+      path); the CF-3300 issues the next 0.6-2.6 ms after every transfer, from ONE DSKIO
+      (B = $1B) with no FAT work between sectors.
+      ~~➡️ NEXT (D-LOADRUNS): ... ONE multi-sector DSKIO~~ **BUILT, MEASURED, REVERTED (2026-11-07).**
+      🎯 Predicted 14 KB 1.5-2.2 s: **4.66 s -- a miss, the wrong way** ([`loadclock_runs.out`](scratchpad/loadclock_runs.out)). The driver's own
+      loop gaps alternated 2.6 / 5.7 ms after a transfer ([`fdcdrq_runs.out`](scratchpad/fdcdrq_runs.out)), and the ISR sat at
+      +0.2 ms in BOTH, so the FAT walk was never the cause. PC samples on OUR ROM
+      ([`isrprof_probe.py`](scratchpad/isrprof_probe.py) -> [`isrprof_runs.out`](scratchpad/isrprof_runs.out)) put **~3 ms of a scan interrupt in C-BIOS's
+      key_cmp bit walk** (all 88 bits, twice a scan -- the repeat path runs it again on an
+      empty buffer; C-BIOS's own `TODO: Optimise scanning if no keys are pressed`).
+      ✅ **D-KEYSKIP (cbios-repack patch #14, [`keyscan-skip.patch`](cbios-repack/keyscan-skip.patch)):** a row with no newly
+      pressed key skips its walk; paid for by computing the F-key index instead of five
+      compare arms (13 B over: island 1's pad grows by 13 B, which D-STOPKEY3 wanted).
+      🔴 The full battery caught a first cut: the skip left B = 8 where the walk's djnz
+      leaves 0, so KSCAN's exit BC read $08FF against the VG-8020's $00FF
+      (biosregs-acceptance) -- "nothing else changes" was the claim, and a register
+      was the exception. Fixed with `ld b,0` in the skip. dimedge-acceptance's two
+      REFUSED rows went to NO READING: the faster interrupt let the ERR 7 handler loop
+      scroll `RUN` off the screen ([`dimedge_keyskip_screen.out`](scratchpad/dimedge_keyskip_screen.out)) -- an instrument fault;
+      its reader now takes the loop's own `[ 7` output as the refusal.
+      🎯 Predicted runs + D-KEYSKIP 1.5-2.2 s: **3.45 s -- a miss** ([`loadclock_keyskip.out`](scratchpad/loadclock_keyskip.out); scan gaps now
+      4.3 ms, plain 2.3-2.6, [`fdcdrq_keyskip.out`](scratchpad/fdcdrq_keyskip.out)). **A/B, D-KEYSKIP with ONE DSKIO A SECTOR:
+      1 KB 0.57 s (CF 1.36), 7 KB 1.65 (CF 2.39), 14 KB 3.07 (CF 2.94: 1.04x)**
+      ([`loadclock_ab_persec.out`](scratchpad/loadclock_ab_persec.out)) -- so the runs went back out; frs_head stays (6 B shorter).
+      ➡️ **WHAT IS LEFT (TIER 5):** (a) lost-data retries under D-FDCDI's windows -- 3 in the
+      14 KB run, a revolution each; the CF-3300 waits masked (0 ISRs in 77 waits). Idea, not
+      measured: mask only the first few ms after a read command (a run's next sector arrives
+      inside them; a missed one still gets windows for the long wait). (b) the per-sector
+      seek-verify (`1C`, ~1 ms) on the same track, which the CF-3300 does not issue -- our
+      next command leaves 2.3 ms after a transfer, the CF-3300's 1.1.
       ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
@@ -7977,7 +8013,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10410 (T-6FE392)8 (T-529ABE)` from `TODO.md:16168 (T-529ABE)`: a
+      `TODO.md:10446 (T-6FE392)8 (T-529ABE)` from `TODO.md:16204 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10716,7 +10752,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16168 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16204 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

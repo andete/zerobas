@@ -155,6 +155,7 @@ def machine(disk):
         mm.cpu.f &= ~0x01
 
     m.trap("read_sector", read_sector)
+
     m.trap("fatprim_write_sector", lambda mm: FAILS.append("a BLOAD wrote a sector"))
     m.poke(s["DISKSLOT_OK"], 1)
     return m

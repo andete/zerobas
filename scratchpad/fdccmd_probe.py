@@ -33,6 +33,25 @@ proc __fs {} {
 debug set_watchpoint write_mem 0x7FB8 {[pc_in_slot 3]} __fc
 debug set_watchpoint write_mem 0x7FBA {[pc_in_slot 3]} __fs
 """ % dump
+if os.environ.get("FDC_DRQ"):
+    # FDC_DRQ=1 (2026-11-07, D-LOSTDATA): a D row at the FIRST data-register read after each
+    # command (the moment the transfer starts) and a J row at every JIFFY write (an
+    # interrupt taken). A J between a command and its D = the wait ran with interrupts on.
+    # Addresses and times only: the data register is I/O, JIFFY a documented work-area cell.
+    r.GAP_TCL = r.GAP_TCL + """
+set ::__armed 0
+proc __fc2 {} { set ::__armed 1 }
+proc __fd {} {
+  if {$::__armed} {
+    set ::__armed 0
+    puts $::__cf "[format %.4f [machine_info time]] D [format %04X [reg PC]]"
+  }
+}
+proc __fj {} { puts $::__cf "[format %.4f [machine_info time]] J" }
+debug set_watchpoint write_mem 0x7FB8 {[pc_in_slot 3]} __fc2
+debug set_watchpoint read_mem 0x7FBB {[pc_in_slot 3]} __fd
+debug set_watchpoint write_mem 0xFC9E {} __fj
+"""
 _pp = os.path.join(REPO, "probes", "programs", name + ".bas")
 text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()
 res = r.run(os.environ.get("FDC_MACH", r.DISK_ZB[0]), "fdccmd", text, gaps=True)

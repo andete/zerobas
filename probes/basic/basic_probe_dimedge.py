@@ -98,10 +98,20 @@ def eval_reading(raw):
     """FITTED when the statement after the edge DIM printed `[OK]`; REFUSED when the
     program ran (its `RUN` is on screen) and never got there -- the trapped ERR 7 loops
     on its own RESUME, as on the reference."""
+    flat = (raw or "").replace(" ", "")
+    if "[OK]" in flat:
+        return "FITTED"
+    # D-KEYSKIP (2026-11-07): the refusal's OWN output is a reading too. The handler
+    # loop prints `[ 7` (ERR 7, Out of memory) on every pass; once the interrupt got
+    # shorter, zerobas looped fast enough to scroll `RUN` off before the snapshot and
+    # the row read as no reading (scratchpad/dimedge_keyskip_screen.out). Two passes
+    # of the loop on screen and no `[OK]` is the refusal, whether or not RUN shows.
+    if flat.count("[7") >= 2:
+        return "REFUSED"
     r = rows(raw)
     if not any(x == "RUN" for x in r):
         return None
-    return "FITTED" if "[OK]" in (raw or "").replace(" ", "") else "REFUSED"
+    return "REFUSED"
 
 
 def store_reading(raw):

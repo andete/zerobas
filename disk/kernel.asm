@@ -6767,6 +6767,22 @@ fat_locate:
                 ld      hl, (FAT_FATSTART)
                 add     hl, de              ; HL = the absolute FAT sector
                 ret
+; hd_last / hd_end -- hdl_direct's tail (disk/runtime.asm), here for the room: the
+; last partial sector through FAT_DBUF, then END into FREAD_OFF and the walk.
+hd_last:        ld      hl,(FREAD_LEFT)
+                ld      a,h
+                or      l
+                jr      z,hd_end
+                push    de                  ; the partial sector: through the buffer
+                call    fat_read_file_sector
+                pop     de
+                jr      c,hd_end
+                ld      hl,FAT_DBUF
+                ld      bc,(FREAD_LEFT)
+                ldir
+hd_end:         ld      (FREAD_OFF),de      ; END (the stream's cell is free now)
+                ld      hl,(CLPTR)
+                                            ; falls into hdl_walk
 ; hdl_walk -- D-LOADDIRECT's second half (hdl_direct, disk/runtime.asm, is the
 ; first): the stream's line rules applied to the file IN PLACE. HL = the line's
 ; start, FREAD_OFF = END. CLPTR ends where hdl_line's last store would have left

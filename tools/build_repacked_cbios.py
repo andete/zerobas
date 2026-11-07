@@ -105,11 +105,14 @@ PATCHES = [
     # which kept the slot in B across the read, calls a keep-BC wrapper. Every
     # label outside RDSLT / WRSLT stays where it was (padding nops).
     os.path.join(REPO, "cbios-repack", "rdslt-regs.patch"),
+    # D-KEYSKIP: the keyboard scan skips a row with no newly pressed key (C-BIOS's own
+    # TODO); the 88-bit walk was most of a ~3 ms interrupt (scratchpad/isrprof_runs.out).
+    os.path.join(REPO, "cbios-repack", "keyscan-skip.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "2e22863b967009c026df1cd899489f5ada5f7216"
+REPACKED_SHA1 = "01a4da22cf8ae1e845e62971c1619c9ef8d70ba1"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

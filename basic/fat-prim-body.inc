@@ -142,8 +142,8 @@ dc_map:
 ; outside, the span carries BOTH `jp` edges and the graph stays honest on both
 ; sides.
 read_sector:
-                xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      b, 1            ; one sector
+                xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's
                                         ; (D-SIDES; fat_geom_read records it)
                 jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
@@ -573,28 +573,37 @@ fat_read_file_sector:
                 ld      hl, FAT_DBUF
 frs_to:
                 push    hl                  ; [destination]
+                call    frs_head
+                pop     hl                  ; the destination (flags kept)
+                ret     c                   ; no data cluster: end of file
+                call    read_sector
+                ret     c
+                ld      hl, FAT_CLUSSEC
+                inc     (hl)
+                or      a                   ; Cy = 0 success
+                ret
+; frs_head -- the next sector's number, WITHOUT reading it. Moves to the next cluster
+; when this one is used up; out DE = the absolute sector, Cy = 1 when FAT_CURCLUS is
+; no data cluster (free, end of chain). Split out for D-LOADRUNS's multi-sector runs
+; (measured slower and removed, disk/runtime.asm hd_full); kept, as it is 6 B
+; shorter than the inline form (one unsigned compare for both cluster bounds).
+frs_head:
                 ld      a, (FAT_CLUSSEC)
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
-                jr      c, frs_incluster
-                call    fat_advance         ; current cluster exhausted -> next
-frs_incluster:
+                call    nc, fat_advance     ; current cluster exhausted -> next
+                ; data clusters are 2..$0FF7: cluster - 2 < $0FF6, unsigned
                 ld      hl, (FAT_CURCLUS)
-                ld      de, 2
+                dec     hl
+                dec     hl
+                ld      de, $0FF6
                 or      a
                 sbc     hl, de
-                jr      c, frs_eof          ; cluster < 2 (free / empty file)
-                ld      hl, (FAT_CURCLUS)
-                ld      de, $0FF8
-                or      a
-                sbc     hl, de
-                jr      nc, frs_eof         ; cluster >= $0FF8 = end-of-chain
-                ; sector = firstData + (cluster-2)*secPerClus + clussec
-                ld      hl, (FAT_CURCLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de
+                ccf
+                ret     c                   ; free (< 2) or end of chain (>= $0FF8)
+                add     hl, de
                 ex      de, hl              ; DE = cluster - 2
+                ; sector = firstData + (cluster-2)*secPerClus + clussec
                 ld      hl, 0
                 ld      a, (FAT_SECPERCLUS)
                 ld      b, a
@@ -606,19 +615,8 @@ frs_mul:
                 ld      a, (FAT_CLUSSEC)
                 ld      e, a
                 ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
+                add     hl, de              ; HL = absolute logical sector (Cy = 0)
                 ex      de, hl
-                pop     hl                  ; the destination
-                call    read_sector
-                ret     c
-                ld      a, (FAT_CLUSSEC)
-                inc     a
-                ld      (FAT_CLUSSEC), a
-                or      a                   ; Cy = 0 success
-                ret
-frs_eof:
-                pop     hl
-                scf
                 ret
 
 ; (D-FATENG Option 2 assembled the next routine in the sub-ROM only -- `IF

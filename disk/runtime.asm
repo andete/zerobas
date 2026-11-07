@@ -675,12 +675,19 @@ hd_rest:        ld      (FREAD_LEFT),hl
                 ld      de,(CLPTR)          ; DE = the destination, throughout
                 ld      a,b
                 or      c
-                jr      z,hd_end            ; the marker alone: an empty program
+                jp      z,hd_end            ; the marker alone: an empty program
                 ldir
+; ⚠️ ONE DSKIO A SECTOR, ON PURPOSE. The CF-3300 reads the run with ONE multi-sector
+; DSKIO (B counts down from $1B), and D-LOADRUNS (2026-11-07) built exactly that --
+; and measured it SLOWER here (14 KB 3.45 s against 3.07 one call a sector, with the
+; key-scan fix in both, scratchpad/loadclock_keyskip.out / loadclock_ab_persec.out):
+; our driver's own per-sector path between two sectors is no shorter than this
+; call's, so the run only moved the FAT walk, it did not remove a miss. What made
+; the misses was the ~3 ms keyboard-scan interrupt, fixed in C-BIOS (D-KEYSKIP).
 hd_full:        ld      hl,(FREAD_LEFT)     ; every full sector: in place
                 ld      a,h
                 cp      2
-                jr      c,hd_last
+                jp      c,hd_last
                 dec     h
                 dec     h
                 ld      (FREAD_LEFT),hl
@@ -688,22 +695,12 @@ hd_full:        ld      hl,(FREAD_LEFT)     ; every full sector: in place
                 ex      de,hl
                 call    frs_to
                 pop     de
-                jr      c,hd_end            ; an EOF here, as the stream's
+                jp      c,hd_end
                 inc     d
                 inc     d
                 jr      hd_full
-hd_last:        or      l
-                jr      z,hd_end
-                push    de                  ; the partial sector: through the buffer
-                call    fat_read_file_sector
-                pop     de
-                jr      c,hd_end
-                ld      hl,FAT_DBUF
-                ld      bc,(FREAD_LEFT)
-                ldir
-hd_end:         ld      (FREAD_OFF),de      ; END (the stream's cell is free now)
-                ld      hl,(CLPTR)
-                jp      hdl_walk
+; (hd_last / hd_end continue in disk/kernel.asm, in front of hdl_walk: this
+; region, bounded by the $7F7C pin, has no room for them.)
 
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
