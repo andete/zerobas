@@ -1387,10 +1387,16 @@ item — do **one item per session** to keep context lean.
       ➡️ **RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room: ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
-      (a) the RAM gate FIRST, alone: FATRES must not be trusted or written while MSX-DOS can own
-          $DE8D..$E48C -- find a condition true from the first DOS load (BASENT_REQ's DOS_TRY,
-          a boot-path flag), measured with the seven DOS suites green on a build that only
-          clears FATRES_OK on that condition;
+      (a) the RAM gate FIRST: FATRES must not be trusted or written while foreign code can own
+          $DE8D..$E48C -- 📏 READ 2026-11-07: that range also holds OUR page-3 bridges
+          (INT_H_HIRAM $DDAE..$DF10, laid at every DOS entry), so the parked layout collided
+          with us too. The two hand-offs to foreign code are boot_call0 (step 5) and
+          lay_page0_env (steps 6-7, MSX-DOS); a BASENT restart re-enters disk init but SKIPS the
+          power-on block (init.asm `basent_pending` -> boot_disk), where DOS_F346 := 0 lives.
+          RULE: a "forbidden" bit set at boot_call0's entry and at lay_page0_env; cleared at
+          power-on only (beside DOS_F346 := 0) and when boot_call0's code RETURNS (a data
+          disk -- then also FATRES_OK := 0, so the next mount compares / reloads); a load and a
+          trusted read both require it clear. Implement with (d) -- a flag alone gates nothing;
       (b) the staleness rule: every chain read must see a FAT_DEFER-held entry -- simplest is
           "a deferral drops FATRES_OK" (wrblkalt-acceptance is the witness);
       (c) the DI gap: load the FAT in per-sector DSKIOs with the D-FDCDI windows between them,
@@ -7908,7 +7914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10341 (T-6FE392)8 (T-529ABE)` from `TODO.md:16092 (T-529ABE)`: a
+      `TODO.md:10347 (T-6FE392)8 (T-529ABE)` from `TODO.md:16098 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10647,7 +10653,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16092 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16098 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

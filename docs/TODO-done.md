@@ -31086,7 +31086,7 @@ the phase narrative above still have somewhere to land.
       filters by type, so `LOAD"CAS:"` steps over a tokenised file); the 09-27
       "keep the feature" ruling is superseded. Closed; nothing to change.
       🎚️ TIER 6 — `LOAD"CAS:"` on a tape that holds a tokenised program
-      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:13596 (T-B42728): *"KEEP THE
+      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:13602 (T-B42728): *"KEEP THE
       FEATURE"* — zerobas loads a tokenised tape via `LOAD"CAS:"`, the reference's
       hang is a stated divergence. D-CASTYPE then made every tape search filter by
       type, as the VG-8020 does, so `LOAD"CAS:"` now steps over a tokenised file —
