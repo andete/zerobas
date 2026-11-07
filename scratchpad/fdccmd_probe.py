@@ -5,7 +5,12 @@ stamped in emulated time, with the sector and track registers -- so the gap from
 one sector's end to the next read command is visible. RAM-mapped FDC registers of
 OUR disk ROM's slot ($7FB8 command, $7FB9 track, $7FBA sector); clean room.
 
-    python3 -u scratchpad/fdccmd_probe.py [program-name]
+    [FDC_MACH=National_CF-3300] python3 -u scratchpad/fdccmd_probe.py [program-name]
+
+FDC_MACH (2026-11-07): another disk machine -- the CF-3300's WD2793 is the same chip in
+the same "National" layout at slot 3-1 (openMSX's machine config), so the same
+watchpoints read its commands. Each command also logs BC / DE / HL (registers only;
+where the bytes are headed, and which sector) -- no ROM byte read.
 """
 import os, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,7 +25,7 @@ if os.path.exists(dump):
 r.GAP_TCL = r.GAP_TCL + """
 set ::__cf [open {%s} w]
 proc __fc {} {
-  puts $::__cf "[format %%.4f [machine_info time]] C [format %%02X $::wp_last_value] [format %%04X [reg PC]] cl=[format %%04X [__rd16 0xF41C]]"
+  puts $::__cf "[format %%.4f [machine_info time]] C [format %%02X $::wp_last_value] [format %%04X [reg PC]] cl=[format %%04X [__rd16 0xF41C]] bc=[format %%04X [reg bc]] de=[format %%04X [reg de]] hl=[format %%04X [reg hl]]"
 }
 proc __fs {} {
   puts $::__cf "[format %%.4f [machine_info time]] S [format %%02X $::wp_last_value]"
@@ -30,7 +35,7 @@ debug set_watchpoint write_mem 0x7FBA {[pc_in_slot 3]} __fs
 """ % dump
 _pp = os.path.join(REPO, "probes", "programs", name + ".bas")
 text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()
-res = r.run(r.DISK_ZB[0], "fdccmd", text, gaps=True)
+res = r.run(os.environ.get("FDC_MACH", r.DISK_ZB[0]), "fdccmd", text, gaps=True)
 print(res[0])
 rows = open(dump).read().splitlines()
 print(len(rows), "rows")
