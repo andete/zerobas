@@ -18234,6 +18234,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measured. tests/test_float.py keeps the 999 / 1000 / 9999 / 10000 ... edges it gained.
       ➡️ So the lever filed above is not where (e)'s time is: re-profile (e) before the next
       round (its model is 28237 T/pass today).
+      ✅ **(15) A ONE- OR TWO-DIGIT INTEGER PART IS THE PACKED BYTE (2026-11-07): 46 -> 43 FRAMES
+      PER 100 CALLS** (VG-8020 39; [`trapcost_cost8.out`](scratchpad/trapcost_cost8.out), 🔮 44-45: MISSED on the good
+      side). Re-profiled ([`trapcost_prof_1107.out`](scratchpad/trapcost_prof_1107.out)): the top label was domain_convert_core's
+      x10 loop, 2108 T a pass. dexp 1 / 2 -- a subscript, a small counter -- now reads digit 0
+      (and x10 + digit 1) from FAC's first packed byte without the loop. Model (e) 29038 ->
+      27685 T/pass, (a) 13827 -> 13481 ([`dcc2_prof.out`](scratchpad/dcc2_prof.out)); +31 B low region. tests/test_float.py's
+      truncation sweep gains every 1..99 and its +-.5, both signs (538 values, both domains).
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 

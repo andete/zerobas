@@ -394,6 +394,10 @@ def run_f2(m, s, ck):
     sweep = ["0", "0.5", "-0.99", "1", "-1", "9", "9.99", "10", "-10.5", "99.5",
              "100", "999.999", "1000", "-1234.5", "9999", "9999.99999999", "-9999.9",
              "10000", "-10000.5", "12345", "3", "3.0000000000001"]
+    # D-TRAPCOST (2026-11-07): dexp 1 / 2 is read from the packed byte alone (no x10
+    # loop) -- every one- and two-digit integer and its +-.5, both signs
+    for n in range(1, 100):
+        sweep += [str(n), str(-n), f"{n}.5", f"-{n}.5"]
     for _ in range(120):                    # inside the strict domain: |x| < 32768
         k = rng.randrange(0, 5)
         sweep.append(str(D(rng.randrange(-32767 * 10 ** k, 32767 * 10 ** k)) / D(10) ** k))

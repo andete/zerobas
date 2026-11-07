@@ -1253,9 +1253,37 @@ domain_convert_core:
                 ld      b,a                 ; B = dexp 1..4
                 ld      a,(FAC+1)
                 ld      h,a
+                ; 🐌 D-TRAPCOST (2026-11-07): dexp 1 or 2 -- a subscript, a small counter
+                ; -- is the packed byte itself: no x10 loop (~107 T a digit).
+                ld      d,0
+                ld      a,b
+                cp      3
+                jr      nc,dcc_fast_gen
+                ld      a,h
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F                 ; A = digit 0
+                djnz    dcc_two             ; dexp 2: x10 + digit 1
+                ld      e,a
+                jr      dcc_fast_end
+dcc_two:
+                ld      e,a
+                add     a,a
+                add     a,a
+                add     a,e
+                add     a,a                 ; A = digit 0 x 10
+                ld      e,a
+                ld      a,h
+                and     $0F
+                add     a,e
+                ld      e,a                 ; DE = the value (D = 0)
+                jr      dcc_fast_end
+dcc_fast_gen:
                 ld      a,(FAC+2)
                 ld      l,a                 ; HL = digits 0|1|2|3, digit 0 on top
-                ld      de,0
+                ld      e,d                 ; DE = 0
 dcc_fast_lp:
                 push    hl
                 ld      h,d
@@ -1282,6 +1310,7 @@ dcc_fast_lp:
                 add     hl,hl
                 add     hl,hl               ; next digit to the top
                 djnz    dcc_fast_lp
+dcc_fast_end:
                 ld      a,(FAC)
                 or      a                   ; CF = 0
                 ret     p

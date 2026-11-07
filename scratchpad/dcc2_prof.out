@@ -1,0 +1,122 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+
+=== (e) GOSUB + H(M)=H(M)+1:RETURN: `DIM H(9):M=3:FOR I=1 TO 40:GOSUB 100:NEXT:END
+100 H(M)=H(M)+1:RETURN` ===
+T per pass (M1 incl.): mean 27430, min 27101, max 27526 over 20 passes  [program printed '']
+  by region: main 27397, hook 33
+  sub-ROM crossings per pass: 0
+  MACHINE MODEL per pass: 27685 T (host 27430 + crossings + BREAKX); -> 132 TIME ticks per 300 passes at 63000 usable T/tick
+  trapped calls per pass (0 T on the host): {'BREAKX': 3.0}
+  -- top by EXCLUSIVE T, per label --
+         1416 T   5.2%  exec_stmt
+         1117 T   4.1%  domain_convert_core
+          732 T   2.7%  vlf_value
+          701 T   2.6%  wsrc_unpack
+          603 T   2.2%  cl_opnd_lo
+          570 T   2.1%  apf_lp
+          526 T   1.9%  apsub_close
+          497 T   1.8%  nx_have
+          494 T   1.8%  npi_tlp
+          490 T   1.8%  npks_lp
+          484 T   1.8%  ctl_reloc
+          460 T   1.7%  vnk_suffix
+          438 T   1.6%  npi_x10
+          414 T   1.5%  es_idx
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         3307 T  12.1%  exec_stmt  (2 calls/pass)
+         2428 T   8.9%  ev_logic  (3 calls/pass)
+         1962 T   7.2%  ev_f_keyed  (3 calls/pass)
+         1136 T   4.1%  ary_parse_call  (2 calls/pass)
+         1134 T   4.1%  ary_resolve_fast  (2 calls/pass)
+         1128 T   4.1%  nx_pki  (2 calls/pass)
+         1118 T   4.1%  nx_pack  (2 calls/pass)
+         1036 T   3.8%  arga_widen  (1 calls/pass)
+         1034 T   3.8%  run_prog  (0 calls/pass)
+          874 T   3.2%  ctl_alloc  (1 calls/pass)
+          768 T   2.8%  var_name_key  (4 calls/pass)
+          754 T   2.7%  gosub_push  (1 calls/pass)
+          698 T   2.5%  arga_pack_fac  (1 calls/pass)
+          554 T   2.0%  npk_sub  (8 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        27430 T 100.0%  run_prog  (0 calls/pass)
+        23273 T  84.8%  exec_stmt  (2 calls/pass)
+        21537 T  78.5%  gosub_push  (1 calls/pass)
+        11272 T  41.1%  inc_eval  (3 calls/pass)
+        10920 T  39.8%  ev_logic  (3 calls/pass)
+         7028 T  25.6%  ary_op0_vt  (2 calls/pass)
+         6860 T  25.0%  ary_parse_call  (2 calls/pass)
+         5253 T  19.1%  ev_f_keyed  (3 calls/pass)
+         2974 T  10.8%  ary_store_write  (1 calls/pass)
+         2631 T   9.6%  widen_and_finalize  (1 calls/pass)
+         1672 T   6.1%  nx_pack  (2 calls/pass)
+         1566 T   5.7%  nx_pki  (2 calls/pass)
+         1376 T   5.0%  var_name_key  (4 calls/pass)
+         1134 T   4.1%  ary_resolve_fast  (2 calls/pass)
+         1069 T   3.9%  arga_widen  (1 calls/pass)
+         1027 T   3.7%  ctl_alloc  (1 calls/pass)
+          994 T   3.6%  fx_cvt  (1 calls/pass)
+          698 T   2.5%  arga_pack_fac  (1 calls/pass)
+  -- calls per pass, caller -> callee --
+      nx_pack->npk_sub 8, ev_logic->ev_sp 8, skipsp_test->skip_spaces 7, exec_stmt->check_fperr_only 6, exec_stmt->skipsp_test 5, var_name_key->upcase 4, var_name_key->is_ident_cont 4, var_name_key->deftbl_lookup 4, nx_pki->npi_x10 3.5, island$0010->hook$FF48 3, ctl_alloc->ctl_put 3, inc_eval->set_factyp2 3, inc_eval->ev_logic 3, ev_logic->var_name_key 3, ev_logic->ev_f_keyed 3, ev_f_keyed->stk_guard 3, ret_frame->ctl_get 3, run_prog->check_fperr_only 2, run_prog->skipsp_test 2, var_str_type->is_ident_cont 2, ary_op0_vt->ary_parse_call 2, ary_parse_call->inc_eval 2, ev_f_keyed->var_find_typed 2, ary_parse_call->fac_to_int_strict 2, fac_to_int_strict->factyp_is2 2, fac_to_int_strict->domain_convert_core 2, ary_parse_call->skip_comma 2, skip_comma->skip_spaces 2, ary_parse_call->fperr_test 2, ary_parse_call->ary_resolve_fast 2, check_preexp_bounds->cmp16_bits 2, run_prog->island$0010 1.05, run_prog->TRAP:BREAKX 1.05, run_prog->derive_directf 1.05, run_prog->req_lineno 1, req_lineno->is_lref 1, run_prog->skip_stmt_tail 1, skip_stmt_tail->tok_skip_to 1, run_prog->gosub_push 1, gosub_push->ctl_alloc 1, gosub_push->find_line_bc 1, gosub_push->derive_directf 1, gosub_push->TRAP:BREAKX 1, gosub_push->exec_stmt 1, exec_stmt->var_str_type 1, var_str_type->upcase 1, var_str_type->is_letter 1, var_str_type->deftbl_lookup 1, exec_stmt->var_name_key 1, exec_stmt->ary_op0_vt 1, exec_stmt->ary_snapshot_offset 1, exec_stmt->skip_eq 1, skip_eq->skip_spaces 1, exec_stmt->inc_eval 1, ev_f_keyed->ary_op0_vt 1, ev_logic->push_lhs_frame 1, ev_logic->ev_f 1, ev_f->stk_guard 1, ev_f->ev_sp 1, ev_logic->lg_go 1, lg_go->pop_lhs_and_probe 1, ev_logic->fx_cvt 1, fx_cvt->factyp_is2 1, fx_cvt->nx_pki 1, ev_logic->caddsub_int 1, ev_logic->factyp_is2 1, ev_logic->fac_zero_mantissa 1, ev_logic->nx_pack 1, exec_stmt->fperr_test 1, exec_stmt->ary_apply_offset 1, exec_stmt->ary_store_write 1, ary_store_write->widen_and_finalize 1, widen_and_finalize->arga_widen 1, arga_widen->factyp_is2 1, widen_and_finalize->arga_dig_iszero 1, widen_and_finalize->check_preexp_bounds 1, widen_and_finalize->arga_pack_fac 1, exec_stmt->stmt_bare_end 1, stmt_bare_end->island$0010 1, exec_stmt->ret_frame 1, run_prog->exec_stmt 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95, exec_stmt->TRAP:BREAKX 0.95, exec_stmt->derive_directf 0.95
+
+=== (a) A=I+7 body: `FOR I=1 TO 40:A=I+7:NEXT` ===
+T per pass (M1 incl.): mean 13396, min 13195, max 13505 over 20 passes  [program printed '']
+  by region: main 13385, hook 11
+  sub-ROM crossings per pass: 0
+  MACHINE MODEL per pass: 13481 T (host 13396 + crossings + BREAKX); -> 64 TIME ticks per 300 passes at 63000 usable T/tick
+  trapped calls per pass (0 T on the host): {'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+          803 T   6.0%  exec_stmt
+          511 T   3.8%  npks_lp
+          497 T   3.7%  nx_have
+          494 T   3.7%  npi_tlp
+          459 T   3.4%  is_ident_cont
+          444 T   3.3%  npi_x10
+          378 T   2.8%  npk_pos
+          325 T   2.4%  nx_again
+          305 T   2.3%  domain_convert_core
+          280 T   2.1%  vft_go
+          277 T   2.1%  pop_lhs_and_probe
+          270 T   2.0%  npk_byte
+          250 T   1.9%  cl_cmp
+          247 T   1.8%  vsa_copy
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2663 T  19.9%  run_prog  (0 calls/pass)
+         1795 T  13.4%  ev_logic  (1 calls/pass)
+         1130 T   8.4%  nx_pki  (2 calls/pass)
+         1083 T   8.1%  nx_pack  (2 calls/pass)
+          687 T   5.1%  ev_f_keyed  (1 calls/pass)
+          638 T   4.8%  var_find_typed  (2 calls/pass)
+          575 T   4.3%  npk_sub  (8 calls/pass)
+          459 T   3.4%  is_ident_cont  (4 calls/pass)
+          444 T   3.3%  npi_x10  (3.55 calls/pass)
+          384 T   2.9%  var_name_key  (2 calls/pass)
+          376 T   2.8%  var_store_at  (1 calls/pass)
+          276 T   2.1%  var_str_type  (1 calls/pass)
+          228 T   1.7%  fac_zero_mantissa  (1 calls/pass)
+          205 T   1.5%  ev_sp  (5 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        13396 T 100.0%  run_prog  (0 calls/pass)
+         6175 T  46.1%  inc_eval  (1 calls/pass)
+         5999 T  44.8%  ev_logic  (1 calls/pass)
+         1658 T  12.4%  nx_pack  (2 calls/pass)
+         1574 T  11.7%  nx_pki  (2 calls/pass)
+         1017 T   7.6%  ev_f_keyed  (1 calls/pass)
+         1002 T   7.5%  fx_cvt  (1 calls/pass)
+          804 T   6.0%  var_name_key  (2 calls/pass)
+          650 T   4.9%  var_str_type  (1 calls/pass)
+          638 T   4.8%  var_find_typed  (2 calls/pass)
+          575 T   4.3%  npk_sub  (8 calls/pass)
+          495 T   3.7%  vaof_oom  (1 calls/pass)
+          465 T   3.5%  var_alloc_or_find  (1 calls/pass)
+          459 T   3.4%  is_ident_cont  (4 calls/pass)
+          444 T   3.3%  npi_x10  (3.55 calls/pass)
+          376 T   2.8%  var_store_at  (1 calls/pass)
+          296 T   2.2%  ev_f  (1 calls/pass)
+          248 T   1.9%  skipsp_test  (4 calls/pass)
+  -- calls per pass, caller -> callee --
+      nx_pack->npk_sub 8, run_prog->check_fperr_only 4, run_prog->skipsp_test 4, skipsp_test->skip_spaces 4, ev_logic->ev_sp 4, nx_pki->npi_x10 3.55, var_str_type->is_ident_cont 2, var_name_key->upcase 2, var_name_key->is_ident_cont 2, var_name_key->deftbl_lookup 2, run_prog->island$0010 1, island$0010->hook$FF48 1, run_prog->is_letter 1, run_prog->nx_pki 1, run_prog->nx_pack 1, run_prog->cmp16_bits 1, run_prog->set_factyp2 1, run_prog->TRAP:BREAKX 1, run_prog->derive_directf 1, run_prog->var_str_type 1, var_str_type->upcase 1, var_str_type->is_letter 1, var_str_type->deftbl_lookup 1, run_prog->var_name_key 1, run_prog->vaof_oom 1, vaof_oom->var_alloc_or_find 1, var_alloc_or_find->var_find_typed 1, run_prog->skip_eq 1, skip_eq->skip_spaces 1, run_prog->inc_eval 1, inc_eval->set_factyp2 1, inc_eval->ev_logic 1, ev_logic->var_name_key 1, ev_logic->ev_f_keyed 1, ev_f_keyed->stk_guard 1, ev_f_keyed->var_find_typed 1, ev_logic->push_lhs_frame 1, ev_logic->ev_f 1, ev_f->stk_guard 1, ev_f->ev_sp 1, ev_logic->lg_go 1, lg_go->pop_lhs_and_probe 1, ev_logic->fx_cvt 1, fx_cvt->factyp_is2 1, fx_cvt->nx_pki 1, ev_logic->caddsub_int 1, ev_logic->factyp_is2 1, ev_logic->fac_zero_mantissa 1, ev_logic->nx_pack 1, run_prog->check_expr_errors_popbc 1, run_prog->var_store_at 1
+
+=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===
+  (e) model  27685 T/pass ->   132 ticks; measured zb 288 (implies 28838 usable T/tick); VG-8020 117 ticks = ~24570 T/pass
+  (a) model  13481 T/pass ->    64 ticks; measured zb 137 (implies 29521 usable T/tick); VG-8020 70 ticks = ~14700 T/pass
