@@ -1,0 +1,26 @@
+# S18_math (D-SESSIONS, 2026-11-07): the arithmetic a user types -- single and double
+# precision side by side (!, #, DEFDBL), integer division and MOD on negatives, CINT /
+# FIX / INT on negatives, ^ with fractional and negative bases, SQR / SIN / COS / TAN /
+# ATN / LOG / EXP, RND with a seed and RND(0), the way numbers print (E notation, the
+# leading blank), and integer overflow. The VG-8020.
+# ⚖️ Fractional powers and the transcendental functions print through CSNG: their 14th
+# digit is the RULED class (2026-07-13, correct rounding; docs/keywords/EXP.md) -- this
+# session's first run differed exactly there, `2^0.5` 1.414213562373 on the VG-8020,
+# 1.4142135623731 here (true value 1.41421356237309...).
+NEW
+PRINT 1/3;1#/3;2/3!;10/4
+PRINT 7\2;-7\2;7 MOD 3;-7 MOD 3;7.9\2
+PRINT CINT(-2.5);FIX(-2.5);INT(-2.5);CINT(2.5);INT(2.5)
+PRINT CSNG(2^0.5);2^-2;0^0;2^10
+PRINT (-8)^(1/3)
+PRINT CSNG(SQR(2));CSNG(SIN(1));CSNG(COS(1));CSNG(TAN(1));CSNG(ATN(1)*4)
+PRINT CSNG(LOG(10));CSNG(EXP(1));CSNG(LOG(EXP(2)))
+PRINT 1E10;1E-10;123456789;1234567;0.0001;1/7*1E6
+PRINT 1#/7;3.141592653589793#;1D10;12345678901234567#
+DEFDBL D:D=1/3:PRINT D;D*3
+A%=32767:PRINT A%:A%=A%+1
+PRINT -32768%
+PRINT &H7FFF;&HFFFF;&O777;&B1010;-32767-1
+X=RND(-1):PRINT RND(1);RND(1);RND(0)
+PRINT 0.1+0.2;0.1+0.2=0.3;100*1.1
+PRINT ABS(-3);SGN(-3);SGN(0);-0

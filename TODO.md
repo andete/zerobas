@@ -8025,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16233 (T-529ABE)`: a
+      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16244 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10764,7 +10764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16233 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16244 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11350,6 +11350,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets. 🔮 Predicted "one divergence in a PRINT USING edge": MISS. (The doubled
       200-byte string is Out of string space, not String too long: CLEAR's default 200 B
       comes first -- my guess in the header, corrected; both machines agree.)
+      ✅ **S18_math (2026-11-07): SAME, after routing the RULED class through CSNG**
+      ([`S18_math.ses`](probes/sessions/S18_math.ses), [`sessions_S18_math.out`](scratchpad/sessions_S18_math.out); first run [`sessions_S18_math_raw.out`](scratchpad/sessions_S18_math_raw.out)): single
+      vs double precision, `\` and MOD on negatives, CINT / FIX / INT at the halves, `^`,
+      the transcendental functions, E notation, DEFDBL, integer overflow, `&H` / `&O` /
+      `&B`, a seeded RND sequence, `0.1+0.2=0.3`. 🔮 Predicted "a divergence in a double
+      print": HIT, and INSIDE THE RULED CLASS -- `2^0.5` 1.414213562373 on the VG-8020,
+      1.4142135623731 here (true 1.41421356237309...; Joost 2026-07-13, correct rounding,
+      docs/keywords/EXP.md). Fractional powers and the transcendentals now print through
+      CSNG (6 digits must still agree). Two session slips of mine, the same on both
+      machines: `(-8)^(1/3)` and `-32768%` raise (Illegal function call, Overflow) and cut
+      their line short -- each on its own line now.
       ➡️ NEXT sessions: tape (CSAVE / CLOAD, the VG-8020, parked on the recorder apparatus)
       and more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
