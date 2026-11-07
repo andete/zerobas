@@ -1,0 +1,5 @@
+vg8020  in(AF BC DE HL)=[None]  out=[None]  err=[None]
+cf3300  in(AF BC DE HL)=[1244 3456 789A BCDE]  out=[A565 1111 2222 3333]  err=[None]
+zb      in(AF BC DE HL)=[1242 3456 789A BCDE]  out=[A561 1111 2222 3333]  err=[None]
+refcache: 0 hit, 3 miss, 3 stored
+refcache: 0 hit, 3 miss, 3 stored

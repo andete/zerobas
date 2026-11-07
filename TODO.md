@@ -17623,7 +17623,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       LOW region (basic/varfind.asm, +16 B, 72 -> 56: islands 1, 2 and 3/4 were all full);
       $0028 -> `jp getypr` (PATCH_RANGES). 🔮 "all three match": HIT ([`getypr_after.out`](scratchpad/getypr_after.out));
       synchr-acceptance gained g.int / g.sng / g.dbl / g.str, 8/8 ([`synchr_gate2.out`](scratchpad/synchr_gate2.out)). zerobas
-      never `rst $28`s itself, so nothing internal moves. ➡️ Left: `$30` CALLF.
+      never `rst $28`s itself, so nothing internal moves. ~~➡️ Left: `$30` CALLF.~~
+      📏 **`$30` CALLF MEASURED THE SAME DAY, AND LEFT AS IT IS** ([`callf_probe.py`](scratchpad/callf_probe.py) ->
+      [`callf_run2.out`](scratchpad/callf_run2.out): a USR routine RST 30h's into a routine of ours in page-3 RAM, the slot
+      computed in BASIC from $A8 / EXPTBL / $FFFF -- the first run used RAMAD3, a disk-ROM
+      cell the diskless VG-8020 never sets, and read nothing there, [`callf_run.out`](scratchpad/callf_run.out)): A / BC /
+      DE / HL pass through both ways on all three; the ONLY difference is the flags the
+      TARGET receives -- $44 (Z, P/V) on both references, $42 (Z, N) through C-BIOS's
+      CALSLT -- and the returned F differs only by that (the target's own `scf` keeps S / Z /
+      P). Not matched, deliberately: the flags at a CALLF target are undefined, and matching
+      them means changing what C-BIOS's CALSLT leaves -- the hot path of every hook and every
+      sub-ROM crossing -- for no reader. The RST-vector sweep this item asked for is done.
 
 - [ ] 🧰 **D-KWTIMESYMRACE — `kwtime` CAN DIE IN 0 s ON `KeyError: 'tokenise'` WHEN ANOTHER BATTERY
       UNIT REWRITES main's .sym (found twice: 2026-10-04 during B-3, 2026-10-05 during B-11; MEASURED)**
