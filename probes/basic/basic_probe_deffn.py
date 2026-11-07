@@ -36,7 +36,7 @@ row the two references did not agree on, so `WANT` contains no unscored reading.
            `o.sameaddr` must be NON-ZERO (the formal is not the variable) and
            `z.addr2`/`z.addr2i` must be EQUAL (the shadow does not move with
            nesting). See `PREDICATE` below.
-  * `gate` everything else — the verb's actual surface, **71 rows**
+  * `gate` everything else — the verb's actual surface, its rows (the probe prints the count; 11 joined 2026-11-07 with D-FNALIAS)
            (69 until 2026-08-23, when D-DEFFNKNIFE's K-FE1 found that no
            row scored `raise_error`'s FN_FEND reset and added
            `o.errfend18`/`o.errfend13`).
@@ -212,6 +212,34 @@ CASES = {
     'o.aryform.dim'     : (['DEF FNA(C(1))=1', 'DIM C(5)'], '"OK"'),
     'o.aryform.bs'      : (['DEF FNA(C(11))=1'], '"OK"'),
     'o.aryform.dz'      : (['DEF FNA(C(1/0))=1'], '"OK"'),
+    # --- D-FNALIAS (docs/spec-deffn-alias.md §6/§7): every actual is evaluated in
+    # the CALLER's scope before any formal binds. The four rows §6 held back until
+    # the fix (scratchpad/deffn_alias_probe.py), plus what the two-pass build had
+    # to decide and asked the references first (scratchpad/fnalias2_scout.py).
+    'o.alias'           : (['DEF FNA(P,Q)=P*100+Q', 'P=3'], 'FNA(5,P)'),
+    'o.alias.ctl'       : (['DEF FNA(P,Q)=P*100+Q'], 'FNA(5,7)'),
+    'o.aliasnest'       : (['DEF FNA(X,Q)=X*100+Q', 'DEF FNB(X)=FNA(9,X)'], 'FNB(3)'),
+    'o.aliasnest.ctl'   : (['DEF FNA(X,Q)=X*100+Q', 'DEF FNB(X)=FNA(9,7)'], 'FNB(3)'),
+    # a formal named twice: the LAST actual wins (a store by key, not a copy by
+    # position) -- the binding pass's own rule
+    'o.dupformal'       : (['DEF FNA(X,X)=X'], 'FNA(1,2)'),
+    'o.dupformal3'      : (['DEF FNA(X,Y,X)=X*10+Y'], 'FNA(1,2,3)'),
+    'o.dupstr'          : (['DEF FNA$(X$,X$)=X$'], 'FNA$("a","b")'),
+    # D-FNSTR9: nine string actuals are parked on the 10-deep temp stack while
+    # the body runs -- they fit with the body's own temp, and one pending
+    # temporary more is ERR 16 (scratchpad/fnstrtemp_probe.py)
+    'o.str9'            : (['DEF FNA$(A$,B$,C$,D$,E$,F$,G$,H$,I$)=A$+I$'],
+                           'FNA$(' + ','.join(f'"{i}"+""' for i in range(1, 10)) + ')'),
+    'o.str9k1'          : (['DEF FNA$(A$,B$,C$,D$,E$,F$,G$,H$,I$)=A$+I$'],
+                           'MID$("Z",1)+(FNA$(' + ','.join(f'"{i}"+""' for i in range(1, 10)) + '))'),
+    # ...and released when the call ends: three calls of five in one expression
+    'o.tempend'         : (['DEF FNA$(A$,B$,C$,D$,E$)=A$'],
+                           '+'.join(['FNA$(' + ','.join(f'"{i}"+""' for i in range(1, 6)) + ')'] * 3)),
+    # the SECOND actual collects (FRE("")) and then allocates over the space a
+    # parked-but-unrooted first actual would have been compacted out of
+    'o.gcpark'          : (['CLEAR 400', 'B$="12345"+"67890":A$="AB"+"CD":B$=""',
+                            'X$="ABCDEFGHIJ"+"KLMNOPQRST"', 'DEF FNA$(S$,N)=S$'],
+                           'FNA$(A$+"",LEN(LEFT$(STR$(FRE(""))+X$+X$,0)))'),
 }
 
 DIRECT = {
@@ -255,6 +283,17 @@ WANT = {
     'o.aryform.dim'     : 'ERR 10 AT 30',   # D-DEFFNARY: C was DIMmed at the DEF
     'o.aryform.bs'      : 'ERR 9 AT 20',   # D-DEFFNARY: the subscript is evaluated
     'o.aryform.dz'      : 'ERR 11 AT 20',   # D-DEFFNARY
+    'o.alias'           : '503',   # D-FNALIAS 2026-08-27, re-run 2026-11-05 (zb was 505)
+    'o.alias.ctl'       : '507',   # D-FNALIAS
+    'o.aliasnest'       : '903',   # D-FNALIAS (zb was 909)
+    'o.aliasnest.ctl'   : '907',   # D-FNALIAS
+    'o.dupformal'       : '2',     # D-FNALIAS 2026-11-07, fnalias2_scout.out
+    'o.dupformal3'      : '32',    # D-FNALIAS 2026-11-07
+    'o.dupstr'          : 'b',     # D-FNALIAS 2026-11-07
+    'o.str9'            : '19',    # D-FNSTR9 (zb was ERR 16)
+    'o.str9k1'          : 'ERR 16 AT 60',   # D-FNSTR9: the reference's ceiling
+    'o.tempend'         : '111',   # D-FNALIAS 2026-11-07 (zb was ERR 16)
+    'o.gcpark'          : 'ABCD',  # D-FNALIAS 2026-11-07
     'o.badname'         : 'ERR 2 AT 20',   # round5
     'o.barecall'        : 'ERR 2 AT 60',   # round5
     'o.clearwipe.ctl'   : '3',   # round6

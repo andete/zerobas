@@ -92,7 +92,6 @@ putio_probe: NO-VERDICT -- single-machine read/write/per-PUT counts; no comparis
 putcost_probe: NO-VERDICT -- per-PUT ticks on the guest's own clock, the same shape as interpspeed_probe above; it serves the SPEED entry, which the scoreboard reclassified as not-correctness
 rungap_probe: NO-VERDICT -- measures the HARNESS (step held fixed while run_gap moves), not BASIC; an apparatus calibration with no BASIC subject
 
-deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; empty string, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
 # 🟢 2026-09-10 (D-FILEDSLICE): `empty string, no delay` REMOVED from
 # playfn_fixture_probe above -- it no longer diverges (`-1 0 0 0` on both sides,
@@ -247,7 +246,6 @@ basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifl
 bareform_probe: CLOAD -- "no row can carry a hang", the `LOAD"CAS:"` class. ⚠️ BOTH references read `<none>` here because `CLOAD` WAITS FOR TAPE; zerobas answers `legal`. The probe's own output says it: "an absence, not agreement, and each needs a reason". So this is apparatus-bounded, NOT a measured divergence, and pinning it says exactly that rather than letting it read as unnoticed
 # --- and the two with no verdict channel, kind established from the probe, not
 # from the family name (the file's standing rule).
-deffn_nestdepth_probe: NO-VERDICT -- D-FNNESTDEPTH measures how deep the REFERENCES will nest DEF FN calls before failing; a capacity figure, like trapdepth's `D`, with no zerobas comparison column
 
 # --- 2026-09-27 filed-row triage (loop): the RAM-usage item's probes -----------
 nset_probe: boot; print_sc; print_nl; cls; crt_file; grph_chr; esc_half -- "COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL": the N-set scratch cells (LINWRK and the transient output flags) are a STATED divergence, Joost 2026-09-25 "Stop here" -- the evaluator/editor scratch stays where zerobas keeps it.

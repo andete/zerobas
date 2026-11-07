@@ -1,0 +1,14 @@
+    capture-on-signal: 33 on signal, 0 fell back to the scheduled budget   ⚠️ 24 REPLAYED from the refcache -- not measured on this run (16 REFERENCE, 8 zerobas)   [signalled at 64.1-126.1 emulated s]
+ok   o.alias          ref='503'  vg8020='503'  cf3300='503'  zb='503'
+ok   o.alias.ctl      ref='507'  vg8020='507'  cf3300='507'  zb='507'
+ok   o.aliasnest      ref='903'  vg8020='903'  cf3300='903'  zb='903'
+ok   o.aliasnest.ctl  ref='907'  vg8020='907'  cf3300='907'  zb='907'
+ok   o.dupformal      ref='2'  vg8020='2'  cf3300='2'  zb='2'
+ok   o.dupformal3     ref='32'  vg8020='32'  cf3300='32'  zb='32'
+ok   o.dupstr         ref='b'  vg8020='b'  cf3300='b'  zb='b'
+ok   o.gcpark         ref='ABCD'  vg8020='ABCD'  cf3300='ABCD'  zb='ABCD'
+ok   o.str9           ref='19'  vg8020='19'  cf3300='19'  zb='19'
+ok   o.str9k1         ref='ERR 16 AT 60'  vg8020='ERR 16 AT 60'  cf3300='ERR 16 AT 60'  zb='ERR 16 AT 60'
+ok   o.tempend        ref='111'  vg8020='111'  cf3300='111'  zb='111'
+ROWS: 11 printed, 11 scored — 0 of 11 DEF FN rows still divergent; 0 of 11 controls failed
+refcache: 24 hit, 9 miss, 8 of the hits were ZEROBAS readings, 9 stored, 24 replayed provenance

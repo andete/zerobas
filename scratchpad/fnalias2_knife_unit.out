@@ -1,0 +1,11 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+FAIL  o.alias: got b' 505 \r\n'  want b' 503 \r\n'
+PASS  o.alias.ctl: got b' 507 \r\n'
+FAIL  o.aliasnest: got b' 909 \r\n'  want b' 903 \r\n'
+PASS  o.aliasnest.ctl: got b' 907 \r\n'
+PASS  o.dupformal: got b' 2 \r\n'
+PASS  o.dupformal3: got b' 32 \r\n'
+FAIL  defint alias: got b' 505 \r\n'  want b' 503 \r\n'
+FAIL  o.str9: got b'String formula too complex in 30\r\n'  want b'19\r\n'
+FAIL  o.tempend: got b'String formula too complex in 30\r\n'  want b'111\r\n'
+FAIL

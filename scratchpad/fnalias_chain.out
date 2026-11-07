@@ -1,0 +1,10 @@
+build=0
+all=0
+allfn=0
+tape=0
+TALLY {"NEAR": 14, "RUNS?": 20, "SAME": 8}
+tiers=0
+marker=0
+rc=1
+GATES: 243/245 green
+RED: ram-map-check filed-pin-check

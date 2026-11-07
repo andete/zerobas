@@ -7850,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15797 (T-529ABE)`: a
+      `TODO.md:10283 (T-6FE392)8 (T-529ABE)` from `TODO.md:15827 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10589,7 +10589,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15797 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15827 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -13046,7 +13046,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"You pick, under a budget"* -- rank the 104 by what each catches that the battery does not, collect the best into ~+120 s; (a) is done; (b) was which of the 104 earn a battery slot, a
       runtime-budget call and the measuring in front of it is finished.
 
-- [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
+- [x] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
       draft binds in place: `FNA(P,Q)` called as `FNA(X, X*2)` from inside an FN
@@ -13186,6 +13186,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `o.aliasnest` 903 / 903 / 909, both controls equal (507, 907). 🔮 "unchanged since
       08-27" HIT. The divergence stands; the pool-route build is next.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      ✅ **SHIPPED 2026-11-07 (built by a subagent from the spec; reviewed, tested and gated
+      here).** Two passes (docs/spec-deffn-alias.md §8): pass 1 (sub/deffn.asm dfn_actual +
+      basic/deffn.asm fn_st) evaluates every actual in the CALLER's scope and parks it --
+      a number coerced into an 11-B `[name][type][value]` entry, a string snapshotted onto
+      the temp-descriptor stack (route (a), the reference's own 10-deep shape); pass 2
+      (dfn_body) binds the formals from the entries, a repeated formal taking the LAST
+      actual as both references do (o.dupformal 2, o.dupformal3 32, o.dupstr b --
+      [`fnalias2_scout.out`](scratchpad/fnalias2_scout.out)); a call releases its parked temps at its end (q.tend 111 on both
+      references, ERR 16 here before). 🔴 **ONE DEVIATION FROM THE RULED SHAPE, STATED:** the
+      parked entries live on the main servicer's own Z80 stack, not in a ctl_alloc pool
+      block. Measured both: the pool block slid the whole live stack per entry (D-SPMERGE)
+      -- `DEF FNA(X)=FNA(X)` reached ERR 7 in 1010 jiffies against HEAD's 718 and b.recurse
+      ran past its capture -- while the stack (the same merged free space under the frontier,
+      under stk_guard, unwound by an error's SP reset) took 723
+      ([`fnalias2_time_head.out`](scratchpad/fnalias2_time_head.out), [`fnalias2_time_pool.out`](scratchpad/fnalias2_time_pool.out), [`fnalias2_time_stack.out`](scratchpad/fnalias2_time_stack.out)). Since D-SPMERGE (ruled
+      09-11) the Z80 stack and the control pool are one region, so this keeps "evaluate
+      every actual into the control pool before binding"; flagged for Joost all the same.
+      📏 After: o.alias 503 / o.aliasnest 903 on all three ([`fnalias2_aliasprobe_after.out`](scratchpad/fnalias2_aliasprobe_after.out)); 11
+      new deffn-probe rows agree on all three sides ([`fnalias2_newrows.out`](scratchpad/fnalias2_newrows.out)); the whole probe
+      0/91 divergent on zerobas ([`fnalias2_deffn_zb2.out`](scratchpad/fnalias2_deffn_zb2.out)). Knife: HEAD's two asm files -> the new
+      rows red (505 / 909 / ERR 16 / ERR 16, [`fnalias2_knife_rows.out`](scratchpad/fnalias2_knife_rows.out)); K-PARK (the parked actual
+      unrooted) turns o.gcpark / o.gcroot / o.str9 red ([`fnalias2_kpark_rows.out`](scratchpad/fnalias2_kpark_rows.out)). Bytes: main's
+      $6CF3 pin pad +65, sub page 0 +39 (124 -> 85). tests/test_deffn_alias.py (9 rows; the
+      host bridge gained an OPT-IN `bridge_keeps_tenant_sp` -- no FN call could run on the
+      host before, and the default broke test_ramad). 🟢 **AND d.n4 CLOSED TOO:** the nesting
+      cap of three (ERR 7 at depth 4, D-FNSTK) is gone -- depth 4 answers 9 on all three
+      ([`fnalias_pin_nest.out`](scratchpad/fnalias_pin_nest.out), refcache off); both probes' pins left tools/filed-row-known.txt
+      after a by-hand re-run with the refcache OFF ([`fnalias_pin_alias.out`](scratchpad/fnalias_pin_alias.out): all four rows
+      agree). 🆕 q.frelit stays divergent: a literal
+      string actual costs 4 B here and 0 on both references (the D-LITREF / D-TEMPD10 class).
 
 - [x] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
@@ -17878,7 +17908,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       re-measure round 1 -- if a handler then fits a frame as on the reference, the grace
       after RETURN can go too.
 
-- [ ] 🔴 **D-FNSTR9 — A `DEF FN` CALL WITH NINE TEMPORARY STRING ACTUALS IS `String formula
+- [x] 🔴 **D-FNSTR9 — A `DEF FN` CALL WITH NINE TEMPORARY STRING ACTUALS IS `String formula
       too complex` HERE AND ANSWERS ON THE VG-8020 (found 2026-11-05 by the D-FNALIAS plan)**
       🎚️ TIER 6 — `DEF FN` with many string arguments built from expressions.
       🤖 **AUTONOMOUS** — measured; fix it inside D-FNALIAS's two-pass build (§7.1).
@@ -17886,6 +17916,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `X$=FNA$("1"+"",..,"9"+"")` -> VG-8020 `19`, zerobas ERR 16. With one pending
       `MID$("Z",1)+(` around it the VG-8020 is ERR 16 too -- it parks the actuals on its
       10-deep TEMPST, so the ceiling is real, zerobas's is just one call lower.
+      ✅ **FIXED 2026-11-07 inside D-FNALIAS's two-pass build:** the actuals are parked on
+      the temp stack as on the reference, and fn_sn keeps a result that is already a temp
+      instead of copying it -- the FN row now matches the VG-8020 at every k (k0 `19`, k1..k10
+      ERR 16; [`fnalias2_fnstrtemp_after.out`](scratchpad/fnalias2_fnstrtemp_after.out)). The no-FN control at k10 still differs: D-TEMPD10.
 
 - [ ] 🔴 **D-TEMPD10 — TEN NESTED PENDING STRING TEMPORARIES ARE `String formula too
       complex` ON THE VG-8020 AND ANSWER HERE (found 2026-11-05 by the D-FNALIAS plan)**

@@ -1,0 +1,12 @@
+    capture-on-signal: 8 on signal, 0 fell back to the scheduled budget   [signalled at 64.1-104.1 emulated s]
+ok   b.str          ref='hi!'  zb='hi!'
+DIFF o.gcpark       ref='ABCD'  zb='<empty>'
+DIFF o.gcroot       ref='ABCD'  zb='GHIJ'
+FAIL o.gcroot.ctla  ref='ABCD'  zb='QRST'
+PASS o.gcroot.ctln  ref='ABCD'  zb='ABCD'
+PASS o.gcroot.ctlv  ref='ABCD'  zb='ABCD'
+DIFF o.str9         ref='19'  zb='9'
+DIFF o.str9k1       ref='ERR 16 AT 60'  zb='Z9'
+ROWS: 8 printed, 8 scored — 4 of 5 DEF FN rows still divergent; 1 of 11 controls failed
+DEF FN not implemented (expected until the verb ships): o.gcpark, o.gcroot, o.str9, o.str9k1
+refcache: 0 hit, 8 miss, 8 stored

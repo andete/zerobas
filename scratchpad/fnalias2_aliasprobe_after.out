@@ -1,0 +1,16 @@
+row                    vg8020        cf3300            zb
+o.alias                   503           503           503
+o.alias.ctl               507           507           507
+o.aliasnest               903           903           903
+o.aliasnest.ctl           907           907           907
+
+  o.alias: agree ('503')
+  o.alias.ctl: agree ('507')
+  o.aliasnest: agree ('903')
+  o.aliasnest.ctl: agree ('907')
+
+🔴 PINNED FACE DRIFT -- the row may still diverge, but NOT to the face this tree has filed:
+     o.alias[zb]: pinned '505', measured '503'
+     o.aliasnest[zb]: pinned '909', measured '903'
+  Re-read the owning entry before touching anything: either the behaviour moved, or the filing was wrong when it was written.
+refcache: 8 hit, 4 miss, 4 stored, 8 replayed provenance

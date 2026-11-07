@@ -1,0 +1,15 @@
+    capture-on-signal: 11 on signal, 0 fell back to the scheduled budget   ⚠️ 4 REPLAYED from the refcache -- not measured on this run (0 REFERENCE, 4 zerobas)   [signalled at 64.1-104.1 emulated s]
+DIFF o.alias          ref='503'  zb='505'
+ok   o.alias.ctl      ref='507'  zb='507'
+DIFF o.aliasnest      ref='903'  zb='909'
+ok   o.aliasnest.ctl  ref='907'  zb='907'
+ok   o.dupformal      ref='2'  zb='2'
+ok   o.dupformal3     ref='32'  zb='32'
+ok   o.dupstr         ref='b'  zb='b'
+ok   o.gcpark         ref='ABCD'  zb='ABCD'
+DIFF o.str9           ref='19'  zb='ERR 16 AT 60'
+ok   o.str9k1         ref='ERR 16 AT 60'  zb='ERR 16 AT 60'
+DIFF o.tempend        ref='111'  zb='ERR 16 AT 60'
+ROWS: 11 printed, 11 scored — 4 of 11 DEF FN rows still divergent; 0 of 11 controls failed
+DEF FN not implemented (expected until the verb ships): o.alias, o.aliasnest, o.str9, o.tempend
+refcache: 4 hit, 7 miss, 4 of the hits were ZEROBAS readings, 7 stored, 4 replayed provenance

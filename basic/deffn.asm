@@ -254,6 +254,18 @@ fn_call:
                                             ; D-SPMERGE's carve: `fn_deep` was a bare
                                             ; `jp gosub_stk_over` with this as its one
                                             ; caller, so the label and its 3 bytes go
+                ; 🎯 D-FNALIAS: THE PARKED ACTUALS LEAVE WITH THE CALL. Each string
+                ; actual is parked on the temp-descriptor stack (fn_st); the
+                ; VG-8020 / CF-3300 hold them there while the body runs -- nine
+                ; parked + one pending + the body's own is `String formula too
+                ; complex` (spec §7.1) -- and give them back when the call ends:
+                ; three calls of five string temporaries in one expression answer
+                ; `111` on both (q.tend, scratchpad/fnalias2_scout.out). And it is
+                ; what keeps b.nest10 (`FNB$(` ten deep) inside the ten slots.
+                ; fn_sn / fn_ld pop this; an error resets SP and the statement
+                ; resets the temp stack.
+                ld      hl,(TEMPPT)
+                push    hl                  ; [TEMPPT at the call]
 
 ; ===========================================================================
 ; D-DEFFNEV: THE PARSE IS A SUB PAGE-0 TENANT, AND WHAT IS LEFT HERE IS A
@@ -276,9 +288,11 @@ fn_call:
 ; because the two alphabets are disjoint.
 ;
 ;   tenant -> main   1  evaluate the expression at FN_PTR; say what you got
-;                    2  store the value into (FN_KEY, FN_TYP)
+;                    2  PARK the value as formal (FN_KEY, FN_TYP) on this
+;                       routine's own stack (D-FNALIAS); FN_KEY := the entry
 ;                    3  snapshot the string result off the frame, then LEAVE
-;                    4  load (FN_KEY, FN_TYP) back into FAC, then LEAVE
+;                    4  coerce the result to FN_TYP and load it, then LEAVE
+;                    5  drop the parked entries, then evaluate (as 1)
 ;                    0  raise FN_TYP
 ;   main -> tenant  $81 a NUMERIC value (FAC/FACTYP/DE)
 ;                   $82 a STRING value (STRPTR)
@@ -360,8 +374,24 @@ fn_lp:
                 jr      z,fn_sn             ; 3 snapshot, then leave
                 dec     a
                 jr      z,fn_ld             ; 4 load, then leave
+                dec     a
+                jr      z,fn_bod            ; 5 drop the parked entries, evaluate
                 ld      a,(FN_TYP)          ; 0 raise -- ERR 18 / 13 / 5, all of
                 jp      raise_error         ; them the tenant's own disposition
+; --- request 5: the tenant has bound every parked value -- drop them -------
+; They are 11 B each, one per formal, and FN_SLOTP counted the formals in the
+; same unit (sub/deffn.asm dfn_actual), so their size is its offset. The stack
+; top here IS the last entry: fn_lp's push/pop around the bounce is balanced.
+fn_bod:
+                ld      a,(FN_SLOTP)
+                sub     low FN_PAREA        ; A = 11 x the formal count
+                ld      l,a
+                ld      h,0
+                add     hl,sp
+                ; the parked entries are released whole; nothing else sits above them
+                ; z80flow: ld-sp same
+                ld      sp,hl
+                ; ...and falls into request 1: evaluate the body
 ; --- request 1: evaluate the expression at FN_PTR --------------------------
 fn_ev:
                 ld      hl,(FN_PTR)
@@ -374,18 +404,64 @@ fn_ev_x:
                 ld      (FN_PTR),hl
                 ld      l,a                 ; the answer, straight into the phase
                 jr      fn_lp
-; --- request 2: bind the value into the shadow slot the tenant just opened -
+; --- request 2: PARK the value on this routine's own stack ----------------
+; 🎯 D-FNALIAS (docs/spec-deffn-alias.md §7): no slot of the callee is open yet,
+; so the NEXT actual is still read in the caller's scope; the tenant binds every
+; parked value at once when the list closes (request 5 then drops them).
+; The entry is a shadow slot's own layout, [name0][name1][type][value:8], and
+; FN_KEY -- whose formal key it has just consumed -- takes its address for the
+; binding bounce. Entries pushed one per actual are CONTIGUOUS: everything
+; between two parks (the next bounce, the next actual's eval, any nested call)
+; is balanced on top of them, and a nested call's pool frame slides the stack
+; block WHOLE (fnf_save), so their spacing survives; only the last one's
+; address is ever published, on the bounce that reads it.
+; 📐 WHY THIS STACK AND NOT A POOL BLOCK (the spec's suggestion): a pool entry
+; slides the whole live stack down under it (D-SPMERGE), once per actual, and
+; that copy grows with the depth -- `DEF FNA(X)=FNA(X)` took 1010 jiffies to
+; reach ERR 7 against 718 before, past b.recurse's capture budget
+; (scratchpad/fnalias2_time_pool.out / fnalias2_time_head.out). This stack is
+; the same free space under the frontier, without the slide; the evaluator's
+; own guard (stk_guard) covers it as it covers every expression.
+; A number is coerced HERE, to the formal's type (FPERR on an int overflow, as
+; var_store_fac did). A string is parked on the TEMP-DESCRIPTOR STACK, which the
+; GC walks -- the reference's own shape: nine string actuals plus one pending
+; temporary are `String formula too complex` on the VG-8020 (spec §7.1) -- and
+; the entry keeps that descriptor's (fixed) address. str_snapshot_arg keeps an
+; actual that is already a temp as it is, so `"1"+""` costs ONE slot.
 fn_st:
-                ld      bc,(FN_KEY)
+                ld      hl,-FN_SLOTSZ
+                add     hl,sp
+                ; the entry is opened below everything live; fn_bod drops it
+                ; z80flow: ld-sp same
+                ld      sp,hl               ; HL = the new entry
+                ; 🔴 NOT THROUGH DE: an INT-typed value IS DE here (fn_lp's own
+                ; header -- FACTYP=2, FAC unwritten), and ary_store_write reads it.
+                ; The first build loaded the key into DE and every integer actual
+                ; parked garbage: o.alias read 2048003 (fnalias2_aliasprobe_after.out).
+                ld      a,(FN_KEY+1)        ; name0 (ld (FN_KEY),bc puts B high)
+                ld      (hl),a
+                inc     hl
+                ld      a,(FN_KEY)          ; name1
+                ld      (hl),a
+                inc     hl
+                ld      (FN_KEY),sp         ; the binding bounce finds them here
                 ld      a,(FN_TYP)
                 cp      DEFTBL_STR
                 jr      z,fn_st_s
-                call    var_store_fac       ; coerces INTO the slot -- the shadow
-                jr      fn_st_x             ; lookup in sub/arrays.asm routes it
+                ld      (hl),a              ; the formal's own type
+                inc     hl
+                call    ary_store_write     ; coerce INTO the entry
+                jr      fn_st_x
 fn_st_s:
-                ld      de,(STRPTR)
-                ld      a,1                 ; the `$` unifier type (slice-4c)
-                call    str_set_key
+                ld      (hl),1              ; the `$` unifier type (slice-4c)
+                inc     hl
+                push    hl
+                call    str_snapshot_arg    ; HL = a temp-stack descriptor
+                ex      de,hl
+                pop     hl
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
 fn_st_x:
                 ld      l,$83
                 jr      fn_lp
@@ -394,23 +470,45 @@ fn_st_x:
 ; slot that fn_leave is about to overwrite with the outer frame. Every measured
 ; row happens to concatenate and so lands in a temp anyway -- which is exactly
 ; the kind of accident this project does not leave standing.
+; 🎯 D-FNSTR9: A RESULT THAT IS ALREADY A TEMP IS KEPT, NOT COPIED. It cost a
+; second slot of the 10-deep temp stack: nine string actuals parked + the body's
+; concat + this copy was 11, so `FNA$("1"+"",..,"9"+"")` was ERR 16 here and `19`
+; on the VG-8020 (scratchpad/fnstrtemp_run.out).
+; Then the result moves DOWN to the first temp slot this call found free, and
+; everything above it -- the parked actuals, the body's own intermediates -- is
+; released (see fn_call). A temp entry is only a descriptor (the GC keeps no
+; back-pointer), so moving one is three bytes; the old copy lies above TEMPPT,
+; which the GC no longer walks, so the body has one root.
 fn_sn:
-                call    str_snapshot_to_temp    ; reads STRPTR itself
+                call    str_snapshot_arg    ; HL = STRPTR = a temp entry / STR_EMPTY
+                pop     de                  ; DE = TEMPPT at the call
+                bit     7,h
+                jr      z,fn_sn_x           ; STR_EMPTY (the stack overflowed): a
+                                            ; main-ROM constant, nothing to move
+                push    de
+                ld      bc,3
+                ldir                        ; DE <= HL always: forward is safe
+                pop     hl
                 ld      (STRPTR),hl
+fn_sn_x:
+                ld      (TEMPPT),de         ; one past the result / the call's own
                 jr      fn_fin
 ; --- request 4: coerce the result to the FN's own type, THEN leave ---------
-; The coercion rides the variable store rather than duplicating the codec: by
-; now the formals have been read and slot 0 is dead, so the tenant re-keys it
-; $FFFF -- a key no formal can carry, since a formal's name0 is always a letter
-; (⚠️ not load-bearing HERE: only that one slot is live, and knife K-RK1, a
-; letter key instead, moved 0 of 73 rows -- the argument's work is the tenant's
-; phase test, K-IR1) -- and this is the int-truncate / single-round / double-widen ladder spec
-; §11.2 already owns. It is what makes `DEF FNA%(X)=X/2` answer 2 where its `!`
-; twin answers 2.5.
+; Into slot 0's value field: the body is done, nothing reads a formal again, and
+; fn_leave overwrites the frame next -- no allocation (so no collection) comes
+; between. ary_store_write is the int-truncate / single-round / double-widen
+; ladder spec §11.2 already owns; it is what makes `DEF FNA%(X)=X/2` answer 2
+; where its `!` twin answers 2.5. (Until D-FNALIAS: var_store_fac / var_load_fac
+; on that slot re-keyed $FFFF; the key is now only the tenant's phase mark.)
 fn_ld:
-                ld      bc,(FN_KEY)
+                ld      hl,FN_PAREA+3
                 ld      a,(FN_TYP)
-                call    var_load_fac        ; FAC/FACTYP/DE = the coerced result
+                call    ary_store_write
+                ld      hl,FN_PAREA+3
+                ld      a,(FN_TYP)
+                call    vlf_value           ; FAC/FACTYP/DE = the coerced result
+                pop     hl                  ; [TEMPPT at the call]
+                ld      (TEMPPT),hl         ; the parked actuals go with the call
 fn_fin:
                 ld      hl,(FN_PTR)         ; the cursor past the whole call
 

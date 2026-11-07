@@ -368,7 +368,15 @@ class Machine:
                 sub0.cpu.sp = cpu.sp                                  # the CALLER's stack
                 sub0.call(cpu.ix, keep_sp=True, hl=cpu.hl, de=cpu.de, bc=cpu.bc)
                 copy_back(mach.mem, sub0.mem)                         # results back
-                cpu.sp = sub_sp
+                # D-FNALIAS (2026-11-07): OPT-IN, the tenant's own SP comes back.
+                # The DEF FN tenant's FNF_SAVE slides the caller's whole stack down
+                # under a pool frame (D-SPMERGE) and returns on the slid stack, so
+                # on the machine SP is lower after the CALSLT; restoring sub_sp
+                # here ran every FN call away (HEAD too). Not the default: a test
+                # that stubs a tenant at IX=0 (test_ramad) returns 4 B low and
+                # relies on the restore.
+                cpu.sp = sub0.cpu.sp if getattr(mach, "bridge_keeps_tenant_sp", False) \
+                    else sub_sp
                 res = sub0.cpu
             else:
                 sub1 = object.__new__(Machine)     # page-1 half over the CALLER's own image

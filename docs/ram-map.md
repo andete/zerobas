@@ -488,10 +488,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$F74A` | 2 B | `basic` | `GFX_CYC` | centre Y (int16 LE) (2) |  |
 | `$F74C` | 2 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
 | `$F74E` | 2 B | `basic` | `FN_DPTR` | 2 B: the definition cursor, tenant-only |  |
-| `$F750` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF result slot) |  |
+| `$F750` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF body/result phase |  |
 | `$F752` | 1 B | `basic` | `FN_TYP` | 1 B: its type -- and the ERR code on req 0 |  |
 | `$F753` | 1 B | `basic` | `FN_FEND` | 1 B: low byte of one-past the live frame. |  |
-| `$F754` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
+| `$F754` | 1 B | `basic` | `FN_SLOTP` | 1 B: low FN_PAREA + 11 x the formals parked so |  |
 | `$F755` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
 | `$F756` |  | `basic` | `FN_PAREA/HORNER_G/MATH_T/PU_NUM/RND_LE/SQRT_X` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$F756` |  | `disk` | `WA_CHAIN` | base of the inter-slot scratch chain (was WA_SEG's) |  |

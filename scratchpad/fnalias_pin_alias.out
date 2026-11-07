@@ -1,0 +1,10 @@
+row                    vg8020        cf3300            zb
+o.alias                   503           503           503
+o.alias.ctl               507           507           507
+o.aliasnest               903           903           903
+o.aliasnest.ctl           907           907           907
+
+  o.alias: agree ('503')
+  o.alias.ctl: agree ('507')
+  o.aliasnest: agree ('903')
+  o.aliasnest.ctl: agree ('907')

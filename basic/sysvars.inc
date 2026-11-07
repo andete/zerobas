@@ -4708,13 +4708,18 @@ FN_DPTR         equ     FN_BASE + 2     ; 2 B: the definition cursor, tenant-onl
 ; ordinary register across a `call`, and an inner fn_call runs entirely inside
 ; the outer one's `call eval`, which sets L again on the way back. -7 B of main
 ; ROM at three sites, and one byte back here.
-FN_KEY          equ     FN_BASE + 4     ; 2 B: the formal (or the $FFFF result slot)
+FN_KEY          equ     FN_BASE + 4     ; 2 B: the formal (or the $FFFF body/result phase
+                                        ; mark) -- and, from a park to the next formal,
+                                        ; main's stack address of the last parked
+                                        ; actual (D-FNALIAS, basic/deffn.asm fn_st)
 FN_TYP          equ     FN_BASE + 6     ; 1 B: its type -- and the ERR code on req 0
 FN_FEND         equ     FN_BASE + 7     ; 1 B: low byte of one-past the live frame.
                                         ; == low FN_PAREA means "no FN call in
                                         ; progress" -- the fast miss every ordinary
                                         ; variable reference takes.
-FN_SLOTP        equ     FN_BASE + 8     ; 1 B: low byte of the slot the NEXT formal takes
+FN_SLOTP        equ     FN_BASE + 8     ; 1 B: low FN_PAREA + 11 x the formals parked so
+                                        ; far (D-FNALIAS: the ceiling count, and the
+                                        ; parked entries' size; dfn_body opens slots)
 FN_RTYPE        equ     FN_BASE + 9     ; 1 B: the FN's own resolved type (its result type)
 FN_CELLS        equ     10              ; ...the ten above, saved WITH the live prefix
 FN_PAREA        equ     FN_BASE + FN_CELLS  ; the shadow-parameter slots themselves

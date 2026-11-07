@@ -1,0 +1,14 @@
+[vg8020 done]
+[cf3300 done]
+[zb done]
+row                vg8020          cf3300              zb
+q.dup                   2               2               2
+q.dup3                 32              32              32
+q.dupstr                b               b               b
+q.fre.ctl               0               0               0
+q.frelit                0               0               4
+q.fretmp                4               4               4
+q.frevar                4               4               4
+q.tend                111             111             111
+refcache: 16 hit, 8 miss, 8 stored, 16 replayed provenance
+refcache: 16 hit, 8 miss, 8 stored, 16 replayed provenance

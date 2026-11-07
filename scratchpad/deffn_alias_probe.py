@@ -66,8 +66,11 @@ PINNED = {
     # measured 2026-09-10. The filing is "two formals of ONE call can alias";
     # the CONTROLS (o.alias.ctl 507, o.aliasnest.ctl 907) agree on all three and
     # are deliberately NOT pinned here -- they are the probe's own fixture check.
-    "o.alias":     {"vg8020": "503", "cf3300": "503", "zb": "505"},
-    "o.aliasnest": {"vg8020": "903", "cf3300": "903", "zb": "909"},
+    # 2026-11-07 D-FNALIAS BUILT: zb 505 -> 503 and 909 -> 903, both agree now
+    # (scratchpad/fnalias2_aliasprobe_after.out); the rows are gated in
+    # probes/basic/basic_probe_deffn.py. Re-pinned so a drift back reddens here.
+    "o.alias":     {"vg8020": "503", "cf3300": "503", "zb": "503"},
+    "o.aliasnest": {"vg8020": "903", "cf3300": "903", "zb": "903"},
 }
 
 _drift = []

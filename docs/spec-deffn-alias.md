@@ -220,3 +220,48 @@ temp-descriptor stack, IS the reference's shape, ceiling included.
 filed in TODO as D-FNSTR9 (zerobas fails the k=0 call outright) and D-TEMPD10
 (the no-FN control: zerobas still answers at k=10).
 
+
+## 8. As built (2026-11-07) — two passes, the actuals parked on the SERVICER's stack
+
+Both passes are built as §7 rules them; one storage choice differs from §7's
+suggestion and was **measured into**, not chosen.
+
+* **Pass 1 (evaluate).** `sub/deffn.asm` `dfn_actual` type-checks the actual and
+  counts the formal against the ceiling (`FN_SLOTP` is now 11 × the count; ERR 5
+  at the tenth, as before). Request 2 (`basic/deffn.asm` `fn_st`) opens an 11-B
+  entry `[name0][name1][type][value:8]` on the servicer's own Z80 stack, coerces a
+  number into it (`ary_store_write`), and for a string parks the actual on the
+  temp-descriptor stack (`str_snapshot_arg`, route (a), §7.1) and stores that
+  descriptor's address. `FN_KEY` takes the entry's address.
+* **Pass 2 (bind).** `dfn_body` empties the frame and walks the entries in formal
+  order: `fn_shadow_find` on the frame built so far, a miss opens a slot, a hit
+  takes the value — so a formal named twice binds its first slot and the LAST
+  actual wins, as on both references (`o.dupformal` 2, `o.dupformal3` 32,
+  `o.dupstr` b — asked before building, `scratchpad/fnalias2_scout.out`). A
+  string's descriptor is HANDED OVER from the parked temp (its length then 0),
+  never copied. Request 5 drops the entries and evaluates the body.
+* **The parked actuals leave with the call** (`fn_call` saves `TEMPPT`; `fn_sn`
+  moves the result down to the call's first temp slot, `fn_ld` resets it):
+  `o.tempend` (three calls of five string temporaries in one expression) is 111
+  on both references, and without it b.nest10 overflowed the ten slots here.
+  `fn_sn` keeps a result that is already a temp (D-FNSTR9: `o.str9` 19, and
+  `o.str9k1` ERR 16 as on both references).
+* **The result coercion** goes through slot 0's value field (dead by then) and
+  `ary_store_write` / `vlf_value`; the `$FFFF` key is only the phase mark now.
+
+📐 **WHY NOT A POOL BLOCK (§7's suggestion).** It was built first. A pool entry
+slides the whole live machine stack down under it (D-SPMERGE), once per actual,
+and that copy grows with the nesting depth: `DEF FNA(X)=FNA(X)` took **1010**
+jiffies to reach ERR 7 against **718** on HEAD
+([`fnalias2_time_pool.out`](../scratchpad/fnalias2_time_pool.out),
+[`fnalias2_time_head.out`](../scratchpad/fnalias2_time_head.out)), and `b.recurse`
+went blank (past the probe's capture budget). The servicer's stack is the same
+free space under the pool frontier without the slide (**723**,
+[`fnalias2_time_stack.out`](../scratchpad/fnalias2_time_stack.out)); a fault in
+pass 1 needs no unwind of it (an error resets `SP`), and `stk_guard` covers it as
+it covers every expression. §5's "the temps cannot live on the Z80 stack" was
+about the TENANT's stack; the tenant reads the entries only on the one bounce
+whose address `fn_st` has just published.
+
+Still open, measured on the way: a string LITERAL actual costs 4 B of string
+space here and 0 on both references (`q.frelit`, the D-LITREF / D-TEMPD10 class).
