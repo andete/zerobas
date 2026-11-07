@@ -8025,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16226 (T-529ABE)`: a
+      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16233 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10764,7 +10764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16226 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16233 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11343,6 +11343,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       program's ON ERROR still armed at the prompt (both machines: the INPUT$ lines printed
       TRAP lines). Reading the screens, not the verdict, caught it -- a session that agrees
       can agree on a typo.
+      ✅ **S17_strings (2026-11-07): SAME** ([`S17_strings.ses`](probes/sessions/S17_strings.ses), [`sessions_S17_strings.out`](scratchpad/sessions_S17_strings.out)): INSTR,
+      MID$ assigned, STRING$ / SPACE$, VAL of `12.5E2` / `&HFF`, HEX$(-1), string compares,
+      PRINT USING (`###.##` overflow `%12345.68`, `+#####`, `**$##.##`, `!`, `\  \`, `&`,
+      `#,###` overflow), SWAP, ERASE + DIM, and four errors -- on the VG-8020 and both
+      targets. 🔮 Predicted "one divergence in a PRINT USING edge": MISS. (The doubled
+      200-byte string is Out of string space, not String too long: CLEAR's default 200 B
+      comes first -- my guess in the header, corrected; both machines agree.)
       ➡️ NEXT sessions: tape (CSAVE / CLOAD, the VG-8020, parked on the recorder apparatus)
       and more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each

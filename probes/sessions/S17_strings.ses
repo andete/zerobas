@@ -1,0 +1,30 @@
+# S17_strings (D-SESSIONS, 2026-11-07): the strings and numbers a user works with at the
+# prompt and in a short program -- INSTR, MID$ assigned, STRING$ / SPACE$, LEFT$ / RIGHT$,
+# VAL / STR$, HEX$ / OCT$ / BIN$, CHR$ / ASC, string compares, PRINT USING's common
+# formats, SWAP, ERASE and DIM again, and the errors met on the way (Out of string space
+# -- 400 bytes against CLEAR's default 200, before String too long can --, Redimensioned
+# array, Subscript out of range, Type mismatch). The VG-8020.
+NEW
+A$="HELLO WORLD":PRINT INSTR(A$,"O");INSTR(6,A$,"O");INSTR(A$,"Z")
+MID$(A$,7,5)="MSX!!":PRINT A$
+PRINT STRING$(5,"*");SPACE$(3);"|";STRING$(3,65)
+PRINT LEFT$(A$,5);"/";RIGHT$(A$,3);"/";MID$(A$,3)
+PRINT VAL("12.5E2");VAL(" -7 ");VAL("&HFF");STR$(-3.25)
+PRINT HEX$(255);" ";OCT$(8);" ";BIN$(10);" ";HEX$(-1)
+PRINT ASC("A");CHR$(66);ASC(CHR$(200))
+PRINT "ABC"<"ABD";"B">"ABC";"AB"="AB "
+PRINT USING "###.##";3.14159;-2.5;12345.678
+PRINT USING "+#####";42;-42
+PRINT USING "**$##.##";7.5
+PRINT USING "!";"XYZ";:PRINT USING "\  \";"ABCDEF"
+PRINT USING "&";"ANY";:PRINT USING "#,###";1234567
+X=1:Y=2:SWAP X,Y:PRINT X;Y
+DIM B(3):B(3)=9:ERASE B:DIM B(5):B(5)=1:PRINT B(5)
+DIM B(2)
+PRINT B(6)
+C$=STRING$(200,"A"):C$=C$+C$
+A=5:A$=A
+10 FOR I=1 TO 3:S$=S$+CHR$(64+I)+STR$(I):NEXT
+20 PRINT S$;LEN(S$)
+30 PRINT USING "Item ## costs ###.##";I;I*1.25
+RUN
