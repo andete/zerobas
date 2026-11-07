@@ -1397,6 +1397,17 @@ item — do **one item per session** to keep context lean.
       was stale -- measure HEAD before re-doing a parked speed slice. What is left of the gap to
       the CF-3300 (4.92 vs 2.94 s on 14 KB, 1.67x; 7 KB 2.59 vs 2.39) is per-sector CPU work and
       lost-data retries (the 11-06 FDC log), not FAT re-reads.
+      📏 **TODAY'S SHAPE (2026-11-07, [`fdccmd_1107.out`](scratchpad/fdccmd_1107.out), the 14 KB LOAD's FDC commands in emulated
+      time):** consecutive sector reads land either ~30 ms apart (the next sector caught) or
+      ~230 ms apart (missed by a hair: one revolution, 200 ms at 300 rpm, lost), and one sector
+      (S 04) took two lost-data retries -- ~0.63 s by itself. The work between two reads (the
+      512-byte copy alone is ~3 ms) is longer than the inter-sector gap, so roughly every other
+      sector costs a revolution; the CF-3300 averages ~100 ms a sector, ours ~170.
+      ➡️ The lever is STRUCTURAL: read a run of consecutive sectors in ONE DSKIO (a cluster into
+      a 1 KB buffer, or straight into the program area when the run is contiguous) so no CPU
+      work sits between them -- a RAM question for a 1 KB buffer (the TIER 4 rung) or a
+      design for direct reads; and the lost-data retries need their own look (what the FDC
+      driver does between DRQs).
       ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
@@ -7927,7 +7938,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10360 (T-6FE392)8 (T-529ABE)` from `TODO.md:16111 (T-529ABE)`: a
+      `TODO.md:10371 (T-6FE392)8 (T-529ABE)` from `TODO.md:16122 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10666,7 +10677,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16122 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
