@@ -1,0 +1,195 @@
+diff --git a/src/main.asm b/src/main.asm
+index 1415618..7536cf6 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -937,11 +937,11 @@ search_roms_next_slot:
+                 ; Helper routine to read two bytes from a given slot.
+ search_roms_read:
+                 ld      b,a             ; Save the input for RDSLT in B.
+-                call    rdslt
++                call    rdslt_keepbc    ; (zerobas repack: RDSLT itself no longer keeps BC)
+                 inc     hl
+                 push    af
+                 ld      a,b
+-                call    rdslt
++                call    rdslt_keepbc
+                 inc     hl
+                 ld      d,a
+                 pop     af
+diff --git a/src/slot.asm b/src/slot.asm
+index 7a6b13b..2aa9a07 100644
+--- a/src/slot.asm
++++ b/src/slot.asm
+@@ -5,51 +5,73 @@
+ ;          HL = address to read
+ ; Output:  A  = value read
+ ;          Interrupts disabled.
+-; Changes: F, C, DE
++; Changes: F, BC, DE
++;          zerobas repack (D-SDSBOOT): RDSLT and WRSLT leave the VG-8020's and the
++;          CF-3300's exit registers (scratchpad/slotregs_probe.py; a disk's boot
++;          code reads them after RDSLT): D = the primary slot register at entry,
++;          E = the byte read or written; for a primary slot B = the slot shifted to
++;          the page and C = the page's mask (page 1: $F3); for an expanded slot
++;          B = the primary slot register and C = the primary slot shifted to page 3.
++;          F holds the flags of the slot-select computation. C-BIOS kept BC and
++;          returned D = the slot ID, E = the saved subslot register.
+ rdslt:
+-                push    bc
+                 push    hl
+-                push    af
+                 ld      d,a             ; init D in case call is not made
+                 and     a               ; expanded slot?
+                 di
+                 call    m,select_subslot
+-                pop     af
+                 pop     hl
+ 
+-                push    hl              ; HL = address
+                 push    de              ; D = slot ID, E = saved SSL
+-                push    hl              ; HL = address
+-                push    af              ; A = slot ID
+                 ld      a,h
+                 rlca
+                 rlca
+                 and     $03
+-                ld      l,a             ; L = page number
++                ld      e,a             ; E = page number
+ 
+                 ld      b,a
+                 ld      a,$FC
+                 call    rdsft
+-                ld      e,a             ; E = mask (shifted)
+-                ld      b,l             ; B = page number
+-                pop     af              ; A = slot ID
++                ld      c,a             ; C = mask (shifted)
++                ld      b,e             ; B = page number
++                ld      a,d             ; A = slot ID
+                 and     $03
+                 call    rdsft
+                 ld      b,a             ; B = primary slot (shifted)
+                 in      a,(PSL_STAT)
+                 ld      d,a             ; D = primary slot select for restore
+-                and     e
++                and     c
+                 or      b               ; A = primary slot select for read
+-                pop     hl              ; HL = address
+ 
+-                call    rdprim
++                call    rdprim          ; E = value read
+                 ld      a,e
+-                pop     de              ; D = slot ID, E = saved SSL
+-                push    af              ; A = value read
+-                bit     7,d             ; expanded slot?
+-                call    nz,restore_subslot
+-                pop     af              ; A = value read
++                ; fall through
++
++; RDSLT's and WRSLT's common exit. In: A / F to return, B / C / D / E as the
++; primary-slot case leaves them, HL = the address, (SP) = slot ID / saved SSL.
++slt_fin:
++                ex      (sp),hl         ; H = slot ID, L = saved SSL; the address stacked
++                push    af
++                bit     7,h             ; expanded slot?
++                jr      z,slt_fin_done
++                push    de
++                ex      de,hl
++                call    restore_subslot ; C = 000000SS
++                pop     de              ; D = the primary slot register, E = the byte
++                ld      b,d             ; B = the primary slot register
++                ld      a,c
++                rrca
++                rrca
++                ld      c,a             ; C = SS000000
++slt_fin_done:
++                pop     af
+                 pop     hl              ; HL = address
++                ret
++
++; C-BIOS's own callers that keep a value in B across the read (search_roms_read).
++rdslt_keepbc:
++                push    bc
++                call    rdslt
+                 pop     bc
+                 ret
+ 
+@@ -70,7 +92,7 @@ rdsft_lp:
+ ;          HL = address to write
+ ;          E  = value to write
+ ; Output:  Interrupts disabled.
+-; Changes: AF, BC, D
++; Changes: AF, BC, D -- A = the primary slot register, the rest as RDSLT (above)
+ wrslt:
+                 push    hl
+                 ld      d,a             ; D = slot ID
+@@ -82,37 +104,29 @@ wrslt:
+                 pop     hl
+                 push    de              ; D = slot ID, E = saved SSL
+ 
+-                push    hl              ; HL = address
++                ld      e,c             ; E = data
+                 ld      a,h
+                 rlca
+                 rlca
+                 and     $03
+-                ld      l,a             ; L = page number
++                ld      c,a             ; C = page number
+ 
+                 ld      b,a             ; B = page number
+                 ld      a,$FC
+                 call    rdsft
+-                ld      e,a             ; E = mask (shifted)
+-
+-                ld      b,l             ; B = page number
++                ld      b,c             ; B = page number
++                ld      c,a             ; C = mask (shifted)
+                 ld      a,d
+                 and     $03             ; A = 000000PP
+                 call    rdsft
+                 ld      b,a             ; B = primary slot (shifted)
+                 in      a,(PSL_STAT)
+                 ld      d,a             ; D = primary slot select for restore
+-                and     e
++                and     c
+                 or      b               ; A = primary slot select for write
+-                pop     hl              ; HL = address
+-                ld      e,c             ; E = data
+-                call    wrprim
+-
+-                pop     de              ; D = slot ID, E = saved SSL
+-                push    hl              ; HL = address
+-                bit     7,d             ; expanded slot?
+-                call    nz,restore_subslot
+-                pop     hl
+-                ret
++                call    wrprim          ; A = D
++                jr      slt_fin
++                nop                     ; (zerobas repack: CALSLT and all after stay put)
+ 
+ ;-------------------------------------
+ ; $001C CALSLT
+@@ -360,16 +374,18 @@ select_subslot_next:
+                 ; Restore original primary slot in page 3.
+                 ld      a,c
+                 out     (PSL_STAT),a
+-                ; Update SLTTBL.
++                ; Update SLTTBL. (zerobas repack: indexed through L, 2 B shorter --
++                ; SLTTBL+3 stays in one page; the A / B / C left are dead in every caller)
+                 ld      a,d
+                 and     $03             ; A = 000000SS
+-                ld      c,a
+-                ld      b,0
+-                ld      a,l             ; A = value written to SSL_REGS
++                ld      b,l             ; B = value written to SSL_REGS
+                 ld      hl,SLTTBL
+-                add     hl,bc
+-                ld      (hl),a
++                add     a,l
++                ld      l,a
++                ld      (hl),b
+                 ret
++                nop                     ; (zerobas repack: restore_subslot and all
++                nop                     ; after it stay where they were)
+ 
+ ;--------------------------------
+ ; Restore subslot, companion routine to select_subslot.

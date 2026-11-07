@@ -268,7 +268,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 1 | 🤖 | loading existing software from tape. | T-57493F |
 | — | TIER 1 | 🔁 | machine code that calls the published BASIC ROM | T-406126 |
 | — | TIER 1 | 🤖 | what a user does AT THE PROMPT (typing lines in, AUTO, RENUM, | T-4A77F4 |
-| — | TIER 1 | 🙋 | booting a disk (D-DISKRUN's denominator). | T-23A2FE |
+| — | TIER 1 | 🤖 | booting a disk (D-DISKRUN's denominator). | T-23A2FE |
 | — | TIER 1 | 🤖 | it is the bar every other item is measured against, and three | T-5657BA |
 | — | TIER 1 | 🤖 | it is part of the bar every other item is measured against. | T-A4C432 |
 | — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | T-D2A359 |

@@ -38,13 +38,12 @@ try_text_slot:
                 jr      nz,tts_done
                 ld      l,8                 ; $8008: TEXT
                 call    rdslt_scan
-                ld      e,a
-                inc     hl
+                ld      (BROM_TEXT),a       ; low byte (RDSLT leaves the byte in E too:
+                inc     hl                  ; D-SDSBOOT -- nothing survives it but HL)
                 call    rdslt_scan
-                ld      d,a
                 or      a                   ; high byte 0: no TEXT (or a bogus one)
                 jr      z,tts_done
-                ld      (BROM_TEXT),de
+                ld      (BROM_TEXT+1),a
                 ld      a,(SCAN_SLOT)
                 ld      (BROM_SLOT),a
 tts_done:

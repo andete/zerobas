@@ -13,6 +13,13 @@ session and the loop resumes exactly where it stopped.
 | D-SLOT3EXP ($FFFF in slot 3) | *"D-SLOT3EXP: won't fix"* | CLOSED won't fix: BMX Simulator stays a known difference; never re-ask |
 | `PUT #1,4294967295#` | *"such an rare corner case I see no practical way it'll ever happen, so keep the better behavior"* | zerobas keeps Disk full; the CF-3300's wrapped success is NOT copied |
 
+## 🟢 RULINGS 2026-11-07 — READ FIRST (they amend the tables below)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| D-SDSBOOT, the BIOS exit registers | *"if it does no harm, why not?"* | give C-BIOS's RDSLT / ENASLT the reference's EXIT registers (characterised black-box on the VG-8020 AND the CF-3300 first), as a cbios-repack patch; "no harm" = the FULL battery and the disk collection show nothing that relied on the old values |
+| D-FNALIAS, where the actuals are parked | *"measure what reference does? we try to match RAM?"* | not a choice between regions on argument: MEASURE the RAM a DEF FN call with arguments costs on the references (free memory during the call, the depth it reaches under a given CLEAR) against zerobas's stack-parked build, and match it -- the TIER 4 rung |
+
 ## 🟢 RULINGS 2026-11-06 — READ FIRST (they amend the tables below)
 
 | ruling | Joost's words | consequence |
@@ -2100,7 +2107,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12338 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12367 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

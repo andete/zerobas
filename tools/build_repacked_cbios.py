@@ -95,11 +95,21 @@ PATCHES = [
     # came out twice (scratchpad/step7c_keyrep.out). Byte-neutral: a label and an
     # operand; nothing moves.
     os.path.join(REPO, "cbios-repack", "key-repeat.patch"),
+    # D-SDSBOOT (2026-11-07, Joost: "if it does no harm, why not?"): RDSLT's and
+    # WRSLT's exit registers are the VG-8020's and the CF-3300's
+    # (scratchpad/slotregs_probe.py) -- D = the primary slot register at entry,
+    # E = the byte, BC = the slot shifted to the page and the page's mask (primary
+    # slot) or the primary slot register and the slot shifted to page 3 (expanded);
+    # WRSLT's A = the primary slot register. C-BIOS kept BC. A disk's boot code
+    # reads them. One shared exit tail pays for it; C-BIOS's own search_roms_read,
+    # which kept the slot in B across the read, calls a keep-BC wrapper. Every
+    # label outside RDSLT / WRSLT stays where it was (padding nops).
+    os.path.join(REPO, "cbios-repack", "rdslt-regs.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "eaf3fae8ddd06c8ec4726e31f848207ae770038c"
+REPACKED_SHA1 = "2e22863b967009c026df1cd899489f5ada5f7216"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

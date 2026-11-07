@@ -1,0 +1,18 @@
+case   AF BC DE HL IX IY  (in: BC 1234, DE 5678)
+rd6    vg8020=[98A4 FC F098 6 FFFF FFFF]
+       cf3300=[98A4 FC F098 6 7D31 0]
+       zb    =[98A4 1234 78 6 8114 872C]
+rd7    vg8020=[98A4 FC F098 7 FFFF FFFF]
+       cf3300=[98A4 FC F098 7 7D31 0]
+       zb    =[98A4 1234 78 7 8114 872C]
+rdram  vg8020=[D3A4 C03F F0D3 F380 FFFF FFFF]
+       cf3300=[D3A4 F0C0 F0D3 F380 7D31 0]
+       zb    =[D3A4 1234 8300 F380 8114 872C]
+ena2   vg8020=[F0A4 30CF FF30 8000 FFFF FFFF]
+       cf3300=[F0A4 30CF FF30 8000 7D31 0]
+       zb    =[F0A4 30CF FF30 8000 8114 872C]
+ena1   vg8020=[F0A4 F3 C 4000 FFFF FFFF]
+       cf3300=[F0A4 F3 C 4000 7D31 0]
+       zb    =[F0A4 F3 C 4000 8114 872C]
+refcache: 0 hit, 15 miss, 15 stored
+refcache: 0 hit, 15 miss, 15 stored

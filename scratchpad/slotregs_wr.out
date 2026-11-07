@@ -1,0 +1,9 @@
+case   a8 slot AF BC DE HL IX IY  (in: BC 1234, DE 5678; IX/IY = BASIC's own, ignore)
+wr3    vg8020=[a8=F0 s=3 F0A4 C03F F05A D200 FF FF FFFF]
+       cf3300=[a8=F0 s=83 F0A4 F0C0 F05A D200 7D3 1 0]
+       zb    =[a8=F0 s=83 32C 3 8300 D200 811D 872C]
+wr2    vg8020=[a8=F0 s=3 F0A4 30CF F0A5 A000 FF FF FFFF]
+       cf3300=[a8=F0 s=83 F0A4 F0C0 F0A5 A000 7D3 1 0]
+       zb    =[a8=F0 s=83 32C 3 8300 A000 811D 872C]
+refcache: 0 hit, 6 miss, 6 stored
+refcache: 0 hit, 6 miss, 6 stored

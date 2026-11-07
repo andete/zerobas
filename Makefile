@@ -1418,6 +1418,11 @@ casquote-acceptance: repack-machine
 blds-acceptance: repack-machine
 	python3 probes/basic/basic_probe_blds.py --gate
 
+# D-SDSBOOT (2026-11-07): RDSLT / WRSLT / ENASLT leave the CF-3300's exit registers
+# (cbios-repack/rdslt-regs.patch); a disk's boot code reads them.
+slotregs-acceptance: repack-machine
+	python3 probes/basic/basic_probe_slotregs.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine

@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15835 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15864 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15864 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11190,7 +11190,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
 - [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
       🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
-      🙋 **NEEDS-JOOST** — the remaining split is in the BIOS's exit registers (the 🙋 at the end).
+      🤖 **AUTONOMOUS** — since 2026-11-07; Joost on the BIOS exit registers: *"if it does no
+      harm, why not?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07). Next: the ENASLT
+      bridge's A (the ➡️ at the end), which needs a disk-ROM carve.
       📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
       SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
       🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over
@@ -11257,6 +11259,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       -- more rows needed: which of BC / DE / A are functions of the inputs). Close to
       D-BIOSINT ("won't fix": BIOS INTERNALS), but these are the published entries: in scope,
       or does SDSNAT1C stay a ZB-NOBOOT row?
+      ✅ **RULED AND DONE (2026-11-07): RDSLT AND WRSLT LEAVE THE REFERENCE'S REGISTERS.**
+      [`slotregs_probe.py`](scratchpad/slotregs_probe.py) (a USR routine calls the entry and
+      stores AF BC DE HL; our test code, registers only; [`slotregs_run2.out`](scratchpad/slotregs_run2.out),
+      [`slotregs_wr.out`](scratchpad/slotregs_wr.out)): on the VG-8020 AND the CF-3300 (they agree wherever
+      both have the case) RDSLT and WRSLT leave D = the primary slot register at entry, E =
+      the byte; for a primary slot B = the slot shifted to the page and C = the page's mask,
+      for an expanded slot B = the primary slot register and C = the slot shifted to page 3;
+      WRSLT's A = the primary slot register. ENASLT already matched on all three.
+      `cbios-repack/rdslt-regs.patch`: one exit tail shared by the two routines, a 2 B
+      shorter SLTTBL store in select_subslot, C-BIOS's own search_roms_read (it kept the slot
+      in B across the read) through a keep-BC wrapper; every other label stays put. Our one
+      caller that kept a byte in E across two reads (try_text_slot, basic/basicrom.asm) now
+      stores each byte as it comes. Gate `slotregs-acceptance`
+      ([`basic_probe_slotregs.py`](probes/basic/basic_probe_slotregs.py), 10 rows, zerobas against the CF-3300;
+      [`slotregs_run.out`](scratchpad/slotregs_run.out) is the red pre-fix reading). 🔮 "the RDSLT rows match;
+      SDSNAT1C boots": HALF -- the registers match ([`slotregs_run4.out`](scratchpad/slotregs_run4.out)), SDSNAT1C is
+      still ZB-NOBOOT ([`sdsone_run.out`](scratchpad/sdsone_run.out)).
+      ➡️ **THE NEXT SPLIT IS OURS: THE PAGE-3 ENASLT BRIDGE** ([`sdsboot_ena_zb3.out`](scratchpad/sdsboot_ena_zb3.out) against
+      [`sdsboot_ena_National_CF-3300.out`](scratchpad/sdsboot_ena_National_CF-3300.out); the boot code is register-identical up to
+      there). With $A8 = $FF (all four pages RAM) the boot code's `ENASLT $83, page 1`
+      enters our RAM vector, the bridge pages the BIOS into page 0 and calls the BIOS's
+      ENASLT, which returns A = the $A8 it set -- $FC, page 0 still the BIOS -- and br_back
+      (disk/runtime.asm) puts page 0 back WITHOUT correcting A. The CF-3300 returns $FF, the
+      real final $A8. Fix: in br_back, when the bridged target (BR_TGT) is ENASLT, store the
+      $A8 it writes into the stacked A (~14 B in the int_h_hiram template -- the disk ROM
+      has no usable free byte, so it needs a carve first; RDSLT's and CALSLT's A must not
+      change, which is why it keys on BR_TGT, not on the value).
       ✅ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is NOT a regression: it is the known
       interrupt-timing case (D-DISKRUN, 2026-10-23: its outcome hangs on whether an interrupt
       lands inside a BDOS page-1 copy, bisected to 1c884267), and FILES-EMPTY is the CF-3300's
