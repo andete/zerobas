@@ -7858,7 +7858,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15930 (T-529ABE)`: a
+      `TODO.md:10291 (T-6FE392)8 (T-529ABE)` from `TODO.md:15944 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10597,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15930 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15944 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11231,6 +11231,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that covered half the run; breakpoints fixed both. The denominator is these suites'
       calls. ➡️ THE RULE for every later disk.rom move: run `padwatch.py` with `--also=` the
       target pad BEFORE filling it (an entry there refuses the pad).
+
+- [ ] 💰 **D-DISKCARVE -- TWO FIXES WAIT ON DISK-ROM BYTES THAT ARE NOT THERE (filed 2026-11-07)**
+      🎚️ BUDGET — disk-ROM carve: the space D-SDSBOOT's ENASLT bridge (TIER 1, ~14 B in the
+      int_h_hiram template, disk/runtime.asm) and the D-FATRES re-do (TIER 5, LOAD 3x the
+      CF-3300; scratchpad/fatres_wip.patch, ~150 B in fragments, no longer applies) both need.
+      🤖 **AUTONOMOUS** — a carve changes no behaviour; the battery and the disk collection settle it.
+      📏 `make basic-reloc` (2026-11-07): disk.rom's only free run of 16 B or more is the FDC
+      window ($7F7F-$7FD0), which code cannot use; the pads D-FATRES used were filled since
+      (D-COPYALL, D-LOADRUN, D-LOADFAT). The main ROM's carve tools (jr_mapper, dupspan_indep,
+      carve_scout) read only the main image.
+      ➡️ First: a disk-ROM `jp` -> `jr` and duplicate-span scan over disk/*.asm (a freed byte is
+      usable only in its own pinned region: rank the regions the two fixes need); then
+      evictions of cold disk code into the sub ROM, as D-ROMSIZE did for main. The rule for every
+      pad that takes code: `padwatch.py --also=` it first (D-PADSLIDE).
 
 - [ ] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
       found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**

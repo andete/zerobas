@@ -29,7 +29,27 @@ session and the loop resumes exactly where it stopped.
 | COPY TO, 2+ matches (RULED) | *"b, copy every match like the reference"* | D-COPYALL: after the Fable agent's 30-case measurement (copymulti_run1..4.out) every match is copied by a live directory walk, trailing self-copy 5 included -- SHIPPED 2026-11-06 |
 | gate tiers | *"Note that that is costing precious time to make actual progress."* | run the tier `make gates-plan` picks, no habitual HANDOFF=1; FULL only for code every program runs, the 5th commit, a real hand-off (memory full-battery-is-expensive-use-the-planned-tier) |
 
-## 🟢 STATE AS OF 2026-11-06 — THE CURRENT ONE
+## 🟢 STATE AS OF 2026-11-07 — THE CURRENT ONE (the 11-06 section below still holds)
+
+- **Landed today, each gated and pushed:** D-SDSBOOT's register half (cbios-repack
+  `rdslt-regs.patch`: RDSLT / WRSLT leave the reference's exit registers; gate
+  `slotregs-acceptance`; FULL + the disk collection unchanged); D-FNRAM (a DEF FN call's
+  FRE(0) cost is the VG-8020's: 14-B frame, parked actuals counted; gate `fnram-acceptance`);
+  D-WILDSAVE (a wildcard in SAVE / BSAVE / LOAD / RUN / MERGE / BLOAD is 56; sessions S14 /
+  S15); D-TRAPCOST rounds 15-16 (46 -> 41 frames per 100 handler calls, VG-8020 39); D-LOOPPROF
+  (a same-line NEXT keeps DIRECTF; loops 66 / 73 / 12 / 20 vs 69 / 97 / 7 / 24). Filed:
+  D-RECHOLE (TIER 6). Measured dead and reverted: the 3..5-digit widen lever.
+- **Interpreter rows now** (scratchpad/interpspeed_1107.out): every row at or under the CF-3300
+  but `c.str` 1.11x (D-CONCATLIT).
+- **🔴 TWO ITEMS ARE BLOCKED ON DISK-ROM BYTES** -- D-SDSBOOT's ENASLT-bridge fix (~14 B in the
+  int_h_hiram template) and the D-FATRES re-do (scratchpad/fatres_wip.patch no longer applies:
+  its pad fragments were filled since). disk.rom's only free run is the FDC window. ->
+  **D-DISKCARVE** (TODO, BUDGET) is the next slice: a disk-ROM jp -> jr / dup-span scan first.
+- **Gate note:** `python3 tools/run_gates.py --full` does NOT run the excluded five; run them
+  after it (memory zerobas-gate-operating-rules, "FULL DOES NOT ALWAYS MEAN + THE EXCLUDED FIVE").
+  A `make clean` deletes build/kwsweep-verdicts.json: `make kwsweep` before `make tiers-md`.
+
+## 🟢 STATE AS OF 2026-11-06
 
 - **Joost 2026-11-06: *"Having typed sessions as integration tests is actually a splendid
   idea."*** -> D-SESSIONS (TIER 1, TODO.md): `probes/programs/run_sessions.py`, gate
@@ -2107,7 +2127,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12433 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12447 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

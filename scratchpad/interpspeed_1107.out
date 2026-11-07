@@ -1,0 +1,12 @@
+
+step=150.0s   JIFFIES (60 Hz) for the whole construct
+row               cf3300              zb   ratio zb/cf
+s.for1k              97              72    0.74x
+s.for2k             201             144    0.72x
+s.for4k             408             291    0.71x
+c.goto2k            718             715    1.00x
+c.while             577             465    0.81x
+c.arith            1004             673    0.67x
+c.str               122             136    1.11x
+z.none                1               1    1.00x
+refcache: 8 hit, 8 miss, 8 stored
