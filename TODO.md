@@ -17816,7 +17816,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a T5 cell whose REFERENCE side is a disk row needs either several reference
       samples or a stability rule before it is shown as a number.
 
-- [ ] 🔴 **D-TRAPNEVERON — `INTERVAL STOP` HOLDS A PERIOD BACK HERE WHEN THE TIMER WAS NOT
+- [x] 🔴 **D-TRAPNEVERON — `INTERVAL STOP` HOLDS A PERIOD BACK HERE WHEN THE TIMER WAS NOT
       ON; THE VG-8020 HOLDS NOTHING (found 2026-11-05 by the trapstmt-acceptance fixture)**
       🎚️ TIER 6 — whether a held-back `INTERVAL` event exists at all.
       🤖 **AUTONOMOUS** — measured; read where zerobas's INTERVAL counter runs in STOP.
@@ -17828,6 +17828,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       "zerobas agrees on `off`" MISSED. So the reference's STOP keeps counting only from ON.
       Next: does STOP from OFF then ON count a period that ends AFTER the ON (the counter
       restarting at ON, or carrying)?
+      ✅ **FIXED 2026-11-07.** Bit 6 of the INTERVAL entry (the other traps' device edge
+      shadow, unused here; set_state preserves it through every transition) now means "the
+      period is running": ex_interval (basic/trapstmt.asm) sets it on ON, clears it on OFF,
+      leaves it on STOP, and the frame tick (basic/traps.asm) latches only while it is set
+      -- which also covers OFF, so the tick's state test became one `bit` (-3 B there, +11 in
+      ex_interval; low region 84 -> 72 B). 🔮 "stop -1 / on 1 / off -1 here too": HIT
+      ([`trapneveron_after.out`](scratchpad/trapneveron_after.out)). Gate: trapstmt-acceptance gained `neveron` and `onoffstop`
+      (a row starting at line 10 brings its own head), 6/6 agree ([`trapneveron_gate.out`](scratchpad/trapneveron_gate.out));
+      the old code's readings ([`trapneveron_run.out`](scratchpad/trapneveron_run.out), zerobas 1 1 1) are the knife.
+      tests/test_traps.py green. The counter's PHASE across OFF -> ON is still unmeasured
+      (it runs on unchanged, as before).
       🎚️ TIER 6 — when a trap event is dispatched (a handler runs at the end of a
       multi-statement line instead of between its statements).
       🤖 **AUTONOMOUS** — a run-loop change, FULL-gated.

@@ -340,10 +340,9 @@ ep_stop_held:
                 jr      nz,ep_ivl_done      ; period not elapsed yet
                 ld      hl,(ZINTVAL)        ; reload AT THE FIRE (not at RETURN)
                 ld      (ZINTCNT),hl
-                ld      a,(ZTRAP)           ; ZTRAP+0 = the INTERVAL state byte
-                and     ZTS_STATE_MASK
-                jr      z,ep_ivl_done       ; OFF (00) -> elapse silently, do not latch
-                ld      hl,ZTRAP
+                ld      hl,ZTRAP            ; ZTRAP+0 = the INTERVAL state byte
+                bit     6,(hl)              ; D-TRAPNEVERON: running (ON since the last
+                jr      z,ep_ivl_done       ; OFF)? Not -> elapse silently, do not latch
                 set     7,(hl)              ; PENDING
                 call    trap_pend   ; wake the run-loop dispatcher
 ep_ivl_done:

@@ -43,6 +43,13 @@ CASES = {
     "for": "30 A=0:INTERVAL ON:FOR I=1 TO 3:A=A+1:NEXT:B=A",
     # INTERVAL ON as the line's last statement: the next line's first
     "eol": "30 A=0:INTERVAL ON\n35 A=1:A=2:B=A",
+    # D-TRAPNEVERON (2026-11-07): a row that starts with line 10 brings its OWN head.
+    # INTERVAL STOP holds an event back only when the timer was ON: never ON, or ON then
+    # OFF then STOP, holds nothing -- H stays -1 on the VG-8020 (scratchpad/trapneveron_run.out)
+    "neveron": "10 ON INTERVAL=50 GOSUB 100:INTERVAL STOP:T=TIME:H=-1\n20 IF TIME-T<120 THEN 20\n"
+               "30 A=0:INTERVAL ON:A=1:A=2:B=A",
+    "onoffstop": "10 ON INTERVAL=50 GOSUB 100:INTERVAL ON:INTERVAL OFF:INTERVAL STOP:T=TIME:H=-1\n"
+                 "20 IF TIME-T<120 THEN 20\n30 A=0:INTERVAL ON:A=1:A=2:B=A",
 }
 MACHINES = ["Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"]
 
@@ -52,7 +59,8 @@ def main():
     got = {}
     for m in [a for a in sys.argv[1:] if a != "--gate"] or MACHINES:
         for name, body in CASES.items():
-            lines = HEAD + body.split("\n") + TAIL + ["RUN"]
+            own = body.startswith("10 ")
+            lines = ([] if own else HEAD) + body.split("\n") + TAIL + ["RUN"]
             scr = omsx_repl.run_cases(m, [("direct", lines)], batch=False, boot=14.0,
                                       reset=("SCREEN 0:WIDTH 40", "NEW"), step=4.0,
                                       run_gap=6.0)[0]

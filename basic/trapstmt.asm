@@ -92,7 +92,21 @@ ex_interval:
                 call    tt_onoff            ; A = the ZTS_ state, DE = past the sub-keyword
                 push    de                  ; the exec-continue cursor
                 ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
-                call    set_state           ; (preserves HL)
+                call    set_state           ; (preserves HL; C = the new state)
+                ; 🔴 D-TRAPNEVERON (2026-11-07): bit 6 of the INTERVAL entry (a device
+                ; edge shadow on the other traps, unused here) = THE PERIOD IS RUNNING.
+                ; ON sets it, OFF clears it, STOP leaves it: on the VG-8020 an `INTERVAL
+                ; STOP` holds an event back only when the timer was ON -- never ON, or
+                ; ON then OFF then STOP, holds nothing (scratchpad/trapneveron_run.out).
+                ; The frame tick (basic/traps.asm) latches only while it is set.
+                ld      a,c
+                cp      ZTS_ON
+                jr      nz,ei_noton
+                set     6,(hl)
+ei_noton:       or      a                   ; OFF?
+                jr      nz,ei_keep
+                res     6,(hl)
+ei_keep:
                 bit     7,(hl)
                 call    nz,trap_pend_late   ; make check_traps look once more -- AFTER
                                             ; the next statement (D-TRAPLATCHWHEN)
