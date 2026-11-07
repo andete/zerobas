@@ -2512,6 +2512,38 @@ nx_pki:
                 cp      5
                 jr      nc,npi_no           ; |x| < 1 or >= 100000
                 ld      c,a                 ; C = digits still to take - 1
+                ; 🐌 D-TRAPCOST (2026-11-07): one or two digits -- a loop counter --
+                ; are the first packed byte alone; the rest must be 0 (npi_tail).
+                cp      2
+                jr      nc,npi_gen
+                inc     de
+                dec     b
+                ld      a,(de)
+                dec     c
+                jr      z,npi_f2
+                and     $0F
+                jr      nz,npi_no           ; one digit: its low nibble is 0
+                ld      a,(de)
+                rrca
+                rrca
+                rrca
+                rrca
+                ld      l,a                 ; HL = the digit (H = 0)
+                jr      npi_tail
+npi_f2:
+                and     $F0
+                rrca                        ; hi x 8
+                ld      l,a
+                rrca
+                rrca                        ; hi x 2
+                add     a,l
+                ld      l,a                 ; hi x 10
+                ld      a,(de)
+                and     $0F
+                add     a,l
+                ld      l,a                 ; HL = hi x 10 + lo
+                jr      npi_tail
+npi_gen:
                 cp      4
                 jr      nz,npi_byte
                 inc     de                  ; five digits: the first must be <= 3, so
@@ -2586,7 +2618,7 @@ npi_x10:
 nx_pack:
                 ld      a,h
                 or      l
-                jr      z,npk_zero
+                jp      z,npk_zero          ; (jp: the small-value path put it past jr)
                 push    de                  ; [dest]
                 ld      a,h
                 and     $80
@@ -2595,6 +2627,46 @@ nx_pack:
                 ex      de,hl
                 call    neg_de_hl           ; HL = |value| (32768 stays 32768)
 npk_pos:
+                ; 🐌 D-TRAPCOST (2026-11-07): under 100 -- a loop counter -- is one
+                ; pair: tens by subtracting 10, then [$41|$42][pair][0][0].
+                ld      a,h
+                or      a
+                jr      nz,npk_big
+                ld      a,l
+                cp      100
+                jr      nc,npk_big
+                ld      c,h                 ; C = tens (H = 0)
+npk_t:
+                cp      10
+                jr      c,npk_t1
+                sub     10
+                inc     c
+                jr      npk_t
+npk_t1:
+                ld      b,a                 ; B = ones
+                ld      e,$41
+                ld      a,c
+                or      a
+                jr      z,npk_one
+                inc     e                   ; two digits: $42
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a
+                or      b                   ; A = tens | ones
+                jr      npk_small
+npk_one:
+                ld      a,b
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a                 ; A = ones | 0
+npk_small:
+                ld      c,a                 ; C = the first pair
+                xor     a
+                ld      b,a                 ; B = 0, and A = 0 for the third (npk_put)
+                jr      npk_put
+npk_big:
                 ld      de,-10000
                 call    npk_sub
                 ld      c,a                 ; C = d4

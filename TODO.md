@@ -18241,6 +18241,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (and x10 + digit 1) from FAC's first packed byte without the loop. Model (e) 29038 ->
       27685 T/pass, (a) 13827 -> 13481 ([`dcc2_prof.out`](scratchpad/dcc2_prof.out)); +31 B low region. tests/test_float.py's
       truncation sweep gains every 1..99 and its +-.5, both signs (538 values, both domains).
+      ✅ **(16) A LOOP COUNTER UNDER 100 IS ONE PACKED PAIR (2026-11-07): 43 -> 41 FRAMES PER 100
+      CALLS** (VG-8020 39; [`trapcost_cost9.out`](scratchpad/trapcost_cost9.out)). A default-type FOR's NEXT unpacked and
+      repacked its variable through five-digit loops (nx_pki / nx_pack, basic/program.asm,
+      ~1100 T each a pass): one or two digits now read the first packed byte (the rest must be
+      0) and write `[$41|$42][pair][0][0]` from a subtract-10 split. Model (e) 27685 -> 26298,
+      (a) 13481 -> 12134, (d) 3693 T/pass ([`nxpk_prof.out`](scratchpad/nxpk_prof.out); 🔮 -1000..-1500: HIT, -1387).
+      Machine loops ([`loops4_time6.out`](scratchpad/loops4_time6.out), [`loops4_run.py`](scratchpad/loops4_run.py), VG-8020 69 / 97 / 7 / 24):
+      zerobas 67 / 75 / 13 / 21. Page 1 took 82 B (2026-11-07). tests/test_forfast.py F3 checks nx_pki / nx_pack
+      against Python over the int16 range; test_forint / test_intfast / test_control_flow green.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 
