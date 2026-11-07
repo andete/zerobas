@@ -1403,11 +1403,23 @@ item — do **one item per session** to keep context lean.
       (S 04) took two lost-data retries -- ~0.63 s by itself. The work between two reads (the
       512-byte copy alone is ~3 ms) is longer than the inter-sector gap, so roughly every other
       sector costs a revolution; the CF-3300 averages ~100 ms a sector, ours ~170.
-      ➡️ The lever is STRUCTURAL: read a run of consecutive sectors in ONE DSKIO (a cluster into
-      a 1 KB buffer, or straight into the program area when the run is contiguous) so no CPU
-      work sits between them -- a RAM question for a 1 KB buffer (the TIER 4 rung) or a
-      design for direct reads; and the lost-data retries need their own look (what the FDC
-      driver does between DRQs).
+      📏 **HOW THE CF-3300 DOES IT (2026-11-07, Joost: "I guess we need to discover how the
+      references do this?"; [`fdccmd_cf1107.out`](scratchpad/fdccmd_cf1107.out) -- fdccmd_probe.py's FDC_MACH: the same WD2793,
+      "National" layout, slot 3-1, per openMSX's machine config; command register writes
+      with BC / DE / HL, registers and I/O only):** the FAT sectors into its own buffer
+      ($E795 / $E995); the FIRST data sector into a sector buffer ($ED95) -- it carries the
+      $FF header byte, so its 511 B go to $8001..$81FF; then EVERY following full sector
+      STRAIGHT TO ITS FINAL ADDRESS ($8200, $8400, ... -- HL steps $200 per read command,
+      one command per sector, ~20 ms apart: each one caught); the LAST partial sector into
+      the buffer again. It misses a revolution only where real work sits between reads:
+      after the buffered first sector and after each track step (`51`) -- 3-4 misses per
+      14 KB, against ~every other sector here.
+      ➡️ **THE PLAN (no new RAM: the reference's own design):** zerobas's LOAD reads every
+      sector into SECTOR_BUF and copies it. Read the full sectors of each contiguous run
+      DIRECTLY into the program area -- the first sector (header) and the last partial one
+      through the buffer, as the reference does; a run is consecutive sectors of one cluster,
+      or of consecutive clusters. Witnesses: loadclock_probe (14 KB 4.92 s now, CF 2.94) and
+      fdccmd_probe (the read commands' HL should step $200, as the CF-3300's do).
       ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
@@ -7938,7 +7950,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10371 (T-6FE392)8 (T-529ABE)` from `TODO.md:16129 (T-529ABE)`: a
+      `TODO.md:10383 (T-6FE392)8 (T-529ABE)` from `TODO.md:16141 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10677,7 +10689,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16129 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
