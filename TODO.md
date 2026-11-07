@@ -1483,6 +1483,18 @@ item — do **one item per session** to keep context lean.
       inside them; a missed one still gets windows for the long wait). (b) the per-sector
       seek-verify (`1C`, ~1 ms) on the same track, which the CF-3300 does not issue -- our
       next command leaves 2.3 ms after a transfer, the CF-3300's 1.1.
+      📏 **(b) BUILT, MEASURED, REVERTED (2026-11-07, D-SEEKSKIP):** the read path skipped the seek
+      when the track register already held the target (the `1C` vanished between same-track
+      reads, [`fdccmd_seekskip.out`](scratchpad/fdccmd_seekskip.out)). 🎯 Predicted 14 KB 2.5-2.8 s: **3.070 s, unchanged to the
+      millisecond** ([`loadclock_seekskip.out`](scratchpad/loadclock_seekskip.out); re-run with ZEROBAS_REFCACHE=0: the same) -- a miss. The
+      millisecond is not what decides which sector is caught; nothing shipped.
+      🟢 **LOAD IS ON PAR (2026-11-07):** 1 KB 0.57 s (CF 1.36), 7 KB 1.65 (CF 2.39), 14 KB 3.07
+      (CF 2.94, 1.04x). What is left is (a) above, and two things seen on the way, FILED, not
+      measured: **the motor goes OFF at the end of every DSKIO** (disk/driver.asm `mtoff`, from
+      `dskio_ok`), so one call a sector toggles it every sector and `fdc_settle` (~0.9 ms of
+      fixed delay) runs each time -- a disk ROM normally leaves it on and turns it off from a
+      timer; and the National interface's FDC_CTRL ($7FBC) READS back IRQ / !DRQ, a way to
+      see a sector's first DRQ coming without polling the status register under a window.
       ~~➡️ RE-DO PLAN (2026-11-07, D-DISKCARVE freed the room:~~ ~181 B of pads, the largest 104 B
       in front of $7F7C):** scratchpad/fatres_wip.patch no longer applies (its pads were filled);
       re-place by hand, smallest risk first --
@@ -8013,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10446 (T-6FE392)8 (T-529ABE)` from `TODO.md:16204 (T-529ABE)`: a
+      `TODO.md:10458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16216 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10752,7 +10764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16204 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16216 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
