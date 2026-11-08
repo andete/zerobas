@@ -8061,7 +8061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10494 (T-6FE392)8 (T-529ABE)` from `TODO.md:16389 (T-529ABE)`: a
+      `TODO.md:10494 (T-6FE392)8 (T-529ABE)` from `TODO.md:16401 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10800,7 +10800,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16401 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11442,6 +11442,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       here. LEN is 8 on both (the session now reads only that). Whether to copy a stale
       buffer is a question in itself: first measure what fills the hole when nothing was
       written before (a fresh disk), and whether the sector on disk or the buffer is read.
+      📏 **MEASURED 2026-11-08 on a FRESH disk** ([`rechole_fresh.ses`](scratchpad/rechole_fresh.ses), [`rechole_fresh_cf.out`](scratchpad/rechole_fresh_cf.out) /
+      [`rechole_fresh_zb.out`](scratchpad/rechole_fresh_zb.out)): records 1 and 3 of an 8-byte file PUT, record 2 never; GET #1,2
+      reads **255 x 8 on the CF-3300** -- live AND after CLOSE + re-open (it is on the disk)
+      -- and 32 x 8 here. The fresh image's data area is $00 (tools/make_test_dsk.py), so it
+      is NOT the disk sector: a record sector created past the end of the file keeps WHATEVER
+      THE CF-3300's DATA BUFFER LAST HELD -- $FF since power-on here, BLOCK.BIN's last bytes
+      in S14 (BSAVEd / BLOADed through the same buffer just before) -- and writes it out. That
+      is the reference's buffer HISTORY, undefined from BASIC's side: reproducing it means
+      mirroring every use the CF-3300 makes of that buffer, which no black-box row can pin.
+      🙋 **FOR JOOST (not blocking anything):** accept this as a documented divergence --
+      zerobas fills a new record sector with spaces, a defined answer where the reference
+      leaves stale bytes -- or chase the reference's buffer history? Recommendation: accept.
 
 - [x] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
       MSX-DOS ENTERS (found 2026-11-06 by D-LOADFAT).**
