@@ -18348,6 +18348,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       FCLOSE) and the directory / FAT deferred to FCLOSE, as the CF-3300's counts below
       show; wroe reads into SECTOR_BUF (FAT_DBUF), not FAT_MBUF, so rh_check's hit rule
       (destination FAT_MBUF) needs the buffer in the tag, or WRBLK moved onto FAT_MBUF.
+      📏 **EXPERIMENT 2026-11-08 (D-WRBLKDIR, reverted): THE DIRECTORY AT FCLOSE, NOT PER CALL.**
+      Dropping wrblk_body's per-call fat_dir_update and writing the entry in close_read from
+      the FCB (wrblk_fcbstate + fat_dir_update): **WSEEK 193.6 -> 106.3 s (6.3x -> 3.4x)**, the
+      ALT write phase 7.35 s against the CF-3300's 9.65; every FCB snapshot still byte-
+      identical ([`blkio_wrblkdir.out`](scratchpad/blkio_wrblkdir.out)). 🔮 Predicted 110-130 s: hit. **BUT ALT1.BIN NOT WRITTEN --
+      wrblkalt-acceptance RED, and it is a real bug the per-call update was hiding:** the
+      exerciser FMAKEs ALT1 and ALT2 and alternates WRBLKs; FMAKE sets the GLOBAL
+      BDOS_WRMODE, so the FIRST FCLOSE takes bdos_close_write, which writes the entry from
+      the GLOBALS (FAT_FILESIZE / FWR_DIRSEC -- the last-used file's, ALT2's), never the
+      closed FCB's own. And close-from-the-FCB for every written file is not safe either:
+      WRSEQ's writeback (wrseq_wr_writeback) marks the FCB written but keeps the size in
+      globals, not FCB +16. ➡️ **The design it needs:** the FCB authoritative for every
+      writer (WRSEQ keeping +16 as WRBLK / WRRND already do), then ONE close rule -- write
+      the closed FCB's entry from the FCB. Witnesses: wrblkalt-acceptance (two FCBs),
+      bdos-acceptance, the roundtrip probe, tests/test_wrseq_position.py.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since
