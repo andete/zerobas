@@ -17686,6 +17686,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (DSK_MEDIA); Cy = 0 (~29 B). The cut-off in SECONDS (the CF-3300 is a 60 Hz machine, ours
       runs 50 Hz). 💰 ~35 B in the $4E4B region, which has 13 -- behind the same carve as
       D-CALSLTP0.
+      🔴 **BUILT AND REVERTED THE SAME DAY (2026-11-08) -- OURS STOPPED BOOTING MSX-DOS.** The
+      design above was built (fdc_prep set a 16-bit DSK_STAMP at $EDBB; fdc_seek moved to the
+      $43A4 pad for the room; dskchg -> dskchg_body in the $75A5 region after four hdl_* `jp` ->
+      `jr`) and assembled clean -- and no DOS program reached its anchor any more (dskchg.asm,
+      dskent.asm). Reverted to the committed tree, dskent reaches its anchor again. 🔴 **THE
+      DESIGN WAS INCOMPLETE, NOT ONLY THE CODE:** in the published DSKIO-layer contract a
+      DSKCHG that answers "unknown" (0) or "changed" (-1) must ALSO bring the DPB at HL up to
+      date -- the CF-3300's A = $F9 in its "unknown" rows is most likely the media byte of the
+      boot sector it re-read for that. MSX-DOS calls DSKCHG while booting; ours answered
+      "unknown" without a DPB (and clobbered HL / DE), where the old stub's Cy = 1 sent the
+      kernel another way. ➡️ First MEASURE: the CF-3300's DPB at HL after an "unknown" answer
+      (dskchg.asm capturing the DPB buffer, not only the registers) and which registers it
+      keeps; then the body: the "unknown" path = getdpb with the caller's HL (A / B / C set as
+      getdpb expects), B := 0; the "unchanged" path keeps HL / DE. More bytes than the 24 B
+      measured above -- price it first. ⚠️ The JIFFY question this run also raised (does JIFFY
+      advance under MSX-DOS on ours? the wait loop never ended) was NOT answered: the boot
+      failure came first. Ask it again with the reverted build.
 
 - [x] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
       2026-11-08 by dskent.asm)**
