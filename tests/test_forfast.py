@@ -101,6 +101,13 @@ class Runner:
         self.exec_pc = s["exec_stmt"]
         self.next_pc = s["ex_next"]
         self.fast_pc = s.get("nx_fast")
+        # D-NXINPLACE (2026-11-08): a `%` loop's NEXT steps in the frame (nxi) and
+        # never reaches nx_fast; it is an int-path entry too, with nx_fslow's stack
+        # ([frame base] on top), so the slow-steered reference run redirects it the
+        # same way and the fast count includes it.
+        self.nxi_pc = s.get("nxi")
+        self.nxi_take_pc = s.get("nxi_take")     # counted only once the frame's
+        self.nxi_ovf_pc = s.get("nxi_ovf")       # variable is `%`; an overflow bails
         self.fslow_pc = s.get("nx_fslow")
         self.steer = steer_slow and self.fast_pc is not None
         self.fast_hits = self.fslow_hits = 0
@@ -134,12 +141,15 @@ class Runner:
                 _T["t"] = 0
                 self.subcalls[0] = 0
                 _T["on"] = True
-            elif pc == self.fast_pc:
+            elif pc == self.fast_pc or pc == self.nxi_pc:
                 if self.steer:
                     cpu.pc = self.fslow_pc
                     return
+                if pc == self.fast_pc:
+                    self.fast_hits += 1
+            elif pc == self.nxi_take_pc:
                 self.fast_hits += 1
-            elif pc == self.fslow_pc:
+            elif pc == self.fslow_pc or pc == self.nxi_ovf_pc:
                 self.fslow_hits += 1
             step()
         cpu.step = hooked

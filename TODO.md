@@ -17569,6 +17569,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       98 / 7 / 24) -- 🔮 predicted `%` 16: MISSED, it is 13 (the machine's lookup costs more
       than the host model charges). tests/test_forfast / forint / control_flow / statements
       green.
+      ✅ **D-NXINPLACE (2026-11-08): a `%` NEXT steps IN THE FRAME -- `%` 12 -> 10 ticks.** Profile
+      first ([`loopprof_1108.out`](scratchpad/loopprof_1108.out), `%` loop 2611 T/pass): nx_have 497 (the 15-byte copy into
+      FOR_CUR), exec_stmt 416, nx_again 387, then nx_fast / nx_fint / nx_fadd / nx_fput / nx_fcmp
+      / cmp16_bits / set_factyp2 ~450 between them. `nxi` (basic/program.asm, entered from
+      nx_have when limit and step are int16 and the D-NXCACHE entry is type 2) adds the step to
+      the variable in place (an int16 overflow falls back to nx_fullcopy, which raises what it
+      always did), tests the end signed by flipping both sign bits, sets FACTYP = 2 as
+      combine_cmp leaves it, and copies only FOR_LINE / FOR_BODY for nx_again. FOR_CUR is
+      statement-exclusive scratch (BUFTX), so not filling it strands no reader. Host model
+      ([`loopprof_nxi.out`](scratchpad/loopprof_nxi.out)) 2611 -> 2315 T/pass (🔮 ~2200: MISSED, nxi's own test costs ~170 T);
+      **machine ([`loops4_nxi.out`](scratchpad/loops4_nxi.out)) 66 / 73 / 12 / 20 -> 65 / 72 / 10 / 20** (VG-8020 69 / 97 / 7 /
+      24; 🔮 `%` 10: HIT). 💰 Page 1 151 -> 36 B free. tests/test_forfast.py counts `nxi_take`
+      as the int path (and `nxi_ovf` as a bail) and steers `nxi` like nx_fast; forint /
+      forfast / control_flow / statements / traps green. ➡️ What is left of the `%` pass:
+      exec_stmt + es_idx (~550 T, the statement dispatch) and nx_again (~390: BREAKX, the STOP
+      shadow, the SAVSTK re-base checks).
       The D-CONCATLIT round-2 design (a combined first-append op) was weighed the same day
       and deferred: ~6 %, and the snapshot is load-bearing for array elements / RVDESC.
       📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →

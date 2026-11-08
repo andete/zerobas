@@ -2209,6 +2209,8 @@ nx_have:
                 jr      nz,nx_fullcopy
                 cp      2
                 jr      nz,nx_fullcopy
+                jp      nxi                 ; D-NXINPLACE: a `%` variable steps in the frame
+nx_copy15:
                 ld      de,FOR_CUR
                 ldi
                 ldi
@@ -2482,6 +2484,96 @@ nx_fput:
 ; 🐌 D-FORINT: a `%` loop is NEVER widened -- its slots stay as FOR left them and
 ; the general path runs on them as it always did -- and this is where that is
 ; decided: nx_have's mixed-slot arms and nx_fast's bail all reach a `%` loop here.
+; 🐌 D-NXINPLACE (2026-11-08): a `%` loop's NEXT (int16 limit and step, nx_have's
+; test, and a type-2 variable -- the entry D-NXCACHE keeps in the frame's FOR_LIM+3..4)
+; steps, stores and compares IN THE FRAME: no 15-byte copy into FOR_CUR, no
+; cmp16_bits. The same verdict as nx_fast's `%` arm: value += step (an int16
+; overflow falls back to the copy path, which raises what it always raised), then
+; the end test signed -- step >= 0 ends when value > limit, step < 0 when value <
+; limit -- made unsigned by flipping both sign bits. FACTYP = 2 as combine_cmp
+; leaves it. A continuing loop copies only FOR_LINE / FOR_BODY, nx_again's reads.
+;   in: HL = the frame base, [frame base] on the stack (nx_have's push)
+nxi:
+                push    hl
+                ld      de,6
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the cached entry
+                ex      de,hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; its type
+                cp      2
+                jr      nz,nxi_no           ; not `%`: the copy path (nx_fast's other arms)
+nxi_take:                                   ; (a label only: tests/test_forfast.py counts it)
+                inc     hl                  ; HL = its value field
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)              ; BC = the variable
+                pop     de                  ; DE = the frame base
+                push    hl                  ; [value field + 1]
+                ld      hl,13
+                add     hl,de
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = the step
+                ld      a,h                 ; A = its sign byte (kept to the test)
+                or      a
+                adc     hl,bc               ; HL = the new value; P/V = int16 overflow
+                jp      pe,nxi_ovf
+                ex      (sp),hl             ; HL = value field + 1, [the new value]
+                pop     bc                  ; BC = the new value
+                ld      (hl),b
+                dec     hl
+                ld      (hl),c              ; stored
+                ld      hl,4
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the limit
+                ld      h,a                 ; H = the step's sign byte
+                ld      a,b
+                xor     $80
+                ld      b,a
+                ld      a,d
+                xor     $80
+                ld      d,a                 ; both biased: unsigned order = signed order
+                bit     7,h
+                jr      nz,nxi_neg
+                ld      h,d
+                ld      l,e
+                or      a
+                sbc     hl,bc               ; CF = value > limit: the loop ends
+                jr      nxi_dec
+nxi_neg:
+                ld      h,b
+                ld      l,c
+                or      a
+                sbc     hl,de               ; CF = value < limit: the loop ends
+nxi_dec:
+                ld      a,2
+                ld      (FACTYP),a          ; as combine_cmp leaves it (CF kept)
+                jp      c,nx_end            ; [frame base] is what nx_end pops
+                pop     hl
+                push    hl                  ; HL = the frame base
+                ld      de,21
+                add     hl,de
+                ld      de,FOR_LINE
+                ldi
+                ldi
+                ldi
+                ldi                         ; FOR_LINE, FOR_BODY
+                jp      nx_again
+nxi_ovf:
+                pop     hl                  ; drop [value field + 1]
+                pop     hl
+                push    hl                  ; HL = the frame base
+                jp      nx_fullcopy         ; the general path raises the overflow
+nxi_no:
+                pop     hl                  ; HL = the frame base
+                jp      nx_copy15
 nx_demote:
                 ld      a,(FOR_CUR+2)
                 cp      2
