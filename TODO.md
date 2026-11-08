@@ -17626,6 +17626,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       growth is out of scope"*), so D-WRRNDEXT below is the rest of this item. The kernel
       enters $47D1 with DE = $DA40 (its FCB copy), HL = $0080, A = $25, C = 0
       ([`wrzer_entryregs.out`](scratchpad/wrzer_entryregs.out), ours). ➡️ LEFT: the zero fill, on top of D-WRRNDEXT.
+      📏 **THE ZERO FILL'S EXTENT (2026-11-08):** wrzer.asm now reads records 0 / 8 / 16 / 20 / 21
+      / 23 ([`wrzer_stock4.out`](scratchpad/wrzer_stock4.out), CF-3300): 21 and 23 answer RDRND A = 1 (past the end -- the
+      file is records 0..20), so what lies after the written record is NOT visible through the
+      FCB at all. What a program can see is exactly: the records from the OLD end of file up to
+      the written one read zero (WRRND: the disk's bytes). 📐 So the faithful-to-the-FCB shape
+      is: for each record from ceil(old size / 128) to RR - 1, a zero record through the same
+      past-EOF path (wrrnd_ext's WRBLK of one record), then the caller's. 🔴 OPEN: a 128-byte
+      ZERO source WRBLK's own work does not overwrite -- FAT_MBUF is reused for FAT sectors
+      mid-write (fat_alloc_cluster), SECTOR_BUF is WRBLK's read-modify-write buffer; options:
+      a zero run in this ROM read through the DTA (the DTA may be in page 1 = this ROM under
+      DOS? check P1_BLIT's rule), or a whole-sector zero path in WRBLK. Speed: one
+      read-modify-write a record (20 records ~ 20 RMWs). Not built.
 
 - [x] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
       THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**

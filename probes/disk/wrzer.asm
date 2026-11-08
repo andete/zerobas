@@ -7,7 +7,8 @@
 ; For each of two fresh files -- Z.DAT written by WRZER, R.DAT by WRRND --
 ; (after the clusters they will take are overwritten with $CC by WRABS)
 ; FMAKE, RS := 128, RR := 20, one 128-byte record of $55 from the DTA, FCLOSE;
-; then FOPEN, RS := 128, and RDRND records 0, 8, 16, 20 into four 128-byte buffers.
+; then FOPEN, RS := 128, and RDRND records 0, 8, 16, 20, 21, 23 into six 128-byte buffers
+; (21 and 23 share the written record's sector: does the zero fill cover them?).
 ; Records 0-19 are the ones the extension added: WRZER's published contract is
 ; that they are zero-filled; WRRND makes no promise. Every call's A is kept.
 ; Self-loop at `done` -- the disk_probe_diff.py capture anchor.
@@ -109,7 +110,8 @@ rd_loop:
                 cp      $FF
                 jr      nz, rd_loop
                 ret
-rdrecs:         db      0, 8, 16, 20, $FF       ; one record from each added cluster + the written one
+rdrecs:         db      0, 8, 16, 20, 21, 23, $FF   ; one record from each added cluster, the written
+                                                ; one, and two AFTER it in its own sector
 absec:          dw      0
 
 set_rs:                                         ; FCB +14..15 := 128
@@ -146,17 +148,17 @@ codes_ptr:      dw      codes
 wdata:          ds      128, $55
 
 ; ---------------------------------------------------------------------------
-; captured block $0400-$089F: codes (16 B), the three FCBs, both read-back areas
+; captured block $0400-$0A9F: codes (16 B), the FCBs, both read-back areas
 ; (the read buffers are pre-filled $AA so an unread record shows)
 ; ---------------------------------------------------------------------------
                 ds      $0400 - $, $00
-codes:          ds      16, $EE                 ; $0400: A of each call, in order
-zfcb:           db      0, "Z       ", "DAT"    ; $0410
+codes:          ds      32, $EE                 ; $0400: A of each call, in order (20 used)
+zfcb:           db      0, "Z       ", "DAT"    ; $0420
                 ds      37 - 12, 0
-                ds      $0440 - $, $00
-rfcb:           db      0, "R       ", "DAT"    ; $0440
+                ds      $0450 - $, $00
+rfcb:           db      0, "R       ", "DAT"    ; $0450
                 ds      37 - 12, 0
                 ds      $04A0 - $, $00
-zbuf:           ds      512, $AA                ; $04A0-$069F: Z.DAT records 0-3
-rbuf:           ds      512, $AA                ; $06A0-$089F: R.DAT records 0-3
-gdata:          ds      512, $CC                ; $08A0-$0A9F: the dirtying sector
+zbuf:           ds      768, $AA                ; $04A0-$079F: Z.DAT records 0 / 8 / 16 / 20 / 21 / 23
+rbuf:           ds      768, $AA                ; $07A0-$0A9F: R.DAT, the same six
+gdata:          ds      512, $CC                ; the dirtying sector
