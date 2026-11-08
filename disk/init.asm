@@ -544,7 +544,8 @@ dc_one:
                 ; (ours' banner lacked "COMMAND version 1.08") and slid through RST 38h,
                 ; which also killed COMMAND.COM's BASIC command (D-DOSBASIC). Same class
                 ; as the DRVCNT/CURDRV move above. scratchpad/strout_run.out.
-                call    install_res_print
+                ; (The call itself is BELOW, after DRVTBL+0 is set: D-DRVINT copies
+                ; DRVCNT / DRVTBL+0 to DRVINT there.)
                 ; 🔴 D-RAMAD (2026-10-21): HOKVLD bit 0, "the EXTBIO hook is valid". Both
                 ; references read 1 there from the Disk BASIC prompt on, with EXTBIO
                 ; ($FFCA) still five RETs; zerobas read 0
@@ -567,6 +568,8 @@ dc_one:
                 ; trampolines that are free on the DOS host only.
                 ld      a, (HOOK_SLOT)
                 ld      (DRVTBL), a
+                call    install_res_print   ; (D-STROUT, above) -- and D-DRVINT's copy,
+                                            ; which needs DRVCNT and DRVTBL+0 set first
                 ld      a, $F9              ; D-SIDES: DSKIO's seating until a disk is
                 ld      (DSK_MEDIA), a      ; mounted -- 2 sides x 9, as before
                 xor     a                   ; D-DSKIB: the drive holds A: at power-on,

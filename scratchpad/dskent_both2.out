@@ -1,0 +1,43 @@
+=== capture: regs+mem at occurrence #1 of 0x013d ===
+  ALIGNED: both hit occurrence #1  (stock t=14.8202, ours t=14.2289, dt=0.5913)
+
+  reg   STOCK  OURS
+  PC    013D   013D
+  SP    D529   D529
+>>AF    0100   0304
+>>BC    0000   0200
+>>DE    7429   0432
+  HL    041F   041F
+  IX    4016   4016
+  IY    0314   0314
+
+  memory 0x0400+64: 27 of 64 bytes differ
+    0409: stock=2A ours=45
+    040A: stock=01 ours=00
+    0411: stock=2A ours=45
+    0412: stock=01 ours=00
+    0418: stock=01 ours=03
+    0419: stock=00 ours=04
+    041A: stock=00 ours=02
+    041E: stock=74 ours=04
+    041F: stock=29 ours=32
+    0421: stock=F9 ours=EE
+    0422: stock=00 ours=EE
+    0423: stock=02 ours=EE
+    0424: stock=0F ours=EE
+    0425: stock=04 ours=EE
+    0426: stock=01 ours=EE
+    0427: stock=02 ours=EE
+    0428: stock=01 ours=EE
+    0429: stock=00 ours=EE
+    042A: stock=02 ours=EE
+    042B: stock=70 ours=EE
+    042C: stock=0E ours=EE
+    042D: stock=00 ours=EE
+    042E: stock=CA ours=EE
+    042F: stock=02 ours=EE
+    0430: stock=03 ours=EE
+    0431: stock=07 ours=EE
+    0432: stock=00 ours=EE
+
+  register diffs: AF, BC, DE

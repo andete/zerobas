@@ -17650,6 +17650,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
       and what BASIC's FILES does with the same disk on both (FILES may share the walk).
 
+- [x] 🔴 **D-DRVINT — DRVINT ($FB21 / $FB22) WAS NEVER FILLED: A PROGRAM FINDING THE DISK ROM
+      THROUGH IT CALSLTED SLOT 0 (found 2026-11-08 by D-ENTRYTIERS)**
+      🎚️ TIER 1 — happy path of the disk-ROM entry points (the published way to find them).
+      ✅ **FIXED THE SAME DAY.** 📏 `probes/disk/dskent.asm` (MTOFF / DSKCHG / GETDPB through CALSLT
+      under MSX-DOS, slot from $FB22) never reached its anchor on ours, even cut down to MTOFF
+      alone; $FB20..$FB2F at the program's start ([`dskent_drvtbl.out`](scratchpad/dskent_drvtbl.out)): **CF-3300 $FB21 = 2,
+      $FB22 = $87; ours 0 / 0** (C-BIOS's fill). install_res_print (disk/kernel.asm, the $7F7C
+      region) now copies DRVCNT / DRVTBL+0 -- adjacent at $F347 / $F348, the same order -- to
+      $FB21 / $FB22 in one word (6 B); init calls it after DRVTBL+0 is set (a reorder, 0 B; the
+      init region had none -- `scratchpad/pinguard.py`). After ([`dskent_drvtbl2.out`](scratchpad/dskent_drvtbl2.out)): 0 of 16
+      bytes differ; dskent reaches its anchor. 🔮 HIT.
+
+- [ ] 🔴 **D-DSKCHG — THE PUBLISHED DSKCHG ($4013) ALWAYS ANSWERS AN ERROR (found 2026-11-08 by
+      dskent.asm)**
+      🎚️ TIER 1 — happy path of a disk-ROM entry point (a program asking "was the disk
+      changed?" before trusting its buffers).
+      🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) records 1-2 (A = 0 drive A, B = 0, C = $F9, HL = a
+      buffer), the disk just read: **CF-3300 Cy = 0, B = 1 ("unchanged")** both times; **ours Cy =
+      1, B = 0**: `dskchg` (disk/fat.asm) is `scf` / `ret`. ➡️ The MSX2 TH contract (B = 1
+      unchanged / 0 unknown / -1 changed, Cy + A on error); ours knows a change through the
+      FDC's disk-change line or DSK_MEDIA -- measure the "changed" answer on the CF-3300 (a
+      swap between the two calls) before choosing.
+
+- [ ] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
+      2026-11-08 by dskent.asm)**
+      🎚️ TIER 1 — happy path of a disk-ROM entry point.
+      🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) record 3 + the buffer (A = 0, B = C = $F9, HL =
+      the buffer): **the CF-3300 fills DPB+1..+18** -- F9 / 0200 / 0F 04 / 01 02 / 0001 / 02 / 70 /
+      000E / 02CA / 03 / 0007 ([`dskent_stock.out`](scratchpad/dskent_stock.out)); **ours leaves every byte $EE** and
+      returns Cy = 0. Our getdpb (disk/fat.asm) DOES write from HL+1 after fat_mount, so the
+      call is not reaching those stores on this path -- trace it (our ROM's PCs from $4016,
+      callwatch / capture) before changing anything.
+
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
       ✅ **FIXED THE SAME DAY, AS DESIGNED.** rrnd_position's past-EOF exit goes to `wrrnd_ext`

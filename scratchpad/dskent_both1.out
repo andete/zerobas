@@ -1,0 +1,10 @@
+=== capture: regs+mem at occurrence #1 of 0x013d ===
+
+*** MISALIGNED — diff NOT meaningful ***
+  stock reached anchor: YES t=14.8202
+  ours  reached anchor: NO (looped / never hit occurrence #1)
+  ours  miss class: LOGICAL — ran its full emulated timeline and genuinely never hit the anchor — a real anchor/keys/--nth defect
+  ours  replay saved: /tmp/zerobas/zb_replay_ours_nf17bktx.omr
+  A side that never reached the anchor means the comparison is between
+  different logical points. Fix the anchor (lower --nth, pick an event
+  both sides reach) before trusting any memory/reg diff. [win #1]

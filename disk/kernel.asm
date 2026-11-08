@@ -7642,6 +7642,14 @@ res_print_end:
 ; tail (no budget limit) and is reached by a single 3-byte `call` from build_resident's
 ; cramped pre-$41FD path (init.asm), same rationale as install_f365 (§7.1/§7.2/§9.3).
 install_res_print:
+                ; 🔴 D-DRVINT (2026-11-08): DRVINT ($FB21 drives on interface 1, $FB22 its
+                ; slot) -- the CF-3300 holds 2 / $87 from the prompt on; ours left C-BIOS's
+                ; 0 / 0, so a program finding the disk ROM through them to call DSKIO /
+                ; DSKCHG / GETDPB direct CALSLTed slot 0 (scratchpad/dskent_drvtbl.out).
+                ; DRVCNT ($F347) and DRVTBL+0 ($F348) lie in that order already: one
+                ; word. Here, in the $7F7C region, for room (init's callers set both first).
+                ld      hl, (DRVCNT)        ; L = the drive count, H = DRVTBL+0 = our slot
+                ld      ($FB21), hl
                 ld      hl, res_print_tmpl
                 ld      de, RES_PRINT
                 ld      bc, res_print_end - res_print_tmpl
