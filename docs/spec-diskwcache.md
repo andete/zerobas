@@ -186,11 +186,19 @@ channel close, `fdcc_rnd`), MSX-DOS entry, and any WRITE of the held sector from
 another buffer. RAM: a 3-byte tag (sector, dirty) -- in the documented free hole
 `$EFDB..$EFF5` (D-PULONG), not new RAM.
 
-Two things to settle on the CF-3300 BEFORE code: (1) **a disk swapped while a
-sector is held** -- here the next mount's `read_sector` would flush it onto the NEW
-disk; what does the reference do (it holds the same data)? (2) whether its `GET`
-of a held record reads the disk (the `8A` after each `AA` in its log may be a
-verify, or the next record's sector).
+Two things to settle on the CF-3300 BEFORE code -- **both settled 2026-11-08:**
+(1) **A disk swapped while a sector is held** (`scratchpad/diskswap.ses`, screens
+`diskswap_cf.out` / `diskswap_zb.out`): one `PUT`, an EMPTY disk inserted, `CLOSE`.
+The CF-3300 writes the held record, the directory and the FAT onto the NEW disk --
+`FILES` there lists `R.DAT` and `GET` reads the record back. It has no protection,
+so a held sector flushed onto whatever disk is in the drive IS the reference's
+behaviour, not a hazard to guard against. Zerobas today wrote the record to the
+OLD disk at `PUT` time: the new disk shows `File not found` -- a divergence the
+cache moves toward (the directory / FAT half is W3b's: the CF-3300 writes its
+CACHED directory sector, ours re-reads the new disk's). (2) **The `8A` after each
+`AA` is a VERIFY:** the same sector register (6, then 7; the directory's `A2` / `82`
+on sector 8 likewise) -- the CF-3300 reads back every sector it writes. Zerobas
+does not; the cache need not either.
 
 Expected for the workload: 64 commands down to about 26 (W1 −5, W2 −10,
 W3 −20 +2, W4 −18 +3). The CF-3300's 32 include its verify reads, which

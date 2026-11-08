@@ -1,0 +1,301 @@
+=== snapshot 1 after '(boot)'  [1 t=12.4 w=32]
+  MSX BASIC version 1.0
+  Copyright 1983 by Microsoft
+  23430 Bytes free
+  Disk BASIC version 1.0
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color auto  goto  list  run
+=== snapshot 2 after 'SCREEN 0:WIDTH 37:CLS'  [2 t=13.2 w=40]
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 3 after 'NEW'  [3 t=13.9 w=40]
+  Ok
+  NEW
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 4 after 'OPEN "R.DAT" AS #1 LEN=32'  [4 t=15.7 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 5 after 'FIELD #1,32 AS A$'  [5 t=16.4 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 6 after 'LSET A$="HELD":PUT #1,1'  [6 t=17.1 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 7 after '{TCL diskmanipulator create {TMP}_b.dsk 720k}'  [7 t=17.8 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 8 after '{TCL diska {TMP}_b.dsk}'  [8 t=18.5 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 9 after '{WAIT 3}'  [9 t=21.5 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 10 after 'CLOSE'  [10 t=24.1 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+  CLOSE
+  Ok
+
+
+
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot 11 after 'FILES'  [11 t=24.8 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+  CLOSE
+  Ok
+  FILES
+  R       .DAT
+  Ok
+
+
+
+
+
+
+
+
+
+  color  auto   goto   list   run
+=== snapshot END after 'OPEN "R.DAT" AS #1 LEN=32:FIELD #1,32 AS B$:GET #1,1:PRINT "[";LEFT$(B$,4);"]":CLOSE'  [END t=26.1 w=40]
+  Ok
+  NEW
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32
+  Ok
+  FIELD #1,32 AS A$
+  Ok
+  LSET A$="HELD":PUT #1,1
+  Ok
+  CLOSE
+  Ok
+  FILES
+  R       .DAT
+  Ok
+  OPEN "R.DAT" AS #1 LEN=32:FIELD #1,32
+   AS B$:GET #1,1:PRINT "[";LEFT$(B$,4)
+  ;"]":CLOSE
+  [HELD]
+  Ok
+
+
+
+
+  color  auto   goto   list   run
+=== printer

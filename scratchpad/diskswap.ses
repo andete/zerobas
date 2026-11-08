@@ -1,0 +1,13 @@
+# @DISK
+# diskswap (scratch, D-PUTCACHE Q1, 2026-11-08): a record PUT, the disk SWAPPED for an
+# empty one before CLOSE -- where do the held record, the directory and the FAT go?
+NEW
+OPEN "R.DAT" AS #1 LEN=32
+FIELD #1,32 AS A$
+LSET A$="HELD":PUT #1,1
+{TCL diskmanipulator create {TMP}_b.dsk 720k}
+{TCL diska {TMP}_b.dsk}
+{WAIT 3}
+CLOSE
+FILES
+OPEN "R.DAT" AS #1 LEN=32:FIELD #1,32 AS B$:GET #1,1:PRINT "[";LEFT$(B$,4);"]":CLOSE
