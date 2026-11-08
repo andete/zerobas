@@ -17682,6 +17682,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       returns Cy = 0. Our getdpb (disk/fat.asm) DOES write from HL+1 after fat_mount, so the
       call is not reaching those stores on this path -- trace it (our ROM's PCs from $4016,
       callwatch / capture) before changing anything.
+      📏 **TRACED (2026-11-08): IT DOES REACH THEM -- WITH THE BIOS IN PAGE 0.** capture at our
+      getdpb ($4C73) on ours ([`getdpb_entry.out`](scratchpad/getdpb_entry.out)): reached with the probe's own registers (HL
+      = DE = $0420, BC = $F9F9), but memory at $0418.. reads CODE (`F3`, `FB`, `CD 27 0A`) where
+      the probe's $EE buffer lives: **page 0 is the main BIOS ROM while our disk ROM runs**, so
+      getdpb's stores went into ROM. The CF-3300 ran the same CALSLT with page 0 the program's
+      RAM. ➡️ **This is D-CALSLTP0 below, not a getdpb bug**; GETDPB is re-measured once it lands.
+
+- [ ] 🔴 **D-CALSLTP0 — UNDER MSX-DOS, A ROUTINE CALSLTED IN THE DISK ROM RUNS WITH THE BIOS IN
+      PAGE 0 (found 2026-11-08 by D-GETDPB)**
+      🎚️ TIER 1 — happy path of every entry point a DOS program reaches through CALSLT ($001C)
+      with a buffer below $4000: GETDPB's DPB, DSKIO's transfer buffer, anything in the TPA's
+      first 16 KB. Data written there by the callee is LOST; data read from there is the BIOS.
+      🤖 **AUTONOMOUS** — 📏 [`getdpb_entry.out`](scratchpad/getdpb_entry.out) (above). The likeliest cause is ours, not the
+      program's: D-TPAP1 (2026-10-23) bridges the page-0 inter-slot entries to the MAIN BIOS
+      through a page-3 bridge (disk/pageenv.asm, br_go / br_frame), which puts the BIOS into page
+      0 to run C-BIOS's CALSLT -- and the callee then runs under that mapping. ➡️ First, measure:
+      (1) on both machines, $A8 / the page-0 slot AT the callee's first instruction (an I/O
+      register and slot state -- the permitted side) for a CALSLT from a .COM; (2) whether
+      D-P1RDBLK / P1_BLIT's page-1 bounce already covers the page-1 half and only page 0 is open;
+      (3) then the bridge's shape: restore page 0 = the caller's RAM before the target runs
+      (the CF-3300's face), keeping the BIOS only for the BIOS's own CALSLT work.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
