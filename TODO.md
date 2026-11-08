@@ -17658,6 +17658,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ($156 / 2 for Z.DAT); ours keeps +14 = 128 and +28..31 at the first cluster / 0.
       ➡️ rdrnd_body: clear +14..15, and keep +28..31 as wrblk_fcb_keep does for WRBLK. First
       check whether WRRND within the file clears +14 too (bdosx3's shape, one row).
+      📐 **DESIGN (2026-11-08):** wrblk_fcb_keep's tail (from `ld hl, (FAT_CURCLUS)`, after its
+      `ret z`) already turns FAT_CURCLUS + a sector-in-file index into +28..31; give it a label
+      and have rdrnd_body's success path set WRBLK_CURSEC := r0 >> 2 (four 128-byte records a
+      sector; r0 is the only RR byte rrnd_position reads) and call it, then clear +14..15 --
+      ~22 B. 🔴 BYTES: the $7F7C region rdrnd_body sits in is full again after D-WRRNDEXT
+      (`scratchpad/pinguard.py --slack`), and the largest hole elsewhere is 9 B ($55FF); even
+      the 3-byte call needs a carve there first. Candidates in that region: wrseq_body_write's
+      tail and the rdb_* exits (check each is entered only by jp / call before moving it).
 
 
       🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style
