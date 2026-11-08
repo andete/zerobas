@@ -17557,6 +17557,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       answer as the reference does. setrnd_char.asm and verifyx.asm run in no gate either.
       ⚠️ The open-item column matches a function's NAME in an item's headline only:
       D-BLKIOPERCALL lands on WRBLK, not RDBLK, whose name its headline does not carry.
+      ✅ **STEP 2, LSTOUT (2026-11-08):** disk_probe_lstout_cbios.py (MSX-DOS on the repack machine,
+      LSTOUTX.COM from AUTOEXEC, 5 x BDOS $05, an openMSX printer logger) was ARCHIVED in the
+      reach allowlist, which is why the table counted LSTOUT "NOT MEASURED". Re-run green
+      ([`lstout_1108.out`](scratchpad/lstout_1108.out): the printer got exactly 'LP!\r\n'), now `lstout-acceptance` (Makefile,
+      run_gates' list). setrnd_char / verifyx stay characterisations, not gates: SETRND and
+      VERIFY are exercised by the bdosx probes in bdos-acceptance. Left of step 2: BUFIN ($0A,
+      typed keys) and AUXIN ($03, may wait for a device).
       ✅ **STEP 4 SHIPPED (2026-11-08): THE DISK-ROM TABLE**, second section of docs/tier-status.md:
       the six published entries ($4010 DSKIO .. $401F MTOFF; exercised = a gate-reached script
       names the address or the routine) and every PINNED address in disk/*.asm (61) -- the

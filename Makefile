@@ -2924,6 +2924,15 @@ dosbasic-acceptance: repack-machine
 strout-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_strout.py
 
+# --- lstout-acceptance: BDOS $05 LSTOUT reaches the printer (D-ENTRYTIERS, 2026-11-08) ---
+# disk_probe_lstout_cbios.py boots MSX-DOS on the repack machine with an openMSX printer
+# logger plugged in, runs LSTOUTX.COM from AUTOEXEC.BAT (5 x BDOS $05) and asserts the
+# printer received exactly 'LP!\r\n'. It sat in the reach allowlist as "archived"; the
+# entry table (tools/entry_table.py) therefore counted LSTOUT NOT MEASURED. Re-run green
+# on 2026-11-08 (scratchpad/lstout_1108.out), now a gate.
+lstout-acceptance: repack-machine
+	python3 probes/disk/disk_probe_lstout_cbios.py --machine $(REPACK_MACHINE)
+
 # --- dosdate-acceptance: DOS dates as the CF-3300 (D-CLOSESTAMP, D-DOSDATE) -----
 # FCLOSE re-dating a WRRND-written file, and SDATE moving GDATE and the file stamp.
 # In the battery since both landed (2026-10-01).

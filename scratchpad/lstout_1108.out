@@ -1,0 +1,5 @@
+WARNING: Var start is never used on line 33 of file /Users/joost/projects/zerobas/probes/disk/lstoutx.asm
+machine   : C-BIOS_MSX1_EU_REPACK_DISK
+LSTOUTX   : 37 bytes, BDOS $05 x5 -> 'LP!\r\n'
+printer   : b'LP!\r\n'
+PASS  BDOS $05 LSTOUT reached the printer through C-BIOS LPTOUT ($00A5) -- got exactly b'LP!\r\n' on the C-BIOS target.
