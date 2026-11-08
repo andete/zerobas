@@ -17714,6 +17714,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the page-0 call-back*; whether a CALSLT that FITS in the present bridge block (the
       INT_H_HIRAM block; measure its free tail first) is inside that ruling, or needs Joost's,
       is the first thing to settle -- 🙋 ask if it does not fit.
+      📏 **THE BLOCK, MEASURED (2026-11-08, build/disk.sym):** the bridge pieces run INT_H_HIRAM
+      $DDAE .. **$DF1C** (br5, the last, is 53 B from BR5_RAM $DEE7); DOS_RESV_TOP, the top of the
+      reservation we advertise to MSX-DOS in DRVTBL+1, is **$DF93** -- just below where the
+      CF-3300 keeps drive B:'s FAT ($DF94, D-FATRES). So **$DF1C..$DF92, 119 B, is inside our own
+      reservation and nothing of ours is declared there** (tools/ram_map.py does not cover it:
+      its window is $E000..$F380). A page-1 / page-2 CALSLT fits. That is not "new RAM" in the
+      HIMEM sense if MSX-DOS / COMMAND.COM never write it -- ➡️ NEXT: a write watch on
+      $DF1C..$DF92 across a DOS boot + a program run (the method that verified $DDAE), then the
+      code; extend ram_map.py's window to cover it so the next tenant is seen.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
