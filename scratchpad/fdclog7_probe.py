@@ -29,11 +29,12 @@ sys.path.insert(0, os.path.join(REPO, "probes", "disk"))
 import probe_tmp                                    # noqa: E402
 import disk_probe_wrblk_alt as A                    # noqa: E402
 RT = A.RT
+PH = int(os.environ.get("FDCLOG_PHASE", "7"))   # 5 = the 32 KB seek READ (BIG.BIN), 7 = the 32 KB WRBLK write
 
 
 def count(machine, tag):
     dsk = probe_tmp.tmp(f"fdclog7_{tag}.dsk")
-    A.build(RT.DEFAULT_DOS, dsk, A.assemble(), False, True)
+    A.build(RT.DEFAULT_DOS, dsk, A.assemble(), PH == 5, PH == 7)
     out = probe_tmp.tmp(f"fdclog7_{tag}.txt")
     if os.path.exists(out):
         os.remove(out)
@@ -41,7 +42,7 @@ def count(machine, tag):
            "array set ::fc {}\n"
            "set ::fn 0\n"
            "debug set_watchpoint write_mem 0x7FB8 {} { set v $::wp_last_value; "
-           "if {$v >= 0x80 && $v < 0xC0 && [debug read memory 0xC000] == 7 && $::fn < 120} { incr ::fn; "
+           "if {$v >= 0x80 && $v < 0xC0 && [debug read memory 0xC000] == " + str(PH) + " && $::fn < 120} { incr ::fn; "
            "puts $::fc_f \"[expr {$v < 0xA0 ? {R} : {W}}] t=[debug read memory 0x7FB9] s=[debug read memory 0x7FBA]\" } }\n"
            "proc fc_dump {} { flush $::fc_f }\n"
            "after time 595 fc_dump\n")

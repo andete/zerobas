@@ -18420,6 +18420,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       call, M30, and a clean FAT_MBUF is not trusted -- WRBLK's multiply scratch WRBLK_MUL* is
       WBUF+500..511, INSIDE FAT_MBUF, so nothing FAT-shaped survives a call), and (a) the data
       sector's read-modify-write every call.
+      📏 **THE READ SIDE, LOGGED (2026-11-08):** `FDCLOG_PHASE=5` [`fdclog7_probe.py`](scratchpad/fdclog7_probe.py) ->
+      [`fdclog5_1108.out`](scratchpad/fdclog5_1108.out) (the 32 KB SEEK read, 256 B RDBLKs): the **CF-3300 reads each data
+      sector ONCE** and no FAT sector; **ours reads every data sector TWICE** -- a call starting
+      mid-sector goes through `k47b2_mid` (disk/kernel.asm), whose fat_read_file_sector re-reads
+      what the previous call left in SECTOR_BUF -- plus one FAT sector each cluster
+      (fat_next_cluster). Halving the data reads is the read side's lever (SEEK 3.1x).
+      🔴 **DESIGNED AND NOT BUILT -- THE TAG IS NOT SAFE WITHOUT THE W4 AUDIT.** The cheap shape
+      ("read_sector hits when SECTOR_BUF still holds the sector RDBLK left; the tag set at
+      RDBLK's exit, cleared at `dskio` entry, which every physical transfer -- the page-1 bounce
+      through SECTOR_BUF included -- passes") is WRONG for writers that FILL SECTOR_BUF WITHOUT
+      I/O: the BDOS sequential write accumulates there (BDOS_WRBUFLEN), and main's channel code
+      shares it as FSECTOR_BUF. RDBLK on A, WRSEQ on B (buffered, no I/O), RDBLK on A mid-sector
+      would serve B's bytes. Every SECTOR_BUF / FSECTOR_BUF writer must drop the tag (76 code
+      lines; spec-diskwcache.md's W4 calls it "the widest audit, and it comes last"). ➡️ Picked
+      up only with that audit; the FAT-per-cluster read waits on the same kind of tag for
+      FAT_MBUF.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since
