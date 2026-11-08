@@ -18386,6 +18386,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       106.3 s / ALT1 NOT WRITTEN reading is in commit ad6f298a.)
       🎯 For the C-BIOS port goal ([[disk-core-portable-to-cbios]]): a written file's entry is
       now written from ITS OWN FCB at close, not from the last-used file's globals.
+      📏 **WHAT IS LEFT, LOGGED (2026-11-08, after D-WRBLKDIR):** [`fdccount_1108.out`](scratchpad/fdccount_1108.out): the 32 KB
+      phase now issues **257 writes / 292 reads** here against the CF-3300's 72 / 78 (🔮 ~256 / ~355:
+      writes HIT, reads MISSED low). [`fdclog7_probe.py`](scratchpad/fdclog7_probe.py) logs each command's track / sector
+      registers ([`fdclog7_1108.out`](scratchpad/fdclog7_1108.out)). Per 1 KB cluster (4 calls of 256 B): the **CF-3300** writes
+      each data sector once and reads it once (2 W + 2 R), and touches NO FAT sector during the
+      run; **ours** reads-modifies-writes the data sector EVERY call (4 R + 4 W) and, per
+      allocation, ~6 FAT reads (the free scan re-reads s3 / s2 / s3 -- the buffer is "clean", so
+      fac_cacheinit trusts nothing) + 4 FAT writes (the mark, then the link, each to both
+      copies). So the two levers are about equal: (a) the data sector held across calls
+      (D-PUTCACHE's shape), (b) the FAT sector held dirty across calls until FCLOSE / a seek
+      away (D-RECSLOW's bit 1, across calls instead of within one). 🔴 **BOTH NEED BYTES:**
+      `check_disk_walls.py` shows NO usable hole left (the only run >= 16 B is the FDC window).
+      ➡️ **NEXT: a D-DISKCARVE round** (its candidate list: the fdc_read_phys / fdc_write_phys
+      prefix ~34 B, the getalloc / fat_have_free_cluster scan bodies ~60 B), then (b), then (a).
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

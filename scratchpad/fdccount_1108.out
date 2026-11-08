@@ -1,0 +1,2 @@
+WARNING: Var start is never used on line 27 of file /Users/joost/projects/zerobas/probes/disk/wrblk_alt.asm
+ours: ph1,R=25 ph1,W=20 ph2,R=38 ph2,W=17 ph235,R=57 ph240,R=1 ph3,R=69 ph3,W=13 ph4,R=10 ph7,R=292 ph7,W=257 ph8,R=12
