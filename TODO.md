@@ -18363,6 +18363,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       writer (WRSEQ keeping +16 as WRBLK / WRRND already do), then ONE close rule -- write
       the closed FCB's entry from the FCB. Witnesses: wrblkalt-acceptance (two FCBs),
       bdos-acceptance, the roundtrip probe, tests/test_wrseq_position.py.
+      🅿️ **PARKED ON 17 B (2026-11-08), [`wrblkdir_wip.patch`](scratchpad/wrblkdir_wip.patch).** Built further: (1) the per-call
+      update dropped and `cr_dir` (close_read: wrblk_fcbstate + fat_dir_update from the FCB);
+      (2) `bdos_close_wm` -- with BDOS_WRMODE set but NOTHING written sequentially
+      (BDOS_WRCLUS = 0) the close goes the FCB way, so a WRSEQ file keeps its globals path.
+      That made ALT1 get an entry -- with ALT2's cluster: 🔴 fat_dir_update writes FWR_FIRST /
+      FWR_BYTES (= BDOS_WRFIRST $ED56 / BDOS_WRBYTES $ED5B), NOT the FAT_FIRSTCLUS /
+      FAT_FILESIZE wrblk_fcbstate loads, and those still hold the LAST-written file's. (3)
+      cr_dir must copy FAT_FIRSTCLUS -> BDOS_WRFIRST and FAT_FILESIZE -> BDOS_WRBYTES (not
+      contiguous: 17 B) -- and no disk.rom hole holds 17 B any more (the largest outside the
+      FDC window is 15; cr_dir fills the $782B one, bdos_close_wm the $7F7C one).
+      ➡️ A carve of >= ~20 B first (a D-DISKCARVE round), then land (1)-(3) together and run
+      wrblkalt / bdos / roundtrip. Measured with (1) alone: WSEEK 193.6 -> 106-108 s.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

@@ -1,0 +1,90 @@
+diff --git a/disk/driver.asm b/disk/driver.asm
+index b0ee2391..265de4f9 100644
+--- a/disk/driver.asm
++++ b/disk/driver.asm
+@@ -852,7 +852,8 @@ rgb_have:
+ bdos_close:
+                 ld      a, (BDOS_WRMODE)
+                 or      a
+-                jr      nz, bdos_close_write
++                jp      nz, bdos_close_wm   ; D-WRBLKDIR: disk/runtime.asm, for room
++bdos_close_rd:
+                 jp      close_read      ; read close: nothing to flush, but a WRITTEN
+                                         ; file is re-dated (D-CLOSESTAMP)
+ bdos_close_write:
+diff --git a/disk/kernel.asm b/disk/kernel.asm
+index 284c92e8..ed458a69 100644
+--- a/disk/kernel.asm
++++ b/disk/kernel.asm
+@@ -2080,7 +2080,8 @@ close_read:
+                 add     hl, de
+                 bit     6, (hl)
+                 jr      nz, cr_ok           ; not written since FOPEN: nothing to do
+-                inc     hl
++                call    cr_dir              ; D-WRBLKDIR: size + first cluster, ONCE; HL = +25
++                jr      c, cr_err
+                 ld      a, (hl)             ; A = the entry's index (+25)
+                 push    af
+                 rrca
+@@ -4001,8 +4002,11 @@ wrblk_loop_done:
+                 call    wrblk_size_max
+                 call    wrblk_set_wrfirst
+                 call    wrblk_fcb_keep      ; D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
+-                call    fat_dir_update
+-                jr      c, wrblk_ioerr2
++                ; D-WRBLKDIR (2026-11-08): NO directory update per call -- the CF-3300
++                ; touches the entry only at FCLOSE (fdccount_run.out: 72 writes for 64
++                ; data sectors; ours wrote the entry every call). The close writes it
++                ; from the FCB (bdos_close -> close_read -> cr_dir), which
++                ; wrblk_fcb_keep keeps current.
+                 xor     a
+                 ld      hl, (WRBLK_REQ)
+                 jr      wrblk_finish
+@@ -7340,6 +7344,24 @@ frl_have:
+                 jp      frl_ext             ; PUT: disk/kernel.asm's $4E20 fill
+ frl_walked:
+                 jp      frl_done            ; D-PUTWALK: disk/runtime.asm, for room
++; cr_dir -- D-WRBLKDIR (2026-11-08): close_read's write of a written file's entry --
++; its size and first cluster, from the FCB, as the per-call update in wrblk_body did.
++; The CF-3300 writes the entry at FCLOSE only. Reached only for a file the
++; SEQUENTIAL writer did not write (bdos_close sends that one to its own path): WRBLK
++; keeps +16 / +26 current (wrblk_fcb_keep), WRRND +16 (wrrnd_extend), FOPEN / FMAKE
++; +26. in DE = the FCB; out CF = an I/O error, else HL = the FCB + 25. For room.
++cr_dir:
++                push    de
++                pop     ix                  ; IX = the FCB (wrblk_fcbstate's contract)
++                call    wrblk_fcbstate      ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
++                ret     c
++                call    fat_dir_update
++                ret     c
++                push    ix
++                pop     hl
++                ld      de, 25
++                add     hl, de              ; HL = the FCB + 25
++                ret
+                 ds      $782B - $, $00
+                 jp      k_782B          ; $782B
+ ; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---
+diff --git a/disk/runtime.asm b/disk/runtime.asm
+index b3bee21f..5b7f1159 100644
+--- a/disk/runtime.asm
++++ b/disk/runtime.asm
+@@ -750,6 +750,18 @@ frl_done:
+                 call    clus_sec            ; (its adds cannot carry: CF = 0)
+                 ld      (GP_PHYS), de
+                 ret
++; bdos_close_wm -- D-WRBLKDIR (2026-11-08): BDOS_WRMODE is ONE global (FMAKE sets
++; it), so with two FMAKE'd FCBs written by WRBLK the first FCLOSE came here and
++; wrote the entry from the GLOBALS -- the last-used file's -- never its own
++; (wrblkalt-acceptance's ALT1). The globals path is for the SEQUENTIAL writer's
++; file only: nothing written sequentially (no cluster yet) -> close from the FCB.
++bdos_close_wm:
++                ld      hl, (BDOS_WRCLUS)
++                ld      a, h
++                or      l
++                jp      nz, bdos_close_write
++                ld      (BDOS_WRMODE), a    ; (A = 0) no longer open for write
++                jp      bdos_close_rd
+                 ds      $7F7C - $, $00
+ k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
+                 IF ($ > $7F80)
