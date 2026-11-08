@@ -1,0 +1,26 @@
+== Philips_VG_8020 (hold 0.2 s, STOP alone; program '10 GOTO 10')
+  RUNNING   t=10.00 CURLIN=000A pending=-
+  RELEASED  t=10.20 CURLIN=000A pending=-
+  +1        t=10.30 CURLIN=000A pending=-
+  +2        t=10.40 CURLIN=000A pending=-
+  +3        t=10.50 CURLIN=000A pending=-
+  +4        t=10.60 CURLIN=000A pending=-
+  +5        t=10.70 CURLIN=000A pending=-
+  +6        t=10.80 CURLIN=000A pending=-
+  +7        t=10.90 CURLIN=000A pending=-
+  +8        t=11.00 CURLIN=000A pending=-
+  +9        t=11.10 CURLIN=000A pending=-
+  +10       t=11.20 CURLIN=000A pending=-
+== C-BIOS_MSX1_EU_REPACK_NODISK (hold 0.2 s, STOP alone; program '10 GOTO 10')
+  RUNNING   t=10.00 CURLIN=000A pending=-
+  RELEASED  t=10.20 CURLIN=000A pending=-
+  +1        t=10.30 CURLIN=000A pending=-
+  +2        t=10.40 CURLIN=000A pending=-
+  +3        t=10.50 CURLIN=000A pending=-
+  +4        t=10.60 CURLIN=000A pending=-
+  +5        t=10.70 CURLIN=000A pending=-
+  +6        t=10.80 CURLIN=000A pending=-
+  +7        t=10.90 CURLIN=000A pending=-
+  +8        t=11.00 CURLIN=000A pending=-
+  +9        t=11.10 CURLIN=000A pending=-
+  +10       t=11.20 CURLIN=000A pending=-

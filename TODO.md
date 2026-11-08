@@ -8061,7 +8061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10494 (T-6FE392)8 (T-529ABE)` from `TODO.md:16373 (T-529ABE)`: a
+      `TODO.md:10494 (T-6FE392)8 (T-529ABE)` from `TODO.md:16389 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10800,7 +10800,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16373 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11749,7 +11749,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ The recorder half ((1) / (2) above) stays apparatus: in-session recordings are not
       replayable here; the D-TAPINBLK `notape` row goes through the same TAPION wait.
 
-- [ ] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
+- [x] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
       (found 2026-11-06 by typed session S2_stopcont).**
       🎚️ TIER 6 — rare: what INKEY$ reads when the user presses Ctrl-STOP during a program.
       🤖 **AUTONOMOUS** — measured from RAM, both machines.
@@ -11785,6 +11785,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ($1AF5..$1BBF) had 5 B free on 2026-11-07: ~10 B of island 1 must move out first
       (or the test goes after the font, which moves BASIC_ORG $2781 that a dozen tools
       hard-code). Not started: a TIER 6 corner against an island relocation.
+      ✅ **BUILT 2026-11-08 -- NO ISLAND MOVE NEEDED.** D-KEYSKIP (cbios-repack #14) had freed 13 B
+      in front of island 1; patch #15 ([`ctrlstop-key.patch`](cbios-repack/ctrlstop-key.patch)) spends exactly them: STOP's
+      table entry `$03`, and key_ctl_none drops it unless CTRL is held (lp_strprn back at
+      $1AEB, island 1 untouched). zerobas empties the buffer in the line editor's Ctrl-STOP
+      path (rl_break), at the STOP trap's confirmed release (rp_* in basic/program.asm), and
+      when a line read begins with the breaking press still held (rl_release_kil,
+      basic/repl.asm -- BREAKX asked twice, D-STOPTEAR). 🔴 Two first cuts failed and were
+      caught: (1) emptying it at the END of do_break waited for the release there, so the
+      prompt came back only once the key was up (CURLIN $000A at release, where both machines
+      are at the prompt while it is held); (2) rl_release_kil at rl_loop BEFORE `ld (RL_HL),hl`
+      -- KILBUF loads HL, which is the line buffer pointer there: typed session S2_stopcont
+      hung (bisected: without the call, no hang). After ([`stopkey_after_plain.out`](scratchpad/stopkey_after_plain.out), [`stopkey_after_noctrl.out`](scratchpad/stopkey_after_noctrl.out),
+      [`stopkey_after_onstop.out`](scratchpad/stopkey_after_onstop.out)): ^C queued on both, STOP alone nothing on both, the ON STOP
+      trap leaves nothing pending; S2_stopcont / S8_input / S9_breaks SAME on both targets.
+      Left, RAM-only: the ^C sits in the buffer while the key is held here; the VG-8020
+      drops it at the break.
 
 - [x] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
       the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**

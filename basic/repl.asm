@@ -170,7 +170,10 @@ rl_loop:
                 ; prompt's read saw the same held key and aborted an empty line). The
                 ; reference reacts to a PRESS (its interrupt queues one ^C per press),
                 ; so wait for the key to be up before a press can count.
-                call    rl_release
+                ld      (RL_HL),hl          ; (stored FIRST: rl_release_kil's KILBUF loads HL;
+                                            ; the first cut called it before the store and
+                                            ; hung S2_stopcont)
+                call    rl_release_kil      ; D-STOPKEY3: and empty its ^C
                 ; D-SCREDIT (docs/spec-basic-screditor.md): the line reader is the
                 ; readline tenant (sub/readline.asm, page 1) -- cursor keys reach
                 ; CHPUT, Enter reads the LOGICAL LINE under the cursor out of VRAM.
@@ -181,7 +184,6 @@ rl_loop:
                 ; and never waits. HL rides in
                 ; through RL_HL; CF (set = Ctrl-STOP / Ctrl-C) rides back through
                 ; RL_STAT, since a carry cannot cross subrom_call.
-                ld      (RL_HL),hl
                 call    txt_mode            ; INPUT inside SCREEN 2 reads its line in SCREEN 0 too (measured)
                 ld      a,(CSRY)
                 ld      (RL_ROW0),a         ; where input begins: the FSTPOS rule
@@ -257,6 +259,7 @@ rl_tenant:
                 ret
 rl_break:                                   ; Ctrl-STOP while a line is read: the
                 call    rl_release          ; press is CONSUMED first
+                call    KILBUF              ; D-STOPKEY3: and its ^C with it
                 ld      e,0                 ; then the cursor comes down, CF rides through
                 call    rl_cursor           ; (subrom_call returns CF clear, so
                 scf                         ; set it again)
@@ -266,6 +269,18 @@ rl_break:                                   ; Ctrl-STOP while a line is read: th
 ; and reads it with interrupts ON, so an ISR in between reads a HELD key as up. On
 ; the DISK target (a longer ISR) one 0.2 s press aborted two or three prompt lines
 ; (scratchpad/stopempty_a.out). Clobbers AF.
+; rl_release_kil -- D-STOPKEY3: when Ctrl-STOP is still held as a line read begins
+; (the press that just broke the program), wait it out and EMPTY the keyboard
+; buffer: the press queued ^C (cbios-repack patch 15), and the VG-8020 leaves the
+; buffer empty after a break (scratchpad/stopkey_run.out). Not held: return at once,
+; keeping any typeahead. (Our break is seen in the matrix before the keyboard scan
+; queues the ^C, so the break itself cannot empty it.)
+rl_release_kil:
+                call    BREAKX              ; held? -- asked TWICE when the first says up:
+                call    nc,BREAKX           ; one BREAKX can tear (D-STOPTEAR), and a missed
+                ret     nc                  ; press left its ^C to wreck the next line
+                call    rl_release          ; (typed session S2_stopcont hung on it)
+                jp      KILBUF              ; (loads HL: rl_loop stores RL_HL before the call)
 rl_release:
                 call    BREAKX
                 jr      c,rl_release

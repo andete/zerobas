@@ -1,0 +1,33 @@
+diff --git a/src/main.asm b/src/main.asm
+index ae2a643..8fd3945 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2929,6 +2929,15 @@ key_ascii_go:
+                 jr      key_ctl_put     ; stored even when it is 0
+ key_ctl_none:
+                 ex      af,af'
++                ; zerobas repack (D-STOPKEY3): $03 here is STOP (rows 6-11's table), and it
++                ; is a key only with CTRL held (row 6 bit 1, active low).
++                cp      3
++                jr      nz,kcn_go
++                ld      a,(NEWKEY + 6)
++                bit     1,a
++                ld      a,3
++                jr      nz,key_store_end2   ; STOP alone: nothing
++kcn_go:
+                 and     a               ; dead key?
+                 jr      z,key_store_end2
+ key_ctl_put:
+@@ -3246,7 +3255,11 @@ str_nocart:     equ     str_error_prompt
+ ; the last rows are not locale specific
+ scode_tbl_otherkeys:
+                 db      $00,$00,$00,$00,$00,$00,$00,$00 ;06
+-                db      $00,$00,$1B,$09,$00,$08,$00,$0D ;07
++; zerobas repack (D-STOPKEY3): STOP (row 7, bit 4) is $03 -- with CTRL held, which
++; key_ctl_none tests: Ctrl-STOP queues ^C on the VG-8020 (zerobas
++; scratchpad/stopkey_run2.out, KEYBUF written 46 ms in), STOP alone queues nothing
++; (stopkey_noctrl.out). The only $03 in this table.
++                db      $00,$00,$1B,$09,$03,$08,$00,$0D ;07
+ ; zerobas repack (D-INSMODE): INS and DEL produced no character ($00), so the
+ ; screen editor never saw either key -- on the MSX they are $12 (INS) and $7F
+ ; (DEL), the codes BASIC's line editor acts on (MSX2 Technical Handbook, the

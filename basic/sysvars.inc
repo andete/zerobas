@@ -38,6 +38,7 @@ LINTTB          equ     $FBB2   ; per-row continuation table, one byte per row: 
 ; Handbook; oracle-confirmed working on C-BIOS_MSX1 (bios_probe_breakx.py: carry
 ; clear when no key pressed, identical to the reference VG-8020).
 BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = pressed
+KILBUF          equ     $0156   ; empty the keyboard buffer (D-STOPKEY3: Ctrl-STOP's ^C)
 
 ; --- input-device BIOS entry points (STICK / STRIG) ------------------------
 ; docs/spec-basic-input-devices.md §6. Published BIOS jump-table entries (MSX

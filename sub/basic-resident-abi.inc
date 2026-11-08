@@ -104,11 +104,11 @@ p0_cas_ascii_load equ 0655CH   ; main's cas_ascii_load
 p0_load_commit_prog equ 0653CH   ; main's load_commit_prog
 p0_dpl_err equ 065D4H   ; main's dpl_err
 p0_dpl_oom equ 065E6H   ; main's dpl_oom
-p0_print_msg equ 07653H   ; main's print_msg
+p0_print_msg equ 07658H   ; main's print_msg
 p0_err_verify equ 0654FH   ; main's err_verify
-p0_exa_loop equ 076CFH   ; main's exa_loop
+p0_exa_loop equ 076D4H   ; main's exa_loop
 p0_le_call_op equ 06EADH   ; main's le_call_op
 p0_print_string equ 045DFH   ; main's print_string
 p0_list_num equ 0635AH   ; main's list_num
-p0_print_in_hl equ 07629H   ; main's print_in_hl
+p0_print_in_hl equ 0762EH   ; main's print_in_hl
 p0_rn_undefined equ 001B8H   ; main's rn_undefined

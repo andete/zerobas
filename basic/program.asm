@@ -627,6 +627,9 @@ rp_exec:
                 ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
                 res     6,a                 ; ZTS_SHADOW — the level follows the key
                 ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ),a
+                push    hl                  ; D-STOPKEY3: the press that fired the STOP
+                call    KILBUF              ; trap is up -- its ^C goes, as on the
+                pop     hl                  ; VG-8020 (stopkey_onstop.out)
 rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
                                             ; re-entered by rp_break after latching STOP.
                                             ; Gate is one RAM load in the no-trap case.
@@ -887,7 +890,10 @@ do_break:
                 ; byte-for-byte the old inline tail ("break" + " in " + <N> + CRLF).
                 ; in DIRECT mode print_in_lineno now suppresses the suffix itself
                 ; (the reference prints a bare "Break" for a typed STOP -- measured),
-                ; so this tail stays a single unconditional jump.
+                ; so this tail stays a single unconditional jump. (D-STOPKEY3's ^C is
+                ; emptied at the prompt's read, rl_release_kil in basic/repl.asm: waiting
+                ; for the release HERE kept the prompt back until the key was up, where
+                ; both machines are at the prompt while it is still held.)
                 jr      print_in_lineno
 ; brk_msg -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
 ; read only by absolute `ld` from main; now in the font island.

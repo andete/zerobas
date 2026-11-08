@@ -76,6 +76,17 @@ the other does not. Nothing a program can observe through `FRE` differs.
 
 ## What we found, and how
 
+- **Ctrl-STOP did not put `^C` in the keyboard buffer** (fixed 2026-11-08,
+  D-STOPKEY3; found by a typed session). On the VG-8020 pressing Ctrl-STOP
+  also queues the character `CHR$(3)`, so a program stopped between
+  `A$=INKEY$` and its test can read `CHR$(3)` after `CONT`; STOP without CTRL
+  queues nothing, and a break or an `ON STOP GOSUB` trap empties the buffer.
+  zerobas queued nothing. It now does the same
+  ([before](../../scratchpad/stopkey_run2.out),
+  [after](../../scratchpad/stopkey_after_plain.out)). One difference is left,
+  visible only in memory: zerobas empties the buffer when the key is let go,
+  the VG-8020 at the break.
+
 - **`PRINT INKEY$=""` read two keys** (fixed 2026-10-30, D-PRSTR2X; found by a
   test program with a key menu). `PRINT` read the string, saw the `=`, then
   started the item again from the beginning as a comparison, so `INKEY$` ran

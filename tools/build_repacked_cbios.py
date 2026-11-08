@@ -108,11 +108,13 @@ PATCHES = [
     # D-KEYSKIP: the keyboard scan skips a row with no newly pressed key (C-BIOS's own
     # TODO); the 88-bit walk was most of a ~3 ms interrupt (scratchpad/isrprof_runs.out).
     os.path.join(REPO, "cbios-repack", "keyscan-skip.patch"),
+    # D-STOPKEY3: Ctrl-STOP queues ^C (), as on the VG-8020; STOP alone nothing.
+    os.path.join(REPO, "cbios-repack", "ctrlstop-key.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "01a4da22cf8ae1e845e62971c1619c9ef8d70ba1"
+REPACKED_SHA1 = "766accef7d7c720907097367cf17584b1e07fb8a"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

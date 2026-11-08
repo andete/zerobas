@@ -440,8 +440,15 @@ def t_stop_shadow(fails):
     def stop_at_trapchk(mm):
         raise _AtTrapchk
 
+    kil = []
+
     def run_exec(reads):
         seq, calls = list(reads), []
+        kil.clear()
+        # D-STOPKEY3 (2026-11-08): the confirmed release now empties the keyboard
+        # buffer (KILBUF, $0156 -- C-BIOS, which this host image does not carry): the
+        # press queued ^C there, and the VG-8020 leaves nothing pending after a trap.
+        m.trap("KILBUF", lambda mm: kil.append(1))
         def breakx(mm):
             down = seq.pop(0) if seq else False
             calls.append(down)
@@ -461,11 +468,13 @@ def t_stop_shadow(fails):
     fails = check(fails, "STOP torn read: a 2nd BREAKX confirms", calls, [False, True])
     fails = check(fails, "STOP torn read: SHADOW KEPT (no fresh edge next poll)",
                   m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+    fails = check(fails, "STOP torn read: the buffer is NOT emptied (still held)", len(kil), 0)
     reset_traps(m)
     m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))
     calls = run_exec([False, False])                   # released for real
     fails = check(fails, "STOP real release: shadow cleared",
                   m.peek(e)[0] & ZTS_SHADOW, 0)
+    fails = check(fails, "STOP real release: the press's ^C emptied (KILBUF once)", len(kil), 1)
     reset_traps(m)
     m.poke(e, bytes([ZTS_ON]))                         # no press seen: no shadow
     calls = run_exec([False])
