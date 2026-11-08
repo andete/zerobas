@@ -4903,31 +4903,36 @@ fhfc_loop:
                 pop     hl
                 jr      nc, fhfc_none       ; scanned past the last cluster -> none free
                 push    hl
+                call    fac_cached_entry    ; DE = the entry (CF = a read error: none free)
+                pop     hl
+                jr      c, fhfc_none
+                ld      a, d
+                or      e
+                jr      z, fhfc_found       ; $000 -> free
+                inc     hl
+                jr      fhfc_loop
+; 💰 D-DISKCARVE3 (2026-11-08): fac_cached_entry -- the step fat_have_free_cluster and
+; getalloc_body both carried verbatim: cluster HL's FAT entry, its sector read into
+; WBUF only when it is not the one FAT_WRTMP2 says is cached (FAT_FATSEC follows).
+;   in: HL = the cluster ; out: DE = the 12-bit entry, CF = 1 on a read error
+;   (HL / A / BC clobbered; fac_entry_from_wbuf reads FAT_BYTEIDX / FAT_PARITY, which
+;   fat_locate set, not HL)
+fac_cached_entry:
                 call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
                 ld      de, (FAT_WRTMP2)
                 push    hl
                 or      a
                 sbc     hl, de
                 pop     hl
-                jr      z, fhfc_have_sec    ; already loaded -> no re-read
+                jr      z, fce_have         ; already loaded -> no re-read
                 ld      (FAT_WRTMP2), hl    ; remember the new cached sector
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
                 ld      hl, WBUF
                 call    read_sector
-                jr      c, fhfc_rderr       ; read error -> treat as no free cluster
-fhfc_have_sec:
-                pop     hl                  ; HL = cluster
-                push    hl
-                call    fac_entry_from_wbuf ; DE = entry value
-                ld      a, d
-                or      e
-                pop     hl
-                jr      z, fhfc_found       ; $000 -> free
-                inc     hl
-                jr      fhfc_loop
-fhfc_rderr:
-                pop     hl                  ; balance the stack (cluster pushed at fhfc_loop)
+                ret     c
+fce_have:
+                jp      fac_entry_from_wbuf ; DE = entry value
 fhfc_none:
                 scf                         ; Cy = 1 -- disk full
                 ret
@@ -7721,22 +7726,9 @@ ga_scanloop:
                 ; math fac_loop_body uses -- Microsoft FAT spec §3.2 12-bit packing)
                 push    de                       ; save free counter across the call below
                 push    hl                       ; save cluster (need it after the call)
-                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
-                ld      de, (FAT_WRTMP2)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jr      z, ga_havesec            ; already the cached sector -> no re-read
-                ld      (FAT_WRTMP2), hl
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, WBUF
-                call    read_sector
-                jr      c, ga_rderr
-ga_havesec:
-                call    fac_entry_from_wbuf      ; DE = 12-bit entry value (clobbers
+                call    fac_cached_entry         ; DE = 12-bit entry value (D-DISKCARVE3; clobbers
                                                  ; AF/BC/DE/HL -- fat.asm's own contract)
+                jr      c, ga_rderr              ; (its pops: cluster, counter, rawTotal)
                 ld      a, d
                 or      e
                 pop     hl                       ; restore cluster

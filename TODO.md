@@ -17658,6 +17658,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       --slack`), so a carve first. ⚠️ The CF-3300 left +14..15 = 0 after WRZER + FCLOSE
       (bdosx9 $04FE) where ours keeps 128: read which call zeroes it before copying it.
       WRZER then = the same wrapper + zero sectors for the clusters wroe_ext adds.
+      💰 **D-DISKCARVE3 (2026-11-08): +30 B in front of $7F7C**, the region wrrnd_body lives in.
+      fat_have_free_cluster and getalloc_body carried the same 32-byte step verbatim (cluster
+      HL's FAT entry, its sector read into WBUF unless FAT_WRTMP2 says it is cached); it is
+      `fac_cached_entry` now, sited in fat_have_free_cluster's region ($75A5's, 12 -> 11 B), so
+      getalloc's region gains the whole copy (`scratchpad/pinguard.py --slack`: $7F7C 0 -> 30 B).
+      fat_alloc_cluster's similar step is NOT folded in: it flushes a dirty buffer first and
+      lives in basic/fat-prim-body.inc, which the sub ROM also assembles. 📏 bdosx9
+      ([`bdosx9_run5.out`](scratchpad/bdosx9_run5.out)): unchanged, ALLOC byte-identical, the same 10 WRZER bytes. 🔮 HIT.
 
 - [x] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
       D-ENTRYTIERS step 2)**
