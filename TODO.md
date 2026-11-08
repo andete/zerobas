@@ -17852,8 +17852,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bdos-acceptance (BDOSX9) and leaves the reach allowlist. 🔮 "R.DAT matches, Z.DAT's
       zero fill still missing": HIT. What remains is D-WRZER's zero fill and D-RNDFCB below.
 
-- [ ] 🔴 **D-RNDFCB — RDRND LEAVES TWO FCB FIELDS THE CF-3300 CHANGES (found 2026-11-08 by
+- [x] 🔴 **D-RNDFCB — RDRND LEAVES TWO FCB FIELDS THE CF-3300 CHANGES (found 2026-11-08 by
       D-WRRNDEXT)**
+      ✅ **CLOSED (2026-11-08): RDRND's FCB is the CF-3300's in every row.** (a) CR = r0 mod 128,
+      (b) +12 = RR >> 7 and +14 := 0, (c) +28..31 = the record's cluster and its chain index --
+      rdrnd_ex computes the record's sector in the file (RR >> 2) into WRBLK_CURSEC and enters
+      wrblk_fcb_keep's own cluster-cache tail (`wfk_cache`); FAT_CURCLUS is the record's
+      cluster there (rrnd_position left it). Room for (c): D-DISKCARVE7 below. 📏 rndfcb.asm
+      ([`rndfcb_ours4.out`](scratchpad/rndfcb_ours4.out)) against [`rndfcb_stock.out`](scratchpad/rndfcb_stock.out): **all 13 captured bytes identical for
+      all five file sizes, both reads**. 🔮 HIT. ⚠️ rndfcb.asm stays parked (not in
+      bdos-acceptance): ours needs ~400 s of settle for its 25 KB WRBLK (D-BLKIOPERCALL) where
+      the runner gives 50. WRRND's tail likely wants (b) / (c) too -- unmeasured, not touched.
+      💰 **D-DISKCARVE7 (2026-11-08): +25 B in the $75A5 region.** KILL, NAME and COPY opened
+      with the same 17-byte prologue (`ld hl,(FN_RESUME)` / fname_expr / pdfcb_resume through
+      two calbaks; scratchpad/diskngram.py 17 B x3) -- one `hk_fname2` now; a RAISE inside it
+      drops its frame with the statement, as main's error path resets SP.
       🎚️ TIER 1 — the FCB is an entry point's contract: a program that sets a record size,
       RDRNDs, then RDBLKs reads with a different record size on the two machines.
       🤖 **AUTONOMOUS** — 📏 wrzer.asm's read-back half ([`wrzer_both1.out`](scratchpad/wrzer_both1.out)): after FOPEN, RS

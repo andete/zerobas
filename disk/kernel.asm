@@ -5980,12 +5980,8 @@ calbak:
 ; body that does long work in THIS ROM rather than inside a call-back re-opens
 ; it, and 0c's numbers are the ones to re-read then.
 hk_kill:
-                ld      hl,(FN_RESUME)  ; the cursor main staged for us
-                ld      ix,fname_expr
-                call    calbak          ; a string EXPRESSION -> STRSCR; may RAISE
-                                        ; (ERR 13) and NOT return -- see the ABI
-                ld      ix,pdfcb_resume
-                call    calbak          ; -> DISK_FCB_NAME (8.3, wildcards)
+                call    hk_fname2           ; 💰 D-DISKCARVE7: the name -> DISK_FCB_NAME; may
+                                            ; RAISE (ERR 13) and NOT return -- see the ABI
                 ; 🎯 EVERY CALL-BACK IS BEHIND US, AND THAT IS THE WHOLE POINT
                 ; OF THE SLICE (D-KILLLOCAL, spec-diskcode-eviction.md §6.6ay).
                 ; What stood here was `ld a,DISKOP_SEL_KILL / ld ix,dirverb_op /
@@ -6101,11 +6097,8 @@ hoc_next:                                   ; a device or cassette channel
 ; RAM is mapped throughout -- so two characters do not need a call-back apiece,
 ; and skip_spaces/upcase stay where they are.
 hk_name:
-                ld      hl,(FN_RESUME)
-                ld      ix,fname_expr
-                call    calbak              ; OLD name -> STRSCR; may RAISE (ERR 13)
-                ld      ix,pdfcb_resume
-                call    calbak              ; -> DISK_FCB_NAME
+                call    hk_fname2           ; 💰 D-DISKCARVE7: the name -> DISK_FCB_NAME; may
+                                            ; RAISE (ERR 13) and NOT return -- see the ABI
                 ld      hl,(FN_RESUME)
 hkn_sp:
                 ld      a,(hl)              ; skip blanks before `AS`
@@ -6319,11 +6312,8 @@ hkn_up:
 ; main could marshal on to `sub.rom`'s tenant. The stash is an `ldir` here and
 ; the body is `hkc_body` below, so `COPY` reaches no other ROM at all.
 hk_copy:
-                ld      hl,(FN_RESUME)
-                ld      ix,fname_expr
-                call    calbak              ; SOURCE name; may RAISE (ERR 13)
-                ld      ix,pdfcb_resume
-                call    calbak              ; -> DISK_FCB_NAME
+                call    hk_fname2           ; 💰 D-DISKCARVE7: the name -> DISK_FCB_NAME; may
+                                            ; RAISE (ERR 13) and NOT return -- see the ABI
                 ld      hl,DISK_FCB_NAME    ; stash the SOURCE, LOCAL now
                 ld      de,COPY_SRC         ; a main sysvar owned by COPY alone,
                 ld      bc,11               ; published by the generated ABI
@@ -7047,10 +7037,21 @@ br6_end:
 ; directory walks carried verbatim (scratchpad/diskngram.py: 15 B x5 -- hkm_next,
 ; ff_skip, fdcr_entloop, df_nextent, dsm_skip). Each site follows it with an
 ; unconditional `jr`; inc / dec hl set no flags, so nothing read a flag from it.
-; 🔴 D-RNDFCB (b) (2026-11-08): rdrnd_ex -- RDRND's other two FCB side effects on the
+; 🔴 D-RNDFCB (b) + (c) (2026-11-08): rdrnd_ex -- RDRND's other FCB side effects on the
 ; CF-3300 (probes/disk/rndfcb.asm, scratchpad/rndfcb_stock.out): +12 = the CP/M extent,
 ; RR >> 7 (record 199 -> 1), and +14 cleared (wrzer.asm: a record size of 128 read back
 ; 0). CR (+32 = r0 mod 128) is rdrnd_body's own. IX = the FCB copy. Here for room.
+; 💰 D-DISKCARVE7 (2026-11-08): hk_fname2 -- the 17-byte prologue KILL, NAME and COPY
+; carried verbatim (scratchpad/diskngram.py, 17 B x3): the file-name EXPRESSION at
+; main's staged cursor -> STRSCR, then -> DISK_FCB_NAME (8.3, wildcards). Either calbak
+; may RAISE and not return: main's error path resets SP, so this frame's return
+; address is dropped with the statement, as the handler's own was.
+hk_fname2:
+                ld      hl,(FN_RESUME)      ; the cursor main staged for us
+                ld      ix,fname_expr
+                call    calbak              ; a string EXPRESSION -> STRSCR; may RAISE
+                ld      ix,pdfcb_resume
+                jp      calbak              ; -> DISK_FCB_NAME (8.3, wildcards)
 rdrnd_ex:
                 ld      a, (ix+33)
                 rla                         ; Cy = r0 bit 7
@@ -7058,7 +7059,19 @@ rdrnd_ex:
                 rla                         ; A = (r1 << 1) | (r0 >> 7)
                 ld      (ix+12), a
                 ld      (ix+14), 0
-                ret
+                ; (c) +28..31 = the record's cluster and its index in the chain (record
+                ; 199 of a 200-record file -> $198 / $18 on the CF-3300): rrnd_position
+                ; left FAT_CURCLUS on the record's cluster; the index comes from the
+                ; record's sector in the file (RR >> 2: four 128-byte records a sector),
+                ; through wrblk_fcb_keep's own cluster-cache tail.
+                ld      l, (ix+33)
+                ld      h, (ix+34)
+                srl     h
+                rr      l
+                srl     h
+                rr      l
+                ld      (WRBLK_CURSEC), hl
+                jp      wfk_cache
 dir_nextsec:
                 ld      hl, (FAT_DIRSEC)
                 inc     hl
@@ -7296,6 +7309,7 @@ wrblk_fcb_keep:
                 ld      a, (WRBLK_CURVALID)
                 or      a
                 ret     z                   ; nothing positioned this call
+wfk_cache:                                  ; (D-RNDFCB (c) enters here: rdrnd_ex)
                 ld      hl, (FAT_CURCLUS)
                 ld      (ix+28), l
                 ld      (ix+29), h
