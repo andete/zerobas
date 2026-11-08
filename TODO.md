@@ -17677,6 +17677,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
       and what BASIC's FILES does with the same disk on both (FILES may share the walk).
 
+- [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
+      DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
+      🎚️ TIER 1 — happy path of main BIOS calls (Joost 2026-11-08: the entry points outrank BASIC).
+      🤖 **AUTONOMOUS** — `scratchpad/biossweep_probe.py` (basic_probe_biosregs.py's stub: A / BC
+      / DE / HL in, the entry called DIRECTLY by a USR stub, HL / DE / BC / A printed; F not
+      compared) over 34 safe entries ([`biossweep_1108.out`](scratchpad/biossweep_1108.out)): **20 SAME, 13 DIVERGE, POSIT no
+      reading** (it moves the cursor; the probe's print is overwritten -- needs its own shape).
+      🔴 **Contract outputs that differ:** SCALXY ($010E, BC = 300 / DE = 200 in SCREEN 2: VG-8020
+      returns the CLIPPED BC = 255 / DE = 191, C-BIOS 0 / 0); GTASPC ($0126: VG DE = HL = $100,
+      C-BIOS leaves them); READC ($011D: VG A = 4, the colour at the cursor; C-BIOS 0); DOWNC
+      ($0108: VG A = 1, C-BIOS 0 -- check whether A is its contract or a side effect); MAPXYC
+      ($0111: HL / DE / A differ -- its real outputs are CLOC / CMASK, capture the RAM).
+      ⚠️ **Only side registers differ** (the documented answer agrees): GTSTCK, GTTRIG, GTPDL,
+      GTPAD, SNSMAT, CHGCLR -- the D-BIOSREGS class (Demonia read such a register), lower first.
+      ➡️ C-BIOS is our BSD dependency: read its source for each, fix as cbios-repack patches
+      (bios-regs.patch's way), turn the batch's SAME + fixed rows into biosregs-acceptance rows,
+      and extend the batch past these 34 (the 85 NOT MEASURED rows of the BIOS table).
+
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**
       🎚️ TIER 1 — happy path of an entry point.
