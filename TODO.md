@@ -17557,6 +17557,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       answer as the reference does. setrnd_char.asm and verifyx.asm run in no gate either.
       ⚠️ The open-item column matches a function's NAME in an item's headline only:
       D-BLKIOPERCALL lands on WRBLK, not RDBLK, whose name its headline does not carry.
+      ✅ **STEP 4 SHIPPED (2026-11-08): THE DISK-ROM TABLE**, second section of docs/tier-status.md:
+      the six published entries ($4010 DSKIO .. $401F MTOFF; exercised = a gate-reached script
+      names the address or the routine) and every PINNED address in disk/*.asm (61) -- the
+      reference's canonical entries the MSX-DOS kernel calls, each tied to the BDOS function its
+      own comment numbers (`BDOS $NN`, in the window from the previous pin's entry to its own
+      instruction) or its own label names (getalloc -> ALLOC), and given that function's status.
+      **34 of 61 tie to a function; 27 do not** (kernel-internal veneers: $402D, $4558, $47B2,
+      $4E4B ...). **Published: DSKIO, CHOICE exercised; DSKCHG, GETDPB, DSKFMT, MTOFF NOT
+      MEASURED.** 🔴 Three attribution faults of the first cuts, each caught by reading the table
+      against the hand list: a +-8-line window credited a pin with the function of the pin in
+      front of it (fdc_write_phys "FREN"); a window ending at a bare label missed the comment on
+      its instruction line (every function shifted one pin down); a name merely MENTIONED in a
+      comment tied fdc_di_save to WRZER (dropped: labels only). tests/test_entry_table.py (d)
+      pins all three.
       ➡️ NEXT, in order: (2) the 10 NOT MEASURED functions and the unused numbers -- one
       differential against the CF-3300 each, registers + FCB / RAM out (bdosx's shape), into
       bdos-acceptance; lstoutx / setrnd_char / verifyx wired into a gate; (3) EXERCISED -> SAME:

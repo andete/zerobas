@@ -74,5 +74,18 @@ bd = {r["name"]: r for r in rs}
 check("bdos-acceptance" in bd["FOPEN"]["gates"],
       "(c) FOPEN is exercised by bdos-acceptance (the two-hop reach)")
 
+# (d) the disk-ROM pins: each tied to ITS function, never to the pin in front of it
+pins = {r["addr"]: r for r in E.pinned_rows()}
+check("WRZER" in pins[0x47D1]["status"], f"(d) $47D1 is WRZER's: {pins[0x47D1]['status']}")
+check("AUXOUT" in pins[0x5474]["status"], f"(d) $5474 is AUXOUT's: {pins[0x5474]['status']}")
+check("FREN" in pins[0x4392]["status"] and "FREN" not in pins[0x43A4]["status"],
+      "(d) FREN is $4392's, not fdc_write_phys's at $43A4 (the window stops at a pin)")
+check("ALLOC" in pins[0x505D]["status"] and "by its label" in pins[0x505D]["status"],
+      f"(d) getalloc ties to ALLOC by its label: {pins[0x505D]['status']}")
+check(pins[0x4C29]["fn"] is None, "(d) fdc_di_save names no function (a comment mention is not a tie)")
+pub = {r["name"]: r for r in E.published_rows()}
+check(set(pub) == {"DSKIO", "DSKCHG", "GETDPB", "CHOICE", "DSKFMT", "MTOFF"},
+      "(d) the six published disk-ROM entries all have a row")
+
 print(f"\n{'ALL PASSED' if not fails else f'{fails} FAILED'}")
 sys.exit(1 if fails else 0)

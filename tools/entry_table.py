@@ -28,6 +28,7 @@ HOW A ROW IS FILLED -- MECHANICALLY, AND WHAT THAT DOES NOT PROVE:
     python3 tools/entry_table.py --markdown the section docs/tier-status.md carries
 """
 import collections
+import glob
 import os
 import re
 import sys
@@ -204,9 +205,139 @@ def fmt_markdown(its=()):
     return "\n".join(out) + "\n"
 
 
+# ---------------------------------------------------------------------------
+# D-ENTRYTIERS step 4: the DISK-ROM entries.
+#   * the six published ones ($4010 DSKIO .. $401F MTOFF, disk/init.asm's table);
+#   * every PINNED address in disk/*.asm (a `ds $XXXX - $` pin and the label or
+#     instruction after it): the reference's canonical entries the MSX-DOS kernel
+#     calls. Their BDOS function is read from a `BDOS $NN` mention around the pin;
+#     their status is that function's row. A pin naming no function says so.
+# ---------------------------------------------------------------------------
+PUBLISHED = [(0x4010, "DSKIO"), (0x4013, "DSKCHG"), (0x4016, "GETDPB"),
+             (0x4019, "CHOICE"), (0x401C, "DSKFMT"), (0x401F, "MTOFF")]
+PIN = re.compile(r"^\s+ds\s+\$([0-9A-Fa-f]{4})\s*-\s*\$")
+LABEL = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):")
+BDOSN = re.compile(r"BDOS\s+\$([0-9A-Fa-f]{2})")
+
+
+def _gate_reach():
+    """script / source basename -> the *-acceptance targets that reach it (code only)."""
+    targets, pys = _targets(), _scripts()
+    out = collections.defaultdict(set)
+    for t, recipe in targets.items():
+        seen = {p for p in pys if p in recipe}
+        frontier = set(seen)
+        while frontier:
+            nxt = set()
+            for p in frontier:
+                for q, _ in pys.items():
+                    if q not in seen and q in pys[p]:
+                        nxt.add(q)
+            seen |= nxt
+            frontier = nxt
+        for p in seen:
+            out[p].add(t)
+    return out, pys
+
+
+def published_rows():
+    reach, pys = _gate_reach()
+    rows = []
+    for addr, name in PUBLISHED:
+        pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
+        gates = set()
+        for p, txt in pys.items():
+            if pat.search(txt):
+                gates |= reach.get(p, set())
+        rows.append(dict(addr=addr, name=name, gates=sorted(gates),
+                         status="exercised" if gates else "NOT MEASURED"))
+    return rows
+
+
+def pinned_rows(bdos=None):
+    bdos = bdos or {r["num"]: r for r in rows()[0]}
+    out = []
+    for f in sorted(glob.glob(os.path.join(REPO, "disk", "*.asm"))):
+        lines = open(f, errors="replace").read().splitlines()
+        prev_entry = -1                     # the line of the previous pin's entry
+        for i, l in enumerate(lines):
+            m = PIN.match(l)
+            if not m:
+                continue
+            addr = int(m.group(1), 16)
+            if not 0x4000 <= addr < 0x8000 or 0x4010 <= addr <= 0x401F:
+                continue
+            j, name = i + 1, None
+            while j < len(lines) and j < i + 80:
+                c = lines[j].split(";", 1)[0].strip()
+                lm = LABEL.match(lines[j])
+                if lm:
+                    name = lm.group(1)
+                    break
+                if c:
+                    name = "(" + c.split()[0] + " " + " ".join(c.split()[1:])[:24] + ")"
+                    break
+                j += 1
+            # the comment that names this pin's function lies between the PREVIOUS
+            # pin's entry and this entry's own line -- never across a pin (a wider
+            # window credited fdc_write_phys with the FREN veneer in front of it)
+            # (a label alone on its line: its instruction -- and the comment naming
+            # the function -- is the next line, so the window takes it too)
+            j = min(j, len(lines) - 1)
+            end = j + 2 if LABEL.match(lines[j]) and not lines[j].split(":", 1)[1].split(";")[0].strip() else j + 1
+            ctx = "\n".join(lines[max(prev_entry + 1, i - 12):end])
+            prev_entry = end - 1
+            fn = BDOSN.search(ctx)
+            fn = int(fn.group(1), 16) if fn else None
+            how = ""
+            if fn is None:
+                # a comment may name the function instead of numbering it (SFIRST,
+                # _GDATE, GETALLOC -- the kernel's own words for ALLOC); weaker
+                # evidence, so the row says how it was tied
+                alias = dict(NAMES, GETALLOC=0x1B, GETDAT=0x2A, SETDAT=0x2B, GDATE=0x2A, SDATE=0x2B)
+                # the entry's OWN label (getalloc -> GETALLOC, setdta_cache -> SETDTA)
+                first = (name or "").strip("(`").split()[0].split("_")[0].upper() if name else ""
+                if first in alias:
+                    fn, how = alias[first], " (by its label)"
+                # (a name merely MENTIONED in the comment window was tried and dropped:
+                # it tied fdc_di_save to WRZER and a pad to WRBLK -- comments name the
+                # routines that moved past a pin as readily as the pin's own function)
+            if fn is not None and fn in bdos:
+                st = f"BDOS ${fn:02X} {bdos[fn]['name']}{how}: {bdos[fn]['status']}"
+            else:
+                st = "no BDOS function named"
+            out.append(dict(addr=addr, name=name or "?", fn=fn, status=st,
+                            where=f"{os.path.relpath(f, REPO)}:{i + 1}"))
+    return sorted(out, key=lambda r: r["addr"])
+
+
+def fmt_disk_markdown():
+    pub, pins = published_rows(), pinned_rows()
+    out = ["## Entry points — the disk ROM", "",
+           "The six published entries, then every PINNED address in `disk/*.asm` -- the "
+           "reference's canonical entries the MSX-DOS kernel calls (each one a `ds $XXXX - $` "
+           "pin; D-WRZER and D-AUXOUT were two such addresses never planted). A pin's status is "
+           "the BDOS function its comment names; a pin naming none is a kernel-internal entry "
+           "this table cannot tie to a function yet. Same rule as above: exercised is not same.", "",
+           "| address | entry | status | exercised by |", "|---|---|---|---|"]
+    for r in pub:
+        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | "
+                   + (", ".join(f"`{g}`" for g in r["gates"]) or "—") + " |")
+    out += ["", "| pin | label | function and its status | source |", "|---|---|---|---|"]
+    for r in pins:
+        out.append(f"| ${r['addr']:04X} | `{r['name']}` | {r['status']} | {r['where']} |")
+    named = sum(1 for r in pins if r["fn"] is not None)
+    out += ["", f"{len(pins)} pinned addresses; {named} name a BDOS function, "
+            f"{len(pins) - named} do not."]
+    return "\n".join(out) + "\n"
+
+
 def main(argv):
     if "--markdown" in argv:
         sys.stdout.write(fmt_markdown())
+        return 0
+    if "--disk" in argv:
+        sys.stdout.write(fmt_disk_markdown())
         return 0
     rs, unreached = rows()
     for r in rs:
