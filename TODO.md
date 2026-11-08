@@ -17897,6 +17897,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       spelled without the space after the comma, so the first exact match found only three).
       One `dir_nextsec` in the $75A5 region; every site follows it with an unconditional `jr`
       (no flag read). Slack after: $75A5 0 -> 18 B, $7F7C 3 -> 14, $5E10 0 -> 11.
+      ✅ **(b) SHIPPED (2026-11-08): +12 = RR >> 7, +14 := 0** -- `rdrnd_ex` (16 B, the $75A5
+      region), called from rdrnd_body's success path. 📏 rndfcb.asm on ours
+      ([`rndfcb_ours3.out`](scratchpad/rndfcb_ours3.out)) against the CF-3300's: **every row identical but +28 / +30 on the
+      last-record reads of the 21 / 128 / 200-record files** -- (c), the cluster cache. 🔮 HIT.
+      ➡️ (c): ~20 B (WRBLK_CURSEC := RR >> 2, then wrblk_fcb_keep's tail from `ld hl,
+      (FAT_CURCLUS)`); check first that FAT_CURCLUS after bdos_seqread is the record's cluster.
       ⏱ Ours reached the anchor at 176 s, the CF-3300 at 56 s (the WRBLK of 25 KB: D-BLKIOPERCALL). Room from `scratchpad/movescout.py` (routines in an
       address range entered only by call / jp / dw, ending unconditionally): wrseq_body_write
       (8 B) moved to the hole before $55FF, and pg0_mainrom_in -- only `jp br_mainin_tmpl` since

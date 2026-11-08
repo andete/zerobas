@@ -7047,6 +7047,18 @@ br6_end:
 ; directory walks carried verbatim (scratchpad/diskngram.py: 15 B x5 -- hkm_next,
 ; ff_skip, fdcr_entloop, df_nextent, dsm_skip). Each site follows it with an
 ; unconditional `jr`; inc / dec hl set no flags, so nothing read a flag from it.
+; 🔴 D-RNDFCB (b) (2026-11-08): rdrnd_ex -- RDRND's other two FCB side effects on the
+; CF-3300 (probes/disk/rndfcb.asm, scratchpad/rndfcb_stock.out): +12 = the CP/M extent,
+; RR >> 7 (record 199 -> 1), and +14 cleared (wrzer.asm: a record size of 128 read back
+; 0). CR (+32 = r0 mod 128) is rdrnd_body's own. IX = the FCB copy. Here for room.
+rdrnd_ex:
+                ld      a, (ix+33)
+                rla                         ; Cy = r0 bit 7
+                ld      a, (ix+34)
+                rla                         ; A = (r1 << 1) | (r0 >> 7)
+                ld      (ix+12), a
+                ld      (ix+14), 0
+                ret
 dir_nextsec:
                 ld      hl, (FAT_DIRSEC)
                 inc     hl
@@ -8590,6 +8602,7 @@ rdrnd_body:
                 and     $7F                 ; side effect; 🔴 D-RNDFCB 2026-11-08: it was raw r0
                 ld      (ix+32), a          ; -- record 199 left $C7 where the CF-3300 has $47,
                                             ; scratchpad/rndfcb_stock.out / rndfcb_ours.out)
+                call    rdrnd_ex            ; ... and +12 EX := RR >> 7, +14 := 0 (D-RNDFCB (b))
                 xor     a
                 ld      h, a
                 ld      l, a                ; HL = $0000 (pinned exit value, success)
