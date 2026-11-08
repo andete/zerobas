@@ -1,0 +1,8 @@
+# D-FDCDI experiment (2026-11-08): FDC_WINMAX = 0 (no interrupt windows in the first-DRQ
+# wait -- the CF-3300's masked waits), everything else at HEAD c9368a0d. Reverted.
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  case   bytes  emulated s  jiffies printed     = s
+  S       1055       0.768                9   0.180
+  M       7208       2.054               27   0.540
+  L      14369       3.267               51   1.020
+# with the windows (HEAD, loadclock_ab_persec.out): S 0.567 / 29, M 1.653 / 83, L 3.069 / 154
