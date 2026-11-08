@@ -17733,6 +17733,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Semantics per entry: its published contract, then a black-box VG-8020 biossweep row in
       SCREEN 2 and SCREEN 3 -- one entry, one row, one commit. Island / pin rules of
       cbios-repack apply (C-BIOS labels move only within the pad; REPACKED_SHA1).
+      📏 **SCALXY / GTASPC, MEASURED (2026-11-08,** [`biossweep_sxy.out`](scratchpad/biossweep_sxy.out), [`biossweep_sxy2.out`](scratchpad/biossweep_sxy2.out),
+      VG-8020): SCALXY clips BC (x) to 0..255 and DE (y) to 0..191, a negative to 0; in SCREEN 3
+      it then divides BOTH by 4 (300 / 200 -> 63 / 47; 100 / 100 -> 25 / 25); **A = $80 when
+      nothing was clipped, 0 when either coordinate was** (x-only and y-only both give 0); HL
+      kept. GTASPC returns DE = ASPCT1 ($F40B), HL = ASPCT2 ($F40D) -- and **those cells hold
+      $100 / $100 on the VG-8020 from the prompt on, 0 / 0 on zerobas**: the fix also needs
+      them initialised. ⚠️ SIZE: C-BIOS's video.asm sits BEFORE BASIC_ORG in the merged image
+      (eu-drop-dead-strings' note), so the patch must keep the span downc .. gtaspc the SAME
+      LENGTH: rewrite it as one block (the stubs not yet implemented become a bare `ret`,
+      dropping print_debug and the name strings -- that is the room) and `ds`-pad to the
+      original pntini address, read from the pristine build's symbols first.
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**

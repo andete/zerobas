@@ -1,0 +1,8 @@
+ROW sxy2in   VG=[[R 5566 64 64 A80]] ZB=[[R 5566 0 0 A0]] DIVERGES
+ROW sxy2neg  VG=[[R 5566 0 0 A0]] ZB=[[R 5566 0 0 A0]] SAME
+ROW sxy3over VG=[[R 5566 2F 3F A0]] ZB=[[R 5566 0 0 A0]] DIVERGES
+ROW sxy3in   VG=[[R 5566 19 19 A80]] ZB=[[R 5566 0 0 A0]] DIVERGES
+ROW gtaspc0  VG=[[R 100 100 1122 A0]] ZB=[[R 5566 3344 1122 A0]] DIVERGES
+
+1 SAME, 4 DIVERGE (sxy2in, sxy3over, sxy3in, gtaspc0)
+refcache: 0 hit, 10 miss, 10 stored

@@ -54,6 +54,18 @@ ROWS = {
     "gtaspc":  B.prog(0x0126, 0, **S2),
     "readc":   B.prog(0x011D, 0, **S2),
     "setatr":  B.prog(0x011A, 5, **S2),
+    # SCALXY's clipping, for the D-BIOSCONTRACT fix: in range, both negative, both over;
+    # SCREEN 2 and SCREEN 3 (multicolour, 64 x 48)
+    "sxy2in":  B.prog(0x010E, 0, bc=100, de=100, **S2),
+    "sxy2neg": B.prog(0x010E, 0, bc=0xFFFB, de=0xFFFB, **S2),
+    "sxy3over": B.prog(0x010E, 0, bc=300, de=200, before="SCREEN 3", after="SCREEN 0"),
+    "sxy3in":  B.prog(0x010E, 0, bc=100, de=100, before="SCREEN 3", after="SCREEN 0"),
+    "gtaspc0": B.prog(0x0126, 0),
+    "sxy2xov": B.prog(0x010E, 0, bc=300, de=100, **S2),
+    "sxy2yov": B.prog(0x010E, 0, bc=100, de=200, **S2),
+    # the aspect cells GTASPC returns, read straight from RAM (HL = $F40B, DE = $F40D)
+    "aspct":   B.prog(0x0000 + 0x0020, 0, de=0, hl=0, before="POKE &HD200,0",
+                      after='PRINT "[ASP";HEX$(PEEK(&HF40B)+256*PEEK(&HF40C));HEX$(PEEK(&HF40D)+256*PEEK(&HF40E));"]"'),
 }
 
 

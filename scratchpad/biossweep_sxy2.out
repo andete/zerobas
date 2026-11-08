@@ -1,0 +1,5 @@
+ROW sxy2xov  VG=[[R 5566 64 FF A0]] ZB=[[R 5566 0 0 A0]] DIVERGES
+ROW sxy2yov  VG=[[R 5566 BF 64 A0]] ZB=[[R 5566 0 0 A0]] DIVERGES
+
+0 SAME, 2 DIVERGE (sxy2xov, sxy2yov)
+refcache: 0 hit, 4 miss, 4 stored
