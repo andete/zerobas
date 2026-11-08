@@ -17709,6 +17709,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       entries at the graphics code BASIC already carries in the same image (PSET / POINT / PAINT
       work on the same VRAM layout) rather than writing it twice -- main ROM is nearly full
       (page 1 was 36 B free and the low region 26 B on 2026-11-08, `make basic-reloc`). (3) Each fix: a biosregs-acceptance row, VG-8020 SAME.
+      📏 **(1) THE INVENTORY, STATIC (2026-11-08):** of the 34, our build REPLACES 10 -- the tape
+      six (tape/tape.asm), GTPAD / GTPDL (the tape image + tools/build_mainrom.py), GETYPR
+      (build_mainrom.py), CHKRAM (bios-keyscan.patch) -- by a grep of cbios-repack/*.patch,
+      tools/build_mainrom.py, tools/build_patches.py and tape/*.asm for each routine. **24 are
+      still C-BIOS's stubs in our main ROM:** the graphics-cursor 16 and INIFNK, STRTMS,
+      ISCNTC, BEEP, FNKSB, ERAFNK, DSPFNK, OUTDLP. BASIC does its own beep / function keys /
+      graphics internally; these are the PUBLISHED entries a machine-code program calls.
+      ➡️ Behavioural confirmation (a biossweep row each: "registers unchanged, nothing done"),
+      then the graphics family against BASIC's own PSET / POINT code -- first read which of
+      BASIC's routines keep CLOC / CMASK / GRPACX the BIOS way.
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**
