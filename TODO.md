@@ -17523,6 +17523,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       And a first cut of the row NAMES collided (`colour-explicit` /
       `colour-default` cut to six letters); the duplicate-key guard refused it.
 
+- [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
+      TIER SHEET (asked by Joost 2026-11-08)**
+      🎚️ APPARATUS — a denominator, like kwsweep's keyword rows: it serves TIER 1's "machine
+      code that calls the published ROM" and the disk core's port to C-BIOS
+      ([[disk-core-portable-to-cbios]]).
+      🤖 **AUTONOMOUS** — Joost: *"I wonder if it would be useful to have each bios call and
+      indirect (e.g.) disk bios call or bdos call have its own place in the tier list ?"*
+      Answered yes, with this shape.
+      📐 Three tables in docs/tier-status.md, each row = name, address / function number, status
+      (same / differs / missing / NOT MEASURED), the gate row that witnesses it, and the tier tag
+      of any open TODO item naming it: (1) **BDOS** $00-$30 (MSX-DOS 1, ~40 functions) FIRST --
+      the disk core's surface; (2) **disk-ROM entries** (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT,
+      MTOFF and the pinned kernel entries); (3) **main BIOS calls** (C-BIOS's, patched by
+      cbios-repack where a row differs). The entry lists come from the published references
+      (clean room). First pass is a MAPPING of existing gates onto rows -- no emulator time; a row
+      nothing witnesses says NOT MEASURED out loud (kwsweep's MISSING lesson). Then a gate keeps
+      the table from drifting (tier_table.py renders it; tiers-md-check fails on a stale one).
+
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
       🎚️ TIER 5 — on-par speed: the `%` FOR loop, 19 ticks against 7 (the rest is level now).
@@ -18711,8 +18729,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first-cut failure D-ADDR29 TEMPST already recorded. (a) is the shape; list every
       op that writes through a temp's ptr before touching str_eval_lit.
 
-- [ ] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
+- [x] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
       2026-11-05 by D-TRAPSTMT)**
+      ✅ **CLOSED ON PAR (2026-11-08):** re-measured at HEAD ([`trapcost_cost10.out`](scratchpad/trapcost_cost10.out),
+      `trapstmt_probe.py --cost`): **zerobas 40 frames per 100 handler calls, VG-8020 39** (1.03x;
+      96 when filed). 🔮 "41, unchanged by today's `%`-only NEXT work": MISSED by one, low --
+      a frame of jitter or D-NXINPLACE's shorter nx_have test. What remains is one frame in a
+      hundred calls; the general interpreter gap it shared is D-LOOPPROF's.
       🎚️ TIER 5 — on-par speed: `GOSUB` / `RETURN` + an array increment, and the trap
       dispatch around it.
       🤖 **AUTONOMOUS** — measure where the frames go first.
