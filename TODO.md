@@ -17672,6 +17672,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       unchanged / 0 unknown / -1 changed, Cy + A on error); ours knows a change through the
       FDC's disk-change line or DSK_MEDIA -- measure the "changed" answer on the CF-3300 (a
       swap between the two calls) before choosing.
+      📏 **MEASURED (2026-11-08) -- `probes/disk/dskchg.asm`** (+ build_dskchg_disk.py): DSKCHG through
+      CALSLT right after a read, then after 1 / 3 / 10 s idle (JIFFY), no swap
+      ([`dskchg_stock.out`](scratchpad/dskchg_stock.out)): **CF-3300 B = 1 ("unchanged"), A = 0 right after and at +1 s; B = 0
+      ("unknown"), A = $F9 at +3 s and +10 s; Cy = 0 always.** A timed scheme, cut-off between 1
+      and 3 s -- the SAFE one: it never says "unchanged" long after the last access, so a swap
+      in the meantime cannot make MSX-DOS trust stale buffers. 🔮 "1, 1, 0, 0": HIT. (The first
+      run hung: a CALSLT can return with interrupts off, so the wait loop got an `ei`.)
+      📐 **THE FIX:** a 16-bit JIFFY stamp of the last FDC access (2 B, disk-owned: the
+      unattributed run at $EDBB in ram_map.py) set in fdc_io_done (push hl / ld hl,(JIFFY) / ld
+      (stamp),hl / pop hl, 8 B -- an 8-bit stamp would wrap after ~5 s and say "unchanged" after
+      a swap: the dangerous direction); dskchg = elapsed < ~2 s -> B = 1, A = 0; else B = 0, A =
+      (DSK_MEDIA); Cy = 0 (~29 B). The cut-off in SECONDS (the CF-3300 is a 60 Hz machine, ours
+      runs 50 Hz). 💰 ~35 B in the $4E4B region, which has 13 -- behind the same carve as
+      D-CALSLTP0.
 
 - [ ] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
       2026-11-08 by dskent.asm)**
