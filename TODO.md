@@ -18400,6 +18400,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `check_disk_walls.py` shows NO usable hole left (the only run >= 16 B is the FDC window).
       ➡️ **NEXT: a D-DISKCARVE round** (its candidate list: the fdc_read_phys / fdc_write_phys
       prefix ~34 B, the getalloc / fat_have_free_cluster scan bodies ~60 B), then (b), then (a).
+      💰 **D-DISKCARVE2 (2026-11-08): +44 B.** fdc_read_phys / fdc_write_phys (disk/driver.asm)
+      shared three pieces, now once: `fdc_prep` (DI, select drive / side / motor, settle, two
+      tries), `fdc_seek`, `fdc_again` (the retry countdown; on the last failure it drops the
+      caller's return and ends at fdc_io_done, as both tails did). The helpers sit in the read
+      side's pad before $436C; the write side's freed bytes join its 7 B before $4462:
+      `check_disk_walls.py` now lists **a 44 B usable hole at $4436** (before: none >= 16 B
+      outside the FDC window). 🔮 ~28 B: the saving was ~28; the hole is larger because it
+      merged with the old 7 B and the read pad's slack.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

@@ -127,23 +127,9 @@ dskio_wnext:
 ; Selects drive A + side + motor, then seeks and reads, retrying once via a
 ; restore if the first attempt fails (recovers a stale Track register).
 fdc_read_phys:
-                call    fdc_di_save     ; mask interrupts across the transfer
-                ld      a, CTRL_DRIVE_A + CTRL_MOTOR
-                bit     0, e
-                jr      z, fdc_rp_nos
-                or      CTRL_SIDE
-fdc_rp_nos:
-                ld      (FDC_CTRL), a
-                call    fdc_settle      ; motor spin-up / head settle
-                ld      a, 2
-                ld      (FDC_TRY), a    ; up to two attempts
+                call    fdc_prep        ; DI, select, settle, two attempts (D-DISKCARVE2)
 fdc_rp_attempt:
-                ; seek to target track (track number via Data register)
-                ld      a, d
-                ld      (FDC_DATA), a
-                ld      a, CMD_SEEK
-                ld      (FDC_STATUS), a
-                call    fdc_wait_ready
+                call    fdc_seek        ; seek to target track
                 ; issue read-sector and transfer the data
                 ld      a, c
                 ld      (FDC_SECTOR), a
@@ -153,16 +139,45 @@ fdc_rp_attempt:
                 call    fdc_read_data
                 jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
+                call    fdc_again       ; last try: ends at fdc_io_done; else restored
+                jr      fdc_rp_attempt
+
+; 💰 D-DISKCARVE2 (2026-11-08): the three pieces fdc_read_phys and fdc_write_phys
+; both carried, once. fdc_prep: interrupts masked (fdc_di_save), drive A + side
+; (E bit 0) + motor, settle, FDC_TRY = 2. fdc_seek: seek to track D, wait.
+; fdc_again: A / Cy = a failed attempt's result; with a try left, recalibrate and
+; return (the caller re-attempts); on the last, DROP the caller's return and end
+; the transfer through fdc_io_done with that result -- what the two tails did.
+fdc_prep:
+                call    fdc_di_save     ; mask interrupts across the transfer
+                ld      a, CTRL_DRIVE_A + CTRL_MOTOR
+                bit     0, e
+                jr      z, fdc_pp_nos
+                or      CTRL_SIDE
+fdc_pp_nos:
+                ld      (FDC_CTRL), a
+                call    fdc_settle      ; motor spin-up / head settle
+                ld      a, 2
+                ld      (FDC_TRY), a    ; up to two attempts
+                ret
+fdc_seek:
+                ld      a, d            ; track number via the Data register
+                ld      (FDC_DATA), a
+                ld      a, CMD_SEEK
+                ld      (FDC_STATUS), a
+                jp      fdc_wait_ready
+fdc_again:
                 push    af
                 ld      a, (FDC_TRY)
                 dec     a
                 ld      (FDC_TRY), a
-                jr      z, fdc_rp_fail
+                jr      z, fdc_ag_last
                 pop     af
-                call    fdc_restore     ; recalibrate, then retry
-                jr      fdc_rp_attempt
-fdc_rp_fail:
-                pop     af              ; restore error code + carry
+                jp      fdc_restore     ; recalibrate; the caller retries
+fdc_ag_last:
+                pop     af              ; the error code + carry
+                inc     sp
+                inc     sp              ; drop the caller's return: the transfer ends
                 jp      fdc_io_done
 
 ; fdc_read_data — transfer 512 bytes of a read-sector command into (HL).
@@ -235,23 +250,9 @@ k_4392:
 ; register after a reset), exactly like the read path. A genuine write-protected
 ; disk is reported up front (no retry) by fdc_write_data's status check.
 fdc_write_phys:
-                call    fdc_di_save     ; mask interrupts across the transfer
-                ld      a, CTRL_DRIVE_A + CTRL_MOTOR
-                bit     0, e
-                jr      z, fdc_wp_nos
-                or      CTRL_SIDE
-fdc_wp_nos:
-                ld      (FDC_CTRL), a
-                call    fdc_settle      ; motor spin-up / head settle
-                ld      a, 2
-                ld      (FDC_TRY), a    ; up to two attempts
+                call    fdc_prep        ; DI, select, settle, two attempts (D-DISKCARVE2)
 fdc_wp_attempt:
-                ; seek to target track (track number via Data register)
-                ld      a, d
-                ld      (FDC_DATA), a
-                ld      a, CMD_SEEK
-                ld      (FDC_STATUS), a
-                call    fdc_wait_ready
+                call    fdc_seek        ; seek to target track
                 ; D-DISKERR (docs/spec-basic-diskerr.md): an EMPTY drive must fail a
                 ; write the way it fails a read -- the seek's type-I status carries
                 ; NOT READY; the body is in the kernel's corridor (this span has 7 B
@@ -280,16 +281,8 @@ fdc_wp_attempt:
                 inc     a
                 dec     a               ; Z iff A = 0 (write protected); Cy KEPT
                 jr      z, fdc_wp_fail
-                push    af
-                ld      a, (FDC_TRY)
-                dec     a
-                ld      (FDC_TRY), a
-                jr      z, fdc_wp_fail2
-                pop     af
-                call    fdc_restore     ; recalibrate, then retry
+                call    fdc_again       ; last try: ends at fdc_io_done; else restored
                 jr      fdc_wp_attempt
-fdc_wp_fail2:
-                pop     af              ; restore error code + carry
 fdc_wp_fail:
                 jp      fdc_io_done
 
