@@ -17648,6 +17648,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 Witness ready: `probes/disk/wrzer.asm`'s R.DAT half (record 20 of an empty file by
       WRRND; the CF-3300 writes it, size 2688, the added records the disk's bytes). Needs
       disk-ROM bytes (none free outside the FDC window): a carve first.
+      📐 **DESIGN (2026-11-08): WRRND past EOF = WRBLK of one 128-byte record.** wrblk_body already
+      extends a file from FCB state (wrblk_fcbstate, wroe_ext) and leaves the sectors an
+      extension skips UNWRITTEN -- the CF-3300's WRRND face ($CC kept, wrzer_stock3.out). So
+      wrrnd_body's past-EOF exit (`jr c, wrrnd_ioerr` after rrnd_position) goes to a wrapper:
+      save FCB +14..15, set 128; DE = the FCB, HL = 1, `call wrblk_body`; RR -= 1 (WRBLK
+      advanced it, WRRND does not); restore +14..15; map A. Within-file WRRND stays on its own
+      path (bdosx3 green on it). ~45 B -- the largest usable hole is 12 B (`scratchpad/pinguard.py
+      --slack`), so a carve first. ⚠️ The CF-3300 left +14..15 = 0 after WRZER + FCLOSE
+      (bdosx9 $04FE) where ours keeps 128: read which call zeroes it before copying it.
+      WRZER then = the same wrapper + zero sectors for the clusters wroe_ext adds.
 
 - [x] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
       D-ENTRYTIERS step 2)**
