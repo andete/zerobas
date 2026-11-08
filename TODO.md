@@ -17662,8 +17662,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       init region had none -- `scratchpad/pinguard.py`). After ([`dskent_drvtbl2.out`](scratchpad/dskent_drvtbl2.out)): 0 of 16
       bytes differ; dskent reaches its anchor. 🔮 HIT.
 
-- [ ] 🔴 **D-DSKCHG — THE PUBLISHED DSKCHG ($4013) ALWAYS ANSWERS AN ERROR (found 2026-11-08 by
+- [x] 🔴 **D-DSKCHG — THE PUBLISHED DSKCHG ($4013) ALWAYS ANSWERS AN ERROR (found 2026-11-08 by
       dskent.asm)**
+      ✅ **FIXED THE SAME DAY (second build).** 📏 The CF-3300 refreshes the DPB at HL on its
+      "unknown" answer ([`dskchg_stock2.out`](scratchpad/dskchg_stock2.out): the same 18 bytes GETDPB writes). dskchg ->
+      dskchg_body (disk/kernel.asm): HL / DE kept, a 16-bit JIFFY delta against DSK_STAMP; under
+      2 s -> B = 1, A = 0; else dc_unk (disk/driver.asm): getdpb on the caller's HL, B = 0.
+      fdc_prep stamps DSK_STAMP at every sector command (fdc_seek moved to the $43A4 pad; four
+      hdl_* `jp` -> `jr` for the $75A5 room). 📏 [`dskchg_ours3.out`](scratchpad/dskchg_ours3.out): **B / Cy IDENTICAL in all four
+      rows, the refreshed DPB BYTE-IDENTICAL**; A in the "unknown" rows ($03 vs $F9) and HL
+      differ -- outside the published contract (B, Cy, the DPB). 🔮 HIT on B / Cy / DPB.
+      🔴 **THE FIRST CUT'S BOOT HANG, BISECTED:** DSKCHG stubbed back -- still hung; the stamp
+      removed -- booted; the stamp with HL preserved -- hung: the CELL. DSK_STAMP had been put at
+      $EDBB, which is disk.rom's RND_HSEC (D-PUTCACHE's held-sector tag) -- declared only in
+      disk/equates.inc, so the BASIC-side ram_map.py component showed $EDBB.. "unattributed"
+      and that was taken as free. Every sector command wrote JIFFY into the tag, and the next
+      read "flushed" a phantom sector. DSK_STAMP is $EDBD now (free in BOTH components'
+      maps). Lesson: an unattributed run must be checked in BOTH components, and it is a
+      candidate, never free space (ram_map.py says so on every run).
       🎚️ TIER 1 — happy path of a disk-ROM entry point (a program asking "was the disk
       changed?" before trusting its buffers).
       🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) records 1-2 (A = 0 drive A, B = 0, C = $F9, HL = a

@@ -1304,14 +1304,17 @@ lc_one:
 ; from disk/driver.asm). The prerequisite it named landed long ago; the stub did
 ; not move, so the reasoning outlived the reason and a reader would go looking for
 ; a driver that is already there [[a-fix-falsifies-the-justification-beside-it]].
+; ✅ MEASURED 2026-11-08 (probes/disk/dskchg.asm; scratchpad/dskchg_stock.out,
+; dskchg_stock2.out): the CF-3300 answers B = 1 "unchanged" right after an access and
+; 1 s later; B = 0 "unknown" at 3 s and 10 s WITH THE DPB AT HL REFRESHED; Cy = 0. The
+; stub (Cy = 1 always) went: dskchg_body (disk/kernel.asm) is that answer. The old note:
 ; ⚠️ WHETHER THE STUB SHOULD STAY IS UNMEASURED, and this note does not claim it
 ; should. "Cannot tell" is a legitimate answer for a driver that does not latch the
 ; disk-change line, `diskbasic-acceptance` is 34/34 with it, and nothing in the
 ; tree has yet asked what the reference answers here. That is a row nobody has
 ; written, not a defect anybody has found.
 dskchg:
-                scf
-                ret
+                jp      dskchg_body         ; 🔴 D-DSKCHG (2026-11-08): measured, below
 
 ; getdpb — build the Drive Parameter Block from the BPB ($4016 disk-ROM entry).
 ;

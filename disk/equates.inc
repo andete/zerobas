@@ -22,6 +22,7 @@ DOS_F346        equ     $F346   ; disk work area: MSX-DOS has been booted -- CAL
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 HOKVLD          equ     $FB20   ; bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B)
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
+JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area; D-DSKCHG)
 ; D-FILESLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ba): FILES/LFILES emit
 ; from THIS ROM now, so it needs the list-device entry beside CHPUT ($00A2,
 ; disk/init.asm) and the two SCREEN cells the wrap decision reads.
@@ -506,6 +507,13 @@ FAT_FCACHE      equ     $EDBA   ; (1)
 ; never a record's). read_sector serves a re-read of it from the buffer and writes it
 ; out before any other read; rh_flush writes it on demand. Zeroed by INIT.
 RND_HSEC        equ     $EDBB   ; (2) word
+; D-DSKCHG (2026-11-08): JIFFY at the last sector command (fdc_prep sets it every
+; time); DSKCHG's clock -- "unchanged" only within ~2 s of it. 🔴 The first cut put it
+; at $EDBB -- RND_HSEC, the cell just above, which basic/sysvars.inc does not declare,
+; so the BASIC-side RAM map showed it "unattributed": every sector command then wrote
+; JIFFY into D-PUTCACHE's held-sector tag and MSX-DOS stopped booting. basic/sysvars.inc
+; holds the same address under the same name.
+DSK_STAMP       equ     $EDBD   ; (2)
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).

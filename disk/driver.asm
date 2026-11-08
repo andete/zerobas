@@ -159,13 +159,9 @@ fdc_pp_nos:
                 call    fdc_settle      ; motor spin-up / head settle
                 ld      a, 2
                 ld      (FDC_TRY), a    ; up to two attempts
-                ret
-fdc_seek:
-                ld      a, d            ; track number via the Data register
-                ld      (FDC_DATA), a
-                ld      a, CMD_SEEK
-                ld      (FDC_STATUS), a
-                jp      fdc_wait_ready
+                ld      hl, (JIFFY)     ; 🔴 D-DSKCHG: the clock DSKCHG reads -- every sector
+                ld      (DSK_STAMP), hl ; command starts here (HL is free: both callers
+                ret                     ; reload it from FDC_DEST)
 fdc_again:
                 push    af
                 ld      a, (FDC_TRY)
@@ -238,6 +234,14 @@ install_hook:
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
                 jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)
+; fdc_seek -- D-DISKCARVE2's helper (seek to track D, wait); here since D-DSKCHG,
+; whose stamp needed the bytes beside fdc_prep. Entered only by `call`.
+fdc_seek:
+                ld      a, d            ; track number via the Data register
+                ld      (FDC_DATA), a
+                ld      a, CMD_SEEK
+                ld      (FDC_STATUS), a
+                jp      fdc_wait_ready
                 ds      $43A4 - $, $00      ; net-zero: fdc_write_phys stays at $43A4
 
 ; fdc_write_phys — write one physical sector from (HL).
@@ -353,6 +357,13 @@ hoc_dout:
                 scf
                 ret     z
                 jp      hoc_next
+; dc_unk -- dskchg_body's "unknown" path (D-DSKCHG; here for room): as the CF-3300 does,
+; bring the DPB at HL up to date (getdpb reads the boot sector), then B = 0. Cy / A are
+; getdpb's (an unreadable disk answers its error).
+dc_unk:
+                call    getdpb
+                ld      b, 0
+                ret
 ; 🐌 D-WRBLKFAT (2026-11-08): WRBLK's chain extension (wroe_need_extend, disk/kernel.asm)
 ; in frl_ext's shape (D-RECSLOW): the new cluster's EOC mark and the link from the
 ; previous cluster both DEFERRED in FAT_MBUF (FAT_DEFER bit 0 -> dirty), then the

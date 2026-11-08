@@ -5867,10 +5867,10 @@ hk_dpload:
                 ; label (D-BLNF). DISKOP_OP is not read on this path -- and it
                 ; could not be, it is carrying the selector.
                 call    fat_mount
-                jp      c,hdl_io            ; 3: mount / I-O (`jp`: the exits
-                                            ; sit past the whole loop body)
+                jr      c,hdl_io            ; 3: mount / I-O (`jr` since D-DSKCHG: the loop
+                                            ; body that kept it `jp` moved out, D-LOADDIRECT)
                 call    fat_io_find
-                jp      c,hdl_nf            ; 1: not found (`jp`, same reason)
+                jr      c,hdl_nf            ; 1: not found
                 ; seed the store cursor. ⚠️ HOISTED ABOVE THE MARKER READ for
                 ; D-TRUNCLOAD's reason, unchanged by the move: an EOF on the
                 ; very first byte (a ZERO-BYTE file) must commit an EMPTY
@@ -5887,10 +5887,10 @@ hk_dpload:
                                             ; FAT_DEFER; hdl_answer clears bit 7)
                 ; first byte selects the format: $FF = tokenised.
                 call    fat_io_getbyte
-                jp      c,hdl_ok            ; D-TRUNCLOAD: EOF here is an empty
+                jr      c,hdl_ok            ; D-TRUNCLOAD: EOF here is an empty
                                             ; program, not an error
                 cp      BASIC_DISK_ID
-                jp      nz,hdl_ascii        ; 2: main re-opens and tokenises
+                jr      nz,hdl_ascii        ; 2: main re-opens and tokenises
                 jp      hdl_direct          ; D-LOADDIRECT (disk/runtime.asm): the
                                             ; whole file in place, then hdl_walk
 ; 🗑️ D-LOADDIRECT (2026-11-07): THE BYTE STREAM IS GONE. hdl_line / hdl_len /
@@ -7044,6 +7044,30 @@ bc_jpix_tmpl:
                 jp      (ix)
 bc_tmp_tmpl:    dw      0
 br6_end:
+; 🔴 D-DSKCHG (2026-11-08): dskchg_body -- DSKCHG ($4013, via dskchg in disk/fat.asm),
+; the CF-3300's TIMED answer (probes/disk/dskchg.asm; scratchpad/dskchg_stock2.out):
+; within ~2 s of the last sector command B = 1 "unchanged", A = 0, HL / DE kept; after
+; it "unknown" -- dc_unk (disk/driver.asm) refreshes the DPB at HL through getdpb, B = 0.
+; Cy = 0 unless the disk cannot be read. The SAFE scheme: never "unchanged" long after an
+; access. DSK_STAMP is 16-bit (fdc_prep sets it): 8 bits would wrap after ~5 s and say
+; "unchanged" after a swap. The cut-off is in SECONDS (100 jiffies = 2 s at our 50 Hz).
+; 🔴 The first build (reverted) answered "unknown" WITHOUT the DPB and clobbered HL / DE:
+; MSX-DOS calls DSKCHG while booting and no DOS program reached its anchor.
+dskchg_body:
+                push    hl
+                push    de
+                ld      hl, (JIFFY)
+                ld      de, (DSK_STAMP)
+                or      a
+                sbc     hl, de              ; HL = jiffies since the last sector command
+                ld      de, -100
+                add     hl, de              ; Cy = 1: 2 s or more
+                pop     de
+                pop     hl
+                jp      c, dc_unk           ; "unknown": the DPB refreshed, B = 0
+                ld      b, 1                ; "unchanged"
+                xor     a                   ; A = 0, Cy = 0
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

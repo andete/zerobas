@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
-* **disk** — 124 declared addresses in this project's own workspace `$E000..$F37F` (115 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
+* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **68** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -113,6 +113,8 @@ second one is the question a per-component map cannot answer.
 | `$EDBA` | 1 B | `basic` | `FAT_FCACHE` | DISK-ONLY: the FAT sector in FAT_MBUF during a LOAD (FAT_DEFER bit 7) (1) |  |
 | `$EDBA` | 1 B | `disk` | `FAT_FCACHE` | (1) |  |
 | `$EDBB` | 2 B | `disk` | `RND_HSEC` | (2) word |  |
+| `$EDBD` | 2 B | `basic` | `DSK_STAMP` | DISK-ONLY: JIFFY at the last sector command (fdc_prep; DSKCHG's clock, D-DSKCHG; after disk.rom's RND_HSEC $EDBB) (2) |  |
+| `$EDBD` | 2 B | `disk` | `DSK_STAMP` | (2) |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
 | `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |
@@ -674,6 +676,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC9A` | 1 B | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$FC9A` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
+| `$FC9E` |  | `disk` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area; D-DSKCHG) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
 | `$FCAC` | 1 B | `basic` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |

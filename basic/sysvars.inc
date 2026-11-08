@@ -3355,6 +3355,7 @@ FAT_DEFER       equ     $EDB9   ; DISK-ONLY: deferred-FAT-write flag, read only 
 ; 🐌 D-LOADFAT (2026-11-06): disk.rom's one-sector FAT read cache for LOAD, named here
 ; so this map does not hand the byte out (disk/equates.inc; basic never reads it).
 FAT_FCACHE      equ     $EDBA   ; DISK-ONLY: the FAT sector in FAT_MBUF during a LOAD (FAT_DEFER bit 7) (1)
+DSK_STAMP       equ     $EDBD   ; DISK-ONLY: JIFFY at the last sector command (fdc_prep; DSKCHG's clock, D-DSKCHG; after disk.rom's RND_HSEC $EDBB) (2)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9, above disk.rom's cell block).
 FAT_SECPERCLUS  equ     $EDFD   ; DISK-ONLY: sectors per cluster (byte)

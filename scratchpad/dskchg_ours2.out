@@ -1,0 +1,14 @@
+=== capture: regs+mem at occurrence #1 of 0x013a ===
+  OURS reached anchor  t=25.8511
+
+  reg   OURS
+  PC    013A
+  SP    D529
+  AF    0045
+  BC    00F9
+  DE    0420
+  HL    041F
+  IX    4013
+  IY    4083
+
+  memory 0x0400+64: 00 45 00 F9 00 00 04 20 00 45 00 F9 00 00 04 20 00 45 00 F9 00 00 04 20 00 45 00 F9 00 00 04 20 EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE
