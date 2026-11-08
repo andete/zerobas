@@ -18408,6 +18408,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `check_disk_walls.py` now lists **a 44 B usable hole at $4436** (before: none >= 16 B
       outside the FDC window). 🔮 ~28 B: the saving was ~28; the hole is larger because it
       merged with the old 7 B and the read pad's slack.
+      ✅ **D-WRBLKFAT (2026-11-08): lever (b)'s within-call half -- 3.5x -> 3.0x.** WRBLK's chain
+      extension took frl_ext's shape (D-RECSLOW): `wroe_ext` (disk/driver.asm, 35 B of the new
+      $4436 hole) defers the new cluster's EOC mark AND the link (frl_defer ->
+      fat_write_fat_entry_hot), then writes the sector to both FATs once (frl_flush); a failure
+      ends through frl_xfail. Nothing outlives the call. wroe_need_extend (disk/kernel.asm) keeps
+      only the first-cluster bookkeeping (19 B back before $75A5). 📏 [`fdccount_wfat.out`](scratchpad/fdccount_wfat.out): phase 7
+      **257 W / 292 R -> 195 / 261** (🔮 ~193 / ~260: HIT); [`blkio_wfat.out`](scratchpad/blkio_wfat.out): every file AS
+      EXPECTED on both machines, FCB snapshots byte-identical, **WSEEK 107.7 -> 93.45 s (3.0x
+      the CF-3300)**. ➡️ Left: the free scan's ~4 FAT reads an allocation (the hint is reset per
+      call, M30, and a clean FAT_MBUF is not trusted -- WRBLK's multiply scratch WRBLK_MUL* is
+      WBUF+500..511, INSIDE FAT_MBUF, so nothing FAT-shaped survives a call), and (a) the data
+      sector's read-modify-write every call.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

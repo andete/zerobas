@@ -353,6 +353,32 @@ hoc_dout:
                 scf
                 ret     z
                 jp      hoc_next
+; 🐌 D-WRBLKFAT (2026-11-08): WRBLK's chain extension (wroe_need_extend, disk/kernel.asm)
+; in frl_ext's shape (D-RECSLOW): the new cluster's EOC mark and the link from the
+; previous cluster both DEFERRED in FAT_MBUF (FAT_DEFER bit 0 -> dirty), then the
+; sector written to both FATs once -- it was written after the mark AND after the
+; link (scratchpad/fdclog7_1108.out: 4 FAT writes a cluster). Nothing outlives the
+; call. A failure ends through frl_xfail: what was claimed reaches the disk, as before.
+;   out: HL = the new cluster; Cy = 1 disk full / I/O (A = the code)
+wroe_ext:
+                call    frl_defer
+                call    fat_alloc_cluster   ; HL = the new cluster, its EOC deferred
+                jp      c, frl_xfail
+                ld      de, (WRBLK_PREVCLUS)
+                ld      a, d
+                or      e
+                jr      z, wx_out           ; the file's first cluster: nothing to link
+                push    hl
+                ex      de, hl              ; HL = the previous cluster, DE = the new one
+                call    frl_defer
+                call    fat_write_fat_entry_hot ; link it (the scan left FAT_MBUF/FATSEC)
+                pop     hl
+                jp      c, frl_xfail
+wx_out:
+                push    hl
+                call    frl_flush           ; the held sector out, both copies (Cy = I/O)
+                pop     hl
+                ret
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
 ; dta_put -- store A at (RDBLK_DST) and advance it: the block reads' one store.

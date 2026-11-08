@@ -4197,21 +4197,12 @@ wroe_incluster:
                 jr      nc, wroe_need_extend ; cluster >= $0FF8 = end-of-chain
                 jr      wroe_have_valid
 wroe_need_extend:
-                call    fat_alloc_cluster   ; HL = new cluster; Cy=1 disk full
-                ret     c
+                call    wroe_ext            ; HL = new cluster, claimed + linked, the FAT
+                ret     c                   ; sector written ONCE (disk/driver.asm); Cy=1 full / I/O
                 ld      de, (WRBLK_PREVCLUS)
                 ld      a, d
                 or      e
-                jr      z, wroe_first
-                push    hl                  ; save new cluster
-                ex      de, hl              ; HL = previous (last-good) cluster
-                pop     de                  ; DE = new cluster (link value)
-                push    de
-                call    fat_write_fat_entry ; previous -> new
-                pop     hl                  ; HL = new cluster
-                ret     c
-                jr      wroe_have_new
-wroe_first:
+                jr      nz, wroe_have_new
                 ld      (FAT_FIRSTCLUS), hl ; file's very first cluster (was empty)
 wroe_have_new:
                 ld      (FAT_CURCLUS), hl
