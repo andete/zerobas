@@ -1670,7 +1670,8 @@ def _entry_section(its):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import entry_table
     return (entry_table.fmt_markdown(its).splitlines() + [""]
-            + entry_table.fmt_disk_markdown().splitlines() + [""])
+            + entry_table.fmt_disk_markdown().splitlines() + [""]
+            + entry_table.fmt_bios_markdown().splitlines() + [""])
 
 
 def main(argv=None):

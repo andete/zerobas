@@ -332,12 +332,93 @@ def fmt_disk_markdown():
     return "\n".join(out) + "\n"
 
 
+# ---------------------------------------------------------------------------
+# D-ENTRYTIERS step 5: the MAIN BIOS calls -- the published MSX1 BIOS jump table
+# (MSX2 Technical Handbook ch. 2; names as published). C-BIOS's, patched by
+# cbios-repack where a row differs. Exercised = a gate-reached script names the
+# entry or its address in CODE; the same "exercised is not same" rule.
+# ---------------------------------------------------------------------------
+BIOS = [(0x0000, "CHKRAM"), (0x0008, "SYNCHR"), (0x000C, "RDSLT"), (0x0010, "CHRGTR"),
+        (0x0014, "WRSLT"), (0x0018, "OUTDO"), (0x001C, "CALSLT"), (0x0020, "DCOMPR"),
+        (0x0024, "ENASLT"), (0x0028, "GETYPR"), (0x0030, "CALLF"), (0x0038, "KEYINT"),
+        (0x003B, "INITIO"), (0x003E, "INIFNK"), (0x0041, "DISSCR"), (0x0044, "ENASCR"),
+        (0x0047, "WRTVDP"), (0x004A, "RDVRM"), (0x004D, "WRTVRM"), (0x0050, "SETRD"),
+        (0x0053, "SETWRT"), (0x0056, "FILVRM"), (0x0059, "LDIRMV"), (0x005C, "LDIRVM"),
+        (0x005F, "CHGMOD"), (0x0062, "CHGCLR"), (0x0066, "NMI"), (0x0069, "CLRSPR"),
+        (0x006C, "INITXT"), (0x006F, "INIT32"), (0x0072, "INIGRP"), (0x0075, "INIMLT"),
+        (0x0078, "SETTXT"), (0x007B, "SETT32"), (0x007E, "SETGRP"), (0x0081, "SETMLT"),
+        (0x0084, "CALPAT"), (0x0087, "CALATR"), (0x008A, "GSPSIZ"), (0x008D, "GRPPRT"),
+        (0x0090, "GICINI"), (0x0093, "WRTPSG"), (0x0096, "RDPSG"), (0x0099, "STRTMS"),
+        (0x009C, "CHSNS"), (0x009F, "CHGET"), (0x00A2, "CHPUT"), (0x00A5, "LPTOUT"),
+        (0x00A8, "LPTSTT"), (0x00AB, "CNVCHR"), (0x00AE, "PINLIN"), (0x00B1, "INLIN"),
+        (0x00B4, "QINLIN"), (0x00B7, "BREAKX"), (0x00BA, "ISCNTC"), (0x00BD, "CKCNTC"),
+        (0x00C0, "BEEP"), (0x00C3, "CLS"), (0x00C6, "POSIT"), (0x00C9, "FNKSB"),
+        (0x00CC, "ERAFNK"), (0x00CF, "DSPFNK"), (0x00D2, "TOTEXT"), (0x00D5, "GTSTCK"),
+        (0x00D8, "GTTRIG"), (0x00DB, "GTPAD"), (0x00DE, "GTPDL"), (0x00E1, "TAPION"),
+        (0x00E4, "TAPIN"), (0x00E7, "TAPIOF"), (0x00EA, "TAPOON"), (0x00ED, "TAPOUT"),
+        (0x00F0, "TAPOOF"), (0x00F3, "STMOTR"), (0x00F6, "LFTQ"), (0x00F9, "PUTQ"),
+        (0x00FC, "RIGHTC"), (0x00FF, "LEFTC"), (0x0102, "UPC"), (0x0105, "TUPC"),
+        (0x0108, "DOWNC"), (0x010B, "TDOWNC"), (0x010E, "SCALXY"), (0x0111, "MAPXYC"),
+        (0x0114, "FETCHC"), (0x0117, "STOREC"), (0x011A, "SETATR"), (0x011D, "READC"),
+        (0x0120, "SETC"), (0x0123, "NSETCX"), (0x0126, "GTASPC"), (0x0129, "PNTINI"),
+        (0x012C, "SCANR"), (0x012F, "SCANL"), (0x0132, "CHGCAP"), (0x0135, "CHGSND"),
+        (0x0138, "RSLREG"), (0x013B, "WSLREG"), (0x013E, "RDVDP"), (0x0141, "SNSMAT"),
+        (0x0144, "PHYDIO"), (0x0147, "FORMAT"), (0x014A, "ISFLIO"), (0x014D, "OUTDLP"),
+        (0x0150, "GETVCP"), (0x0153, "GETVC2"), (0x0156, "KILBUF"), (0x0159, "CALBAS")]
+
+
+def bios_rows():
+    reach, pys = _gate_reach()
+    asms = {}
+    for root, _, files in os.walk(os.path.join(REPO, "probes")):
+        for f in files:
+            if f.endswith(".asm"):
+                asms[f] = "\n".join(l.split(";", 1)[0]
+                                    for l in open(os.path.join(root, f), errors="replace"))
+    out = []
+    for addr, name in BIOS:
+        pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
+        gates = set()
+        for p, txt in pys.items():
+            if pat.search(txt):
+                gates |= reach.get(p, set())
+        for a, txt in asms.items():
+            if pat.search(txt):
+                for p, ptxt in pys.items():
+                    if a in ptxt:
+                        gates |= reach.get(p, set())
+        out.append(dict(addr=addr, name=name, gates=sorted(gates),
+                        status="exercised" if gates else "NOT MEASURED"))
+    return out
+
+
+def fmt_bios_markdown():
+    rs = bios_rows()
+    nm = [r for r in rs if r["status"] == "NOT MEASURED"]
+    out = ["## Entry points — the main BIOS calls", "",
+           "The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by "
+           "cbios-repack where a row differs). Exercised = a gate whose script (or a probe "
+           "source it runs) names the entry or its address in code. Every BASIC program "
+           "calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. "
+           "Exercised is not same.", "",
+           f"**{len(rs) - len(nm)} of {len(rs)}** have a direct witness; **{len(nm)} are NOT "
+           "MEASURED**.", "",
+           "| address | call | status | exercised by |", "|---|---|---|---|"]
+    for r in rs:
+        by = ", ".join(f"`{g}`" for g in r["gates"][:6]) + (" …" if len(r["gates"]) > 6 else "")
+        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {by or '—'} |")
+    return "\n".join(out) + "\n"
+
+
 def main(argv):
     if "--markdown" in argv:
         sys.stdout.write(fmt_markdown())
         return 0
     if "--disk" in argv:
         sys.stdout.write(fmt_disk_markdown())
+        return 0
+    if "--bios" in argv:
+        sys.stdout.write(fmt_bios_markdown())
         return 0
     rs, unreached = rows()
     for r in rs:

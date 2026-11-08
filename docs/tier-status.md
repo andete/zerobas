@@ -167,6 +167,123 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 62 pinned addresses; 36 name a BDOS function, 26 do not.
 
+## Entry points — the main BIOS calls
+
+The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
+
+**23 of 108** have a direct witness; **85 are NOT MEASURED**.
+
+| address | call | status | exercised by |
+|---|---|---|---|
+| $0000 | CHKRAM | exercised | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `key-trap-acceptance`, `lof-acceptance` … |
+| $0008 | SYNCHR | exercised | `synchr-acceptance` |
+| $000C | RDSLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0010 | CHRGTR | NOT MEASURED | — |
+| $0014 | WRSLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0018 | OUTDO | NOT MEASURED | — |
+| $001C | CALSLT | exercised | `p1vec-acceptance`, `subrom-acceptance` |
+| $0020 | DCOMPR | exercised | `biosregs-acceptance` |
+| $0024 | ENASLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0028 | GETYPR | NOT MEASURED | — |
+| $0030 | CALLF | exercised | `bootenv-acceptance`, `p1vec-acceptance` |
+| $0038 | KEYINT | NOT MEASURED | — |
+| $003B | INITIO | NOT MEASURED | — |
+| $003E | INIFNK | NOT MEASURED | — |
+| $0041 | DISSCR | NOT MEASURED | — |
+| $0044 | ENASCR | NOT MEASURED | — |
+| $0047 | WRTVDP | NOT MEASURED | — |
+| $004A | RDVRM | NOT MEASURED | — |
+| $004D | WRTVRM | NOT MEASURED | — |
+| $0050 | SETRD | NOT MEASURED | — |
+| $0053 | SETWRT | NOT MEASURED | — |
+| $0056 | FILVRM | NOT MEASURED | — |
+| $0059 | LDIRMV | exercised | `biosregs-acceptance` |
+| $005C | LDIRVM | exercised | `biosregs-acceptance` |
+| $005F | CHGMOD | exercised | `screenerr-acceptance` |
+| $0062 | CHGCLR | NOT MEASURED | — |
+| $0066 | NMI | NOT MEASURED | — |
+| $0069 | CLRSPR | NOT MEASURED | — |
+| $006C | INITXT | NOT MEASURED | — |
+| $006F | INIT32 | NOT MEASURED | — |
+| $0072 | INIGRP | NOT MEASURED | — |
+| $0075 | INIMLT | NOT MEASURED | — |
+| $0078 | SETTXT | NOT MEASURED | — |
+| $007B | SETT32 | NOT MEASURED | — |
+| $007E | SETGRP | NOT MEASURED | — |
+| $0081 | SETMLT | NOT MEASURED | — |
+| $0084 | CALPAT | exercised | `biosregs-acceptance` |
+| $0087 | CALATR | exercised | `biosregs-acceptance` |
+| $008A | GSPSIZ | NOT MEASURED | — |
+| $008D | GRPPRT | NOT MEASURED | — |
+| $0090 | GICINI | exercised | `gicini-acceptance` |
+| $0093 | WRTPSG | NOT MEASURED | — |
+| $0096 | RDPSG | NOT MEASURED | — |
+| $0099 | STRTMS | NOT MEASURED | — |
+| $009C | CHSNS | NOT MEASURED | — |
+| $009F | CHGET | NOT MEASURED | — |
+| $00A2 | CHPUT | NOT MEASURED | — |
+| $00A5 | LPTOUT | exercised | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance` |
+| $00A8 | LPTSTT | NOT MEASURED | — |
+| $00AB | CNVCHR | NOT MEASURED | — |
+| $00AE | PINLIN | NOT MEASURED | — |
+| $00B1 | INLIN | NOT MEASURED | — |
+| $00B4 | QINLIN | NOT MEASURED | — |
+| $00B7 | BREAKX | NOT MEASURED | — |
+| $00BA | ISCNTC | NOT MEASURED | — |
+| $00BD | CKCNTC | NOT MEASURED | — |
+| $00C0 | BEEP | exercised | `beep-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
+| $00C3 | CLS | exercised | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `bloadofs-acceptance`, `bsavevar-acceptance` … |
+| $00C6 | POSIT | NOT MEASURED | — |
+| $00C9 | FNKSB | NOT MEASURED | — |
+| $00CC | ERAFNK | NOT MEASURED | — |
+| $00CF | DSPFNK | NOT MEASURED | — |
+| $00D2 | TOTEXT | NOT MEASURED | — |
+| $00D5 | GTSTCK | NOT MEASURED | — |
+| $00D8 | GTTRIG | NOT MEASURED | — |
+| $00DB | GTPAD | NOT MEASURED | — |
+| $00DE | GTPDL | NOT MEASURED | — |
+| $00E1 | TAPION | exercised | `tapionlead-acceptance` |
+| $00E4 | TAPIN | NOT MEASURED | — |
+| $00E7 | TAPIOF | NOT MEASURED | — |
+| $00EA | TAPOON | NOT MEASURED | — |
+| $00ED | TAPOUT | NOT MEASURED | — |
+| $00F0 | TAPOOF | NOT MEASURED | — |
+| $00F3 | STMOTR | NOT MEASURED | — |
+| $00F6 | LFTQ | NOT MEASURED | — |
+| $00F9 | PUTQ | NOT MEASURED | — |
+| $00FC | RIGHTC | NOT MEASURED | — |
+| $00FF | LEFTC | exercised | `slotregs-acceptance` |
+| $0102 | UPC | exercised | `bdos-acceptance`, `diskbasic-acceptance` |
+| $0105 | TUPC | NOT MEASURED | — |
+| $0108 | DOWNC | NOT MEASURED | — |
+| $010B | TDOWNC | NOT MEASURED | — |
+| $010E | SCALXY | NOT MEASURED | — |
+| $0111 | MAPXYC | NOT MEASURED | — |
+| $0114 | FETCHC | NOT MEASURED | — |
+| $0117 | STOREC | NOT MEASURED | — |
+| $011A | SETATR | NOT MEASURED | — |
+| $011D | READC | NOT MEASURED | — |
+| $0120 | SETC | NOT MEASURED | — |
+| $0123 | NSETCX | NOT MEASURED | — |
+| $0126 | GTASPC | NOT MEASURED | — |
+| $0129 | PNTINI | NOT MEASURED | — |
+| $012C | SCANR | NOT MEASURED | — |
+| $012F | SCANL | NOT MEASURED | — |
+| $0132 | CHGCAP | NOT MEASURED | — |
+| $0135 | CHGSND | NOT MEASURED | — |
+| $0138 | RSLREG | exercised | `p1vec-acceptance` |
+| $013B | WSLREG | NOT MEASURED | — |
+| $013E | RDVDP | NOT MEASURED | — |
+| $0141 | SNSMAT | exercised | `bootenv-acceptance` |
+| $0144 | PHYDIO | NOT MEASURED | — |
+| $0147 | FORMAT | exercised | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `float-acceptance` … |
+| $014A | ISFLIO | NOT MEASURED | — |
+| $014D | OUTDLP | NOT MEASURED | — |
+| $0150 | GETVCP | NOT MEASURED | — |
+| $0153 | GETVC2 | NOT MEASURED | — |
+| $0156 | KILBUF | NOT MEASURED | — |
+| $0159 | CALBAS | NOT MEASURED | — |
+
 ## Every keyword and its status
 
 🚩 **`TIER n` IN THIS DOCUMENT ALWAYS MEANS AN *ITEM'S* PRIORITY — never a rung a keyword has climbed.** A keyword has a STATUS. The two were one ordinal scale until 2026-09-23 (Joost: *"I have a feeling this TIER ranking is confusing"*), and it was: `TIER 2` on an item means *a defect is filed at the reasonable-time rung*, while on a keyword it read as *it has reached reasonable time* — the same token in near-opposite senses. Eleven of the fifteen buckets were all called `TIER 0`, which is why this section used to open by declaring that every keyword was TIER 0 anyway, twelve lines above a row awarding TIER 1 to 139 of them.

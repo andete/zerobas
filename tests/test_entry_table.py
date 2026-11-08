@@ -87,5 +87,14 @@ pub = {r["name"]: r for r in E.published_rows()}
 check(set(pub) == {"DSKIO", "DSKCHG", "GETDPB", "CHOICE", "DSKFMT", "MTOFF"},
       "(d) the six published disk-ROM entries all have a row")
 
+# (e) the main BIOS table: the published jump table, $0000 .. $0159, no gap or repeat
+br = E.bios_rows()
+ad = [r["addr"] for r in br]
+check(ad == sorted(set(ad)) and ad[0] == 0x0000 and ad[-1] == 0x0159,
+      f"(e) the BIOS table runs $0000..$0159 in order, {len(ad)} distinct entries")
+bmap = {r["name"]: r for r in br}
+check("slotregs-acceptance" in bmap["RDSLT"]["gates"],
+      "(e) RDSLT is exercised by slotregs-acceptance (a direct BIOS witness)")
+
 print(f"\n{'ALL PASSED' if not fails else f'{fails} FAILED'}")
 sys.exit(1 if fails else 0)
