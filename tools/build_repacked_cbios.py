@@ -118,7 +118,7 @@ PATCHES = [
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "5ac92a2dcf76db54320c8078f746c766802717b1"
+REPACKED_SHA1 = "97558328f28a23382bc449cae88c4265aa99e3d5"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

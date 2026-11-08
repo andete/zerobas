@@ -17759,6 +17759,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`biossweep_cur2.out`](scratchpad/biossweep_cur2.out): **all 8 rows SAME**; 6 are biosregs-acceptance rows. ⚠️ SCREEN 3
       (4 x 4 blocks) not yet measured -- these are SCREEN 2's semantics. Left of the family:
       TUPC / TDOWNC, STOREC, SETATR, READC, SETC, NSETCX, PNTINI / SCANR / SCANL.
+      ✅ **STOREC / SETATR / READC SHIPPED (2026-11-08).** Measured ([`biossweep_b3.out`](scratchpad/biossweep_b3.out)): STOREC
+      CLOC := HL, CMASK := A; SETATR ATRBYT := A when A < 16, else Cy = 1 and ATRBYT kept (F
+      $41 = `cp 16` / `ccf` / `ret c`); READC A = the colour byte's foreground nibble when the
+      pattern bit is set, else its background nibble (C-BIOS's rdvrm, HL / DE / BC kept). 📏
+      [`biossweep_b4.out`](scratchpad/biossweep_b4.out): **all SAME, SETATR's F included**; four are biosregs-acceptance rows.
+      🔴 **AN OVERRUN THE ASSEMBLER DID NOT REFUSE:** with TUPC / TDOWNC too the span ran ~29 B past
+      pntini (FETCHC at $0976 > $0966) and pasmo built it anyway -- a negative `ds` was not an
+      error there; read off the symbol table before testing. TUPC / TDOWNC came back out (bare
+      `ret`) and an `IF $ > $0966` / ERROR guard was added. Measured, waiting on ~15 B of the
+      span (RIGHTC / LEFTC and UPC / DOWNC can share their CLOC tails): TUPC / TDOWNC = no move,
+      A = 0, F = $45 (Cy) on the screen's top / bottom row, else UPC / DOWNC. ⚠️ SETC's pattern
+      half was misread (the probe VPEEKed after SCREEN 0, which rebuilds the pattern table):
+      re-measure reading VRAM before leaving SCREEN 2.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

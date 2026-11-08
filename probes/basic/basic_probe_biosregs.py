@@ -116,6 +116,15 @@ ROWS = {
     "uc_mid": cur(0x0102, 0x010B, 0x10),
     "uc_wrap": cur(0x0102, 0x0108, 0x10),
     "dc_wrap": cur(0x0108, 0x010F, 0x10),
+    # STOREC (CLOC := HL, CMASK := A), SETATR (ATRBYT := A), READC (the pixel's colour:
+    # the colour byte's foreground nibble when the pattern bit is set, else background)
+    "storec": prog(0x0117, 0x40, hl=0x1234,
+                   after='PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]"'),
+    "setatr": prog(0x011A, 5, after='PRINT "[C";HEX$(PEEK(&HF3F2));"]"'),
+    "readc_fg": prog(0x011D, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,16:"
+                     "VPOKE &H108,16:VPOKE &H2108,&H4F", after="SCREEN 0"),
+    "readc_bg": prog(0x011D, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,32:"
+                     "VPOKE &H108,16:VPOKE &H2108,&H4F", after="SCREEN 0"),
 }
 
 

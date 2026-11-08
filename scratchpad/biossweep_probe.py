@@ -104,6 +104,55 @@ def read2(machine, p):
 B.read = read2
 
 
+def prog_f(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after=""):
+    """B.prog with F captured too: `push af` right after the call, popped after the
+    register stores into $D10A (low byte = F), printed as [F..]."""
+    body = [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
+            0x3E, a, 0xCD, addr & 255, addr >> 8, 0xF5,
+            0x22, 0x00, 0xD1, 0xED, 0x53, 0x02, 0xD1, 0xED, 0x43, 0x04, 0xD1,
+            0x32, 0x06, 0xD1, 0xE1, 0x22, 0x0A, 0xD1, 0xC9]
+    p = B.prog(addr, a, bc, de, hl, before=before, after=after)
+    # replace the DATA lines with this stub's bytes and add the F print
+    p = [l for l in p if not (l.startswith("60 DATA") or l.startswith("70 DATA"))]
+    i = p.index("RUN")
+    p[i:i] = ["60 DATA " + ",".join(str(b) for b in body[:40])]
+    p = [l.replace("FOR I=0 TO " + l.split("FOR I=0 TO ")[1].split(":")[0], f"FOR I=0 TO {len(body) - 1}")
+         if l.startswith("20 FOR") else l for l in p]
+    p = [l.replace(';"]"', ';" F";HEX$(PEEK(&HD10A));"]"') if l.startswith("50 PRINT") else l for l in p]
+    return p
+
+
+def vram(before_extra, show):
+    return f"SCREEN 2:{before_extra}", f"SCREEN 0:PRINT \"[C\";{show};\"]\""
+
+
+SHOWC = 'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C))'
+SHOWV = 'HEX$(VPEEK(&H108));" ";HEX$(VPEEK(&H2108))'
+SET1 = "POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,16:VPOKE &H108,16:VPOKE &H2108,&H4F"
+MORE = {
+    "storec": B.prog(0x0117, 0x40, hl=0x1234, after=f'PRINT "[C";{SHOWC};"]"'),
+    "setatr5": B.prog(0x011A, 5, after='PRINT "[C";HEX$(PEEK(&HF3F2));"]"'),
+    "setatr16": prog_f(0x011A, 16, before="POKE &HF3F2,7", after='PRINT "[C";HEX$(PEEK(&HF3F2));"]"'),
+    "readc_fg": B.prog(0x011D, 0, before="SCREEN 2:" + SET1, after="SCREEN 0"),
+    "readc_bg": B.prog(0x011D, 0, before="SCREEN 2:" + SET1 + ":POKE &HF92C,32", after="SCREEN 0"),
+    "setc_new": B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":VPOKE &H108,0:POKE &HF3F2,6",
+                       after=f'SCREEN 0:PRINT "[C";{SHOWV};"]"'),
+    "setc_bg": B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":POKE &HF3F2,15",
+                      after=f'SCREEN 0:PRINT "[C";{SHOWV};"]"'),
+    "setc_fg": B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":VPOKE &H108,0:POKE &HF3F2,4",
+                      after=f'SCREEN 0:PRINT "[C";{SHOWV};"]"'),
+    "tupc_top": prog_f(0x0105, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,0:POKE &HF92C,16",
+                       after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+    "tupc_mid": prog_f(0x0105, 0, before="SCREEN 2:POKE &HF92A,11:POKE &HF92B,1:POKE &HF92C,16",
+                       after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+    "tdownc_bot": prog_f(0x010B, 0, before="SCREEN 2:POKE &HF92A,&H0F:POKE &HF92B,&H17:POKE &HF92C,16",
+                         after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+    "tdownc_mid": prog_f(0x010B, 0, before="SCREEN 2:POKE &HF92A,11:POKE &HF92B,1:POKE &HF92C,16",
+                         after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+}
+ROWS.update(MORE)
+
+
 def main():
     only = sys.argv[1:] or list(ROWS)
     bad, blind = [], []

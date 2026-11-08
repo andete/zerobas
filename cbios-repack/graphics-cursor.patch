@@ -1,8 +1,8 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..a048cd0 100644
+index bb11106..b563b85 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -2155,107 +2155,165 @@ getpat_loop:    push    bc
+@@ -2155,107 +2155,208 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -17,9 +17,6 @@ index bb11106..a048cd0 100644
 +; ---------------------------------------------------------------------------
 +tupc:
 +tdownc:
-+storec:
-+setatr:
-+readc:
 +setc:
 +nsetcx:
 +                ret
@@ -29,11 +26,80 @@ index bb11106..a048cd0 100644
 -; Function : Shifts screenpixel to the right
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
+-rightc:
+-                push    hl
+-                push    af
+-                ld      hl,rightc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
++; $0117 STOREC -- CLOC := HL, CMASK := A
++storec:
++                ld      (CLOC),hl
++                ld      (CMASK),a
+                 ret
+-rightc_text:    db      "RIGHTC",0
+ 
+ ;--------------------------------
+-; $00FF LEFTC
+-; Function : Shifts screenpixel to the left
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-leftc:
++; $011A SETATR -- ATRBYT := A when A < 16; else Cy = 1 and ATRBYT kept (the VG-8020:
++; F = $41 for A = 16 -- exactly `cp 16` / `ccf` / `ret c`)
++setatr:
++                cp      16
++                ccf
++                ret     c
++                ld      (ATRBYT),a
++                ret
++
++;--------------------------------
++; $011D READC -- A = the colour of the pixel at CLOC / CMASK (SCREEN 2): the colour
++; byte's foreground nibble when the pattern bit is set, else its background nibble.
++; HL / DE / BC kept.
++readc:
+                 push    hl
+-                push    af
+-                ld      hl,leftc_text
+-                call    print_debug
+-                pop     af
++                push    bc
++                ld      hl,(CLOC)
++                call    rdvrm           ; A = the pattern byte
++                ld      b,a
++                ld      a,h
++                add     a,$20
++                ld      h,a
++                call    rdvrm           ; A = the colour byte
++                ld      c,a
++                ld      a,(CMASK)
++                and     b
++                ld      a,c
++                jr      z,readc_bg
++                rrca
++                rrca
++                rrca
++                rrca
++readc_bg:
++                and     $0F
++                pop     bc
+                 pop     hl
+                 ret
+-leftc_text:     db      "LEFTC",0
+ 
+ ;--------------------------------
+-; $0102 UPC
+-; Function : Shifts screenpixel up
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-upc:
 +; $00FC RIGHTC / $00FF LEFTC -- the graphics cursor one pixel right / left (SCREEN 2)
 +; CMASK rotated; on the byte's wrap CLOC moves by 8 (the next / previous character
 +; column). A = the new CMASK; HL / DE / BC kept. Measured on the Philips VG-8020
 +; (zerobas scratchpad/biossweep_cur.out).
- rightc:
++rightc:
                  push    hl
 +                ld      hl,CMASK
 +                rrc     (hl)
@@ -41,7 +107,7 @@ index bb11106..a048cd0 100644
 +                jr      nc,rightc_out
 +                ld      hl,(CLOC)
                  push    af
--                ld      hl,rightc_text
+-                ld      hl,upc_text
 -                call    print_debug
 +                ld      a,l
 +                add     a,8
@@ -54,14 +120,16 @@ index bb11106..a048cd0 100644
 +rightc_out:
                  pop     hl
                  ret
--rightc_text:    db      "RIGHTC",0
+-upc_text:       db      "UPC",0
 -
 -;--------------------------------
--; $00FF LEFTC
--; Function : Shifts screenpixel to the left
+-; $0105 TUPC
+-; Function : Tests whether UPC is possible, if possible, execute UPC
+-; Output   : C-flag set if operation would end outside the screen
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
- leftc:
+-tupc:
++leftc:
                  push    hl
 +                ld      hl,CMASK
 +                rlc     (hl)
@@ -69,7 +137,7 @@ index bb11106..a048cd0 100644
 +                jr      nc,leftc_out
 +                ld      hl,(CLOC)
                  push    af
--                ld      hl,leftc_text
+-                ld      hl,tupc_text
 -                call    print_debug
 +                ld      a,l
 +                sub     8
@@ -82,39 +150,19 @@ index bb11106..a048cd0 100644
 +leftc_out:
                  pop     hl
                  ret
--leftc_text:     db      "LEFTC",0
+-tupc_text:      db      "TUPC",0
  
  ;--------------------------------
--; $0102 UPC
--; Function : Shifts screenpixel up
+-; $0108 DOWNC
+-; Function : Shifts screenpixel down
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
 +; $0102 UPC / $0108 DOWNC -- the graphics cursor one pixel up / down (SCREEN 2)
 +; CLOC -/+ 1 inside the 8-row character cell; across the cell's top / bottom row
 +; CLOC -/+ $F9 (the row-7 / row-0 byte of the cell above / below). A = the old row
 +; (UPC) or (old row + 1) AND 7 (DOWNC), as the VG-8020 leaves it; HL / DE / BC kept.
- upc:
-                 push    hl
--                push    af
--                ld      hl,upc_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ret
--upc_text:       db      "UPC",0
--
--;--------------------------------
--; $0105 TUPC
--; Function : Tests whether UPC is possible, if possible, execute UPC
--; Output   : C-flag set if operation would end outside the screen
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--tupc:
--                push    hl
--                push    af
--                ld      hl,tupc_text
--                call    print_debug
--                pop     af
++upc:
++                push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
 +                and     7
@@ -128,15 +176,8 @@ index bb11106..a048cd0 100644
 +                pop     de
 +upc_st:
 +                ld      (CLOC),hl
-                 pop     hl
-                 ret
--tupc_text:      db      "TUPC",0
--
--;--------------------------------
--; $0108 DOWNC
--; Function : Shifts screenpixel down
--; Registers: AF
--; NOTE     : This implementation is still a stub!
++                pop     hl
++                ret
  downc:
                  push    hl
 -                push    af
@@ -238,7 +279,7 @@ index bb11106..a048cd0 100644
  
  ;--------------------------------
  ; $0111 MAPXYC
-@@ -2311,94 +2369,7 @@ fetchc:
+@@ -2311,94 +2412,10 @@ fetchc:
                  ret
  fetchc_text:    db      "FETCHC",0
  
@@ -330,6 +371,9 @@ index bb11106..a048cd0 100644
 -                ret
 -gtaspc_text:    db      "GTASPC",0
 -
++        IF $ > $0966
++                ERROR   "graphics-cursor span overran pntini"
++        ENDIF
 +                ds      $0966 - $, $00  ; the span keeps its length: pntini stays put
  ;--------------------------------
  ; $0129 PNTINI
