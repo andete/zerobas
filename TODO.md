@@ -17769,6 +17769,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the sub ROM stopped including it on 2026-10-19 (D-ROMSIZE step 1). All three are `call
       fat_locate` now (byte-for-byte the same sequence, the same outputs and clobbers). FAT /
       WRBLK / RAND / LOAD / WRRND / WRSEQ unit tests green. The room is D-CALSLTP0's template's.
+      📐 **THE PIECE, WRITTEN OUT (2026-11-08), ~121 B after two trims:** br6 at BR5_RAM + 53 =
+      $DF1C, reached by `jp BR_CALS` from br_calslt_tmpl (7 -> 3 B, so the RAM tail gains 4: 123).
+      `push af` / `ld a,ixh` / `and $C0` / `jr z,old` (page 0: today's BR_GO path -- DOS programs
+      CALSLT the BIOS that way); push hl/de/bc; D = the page address, B = p (rlca x2); C = the
+      caller's primary for page p from `in a,($A8)` (a `bfield` helper: A >>= 2p, and 3); if
+      EXPTBL[C] bit 7: OR in (SLTTBL[C] >> 2p & 3) << 2 and $80; E = that slot; `ld
+      (BC_TMP),de`; `ld h,d / ld a,iyh / call BR_ENASLT` (the target in); pop the caller's
+      regs; `ld iy,(BC_TMP) / push iy` (IY is CALSLT's input only, free now; the save word
+      rides the STACK, so a callee that itself CALSLTs cannot clobber it); `call bc_jpix` (`jp
+      (ix)`); push the outputs; read the save word at SP+8; `ld h,d / ld a,e / call BR_ENASLT`
+      (the caller's slot back); pop the outputs; drop the save word; ret. The page-3 test is
+      dropped (CALSLT into page 3 is meaningless). Interrupts: BR_ENASLT leaves them off, as
+      the CF-3300's CALSLT returns (dskchg.asm needed an `ei` there). 💰 ROM: ~121 + install 8
+      against 95 + 13 -- ~30 B short in the $75A5 region: the next diskngram hit (34 B x3,
+      fat_advance+13 / frs_mul+16 / innoe_body+19) first.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
