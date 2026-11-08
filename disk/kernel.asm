@@ -1503,6 +1503,11 @@ install_f365:
                 ld      bc, f365_iord_end - f365_iord_tmpl
                 ldir
                 ret
+; (setdta_cache_body -- its contract is in the comment block at the old site, the free
+; tail; moved here by D-SFIRSTVOL, whose skip needed the bytes there.)
+setdta_cache_body:
+                ld      (DOS_DTAPTR), de    ; $F23D := DE (runtime DTA pointer)
+                ret
                 ds      $5552 - $, $00
 k_5552:         jp      sdate_body
 ; --- D-BDOSBASIC slice 3b: DELETE / RENAME at $F37D (oracle; MSX2 TH BDOS) ------
@@ -1618,6 +1623,14 @@ rnd_tab:
                 ds      $55DB - $, $00  ; pad up to the pinned $55DB GTIME entry (M22a)
 k_55DB:
                 jp      gtime_body      ; $55DB: BDOS $2C GTIME canonical entry (M22a)
+; (seldsk_drv_body / curdrv_body -- its contract is in the comment block at the old site, the free
+; tail; moved here by D-SFIRSTVOL, whose skip needed the bytes there.)
+seldsk_drv_body:
+                ld      a, (DRVCNT)     ; DRVCNT = $F347 = logical-drive count ($02)
+                ret
+curdrv_body:
+                ld      a, (CURDRV_CELL) ; CURDRV_CELL = $F247 = current-drive index ($00)
+                ret
                 ds      $55E6 - $, $00  ; pad up to the pinned $55E6 STIME entry (M22a)
 k_55E6:
                 jp      stime_body      ; $55E6: BDOS $2D STIME canonical entry (M22a)
@@ -7610,9 +7623,7 @@ install_res_print:
 ; CLEAN-ROOM: derives from the observed DATA-cell read contract (return [$F347]) +
 ; our own code; no stock/kernel bytes decoded (only entry/exit regs + the $F347 read).
 ;   in: -    ; out: A = ($F347) = drive count ; BC/DE/HL/IX/IY preserved
-seldsk_drv_body:
-                ld      a, (DRVCNT)     ; DRVCNT = $F347 = logical-drive count ($02)
-                ret
+; (the body is in front of the $55E6 pin since D-SFIRSTVOL)
 
 ; curdrv_body — the $50C4 kernel CURDRV-time entry (M18; tier2-m18-spec.md).
 ; The relocated kernel CALLs $50C4 while processing BDOS CURDRV ($19) to read the
@@ -7622,9 +7633,7 @@ seldsk_drv_body:
 ; CLEAN-ROOM: derives from the observed DATA-cell read contract (return [$F247]) +
 ; our own code; no stock/kernel bytes decoded (only entry/exit regs + the $F247 read).
 ;   in: -    ; out: A = ($F247) = current drive ; BC/DE/HL/IX/IY preserved
-curdrv_body:
-                ld      a, (CURDRV_CELL) ; CURDRV_CELL = $F247 = current-drive index ($00)
-                ret
+; (the body is in front of the $55E6 pin since D-SFIRSTVOL)
 
 ; ===== M19: runtime directory search (BDOS SFIRST $11 / SNEXT $12) =============
 ; sfirst_body / snext_body / dirscan_match / name_cmp_wild — the bodies behind the
@@ -7662,9 +7671,7 @@ curdrv_body:
 ; CLEAN-ROOM: our own DE->$F23D store + the observed entry DE=DTA / write-$F23D
 ; contract; no stock routine internals decoded. See docs/tier2-m19-spec.md.
 ;   in:  DE = new DTA pointer ; out: ($F23D) := DE ; all registers preserved
-setdta_cache_body:
-                ld      (DOS_DTAPTR), de    ; $F23D := DE (runtime DTA pointer)
-                ret
+; (the body is in front of the $5552 pin since D-SFIRSTVOL)
 
 ; getalloc_body — the $505D kernel GETALLOC-time entry (M20 REVISION 3;
 ; tier2-m20-spec.md). BDOS $1B GETALLOC: return the volume's allocation geometry.
@@ -7851,7 +7858,13 @@ dsm_entloop:
                 or      a
                 jr      z, ds_none          ; $00 = end of directory -> exhausted
                 cp      $E5
-                jr      z, dsm_skip         ; deleted entry -> skip (no filter else)
+                jr      z, dsm_skip         ; deleted entry -> skip
+                push    hl                  ; 🔴 D-SFIRSTVOL (2026-11-08): the VOLUME LABEL
+                ld      de, 11              ; (attr bit 3) is not a file -- the CF-3300's
+                add     hl, de              ; SFIRST "????????.???" skips it and returns
+                bit     3, (hl)             ; the first file (scratchpad/bdosx9_run3.out,
+                pop     hl                  ; DTA 1); ours returned the label, and SNEXT
+                jr      nz, dsm_skip        ; stayed one entry behind
                 ld      de, (FAT_NAMEPTR)
                 push    hl
                 push    bc

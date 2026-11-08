@@ -17613,8 +17613,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       enters $47D1 with DE = $DA40 (its FCB copy), HL = $0080, A = $25, C = 0
       ([`wrzer_entryregs.out`](scratchpad/wrzer_entryregs.out), ours). ➡️ LEFT: the zero fill, on top of D-WRRNDEXT.
 
-- [ ] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
+- [x] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
       THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**
+      ✅ **FIXED THE SAME DAY.** dirscan_match (disk/kernel.asm) skips an entry with attr bit 3,
+      beside the deleted-entry skip. Room: the region before runtime.asm's $7F7C pin had none
+      (`scratchpad/pinguard.py` -- a label before every pin, assembled in a copy -- named it,
+      10 B over), so seldsk_drv_body + curdrv_body went to the 8 B in front of $55E6 and
+      setdta_cache_body to the hole in front of $5552 (all three entered only by `jp` / the
+      `dw` table). 📏 bdosx9 ([`bdosx9_run4.out`](scratchpad/bdosx9_run4.out)): both DTAs BYTE-IDENTICAL now (SFIRST `LIST`,
+      SNEXT `OPENMSX1.MBK`); 10 bytes still differ, all WRZER's (D-WRRNDEXT). 🔮 HIT.
+      ⚠️ Only the label is measured: whether the CF-3300's SFIRST also hides HIDDEN / SYSTEM
+      entries is unmeasured (this disk has none) -- the next bdosx row when a disk with them
+      is built.
       🎚️ TIER 1 — happy path of an entry point: every directory listing a DOS program makes
       starts one entry early, and SNEXT stays one behind.
       🤖 **AUTONOMOUS** — 📏 [`bdosx9_run3.out`](scratchpad/bdosx9_run3.out) DTA 1 ($0490): the CF-3300's first match is
