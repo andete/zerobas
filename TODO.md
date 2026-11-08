@@ -5910,6 +5910,14 @@ item — do **one item per session** to keep context lean.
 - [ ] 🔴 **TOKENISED `LOAD` IS 5.8× THE REFERENCE PER BYTE, AND THAT IS NOT THE
       INTERPRETATION GAP.**
       🎚️ TIER 5 — on-par speed, on `LOAD`.
+      📏 **RE-MEASURED 2026-11-08, AFTER D-LOADDIRECT + D-KEYSKIP** ([`loadclock_ab_persec.out`](scratchpad/loadclock_ab_persec.out), both
+      machines, outside the guest): **0.188 ms/byte here, 0.119 on the CF-3300 -- 1.58x, down
+      from 5.8x**; fixed cost 0.37 s here against 1.23 there, so the TOTALS are on par up to
+      14 KB (1 KB 0.57 / 1.36 s, 7 KB 1.65 / 2.39, 14 KB 3.07 / 2.94) and fall behind beyond.
+      What is left per byte is the lever already filed under the LOAD item above: sectors
+      missed on the disk's turn (ours 11 of 28 gaps, the CF-3300's LOAD 4 of 26) and the
+      lost-data retries under D-FDCDI's windows (the CF-3300 waits masked: 0 ISRs in 77
+      read waits). Open on that, not on the per-byte loop.
       🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
       SPENDING BYTES on it is not, and the byte budget is Joost's call.
       Measured 2026-09-18 by
@@ -8034,7 +8042,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16346 (T-529ABE)`: a
+      `TODO.md:10475 (T-6FE392)8 (T-529ABE)` from `TODO.md:16354 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10781,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16346 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
