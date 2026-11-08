@@ -17595,6 +17595,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (the published contract) -- MEASURE the zero fill on the CF-3300 first (WRZER at RR = 3 of
       an empty file: what records 0-2 hold), and what +14..15 = 0 after FCLOSE means. Witness:
       bdosx9 into bdos-acceptance, byte-identical.
+      📏 **THE ZERO FILL, MEASURED (2026-11-08)** -- `probes/disk/wrzer.asm` (+ build_wrzer_disk.py):
+      the clusters the files will take are overwritten with $CC by WRABS first (a deleted file's
+      clusters are NOT reused -- the allocator moves forward, measured by the first two runs,
+      [`wrzer_stock.out`](scratchpad/wrzer_stock.out) / [`wrzer_stock2.out`](scratchpad/wrzer_stock2.out), both all-zero and blind); then record
+      20 of an empty file is written by WRZER (Z.DAT) and by WRRND (R.DAT) and records 0 / 8 /
+      16 / 20 read back ([`wrzer_stock3.out`](scratchpad/wrzer_stock3.out), CF-3300): **WRZER zero-fills every record
+      the extension adds; WRRND leaves the disk's bytes ($CC)**; record 20 is $55 in both, size
+      2688 (21 x 128). 🔮 HIT.
+      ✅ **THE CORRUPTION HALF FIXED (2026-11-08):** a `jp` at $47D1 (fat_write_fat_entry_hot
+      steps over it: `or a` / `jr fwe_cmp` / the veneer / `sbc hl,de`; 7 B from moving rh_init
+      beside rh_flush), INTERIM to wrrnd_body. The FAT write no longer runs with WRZER's
+      registers. bdosx9 cut after WRZER ([`bdosx9_bisect4.out`](scratchpad/bdosx9_bisect4.out)): ours reaches the anchor
+      now, FCLOSE after it matches -- but **WRZER answers A = $02, HL = $E8AD (CF-3300: A = $00,
+      HL = 0)**: wrrnd_body cannot extend a file (its M26 header: *"positioned past EOF -- FAT
+      growth is out of scope"*), so D-WRRNDEXT below is the rest of this item. The kernel
+      enters $47D1 with DE = $DA40 (its FCB copy), HL = $0080, A = $25, C = 0
+      ([`wrzer_entryregs.out`](scratchpad/wrzer_entryregs.out), ours). ➡️ LEFT: the zero fill, on top of D-WRRNDEXT.
+
+- [ ] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
+      WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
+      🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style
+      program grows a file).
+      🤖 **AUTONOMOUS** — wrrnd_body (disk/kernel.asm, M26) positions with rrnd_position and
+      refuses past EOF -- its header scoped FAT growth out. The growth machinery exists twice
+      already: WRBLK's (wrblk_read_or_extend_sector / wroe_ext) and BASIC PUT's (frnd_locate /
+      frl_ext). 🔴 bdos-acceptance's BDOSX3 exercises WRRND only INSIDE a file, which is why the
+      entry table counts WRRND "exercised": the table's own warning, met on its first day.
+      📏 Witness ready: `probes/disk/wrzer.asm`'s R.DAT half (record 20 of an empty file by
+      WRRND; the CF-3300 writes it, size 2688, the added records the disk's bytes). Needs
+      disk-ROM bytes (none free outside the FDC window): a carve first.
+
+- [ ] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
+      D-ENTRYTIERS step 2)**
+      🎚️ TIER 1 — happy path of an entry point.
+      🤖 **AUTONOMOUS** — bdosx9 cut before the unused numbers ([`bdosx9_bisect4.out`](scratchpad/bdosx9_bisect4.out)):
+      after FCLOSE both machines agree; after AUXOUT (E = 'A') ours never reaches the anchor,
+      the CF-3300 does (AUXOUT returned A = $41 there, [`bdosx9_stock.out`](scratchpad/bdosx9_stock.out) record 10). ➡️ First:
+      `callwatch --in-func 0x04 --machine ours` -- which of OUR ROM's addresses the kernel
+      enters (most likely another canonical entry never planted, the D-WRZER class).
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**

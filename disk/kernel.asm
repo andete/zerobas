@@ -6897,6 +6897,13 @@ rh_flush:
                 pop     de
                 pop     bc
                 ret
+; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
+; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
+; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
+rh_init:
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

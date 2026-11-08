@@ -299,6 +299,18 @@ fat_write_fat_entry_hot:
                 push    hl                  ; the entry's sector
                 ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
                 or      a
+                jr      fwe_cmp             ; over WRZER's entry (Cy = 0 kept: jr leaves flags)
+; 🔴 D-WRZER (2026-11-08): $47D1 IS BDOS $28 WRZER's CANONICAL ENTRY. MSX-DOS's
+; kernel CALLs it (disk_probe_diff.py callwatch --in-func 0x28, our ROM's PCs:
+; scratchpad/wrzer_callwatch.out), and it fell 16 bytes into this routine -- the
+; FAT-entry write ran with WRZER's registers and could damage the user's FAT (the
+; M26 / M28 collision class: $436C FDEL, $4392 FREN, $47BE WRBLK). A veneer now
+; sits at the pinned address and this routine steps over it.
+                ds      $47D1 - $, $00      ; (zero-size when exact; an overrun empties the ROM)
+k_47D1:         jp      wrrnd_body          ; $47D1: BDOS $28 WRZER -- INTERIM: WRRND's write,
+                                            ; without the zero fill of the records an
+                                            ; extension adds (D-WRZER, TODO.md)
+fwe_cmp:
                 sbc     hl, de
                 pop     hl
                 jp      z, fwe_have         ; already loaded: no read
@@ -1208,10 +1220,8 @@ br2_end:
 ; (rh_flush moved to disk/kernel.asm, in front of the $75A5 pin, for room.)
 ; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
 ; Keeps A (INIT's 0 is still needed after the call).
-rh_init:
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ret
+; (rh_init moved to disk/kernel.asm beside rh_flush, D-WRZER: this fill gave its
+; 7 bytes to WRZER's $47D1 veneer.)
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz
