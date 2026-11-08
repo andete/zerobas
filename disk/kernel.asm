@@ -6867,6 +6867,32 @@ hw_tok:         or      a
 hw_eof:         ld      hl,(FREAD_OFF)
                 ld      (CLPTR),hl          ; any other EOF: everything stored
 hw_ok:          jp      hdl_ok
+; rh_flush -- D-PUTCACHE: write the sector a PUT left in FAT_MBUF (RND_HSEC) and
+; forget it. CF / A as fatprim_write_sector's (the tag is cleared either way: a
+; failed write is reported once, not retried at every read after). Keeps BC, DE.
+rh_flush:
+                ld      hl, (RND_HSEC)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing held (CF = 0)
+                ei                          ; the write's rotational wait with the ISR
+                                            ; running, as the PUT that left it had: this
+                                            ; runs inside whatever hook reads next, and a
+                                            ; hook arrives through CALSLT masked -- a
+                                            ; 352 ms masked gap in L5_stock (D-GCDI's
+                                            ; rule; D-LOADDI / D-HOOKDI's reasoning).
+                                            ; Only with a sector held: BDOS / DOS paths
+                                            ; never hold one, and return above.
+                push    bc
+                push    de
+                ex      de, hl              ; DE = the held sector
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ld      hl, FAT_MBUF
+                call    fatprim_write_sector
+                pop     de
+                pop     bc
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

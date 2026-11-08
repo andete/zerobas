@@ -1,0 +1,4 @@
+D-INPLF (A), 2026-11-08: after INPUT$ took a CR, the next INPUT# reads the LF as the end of an EMPTY item
+CF-3300 lpt: A 4  0  36 / B 5  36
+zerobas lpt: A 4  0  36 / B 5  36
+(inplf_measure.bas and inplf_grid.bas: the printer output identical on both; the screens differ only in the harness footer)

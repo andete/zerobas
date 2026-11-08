@@ -129,8 +129,11 @@ keyboard form.
   CF-3300 has rules for it: inside a number read by `INPUT #` it is skipped
   (`5`, line feed, `6` reads 56; zerobas read 5), and `LINE INPUT #` keeps it
   as a character of the line (zerobas dropped it). Both now match on disk
-  ([readings](../../scratchpad/inplf_grid2.out)). Still different: a line feed
-  read right after `INPUT$` took the carriage return in front of it.
+  ([readings](../../scratchpad/inplf_grid2.out)). The last case followed on
+  2026-11-08: when `INPUT$` takes the carriage return, the line feed after it
+  ends an EMPTY item for the next `INPUT #` on the CF-3300 (a number reads 0),
+  and zerobas had skipped it as the second half of the pair. It now does the
+  same ([after](../../scratchpad/inplf_after3.out)).
 
 - **Ctrl-STOP while `INPUT` waited did nothing** (fixed 2026-11-06,
   D-STOPINPUT; found by a typed session). On the VG-8020 Ctrl-STOP or Ctrl-C

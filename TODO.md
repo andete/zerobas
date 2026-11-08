@@ -70,7 +70,7 @@ item — do **one item per session** to keep context lean.
       everything, no handler / token row) stays unknown -> the canary, as before. Selftest
       arms P18 / P18b / P18c green.
 
-- [ ] 📄 **`INPUT#` / `LINE INPUT#` TREAT A LONE LF DIFFERENTLY FROM THE CF-3300 (D-INPLF, found
+- [x] 📄 **`INPUT#` / `LINE INPUT#` TREAT A LONE LF DIFFERENTLY FROM THE CF-3300 (D-INPLF, found
       2026-11-05 by the program ladder's L5_files).**
       🎚️ TIER 6 — data files with a LF that is not part of a CR LF pair (MSX writes CR LF; a
       CR LF file reads the same on both).
@@ -97,7 +97,15 @@ item — do **one item per session** to keep context lean.
       keeps the old rule). After: the grid SAME ([`inplf_after.out`](scratchpad/inplf_after.out)); inplf_measure still differs
       ONLY in (A) -- INPUT$ took the CR, and the next INPUT # reads an EMPTY field (0) there
       where zerobas skips the LF (36): the CR state survives INPUT$ on the reference. That
-      residual stays open here. 🔴 The first cut of ris_lf sat in front of ris_keep and the
+      residual stays open here.
+      ✅ **THE RESIDUAL, FIXED 2026-11-08 -- CLOSED.** The reference remembers the CR INPUT$
+      handed over: the LF after it ends an EMPTY item for the next INPUT # (reads 0). A row
+      flag, DIN_CRPEND (bit 2 of DOUT_FLG on an INPUT row, disk/fat.asm): set when INPUT$
+      delivers a CR, cleared by din_take (any byte taken); din_num honours it before its
+      lead-in skip. Numbers only -- the measured case; a string field or LINE INPUT # after
+      INPUT$'s CR keeps today's rule, unmeasured. rh_flush moved to the $75A5 hole to make the
+      room. After ([`inplf_after3.out`](scratchpad/inplf_after3.out)): inplf_measure's printer output identical on both
+      ("A 4  0  36"), the 19-case grid still identical; tests/test_seqin.py green. 🔴 The first cut of ris_lf sat in front of ris_keep and the
       quote arm's `jr z,ris_setq` FELL INTO it: LINE INPUT # from TAPE lost its quotes
       (castail-acceptance cas2-open `10 PRINTZQ9`, [`inplf_castail.out`](scratchpad/inplf_castail.out) after the move: 47/47).
       (The grid's first draft wrote `""` in DATA, which MSX does
@@ -8050,7 +8058,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10483 (T-6FE392)8 (T-529ABE)` from `TODO.md:16362 (T-529ABE)`: a
+      `TODO.md:10491 (T-6FE392)8 (T-529ABE)` from `TODO.md:16370 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10789,7 +10797,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16362 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16370 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

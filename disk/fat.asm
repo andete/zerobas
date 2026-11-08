@@ -557,6 +557,8 @@ frg_pass:
 ; The refill is RDBLK's own positioning and byte source (k47b2_seek /
 ; k47b2_nextbyte, D-RDBLKSEEK): no re-mount, no re-find, the chain walked from
 ; the FCB's running cluster -- 256 B a refill, the CF-3300's block size.
+DIN_CRPEND      equ     2               ; DOUT_FLG bit (an INPUT row): INPUT$ handed over a CR
+                                        ; and its LF is still unread (D-INPLF (A), din_num)
 DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..256).
                                         ; DOUT_FIRST's place -- an INPUT row has no
                                         ; write cursor
@@ -684,7 +686,10 @@ hk_chin:
                 jr      nz, din_ok
                 ld      a, (FCH_RDMODE)
                 cp      2                   ; INPUT$ reads the CR-LF pair as data
-                jr      z, din_cr
+                jr      nz, din_inp
+                set     DIN_CRPEND, (ix+DOUT_FLG)   ; D-INPLF (A): its LF is still to come
+                jr      din_cr
+din_inp:
                 call    din_peek            ; INPUT#: what follows the CR?
                 jr      c, din_cr
                 cp      $0A
@@ -707,6 +712,18 @@ din_ok:
 din_num:
                 xor     a
                 ld      (STRSCR), a
+                ; D-INPLF (A), measured on the CF-3300 (scratchpad/inplf_measure.out): after
+                ; INPUT$ took a CR, the LF that follows ENDS AN EMPTY ITEM -- INPUT # reads 0
+                ; there -- where the lead-in below would skip it. The CR is still pending.
+                bit     DIN_CRPEND, (ix+DOUT_FLG)
+                jr      z, dnm_lead
+                call    din_peek
+                jr      c, dnm_lead
+                cp      $0A
+                jr      nz, dnm_lead
+                call    din_take            ; the LF (and the pending CR with it)
+                or      a                   ; an empty item, CF clear: 0
+                ret
 dnm_lead:
                 call    din_peek
                 ret     c                   ; the end before any byte
@@ -792,6 +809,7 @@ din_peek:
 ; din_take -- consume the byte din_peek saw: position + 1, DIN_LEFT - 1. A and
 ; the flags are kept; BC, DE, HL clobbered. IX = the row.
 din_take:
+                res     DIN_CRPEND, (ix+DOUT_FLG)   ; any byte taken: no CR pending
                 push    af
                 call    dout_pos
                 inc     (hl)                ; the position (wraps with the record)
@@ -1187,32 +1205,7 @@ br2_end:
                 ; with RET. They were deleted because the comment MISLED: S10.D's
                 ; drafter read them as pins and priced this 793 B run at ~59 B.
                 ; tools/check_disk_walls.py was right all along (room-before-pin 793 B).
-; rh_flush -- D-PUTCACHE: write the sector a PUT left in FAT_MBUF (RND_HSEC) and
-; forget it. CF / A as fatprim_write_sector's (the tag is cleared either way: a
-; failed write is reported once, not retried at every read after). Keeps BC, DE.
-rh_flush:
-                ld      hl, (RND_HSEC)
-                ld      a, h
-                or      l
-                ret     z                   ; nothing held (CF = 0)
-                ei                          ; the write's rotational wait with the ISR
-                                            ; running, as the PUT that left it had: this
-                                            ; runs inside whatever hook reads next, and a
-                                            ; hook arrives through CALSLT masked -- a
-                                            ; 352 ms masked gap in L5_stock (D-GCDI's
-                                            ; rule; D-LOADDI / D-HOOKDI's reasoning).
-                                            ; Only with a sector held: BDOS / DOS paths
-                                            ; never hold one, and return above.
-                push    bc
-                push    de
-                ex      de, hl              ; DE = the held sector
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
-                pop     de
-                pop     bc
-                ret
+; (rh_flush moved to disk/kernel.asm, in front of the $75A5 pin, for room.)
 ; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
 ; Keeps A (INIT's 0 is still needed after the call).
 rh_init:
