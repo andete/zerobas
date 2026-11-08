@@ -852,7 +852,8 @@ rgb_have:
 bdos_close:
                 ld      a, (BDOS_WRMODE)
                 or      a
-                jr      nz, bdos_close_write
+                jp      nz, bdos_close_wm   ; D-WRBLKDIR: disk/runtime.asm, for room
+bdos_close_rd:
                 jp      close_read      ; read close: nothing to flush, but a WRITTEN
                                         ; file is re-dated (D-CLOSESTAMP)
 bdos_close_write:

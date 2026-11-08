@@ -37,7 +37,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 from test_wrblk_body_e2e import (  # noqa: E402
-    Disk, EOC, FCB, SECSIZE, build, get_fat12, n83, new_machine, setup_fcb,
+    Disk, EOC, FCB, SECSIZE, build, close_fcb, get_fat12, n83, new_machine,
+    setup_fcb,
 )
 
 
@@ -122,6 +123,10 @@ def run():
         check(cpu.a == 0, f"  extend record {i}: A={cpu.a} (want 0)")
         total_reads += counts["reads"]
         counts["reads"] = 0
+        # D-WRBLKDIR: the next setup_fcb is a re-FOPEN from the dirent, which
+        # FCLOSE writes -- so close between calls, as a real program must.
+        check(close_fcb(m) == 0, f"  FCLOSE after record {i}: A=0")
+        counts["reads"] = 0
     # Correctness: walk the resulting chain and verify every record's bytes.
     cluster, size = disk.dirent()
     check(size == NREC * 128, f"final size = {size} (want {NREC * 128})")
@@ -161,6 +166,7 @@ def run():
         m.poke(0xC000 + i * 128, bytes([0x80 + i] * 128))
     cpu = m.call("wrblk_body", de=FCB, hl=NREC2)
     check(cpu.a == 0, f"single-call {NREC2}-record multi-cluster extend: A={cpu.a} (want 0)")
+    check(close_fcb(m) == 0, "  FCLOSE: A=0 (D-WRBLKDIR: the dirent is written here)")
     cluster, size = disk.dirent()
     check(size == NREC2 * 128, f"  final size = {size} (want {NREC2 * 128})")
     chain = []

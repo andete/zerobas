@@ -750,6 +750,24 @@ frl_done:
                 call    clus_sec            ; (its adds cannot carry: CF = 0)
                 ld      (GP_PHYS), de
                 ret
+; bdos_close_wm -- D-WRBLKDIR (2026-11-08): BDOS_WRMODE is ONE global (FMAKE sets
+; it), so with two FMAKE'd FCBs written by WRBLK the first FCLOSE came here and
+; wrote the entry from the GLOBALS -- the last-used file's -- never its own
+; (wrblkalt-acceptance's ALT1). The globals path is for the SEQUENTIAL writer's
+; file only: nothing written sequentially (no cluster yet) -> close from the FCB.
+bdos_close_wm:
+                ld      hl, (BDOS_WRCLUS)
+                ld      a, h
+                or      l
+                jp      nz, bdos_close_write
+                ld      (BDOS_WRMODE), a    ; (A = 0) no longer open for write
+                jp      bdos_close_rd
+cr_copy2:                                   ; (cr_copy1's second half, disk/kernel.asm)
+                ld      hl, FAT_FILESIZE
+                ld      de, BDOS_WRBYTES
+                ld      bc, 4
+                ldir
+                jp      fat_dir_update
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

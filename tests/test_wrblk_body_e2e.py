@@ -175,6 +175,15 @@ def setup_fcb(m, name, rs=128, rr=0, disk=None):
     m.poke_w(m.addr("DOS_DTAPTR"), 0xC000)   # arbitrary scratch DTA
 
 
+def close_fcb(m):
+    """FCLOSE's write half. D-WRBLKDIR (2026-11-08): wrblk_body keeps the size
+    (+16..19) and first cluster (+26) in the FCB; the directory entry is
+    written from them once, at close (`close_read` -> `cr_dir`), not on every
+    WRBLK call. A test reading the dirent after a write must close first."""
+    cpu = m.call("close_read", de=FCB)
+    return cpu.a
+
+
 def run():
     build()
     fails = 0
@@ -222,8 +231,13 @@ def run():
     # sector 0. Cluster c's sector 0 lives at data[(c-2)*SECPERCLUS*SECSIZE : ...].
     new_tail_bytes = bytes(disk.data[(new_tail - 2) * SECSIZE:(new_tail - 2) * SECSIZE + 128])
     check(new_tail_bytes == pattern, "  record 4's 128 bytes landed in the newly allocated cluster")
+    fsize = struct.unpack("<I", bytes(m.peek(FCB + 16, 4)))[0]
+    check(fsize == 640, f"  FCB size grew to {fsize} (want 640 = 5 records * 128)")
     cluster, size = disk.dirent()
-    check(size == 640, f"  dirent size grew to {size} (want 640 = 5 records * 128)")
+    check(size == 512, f"  dirent size still {size} before FCLOSE (want 512: written at close)")
+    check(close_fcb(m) == 0, "  FCLOSE: A=0")
+    cluster, size = disk.dirent()
+    check(size == 640, f"  dirent size grew to {size} at FCLOSE (want 640 = 5 records * 128)")
     r0, r1, r2 = m.peek(FCB + 33, 3)
     check((r0, r1, r2) == (5, 0, 0), f"  RR advanced to {(r0,r1,r2)} (want (5,0,0))")
 

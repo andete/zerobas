@@ -18375,6 +18375,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       FDC window is 15; cr_dir fills the $782B one, bdos_close_wm the $7F7C one).
       ➡️ A carve of >= ~20 B first (a D-DISKCARVE round), then land (1)-(3) together and run
       wrblkalt / bdos / roundtrip. Measured with (1) alone: WSEEK 193.6 -> 106-108 s.
+      ✅ **LANDED 2026-11-08 -- NO CARVE NEEDED.** (3) split in two: `cr_copy1` (FAT_FIRSTCLUS ->
+      BDOS_WRFIRST, 9 B, the $5FD6 hole before the $5FE5 pin) jumps to `cr_copy2` (FAT_FILESIZE
+      -> BDOS_WRBYTES, then `jp fat_dir_update`, 14 B, the runtime hole's last 14 B); cr_dir
+      calls cr_copy1 where it called fat_dir_update. 🔮 Predicted every file AS EXPECTED and
+      WSEEK ~106 s: **HIT** ([`blkio_wrblkdir3.out`](scratchpad/blkio_wrblkdir3.out)) -- ALT1 [372], ALT2 [373], OUT, OUT2, BIGW
+      all as written on both machines, FCB snapshots byte-identical, **WSEEK 193.6 -> 107.7 s
+      (6.3x -> 3.5x the CF-3300)**, the ALT write phase 7.75 s against its 9.65.
+      (blkio_wrblkdir.out was overwritten by the second run; the first experiment's
+      106.3 s / ALT1 NOT WRITTEN reading is in commit ad6f298a.)
+      🎯 For the C-BIOS port goal ([[disk-core-portable-to-cbios]]): a written file's entry is
+      now written from ITS OWN FCB at close, not from the last-used file's globals.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

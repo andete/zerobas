@@ -2080,7 +2080,8 @@ close_read:
                 add     hl, de
                 bit     6, (hl)
                 jr      nz, cr_ok           ; not written since FOPEN: nothing to do
-                inc     hl
+                call    cr_dir              ; D-WRBLKDIR: size + first cluster, ONCE; HL = +25
+                jr      c, cr_err
                 ld      a, (hl)             ; A = the entry's index (+25)
                 push    af
                 rrca
@@ -3615,6 +3616,15 @@ frp_full:                                   ; fat_rand_put's record past any dis
                 scf
                 ret
 
+; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
+; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
+; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
+; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
+; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room.
+cr_copy1:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                jp      cr_copy2            ; disk/runtime.asm
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
 ; --- S10.D: the RANDOM record writer, in the free region after the $5FE5 veneer
@@ -4001,8 +4011,11 @@ wrblk_loop_done:
                 call    wrblk_size_max
                 call    wrblk_set_wrfirst
                 call    wrblk_fcb_keep      ; D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
-                call    fat_dir_update
-                jr      c, wrblk_ioerr2
+                ; D-WRBLKDIR (2026-11-08): NO directory update per call -- the CF-3300
+                ; touches the entry only at FCLOSE (fdccount_run.out: 72 writes for 64
+                ; data sectors; ours wrote the entry every call). The close writes it
+                ; from the FCB (bdos_close -> close_read -> cr_dir), which
+                ; wrblk_fcb_keep keeps current.
                 xor     a
                 ld      hl, (WRBLK_REQ)
                 jr      wrblk_finish
@@ -7340,6 +7353,24 @@ frl_have:
                 jp      frl_ext             ; PUT: disk/kernel.asm's $4E20 fill
 frl_walked:
                 jp      frl_done            ; D-PUTWALK: disk/runtime.asm, for room
+; cr_dir -- D-WRBLKDIR (2026-11-08): close_read's write of a written file's entry --
+; its size and first cluster, from the FCB, as the per-call update in wrblk_body did.
+; The CF-3300 writes the entry at FCLOSE only. Reached only for a file the
+; SEQUENTIAL writer did not write (bdos_close sends that one to its own path): WRBLK
+; keeps +16 / +26 current (wrblk_fcb_keep), WRRND +16 (wrrnd_extend), FOPEN / FMAKE
+; +26. in DE = the FCB; out CF = an I/O error, else HL = the FCB + 25. For room.
+cr_dir:
+                push    de
+                pop     ix                  ; IX = the FCB (wrblk_fcbstate's contract)
+                call    wrblk_fcbstate      ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
+                ret     c
+                call    cr_copy1            ; -> BDOS_WRFIRST / BDOS_WRBYTES, then
+                ret     c                   ; fat_dir_update
+                push    ix
+                pop     hl
+                ld      de, 25
+                add     hl, de              ; HL = the FCB + 25
+                ret
                 ds      $782B - $, $00
                 jp      k_782B          ; $782B
 ; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---
