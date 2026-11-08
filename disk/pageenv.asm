@@ -139,6 +139,13 @@ BR_TGT          equ     BR5_RAM + (br_tgt_tmpl - br5_tmpl)
 BR_FRM          equ     BR5_RAM + (br_frm_tmpl - br5_tmpl)
 BR_HL           equ     BR5_RAM + (br_hl_tmpl - br5_tmpl)
 BR_CFOP         equ     BR5_RAM + (br_cfop_tmpl - br5_tmpl)
+; D-CALSLTP0 (2026-11-08): br6, the page-1 / page-2 CALSLT, right after br5 -- $DF18..,
+; inside our own DOS reservation (DOS_RESV_TOP $DF93; $DF1C..$DF92 watched: 0 writes).
+BR6_RAM         equ     BR5_RAM + (br5_end - br5_tmpl)
+BR_CALS         equ     BR6_RAM + (br_cals_tmpl - br6_tmpl)
+BC_FIELD        equ     BR6_RAM + (bc_field_tmpl - br6_tmpl)
+BC_JPIX         equ     BR6_RAM + (bc_jpix_tmpl - br6_tmpl)
+BC_TMP          equ     BR6_RAM + (bc_tmp_tmpl - br6_tmpl)
 br1_tmpl:
 br_rdslt_tmpl:
                 push    hl
@@ -149,9 +156,8 @@ br_wrslt_tmpl:
                 ld      hl, $0014           ; WRSLT
                 jp      BR_GO
 br_calslt_tmpl:
-                push    hl
-                ld      hl, $001C           ; CALSLT
-                jp      BR_GO
+                jp      BR_CALS             ; CALSLT: br6 (D-CALSLTP0) -- a page-1 / page-2
+                                            ; target with page 0 the caller's RAM
 br_enaslt_tmpl:
                 push    af
                 ld      a, h

@@ -44,6 +44,13 @@ frl_ext:
                 ld      (GP_CLIDX), hl
                 jr      nz, frl_ext
                 jp      frl_xdone
+; install_br6 -- install_dos_env's last piece (D-CALSLTP0): br6, the page-1/2 CALSLT,
+; LDIR'd on from where br5 ended (DE runs on). Here for room.
+install_br6:
+                ld      hl, br6_tmpl
+                ld      bc, br6_end - br6_tmpl
+                ldir
+                ret
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
 ; 📌 In the $4E4E..$4EDE fill (check_disk_walls, 2026-10-21).
@@ -121,15 +128,13 @@ install_dos_env:
                 ld      hl, br5_tmpl        ; ... and br5
                 ld      bc, br5_end - br5_tmpl
                 ldir
-                ret
+                jp      install_br6         ; ... and br6 (D-CALSLTP0)
 ; 💰 D-DISKCARVE (2026-11-07): three BDOS bodies moved here from disk/runtime.asm's
 ; $782B..$7F7C region (15 B), which the int_h_hiram template's ENASLT fix needed
 ; (D-SDSBOOT). Entered only by `jp` from the BDOS dispatch; this pad was empty and
 ; never entered (scratchpad/padwatch_4ede.out, the ten DOS suites).
-cpmver_body:
-                ld      a, $22
-                ld      b, 0
-                ret
+; (cpmver_body moved to the hole in front of $607B by D-CALSLTP0, whose install
+; needed this region's bytes.)
 
 ; --- login_body - the $504E LOGIN canonical entry (M22a) -------------------------
 ; A := the online-drive bitmap (1 << DRVCNT) - 1, the published LOGIN contract
@@ -3788,6 +3793,12 @@ fill_sp:
                 or      a
                 ret
 
+; cpmver_body -- BDOS $0C CPMVER (D-DISKCARVE's move; here since D-CALSLTP0). Entered
+; only by `jp` from the BDOS dispatch.
+cpmver_body:
+                ld      a, $22
+                ld      b, 0
+                ret
                 ds      $607B - $, $00
                 jp      k_607B          ; $607B  (BDOS callback; spec §5.2)
 
@@ -6944,6 +6955,95 @@ pg0_mainrom_out:
                 ld      a, (PG_SV_A8)
                 out     ($A8), a
                 ret
+; 🔴 D-CALSLTP0 (2026-11-08): br6 -- CALSLT for a page-1 / page-2 target WITH PAGE 0
+; LEFT THE CALLER'S RAM. The $001C stub used to enter the BIOS's own CALSLT with the
+; BIOS mapped into page 0 (br_go), so the target ran under it: a DOS program's buffer
+; below $4000 was the BIOS while the callee wrote it -- GETDPB's DPB went into ROM
+; (scratchpad/getdpb_entry.out). The CF-3300 runs the callee with page 0 the
+; program's RAM. Page 3 cannot switch itself, so the slot work stays the BIOS's, through
+; BR_ENASLT (which maps the BIOS in for the switch only and puts page 0 back): save the
+; caller's slot for page p, ENASLT the target, call it, ENASLT the caller's back. The
+; save word rides the STACK (a callee that itself CALSLTs cannot clobber it). A page-0
+; or page-3 target keeps the old path (the BIOS's CALSLT: page 3 holds this code).
+; Interrupts: BR_ENASLT leaves them off, as the CF-3300's CALSLT returns.
+; LDIR'd to BR6_RAM by install_dos_env; runs from page-3 RAM -- `jr` within, the
+; BR_* / BC_* equates for every absolute reference to itself.
+;   in: IYH = the slot, IX = the address, AF / BC / DE / HL for the target
+br6_tmpl:
+br_cals_tmpl:
+                push    af
+                ld      a, ixh
+                and     $C0
+                jr      z, bcs_old          ; page 0: the BIOS's CALSLT, as before
+                cp      $C0
+                jr      z, bcs_old          ; page 3: likewise (this code lives there)
+                push    hl
+                push    de
+                push    bc
+                ld      d, a                ; D = the page's address high byte ($40 / $80)
+                rlca
+                rlca
+                ld      b, a                ; B = p (1 / 2)
+                in      a, ($A8)
+                call    BC_FIELD
+                ld      c, a                ; C = the caller's primary slot for page p
+                ld      hl, EXPTBL
+                add     a, l
+                ld      l, a
+                bit     7, (hl)
+                jr      z, bcs_have         ; not expanded: the primary is the slot
+                ld      a, l
+                add     a, SLTTBL - EXPTBL  ; SLTTBL[primary]
+                ld      l, a
+                ld      a, (hl)
+                call    BC_FIELD            ; its subslot for page p
+                rlca
+                rlca
+                or      c
+                or      $80
+                ld      c, a                ; C = $80 | sub << 2 | primary
+bcs_have:
+                ld      e, c                ; E = the caller's slot, D = the page
+                ld      (BC_TMP), de
+                ld      h, d
+                ld      a, iyh
+                call    BR_ENASLT           ; the target's slot into page p
+                pop     bc
+                pop     de
+                pop     hl
+                pop     af                  ; the caller's registers for the target
+                ld      iy, (BC_TMP)        ; (IY is CALSLT's input only: free now)
+                push    iy                  ; [the save word][the caller's return]
+                call    BC_JPIX             ; the target -- page 0 the caller's RAM
+                ex      (sp), hl            ; HL = the save word (H page, L slot);
+                push    af                  ; the target's HL waits on the stack
+                push    bc
+                push    de
+                ld      a, l
+                call    BR_ENASLT           ; the caller's slot back into page p
+                pop     de
+                pop     bc
+                pop     af
+                pop     hl                  ; the target's answer, every register
+                ret
+bcs_old:
+                pop     af
+                push    hl
+                ld      hl, $001C           ; CALSLT, through the BIOS (br_go)
+                jp      BR_GO
+bc_field_tmpl:                              ; A := (A >> 2B) AND 3 (B = p, kept)
+                push    bc
+bcf_lp:
+                rrca
+                rrca
+                djnz    bcf_lp
+                pop     bc
+                and     3
+                ret
+bc_jpix_tmpl:
+                jp      (ix)
+bc_tmp_tmpl:    dw      0
+br6_end:
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

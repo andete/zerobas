@@ -17687,8 +17687,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       runs 50 Hz). 💰 ~35 B in the $4E4B region, which has 13 -- behind the same carve as
       D-CALSLTP0.
 
-- [ ] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
+- [x] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
       2026-11-08 by dskent.asm)**
+      ✅ **CLOSED BY D-CALSLTP0 (2026-11-08):** the DPB is the CF-3300's byte for byte now
+      ([`dskent_both3.out`](scratchpad/dskent_both3.out)). Its exit registers still differ (A / F / B / HL), outside the
+      published contract -- filed under D-ENTRYTIERS step (3), "exercised -> same", not as a
+      defect.
       🎚️ TIER 1 — happy path of a disk-ROM entry point.
       🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) record 3 + the buffer (A = 0, B = C = $F9, HL =
       the buffer): **the CF-3300 fills DPB+1..+18** -- F9 / 0200 / 0F 04 / 01 02 / 0001 / 02 / 70 /
@@ -17703,8 +17707,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       getdpb's stores went into ROM. The CF-3300 ran the same CALSLT with page 0 the program's
       RAM. ➡️ **This is D-CALSLTP0 below, not a getdpb bug**; GETDPB is re-measured once it lands.
 
-- [ ] 🔴 **D-CALSLTP0 — UNDER MSX-DOS, A ROUTINE CALSLTED IN THE DISK ROM RUNS WITH THE BIOS IN
+- [x] 🔴 **D-CALSLTP0 — UNDER MSX-DOS, A ROUTINE CALSLTED IN THE DISK ROM RUNS WITH THE BIOS IN
       PAGE 0 (found 2026-11-08 by D-GETDPB)**
+      ✅ **FIXED (2026-11-08).** br6 (disk/kernel.asm, the $75A5 region; 105 B in RAM at BR6_RAM
+      $DF18..$DF80, inside DOS_RESV_TOP) is CALSLT for a page-1 / page-2 target: the caller's
+      slot for that page computed from $A8 / EXPTBL / SLTTBL, BR_ENASLT the target in (the BIOS
+      mapped into page 0 for the switch ONLY), the target called with page 0 the caller's RAM,
+      BR_ENASLT the caller's slot back; the save word on the stack (`push iy` / `ex (sp),hl`),
+      so a nested CALSLT cannot clobber it. Page 0 / page 3 targets keep the BIOS's CALSLT. The
+      $001C stub is `jp BR_CALS`; install_dos_env ends `jp install_br6` (9 B before $4E4B;
+      cpmver_body moved to the hole before $607B for the region's 2 B). 📏 dskent.asm
+      ([`dskent_both3.out`](scratchpad/dskent_both3.out)): **GETDPB's DPB BYTE-IDENTICAL to the CF-3300's (18 bytes)**; what
+      still differs is DSKCHG (D-DSKCHG) and GETDPB's exit registers (A / F / B / HL -- not in
+      the published contract, which defines the DPB). 🔮 HIT.
       🎚️ TIER 1 — happy path of every entry point a DOS program reaches through CALSLT ($001C)
       with a buffer below $4000: GETDPB's DPB, DSKIO's transfer buffer, anything in the TPA's
       first 16 KB. Data written there by the callee is LOST; data read from there is the BIOS.
