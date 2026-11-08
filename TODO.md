@@ -17694,6 +17694,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ C-BIOS is our BSD dependency: read its source for each, fix as cbios-repack patches
       (bios-regs.patch's way), turn the batch's SAME + fixed rows into biosregs-acceptance rows,
       and extend the batch past these 34 (the 85 NOT MEASURED rows of the BIOS table).
+      🔴 **THE SOURCE SAYS WHY (2026-11-08):** in the pinned C-BIOS (v0.29-3-gb5ad9cb, our BSD
+      dependency) SCALXY returns GRPACX / GRPACY unclipped, and READC, GTASPC, DOWNC are
+      `print_debug` STUBS ("This implementation is still a stub!"). The pinned tag's src/main.asm
+      + src/video.asm hold **34 stubbed MSX1 entries** ([`cbios_stubs_1108.out`](scratchpad/cbios_stubs_1108.out)): the whole
+      GRAPHICS-CURSOR family (RIGHTC LEFTC UPC TUPC DOWNC TDOWNC SCALXY STOREC SETATR READC SETC
+      NSETCX GTASPC PNTINI SCANR SCANL -- 16), function keys and misc (GETYPR INIFNK STRTMS
+      ISCNTC BEEP FNKSB ERAFNK DSPFNK GTPAD GTPDL OUTDLP), the tape six (TAPION .. TAPOOF), and
+      CHKRAM. A machine-code program that draws through the published BIOS graphics entries
+      draws NOTHING on zerobas. ➡️ (1) INVENTORY first: which of the 34 still answer as stubs
+      in OUR built main ROM -- the zerobas tape patch and cbios-repack likely replaced some (the
+      tape six; GTPAD / GTPDL already gave the VG-8020's A) -- one biossweep row each, the
+      stub's tell is "registers unchanged, nothing done". (2) The graphics family: point the
+      entries at the graphics code BASIC already carries in the same image (PSET / POINT / PAINT
+      work on the same VRAM layout) rather than writing it twice -- main ROM is nearly full
+      (page 1 was 36 B free and the low region 26 B on 2026-11-08, `make basic-reloc`). (3) Each fix: a biosregs-acceptance row, VG-8020 SAME.
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**
