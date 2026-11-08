@@ -18339,6 +18339,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       REWRITES THE DIRECTORY: 3.1× (read) AND 8.7× (write) THE CF-3300 ON 32 KB
       (filed 2026-10-01 with D-WRBLKSEEK)**
       🎚️ TIER 5 — on-par speed: inside T2's 10×, so this is the ratio, not the rung.
+      📏 **RE-MEASURED 2026-11-08** ([`blkio_1108.out`](scratchpad/blkio_1108.out), wrblkalt-acceptance's own command line): the
+      32 KB WSEEK write **193.60 s against the CF-3300's 30.95 (6.3x)**, the SEEK read 46.00
+      against 14.65 (3.1x). 🔮 Predicted "write ~unchanged (D-PUTCACHE holds PUT's sectors
+      only), read better (D-KEYSKIP)": the write HIT (6.6x -> 6.3x), the read MISSED (3.1x
+      unchanged). The largest speed ratio left in the queue. ➡️ NEXT: D-PUTCACHE's shape for
+      WRBLK -- the data sector held across calls (write when full, at a seek away, or at
+      FCLOSE) and the directory / FAT deferred to FCLOSE, as the CF-3300's counts below
+      show; wroe reads into SECTOR_BUF (FAT_DBUF), not FAT_MBUF, so rh_check's hit rule
+      (destination FAT_MBUF) needs the buffer in the tag, or WRBLK moved onto FAT_MBUF.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since
