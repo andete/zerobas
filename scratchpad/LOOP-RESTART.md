@@ -4,6 +4,12 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🟢 RULINGS 2026-11-08 — READ FIRST (newest; they amend every table below)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| entry points before BASIC | *"I wonder if it would be useful to have each bios call and indirect (e.g.) disk bios call or bdos call have its own place in the tier list ?"* then *"The main reason I'm asking is imho having the bios and such stable and on par is of higher priority then having basic stable"* | READING (stated to him, open to correction): the entry-point surface -- main BIOS calls, disk-ROM entries, BDOS $00-$30 -- stable AND on par ranks ABOVE BASIC's own tiers, TIER 1 included; inside it the rung order holds. FIRST: D-ENTRYTIERS (TODO.md) builds the per-entry rows in docs/tier-status.md; the next items are picked from its NOT MEASURED / differs rows; filed entry-point items (D-BLKIOPERCALL's WRBLK / RDBLK) rank with it. Won't-fix rulings (D-BIOSINT, D-SLOT3EXP) stand. Memory entry-points-outrank-basic |
+
 ## 🟢 RULINGS 2026-11-05 — READ FIRST (they amend the tables below)
 
 | ruling | Joost's words | consequence |

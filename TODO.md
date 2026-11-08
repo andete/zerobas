@@ -17525,9 +17525,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**
-      🎚️ APPARATUS — a denominator, like kwsweep's keyword rows: it serves TIER 1's "machine
-      code that calls the published ROM" and the disk core's port to C-BIOS
-      ([[disk-core-portable-to-cbios]]).
+      🎚️ TIER 1 — ⬆️ RE-TAGGED THE SAME DAY: Joost, *"having the bios and such stable and on par is
+      of higher priority then having basic stable"* -- the entry-point surface outranks BASIC
+      (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-08), and this table is how that surface is
+      counted, so it is the FIRST item. (Was: APPARATUS, a denominator like kwsweep's rows.)
+      Serves the disk core's port to C-BIOS ([[disk-core-portable-to-cbios]]).
       🤖 **AUTONOMOUS** — Joost: *"I wonder if it would be useful to have each bios call and
       indirect (e.g.) disk bios call or bdos call have its own place in the tier list ?"*
       Answered yes, with this shape.
