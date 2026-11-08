@@ -8498,8 +8498,10 @@ rdrnd_body:
                 call    bdos_seqread        ; A=$00 record delivered / $01 EOF
                 or      a
                 jr      nz, rrnd_finish     ; EOF from seqread -- pass A through, HL untested
-                ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
-                ld      (ix+32), a
+                ld      a, (ix+33)          ; CR (copy+32) := r0 MOD 128 (stock's random-op
+                and     $7F                 ; side effect; 🔴 D-RNDFCB 2026-11-08: it was raw r0
+                ld      (ix+32), a          ; -- record 199 left $C7 where the CF-3300 has $47,
+                                            ; scratchpad/rndfcb_stock.out / rndfcb_ours.out)
                 xor     a
                 ld      h, a
                 ld      l, a                ; HL = $0000 (pinned exit value, success)

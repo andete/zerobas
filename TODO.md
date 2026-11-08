@@ -17674,7 +17674,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       0 / 8 / 16 / 20) it left 0 / 0, in BDOSX3 0 / 3. The CP/M FCB's +15 is RC, the record
       count of the current extent -- the likeliest reading, unmeasured: characterise +12..15
       after RDRND on files of 1, 3, 21, 128 and 200 records before any code. The clear is
-      reverted; the room-making moves below stay (the FULL battery passed with them). Room from `scratchpad/movescout.py` (routines in an
+      reverted; the room-making moves below stay (the FULL battery passed with them).
+      📏 **CHARACTERISED (2026-11-08) -- `probes/disk/rndfcb.asm`** (+ build_rndfcb_disk.py): files
+      of 1 / 3 / 21 / 128 / 200 records by WRBLK, FOPEN, RDRND of the last record then record 0,
+      FCB +12..15 / +28..35 after each ([`rndfcb_stock.out`](scratchpad/rndfcb_stock.out), [`rndfcb_ours.out`](scratchpad/rndfcb_ours.out)). **+15 is
+      FOPEN's record count (min(N, 128)) and RDRND leaves it -- IDENTICAL on both machines in
+      every row**; the wrzer.asm "0" was the probe's own RS write. What differs: (a) **+32 CR =
+      r0 mod 128** on the CF-3300 (record 199 -> $47); ours stored raw r0 ($C7) -- FIXED here,
+      `and $7F` in rdrnd_body (2 B); (b) **+12 = RR >> 7** (record 199 -> 1; ours 0), and +14
+      cleared (wrzer.asm: $80 -> 0) -- the CP/M EX / S2 pair; (c) **+28..31 = the cluster the
+      record lives in and its index** (record 199 -> $198 / $18; ours keeps FOPEN's). 🔮 "+15 the
+      extent record count, +12 = 1 at record 199": both HIT as values, the first MISSED as to
+      WHO sets it (FOPEN, not RDRND). ➡️ (b) + (c), ~28 B, in the $7F7C region (9 B left after
+      (a)); WRRND's tail (wrrnd_ok) likely wants (a)-(c) too -- unmeasured, so not touched.
+      ⏱ Ours reached the anchor at 176 s, the CF-3300 at 56 s (the WRBLK of 25 KB: D-BLKIOPERCALL). Room from `scratchpad/movescout.py` (routines in an
       address range entered only by call / jp / dw, ending unconditionally): wrseq_body_write
       (8 B) moved to the hole before $55FF, and pg0_mainrom_in -- only `jp br_mainin_tmpl` since
       D-DISKCARVE -- is gone, its eight callers calling br_mainin_tmpl. 📏 wrzer.asm on both
