@@ -1,0 +1,11 @@
+ROW scalxy   VG=[[R 5566 BF FF A0]] ZB=[[R 5566 BF FF A0]] SAME
+ROW sxy2in   VG=[[R 5566 64 64 A80]] ZB=[[R 5566 64 64 A80]] SAME
+ROW sxy2neg  VG=[[R 5566 0 0 A0]] ZB=[[R 5566 0 0 A0]] SAME
+ROW sxy2xov  VG=[[R 5566 64 FF A0]] ZB=[[R 5566 64 FF A0]] SAME
+ROW sxy2yov  VG=[[R 5566 BF 64 A0]] ZB=[[R 5566 BF 64 A0]] SAME
+ROW sxy3over VG=[[R 5566 2F 3F A0]] ZB=[[R 5566 2F 3F A0]] SAME
+ROW sxy3in   VG=[[R 5566 19 19 A80]] ZB=[[R 5566 19 19 A80]] SAME
+ROW gtaspc0  VG=[[R 100 100 1122 A0]] ZB=[[R 0 0 1122 A0]] DIVERGES
+
+7 SAME, 1 DIVERGE (gtaspc0)
+refcache: 8 hit, 8 miss, 8 stored

@@ -1,0 +1,272 @@
+diff --git a/src/video.asm b/src/video.asm
+index bb11106..447777d 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -2155,107 +2155,84 @@ getpat_loop:    push    bc
+                 djnz    getpat_loop
+                 ret
+ 
+-;--------------------------------
+-; $00FC RIGHTC
+-; Function : Shifts screenpixel to the right
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
++; ---------------------------------------------------------------------------
++; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-08): the graphics-cursor span
++; RIGHTC .. GTASPC, rewritten as one block of the SAME LENGTH (it sits before
++; BASIC_ORG in the merged image; padded to pntini at the end). SCALXY and GTASPC
++; are real now -- measured against the Philips VG-8020 (zerobas
++; scratchpad/biossweep_sxy*.out); the entries not implemented YET are a bare
++; `ret` (they were print_debug stubs that did nothing either), their debug
++; calls and name strings giving the room. MAPXYC and FETCHC are unchanged.
++; ---------------------------------------------------------------------------
+ rightc:
+-                push    hl
+-                push    af
+-                ld      hl,rightc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-rightc_text:    db      "RIGHTC",0
+-
+-;--------------------------------
+-; $00FF LEFTC
+-; Function : Shifts screenpixel to the left
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+ leftc:
+-                push    hl
+-                push    af
+-                ld      hl,leftc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-leftc_text:     db      "LEFTC",0
+-
+-;--------------------------------
+-; $0102 UPC
+-; Function : Shifts screenpixel up
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+ upc:
+-                push    hl
+-                push    af
+-                ld      hl,upc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-upc_text:       db      "UPC",0
+-
+-;--------------------------------
+-; $0105 TUPC
+-; Function : Tests whether UPC is possible, if possible, execute UPC
+-; Output   : C-flag set if operation would end outside the screen
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+ tupc:
+-                push    hl
+-                push    af
+-                ld      hl,tupc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-tupc_text:      db      "TUPC",0
+-
+-;--------------------------------
+-; $0108 DOWNC
+-; Function : Shifts screenpixel down
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+ downc:
+-                push    hl
+-                push    af
+-                ld      hl,downc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
++tdownc:
++storec:
++setatr:
++readc:
++setc:
++nsetcx:
+                 ret
+-downc_text:     db      "DOWNC",0
+ 
+ ;--------------------------------
+-; $010B TDOWNC
+-; Function : Tests whether DOWNC is possible, if possible, execute DOWNC
+-; Output   : C-flag set if operation would end outside the screen
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-tdownc:
++; $010E SCALXY
++; Function : Clips the X / Y coordinate to the screen
++; Input    : BC = X, DE = Y
++; Output   : BC / DE clipped (X 0..255, Y 0..191, negatives to 0), then both
++;            divided by 4 in SCREEN 3; A = $80 if neither was clipped, else 0
++; Registers: AF, BC, DE (HL kept)
++scalxy:
+                 push    hl
+-                push    af
+-                ld      hl,tdownc_text
+-                call    print_debug
+-                pop     af
++                ld      h,$80           ; "in range" until a clip says otherwise
++                bit     7,b
++                jr      z,scalxy_xpos
++                ld      bc,0
++                ld      h,b
++scalxy_xpos:
++                ld      a,b
++                or      a
++                jr      z,scalxy_xok
++                ld      bc,255
++                ld      h,0
++scalxy_xok:
++                bit     7,d
++                jr      z,scalxy_ypos
++                ld      de,0
++                ld      h,d
++scalxy_ypos:
++                ld      a,d
++                or      a
++                jr      nz,scalxy_yclip
++                ld      a,e
++                cp      192
++                jr      c,scalxy_yok
++scalxy_yclip:
++                ld      de,191
++                ld      h,0
++scalxy_yok:
++                ld      a,(SCRMOD)
++                cp      3
++                jr      nz,scalxy_done
++                srl     c
++                srl     c
++                srl     e
++                srl     e
++scalxy_done:
++                ld      a,h
+                 pop     hl
+                 ret
+-tdownc_text:    db      "TDOWNC",0
+ 
+ ;--------------------------------
+-; $010E SCALXY
+-; Function : Scales X and Y coordinates
+-; NOTE     : This implementation is still a stub!
+-scalxy:
+-                ld      bc,(GRPACX)
+-                ld      de,(GRPACY)
++; $0126 GTASPC
++; Function : Gets the screen aspect ratio
++; Output   : DE = ASPCT1, HL = ASPCT2
++gtaspc:
++                ld      de,(ASPCT1)
++                ld      hl,(ASPCT2)
+                 ret
+-scalxy_text:    db      "SCALXY",0
+ 
+ ;--------------------------------
+ ; $0111 MAPXYC
+@@ -2311,94 +2288,7 @@ fetchc:
+                 ret
+ fetchc_text:    db      "FETCHC",0
+ 
+-;--------------------------------
+-; $0117 STOREC
+-; Function : Record current cursor addresses mask pattern
+-; Input    : HL - Cursor address
+-;            A  - Mask pattern
+-; NOTE     : This implementation is still a stub!
+-storec:
+-                push    hl
+-                push    af
+-                ld      hl,storec_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-storec_text:    db      "STOREC",0
+-
+-;--------------------------------
+-; $011A SETATR
+-; Function : Set attribute byte
+-; NOTE     : This implementation is still a stub!
+-setatr:
+-                push    hl
+-                push    af
+-                ld      hl,setatr_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-setatr_text:    db      "SETATR",0
+-
+-;--------------------------------
+-; $011D READC
+-; Function : Reads attribute byte of current screenpixel
+-; NOTE     : This implementation is still a stub!
+-readc:
+-                push    hl
+-                push    af
+-                ld      hl,readc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-readc_text:     db      "READC",0
+-
+-;--------------------------------
+-; $0120 SETC
+-; Function : Returns currenct screenpixel of specificed attribute byte
+-; NOTE     : This implementation is still a stub!
+-setc:
+-                push    hl
+-                push    af
+-                ld      hl,setc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-setc_text:      db      "SETC",0
+-
+-;--------------------------------
+-; $0123 NSETCX
+-; Function : Set horizontal screenpixels
+-; NOTE     : This implementation is still a stub!
+-nsetcx:
+-                push    hl
+-                push    af
+-                ld      hl,nsetcx_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-nsetcx_text:    db      "NSETCX",0
+-
+-;--------------------------------
+-; $0126 GTASPC
+-; Function : Gets screen relations
+-; Output   : DE, HL
+-; Registers: DE, HL
+-; NOTE     : This implementation is still a stub!
+-gtaspc:
+-                push    hl
+-                push    af
+-                ld      hl,gtaspc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-gtaspc_text:    db      "GTASPC",0
+-
++                ds      $0966 - $, $00  ; the span keeps its length: pntini stays put
+ ;--------------------------------
+ ; $0129 PNTINI
+ ; Function : Initalises the PAINT instruction

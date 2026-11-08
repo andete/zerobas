@@ -17744,6 +17744,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       LENGTH: rewrite it as one block (the stubs not yet implemented become a bare `ret`,
       dropping print_debug and the name strings -- that is the room) and `ds`-pad to the
       original pntini address, read from the pristine build's symbols first.
+      ✅ **SCALXY SHIPPED (2026-11-08), GTASPC TO THE CONTRACT:** `cbios-repack/graphics-cursor.patch`
+      (last in PATCHES; REPACKED_SHA1 updated) rewrites $083F..$0965 -- RIGHTC .. GTASPC -- as
+      one block padded to pntini ($0966, unmoved; the build differs only at $0100..$0964, the
+      jump-table targets and the span). SCALXY as measured; GTASPC = DE := ASPCT1, HL := ASPCT2;
+      MAPXYC / FETCHC verbatim; the other ten a bare `ret` for now. 📏 [`biossweep_sxy3.out`](scratchpad/biossweep_sxy3.out):
+      **all 7 SCALXY rows SAME as the VG-8020**; five of them are biosregs-acceptance rows now.
+      GTASPC still reads 0 / 0: see D-NUMBUFASPCT.
+
+- [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
+      ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
+      🎚️ TIER 1 — the BIOS's published work area (GTASPC returns those cells; CIRCLE's aspect
+      lives there on the reference): Joost's entry-points-first ruling.
+      🤖 **AUTONOMOUS** — the VG-8020 holds $100 / $100 in ASPCT1 / ASPCT2 from the prompt on;
+      zerobas 0 / 0 (C-BIOS never sets them) -- and an init would not hold: our PRINT's
+      number-format scratch NUMBUF (basic/sysvars.inc, 8 B at $F408) overwrites them on the
+      first PRINT of a number. ➡️ Move NUMBUF to a cell the reference does not publish (a RAM
+      move: `make ram-map-check` + the FULL battery), then initialise ASPCT1 / ASPCT2 to $100
+      at the cold start (basic/interp.asm beside ATRBYT, 9 B), and GTASPC answers $100 / $100.
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**

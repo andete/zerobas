@@ -91,6 +91,14 @@ ROWS = {
     "kscan": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFBF6, 0xFBF6)),  # empty
     "kscan3": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFBF0, 0xFBF3)),
     "kscanw": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFC15, 0xFBF2)),  # wrapped
+    # D-BIOSCONTRACT (2026-11-08, cbios-repack/graphics-cursor.patch): SCALXY clips X to
+    # 0..255 and Y to 0..191 (negatives to 0), divides both by 4 in SCREEN 3, A = $80
+    # only when nothing was clipped; C-BIOS returned GRPACX / GRPACY untouched.
+    "sxy2over": prog(0x010E, 0, bc=300, de=200, before="SCREEN 2", after="SCREEN 0"),
+    "sxy2in": prog(0x010E, 0, bc=100, de=100, before="SCREEN 2", after="SCREEN 0"),
+    "sxy2neg": prog(0x010E, 0, bc=0xFFFB, de=0xFFFB, before="SCREEN 2", after="SCREEN 0"),
+    "sxy2xov": prog(0x010E, 0, bc=300, de=100, before="SCREEN 2", after="SCREEN 0"),
+    "sxy3over": prog(0x010E, 0, bc=300, de=200, before="SCREEN 3", after="SCREEN 0"),
 }
 
 
