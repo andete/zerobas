@@ -1291,16 +1291,18 @@ k_5465:
 ; entry (same documented class as CHPUT $00A2 already called by conout_body); no oracle
 ; bytes decoded. Lives in the $5456-$5FE4 gap section (net-zero: absorbed by the
 ; `ds $5FE5 - $` pad below, so nothing downstream shifts / the FDC-window guard holds).
-; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
-; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
-; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
-; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
-; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room;
-; cr_copy1 moved here by D-AUXOUT to fill the span in front of $5474.
-cr_copy1:
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (BDOS_WRFIRST), hl
-                jp      cr_copy2            ; disk/runtime.asm
+                ds      $546E - $, $00
+; 🔴 D-AUXIN (2026-11-08): $546E IS BDOS $03 AUXIN's CANONICAL ENTRY. MSX-DOS's kernel
+; CALLs it (disk_probe_diff.py callwatch --in-func 0x03, our ROM's PCs:
+; scratchpad/auxin_callwatch.out) -- and it landed 6 bytes into cr_copy1 (D-AUXOUT had
+; moved it into this span), which ran cr_copy2 and fat_dir_update: AUXIN went to the
+; directory-entry writer. (Before that it landed in lstout_body.) No AUX device on
+; either target; the CF-3300 answers A = $1A, CP/M's end of file
+; (probes/disk/auxinx.asm, scratchpad/auxinx_both1.out).
+k_546E:
+auxin_body:
+                ld      a, $1A
+                ret
                 ds      $5474 - $, $00
 ; 🔴 D-AUXOUT (2026-11-08): $5474 IS BDOS $04 AUXOUT's CANONICAL ENTRY. MSX-DOS's
 ; kernel CALLs it (disk_probe_diff.py callwatch --in-func 0x04, our ROM's PCs:
@@ -3301,6 +3303,17 @@ basent_pending:
 ; It is basent_body itself: under boot_call0's DOS_TRY mark that is the boot-loader
 ; restart ('B','D'), which skips the DOS boot and asks the date only when the disk has
 ; no AUTOEXEC.BAS -- mb.dsk has one. A pad, then the jump: no new behaviour.
+; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
+; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
+; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
+; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
+; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room; cr_copy1 is
+; here since D-AUXIN, which needed $546E -- inside cr_copy1's old span -- for AUXIN.
+; Entered only by `call` (cr_dir).
+cr_copy1:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                jp      cr_copy2            ; disk/runtime.asm
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
 mb_5e10:
                 jp      basent_body

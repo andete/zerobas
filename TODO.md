@@ -17570,7 +17570,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       exit registers differ (the CF-3300 leaves A = $0D, the CR; ours $02) -- outside the
       published contract. In bdos-acceptance as BUFINX, capturing the buffer only
       ([`bufinx_gate.out`](scratchpad/bufinx_gate.out): PASS, 0-byte-diff). 🔮 "count 2, AB; the registers the likeliest
-      split": HIT. Left of step 2: AUXIN ($03).
+      split": HIT. AUXIN: D-AUXIN (fixed). **Step 2 is DONE**: every MSX-DOS 1
+      function the table counted NOT MEASURED now has a reading.
       ✅ **STEP 4 SHIPPED (2026-11-08): THE DISK-ROM TABLE**, second section of docs/tier-status.md:
       the six published entries ($4010 DSKIO .. $401F MTOFF; exercised = a gate-reached script
       names the address or the routine) and every PINNED address in disk/*.asm (61) -- the
@@ -17675,6 +17676,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       with attr bit 3 (volume label) -- after first measuring on the CF-3300 whether a search FCB
       can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
       and what BASIC's FILES does with the same disk on both (FILES may share the walk).
+
+- [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
+      2026-11-08 by D-ENTRYTIERS step 2)**
+      🎚️ TIER 1 — happy path of an entry point.
+      📏 `probes/disk/auxinx.asm` (+ build_auxinx_disk.py) on both ([`auxinx_both1.out`](scratchpad/auxinx_both1.out)): the
+      CF-3300 returns **A = $1A** (CP/M's end of file -- no AUX device), ours A = 0. callwatch on
+      our ROM ([`auxin_callwatch.out`](scratchpad/auxin_callwatch.out)): the kernel enters **$546E -- 6 bytes into cr_copy1**,
+      which D-AUXOUT had moved into the span before $5474, and ran cr_copy2 / fat_dir_update
+      (the directory-entry writer). Before that move it landed in lstout_body: AUXIN was never
+      right. The D-WRZER / D-AUXOUT class again: a canonical entry never planted. ✅ `k_546E` /
+      auxin_body = `ld a, $1A` / `ret` at the pinned address; cr_copy1 moved to the hole before
+      $5E10. After ([`auxinx_both2.out`](scratchpad/auxinx_both2.out)): **A = $1A on both**; only F differs ($42 / $44),
+      outside the contract. 🔮 "$1A or $00, ours different or hung": HIT ($1A). ➡️ The next
+      such address is likelier found by sweeping EVERY BDOS function's kernel entry with
+      callwatch than one function at a time (D-ENTRYTIERS step 3).
 
 - [x] 🔴 **D-DRVINT — DRVINT ($FB21 / $FB22) WAS NEVER FILLED: A PROGRAM FINDING THE DISK ROM
       THROUGH IT CALSLTED SLOT 0 (found 2026-11-08 by D-ENTRYTIERS)**
