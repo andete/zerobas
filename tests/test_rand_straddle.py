@@ -115,13 +115,13 @@ def make_machine(disk):
         mm.cpu.f &= ~0x01
 
     m.trap("frnd_locate", frnd_locate)
-    m.trap("read_sector", read_sector)
-    # D-FATENG Option 2: the shared FAT body writes through
-    # `fatprim_write_sector`, not disk's own `write_sector` (the kernel's, which
-    # the BDOS half still uses and which maps no DSKIO code) -- and so does the
-    # record engine since S10.D. Trapping only the old name would let the
-    # engine's writes through untrapped.
-    m.trap("fatprim_write_sector", write_sector)
+    # D-PUTCACHE (2026-11-08): trapped BELOW read_sector / fatprim_write_sector, at
+    # the DSKIO both end in (the carry is the direction), so read_sector's held-
+    # sector check (rh_check) and PUT's deferred write run for real. (D-FATENG
+    # Option 2's note stands: the engine writes through fatprim_write_sector.)
+    def dskio(mm):
+        (write_sector if mm.cpu.f & 0x01 else read_sector)(mm)
+    m.trap("dskio_calslt", dskio)
     # the directory stamp is a separate concern with its own tests
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~0x01))
     # D-FLDDESC: the row caches the channel's block; the record is its +9
@@ -167,6 +167,15 @@ def run():
         m.call("fat_rand_put", ix=ROW)
 
         tag = f"r={reclen} rec={recno}" + ("  [STRADDLE]" if straddles else "")
+        # D-PUTCACHE: the record's LAST sector is HELD in FAT_MBUF, not written,
+        # until something reads another sector or the channel closes -- here,
+        # rh_flush, which CLOSE's directory read reaches through read_sector.
+        last = max(want)
+        held = m.mem[s["RND_HSEC"]] | m.mem[s["RND_HSEC"] + 1] << 8
+        report(f"{tag}: the last sector is held, not yet written",
+               held == last and last not in disk,
+               f"RND_HSEC {held}, last {last}, on disk {last in disk}")
+        m.call("rh_flush")
         # 🔴 THE GUARD HAS TO EXCLUDE THE CELLS THE ROUTINE LEGITIMATELY
         # WRITES, or it flags every row and says nothing. The sub-ROM engine's
         # `frnd_update_size` stored FWR_BYTES and FAT_FILESIZE, and BOTH sat above
@@ -218,6 +227,7 @@ def run():
         m.poke(REC, rec_bytes(recno, 100))
         m.call("fat_rand_put", ix=ROW)
         model_put(want, recno, 100)
+    m.call("rh_flush")          # D-PUTCACHE: record 6's tail is in the HELD sector 1
     for sec, exp in sorted(want.items()):
         got = disk.get(sec)
         bad = [] if got is None else [i for i in range(SECSIZE) if got[i] != exp[i]]
@@ -225,6 +235,45 @@ def run():
                got is not None and not bad,
                "sector absent" if got is None else
                (f"{len(bad)} byte(s) differ, first at offset {bad[0]}" if bad else ""))
+
+    # 🎯 D-PUTCACHE (2026-11-08): THE CACHE'S OWN WITNESS -- what it saves. 16 records
+    # of 32 B fill ONE sector: the first PUT starts it from spaces (no read), the next
+    # 15 find it HELD (no read, no write), a GET of record 9 is served from the buffer,
+    # and the one write comes at the flush -- the CF-3300's shape (fdcput_cf.out: one
+    # data write per 512 B). The old engine read + wrote the sector at every PUT.
+    disk, want, io = {}, {}, []
+    m = make_machine(disk)
+    s = m.sym
+    orig = m.traps[s["dskio_calslt"]]
+
+    def logged(mm, orig=orig):
+        io.append(("W" if mm.cpu.f & 0x01 else "R", mm.cpu.de))
+        orig(mm)
+    m.traps[s["dskio_calslt"]] = logged
+    m.poke(s["FCH_ACTIVE"], CHAN)
+    m.poke_w(s["FCH_RECLENS"] + CHAN * 2, 32)
+    for recno in range(1, 17):
+        set_size(m, (recno - 1) * 32)
+        m.poke(ROW + 33, (recno - 1).to_bytes(4, "little"))
+        m.poke(REC, rec_bytes(recno, 32))
+        m.call("fat_rand_put", ix=ROW)
+        model_put(want, recno, 32)
+    puts_io = list(io)
+    set_size(m, 512)
+    m.poke(ROW + 33, (9 - 1).to_bytes(4, "little"))
+    m.poke(REC, b"\x00" * 32)
+    m.call("fat_rand_get", ix=ROW)
+    get_ok = bytes(m.peek(REC, 32)) == rec_bytes(9, 32)
+    get_io = io[len(puts_io):]
+    m.call("rh_flush")
+    flush_io = io[len(puts_io) + len(get_io):]
+    report("cache: 16 PUTs into one sector -- no sector I/O at all",
+           puts_io == [], f"{puts_io}")
+    report("cache: GET of a held record is served from the buffer",
+           get_ok and get_io == [], f"record {'ok' if get_ok else 'WRONG'}, I/O {get_io}")
+    report("cache: one write at the flush, the sector as the model",
+           flush_io == [("W", PHYS0)] and disk.get(PHYS0) == want[PHYS0],
+           f"{flush_io}")
 
     # 🎯 THE READ SIDE, AND IT NEEDS ITS OWN ROWS FOR THE SAME REASON. A GET's
     # failure is a wrong ANSWER rather than corruption -- the old single `ldir`

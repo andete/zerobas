@@ -6,9 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `PUT` — write a record to a random-access file (and `PUT SPRITE`)
 
-> **Status (2026-11-04):** `PUT` starts two statements: `PUT #`, documented
+> **Status (2026-11-08):** `PUT` starts two statements: `PUT #`, documented
 > here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). One recorded
-> difference for `PUT #`: the single record 4294967295 (below). Record
+> difference for `PUT #`: the single record 4294967295 (below); one open
+> item, a disk swapped before `CLOSE`. Record
 > numbers follow the CF-3300 across the rest of its range since 2026-11-04.
 > A `PUT` without a record number writes the next record, as on
 > the CF-3300, since 2026-10-09.
@@ -109,6 +110,21 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Every `PUT` wrote its sector to the disk at once** (changed 2026-11-08,
+  D-PUTCACHE). Logging the floppy controller's commands showed the CF-3300
+  keeping the sector a record goes into in memory and writing it only when a
+  record needs another sector, or at `CLOSE`: 20 records of 32 bytes are two
+  sector writes there ([`fdcput_cf.out`](../../scratchpad/fdcput_cf.out)). zerobas
+  read and rewrote the sector for every record. It now keeps the sector the
+  same way.
+- **A disk swapped between a `PUT` and its `CLOSE`** (found 2026-11-08, open).
+  The CF-3300 writes the held record, its directory sector and its FAT onto
+  the disk that is in the drive at `CLOSE`, so the NEW disk lists the file and
+  reads the record back ([`diskswap_cf.out`](../../scratchpad/diskswap_cf.out)). zerobas
+  now writes the held record there too, but it re-reads the new disk's
+  directory instead of writing its own copy, so the new disk still says
+  `File not found` ([`diskswap_zb_cache.out`](../../scratchpad/diskswap_zb_cache.out)).
+
 - **Record numbers stopped at 65535** (fixed 2026-11-04, D-RECBIG, Joost:
   "Widen"). The CF-3300's record number is 32 bits: `PUT #1,65536` writes
   that record, `PUT #1,1E9` is `Disk full`, and 4294967296 is the first
@@ -166,7 +182,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 the channel; the record number and the record engine are the disk ROM's
 (`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D; the
 record number's range is `rnd_parse` in [disk/fat.asm](../../disk/fat.asm)); the
-directory entry is written by `CLOSE` (`hk_chclose`, same file).
+directory entry is written by `CLOSE` (`hk_chclose`, same file). The sector a
+`PUT` leaves unwritten is tracked by `RND_HSEC` and written by `rh_check` /
+`rh_flush` ([disk/driver.asm](../../disk/driver.asm), [disk/fat.asm](../../disk/fat.asm)) before any other
+sector is read.
 
 ## Related concepts
 
@@ -177,5 +196,8 @@ directory entry is written by `CLOSE` (`hk_chclose`, same file).
 - `make kwsweep` — the everyday row (`puthash`) and the error rows.
 - `make diskbasic-acceptance` — the random-file round trips.
 - `make putdir-acceptance` — when the directory entry changes (at `CLOSE`).
+- `tests/test_rand_straddle.py` (in `make unit-test`) — the record's last
+  sector held until it is needed; sixteen `PUT`s into one sector and a `GET`
+  of one of them with no disk reads or writes, then one write.
 - `make recbig-acceptance` — the record number's range: fractions, 32768 to
   65535, negative numbers, −32768, 0, a string, and `LOC` afterwards.

@@ -8034,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16285 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16321 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16285 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16321 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15858,6 +15858,42 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       "the CF-3300 writes it to B": HIT. (2) its `8A` after each `AA` is a verify read of
       the same sector. ➡️ NEXT: BUILD W4 for PUT -- the tag in the $EFDB..$EFF5 hole, the
       check in read_sector, the flush at the channel close and MSX-DOS entry.
+      ✅ **D-PUTCACHE BUILT (2026-11-08).** `RND_HSEC` ($EDBB, 2 B -- the $EFDB..$EFF5 hole TODO
+      named was stale; tools/ram_map.py shows $EDBB..$EDFD free in the disk AND basic
+      components, beside D-LOADFAT's FAT_FCACHE) holds the sector a PUT left in FAT_MBUF
+      unwritten. `rh_check` (disk/driver.asm), read_sector's first act, serves a re-read of it
+      INTO FAT_MBUF and writes it out before anything else is read; `rh_flush` (disk/fat.asm)
+      writes it before PUT's fill_sec and at the BDOS block write's multiply (WRBLK_MUL* are
+      WBUF+500..511 -- 🔴 the audit's first pass MISSED them: FAT_MBUF has two more names,
+      FWBUF in main and WBUF in the disk build, and only the map's range view showed the
+      overlap); `rh_init` zeroes it at INIT. The CLOSE needs nothing of its own: its directory
+      stamp reads through read_sector. Disk ROM ~70 B. tests/test_rand_straddle.py and
+      test_rand_extend.py now trap DSKIO itself (they trapped read_sector, so the cache never
+      ran on the host) and gained "the last sector is held" rows and the cache's own
+      witness (16 PUTs into one sector: no I/O; a GET of one: no I/O; one write at the flush).
+      📏 32-byte records ([`fdcput_zb_cache.out`](scratchpad/fdcput_zb_cache.out)): **106 FDC commands -> 34** (6 writes; the CF-3300
+      10 incl. verifies). 🎯 Predicted 20 PUTs + CLOSE of 128 B, 10.58 s -> 3-4 s: **7.58 s --
+      a MISS** ([`putstopwatch20_cache.out`](scratchpad/putstopwatch20_cache.out); CF 3.38). ➡️ **WHY, AND THE NEXT LEVER:** past the
+      first cluster every PUT's frnd_locate walks the chain from the file's first cluster
+      through frnd_next -> fat_read_fat_sector, INTO FAT_MBUF -- evicting the held sector, so
+      each such PUT is a FAT read + a data re-read + a write ([`fdcput128_zb.out`](scratchpad/fdcput128_zb.out) / [`fdcput128_cf.out`](scratchpad/fdcput128_cf.out)).
+      Either a per-channel "last cluster index -> cluster" in the FCB row (a PUT in the same
+      cluster walks nothing) or a FAT walk through another buffer -- each its own audit.
+      🔴 **AND THE DISK SWAP STILL DIVERGES** ([`diskswap_zb_cache.out`](scratchpad/diskswap_zb_cache.out)): the held record now
+      reaches the new disk, but CLOSE re-reads the NEW disk's directory to stamp it, where
+      the CF-3300 writes its CACHED directory sector -- the new disk says `File not found`
+      here, lists R.DAT there. That is W3b's half (the directory / FAT written from the cache
+      at CLOSE).
+      🔴 **THE FULL BATTERY CAUGHT A MASKED GAP:** programs-acceptance's L5_stock, a 352 ms
+      frame gap against the CF-3300's 223 (D-GCDI's rule) -- the held sector was now written
+      inside the NEXT hook's read_sector (line 200's OPEN FOR OUTPUT), and a hook arrives
+      through CALSLT masked, so the write's rotational wait opened no D-FDCDI window.
+      `rh_flush` now `ei`s once something is held (D-LOADDI / D-HOOKDI's reasoning; the
+      BDOS / DOS paths never hold a sector and return before it): L5_stock max gap 0.097 s,
+      SAME. ⚠️ **FILED, NOT MEASURED:** anything that reaches DSKIO directly bypasses
+      read_sector and so does NOT flush a held sector -- `CALL SYSTEM`'s MSX-DOS boot, DSKI$,
+      a BDOS absolute read: a program that PUTs and enters MSX-DOS without CLOSE loses that
+      record here. What the CF-3300 does there is the question first.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the

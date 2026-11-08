@@ -571,6 +571,8 @@ dc_one:
                 ld      (DSK_MEDIA), a      ; mounted -- 2 sides x 9, as before
                 xor     a                   ; D-DSKIB: the drive holds A: at power-on,
                 ld      (DSK_CURDRV), a     ; and no drive is requested yet: DISK_FCB is
+                call    rh_init             ; D-PUTCACHE: no PUT sector held (power-on
+                                            ; RAM is garbage); disk/fat.asm, for room
                 ld      (DK_FCB_DRV), a     ; power-on RAM until BASIC parses a name; a boot
                                             ; loader that mounts before then must not meet a
                                             ; stray 2 there and wait for a key

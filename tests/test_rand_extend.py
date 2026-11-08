@@ -72,8 +72,11 @@ def put(recno, preused=0, tot=2 + 713):
         disk[mm.cpu.de] = bytearray(mm.peek(mm.cpu.hl, 512))
         mm.cpu.f &= ~1
 
-    m.trap("read_sector", rd)
-    m.trap("fatprim_write_sector", wr)
+    # D-PUTCACHE: trap BELOW read_sector / fatprim_write_sector, at the DSKIO both
+    # end in (the direction is the carry), so read_sector's held-sector check runs.
+    def dskio(mm):
+        (wr if mm.cpu.f & 1 else rd)(mm)
+    m.trap("dskio_calslt", dskio)
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~1))
     m.poke(s["FAT_SECPERCLUS"], 2)
     m.poke_w(s["FAT_FATSTART"], 1)
@@ -93,6 +96,8 @@ def put(recno, preused=0, tot=2 + 713):
     m.poke(BLK + 9, b"Z")
     m.poke(s["GP_FLAGS"], 1)
     cpu = m.call("fat_rand_put", ix=ROW, max_steps=50_000_000)
+    cf = carry(cpu)             # (m.call hands back the LIVE cpu: read it before the flush)
+    m.call("rh_flush")          # D-PUTCACHE: the held record sector out, as CLOSE does
     fat = disk[1] + disk[2] + disk[3]
 
     def ent(c):
@@ -105,7 +110,7 @@ def put(recno, preused=0, tot=2 + 713):
     while 2 <= c < 0xFF8 and len(chain) < 800:
         chain.append(c)
         c = ent(c)
-    return dict(cf=carry(cpu), err=m.mem[s["DISKOP_ERR"]], defer=m.mem[s["FAT_DEFER"]],
+    return dict(cf=cf, err=m.mem[s["DISKOP_ERR"]], defer=m.mem[s["FAT_DEFER"]],
                 chain=chain, end=c, copies=all(disk[i] == disk[i + 3] for i in (1, 2, 3)),
                 log=log, disk=disk)
 

@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
-* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 124 declared addresses in this project's own workspace `$E000..$F37F` (115 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -112,6 +112,7 @@ second one is the question a per-component map cannot answer.
 | `$EDB9` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
 | `$EDBA` | 1 B | `basic` | `FAT_FCACHE` | DISK-ONLY: the FAT sector in FAT_MBUF during a LOAD (FAT_DEFER bit 7) (1) |  |
 | `$EDBA` | 1 B | `disk` | `FAT_FCACHE` | (1) |  |
+| `$EDBB` | 2 B | `disk` | `RND_HSEC` | (2) word |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
 | `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |

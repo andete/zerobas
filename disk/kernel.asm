@@ -3648,6 +3648,8 @@ frp_pass:
                 rla                         ; A:HL = GP_SEC << 9
                 call    rnd_cmp
                 jr      c, frp_readold      ; yes: read it first
+                call    rh_flush            ; D-PUTCACHE: a held sector out first --
+                ret     c                   ; fill_sec is about to overwrite FAT_MBUF
                 ld      hl, FAT_MBUF
                 call    fill_sec            ; past the old end: start from spaces
                 jr      frp_overlay
@@ -3663,10 +3665,13 @@ frp_overlay:
                 ld      hl, (GP_SRC)        ; the record, advanced per pass
                 ldir
                 ld      (GP_SRC), hl
-                ld      de, (GP_PHYS)
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector    ; NOT the kernel's write_sector:
-                ret     c                   ; this one maps the DSKIO code (D-DISKERR)
+                ; D-PUTCACHE (W4, docs/spec-diskwcache.md): the sector is HELD in
+                ; FAT_MBUF, not written -- as the CF-3300, which writes a data sector
+                ; once per 512 B the records fill and at CLOSE (scratchpad/fdcput_cf.out).
+                ; read_sector writes it before any other read, and serves a re-read
+                ; of it (the next PUT / GET in the same sector) from the buffer.
+                ld      hl, (GP_PHYS)
+                ld      (RND_HSEC), hl
                 call    rnd_step
                 jr      nz, frp_pass        ; the record's second sector
                 ; FALLS INTO frnd_update_size
@@ -4223,6 +4228,8 @@ wroe_have_valid:
 ; WBUF's tail is safe transient scratch here (§ equates.inc note).
 ;   out: WRBLK_MULACC = the 32-bit product; trashes AF, BC, DE, HL
 wrblk_mul_rr_rs:
+                call    rh_flush            ; D-PUTCACHE: WRBLK_MUL* are WBUF+500..511,
+                                            ; inside a sector a PUT may hold
                 xor     a
                 ld      (WRBLK_MULACC), a
                 ld      (WRBLK_MULACC + 1), a

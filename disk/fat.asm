@@ -1187,6 +1187,38 @@ br2_end:
                 ; with RET. They were deleted because the comment MISLED: S10.D's
                 ; drafter read them as pins and priced this 793 B run at ~59 B.
                 ; tools/check_disk_walls.py was right all along (room-before-pin 793 B).
+; rh_flush -- D-PUTCACHE: write the sector a PUT left in FAT_MBUF (RND_HSEC) and
+; forget it. CF / A as fatprim_write_sector's (the tag is cleared either way: a
+; failed write is reported once, not retried at every read after). Keeps BC, DE.
+rh_flush:
+                ld      hl, (RND_HSEC)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing held (CF = 0)
+                ei                          ; the write's rotational wait with the ISR
+                                            ; running, as the PUT that left it had: this
+                                            ; runs inside whatever hook reads next, and a
+                                            ; hook arrives through CALSLT masked -- a
+                                            ; 352 ms masked gap in L5_stock (D-GCDI's
+                                            ; rule; D-LOADDI / D-HOOKDI's reasoning).
+                                            ; Only with a sector held: BDOS / DOS paths
+                                            ; never hold one, and return above.
+                push    bc
+                push    de
+                ex      de, hl              ; DE = the held sector
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ld      hl, FAT_MBUF
+                call    fatprim_write_sector
+                pop     de
+                pop     bc
+                ret
+; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
+; Keeps A (INIT's 0 is still needed after the call).
+rh_init:
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ret
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz

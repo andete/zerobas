@@ -142,6 +142,8 @@ dc_map:
 ; outside, the span carries BOTH `jp` edges and the graph stays honest on both
 ; sides.
 read_sector:
+                call    rh_check        ; D-PUTCACHE: a held PUT sector -- served or
+                                        ; written out first (disk/driver.asm)
                 ld      b, 1            ; one sector
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's

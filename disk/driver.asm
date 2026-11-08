@@ -461,6 +461,41 @@ wrseq_body:
                 or      a
                 call    z, wrseq_writeback  ; only on a delivered record (A=$00)
                 ret
+; rh_check -- D-PUTCACHE, read_sector's first act (basic/fat-prim-body.inc). The
+; sector a PUT left unwritten in FAT_MBUF (RND_HSEC) is either the one being read
+; INTO FAT_MBUF -- then the buffer already holds it: read_sector returns at once,
+; CF = 0 -- or it is written out first (rh_flush, disk/fat.asm) and the read goes on.
+; A failed write returns read_sector's CF / A to its caller.
+;   in DE = the sector, HL = the destination. Keeps DE, HL.
+rh_check:
+                push    hl
+                ld      hl, (RND_HSEC)
+                ld      a, h
+                or      l
+                jr      z, rhc_go           ; nothing held
+                sbc     hl, de              ; (CF = 0)
+                jr      nz, rhc_flush       ; another sector
+                pop     hl
+                push    hl
+                ld      a, h
+                cp      high FAT_MBUF
+                jr      nz, rhc_flush
+                ld      a, l
+                cp      low FAT_MBUF
+                jr      nz, rhc_flush
+                pop     hl                  ; a HIT: FAT_MBUF holds it already
+                inc     sp
+                inc     sp                  ; past read_sector itself
+                xor     a                   ; CF = 0, A = 0 (DSKIO's success)
+                ret
+rhc_flush:
+                call    rh_flush
+rhc_go:
+                pop     hl
+                ret     nc                  ; on to the read
+                inc     sp
+                inc     sp                  ; a failed write: read_sector's caller
+                ret                         ; gets its CF and A
                 ds      $44F4 - $, $00      ; pad the rest of the vacated span (net-zero)
 
 ; choice — format-choice string (CHOICE entry point).

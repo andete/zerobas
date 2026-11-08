@@ -501,6 +501,11 @@ FAT_DEFER       equ     $EDB9   ; (1)
 ; hdl_answer clears the bit, so no other reader -- a channel, the directory work,
 ; MSX-DOS -- ever touches this byte.
 FAT_FCACHE      equ     $EDBA   ; (1)
+; RND_HSEC -- D-PUTCACHE (W4 for PUT, docs/spec-diskwcache.md): the data sector a
+; random-file PUT left in FAT_MBUF UNWRITTEN, 0 = none (sector 0 is the boot sector,
+; never a record's). read_sector serves a re-read of it from the buffer and writes it
+; out before any other read; rh_flush writes it on demand. Zeroed by INIT.
+RND_HSEC        equ     $EDBB   ; (2) word
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).
