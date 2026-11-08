@@ -1,0 +1,7 @@
+python3 probes/disk/disk_bdos_acceptance.py --only 'BUFINX'
+
+===== BUFINX (build_bufinx_disk.py) =====
+  PASS  BUFINX capture 0x0408:0x18: 0-byte-diff (anchor t=30.2 ≥ keys-at); live-reg delta [AF, HL, IX] (benign epilogue)
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

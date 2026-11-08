@@ -17564,6 +17564,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       run_gates' list). setrnd_char / verifyx stay characterisations, not gates: SETRND and
       VERIFY are exercised by the bdosx probes in bdos-acceptance. Left of step 2: BUFIN ($0A,
       typed keys) and AUXIN ($03, may wait for a device).
+      ✅ **BUFIN (2026-11-08):** `probes/disk/bufinx.asm` (+ build_bufinx_disk.py): BUFIN with a
+      10-character buffer, "AB" + Return typed by the harness (--keys2 at 30 s). On both
+      machines ([`bufinx_both1.out`](scratchpad/bufinx_both1.out)) the BUFFER is byte-identical (max, count 2, "AB"); the
+      exit registers differ (the CF-3300 leaves A = $0D, the CR; ours $02) -- outside the
+      published contract. In bdos-acceptance as BUFINX, capturing the buffer only
+      ([`bufinx_gate.out`](scratchpad/bufinx_gate.out): PASS, 0-byte-diff). 🔮 "count 2, AB; the registers the likeliest
+      split": HIT. Left of step 2: AUXIN ($03).
       ✅ **STEP 4 SHIPPED (2026-11-08): THE DISK-ROM TABLE**, second section of docs/tier-status.md:
       the six published entries ($4010 DSKIO .. $401F MTOFF; exercised = a gate-reached script
       names the address or the routine) and every PINNED address in disk/*.asm (61) -- the

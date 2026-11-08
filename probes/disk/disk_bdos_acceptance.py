@@ -85,6 +85,11 @@ EXERCISERS = [
     # does not use. Byte-identical once D-WRZER ($47D1), D-AUXOUT ($5474),
     # D-SFIRSTVOL and D-WRRNDEXT landed (scratchpad/bdosx9_run6.out).
     ("BDOSX9", "build_bdosx9_disk.py"),
+    # BUFINX (D-ENTRYTIERS step 2, 2026-11-08): BDOS $0A BUFIN with "AB" + Return typed
+    # by the harness -- the buffer (max, count, characters) is byte-identical to the
+    # CF-3300's (scratchpad/bufinx_both1.out). The capture is the BUFFER only: the exit
+    # registers differ (the CF-3300 leaves A = the CR) and are outside the contract.
+    ("BUFINX", "build_bufinx_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
