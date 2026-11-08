@@ -4932,28 +4932,8 @@ fhfc_loop:
                 jr      z, fhfc_found       ; $000 -> free
                 inc     hl
                 jr      fhfc_loop
-; 💰 D-DISKCARVE3 (2026-11-08): fac_cached_entry -- the step fat_have_free_cluster and
-; getalloc_body both carried verbatim: cluster HL's FAT entry, its sector read into
-; WBUF only when it is not the one FAT_WRTMP2 says is cached (FAT_FATSEC follows).
-;   in: HL = the cluster ; out: DE = the 12-bit entry, CF = 1 on a read error
-;   (HL / A / BC clobbered; fac_entry_from_wbuf reads FAT_BYTEIDX / FAT_PARITY, which
-;   fat_locate set, not HL)
-fac_cached_entry:
-                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
-                ld      de, (FAT_WRTMP2)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jr      z, fce_have         ; already loaded -> no re-read
-                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, WBUF
-                call    read_sector
-                ret     c
-fce_have:
-                jp      fac_entry_from_wbuf ; DE = entry value
+; (fac_cached_entry, D-DISKCARVE3, is in front of runtime.asm's $7F7C pin since
+; D-DISKCARVE5: this region holds D-CALSLTP0's template.)
 fhfc_none:
                 scf                         ; Cy = 1 -- disk full
                 ret
@@ -8133,35 +8113,14 @@ fdc_rd_status:
                 jr      z, fdc_rd_ok
                 ld      b, a            ; keep the error bits
                 call    fdc_lostwin     ; D-FDCDI: lost data under a window? try again
-                jr      nz, fdc_rd_nowin
+                jp      nz, fwd_nowin   ; 💰 D-DISKCARVE5: the write path's decoder (disk/
+                                        ; fat.asm) -- byte-for-byte the read path's copy
                 ld      a, CMD_READ
                 ld      (FDC_STATUS), a
                 jp      fdc_read_data_body
-fdc_rd_nowin:
-                ld      a, b
-                and     ST_NOTRDY
-                jr      z, fdc_rd_n1
-                ld      a, 2            ; not ready
-                scf
-                ret
-fdc_rd_n1:
-                ld      a, b
-                and     ST_RNF
-                jr      z, fdc_rd_n2
-                ld      a, 8            ; record not found
-                scf
-                ret
-fdc_rd_n2:
-                ld      a, b
-                and     ST_CRC
-                jr      z, fdc_rd_n3
-                ld      a, 4            ; CRC / data error
-                scf
-                ret
-fdc_rd_n3:
-                ld      a, 12           ; lost data / other
-                scf
-                ret
+; (fdc_rd_nowin -- the FDC status -> DSKIO error code decode -- was a byte-for-byte
+; copy of fat.asm's fwd_nowin; D-DISKCARVE5 (2026-11-08, scratchpad/diskngram.py)
+; jumps there instead.)
 fdc_rd_ok:
                 or      a               ; A = 0, Cy = 0
                 ret

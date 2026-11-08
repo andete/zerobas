@@ -17784,6 +17784,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the CF-3300's CALSLT returns (dskchg.asm needed an `ei` there). 💰 ROM: ~121 + install 8
       against 95 + 13 -- ~30 B short in the $75A5 region: the next diskngram hit (34 B x3,
       fat_advance+13 / frs_mul+16 / innoe_body+19) first.
+      💰 **D-DISKCARVE5 (2026-11-08): the $75A5 region 95 -> 126 B.** The 34 B x3 hit was gone (it
+      overlapped DISKCARVE4's locate); the rescan ([`diskngram_1108b.out`](scratchpad/diskngram_1108b.out)) showed fdc_rd_nowin
+      (disk/kernel.asm) and fwd_nowin (disk/fat.asm) are the SAME 33-byte FDC-status ->
+      DSKIO-error decoder: the read path's one `jr nz` is `jp nz, fwd_nowin` now and its copy is
+      gone ($7F7C region 4 -> 34 B), then fac_cached_entry (28 B, entered only by call) moved
+      there from the $75A5 region -- so D-CALSLTP0's ~121-byte template fits in ONE piece there
+      (one `ldir` in install_dos_env, 8 of the $4E4B region's 13 B).
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**

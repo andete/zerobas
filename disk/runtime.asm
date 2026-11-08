@@ -23,6 +23,29 @@
 ; br_mainin_tmpl directly and the 3-byte veneer is gone. The contract above is
 ; br_mainin_tmpl's.
 
+; 💰 D-DISKCARVE3 (2026-11-08; here since D-DISKCARVE5): fac_cached_entry -- the step fat_have_free_cluster and
+; getalloc_body both carried verbatim: cluster HL's FAT entry, its sector read into
+; WBUF only when it is not the one FAT_WRTMP2 says is cached (FAT_FATSEC follows).
+;   in: HL = the cluster ; out: DE = the 12-bit entry, CF = 1 on a read error
+;   (HL / A / BC clobbered; fac_entry_from_wbuf reads FAT_BYTEIDX / FAT_PARITY, which
+;   fat_locate set, not HL)
+fac_cached_entry:
+                call    fat_locate          ; 💰 D-DISKCARVE: HL = the entry's FAT sector, PARITY / BYTEIDX set
+                ld      de, (FAT_WRTMP2)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      z, fce_have         ; already loaded -> no re-read
+                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, WBUF
+                call    read_sector
+                ret     c
+fce_have:
+                jp      fac_entry_from_wbuf ; DE = entry value
+
 ; (pg0_mainrom_out is in disk/kernel.asm in front of the $75A5 pin since D-WRRNDEXT,
 ; whose wrapper needed this region's bytes.)
 
