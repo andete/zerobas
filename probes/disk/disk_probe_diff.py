@@ -1037,13 +1037,19 @@ def mode_writewatch(args) -> int:
 # of each contiguous run (an entry point) — i.e. a fetch whose PC is not sequential
 # after the previous page-1 fetch — as a called/entered routine, with its hit count.
 def _callwatch_arm(arm_addr: int, arm_cond: str, lo: int, hi: int,
-                   gate_func9: bool, maxhits: int, in_func: int = 9) -> str:
+                   gate_func9: bool, maxhits: int, in_func: int = 9,
+                   per_call: bool = False) -> str:
     gate = "if {!$::in9} return\n  " if gate_func9 else ""
+    # --per-call: only a call's FIRST entry is emitted (and counted against maxhits) --
+    # one BDOS call's sector I/O alone enters hundreds of times
+    once = "if {$::callno == $::lastcall} return\n  set ::lastcall $::callno\n  " if per_call else ""
     return f"""
 set ::armed 0
 set ::in9 0
 set ::callno 0
 set ::rn 0
+set ::fn -1
+set ::lastcall -1
 set ::prevpc -99
 debug set_bp {arm_addr:#06x} {{}} {{
   if {{ {arm_cond} }} {{ set ::armed 1 }}
@@ -1051,6 +1057,7 @@ debug set_bp {arm_addr:#06x} {{}} {{
 debug set_bp 0x0005 {{}} {{
   if {{!$::armed}} return
   incr ::callno
+  set ::fn [expr {{[reg BC]&0xFF}}]
   if {{ ([reg BC]&0xFF) == {in_func} }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
 }}
 debug set_watchpoint read_mem {{{lo:#06x} {hi:#06x}}} {{}} {{
@@ -1059,8 +1066,8 @@ debug set_watchpoint read_mem {{{lo:#06x} {hi:#06x}}} {{}} {{
   set entry [expr {{$pc != ($::prevpc + 1) && $pc != $::prevpc}}]
   set ::prevpc $pc
   if {{!$entry}} return
-  incr ::rn
-  emit [format "ENTRY PC=%04X in9=%d call=%d t=%.6f" $pc $::in9 $::callno [machine_info time]]
+  {once}incr ::rn
+  emit [format "ENTRY PC=%04X in9=%d call=%d fn=%d t=%.6f" $pc $::in9 $::callno $::fn [machine_info time]]
   if {{$::rn >= {maxhits}}} {{ exit }}
 }}
 """
@@ -1073,7 +1080,7 @@ def mode_callwatch(args) -> int:
     arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
     body = 'emit [format "DONE armed=%d rn=%d" $::armed $::rn]; exit'
     arm = _callwatch_arm(args.at, arm_cond, lo, hi, args.gate_func9, args.maxhits,
-                         in_func=args.in_func)
+                         in_func=args.in_func, per_call=getattr(args, "per_call", False))
 
     def entries_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
@@ -1101,6 +1108,19 @@ def mode_callwatch(args) -> int:
         for e in ent:
             by_pc[e["PC"]] = by_pc.get(e["PC"], 0) + 1
         print(f"  {who}: {len(ent)} entries across {len(by_pc)} distinct PC(s)")
+        if getattr(args, "per_call", False):
+            # D-ENTRYTIERS step 3 (2026-11-08): the FIRST page-1 PC each BDOS call
+            # entered -- the kernel's own entry into this ROM for that function, in
+            # call order. A canonical entry never planted shows as a PC that is not a
+            # label of ours (D-WRZER $47D1, D-AUXOUT $5474, D-AUXIN $546E).
+            seen = set()
+            for ev in ent:
+                c = ev.get("call", 0)
+                if c == 0 or c in seen:
+                    continue
+                seen.add(c)
+                print(f"    FIRST call={c} fn=${ev.get('fn', 0) & 0xFF:02X} PC={ev['PC']:04X}")
+            continue
         for pc in sorted(by_pc):
             print(f"    {pc:04X}: entered {by_pc[pc]}x")
     return 0
@@ -1350,6 +1370,9 @@ def main() -> int:
     c.add_argument("--maxhits", type=int, default=400)
     c.add_argument("--machine", choices=("both", "ours", "stock"), default="ours",
                    help="default OURS: enumerating stock's page-1 routine set is not needed and near the disasm line")
+    c.add_argument("--per-call", action="store_true",
+                   help="print the FIRST page-1 PC each BDOS call entered, with its function "
+                        "(D-ENTRYTIERS step 3: an unplanted canonical entry lands mid-routine)")
 
     args = ap.parse_args()
 

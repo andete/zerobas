@@ -1,0 +1,48 @@
+bdosx    11 calls
+bdosx0   50 calls
+bdosx2   4000 calls
+bdosx3   30 calls
+bdosx4   15 calls
+bdosx5   3 calls
+bdosx6   7 calls
+bdosx7   3 calls
+bdosx8   15 calls
+bdosx9   14 calls
+bufinx   1 calls
+auxinx   1 calls
+
+   fn $00  first PC $50A9  w50a9_stub+0
+   fn $02  first PC $53A7  k_53A7+0
+   fn $03  first PC $546E  k_546E+0
+   fn $04  first PC $5474  k_5474+0
+   fn $09  first PC $7CC8  conout_body+0
+   fn $0A  first PC $50E0  conin+0
+   fn $0B  first PC $543C  k_543C+0
+   fn $0C  first PC $41EF  k_41EF+0
+   fn $0D  first PC $509F  k_509F+0
+   fn $0E  first PC $50D5  seldsk_drv+0
+   fn $0F  first PC $4462  wx_out+9  (pinned)
+   fn $10  first PC $456F  k_456F+0
+   fn $11  first PC $4FB8  sfirst+0
+   fn $12  first PC $5006  snext+0
+   fn $13  first PC $436C  k_436C+0
+   fn $14  first PC $4775  k_4775+0
+   fn $15  first PC $477D  tgt_desc+0
+   fn $16  first PC $461D  k_461D+0
+   fn $17  first PC $4392  k_4392+0
+   fn $18  first PC $504E  k_504E+0
+   fn $19  first PC $50C4  curdrv+0
+   fn $1A  first PC $5058  setdta_cache+0
+   fn $1B  first PC $505D  getalloc+0
+   fn $21  first PC $4788  k_4788+0
+   fn $22  first PC $4793  k_4793+0
+   fn $23  first PC $501E  k_501E+0
+   fn $24  first PC $50C8  setrnd+0
+   fn $26  first PC $47BE  k_47BE+0
+   fn $27  first PC $47B2  fac_flushdirty+15  (pinned)
+   fn $28  first PC $47D1  k_47D1+0
+   fn $2C  first PC $55DB  k_55DB+0
+   fn $2D  first PC $55E6  k_55E6+0
+   fn $2E  first PC $55FF  k_55FF+0
+   fn $2F  first PC $46BA  k_46BA+0
+   fn $30  first PC $4720  k_4720+0
