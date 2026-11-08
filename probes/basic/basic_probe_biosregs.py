@@ -125,6 +125,22 @@ ROWS = {
                      "VPOKE &H108,16:VPOKE &H2108,&H4F", after="SCREEN 0"),
     "readc_bg": prog(0x011D, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,32:"
                      "VPOKE &H108,16:VPOKE &H2108,&H4F", after="SCREEN 0"),
+    # SETC (scratchpad/biossweep_setc.out): ATRBYT the background -> the bit cleared;
+    # else set, the colour byte ATRBYT << 4 | background unless ATRBYT is the
+    # foreground already; A = the colour byte when written, else the pattern byte.
+    # Pattern / colour read while still in SCREEN 2 (SCREEN 0 rebuilds VRAM).
+    **{n: prog(0x0120, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,16:"
+                f"VPOKE &H108,{pat}:VPOKE &H2108,&H4F:POKE &HF3F2,{atr}",
+               after='P=VPEEK(&H108):C=VPEEK(&H2108):SCREEN 0:PRINT "[C";HEX$(P);" ";HEX$(C);"]"')
+       for n, pat, atr in (("setc_new", 0, 6), ("setc_bg", 16, 15), ("setc_fg", 0, 4),
+                           ("setc_set", 16, 6))},
+    # MAPXYC (scratchpad/biossweep_mxy.out): CLOC = (Y AND $F8) * 32 + (Y AND 7) +
+    # (X AND $F8), CMASK = $80 >> (X AND 7); A = CLOC's low byte, D = X; C-BIOS left
+    # out Y AND 7, set every bit rightward and stored GRPACX / GRPACY
+    **{n: prog(0x0111, 0, bc=x, de=y, before="SCREEN 2:POKE &HFCB7,0:POKE &HFCB8,0",
+               after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
+                     'HEX$(PEEK(&HF92C));" ";HEX$(PEEK(&HFCB7)+256*PEEK(&HFCB8));"]"')
+       for n, x, y in (("mxy_13", 13, 21), ("mxy_max", 255, 191))},
 }
 
 

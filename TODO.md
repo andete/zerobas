@@ -17772,6 +17772,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       A = 0, F = $45 (Cy) on the screen's top / bottom row, else UPC / DOWNC. ⚠️ SETC's pattern
       half was misread (the probe VPEEKed after SCREEN 0, which rebuilds the pattern table):
       re-measure reading VRAM before leaving SCREEN 2.
+      ✅ **SETC AND MAPXYC SHIPPED (2026-11-08), SCREEN 2.** SETC re-measured with VRAM read inside
+      SCREEN 2 ([`biossweep_setc.out`](scratchpad/biossweep_setc.out)): ATRBYT = the cell's background -> the pattern bit
+      CLEARED, colour kept, A = the pattern byte; else the bit SET and, unless ATRBYT is already
+      the foreground, colour := ATRBYT << 4 | background, A = that colour byte (else A = the
+      pattern byte); HL / DE / BC kept. MAPXYC measured ([`biossweep_mxy.out`](scratchpad/biossweep_mxy.out)): CLOC = (Y AND $F8)
+      * 32 + (Y AND 7) + (X AND $F8), CMASK = $80 >> (X AND 7), A = CLOC's low byte, D = X,
+      GRPACX / GRPACY untouched -- C-BIOS's "test version" left out Y AND 7, set every bit
+      rightward in CMASK and stored GRPACX / GRPACY. **C-BIOS's own GRPPRT ($008D) relied on
+      both quirks**: `grpprt_sc2` now turns CMASK back into its rightward mask (CMASK * 2 - 1)
+      and drops its own Y AND 7 add. 📏 [`biossweep_after.out`](scratchpad/biossweep_after.out): **SETC 4/4 and MAPXYC 4/4 SAME**
+      (six are biosregs-acceptance rows); GRPPRT's glyph lands on the VG-8020's rows and bit
+      columns, only the glyph itself differs (C-BIOS's font). Room: PNTINI / SCANR / SCANL
+      (print_debug stubs, 52 B) joined the bare-`ret` list and the span now pads to print_debug
+      ($099A); MAPXYC's rewrite is shorter; READC and SETC share one cell read. Left: TUPC /
+      TDOWNC (measured above), NSETCX, PNTINI / SCANR / SCANL, SCREEN 3.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

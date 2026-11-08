@@ -110,15 +110,16 @@ PATCHES = [
     os.path.join(REPO, "cbios-repack", "keyscan-skip.patch"),
     # D-STOPKEY3: Ctrl-STOP queues ^C (), as on the VG-8020; STOP alone nothing.
     os.path.join(REPO, "cbios-repack", "ctrlstop-key.patch"),
-    # D-BIOSCONTRACT (2026-11-08): the graphics-cursor span RIGHTC .. GTASPC rewritten
-    # as one block of the SAME length (padded to pntini): SCALXY clips and scales as
-    # the VG-8020 does, GTASPC returns ASPCT1 / ASPCT2; the other stubs a bare `ret`.
+    # D-BIOSCONTRACT (2026-11-08): the graphics-cursor span RIGHTC .. SCANL rewritten
+    # as one block of the SAME length (padded to print_debug): SCALXY, GTASPC, MAPXYC,
+    # SETC, STOREC, SETATR, READC and the four moves as the VG-8020; GRPPRT follows
+    # MAPXYC's CLOC; the other stubs a bare `ret`.
     os.path.join(REPO, "cbios-repack", "graphics-cursor.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "97558328f28a23382bc449cae88c4265aa99e3d5"
+REPACKED_SHA1 = "a15a51536055a72cc0e691131f39d1aefb0c2ff3"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

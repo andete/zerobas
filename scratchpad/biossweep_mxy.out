@@ -1,0 +1,7 @@
+ROW mxy_10   VG=[[C10A 20 0 0] | [R 10A A0A A AA]] ZB=[[C108 3F A A] | [R 108 A A A8]] DIVERGES
+ROW mxy_13   VG=[[C20D 4 0 0] | [R 20D D15 D AD]] ZB=[[C208 7 D 15] | [R 208 15 D A8]] DIVERGES
+ROW mxy_0    VG=[[C0 80 0 0] | [R 0 0 0 A0]] ZB=[[C0 FF 0 0] | [R 0 0 0 A0]] DIVERGES
+ROW mxy_max  VG=[[C17FF 1 0 0] | [R 17FF FFBF FF AFF]] ZB=[[C17F8 1 FF BF] | [R 17F8 BF FF AF8]] DIVERGES
+
+0 SAME, 4 DIVERGE (mxy_10, mxy_13, mxy_0, mxy_max)
+refcache: 0 hit, 8 miss, 8 stored

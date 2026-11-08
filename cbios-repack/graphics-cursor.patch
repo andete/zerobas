@@ -1,8 +1,32 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..b563b85 100644
+index bb11106..59fe308 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -2155,107 +2155,208 @@ getpat_loop:    push    bc
+@@ -1182,6 +1182,13 @@ grpprt_sc2:
+                 ld      de,(GRPACY)
+                 ld      bc,(GRPACX)
+                 call    mapxy
++                ; zerobas cbios-repack (D-BIOSCONTRACT): MAPXYC answers as the VG-8020
++                ; now -- CMASK is the pixel's own bit; this code wants every bit from
++                ; it rightward ($FF >> (X AND 7)), which is CMASK * 2 - 1
++                ld      a,(CMASK)
++                add     a,a
++                dec     a
++                ld      (CMASK),a
+ 
+                 ld      a,(FORCLR)
+                 ld      (ATRBYT),a
+@@ -1196,8 +1203,7 @@ grpprt_sc2:
+                 and     $07
+ 
+                 ld      b,$00
+-                ld      c,a
+-                add     hl,bc
++                ld      c,a             ; (CLOC carries Y AND 7 already: no add)
+                 call    grpprt_chr_x
+ 
+                 ld      bc,$00F0
+@@ -2155,150 +2161,313 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -13,12 +37,16 @@ index bb11106..b563b85 100644
 +; are real now -- measured against the Philips VG-8020 (zerobas
 +; scratchpad/biossweep_sxy*.out); the entries not implemented YET are a bare
 +; `ret` (they were print_debug stubs that did nothing either), their debug
-+; calls and name strings giving the room. MAPXYC and FETCHC are unchanged.
++; calls and name strings giving the room. MAPXYC, SETC, STOREC, SETATR, READC
++; and the four moves too; the span runs to print_debug since PNTINI / SCANR /
++; SCANL joined the bare-`ret` list.
 +; ---------------------------------------------------------------------------
 +tupc:
 +tdownc:
-+setc:
 +nsetcx:
++pntini:
++scanr:
++scanl:
 +                ret
 +
  ;--------------------------------
@@ -27,25 +55,13 @@ index bb11106..b563b85 100644
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
 -rightc:
--                push    hl
--                push    af
--                ld      hl,rightc_text
--                call    print_debug
--                pop     af
--                pop     hl
 +; $0117 STOREC -- CLOC := HL, CMASK := A
 +storec:
 +                ld      (CLOC),hl
 +                ld      (CMASK),a
-                 ret
--rightc_text:    db      "RIGHTC",0
- 
- ;--------------------------------
--; $00FF LEFTC
--; Function : Shifts screenpixel to the left
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--leftc:
++                ret
++
++;--------------------------------
 +; $011A SETATR -- ATRBYT := A when A < 16; else Cy = 1 and ATRBYT kept (the VG-8020:
 +; F = $41 for A = 16 -- exactly `cp 16` / `ccf` / `ret c`)
 +setatr:
@@ -62,18 +78,11 @@ index bb11106..b563b85 100644
 +readc:
                  push    hl
 -                push    af
--                ld      hl,leftc_text
+-                ld      hl,rightc_text
 -                call    print_debug
 -                pop     af
 +                push    bc
-+                ld      hl,(CLOC)
-+                call    rdvrm           ; A = the pattern byte
-+                ld      b,a
-+                ld      a,h
-+                add     a,$20
-+                ld      h,a
-+                call    rdvrm           ; A = the colour byte
-+                ld      c,a
++                call    gcell
 +                ld      a,(CMASK)
 +                and     b
 +                ld      a,c
@@ -87,7 +96,89 @@ index bb11106..b563b85 100644
 +                pop     bc
                  pop     hl
                  ret
+-rightc_text:    db      "RIGHTC",0
++
++; B = the pattern byte at CLOC, C = its colour byte, HL = the colour byte's address
++gcell:
++                ld      hl,(CLOC)
++                call    rdvrm
++                ld      b,a
++                ld      a,h
++                add     a,$20
++                ld      h,a
++                call    rdvrm
++                ld      c,a
++                ret
+ 
+ ;--------------------------------
+-; $00FF LEFTC
+-; Function : Shifts screenpixel to the left
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-leftc:
++; $0120 SETC -- the pixel at CLOC / CMASK set to ATRBYT (SCREEN 2), as the VG-8020
++; (zerobas scratchpad/biossweep_setc.out): when ATRBYT is the cell's background
++; colour the pattern bit is CLEARED and the colour byte kept, A = the pattern byte;
++; otherwise the bit is SET, and when ATRBYT is not already the foreground the colour
++; byte becomes ATRBYT << 4 | background, A = that colour byte (else A = the pattern
++; byte). HL / DE / BC kept.
++setc:
+                 push    hl
+-                push    af
+-                ld      hl,leftc_text
+-                call    print_debug
+-                pop     af
++                push    bc
++                push    de
++                call    gcell
++                ld      a,(ATRBYT)
++                ld      e,a
++                ld      a,(CMASK)
++                ld      d,a
++                ld      a,c
++                and     $0F
++                cp      e
++                ld      a,d
++                jr      nz,setc_set
++                cpl
++                and     b               ; ATRBYT is the background: the bit cleared
++                jr      setc_pat
++setc_set:
++                ld      a,e
++                rlca
++                rlca
++                rlca
++                rlca
++                xor     c
++                and     $F0
++                jr      z,setc_fg       ; the foreground is ATRBYT already
++                xor     c               ; ATRBYT << 4 | background
++                call    wrtvrm
++                ld      e,a
++                ld      a,d
++                or      b
++                call    setc_wpat
++                ld      a,e
++                jr      setc_out
++setc_fg:
++                ld      a,d
++                or      b
++setc_pat:
++                call    setc_wpat
++setc_out:
++                pop     de
++                pop     bc
+                 pop     hl
+                 ret
 -leftc_text:     db      "LEFTC",0
++; the pattern byte A written at the colour address HL - $2000
++setc_wpat:
++                ld      b,a
++                ld      a,h
++                sub     $20
++                ld      h,a
++                ld      a,b
++                jp      wrtvrm
  
  ;--------------------------------
 -; $0102 UPC
@@ -279,10 +370,78 @@ index bb11106..b563b85 100644
  
  ;--------------------------------
  ; $0111 MAPXYC
-@@ -2311,94 +2412,10 @@ fetchc:
+-; Function : Places cursor at current cursor address
+-; Input    : BC = X coordinate,DE=Y coordinate
+-; Register : AF,D,HL
+-; NOTE     : This is a test version
++; Function : Places the graphics cursor at X / Y (SCREEN 2)
++; Input    : BC = X coordinate, DE = Y coordinate
++; Output   : CLOC = (Y AND $F8) * 32 + (Y AND 7) + (X AND $F8), CMASK = $80 >> (X AND 7);
++;            A = the low byte of CLOC and D = X, as the VG-8020 leaves them
++;            (zerobas scratchpad/biossweep_mxy.out); GRPACX / GRPACY untouched
+ mapxy:
++                ld      d,c
+                 push    bc
+-                ld      (GRPACX),bc
+-                ld      (GRPACY),de
+-                ld      hl,(GRPACY)
+-                add     hl,hl
+-                add     hl,hl
+-                add     hl,hl
+-                add     hl,hl
+-                add     hl,hl
+-                ld      l,$00
+-                ld      b,$00
+-
+-                ld      a,$ff
+-                ld      (CMASK),a
+                 ld      a,c
+-                and     $07
+-                jr      z,mapxy_mask_ed
++                and     7
++                inc     a
+                 ld      b,a
+-                ld      a,$ff
+-mapxy_mask_lp:
+-                and     a
+-                rra
+-                djnz    mapxy_mask_lp
++                ld      a,1
++mapxy_mask:
++                rrca
++                djnz    mapxy_mask
+                 ld      (CMASK),a
+-mapxy_mask_ed:
++                ld      a,e
++                rrca
++                rrca
++                rrca
++                and     $1F
++                ld      h,a
+                 ld      a,c
+                 and     $F8
+-                ld      c,a
+-                ld      b,$00
+-                add     hl,bc
+-
++                ld      l,a
++                ld      a,e
++                and     7
++                or      l
++                ld      l,a
+                 ld      (CLOC),hl
+                 pop     bc
                  ret
- fetchc_text:    db      "FETCHC",0
+-mapxy_text:    db      "MAPXY",0
  
+ ;--------------------------------
+ ; $0114 FETCHC
+@@ -2309,136 +2478,10 @@ fetchc:
+                 ld      a,(CMASK)
+                 ld      hl,(CLOC)
+                 ret
+-fetchc_text:    db      "FETCHC",0
+-
 -;--------------------------------
 -; $0117 STOREC
 -; Function : Record current cursor addresses mask pattern
@@ -371,10 +530,50 @@ index bb11106..b563b85 100644
 -                ret
 -gtaspc_text:    db      "GTASPC",0
 -
-+        IF $ > $0966
-+                ERROR   "graphics-cursor span overran pntini"
+-;--------------------------------
+-; $0129 PNTINI
+-; Function : Initalises the PAINT instruction
+-; NOTE     : This implementation is still a stub!
+-pntini:
+-                push    hl
+-                push    af
+-                ld      hl,pntini_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-pntini_text:    db      "PNTINI",0
+-
+-;--------------------------------
+-; $012C SCANR
+-; Function : Scans screenpixels to the right
+-; NOTE     : This implementation is still a stub!
+-scanr:
+-                push    hl
+-                push    af
+-                ld      hl,scanr_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-scanr_text:     db      "SCANR",0
+ 
+-;--------------------------------
+-; $012F SCANL
+-; Function : Scans screenpixels to the left
+-; NOTE     : This implementation is still a stub!
+-scanl:
+-                push    hl
+-                push    af
+-                ld      hl,scanl_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+-                ret
+-scanl_text:     db      "SCANL",0
++        IF $ > $099A
++                ERROR   "graphics-cursor span overran print_debug"
 +        ENDIF
-+                ds      $0966 - $, $00  ; the span keeps its length: pntini stays put
- ;--------------------------------
- ; $0129 PNTINI
- ; Function : Initalises the PAINT instruction
++                ds      $099A - $, $00  ; the span keeps its length: print_debug stays put
+ 
+ ; vim:ts=8:expandtab:filetype=z8a:syntax=z8a:

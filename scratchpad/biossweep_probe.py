@@ -151,6 +151,41 @@ MORE = {
                          after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
 }
 ROWS.update(MORE)
+# SETC again, VRAM read BEFORE leaving SCREEN 2 (the first cut VPEEKed after SCREEN 0,
+# which rebuilds the pattern table): pattern / colour byte of the cursor's cell
+SHOW2 = 'P=VPEEK(&H108):C=VPEEK(&H2108):SCREEN 0:PRINT "[C";HEX$(P);" ";HEX$(C);"]"'
+ROWS.update({
+    "setc2_new": B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":VPOKE &H108,0:POKE &HF3F2,6", after=SHOW2),
+    "setc2_bg":  B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":POKE &HF3F2,15", after=SHOW2),
+    "setc2_fg":  B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":VPOKE &H108,0:POKE &HF3F2,4", after=SHOW2),
+    "setc2_set": B.prog(0x0120, 0, before="SCREEN 2:" + SET1 + ":POKE &HF3F2,6", after=SHOW2),
+})
+
+# MAPXYC (D-BIOSCONTRACT): CLOC / CMASK and GRPACX / GRPACY ($FCB7 / $FCB9, POKEd 0
+# first) after the call, in SCREEN 2
+SHOWM = ('SCREEN 0:PRINT "[C";' + SHOWC + ';" ";HEX$(PEEK(&HFCB7)+256*PEEK(&HFCB8));'
+         '" ";HEX$(PEEK(&HFCB9)+256*PEEK(&HFCBA));"]"')
+ZG = "SCREEN 2:POKE &HFCB7,0:POKE &HFCB8,0:POKE &HFCB9,0:POKE &HFCBA,0"
+ROWS.update({
+    "mxy_10":  B.prog(0x0111, 0, bc=10, de=10, before=ZG, after=SHOWM),
+    "mxy_13":  B.prog(0x0111, 0, bc=13, de=21, before=ZG, after=SHOWM),
+    "mxy_0":   B.prog(0x0111, 0, bc=0, de=0, before=ZG, after=SHOWM),
+    "mxy_max": B.prog(0x0111, 0, bc=255, de=191, before=ZG, after=SHOWM),
+})
+
+# GRPPRT (C-BIOS's own, $008D) after MAPXYC's fix: 'A' at GRPACX 10 / GRPACY 13 (row 5
+# of its cell, so the glyph straddles two cells), weighted sums of the two cells' bytes
+GP = ('P=0:Q=0:FOR I=0 TO 7:P=P+VPEEK(&H108+I)*(I+1):Q=Q+VPEEK(&H208+I)*(I+1):NEXT:'
+      'SCREEN 0:PRINT "[C";P;Q;"]"')
+GPR = ('S$="":FOR I=0 TO 7:S$=S$+RIGHT$("0"+HEX$(VPEEK(&H108+I)),2):NEXT:'
+       'T$="":FOR I=0 TO 7:T$=T$+RIGHT$("0"+HEX$(VPEEK(&H208+I)),2):NEXT:'
+       'SCREEN 0:PRINT "[C";S$;" ";T$;"]"')
+ROWS.update({
+    "grpprt_raw": B.prog(0x008D, 0x41, before="SCREEN 2:POKE &HFCB7,10:POKE &HFCB8,0:"
+                         "POKE &HFCB9,13:POKE &HFCBA,0", after=GPR),
+    "grpprt": B.prog(0x008D, 0x41, before="SCREEN 2:POKE &HFCB7,10:POKE &HFCB8,0:"
+                     "POKE &HFCB9,13:POKE &HFCBA,0", after=GP),
+})
 
 
 def main():

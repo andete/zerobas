@@ -1,0 +1,7 @@
+ROW setc2_new VG=[[C10 6F] | [R 5566 3344 1122 A6F]] ZB=[[C0 4F] | [R 5566 3344 1122 A0]] DIVERGES
+ROW setc2_bg VG=[[C0 4F] | [R 5566 3344 1122 A0]] ZB=[[C10 4F] | [R 5566 3344 1122 A0]] DIVERGES
+ROW setc2_fg VG=[[C10 4F] | [R 5566 3344 1122 A10]] ZB=[[C0 4F] | [R 5566 3344 1122 A0]] DIVERGES
+ROW setc2_set VG=[[C10 6F] | [R 5566 3344 1122 A6F]] ZB=[[C10 4F] | [R 5566 3344 1122 A0]] DIVERGES
+
+0 SAME, 4 DIVERGE (setc2_new, setc2_bg, setc2_fg, setc2_set)
+refcache: 0 hit, 8 miss, 8 stored

@@ -171,7 +171,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**30 of 108** have a direct witness; **78 are NOT MEASURED**.
+**32 of 108** have a direct witness; **76 are NOT MEASURED**.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -258,12 +258,12 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0108 | DOWNC | exercised | `biosregs-acceptance` |
 | $010B | TDOWNC | exercised | `biosregs-acceptance` |
 | $010E | SCALXY | exercised | `biosregs-acceptance` |
-| $0111 | MAPXYC | NOT MEASURED | — |
+| $0111 | MAPXYC | exercised | `biosregs-acceptance` |
 | $0114 | FETCHC | NOT MEASURED | — |
 | $0117 | STOREC | exercised | `biosregs-acceptance` |
 | $011A | SETATR | exercised | `biosregs-acceptance` |
 | $011D | READC | exercised | `biosregs-acceptance` |
-| $0120 | SETC | NOT MEASURED | — |
+| $0120 | SETC | exercised | `biosregs-acceptance` |
 | $0123 | NSETCX | NOT MEASURED | — |
 | $0126 | GTASPC | NOT MEASURED | — |
 | $0129 | PNTINI | NOT MEASURED | — |
