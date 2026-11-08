@@ -17736,6 +17736,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the saved slot; return them. A page-0 / page-3 target keeps today's path. ~70 B of the
       119. Witnesses: dskent.asm's GETDPB (its DPB written), bdos-acceptance, p1vec /
       callsystem (both CALSLT from the TPA).
+      💰 **BLOCKED ON DISK-ROM BYTES (2026-11-08):** the page-3 RAM is there, the ROM is not. The
+      piece is a template LDIR'd by install_dos_env right after br5 (BR5_RAM + 53 = $DF1C,
+      contiguous: one more `ld hl / ld bc / ldir`, 8 B); the $001C stub (br_calslt_tmpl, 7 B)
+      becomes `jp BR_CALS`. Estimated: ~90 B of template (page test 10, the caller's page slot
+      from $A8 / SLTTBL ~25, two register stashes around two BR_ENASLT calls, the jp (ix) call,
+      the old path for page 0 / 3) + 8 B of install. Every disk-ROM region has <= 5 B
+      (`scratchpad/pinguard.py --slack`). ➡️ A ~100 B carve first -- the largest yet:
+      candidates are `scratchpad/movescout.py` over the whole ROM for routines to sub-ROM
+      eviction (D-ROMSIZE's method for main), or a shared CALSLT helper replacing the page-0
+      dance br_p0in already holds.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
