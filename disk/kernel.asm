@@ -6936,6 +6936,13 @@ rh_init:
                 ld      hl, 0
                 ld      (RND_HSEC), hl
                 ret
+; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
+; touched, so its page-0 subslot is intact). Clobbers A. (Moved here from
+; disk/runtime.asm by D-WRRNDEXT, whose wrapper needed that region's bytes.)
+pg0_mainrom_out:
+                ld      a, (PG_SV_A8)
+                out     ($A8), a
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -8503,9 +8510,8 @@ wrrnd_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer
                 call    rrnd_position
-                jr      c, wrrnd_ioerr      ; positioned past EOF -- FAT growth is out of
-                                            ; scope this milestone (§4 non-goal), same as
-                                            ; every other M26 fix
+                jr      c, wrrnd_ext        ; past EOF: D-WRRNDEXT grows the file (WRBLK's
+                                            ; machinery); M26 had scoped FAT growth out
                 ; SECTOR_BUF now holds the target sector (loaded by rrnd_position's seek
                 ; loop) -- overlay the caller's DTA record into it at BDOS_RECIDX*RECSIZE.
                 ld      a, (BDOS_RECIDX)
@@ -8534,6 +8540,7 @@ wrrnd_body:
                 call    wrrnd_extend        ; M36: grow ix+16..19 + the on-disk dirent if this
                                             ; write landed past the previous end-of-file
                 jr      c, wrrnd_ioerr
+wrrnd_ok:
                 ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
                 ld      (ix+32), a
                 xor     a
@@ -8549,4 +8556,31 @@ rrnd_finish:                                ; shared tail: M20 dispatcher-flag r
                 ld      ($F306), a
                 pop     af
                 ret
+; 🔴 D-WRRNDEXT (2026-11-08): WRRND / WRZER PAST THE END OF THE FILE. rrnd_position
+; refuses there (M26 scoped FAT growth out), so under MSX-DOS a random write that
+; grows a file answered A = $02 where the CF-3300 writes it (probes/disk/wrzer.asm,
+; scratchpad/wrzer_stock3.out). WRBLK already grows a file from the FCB's own state
+; (wrblk_fcbstate / wroe_ext) and leaves the sectors an extension skips unwritten --
+; WRRND's face on the CF-3300 (the disk's bytes kept). So: one record of 128 bytes
+; by wrblk_body -- FCB +14..15 := 0 (WRBLK's 128 default; the CF-3300 leaves 0 there,
+; scratchpad/bdosx9_stock.out $04FE) -- with RR put back after (WRBLK advances it,
+; WRRND does not), then WRRND's own success tail; a failure keeps WRBLK's A (1 full,
+; 2 I/O). IX = the FCB copy (wrrnd_body set it).
+wrrnd_ext:
+                push    ix
+                pop     de                  ; DE = the FCB copy (wrblk_body's input)
+                xor     a
+                ld      (ix+14), a
+                ld      (ix+15), a          ; record size 0 = 128
+                ld      l, (ix+33)
+                ld      h, (ix+34)
+                push    hl                  ; RR (r0 / r1: the record WRRND names)
+                ld      hl, 1
+                call    wrblk_body          ; A = 0 ok / 1 disk full / 2 I/O
+                pop     hl
+                ld      (ix+33), l
+                ld      (ix+34), h          ; RR as it was
+                or      a
+                jr      nz, rrnd_finish
+                jr      wrrnd_ok
 

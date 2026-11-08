@@ -79,6 +79,12 @@ EXERCISERS = [
     # post-WRSEQ FCB position/size/first-cluster is now byte-identical to stock
     # (was stale -- the write branch had no advance, only the read branch did).
     ("BDOSX8", "build_bdosx8_disk.py"),
+    # BDOSX9 (D-ENTRYTIERS step 2, 2026-11-08): the functions tools/entry_table.py found
+    # NOT MEASURED -- CURDRV, SELDSK, ALLOC, SFIRST/SNEXT (both DTAs), CONOUT,
+    # FMAKE/WRZER/FCLOSE (the written FCB), AUXOUT, and the seven numbers MSX-DOS 1
+    # does not use. Byte-identical once D-WRZER ($47D1), D-AUXOUT ($5474),
+    # D-SFIRSTVOL and D-WRRNDEXT landed (scratchpad/bdosx9_run6.out).
+    ("BDOSX9", "build_bdosx9_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

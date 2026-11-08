@@ -17636,8 +17636,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
       and what BASIC's FILES does with the same disk on both (FILES may share the walk).
 
-- [ ] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
+- [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
+      ✅ **FIXED THE SAME DAY, AS DESIGNED.** rrnd_position's past-EOF exit goes to `wrrnd_ext`
+      (disk/kernel.asm): FCB +14..15 := 0, RR saved, `wrblk_body` with HL = 1, RR restored,
+      then WRRND's own success tail (`wrrnd_ok`); a failure keeps WRBLK's A. 36 B: the 30 that
+      D-DISKCARVE3 made plus pg0_mainrom_out moved into the hole before $75A5. 📏 wrzer.asm on
+      both ([`wrzer_both1.out`](scratchpad/wrzer_both1.out), ours one-sided [`wrzer_ours1.out`](scratchpad/wrzer_ours1.out)): **R.DAT now the CF-3300's --
+      records 0 / 8 / 16 the disk's $CC, record 20 $55, size 2688, first cluster $157**; every
+      call A = 0. **bdosx9 BYTE-IDENTICAL, 0 of 280** ([`bdosx9_run6.out`](scratchpad/bdosx9_run6.out)) -- it joins
+      bdos-acceptance (BDOSX9) and leaves the reach allowlist. 🔮 "R.DAT matches, Z.DAT's
+      zero fill still missing": HIT. What remains is D-WRZER's zero fill and D-RNDFCB below.
+
+- [ ] 🔴 **D-RNDFCB — RDRND LEAVES TWO FCB FIELDS THE CF-3300 CHANGES (found 2026-11-08 by
+      D-WRRNDEXT)**
+      🎚️ TIER 1 — the FCB is an entry point's contract: a program that sets a record size,
+      RDRNDs, then RDBLKs reads with a different record size on the two machines.
+      🤖 **AUTONOMOUS** — 📏 wrzer.asm's read-back half ([`wrzer_both1.out`](scratchpad/wrzer_both1.out)): after FOPEN, RS
+      := 128, then RDRND of records 0 / 8 / 16 / 20, the CF-3300's FCB has **+14..15 = 0** (RDRND
+      cleared the record size) and **+28..31 = the cluster record 20 lives in and its index**
+      ($156 / 2 for Z.DAT); ours keeps +14 = 128 and +28..31 at the first cluster / 0.
+      ➡️ rdrnd_body: clear +14..15, and keep +28..31 as wrblk_fcb_keep does for WRBLK. First
+      check whether WRRND within the file clears +14 too (bdosx3's shape, one row).
+
+
       🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style
       program grows a file).
       🤖 **AUTONOMOUS** — wrrnd_body (disk/kernel.asm, M26) positions with rrnd_position and

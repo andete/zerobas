@@ -28,12 +28,8 @@ pg0_mainrom_in:
                 ; ROM -- is the page they sit in.
                 jp      br_mainin_tmpl
 
-; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
-; touched, so its page-0 subslot is intact). Clobbers A.
-pg0_mainrom_out:
-                ld      a, (PG_SV_A8)
-                out     ($A8), a
-                ret
+; (pg0_mainrom_out is in disk/kernel.asm in front of the $75A5 pin since D-WRRNDEXT,
+; whose wrapper needed this region's bytes.)
 
 ; --- conout_body - the real $5454 CONOUT (M8/8.67; char-reg fix M10/§8.80) ------
 ; Emit the char (in E) via the main-ROM CHPUT ($00A2). Reached from the $5454 veneer
