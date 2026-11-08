@@ -17666,6 +17666,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`scratchpad/pinguard.py --slack`), and the largest hole elsewhere is 9 B ($55FF); even
       the 3-byte call needs a carve there first. Candidates in that region: wrseq_body_write's
       tail and the rdb_* exits (check each is entered only by jp / call before moving it).
+      ~~✅ HALF 1 SHIPPED (2026-11-08): RDRND clears the record size.~~ 🔴 **WITHDRAWN BEFORE
+      COMMIT -- bdos-acceptance went red on it.** rdrnd_body's success path had stored its `xor a`
+      into +14..15 (6 B); BDOSX3 then differed at its FCB **+15: CF-3300 $03, ours $00**
+      (rf_x_bdos run: the scratch 384-byte file, three 128-byte records, after RDRND). So the
+      CF-3300's RDRND does NOT clear +14..15: in wrzer.asm (2688 B, 21 records, RDRND of records
+      0 / 8 / 16 / 20) it left 0 / 0, in BDOSX3 0 / 3. The CP/M FCB's +15 is RC, the record
+      count of the current extent -- the likeliest reading, unmeasured: characterise +12..15
+      after RDRND on files of 1, 3, 21, 128 and 200 records before any code. The clear is
+      reverted; the room-making moves below stay (the FULL battery passed with them). Room from `scratchpad/movescout.py` (routines in an
+      address range entered only by call / jp / dw, ending unconditionally): wrseq_body_write
+      (8 B) moved to the hole before $55FF, and pg0_mainrom_in -- only `jp br_mainin_tmpl` since
+      D-DISKCARVE -- is gone, its eight callers calling br_mainin_tmpl. 📏 wrzer.asm on both
+      ([`wrzer_both2.out`](scratchpad/wrzer_both2.out)): FCB +14..15 the CF-3300's on both files THERE (🔮 HIT on that probe,
+      wrong as a rule -- above). ➡️ The +12..15 characterisation first; then the cluster cache
+      (~16 B in the $7F7C region, which has 11 B now).
 
 
       🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style

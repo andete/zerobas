@@ -1314,7 +1314,7 @@ lstout_body:
                 push    de
                 push    hl
                 di                          ; no interrupt while the BIOS is half-mapped
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 ld      a, (CONOUT_CHAR)
                 call    $00A5               ; LPTOUT - output A to the list device
                 call    pg0_mainrom_out     ; restore page 0
@@ -1651,6 +1651,27 @@ drw_lp:
 ; entered (scratchpad/padwatch_4ede.out).
 verify_body:
                 ld      a, e
+                ret
+; (wrseq_body_write moved here by D-RNDFCB from the $7F7C region; entered only by
+; driver.asm wrseq_body's `jp nz`.)
+wrseq_body_write:
+                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
+                ; the M33 read-branch FCB-position write-back. M33 advanced the
+                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
+                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
+                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
+                ; sequential WRITES too. Our file bytes were already correct (the
+                ; write-iterator tracks position internally); only the caller-visible
+                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
+                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
+                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
+                ; not-open, do NOT advance -- no record was stored). The twin is
+                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
+                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
+                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
+                call    bdos_seqwrite
+                or      a
+                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
                 ret
                 ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
 k_55FF:
@@ -6773,7 +6794,7 @@ innoe_body:
                 push    de
                 push    hl
                 di
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 call    $009F               ; CHGET: blocking; A := char (no echo)
                 push    af
                 call    pg0_mainrom_out
@@ -8040,25 +8061,6 @@ rdb_eof:
                 ld      c, l
                 ret
 
-wrseq_body_write:
-                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
-                ; the M33 read-branch FCB-position write-back. M33 advanced the
-                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
-                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
-                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
-                ; sequential WRITES too. Our file bytes were already correct (the
-                ; write-iterator tracks position internally); only the caller-visible
-                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
-                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
-                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
-                ; not-open, do NOT advance -- no record was stored). The twin is
-                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
-                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
-                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
-                call    bdos_seqwrite
-                or      a
-                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
-                ret
 
 ; fdc_read_data_body — relocated fdc_read_data (M26, tier2-m26-spec.md): its
 ; old span at driver.asm's $435A collided with the real kernel's canonical

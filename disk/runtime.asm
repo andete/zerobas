@@ -18,15 +18,10 @@
 ; secondary protocol are documented MSX BIOS ABI (MSX2 TH ch.2/2.4); no oracle bytes.
 ; NOTE: on the CF-3300 EXPTBL[0]=$00 (unexpanded), so the primary path is exercised+
 ; validated; the expanded sub-path is spec-derived and NOT reachable here (review queue).
-pg0_mainrom_in:
-                ; 💰 D-DISKCARVE (2026-11-07): this was a 66-byte copy of the bridge
-                ; template's own page-0 switch (br_mainin_tmpl below: EXPTBL into C, then
-                ; br_p0in_tmpl -- the same steps, EXPTBL read before rather than after
-                ; saving $A8, the same registers clobbered; scratchpad/diskcarve_ngram.out).
-                ; The template's ROM bytes run in place: straight-line code, absolute
-                ; references only (PG_SV_A8, SLTTBL, $FFFF), and this page -- the disk
-                ; ROM -- is the page they sit in.
-                jp      br_mainin_tmpl
+; 💰 D-RNDFCB (2026-11-08): pg0_mainrom_in WAS ONLY `jp br_mainin_tmpl` (D-DISKCARVE had
+; made it the bridge template's own page-0 switch, run in place); its callers now call
+; br_mainin_tmpl directly and the 3-byte veneer is gone. The contract above is
+; br_mainin_tmpl's.
 
 ; (pg0_mainrom_out is in disk/kernel.asm in front of the $75A5 pin since D-WRRNDEXT,
 ; whose wrapper needed this region's bytes.)
@@ -133,7 +128,7 @@ dirio_in_body:
                 push    de
                 push    hl
                 di
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
                 or      a
                 jr      z, dirioin_empty
@@ -161,7 +156,7 @@ const_body:
                 push    de
                 push    hl
                 di
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
                 or      a
                 jr      z, const_notready
@@ -187,7 +182,7 @@ conin_body:
                 push    de
                 push    hl
                 di
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 call    $009F               ; CHGET: blocking; A := char
                 push    af                  ; stash char across mainrom_out (clobbers A)
                 call    pg0_mainrom_out
@@ -263,7 +258,7 @@ conin_line_body:
                 ld      (CONIN_COUNT), a    ; running fill count starts at 0
 cinl_getchar:
                 di                          ; no interrupt while the BIOS is half-mapped
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 call    $009F               ; CHGET - wait for + return a char in A
                 ld      b, a                ; B = the char (pg0_mainrom_out clobbers A)
                 call    pg0_mainrom_out     ; restore page 0
@@ -586,7 +581,7 @@ dos_handoff_keep:
 ; $F3DC/$F3DD are all documented MSX BIOS ABI / work-area sysvars (cited, not decoded).
 dos_clear_screen:
                 push    ix                  ; IX=$F195 (DRVA_DPB) must survive into MSXDOS.SYS
-                call    pg0_mainrom_in      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
+                call    br_mainin_tmpl      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
                 ld      a, $20              ; A = space
                 ld      bc, $0300           ; BC = 768 = 32*24 name-table cells
                 ld      hl, $1800           ; HL = SCREEN-1 name-table base
@@ -795,7 +790,7 @@ conout_emit_e:
                 push    de
                 push    hl
                 di                          ; no interrupt while the BIOS is half-mapped
-                call    pg0_mainrom_in
+                call    br_mainin_tmpl
                 ld      a, (CONOUT_CHAR)
                 call    $00A2               ; CHPUT - emit A; preserves all registers
                 call    pg0_mainrom_out     ; restore page 0

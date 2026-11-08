@@ -1,0 +1,65 @@
+=== capture: regs+mem at occurrence #1 of 0x013e ===
+  ALIGNED: both hit occurrence #1  (stock t=42.8098, ours t=46.2219, dt=3.4121)
+
+  reg   STOCK  OURS
+  PC    013E   013E
+  SP    D529   D529
+  AF    FF6A   FF6A
+  BC    0000   0000
+  DE    0080   0080
+  HL    01C2   01C2
+>>IX    F195   DA40
+  IY    DA40   DA40
+
+  memory 0x0400+1184: 388 of 1184 bytes differ
+    042C: stock=56 ours=54
+    042E: stock=02 ours=00
+    045C: stock=59 ours=57
+    045E: stock=02 ours=00
+    04A0: stock=00 ours=64
+    04A1: stock=00 ours=69
+    04A2: stock=00 ours=63
+    04A3: stock=00 ours=6F
+    04A4: stock=00 ours=6E
+    04A5: stock=00 ours=2B
+    04A6: stock=00 ours=36
+    04A7: stock=00 ours=A9
+    04A8: stock=00 ours=09
+    04A9: stock=00 ours=61
+    04AA: stock=00 ours=64
+    04AB: stock=00 ours=64
+    04AC: stock=00 ours=09
+    04AD: stock=00 ours=61
+    04AE: stock=00 ours=2C
+    04AF: stock=00 ours=31
+    04B0: stock=00 ours=B6
+    04B1: stock=00 ours=09
+    04B2: stock=00 ours=6C
+    04B3: stock=00 ours=64
+    04B4: stock=00 ours=09
+    04B5: stock=00 ours=28
+    04B6: stock=00 ours=62
+    04B7: stock=00 ours=6F
+    04B8: stock=00 ours=61
+    04B9: stock=00 ours=72
+    04BA: stock=00 ours=64
+    04BB: stock=00 ours=69
+    04BC: stock=00 ours=63
+    04BD: stock=00 ours=6F
+    04BE: stock=00 ours=6E
+    04BF: stock=00 ours=2B
+    04C0: stock=00 ours=36
+    04C1: stock=00 ours=29
+    04C2: stock=00 ours=2C
+    04C3: stock=00 ours=E1
+    04C4: stock=00 ours=80
+    04C5: stock=00 ours=09
+    04C6: stock=00 ours=70
+    04C7: stock=00 ours=6F
+    04C8: stock=00 ours=70
+    04C9: stock=00 ours=09
+    04CA: stock=00 ours=62
+    04CB: stock=00 ours=E3
+    ... (+340 more)
+
+  register diffs: IX
