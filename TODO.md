@@ -17542,6 +17542,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (clean room). First pass is a MAPPING of existing gates onto rows -- no emulator time; a row
       nothing witnesses says NOT MEASURED out loud (kwsweep's MISSING lesson). Then a gate keeps
       the table from drifting (tier_table.py renders it; tiers-md-check fails on a stale one).
+      ✅ **STEP 1 SHIPPED (2026-11-08): THE BDOS TABLE.** `tools/entry_table.py` maps every probe
+      source that calls the BDOS (the last `ld c, N` before the call: a number, the file's `equ`
+      or the published name) to the `*-acceptance` targets that reach it -- through scripts that
+      name it IN CODE, to a fixed point (bdos-acceptance is two hops away from bdosx.asm).
+      tier_table.py renders it as docs/tier-status.md's FIRST section, so tiers-md-check keeps it
+      current. tests/test_entry_table.py pins the parser and the reach rule. 🔴 Two faults of
+      the first prototype, both caught by reading its table before believing it: `lstoutx`
+      loads `LSTOUT` by name (read NOT MEASURED), and two runners' DOCSTRINGS named
+      disk_bdos_acceptance.py, crediting diskbasic-acceptance / callsystem-acceptance with every
+      bdosx probe. **Reading: 32 of 42 functions EXERCISED, 10 NOT MEASURED** -- CONOUT, AUXIN,
+      AUXOUT, LSTOUT (lstoutx.asm exists; no gate runs it), BUFIN, SELDSK, SNEXT, CURDRV, ALLOC,
+      WRZER -- and the 7 unused numbers ($1C-$20, $25, $29) have no row checking that they
+      answer as the reference does. setrnd_char.asm and verifyx.asm run in no gate either.
+      ⚠️ The open-item column matches a function's NAME in an item's headline only:
+      D-BLKIOPERCALL lands on WRBLK, not RDBLK, whose name its headline does not carry.
+      ➡️ NEXT, in order: (2) the 10 NOT MEASURED functions and the unused numbers -- one
+      differential against the CF-3300 each, registers + FCB / RAM out (bdosx's shape), into
+      bdos-acceptance; lstoutx / setrnd_char / verifyx wired into a gate; (3) EXERCISED -> SAME:
+      read which of those gates compare the function's result, and say so per row; (4) the
+      disk-ROM entry table; (5) the main BIOS table.
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**

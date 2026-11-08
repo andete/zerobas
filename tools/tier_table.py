@@ -1550,6 +1550,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
                _nobare_prose(),
                len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
+            ] + _entry_section(its) + [
             "## Every keyword and its status", "",
             "🚩 **`TIER n` IN THIS DOCUMENT ALWAYS MEANS AN *ITEM\'S* "
             "PRIORITY — never a rung a keyword has climbed.** A keyword has a "
@@ -1661,6 +1662,14 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
             sys.exit(f"tier_table: no todo_inventory block starts at TODO.md line {it['line']}")
         out.append(f"| {kw} | {base_tier(it['tier'])} | {it['marker']} | {w} | {bid} |")
     return "\n".join(out) + "\n"
+
+
+def _entry_section(its):
+    """D-ENTRYTIERS: the BDOS rows (tools/entry_table.py), ahead of the keyword
+    rows -- Joost 2026-11-08, the entry points outrank BASIC."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import entry_table
+    return entry_table.fmt_markdown(its).splitlines() + [""]
 
 
 def main(argv=None):
