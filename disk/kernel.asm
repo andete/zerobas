@@ -1286,6 +1286,27 @@ k_5465:
 ; entry (same documented class as CHPUT $00A2 already called by conout_body); no oracle
 ; bytes decoded. Lives in the $5456-$5FE4 gap section (net-zero: absorbed by the
 ; `ds $5FE5 - $` pad below, so nothing downstream shifts / the FDC-window guard holds).
+; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
+; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
+; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
+; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
+; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room;
+; cr_copy1 moved here by D-AUXOUT to fill the span in front of $5474.
+cr_copy1:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                jp      cr_copy2            ; disk/runtime.asm
+                ds      $5474 - $, $00
+; 🔴 D-AUXOUT (2026-11-08): $5474 IS BDOS $04 AUXOUT's CANONICAL ENTRY. MSX-DOS's
+; kernel CALLs it (disk_probe_diff.py callwatch --in-func 0x04, our ROM's PCs:
+; scratchpad/auxout_callwatch.out), and it fell 12 bytes into lstout_body -- which
+; then ran into our page-3 bridge and the program never came back (the D-WRZER
+; class). No AUX device exists on either target; the CF-3300 answered E = 'A' with
+; A = $41 (scratchpad/bdosx9_stock.out record 10): the char comes back in A.
+k_5474:
+auxout_body:
+                ld      a, e
+                ret
 lstout_body:
                 ld      a, e                ; char arrives in E ($5465 LSTOUT contract)
                 ld      (CONOUT_CHAR), a    ; stash across the slot work (A needed for paging)
@@ -1315,6 +1336,11 @@ lstout_body:
 ; (callf_body_body, the $0030 CALLF handler, was here: D-TPAP1 moved the page-0
 ; entries to page-3 bridges into the main BIOS -- br1_tmpl, pageenv.asm.)
 
+; br3 (D-BOOTREGS) -- the fourth piece of the page-3 slot bridges, laid after the hook
+; bodies: $0005 until MSXDOS.SYS lays its own. A boot code may put RAM into page 1
+; ($F368+3) and then call the BDOS -- frayd1.dsk's does, through $F37D, and the
+; CF-3300 answers it (scratchpad/fray_f37d.out). So: the disk ROM in for bdos_entry,
+; and the caller's page 1 (RAM, subslot 0, or this ROM) back after.
 ; boot_call0 -- step 5: the boot sector's code at $C01E with Cy = 0 ("custom boot"),
 ; under the DOS_TRY mark. 🔴 D-BASENTRUN's other half (2026-10-22): a boot loader may
 ; fall back to $4022 from THIS call too, not only from dos_handoff's -- facdemo5's
@@ -1337,11 +1363,6 @@ boot_call0:
                 pop     hl
                 ld      (BASENT_REQ), hl
                 ret
-; br3 (D-BOOTREGS) -- the fourth piece of the page-3 slot bridges, laid after the hook
-; bodies: $0005 until MSXDOS.SYS lays its own. A boot code may put RAM into page 1
-; ($F368+3) and then call the BDOS -- frayd1.dsk's does, through $F37D, and the
-; CF-3300 answers it (scratchpad/fray_f37d.out). So: the disk ROM in for bdos_entry,
-; and the caller's page 1 (RAM, subslot 0, or this ROM) back after.
 br3_tmpl:
 br_bdos_tmpl:
                 push    af
@@ -1377,8 +1398,8 @@ mul_reclen:
                 jr      z, mr_lt256
                 ld      a, b                ; reclen == 256: A:HL = k << 8
                 ld      h, c
-                ld      l, 0
-                ret
+                ld      l, e                ; 💰 D-AUXOUT: E = 0 here (DE = 256), 1 B
+                ret                         ; under `ld l, 0`, for the $5474 veneer's room
 mr_lt256:                                   ; A = 0; E = reclen (1..255)
                 ld      h, a
                 ld      l, a
@@ -1447,12 +1468,6 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 xor     a                   ; A = $00 success
                 ret
 
-write_sector:                           ; relocated (its entry once collided with the $4935 veneer, gone)
-                ld      b, 1            ; one sector
-                ld      c, 0            ; media: not an ID -> the mounted disk's (D-SIDES)
-                ld      a, 0            ; drive 0 (ignored)
-                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jp      dskio           ; tail-call: dskio returns to our caller
 
 ; --- MSX-DOS-1 kernel _GDATE entry: $553C ($4000 + $153C; M9 date slice) ----
 ; The kernel BDOS dispatcher ($D831; table $D8BE + 3*C) routes _GDATE ($2A) here
@@ -3616,15 +3631,14 @@ frp_full:                                   ; fat_rand_put's record past any dis
                 scf
                 ret
 
-; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
-; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
-; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
-; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
-; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room.
-cr_copy1:
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (BDOS_WRFIRST), hl
-                jp      cr_copy2            ; disk/runtime.asm
+; (write_sector moved here from the $5456 gap by D-AUXOUT, whose $5474 veneer
+; needed the room in front of the $553C pin.)
+write_sector:                           ; relocated (its entry once collided with the $4935 veneer, gone)
+                ld      b, 1            ; one sector
+                ld      c, 0            ; media: not an ID -> the mounted disk's (D-SIDES)
+                ld      a, 0            ; drive 0 (ignored)
+                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
+                jp      dskio           ; tail-call: dskio returns to our caller
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
 ; --- S10.D: the RANDOM record writer, in the free region after the $5FE5 veneer

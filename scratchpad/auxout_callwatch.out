@@ -1,0 +1,6 @@
+=== callwatch: page-1 entry-PCs in 0x4000..0x7fff after arm@0x0100 (gated: during func-0x4 only) ===
+  OURS : 4 entries across 4 distinct PC(s)
+    5474: entered 1x
+    DE75: entered 1x
+    DE7A: entered 1x
+    DE7F: entered 1x

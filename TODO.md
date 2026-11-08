@@ -17613,6 +17613,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       enters $47D1 with DE = $DA40 (its FCB copy), HL = $0080, A = $25, C = 0
       ([`wrzer_entryregs.out`](scratchpad/wrzer_entryregs.out), ours). ➡️ LEFT: the zero fill, on top of D-WRRNDEXT.
 
+- [ ] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
+      THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**
+      🎚️ TIER 1 — happy path of an entry point: every directory listing a DOS program makes
+      starts one entry early, and SNEXT stays one behind.
+      🤖 **AUTONOMOUS** — 📏 [`bdosx9_run3.out`](scratchpad/bdosx9_run3.out) DTA 1 ($0490): the CF-3300's first match is
+      `LIST` (attr $00); ours is the label entry `SandStone (` with attr **$28** (volume label +
+      archive). DTA 2 (SNEXT): CF-3300 `OPENMSX1.MBK`, ours `LIST`. bdosx9's records 4 / 5 (the
+      registers) agree, which is why the bisect runs -- which captured only the register table
+      -- did not see it. ➡️ sfirst_body / dirscan_match (disk/kernel.asm, M19): skip an entry
+      with attr bit 3 (volume label) -- after first measuring on the CF-3300 whether a search FCB
+      can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
+      and what BASIC's FILES does with the same disk on both (FILES may share the walk).
+
 - [ ] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
       🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style
@@ -17626,8 +17639,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       WRRND; the CF-3300 writes it, size 2688, the added records the disk's bytes). Needs
       disk-ROM bytes (none free outside the FDC window): a carve first.
 
-- [ ] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
+- [x] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
       D-ENTRYTIERS step 2)**
+      ✅ **FIXED THE SAME DAY.** callwatch on our ROM ([`auxout_callwatch.out`](scratchpad/auxout_callwatch.out)): the kernel
+      enters **$5474 = lstout_body+12** -- AUXOUT's canonical entry, never planted (the D-WRZER
+      class); lstout_body then ran into our page-3 bridge. `k_5474` / `auxout_body` is now the
+      body itself at the pinned address, `ld a, e` / `ret` (no AUX device on either target; the
+      CF-3300 hands the char back in A). Room: the 12 B in front of $5474 hold cr_copy1 (+3 pad);
+      write_sector moved to the $5FE5 fill; mul_reclen's reclen-256 arm `ld l, 0` -> `ld l, e`
+      (E = 0 there, OPEN's LEN= is 1..256) for the last byte the $553C pin lacked -- found by
+      the pin-guard technique (an overrun empties the ROM). 📏 bdosx9 whole
+      ([`bdosx9_run3.out`](scratchpad/bdosx9_run3.out)): both reach the anchor with IDENTICAL registers; records 10-17 --
+      AUXOUT (B = H = $74 too) and all seven unused numbers -- byte-identical. 🔮 "AUXOUT A =
+      $41, B / H may differ": A HIT, the doubt MISSED (they match).
       🎚️ TIER 1 — happy path of an entry point.
       🤖 **AUTONOMOUS** — bdosx9 cut before the unused numbers ([`bdosx9_bisect4.out`](scratchpad/bdosx9_bisect4.out)):
       after FCLOSE both machines agree; after AUXOUT (E = 'A') ours never reaches the anchor,
