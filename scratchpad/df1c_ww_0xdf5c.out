@@ -1,0 +1,3 @@
+=== writewatch: writes to 0xdf5c:0x37 after arm@0x0100 ===
+  OURS : 0 gated writes (in call order)
+  --- per-cell summary (0 cell(s) written) ---

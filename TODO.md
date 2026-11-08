@@ -17723,6 +17723,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HIMEM sense if MSX-DOS / COMMAND.COM never write it -- ➡️ NEXT: a write watch on
       $DF1C..$DF92 across a DOS boot + a program run (the method that verified $DDAE), then the
       code; extend ram_map.py's window to cover it so the next tenant is seen.
+      ✅ **WATCHED (2026-11-08):** `disk_probe_diff.py writewatch --no-gate` on $DF1C+64 and $DF5C+55,
+      ours, the bdosx9 disk (COMMAND.COM + BDOSX9's whole run, armed at $0100):
+      **0 writes in both** ([`df1c_ww_0xdf1c.out`](scratchpad/df1c_ww_0xdf1c.out), [`df1c_ww_0xdf5c.out`](scratchpad/df1c_ww_0xdf5c.out)). MSXDOS.SYS's own early init
+      is before the arm; it places its kernel below $DD0E. 🔮 "0 writes": HIT.
+      📐 **THE SHAPE:** page 3 cannot switch itself, so the expanded-slot work stays the BIOS's,
+      through the bridge that already wraps it: a new br piece at $DF1C, reached from the $001C
+      stub when the target page (IX >> 14) is 1 or 2 -- stash AF / BC / DE / HL; read the
+      caller's slot for that page ($A8 + SLTTBL when expanded); `call BR_ENASLT` with IYH / IX
+      (it maps the BIOS into page 0, switches, and puts page 0 back); restore the registers and
+      `call` the target with page 0 = the caller's RAM; stash its outputs; `BR_ENASLT` back to
+      the saved slot; return them. A page-0 / page-3 target keeps today's path. ~70 B of the
+      119. Witnesses: dskent.asm's GETDPB (its DPB written), bdos-acceptance, p1vec /
+      callsystem (both CALSLT from the TPA).
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
