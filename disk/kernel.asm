@@ -7269,6 +7269,8 @@ frl_div:
                 ld      a, l
                 ld      (GP_SECINCL), a
                 ld      (GP_CLIDX), de
+                call    frl_cache           ; D-PUTWALK: Z = start from the row's last
+                jr      z, frl_have         ; cluster (HL), GP_CLIDX the steps left
                 ld      l, (ix+DOUT_FIRST)
                 ld      h, (ix+DOUT_FIRST+1)
                 ld      a, h
@@ -7311,11 +7313,7 @@ frl_have:
                 ret     z                   ; GET: past the end
                 jp      frl_ext             ; PUT: disk/kernel.asm's $4E20 fill
 frl_walked:
-                ld      hl, (GP_CLUS)
-                ld      a, (GP_SECINCL)
-                call    clus_sec            ; (its adds cannot carry: CF = 0)
-                ld      (GP_PHYS), de
-                ret
+                jp      frl_done            ; D-PUTWALK: disk/runtime.asm, for room
                 ds      $782B - $, $00
                 jp      k_782B          ; $782B
 ; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---

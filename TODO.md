@@ -8034,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16321 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16336 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16321 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16336 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15894,6 +15894,21 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       read_sector and so does NOT flush a held sector -- `CALL SYSTEM`'s MSX-DOS boot, DSKI$,
       a BDOS absolute read: a program that PUTs and enters MSX-DOS without CLOSE loses that
       record here. What the CF-3300 does there is the question first.
+      ✅ **D-PUTWALK (2026-11-08): THE NEXT LEVER, BUILT.** frnd_locate's chain walk starts where
+      the channel's last one ended -- the row's +28..29 (last cluster accessed) and +30..31
+      (its index), where an MSX-DOS FCB keeps them and the kernel's own BDOS seek (ws_cid)
+      reads them; `frl_cache` / `frl_done` in disk/runtime.asm's hole (frnd_locate's region
+      had no room). +28..29 is zeroed before every walk and set only when one lands, so a
+      failed walk or an extension leaves no stale cache; dout_open zeroes the row, and
+      cluster 0 is never a data cluster. tests/test_rand_extend.py's new row: a PUT in the
+      SAME cluster reads 0 FAT sectors, the next cluster 1, one before the cache walks from
+      the first -- each landing where the chain says, its byte on the disk. (Its first cut
+      put the "next cluster" record past the end of the file: that PUT EXTENDS, and its FAT
+      I/O is the allocation's -- the row's expectation was wrong, not the walk.)
+      🎯 Predicted 20 PUTs + CLOSE of 128 B 7.58 -> 4-5 s: **2.76 s** ([`putstopwatch20_walk.out`](scratchpad/putstopwatch20_walk.out)) -- a
+      miss, the good way: **FASTER THAN THE CF-3300's 3.38**. FDC commands 125 -> 56
+      ([`fdcput128_zb_walk.out`](scratchpad/fdcput128_zb_walk.out); 13 writes, the CF-3300 9 + 4 with its verifies). L5_stock
+      SAME, max gap 0.097 s.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the

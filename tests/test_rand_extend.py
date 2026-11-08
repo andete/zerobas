@@ -57,7 +57,7 @@ def fresh_fat(preused):
     return disk
 
 
-def put(recno, preused=0, tot=2 + 713):
+def put(recno, preused=0, tot=2 + 713, more=()):
     disk, log = fresh_fat(preused), []
     m = Machine(ROM, SYM, rom_base=0x4000)
     s = m.sym
@@ -98,6 +98,18 @@ def put(recno, preused=0, tot=2 + 713):
     cpu = m.call("fat_rand_put", ix=ROW, max_steps=50_000_000)
     cf = carry(cpu)             # (m.call hands back the LIVE cpu: read it before the flush)
     m.call("rh_flush")          # D-PUTCACHE: the held record sector out, as CLOSE does
+    # D-PUTWALK: further PUTs on the SAME channel -- each one's FAT-sector reads and
+    # the data sector it lands in, then the record's byte read back off the disk
+    later = []
+    for rn, ch in more:
+        n0 = len(log)
+        m.poke(ROW + 33, (int(rn) - 1).to_bytes(4, "little"))
+        m.poke(BLK + 9, ch.encode())
+        cpu2 = m.call("fat_rand_put", ix=ROW, max_steps=50_000_000)
+        cf2 = carry(cpu2)
+        m.call("rh_flush")
+        fatr = sum(1 for k, d in log[n0:] if k == "R" and 1 <= d <= 6)
+        later.append(dict(rn=rn, cf=cf2, fatreads=fatr, phys=m.mem[s["GP_PHYS"]] | m.mem[s["GP_PHYS"] + 1] << 8))
     fat = disk[1] + disk[2] + disk[3]
 
     def ent(c):
@@ -112,7 +124,7 @@ def put(recno, preused=0, tot=2 + 713):
         c = ent(c)
     return dict(cf=cf, err=m.mem[s["DISKOP_ERR"]], defer=m.mem[s["FAT_DEFER"]],
                 chain=chain, end=c, copies=all(disk[i] == disk[i + 3] for i in (1, 2, 3)),
-                log=log, disk=disk)
+                log=log, disk=disk, later=later)
 
 
 def run():
@@ -132,6 +144,31 @@ def run():
           and r["disk"].get(want_sec, b" ")[510] == ord("Z"),
           f"chain {len(r['chain'])} (want 32), copies equal {r['copies']}, "
           f"{len(r['log'])} sector commands (<= 10), FAT_DEFER {r['defer']}")
+    # 🎯 D-PUTWALK (2026-11-08): the walk starts where the last one ended. Record 4000
+    # at LEN=1 makes a 4-cluster chain (indexes 0..3) and leaves the cache at index 3;
+    # record 3001 (index 2) lies BEFORE it and walks from the first cluster; 3002 is
+    # in the SAME cluster and must read NO FAT sector; 3600 (index 3) is one step on,
+    # inside the chain: at most one FAT read; record 5 walks from the first again.
+    # (A first cut put 3600 past the end of a 3000-byte file: that PUT EXTENDS the
+    # chain, and its FAT reads / writes are the allocation's, not the walk's.)
+    # Each lands where the chain says, and its byte is on the disk.
+    r = put(4000, more=(("3001", "A"), ("3002", "D"), ("3600", "B"), ("5", "C")))
+    lat = {x["rn"]: x for x in r["later"]}
+    ch = r["chain"]
+
+    def phys(recno):
+        sec = (recno - 1) // 512
+        return 14 + (ch[sec // 2] - 2) * 2 + sec % 2
+
+    ok = (not r["cf"] and all(not x["cf"] for x in r["later"]) and len(ch) == 4
+          and lat["3002"]["fatreads"] == 0 and lat["3600"]["fatreads"] <= 1
+          and all(lat[k]["phys"] == phys(int(k)) for k in lat)
+          and all(r["disk"].get(phys(int(k)), b" ")[(int(k) - 1) % 512] == ord(v)
+                  for k, v in (("3001", "A"), ("3002", "D"), ("3600", "B"), ("5", "C"))))
+    check("walk cache: a PUT in the same cluster reads no FAT sector", ok,
+          f"chain {len(ch)}; " + ", ".join(
+              f"rec {x['rn']}: {x['fatreads']} FAT reads, phys {x['phys']} (want {phys(int(x['rn']))})"
+              for x in r["later"]))
     r = put(16000, preused=334)
     check("cross: the chain crosses FAT sectors 1/2 (entry 341 straddles)",
           not r["cf"] and len(r["chain"]) == 16 and r["chain"][0] == 336

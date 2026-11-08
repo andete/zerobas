@@ -707,6 +707,49 @@ hd_full:        ld      hl,(FREAD_LEFT)     ; every full sector: in place
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
                 ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).
+; frl_cache / frl_done -- D-PUTWALK (2026-11-08): a random channel's chain walk
+; starts where the last one ended. frnd_locate (disk/kernel.asm) walked from the
+; file's first cluster on EVERY PUT / GET, through frnd_next's FAT read into
+; FAT_MBUF -- which evicted the sector D-PUTCACHE holds there, so past the first
+; cluster each PUT cost a FAT read, a data re-read and a write
+; (scratchpad/fdcput128_zb.out). The row keeps the walk's end where an MSX-DOS FCB
+; keeps it -- +28..29 the last cluster accessed, +30..31 its index in the chain (the
+; kernel's own BDOS seek, ws_cid, uses the same two fields; dout_open zeroes them,
+; and cluster 0 is never a data cluster, so 0 = no cache).
+; frl_cache: in GP_CLIDX = the record's cluster index. Out Z + HL = the cluster to
+; walk from, GP_CLIDX = the steps left (a hit: the record at or past the cached
+; index); NZ = walk from the first cluster, as before. +28..29 is zeroed either way
+; and only frl_done sets it again, so a walk that fails leaves no stale cache.
+frl_cache:
+                ld      c, (ix+30)
+                ld      b, (ix+31)          ; BC = the cached index
+                ld      e, (ix+28)
+                ld      d, (ix+29)          ; DE = the cached cluster
+                ld      (ix+28), 0
+                ld      (ix+29), 0
+                ld      hl, (GP_CLIDX)
+                ld      (ix+30), l
+                ld      (ix+31), h          ; the index this walk lands on
+                ld      a, d
+                or      e
+                jr      z, frc_miss         ; nothing cached
+                sbc     hl, bc              ; (CF = 0) the steps from the cache
+                jr      c, frc_miss         ; the record lies before it
+                ld      (GP_CLIDX), hl
+                ex      de, hl              ; HL = the cached cluster
+                xor     a                   ; Z: a hit
+                ret
+frc_miss:
+                or      1                   ; NZ: from the first cluster
+                ret
+frl_done:
+                ld      hl, (GP_CLUS)
+                ld      (ix+28), l
+                ld      (ix+29), h          ; the cache: where this walk ended
+                ld      a, (GP_SECINCL)
+                call    clus_sec            ; (its adds cannot carry: CF = 0)
+                ld      (GP_PHYS), de
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)
