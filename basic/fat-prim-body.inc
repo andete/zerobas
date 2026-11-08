@@ -325,12 +325,7 @@ ff_skip:
                 add     hl, de              ; next 32-byte directory entry
                 pop     bc
                 djnz    ff_entloop
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
+                call    dir_nextsec         ; 💰 D-DISKCARVE6: FAT_DIRSEC += 1, FAT_DIRREM -= 1
                 jr      ff_secloop
 ff_endmark:
                 pop     hl
@@ -1296,12 +1291,7 @@ fdcr_entloop:
                 add     hl, de
                 pop     bc
                 djnz    fdcr_entloop
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
+                call    dir_nextsec         ; 💰 D-DISKCARVE6: FAT_DIRSEC += 1, FAT_DIRREM -= 1
                 jr      fdcr_secloop
 fdcr_useslot:
                 pop     hl                  ; HL = dir entry slot in FAT_MBUF

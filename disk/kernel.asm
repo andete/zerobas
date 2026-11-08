@@ -2081,12 +2081,7 @@ hkm_next:       ld      de,32
                 add     hl,de
                 inc     c
                 djnz    hkm_ent
-                ld      hl,(FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM),hl
+                call    dir_nextsec         ; 💰 D-DISKCARVE6: FAT_DIRSEC += 1, FAT_DIRREM -= 1
                 jr      hkm_sec
 hkm_hit:        ld      a,c                 ; SP = the frame again
                 inc     a
@@ -6620,12 +6615,7 @@ df_nextent:
                 ld      (FILES_ENTIDX),a
                 cp      16                  ; 512 / 32 entries per sector
                 jr      c,df_entloop
-                ld      hl,(FAT_DIRSEC)     ; advance to the next root-dir sector
-                inc     hl
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM),hl
+                call    dir_nextsec         ; 💰 D-DISKCARVE6: FAT_DIRSEC += 1, FAT_DIRREM -= 1
                 jr      df_secloop
 df_end:
                 ; D-DFEND: the SCREEN form leaves the cursor where the last entry
@@ -7053,6 +7043,18 @@ br6_end:
 ; "unchanged" after a swap. The cut-off is in SECONDS (100 jiffies = 2 s at our 50 Hz).
 ; 🔴 The first build (reverted) answered "unknown" WITHOUT the DPB and clobbered HL / DE:
 ; MSX-DOS calls DSKCHG while booting and no DOS program reached its anchor.
+; 💰 D-DISKCARVE6 (2026-11-08): dir_nextsec -- the "next directory sector" step five
+; directory walks carried verbatim (scratchpad/diskngram.py: 15 B x5 -- hkm_next,
+; ff_skip, fdcr_entloop, df_nextent, dsm_skip). Each site follows it with an
+; unconditional `jr`; inc / dec hl set no flags, so nothing read a flag from it.
+dir_nextsec:
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                ret
 dskchg_body:
                 push    hl
                 push    de
@@ -8010,12 +8012,7 @@ dsm_skip:
                 call    dsm_bump            ; BDOS_SRCHIDX += 1 (advance past this one)
                 djnz    dsm_entloop
                 ; sector done: advance FAT_DIRSEC, dec FAT_DIRREM, next sector.
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
+                call    dir_nextsec         ; 💰 D-DISKCARVE6: FAT_DIRSEC += 1, FAT_DIRREM -= 1
                 jr      dsm_secloop
 dsm_found:
                 call    dsm_p1_pre          ; D-P1SRCH: fill a scratch, blit it after

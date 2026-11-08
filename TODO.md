@@ -17891,6 +17891,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       extent record count, +12 = 1 at record 199": both HIT as values, the first MISSED as to
       WHO sets it (FOPEN, not RDRND). ➡️ (b) + (c), ~28 B, in the $7F7C region (9 B left after
       (a)); WRRND's tail (wrrnd_ok) likely wants (a)-(c) too -- unmeasured, so not touched.
+      💰 **D-DISKCARVE6 (2026-11-08): room for (b) + (c).** `scratchpad/diskngram.py`'s top hit,
+      15 B x5, is the "next directory sector" step (FAT_DIRSEC += 1, FAT_DIRREM -= 1) in five
+      directory walks -- hkm_next, ff_skip, fdcr_entloop, df_nextent, dsm_skip (two of them
+      spelled without the space after the comma, so the first exact match found only three).
+      One `dir_nextsec` in the $75A5 region; every site follows it with an unconditional `jr`
+      (no flag read). Slack after: $75A5 0 -> 18 B, $7F7C 3 -> 14, $5E10 0 -> 11.
       ⏱ Ours reached the anchor at 176 s, the CF-3300 at 56 s (the WRBLK of 25 KB: D-BLKIOPERCALL). Room from `scratchpad/movescout.py` (routines in an
       address range entered only by call / jp / dw, ending unconditionally): wrseq_body_write
       (8 B) moved to the hole before $55FF, and pg0_mainrom_in -- only `jp br_mainin_tmpl` since
