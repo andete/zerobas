@@ -17762,6 +17762,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first PRINT of a number. ➡️ Move NUMBUF to a cell the reference does not publish (a RAM
       move: `make ram-map-check` + the FULL battery), then initialise ASPCT1 / ASPCT2 to $100
       at the cold start (basic/interp.asm beside ATRBYT, 9 B), and GTASPC answers $100 / $100.
+      📐 **WHERE NUMBUF GOES (2026-11-08):** not into a "free" run below $F380 -- TXTMAX_NODISK is
+      $F380, so in the diskless build everything under it is PROGRAM RAM ($EDBF.. included). The
+      faithful home is the reference's own: FBUFFR+1 (FOUTBUF), where D-ADDR29 S1 already put
+      the FLOAT formatter's digits; basic/sysvars.inc's own note lists "zerobas formats INTEGERS
+      in NUMBUF, not here" as a remaining difference. So: format integers into FOUTBUF too and
+      NUMBUF goes away. ⚠️ AUDIT FIRST (24 NUMBUF users): FOUTBUF carries aliases (SQRT_R,
+      HORNER_CNT, HORNER_PTR; TKOVF = FBUFFR+0 is guarded) -- prove no path has an integer and a
+      float formatting live at once (PRINT USING's field, STR$ of an expression that formats
+      inside). Then the ASPCT init, the GTASPC row in biosregs-acceptance, `make ram-map-check`,
+      the FULL battery.
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**
