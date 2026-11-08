@@ -17562,6 +17562,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bdos-acceptance; lstoutx / setrnd_char / verifyx wired into a gate; (3) EXERCISED -> SAME:
       read which of those gates compare the function's result, and say so per row; (4) the
       disk-ROM entry table; (5) the main BIOS table.
+      📏 **STEP 2, FIRST HALF RUN (2026-11-08): `probes/disk/bdosx9.asm`** (+ build_bdosx9_disk.py):
+      CURDRV, SELDSK, ALLOC, SFIRST / SNEXT, CONOUT, FMAKE / WRZER / FCLOSE, AUXOUT and the
+      seven unused numbers, registers + both search DTAs + the written FCB captured at `done`
+      on both machines ([`bdosx9_run1.out`](scratchpad/bdosx9_run1.out); the CF-3300's full block one-sided,
+      [`bdosx9_stock.out`](scratchpad/bdosx9_stock.out)). Cut short and re-run
+      ([`bdosx9_bisect.py`](scratchpad/bdosx9_bisect.py) -> [`bdosx9_bisect1.out`](scratchpad/bdosx9_bisect1.out) ..
+      [`bdosx9_bisect3.out`](scratchpad/bdosx9_bisect3.out)): **records 0-7 BYTE-IDENTICAL** --
+      CURDRV, SELDSK, ALLOC, SFIRST, SNEXT, CONOUT, FMAKE (ALLOC reached ~1.4 s later here:
+      speed, not contract) -- and **WRZER BREAKS OURS: D-WRZER below.** 🔮 SELDSK's drive count
+      the likeliest split: MISSED, it is identical; "WRZER a likely gap": HIT. Not in
+      bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
+      unused numbers and AUXOUT get read (they ran after the fault here).
+
+- [ ] 🔴 **D-WRZER — BDOS $28 (WRZER) UNDER MSX-DOS RUNS OUR FAT-WRITE CODE WITH ITS REGISTERS
+      (found 2026-11-08 by D-ENTRYTIERS step 2)**
+      🎚️ TIER 1 — happy path of an ENTRY POINT (Joost 2026-11-08: entry points outrank BASIC).
+      A program calling WRZER on zerobas can write a garbage FAT entry to the user's disk.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 `disk_probe_diff.py callwatch --in-func 0x28 --machine ours`
+      ([`wrzer_callwatch.out`](scratchpad/wrzer_callwatch.out); our own ROM's PCs only): MSX-DOS's kernel enters
+      our disk ROM at **$47D1 = fat_write_fat_entry_hot+16** -- mid-routine, the M26 / M28
+      collision class ($436C FDEL, $4392 FREN, $47BE WRBLK): $47D1 is WRZER's canonical entry
+      and we never planted one. From there it runs the FAT entry write (read_sector, dskio)
+      with WRZER's registers; the program then never reaches its anchor.
+      📏 **The CF-3300's answer** ([`bdosx9_stock.out`](scratchpad/bdosx9_stock.out), record 8 at $0440 and the FCB at
+      $04F0 after FCLOSE): FMAKE "ZERO.DAT", RS := 128, RR := 0, DTA = 128 B of $55, WRZER ->
+      **A = $00**, DE = $0514; the closed FCB: size **128**, first cluster $153, dated, +14..15 =
+      0. ➡️ **THE FIX:** (1) a `jp wrzer_body` AT $47D1, jumped over inside
+      fat_write_fat_entry_hot (`jr` + the 3-byte veneer, 5 B in the $47C1 fill) or the routine
+      moved; (2) `wrzer_body` = WRRND's write with the records an EXTENSION adds zero-filled
+      (the published contract) -- MEASURE the zero fill on the CF-3300 first (WRZER at RR = 3 of
+      an empty file: what records 0-2 hold), and what +14..15 = 0 after FCLOSE means. Witness:
+      bdosx9 into bdos-acceptance, byte-identical.
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**

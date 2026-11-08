@@ -1,0 +1,20 @@
+WARNING: Var start is never used on line 30 of file /tmp/zerobas/bdosx9_cut4.asm
+===== cut before record 4
+  ALIGNED: both hit occurrence #1  (stock t=14.9369, ours t=16.3426, dt=1.4056)
+  PC    021D   021D
+  SP    D529   D529
+  AF    0200   0200
+  BC    0200   0200
+  DE    02C9   02C9
+  HL    016C   016C
+  memory 0x0400+96: 0 of 96 bytes differ
+WARNING: Var start is never used on line 30 of file /tmp/zerobas/bdosx9_cut7.asm
+===== cut before record 7
+  ALIGNED: both hit occurrence #1  (stock t=15.5999, ours t=16.8627, dt=1.2628)
+  PC    021D   021D
+  SP    D529   D529
+  AF    2A44   2A44
+  BC    A702   A702
+  DE    022A   022A
+  HL    A72A   A72A
+  memory 0x0400+96: 0 of 96 bytes differ

@@ -1,0 +1,18 @@
+WARNING: Var start is never used on line 30 of file /tmp/zerobas/bdosx9_cut8.asm
+===== cut before record 8
+  ALIGNED: both hit occurrence #1  (stock t=16.8420, ours t=17.5385, dt=0.6966)
+  PC    021D   021D
+  SP    D529   D529
+  AF    0044   0044
+  BC    0000   0000
+  DE    0510   0510
+  HL    0000   0000
+  memory 0x0400+96: 0 of 96 bytes differ
+WARNING: Var start is never used on line 30 of file /tmp/zerobas/bdosx9_cut9.asm
+===== cut before record 9
+*** MISALIGNED — diff NOT meaningful ***
+  different logical points. Fix the anchor (lower --nth, pick an event
+WARNING: Var start is never used on line 30 of file /tmp/zerobas/bdosx9_cut10.asm
+===== cut before record 10
+*** MISALIGNED — diff NOT meaningful ***
+  different logical points. Fix the anchor (lower --nth, pick an event
