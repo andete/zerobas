@@ -1,0 +1,40 @@
+ 33 B x4  saves ~87 B  $6A5D fat_next_cluster+0   $6B36 fat_read_fat_sector+0   $6B7E fac_loop+12   $74C0 fat_locate+0
+ 34 B x3  saves ~59 B  $6A5C fat_advance+13   $6B35 frs_mul+16   $74BF innoe_body+19
+ 15 B x5  saves ~45 B  $5808 hkm_next+7   $69C5 ff_skip+8   $6EAB fch_ctx_addr+4   $740A df_nextent+11   $7999 dsm_skip+9
+ 14 B x4  saves ~30 B  $7196 hk_kill+3   $71E6 hk_name+3   $72AB hk_copy+3   $72D4 hkc_to+5
+ 13 B x4  saves ~27 B  $5B45 clus_sec+5   $6B20 frs_head+27   $6E4B ffds_haveclus+12   $7C2A rrnd_sector+19
+ 12 B x4  saves ~24 B  $7835 k_4919+0   $7836 k_4935+0   $7837 k_498C+0   $7838 k_49B4+0
+ 17 B x3  saves ~25 B  $6B1D frs_head+24   $6E48 ffds_haveclus+9   $7C27 rrnd_sector+16
+ 17 B x3  saves ~25 B  $7193 hk_kill+0   $71E3 hk_name+0   $72A8 hk_copy+0
+ 33 B x2  saves ~27 B  $48A4 fwd_nowin+0   $7ABF fdc_rd_nowin+0
+ 29 B x2  saves ~23 B  $45DD bdos_rdblk+0   $646D k47b2_body+1
+ 29 B x2  saves ~23 B  $61CA wrblk_zero_path+3   $6386 wrblk_size_max+0
+ 29 B x2  saves ~23 B  $654B wrseq_writeback+1   $6696 wrseq_wr_writeback+4
+ 29 B x2  saves ~23 B  $656D wsw_shr7+16   $66BE wsww_shr7+22
+ 14 B x3  saves ~19 B  $551C bdos_create_body+23   $5713 hkc_differ+51   $700C fat_io_create+0
+ 13 B x3  saves ~17 B  $48F8 hk_finp+0   $59CC hk_fapp+0   $5C28 hk_frnd+0
+ 13 B x3  saves ~17 B  $761B wrblk_seek+10   $76C3 wrblk_fcb_keep+50   $7721 k47b2_geom+64
+ 24 B x2  saves ~18 B  $6AD9 fnc_combine+19   $6C31 fac_comb+19
+ 23 B x2  saves ~17 B  $5585 bb_rename+27   $7239 hkn_a+58
+ 23 B x2  saves ~17 B  $6E42 ffds_haveclus+3   $7C21 rrnd_sector+10
+ 20 B x2  saves ~14 B  $4644 rgb_have+15   $6FF3 fig_have+18
+ 20 B x2  saves ~14 B  $4CE0 fopen_fill_body+7   $7B55 fdel_body+3
+ 20 B x2  saves ~14 B  $6C9C fwe_byte1+38   $6CC8 fwe_b1_same+1
+ 20 B x2  saves ~14 B  $7629 ws_cid+1   $7731 k47b2_ci_done+3
+ 19 B x2  saves ~13 B  $4538 eval_int16_checked+3   $4D65 ffb_rcok+46
+ 19 B x2  saves ~13 B  $4911 hk_finp+25   $5C40 hk_frnd+24
+ 18 B x2  saves ~12 B  $42B9 dskio_rd+5   $42FF type_mismatch_error+7
+ 18 B x2  saves ~12 B  $7192 calbak+8   $72A7 hkn_up+8
+ 18 B x2  saves ~12 B  $7D1C dirioin_done+0   $7D35 const_notready+0
+ 17 B x2  saves ~11 B  $4878 fwd_byte+4   $7A9D fdc_rd_byte+4
+ 17 B x2  saves ~11 B  $6CB4 fwe_str_odd+3   $6CDD fwe_same_odd+0
+ 17 B x2  saves ~11 B  $74AB dfo_done+3   $7D3E const_notready+9
+ 15 B x2  saves ~9 B  $4267 dskio_keep+7   $42E1 dskio_write+4
+ 15 B x2  saves ~9 B  $4865 fwd_blk+0   $7A8A fdc_rd_blk+0
+ 15 B x2  saves ~9 B  $4DE6 rdabs_body+17   $4E05 wrabs_body+16
+ 15 B x2  saves ~9 B  $515B bsv_full+5   $5EA4 sav_full+0
+ 15 B x2  saves ~9 B  $5476 lstout_body+0   $7FD1 conout_emit_e+0
+ 14 B x2  saves ~8 B  $488F fwd_chk+0   $7AAA fdc_rd_status+0
+ 14 B x2  saves ~8 B  $48DA frg_pass+6   $600C frp_readold+0
+ 14 B x2  saves ~8 B  $48F7 str_eval+18   $5C27 wfs_geom+68
+ 14 B x2  saves ~8 B  $555A bb_delete+5   $71B9 hkk_none_open+0

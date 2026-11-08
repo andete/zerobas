@@ -461,26 +461,9 @@ fat_advance:
 ; boundary; the high byte is then read from the following FAT sector.
 ; (Microsoft FAT spec §3.2.)
 fat_next_cluster:
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a     ; cluster parity selects the nibbles
-                ; fatofs = cluster + cluster/2  (= cluster * 3/2)
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; fatofs >> 9 = FAT sector offset
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de
+                call    fat_locate          ; 💰 D-DISKCARVE4: HL = the entry's FAT sector,
+                                            ; PARITY / BYTEIDX set (disk/kernel.asm; the
+                                            ; sub ROM no longer assembles this body)
                 ld      (FAT_FATSEC), hl
                 ex      de, hl              ; DE = the FAT sector
                 ; 🐌 D-LOADFAT (2026-11-06): LOAD read this FAT sector into FAT_DBUF
@@ -658,25 +641,9 @@ frs_mul:
 ;        (FAT_BYTEIDX) = byte index of the entry's low byte within the sector;
 ;        (FAT_PARITY) = cluster & 1; Cy reflects the read.
 fat_read_fat_sector:
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; fatofs >> 9 = FAT sector offset
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de
+                call    fat_locate          ; 💰 D-DISKCARVE4: HL = the entry's FAT sector,
+                                            ; PARITY / BYTEIDX set (disk/kernel.asm; the
+                                            ; sub ROM no longer assembles this body)
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
                 ld      hl, FAT_MBUF
@@ -720,25 +687,9 @@ fac_loop:
                 jr      nc, fac_full        ; cluster >= total -> disk full
                 ; which FAT sector + byte index holds cluster HL's entry?
                 push    hl
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; FAT sector offset = fatofs >> 9
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = absolute FAT sector
+                call    fat_locate          ; 💰 D-DISKCARVE4: HL = the entry's FAT sector,
+                                            ; PARITY / BYTEIDX set (disk/kernel.asm; the
+                                            ; sub ROM no longer assembles this body)
                 ; is this sector already in FAT_MBUF? (cached-sector compare)
                 ld      de, (FAT_WRTMP2)
                 push    hl

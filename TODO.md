@@ -17760,6 +17760,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       candidates are `scratchpad/movescout.py` over the whole ROM for routines to sub-ROM
       eviction (D-ROMSIZE's method for main), or a shared CALSLT helper replacing the page-0
       dance br_p0in already holds.
+      💰 **D-DISKCARVE4 (2026-11-08): +90 B in front of $75A5 (5 -> 95).** `scratchpad/diskngram.py`
+      (repeated byte runs in disk.rom, label boundaries ignored -- the third cut's scan,
+      re-runnable; [`diskngram_1108.out`](scratchpad/diskngram_1108.out)) ranked first a 33-byte run x4: the FAT12 locate
+      still inline in fat_next_cluster, fat_read_fat_sector and fat_alloc_cluster's loop
+      (basic/fat-prim-body.inc) beside D-DISKCARVE's own fat_locate. The third cut had left
+      them "because the sub ROM assembles this body" -- 🔴 STALE: the body's own header says
+      the sub ROM stopped including it on 2026-10-19 (D-ROMSIZE step 1). All three are `call
+      fat_locate` now (byte-for-byte the same sequence, the same outputs and clobbers). FAT /
+      WRBLK / RAND / LOAD / WRRND / WRSEQ unit tests green. The room is D-CALSLTP0's template's.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
