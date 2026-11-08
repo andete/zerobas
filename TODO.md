@@ -8034,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16336 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:16346 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16336 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16346 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15378,7 +15378,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       exception.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
+- [x] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
       [`docs/spec-basic-put3slow.md`](docs/spec-basic-put3slow.md)).**
       🔴 **NOTHING HANGS.** Every reading behind the hang claim was taken at a
@@ -15909,6 +15909,16 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       miss, the good way: **FASTER THAN THE CF-3300's 3.38**. FDC commands 125 -> 56
       ([`fdcput128_zb_walk.out`](scratchpad/fdcput128_zb_walk.out); 13 writes, the CF-3300 9 + 4 with its verifies). L5_stock
       SAME, max gap 0.097 s.
+      🟢 **CLOSED 2026-11-08 -- ON PAR, FASTER:** the item's own workload, both machines in one run
+      ([`putstopwatch20_close.out`](scratchpad/putstopwatch20_close.out)): 20 PUTs + CLOSE **2.76 s here, 3.38 s on the CF-3300**; 3 PUTs
+      + CLOSE 0.84 against 1.98. What stays open is NOT speed and is filed above: a disk
+      swapped before CLOSE (the directory half, W3b) and direct-DSKIO users not flushing a
+      held sector (unmeasured on the reference). Closing it ORPHANED five filed pins
+      (filed-pin-check): four were NO-VERDICT characterisations (put3consume / putio /
+      putcost / rungap) and leave with the item; reclen_probe's p.put3 / p.same3 /
+      p.close3 / p.trap3 -- blank on zerobas only because 3 PUTs outran the 2.5 s step --
+      now read OK on BOTH ([`reclen_after_putwalk.out`](scratchpad/reclen_after_putwalk.out), refcache off, DIFF 0/7), so that pin
+      leaves on the measurement.
 
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
