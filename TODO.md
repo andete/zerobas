@@ -17703,6 +17703,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-P1RDBLK / P1_BLIT's page-1 bounce already covers the page-1 half and only page 0 is open;
       (3) then the bridge's shape: restore page 0 = the caller's RAM before the target runs
       (the CF-3300's face), keeping the BIOS only for the BIOS's own CALSLT work.
+      📐 **WHY IT IS NOT A ONE-LINE FIX (2026-11-08, from disk/pageenv.asm's D-TPAP1 header):** the
+      $001C stub maps the BIOS into page 0 and enters C-BIOS's OWN CALSLT, which runs from page
+      0, switches the target's page and calls it -- so the target runs under the BIOS in page 0
+      by construction, and page 0 cannot be handed back before the call (the target returns
+      into that code). The CF-3300's face (step 1 is already answered by D-GETDPB: its callee
+      wrote the program's page-0 buffer) needs OUR OWN CALSLT for a page-1 / page-2 target in
+      page-3 RAM: switch that page (expanded slots too -- br_p0in has the page-0 logic), call,
+      restore, page 0 untouched. ⚠️ RAM: the 2026-10-20 / 10-21 rulings say *no new RAM for
+      the page-0 call-back*; whether a CALSLT that FITS in the present bridge block (the
+      INT_H_HIRAM block; measure its free tail first) is inside that ruling, or needs Joost's,
+      is the first thing to settle -- 🙋 ask if it does not fit.
 
 - [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
       WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
