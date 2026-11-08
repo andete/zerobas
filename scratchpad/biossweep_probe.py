@@ -69,6 +69,41 @@ ROWS = {
 }
 
 
+# the cursor moves (D-BIOSCONTRACT): CLOC / CMASK set by POKE in SCREEN 2, the entry
+# called, both cells printed after (the move's whole effect is on them, not on the
+# registers). Starting points at the edges each move wraps over.
+def cur(addr, cloc, cmask):
+    setup = f"SCREEN 2:POKE &HF92A,{cloc & 255}:POKE &HF92B,{cloc >> 8}:POKE &HF92C,{cmask}"
+    show = ('SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]"')
+    return B.prog(addr, 0, before=setup, after=show)
+
+
+CUR = {
+    "rc_mid":  cur(0x00FC, 0x0108, 0x10),   # RIGHTC inside a byte
+    "rc_wrap": cur(0x00FC, 0x0108, 0x01),   # RIGHTC off the byte's last pixel
+    "lc_mid":  cur(0x00FF, 0x0108, 0x10),   # LEFTC inside a byte
+    "lc_wrap": cur(0x00FF, 0x0108, 0x80),   # LEFTC off the first pixel
+    "uc_mid":  cur(0x0102, 0x010B, 0x10),   # UPC inside a character cell (row 3)
+    "uc_wrap": cur(0x0102, 0x0108, 0x10),   # UPC off the cell's top row
+    "dc_mid":  cur(0x0108, 0x010B, 0x10),   # DOWNC inside a cell
+    "dc_wrap": cur(0x0108, 0x010F, 0x10),   # DOWNC off the cell's bottom row
+}
+ROWS.update(CUR)
+
+
+def read2(machine, p):
+    import omsx_repl
+    scr = omsx_repl.run_cases(machine, [("direct", p)], batch=False,
+                              reset=("", "SCREEN 0:WIDTH 40"), step=3.0, run_gap=20.0)[0]
+    if not scr:
+        return None
+    r = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]
+    return " | ".join(x for x in r if x.startswith("[R") or x.startswith("[C") or "rror" in x) or None
+
+
+B.read = read2
+
+
 def main():
     only = sys.argv[1:] or list(ROWS)
     bad, blind = [], []

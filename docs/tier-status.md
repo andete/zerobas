@@ -171,7 +171,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**24 of 108** have a direct witness; **84 are NOT MEASURED**.
+**27 of 108** have a direct witness; **81 are NOT MEASURED**.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -251,12 +251,12 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00F3 | STMOTR | NOT MEASURED | — |
 | $00F6 | LFTQ | NOT MEASURED | — |
 | $00F9 | PUTQ | NOT MEASURED | — |
-| $00FC | RIGHTC | NOT MEASURED | — |
-| $00FF | LEFTC | exercised | `slotregs-acceptance` |
-| $0102 | UPC | exercised | `bdos-acceptance`, `diskbasic-acceptance` |
+| $00FC | RIGHTC | exercised | `biosregs-acceptance` |
+| $00FF | LEFTC | exercised | `biosregs-acceptance`, `slotregs-acceptance` |
+| $0102 | UPC | exercised | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance` |
 | $0105 | TUPC | NOT MEASURED | — |
-| $0108 | DOWNC | NOT MEASURED | — |
-| $010B | TDOWNC | NOT MEASURED | — |
+| $0108 | DOWNC | exercised | `biosregs-acceptance` |
+| $010B | TDOWNC | exercised | `biosregs-acceptance` |
 | $010E | SCALXY | exercised | `biosregs-acceptance` |
 | $0111 | MAPXYC | NOT MEASURED | — |
 | $0114 | FETCHC | NOT MEASURED | — |

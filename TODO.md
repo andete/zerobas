@@ -17751,6 +17751,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       MAPXYC / FETCHC verbatim; the other ten a bare `ret` for now. 📏 [`biossweep_sxy3.out`](scratchpad/biossweep_sxy3.out):
       **all 7 SCALXY rows SAME as the VG-8020**; five of them are biosregs-acceptance rows now.
       GTASPC still reads 0 / 0: see D-NUMBUFASPCT.
+      ✅ **RIGHTC / LEFTC / UPC / DOWNC SHIPPED (2026-11-08), SCREEN 2.** Measured first (CLOC / CMASK
+      POKEd, the entry called, both cells read; [`biossweep_cur.out`](scratchpad/biossweep_cur.out)): RIGHTC / LEFTC rotate
+      CMASK and move CLOC by 8 on the wrap, A = the new CMASK; UPC / DOWNC move CLOC by 1 inside
+      the 8-row cell and by $F9 across it, A = the old row (UPC) / (old row + 1) AND 7 (DOWNC);
+      HL / DE / BC kept. In the same graphics-cursor span (pntini still $0966). 📏
+      [`biossweep_cur2.out`](scratchpad/biossweep_cur2.out): **all 8 rows SAME**; 6 are biosregs-acceptance rows. ⚠️ SCREEN 3
+      (4 x 4 blocks) not yet measured -- these are SCREEN 2's semantics. Left of the family:
+      TUPC / TDOWNC, STOREC, SETATR, READC, SETC, NSETCX, PNTINI / SCANR / SCANL.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

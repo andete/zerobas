@@ -78,6 +78,14 @@ def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after="", buf=No
 
 
 S1 = dict(before="SCREEN 1", after="SCREEN 0")
+
+
+def cur(addr, cloc, cmask):
+    """D-BIOSCONTRACT: a graphics-cursor move -- CLOC / CMASK POKEd in SCREEN 2, the
+    entry called, both cells printed after (its whole effect is on them)."""
+    setup = f"SCREEN 2:POKE &HF92A,{cloc & 255}:POKE &HF92B,{cloc >> 8}:POKE &HF92C,{cmask}"
+    show = 'SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]"'
+    return prog(addr, 0, before=setup, after=show)
 ROWS = {
     "atr": prog(0x0087, 5, **S1),                                  # HL DE BC A
     "pat8": prog(0x0084, 5, **S1),
@@ -99,6 +107,15 @@ ROWS = {
     "sxy2neg": prog(0x010E, 0, bc=0xFFFB, de=0xFFFB, before="SCREEN 2", after="SCREEN 0"),
     "sxy2xov": prog(0x010E, 0, bc=300, de=100, before="SCREEN 2", after="SCREEN 0"),
     "sxy3over": prog(0x010E, 0, bc=300, de=200, before="SCREEN 3", after="SCREEN 0"),
+    # D-BIOSCONTRACT (2026-11-08): RIGHTC / LEFTC / UPC / DOWNC in SCREEN 2, inside a
+    # byte or cell and across its edge -- CMASK rotated / CLOC +-8, CLOC +-1 / +-$F9
+    # (scratchpad/biossweep_cur2.out); C-BIOS's were print_debug stubs.
+    "rc_mid": cur(0x00FC, 0x0108, 0x10),
+    "rc_wrap": cur(0x00FC, 0x0108, 0x01),
+    "lc_wrap": cur(0x00FF, 0x0108, 0x80),
+    "uc_mid": cur(0x0102, 0x010B, 0x10),
+    "uc_wrap": cur(0x0102, 0x0108, 0x10),
+    "dc_wrap": cur(0x0108, 0x010F, 0x10),
 }
 
 
@@ -108,7 +125,7 @@ def read(machine, p):
     if not scr:
         return None
     r = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]
-    return " | ".join(x for x in r if x.startswith("[R") or "rror" in x) or None
+    return " | ".join(x for x in r if x.startswith("[R") or x.startswith("[C") or "rror" in x) or None
 
 
 def main():

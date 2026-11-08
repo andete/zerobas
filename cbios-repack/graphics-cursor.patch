@@ -1,16 +1,11 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..447777d 100644
+index bb11106..a048cd0 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -2155,107 +2155,84 @@ getpat_loop:    push    bc
+@@ -2155,107 +2155,165 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
--;--------------------------------
--; $00FC RIGHTC
--; Function : Shifts screenpixel to the right
--; Registers: AF
--; NOTE     : This implementation is still a stub!
 +; ---------------------------------------------------------------------------
 +; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-08): the graphics-cursor span
 +; RIGHTC .. GTASPC, rewritten as one block of the SAME LENGTH (it sits before
@@ -20,14 +15,45 @@ index bb11106..447777d 100644
 +; `ret` (they were print_debug stubs that did nothing either), their debug
 +; calls and name strings giving the room. MAPXYC and FETCHC are unchanged.
 +; ---------------------------------------------------------------------------
++tupc:
++tdownc:
++storec:
++setatr:
++readc:
++setc:
++nsetcx:
++                ret
++
+ ;--------------------------------
+-; $00FC RIGHTC
+-; Function : Shifts screenpixel to the right
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
++; $00FC RIGHTC / $00FF LEFTC -- the graphics cursor one pixel right / left (SCREEN 2)
++; CMASK rotated; on the byte's wrap CLOC moves by 8 (the next / previous character
++; column). A = the new CMASK; HL / DE / BC kept. Measured on the Philips VG-8020
++; (zerobas scratchpad/biossweep_cur.out).
  rightc:
--                push    hl
--                push    af
+                 push    hl
++                ld      hl,CMASK
++                rrc     (hl)
++                ld      a,(hl)
++                jr      nc,rightc_out
++                ld      hl,(CLOC)
+                 push    af
 -                ld      hl,rightc_text
 -                call    print_debug
--                pop     af
--                pop     hl
--                ret
++                ld      a,l
++                add     a,8
++                ld      l,a
++                jr      nc,rightc_st
++                inc     h
++rightc_st:
++                ld      (CLOC),hl
+                 pop     af
++rightc_out:
+                 pop     hl
+                 ret
 -rightc_text:    db      "RIGHTC",0
 -
 -;--------------------------------
@@ -36,22 +62,39 @@ index bb11106..447777d 100644
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
  leftc:
--                push    hl
--                push    af
+                 push    hl
++                ld      hl,CMASK
++                rlc     (hl)
++                ld      a,(hl)
++                jr      nc,leftc_out
++                ld      hl,(CLOC)
+                 push    af
 -                ld      hl,leftc_text
 -                call    print_debug
--                pop     af
--                pop     hl
--                ret
++                ld      a,l
++                sub     8
++                ld      l,a
++                jr      nc,leftc_st
++                dec     h
++leftc_st:
++                ld      (CLOC),hl
+                 pop     af
++leftc_out:
+                 pop     hl
+                 ret
 -leftc_text:     db      "LEFTC",0
--
--;--------------------------------
+ 
+ ;--------------------------------
 -; $0102 UPC
 -; Function : Shifts screenpixel up
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
++; $0102 UPC / $0108 DOWNC -- the graphics cursor one pixel up / down (SCREEN 2)
++; CLOC -/+ 1 inside the 8-row character cell; across the cell's top / bottom row
++; CLOC -/+ $F9 (the row-7 / row-0 byte of the cell above / below). A = the old row
++; (UPC) or (old row + 1) AND 7 (DOWNC), as the VG-8020 leaves it; HL / DE / BC kept.
  upc:
--                push    hl
+                 push    hl
 -                push    af
 -                ld      hl,upc_text
 -                call    print_debug
@@ -66,14 +109,27 @@ index bb11106..447777d 100644
 -; Output   : C-flag set if operation would end outside the screen
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
- tupc:
+-tupc:
 -                push    hl
 -                push    af
 -                ld      hl,tupc_text
 -                call    print_debug
 -                pop     af
--                pop     hl
--                ret
++                ld      hl,(CLOC)
++                ld      a,l
++                and     7
++                jr      z,upc_wrap
++                dec     hl
++                jr      upc_st
++upc_wrap:
++                push    de
++                ld      de,-$F9
++                add     hl,de
++                pop     de
++upc_st:
++                ld      (CLOC),hl
+                 pop     hl
+                 ret
 -tupc_text:      db      "TUPC",0
 -
 -;--------------------------------
@@ -82,18 +138,26 @@ index bb11106..447777d 100644
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
  downc:
--                push    hl
+                 push    hl
 -                push    af
 -                ld      hl,downc_text
 -                call    print_debug
 -                pop     af
--                pop     hl
-+tdownc:
-+storec:
-+setatr:
-+readc:
-+setc:
-+nsetcx:
++                ld      hl,(CLOC)
++                ld      a,l
++                inc     a
++                and     7
++                jr      z,downc_wrap
++                inc     hl
++                jr      downc_st
++downc_wrap:
++                push    de
++                ld      de,$F9
++                add     hl,de
++                pop     de
++downc_st:
++                ld      (CLOC),hl
+                 pop     hl
                  ret
 -downc_text:     db      "DOWNC",0
  
@@ -174,7 +238,7 @@ index bb11106..447777d 100644
  
  ;--------------------------------
  ; $0111 MAPXYC
-@@ -2311,94 +2288,7 @@ fetchc:
+@@ -2311,94 +2369,7 @@ fetchc:
                  ret
  fetchc_text:    db      "FETCHC",0
  
