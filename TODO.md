@@ -17719,6 +17719,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ Behavioural confirmation (a biossweep row each: "registers unchanged, nothing done"),
       then the graphics family against BASIC's own PSET / POINT code -- first read which of
       BASIC's routines keep CLOC / CMASK / GRPACX the BIOS way.
+      📐 **THE ROOM IS THE STUBS THEMSELVES (2026-11-08).** BASIC's graphics (sub/graphics.asm)
+      do keep CLOC / CMASK (gfx_calc_addr publishes them) but take x / y in E / D -- not the BIOS
+      entries' calling conventions -- and the sub ROM has no room (69 B / 21 B free on
+      2026-11-08). But each C-BIOS stub is ~11 B of `push hl / push af / ld hl,text / call
+      print_debug / pop / pop / ret` plus its name string (~6 B): **the 16 graphics stubs hold
+      ~270 B of main ROM that does nothing**. A cbios-repack patch replacing those bodies IN
+      PLACE (video.asm) funds the real routines: RIGHTC / LEFTC / UPC / DOWNC move CLOC / CMASK
+      by a pixel (RIGHTC ~19 B: CMASK rrca, CLOC += 8 on the wrap), TUPC / TDOWNC the same with
+      Cy at the screen edge, STOREC / FETCHC the two cells, SETATR := A, GTASPC two constants,
+      SCALXY clip to 0..255 / 0..191 with Cy, READC / SETC the VRAM colour byte at CLOC, NSETCX
+      a run of HL pixels; PNTINI / SCANR / SCANL (PAINT's support) are the large ones, last.
+      Semantics per entry: its published contract, then a black-box VG-8020 biossweep row in
+      SCREEN 2 and SCREEN 3 -- one entry, one row, one commit. Island / pin rules of
+      cbios-repack apply (C-BIOS labels move only within the pad; REPACKED_SHA1).
 
 - [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
       2026-11-08 by D-ENTRYTIERS step 2)**
