@@ -187,6 +187,22 @@ ROWS.update({
                      "POKE &HFCB9,13:POKE &HFCBA,0", after=GP),
 })
 
+# TUPC / TDOWNC across a cell edge that is NOT the screen's (F unmeasured until now)
+ROWS.update({
+    "tupc_wrap": prog_f(0x0105, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,16",
+                        after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+    "tdownc_wrap": prog_f(0x010B, 0, before="SCREEN 2:POKE &HF92A,15:POKE &HF92B,1:POKE &HF92C,16",
+                          after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+})
+
+# UPC / DOWNC across the cell edge with F (the wrap path's flags)
+ROWS.update({
+    "uc_wrapf": prog_f(0x0102, 0, before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,16",
+                       after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+    "dc_wrapf": prog_f(0x0108, 0, before="SCREEN 2:POKE &HF92A,15:POKE &HF92B,1:POKE &HF92C,16",
+                       after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
+})
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

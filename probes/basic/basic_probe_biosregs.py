@@ -80,6 +80,22 @@ def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after="", buf=No
 S1 = dict(before="SCREEN 1", after="SCREEN 0")
 
 
+def prog_f(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after=""):
+    """prog() with F captured too: `push af` right after the call, popped after the
+    register stores into $D10A (low byte = F), printed as F.. inside the [R ..] line."""
+    body = [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
+            0x3E, a, 0xCD, addr & 255, addr >> 8, 0xF5,
+            0x22, 0x00, 0xD1, 0xED, 0x53, 0x02, 0xD1, 0xED, 0x43, 0x04, 0xD1,
+            0x32, 0x06, 0xD1, 0xE1, 0x22, 0x0A, 0xD1, 0xC9]
+    p = [l for l in prog(addr, a, bc, de, hl, before=before, after=after)
+         if not (l.startswith("60 DATA") or l.startswith("70 DATA"))]
+    p.insert(p.index("RUN"), "60 DATA " + ",".join(str(b) for b in body))
+    p = [f"20 FOR I=0 TO {len(body) - 1}:READ X:POKE &HD000+I,X:NEXT" if l.startswith("20 FOR") else l
+         for l in p]
+    return [l.replace(';"]"', ';" F";HEX$(PEEK(&HD10A));"]"') if l.startswith("50 PRINT") else l
+            for l in p]
+
+
 def cur(addr, cloc, cmask):
     """D-BIOSCONTRACT: a graphics-cursor move -- CLOC / CMASK POKEd in SCREEN 2, the
     entry called, both cells printed after (its whole effect is on them)."""
@@ -141,6 +157,14 @@ ROWS = {
                after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
                      'HEX$(PEEK(&HF92C));" ";HEX$(PEEK(&HFCB7)+256*PEEK(&HFCB8));"]"')
        for n, x, y in (("mxy_13", 13, 21), ("mxy_max", 255, 191))},
+    # TUPC / TDOWNC (scratchpad/biossweep_tud2.out), F captured: on the screen's top /
+    # bottom pixel row no move, A = 0, F = $45 (Cy); across an inner cell edge as UPC /
+    # DOWNC, F = $54 -- C-BIOS's were print_debug stubs
+    **{n: prog_f(addr, 0, before=f"SCREEN 2:POKE &HF92A,{lo}:POKE &HF92B,{hi}:POKE &HF92C,16",
+                 after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
+                       'HEX$(PEEK(&HF92C));"]"')
+       for n, addr, lo, hi in (("tupc_top", 0x0105, 8, 0), ("tupc_wrap", 0x0105, 8, 1),
+                               ("tdownc_bot", 0x010B, 15, 0x17), ("tdownc_wrap", 0x010B, 15, 1))},
 }
 
 

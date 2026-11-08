@@ -1,5 +1,5 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..59fe308 100644
+index bb11106..81d3244 100644
 --- a/src/video.asm
 +++ b/src/video.asm
 @@ -1182,6 +1182,13 @@ grpprt_sc2:
@@ -26,7 +26,7 @@ index bb11106..59fe308 100644
                  call    grpprt_chr_x
  
                  ld      bc,$00F0
-@@ -2155,150 +2161,313 @@ getpat_loop:    push    bc
+@@ -2155,150 +2161,318 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -41,8 +41,6 @@ index bb11106..59fe308 100644
 +; and the four moves too; the span runs to print_debug since PNTINI / SCANR /
 +; SCANL joined the bare-`ret` list.
 +; ---------------------------------------------------------------------------
-+tupc:
-+tdownc:
 +nsetcx:
 +pntini:
 +scanr:
@@ -103,9 +101,7 @@ index bb11106..59fe308 100644
 +                ld      hl,(CLOC)
 +                call    rdvrm
 +                ld      b,a
-+                ld      a,h
-+                add     a,$20
-+                ld      h,a
++                set     5,h             ; the colour table: pattern address + $2000
 +                call    rdvrm
 +                ld      c,a
 +                ret
@@ -173,11 +169,7 @@ index bb11106..59fe308 100644
 -leftc_text:     db      "LEFTC",0
 +; the pattern byte A written at the colour address HL - $2000
 +setc_wpat:
-+                ld      b,a
-+                ld      a,h
-+                sub     $20
-+                ld      h,a
-+                ld      a,b
++                res     5,h
 +                jp      wrtvrm
  
  ;--------------------------------
@@ -192,83 +184,96 @@ index bb11106..59fe308 100644
 +; (zerobas scratchpad/biossweep_cur.out).
 +rightc:
                  push    hl
-+                ld      hl,CMASK
-+                rrc     (hl)
-+                ld      a,(hl)
-+                jr      nc,rightc_out
-+                ld      hl,(CLOC)
-                 push    af
+-                push    af
 -                ld      hl,upc_text
 -                call    print_debug
-+                ld      a,l
-+                add     a,8
-+                ld      l,a
-+                jr      nc,rightc_st
-+                inc     h
-+rightc_st:
-+                ld      (CLOC),hl
-                 pop     af
-+rightc_out:
-                 pop     hl
-                 ret
--upc_text:       db      "UPC",0
--
--;--------------------------------
--; $0105 TUPC
--; Function : Tests whether UPC is possible, if possible, execute UPC
--; Output   : C-flag set if operation would end outside the screen
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--tupc:
+-                pop     af
++                ld      hl,CMASK
++                rrc     (hl)
++                push    de
++                ld      de,8
++                jr      leftc_mv
 +leftc:
-                 push    hl
++                push    hl
 +                ld      hl,CMASK
 +                rlc     (hl)
++                push    de
++                ld      de,-8
++leftc_mv:
 +                ld      a,(hl)
 +                jr      nc,leftc_out
 +                ld      hl,(CLOC)
-                 push    af
--                ld      hl,tupc_text
--                call    print_debug
-+                ld      a,l
-+                sub     8
-+                ld      l,a
-+                jr      nc,leftc_st
-+                dec     h
-+leftc_st:
++                add     hl,de
 +                ld      (CLOC),hl
-                 pop     af
 +leftc_out:
++                pop     de
                  pop     hl
                  ret
--tupc_text:      db      "TUPC",0
+-upc_text:       db      "UPC",0
  
  ;--------------------------------
--; $0108 DOWNC
--; Function : Shifts screenpixel down
+-; $0105 TUPC
+-; Function : Tests whether UPC is possible, if possible, execute UPC
+-; Output   : C-flag set if operation would end outside the screen
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
 +; $0102 UPC / $0108 DOWNC -- the graphics cursor one pixel up / down (SCREEN 2)
 +; CLOC -/+ 1 inside the 8-row character cell; across the cell's top / bottom row
 +; CLOC -/+ $F9 (the row-7 / row-0 byte of the cell above / below). A = the old row
 +; (UPC) or (old row + 1) AND 7 (DOWNC), as the VG-8020 leaves it; HL / DE / BC kept.
++; $0105 TUPC / $010B TDOWNC -- the same, except on the screen's top / bottom pixel
++; row: no move, A = 0, F = $45 (Cy set) as the VG-8020 (zerobas
++; scratchpad/biossweep_b3.out); elsewhere Cy clear.
 +upc:
 +                push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
 +                and     7
 +                jr      z,upc_wrap
++upc_in:
 +                dec     hl
 +                jr      upc_st
 +upc_wrap:
 +                push    de
 +                ld      de,-$F9
-+                add     hl,de
-+                pop     de
-+upc_st:
-+                ld      (CLOC),hl
-+                pop     hl
-+                ret
++                jr      upc_add
+ tupc:
+                 push    hl
+-                push    af
+-                ld      hl,tupc_text
+-                call    print_debug
+-                pop     af
++                ld      hl,(CLOC)
++                ld      a,l
++                and     7
++                jr      nz,upc_in
++                inc     h
++                dec     h
++                jr      nz,upc_wrap     ; not the screen's top cell row
++tupc_edge:
++                xor     a
++                scf
+                 pop     hl
+                 ret
+-tupc_text:      db      "TUPC",0
+-
+-;--------------------------------
+-; $0108 DOWNC
+-; Function : Shifts screenpixel down
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
++tdownc:
++                push    hl
++                ld      hl,(CLOC)
++                ld      a,l
++                inc     a
++                and     7
++                jr      nz,downc_in
++                ld      a,h
++                cp      $17             ; the bottom cell row (192 / 8 - 1)
++                ld      a,0
++                jr      z,tupc_edge
++                jr      downc_wrap
  downc:
                  push    hl
 -                push    af
@@ -280,14 +285,17 @@ index bb11106..59fe308 100644
 +                inc     a
 +                and     7
 +                jr      z,downc_wrap
++downc_in:
 +                inc     hl
-+                jr      downc_st
++                jr      upc_st
 +downc_wrap:
 +                push    de
 +                ld      de,$F9
++upc_add:
 +                add     hl,de
++                and     a               ; A = 0 here: F = $54 as the VG-8020 leaves it
 +                pop     de
-+downc_st:
++upc_st:
 +                ld      (CLOC),hl
                  pop     hl
                  ret
@@ -436,12 +444,12 @@ index bb11106..59fe308 100644
  
  ;--------------------------------
  ; $0114 FETCHC
-@@ -2309,136 +2478,10 @@ fetchc:
+@@ -2309,136 +2483,10 @@ fetchc:
                  ld      a,(CMASK)
                  ld      hl,(CLOC)
                  ret
 -fetchc_text:    db      "FETCHC",0
--
+ 
 -;--------------------------------
 -; $0117 STOREC
 -; Function : Record current cursor addresses mask pattern
@@ -557,7 +565,7 @@ index bb11106..59fe308 100644
 -                pop     hl
 -                ret
 -scanr_text:     db      "SCANR",0
- 
+-
 -;--------------------------------
 -; $012F SCANL
 -; Function : Scans screenpixels to the left

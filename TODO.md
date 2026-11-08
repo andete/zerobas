@@ -17787,6 +17787,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (print_debug stubs, 52 B) joined the bare-`ret` list and the span now pads to print_debug
       ($099A); MAPXYC's rewrite is shorter; READC and SETC share one cell read. Left: TUPC /
       TDOWNC (measured above), NSETCX, PNTINI / SCANR / SCANL, SCREEN 3.
+      ✅ **TUPC / TDOWNC SHIPPED (2026-11-08).** Room from RIGHTC / LEFTC sharing one body (DE = +-8),
+      UPC / DOWNC sharing the wrap and store tail, and `set 5,h` / `res 5,h` for the colour
+      address. 📏 [`biossweep_tud2.out`](scratchpad/biossweep_tud2.out): **all 10 rows SAME, F included** -- and the
+      new inner-edge rows found **UPC / DOWNC's own F wrong across a cell edge** (VG $54, the
+      `and 7` flags; ours the `add hl,de`'s) that no row saw, because biosregs never captured
+      F for them: one `and a` on the shared wrap path. `prog_f` moved into
+      basic_probe_biosregs.py; four F rows there (35/35). The span has 2 B left. Left: NSETCX,
+      PNTINI / SCANR / SCANL, SCREEN 3, the 8 non-graphics stubs.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
