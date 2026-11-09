@@ -271,6 +271,27 @@ B5 = {
 }
 ROWS.update(B5)
 
+# ERAFNK / DSPFNK in full (2026-11-09): CNSDFG ($F3DE), CRTCNT ($F3B1), row 23's
+# first characters (SCREEN 0, WIDTH 37 at boot: NAMBAS + 23*40 = $398), and in SCREEN 2
+# the pattern byte at $398 (marked 7 first) -- read before SCREEN 0 repaints
+FK0 = ('A=PEEK(&HF3DE):B=PEEK(&HF3B1):C=VPEEK(&H399):D=VPEEK(&H39A):E=VPEEK(&H39B):'
+       'PRINT:PRINT "[C";HEX$(A);" ";HEX$(B);" ";HEX$(C);" ";HEX$(D);" ";HEX$(E);"]"')
+FK2 = ('A=PEEK(&HF3DE):B=PEEK(&HF3B1):C=VPEEK(&H398):SCREEN 0:'
+       'PRINT "[C";HEX$(A);" ";HEX$(B);" ";HEX$(C);"]"')
+ROWS.update({
+    "era0":  B.prog(0x00CC, 0, after=FK0),
+    "dsp0":  B.prog(0x00CF, 0, before="KEY OFF", after=FK0),
+    "era2":  B.prog(0x00CC, 0, before="SCREEN 2:VPOKE &H398,7", after=FK2),
+    "dsp2":  B.prog(0x00CF, 0, before="KEY OFF:SCREEN 2:VPOKE &H398,7", after=FK2),
+})
+
+CRT = 'PRINT:PRINT "[C";HEX$(PEEK(&HF3B1));" ";HEX$(PEEK(&HF3DE));"]"'
+ROWS.update({
+    "crt_boot": B.prog(0x0028, 0, after=CRT),
+    "crt_off":  B.prog(0x0028, 0, before="KEY OFF", after=CRT),
+    "crt_on":   B.prog(0x0028, 0, before="KEY OFF:KEY ON", after=CRT),
+})
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

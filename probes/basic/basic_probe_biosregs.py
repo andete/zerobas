@@ -177,6 +177,21 @@ ROWS = {
                      'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(C);" ";HEX$(D);" ";'
                      'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]":END')
        for n, atr, pat in (("nsx_new", 6, 0), ("nsx_bg", 15, 255), ("nsx_fg", 4, 0))},
+    # ERAFNK / DSPFNK (D-BIOSCONTRACT, basic/biosfnk.asm; scratchpad/biossweep_fnk2.out):
+    # CNSDFG and the key row's first characters (SCREEN 0) or the VRAM byte under it
+    # (SCREEN 2, untouched). Cells only (`END` before the [R] print): DE / A are side
+    # values, and DSPFNK's CRTCNT is 23 where the VG-8020 keeps 24 (filed).
+    "era0": prog(0x00CC, 0, after='A=PEEK(&HF3DE):C=VPEEK(&H399):D=VPEEK(&H39A):PRINT:'
+                                  'PRINT "[C";HEX$(A);" ";HEX$(C);" ";HEX$(D);"]":END'),
+    "dsp0": prog(0x00CF, 0, before="KEY OFF",
+                 after='A=PEEK(&HF3DE):C=VPEEK(&H399):D=VPEEK(&H39A):PRINT:'
+                       'PRINT "[C";HEX$(A);" ";HEX$(C);" ";HEX$(D);"]":END'),
+    "era2": prog(0x00CC, 0, before="SCREEN 2:VPOKE &H398,7",
+                 after='A=PEEK(&HF3DE):B=PEEK(&HF3B1):C=VPEEK(&H398):SCREEN 0:'
+                       'PRINT "[C";HEX$(A);" ";HEX$(B);" ";HEX$(C);"]"'),
+    "dsp2": prog(0x00CF, 0, before="KEY OFF:SCREEN 2:VPOKE &H398,7",
+                 after='A=PEEK(&HF3DE):C=VPEEK(&H398):SCREEN 0:'
+                       'PRINT "[C";HEX$(A);" ";HEX$(C);"]":END'),
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

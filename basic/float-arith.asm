@@ -311,6 +311,7 @@ dig15_shr:
 ; HL = the pushed word, BC / DE untouched). FIXED ADDRESS -- placed by
 ; tools/pin_plan.py after an unconditional transfer; the `ds` is the pad, and
 ; `pin_plan.py --check` fails if it grows (Joost: no growing holes).
+                include "basic/biosfnk.asm"   ; D-BIOSCONTRACT: ERAFNK / DSPFNK, in this pad
     IF BASICINT_PINS
                 ds      $3297 - $, $00
 basicint_3297:

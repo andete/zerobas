@@ -17846,6 +17846,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       its function-key defaults / BEEP (same image) where the calling conventions allow.
       Still NOT MEASURED: the input waits (CHGET, PINLIN, INLIN, QINLIN), tape six, PHYDIO /
       FORMAT, OUTDLP / LPTOUT, CALSLT-class slot calls, NMI / KEYINT, POSIT, WSLREG, CALBAS.
+      ✅ **(a) ERAFNK / DSPFNK SHIPPED (2026-11-09).** Measured in full first ([`biossweep_fnk.out`](scratchpad/biossweep_fnk.out)):
+      ERAFNK -> CNSDFG 0 and row 23 blanked; DSPFNK -> CNSDFG $FF and the row painted; in SCREEN
+      2 only the cells change, VRAM untouched; **CRTCNT 24 after BOTH**. basic/biosfnk.asm (44 B
+      of the $3297 low-region pin pad -- page 0, since a caller's page 1 may be RAM) does
+      BASIC's KEY OFF / KEY ON work there; the main ROM's islands overlay points the
+      jump-table slots $00CC / $00CF at it (tools/build_mainrom.py PATCH_RANGES checks C-BIOS's
+      old `jp`s); sub2/scrstmt.asm's KEY OFF / KEY ON now only call the BIOS (sub page 1 +25
+      B). 📏 [`biossweep_fnk2.out`](scratchpad/biossweep_fnk2.out): **CNSDFG, the row and VRAM SAME in all four; four
+      biosregs-acceptance rows (71/71).** 🔮 HIT, misses none.
+      🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
+      holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
+      row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,
+      DSPFNK) and bounds its console scroll by CRTCNT (D-SCROLLBOUND). A published work-area
+      cell that reads differently: a program that PEEKs it, or POKEs 24 under KEY ON, sees our
+      key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
+      always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

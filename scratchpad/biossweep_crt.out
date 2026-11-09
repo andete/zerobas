@@ -1,0 +1,6 @@
+ROW crt_boot VG=[[C18 FF] | [R 5566 3344 1122 AFF]] ZB=[[C17 FF] | [R 5566 3344 1122 AFF]] DIVERGES
+ROW crt_off  VG=[[C18 0] | [R 5566 3344 1122 AFF]] ZB=[[C18 0] | [R 5566 3344 1122 AFF]] SAME
+ROW crt_on   VG=[[C18 FF] | [R 5566 3344 1122 AFF]] ZB=[[C17 FF] | [R 5566 3344 1122 AFF]] DIVERGES
+
+1 SAME, 2 DIVERGE (crt_boot, crt_on)
+refcache: 0 hit, 6 miss, 6 stored

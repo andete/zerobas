@@ -485,6 +485,13 @@ fperr_to_err:
                 org     $0028
                 jp      getypr              ; D-SYNCHR follow-up (was C-BIOS's `jp $1127`)
 
+; --- ERAFNK / DSPFNK: C-BIOS's are print_debug stubs (D-BIOSCONTRACT, 2026-11-09) --
+; The jump-table slots point at basic/biosfnk.asm instead; PATCH_RANGES refuses
+; unless they still read C-BIOS's `jp erafnk` / `jp dspfnk`.
+                org     $00CC
+                jp      bios_erafnk
+                jp      bios_dspfnk
+
 ; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
 ; $11CF is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
 ; "CSRX -> TTYPOS"). PATCH_RANGES refuses unless it reads 3A DD F3.

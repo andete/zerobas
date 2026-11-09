@@ -147,43 +147,20 @@ sck_drain:                                  ; A = the op, HL = the cursor
                 ld      de,p0_key_drain     ; a CONTINUATION: the tenant's render is
                 ret                         ; drained by main, off this CALSLT
 
-; KEY OFF / KEY ON (D-FNKLINE): keep the BIOS call (harmless here, correct on a
-; BIOS that paints), set CNSDFG -- the documented flag C-BIOS does not maintain
-; -- and have the keystr tenant draw or erase row 23 (C-BIOS's DSPFNK paints
-; nothing, D-DSPFNK). CRTCNT is WRITTEN ABSOLUTELY, not adjusted (D-SCROLLBOUND:
-; WIDTH rewrites it underneath, so an inc/dec gated on CNSDFG is not idempotent).
-; ONE body for both: A = the new CNSDFG, 0 (OFF) or $FF (ON) = -1, and the other
-; two values are arithmetic on it -- CRTCNT = CON_ROWS + A (24 / 23, written
-; absolutely) and the op = KEYOP_FNKBLANK - A (BLANK / PAINT). The stores keep
-; their order (CRTCNT, CNSDFG, then the tenant). `push af` parks A across the BIOS
-; call, so ERAFNK / DSPFNK run 2 B deeper than the other BIOS calls here.
-    IF CON_ROWS_KEYON != CON_ROWS - 1 || KEYOP_FNKPAINT != KEYOP_FNKBLANK + 1
-                db      SCK_FNK_ARITHMETIC_NEEDS_KEYON_ROWS_AND_PAINT_ONE_APART
-    ENDIF
+; KEY OFF / KEY ON (D-FNKLINE): the BIOS call does the whole job since
+; D-BIOSCONTRACT (2026-11-09) -- ERAFNK / DSPFNK (basic/biosfnk.asm, the main ROM's
+; jump-table slots) set CNSDFG and CRTCNT and have the keystr tenant erase / paint
+; row 23, as the VG-8020's do (scratchpad/biossweep_fnk.out). This body set the
+; same three things after the BIOS's stub returned; it would paint twice now.
 sck_off:
                 ld      ix,ERAFNK
-                xor     a                   ; the line is hidden
                 jr      sck_fnk
 sck_on:
                 ld      ix,DSPFNK
-                ld      a,$FF               ; the reference's own value, measured
-sck_fnk:                                    ; A = the new CNSDFG, IX = the BIOS call
+sck_fnk:                                    ; IX = the BIOS call
                 inc     hl                  ; past OFF / ON
                 push    hl
-                push    af
                 call    p1cb                ; ERAFNK / DSPFNK
-                pop     af
-                ld      c,a                 ; C = 0 / $FF (= -1)
-                add     a,CON_ROWS          ; 24: all rows / 23: reserve the bottom one
-                ld      (CRTCNT),a
-                ld      a,c
-                ld      (CNSDFG),a
-                ld      a,KEYOP_FNKBLANK
-                sub     c                   ; BLANK / PAINT (= BLANK + 1)
-sck_op:
-                ld      ix,p0_key_op
-                call    p1cb                ; KEYARG := A; the keystr tenant (no drain:
-                                            ; these ops leave DETOKBUF a lone NUL)
                 jp      ls_pop_exec         ; main's `jp pop_exec`
 
 ; --- the shared tail: Missing operand (ERR 24) ---------------------------------
