@@ -223,6 +223,11 @@ ROWS = {
                      'NEXT:NEXT:P=VPEEK(&H3800):SCREEN 0:PRINT "[C";A$;HEX$(P);"]":END')
        for n, a, sz in (("clrspr8", 0x0069, ""), ("clrspr16", 0x0069, ",2"),
                         ("spa_inigrp", 0x0072, ""), ("spa_init32", 0x006F, ""))},
+    # GTASPC (D-NUMBUFASPCT): DE / HL = ASPCT1 / ASPCT2 = $100 / $100 from the prompt
+    # on -- and still after numbers were PRINTed and STR$'d (our integer formatter
+    # wrote over them until NUMBUF moved to FOUTBUF; scratchpad/biossweep_asp.out)
+    "gtaspc": prog(0x0126, 0, before="SCREEN 2", after="SCREEN 0"),
+    "gtaspc_print": prog(0x0126, 0, before='PRINT 12345;-321;STR$(777);HEX$(255)'),
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

@@ -318,6 +318,10 @@ ROWS.update({
     "spa_scr2":   B.prog(0x0028, 0, before=PRE + ":SCREEN 2", after=SPA),
 })
 
+# ASPCT1 / ASPCT2 after numbers have been PRINTed and STR$'d (NUMBUF overwrote them)
+ROWS["aspct_print"] = B.prog(0x0126, 0, before='PRINT 12345;-321;STR$(777)',
+                             after='PRINT "[ASP";HEX$(PEEK(&HF40B)+256*PEEK(&HF40C));HEX$(PEEK(&HF40D)+256*PEEK(&HF40E));"]"')
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

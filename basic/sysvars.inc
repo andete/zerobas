@@ -954,7 +954,18 @@ TKNAME          equ     $F6EA   ; tokeniser: 1 = previous char was part of a nam
                                 ; (so a following digit stays verbatim, not crunched)
 TKRADIX         equ     $F6EB   ; tokeniser: &H/&O accumulator radix (16 or 8)
 TKRTOK          equ     $F6EC   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
-NUMBUF          equ     $F408   ; PRINT: decimal-format scratch (8 bytes, 0-term)
+; 🧮 D-NUMBUFASPCT (2026-11-09): integers are formatted where the reference formats
+; them -- FOUTBUF (FBUFFR+1), the float formatter's own output. NUMBUF sat at $F408
+; .. $F40F, on the reference's ASPCT1 / ASPCT2 ($F40B / $F40D), which GTASPC returns
+; and which the VG-8020 holds at $100 from the prompt on: our first PRINT of a number
+; overwrote them. Every NUMBUF user formats a 16-bit integer and consumes it at once
+; (printed, copied to a heap string or to LINEBUF); none runs while a float's FOUTBUF
+; text or the SQRT_R / HORNER_* scratch on FOUTBUF is live -- an expression is
+; evaluated before it is formatted (audit: TODO D-NUMBUFASPCT).
+; (NUMBUF itself is defined after FOUTBUF, below -- a forward `equ` here broke the
+; layout: pasmo resolved an IF / ds on it before FOUTBUF existed.)
+ASPCT1          equ     $F40B   ; published: the aspect ratio's 1st word -- $100 at the prompt (2)
+ASPCT2          equ     $F40D   ; published: the aspect ratio's 2nd word -- $100 at the prompt (2)
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
 ; Repack (arrays slice-4a): a DEDICATED cell in the freed STRTAB window
@@ -4846,7 +4857,8 @@ VALTYP_PUB      equ     $F663   ; PUBLISHED value type: 2 int / 4 single / 8 dou
 ; user spells the name), and $F024..$F03B is freed.
 ; ⚠️ STILL DIFFERENT, AND EACH IS A WRITE (route W), NOT THIS EQUATE: zerobas
 ; appends PRINT's trailing space even for STR$ (the reference's STR$ does not);
-; zerobas formats INTEGERS in NUMBUF, not here; and FBUFFR+0 is not written.
+; zerobas formats INTEGERS here too since D-NUMBUFASPCT (NUMBUF = FOUTBUF); FBUFFR+0
+; is not written.
 ; The math aliases on FOUTBUF (SQRT_R, HORNER_CNT, HORNER_PTR) move with it --
 ; the reference also uses FBUFFR as scratch during SIN (D-RAMFOOT).
 FBUFFR          equ     $F7C5   ; published: number-conversion buffer (43 B)
@@ -4878,6 +4890,7 @@ PRMWANT         equ     $F73D   ; D-OKSTORE: nonzero = print the prompt (1)
 STOPHOLD        equ     $FC89   ; (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
+NUMBUF          equ     FOUTBUF ; PRINT / STR$ / LIST / HEX$: integer-format scratch (8 of its 24 B, 0-term)
 TKDIG           equ     $F82A   ; tokeniser/formatter: significant-digit array, $F82A..$F841
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead

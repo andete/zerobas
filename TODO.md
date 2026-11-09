@@ -17903,8 +17903,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
-- [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
+- [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
+      ✅ **FIXED 2026-11-09.** NUMBUF = FOUTBUF (FBUFFR+1, basic/sysvars.inc): integers are
+      formatted where the float formatter writes, the reference's own place. 📐 THE AUDIT: every
+      NUMBUF user (PRINT, STR$, PRINT USING's integer path, LIST / detok line numbers and
+      constants, AUTO's number, HEX$ / OCT$ / BIN$) formats a 16-bit integer and consumes it at
+      once; none runs while a float's FOUTBUF text or the SQRT_R / HORNER_* scratch is live
+      (an expression is evaluated before it is formatted; PRINT USING's float path renders in
+      the PUNUM tenant into PU_NUM). MIDS_DEST no longer aliases NUMBUF (WSTX since D-WSZERO
+      S14c; PROVENANCE's row was stale, fixed). ASPCT1 / ASPCT2 := $100 at cold start in
+      clear_usrtab (basic/usr.asm, the boot-only pass) -- 🔴 NOT beside ATRBYT in init as
+      planned: that region, before vars.asm's $475A pin, had no room, and 9 B there overran
+      the pin and EMPTIED the image (pasmo does not refuse a negative `ds`; split_islands
+      reported "image base $8000"). Also: a forward `equ` of NUMBUF on FOUTBUF was moved below
+      FOUTBUF's definition. 📏 [`biossweep_asp.out`](scratchpad/biossweep_asp.out): **GTASPC $100 / $100 SAME, also after `PRINT
+      12345;-321;STR$(777)`**; two biosregs-acceptance rows (87/87); `make ram-map-check` green
+      after `make ram-map-doc`.
+      Tape ([`asp_tape.out`](scratchpad/asp_tape.out)): Arkanoid NEAR 67 -> RUNS? 9674 (a whole-screen difference), the
+      rest drift. The second witness ([`asp_ark_new.out`](scratchpad/asp_ark_new.out), six capture times): both machines in
+      SCREEN 2 and in the SAME loop (PC $40D8) at T120 / T300 / T420 -- the game runs; the
+      capture lands in a different phase of its attract sequence (timing, the class in
+      memory a-running-titles-tape-verdict-tracks-timing). Knives identical.
       🎚️ TIER 1 — the BIOS's published work area (GTASPC returns those cells; CIRCLE's aspect
       lives there on the reference): Joost's entry-points-first ruling.
       🤖 **AUTONOMOUS** — the VG-8020 holds $100 / $100 in ASPCT1 / ASPCT2 from the prompt on;

@@ -344,7 +344,7 @@ the old `basic_probe_statements` only exercised single-item PRINT.
 | 14-column comma tab zones via CSRX | `$F3DD` | public language reference (zones) + C-BIOS sysvars (CSRX) | sourced |
 | `CHPUT` for character output | `$00A2` | C-BIOS / MSX Assembly Page BIOS list | sourced |
 | `div10`, number→ASCII, PRINT parse loop | — | **own code** (standard binary divide); not from any disassembly | sourced |
-| `NUMBUF` decimal scratch | `$E0C0` | own choice (free page-3 RAM) | sourced |
+| `NUMBUF` decimal scratch | `FOUTBUF` (`FBUFFR`+1, `$F7C6`) | the reference's own number-conversion buffer (D-NUMBUFASPCT, 2026-11-09) | sourced |
 
 **Quarantined divergence — comma tab-zone line-wrap.** Real MSX-BASIC moves a `,`
 tab to a NEW LINE once the next 14-column zone would run past the screen width

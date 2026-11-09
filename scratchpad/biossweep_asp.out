@@ -1,0 +1,7 @@
+ROW gtaspc   VG=[[R 100 100 1122 A0]] ZB=[[R 100 100 1122 A0]] SAME
+ROW gtaspc0  VG=[[R 100 100 1122 A0]] ZB=[[R 100 100 1122 A0]] SAME
+ROW aspct    VG=[[R 0 0 1122 A0]] ZB=[[R 0 0 1122 A0]] SAME
+ROW aspct_print VG=[[R 100 100 1122 A0]] ZB=[[R 100 100 1122 A0]] SAME
+
+4 SAME, 0 DIVERGE
+refcache: 2 hit, 6 miss, 6 stored

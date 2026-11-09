@@ -54,6 +54,14 @@ clear_usrtab:
                 ; this is the cold-boot half.
                 ld      a,low FN_PAREA
                 ld      (FN_FEND),a
+                ; 🧮 D-NUMBUFASPCT (2026-11-09) rides it too: ASPCT1 / ASPCT2 read $100
+                ; / $100 on the VG-8020 from the prompt on (GTASPC returns them;
+                ; C-BIOS never sets them). Here, not beside ATRBYT in init: that
+                ; region (before vars.asm's $475A pin) has no room -- 9 B there
+                ; overran the pin and emptied the image.
+                ld      hl,$0100
+                ld      (ASPCT1),hl
+                ld      (ASPCT2),hl
                 ld      hl,USRTAB
                 ld      b,10
 cut_lp:

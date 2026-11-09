@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **440** in the MSX standard work area at or above `$F380`.
 * **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **68** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -287,7 +287,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3FC` | 2 B | `basic` | `CS120_LOW` | 1200-baud reference low-signal length word |  |
 | `$F401` | 2 B | `basic` | `CS240_LOW` | 2400-baud reference low-signal length word |  |
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
-| `$F408` | 8 B | `basic` | `NUMBUF` | PRINT: decimal-format scratch (8 bytes, 0-term) |  |
+| `$F40B` | 2 B | `basic` | `ASPCT1` | published: the aspect ratio's 1st word -- $100 at the prompt (2) |  |
+| `$F40D` | 2 B | `basic` | `ASPCT2` | published: the aspect ratio's 2nd word -- $100 at the prompt (2) |  |
 | `$F410` | 2 B | `basic` | `GFX_DTX` | $F410: move target X (2) |  |
 | `$F412` | 2 B | `basic` | `GFX_DTY` | $F412: ...Y (2) |  |
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
@@ -546,7 +547,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7C2` |  | `basic` | `SVT_SP/SW_MODE` | 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its |  |
 | `$F7C4` | 1 B | `basic` | `TRACEFLAG` | = TRCFLG: TRON state, 175 = TRON / 0 = TROFF (1 B) |  |
 | `$F7C5` |  | `basic` | `FBUFFR/TKOVF` | published: number-conversion buffer (43 B) |  |
-| `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
+| `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/NUMBUF/SQRT_R` | PRINT / STR$ / LIST / HEX$: integer-format scratch (8 of its 24 B, 0-term) |  |
 | `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
 | `$F7DE` | 8 B | `basic` | `DIVREM` | fp_div: the running remainder, packed BCD (8) |  |
