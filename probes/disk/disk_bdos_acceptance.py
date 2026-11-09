@@ -107,8 +107,10 @@ EXERCISERS = [
     # D-DOSLADDER (2026-11-09): MSX-DOS programs of rising complexity, our own .COMs
     # (probes/disk/dosl/), each comparing only its contract block. D2: TYPE --
     # COMMAND.COM read sequentially to the end (records, byte sum, EX / size / CR).
-    # (D3, COPY, is parked: it found D-SEQTWO -- ours never reaches the source's end.)
+    # D3: COPY -- COMMAND.COM to C.COM by SEQREAD / SEQWRITE in turn, re-read, FSIZE,
+    # SFIRST; it found D-SEQTWO (ours never ended the copy). The CF-3300 takes 93 s.
     ("DOSL-D2", "build_dosl_disk.py", ["--prog", "d2type"]),
+    ("DOSL-D3", "build_dosl_disk.py", ["--prog", "d3copy", "--settle", "150"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

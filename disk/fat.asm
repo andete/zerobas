@@ -272,7 +272,7 @@ pg0_mainrom_out:
                 out     ($A8), a
                 ret
                 ds      $4775 - $, $00
-k_4775:         jp      wrseq_body          ; $4775: MSX-DOS's entry (measured), = the NOP slide
+k_4775:         jp      wrseq_rd            ; $4775: BDOS $14 SEQREAD (measured; D-SEQTWO)
                 ds      $477D - $, $00      ; pad up to the pinned $477D WRSEQ-worker entry
 k_477D:
                 jp      wrseq_body          ; $477D: BDOS $15 WRSEQ canonical entry (M24 slice B)

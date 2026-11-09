@@ -499,16 +499,22 @@ install_p1blit:
 ; FCB-copy base $DA40 (a constant here -- no register to preserve across the
 ; call). A is stashed across the write-back and restored before ret so
 ; bdos_seqread's pass-through A/HL exit contract is unchanged.
-wrseq_body:
+; 🔴 D-SEQTWO (2026-11-09): THE BRANCH IS THE ENTRY, NOT BDOS_WRMODE. This picked
+; read or write by BDOS_WRMODE -- "a file is open for writing" -- so once a program
+; FMAKE'd a copy, every SEQREAD ($4775) of its source ran the WRITE branch and the
+; copy never ended (probes/disk/dosl/d3copy.asm; the CF-3300 copies it). $4775 is
+; SEQREAD's entry and $477D SEQWRITE's (callwatch, per call): each its own branch.
+wrseq_rd:                                   ; $4775: BDOS $14 SEQREAD
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
-                ld      a, (BDOS_WRMODE)
-                or      a
-                jp      nz, wrseq_body_write ; (`jp`: moved away from it, D-LOADRUN)
                 call    bdos_seqread
                 or      a
                 call    z, wrseq_writeback  ; only on a delivered record (A=$00)
                 ret
+wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                jp      wrseq_body_write    ; (`jp`: moved away from it, D-LOADRUN)
 ; rh_check -- D-PUTCACHE, read_sector's first act (basic/fat-prim-body.inc). The
 ; sector a PUT left unwritten in FAT_MBUF (RND_HSEC) is either the one being read
 ; INTO FAT_MBUF -- then the buffer already holds it: read_sector returns at once,

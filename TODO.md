@@ -17972,8 +17972,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
-- [ ] 🔴 **D-SEQTWO — UNDER MSX-DOS, SEQREAD OF ONE FILE WHILE ANOTHER IS OPEN FOR WRITING NEVER
+- [x] 🔴 **D-SEQTWO — UNDER MSX-DOS, SEQREAD OF ONE FILE WHILE ANOTHER IS OPEN FOR WRITING NEVER
       REACHES ITS END (found 2026-11-09 by D-DOSLADDER's D3, COPY)**
+      ✅ **FIXED THE SAME DAY -- step (1) alone.** wrseq_body split by ENTRY (disk/driver.asm):
+      k_4775 -> wrseq_rd (DTA reseed, bdos_seqread, the position write-back), k_477D ->
+      wrseq_body (DTA reseed, the write) -- 0 B net. Step (2), the per-FCB repositioning,
+      proved unneeded: the write keeps its own cells (BDOS_WRCLUS / WRBYTES / WRFIRST) and
+      leaves the read's iterator alone. 📏 [`dosl_d3_5.out`](scratchpad/dosl_d3_5.out): **D3 BYTE-IDENTICAL to the CF-3300**
+      (32 bytes: every A, both record counts and sums, sizes, FSIZE, the directory entry);
+      ours 41 s, the CF-3300 93 s. bdos-acceptance 20/20 with D3 in it; p1dta-acceptance
+      (SEQRD into page-1 RAM) green. 🔮 "~50 B, two steps": MISSED -- one step, 0 B.
       🎚️ TIER 1 — happy path of the BDOS entry points: a program that copies a file through
       FCB sequential I/O (FOPEN the source, FMAKE the copy, SEQREAD / SEQWRITE in turn)
       loops forever on ours; the CF-3300 copies its 51 records in 93 s.
@@ -18011,7 +18019,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       --prog NAME builds any rung from probes/disk/dosl/NAME.asm (the `cap` block compared;
       bdos-acceptance's EXERCISERS take extra build arguments now). D2: COMMAND.COM read to
       the end -- FOPEN 0, 51 records, byte sum $6C2A, EOF A = 1, FCLOSE 0, size 6528, CR 51
-      -- **byte-identical on both** ([`dosl_d2_1.out`](scratchpad/dosl_d2_1.out)); a bdos-acceptance row. D3: above.
+      -- **byte-identical on both** ([`dosl_d2_1.out`](scratchpad/dosl_d2_1.out)); a bdos-acceptance row. D3: above. D3 joined
+      bdos-acceptance when D-SEQTWO landed (settle 150: the CF-3300 takes 93 s). Next rungs:
+      D4 dir (SFIRST / SNEXT over wildcards, ALLOC), D5 ren / del, D6 a random-access file.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
