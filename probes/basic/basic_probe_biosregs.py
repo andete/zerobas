@@ -214,6 +214,15 @@ ROWS = {
                                  ("init32", 0x006F, 0x1122, "", ":END"),
                                  ("inigrp", 0x0072, 0x1122, "", ":END"),
                                  ("inimlt", 0x0075, 0x1122, "", ":END"))},
+    # CLRSPR / INIT32 / INIGRP and sprite attributes (D-BIOSCONTRACT (d), cbios-repack's
+    # clrspr_attr): every attribute byte pre-set $5A in SCREEN 1; after the call each
+    # sprite's X is KEPT (Y $D1, pattern = its number -- x4 at size 16 --, colour =
+    # FORCLR), patterns cleared. Cells only: DE is a side value (the VG-8020 keeps D).
+    **{n: prog(a, 0, before=f"SCREEN 1{sz}:FOR I=0 TO 127:VPOKE &H1B00+I,&H5A:NEXT:VPOKE &H3800,&H5A",
+               after='A$="":FOR S=0 TO 2:T=S-(S=2)*29:FOR I=0 TO 3:A$=A$+HEX$(VPEEK(&H1B00+T*4+I))+",":'
+                     'NEXT:NEXT:P=VPEEK(&H3800):SCREEN 0:PRINT "[C";A$;HEX$(P);"]":END')
+       for n, a, sz in (("clrspr8", 0x0069, ""), ("clrspr16", 0x0069, ",2"),
+                        ("spa_inigrp", 0x0072, ""), ("spa_init32", 0x006F, ""))},
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

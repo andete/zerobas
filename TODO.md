@@ -17878,6 +17878,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`txt_tape.out`](scratchpad/txt_tape.out); tally 9 SAME / 11 NEAR / 22 RUNS?, was 8 / 11 / 23). Not traced which copy
       they read (the software is run, never decoded); RG5SAV / RG6SAV (sprite tables) are
       the likely ones.
+      ✅ **(d) CLRSPR / INIT32 / INIGRP / INIMLT KEEP EACH SPRITE'S X (2026-11-09).** Measured
+      ([`biossweep_clrspr.out`](scratchpad/biossweep_clrspr.out), [`biossweep_spa.out`](scratchpad/biossweep_spa.out)): the VG-8020 writes Y $D1, the pattern number (x4 at
+      size 16) and FORCLR, and leaves X; its mode inits do the same (they share C-BIOS's
+      clrspr_attr). C-BIOS wrote X = 0. clrspr_attr now sets the address twice per sprite
+      (Y, then past X), and CLRSPR clears the patterns FIRST and the attributes last, so HL
+      ($1B80), BC and A end as the VG-8020's. 4 B shorter (the span: 7 B free). 📏
+      [`biossweep_clrspr2.out`](scratchpad/biossweep_clrspr2.out): **the attribute bytes and the pattern byte SAME in all six rows**
+      (DE differs: the VG-8020 keeps D and leaves the colour in E -- side). Four
+      biosregs-acceptance rows (85/85). Left of this list: STRTMS.
+      🔴 **THE TAPE VERDICTS OF RUNNING TITLES TRACK TIMING, NOT ONLY CORRECTNESS -- (c)'s note
+      above OVERCLAIMED.** With (d) ([`spr_tape.out`](scratchpad/spr_tape.out)) the tally stayed 9 / 11 / 22 but the titles
+      moved both ways: Ballblazer SAME -> RUNS? (279), Mutant Monty NEAR 1 -> SAME, Elite RUNS?
+      173 -> NEAR 18, Arkanoid 32 -> 67. The runner is deterministic for a fixed ROM (three
+      ROM changes that did not touch these paths gave byte-identical runs), so any change
+      to code a game RUNS shifts where its snapshot lands; "Ballblazer became SAME because
+      of RG5SAV / RG6SAV" was a guess, not a measurement. Read a running title's move as a
+      cause only with a second witness.
       🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
       holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
       row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,

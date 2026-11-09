@@ -1,0 +1,6 @@
+ROW spa_inigrp VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3D1 7F03 1 AE0]] ZB=[[CD1,0,0,F,D1,0,1,F,] | [R F3E7 88D1 1 AE0]] DIVERGES
+ROW spa_init32 VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3C7 0 1 AE0]] ZB=[[CD1,0,0,F,D1,0,1,F,] | [R F3E7 88CA 1 AE0]] DIVERGES
+ROW spa_scr2 VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R 5566 3344 1122 AFF]] ZB=[[CD1,5A,0,F,D1,5A,1,F,] | [R 5566 3344 1122 AFF]] SAME
+
+1 SAME, 2 DIVERGE (spa_inigrp, spa_init32)
+refcache: 0 hit, 6 miss, 6 stored

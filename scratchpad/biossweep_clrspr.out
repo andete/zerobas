@@ -1,0 +1,5 @@
+ROW clrspr8  VG=[[CD1,5A,0,F,D1,5A,1,F,D1,5A,1F,F,0] | [R 1B80 330F 20 AF]] ZB=[[CD1,0,0,F,D1,0,1,F,D1,0,1F,F,0] | [R 3800 FD1 0 A0]] DIVERGES
+ROW clrspr16 VG=[[CD1,5A,0,F,D1,5A,4,F,D1,5A,7C,F,0] | [R 1B80 330F 80 AF]] ZB=[[CD1,0,0,F,D1,0,4,F,D1,0,7C,F,0] | [R 3800 FD1 0 A0]] DIVERGES
+
+0 SAME, 2 DIVERGE (clrspr8, clrspr16)
+refcache: 0 hit, 4 miss, 4 stored

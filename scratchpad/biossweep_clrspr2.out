@@ -1,0 +1,13 @@
+ROW clrspr8  VG=[[CD1,5A,0,F,D1,5A,1,F,D1,5A,1F,F,0] | [R 1B80 330F 20 AF]] ZB=[[CD1,5A,0,F,D1,5A,1,F,D1,5A,1F,F,0] | [R 1B80 FD1 20 AF]] DIVERGES
+ROW clrspr16 VG=[[CD1,5A,0,F,D1,5A,4,F,D1,5A,7C,F,0] | [R 1B80 330F 80 AF]] ZB=[[CD1,5A,0,F,D1,5A,4,F,D1,5A,7C,F,0] | [R 1B80 FD1 80 AF]] DIVERGES
+ROW clrspr   VG=[[CD1 6 F] | [R 1B80 330F 20 AF]] ZB=[[CD1 6 F] | [R 1B80 FD1 20 AF]] DIVERGES
+ROW spa_inigrp VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3D1 7F03 1 AE0]] ZB=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3E7 88D1 1 AE0]] DIVERGES
+ROW spa_init32 VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3C7 0 1 AE0]] ZB=[[CD1,5A,0,F,D1,5A,1,F,] | [R F3E7 88CA 1 AE0]] DIVERGES
+ROW spa_scr2 VG=[[CD1,5A,0,F,D1,5A,1,F,] | [R 5566 3344 1122 AFF]] ZB=[[CD1,5A,0,F,D1,5A,1,F,] | [R 5566 3344 1122 AFF]] SAME
+ROW initxt   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 1 AF0]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3E7 88CA 1 AF0]] DIVERGES
+ROW inigrp   VG=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3D1 7F03 1 AE0]] ZB=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3E7 88D1 1 AE0]] DIVERGES
+ROW init32   VG=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3C7 0 1 AE0]] ZB=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3E7 88CA 1 AE0]] DIVERGES
+ROW inimlt   VG=[[C0,E8,2,0,0,36,7,4, 3 ] | [R F3DB 0 1 AE8]] ZB=[[C0,E8,2,0,0,36,7,4, 3 ] | [R F3E7 88D1 1 AE8]] DIVERGES
+
+1 SAME, 9 DIVERGE (clrspr8, clrspr16, clrspr, spa_inigrp, spa_init32, initxt, inigrp, init32, inimlt)
+refcache: 10 hit, 10 miss, 10 stored

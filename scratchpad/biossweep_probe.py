@@ -295,6 +295,29 @@ ROWS.update({
 # the TXT* base table ($F3B3 TXTNAM .. $F3BC), both machines, at the prompt
 ROWS["txttab"] = B.prog(0x0028, 0, after='A$="":FOR I=0 TO 9:A$=A$+HEX$(PEEK(&HF3B3+I))+",":NEXT:PRINT "[C";A$;"]"')
 
+# CLRSPR in full: sprites 0, 1, 31 -- all four attribute bytes ($1B00 in SCREEN 1),
+# every byte pre-set to $5A, and the first pattern byte ($3800)
+CSP = ('A$="":FOR S=0 TO 31 STEP 1:IF S=0 OR S=1 OR S=31 THEN FOR I=0 TO 3:'
+       'A$=A$+HEX$(VPEEK(&H1B00+S*4+I))+",":NEXT:A$=A$+"/"'
+       '\nNEXT')
+ROWS.update({
+    "clrspr8":  B.prog(0x0069, 0, before="SCREEN 1:FOR I=0 TO 127:VPOKE &H1B00+I,&H5A:NEXT:VPOKE &H3800,&H5A",
+                       after='A$="":FOR S=0 TO 2:T=S-(S=2)*29:FOR I=0 TO 3:A$=A$+HEX$(VPEEK(&H1B00+T*4+I))+",":NEXT:NEXT:'
+                             'P=VPEEK(&H3800):SCREEN 0:PRINT "[C";A$;HEX$(P);"]"'),
+    "clrspr16": B.prog(0x0069, 0, before="SCREEN 1,2:FOR I=0 TO 127:VPOKE &H1B00+I,&H5A:NEXT:VPOKE &H3800,&H5A",
+                       after='A$="":FOR S=0 TO 2:T=S-(S=2)*29:FOR I=0 TO 3:A$=A$+HEX$(VPEEK(&H1B00+T*4+I))+",":NEXT:NEXT:'
+                             'P=VPEEK(&H3800):SCREEN 0:PRINT "[C";A$;HEX$(P);"]"'),
+})
+
+# what the mode inits leave in sprite 0's / 1's attributes ($1B00, pre-set $5A in SCREEN 1)
+SPA = ('A$="":FOR I=0 TO 7:A$=A$+HEX$(VPEEK(&H1B00+I))+",":NEXT:SCREEN 0:PRINT "[C";A$;"]"')
+PRE = "SCREEN 1:FOR I=0 TO 127:VPOKE &H1B00+I,&H5A:NEXT"
+ROWS.update({
+    "spa_inigrp": B.prog(0x0072, 0, before=PRE, after=SPA),
+    "spa_init32": B.prog(0x006F, 0, before=PRE, after=SPA),
+    "spa_scr2":   B.prog(0x0028, 0, before=PRE + ":SCREEN 2", after=SPA),
+})
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

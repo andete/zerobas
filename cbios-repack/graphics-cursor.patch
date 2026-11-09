@@ -1,8 +1,85 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..a8b3971 100644
+index bb11106..231574e 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -840,18 +840,21 @@ settxt:
+@@ -494,9 +494,6 @@ clrspr:
+                 or      a
+                 ret     z               ; no sprites in SCREEN0
+ 
+-; Clear sprite attribute table.
+-                call    clrspr_attr
+-
+ ; Clear sprite colour table.
+                 ld      a,(SCRMOD)
+                 cp      4               ; sprite mode 1?
+@@ -523,7 +520,9 @@ clrspr_col_skip:
+         ELSE
+                 call    bigfil
+         ENDIF
+-                ret
++; Clear sprite attribute table -- LAST, as the VG-8020 leaves HL / BC / A from it
++; (zerobas cbios-repack, D-BIOSCONTRACT 2026-11-09).
++                jp      clrspr_attr
+ 
+ ;--------------------------------
+ ; Clear sprite attribute table.
+@@ -542,31 +541,30 @@ clrspr_attr_spritemode1:
+                 ld      e,209           ; Y coordinate
+ 
+ clrspr_attr_spritemode_start:
++; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): each sprite's X (+1) is KEPT,
++; as on the VG-8020 (zerobas scratchpad/biossweep_clrspr.out) -- Y, then the address
++; set again past X for the pattern number and colour. HL ends at ATRBAS + 128, BC
++; at 32 / 128, A = the colour, as the VG-8020's.
+                 ld      hl,(ATRBAS)
++                ld      a,(FORCLR)
++                ld      d,a
++                ld      bc,$2000        ; B = 32 = counter, C = pattern index
++clrspr_attr_lp:
+         IF VDP = TMS99X8
+                 call    setwrt
+         ELSE
+                 call    nsetwr
+         ENDIF
+-                ld      a,(FORCLR)
+-                ld      d,a
+-                ld      bc,$2000        ; B = 32 = counter, C = pattern index
+-                di
+-clrspr_attr_lp:
+                 ld      a,e
+                 out     (VDP_DATA),a    ; Y coordinate
+-                ld      a,0
++                inc     hl
++                inc     hl              ; past X
+         IF VDP = TMS99X8
+-                nop                     ; wait (at least) 29 t-states between VRAM accesses
+-                nop                     ; only 2 nops, as ld a,0 is slow
++                call    setwrt
++        ELSE
++                call    nsetwr
+         ENDIF
+-                out     (VDP_DATA),a    ; X coordinate
+                 ld      a,c
+-        IF VDP = TMS99X8
+-                nop                     ; wait (at least) 29 t-states between VRAM accesses
+-                nop
+-                nop
+-        ENDIF
+                 out     (VDP_DATA),a    ; pattern number
+                 inc     c
+                 call    gspsiz
+@@ -577,8 +575,9 @@ clrspr_attr_lp:
+ clrspr_attr_8:
+                 ld      a,d
+                 out     (VDP_DATA),a    ; color
++                inc     hl
++                inc     hl
+                 djnz    clrspr_attr_lp
+-                ei
+                 ret
+ 
+ ;--------------------------------
+@@ -840,18 +839,21 @@ settxt:
                  call    wrtvdp          ; write VDP R#1
  
                  ; Set the VDP base address registers. This works because
@@ -18,13 +95,13 @@ index bb11106..a8b3971 100644
                  ld      de,TXTNAM
                  ld      c,2
 -
--                xor     a
++settxt_base:
+                 xor     a
 -                call    set_base_address
 -                inc     de              ; Skip TXTCOL.
 -                inc     de
 -                inc     c
-+settxt_base:
-                 xor     a
+-                xor     a
 -                call    set_base_address
 +                call    set_base_address ; DE += 2, C += 1
 +                ld      a,c
@@ -33,7 +110,7 @@ index bb11106..a8b3971 100644
  
                  ret
  
-@@ -1182,6 +1185,13 @@ grpprt_sc2:
+@@ -1182,6 +1184,13 @@ grpprt_sc2:
                  ld      de,(GRPACY)
                  ld      bc,(GRPACX)
                  call    mapxy
@@ -47,7 +124,7 @@ index bb11106..a8b3971 100644
  
                  ld      a,(FORCLR)
                  ld      (ATRBYT),a
-@@ -1196,8 +1206,7 @@ grpprt_sc2:
+@@ -1196,8 +1205,7 @@ grpprt_sc2:
                  and     $07
  
                  ld      b,$00
@@ -57,7 +134,7 @@ index bb11106..a8b3971 100644
                  call    grpprt_chr_x
  
                  ld      bc,$00F0
-@@ -2155,150 +2164,328 @@ getpat_loop:    push    bc
+@@ -2155,150 +2163,328 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -488,12 +565,12 @@ index bb11106..a8b3971 100644
  
  ;--------------------------------
  ; $0114 FETCHC
-@@ -2309,136 +2496,10 @@ fetchc:
+@@ -2309,136 +2495,10 @@ fetchc:
                  ld      a,(CMASK)
                  ld      hl,(CLOC)
                  ret
 -fetchc_text:    db      "FETCHC",0
- 
+-
 -;--------------------------------
 -; $0117 STOREC
 -; Function : Record current cursor addresses mask pattern
@@ -537,7 +614,7 @@ index bb11106..a8b3971 100644
 -                pop     hl
 -                ret
 -readc_text:     db      "READC",0
--
+ 
 -;--------------------------------
 -; $0120 SETC
 -; Function : Returns currenct screenpixel of specificed attribute byte
