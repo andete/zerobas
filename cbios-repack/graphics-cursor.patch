@@ -1,5 +1,5 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..81d3244 100644
+index bb11106..0ab165e 100644
 --- a/src/video.asm
 +++ b/src/video.asm
 @@ -1182,6 +1182,13 @@ grpprt_sc2:
@@ -26,7 +26,7 @@ index bb11106..81d3244 100644
                  call    grpprt_chr_x
  
                  ld      bc,$00F0
-@@ -2155,150 +2161,318 @@ getpat_loop:    push    bc
+@@ -2155,150 +2161,328 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -41,25 +41,56 @@ index bb11106..81d3244 100644
 +; and the four moves too; the span runs to print_debug since PNTINI / SCANR /
 +; SCANL joined the bare-`ret` list.
 +; ---------------------------------------------------------------------------
-+nsetcx:
-+pntini:
-+scanr:
-+scanl:
-+                ret
-+
  ;--------------------------------
 -; $00FC RIGHTC
 -; Function : Shifts screenpixel to the right
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
 -rightc:
++; $0123 NSETCX -- HL pixels from CLOC / CMASK rightward set as SETC does (SCREEN 2);
++; CLOC / CMASK end where they started, as on the VG-8020 (zerobas
++; scratchpad/biossweep_nsx.out). Registers not kept (the VG-8020 keeps none either).
++nsetcx:
+                 push    hl
+-                push    af
+-                ld      hl,rightc_text
+-                call    print_debug
++                call    fetchc
++                ex      (sp),hl         ; (SP) = CLOC, HL = the count
++                push    af              ; CMASK
++                jr      nsetcx_test
++nsetcx_lp:
++                call    setc
++                call    rightc
++                dec     hl
++nsetcx_test:
++                ld      a,h
++                or      l
++                jr      nz,nsetcx_lp
+                 pop     af
+-                pop     hl
++                pop     hl              ; falls into STOREC: CLOC / CMASK restored
++
++;--------------------------------
 +; $0117 STOREC -- CLOC := HL, CMASK := A
 +storec:
 +                ld      (CLOC),hl
 +                ld      (CMASK),a
-+                ret
-+
-+;--------------------------------
+                 ret
+-rightc_text:    db      "RIGHTC",0
+ 
+ ;--------------------------------
+-; $00FF LEFTC
+-; Function : Shifts screenpixel to the left
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-leftc:
+-                push    hl
+-                push    af
+-                ld      hl,leftc_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
 +; $011A SETATR -- ATRBYT := A when A < 16; else Cy = 1 and ATRBYT kept (the VG-8020:
 +; F = $41 for A = 16 -- exactly `cp 16` / `ccf` / `ret c`)
 +setatr:
@@ -67,18 +98,25 @@ index bb11106..81d3244 100644
 +                ccf
 +                ret     c
 +                ld      (ATRBYT),a
-+                ret
-+
-+;--------------------------------
+                 ret
+-leftc_text:     db      "LEFTC",0
+ 
+ ;--------------------------------
+-; $0102 UPC
+-; Function : Shifts screenpixel up
+-; Registers: AF
+-; NOTE     : This implementation is still a stub!
+-upc:
 +; $011D READC -- A = the colour of the pixel at CLOC / CMASK (SCREEN 2): the colour
 +; byte's foreground nibble when the pattern bit is set, else its background nibble.
 +; HL / DE / BC kept.
 +readc:
                  push    hl
 -                push    af
--                ld      hl,rightc_text
+-                ld      hl,upc_text
 -                call    print_debug
 -                pop     af
+-                pop     hl
 +                push    bc
 +                call    gcell
 +                ld      a,(CMASK)
@@ -91,10 +129,7 @@ index bb11106..81d3244 100644
 +                rrca
 +readc_bg:
 +                and     $0F
-+                pop     bc
-                 pop     hl
-                 ret
--rightc_text:    db      "RIGHTC",0
++                jr      readc_out
 +
 +; B = the pattern byte at CLOC, C = its colour byte, HL = the colour byte's address
 +gcell:
@@ -104,14 +139,16 @@ index bb11106..81d3244 100644
 +                set     5,h             ; the colour table: pattern address + $2000
 +                call    rdvrm
 +                ld      c,a
-+                ret
+                 ret
+-upc_text:       db      "UPC",0
  
  ;--------------------------------
--; $00FF LEFTC
--; Function : Shifts screenpixel to the left
+-; $0105 TUPC
+-; Function : Tests whether UPC is possible, if possible, execute UPC
+-; Output   : C-flag set if operation would end outside the screen
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
--leftc:
+-tupc:
 +; $0120 SETC -- the pixel at CLOC / CMASK set to ATRBYT (SCREEN 2), as the VG-8020
 +; (zerobas scratchpad/biossweep_setc.out): when ATRBYT is the cell's background
 +; colour the pattern bit is CLEARED and the colour byte kept, A = the pattern byte;
@@ -121,7 +158,7 @@ index bb11106..81d3244 100644
 +setc:
                  push    hl
 -                push    af
--                ld      hl,leftc_text
+-                ld      hl,tupc_text
 -                call    print_debug
 -                pop     af
 +                push    bc
@@ -153,31 +190,30 @@ index bb11106..81d3244 100644
 +                ld      e,a
 +                ld      a,d
 +                or      b
-+                call    setc_wpat
++                res     5,h
++                call    wrtvrm
 +                ld      a,e
 +                jr      setc_out
 +setc_fg:
 +                ld      a,d
 +                or      b
 +setc_pat:
-+                call    setc_wpat
++                res     5,h             ; the pattern byte, at the colour address - $2000
++                call    wrtvrm
 +setc_out:
 +                pop     de
++readc_out:
 +                pop     bc
                  pop     hl
                  ret
--leftc_text:     db      "LEFTC",0
-+; the pattern byte A written at the colour address HL - $2000
-+setc_wpat:
-+                res     5,h
-+                jp      wrtvrm
+-tupc_text:      db      "TUPC",0
  
  ;--------------------------------
--; $0102 UPC
--; Function : Shifts screenpixel up
+-; $0108 DOWNC
+-; Function : Shifts screenpixel down
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
--upc:
+-downc:
 +; $00FC RIGHTC / $00FF LEFTC -- the graphics cursor one pixel right / left (SCREEN 2)
 +; CMASK rotated; on the byte's wrap CLOC moves by 8 (the next / previous character
 +; column). A = the new CMASK; HL / DE / BC kept. Measured on the Philips VG-8020
@@ -185,7 +221,7 @@ index bb11106..81d3244 100644
 +rightc:
                  push    hl
 -                push    af
--                ld      hl,upc_text
+-                ld      hl,downc_text
 -                call    print_debug
 -                pop     af
 +                ld      hl,CMASK
@@ -209,11 +245,11 @@ index bb11106..81d3244 100644
 +                pop     de
                  pop     hl
                  ret
--upc_text:       db      "UPC",0
+-downc_text:     db      "DOWNC",0
  
  ;--------------------------------
--; $0105 TUPC
--; Function : Tests whether UPC is possible, if possible, execute UPC
+-; $010B TDOWNC
+-; Function : Tests whether DOWNC is possible, if possible, execute DOWNC
 -; Output   : C-flag set if operation would end outside the screen
 -; Registers: AF
 -; NOTE     : This implementation is still a stub!
@@ -237,12 +273,8 @@ index bb11106..81d3244 100644
 +                push    de
 +                ld      de,-$F9
 +                jr      upc_add
- tupc:
-                 push    hl
--                push    af
--                ld      hl,tupc_text
--                call    print_debug
--                pop     af
++tupc:
++                push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
 +                and     7
@@ -253,33 +285,10 @@ index bb11106..81d3244 100644
 +tupc_edge:
 +                xor     a
 +                scf
-                 pop     hl
-                 ret
--tupc_text:      db      "TUPC",0
--
--;--------------------------------
--; $0108 DOWNC
--; Function : Shifts screenpixel down
--; Registers: AF
--; NOTE     : This implementation is still a stub!
-+tdownc:
++                pop     hl
++                ret
++downc:
 +                push    hl
-+                ld      hl,(CLOC)
-+                ld      a,l
-+                inc     a
-+                and     7
-+                jr      nz,downc_in
-+                ld      a,h
-+                cp      $17             ; the bottom cell row (192 / 8 - 1)
-+                ld      a,0
-+                jr      z,tupc_edge
-+                jr      downc_wrap
- downc:
-                 push    hl
--                push    af
--                ld      hl,downc_text
--                call    print_debug
--                pop     af
 +                ld      hl,(CLOC)
 +                ld      a,l
 +                inc     a
@@ -288,6 +297,21 @@ index bb11106..81d3244 100644
 +downc_in:
 +                inc     hl
 +                jr      upc_st
+ tdownc:
+                 push    hl
+-                push    af
+-                ld      hl,tdownc_text
+-                call    print_debug
+-                pop     af
++                ld      hl,(CLOC)
++                ld      a,l
++                inc     a
++                and     7
++                jr      nz,downc_in
++                ld      a,h
++                cp      $17             ; the bottom cell row (192 / 8 - 1)
++                jr      z,tupc_edge
++                xor     a
 +downc_wrap:
 +                push    de
 +                ld      de,$F9
@@ -299,53 +323,46 @@ index bb11106..81d3244 100644
 +                ld      (CLOC),hl
                  pop     hl
                  ret
--downc_text:     db      "DOWNC",0
+-tdownc_text:    db      "TDOWNC",0
  
  ;--------------------------------
--; $010B TDOWNC
--; Function : Tests whether DOWNC is possible, if possible, execute DOWNC
--; Output   : C-flag set if operation would end outside the screen
--; Registers: AF
+ ; $010E SCALXY
+-; Function : Scales X and Y coordinates
 -; NOTE     : This implementation is still a stub!
--tdownc:
-+; $010E SCALXY
 +; Function : Clips the X / Y coordinate to the screen
 +; Input    : BC = X, DE = Y
 +; Output   : BC / DE clipped (X 0..255, Y 0..191, negatives to 0), then both
 +;            divided by 4 in SCREEN 3; A = $80 if neither was clipped, else 0
 +; Registers: AF, BC, DE (HL kept)
-+scalxy:
-                 push    hl
--                push    af
--                ld      hl,tdownc_text
--                call    print_debug
--                pop     af
+ scalxy:
+-                ld      bc,(GRPACX)
+-                ld      de,(GRPACY)
++                push    hl
 +                ld      h,$80           ; "in range" until a clip says otherwise
-+                bit     7,b
-+                jr      z,scalxy_xpos
-+                ld      bc,0
-+                ld      h,b
-+scalxy_xpos:
 +                ld      a,b
 +                or      a
 +                jr      z,scalxy_xok
++                rla                     ; Cy = negative
 +                ld      bc,255
-+                ld      h,0
++                jr      nc,scalxy_xc
++                ld      c,b             ; BC = 0
++scalxy_xc:
++                ld      h,b             ; H = 0: clipped
 +scalxy_xok:
-+                bit     7,d
-+                jr      z,scalxy_ypos
-+                ld      de,0
-+                ld      h,d
-+scalxy_ypos:
 +                ld      a,d
 +                or      a
-+                jr      nz,scalxy_yclip
++                jr      nz,scalxy_yhi
 +                ld      a,e
 +                cp      192
 +                jr      c,scalxy_yok
-+scalxy_yclip:
++                xor     a               ; 192..255: over, not negative
++scalxy_yhi:
++                rla
 +                ld      de,191
-+                ld      h,0
++                jr      nc,scalxy_yc
++                ld      e,d             ; DE = 0
++scalxy_yc:
++                ld      h,d
 +scalxy_yok:
 +                ld      a,(SCRMOD)
 +                cp      3
@@ -356,23 +373,19 @@ index bb11106..81d3244 100644
 +                srl     e
 +scalxy_done:
 +                ld      a,h
-                 pop     hl
-                 ret
--tdownc_text:    db      "TDOWNC",0
- 
- ;--------------------------------
--; $010E SCALXY
--; Function : Scales X and Y coordinates
--; NOTE     : This implementation is still a stub!
--scalxy:
--                ld      bc,(GRPACX)
--                ld      de,(GRPACY)
++                pop     hl
++                ret
++
++;--------------------------------
 +; $0126 GTASPC
 +; Function : Gets the screen aspect ratio
 +; Output   : DE = ASPCT1, HL = ASPCT2
 +gtaspc:
 +                ld      de,(ASPCT1)
 +                ld      hl,(ASPCT2)
++pntini:                                 ; PNTINI / SCANR / SCANL: not yet, a bare `ret`
++scanr:
++scanl:
                  ret
 -scalxy_text:    db      "SCALXY",0
  
@@ -388,8 +401,7 @@ index bb11106..81d3244 100644
 +;            A = the low byte of CLOC and D = X, as the VG-8020 leaves them
 +;            (zerobas scratchpad/biossweep_mxy.out); GRPACX / GRPACY untouched
  mapxy:
-+                ld      d,c
-                 push    bc
+-                push    bc
 -                ld      (GRPACX),bc
 -                ld      (GRPACY),de
 -                ld      hl,(GRPACY)
@@ -406,18 +418,20 @@ index bb11106..81d3244 100644
                  ld      a,c
 -                and     $07
 -                jr      z,mapxy_mask_ed
-+                and     7
-+                inc     a
-                 ld      b,a
+-                ld      b,a
 -                ld      a,$ff
 -mapxy_mask_lp:
 -                and     a
 -                rra
 -                djnz    mapxy_mask_lp
++                and     7
++                inc     a
++                ld      d,a
 +                ld      a,1
 +mapxy_mask:
 +                rrca
-+                djnz    mapxy_mask
++                dec     d
++                jr      nz,mapxy_mask
                  ld      (CMASK),a
 -mapxy_mask_ed:
 +                ld      a,e
@@ -427,24 +441,23 @@ index bb11106..81d3244 100644
 +                and     $1F
 +                ld      h,a
                  ld      a,c
++                xor     e
                  and     $F8
 -                ld      c,a
 -                ld      b,$00
 -                add     hl,bc
 -
-+                ld      l,a
-+                ld      a,e
-+                and     7
-+                or      l
++                xor     e               ; (X AND $F8) OR (Y AND 7)
 +                ld      l,a
                  ld      (CLOC),hl
-                 pop     bc
+-                pop     bc
++                ld      d,c
                  ret
 -mapxy_text:    db      "MAPXY",0
  
  ;--------------------------------
  ; $0114 FETCHC
-@@ -2309,136 +2483,10 @@ fetchc:
+@@ -2309,136 +2493,10 @@ fetchc:
                  ld      a,(CMASK)
                  ld      hl,(CLOC)
                  ret

@@ -165,6 +165,18 @@ ROWS = {
                        'HEX$(PEEK(&HF92C));"]"')
        for n, addr, lo, hi in (("tupc_top", 0x0105, 8, 0), ("tupc_wrap", 0x0105, 8, 1),
                                ("tdownc_bot", 0x010B, 15, 0x17), ("tdownc_wrap", 0x010B, 15, 1))},
+    # NSETCX (scratchpad/biossweep_nsx2.out): HL pixels from pixel 2 of $108 across two
+    # bytes, as SETC sets / clears them, CLOC / CMASK back where they started. The
+    # registers it leaves are NOT compared (`END` before the [R] print): the VG-8020
+    # keeps none of them, and ours differ -- filed under D-BIOSCONTRACT.
+    **{n: prog(0x0123, 0, hl=12,
+               before="SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,32:"
+                      f"VPOKE &H108,{pat}:VPOKE &H110,{pat}:VPOKE &H2108,&H4F:VPOKE &H2110,&H4F:"
+                      f"POKE &HF3F2,{atr}",
+               after='P=VPEEK(&H108):Q=VPEEK(&H110):C=VPEEK(&H2108):D=VPEEK(&H2110):SCREEN 0:'
+                     'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(C);" ";HEX$(D);" ";'
+                     'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]":END')
+       for n, atr, pat in (("nsx_new", 6, 0), ("nsx_bg", 15, 255), ("nsx_fg", 4, 0))},
 }
 
 

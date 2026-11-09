@@ -17795,6 +17795,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       F for them: one `and a` on the shared wrap path. `prog_f` moved into
       basic_probe_biosregs.py; four F rows there (35/35). The span has 2 B left. Left: NSETCX,
       PNTINI / SCANR / SCANL, SCREEN 3, the 8 non-graphics stubs.
+      ✅ **NSETCX SHIPPED (2026-11-09), SCREEN 2.** Measured ([`biossweep_nsx.out`](scratchpad/biossweep_nsx.out)): HL pixels from
+      CLOC / CMASK rightward set exactly as SETC sets / clears them, colour bytes per byte,
+      and **CLOC / CMASK END WHERE THEY STARTED**. Ours: a SETC + RIGHTC loop between FETCHC
+      and a fall-through into STOREC. Room (the span is now FULL, 0 B): SCALXY's clips via
+      `rla` (-12 B), MAPXYC's (X AND $F8) OR (Y AND 7) as `xor e / and $F8 / xor e` (-4),
+      TDOWNC falling into DOWNC's wrap (-3), SETC's pattern write inlined and READC on
+      SETC's pop tail (-2), PNTINI / SCANR / SCANL on GTASPC's `ret`. 📏
+      [`biossweep_nsx2.out`](scratchpad/biossweep_nsx2.out): **NSETCX's VRAM and CLOC / CMASK SAME on the four HL >= 1 rows; all
+      27 earlier graphics rows still SAME**; three NSETCX rows in biosregs-acceptance (38/38),
+      which compare VRAM and the cells only.
+      ⚠️ **NSETCX's residuals (TIER 6 side, filed here):** (a) the registers -- the VG-8020
+      leaves HL / DE / BC / A / F all changed (e.g. HL = $2110, DE = $400F after 12 pixels
+      from $108), ours HL = CLOC, A = CMASK; matching them means matching its byte-wise
+      algorithm, and the span has no room. (b) **HL = 0: the VG-8020 still writes the first
+      byte's colour** (pattern untouched); ours does nothing. Left of the family: PNTINI /
+      SCANR / SCANL, SCREEN 3; then the 8 non-graphics stubs. Any further graphics byte
+      needs room from OUTSIDE the span first.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

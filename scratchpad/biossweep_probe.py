@@ -203,6 +203,25 @@ ROWS.update({
                        after=f'SCREEN 0:PRINT "[C";{SHOWC};"]"'),
 })
 
+# NSETCX ($0123): HL pixels from CLOC / CMASK rightward in ATRBYT. Start: pixel 2 of the
+# byte at $108 (CMASK $20); two adjacent bytes $108 / $110 and their colour bytes read
+# while still in SCREEN 2, then CLOC / CMASK
+def nsx(hl, atr, pat):
+    setup = ("SCREEN 2:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,32:"
+             f"VPOKE &H108,{pat}:VPOKE &H110,{pat}:VPOKE &H2108,&H4F:VPOKE &H2110,&H4F:POKE &HF3F2,{atr}")
+    show = ('P=VPEEK(&H108):Q=VPEEK(&H110):C=VPEEK(&H2108):D=VPEEK(&H2110):'
+            'SCREEN 0:PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(C);" ";HEX$(D);" ";' + SHOWC + ';"]"')
+    return prog_f(0x0123, 0, hl=hl, before=setup, after=show)
+
+
+ROWS.update({
+    "nsx_new": nsx(12, 6, 0),      # a new colour across two bytes
+    "nsx_bg":  nsx(12, 15, 255),   # the background colour: bits cleared?
+    "nsx_fg":  nsx(12, 4, 0),      # the foreground already
+    "nsx_one": nsx(1, 6, 0),
+    "nsx_zero": nsx(0, 6, 0),
+})
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)
