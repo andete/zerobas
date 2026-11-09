@@ -1,8 +1,39 @@
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..0ab165e 100644
+index bb11106..a8b3971 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -1182,6 +1182,13 @@ grpprt_sc2:
+@@ -840,18 +840,21 @@ settxt:
+                 call    wrtvdp          ; write VDP R#1
+ 
+                 ; Set the VDP base address registers. This works because
+-                ; TXTNAM, TXTCOL and TXTCGP are in same order as the VDP
+-                ; base address registers.
++                ; TXTNAM .. TXTPAT are in same order as the VDP base address
++                ; registers.
++                ; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): ALL FIVE, R#2
++                ; to R#6, as the VG-8020 does -- it holds RG3SAV / RG5SAV / RG6SAV
++                ; = 0 in SCREEN 0 (TXTCOL / TXTATR / TXTPAT are 0), where this
++                ; skipped TXTCOL and never wrote R#5 / R#6, so the copies kept the
++                ; previous mode's values (zerobas scratchpad/biossweep_b5.out).
+                 ld      de,TXTNAM
+                 ld      c,2
+-
+-                xor     a
+-                call    set_base_address
+-                inc     de              ; Skip TXTCOL.
+-                inc     de
+-                inc     c
++settxt_base:
+                 xor     a
+-                call    set_base_address
++                call    set_base_address ; DE += 2, C += 1
++                ld      a,c
++                cp      7
++                jr      nz,settxt_base
+ 
+                 ret
+ 
+@@ -1182,6 +1185,13 @@ grpprt_sc2:
                  ld      de,(GRPACY)
                  ld      bc,(GRPACX)
                  call    mapxy
@@ -16,7 +47,7 @@ index bb11106..0ab165e 100644
  
                  ld      a,(FORCLR)
                  ld      (ATRBYT),a
-@@ -1196,8 +1203,7 @@ grpprt_sc2:
+@@ -1196,8 +1206,7 @@ grpprt_sc2:
                  and     $07
  
                  ld      b,$00
@@ -26,7 +57,7 @@ index bb11106..0ab165e 100644
                  call    grpprt_chr_x
  
                  ld      bc,$00F0
-@@ -2155,150 +2161,328 @@ getpat_loop:    push    bc
+@@ -2155,150 +2164,328 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
@@ -457,7 +488,7 @@ index bb11106..0ab165e 100644
  
  ;--------------------------------
  ; $0114 FETCHC
-@@ -2309,136 +2493,10 @@ fetchc:
+@@ -2309,136 +2496,10 @@ fetchc:
                  ld      a,(CMASK)
                  ld      hl,(CLOC)
                  ret

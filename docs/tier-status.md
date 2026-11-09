@@ -171,7 +171,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**65 of 108** have a direct witness; **43 are NOT MEASURED**.
+**74 of 108** have a direct witness; **34 are NOT MEASURED**.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -189,9 +189,9 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0038 | KEYINT | NOT MEASURED | — |
 | $003B | INITIO | NOT MEASURED | — |
 | $003E | INIFNK | exercised | `biosregs-acceptance` |
-| $0041 | DISSCR | NOT MEASURED | — |
-| $0044 | ENASCR | NOT MEASURED | — |
-| $0047 | WRTVDP | NOT MEASURED | — |
+| $0041 | DISSCR | exercised | `biosregs-acceptance` |
+| $0044 | ENASCR | exercised | `biosregs-acceptance` |
+| $0047 | WRTVDP | exercised | `biosregs-acceptance` |
 | $004A | RDVRM | exercised | `biosregs-acceptance` |
 | $004D | WRTVRM | exercised | `biosregs-acceptance` |
 | $0050 | SETRD | exercised | `biosregs-acceptance` |
@@ -203,11 +203,11 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0062 | CHGCLR | NOT MEASURED | — |
 | $0066 | NMI | NOT MEASURED | — |
 | $0069 | CLRSPR | NOT MEASURED | — |
-| $006C | INITXT | NOT MEASURED | — |
-| $006F | INIT32 | NOT MEASURED | — |
-| $0072 | INIGRP | NOT MEASURED | — |
-| $0075 | INIMLT | NOT MEASURED | — |
-| $0078 | SETTXT | NOT MEASURED | — |
+| $006C | INITXT | exercised | `biosregs-acceptance` |
+| $006F | INIT32 | exercised | `biosregs-acceptance` |
+| $0072 | INIGRP | exercised | `biosregs-acceptance` |
+| $0075 | INIMLT | exercised | `biosregs-acceptance` |
+| $0078 | SETTXT | exercised | `biosregs-acceptance` |
 | $007B | SETT32 | NOT MEASURED | — |
 | $007E | SETGRP | NOT MEASURED | — |
 | $0081 | SETMLT | NOT MEASURED | — |
@@ -237,7 +237,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00C9 | FNKSB | NOT MEASURED | — |
 | $00CC | ERAFNK | exercised | `biosregs-acceptance` |
 | $00CF | DSPFNK | exercised | `biosregs-acceptance` |
-| $00D2 | TOTEXT | NOT MEASURED | — |
+| $00D2 | TOTEXT | exercised | `biosregs-acceptance` |
 | $00D5 | GTSTCK | NOT MEASURED | — |
 | $00D8 | GTTRIG | exercised | `biosregs-acceptance` |
 | $00DB | GTPAD | NOT MEASURED | — |

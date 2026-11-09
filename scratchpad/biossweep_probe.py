@@ -292,6 +292,9 @@ ROWS.update({
     "crt_on":   B.prog(0x0028, 0, before="KEY OFF:KEY ON", after=CRT),
 })
 
+# the TXT* base table ($F3B3 TXTNAM .. $F3BC), both machines, at the prompt
+ROWS["txttab"] = B.prog(0x0028, 0, after='A$="":FOR I=0 TO 9:A$=A$+HEX$(PEEK(&HF3B3+I))+",":NEXT:PRINT "[C";A$;"]"')
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

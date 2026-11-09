@@ -198,6 +198,22 @@ ROWS = {
     "inifnk": prog(0x003E, 0, before="FOR I=0 TO 15:POKE &HF87F+I,0:POKE &HF90F+I,0:NEXT",
                    after='S=0:FOR I=0 TO 159:S=S+PEEK(&HF87F+I)*(I+1):NEXT:'
                          'PRINT "[C";S;"]":END'),
+    # the screen-mode setters (D-BIOSCONTRACT (c), cbios-repack/graphics-cursor.patch's
+    # settxt): RG0SAV..RG7SAV and SCRMOD read before SCREEN 0 restores. SCREEN 0 holds
+    # RG3 / RG5 / RG6 = 0 as on the VG-8020 (C-BIOS kept the previous mode's).
+    # DISSCR / ENASCR / WRTVDP whole; the mode setters' HL / DE are side values (`END`).
+    **{n: prog(a, 0, bc=bc, before=bf,
+               after='A$="":FOR I=0 TO 7:A$=A$+HEX$(PEEK(&HF3DF+I))+",":NEXT:M=PEEK(&HFCAF):'
+                     'SCREEN 0:PRINT "[C";A$;M;"]"' + end)
+       for n, a, bc, bf, end in (("disscr", 0x0041, 0x1122, "", ""),
+                                 ("enascr", 0x0044, 0x1122, "DEFUSR1=&H41:Q=USR1(0)", ""),
+                                 ("wrtvdp", 0x0047, 0xF407, "", ""),
+                                 ("initxt", 0x006C, 0x1122, "", ":END"),
+                                 ("settxt", 0x0078, 0x1122, "", ":END"),
+                                 ("totext", 0x00D2, 0x1122, "SCREEN 2", ":END"),
+                                 ("init32", 0x006F, 0x1122, "", ":END"),
+                                 ("inigrp", 0x0072, 0x1122, "", ":END"),
+                                 ("inimlt", 0x0075, 0x1122, "", ":END"))},
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

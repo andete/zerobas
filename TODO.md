@@ -17865,6 +17865,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       chr$(7)` (CHPUT's BEL, which calls C-BIOS's internal beep, not the jump table) gave NO
       reading on the VG-8020 with that probe's onset anchor -- unmeasured, not claimed.
       Left of this list: (c) the text-mode VDP copies, (d) CLRSPR's X, STRTMS.
+      ✅ **(c) THE TEXT-MODE VDP COPIES SHIPPED (2026-11-09).** C-BIOS's settxt wrote R#2 and R#4 only
+      (it skipped TXTCOL and never wrote R#5 / R#6), so SCREEN 0 kept the previous mode's
+      RG3SAV / RG5SAV / RG6SAV. It now writes R#2..R#6 from TXTNAM..TXTPAT in a loop (3 B
+      SHORTER; cbios-repack/graphics-cursor.patch) -- TXTCOL / TXTATR / TXTPAT are 0 on both
+      ([`biossweep_txttab.out`](scratchpad/biossweep_txttab.out)), so the copies read the VG-8020's 0 / 1 / 0 / 0. 📏
+      [`biossweep_txt.out`](scratchpad/biossweep_txt.out): **the register copies and SCRMOD SAME in all 8 rows** (DISSCR /
+      ENASCR / WRTVDP whole; the mode setters' HL / DE differ -- the VG-8020 walks the table
+      with HL, ours with DE: side values). Nine biosregs-acceptance rows (81/81).
+      🔮 Predicted the tape corpus unchanged: MISSED, for the better -- **Ballblazer went RUNS?
+      (791 VRAM bytes apart) -> SAME (byte-identical)** and Arkanoid's NEAR 65 -> 32 bytes
+      ([`txt_tape.out`](scratchpad/txt_tape.out); tally 9 SAME / 11 NEAR / 22 RUNS?, was 8 / 11 / 23). Not traced which copy
+      they read (the software is run, never decoded); RG5SAV / RG6SAV (sprite tables) are
+      the likely ones.
       🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
       holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
       row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,

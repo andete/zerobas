@@ -1,0 +1,11 @@
+ROW disscr   VG=[[C0,B0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AB0]] ZB=[[C0,B0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AB0]] SAME
+ROW enascr   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AF0]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AF0]] SAME
+ROW wrtvdp   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 7 AF4]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 7 AF4]] SAME
+ROW initxt   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 1 AF0]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3E7 88CA 1 AF0]] DIVERGES
+ROW settxt   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 7 A0]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 0 F3BD 7 A7]] DIVERGES
+ROW totext   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 1 AF0]] ZB=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3E7 88CA 1 AF0]] DIVERGES
+ROW init32   VG=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3C7 0 1 AE0]] ZB=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3E7 88CA 1 AE0]] DIVERGES
+ROW inigrp   VG=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3D1 7F03 1 AE0]] ZB=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3E7 88D1 1 AE0]] DIVERGES
+
+3 SAME, 5 DIVERGE (initxt, settxt, totext, init32, inigrp)
+refcache: 8 hit, 8 miss, 8 stored
