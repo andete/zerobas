@@ -488,6 +488,10 @@ fperr_to_err:
 ; --- ERAFNK / DSPFNK: C-BIOS's are print_debug stubs (D-BIOSCONTRACT, 2026-11-09) --
 ; The jump-table slots point at basic/biosfnk.asm instead; PATCH_RANGES refuses
 ; unless they still read C-BIOS's `jp erafnk` / `jp dspfnk`.
+                org     $003E
+                jp      bios_inifnk         ; INIFNK: C-BIOS's was a stub too
+                org     $00C0
+                jp      bios_beep           ; BEEP: C-BIOS's was a stub too
                 org     $00CC
                 jp      bios_erafnk
                 jp      bios_dspfnk

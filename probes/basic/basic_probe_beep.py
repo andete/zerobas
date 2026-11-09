@@ -76,6 +76,10 @@ CASES = [
     ("chain",  "beep:beep"),            # two blips
     ("r7dyn",  "sound 7,190:beep"),     # prior R7=be; restore to b8 (dynamic, wipes SOUND 7)
     ("r8prior", "sound 8,10:beep"),     # prior R8=0a; BEEP zeroes it, not restores
+    # D-BIOSCONTRACT (2026-11-09): the BIOS entry BEEP ($00C0) called directly, and
+    # C-BIOS's was a print_debug stub (no tone at all). (`print chr$(7)` gave NO
+    # reading on the VG-8020 either -- this onset anchor does not see a BEL; unmeasured.)
+    ("bios",   "defusr=&hc0:a=usr(0)"),
 ]
 
 

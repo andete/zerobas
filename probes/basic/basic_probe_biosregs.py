@@ -192,6 +192,12 @@ ROWS = {
     "dsp2": prog(0x00CF, 0, before="KEY OFF:SCREEN 2:VPOKE &H398,7",
                  after='A=PEEK(&HF3DE):C=VPEEK(&H398):SCREEN 0:'
                        'PRINT "[C";HEX$(A);" ";HEX$(C);"]":END'),
+    # INIFNK (basic/biosfnk.asm): slots 1 and 10 zeroed, INIFNK, then a position-
+    # weighted sum over all 160 bytes of FNKSTR ($F87F) -- the defaults restored.
+    # Cells only: the VG-8020's HL / BC / A after it are side values.
+    "inifnk": prog(0x003E, 0, before="FOR I=0 TO 15:POKE &HF87F+I,0:POKE &HF90F+I,0:NEXT",
+                   after='S=0:FOR I=0 TO 159:S=S+PEEK(&HF87F+I)*(I+1):NEXT:'
+                         'PRINT "[C";S;"]":END'),
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

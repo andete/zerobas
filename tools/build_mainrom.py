@@ -75,6 +75,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0xED, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0010: bytes([0xC3, 0xFF, 0x10]),     # RST 10h -> chrgtr
                 0x0018: bytes([0xC3, 0x1B, 0x11]),     # RST 18h -> outdo
                 0x0028: bytes([0xC3, 0x27, 0x11]),     # RST 28h -> getypr
+                0x003E: bytes([0xC3, 0x58, 0x11]),     # INIFNK -> basic/biosfnk.asm
+                0x00C0: bytes([0xC3, 0x59, 0x16]),     # BEEP -> basic/biosfnk.asm
                 0x00CC: bytes([0xC3, 0x7E, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
                                0xC3, 0x90, 0x16]),     #  (D-BIOSCONTRACT)
                 0x1038: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput

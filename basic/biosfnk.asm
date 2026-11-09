@@ -1,7 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; biosfnk.asm -- the BIOS's ERAFNK ($00CC) and DSPFNK ($00CF), D-BIOSCONTRACT
+; biosfnk.asm -- the BIOS's INIFNK ($003E), ERAFNK ($00CC), DSPFNK ($00CF) and BEEP
+; ($00C0), D-BIOSCONTRACT
 ; (2026-11-09). C-BIOS's were print_debug stubs: a program's own KEY OFF / KEY ON
 ; through the BIOS did nothing. Measured on the Philips VG-8020, called directly
 ; (scratchpad/biossweep_fnk.out): ERAFNK sets CNSDFG ($F3DE) to 0 and blanks the
@@ -14,6 +15,16 @@
 ; console bounds its scroll by CRTCNT, so DSPFNK writes 23 until that is changed
 ; (TODO D-BIOSCONTRACT). Page 0 (the $3297 pad): a caller's page 1 may be RAM.
 ; Clean-room: own code; the published entry names and work-area cells.
+
+; INIFNK ($003E): C-BIOS's was a stub; the VG-8020 rewrites the ten defaults into
+; FNKSTR (scratchpad/biossweep_b5.out). The keystr tenant's op 0 -- what the cold
+; boot runs (basic/interp.asm) -- through bios_fnk's call.
+bios_inifnk:
+                push    hl
+                push    bc
+                push    ix
+                xor     a                   ; op 0: the defaults
+                jr      bios_fnk_key
 
 bios_erafnk:
                 xor     a                   ; the line hidden
@@ -34,11 +45,25 @@ bios_fnk:
                 jr      nc,bios_fnk_out     ; graphics: the cells only
                 ld      a,KEYOP_FNKBLANK
                 sub     c                   ; BLANK / PAINT (= BLANK + 1)
+bios_fnk_key:                               ; A = the keystr op
                 ld      (KEYARG),a
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
                 call    subrom_call         ; CF = no sub-ROM: nothing painted
 bios_fnk_out:
                 pop     ix
                 pop     bc
+                pop     hl
+                ret
+
+; BEEP ($00C0): C-BIOS's was a print_debug stub -- no tone. The sub-ROM's BEEP tenant
+; (sub/beep.asm, the body BASIC's BEEP runs) through subrom_call; the VG-8020's tone
+; is pinned by beep-acceptance's `bios` case (a USR to $00C0). HL / IX kept (CALSLT
+; spends the rest; the VG-8020 changes DE / BC too).
+bios_beep:
+                push    hl
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BEEP
+                call    subrom_call
+                pop     ix
                 pop     hl
                 ret

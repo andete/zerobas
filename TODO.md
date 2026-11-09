@@ -17855,6 +17855,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       old `jp`s); sub2/scrstmt.asm's KEY OFF / KEY ON now only call the BIOS (sub page 1 +25
       B). 📏 [`biossweep_fnk2.out`](scratchpad/biossweep_fnk2.out): **CNSDFG, the row and VRAM SAME in all four; four
       biosregs-acceptance rows (71/71).** 🔮 HIT, misses none.
+      ✅ **(b) INIFNK AND (e) BEEP SHIPPED (2026-11-09)**, beside them in basic/biosfnk.asm (+20 B of
+      the pad) with the jump-table slots $003E / $00C0 overlaid the same way. INIFNK = the
+      keystr tenant's op 0, the defaults the cold boot writes: 📏 biosregs-acceptance's
+      `inifnk` row (two slots zeroed, INIFNK, a weighted sum over all 160 bytes of FNKSTR)
+      SAME, 72/72 ([`biossweep_inifnk.out`](scratchpad/biossweep_inifnk.out): HL / BC / A are side values). BEEP = the
+      sub-ROM's BEEP tenant (BASIC's own body): 📏 beep-acceptance's new `bios` case (a USR
+      to $00C0) gives the VG-8020's PSG transient, 5/5 -- it was SILENT before. ⚠️ `print
+      chr$(7)` (CHPUT's BEL, which calls C-BIOS's internal beep, not the jump table) gave NO
+      reading on the VG-8020 with that probe's onset anchor -- unmeasured, not claimed.
+      Left of this list: (c) the text-mode VDP copies, (d) CLRSPR's X, STRTMS.
       🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
       holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
       row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,
