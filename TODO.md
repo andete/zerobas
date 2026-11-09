@@ -17988,6 +17988,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference** -- *"we should be able to fit all of disk rom in its one page like on
       reference."* So the room is CARVED (D-WRZER's carve steps 1-2 found 113 B the same day
       from duplicated spans; scratchpad/diskngram.py lists more), never a second page.
+      📏 **(1) MEASURED ON THE CF-3300 (2026-11-09)** -- probes/disk/dskfmt.asm (+ build_dskfmt_disk.py)
+      formats drive A of a throwaway copy from RAM under MSX-DOS ([`dskfmt_stock1.out`](scratchpad/dskfmt_stock1.out),
+      [`dskfmt_stock2.out`](scratchpad/dskfmt_stock2.out), [`dskfmt_both1.out`](scratchpad/dskfmt_both1.out)): **CHOICE** returns HL -> a menu, CR LF first:
+      "1 - 1 side" / "2 - 2 sides" / "3 - 1 side, double track" / "4 - 2 sides,double
+      track" (no space after that comma), ending CR LF CR LF. **DSKFMT choice 1** (D = 0,
+      HL = a $2000 work area): A = 0, Cy = 0, B = 0; then the disk reads back media **$FC**
+      -- 1 side, 9 sectors/track, 360 sectors, 1 sector/cluster, 1 reserved, 2 FATs of 2
+      sectors, 64 root entries; each FAT starts `FC FF FF` then zeros; the root is zeros;
+      sector 0 carries "MSX_01" and the BPB, AND THE REFERENCE'S OWN BOOT CODE -- which we
+      must NOT copy: ours writes its own loader (the BPB, FATs and root are the contract).
+      Ours: CHOICE HL = 0, DSKFMT A = 1, Cy = 1 (the stub). ➡️ Next: choices 2 / 3 / 4
+      measured the same way (the probe's `ld a, 1`), then the room (a carve pass), then the
+      build -- WD2793 Write Track per track, the boot sector, FATs, root.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
