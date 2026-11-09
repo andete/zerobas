@@ -240,15 +240,39 @@ def _gate_reach():
     return out, pys
 
 
+def _probe_asms():
+    """probe .asm basename -> its CODE (comments stripped): a probe a gate script
+    builds witnesses an entry it calls (bios_rows' rule, shared since D-ENTRYTIERS
+    step 3 -- dskent.asm's `ld ix, $4016` was invisible to the disk table)."""
+    asms = {}
+    for root, _, files in os.walk(os.path.join(REPO, "probes")):
+        for f in files:
+            if f.endswith(".asm"):
+                asms[f] = "\n".join(l.split(";", 1)[0]
+                                    for l in open(os.path.join(root, f), errors="replace"))
+    return asms
+
+
+def _witnesses(pat, reach, pys, asms):
+    gates = set()
+    for p, txt in pys.items():
+        if pat.search(txt):
+            gates |= reach.get(p, set())
+    for a, txt in asms.items():
+        if pat.search(txt):
+            for p, ptxt in pys.items():
+                if a in ptxt:
+                    gates |= reach.get(p, set())
+    return gates
+
+
 def published_rows():
     reach, pys = _gate_reach()
+    asms = _probe_asms()
     rows = []
     for addr, name in PUBLISHED:
         pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
-        gates = set()
-        for p, txt in pys.items():
-            if pat.search(txt):
-                gates |= reach.get(p, set())
+        gates = _witnesses(pat, reach, pys, asms)
         rows.append(dict(addr=addr, name=name, gates=sorted(gates),
                          status="exercised" if gates else "NOT MEASURED"))
     return rows
@@ -369,24 +393,11 @@ BIOS = [(0x0000, "CHKRAM"), (0x0008, "SYNCHR"), (0x000C, "RDSLT"), (0x0010, "CHR
 
 def bios_rows():
     reach, pys = _gate_reach()
-    asms = {}
-    for root, _, files in os.walk(os.path.join(REPO, "probes")):
-        for f in files:
-            if f.endswith(".asm"):
-                asms[f] = "\n".join(l.split(";", 1)[0]
-                                    for l in open(os.path.join(root, f), errors="replace"))
+    asms = _probe_asms()
     out = []
     for addr, name in BIOS:
         pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
-        gates = set()
-        for p, txt in pys.items():
-            if pat.search(txt):
-                gates |= reach.get(p, set())
-        for a, txt in asms.items():
-            if pat.search(txt):
-                for p, ptxt in pys.items():
-                    if a in ptxt:
-                        gates |= reach.get(p, set())
+        gates = _witnesses(pat, reach, pys, asms)
         out.append(dict(addr=addr, name=name, gates=sorted(gates),
                         status="exercised" if gates else "NOT MEASURED"))
     return out

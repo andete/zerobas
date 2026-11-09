@@ -10,7 +10,8 @@
 ;   record 1  DSKCHG after ~1 s idle   (JIFFY,  50 ticks)
 ;   record 2  DSKCHG after ~3 s idle   (JIFFY, 150 ticks)
 ;   record 3  DSKCHG after ~10 s idle  (JIFFY, 500 ticks)
-; Each record: A, F, B, C, D, E, H, L after the call. Called through CALSLT
+; Each record: the contract only (+1 Cy, +2 B; the rest $EE), gated in
+; bdos-acceptance since D-ENTRYTIERS step 3. Called through CALSLT
 ; ($001C) with the slot from $FB22 (dskent.asm's way; D-DRVINT). Self-loop at
 ; `done` -- the disk_probe_diff.py capture anchor.
 ;
@@ -76,26 +77,20 @@ chg:
                 ld      c, $F9
                 ld      hl, dpb
                 call    CALSLT
-                push    hl
+                ; D-ENTRYTIERS step 3 (2026-11-09): the CONTRACT only -- +1 = Cy, +2 =
+                ; B (1 unchanged / 0 unknown / $FF changed); A and HL differ in the
+                ; "unknown" rows (scratchpad/dskchg_ours3.out), outside it. The DPB
+                ; refreshed on "unknown" is captured after the records.
+                ld      d, b
                 push    af
+                pop     bc
                 ld      hl, (recp)
-                pop     de                      ; D = A, E = F
-                ld      (hl), d
                 inc     hl
-                ld      (hl), e
+                ld      a, c
+                and     1
+                ld      (hl), a                 ; +1 Cy
                 inc     hl
-                ld      (hl), b
-                inc     hl
-                ld      (hl), c
-                inc     hl
-                ld      (hl), 0
-                inc     hl
-                ld      (hl), 0
-                inc     hl
-                pop     de                      ; the call's HL
-                ld      (hl), d
-                inc     hl
-                ld      (hl), e
+                ld      (hl), d                 ; +2 B
                 ret
 
 recp:           dw      0

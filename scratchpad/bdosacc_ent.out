@@ -1,0 +1,12 @@
+
+===== AUXINX (build_auxinx_disk.py) =====
+  PASS  AUXINX capture 0x0400:0x08: 0-byte-diff (anchor t=13.8 ≥ keys-at); live-reg delta [AF] (benign epilogue)
+
+===== DSKENT (build_dskent_disk.py) =====
+  PASS  DSKENT capture 0x0400:0x40: 0-byte-diff (anchor t=14.0 ≥ keys-at); live-reg delta [BC, DE, IY] (benign epilogue)
+
+===== DSKCHG (build_dskchg_disk.py) =====
+  PASS  DSKCHG capture 0x0400:0x40: 0-byte-diff (anchor t=26.1 ≥ keys-at); live-reg delta [BC, DE, IX, IY] (benign epilogue)
+
+===== BDOSX acceptance: 3/3 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

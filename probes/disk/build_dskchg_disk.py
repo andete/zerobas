@@ -74,7 +74,7 @@ def main() -> int:
     print("next: python3 probes/disk/disk_probe_diff.py capture "
           f"--at {done_addr:#06x} --arm-check-val {sig:#04x} "
           "--settle 50 --machine both "
-          f"--mem 0x0400:0x20 --diska {args.out}")
+          f"--mem 0x0400:0x40 --diska {args.out}")
     return 0
 
 

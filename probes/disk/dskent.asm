@@ -9,8 +9,9 @@
 ;   record 1  DSKCHG ($4013)  A = 0 (drive A), B = 0, C = $F9 (media), HL = dpb
 ;   record 2  DSKCHG again (the disk was just read: "unchanged" expected)
 ;   record 3  GETDPB ($4016)  A = 0, B = $F9 (media), C = $F9, HL = dpb
-; Each record is the function's outward A, F, B, C, D, E, H, L. The DPB buffer
-; GETDPB fills is captured too. DSKFMT ($401C) is NOT called: it formats the
+; Each record holds the function's CONTRACT only (Cy at +1, DSKCHG's B at +2;
+; the rest $EE), since D-ENTRYTIERS step 3 gates it in bdos-acceptance. The DPB
+; buffer GETDPB fills is captured too. DSKFMT ($401C) is NOT called: it formats the
 ; disk; it needs its own probe on a scratch image.
 ; Self-loop at `done` -- the disk_probe_diff.py capture anchor.
 ;
@@ -36,18 +37,22 @@ start:
                 ld      ix, $4013
                 ld      (outp), hl
                 ld      hl, regs+1*8
-                call    xcall_keep
+                call    xcall_chg
                 xor     a                       ; record 2: DSKCHG again
                 ld      b, 0
                 ld      c, $F9
                 ld      ix, $4013
                 ld      hl, regs+2*8
-                call    xcall_keep
+                call    xcall_chg
                 xor     a                       ; record 3: GETDPB
                 ld      b, $F9
                 ld      c, $F9
                 ld      ix, $4016
                 ld      hl, regs+3*8
+                push    af
+                xor     a
+                ld      (bmask), a              ; GETDPB: B is not its answer
+                pop     af
                 call    xcall_keep
 done:
                 jr      done
@@ -66,32 +71,35 @@ xc_go:
                 ld      iyh, a
                 pop     af
                 call    CALSLT
+                ; D-ENTRYTIERS step 3 (2026-11-09): only each entry's CONTRACT is
+                ; recorded, so the record can be gated byte for byte: +1 = Cy (bit 0
+                ; of F), +2 = B where B is the answer (DSKCHG; `bmask` $FF), 0 for
+                ; MTOFF / GETDPB. A, the rest of F, C, D, E, H, L are outside the
+                ; published contracts and differ (scratchpad/dskent_both3.out); the
+                ; other bytes keep their $EE fill on both machines.
+                ld      d, b                    ; D = the call's B
                 push    af
-                push    hl
+                pop     bc                      ; C = the call's F
                 ld      hl, (recp)
-                pop     de                      ; DE = the call's HL
-                pop     af
-                push    de
-                ld      (hl), a                 ; +0 A
                 inc     hl
-                push    af
-                pop     de
-                ld      (hl), e                 ; +1 F
+                ld      a, c
+                and     1
+                ld      (hl), a                 ; +1 Cy
                 inc     hl
-                ld      (hl), b                 ; +2 B
-                inc     hl
-                ld      (hl), c                 ; +3 C
-                inc     hl
-                pop     de                      ; DE = the call's HL again
-                ld      (hl), 0                 ; +4 D / +5 E: not part of any of
-                inc     hl                      ; the three contracts here (they are
-                ld      (hl), 0                 ; kept as 0, not compared)
-                inc     hl
-                ld      (hl), d                 ; +6 H
-                inc     hl
-                ld      (hl), e                 ; +7 L
+                ld      a, (bmask)
+                and     d
+                ld      (hl), a                 ; +2 B (DSKCHG's answer) or 0
                 ret
 
+; xcall_chg -- xcall_keep for DSKCHG: B is its answer, recorded
+xcall_chg:
+                push    af
+                ld      a, $FF
+                ld      (bmask), a
+                pop     af
+                jr      xcall_keep
+
+bmask:          db      0
 recp:           dw      0
 outp:           dw      0
 

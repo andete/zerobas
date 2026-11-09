@@ -90,6 +90,15 @@ EXERCISERS = [
     # CF-3300's (scratchpad/bufinx_both1.out). The capture is the BUFFER only: the exit
     # registers differ (the CF-3300 leaves A = the CR) and are outside the contract.
     ("BUFINX", "build_bufinx_disk.py"),
+    # D-ENTRYTIERS step 3 (2026-11-09): the last entries tools/entry_table.py counted
+    # NOT MEASURED, each probe recording its CONTRACT only (the other registers differ
+    # outside it and are not captured): AUXINX -- BDOS $03 AUXIN's A ($1A on both;
+    # scratchpad/auxinx_both2.out); DSKENT -- the disk ROM's MTOFF / DSKCHG / GETDPB
+    # through CALSLT (Cy, DSKCHG's B, GETDPB's DPB); DSKCHG -- DSKCHG's B / Cy after
+    # 0 / 1 / 3 / 10 s idle and the DPB it refreshes (scratchpad/dskchg_ours3.out).
+    ("AUXINX", "build_auxinx_disk.py"),
+    ("DSKENT", "build_dskent_disk.py"),
+    ("DSKCHG", "build_dskchg_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

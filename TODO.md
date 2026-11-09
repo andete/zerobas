@@ -17586,6 +17586,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       its instruction line (every function shifted one pin down); a name merely MENTIONED in a
       comment tied fdc_di_save to WRZER (dropped: labels only). tests/test_entry_table.py (d)
       pins all three.
+      ✅ **STEP 3, THE PARKED PROBES INTO THE GATE (2026-11-09):** auxinx / dskent / dskchg -- measured
+      on 11-08 but parked in tools/probe-reach-allow.txt -- now record their entry's CONTRACT
+      ONLY (AUXIN's A; MTOFF nothing; DSKCHG's B and Cy; GETDPB's Cy and DPB; DSKCHG's
+      refreshed DPB), since the other registers differ outside it, and are bdos-acceptance
+      exercisers: **3/3 converged byte for byte** ([`bdosacc_ent.out`](scratchpad/bdosacc_ent.out)). tools/entry_table.py's disk
+      table read only Python scripts (DSKCHG matched by name alone, GETDPB / MTOFF stayed NOT
+      MEASURED though dskent.asm calls them); it shares bios_rows' probe-.asm rule now
+      (_probe_asms / _witnesses). **The tables now: BDOS 0 NOT MEASURED; disk ROM only DSKFMT
+      (it formats -- a scratch image); BIOS 76 of 108 witnessed.**
       ➡️ NEXT, in order: (2) the 10 NOT MEASURED functions and the unused numbers -- one
       differential against the CF-3300 each, registers + FCB / RAM out (bdosx's shape), into
       bdos-acceptance; lstoutx / setrnd_char / verifyx wired into a gate; (3) EXERCISED -> SAME:
