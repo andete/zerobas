@@ -1,0 +1,5 @@
+ROW chput    VG=[[R 5566 3344 1122 A41]] ZB=[[R 5566 3344 1122 A41]] SAME
+ROW outdo    VG=[[R 5566 3344 1122 A42]] ZB=[[R 5566 3344 1122 A42]] SAME
+
+2 SAME, 0 DIVERGE
+refcache: 0 hit, 4 miss, 4 stored

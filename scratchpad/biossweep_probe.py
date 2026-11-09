@@ -222,6 +222,55 @@ ROWS.update({
     "nsx_zero": nsx(0, 6, 0),
 })
 
+# D-ENTRYTIERS step 5, batch 5 (2026-11-09): the NOT MEASURED entries that are safe to
+# call directly -- no input wait, no tape / disk / printer, no slot switch. A mode
+# setter's effect is read from the VDP register copies RG0SAV..RG7SAV ($F3DF) and
+# SCRMOD ($FCAF) BEFORE SCREEN 0 restores the text screen.
+RGS = ('A$="":FOR I=0 TO 7:A$=A$+HEX$(PEEK(&HF3DF+I))+",":NEXT:M=PEEK(&HFCAF):'
+       'SCREEN 0:PRINT "[C";A$;M;"]"')
+CS = 'PRINT "[C";HEX$(PEEK(&HF3DE));"]"'
+B5 = {
+    "disscr":  B.prog(0x0041, 0, after=RGS),
+    "enascr":  B.prog(0x0044, 0, before="DEFUSR1=&H41:Q=USR1(0)", after=RGS),
+    "wrtvdp":  B.prog(0x0047, 0, bc=0xF407, after=RGS),
+    "initxt":  B.prog(0x006C, 0, after=RGS),
+    "init32":  B.prog(0x006F, 0, after=RGS),
+    "inigrp":  B.prog(0x0072, 0, after=RGS),
+    "inimlt":  B.prog(0x0075, 0, after=RGS),
+    "settxt":  B.prog(0x0078, 0, after=RGS),
+    "sett32":  B.prog(0x007B, 0, after=RGS),
+    "setgrp":  B.prog(0x007E, 0, after=RGS),
+    "setmlt":  B.prog(0x0081, 0, after=RGS),
+    "clrspr":  B.prog(0x0069, 0, before="SCREEN 1:VPOKE &H1B00,5:VPOKE &H1B01,6",
+                      after='P=VPEEK(&H1B00):Q=VPEEK(&H1B01):R=VPEEK(&H1B03):SCREEN 0:'
+                            'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(R);"]"'),
+    "gspsiz":  B.prog(0x008A, 0, before="SCREEN 1,2", after="SCREEN 0"),
+    "wrtpsg":  B.prog(0x0093, 8, de=0x000A),
+    "strtms":  B.prog(0x0099, 0),
+    "chput":   B.prog(0x00A2, 0x41, after="PRINT"),
+    "outdo":   B.prog(0x0018, 0x42, after="PRINT"),
+    "chrgtr":  B.prog(0x0010, 0, hl=0xD1FF, before="POKE &HD200,32:POKE &HD201,53:POKE &HD202,0"),
+    "getypr":  B.prog(0x0028, 0),
+    "iscntc":  B.prog(0x00BA, 0),
+    "ckcntc":  B.prog(0x00BD, 0),
+    "beep":    B.prog(0x00C0, 0),
+    "fnksb":   B.prog(0x00C9, 0, after=CS),
+    "erafnk":  B.prog(0x00CC, 0, after=CS),
+    "dspfnk":  B.prog(0x00CF, 0, before="KEY OFF", after=CS),
+    "totext":  B.prog(0x00D2, 0, before="SCREEN 2", after=RGS),
+    "stmotr":  B.prog(0x00F3, 0),
+    "lftq":    B.prog(0x00F6, 0),
+    "putq":    B.prog(0x00F9, 0, de=0x0041),
+    "chgcap1": B.prog(0x0132, 1),
+    "chgsnd1": B.prog(0x0135, 1),
+    "getvcp":  B.prog(0x0150, 0, de=0, hl=0),
+    "getvc2":  B.prog(0x0153, 0, hl=0),
+    "inifnk":  B.prog(0x003E, 0, before="POKE &HF87F,0:POKE &HF880,0",
+                      after='PRINT "[C";HEX$(PEEK(&HF87F));" ";HEX$(PEEK(&HF880));" ";HEX$(PEEK(&HF88F));"]"'),
+    "initio":  B.prog(0x003B, 0),
+}
+ROWS.update(B5)
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

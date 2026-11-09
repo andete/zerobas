@@ -1,0 +1,38 @@
+ROW disscr   VG=[[C0,B0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AB0]] ZB=[[C0,B0,0,80,1,36,7,F4, 0 ] | [R 5566 3344 1 AB0]] DIVERGES
+ROW enascr   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 1 AF0]] ZB=[[C0,F0,0,80,1,36,7,F4, 0 ] | [R 5566 3344 1 AF0]] DIVERGES
+ROW wrtvdp   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R 5566 3344 7 AF4]] ZB=[[C0,F0,0,80,1,36,7,F4, 0 ] | [R 5566 3344 7 AF4]] DIVERGES
+ROW initxt   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 1 AF0]] ZB=[[C0,F0,0,80,1,36,7,F4, 0 ] | [R F3E7 88CA 1 AF0]] DIVERGES
+ROW init32   VG=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3C7 0 1 AE0]] ZB=[[C0,E0,6,80,0,36,7,4, 1 ] | [R F3E7 88CA 1 AE0]] DIVERGES
+ROW inigrp   VG=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3D1 7F03 1 AE0]] ZB=[[C2,E0,6,FF,3,36,7,4, 2 ] | [R F3E7 88D1 1 AE0]] DIVERGES
+ROW inimlt   VG=[[C0,E8,2,0,0,36,7,4, 3 ] | [R F3DB 0 1 AE8]] ZB=[[C0,E8,2,0,0,36,7,4, 3 ] | [R F3E7 88D1 1 AE8]] DIVERGES
+ROW settxt   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 7 A0]] ZB=[[C0,F0,0,80,1,36,7,F4, 0 ] | [R 0 F3B9 5 A1]] DIVERGES
+ROW sett32   VG=[[C0,E0,6,80,0,36,7,F4, 0 ] | [R F3C7 0 7 A7]] ZB=[[C0,E0,6,80,0,36,7,F4, 0 ] | [R 0 F3C7 7 A7]] DIVERGES
+ROW setgrp   VG=[[C2,E0,6,FF,3,36,7,F4, 0 ] | [R F3D1 7F03 7 A7]] ZB=[[C2,E0,6,FF,3,36,7,F4, 0 ] | [R 0 F3D1 7 A7]] DIVERGES
+ROW setmlt   VG=[[C0,E8,2,0,0,36,7,F4, 0 ] | [R F3DB 0 7 A7]] ZB=[[C0,E8,2,0,0,36,7,F4, 0 ] | [R 0 F3DB 7 A7]] DIVERGES
+ROW clrspr   VG=[[CD1 6 F] | [R 1B80 330F 20 AF]] ZB=[[CD1 0 F] | [R 3800 FD1 0 A0]] DIVERGES
+ROW gspsiz   VG=[[R 5566 3344 1122 A20]] ZB=[[R 5566 3344 1122 A20]] SAME
+ROW wrtpsg   VG=[[R 5566 A 1122 A8]] ZB=[[R 5566 A 1122 A8]] SAME
+ROW strtms   VG=[[R FB40 3344 1122 A0]] ZB=[[R 5566 3344 1122 A0]] DIVERGES
+ROW chput    VG=[None] ZB=[None] NO-REFERENCE
+ROW outdo    VG=[None] ZB=[None] NO-REFERENCE
+ROW chrgtr   VG=[[R D201 3344 1122 A35]] ZB=[[R D201 3344 1122 A35]] SAME
+ROW getypr   VG=[[R 5566 3344 1122 AFF]] ZB=[[R 5566 3344 1122 AFF]] SAME
+ROW iscntc   VG=[[R 5566 3344 1122 A0]] ZB=[[R 5566 3344 1122 A0]] SAME
+ROW ckcntc   VG=[[R 5566 3344 1122 A0]] ZB=[[R 5566 3344 1122 A0]] SAME
+ROW beep     VG=[[R 5566 3307 0 A0]] ZB=[[R 5566 3344 1122 A0]] DIVERGES
+ROW fnksb    VG=[[CFF] | [R 5566 FC40 0 A0]] ZB=[[CFF] | [R 5566 3344 1122 A0]] DIVERGES
+ROW erafnk   VG=[[C0] | [R 5566 399 1122 A28]] ZB=[[CFF] | [R 5566 3344 1122 A0]] DIVERGES
+ROW dspfnk   VG=[[CFF] | [R 5566 FC40 0 A0]] ZB=[[C0] | [R 5566 3344 1122 A0]] DIVERGES
+ROW totext   VG=[[C0,F0,0,0,1,0,0,F4, 0 ] | [R F3BD 0 1 AF0]] ZB=[[C0,F0,0,FF,1,36,7,F4, 0 ] | [R F3E7 88CA 1 AF0]] DIVERGES
+ROW stmotr   VG=[[R 5566 3344 1122 A9]] ZB=[[R 5566 3344 1122 A9]] SAME
+ROW lftq     VG=[[R 7F 3344 100 A7F]] ZB=[[R 7F 3344 100 A7F]] SAME
+ROW putq     VG=[[R F959 41 1 A75]] ZB=[[R F975 41 0 A75]] DIVERGES
+ROW chgcap1  VG=[[R 5566 3344 1122 AD]] ZB=[[R 5566 3344 1122 A17]] DIVERGES
+ROW chgsnd1  VG=[[R 5566 3344 1122 AF]] ZB=[[R 5566 3344 1122 AF]] SAME
+ROW getvcp   VG=[[R FB43 0 1122 A0]] ZB=[[R FB43 0 1122 A0]] SAME
+ROW getvc2   VG=[[R FB41 3344 1122 A0]] ZB=[[R FB41 3344 1122 A0]] SAME
+ROW inifnk   VG=[[C63 6F 61] | [R 1449 F91F 0 A0]] ZB=[[C0 0 61] | [R 5566 3344 1122 A0]] DIVERGES
+ROW initio   VG=[[R 5566 330B 1122 AFF]] ZB=[[R 5566 33B8 1122 A7]] DIVERGES
+
+11 SAME, 22 DIVERGE (disscr, enascr, wrtvdp, initxt, init32, inigrp, inimlt, settxt, sett32, setgrp, setmlt, clrspr, strtms, beep, fnksb, erafnk, dspfnk, totext, putq, chgcap1, inifnk, initio), 2 no reference reading (chput, outdo)
+refcache: 0 hit, 70 miss, 70 stored

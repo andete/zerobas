@@ -17653,6 +17653,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a zero run in this ROM read through the DTA (the DTA may be in page 1 = this ROM under
       DOS? check P1_BLIT's rule), or a whole-sector zero path in WRBLK. Speed: one
       read-modify-write a record (20 records ~ 20 RMWs). Not built.
+      📐 **NO ZERO SOURCE NEEDED (2026-11-09):** disk.rom has no 128-byte zero run (the only
+      long one, $7F7F..$7FD0, straddles the FDC window). Instead: WRZER = (1) R0 := ceil(+16..18
+      / 128); R0 >= RR -> plain wrrnd_body; (2) wrrnd_body with the caller's record -- it
+      extends the file (wrrnd_ext); (3) for R = R0 .. RR-1: RR := R, rrnd_position (in the file
+      now), ZERO the record in SECTOR_BUF in place (BDOS_RECIDX * 128), rrnd_sector /
+      write_sector; (4) RR back, wrrnd_body once more (re-writes the caller's record, so the
+      FCB's cluster cache ends as plain WRRND leaves it). ~95 B. 🔴 **ROOM IS THE BLOCKER:**
+      `scratchpad/pinguard.py --slack` on 2026-11-09 found 390 B free in all, but no hole over
+      14 B (the 82 B at $7FD1 is mostly the FDC window; $7FC0..$7FD0 = 17 B usable), and
+      movescout over $7000..$7F7C finds only bdos_close_wm (14) and dsm_bump (10) small enough
+      for an existing hole. Needs a carve (diskngram / djr) or the routine split over the
+      $5006 / $501E / $504E / $50D5 holes (14 + 13 + 13 + 10 B, `jr`-linked).
 
 - [x] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
       THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**
@@ -17812,6 +17824,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       byte's colour** (pattern untouched); ours does nothing. Left of the family: PNTINI /
       SCANR / SCANL, SCREEN 3; then the 8 non-graphics stubs. Any further graphics byte
       needs room from OUTSIDE the span first.
+      📏 **BATCH 5 (2026-11-09): 35 MORE ENTRIES, CALLED DIRECTLY** ([`biossweep_b5.out`](scratchpad/biossweep_b5.out),
+      [`biossweep_b5b.out`](scratchpad/biossweep_b5b.out)) -- the NOT MEASURED rows safe to call (no input wait, tape, disk,
+      printer or slot switch): **13 SAME** (GSPSIZ, WRTPSG, CHRGTR, GETYPR, ISCNTC, CKCNTC,
+      STMOTR, LFTQ, CHGSND, GETVCP, GETVC2, CHPUT, OUTDO), **22 DIVERGE**. With the first
+      batch's SAME rows, **29 went into biosregs-acceptance (67/67)**: the BIOS table reads 62
+      of 108 with a direct witness (was 34). 🔮 ~15 SAME / 20 DIVERGE: MISSED low on
+      divergence (and CHPUT / OUTDO first gave no reading -- their output shared the
+      result's line; an instrument fault, fixed with a newline). **Contract divergences, by
+      reach** (the rest differ in side registers only -- HL / DE after the mode setters,
+      PUTQ's, INITIO's, CHGCAP's A -- the D-BIOSREGS class, later):
+      (a) **ERAFNK / DSPFNK are stubs**: CNSDFG ($F3DE) after ERAFNK is 0 on the VG-8020, after
+      DSPFNK $FF; ours unchanged. A program's own KEY OFF / KEY ON through the BIOS does
+      nothing. (b) **INIFNK is a stub**: the VG-8020 fills FNKSTR ($F87F: "co"...); ours
+      leaves it. (c) **SCREEN 0's VDP copies**: after INITXT / SETTXT / TOTEXT (and in BASIC's
+      SCREEN 0) the VG-8020 holds RG3SAV / RG5SAV / RG6SAV = 0; ours keeps the previous mode's
+      $80 / $36 / $07. (d) **CLRSPR** keeps each sprite's X on the VG-8020 (attribute +1);
+      ours zeroes it. (e) **BEEP, STRTMS**: registers differ, the SOUND is the contract and
+      is unmeasured -- C-BIOS's are stubs (no beep; PLAY's queues not started). ➡️ (a) / (b)
+      / (e) first: point the entries at the code BASIC already runs for KEY OFF / KEY ON /
+      its function-key defaults / BEEP (same image) where the calling conventions allow.
+      Still NOT MEASURED: the input waits (CHGET, PINLIN, INLIN, QINLIN), tape six, PHYDIO /
+      FORMAT, OUTDLP / LPTOUT, CALSLT-class slot calls, NMI / KEYINT, POSIT, WSLREG, CALBAS.
 
 - [ ] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

@@ -171,20 +171,20 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**34 of 108** have a direct witness; **74 are NOT MEASURED**.
+**62 of 108** have a direct witness; **46 are NOT MEASURED**.
 
 | address | call | status | exercised by |
 |---|---|---|---|
 | $0000 | CHKRAM | exercised | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `key-trap-acceptance`, `lof-acceptance` … |
 | $0008 | SYNCHR | exercised | `synchr-acceptance` |
 | $000C | RDSLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0010 | CHRGTR | NOT MEASURED | — |
+| $0010 | CHRGTR | exercised | `biosregs-acceptance` |
 | $0014 | WRSLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0018 | OUTDO | NOT MEASURED | — |
+| $0018 | OUTDO | exercised | `biosregs-acceptance` |
 | $001C | CALSLT | exercised | `p1vec-acceptance`, `subrom-acceptance` |
 | $0020 | DCOMPR | exercised | `biosregs-acceptance` |
 | $0024 | ENASLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0028 | GETYPR | NOT MEASURED | — |
+| $0028 | GETYPR | exercised | `biosregs-acceptance` |
 | $0030 | CALLF | exercised | `bootenv-acceptance`, `p1vec-acceptance` |
 | $0038 | KEYINT | NOT MEASURED | — |
 | $003B | INITIO | NOT MEASURED | — |
@@ -192,11 +192,11 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0041 | DISSCR | NOT MEASURED | — |
 | $0044 | ENASCR | NOT MEASURED | — |
 | $0047 | WRTVDP | NOT MEASURED | — |
-| $004A | RDVRM | NOT MEASURED | — |
-| $004D | WRTVRM | NOT MEASURED | — |
-| $0050 | SETRD | NOT MEASURED | — |
-| $0053 | SETWRT | NOT MEASURED | — |
-| $0056 | FILVRM | NOT MEASURED | — |
+| $004A | RDVRM | exercised | `biosregs-acceptance` |
+| $004D | WRTVRM | exercised | `biosregs-acceptance` |
+| $0050 | SETRD | exercised | `biosregs-acceptance` |
+| $0053 | SETWRT | exercised | `biosregs-acceptance` |
+| $0056 | FILVRM | exercised | `biosregs-acceptance` |
 | $0059 | LDIRMV | exercised | `biosregs-acceptance` |
 | $005C | LDIRVM | exercised | `biosregs-acceptance` |
 | $005F | CHGMOD | exercised | `screenerr-acceptance` |
@@ -213,24 +213,24 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0081 | SETMLT | NOT MEASURED | — |
 | $0084 | CALPAT | exercised | `biosregs-acceptance` |
 | $0087 | CALATR | exercised | `biosregs-acceptance` |
-| $008A | GSPSIZ | NOT MEASURED | — |
+| $008A | GSPSIZ | exercised | `biosregs-acceptance` |
 | $008D | GRPPRT | NOT MEASURED | — |
 | $0090 | GICINI | exercised | `gicini-acceptance` |
-| $0093 | WRTPSG | NOT MEASURED | — |
-| $0096 | RDPSG | NOT MEASURED | — |
+| $0093 | WRTPSG | exercised | `biosregs-acceptance` |
+| $0096 | RDPSG | exercised | `biosregs-acceptance` |
 | $0099 | STRTMS | NOT MEASURED | — |
-| $009C | CHSNS | NOT MEASURED | — |
+| $009C | CHSNS | exercised | `biosregs-acceptance` |
 | $009F | CHGET | NOT MEASURED | — |
-| $00A2 | CHPUT | NOT MEASURED | — |
+| $00A2 | CHPUT | exercised | `biosregs-acceptance` |
 | $00A5 | LPTOUT | exercised | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance` |
-| $00A8 | LPTSTT | NOT MEASURED | — |
-| $00AB | CNVCHR | NOT MEASURED | — |
+| $00A8 | LPTSTT | exercised | `biosregs-acceptance` |
+| $00AB | CNVCHR | exercised | `biosregs-acceptance` |
 | $00AE | PINLIN | NOT MEASURED | — |
 | $00B1 | INLIN | NOT MEASURED | — |
 | $00B4 | QINLIN | NOT MEASURED | — |
-| $00B7 | BREAKX | NOT MEASURED | — |
-| $00BA | ISCNTC | NOT MEASURED | — |
-| $00BD | CKCNTC | NOT MEASURED | — |
+| $00B7 | BREAKX | exercised | `biosregs-acceptance` |
+| $00BA | ISCNTC | exercised | `biosregs-acceptance` |
+| $00BD | CKCNTC | exercised | `biosregs-acceptance` |
 | $00C0 | BEEP | exercised | `beep-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
 | $00C3 | CLS | exercised | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `bloadofs-acceptance`, `bsavevar-acceptance` … |
 | $00C6 | POSIT | NOT MEASURED | — |
@@ -239,7 +239,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00CF | DSPFNK | NOT MEASURED | — |
 | $00D2 | TOTEXT | NOT MEASURED | — |
 | $00D5 | GTSTCK | NOT MEASURED | — |
-| $00D8 | GTTRIG | NOT MEASURED | — |
+| $00D8 | GTTRIG | exercised | `biosregs-acceptance` |
 | $00DB | GTPAD | NOT MEASURED | — |
 | $00DE | GTPDL | NOT MEASURED | — |
 | $00E1 | TAPION | exercised | `tapionlead-acceptance` |
@@ -248,8 +248,8 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00EA | TAPOON | NOT MEASURED | — |
 | $00ED | TAPOUT | NOT MEASURED | — |
 | $00F0 | TAPOOF | NOT MEASURED | — |
-| $00F3 | STMOTR | NOT MEASURED | — |
-| $00F6 | LFTQ | NOT MEASURED | — |
+| $00F3 | STMOTR | exercised | `biosregs-acceptance` |
+| $00F6 | LFTQ | exercised | `biosregs-acceptance` |
 | $00F9 | PUTQ | NOT MEASURED | — |
 | $00FC | RIGHTC | exercised | `biosregs-acceptance` |
 | $00FF | LEFTC | exercised | `biosregs-acceptance`, `slotregs-acceptance` |
@@ -259,7 +259,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $010B | TDOWNC | exercised | `biosregs-acceptance` |
 | $010E | SCALXY | exercised | `biosregs-acceptance` |
 | $0111 | MAPXYC | exercised | `biosregs-acceptance` |
-| $0114 | FETCHC | NOT MEASURED | — |
+| $0114 | FETCHC | exercised | `biosregs-acceptance` |
 | $0117 | STOREC | exercised | `biosregs-acceptance` |
 | $011A | SETATR | exercised | `biosregs-acceptance` |
 | $011D | READC | exercised | `biosregs-acceptance` |
@@ -270,18 +270,18 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $012C | SCANR | NOT MEASURED | — |
 | $012F | SCANL | NOT MEASURED | — |
 | $0132 | CHGCAP | NOT MEASURED | — |
-| $0135 | CHGSND | NOT MEASURED | — |
-| $0138 | RSLREG | exercised | `p1vec-acceptance` |
+| $0135 | CHGSND | exercised | `biosregs-acceptance` |
+| $0138 | RSLREG | exercised | `biosregs-acceptance`, `p1vec-acceptance` |
 | $013B | WSLREG | NOT MEASURED | — |
-| $013E | RDVDP | NOT MEASURED | — |
+| $013E | RDVDP | exercised | `biosregs-acceptance` |
 | $0141 | SNSMAT | exercised | `bootenv-acceptance` |
 | $0144 | PHYDIO | NOT MEASURED | — |
 | $0147 | FORMAT | exercised | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `float-acceptance` … |
-| $014A | ISFLIO | NOT MEASURED | — |
+| $014A | ISFLIO | exercised | `biosregs-acceptance` |
 | $014D | OUTDLP | NOT MEASURED | — |
-| $0150 | GETVCP | NOT MEASURED | — |
-| $0153 | GETVC2 | NOT MEASURED | — |
-| $0156 | KILBUF | NOT MEASURED | — |
+| $0150 | GETVCP | exercised | `biosregs-acceptance` |
+| $0153 | GETVC2 | exercised | `biosregs-acceptance` |
+| $0156 | KILBUF | exercised | `biosregs-acceptance` |
 | $0159 | CALBAS | NOT MEASURED | — |
 
 ## Every keyword and its status

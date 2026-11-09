@@ -177,6 +177,39 @@ ROWS = {
                      'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(C);" ";HEX$(D);" ";'
                      'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]":END')
        for n, atr, pat in (("nsx_new", 6, 0), ("nsx_bg", 15, 255), ("nsx_fg", 4, 0))},
+    # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
+    # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
+    # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /
+    # ISFLIO agree with nothing pending (no STOP, no file I/O): that state only.
+    "wrtvrm": prog(0x004D, 0x5A, hl=0x3F10),
+    "rdvrm": prog(0x004A, 0, hl=0x3F10, before="VPOKE &H3F10,&H5A"),
+    "setrd": prog(0x0050, 0, hl=0x3F10),
+    "setwrt": prog(0x0053, 0, hl=0x3F10),
+    "filvrm": prog(0x0056, 0x33, bc=4, hl=0x3F20),
+    "gttrig0": prog(0x00D8, 0),
+    "rdpsg7": prog(0x0096, 7),
+    "chsns": prog(0x009C, 0),
+    "cnvchr": prog(0x00AB, 0x41),
+    "rslreg": prog(0x0138, 0),
+    "rdvdp": prog(0x013E, 0),
+    "lptstt": prog(0x00A8, 0),
+    "kilbuf": prog(0x0156, 0),
+    "isflio": prog(0x014A, 0),
+    "breakx": prog(0x00B7, 0),
+    "fetchc": prog(0x0114, 0, before="SCREEN 2", after="SCREEN 0"),
+    "gspsiz": prog(0x008A, 0, before="SCREEN 1,2", after="SCREEN 0"),
+    "wrtpsg": prog(0x0093, 8, de=0x000A),
+    "chrgtr": prog(0x0010, 0, hl=0xD1FF, before="POKE &HD200,32:POKE &HD201,53:POKE &HD202,0"),
+    "getypr": prog(0x0028, 0),
+    "iscntc": prog(0x00BA, 0),
+    "ckcntc": prog(0x00BD, 0),
+    "stmotr": prog(0x00F3, 0),
+    "lftq": prog(0x00F6, 0),
+    "chgsnd1": prog(0x0135, 1),
+    "getvcp": prog(0x0150, 0, de=0, hl=0),
+    "getvc2": prog(0x0153, 0, hl=0),
+    "chput": prog(0x00A2, 0x41, after="PRINT"),
+    "outdo": prog(0x0018, 0x42, after="PRINT"),
 }
 
 
