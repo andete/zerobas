@@ -8562,8 +8562,6 @@ rrnd_pos_loop:
 rrnd_pos_err:
                 scf
                 ret
-                ds      1, $00              ; (was rrnd_recsector db 0 — cell moved to RAM
-                                            ; RRND_RECSEC; byte retained for net-zero layout)
 
 ; rrnd_sector — recover the absolute logical sector number rrnd_position's
 ; seek loop last landed on (see the placement note above for why this is
@@ -8571,29 +8569,12 @@ rrnd_pos_err:
 ;   out: DE = absolute logical sector number; trashes AF, BC, HL
 rrnd_sector:
                 ld      a, (FAT_CLUSSEC)
-                dec     a
-                ld      (RRND_CLUSSEC), a   ; (RAM: ROM cell here silently no-op'd)
+                dec     a                   ; the seek loop's sector: FAT_CLUSSEC - 1
                 ld      hl, (FAT_CURCLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de              ; HL = cluster - 2
-                ex      de, hl              ; DE = cluster - 2
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-rrnd_sector_mul:
-                add     hl, de
-                djnz    rrnd_sector_mul     ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
-                ld      a, (RRND_CLUSSEC)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl              ; DE = absolute logical sector (write_sector's convention)
-                ret
-                ds      1, $00              ; (was rrnd_clussec_tmp db 0 — cell moved to RAM
-                                            ; RRND_CLUSSEC; byte retained for net-zero layout)
+                jp      clus_sec            ; DE = the absolute sector -- clus_sec's
+                                            ; arithmetic, which stood here inline (D-DSKFMT
+                                            ; defrag, 2026-11-09; both callers reload HL
+                                            ; and write_sector sets A / B / C itself)
 
 rdrnd_body:
                 push    de

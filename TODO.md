@@ -18040,6 +18040,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pops HL and passes only DE / Cy on, ffds_haveclus reloads HL and A at once.
       **That region: 72 -> 113 B.** L5_journal / L5_stock and BDOSX3 / BDOSX9 / WRZER clean
       before the battery.
+      ✂️ **DEFRAG STEP 3 (2026-11-09):** rrnd_sector carried clus_sec's arithmetic a fourth time
+      (plus an RRND_CLUSSEC cell only it read); it tails into clus_sec now (both callers
+      reload HL, write_sector sets A / B / C), and the two `ds 1` net-zero fillers beside it
+      went. **The region in front of $7F7C: 11 -> 36 B** -- a home for the CHOICE text and the
+      geometry table (data, reached by address), the code staying in front of $75A5 (113 B).
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
