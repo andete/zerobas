@@ -8,6 +8,7 @@ session and the loop resumes exactly where it stopped.
 
 | ruling | Joost's words | consequence |
 |---|---|---|
+| the disk ROM stays ONE page | *"we should be able to fit all of disk rom in its one page like on reference."* (2026-11-09, when a second disk-ROM page was offered for D-DSKFMT's room) | ROOM FOR DISK-ROM WORK IS CARVED inside the one 16 KB page (diskngram / movescout / djr / pinguard --slack); never propose a second page or slot. Memory disk-rom-stays-one-page |
 | entry points before BASIC | *"I wonder if it would be useful to have each bios call and indirect (e.g.) disk bios call or bdos call have its own place in the tier list ?"* then *"The main reason I'm asking is imho having the bios and such stable and on par is of higher priority then having basic stable"* | READING (stated to him, open to correction): the entry-point surface -- main BIOS calls, disk-ROM entries, BDOS $00-$30 -- stable AND on par ranks ABOVE BASIC's own tiers, TIER 1 included; inside it the rung order holds. FIRST: D-ENTRYTIERS (TODO.md) builds the per-entry rows in docs/tier-status.md; the next items are picked from its NOT MEASURED / differs rows; filed entry-point items (D-BLKIOPERCALL's WRBLK / RDBLK) rank with it. Won't-fix rulings (D-BIOSINT, D-SLOT3EXP) stand. Memory entry-points-outrank-basic |
 
 ## 🟢 RULINGS 2026-11-05 — READ FIRST (they amend the tables below)
@@ -52,7 +53,13 @@ D-BIOSCONTRACT, D-ENTRYTIERS, D-NUMBUFASPCT for the measurements):
 - NUMBUF = FOUTBUF, ASPCT1/2 = $100 (clear_usrtab -- init's region before $475A is FULL);
 - entry tables: BDOS 0 NOT MEASURED, disk ROM only DSKFMT, BIOS 90 of 108 witnessed
   (biosregs-acceptance 104 rows). tools/entry_table.py shares the probe-.asm witness rule.
-OPEN, next by tier (all TIER 1, entry points): D-DSKFMT and D-WRZER's zero fill are
+LOOP PAUSED by Joost 2026-11-09 (~07:20): the heartbeat cron was cancelled; resume
+only when asked. Since the 11-09 state below: D-WRZER shipped (1f203e6d, its zero
+fill byte-identical to the CF-3300; the fac_comb HL mystery filed), PHYDIO witnessed
+(202b803e; BIOS 91 of 108).
+OPEN, next by tier (all TIER 1, entry points): D-DSKFMT is BLOCKED ON DISK-ROM ROOM
+(carve only -- the one-page ruling above); D-WRZER's zero fill is DONE. Was:
+D-DSKFMT and D-WRZER's zero fill are
 BLOCKED ON DISK-ROM ROOM (no hole over 14 B; scratchpad/diskngram.py 8 lists ~20
 duplicated runs of 8-29 B -- the carve pass is next); the CRTCNT item (VG holds 24
 under KEY ON; ~20 CRTCNT sites incl. C-BIOS CHPUT -- a scoped refactor); STRTMS /

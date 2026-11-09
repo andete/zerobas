@@ -17982,10 +17982,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from RAM, then reads sectors 0..13 back through DSKIO into the capture block): what
       CHOICE returns, which A selects what, and the boot sector / FAT / root it writes. (2)
       Build: WD2793 Write Track per track (the ID fields, gaps, sync), then the boot sector,
-      both FATs and an empty root -- a few hundred bytes. 🔴 ROOM IS THE BLOCKER, as for
-      D-WRZER's zero fill (~95 B): `scratchpad/pinguard.py --slack` on 2026-11-09 found no
-      disk.rom hole over 14 B (390 B scattered). Both need a carve pass first, or a decision
-      on a second disk-ROM page -- the latter is Joost's (a ROM-layout ruling).
+      both FATs and an empty root -- a few hundred bytes. 🔴 ROOM IS THE BLOCKER:
+      `scratchpad/pinguard.py --slack` on 2026-11-09 found no disk.rom hole over 14 B (390 B
+      scattered). 🏗️ **RULED (Joost 2026-11-09): the disk ROM stays ONE page, as on the
+      reference** -- *"we should be able to fit all of disk rom in its one page like on
+      reference."* So the room is CARVED (D-WRZER's carve steps 1-2 found 113 B the same day
+      from duplicated spans; scratchpad/diskngram.py lists more), never a second page.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
