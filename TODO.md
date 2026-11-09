@@ -18018,6 +18018,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ds`); two tail `jr`s became `jp` (out of reach after the move), and k47b2_nextbyte
       went back -- it falls into k47b2_nextbyte_get by a `jr nz`. **That region: 2 -> 72 B.**
       Next steps: the duplicated spans inside it (scratchpad/diskngram.py), then more moves.
+      ✂️ **DEFRAG STEP 2 (2026-11-09):** clus_sec (disk/kernel.asm: HL = cluster, A = the sector in
+      it -> DE = the absolute sector) stood a second and third time, inline, in frs_head and
+      ffds_haveclus (basic/fat-prim-body.inc); both call it now. Their exit A / HL differ
+      from the inline copies' -- checked against the HL lesson above: frs_head's one caller
+      pops HL and passes only DE / Cy on, ffds_haveclus reloads HL and A at once.
+      **That region: 72 -> 113 B.** L5_journal / L5_stock and BDOSX3 / BDOSX9 / WRZER clean
+      before the battery.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

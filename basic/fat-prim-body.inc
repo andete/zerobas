@@ -581,23 +581,12 @@ frs_head:
                 sbc     hl, de
                 ccf
                 ret     c                   ; free (< 2) or end of chain (>= $0FF8)
-                add     hl, de
-                ex      de, hl              ; DE = cluster - 2
-                ; sector = firstData + (cluster-2)*secPerClus + clussec
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-frs_mul:
-                add     hl, de
-                djnz    frs_mul             ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
+                ; sector = firstData + (cluster-2)*secPerClus + clussec: clus_sec's
+                ; arithmetic (disk/kernel.asm), which stood here a second time (D-DSKFMT
+                ; defrag, 2026-11-09). The caller pops HL and reads DE / Cy only.
+                ld      hl, (FAT_CURCLUS)
                 ld      a, (FAT_CLUSSEC)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector (Cy = 0)
-                ex      de, hl
-                ret
+                jp      clus_sec            ; DE = the absolute sector (Cy = 0)
 
 ; (D-FATENG Option 2 assembled the next routine in the sub-ROM only -- `IF
 ; DISK_BUILD / ELSE` -- because it touched basic-core's FCH_ACTIVE / FCH_MODES.)
@@ -1205,25 +1194,11 @@ ffds_setclus:
                 xor     a
                 ld      (FWR_SECIDX), a     ; start at sector 0 of the new cluster
 ffds_haveclus:
-                ; absolute sector = firstData + (cluster-2)*secPerClus + WRSECIDX
+                ; absolute sector = firstData + (cluster-2)*secPerClus + WRSECIDX: clus_sec
+                ; (disk/kernel.asm) -- the same arithmetic stood here (D-DSKFMT defrag)
                 ld      hl, (FWR_CLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de
-                ex      de, hl              ; DE = cluster - 2
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-ffds_mul:
-                add     hl, de
-                djnz    ffds_mul            ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
                 ld      a, (FWR_SECIDX)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl              ; DE = sector
+                call    clus_sec            ; DE = sector
                 ld      hl, FAT_DBUF
                 call    fatprim_write_sector
                 ret     c
