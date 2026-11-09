@@ -17972,6 +17972,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
+- [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
+      2026-11-09)**
+      🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
+      calls), which the one-function exercisers (bdosx..) do not reach: the entry-point ruling.
+      🤖 **AUTONOMOUS** — probes/programs' shape (L1..L5 BASIC programs, run_programs.py) at the
+      BDOS level: our own small .COM programs, each writing its results to a capture block
+      (and the screen), run on the National_CF-3300 and ours with fat12_add + AUTOEXEC.BAT and
+      disk_probe_diff.py capture at `done`; one runner, one gate (dosprog-acceptance). Rungs:
+      D1 hello / echo (CONOUT, STROUT, BUFIN, version) · D2 type (FOPEN, sequential read to
+      EOF) · D3 copy (FMAKE, SEQWRITE, FCLOSE, re-read) · D4 dir (SFIRST / SNEXT over
+      wildcards, sizes, ALLOC) · D5 ren / del (FREN, FDEL with wildcards, the error paths) ·
+      D6 a random-access database (WRRND / RDRND, WRZER, RDBLK / WRBLK, FSIZE, SETRND) · D7 a
+      mini editor / sort (many files, append, truncate by WRBLK of 0). Clean-room: own code.
+      ⏳ Order against D-DSKFMT's carve: asked of Joost 2026-11-09, unanswered at filing.
+
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
       🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
