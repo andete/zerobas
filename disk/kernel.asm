@@ -4497,6 +4497,35 @@ wz_out:
                 pop     hl
                 ret
 
+; seq_k_adv -- BDOS_SEQREC += 1 = K; the kernel FCB copy's +32 CR := K AND $7F and
+; +12 EX := K >> 7; HL = K. seq_k30 -- +30 := (K - 1) / records-per-cluster, from
+; HL = K. Both stood twice, in wrseq_writeback and wrseq_wr_writeback (D-DSKFMT
+; defrag, 2026-11-09). Clobber A, B (seq_k30 also C, DE, HL).
+seq_k_adv:
+                ld      hl, (BDOS_SEQREC)
+                inc     hl
+                ld      (BDOS_SEQREC), hl
+                ld      a, l
+                and     $7F
+                ld      ($DA40+32), a
+                push    hl
+                ld      b, 7
+ska_shr:
+                srl     h
+                rr      l
+                djnz    ska_shr             ; HL = K >> 7
+                ld      a, l
+                ld      ($DA40+12), a
+                pop     hl
+                ret
+seq_k30:
+                dec     hl
+                ld      a, (FAT_SECPERCLUS)
+                call    recperclus_div
+                ld      a, e
+                ld      ($DA40+30), a
+                ret
+
 ; recperclus_div -- DE := HL / (A * RECPERSEC), A = FAT_SECPERCLUS on entry (the
 ; records in a cluster); div_hl_bc -- DE := HL / BC by subtraction (HL ends one BC
 ; past the remainder, Cy set). The pair stood twice (wrseq_writeback /
@@ -4857,38 +4886,14 @@ k47b2_nextbyte_get:
 wrseq_writeback:
                 push    af                  ; preserve bdos_seqread's exit A
                 ; K := BDOS_SEQREC + 1
-                ld      hl, (BDOS_SEQREC)
-                inc     hl
-                ld      (BDOS_SEQREC), hl   ; HL = K
-                push    hl                  ; keep K on the stack (K-1 div needs it again)
-                ; copy+32 := K mod 128 (low 7 bits of K's low byte)
-                ld      a, l
-                and     $7F
-                ld      ($DA40+32), a
-                ; copy+12 := K div 128 = (HL >> 7), low byte (fits a byte, floppy range)
-                pop     hl                  ; HL = K
+                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
                 push    hl
-                ld      b, 7
-wsw_shr7:
-                srl     h
-                rr      l
-                djnz    wsw_shr7            ; HL = K >> 7
-                ld      a, l
-                ld      ($DA40+12), a
                 ; copy+28/29 := FAT_CURCLUS (word)
                 ld      hl, (FAT_CURCLUS)
                 ld      ($DA40+28), hl
                 ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
                 pop     hl                  ; HL = K
-                dec     hl                  ; HL = K-1
-                ; recPerClus = FAT_SECPERCLUS * RECPERSEC, by repeated addition
-                ; (RECPERSEC is a small compile-time constant, currently 4; this
-                ; stays correct even if it is ever redefined -- own choice, no
-                ; oracle bytes, same idiom as wshrink_divloop's repeated-sub div).
-                ld      a, (FAT_SECPERCLUS)
-                call    recperclus_div      ; DE = HL / (FAT_SECPERCLUS * RECPERSEC)
-                ld      a, e                ; quotient fits a byte (floppy record range)
-                ld      ($DA40+30), a
+                call    seq_k30             ; +30 := (K-1)'s cluster index
                 pop     af                  ; restore bdos_seqread's exit A
                 ret
 
@@ -5147,24 +5152,8 @@ wrseq_wr_writeback:
                 push    de
                 push    hl
                 ; K := BDOS_SEQREC + 1
-                ld      hl, (BDOS_SEQREC)
-                inc     hl
-                ld      (BDOS_SEQREC), hl   ; HL = K
-                push    hl                  ; keep K (the (K-1) div needs it again)
-                ; copy+32 := K mod 128 (low 7 bits of K's low byte)
-                ld      a, l
-                and     $7F
-                ld      ($DA40+32), a
-                ; copy+12 := K div 128 = (HL >> 7), low byte (fits a byte, floppy)
-                pop     hl                  ; HL = K
+                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
                 push    hl
-                ld      b, 7
-wsww_shr7:
-                srl     h
-                rr      l
-                djnz    wsww_shr7           ; HL = K >> 7
-                ld      a, l
-                ld      ($DA40+12), a
                 ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
                 ld      hl, (BDOS_WRCLUS)
                 ld      ($DA40+28), hl
@@ -5172,11 +5161,7 @@ wsww_shr7:
                 call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX8)
                 ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
                 pop     hl                  ; HL = K
-                dec     hl                  ; HL = K-1
-                ld      a, (FAT_SECPERCLUS)
-                call    recperclus_div      ; DE = HL / (FAT_SECPERCLUS * RECPERSEC)
-                ld      a, e                ; quotient fits a byte (floppy record range)
-                ld      ($DA40+30), a
+                call    seq_k30             ; +30 := (K-1)'s cluster index
                 ; copy+16..19 := BDOS_WRBYTES (running file size, 4-byte LE). Stock
                 ; maintains the in-memory FCB size on every written record (proven
                 ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin

@@ -18045,6 +18045,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reload HL, write_sector sets A / B / C), and the two `ds 1` net-zero fillers beside it
       went. **The region in front of $7F7C: 11 -> 36 B** -- a home for the CHOICE text and the
       geometry table (data, reached by address), the code staying in front of $75A5 (113 B).
+      ✂️ **DEFRAG STEP 4 (2026-11-09):** wrseq_writeback / wrseq_wr_writeback shared two runs --
+      K := BDOS_SEQREC + 1 with +32 CR / +12 EX (28 B) and +30 from K - 1 (12 B) -- now
+      seq_k_adv / seq_k30 (replaced by RANGE, each range checked to hold exactly the expected
+      instructions: the source interleaves full-line comments, which defeated a text
+      anchor). **The region in front of $75A5: 113 -> 137 B.** BDOSX / 2 / 3 / 8 clean.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
