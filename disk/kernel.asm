@@ -4091,22 +4091,7 @@ wrblk_zero_path:
                 ; grow-or-hold (target >= old size) or shrink (target < old size). RR
                 ; itself is NOT advanced (+= 0, a no-op) per [LANDED-A].
                 call    wrblk_mul_rr_rs     ; WRBLK_MULACC := (ix+33..35, = RR unchanged) * RS
-                ; compare WRBLK_MULACC vs FAT_FILESIZE (32-bit unsigned, MSB first)
-                ld      a, (WRBLK_MULACC + 3)
-                ld      hl, FAT_FILESIZE + 3
-                cp      (hl)
-                jr      nz, wzp_decided
-                ld      a, (WRBLK_MULACC + 2)
-                dec     hl
-                cp      (hl)
-                jr      nz, wzp_decided
-                ld      a, (WRBLK_MULACC + 1)
-                dec     hl
-                cp      (hl)
-                jr      nz, wzp_decided
-                ld      a, (WRBLK_MULACC)
-                dec     hl
-                cp      (hl)
+                call    mulacc_cmp          ; WRBLK_MULACC vs FAT_FILESIZE (Cy = below)
 wzp_decided:
                 jr      c, wzp_shrink       ; MULACC < FAT_FILESIZE -> shrink path
                 call    wrblk_size_max      ; MULACC >= old size -> grow-or-hold (no chain change)
@@ -4416,24 +4401,30 @@ wm16_no:
                 dec     a
                 jr      nz, wm16_lp
                 ret
-; wrblk_size_max — BDOS_WRBYTES(32) := max(FAT_FILESIZE, WRBLK_MULACC). Simple
-; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
-wrblk_size_max:
+; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
+; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
+; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL.
+mulacc_cmp:
                 ld      a, (WRBLK_MULACC + 3)
                 ld      hl, FAT_FILESIZE + 3
                 cp      (hl)
-                jr      nz, wsm_decided
+                ret     nz
                 ld      a, (WRBLK_MULACC + 2)
                 dec     hl
                 cp      (hl)
-                jr      nz, wsm_decided
+                ret     nz
                 ld      a, (WRBLK_MULACC + 1)
                 dec     hl
                 cp      (hl)
-                jr      nz, wsm_decided
+                ret     nz
                 ld      a, (WRBLK_MULACC)
                 dec     hl
                 cp      (hl)
+                ret
+; wrblk_size_max — BDOS_WRBYTES(32) := max(FAT_FILESIZE, WRBLK_MULACC). Simple
+; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
+wrblk_size_max:
+                call    mulacc_cmp
 wsm_decided:
                 jr      c, wsm_keepold      ; MULACC < FILESIZE -> old size wins
                 ld      hl, WRBLK_MULACC
@@ -4581,22 +4572,8 @@ wshrink_ioerr:
 ; on the stack, popped back for the RR write-back + IY return at the end).
 k47b2_body:
                 push    de                  ; save entry FCB ptr (RR write-back + IY return)
-                ld      (RDBLK_REQ), hl     ; save entry HL = requested record count (step 3)
-                ; --- step 2: record size <- FCB+14..15, 0 -> 128 default ----------
-                ld      hl, 14
-                add     hl, de
-                ld      a, (hl)
-                ld      (RDBLK_RECSIZE), a
-                inc     hl
-                ld      a, (hl)
-                ld      (RDBLK_RECSIZE + 1), a
-                ld      hl, (RDBLK_RECSIZE)
-                ld      a, h
-                or      l
-                jr      nz, k47b2_rs_ok
-                ld      hl, RECSIZE
-                ld      (RDBLK_RECSIZE), hl
-k47b2_rs_ok:
+                ; --- steps 2/3: RDBLK_REQ, record size <- FCB+14..15, 0 -> 128 --
+                call    rdblk_rs            ; (driver.asm, shared with bdos_rdblk)
                 ; --- step 4: RR start <- FCB+33..35 (24-bit) -> RDBLK_RRSTART -----
                 pop     hl                  ; HL = entry FCB ptr (peek without losing it)
                 push    hl

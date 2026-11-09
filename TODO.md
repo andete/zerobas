@@ -17674,6 +17674,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       movescout over $7000..$7F7C finds only bdos_close_wm (14) and dsm_bump (10) small enough
       for an existing hole. Needs a carve (diskngram / djr) or the routine split over the
       $5006 / $501E / $504E / $50D5 holes (14 + 13 + 13 + 10 B, `jr`-linked).
+      ✂️ **CARVE STEP 1 (2026-11-09):** two duplicates scratchpad/diskngram.py found, factored --
+      the 4-byte WRBLK_MULACC-vs-FAT_FILESIZE compare chain (wrblk_zero_path and
+      wrblk_size_max, 28 B each) into `mulacc_cmp`, and the record-size resolution
+      (bdos_rdblk and k47b2_body, 29 B each) into `rdblk_rs` (22 B: the FCB word loaded
+      straight into HL). The first cut kept rdblk_rs's 30-byte form and overran driver.asm's
+      $461D pin by 5 B (EMPTY ROM; pinguard named it). **The region in front of $75A5 holds
+      58 B now (was 8).** 📐 Sized concretely, the zero fill is ~110 B, not 95 (R0 from the
+      24-bit size, the per-record reposition / zero / write, RR put back on both exits): ~50 B
+      more in that region next -- fnc_combine / fac_comb (24 B x2) and the 11 B x3 groups
+      (wrblk_shrink / wsw_recperclus / wsww_recperclus) are in it.
 
 - [x] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
       THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**

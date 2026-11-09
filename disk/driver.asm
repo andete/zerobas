@@ -782,21 +782,26 @@ bsr_eof:
 ; Bounded by the true file size in BDOS_BYTESLEFT (reseeded from FAT_FILESIZE here).
 ; See disk/PROVENANCE.md §BDOS interface.
 bdos_rdblk:
-                ld      (RDBLK_REQ), hl     ; save requested record count
-                ; record size <- FCB+14..15 (DE = FCB)
+                call    rdblk_rs
+                jr      rdb_rs_ok
+; rdblk_rs -- RDBLK_REQ := HL (the requested record count); RDBLK_RECSIZE := the
+; FCB's (DE) record size at +14..15, 0 -> 128 (MSX-DOS block I/O). Shared with
+; k47b2_body, which carried the same 29 B (D-WRZER's carve, 2026-11-09).
+rdblk_rs:
+                ld      (RDBLK_REQ), hl
                 ld      hl, 14
                 add     hl, de
                 ld      a, (hl)
-                ld      (RDBLK_RECSIZE), a
                 inc     hl
-                ld      a, (hl)
-                ld      (RDBLK_RECSIZE + 1), a
-                ld      hl, (RDBLK_RECSIZE) ; 0 -> default 128 (MSX-DOS block I/O)
+                ld      h, (hl)
+                ld      l, a                ; HL = the FCB's record size
                 ld      a, h
                 or      l
-                jr      nz, rdb_rs_ok
-                ld      hl, RECSIZE
+                jr      nz, rrs_st
+                ld      hl, RECSIZE         ; 0 -> 128
+rrs_st:
                 ld      (RDBLK_RECSIZE), hl
+                ret
 rdb_rs_ok:
                 ; re-prime the read position to the file start (random record 0)
                 call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
