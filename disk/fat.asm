@@ -361,10 +361,7 @@ fwe_cmp:
                 call    nz, fat_write_buf_allfats   ; out FIRST (it clears the flag;
                                             ; bit 1 = dirty since D-RECSLOW)
                 pop     hl
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 jp      fwe_have
 
 ; --- disk.rom's copies of three shared-body routines (basic/fat-prim-body.inc),

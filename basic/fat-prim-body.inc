@@ -686,10 +686,7 @@ fac_loop:
                 pop     hl                  ; before another sector replaces it
                 jr      c, fac_rderr
                 ld      (FAT_WRTMP2), hl    ; remember the new cached sector
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 jr      c, fac_rderr
 fac_have_sec:
                 ; read the 12-bit entry from FAT_MBUF (handles straddle into next sec).
@@ -860,10 +857,7 @@ fwe_byte1:
                 jr      c, fwe_err
                 ld      hl, (FAT_FATSEC)
                 inc     hl
-                ld      (FAT_FATSEC), hl    ; advance to the straddle sector
-                ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
+                call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 jr      c, fwe_err
                 ld      hl, FAT_MBUF           ; patch byte 0 of the next sector
                 ld      de, (FAT_WRTMP)

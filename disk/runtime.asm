@@ -38,10 +38,7 @@ fac_cached_entry:
                 pop     hl
                 jr      z, fce_have         ; already loaded -> no re-read
                 ld      (FAT_WRTMP2), hl    ; remember the new cached sector
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, WBUF
-                call    read_sector
+                call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 ret     c
 fce_have:
                 jp      fac_entry_from_wbuf ; DE = entry value

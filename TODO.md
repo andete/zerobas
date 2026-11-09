@@ -18050,6 +18050,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       seq_k_adv / seq_k30 (replaced by RANGE, each range checked to hold exactly the expected
       instructions: the source interleaves full-line comments, which defeated a text
       anchor). **The region in front of $75A5: 113 -> 137 B.** BDOSX / 2 / 3 / 8 clean.
+      ✂️ **DEFRAG STEP 5 (2026-11-09):** the fifteen bodiless canonical entries (k_4919 .. k_782B)
+      share ONE `ret` (they stood as fifteen); `ld (FAT_FATSEC),hl` / `ex de,hl` / `ld
+      hl,FAT_MBUF` / `call read_sector` stood four times -> rd_fatsec (tail `jp`, the same
+      registers out). **$75A5's region 141 B, $7F7C's 57 B.** L5_journal / L5_stock (the BSAVE
+      that caught the HL fault) and BDOSX3 / 8 / 9 / WRZER clean.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

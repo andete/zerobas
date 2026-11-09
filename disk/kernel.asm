@@ -4497,6 +4497,15 @@ wz_out:
                 pop     hl
                 ret
 
+; rd_fatsec -- FAT_FATSEC := HL and read that sector into FAT_MBUF (= WBUF); Cy and A
+; as read_sector leaves them. The four instructions stood four times (fat_alloc's
+; scan, both fat_write_fat_entry paths, fac_cached_entry): D-DSKFMT defrag, 2026-11-09.
+rd_fatsec:
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, FAT_MBUF
+                jp      read_sector
+
 ; seq_k_adv -- BDOS_SEQREC += 1 = K; the kernel FCB copy's +32 CR := K AND $7F and
 ; +12 EX := K >> 7; HL = K. seq_k30 -- +30 := (K - 1) / records-per-cluster, from
 ; HL = K. Both stood twice, in wrseq_writeback and wrseq_wr_writeback (D-DSKFMT
@@ -7575,20 +7584,22 @@ k_46C8:         ret
 ; $4919 span, so this veneer diverts to k47b2_body in the free kernel tail
 ; (below k_47B2 in this file); every k_* canonical address stays net-zero.
 k_47B2:         jp      k47b2_body          ; Tier-2 3b: divert; veneer fills the gap
-k_4919:         ret
-k_4935:         ret
-k_498C:         ret
-k_49B4:         ret
-k_4A39:         ret
-k_4B59:         ret
-k_4BE5:         ret
-k_4C25:         ret
-k_4E4B:         ret
-k_4EDE:         ret
-k_5FE5:         ret
-k_607B:         ret
-k_75A5:         ret
-k_77B8:         ret
+; (the canonical entries with no body yet share ONE `ret` -- they stood as fifteen;
+; D-DSKFMT defrag, 2026-11-09)
+k_4919:
+k_4935:
+k_498C:
+k_49B4:
+k_4A39:
+k_4B59:
+k_4BE5:
+k_4C25:
+k_4E4B:
+k_4EDE:
+k_5FE5:
+k_607B:
+k_75A5:
+k_77B8:
 k_782B:         ret
 
 ; p1_blit_tmpl — clean-room blit routine (§8.35), LDIR'd to P1_BLIT ($E77A) by
