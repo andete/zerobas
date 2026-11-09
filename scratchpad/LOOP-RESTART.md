@@ -35,7 +35,32 @@ session and the loop resumes exactly where it stopped.
 | COPY TO, 2+ matches (RULED) | *"b, copy every match like the reference"* | D-COPYALL: after the Fable agent's 30-case measurement (copymulti_run1..4.out) every match is copied by a live directory walk, trailing self-copy 5 included -- SHIPPED 2026-11-06 |
 | gate tiers | *"Note that that is costing precious time to make actual progress."* | run the tier `make gates-plan` picks, no habitual HANDOFF=1; FULL only for code every program runs, the 5th commit, a real hand-off (memory full-battery-is-expensive-use-the-planned-tier) |
 
-## 🟢 STATE AS OF 2026-11-07 — THE CURRENT ONE (the 11-06 section below still holds)
+## 🟢 STATE AS OF 2026-11-09 — THE CURRENT ONE (the 11-07 section below still holds)
+
+The entry-point ruling (2026-11-08) drives the queue: TIER 1 is the BIOS / disk-ROM /
+BDOS surface first. Shipped 11-08 .. 11-09 (all FULL green unless noted; see TODO
+D-BIOSCONTRACT, D-ENTRYTIERS, D-NUMBUFASPCT for the measurements):
+- the graphics-cursor family as the VG-8020: SCALXY, GTASPC, RIGHTC/LEFTC/UPC/DOWNC,
+  TUPC/TDOWNC, STOREC/SETATR/READC, SETC, MAPXYC (+ C-BIOS's GRPPRT fixed to match),
+  NSETCX -- cbios-repack/graphics-cursor.patch, the span RIGHTC..SCANL padded to
+  print_debug ($099A), now FULL (0-7 B free: read the .lst, never this line);
+- ERAFNK / DSPFNK / INIFNK / BEEP / PINLIN / INLIN / QINLIN in basic/biosfnk.asm
+  (the $3297 low-region pin pad), the C-BIOS jump-table slots overlaid by islands.asm
+  with PATCH_RANGES checking the old jps -- THE PATTERN for any further BIOS entry;
+- C-BIOS fixes in the patch: settxt writes R#2..R#6 (SCREEN 0's RG3/5/6SAV = 0),
+  clrspr keeps sprite X, chgcap's lamp polarity (both references agree);
+- NUMBUF = FOUTBUF, ASPCT1/2 = $100 (clear_usrtab -- init's region before $475A is FULL);
+- entry tables: BDOS 0 NOT MEASURED, disk ROM only DSKFMT, BIOS 90 of 108 witnessed
+  (biosregs-acceptance 104 rows). tools/entry_table.py shares the probe-.asm witness rule.
+OPEN, next by tier (all TIER 1, entry points): D-DSKFMT and D-WRZER's zero fill are
+BLOCKED ON DISK-ROM ROOM (no hole over 14 B; scratchpad/diskngram.py 8 lists ~20
+duplicated runs of 8-29 B -- the carve pass is next); the CRTCNT item (VG holds 24
+under KEY ON; ~20 CRTCNT sites incl. C-BIOS CHPUT -- a scoped refactor); STRTMS /
+PUTQ (PLAY's queues); PNTINI / SCANR / SCANL (no room in the span); GRPPRT's font.
+LESSON (memory a-running-titles-tape-verdict-tracks-timing): a running game's tape
+verdict moves with ANY timing change -- never read one title's move as a fix's effect.
+
+## 🟢 STATE AS OF 2026-11-07 (the 11-06 section below still holds)
 
 - **Landed today, each gated and pushed:** D-SDSBOOT's register half (cbios-repack
   `rdslt-regs.patch`: RDSLT / WRSLT leave the reference's exit registers; gate

@@ -17933,6 +17933,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
+- [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
+      NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
+      🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
+      BASIC); MSX-DOS's FORMAT and any formatter call it.
+      🤖 **AUTONOMOUS** — disk/driver.asm `dskfmt: scf / ret` ("write support deferred
+      indefinitely; not a loader need"); CHOICE answers HL = 0 (no choice string). ➡️ (1)
+      MEASURE the CF-3300 first, on a SCRATCH copy of the boot image (a probe formats drive A
+      from RAM, then reads sectors 0..13 back through DSKIO into the capture block): what
+      CHOICE returns, which A selects what, and the boot sector / FAT / root it writes. (2)
+      Build: WD2793 Write Track per track (the ID fields, gaps, sync), then the boot sector,
+      both FATs and an empty root -- a few hundred bytes. 🔴 ROOM IS THE BLOCKER, as for
+      D-WRZER's zero fill (~95 B): `scratchpad/pinguard.py --slack` on 2026-11-09 found no
+      disk.rom hole over 14 B (390 B scattered). Both need a carve pass first, or a decision
+      on a second disk-ROM page -- the latter is Joost's (a ROM-layout ruling).
+
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
       ✅ **FIXED 2026-11-09.** NUMBUF = FOUTBUF (FBUFFR+1, basic/sysvars.inc): integers are
