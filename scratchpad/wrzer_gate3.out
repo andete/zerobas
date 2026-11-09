@@ -1,0 +1,6 @@
+
+===== WRZER (build_wrzer_disk.py) =====
+  PASS  WRZER capture 0x0400:0x6A0: 0-byte-diff (anchor t=42.8 ≥ keys-at); live-reg delta [IX] (benign epilogue)
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

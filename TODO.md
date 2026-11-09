@@ -17613,8 +17613,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
       unused numbers and AUXOUT get read (they ran after the fault here).
 
-- [ ] 🔴 **D-WRZER — BDOS $28 (WRZER) UNDER MSX-DOS RUNS OUR FAT-WRITE CODE WITH ITS REGISTERS
+- [x] 🔴 **D-WRZER — BDOS $28 (WRZER) UNDER MSX-DOS RUNS OUR FAT-WRITE CODE WITH ITS REGISTERS
       (found 2026-11-08 by D-ENTRYTIERS step 2)**
+      ✅ **THE ZERO FILL SHIPPED (2026-11-09).** wrzer_body (disk/kernel.asm, the region in front of
+      $75A5 after carve steps 1-2 -- mulacc_cmp, rdblk_rs, fac_comb on fnc_combine, the
+      recperclus_div / div_hl_bc pair: 8 -> 121 B; wrzer_body took 119): the caller's record
+      through wrrnd_body (it extends the file), then the caller's DTA -- its record on the disk
+      now -- zeroed and written by WRBLK to each gap record, RDBLK reads record RR back into
+      the DTA, RR put back, WRRND's success tail. 🔴 The first cut repositioned each gap record
+      with rrnd_position, which re-finds the file through the DIRECTORY -- not updated until
+      close after a WRBLK extension -- and answered A = 2 (scratchpad/wrzer_both3.out); WRBLK
+      positions from the FCB's own state. Also found and fixed: **RDRND past the end left CR
+      unset; the CF-3300 sets it to r0 MOD 128** (both FCBs' +32, $17 vs $14). 📏
+      ([`wrzer_gate3.out`](scratchpad/wrzer_gate3.out)): **WRZER.COM BYTE-IDENTICAL to the CF-3300 (1696 bytes: codes, both FCBs,
+      Z.DAT's zeroed records and R.DAT's untouched $CC)**; WRZER joins bdos-acceptance.
+      ⏱ ours reaches the end ~15 s later (57 s vs 43 s: one WRBLK per gap record) -- the
+      probe's settle went 50 -> 90; a TIER 5 note, not filed separately until a program shows it.
+      🔴 **THE FULL BATTERY CAUGHT A CARVE THAT WAS "SEMANTICALLY IDENTICAL" (2026-11-09):** fac_comb
+      as `call fnc_combine` / `ex de,hl` returned the same DE, A and flags, and every
+      fac_entry_from_wbuf caller visibly saves HL -- yet programs-acceptance went red on
+      L5_journal: its BSAVE ran 1.43 s of FDC work under DI (CF-3300 0.22 s; the gap bound),
+      scratchpad/wz_gappc.out. Bisected ([`wz_bis3.out`](scratchpad/wz_bis3.out) .. [`wz_bis6.out`](scratchpad/wz_bis6.out)): not the layout (+40 B
+      shift clean), not the stack depth (one call deeper clean), **HL** -- the old even
+      path left HL untouched, and with `push hl` / `pop hl` around the call it is clean. No
+      reader of that HL has been found. 🔎 FILED, TIER 6 (apparatus): find who reads HL after
+      fac_entry_from_wbuf on BSAVE's path (a breakpoint on fac_comb's ret, then the caller's
+      next HL use) -- a contract comment ("preserves nothing but DE") that is false.
       🎚️ TIER 1 — happy path of an ENTRY POINT (Joost 2026-11-08: entry points outrank BASIC).
       A program calling WRZER on zerobas can write a garbage FAT entry to the user's disk.
       🤖 **AUTONOMOUS** — the reference settles it.

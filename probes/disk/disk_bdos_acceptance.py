@@ -99,6 +99,11 @@ EXERCISERS = [
     ("AUXINX", "build_auxinx_disk.py"),
     ("DSKENT", "build_dskent_disk.py"),
     ("DSKCHG", "build_dskchg_disk.py"),
+    # WRZER (D-WRZER, 2026-11-09): BDOS $28 against $22 WRRND at RR 20 of an empty
+    # file, over clusters WRABS filled with $CC first -- WRZER's records 0..19 read
+    # zero, WRRND's the disk's $CC; records past the end answer A = 1
+    # (scratchpad/wrzer_stock3.out / wrzer_stock4.out).
+    ("WRZER", "build_wrzer_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

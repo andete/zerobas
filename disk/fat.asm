@@ -307,9 +307,8 @@ fat_write_fat_entry_hot:
 ; M26 / M28 collision class: $436C FDEL, $4392 FREN, $47BE WRBLK). A veneer now
 ; sits at the pinned address and this routine steps over it.
                 ds      $47D1 - $, $00      ; (zero-size when exact; an overrun empties the ROM)
-k_47D1:         jp      wrrnd_body          ; $47D1: BDOS $28 WRZER -- INTERIM: WRRND's write,
-                                            ; without the zero fill of the records an
-                                            ; extension adds (D-WRZER, TODO.md)
+k_47D1:         jp      wrzer_body          ; $47D1: BDOS $28 WRZER -- zero-fills the
+                                            ; records an extension adds (disk/kernel.asm)
 fwe_cmp:
                 sbc     hl, de
                 pop     hl

@@ -73,7 +73,7 @@ def main() -> int:
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
           f"--at {done_addr:#06x} --arm-check-val {sig:#04x} "
-          "--settle 50 --machine both "
+          "--settle 90 --machine both "  # D-WRZER: ours zero-fills 20 records, ~15 s slower than the CF-3300
           f"--mem 0x0400:0x6A0 --diska {args.out}")
     return 0
 

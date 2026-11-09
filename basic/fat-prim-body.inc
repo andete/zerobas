@@ -775,34 +775,16 @@ fac_straddle:
                 call    read_sector
                 ld      a, (FAT_MBUF)
 fac_comb:
-                ld      (FAT_B1), a
-                ld      a, (FAT_PARITY)
-                or      a
-                jr      nz, fac_e_odd
-                ld      a, (FAT_B1)
-                and     $0F
-                ld      d, a
-                ld      a, (FAT_B0)
-                ld      e, a
-                ret
-fac_e_odd:
-                ld      a, (FAT_B1)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                ld      a, (FAT_B0)
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F
-                ld      e, a
-                ld      d, 0
-                add     hl, de
+                ; the 12-bit unpack is fnc_combine's (above), with the result in DE --
+                ; this carried a byte-identical copy (D-WRZER's carve, 2026-11-09).
+                ; 🔴 HL IS KEPT, as the old copy's even path kept it: without the
+                ; push / pop, L5_journal's BSAVE ran 1.4 s of FDC work under DI
+                ; (programs-acceptance's gap bound; scratchpad/wz_bis5.out / wz_bis6.out
+                ; bisected it to HL) although no reader of HL was found -- filed.
+                push    hl
+                call    fnc_combine         ; HL = the entry
                 ex      de, hl
+                pop     hl
                 ret
 
 ; fat_write_fat_entry — set a cluster's 12-bit value in EVERY FAT copy on disk.

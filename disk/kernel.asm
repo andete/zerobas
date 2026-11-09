@@ -4401,6 +4401,110 @@ wm16_no:
                 dec     a
                 jr      nz, wm16_lp
                 ret
+; wrzer_body -- BDOS $28 WRZER (D-WRZER, 2026-11-09): WRRND, and the records an
+; EXTENSION adds read zero. Measured on the CF-3300 (probes/disk/wrzer.asm,
+; scratchpad/wrzer_stock3.out / wrzer_stock4.out): WRZER at RR past the end zero-fills
+; every record from the old end of file (ceil(size / 128)) to RR - 1; WRRND leaves
+; the disk's bytes there. So: the caller's record through wrrnd_body (it extends
+; the file, by WRBLK); then the caller's DTA -- its record is on the disk now -- is
+; zeroed and written to each gap record by WRBLK, which positions from the FCB's own
+; state (rrnd_position re-finds the file through the DIRECTORY, which WRBLK only
+; updates at close: the first cut failed there, A = 2); then RDBLK reads record RR
+; back into the DTA, RR is put back and WRRND's success tail runs. R0 >= RR: plain
+; wrrnd_body. A failure keeps WRBLK's A (1 full, 2 I/O); the DTA is restored either way.
+;   in  DE = the kernel's FCB copy
+wrzer_body:
+                push    de
+                pop     ix
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                ld      a, (ix+18)
+                ld      bc, 127
+                add     hl, bc
+                adc     a, b                ; B = 0
+                add     hl, hl
+                rla
+                ld      l, h
+                ld      h, a                ; HL = R0 = ceil(size / 128)
+                ld      c, (ix+33)
+                ld      b, (ix+34)          ; BC = RR (records < 65536)
+                or      a
+                sbc     hl, bc
+                jp      nc, wrrnd_body      ; R0 >= RR: no gap (DE = the FCB copy still)
+                add     hl, bc
+                push    bc                  ; [RR]
+                push    hl                  ; [RR][R0]
+                call    wrrnd_body          ; the caller's record: extends the file
+                pop     bc                  ; BC = R0
+                or      a
+                jr      nz, wz_out          ; its own error, A kept
+                ld      hl, (DOS_DTAPTR)
+                ld      e, RECSIZE
+wz_z:
+                ld      (hl), a             ; A = 0
+                inc     hl
+                dec     e
+                jr      nz, wz_z            ; the caller's DTA: 128 zeros
+wz_lp:
+                ld      (ix+33), c
+                ld      (ix+34), b
+                push    bc                  ; [RR][R]
+                ld      hl, 1
+                push    ix
+                pop     de
+                call    wrblk_body          ; record R := the zeroed DTA
+                pop     bc                  ; [RR]
+                or      a
+                jr      nz, wz_done
+                inc     bc
+                pop     hl
+                push    hl
+                sbc     hl, bc              ; (Cy = 0 from the `or a`)
+                jr      nz, wz_lp
+wz_done:                                    ; A = 0, or WRBLK's failure
+                pop     hl                  ; RR
+                push    af
+                push    hl                  ; [AF][RR]
+                ld      (ix+33), l
+                ld      (ix+34), h
+                push    ix
+                pop     de
+                push    de                  ; the FCB copy (k47b2_body takes IX over)
+                ld      hl, 1
+                call    k47b2_body          ; the DTA <- record RR again (the caller's)
+                pop     ix
+                pop     hl
+                ld      (ix+33), l
+                ld      (ix+34), h          ; RR as the caller gave it
+                pop     af                  ; (its flags: Z = success)
+                jp      z, wrrnd_ok         ; CR := r0, A = 0, HL = 0
+                jp      rrnd_finish
+wz_out:
+                pop     hl
+                ret
+
+; recperclus_div -- DE := HL / (A * RECPERSEC), A = FAT_SECPERCLUS on entry (the
+; records in a cluster); div_hl_bc -- DE := HL / BC by subtraction (HL ends one BC
+; past the remainder, Cy set). The pair stood twice (wrseq_writeback /
+; wrseq_wr_writeback) and the divide once more (wrblk_shrink): D-WRZER's carve,
+; 2026-11-09. Clobbers A, BC, HL.
+recperclus_div:
+                ld      c, a
+                ld      b, RECPERSEC - 1
+rpc_lp:
+                add     a, c
+                djnz    rpc_lp              ; A = FAT_SECPERCLUS * RECPERSEC
+                ld      c, a
+                ld      b, 0
+div_hl_bc:
+                ld      de, 0
+dhb_lp:
+                or      a
+                sbc     hl, bc
+                ret     c
+                inc     de
+                jr      dhb_lp
+
 ; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
 ; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
 ; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL.
@@ -4489,14 +4593,7 @@ wrblk_shrink:
                 pop     de
                 dec     de
                 add     hl, de              ; HL = keep_sectors + SECPERCLUS - 1
-                ld      de, 0               ; DE = quotient accumulator
-wshrink_divloop:
-                or      a
-                sbc     hl, bc
-                jr      c, wshrink_divdone
-                inc     de
-                jr      wshrink_divloop
-wshrink_divdone:
+                call    div_hl_bc           ; DE = HL / BC
                 ld      (WRBLK_KEEPCNT), de ; keep_clusters (>= 1, since target size > 0)
                 ld      hl, (FAT_FIRSTCLUS)
 wshrink_walk:
@@ -4783,21 +4880,7 @@ wsw_shr7:
                 ; stays correct even if it is ever redefined -- own choice, no
                 ; oracle bytes, same idiom as wshrink_divloop's repeated-sub div).
                 ld      a, (FAT_SECPERCLUS)
-                ld      c, a                ; C = FAT_SECPERCLUS (addend)
-                ld      b, RECPERSEC - 1    ; RECPERSEC-1 more additions after the seed
-wsw_recperclus:
-                add     a, c
-                djnz    wsw_recperclus      ; A = FAT_SECPERCLUS * RECPERSEC
-                ld      c, a
-                ld      b, 0                ; BC = recPerClus
-                ld      de, 0               ; DE = quotient accumulator
-wsw_divloop:
-                or      a
-                sbc     hl, bc
-                jr      c, wsw_divdone
-                inc     de
-                jr      wsw_divloop
-wsw_divdone:
+                call    recperclus_div      ; DE = HL / (FAT_SECPERCLUS * RECPERSEC)
                 ld      a, e                ; quotient fits a byte (floppy record range)
                 ld      ($DA40+30), a
                 pop     af                  ; restore bdos_seqread's exit A
@@ -5085,21 +5168,7 @@ wsww_shr7:
                 pop     hl                  ; HL = K
                 dec     hl                  ; HL = K-1
                 ld      a, (FAT_SECPERCLUS)
-                ld      c, a                ; C = FAT_SECPERCLUS (addend)
-                ld      b, RECPERSEC - 1    ; RECPERSEC-1 more additions after the seed
-wsww_recperclus:
-                add     a, c
-                djnz    wsww_recperclus     ; A = FAT_SECPERCLUS * RECPERSEC
-                ld      c, a
-                ld      b, 0                ; BC = recPerClus
-                ld      de, 0               ; DE = quotient accumulator
-wsww_divloop:
-                or      a
-                sbc     hl, bc
-                jr      c, wsww_divdone
-                inc     de
-                jr      wsww_divloop
-wsww_divdone:
+                call    recperclus_div      ; DE = HL / (FAT_SECPERCLUS * RECPERSEC)
                 ld      a, e                ; quotient fits a byte (floppy record range)
                 ld      ($DA40+30), a
                 ; copy+16..19 := BDOS_WRBYTES (running file size, 4-byte LE). Stock
@@ -8597,6 +8666,9 @@ rrnd_sector_mul:
 rdrnd_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer
+                ld      a, (ix+33)          ; CR := r0 MOD 128 FIRST: the CF-3300 sets it
+                and     $7F                 ; past the end of the file too (A = 1; probes/
+                ld      (ix+32), a          ; disk/wrzer.asm's records 21 / 23 -- D-WRZER)
                 call    rrnd_position
                 jr      c, rrnd_eof
                 call    bdos_seqread        ; A=$00 record delivered / $01 EOF
