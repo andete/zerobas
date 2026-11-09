@@ -71,6 +71,16 @@ lpe_loop:
                 ds      $41EF - $, $00      ; pad (frees the old table tail + callf_body jp)
 k_41EF:
                 jp      cpmver_body         ; $41EF: BDOS $0C CPMVER canonical entry (M22a)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; hkn_up: upcase A. Six bytes of our own rather than a call-back for one
+; character -- own-design, and the same fold main's `upcase` does.
+hkn_up:
+                cp      'a'
+                ret     c
+                cp      'z' + 1
+                ret     nc
+                sub     32
+                ret
                 ds      $41FD - $, $00      ; anchor the canonical address
                 jp      k_41FD              ; $41FD: COMMAND.COM-load kernel veneer
 ; 🐌 D-SAVEFAT (2026-11-06), in this hole because the SAVE engine's region had 11 B:

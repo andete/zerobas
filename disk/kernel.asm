@@ -391,6 +391,20 @@ hkc_ill:        ld      a,3                 ; refused -> ERR 5
                 ret
 hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; 🔴 D-DISKFULL (2026-10-02): THE FIRST FAILURE ENDS THE SAVE. sv_load_error used
+; to set the status and `ret` -- to whoever had `jp`'d into it, i.e. back INTO
+; sav_disk_write's loop, which wrote on. After a failed create the write state was
+; never initialised (BDOS_WRBUFLEN read $FFFF): the old putbyte stored one byte at
+; SECTOR_BUF+$FFFF and wrapped, and the flush-first putbyte retried a doomed flush
+; on EVERY byte -- a write-protected SAVE took long enough that wprotect-acceptance
+; captured before it answered (scratchpad/dfwp_trace.py). Resident, sv_load_error
+; is disk_error and raises; here it now unwinds to hk_dpsave the same way.
+hkds_run:
+                ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
+                ; hk_dpsave loads HL = sav_disk_write, the BSAVE entry HL = bsv_open
+                ; z80flow: targets sav_disk_write bsv_open
+                jp      (hl)                ; sav_disk_write, or BSAVE's bsv_open
                 ds      $501E - $, $00  ; pad up to the pinned $501E FSIZE entry (M28)
 k_501E:
                 jp      fsize_body      ; $501E: BDOS $23 FSIZE canonical entry (M28)
@@ -431,6 +445,10 @@ dst_lead:
 dst_skip:
                 call    din_take
                 jr      dst_lead
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+hdl_oom:                                    ; D-LOADDIRECT: the file does not fit
+                ld      a,4                 ; 4: out of memory
+                jp      hdl_answer          ; (jp: out of jr reach since the move)
                 ds      $504E - $, $00  ; pad up to the pinned $504E LOGIN entry (M22a)
 k_504E:
                 jp      login_body      ; $504E: BDOS $18 LOGIN canonical entry (M22a)
@@ -4108,10 +4126,6 @@ wzp_dirupdate:
                 xor     a
                 ld      hl, (WRBLK_REQ)     ; = 0
                 jr      wrblk_finish
-wrblk_full:
-                ld      a, 1                ; disk-full path ([C]-only, not black-box-provoked)
-                ld      hl, (WRBLK_REQ)
-                jr      wrblk_finish
 wrblk_ioerr:
 wrblk_ioerr2:
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
@@ -4543,14 +4557,6 @@ wsm_keepold:
                 ldir
                 ret
 
-; wrblk_set_wrfirst — BDOS_WRFIRST := FAT_FIRSTCLUS (may have just been updated by
-; wrblk_read_or_extend_sector's very-first-cluster case, or zeroed by wrblk_shrink's
-; empty-file case) -- the field fat_dir_update stamps into the dirent's first-
-; cluster word.
-wrblk_set_wrfirst:
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (BDOS_WRFIRST), hl
-                ret
 
 ; wrblk_shrink — HL_requested==0 and the target size (WRBLK_MULACC, already =
 ; RR*RS) is BEFORE the file's current end -- shrink to that size ([LANDED-A]/§6
@@ -5324,25 +5330,7 @@ hkm_copy:
 ; (hk_lrset -- LSET / RSET's handler -- moved to the hole in front of the pinned
 ; $53A7 entry when D-DISKREST slice 1 made it parse: ~60 B more than this region had.)
 
-; rnd_rec -- D-FLDDESC (2026-10-17): HL = the channel's RECORD, its block's +9
-; (FCH_HDRSZ) -- where the CF-3300 keeps it and where FIELD points a variable's
-; descriptor. IX = the row (its cached DOUT_BLK). Clobbers nothing else.
-; Sited here, in the bytes hk_lrset's field-entry walk left, because the record
-; engine's own fills (before the $607B and $77B8 veneers) have no room.
-rnd_rec:
-                call    dout_pos            ; HL = block+6
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL = block+9
-                ret
 
-; fill_rec -- the record (rnd_rec, FCH_RECMAX bytes) := spaces, CF = 0 (fill_sp).
-; IX = the row. Clobbers BC, DE, HL. GET's clean end (hk_frnd's OPEN fill went
-; with D-FLDDESC: the reference never clears the record).
-fill_rec:
-                call    rnd_rec
-                ld      bc, FCH_RECMAX-1
-                jp      fill_sp
 
 ; --- hk_dskf: DSKF's body, RUNNING IN THE DISK ROM --------------------------
 ; docs/spec-basic-nodisk.md §9 for the hook, and D-DSKFDRV
@@ -5816,19 +5804,6 @@ hkds_go:                                    ; hk_dpbsave enters here, HL = bsv_o
                                             ; any depth (D-DISKFULL, below)
                 ld      a,(DISKOP_STATUS)   ; D-ERRKEEP2: out through the shared
                 jp      hk_claim_status     ; tail, so a 68 survives an open file
-; 🔴 D-DISKFULL (2026-10-02): THE FIRST FAILURE ENDS THE SAVE. sv_load_error used
-; to set the status and `ret` -- to whoever had `jp`'d into it, i.e. back INTO
-; sav_disk_write's loop, which wrote on. After a failed create the write state was
-; never initialised (BDOS_WRBUFLEN read $FFFF): the old putbyte stored one byte at
-; SECTOR_BUF+$FFFF and wrapped, and the flush-first putbyte retried a doomed flush
-; on EVERY byte -- a write-protected SAVE took long enough that wprotect-acceptance
-; captured before it answered (scratchpad/dfwp_trace.py). Resident, sv_load_error
-; is disk_error and raises; here it now unwinds to hk_dpsave the same way.
-hkds_run:
-                ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
-                ; hk_dpsave loads HL = sav_disk_write, the BSAVE entry HL = bsv_open
-                ; z80flow: targets sav_disk_write bsv_open
-                jp      (hl)                ; sav_disk_write, or BSAVE's bsv_open
 ; (sited here, beside its unwind point, since D-SAVEFULLSTAMP grew the engine
 ; above past the shared `disk_write_end`'s `jr c,sv_load_error` reach)
 sv_load_error:
@@ -5955,9 +5930,6 @@ hk_dpload:
 hdl_ok:
                 xor     a                   ; 0: loaded
                 jr      hdl_answer
-hdl_oom:                                    ; D-LOADDIRECT: the file does not fit
-                ld      a,4                 ; 4: out of memory
-                jr      hdl_answer
 hdl_nf:
                 ld      a,1                 ; 1: file not found
                 jr      hdl_answer
@@ -5988,23 +5960,6 @@ hdl_answer:
 
 
 
-; --- calbak: ONE inter-slot call back into main page 1 (MSX2 TH) ------------
-; D-DISKVERB. IX = the main page-1 target (an address from the GENERATED
-; basic-resident-abi.inc, so a page-1 shift cannot leave us calling a stale one).
-; A/HL/DE/BC pass through in both directions -- MEASURED, not assumed
-; (D-XSLOTABI, scratchpad/xslot_abi.py); IY is ours and IX is consumed.
-; 🔴 D-HOOKDI: and it RETURNS WITH INTERRUPTS ON. CALSLT returns DI, and the FDC
-; driver keeps the caller's state per sector (fdc_di_save), so every disk verb
-; whose work followed a calbak ran masked to its end: TIME stood still for a
-; whole SAVE / KILL / COPY / NAME, keys typed meanwhile were lost
-; (scratchpad/verbclock_run.out, against the CF-3300's 30-75 %). Every caller is
-; a BASIC-facing hook handler; the one that hands over to MSX-DOS masks again
-; itself (hsy_ok). It was `jp CALSLT`, CALSLT's `ret` landing on our caller.
-calbak:
-                ld      iy,(EXPTBL-1)   ; IYh = main-ROM slot id (MSX2 TH idiom)
-                call    CALSLT
-                ei
-                ret
 
 ; --- hk_kill: KILL's body, RUNNING IN THE DISK ROM --------------------------
 ; D-DISKVERB, spec-diskbasic-hook-rearchitecture.md phase 2. The first verb whose
@@ -6335,15 +6290,6 @@ hkn_stamp:
                 ld      hl,FAT_DBUF
                 jp      write_sector        ; tail-call: its CF is our answer
 
-; hkn_up: upcase A. Six bytes of our own rather than a call-back for one
-; character -- own-design, and the same fold main's `upcase` does.
-hkn_up:
-                cp      'a'
-                ret     c
-                cp      'z' + 1
-                ret     nc
-                sub     32
-                ret
 
 ; --- hk_copy: COPY's body, BOTH HALVES, in the disk ROM (MSX2 TH hook) ------
 ; D-DISKVERB3, spec-diskbasic-hook-rearchitecture.md phase 3, third verb.
@@ -6979,20 +6925,6 @@ rh_flush:
                 call    fatprim_write_sector
                 pop     de
                 pop     bc
-                ret
-; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
-; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
-; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
-rh_init:
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ret
-; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
-; touched, so its page-0 subslot is intact). Clobbers A. (Moved here from
-; disk/runtime.asm by D-WRRNDEXT, whose wrapper needed that region's bytes.)
-pg0_mainrom_out:
-                ld      a, (PG_SV_A8)
-                out     ($A8), a
                 ret
 ; 🔴 D-CALSLTP0 (2026-11-08): br6 -- CALSLT for a page-1 / page-2 target WITH PAGE 0
 ; LEFT THE CALLER'S RAM. The $001C stub used to enter the BIOS's own CALSLT with the

@@ -18009,6 +18009,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       choice 4 $F9 2 sides 80 tracks 1440 sectors 2 / cluster FAT 3 root 112 (the CF-3300
       takes 181 s; the probe's settle is 300). ➡️ Next: the room (a carve pass, one page),
       then the build -- WD2793 Write Track per track, our own boot loader, the BPB, FATs, root.
+      ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
+      a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
+      routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,
+      pg0_mainrom_out, hkds_run, hdl_oom; 4-9 B each, `call` / `jp`-entered,
+      scratchpad/movescout.py) moved OUT of the region in front of $75A5 into the 8-14 B pin
+      holes (scratchpad/move_routine.py: the routine and its comment, before the pin's
+      `ds`); two tail `jr`s became `jp` (out of reach after the move), and k47b2_nextbyte
+      went back -- it falls into k47b2_nextbyte_get by a `jr nz`. **That region: 2 -> 72 B.**
+      Next steps: the duplicated spans inside it (scratchpad/diskngram.py), then more moves.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

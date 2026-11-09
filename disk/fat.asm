@@ -87,6 +87,11 @@ frnd_next:
                 or      a
                 ret
 
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+wrblk_full:
+                ld      a, 1                ; disk-full path ([C]-only, not black-box-provoked)
+                ld      hl, (WRBLK_REQ)
+                jp      wrblk_finish        ; (jp: out of jr reach since the move)
                 ds      $46E6 - $, $00      ; pad to bdos_create_failpop (net-zero)
 bdos_create_failpop:
                 pop     hl
@@ -146,6 +151,14 @@ rnp_store:
 rnp_ovf:
                 ld      a, 6
                 jp      hdg_raise
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; fill_rec -- the record (rnd_rec, FCH_RECMAX bytes) := spaces, CF = 0 (fill_sp).
+; IX = the row. Clobbers BC, DE, HL. GET's clean end (hk_frnd's OPEN fill went
+; with D-FLDDESC: the reference never clears the record).
+fill_rec:
+                call    rnd_rec
+                ld      bc, FCH_RECMAX-1
+                jp      fill_sp
                 ds      $4720 - $, $00      ; pad up to the pinned canonical entry
 k_4720:         jp      wrabs_body          ; $4720: BDOS $30 WRABS canonical entry (M26)
 ; rnd_parse's float half, past the pin: the pad in front of $4720 holds the rest.
@@ -240,11 +253,28 @@ drc_set:
                 ; (BDOS SEQRD = $C9, the record unread). Pinned now, with the slide's own
                 ; effect; the bytes below $4775 and between the pins stay EMPTY -- another
                 ; unmeasured entry may land in them.
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
+; touched, so its page-0 subslot is intact). Clobbers A. (Moved here from
+; disk/runtime.asm by D-WRRNDEXT, whose wrapper needed that region's bytes.)
+pg0_mainrom_out:
+                ld      a, (PG_SV_A8)
+                out     ($A8), a
+                ret
                 ds      $4775 - $, $00
 k_4775:         jp      wrseq_body          ; $4775: MSX-DOS's entry (measured), = the NOP slide
                 ds      $477D - $, $00      ; pad up to the pinned $477D WRSEQ-worker entry
 k_477D:
                 jp      wrseq_body          ; $477D: BDOS $15 WRSEQ canonical entry (M24 slice B)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; wrblk_set_wrfirst — BDOS_WRFIRST := FAT_FIRSTCLUS (may have just been updated by
+; wrblk_read_or_extend_sector's very-first-cluster case, or zeroed by wrblk_shrink's
+; empty-file case) -- the field fat_dir_update stamps into the dirent's first-
+; cluster word.
+wrblk_set_wrfirst:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                ret
                 ds      $4788 - $, $00      ; pad remainder (M26, tier2-m26-spec.md §2.3:
                                             ; trace --resync confirmed $4788 is the
                                             ; kernel's real fixed $21 RDRND dispatch
@@ -253,6 +283,18 @@ k_477D:
                                             ; read was a dedup artifact; no relocation
                                             ; needed, RDABS-shape)
 k_4788:         jp      rdrnd_body          ; $4788: BDOS $21 RDRND canonical entry (M26)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; rnd_rec -- D-FLDDESC (2026-10-17): HL = the channel's RECORD, its block's +9
+; (FCH_HDRSZ) -- where the CF-3300 keeps it and where FIELD points a variable's
+; descriptor. IX = the row (its cached DOUT_BLK). Clobbers nothing else.
+; Sited here, in the bytes hk_lrset's field-entry walk left, because the record
+; engine's own fills (before the $607B and $77B8 veneers) have no room.
+rnd_rec:
+                call    dout_pos            ; HL = block+6
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = block+9
+                ret
                 ds      $4793 - $, $00      ; pad remainder (M26, tier2-m26-spec.md §2.3:
                                             ; $4793 is $22 WRRND's own separate dispatch,
                                             ; same pad corridor, RDABS-shape)

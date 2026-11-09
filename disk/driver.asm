@@ -194,6 +194,24 @@ fdc_ag_last:
 ; the pinned offset so fdc_write_phys below stays at its exact address.
 fdc_read_data:
                 jp      fdc_read_data_body
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; --- calbak: ONE inter-slot call back into main page 1 (MSX2 TH) ------------
+; D-DISKVERB. IX = the main page-1 target (an address from the GENERATED
+; basic-resident-abi.inc, so a page-1 shift cannot leave us calling a stale one).
+; A/HL/DE/BC pass through in both directions -- MEASURED, not assumed
+; (D-XSLOTABI, scratchpad/xslot_abi.py); IY is ours and IX is consumed.
+; 🔴 D-HOOKDI: and it RETURNS WITH INTERRUPTS ON. CALSLT returns DI, and the FDC
+; driver keeps the caller's state per sector (fdc_di_save), so every disk verb
+; whose work followed a calbak ran masked to its end: TIME stood still for a
+; whole SAVE / KILL / COPY / NAME, keys typed meanwhile were lost
+; (scratchpad/verbclock_run.out, against the CF-3300's 30-75 %). Every caller is
+; a BASIC-facing hook handler; the one that hands over to MSX-DOS masks again
+; itself (hsy_ok). It was `jp CALSLT`, CALSLT's `ret` landing on our caller.
+calbak:
+                ld      iy,(EXPTBL-1)   ; IYh = main-ROM slot id (MSX2 TH idiom)
+                call    CALSLT
+                ei
+                ret
                 ds      $436C - $, $00      ; pad remainder up to the pinned canonical entry
 k_436C:
                 jp      fdel_body           ; $436C: BDOS $13 FDEL canonical entry (M26)
