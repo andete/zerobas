@@ -121,6 +121,9 @@ REGISTRY = [
     # route PRINT# to the printer (LPTOUT)/screen (CHPUT). Keyboard-free AUTOEXEC.BAS
     # + printer logger; asserts the LP! line physically reaches the printer log.
     ("OPEN(LPT/CRT)",  "disk_probe_open_device.py",     [], "artifact"),
+    # D-ENTRYTIERS step 5 (2026-11-09): BIOS PHYDIO ($0144) called directly -- sector 0
+    # read; Cy / A / B and the data against the CF-3300 (HL / C outside the contract)
+    ("PHYDIO",         "disk_probe_phydio.py",          [], "live"),
 ]
 
 

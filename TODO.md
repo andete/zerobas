@@ -17959,6 +17959,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       BIOS table: 90 of 108 witnessed**; the 18 left are KEYINT / NMI / INITIO, the tape
       five, WSLREG / CALBAS, PHYDIO, OUTDLP, PUTQ / STRTMS (PLAY's queues), GRPPRT (its font
       differs from the VG-8020's) and PNTINI / SCANR / SCANL (not implemented; no room).
+      ✅ **PHYDIO WITNESSED (2026-11-09):** probes/disk/disk_probe_phydio.py -- sector 0 of drive A
+      read directly through $0144 from Disk BASIC, the National_CF-3300 against ours:
+      **the 512 bytes (checksum + three of them), Cy, A and B (0 left) SAME**; HL ($D200 vs
+      1) and C ($3C vs 1) differ, outside the contract ([`phydio_1109.out`](scratchpad/phydio_1109.out)). A
+      diskbasic-acceptance row ("PHYDIO", live). The BIOS table: 91 of 108.
       🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
       holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
       row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,

@@ -171,7 +171,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**90 of 108** have a direct witness; **18 are NOT MEASURED**.
+**91 of 108** have a direct witness; **17 are NOT MEASURED**.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -275,7 +275,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $013B | WSLREG | NOT MEASURED | — |
 | $013E | RDVDP | exercised | `biosregs-acceptance` |
 | $0141 | SNSMAT | exercised | `bootenv-acceptance` |
-| $0144 | PHYDIO | NOT MEASURED | — |
+| $0144 | PHYDIO | exercised | `diskbasic-acceptance` |
 | $0147 | FORMAT | exercised | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `float-acceptance` … |
 | $014A | ISFLIO | exercised | `biosregs-acceptance` |
 | $014D | OUTDLP | NOT MEASURED | — |
