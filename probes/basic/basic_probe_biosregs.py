@@ -228,6 +228,33 @@ ROWS = {
     # wrote over them until NUMBUF moved to FOUTBUF; scratchpad/biossweep_asp.out)
     "gtaspc": prog(0x0126, 0, before="SCREEN 2", after="SCREEN 0"),
     "gtaspc_print": prog(0x0126, 0, before='PRINT 12345;-321;STR$(777);HEX$(255)'),
+    # batch 6 (D-ENTRYTIERS step 5 / D-BIOSCONTRACT, 2026-11-09; scratchpad/
+    # biossweep_b6.out, biossweep_inlin.out): the input waits with keys put in KEYBUF
+    # first; cells and contract values only (`END`) where side registers differ.
+    # INLIN / PINLIN / QINLIN never returned on C-BIOS (basic/biosfnk.asm): BUF "AB",0,
+    # HL = BUF - 1, A = $0D. CHGCAP: port C bit 6 set for A <> 0 on BOTH references.
+    **{n: prog(a, 0, before=":".join(f"POKE &HFBF0+{i},{ord(c)}" for i, c in enumerate("AB\r"))
+                     + ":POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:POKE &HF3F8,&HF3:POKE &HF3F9,&HFB",
+               after='A$="":FOR I=0 TO 3:A$=A$+HEX$(PEEK(&HF55E+I))+",":NEXT:PRINT:'
+                     'PRINT "[C";A$;HEX$(PEEK(&HD100)+256*PEEK(&HD101));" ";HEX$(PEEK(&HD106));"]":END')
+       for n, a in (("inlin", 0x00B1), ("pinlin", 0x00AE), ("qinlin", 0x00B4))},
+    "chget": prog(0x009F, 0, before="POKE &HFBF0,81:POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:"
+                                    "POKE &HF3F8,&HF1:POKE &HF3F9,&HFB"),
+    **{n: prog(0x0132, a, after='PRINT "[C";HEX$(INP(&HAA) AND &H40);"]":END')
+       for n, a in (("chgcap0", 0), ("chgcap1", 1))},
+    **{n: prog(a, r, after='PRINT "[C";HEX$(PEEK(&HD106));"]":END')
+       for n, a, r in (("gtstck0a", 0x00D5, 0), ("gtstck1a", 0x00D5, 1),
+                       ("gtpad0a", 0x00DB, 0), ("gtpdl1a", 0x00DE, 1))},
+    "chgclr7": prog(0x0062, 0, before="POKE &HF3E9,4:POKE &HF3EA,1:POKE &HF3EB,6",
+                    after='PRINT "[C";HEX$(PEEK(&HF3E6));"]":END'),
+    "posit": prog(0x00C6, 0, hl=0x0A05,
+                  after='X=PEEK(&HF3DD):Y=PEEK(&HF3DC):PRINT:PRINT "[C";X;Y;"]":END'),
+    **{n: prog(0x00C9, 0, before=b,
+               after='A=PEEK(&HF3DE):C=VPEEK(&H399):PRINT:PRINT "[C";HEX$(A);" ";HEX$(C);"]":END')
+       for n, b in (("fnksb_on", "KEY ON"), ("fnksb_off", "KEY OFF"))},
+    **{n: prog(a, 0, after='A$="":FOR I=0 TO 7:A$=A$+HEX$(PEEK(&HF3DF+I))+",":NEXT:M=PEEK(&HFCAF):'
+                           'SCREEN 0:PRINT "[C";A$;M;"]":END')
+       for n, a in (("sett32", 0x007B), ("setgrp", 0x007E), ("setmlt", 0x0081))},
     # D-ENTRYTIERS step 5 (2026-11-09): every BIOS entry the sweeps found SAME as the
     # VG-8020 (scratchpad/biossweep_1108.out, biossweep_b5.out, biossweep_b5b.out),
     # called directly -- a witness each in the entry table. ISCNTC / CKCNTC / BREAKX /

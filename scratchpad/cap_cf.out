@@ -1,0 +1,4 @@
+⚠️ refcache: National_CF-3300_ZEROBASDISK: name says reference, its ROM bytes say zerobas -- treated as ZEROBAS (measured, never replayed)
+National_CF-3300_ZEROBASDISK chgcap0 [C0] | [R 5566 3344 1122 AC]
+National_CF-3300_ZEROBASDISK chgcap1 [C40] | [R 5566 3344 1122 AD]
+refcache: 2 hit, 0 miss, 2 of the hits were ZEROBAS readings

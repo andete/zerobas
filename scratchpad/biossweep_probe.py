@@ -322,6 +322,39 @@ ROWS.update({
 ROWS["aspct_print"] = B.prog(0x0126, 0, before='PRINT 12345;-321;STR$(777)',
                              after='PRINT "[ASP";HEX$(PEEK(&HF40B)+256*PEEK(&HF40C));HEX$(PEEK(&HF40D)+256*PEEK(&HF40E));"]"')
 
+# D-ENTRYTIERS step 5, batch 6 (2026-11-09): the rest that can be witnessed directly.
+# Keys for the input waits are put in KEYBUF ($FBF0) with GETPNT / PUTPNT ($F3FA /
+# $F3F8) around them, so the call returns at once.
+def keys(txt):
+    pk = ":".join(f"POKE &HFBF0+{i},{ord(c)}" for i, c in enumerate(txt))
+    return (pk + f":POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:POKE &HF3F8,{0xF0 + len(txt)}:POKE &HF3F9,&HFB")
+AONLY = 'PRINT "[C";HEX$(PEEK(&HD106));"]":END'
+BUFS = ('A$="":FOR I=0 TO 3:A$=A$+HEX$(PEEK(&HF55E+I))+",":NEXT:PRINT:PRINT "[C";A$;"]"')
+B6 = {
+    "sett32c":  B.prog(0x007B, 0, after=RGS),
+    "setgrpc":  B.prog(0x007E, 0, after=RGS),
+    "setmltc":  B.prog(0x0081, 0, after=RGS),
+    "gtstck0a": B.prog(0x00D5, 0, after=AONLY),
+    "gtstck1a": B.prog(0x00D5, 1, after=AONLY),
+    "gtpad0a":  B.prog(0x00DB, 0, after=AONLY),
+    "gtpdl1a":  B.prog(0x00DE, 1, after=AONLY),
+    "chgclr7":  B.prog(0x0062, 0, before="POKE &HF3E9,4:POKE &HF3EA,1:POKE &HF3EB,6",
+                       after='PRINT "[C";HEX$(PEEK(&HF3E6));"]"'),
+    "chgcap0":  B.prog(0x0132, 0, after='PRINT "[C";HEX$(INP(&HAA) AND &H40);"]"'),
+    "chgcap1":  B.prog(0x0132, 1, after='PRINT "[C";HEX$(INP(&HAA) AND &H40);"]"'),
+    "chget":    B.prog(0x009F, 0, before=keys("Q")),
+    "inlin":    B.prog(0x00B1, 0, before=keys("AB\r"), after=BUFS),
+    "pinlin":   B.prog(0x00AE, 0, before=keys("AB\r"), after=BUFS),
+    "qinlin":   B.prog(0x00B4, 0, before=keys("AB\r"), after=BUFS),
+    "posit":    B.prog(0x00C6, 0, hl=0x0A05,
+                       after='X=PEEK(&HF3DD):Y=PEEK(&HF3DC):PRINT:PRINT "[C";X;Y;"]"'),
+    "fnksb_on": B.prog(0x00C9, 0, before="KEY ON",
+                       after='A=PEEK(&HF3DE):C=VPEEK(&H399):PRINT:PRINT "[C";HEX$(A);" ";HEX$(C);"]":END'),
+    "fnksb_off": B.prog(0x00C9, 0, before="KEY OFF",
+                        after='A=PEEK(&HF3DE):C=VPEEK(&H399):PRINT:PRINT "[C";HEX$(A);" ";HEX$(C);"]":END'),
+}
+ROWS.update(B6)
+
 
 def main():
     only = sys.argv[1:] or list(ROWS)

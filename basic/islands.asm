@@ -490,6 +490,10 @@ fperr_to_err:
 ; unless they still read C-BIOS's `jp erafnk` / `jp dspfnk`.
                 org     $003E
                 jp      bios_inifnk         ; INIFNK: C-BIOS's was a stub too
+                org     $00AE
+                jp      bios_inlin          ; PINLIN: C-BIOS's INLIN never returned
+                jp      bios_inlin          ; INLIN
+                jp      bios_qinlin         ; QINLIN
                 org     $00C0
                 jp      bios_beep           ; BEEP: C-BIOS's was a stub too
                 org     $00CC

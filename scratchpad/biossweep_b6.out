@@ -1,0 +1,20 @@
+ROW sett32c  VG=[[C0,E0,6,80,0,36,7,F4, 0 ] | [R F3C7 0 7 A7]] ZB=[[C0,E0,6,80,0,36,7,F4, 0 ] | [R 0 F3C7 7 A7]] DIVERGES
+ROW setgrpc  VG=[[C2,E0,6,FF,3,36,7,F4, 0 ] | [R F3D1 7F03 7 A7]] ZB=[[C2,E0,6,FF,3,36,7,F4, 0 ] | [R 0 F3D1 7 A7]] DIVERGES
+ROW setmltc  VG=[[C0,E8,2,0,0,36,7,F4, 0 ] | [R F3DB 0 7 A7]] ZB=[[C0,E8,2,0,0,36,7,F4, 0 ] | [R 0 F3DB 7 A7]] DIVERGES
+ROW gtstck0a VG=[[C0]] ZB=[[C0]] SAME
+ROW gtstck1a VG=[[C0]] ZB=[[C0]] SAME
+ROW gtpad0a  VG=[[C0]] ZB=[[C0]] SAME
+ROW gtpdl1a  VG=[[CFF]] ZB=[[CFF]] SAME
+ROW chgclr7  VG=[[C41] | [R F3EA 3344 7 A41]] ZB=[[C41] | [R F3EA FF41 7 A41]] DIVERGES
+ROW chgcap0  VG=[[C0] | [R 5566 3344 1122 AC]] ZB=[[C40] | [R 5566 3344 1122 A57]] DIVERGES
+ROW chgcap1  VG=[[C40] | [R 5566 3344 1122 AD]] ZB=[[C0] | [R 5566 3344 1122 A17]] DIVERGES
+ROW chget    VG=[[R 5566 3344 1122 A51]] ZB=[[R 5566 3344 1122 A51]] SAME
+ROW inlin    VG=[[C41,42,0,20,] | [R F55D FBC7 D65A AD]] ZB=[None] DIVERGES
+ROW pinlin   VG=[[C41,42,0,20,] | [R F55D FBC7 D65A AD]] ZB=[None] DIVERGES
+ROW qinlin   VG=[[C41,42,0,20,] | [R F55D FBC7 D85A AD]] ZB=[None] DIVERGES
+ROW posit    VG=[[C 10  5 ] | [R A05 3344 1122 A29]R(0):X=PEEK(&HF3DD)] ZB=[[C 10  5 ] | [R A05 3344 1122 A0]SR(0):X=PEEK(&HF3DD)] DIVERGES
+ROW fnksb_on VG=[[CFF 6F]] ZB=[[CFF 6F]] SAME
+ROW fnksb_off VG=[[C0 20]] ZB=[[C0 20]] SAME
+
+7 SAME, 10 DIVERGE (sett32c, setgrpc, setmltc, chgclr7, chgcap0, chgcap1, inlin, pinlin, qinlin, posit)
+refcache: 3 hit, 31 miss, 31 stored

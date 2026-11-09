@@ -1,0 +1,6 @@
+ROW inlin    VG=[[C41,42,0,20,] | [R F55D FBC7 D65A AD]] ZB=[[C41,42,0,20,] | [R F55D F560 1629 AD]] DIVERGES
+ROW pinlin   VG=[[C41,42,0,20,] | [R F55D FBC7 D65A AD]] ZB=[[C41,42,0,20,] | [R F55D F560 1629 AD]] DIVERGES
+ROW qinlin   VG=[[C41,42,0,20,] | [R F55D FBC7 D85A AD]] ZB=[[C41,42,0,20,] | [R F55D F560 1629 AD]] DIVERGES
+
+0 SAME, 3 DIVERGE (inlin, pinlin, qinlin)
+refcache: 3 hit, 3 miss, 3 stored

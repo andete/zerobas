@@ -67,3 +67,30 @@ bios_beep:
                 pop     ix
                 pop     hl
                 ret
+
+; PINLIN ($00AE) / INLIN ($00B1) / QINLIN ($00B4): C-BIOS's INLIN is a skeleton --
+; its Return handler is a bare `ret` back into the key loop, so a program calling
+; any of the three HUNG (scratchpad/biossweep_b6.out: "AB" echoed, never returned).
+; The VG-8020 returns the line in BUF, 0-terminated, HL = BUF - 1, A = $0D; QINLIN
+; prints "? " first. BASIC's own line editor (read_line, basic/repl.asm -- the
+; prompt's and INPUT's: screen editing, Enter reads the logical line) does the
+; work; it is MAIN PAGE 1, so page 1 is mapped to primary slot 0 for the call and
+; the caller's layout put back after (htimi_guard's way). CF = Ctrl-STOP as
+; read_line reports it. PINLIN's AUTO handling is BASIC's own (repl), not here.
+bios_qinlin:
+                ld      a,'?'
+                call    CHPUT
+                ld      a,' '
+                call    CHPUT
+bios_inlin:                                 ; also PINLIN
+                in      a,(PSLTREG)
+                push    af                  ; the caller's slot layout
+                and     %11110011           ; page 1 -> primary slot 0: main ROM
+                out     (PSLTREG),a
+                call    read_line           ; LINEBUF (= BUF) <- the line; CF = STOP
+                pop     hl                  ; H = the caller's layout (flags kept)
+                ld      a,h
+                out     (PSLTREG),a
+                ld      hl,LINEBUF - 1      ; the published HL
+                ld      a,$0D               ; A as the VG-8020 leaves it
+                ret

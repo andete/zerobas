@@ -17904,6 +17904,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       to code a game RUNS shifts where its snapshot lands; "Ballblazer became SAME because
       of RG5SAV / RG6SAV" was a guess, not a measurement. Read a running title's move as a
       cause only with a second witness.
+      📏 **BATCH 6 (2026-11-09), THE INPUT WAITS AND THE REST** ([`biossweep_b6.out`](scratchpad/biossweep_b6.out)): keys put in KEYBUF
+      ($FBF0, GETPNT / PUTPNT around them) so CHGET / INLIN return at once. SAME in their cells:
+      SETT32 / SETGRP / SETMLT (register copies), GTSTCK / GTPAD / GTPDL (A), CHGCLR (RG7SAV),
+      CHGET, POSIT (CSRX / CSRY), FNKSB (with KEY ON and OFF). Two contract faults, both fixed:
+      ✅ **INLIN / PINLIN / QINLIN NEVER RETURNED.** C-BIOS's INLIN is a skeleton (its Return
+      handler `inlin_cr` is a bare `ret` back into the key loop): "AB" echoed, then the
+      program hung. basic/biosfnk.asm maps main page 1 to primary slot 0 (htimi_guard's way)
+      and runs BASIC's own line editor (read_line), then HL = BUF - 1, A = $0D; QINLIN
+      prints "? " first; the slots $00AE / $00B1 / $00B4 overlaid as before. 📏
+      [`biossweep_inlin.out`](scratchpad/biossweep_inlin.out): **BUF, HL and A SAME on all three, and QINLIN's screen ("? AB")
+      identical**; DE / BC are side values. ⚠️ Measured from BASIC only: under MSX-DOS
+      (CALSLT, page 1 = RAM) the wrapper maps the main ROM in, but read_line's sub-ROM tenant
+      needs SUBSLOT, which BASIC's init sets -- unmeasured there.
+      ✅ **CHGCAP HAD THE CAPS LAMP INVERTED.** Both references -- the VG-8020 and the CF-3300
+      ([`cap_cf.out`](scratchpad/cap_cf.out); that machine carries OUR disk ROM, so refcache classes it zerobas, but its
+      MAIN BIOS is the National's: it read C0 / C40 while ours read the inverse) -- leave PPI
+      port C bit 6 SET for A <> 0, CLEAR for A = 0; C-BIOS had it the other way round
+      (set / res swapped in cbios-repack). Sixteen biosregs-acceptance rows (104/104). **The
+      BIOS table: 90 of 108 witnessed**; the 18 left are KEYINT / NMI / INITIO, the tape
+      five, WSLREG / CALBAS, PHYDIO, OUTDLP, PUTQ / STRTMS (PLAY's queues), GRPPRT (its font
+      differs from the VG-8020's) and PNTINI / SCANR / SCANL (not implemented; no room).
       🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
       holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
       row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,

@@ -1,3 +1,25 @@
+diff --git a/src/main.asm b/src/main.asm
+index 8fd3945..f3411e0 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2540,12 +2540,15 @@ calc_queue_address:
+ ; Input    : A  - #00 is lamp on
+ ;             not #00 is lamp off
+ ; Registers: AF
++; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): BOTH references -- the Philips
++; VG-8020 and the National CF-3300 -- leave PPI port C bit 6 SET for A <> 0 and CLEAR
++; for A = 0 (zerobas scratchpad/biossweep_b6.out, cap_cf.out); this had it inverted.
+ chgcap:
+                 or      a
+                 in      a,(GIO_REGS)
+-                res     6,a
+-                jr      nz,chgcap_on
+                 set     6,a
++                jr      nz,chgcap_on
++                res     6,a
+ chgcap_on:      out     (GIO_REGS),a
+                 ret
+ 
 diff --git a/src/video.asm b/src/video.asm
 index bb11106..231574e 100644
 --- a/src/video.asm
