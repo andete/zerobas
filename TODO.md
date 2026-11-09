@@ -17998,9 +17998,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sectors, 64 root entries; each FAT starts `FC FF FF` then zeros; the root is zeros;
       sector 0 carries "MSX_01" and the BPB, AND THE REFERENCE'S OWN BOOT CODE -- which we
       must NOT copy: ours writes its own loader (the BPB, FATs and root are the contract).
-      Ours: CHOICE HL = 0, DSKFMT A = 1, Cy = 1 (the stub). ➡️ Next: choices 2 / 3 / 4
-      measured the same way (the probe's `ld a, 1`), then the room (a carve pass), then the
-      build -- WD2793 Write Track per track, the boot sector, FATs, root.
+      Ours: CHOICE HL = 0, DSKFMT A = 1, Cy = 1 (the stub).
+      📏 **ALL FOUR CHOICES (2026-11-09; build_dskfmt_disk.py --choice N,
+      [`dskfmt_stock_c2.out`](scratchpad/dskfmt_stock_c2.out) .. [`dskfmt_stock_c4.out`](scratchpad/dskfmt_stock_c4.out)):** every one answers A = 0, Cy = 0, B = 0; OEM
+      name "MSX_0N"; 512 B sectors, 9 per track, 1 reserved, 2 FATs, each starting
+      `<media> FF FF` then zeros, an all-zero root:
+      choice 1 $FC 1 side 40 tracks 360 sectors 1 sector/cluster FAT 2 sectors root 64;
+      choice 2 $FD 2 sides 40 tracks 720 sectors 2 / cluster FAT 2 root 112;
+      choice 3 $F8 1 side 80 tracks 720 sectors 2 / cluster FAT 2 root 112;
+      choice 4 $F9 2 sides 80 tracks 1440 sectors 2 / cluster FAT 3 root 112 (the CF-3300
+      takes 181 s; the probe's settle is 300). ➡️ Next: the room (a carve pass, one page),
+      then the build -- WD2793 Write Track per track, our own boot loader, the BPB, FATs, root.
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

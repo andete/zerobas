@@ -29,20 +29,23 @@ import probe_tmp  # noqa: E402  -- every scratch file under the project's temp r
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "dskfmt.asm")
+CHOICE = 1
 
 
 def assemble(tmp_dir: str) -> tuple[bytes, int]:
     com = os.path.join(tmp_dir, "dskfmt.com")
     sym = os.path.join(tmp_dir, "dskfmt.sym")
     subprocess.run(["pasmo", "--bin", ASM, com, sym], check=True)
-    done = None
+    syms = {}
     for line in open(sym):
         name, _, rest = line.strip().partition("\t")
-        if name.strip() == "done":
-            done = int(rest.strip().split()[-1].rstrip("H"), 16)
-    if done is None:
-        sys.exit("could not find `done` symbol in dskfmt.sym")
-    return open(com, "rb").read(), done
+        if rest.strip():
+            syms[name.strip()] = int(rest.strip().split()[-1].rstrip("H"), 16)
+    if "done" not in syms or "fchoice" not in syms:
+        sys.exit("could not find `done` / `fchoice` in dskfmt.sym")
+    com_bytes = bytearray(open(com, "rb").read())
+    com_bytes[syms["fchoice"] - 0x100] = CHOICE
+    return bytes(com_bytes), syms["done"]
 
 
 def build(dos_src: str, out: str, tmp_dir: str) -> tuple[int, int]:
@@ -62,7 +65,10 @@ def main() -> int:
     ap.add_argument("--dos-disk", required=True, help="source MSX-DOS 1 disk (e.g. test.dsk)")
     ap.add_argument("--out", default=probe_tmp.tmp("dskfmt.dsk"))
     ap.add_argument("--tmp-dir", default=probe_tmp.ROOT)
+    ap.add_argument("--choice", type=int, default=1, help="DSKFMT's A: the CHOICE item (1..4)")
     args = ap.parse_args()
+    global CHOICE
+    CHOICE = args.choice
 
     done_addr, sig = build(args.dos_disk, args.out, args.tmp_dir)
     print(f"built {args.out}")
@@ -73,7 +79,7 @@ def main() -> int:
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
           f"--at {done_addr:#06x} --arm-check-val {sig:#04x} "
-          "--settle 120 --machine both "
+          "--settle 300 --machine both "  # choice 4 (2DD) takes the CF-3300 181 s
           f"--mem 0x0400:0x10C0 --diska {args.out}")
     return 0
 

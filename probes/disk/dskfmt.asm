@@ -52,7 +52,7 @@ cs_lp:                                          ; the string, through RDSLT
                 jr      z, fmt
                 djnz    cs_lp
 fmt:
-                ld      a, 1                    ; the first choice
+                ld      a, (fchoice)            ; the choice (build_dskfmt_disk.py --choice)
                 ld      d, 0                    ; drive A
                 ld      hl, WORK
                 ld      bc, $2000
@@ -117,6 +117,7 @@ xslot:          ld      iy, $0000               ; IYh = the slot (patched above)
                 ret
 
 media:          db      0
+fchoice:        db      1                       ; patched by the builder
 
 ; ---------------------------------------------------------------------------
 ; captured block $0400-$14BF
