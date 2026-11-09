@@ -17972,6 +17972,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
+- [ ] 🔴 **D-SEQTWO — UNDER MSX-DOS, SEQREAD OF ONE FILE WHILE ANOTHER IS OPEN FOR WRITING NEVER
+      REACHES ITS END (found 2026-11-09 by D-DOSLADDER's D3, COPY)**
+      🎚️ TIER 1 — happy path of the BDOS entry points: a program that copies a file through
+      FCB sequential I/O (FOPEN the source, FMAKE the copy, SEQREAD / SEQWRITE in turn)
+      loops forever on ours; the CF-3300 copies its 51 records in 93 s.
+      🤖 **AUTONOMOUS** — 📏 probes/disk/dosl/d3copy.asm ([`dosl_d3_2.out`](scratchpad/dosl_d3_2.out): the CF-3300's result;
+      ours never reaches `done` in 600 s, [`dosl_d3_4.out`](scratchpad/dosl_d3_4.out)); callwatch on our ROM
+      ([`dosl_d3_cw.out`](scratchpad/dosl_d3_cw.out)): 274 SEQREAD / SEQWRITE pairs and counting -- the source never ends.
+      THE CAUSE, read in disk/driver.asm: `$4775` (SEQREAD, measured) and `$477D` (SEQWRITE)
+      BOTH jump to wrseq_body, which picks read or write by BDOS_WRMODE -- "a file is open
+      for writing" -- NOT by the function called: once FMAKE opened C.COM, every SEQREAD of
+      COMMAND.COM ran the WRITE branch. Underneath, the read state (FAT iterator,
+      BDOS_BYTESLEFT, BDOS_SEQREC) is single-open-file global state, shared with the write
+      ("both are single-open-file global state", wrseq_body's own header). ➡️ (1) dispatch by
+      ENTRY: k_4775 -> the read branch, k_477D -> the write branch; (2) the read repositions
+      from the FCB (R = EX * 128 + CR, the way rdrnd_body does through rrnd_position) when
+      the global read state is not this FCB's -- first cluster (+26) and position compared --
+      keeping the fast path for a lone reader (COMMAND.COM loads, TYPE). ~50 B; the region in
+      front of $75A5 (151 B, gathered for D-DSKFMT) is where it fits. D3 joins bdos-acceptance
+      when this lands.
+
 - [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
       2026-11-09)**
       🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
@@ -17986,6 +18007,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D6 a random-access database (WRRND / RDRND, WRZER, RDBLK / WRBLK, FSIZE, SETRND) · D7 a
       mini editor / sort (many files, append, truncate by WRBLK of 0). Clean-room: own code.
       ⏳ Order against D-DSKFMT's carve: asked of Joost 2026-11-09, unanswered at filing.
+      ✅ **D2 (TYPE) SHIPPED, D3 (COPY) FOUND D-SEQTWO (2026-11-09).** probes/disk/build_dosl_disk.py
+      --prog NAME builds any rung from probes/disk/dosl/NAME.asm (the `cap` block compared;
+      bdos-acceptance's EXERCISERS take extra build arguments now). D2: COMMAND.COM read to
+      the end -- FOPEN 0, 51 records, byte sum $6C2A, EOF A = 1, FCLOSE 0, size 6528, CR 51
+      -- **byte-identical on both** ([`dosl_d2_1.out`](scratchpad/dosl_d2_1.out)); a bdos-acceptance row. D3: above.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

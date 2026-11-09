@@ -104,16 +104,23 @@ EXERCISERS = [
     # zero, WRRND's the disk's $CC; records past the end answer A = 1
     # (scratchpad/wrzer_stock3.out / wrzer_stock4.out).
     ("WRZER", "build_wrzer_disk.py"),
+    # D-DOSLADDER (2026-11-09): MSX-DOS programs of rising complexity, our own .COMs
+    # (probes/disk/dosl/), each comparing only its contract block. D2: TYPE --
+    # COMMAND.COM read sequentially to the end (records, byte sum, EX / size / CR).
+    # (D3, COPY, is parked: it found D-SEQTWO -- ours never reaches the source's end.)
+    ("DOSL-D2", "build_dosl_disk.py", ["--prog", "d2type"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
 
 
-def build_and_plan(name: str, script: str, dos_disk: str) -> tuple[list[list[str]], str]:
-    """Run the build script; return (list of probe arg-lists, its raw output)."""
+def build_and_plan(name: str, script: str, dos_disk: str,
+                   extra: tuple = ()) -> tuple[list[list[str]], str]:
+    """Run the build script; return (list of probe arg-lists, its raw output).
+    `extra`: more build-script arguments (D-DOSLADDER's --prog)."""
     out_dsk = f"/tmp/zerobas_acc_{name.lower()}.dsk"
     proc = subprocess.run(
-        ["python3", os.path.join(HERE, script), "--dos-disk", dos_disk, "--out", out_dsk],
+        ["python3", os.path.join(HERE, script), "--dos-disk", dos_disk, "--out", out_dsk, *extra],
         cwd=ROOT, capture_output=True, text=True)
     blob = proc.stdout + proc.stderr
     if proc.returncode != 0:
@@ -289,12 +296,12 @@ def main() -> int:
     total = passed = failed = skipped = 0
     failures = []
 
-    for name, script in EXERCISERS:
+    for name, script, *extra in EXERCISERS:
         if wanted and name not in wanted:
             continue
         print(f"\n===== {name} ({script}) =====")
         try:
-            cmds, _ = build_and_plan(name, script, dos_copy)
+            cmds, _ = build_and_plan(name, script, dos_copy, tuple(extra[0]) if extra else ())
         except RuntimeError as e:
             print(f"  BUILD-ERROR: {e}")
             failed += 1
