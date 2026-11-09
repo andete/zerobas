@@ -213,12 +213,12 @@ def main() -> int:
     failures = []
     xfails = []
 
-    for name, script in EXERCISERS:
+    for name, script, *extra in EXERCISERS:   # a row may carry build args (D-DOSLADDER)
         if wanted and name not in wanted:
             continue
         print(f"\n===== {name} ({script}) =====")
         try:
-            cmds, _ = build_and_plan(name, script, dos_copy)
+            cmds, _ = build_and_plan(name, script, dos_copy, tuple(extra[0]) if extra else ())
         except RuntimeError as e:
             print(f"  BUILD-ERROR: {e}")
             failed += 1
