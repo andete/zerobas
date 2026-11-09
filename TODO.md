@@ -18055,6 +18055,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       hl,FAT_MBUF` / `call read_sector` stood four times -> rd_fatsec (tail `jp`, the same
       registers out). **$75A5's region 141 B, $7F7C's 57 B.** L5_journal / L5_stock (the BSAVE
       that caught the HL fault) and BDOSX3 / 8 / 9 / WRZER clean.
+      ✂️ **DEFRAG STEP 6 (2026-11-09):** four more moves into holes (rd_fatsec -> $50D5,
+      bdos_close_wm -> $5006, dsm_bump -> $46C8, rrnd_sector -> $5462; each ends `ret` /
+      `jp`). A dec32 helper (the 4-byte decrement in rgb_have and fig_have) was tried and
+      REVERTED: fig_have shares the target region with where the helper had to go, so the
+      region LOST 4 B. **$75A5's region 151 B, $7F7C's 91 B -- 242 B.** 📐 A compact DSKFMT
+      sized at ~300 B: the CHOICE text (~85 B) and a 4 x 3 B geometry table in $7F7C's region;
+      in $75A5's, a run-length table of the WD2793 track image (gaps / sync / marks, ~40 B),
+      the Write Track loop (~60 B), the boot sector (BPB + a minimal loader of our own) and
+      the FAT / root zeroing (~70 B).
 
 - [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
       ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**

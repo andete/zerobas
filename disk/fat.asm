@@ -63,6 +63,16 @@ dst_put:
                                             ; bytes into bdos_create's body as first
                                             ; guessed; no relocation needed)
 k_46BA:         jp      rdabs_body          ; $46BA: BDOS $2F RDABS canonical entry (M26)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; dsm_bump — BDOS_SRCHIDX += 1 (advance the persistent scan cursor). Preserves all
+; registers (HL is the live entry pointer at both call sites).
+dsm_bump:
+                push    hl
+                ld      hl, (BDOS_SRCHIDX)
+                inc     hl
+                ld      (BDOS_SRCHIDX), hl
+                pop     hl
+                ret
                 ds      $46C8 - $, $00      ; anchor the canonical address
                 jp      k_46C8              ; $46C8: COMMAND.COM-load kernel veneer
 ; 📍 D-RECSLOW: from disk/kernel.asm's $75A5 region (no room there).

@@ -370,6 +370,19 @@ bd_step7:
                 ret                     ; -> the BIOS boot scan -> BASIC
 bd_nosig:
                 jp      boot_date       ; the scan's masked state kept, as before
+; (moved here from runtime.asm by the D-DSKFMT defrag, 2026-11-09)
+; bdos_close_wm -- D-WRBLKDIR (2026-11-08): BDOS_WRMODE is ONE global (FMAKE sets
+; it), so with two FMAKE'd FCBs written by WRBLK the first FCLOSE came here and
+; wrote the entry from the GLOBALS -- the last-used file's -- never its own
+; (wrblkalt-acceptance's ALT1). The globals path is for the SEQUENTIAL writer's
+; file only: nothing written sequentially (no cluster yet) -> close from the FCB.
+bdos_close_wm:
+                ld      hl, (BDOS_WRCLUS)
+                ld      a, h
+                or      l
+                jp      nz, bdos_close_write
+                ld      (BDOS_WRMODE), a    ; (A = 0) no longer open for write
+                jp      bdos_close_rd
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
@@ -635,6 +648,15 @@ curdrv:
                 ds      $50C8 - $, $00  ; pad the single leftover pad byte ($50C7)
 setrnd:
                 jp      setrnd_body     ; $50C8: BDOS $24 SETRND canonical entry (M32)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; rd_fatsec -- FAT_FATSEC := HL and read that sector into FAT_MBUF (= WBUF); Cy and A
+; as read_sector leaves them. The four instructions stood four times (fat_alloc's
+; scan, both fat_write_fat_entry paths, fac_cached_entry): D-DSKFMT defrag, 2026-11-09.
+rd_fatsec:
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, FAT_MBUF
+                jp      read_sector
                 ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
 seldsk_drv:
                 jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
@@ -1278,6 +1300,16 @@ conout:
 ; below, §4.6) — fat_find_body never had a canonical-address requirement of its
 ; own (only reached by label from fat.asm's `fat_find` veneer), so moving it
 ; frees this slot outright. Body = dirin_body (free tail).
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; rrnd_sector — recover the absolute logical sector number rrnd_position's
+; seek loop last landed on (see the placement note above for why this is
+; safe: FAT_CLUSSEC - 1, FAT_CURCLUS as-is).
+;   out: DE = absolute logical sector number; trashes AF, BC, HL
+rrnd_sector:
+                ld      a, (FAT_CLUSSEC)
+                dec     a                   ; the seek loop's sector: FAT_CLUSSEC - 1
+                ld      hl, (FAT_CURCLUS)
+                jp      clus_sec            ; DE = the absolute sector -- clus_sec's
                 ds      $5462 - $, $00  ; pad up to the pinned $5462 DIRIN entry (M22a)
 k_5462:
                 jp      innoe_body      ; $5462: BDOS $07 DIRIN canonical entry (M22a; was via
@@ -4497,14 +4529,6 @@ wz_out:
                 pop     hl
                 ret
 
-; rd_fatsec -- FAT_FATSEC := HL and read that sector into FAT_MBUF (= WBUF); Cy and A
-; as read_sector leaves them. The four instructions stood four times (fat_alloc's
-; scan, both fat_write_fat_entry paths, fac_cached_entry): D-DSKFMT defrag, 2026-11-09.
-rd_fatsec:
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, FAT_MBUF
-                jp      read_sector
 
 ; seq_k_adv -- BDOS_SEQREC += 1 = K; the kernel FCB copy's +32 CR := K AND $7F and
 ; +12 EX := K >> 7; HL = K. seq_k30 -- +30 := (K - 1) / records-per-cluster, from
@@ -8095,15 +8119,6 @@ ds_none:
                 ld      a, $FF              ; A = $FF = no (more) matching entry
                 ret
 
-; dsm_bump — BDOS_SRCHIDX += 1 (advance the persistent scan cursor). Preserves all
-; registers (HL is the live entry pointer at both call sites).
-dsm_bump:
-                push    hl
-                ld      hl, (BDOS_SRCHIDX)
-                inc     hl
-                ld      (BDOS_SRCHIDX), hl
-                pop     hl
-                ret
 
 ; name_cmp_wild — compare an 11-byte dir name against the search pattern, with the
 ; FCB ? wildcard: a pattern byte of $3F matches any single character. Otherwise
@@ -8559,15 +8574,6 @@ rrnd_pos_err:
                 scf
                 ret
 
-; rrnd_sector — recover the absolute logical sector number rrnd_position's
-; seek loop last landed on (see the placement note above for why this is
-; safe: FAT_CLUSSEC - 1, FAT_CURCLUS as-is).
-;   out: DE = absolute logical sector number; trashes AF, BC, HL
-rrnd_sector:
-                ld      a, (FAT_CLUSSEC)
-                dec     a                   ; the seek loop's sector: FAT_CLUSSEC - 1
-                ld      hl, (FAT_CURCLUS)
-                jp      clus_sec            ; DE = the absolute sector -- clus_sec's
                                             ; arithmetic, which stood here inline (D-DSKFMT
                                             ; defrag, 2026-11-09; both callers reload HL
                                             ; and write_sector sets A / B / C itself)
