@@ -1,0 +1,34 @@
+===== National_CF-3300_ZEROBASDISK =====
+--- t=110.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  11|  1 - 1 side
+  12|  2 - 2 sides
+  13|  3 - 1 side, double track
+  14|  4 - 2 sides,double track
+  16|  ? 1
+  17|  and strike a key when ready
+  18|  Format complete
+  20|  A>.
+--- t=110.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  11|  1 - 1 side
+  12|  2 - 2 sides
+  13|  3 - 1 side, double track
+  14|  4 - 2 sides,double track
+  16|  ? 1
+  17|  and strike a key when ready
+  18|  Format complete
+  20|  A>.
+   END

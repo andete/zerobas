@@ -4,11 +4,12 @@
 
 """Functional + structural oracle for zerobas-BASIC CALL FORMAT (Phase 2).
 
-CALL FORMAT lays a fresh empty 720 KB FAT12 filesystem onto the disk (drive A, no
-prompts — zerobas-disk has a single geometry so there is nothing to choose). The
-probe starts from a junk-filled image, formats it, then writes and reads a file back:
+CALL FORMAT runs the CF-3300's dialogue (D-DSKFMT, 2026-11-10: a drive key, a choice
+1..4 from CHOICE's menu, a key to start -- one key each) and DSKFMT, a real low-level
+format of every track. The probe starts from a junk-filled image, formats it, then
+writes and reads a file back:
 
-  CALL FORMAT
+  CALL FORMAT  a  4 (or 2)  <space>
   OPEN "T.DAT" FOR OUTPUT AS #1 : PRINT #1,"hi" : CLOSE   ' -> T.DAT = "hi\\r\\n\\x1a"
 
 Two checks:
@@ -56,21 +57,29 @@ CF3300_BPB_720 = bytes.fromhex("0002020100027000a005f9030009000200")
 CF3300_BPB_360 = bytes.fromhex("0002020100027000d002fd020009000200")
 # (geometry key, menu choice key, expected BPB, expected FAT head)
 GEOMS = [
-    ("720K", "2", CF3300_BPB_720, bytes([0xF9, 0xFF, 0xFF])),
-    ("360K", "1", CF3300_BPB_360, bytes([0xFD, 0xFF, 0xFF])),
+    ("720K", "4", CF3300_BPB_720, bytes([0xF9, 0xFF, 0xFF])),
+    ("360K", "2", CF3300_BPB_360, bytes([0xFD, 0xFF, 0xFF])),
 ]
 FILE_EXPECT = b"hi\r\n\x1a"
 
 
+# Seconds of emulated time for a format to finish once its key is struck (a full
+# Write Track of every track: choice 4 is 160 of them).
+FMT_WAIT = 90
+
+
 def program(choice):
-    # CALL FORMAT now prompts a geometry menu; the choice is read via the REPL line
-    # editor, so it is typed as its own line right after `call format`.
+    # D-DSKFMT (2026-11-10): CALL FORMAT is the CF-3300's dialogue -- ONE key per answer
+    # (a drive, a choice 1..4, a key to start), no Enter -- then DSKFMT. Each step is
+    # (text, Enter after it, seconds before the next).
     return [
-        "call format",
-        choice,
-        'open"t.dat" for output as #1',
-        'print#1,"hi"',
-        "close",
+        ("call format", True, 7),
+        ("a", False, 4),
+        (choice, False, 4),
+        (" ", False, FMT_WAIT),
+        ('open"t.dat" for output as #1', True, 7),
+        ('print#1,"hi"', True, 7),
+        ("close", True, 7),
     ]
 
 
@@ -103,10 +112,11 @@ def read_fat_file(img, name8, ext3):
 
 def build_tcl(lines):
     body, t = ['after time 4 { type "\\r" }'], 8  # D-STEP7DATE: an E5-filled disk gets the date question
-    for ln in lines:
+    for ln, enter, gap in lines:
         body.append(f'after time {t} {{ type {{{ln}}} }}')
-        body.append(f'after time {t+3} {{ type "\\r" }}')
-        t += 7
+        if enter:
+            body.append(f'after time {t+3} {{ type "\\r" }}')
+        t += gap
     body.append(f'after time {t+8} {{ exit }}')
     return "set throttle off\n" + "\n".join(body) + "\n"
 
@@ -121,7 +131,7 @@ def run(machine, choice):
         omsx_preflight.guarded([OMSX, "-machine", machine, "-diska", dsk,
          "-command", "set renderer none; set sound_driver null", "-script", tcl]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + 120
+    deadline = time.time() + 300   # the format's own Write Tracks (FMT_WAIT)
     while proc.poll() is None and time.time() < deadline:
         time.sleep(0.1)
     if proc.poll() is None:

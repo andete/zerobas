@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **440** in the MSX standard work area at or above `$F380`.
-* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **68** in the MSX standard work area at or above `$F380`.
+* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **70** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -398,6 +398,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F698` | 3 B | `basic` | `RVDESC/TEMPBASE` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$F698` | 3 B | `disk` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$F69B` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
+| `$F69B` |  | `disk` | `FRETOP` | the string heap's low boundary -- the work area ends below it (D-DSKFMT) |  |
 | `$F69D` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO) |  |
 | `$F69F` | 2 B | `basic` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
 | `$F69F` | 2 B | `disk` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
@@ -424,6 +425,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6C2` | 2 B | `basic` | `VARTAB` | PUBLISHED: variable-table base = (PRGEND)+2 (2 B) |  |
 | `$F6C4` | 2 B | `basic` | `ARYTAB` | PUBLISHED: scalar-region end == array base (2 B) |  |
 | `$F6C6` | 2 B | `basic` | `STREND` | PUBLISHED: array-region end = ARYEND (2 B) |  |
+| `$F6C6` |  | `disk` | `STREND` | PUBLISHED: the arrays' end -- CALL FORMAT's work area starts here (D-DSKFMT) |  |
 | `$F6C8` | 2 B | `basic` | `DATAPTR` | next unread DATA item (ASCII) in the program (2) |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
 | `$F6E4` | 2 B | `basic` | `FNSP` | newest FN frame's address, 0 = no FN call live (2) |  |

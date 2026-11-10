@@ -59,15 +59,13 @@
                 ; banner. (Swapping the two instead HANGS the machine: measured.)
                 ds      $4022 - $, $00  ; pad up to the pinned $4022 entry
                 jp      basent_body     ; $4022: BASENT -- leave DOS for disk BASIC
-; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
-; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
-; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
-; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
-rh_init:
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ret
-                ds      $402D - $, $00  ; pad $4025-$402C (unused kernel-entry slots)
+                ds      $4025 - $, $00
+                ; 🔴 D-DOSFORMAT (2026-11-10): $4025 IS THE PUBLISHED FORMAT ENTRY -- MSX-DOS's
+                ; `format` hands the whole dialogue to it (scratchpad/fmttrace.out). This pad's
+                ; old comment called $4025-$402C "unused kernel-entry slots"; nobody had
+                ; measured that, and a defrag put rh_init here.
+k_4025:         jp      fmt_dos         ; $4025: FORMAT (kernel.asm)
+                ds      $402D - $, $00  ; pad $4028-$402C (not measured: check before using)
                 jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
                 ld      hl, GETWRK_AREA ; $4030: return our work-area base
                 ret                     ; ($4033) HL = work area, all else preserved

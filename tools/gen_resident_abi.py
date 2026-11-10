@@ -397,6 +397,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # prompt itself is CHPUT'd from disk.rom: its text is there, and a
     # print_string call-back would read main page 1 at the text's address.
     "read_line",                # LINEBUF <- one edited line, echoed
+    # D-DSKFMT ($4025 FORMAT): CALL FORMAT's dialogue takes ONE key per answer, as the
+    # CF-3300's does -- INPUT$'s key source, so the wait is in MAIN (repl.asm's rule:
+    # a page-1 tenant must not wait). No echo; HL kept; CF clear.
+    "chget_getbyte",
     # D-CALLSYSTEM: CALL SYSTEM closes every file before handing over to MSX-DOS,
     # as the CF-3300 does (scratchpad/callsystem_peek.out `dosfile`).
     "fch_close_all",

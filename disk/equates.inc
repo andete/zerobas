@@ -184,6 +184,8 @@ H_FOPEN         equ     $FE5D
 ; call -- so the selector crosses in RAM (§6.6n).
 FOPEN_SEL       equ     DISKOP_OP
 HIMEM           equ     $FC4A   ; the published BASIC ceiling (MSX2 Technical Handbook,
+STREND          equ     $F6C6   ; PUBLISHED: the arrays' end -- CALL FORMAT's work area starts here (D-DSKFMT)
+FRETOP          equ     $F69B   ; the string heap's low boundary -- the work area ends below it (D-DSKFMT)
                                 ; work area) -- D-FCBSHAPE S2 lowers it at init
 SUB_BUILD       equ     0       ; this is the DISK build, not the sub-ROM
 

@@ -17003,6 +17003,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the $7F80-$7FBF window really is dead (the registers mirror x8 across it: the
       2026-07-04 FMAKE break), and the $5FE5 region has two movable routines (33 B). The
       cheap families are spent: the ~120 B for the $4025 entry come from REWRITING routines.
+      ✂️ **CARVES 34-36 (2026-11-10, +141 B in the $75A5 region):** (34) skip_sp -- the blank-skip
+      loop stood three times (NAME's `AS`, COPY's `TO`, FILES); (35) wrblk_mul_rr_rs computes
+      RR x RS in REGISTERS (DE:HL, BC = RS; wmr_byte shifts in one byte of RR, a sentinel
+      bit for its counter) instead of byte-at-a-time RAM arithmetic -- the same 32-bit
+      product, tests/test_wrblk_fsize.py unchanged and green; (36) wrblk_off24 is that
+      product's low three bytes (wmr_core), not a second RAM loop.
+      ✅ **(a) DONE (2026-11-10): THE $4025 FORMAT ENTRY AND CALL FORMAT.** The parked patch went
+      in with the dialogue next to DSKFMT (the $75A5 region: 0 B left) and hk_format (37 B
+      left in front of $5FE5) setting FMT_RESULT, which main's do_format reads (basic/
+      format.asm). 📏 MSX-DOS's `format` on ours: the dialogue, the format, `Format
+      complete`, A> ([`fmtdialog_dos_ours.out`](scratchpad/fmtdialog_dos_ours.out)); CALL FORMAT on ours ([`fmtdialog_basic_ours.out`](scratchpad/fmtdialog_basic_ours.out)).
+      probes/disk/disk_probe_format.py types the new dialogue (one key per answer; 720K =
+      choice 4, 360K = choice 2): both geometries PASS, BPB / FAT head / a file round
+      trip -- it is diskbasic-acceptance's CALL FORMAT row. Differences left, presentation
+      only (Joost's 11-10 ruling): "and strike a key when ready" for "Strike a key when
+      ready", and one blank line fewer after the drive key (6 B; the region has 0).
+      Unmeasured, TIER 6: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP;
+      a failed format is main's `load error` (the old disposition).
+      ➡️ STILL OPEN: (b) our loader booting MSX-DOS from a disk formatted here; the sub-ROM's
+      quick format (format_tenant, basic/format-body.inc) is unused now -- retire it (sub-ROM
+      room, not disk); a standing row for MSX-DOS's `format` (fmtdialog_probe.py's steps).
+
+- [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
+      ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
+      🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
+      🤖 **AUTONOMOUS** — National_CF-3300_ZEROBASDISK (the stock machine, our disk ROM) answers
+      `call format` with Syntax error at once: that BASIC dispatches CALL to the disk ROM's
+      STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
+      is 0 -- zerobas-BASIC reaches the same bodies through its own hooks (H_FORM / H_SYST), so
+      the gap shows only under another BASIC. Our trace saw no disk-ROM entry run at all.
+      ➡️ A statement handler at the header's slot: match FORMAT / SYSTEM (the published CALL
+      convention: PROCNM, HL the text, CF), then the same bodies. Measure first what the
+      CF-3300 answers for an unknown CALL name under its BASIC with ours.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

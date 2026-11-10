@@ -1325,6 +1325,15 @@ bb_dskrst:
                 xor     a
                 ld      (CURDRV_CELL), a    ; drive A
                 ret
+; (moved here from init.asm by the D-DSKFMT defrag)
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
+; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
+; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
+rh_init:
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ret
                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
 k_543C:
                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
@@ -3599,32 +3608,28 @@ hkg_st:
 ; 📍 SITED IN THE FILL ABOVE `ds $5FE5 - $` for hkc_resolve's reason: the tail
 ; after runtime.asm is nearly full, and code here shifts nothing downstream.
 hk_format:
-                ld      hl,fmt_menu_text
-                call    hke_pr              ; CHPUT the 0-terminated prompt (its CF=1 is ignored)
-                ld      ix,read_line
-                call    calbak              ; main: LINEBUF <- the typed choice (echoed)
-                ld      a,(LINEBUF)
-                cp      '1'
-                jr      z,hkfm_360
-                cp      '2'
-                jr      z,hkfm_720
-                jr      hk_format           ; invalid -> re-prompt (like the CF-3300's '?')
-hkfm_360:
-                xor     a                   ; 0 -> 360k (format_tenant's GEOM select)
-                jr      hkfm_go
-hkfm_720:
-                ld      a,1                 ; 1 -> 720k
-hkfm_go:
-                ld      (FMT_GEOMSEL),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
-                jr      nc,hkfm_done        ; completed: FMT_RESULT is the tenant's own
-                ld      a,1
-                ld      (FMT_RESULT),a      ; absent -> the same face as a write error
-hkfm_done:
-                scf                         ; claimed
-                ret
-fmt_menu_text:  db      "1=360k 2=720k? ",0
+                ; 🔴 D-DSKFMT (2026-11-10): CALL FORMAT is the CF-3300's -- the dialogue and
+                ; DSKFMT, as MSX-DOS's `format` ($4025); it was a quick format through the
+                ; sub-ROM (format_tenant), system area only, "1=360k 2=720k? ". The work area
+                ; is the free RAM between the arrays and the strings, less 64 B.
+                ld      hl,(FRETOP)
+                ld      de,(STREND)
+                or      a
+                sbc     hl,de
+                ld      bc,-64
+                add     hl,bc               ; Cy: 64 B or more
+                jr      c,hkfm_room
+                ld      hl,0                ; none: DSKFMT answers 14
+hkfm_room:
+                ld      b,h
+                ld      c,l
+                ld      hl,fmt_bkey         ; keys: ONE each, waited for in MAIN
+                call    fmt_dlg
+                sbc     a,a
+                and     1                   ; 0 done / 1 failed: main's do_format reads it
+                ld      (FMT_RESULT),a      ; (basic/format.asm; a failure is its load error --
+                scf                         ; the old disposition, TIER 6 to refine)
+                ret                         ; claimed
 
 ; --- hk_system: CALL SYSTEM / _SYSTEM -- back to MSX-DOS (D-CALLSYSTEM; oracle: CF-3300) ---
 ; Measured on the CF-3300 (scratchpad/callsystem_run.out, callsystem_dos2.out,
@@ -4372,113 +4377,62 @@ wroe_have_valid:
 
 ; wrblk_mul_rr_rs — WRBLK_MULACC(32-bit LE, WBUF+500) := RR(24-bit, ix+33..35) *
 ; RS(16-bit, WRBLK_RS). Classic LSB-first shift-add multiply, 24 iterations: a
-; 32-bit zero-extended copy of RS (WRBLK_MULOP, WBUF+504) is doubled each
+; 32-bit zero-extended copy of RS (WRBLK_MULOP, WBUF+504) WAS doubled each
 ; iteration and added into WRBLK_MULACC whenever the corresponding bit of a
-; shifting 24-bit copy of RR (WRBLK_MULN, WBUF+508) is 1. Deliberately
-; register-free (RAM-only state) so every step is an independently-checkable
-; byte operation -- host-unit-tested (tests/test_wrblk_mul.py). Runs after
+; shifting 24-bit copy of RR (WRBLK_MULN, WBUF+508) was 1 -- RAM-only state, one
+; byte operation at a time. Since carve 35 the same product is computed in
+; registers (below); WRBLK_MULOP / WRBLK_MULN are no longer used. Host-unit-tested
+; by tests/test_wrblk_fsize.py. Runs after
 ; fat_find's SECTOR_BUF scan and before fat_dir_update's own WBUF read/write, so
 ; WBUF's tail is safe transient scratch here (§ equates.inc note).
 ;   out: WRBLK_MULACC = the 32-bit product; trashes AF, BC, DE, HL
 wrblk_mul_rr_rs:
                 call    rh_flush            ; D-PUTCACHE: WRBLK_MUL* are WBUF+500..511,
-                                            ; inside a sector a PUT may hold
-                xor     a
-                ld      (WRBLK_MULACC), a
-                ld      (WRBLK_MULACC + 1), a
-                ld      (WRBLK_MULACC + 2), a
-                ld      (WRBLK_MULACC + 3), a
-                ld      hl, (WRBLK_RS)
-                ld      (WRBLK_MULOP), hl
-                xor     a
-                ld      (WRBLK_MULOP + 2), a
-                ld      (WRBLK_MULOP + 3), a
-                ld      a, (ix+33)
-                ld      (WRBLK_MULN), a
-                ld      a, (ix+34)
-                ld      (WRBLK_MULN + 1), a
-                ld      a, (ix+35)
-                ld      (WRBLK_MULN + 2), a
-                ld      b, 24
-wmr_loop:
-                ld      a, (WRBLK_MULN)
-                and     1
-                jr      z, wmr_noadd
-                ld      a, (WRBLK_MULACC)
-                ld      hl, WRBLK_MULOP
-                add     a, (hl)
-                ld      (WRBLK_MULACC), a
-                ld      a, (WRBLK_MULACC + 1)
-                inc     hl
-                adc     a, (hl)
-                ld      (WRBLK_MULACC + 1), a
-                ld      a, (WRBLK_MULACC + 2)
-                inc     hl
-                adc     a, (hl)
-                ld      (WRBLK_MULACC + 2), a
-                ld      a, (WRBLK_MULACC + 3)
-                inc     hl
-                adc     a, (hl)
-                ld      (WRBLK_MULACC + 3), a
-wmr_noadd:
-                ld      a, (WRBLK_MULN + 2)
-                srl     a
-                ld      (WRBLK_MULN + 2), a
-                ld      a, (WRBLK_MULN + 1)
-                rra
-                ld      (WRBLK_MULN + 1), a
-                ld      a, (WRBLK_MULN)
-                rra
-                ld      (WRBLK_MULN), a
-                ld      a, (WRBLK_MULOP)
-                add     a, a
-                ld      (WRBLK_MULOP), a
-                ld      a, (WRBLK_MULOP + 1)
-                adc     a, a
-                ld      (WRBLK_MULOP + 1), a
-                ld      a, (WRBLK_MULOP + 2)
-                adc     a, a
-                ld      (WRBLK_MULOP + 2), a
-                ld      a, (WRBLK_MULOP + 3)
-                adc     a, a
-                ld      (WRBLK_MULOP + 3), a
-                djnz    wmr_loop
+                call    wmr_core
+                ld      (WRBLK_MULACC), hl
+                ld      (WRBLK_MULACC + 2), de
                 ret
-
-; wrblk_off24 -- WRBLK_REC := (RR * RS) & $FFFFFF: the start BYTE offset
-; (D-WRBLKRS). RR = (ix+33..35), RS = (WRBLK_RS). 🔴 NOT wrblk_mul_rr_rs, and
-; why: that routine's accumulator lives at WBUF+500..511, and WBUF IS the FAT/dir
-; write-back buffer (FAT_MBUF) that the extension below allocates clusters
-; through. The old code only called it AFTER the loop. Before the loop, its 12
-; bytes could ride a FAT sector back to disk, and in FAT12 offsets 500..511 hold
-; the entries of clusters ~333..341. Registers and WRBLK_REC only here.
+; wrblk_off24 -- WRBLK_REC (24 bits) := RR x RS, its low three bytes: the same product.
+; 💰 D-DSKFMT carve 36 (2026-11-10): it had its own RAM shift-and-add loop.
 wrblk_off24:
-                xor     a
-                ld      (WRBLK_REC), a
-                ld      (WRBLK_REC + 1), a
+                call    wmr_core
+                ld      (WRBLK_REC), hl
+                ld      a, e
                 ld      (WRBLK_REC + 2), a
-                ld      l, (ix+33)
-                ld      h, (ix+34)
-                ld      c, (ix+35)          ; C:HL = RR, shifted LEFT each step
-                ld      de, (WRBLK_RS)      ; DE = RS, shifted RIGHT each step
-                ld      b, 16
-wo24_lp:
-                srl     d
-                rr      e                   ; CY = the next bit of RS
-                jr      nc, wo24_no
-                ld      a, (WRBLK_REC)
-                add     a, l
-                ld      (WRBLK_REC), a
-                ld      a, (WRBLK_REC + 1)
-                adc     a, h
-                ld      (WRBLK_REC + 1), a
-                ld      a, (WRBLK_REC + 2)
-                adc     a, c
-                ld      (WRBLK_REC + 2), a
-wo24_no:
+                ret
+; wmr_core -- DE:HL := RR (ix+33..35) x RS (WRBLK_RS), mod 2^32. 💰 D-DSKFMT carve 35
+; (2026-11-10): in REGISTERS -- DE:HL the accumulator, BC = RS -- shift-and-add over
+; RR's 24 bits, most significant first; the same result as the RAM-only version it
+; replaces (tests/test_wrblk_fsize.py checks it). Trashes A, BC.
+wmr_core:
+                ld      bc, (WRBLK_RS)
+                ld      hl, 0
+                ld      d, h
+                ld      e, l
+                ld      a, (ix+35)
+                call    wmr_byte
+                ld      a, (ix+34)
+                call    wmr_byte
+                ld      a, (ix+33)          ; (falls into wmr_byte: its ret is ours)
+; wmr_byte -- DE:HL := DE:HL x 256 + A x BC, A's bits most significant first. A
+; sentinel 1 (rla after scf) counts the eight: A turns 0 when it has gone out.
+wmr_byte:
+                scf
+                rla                         ; CF = bit 7; the sentinel into bit 0
+wmr_bit:
+                push    af
                 add     hl, hl
-                rl      c                   ; C:HL <<= 1
-                djnz    wo24_lp
+                ex      de, hl
+                adc     hl, hl
+                ex      de, hl              ; DE:HL x 2
+                pop     af
+                jr      nc, wmr_next
+                add     hl, bc
+                jr      nc, wmr_next
+                inc     de                  ; + BC
+wmr_next:
+                add     a, a                ; the next bit
+                jr      nz, wmr_bit
                 ret
 ; wrblk_mul16 -- HL := (HL * DE) & $FFFF, MSB-first shift-and-add. D-WRBLKRS: the
 ; byte budget, WRBLK's documented `(HL*RS) & $FFFF`. Trashes A, BC, DE.
@@ -6162,12 +6116,7 @@ hk_name:
                 call    hk_fname2           ; 💰 D-DISKCARVE7: the name -> DISK_FCB_NAME; may
                                             ; RAISE (ERR 13) and NOT return -- see the ABI
                 ld      hl,(FN_RESUME)
-hkn_sp:
-                ld      a,(hl)              ; skip blanks before `AS`
-                cp      ' '
-                jr      nz,hkn_a
-                inc     hl
-                jr      hkn_sp
+                call    skip_sp             ; skip blanks before `AS` (carve 34)
 hkn_a:
                 call    hkn_up
                 cp      'A'
@@ -6319,12 +6268,7 @@ hk_copy:
                 ld      bc,11               ; published by the generated ABI
                 ldir                        ; -> COPY_SRC, freeing the 8.3 buffer
                 ld      hl,(FN_RESUME)      ; the ldir clobbered HL
-hkc_sp:
-                ld      a,(hl)              ; skip blanks before `TO`
-                cp      ' '
-                jr      nz,hkc_to
-                inc     hl
-                jr      hkc_sp
+                call    skip_sp             ; skip blanks before `TO` (carve 34)
 hkc_to:
                 cp      TO_TOKEN
                 jr      nz,hkc_noto         ; no `TO` -> ERR 5 (measured), not ERR 2
@@ -6496,12 +6440,7 @@ hkf_sel:
                 xor     a
                 ld      (FILES_HASPAT),a    ; no pattern yet
                 ld      (DK_FCB_DRV),a      ; D-DSKIB: and the default drive (A:) until one is typed
-hkf_sp:
-                ld      a,(hl)              ; skip blanks before the filespec
-                cp      ' '
-                jr      nz,hkf_chk
-                inc     hl
-                jr      hkf_sp
+                call    skip_sp             ; skip blanks before the filespec (carve 34)
 hkf_chk:
                 or      a
                 jr      z,hkf_run           ; end of statement -> whole directory
@@ -7016,6 +6955,14 @@ fname_fcb:
 fname_ev:
                 ld      ix,fname_expr
                 jp      calbak
+; skip_sp -- HL past the blanks at it; A = the first other character. 💰 D-DSKFMT
+; carve 34 (2026-11-10): the loop stood three times (NAME's `AS`, COPY's `TO`, FILES).
+skip_sp:
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+                inc     hl
+                jr      skip_sp
 ; seq_flush / seq_dirty -- the start of a random positioning.
 ; seq_dirty (k47b2_seek, RDBLK -- BASIC's own file reads come through here too): a
 ; READ-open file's iterator moves, so BDOS_SEQREC := $FFFF makes srd_pos re-position
@@ -7281,6 +7228,78 @@ fmt_off:
 ; $FC), gap 1 -- the WD2793 data sheet's Write Track bytes
 fmt_head:
                 db      80, $4E, 12, $00, 3, $F6, 1, $FC, 50, $4E
+; 📍 D-DSKFMT: the FORMAT dialogue lives here, next to DSKFMT (CALL FORMAT's hk_format
+; and $4025 both use it); carves 34-36 made the room.
+; fmt_bkey -- CALL FORMAT's key: INPUT$'s key source in main (no echo), so the wait
+; happens with main in page 1 (a page-1 tenant must not wait: basic/repl.asm).
+fmt_bkey:
+                ld      ix,chget_getbyte
+                jp      calbak
+; fmt_dos -- $4025, MSX-DOS's FORMAT: keys through our own CHGET body (page 0 is RAM
+; there); the work area is the TPA from $0100 (COMMAND.COM lives at its top).
+fmt_dos:
+                ld      hl,innoe_body
+                ld      de,$0100
+                ld      bc,$1E00
+; fmt_dlg -- the dialogue, from either: HL = the key routine, DE / BC = the work area.
+; The CF-3300's keys and their order: a drive key (echoed), a choice 1..4 (echoed;
+; other keys ignored -- unmeasured, TIER 6), any key to start (not echoed). Its WORDING
+; may differ (Joost 2026-11-10): "and strike a key when ready" is the ROM's own swap
+; prompt, where the CF-3300 says "Strike a key when ready". Out: Cy / A as DSKFMT.
+fmt_dlg:
+                ld      (FDC_DEST),hl       ; (free until DSKFMT runs)
+                push    de
+                push    bc
+                ld      hl,fmt_t_drive
+                call    fmt_pr
+                call    fmt_key
+                call    fmt_echo            ; the drive: one drive here, any key is A
+                ld      hl,choice_txt
+                call    fmt_pr
+                ld      hl,fmt_t_q
+                call    fmt_pr
+fd_choice:
+                call    fmt_key
+                cp      '1'
+                jr      c,fd_choice
+                cp      '5'
+                jr      nc,fd_choice
+                push    af
+                call    fmt_echo
+                ld      hl,dsl_text_nl
+                call    fmt_pr
+                ld      hl,dsl_text_2 + 3   ; "and strike a key when ready", CR LF
+                call    fmt_pr
+                call    fmt_key             ; not echoed
+                pop     af
+                sub     '0'                 ; A = the choice
+                pop     bc
+                pop     hl
+                ld      d,0                 ; drive A
+                call    dskfmt_body
+                ret     c
+                ld      hl,fmt_t_done
+; fmt_pr -- print the 0-terminated string at HL (conout_emit_e: the BIOS paged in by
+; itself, so from BASIC and from MSX-DOS alike). Out: CF = 0.
+fmt_pr:
+                ld      a,(hl)
+                or      a
+                ret     z
+                ld      e,a
+                push    hl
+                call    conout_emit_e
+                pop     hl
+                inc     hl
+                jr      fmt_pr
+fmt_key:
+                ld      hl,(FDC_DEST)
+                jp      (hl)
+fmt_echo:
+                ld      e,a
+                jp      conout_emit_e
+fmt_t_drive:    db      "Drive name? (A,B) ",0
+fmt_t_q:        db      "? ",0
+fmt_t_done:     db      "Format complete",13,10,0
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

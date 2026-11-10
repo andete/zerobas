@@ -109,6 +109,7 @@ lrset_finish equ 070B8H
 fch_ctx_addr equ 06EA7H
 disk_error equ 06738H
 read_line equ 045E6H
+chget_getbyte equ 0700AH
 fch_close_all equ 06F67H
 eval_int16_checked equ 04535H
 check_expr_errors equ 04411H
