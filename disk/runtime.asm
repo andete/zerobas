@@ -825,6 +825,60 @@ fpl_split:
                 ld      b, d
                 ld      c, e
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; wrseq_wr_writeback — Item 5 (spec-diskbasic-option-closure.md): the WRITE-side
+; twin of wrseq_writeback. Mirrors the SAME FCB-position field set the read
+; branch advances, into the FCB in IX (the fixed $DA40 until D-BDOSFCB stage B),
+; after a WRITTEN sequential record (wrseq_body calls this only on A=$00). K = BDOS_SEQREC after this
+; call's increment (records written so far, 1-based).
+;   copy+32 (CR)      := K mod 128
+;   copy+12 (EX)      := K div 128            (floppy -> fits a byte, §2.2)
+;   copy+28/29 (word) := BDOS_WRCLUS          (the WRITE iterator's current cluster;
+;                        NOT FAT_CURCLUS -- that is the READ iterator's cluster)
+;   copy+30           := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+; Placement/register discipline differ deliberately from wrseq_writeback: this
+; lives in the $607B-$75A5 free-region corridor (the `ds $75A5 - $` pad below
+; absorbs its size -> net-zero canonical addresses), and it is FULLY
+; register-transparent -- preserves AF/BC/DE/HL so wrseq_body_write returns
+; bdos_seqwrite's exact registers unchanged (keeps the BDOSX3/BDOSX4 WRSEQ
+; register snaps byte-identical; only the FCB position memory moves). The
+; source cluster is the ONLY logic difference from the read twin; the CR/EX/+30
+; arithmetic is identical (deliberate duplication over sharing: the proven read
+; routine stays byte-for-byte untouched, and the corridor has ample slack).
+wrseq_wr_writeback:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                ; K := BDOS_SEQREC + 1
+                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
+                push    hl
+                ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
+                ld      hl, (BDOS_WRCLUS)
+                ld      (ix+28), l
+                ld      (ix+29), h
+                push    ix
+                pop     hl
+                call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX8)
+                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+                pop     hl                  ; HL = K
+                call    seq_k30             ; +30 := (K-1)'s cluster index
+                ; copy+16..19 := BDOS_WRBYTES (running file size, 4-byte LE). Stock
+                ; maintains the in-memory FCB size on every written record (proven
+                ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin
+                ; never needed this (FOPEN loads +16..19 from the dirent), but FMAKE
+                ; zeroes it, so the write session must grow it here.
+                call    fcb_size_keep       ; +16..19 (D-DSKFMT carve 12: runtime.asm)
+                ; copy+26/27 := BDOS_WRFIRST (file's first cluster). Also maintained
+                ; per stock's post-WRSEQ FCB, and also zero after FMAKE.
+                ld      hl, (BDOS_WRFIRST)
+                ld      (ix+26), l
+                ld      (ix+27), h
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

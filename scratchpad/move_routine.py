@@ -29,15 +29,26 @@ def main():
     while c > 0 and lines[c - 1].lstrip().startswith(";") and not lines[c - 1].lstrip().startswith(";;"):
         c -= 1
     block = lines[c:j]
+    # 🔴 refuse a block whose jr / djnz leaves it: out of reach after the move
+    # (hk_auto / hk_kill, 2026-11-10: each ended in a `jr` to its own continuation).
+    own = {m.group(1) for l in block for m in [LABEL.match(l)] if m}
+    for l in block:
+        code = l.split(";", 1)[0]
+        m = re.match(r"\s+(jr|djnz)\s+(?:(?:nz|z|nc|c)\s*,\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*$", code, re.I)
+        if m and m.group(2) not in own:
+            sys.exit(f"{label}: `{code.strip()}` leaves the block -- not movable")
     pinre = re.compile(r"^\s+ds\s+\$%s\s*-\s*\$" % pin, re.I)
     dst = [(f, k) for f in files for k, l in enumerate(open(f).read().split("\n")) if pinre.match(l)]
     if len(dst) != 1:
         sys.exit(f"pin ${pin}: found {len(dst)} `ds` lines")
     del lines[c:j]
     open(src[0], "w").write("\n".join(lines))
-    f, k = dst[0]
+    # 🔴 re-find the pin AFTER the delete: in the same file, a source block above it
+    # shifted it up (mulacc_cmp, 2026-11-10, landed inside frl_div).
+    f = dst[0][0]
     dl = open(f).read().split("\n")
-    note = f"; (moved here from {os.path.basename(src[0])} by the D-DSKFMT defrag, 2026-11-09)"
+    k = next(i for i, l in enumerate(dl) if pinre.match(l))
+    note = f"; (moved here from {os.path.basename(src[0])} by the D-DSKFMT defrag)"
     dl[k:k] = [note] + block
     open(f, "w").write("\n".join(dl))
     print(f"moved {label} ({j - c} lines) {os.path.basename(src[0])} -> {os.path.basename(f)} before ${pin}")

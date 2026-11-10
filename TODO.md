@@ -16824,6 +16824,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bytes from BDOS_DTA) for the copies inline in bsw_m34_buffer, wrrnd_body and WRBLK's
       chunk loop; wrrnd_body's record x 128 is `srl h / rr l`. check_disk_walls: 404 B in
       runs of 16 B or more. bdos, wrblkalt and dosmode acceptance unchanged.
+      🧱 **DEFRAG STEP 7 (2026-11-10, Joost: "move other routines around to create a
+      continuous space"):** nine routines left the region in front of $75A5 for the pin
+      holes (wrseq_wr_writeback -> $7F7C; hkn_stamp, seq_k30 -> $4558; rdrnd_ex -> $5E10;
+      mulacc_cmp -> $77B8; dskchg_body -> $4E4B; new_taken -> $436C; wrseq_writeback ->
+      $4FB8; dir_nextsec -> $4C29; innoe_body -> $53A7). **That region: 52 -> 298 B, ONE
+      hole** -- FORMAT's build goes there whole. 🔴 scratchpad/move_routine.py had two
+      faults, both fixed: (1) a move FORWARD within one file took the pin's line before
+      deleting the source block, so mulacc_cmp landed inside frl_div (the build overran
+      $782B; every earlier marker was checked -- each follows an unconditional exit, so
+      no earlier move hit it); (2) it moved hk_auto / hk_kill, whose last `jr` goes to
+      their own continuation -- it now REFUSES a block with a `jr` / `djnz` that leaves it
+      (and so refused auto_find). Each insertion follows an unconditional exit.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

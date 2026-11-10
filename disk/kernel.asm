@@ -51,6 +51,22 @@ install_br6:
                 ld      bc, br6_end - br6_tmpl
                 ldir
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+dskchg_body:
+                push    hl
+                push    de
+                ld      hl, (JIFFY)
+                ld      de, (DSK_STAMP)
+                or      a
+                sbc     hl, de              ; HL = jiffies since the last sector command
+                ld      de, -100
+                add     hl, de              ; Cy = 1: 2 s or more
+                pop     de
+                pop     hl
+                jp      c, dc_unk           ; "unknown": the DPB refreshed, B = 0
+                ld      b, 1                ; "unchanged"
+                xor     a                   ; A = 0, Cy = 0
+                ret
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
 ; 📌 In the $4E4E..$4EDE fill (check_disk_walls, 2026-10-21).
@@ -309,6 +325,39 @@ frl_flush:
                 and     2
                 jp      nz, fat_write_buf_allfats   ; dirty: out (it clears the flag)
                 ld      (FAT_DEFER), a      ; clean: drop a request (A = 0, CF = 0)
+                ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; wrseq_writeback — M33 (tier2-m33-m32-fcb-position-spec.md §2.2): mirror the
+; sequential-read iterator's position into the FCB in IX (the fixed base $DA40
+; until D-BDOSFCB stage B, 2026-11-10; IX = DE at entry, which is $DA40 under
+; MSX-DOS and the caller's own FCB from $F37D) after a DELIVERED RDSEQ record (wrseq_body's read branch calls
+; this only when A=$00; see wrseq_body above). K = BDOS_SEQREC after this
+; call's increment (records delivered so far, 1-based).
+;   copy+32 (CR)          := K mod 128
+;   copy+12 (EX)          := K div 128         (floppy -> fits a byte, §2.2)
+;   copy+28/29 (word)     := FAT_CURCLUS       (cluster of the just-read record)
+;   copy+30               := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+; Does not touch copy+14/15/16/17/24/25/26/27/31 (already correct/out of scope,
+; §2.2/§1). Leaf routine: preserves A (the caller's bdos_seqread exit code)
+; across the whole body; trashes BC/DE/HL/IX (dead in wrseq_body at the call
+; site -- bdos_seqread's own exit values are only A, per the dispatcher's
+; H:=B,L:=A mirror rule already noted above). PLACEMENT: this position-free
+; corridor (same class as fdc_entloop_body/p0_env_tab/ff_secloop above --
+; 0 canonical entries, no FDC window, ample slack), not kernel.asm's own tail
+; (which is already tight against the $7F80 FDC-window guard).
+wrseq_writeback:
+                push    af                  ; preserve bdos_seqread's exit A
+                ; K := BDOS_SEQREC + 1
+                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
+                push    hl
+                ; copy+28/29 := FAT_CURCLUS (word)
+                ld      hl, (FAT_CURCLUS)
+                ld      (ix+28), l
+                ld      (ix+29), h
+                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+                pop     hl                  ; HL = K
+                call    seq_k30             ; +30 := (K-1)'s cluster index
+                pop     af                  ; restore bdos_seqread's exit A
                 ret
                 ds      $4FB8 - $, $00  ; pad up to the pinned $4FB8 SFIRST entry
 sfirst:
@@ -1126,6 +1175,22 @@ bb_version:
                 ld      b, h
                 ld      a, l
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
+; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.
+; --- innoe_body / dirin_body - the $544E INNOE / $5462 DIRIN canonical entries
+; (M22a) -- blocking read, NO echo (the published BDOS $08/$07 contract, as
+; distinct from $01 CONIN's echo). Pinned identical at this probe's granularity
+; (tier2-m22-cpmver-spec.md §6.3): dirin_body tail-jumps into innoe_body.
+; B/C/D/E preserved; A := char.
+; CLEAN-ROOM: published INNOE/DIRIN contracts (map.grauw.nl) + CHGET; no oracle bytes.
+innoe_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    br_mainin_tmpl
+                jp      dirio_chget         ; 💰 carve 15: CHGET + the shared exit (runtime.asm)
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -3280,6 +3345,27 @@ wrblk_huge:
 wh_full:
                 pop     hl
                 jp      wrblk_full
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+rdrnd_ex:
+                ld      a, (ix+33)
+                rla                         ; Cy = r0 bit 7
+                ld      a, (ix+34)
+                rla                         ; A = (r1 << 1) | (r0 >> 7)
+                ld      (ix+12), a
+                ld      (ix+14), 0
+                ; (c) +28..31 = the record's cluster and its index in the chain (record
+                ; 199 of a 200-record file -> $198 / $18 on the CF-3300): rrnd_position
+                ; left FAT_CURCLUS on the record's cluster; the index comes from the
+                ; record's sector in the file (RR >> 2: four 128-byte records a sector),
+                ; through wrblk_fcb_keep's own cluster-cache tail.
+                ld      l, (ix+33)
+                ld      h, (ix+34)
+                srl     h
+                rr      l
+                srl     h
+                rr      l
+                ld      (WRBLK_CURSEC), hl
+                jp      wfk_cache
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
 mb_5e10:
                 jp      basent_body
@@ -4575,13 +4661,6 @@ ska_shr:
                 ld      (ix+12), a
                 pop     hl
                 ret
-seq_k30:
-                dec     hl
-                ld      a, (FAT_SECPERCLUS)
-                call    recperclus_div
-                ld      a, e
-                ld      (ix+30), a
-                ret
 
 ; recperclus_div -- DE := HL / (A * RECPERSEC), A = FAT_SECPERCLUS on entry (the
 ; records in a cluster); div_hl_bc -- DE := HL / BC by subtraction (HL ends one BC
@@ -4605,26 +4684,6 @@ dhb_lp:
                 inc     de
                 jr      dhb_lp
 
-; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
-; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
-; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL.
-mulacc_cmp:
-                ld      a, (WRBLK_MULACC + 3)
-                ld      hl, FAT_FILESIZE + 3
-                cp      (hl)
-                ret     nz
-                ld      a, (WRBLK_MULACC + 2)
-                dec     hl
-                cp      (hl)
-                ret     nz
-                ld      a, (WRBLK_MULACC + 1)
-                dec     hl
-                cp      (hl)
-                ret     nz
-                ld      a, (WRBLK_MULACC)
-                dec     hl
-                cp      (hl)
-                ret
 ; wrblk_size_max — BDOS_WRBYTES(32) := max(FAT_FILESIZE, WRBLK_MULACC). Simple
 ; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
 wrblk_size_max:
@@ -4923,38 +4982,6 @@ k47b2_nextbyte_get:
                 jp      rdblk_getbyte       ; tail-call: A=byte/Cy=0, or Cy=1 chain-end;
                                             ; either way its own `ret` is our `ret` too
 
-; wrseq_writeback — M33 (tier2-m33-m32-fcb-position-spec.md §2.2): mirror the
-; sequential-read iterator's position into the FCB in IX (the fixed base $DA40
-; until D-BDOSFCB stage B, 2026-11-10; IX = DE at entry, which is $DA40 under
-; MSX-DOS and the caller's own FCB from $F37D) after a DELIVERED RDSEQ record (wrseq_body's read branch calls
-; this only when A=$00; see wrseq_body above). K = BDOS_SEQREC after this
-; call's increment (records delivered so far, 1-based).
-;   copy+32 (CR)          := K mod 128
-;   copy+12 (EX)          := K div 128         (floppy -> fits a byte, §2.2)
-;   copy+28/29 (word)     := FAT_CURCLUS       (cluster of the just-read record)
-;   copy+30               := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
-; Does not touch copy+14/15/16/17/24/25/26/27/31 (already correct/out of scope,
-; §2.2/§1). Leaf routine: preserves A (the caller's bdos_seqread exit code)
-; across the whole body; trashes BC/DE/HL/IX (dead in wrseq_body at the call
-; site -- bdos_seqread's own exit values are only A, per the dispatcher's
-; H:=B,L:=A mirror rule already noted above). PLACEMENT: this position-free
-; corridor (same class as fdc_entloop_body/p0_env_tab/ff_secloop above --
-; 0 canonical entries, no FDC window, ample slack), not kernel.asm's own tail
-; (which is already tight against the $7F80 FDC-window guard).
-wrseq_writeback:
-                push    af                  ; preserve bdos_seqread's exit A
-                ; K := BDOS_SEQREC + 1
-                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
-                push    hl
-                ; copy+28/29 := FAT_CURCLUS (word)
-                ld      hl, (FAT_CURCLUS)
-                ld      (ix+28), l
-                ld      (ix+29), h
-                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
-                pop     hl                  ; HL = K
-                call    seq_k30             ; +30 := (K-1)'s cluster index
-                pop     af                  ; restore bdos_seqread's exit A
-                ret
 
 ; setrnd_body — M32 (tier2-m33-m32-fcb-position-spec.md §3.2): the real BDOS
 ; $24 SETRND canonical entry ($50C8's body). Entry: DE=IY=$DA40 (kernel FCB
@@ -5156,59 +5183,6 @@ wre_noext:
                 or      a                   ; Cy = 0 -- no extension needed, NOT an error
                 ret                         ; (the preceding sbc's Cy/Z must not leak to the caller)
 
-; wrseq_wr_writeback — Item 5 (spec-diskbasic-option-closure.md): the WRITE-side
-; twin of wrseq_writeback. Mirrors the SAME FCB-position field set the read
-; branch advances, into the FCB in IX (the fixed $DA40 until D-BDOSFCB stage B),
-; after a WRITTEN sequential record (wrseq_body calls this only on A=$00). K = BDOS_SEQREC after this
-; call's increment (records written so far, 1-based).
-;   copy+32 (CR)      := K mod 128
-;   copy+12 (EX)      := K div 128            (floppy -> fits a byte, §2.2)
-;   copy+28/29 (word) := BDOS_WRCLUS          (the WRITE iterator's current cluster;
-;                        NOT FAT_CURCLUS -- that is the READ iterator's cluster)
-;   copy+30           := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
-; Placement/register discipline differ deliberately from wrseq_writeback: this
-; lives in the $607B-$75A5 free-region corridor (the `ds $75A5 - $` pad below
-; absorbs its size -> net-zero canonical addresses), and it is FULLY
-; register-transparent -- preserves AF/BC/DE/HL so wrseq_body_write returns
-; bdos_seqwrite's exact registers unchanged (keeps the BDOSX3/BDOSX4 WRSEQ
-; register snaps byte-identical; only the FCB position memory moves). The
-; source cluster is the ONLY logic difference from the read twin; the CR/EX/+30
-; arithmetic is identical (deliberate duplication over sharing: the proven read
-; routine stays byte-for-byte untouched, and the corridor has ample slack).
-wrseq_wr_writeback:
-                push    af
-                push    bc
-                push    de
-                push    hl
-                ; K := BDOS_SEQREC + 1
-                call    seq_k_adv           ; HL = K (+32 CR, +12 EX set; D-DSKFMT defrag)
-                push    hl
-                ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
-                ld      hl, (BDOS_WRCLUS)
-                ld      (ix+28), l
-                ld      (ix+29), h
-                push    ix
-                pop     hl
-                call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX8)
-                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
-                pop     hl                  ; HL = K
-                call    seq_k30             ; +30 := (K-1)'s cluster index
-                ; copy+16..19 := BDOS_WRBYTES (running file size, 4-byte LE). Stock
-                ; maintains the in-memory FCB size on every written record (proven
-                ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin
-                ; never needed this (FOPEN loads +16..19 from the dirent), but FMAKE
-                ; zeroes it, so the write session must grow it here.
-                call    fcb_size_keep       ; +16..19 (D-DSKFMT carve 12: runtime.asm)
-                ; copy+26/27 := BDOS_WRFIRST (file's first cluster). Also maintained
-                ; per stock's post-WRSEQ FCB, and also zero after FMAKE.
-                ld      hl, (BDOS_WRFIRST)
-                ld      (ix+26), l
-                ld      (ix+27), h
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af
-                ret
 
 ; --- the disk ROM's banner line (docs/disk-rom-layout.md) -------------------
 ; Own text, own code: nothing here is derived from any reference ROM. The only
@@ -6189,22 +6163,6 @@ hkn_a:
                 jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
-; new_taken -- is DISK_FCB_NAME (the NEW name) already in the directory? fat_find,
-; with FWR_DIRSEC / FWR_DIROFF (the OLD entry, which a rename then rewrites) kept.
-; Out: CF clear = taken; HL clobbered (POP and LD (nn),HL touch no flag). It stood
-; twice, inline, in bb_rename and hkn_a (D-DSKFMT's carve, 2026-11-10).
-new_taken:
-                ld      hl, (FWR_DIRSEC)
-                push    hl
-                ld      hl, (FWR_DIROFF)
-                push    hl
-                ld      hl, DISK_FCB_NAME
-                call    fat_find
-                pop     hl
-                ld      (FWR_DIROFF), hl
-                pop     hl
-                ld      (FWR_DIRSEC), hl
-                ret
 hkn_open:
                 ld      a,64                ; `File still open` (D-COPYNAMEOPEN)
                 jr      hkn_err
@@ -6267,49 +6225,6 @@ hk_claim_status:
                 ld      (DISKOP_STATUS),a
                 scf                         ; CF=1: the hook is claimed
                 ret
-; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
-; D-NAMESTAMP (disk/docs/spec-diskcode-eviction.md §6.6aw). This was
-; `ld a,DISKOP_SEL_NAME_STAMP / ld ix,dirverb_op / call calbak` -- a call-back
-; into MAIN that marshalled on to `sub.rom`'s dirverb tenant, so a NAME crossed
-; main -> disk.rom -> main -> sub.rom. Steps 9/11/12 gave this ROM its own
-; read_sector / write_sector / FAT_DBUF, so the stamp is thirteen instructions
-; here and the round trip is gone.
-; Sources: the dir-entry layout is FAT12's published one (the 8.3 name is the
-; entry's first 11 bytes -- disk/docs/spec-diskbasic-verbs.md, and the same
-; DIRENT_* constants disk/equates.inc already declares); read_sector /
-; write_sector take DE = logical sector, HL = buffer (basic/fat-prim-body.inc).
-; Clean-room: our own FAT12 engine throughout; no reference ROM byte is read.
-;
-;   in : FWR_DIRSEC / FWR_DIROFF -- where THIS ROM's fat_find found the OLD
-;        entry (hk_name); DISK_FCB_NAME -- the NEW 8.3 name
-;   out: CF = 0 stamped, CF = 1 a DSKIO failure (DISKOP_ERR carries the code)
-; 🔴 THE BARE NAMES ARE RIGHT NOW, AND UNTIL 2026-10-19 THEY WOULD HAVE BEEN THE
-; BUG. disk.rom declares FWR_DIRSEC/FWR_DIROFF itself (BDOS_DIRSEC / BDOS_DIROFF,
-; disk/equates.inc) -- its own FAT's scratch, a DIFFERENT address from main's.
-; While hk_name found the old entry with MAIN's fat_find, this read the aliased
-; import main_FWR_DIRSEC / main_FWR_DIROFF, and the bare spelling would have
-; assembled cleanly and written a valid sector at the WRONG OFFSET -- the class
-; that cost step 12 a day (§6.6ao). hk_name's lookups are this ROM's own now, so
-; the position is in this ROM's cells, and the import is gone from the ABI
-; (tools/gen_resident_abi.py).
-; 🔴 AND `FAT_DBUF`, NEVER `FSECTOR_BUF`: the sub-ROM body this replaces spells
-; `FSECTOR_BUF`, which in THIS ROM is main's buffer at $E5C0 rather than ours at
-; $E2A0. Copying it verbatim is the bug it would have been. (D-BUFMERGE made
-; them one address on 2026-09-24; the neutral spelling stays right either way.)
-hkn_stamp:
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FAT_DBUF
-                call    read_sector
-                ret     c
-                ld      hl,FAT_DBUF
-                ld      de,(FWR_DIROFF)
-                add     hl,de               ; HL -> the entry in the buffer
-                ex      de,hl               ; DE -> its 11-byte name field
-                ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name, typed case:
-                call    cpy_up11            ; the entry is upper case (OPEN twice)
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FAT_DBUF
-                jp      write_sector        ; tail-call: its CF is our answer
 
 
 ; --- hk_copy: COPY's body, BOTH HALVES, in the disk ROM (MSX2 TH hook) ------
@@ -6778,21 +6693,6 @@ dfo_done:
 ; (frl_alloc and frnd_next moved to disk/fat.asm's $46CB fill by D-RECSLOW: this
 ; region's 2 B of slack could not take the FAT scan's new calls.)
 
-; 📍 D-LOADRUN (2026-11-06): MOVED HERE from the $782B..$7F7C region, which LOAD's
-; hdl_run outgrew by 48 B; entered only by call / jp, so it can live in any hole.
-; --- innoe_body / dirin_body - the $544E INNOE / $5462 DIRIN canonical entries
-; (M22a) -- blocking read, NO echo (the published BDOS $08/$07 contract, as
-; distinct from $01 CONIN's echo). Pinned identical at this probe's granularity
-; (tier2-m22-cpmver-spec.md §6.3): dirin_body tail-jumps into innoe_body.
-; B/C/D/E preserved; A := char.
-; CLEAN-ROOM: published INNOE/DIRIN contracts (map.grauw.nl) + CHGET; no oracle bytes.
-innoe_body:
-                push    bc
-                push    de
-                push    hl
-                di
-                call    br_mainin_tmpl
-                jp      dirio_chget         ; 💰 carve 15: CHGET + the shared exit (runtime.asm)
 ; fat_locate -- HL = a cluster -> HL = the absolute FAT sector holding its 12-bit entry;
 ; FAT_PARITY = cluster & 1, FAT_BYTEIDX = fatofs & $1FF (fatofs = cluster * 3/2, the
 ; Microsoft FAT spec's 12-bit packing). Clobbers A, DE. 💰 D-DISKCARVE (2026-11-07): the
@@ -7056,49 +6956,6 @@ hk_fname2:
                 call    calbak              ; a string EXPRESSION -> STRSCR; may RAISE
                 ld      ix,pdfcb_resume
                 jp      calbak              ; -> DISK_FCB_NAME (8.3, wildcards)
-rdrnd_ex:
-                ld      a, (ix+33)
-                rla                         ; Cy = r0 bit 7
-                ld      a, (ix+34)
-                rla                         ; A = (r1 << 1) | (r0 >> 7)
-                ld      (ix+12), a
-                ld      (ix+14), 0
-                ; (c) +28..31 = the record's cluster and its index in the chain (record
-                ; 199 of a 200-record file -> $198 / $18 on the CF-3300): rrnd_position
-                ; left FAT_CURCLUS on the record's cluster; the index comes from the
-                ; record's sector in the file (RR >> 2: four 128-byte records a sector),
-                ; through wrblk_fcb_keep's own cluster-cache tail.
-                ld      l, (ix+33)
-                ld      h, (ix+34)
-                srl     h
-                rr      l
-                srl     h
-                rr      l
-                ld      (WRBLK_CURSEC), hl
-                jp      wfk_cache
-dir_nextsec:
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                ret
-dskchg_body:
-                push    hl
-                push    de
-                ld      hl, (JIFFY)
-                ld      de, (DSK_STAMP)
-                or      a
-                sbc     hl, de              ; HL = jiffies since the last sector command
-                ld      de, -100
-                add     hl, de              ; Cy = 1: 2 s or more
-                pop     de
-                pop     hl
-                jp      c, dc_unk           ; "unknown": the DPB refreshed, B = 0
-                ld      b, 1                ; "unchanged"
-                xor     a                   ; A = 0, Cy = 0
-                ret
 ; seq_flush / seq_dirty -- the start of a random positioning.
 ; seq_dirty (k47b2_seek, RDBLK -- BASIC's own file reads come through here too): a
 ; READ-open file's iterator moves, so BDOS_SEQREC := $FFFF makes srd_pos re-position
@@ -7500,6 +7357,27 @@ srd_pos:
                 ret     nz                  ; past rrnd_position's scope
                 ld      a, l
                 jp      rrnd_pos_a
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
+; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
+; twice, 28 B each -- D-WRZER's carve, 2026-11-09). Clobbers A, HL.
+mulacc_cmp:
+                ld      a, (WRBLK_MULACC + 3)
+                ld      hl, FAT_FILESIZE + 3
+                cp      (hl)
+                ret     nz
+                ld      a, (WRBLK_MULACC + 2)
+                dec     hl
+                cp      (hl)
+                ret     nz
+                ld      a, (WRBLK_MULACC + 1)
+                dec     hl
+                cp      (hl)
+                ret     nz
+                ld      a, (WRBLK_MULACC)
+                dec     hl
+                cp      (hl)
+                ret
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
 ; --- S10.D: the RANDOM record engine's chain walk, in the free region between the

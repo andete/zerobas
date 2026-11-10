@@ -1281,6 +1281,15 @@ fw_refuse:
                 add     hl, sp
                 ld      sp, hl
                 jp      fren_miss
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+dir_nextsec:
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                ret
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz

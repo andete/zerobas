@@ -204,6 +204,23 @@ calbak:
                 call    CALSLT
                 ei
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; new_taken -- is DISK_FCB_NAME (the NEW name) already in the directory? fat_find,
+; with FWR_DIRSEC / FWR_DIROFF (the OLD entry, which a rename then rewrites) kept.
+; Out: CF clear = taken; HL clobbered (POP and LD (nn),HL touch no flag). It stood
+; twice, inline, in bb_rename and hkn_a (D-DSKFMT's carve, 2026-11-10).
+new_taken:
+                ld      hl, (FWR_DIRSEC)
+                push    hl
+                ld      hl, (FWR_DIROFF)
+                push    hl
+                ld      hl, DISK_FCB_NAME
+                call    fat_find
+                pop     hl
+                ld      (FWR_DIROFF), hl
+                pop     hl
+                ld      (FWR_DIRSEC), hl
+                ret
                 ds      $436C - $, $00      ; pad remainder up to the pinned canonical entry
 k_436C:
                 jp      fdel_body           ; $436C: BDOS $13 FDEL canonical entry (M26)
@@ -652,6 +669,58 @@ wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
                 pop     ix
                 or      a
                 call    z, wrseq_wr_writeback   ; advance FCB position on a written record
+                ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
+; D-NAMESTAMP (disk/docs/spec-diskcode-eviction.md §6.6aw). This was
+; `ld a,DISKOP_SEL_NAME_STAMP / ld ix,dirverb_op / call calbak` -- a call-back
+; into MAIN that marshalled on to `sub.rom`'s dirverb tenant, so a NAME crossed
+; main -> disk.rom -> main -> sub.rom. Steps 9/11/12 gave this ROM its own
+; read_sector / write_sector / FAT_DBUF, so the stamp is thirteen instructions
+; here and the round trip is gone.
+; Sources: the dir-entry layout is FAT12's published one (the 8.3 name is the
+; entry's first 11 bytes -- disk/docs/spec-diskbasic-verbs.md, and the same
+; DIRENT_* constants disk/equates.inc already declares); read_sector /
+; write_sector take DE = logical sector, HL = buffer (basic/fat-prim-body.inc).
+; Clean-room: our own FAT12 engine throughout; no reference ROM byte is read.
+;
+;   in : FWR_DIRSEC / FWR_DIROFF -- where THIS ROM's fat_find found the OLD
+;        entry (hk_name); DISK_FCB_NAME -- the NEW 8.3 name
+;   out: CF = 0 stamped, CF = 1 a DSKIO failure (DISKOP_ERR carries the code)
+; 🔴 THE BARE NAMES ARE RIGHT NOW, AND UNTIL 2026-10-19 THEY WOULD HAVE BEEN THE
+; BUG. disk.rom declares FWR_DIRSEC/FWR_DIROFF itself (BDOS_DIRSEC / BDOS_DIROFF,
+; disk/equates.inc) -- its own FAT's scratch, a DIFFERENT address from main's.
+; While hk_name found the old entry with MAIN's fat_find, this read the aliased
+; import main_FWR_DIRSEC / main_FWR_DIROFF, and the bare spelling would have
+; assembled cleanly and written a valid sector at the WRONG OFFSET -- the class
+; that cost step 12 a day (§6.6ao). hk_name's lookups are this ROM's own now, so
+; the position is in this ROM's cells, and the import is gone from the ABI
+; (tools/gen_resident_abi.py).
+; 🔴 AND `FAT_DBUF`, NEVER `FSECTOR_BUF`: the sub-ROM body this replaces spells
+; `FSECTOR_BUF`, which in THIS ROM is main's buffer at $E5C0 rather than ours at
+; $E2A0. Copying it verbatim is the bug it would have been. (D-BUFMERGE made
+; them one address on 2026-09-24; the neutral spelling stays right either way.)
+hkn_stamp:
+                ld      de,(FWR_DIRSEC)
+                ld      hl,FAT_DBUF
+                call    read_sector
+                ret     c
+                ld      hl,FAT_DBUF
+                ld      de,(FWR_DIROFF)
+                add     hl,de               ; HL -> the entry in the buffer
+                ex      de,hl               ; DE -> its 11-byte name field
+                ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name, typed case:
+                call    cpy_up11            ; the entry is upper case (OPEN twice)
+                ld      de,(FWR_DIRSEC)
+                ld      hl,FAT_DBUF
+                jp      write_sector        ; tail-call: its CF is our answer
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+seq_k30:
+                dec     hl
+                ld      a, (FAT_SECPERCLUS)
+                call    recperclus_div
+                ld      a, e
+                ld      (ix+30), a
                 ret
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
