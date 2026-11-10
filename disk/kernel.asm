@@ -212,8 +212,7 @@ fat_geom_read:
                 ld      a, (DK_FCB_DRV)     ; D-DSKIB: the drive this operation named
                 call    drv_select          ; -> the swap prompt when it is the other one
                 ld      de, 1               ; logical sector 1: the FAT, media ID first
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    rd_dbuf
                 ret     c
                 call    fat_media
                 ld      a, (FAT_DBUF)       ; D-SIDES: DSKIO seats by this media ID
@@ -221,8 +220,15 @@ fat_geom_read:
                 ld      a, $F9              ; no media ID: the old 2 sides x 9 seating
                 ld      (DSK_MEDIA), a
                 ld      de, 0               ; boot sector = logical sector 0
+; rd_dbuf -- read logical sector DE into FAT_DBUF. 💰 D-DSKFMT carve 24 (2026-11-10):
+; `ld hl,FAT_DBUF / call read_sector` stood at seven sites; this tail is the one.
+rd_dbuf:
                 ld      hl, FAT_DBUF
                 jp      read_sector
+; wr_sbuf -- write SECTOR_BUF to logical sector DE (carve 24: four sites).
+wr_sbuf:
+                ld      hl, SECTOR_BUF
+                jp      write_sector
 fgr_media:
                 ld      (DSK_MEDIA), a
                 or      a                   ; CF = 0
@@ -1954,8 +1960,7 @@ hkc_differ:     ld      hl,COPY_SRC
                 ld      de,22               ; D-COPYDATE: keep the SOURCE's time/date
                 add     hl,de               ; (+22..25) for the destination
                 ld      de,COPY_STAMP
-                ld      bc,4
-                ldir
+                call    copy4
                 ld      hl,(FAT_FIRSTCLUS)
                 ld      (COPY_CLUS),hl
                 ld      hl,(FAT_FILESIZE)
@@ -2022,8 +2027,7 @@ hkc_fin:        call    fat_dir_update      ; true size + first cluster
                 add     hl,de
                 ex      de,hl               ; DE -> the entry's +22
                 ld      hl,COPY_STAMP
-                ld      bc,4
-                ldir
+                call    copy4
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_MBUF
                 call    write_sector
@@ -2077,8 +2081,7 @@ hkm_sec:        ld      hl,(FAT_DIRREM)
                 jp      z,hkm_end           ; every root sector scanned
                 push    bc
                 ld      de,(FAT_DIRSEC)
-                ld      hl,FAT_DBUF
-                call    read_sector
+                call    rd_dbuf
                 pop     bc
                 jr      c,hkm_io
                 ld      hl,FAT_DBUF
@@ -2177,8 +2180,7 @@ close_read:
                 add     hl, de              ; HL -> the entry
                 call    dir_stamp_date      ; as the CF-3300 dates a written file
                 pop     de
-                ld      hl, SECTOR_BUF
-                call    write_sector
+                call    wr_sbuf
                 jr      c, cr_err
 cr_ok:
                 xor     a
@@ -2520,8 +2522,7 @@ hfa_found:
                 jr      nz, hfa_rr
                 dec     h                   ; a whole last record: re-load it all
 hfa_rr:
-                ld      (ix+33), l
-                ld      (ix+34), h          ; the random record: that record's start
+                call      set_rr          ; the random record: that record's start
                 push    bc                  ; [B = the count, 0 = 256]
                 ld      a, h
                 srl     a                   ; A = the record's sector in the file
@@ -2688,8 +2689,7 @@ dwr_keep:
                 ld      l, (ix+33)
                 ld      h, (ix+34)
                 add     hl, bc
-                ld      (ix+33), l
-                ld      (ix+34), h          ; the random record (64 KB: the size
+                call      set_rr          ; the random record (64 KB: the size
                                             ; field's high word stays 0, as below)
                 ld      e, (ix+16)
                 ld      d, (ix+17)
@@ -2711,8 +2711,7 @@ dout_secread:
                 ld      hl, (FWR_CLUS)
                 ld      a, (FWR_SECIDX)
                 call    clus_sec            ; DE = the sector
-                ld      hl, FAT_DBUF
-                jp      read_sector
+                jp      rd_dbuf
 ; clus_sec -- DE = the absolute sector of sector A of cluster HL:
 ; FIRSTDATA + (cluster - 2) * secPerClus + A. Clobbers A, B, HL.
 clus_sec:
@@ -2857,11 +2856,7 @@ root_pos:
                 and     $0F
                 ld      l, a
                 ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = (index mod 16) x 32
+                call    hl_x32            ; HL = (index mod 16) x 32
                 ret
 ; dta_rec / dta_chunk -- SECTOR_BUF + HL := RECSIZE (dta_rec) or BC (dta_chunk) bytes
 ; from the DTA (BDOS_DTA). Out: HL / DE past the source / the destination, BC = 0.
@@ -2933,8 +2928,7 @@ hfr_size:                                   ; (hk_finp joins here: D-DSKFMT carv
                 add     hl, de
                 ex      de, hl              ; DE = the FCB's size, +16
                 ld      hl, FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; the whole 32-bit size (D-PUTU32)
+                call    copy4                ; the whole 32-bit size (D-PUTU32)
                 jp      hfm_ok              ; the entry's place, LOF, status 0
 hfr_make:
                 push    ix
@@ -2982,8 +2976,7 @@ hdg_next:
                 ld      de, 33
                 add     hl, de
                 ld      de, GP_RECNO
-                ld      bc, 4
-                ldir                        ; GP_RECNO = LOC (32 bits) ...
+                call    copy4                ; GP_RECNO = LOC (32 bits) ...
                 ld      hl, GP_RECNO
                 ld      b, 4
 hdg_inc:
@@ -3955,8 +3948,7 @@ fsize_shift:
                 rr      l
                 djnz    fsize_shift
                 ; r0..r2 = low 24 bits of DE:HL = L, H, E (LE)
-                ld      (ix+33), l
-                ld      (ix+34), h
+                call      set_rr
                 ld      (ix+35), e
                 xor     a                   ; A = 0 = found
                 ld      l, a                ; L := A (A=L=0, the pinned success contract)
@@ -4092,8 +4084,7 @@ wrblk_room:
                 call    dta_chunk           ; SECTOR_BUF + within := the caller's bytes
                 ld      (BDOS_DTA), hl
                 call    rrnd_sector         ; DE = absolute logical sector to persist
-                ld      hl, SECTOR_BUF
-                call    write_sector
+                call    wr_sbuf
                 pop     bc                  ; chunk (pop leaves the flags alone)
                 jp      c, wrblk_ioerr
                 ld      hl, (WRBLK_REC)
@@ -4116,8 +4107,7 @@ wrblk_loop_done:
                 ld      h, a
                 ld      de, (WRBLK_REQ)
                 add     hl, de
-                ld      (ix+33), l
-                ld      (ix+34), h
+                call      set_rr
                 ld      a, (ix+35)
                 adc     a, 0
                 ld      (ix+35), a
@@ -4514,8 +4504,7 @@ wz_done:                                    ; A = 0, or WRBLK's failure
                 pop     hl                  ; RR
                 push    af
                 push    hl                  ; [AF][RR]
-                ld      (ix+33), l
-                ld      (ix+34), h
+                call      set_rr
                 push    ix
                 pop     de
                 push    de                  ; the FCB copy (k47b2_body takes IX over)
@@ -4523,8 +4512,7 @@ wz_done:                                    ; A = 0, or WRBLK's failure
                 call    k47b2_body          ; the DTA <- record RR again (the caller's)
                 pop     ix
                 pop     hl
-                ld      (ix+33), l
-                ld      (ix+34), h          ; RR as the caller gave it
+                call      set_rr          ; RR as the caller gave it
                 pop     af                  ; (its flags: Z = success)
                 jp      z, wrrnd_ok         ; CR := r0, A = 0, HL = 0
                 jp      rrnd_finish
@@ -4688,18 +4676,34 @@ dhb_lp:
 ; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
 wrblk_size_max:
                 call    mulacc_cmp
-wsm_decided:
-                jr      c, wsm_keepold      ; MULACC < FILESIZE -> old size wins
                 ld      hl, WRBLK_MULACC
+                jr      nc, to_wrbytes      ; MULACC >= FILESIZE: the new size
+                ld      hl, FAT_FILESIZE    ; MULACC < FILESIZE: the old size wins
+; to_wrbytes -- BDOS_WRBYTES := the 4 bytes at HL; copy4 -- (DE) := the 4 bytes at HL.
+; Clobber BC; HL / DE end past the copy. 💰 D-DSKFMT carve 23 (2026-11-10): the 4-byte
+; LDIR stood inline at eleven sites, five of them into BDOS_WRBYTES.
+to_wrbytes:
                 ld      de, BDOS_WRBYTES
+copy4:
                 ld      bc, 4
                 ldir
                 ret
-wsm_keepold:
-                ld      hl, FAT_FILESIZE
-                ld      de, BDOS_WRBYTES
-                ld      bc, 4
-                ldir
+; hl_x128 / hl_x32 -- HL := HL x 128 / x 32 (16 bits, flags as `add hl,hl`'s).
+; set_rr -- the FCB copy's random record (IX+33..34) := HL. 💰 D-DSKFMT carves 25 / 26
+; (2026-11-10): the shift chains stood seven times, the RR store eight.
+hl_x128:
+                add     hl, hl
+                add     hl, hl
+hl_x32:
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                ret
+set_rr:
+                ld      (ix+33), l
+                ld      (ix+34), h
                 ret
 
 
@@ -4713,9 +4717,7 @@ wsm_keepold:
 ;   out: Cy = 0 ok, Cy = 1 = I/O error
 wrblk_shrink:
                 ld      hl, WRBLK_MULACC
-                ld      de, BDOS_WRBYTES
-                ld      bc, 4
-                ldir                        ; BDOS_WRBYTES := target size
+                call    to_wrbytes          ; BDOS_WRBYTES := target size
                 ld      a, (WRBLK_MULACC)
                 ld      hl, WRBLK_MULACC + 1
                 or      (hl)
@@ -5006,13 +5008,7 @@ setrnd_body:
                 ld      a, (ix+12)          ; A = ex
                 ld      h, 0
                 ld      l, a
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = ex * 128
+                call    hl_x128            ; HL = ex * 128
                 ld      a, (ix+32)          ; A = cr
                 add     a, l
                 ld      l, a
@@ -5055,8 +5051,7 @@ srb_have_lo:
                 srl     a                   ; A = s2 >> 4 (bits 16..23 contribution)
                 add     a, c                ; propagate the stashed bit-16 carry
                                             ; (s2>>4 <= 15, +1 carry never overflows a byte)
-                ld      (ix+33), l          ; r0
-                ld      (ix+34), h          ; r1
+                call      set_rr          ; r1
                 ld      (ix+35), a          ; r2
                 ; Epilogue — match stock's $24 EXIT registers exactly (§3.3, now
                 ; pinned by the acceptance capture, NOT part of the intended rr
@@ -5151,13 +5146,7 @@ wrrnd_extend:
                 ld      l, a
                 ld      h, 0
                 inc     hl                  ; HL = r0+1 (<= 256, safe before the x128 shift)
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = (r0+1)*RECSIZE = newsize (<= 32768)
+                call    hl_x128            ; HL = (r0+1)*RECSIZE = newsize (<= 32768)
                 ld      e, (ix+16)
                 ld      d, (ix+17)          ; DE = oldsize (low word; high word already 0 here)
                 push    hl                  ; keep newsize
@@ -6510,8 +6499,7 @@ df_secloop:
                 or      l
                 jr      z,df_end            ; scanned every root sector
                 ld      de,(FAT_DIRSEC)
-                ld      hl,FAT_DBUF
-                call    read_sector         ; LOCAL primitive body
+                call    rd_dbuf         ; LOCAL primitive body
                 jr      c,hkf_io            ; FDC / DSKIO error
                 xor     a
                 ld      (FILES_ENTIDX),a    ; entry 0..15 within this sector
@@ -8304,8 +8292,7 @@ fdel_relocate:
                 call    mf_find             ; (a miss -> fren_miss)
                 ld      (hl), $E5           ; CP/M delete marker (Microsoft FAT spec sec 3.1)
                 ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
-                call    write_sector
+                call    wr_sbuf
                 jr      c, fdel_ioerr
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
@@ -8454,13 +8441,7 @@ rrnd_pos_a:                                 ; srd_pos: A = the record
                 ; fits 16 bits, so only the filesize low word can matter here)
                 ld      h, 0
                 ld      l, c                ; HL = r0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = r0 * 128
+                call    hl_x128            ; HL = r0 * 128
                 ld      de, (FAT_FILESIZE)
                 ex      de, hl              ; HL = filesize_lo16, DE = r0*128
                 or      a
@@ -8535,8 +8516,7 @@ wrrnd_body:
                 rr      l                   ; HL = BDOS_RECIDX * 128
                 call    dta_rec             ; the caller's record -> its place in SECTOR_BUF
                 call    rrnd_sector         ; DE = absolute logical sector to persist
-                ld      hl, SECTOR_BUF
-                call    write_sector
+                call    wr_sbuf
                 jr      c, wrrnd_ioerr
                 push    ix
                 pop     hl
@@ -8582,8 +8562,7 @@ wrrnd_ext:                                  ; (a record past 1 MB: wrblk_huge an
                 ld      hl, 1
                 call    wrblk_body          ; A = 0 ok / 1 disk full / 2 I/O
                 pop     hl
-                ld      (ix+33), l
-                ld      (ix+34), h          ; RR as it was
+                call      set_rr          ; RR as it was
                 or      a
                 jr      nz, rrnd_finish
                 jr      wrrnd_ok

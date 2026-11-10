@@ -16836,6 +16836,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       no earlier move hit it); (2) it moved hk_auto / hk_kill, whose last `jr` goes to
       their own continuation -- it now REFUSES a block with a `jr` / `djnz` that leaves it
       (and so refused auto_find). Each insertion follows an unconditional exit.
+      📏 **THE BUILD, DRAFTED AND ASSEMBLED (2026-11-10): ~440 B, NOT ~290.** A standalone draft
+      (the WD2793 Write Track loop with each ID field set per track, a run-length track
+      image built in the caller's work area, every track and side, the system area --
+      boot sector, both FATs, the root -- zeroed in the work area and written by ONE
+      DSKIO call, the BPB from a 7-byte row per choice, our own loader: FOPEN
+      MSXDOS.SYS, SETDTA $0100, RDBLK, `jp $0100`, IX kept) assembled to 522 B; tightened
+      it is ~440 B. Room: the 298 B hole in front of $75A5 and ~100 B scattered -- so
+      ~150 B more must be CARVED (the ngram duplicates are down to 5-7 B each) and
+      gathered there. ➡️ **And CALL FORMAT (hk_format) should become what the CF-3300's
+      is -- the CHOICE menu, then DSKFMT:** today it is a QUICK format (system area only,
+      no Write Track, "1=360k 2=720k? ") through the sub-ROM's format_tenant
+      (sub/format.asm, basic/format-body.inc), which retires with it (~20 B back here).
+      The Write Track loop cannot live in the sub-ROM: the FDC registers are in the disk
+      interface's own page 1.
+      📏 **Draft v2, assembled: 331 B of code + 167 B of data = 498 B** (main body 224, fmt_track
+      81, small routines 26; run-length tables 42, BPB rows + offsets 35, boot sector 90).
+      🏗️ **RULED (Joost 2026-11-10): SPLIT CODE AND DATA** (data is read by address, so it
+      can sit in any hole). But a ~90 B second bin is needed for the boot blob or
+      fmt_track and the 28 B tables compete for the same slacks -- the cleaner road
+      is to carve INSIDE the $75A5 region ($607B..$75A5), which grows the target hole
+      directly (carves 23-26 took it 298 -> 326 B). scratchpad/defrag_plan.py plans a
+      gathering (best: 379 B, 118 moves -- not worth it) and, with --bin N, the fewest
+      evictions that open an N-byte bin.
+      ✂️ **CARVES 23-26 (2026-11-10, +91 B in all; total free 589 -> 680 B):** (23)
+      to_wrbytes / copy4 -- the 4-byte LDIR stood at eleven sites, five into BDOS_WRBYTES
+      (wrblk_size_max now picks the source and falls into it); (24) rd_dbuf -- `ld
+      hl,FAT_DBUF / call read_sector` at seven sites, the tail of fat_geom_read is the
+      helper -- and wr_sbuf for four SECTOR_BUF writes; (25) hl_x128 / hl_x32 for seven
+      `add hl,hl` chains; (26) set_rr for eight `ld (ix+33),l / ld (ix+34),h`. bdos,
+      diskbasic, lof, wrblkalt, programs, recbig, dosmode, boot5e10, fat-error, dout,
+      copy, catcopy, clearclose acceptance and the unit tests green. 🔴 One diskbasic
+      run read STALE build/disk.rom and refused every row: carve 24's sources were
+      edited while the suites ran (the preflight was right; nothing was mis-measured).
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

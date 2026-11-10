@@ -702,8 +702,7 @@ wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
 ; them one address on 2026-09-24; the neutral spelling stays right either way.)
 hkn_stamp:
                 ld      de,(FWR_DIRSEC)
-                ld      hl,FAT_DBUF
-                call    read_sector
+                call    rd_dbuf
                 ret     c
                 ld      hl,FAT_DBUF
                 ld      de,(FWR_DIROFF)
@@ -786,13 +785,7 @@ bsr_partial:
                 ld      a, (BDOS_RECIDX)
                 ld      h, 0
                 ld      l, a
-                add     hl, hl          ; *2
-                add     hl, hl          ; *4
-                add     hl, hl          ; *8
-                add     hl, hl          ; *16
-                add     hl, hl          ; *32
-                add     hl, hl          ; *64
-                add     hl, hl          ; HL = RECIDX * 128
+                call    hl_x128            ; HL = RECIDX * 128
                 ld      de, SECTOR_BUF
                 add     hl, de          ; HL = source record in SECTOR_BUF
                 ld      de, (BDOS_DTA)  ; settable DTA (BDOS $1A); default $0080

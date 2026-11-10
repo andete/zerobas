@@ -749,9 +749,7 @@ frl_done:
                 ret
 cr_copy2:                                   ; (cr_copy1's second half, disk/kernel.asm)
                 ld      hl, FAT_FILESIZE
-                ld      de, BDOS_WRBYTES
-                ld      bc, 4
-                ldir
+                call    to_wrbytes
                 jp      fat_dir_update
 ; bdos_close_write -- FCLOSE of a file open for write (disk/driver.asm bdos_close ->
 ; kernel.asm bdos_close_wm). Moved here by D-BDOSSEQ (2026-11-10), for room.
@@ -779,9 +777,7 @@ bdos_close_write:
 close_size_upd:
                 ld      de, 16
                 add     hl, de
-                ld      de, BDOS_WRBYTES
-                ld      bc, 4
-                ldir
+                call    to_wrbytes
                 call    fat_dir_update      ; write true size + first cluster
                 jr      c, bdos_close_err
                 xor     a                   ; A = $00 success

@@ -1626,8 +1626,7 @@ ffb_rcok:
                 add     hl, bc
                 ex      de, hl
                 ld      hl, FAT_FILESIZE
-                ld      bc, 4
-                ldir
+                call    copy4
                 ; +24 devid: oracle-observed constant (§3 RC-1). +25 dirloc was left
                 ; at the kernel's pre-zero ("cosmetic-only") until D-WRBLKSEEK (b):
                 ; fcb_dirloc above now fills it, as the CF-3300 does.
@@ -1658,8 +1657,7 @@ ffb_rcok:
                 ld      (BDOS_RECIDX), a
                 ld      hl, FAT_FILESIZE
                 ld      de, BDOS_BYTESLEFT
-                ld      bc, 4
-                ldir
+                call    copy4
                 ; M33 (tier2-m33-m32-fcb-position-spec.md §2.1): reset the
                 ; per-open RDSEQ records-delivered counter alongside the other
                 ; read-iterator seeding above (wrseq_writeback increments it).
@@ -1718,8 +1716,7 @@ fre_shr:
                 sbc     hl, de
                 jr      z, fre_have         ; already in FAT_DBUF
                 ld      (FAT_DIRSEC), de
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    rd_dbuf
                 jr      c, fre_out
 fre_have:
                 pop     hl
@@ -1727,11 +1724,7 @@ fre_have:
                 and     15
                 ld      l, a
                 ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; (index AND 15) * 32
+                call    hl_x32            ; (index AND 15) * 32
                 ld      de, FAT_DBUF
                 add     hl, de              ; Cy = 0
                 ret
