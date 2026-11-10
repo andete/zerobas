@@ -4,7 +4,13 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 RULINGS 2026-11-08 — READ FIRST (newest; they amend every table below)
+## 🟢 RULINGS 2026-11-10 — READ FIRST (newest; amends the 11-08 table and the 2026-10-15 "Fill the gate wait" row)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| gate in a worktree, keep working here (D-GATEWT) | *"I think we really need to come up with a way of working that allows work to continue while we're waiting for long test runs"*, then *"yes, file it tier 2 and do it next"* (2026-11-10) | Settles the 10-15 "separate gate runner NOT decided". THE FLOW: stage → `make gates-plan` (read the tier) → commit LOCALLY, do not push → `python3 -u tools/gate_wt.py [--tier full]` in the background (knives + tape corpus run INSIDE it for a ROM commit; `TAPECORPUS_DIR` must be set) → keep working in THIS checkout: edits, builds, `repack-machine`, host unit tests, static tools, TODO / docs → verdict `GATEWT <sha> GREEN` (last line of scratchpad/gate_wt/<sha>.log): push; if it printed TRACKED FILES MOVED, amend with scratchpad/gate_wt/<sha>.changed/* first. RED: read the log, fix, `git commit --amend` (never pushed), re-gate. 🔴 STILL ONE EMULATOR AT A TIME: no openMSX run in this checkout while a gate_wt run is live -- the gate owns the emulator; the lock is scratchpad/gate_wt/running.pid. WHY IT IS SAFE NOW: the worktree has its OWN openMSX share ($OPENMSX_USER_DATA, machines copied with its path) -- proven by a knife on 2026-11-10: this checkout's build/disk.rom replaced by random bytes and repacked into the shared machines during the worktree's FULL battery; the five disk suites and 250 of 251 units stayed green, the worktree ROM hash did not move (the one red was a real todo-marker-check finding). The 10-15 ban on `make gates-*` / `repack-machine` in a worktree stands for any OTHER worktree (a subagent's); gate_wt.py is the one that may. |
+
+## 🟢 RULINGS 2026-11-08 — READ FIRST (they amend every table below)
 
 | ruling | Joost's words | consequence |
 |---|---|---|

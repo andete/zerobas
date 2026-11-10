@@ -8335,7 +8335,7 @@ bdos_seqwrite_body:
                 ld      hl, (BDOS_WRCLUS)
                 ld      a, h
                 or      l
-                jr      z, bsw_m34_needclus ; no cluster yet (fresh file)
+                jr      z, bsw_first        ; no cluster yet (fresh file)
                 ld      a, (BDOS_WRSECIDX)
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
@@ -8345,6 +8345,16 @@ bsw_m34_needclus:
                 jr      nc, bsw_m34_buffer
                 ld      a, $01              ; disk full -- BEFORE any buffering
                 ret
+                ; D-BDOSFCB B3 (2026-11-10): the FIRST cluster is claimed at record 0,
+                ; not at the first sector flush -- the CF-3300's FCB has +26 / +28 from
+                ; its first SEQWRITE (scratchpad/bdosfcb_run5.out, rows 2-4). The flush
+                ; then finds BDOS_WRCLUS set and BDOS_WRSECIDX 0 (FMAKE's) and writes
+                ; into it. No free cluster: A = 1 before any buffering, as M34's check.
+bsw_first:
+                call    fat_alloc_cluster   ; HL = the cluster, marked end-of-chain
+                jr      c, bsw_full
+                ld      (BDOS_WRFIRST), hl
+                ld      (BDOS_WRCLUS), hl
 bsw_m34_buffer:
                 ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
                 ld      hl, (BDOS_WRBUFLEN)

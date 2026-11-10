@@ -17652,9 +17652,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       skips a write-open file (its SEQWRITE write-back counts on BDOS_SEQREC), so on an
       FMAKE'd file a SEQREAD whose FCB record equals the counter while a random call moved
       the iterator still reads on from the iterator; (b) records past 255 sync the counter
-      but are not re-positioned (rrnd_position's scope); (c) SEQWRITE's first records leave
-      FCB +26 / +28 at 0 until the first sector flushes; the CF-3300 sets the first cluster
-      at record 0 (bdosfcb rows 2-4).
+      but are not re-positioned (rrnd_position's scope); ✅ (c) DONE 2026-11-10: bdos_seqwrite_body claims the
+      FIRST cluster at record 0 (bsw_first: fat_alloc_cluster, BDOS_WRFIRST / BDOS_WRCLUS),
+      so the write-back gives +26 / +28 from the first SEQWRITE; the flush finds the
+      cluster and writes into it; no free cluster still answers A = 1 before buffering.
+      📏 [`bdosfcb_run6.out`](scratchpad/bdosfcb_run6.out) rows 2-4: FCB identical (only
+      HL / BC, the register residual). (a) and (b) stay open -- latent: no measured
+      program writes, randomly moves, then SEQREADs one FMAKE'd file, nor SEQREADs a
+      repositioned record past 255.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**
