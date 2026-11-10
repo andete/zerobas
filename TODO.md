@@ -16634,7 +16634,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- fat_mount then fat_find the FCB's name, a miss DROPPING the return address into
       fren_miss (identical to the callers' `jp c, fren_miss`: none has anything else pushed,
       fdel_one's free loop pops before each branch) -- in fopen_fill_body, fdel_one and
-      fdel_relocate. **Free in disk.rom: 328 B before step 7 -> 421 B.** Unit tests 94/94,
+      fdel_relocate. **Free in disk.rom: 328 B before step 7 -> 421 B.** Step 11: rgb_have's
+      32-bit BDOS_BYTESLEFT decrement written out (19 B) became a carry-chained loop counted
+      in E (11 B; every caller saves or reloads DE) -- 429 B. Unit tests 94/94,
       bdos-acceptance 25/25; NAME's three gates and the BASIC-side BDOS probe
       (scratchpad/bdosset_probe.py zb: RENAME of a missing name $FF, a real one 0 and the
       file then deletable) green.
@@ -17515,8 +17517,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🔴 **D-BDOSFCB — THE REST OF THE $F37D ANSWER SET FROM BASIC: THE RANDOM RECORD FUNCTIONS AND
       THE FCB-STATE ANSWERS (split from D-BDOSBASIC, 2026-10-22)**
-      🎚️ TIER 6 (latent) — BDOS from Disk BASIC: no program yet calls these; both references
-      answer them ([`bdosset_run.out`](scratchpad/bdosset_run.out), [`bdosset_run2.out`](scratchpad/bdosset_run2.out)).
+      🎚️ TIER 1 — the $F37D BDOS surface's happy path, re-tiered by Joost 2026-11-10 under the
+      2026-11-08 entry-point ruling (was TIER 6 "latent: no program yet calls these"); both
+      references answer them ([`bdosset_run.out`](scratchpad/bdosset_run.out), [`bdosset_run2.out`](scratchpad/bdosset_run2.out)).
       🤖 **AUTONOMOUS** — measure each against the probe's rows first.
       - $21 RNDRD, $22 RNDWR, $23 FSIZE, $24 SETRND, $26 WRBLK, $28 WRZER: $FF here. DOS-side
         bodies exist for FSIZE ($501E), SETRND ($50C8) and WRBLK ($47BE), written for the DOS
@@ -17529,6 +17532,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         question, not a patch.
       - ALLOC's free count after the probe's CREATE / SEQWR ($02C7 here, $02C4 there): what
         those calls allocate differs.
+      🔎 **2026-11-10, while carving for D-DSKFMT:** (1) tools/entry_table.py keys the BDOS
+      table by FUNCTION NUMBER, so one row merges the MSX-DOS surface ($0005, the kernel's
+      k_ bodies) and this one ($F37D, driver.asm's bdos_entry): $21 / $22 / $26 read
+      EXERCISED from the DOS side while this side answers $FF -- a row agreeing for the
+      wrong reason. (2) THE CARVE ANGLE: bdos_entry is a second, simplified BDOS (one file's
+      state in its own cells) beside the kernel bodies; routing it to the kernel's FCB-state
+      bodies would retire bdos_rdblk + rdb_recloop_body (~100 B) and more, room D-DSKFMT
+      needs. Its callers: disk/kernel.asm:82 installs it, :1431 calls it; the main ROM's
+      BLOAD path and the boot loader go through it -- the design question above.
+      🏗️ **RULED (Joost 2026-11-10): "I think D-BDOSFCB makes sense"** -- TIER 1, and done
+      BEFORE D-DSKFMT's build, as the combined fix and carve.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

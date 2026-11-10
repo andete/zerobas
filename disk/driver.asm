@@ -879,23 +879,20 @@ rgb_have:
                 ld      de, SECTOR_BUF
                 add     hl, de
                 ld      c, (hl)             ; C = the file byte
-                ; BDOS_BYTESLEFT -= 1 (4-byte LE)
+                ; BDOS_BYTESLEFT -= 1 (4-byte LE): the borrow rides the carry (DEC E
+                ; leaves it alone). Written out it was 19 B, the loop is 11 (D-DSKFMT's
+                ; carve, 2026-11-10); every caller saves or reloads DE, which now ends
+                ; with E = 0.
                 ld      hl, BDOS_BYTESLEFT
-                ld      a, (hl)
-                sub     1
-                ld      (hl), a
-                inc     hl
-                ld      a, (hl)
-                sbc     a, 0
-                ld      (hl), a
-                inc     hl
+                ld      e, 4
+                scf
+rgb_dec:
                 ld      a, (hl)
                 sbc     a, 0
                 ld      (hl), a
                 inc     hl
-                ld      a, (hl)
-                sbc     a, 0
-                ld      (hl), a
+                dec     e
+                jr      nz, rgb_dec
                 ld      a, c                ; A = the byte
                 or      a                   ; Cy = 0 success
                 ret
