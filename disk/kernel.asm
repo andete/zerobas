@@ -3610,26 +3610,60 @@ hkg_st:
 hk_format:
                 ; 🔴 D-DSKFMT (2026-11-10): CALL FORMAT is the CF-3300's -- the dialogue and
                 ; DSKFMT, as MSX-DOS's `format` ($4025); it was a quick format through the
-                ; sub-ROM (format_tenant), system area only, "1=360k 2=720k? ". The work area
-                ; is the free RAM between the arrays and the strings, less 64 B.
-                ld      hl,(FRETOP)
-                ld      de,(STREND)
-                or      a
-                sbc     hl,de
-                ld      bc,-64
-                add     hl,bc               ; Cy: 64 B or more
-                jr      c,hkfm_room
-                ld      hl,0                ; none: DSKFMT answers 14
-hkfm_room:
-                ld      b,h
-                ld      c,l
+                ; sub-ROM (format_tenant), system area only, "1=360k 2=720k? ".
                 ld      hl,fmt_bkey         ; keys: ONE each, waited for in MAIN
-                call    fmt_dlg
+                call    fmt_basic
                 sbc     a,a
                 and     1                   ; 0 done / 1 failed: main's do_format reads it
                 ld      (FMT_RESULT),a      ; (basic/format.asm; a failure is its load error --
                 scf                         ; the old disposition, TIER 6 to refine)
                 ret                         ; claimed
+; stmt_hdl -- the ROM header's STATEMENT handler ($4004): ANOTHER BASIC's CALL (the
+; CF-3300's own; zerobas-BASIC reaches hk_format through H_FORM). PROCNM = the name,
+; 0-terminated, HL = the text after it; out CF = 0 done (HL kept), CF = 1 not ours.
+; D-CALLSTMT (2026-11-10): FORMAT only -- CALL SYSTEM's body calls back into
+; zerobas-BASIC, so under another BASIC it is still "not ours" (Syntax error).
+stmt_hdl:
+                push    hl
+                ld      hl,PROCNM
+                ld      de,fmt_word
+                ld      b,7
+sh_lp:
+                ld      a,(de)
+                cp      (hl)
+                jr      nz,sh_no
+                inc     hl
+                inc     de
+                djnz    sh_lp
+                ld      hl,innoe_body       ; keys through our own CHGET body
+                call    fmt_basic
+                pop     hl
+                or      a                   ; done (a failed format: TIER 6)
+                ret
+sh_no:
+                pop     hl
+                scf
+                ret
+fmt_word:       db      "FORMAT",0
+; fmt_basic -- the dialogue from BASIC (HL = the key routine): the work area is the
+; free RAM from the arrays' end (STREND) to the STACK, less 256 B for the dialogue's
+; own calls. 🔴 Not FRETOP: the stack lies between the arrays and the strings, so
+; FRETOP - 64 (the first cut, 2026-11-10) reached over the live stack on a full
+; machine; it only worked with much free memory.
+fmt_basic:
+                push    hl
+                ld      hl,-256
+                add     hl,sp
+                ld      de,(STREND)
+                sbc     hl,de               ; the room (CF: none); the add's CF (always set:
+                                            ; SP > 256) takes one byte more -- harmless
+                jr      nc,fbs_room
+                ld      hl,0                ; none: DSKFMT answers 14
+fbs_room:
+                ld      b,h
+                ld      c,l
+                pop     hl
+                jp      fmt_dlg
 
 ; --- hk_system: CALL SYSTEM / _SYSTEM -- back to MSX-DOS (D-CALLSYSTEM; oracle: CF-3300) ---
 ; Measured on the CF-3300 (scratchpad/callsystem_run.out, callsystem_dos2.out,

@@ -17039,9 +17039,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
       is 0 -- zerobas-BASIC reaches the same bodies through its own hooks (H_FORM / H_SYST), so
       the gap shows only under another BASIC. Our trace saw no disk-ROM entry run at all.
-      ➡️ A statement handler at the header's slot: match FORMAT / SYSTEM (the published CALL
-      convention: PROCNM, HL the text, CF), then the same bodies. Measure first what the
-      CF-3300 answers for an unknown CALL name under its BASIC with ours.
+      ✅ **FORMAT DONE (2026-11-10):** the header's STATEMENT word is stmt_hdl (kernel.asm, in
+      front of $5FE5: 0 B left) -- PROCNM against "FORMAT" + 0, then the dialogue with our
+      own CHGET body for keys. Under the CF-3300's BASIC with our disk ROM, CALL FORMAT runs
+      the dialogue, formats and comes back to Ok ([`callstmt_ours.out`](scratchpad/callstmt_ours.out)). ➡️ STILL OPEN:
+      CALL SYSTEM there (hk_system calls back into zerobas-BASIC: fch_close_all, disk_error
+      -- under another BASIC it needs its own way), so it stays "not ours" (Syntax error);
+      and what the CF-3300 answers for an unknown CALL name under its BASIC with ours.
+      🔴 **AND A FIX TO D-DSKFMT'S CALL FORMAT, found writing this:** its work area ran from
+      STREND to FRETOP - 64 -- but the BASIC stack lies between the arrays and the strings,
+      so on a full machine that reached over the live stack (it worked with ~28 KB free
+      only). Now STREND .. SP - 256 (fmt_basic, both paths). With 4214 B free the format
+      refuses (DSKFMT's 14 -> main's load error) and BASIC is untouched -- FRE(0) the same
+      after ([`callfmt_lowmem.out`](scratchpad/callfmt_lowmem.out)). The CF-3300's own answer there is unmeasured (TIER 6).
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

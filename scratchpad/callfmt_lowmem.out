@@ -1,0 +1,48 @@
+===== C-BIOS_MSX1_EU_REPACK_DISK =====
+--- t=40.0 (40 columns) ---
+   0|  zerobas version 0.1
+   1|  clean-room MSX1 BASIC
+   3|  zerobas Disk BASIC
+   4|  ZB
+   5|  dim a#(2400):print fre(0)
+   6|   4214
+   7|  ZB
+   8|  call format
+   9|  Drive name? (A,B) a
+  10|  1 - 1 side
+  11|  2 - 2 sides
+  12|  3 - 1 side, double track
+  13|  4 - 2 sides,double track
+  15|  ? 1
+  16|  and strike a key when ready
+  17|  load error
+  18|  ZB
+  19|  print fre(0)
+  20|   4214
+  21|  ZB
+  22|  .
+  23|  color  auto   goto   list   run
+--- t=40.5 (40 columns) ---
+   0|  zerobas version 0.1
+   1|  clean-room MSX1 BASIC
+   3|  zerobas Disk BASIC
+   4|  ZB
+   5|  dim a#(2400):print fre(0)
+   6|   4214
+   7|  ZB
+   8|  call format
+   9|  Drive name? (A,B) a
+  10|  1 - 1 side
+  11|  2 - 2 sides
+  12|  3 - 1 side, double track
+  13|  4 - 2 sides,double track
+  15|  ? 1
+  16|  and strike a key when ready
+  17|  load error
+  18|  ZB
+  19|  print fre(0)
+  20|   4214
+  21|  ZB
+  22|  .
+  23|  color  auto   goto   list   run
+   END

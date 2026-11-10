@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **440** in the MSX standard work area at or above `$F380`.
-* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **70** in the MSX standard work area at or above `$F380`.
+* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -705,6 +705,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FD0A` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$FD0B` | 1 B | `basic` | `SUBSLOT2` | UNUSED: zerobas-sub2's slot id until it was retired (2f) |  |
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
+| `$FD89` |  | `disk` | `PROCNM` | PUBLISHED: a CALL statement's name, 0-terminated (expansion-ROM STATEMENT handler) |  |
 | `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
 | `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |
 | `$FDEF` |  | `disk` | `HOOK_LO/H_DSKO` | DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK |  |

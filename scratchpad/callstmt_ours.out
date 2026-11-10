@@ -1,0 +1,36 @@
+===== National_CF-3300_ZEROBASDISK =====
+--- t=120.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  28815 Bytes free
+   3|  Ok
+   4|  call format
+   5|  Drive name? (A,B) a
+   6|  1 - 1 side
+   7|  2 - 2 sides
+   8|  3 - 1 side, double track
+   9|  4 - 2 sides,double track
+  11|  ? 1
+  12|  and strike a key when ready
+  13|  Format complete
+  14|  Ok
+  15|  .
+  23|  color auto  goto  list  run
+--- t=120.5 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  28815 Bytes free
+   3|  Ok
+   4|  call format
+   5|  Drive name? (A,B) a
+   6|  1 - 1 side
+   7|  2 - 2 sides
+   8|  3 - 1 side, double track
+   9|  4 - 2 sides,double track
+  11|  ? 1
+  12|  and strike a key when ready
+  13|  Format complete
+  14|  Ok
+  15|  .
+  23|  color auto  goto  list  run
+   END
