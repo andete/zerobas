@@ -90,7 +90,9 @@ try_init_slot:
 init_ext_roms:
                 xor     a
                 ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
-                ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
+                ; (SUBSLOT_OK is NOT cleared here since D-BIOSLADDER B5, 2026-11-10: the
+                ; cold start clears it (interp.asm) and the caller records the sub-ROM
+                ; just before this scan.)
                 ; (SUBSLOT2 was cleared here for zerobas-sub2 until D-SUB2RETIRE
                 ; step 2f, 2026-11-04 retired that ROM; the cell is unused.)
                 di                          ; slot switching must be uninterrupted

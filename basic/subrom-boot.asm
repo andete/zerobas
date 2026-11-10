@@ -68,6 +68,9 @@ try_sub_slot:
                 ld      (SUBSLOT_OK),a
                 ret
 
+; (sub_first, which records the sub-ROM before the boot scan, is at the end of
+; basic/missing.asm: the stretch here, in front of the $475A pin, is full.)
+
 ; sub_int_install: copy the trampoline template into RAM and record the main
 ; page-0 primary. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
 ; the boot DI, only when a sub-ROM was found. Clobbers AF/BC/DE/HL.

@@ -60,8 +60,6 @@ ALLOW = {
         0xE00C: (0x00, "R11 at INIT: the VG-8020's GICINI leaves $0B there -- D-PSGINIT"),
         0xE01C: (0x00, "R11 after GICINI: the VG-8020 $0B -- D-PSGINIT"),
         0xE02C: (0x00, "R11 after the tone writes (still GICINI's): $0B there -- D-PSGINIT"),
-        0xE051: (0xFE, "R0 after BEEP: the VG-8020 leaves $55 -- D-PSGINIT"),
-        0xE052: (0x01, "R1 after BEEP: the VG-8020 leaves $00 -- D-PSGINIT"),
         0xE001: (0x00, "R0 at INIT, disk row: $55 on the VG-8020 + NMS 1200 (a beep at its "
                        "boot, kept by GICINI) -- D-PSGINIT"),
         0xE011: (0x00, "R0 after GICINI, disk row: $55 there -- D-PSGINIT"),

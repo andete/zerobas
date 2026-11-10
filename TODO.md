@@ -16635,6 +16635,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       kernel bodies) changes the outcome -- the random rows then answer $FF at once -- so
       stage C waits for this. ➡️ Next: a row-by-row probe of just this sequence; a trace
       from a breakpoint CALLBACK with `debug step` deadlocks openMSX (wrrnd_hang.py, timed out).
+      ✅ **THE DATA LOSS FIXED (2026-11-10).** scratchpad/bdosseq_probe.py drops SETRND (RR
+      POKEd): FMAKE, one SEQWRITE, WRRND RR 1, WRRND RR 0, FCLOSE, FOPEN, RDRND 0 / 1. It did
+      not hang, but the file came back 128 bytes with record 1 = $00 where the CF-3300 has
+      256 and $22 ([`bdosseq_run1.out`](scratchpad/bdosseq_run1.out)): (1) the write-mode FCLOSE wrote the SEQWRITE session's own
+      byte count, never grown by WRRND -- now the FCB's +16..19 (bdos_close_write, moved
+      to disk/runtime.asm's $7F1E hole for room); (2) its zero-padded flush of the pending
+      SEQWRITE buffer -- the sector buffer the random call had just used -- wrote over
+      record 1: seq_dirty now flushes that buffer FIRST, at every random positioning of a
+      write-open file. [`bdosseq_run3.out`](scratchpad/bdosseq_run3.out): every A / FCB / DTA byte as the CF-3300 (BC
+      aside); bdosfcb unchanged, bdos-acceptance green. ➡️ **STILL OPEN:** bdosset's own
+      sequence still stalls in WRRND -- there our SETRND leaves RR $080002 (residual 2), and
+      wrblk_off24's 24-bit RR x RS wraps; the CF-3300 answers disk full (A = 1) for its huge
+      RR. A guard (RR x RS past 24 bits -> A = 1) is the next step.
 
 - [ ] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B5)**
@@ -16646,6 +16659,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       INIT) is the joystick-port select of the last read: pinned, not filed. All pinned in
       biosl_run.py ALLOW until fixed. GICINI is C-BIOS's (a repack patch -- mind the address
       cascade above $0F66); BEEP is ours (basic/biosfnk.asm bios_beep).
+      ✅ **BEEP FIXED (2026-11-10) -- and the cause was bigger:** our BEEP already sets R0 /
+      R1 = $0055; from a cartridge's INIT it never RAN. The sub-ROM (3-2) was recorded by
+      the boot scan only AFTER the cartridges' INITs (slot 1 / 2 come first), so
+      subrom_call found SUBSLOT_OK 0 and returned: BEEP and ERAFNK / DSPFNK's key line did
+      nothing from a cartridge -- and a game never returns from its INIT, so for the whole
+      session. sub_first (basic/missing.asm, page 1's tail: the stretch before the $475A
+      pin is full) records it and installs its trampoline just before init_ext_roms, and
+      now also holds D-BOOTSCAN's SCNCNT := 1 (B1). [`biosl_all_run3.out`](scratchpad/biosl_all_run3.out): BEEP's bytes
+      SAME; beep-, bootkey-, autorun-, subrom-acceptance green. ➡️ Left: GICINI's R11 ($0B)
+      and the NMS 1200's boot-beep R0 on the disk row.
 
 - [ ] **D-F37DNODISK — WITH NO DISK INTERFACE $F37D HOLDS $C9 HERE, $00 ON THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B8's NODISK row)**
@@ -16691,6 +16714,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       choice 4 $F9 2 sides 80 tracks 1440 sectors 2 / cluster FAT 3 root 112 (the CF-3300
       takes 181 s; the probe's settle is 300). ➡️ Next: the room (a carve pass, one page),
       then the build -- WD2793 Write Track per track, our own boot loader, the BPB, FATs, root.
+      ✅ **CHOICE (2026-11-10):** HL -> the CF-3300's menu (choice_txt, 82 B with the $00, in
+      the hole D-BDOSFCB stage C opened before $55DB); tests/test_choice.py. ⚠️ Until DSKFMT
+      is built a formatter now SHOWS the menu, then gets the stub's error (it got no menu
+      before). Room left for the build, taken 2026-11-10 after D-BDOSSEQ's close moved
+      into the $7F1E hole: no hole of 85 B any more, 243 B in runs of 16 B or more.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,
@@ -17732,6 +17760,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL / BC, the register residual). (a) and (b) stay open -- latent: no measured
       program writes, randomly moves, then SEQREADs one FMAKE'd file, nor SEQREADs a
       repositioned record past 255.
+      ✂️ **STAGE C (2026-11-10):** bdos_tab sends $13 DELETE / $17 RENAME to the kernel's
+      fdel_body / fren_wild (same DE = FCB; every match, a `?` in RENAME's new name keeps
+      the entry's byte -- the CF-3300's, D-FDELWILD / D-FRENWILD) and bb_delete,
+      bb_rename and bb_name11 are gone: a 95 B hole at $557C (check_disk_walls, taken
+      2026-11-10) -- with the $7F0A one, two holes over CHOICE's 85 B. tests/test_bdosbasic.py
+      checks the route. 📏 BASIC's $F37D RENAME ->PROBE2 and DELETE PROBE2 A = 0, as the
+      CF-3300 (scratchpad/bdosset_probe.py, a completing run).
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

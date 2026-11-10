@@ -820,3 +820,19 @@ lha_kept:
                 pop     hl
                 jp      exec_stmt
 
+; --- sub_first (moved here from subrom-boot.asm: page 1's free tail) ----------
+; sub_first -- the key scan on (SCNCNT := 1, D-BOOTSCAN, moved here by D-BIOSLADDER B1),
+; then D-BIOSLADDER B5 (2026-11-10): record the sub-ROM in 3-2 and install its
+; page-0 trampoline BEFORE the boot scan runs the cartridges' INITs (interp.asm calls
+; it just before init_ext_roms): a cartridge sits in slot 1 or 2, ahead of 3-2, and its
+; INIT -- which a game never returns from -- found SUBSLOT_OK 0, so BEEP and the key
+; line of ERAFNK / DSPFNK did nothing (probes/bios/biosl/b5sound.asm). All our machines
+; have the sub-ROM in the EXPANDED slot 3 (the 2026-07-11 slot map); the scan itself
+; still records one found anywhere else, and calls sub_int_install again (idempotent).
+sub_first:
+                ld      a,1                 ; D-BOOTSCAN / B1: the key scan from here on
+                ld      (SCNCNT),a          ; (interp.asm's note, before init_ext_roms)
+                ld      a,$8B               ; slot 3-2
+                ld      (SCAN_SLOT),a
+                call    try_sub_slot
+                jp      sub_int_install

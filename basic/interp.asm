@@ -165,8 +165,8 @@ init:
                 ; that kept keys typed during the first second of boot, which the
                 ; VG-8020 drops -- openMSX's tape autorun then ran a stray line and
                 ; lost its RUN (autorun-acceptance, scratchpad/autorun_tokdiag_h2.out).
-                inc     a                   ; A = 1 (0 from the store above)
-                ld      (SCNCNT),a
+                ; (the store itself is in sub_first, called below: this stretch, in
+                ; front of the $475A pin, is full)
                 ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
                 ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational
                 ; reference split (EU/PAL keeps text inside the overscan), so the
@@ -179,6 +179,13 @@ init:
                 ; (probes/bios/biosl/b1text.asm, CAP+3).
                 ld      a,37
                 ld      (LINL40),a
+                ; D-BIOSLADDER B5 (2026-11-10): the sub-ROM FIRST. It sits in 3-2, after
+                ; a cartridge in slot 1 or 2, so a cartridge's INIT (which a game never
+                ; returns from) found SUBSLOT_OK 0: BEEP and the key line of ERAFNK /
+                ; DSPFNK did nothing (probes/bios/biosl/b5sound.asm). All our machines
+                ; have it in the EXPANDED slot 3 (the 2026-07-11 slot map); the scan
+                ; still records one found anywhere else.
+                call    sub_first           ; SCNCNT := 1, then the sub-ROM (subrom-boot.asm)
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                 ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
                 ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,

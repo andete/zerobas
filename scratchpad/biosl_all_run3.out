@@ -1,0 +1,117 @@
+===== b1text nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=f200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=a200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 010f1d25180001040d0505090b0a02010018ff186142370201031800000000e0f01d
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff176142370201031800000000e0f01d
+  CAP E002: ref=0F ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  CAP E014: ref=18 ours=17  (excused: CRTCNT after DSPFNK: ours 23, the VG-8020 24 -- TODO.md 'CRTCNT UNDER KEY ON', filed TIER 1 (the scroll bound))
+  SAME (2 allowlisted)
+===== b1text disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=1a01 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=a200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 010f1d25180001040d0505090b0a02010018ff186142370201031800000000e0f01d
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff176142370201031800000000e0f01d
+  CAP E002: ref=0F ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  CAP E014: ref=18 ours=17  (excused: CRTCNT after DSPFNK: ours 23, the VG-8020 24 -- TODO.md 'CRTCNT UNDER KEY ON', filed TIER 1 (the scroll bound))
+  SAME (2 allowlisted)
+===== b2vdp nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 226, ours 226
+  ref : jiffy=ed00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8e00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 00e0068000360704001800200000001b0038452107f10820a038141bd1000fe202e206ff03360707001800200000001b00380100ea020000360707000800000000001b003800e20680003607072e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e21
+  CAP ours: 00e0068000360704001800200000001b0038452107f10820a038141bd1000fe202e206ff03360707001800200000001b00380100ea020000360707000800000000001b003800e20680003607072e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e21
+  SAME (0 allowlisted)
+===== b2vdp disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 226, ours 226
+  ref : jiffy=1a01 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8e00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 00e0068000360704001800200000001b0038452107f10820a038141bd1000fe202e206ff03360707001800200000001b00380100ea020000360707000800000000001b003800e20680003607072e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e21
+  CAP ours: 00e0068000360704001800200000001b0038452107f10820a038141bd1000fe202e206ff03360707001800200000001b00380100ea020000360707000800000000001b003800e20680003607072e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e21
+  SAME (0 allowlisted)
+===== b3int nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=4101 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c94641c9c9c92941c9c9
+  ours: jiffy=0601 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c94641c9c9c92941c9c9
+  CAP ref : 32003200320032009f9f000000000000000000000a0080000000000000000000
+  CAP ours: 32003200320032009f9f000000000000000000000a0080000000000000000000
+  SAME (0 allowlisted)
+===== b3int disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=6901 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c94641c9c9c9294179c9
+  ours: jiffy=0601 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c94641c9c9c92941c9c9
+  CAP ref : 32003200320032009f9f000000000000000000000a0080000000000000000000
+  CAP ours: 32003200320032009f9f000000000000000000000a0080000000000000000000
+  SAME (0 allowlisted)
+===== b4input nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=de00 putpnt,getpnt=f2fbf2fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=a700 putpnt,getpnt=f1fbf1fb typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  CAP ours: 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  SAME (0 allowlisted)
+===== b4input disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=0601 putpnt,getpnt=f2fbf2fb typed=1 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=a700 putpnt,getpnt=f1fbf1fb typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  CAP ours: 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  SAME (0 allowlisted)
+===== b5sound nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=c400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 00000000000000b80000000b0000bfcf00000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP ours: 00000000000000b8000000000000bf8f00000000000000b80000000000000000fe0100000000003e0f000000000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP E00C: ref=0B ours=00  (excused: R11 at INIT: the VG-8020's GICINI leaves $0B there -- D-PSGINIT)
+  CAP E010: ref=CF ours=8F  (excused: R15 at INIT: bit 6 is the joystick-port select, left by the last port read (VG-8020 $CF) -- I/O state, not a BIOS contract)
+  CAP E01C: ref=0B ours=00  (excused: R11 after GICINI: the VG-8020 $0B -- D-PSGINIT)
+  CAP E02C: ref=0B ours=00  (excused: R11 after the tone writes (still GICINI's): $0B there -- D-PSGINIT)
+  SAME (4 allowlisted)
+===== b5sound disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=ed00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 55000000000000b80000000b0000bfcf55000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP ours: 00000000000000b8000000000000bf8f00000000000000b80000000000000000fe0100000000003e0f000000000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP E001: ref=55 ours=00  (excused: R0 at INIT, disk row: $55 on the VG-8020 + NMS 1200 (a beep at its boot, kept by GICINI) -- D-PSGINIT)
+  CAP E00C: ref=0B ours=00  (excused: R11 at INIT: the VG-8020's GICINI leaves $0B there -- D-PSGINIT)
+  CAP E010: ref=CF ours=8F  (excused: R15 at INIT: bit 6 is the joystick-port select, left by the last port read (VG-8020 $CF) -- I/O state, not a BIOS contract)
+  CAP E011: ref=55 ours=00  (excused: R0 after GICINI, disk row: $55 there -- D-PSGINIT)
+  CAP E01C: ref=0B ours=00  (excused: R11 after GICINI: the VG-8020 $0B -- D-PSGINIT)
+  CAP E02C: ref=0B ours=00  (excused: R11 after the tone writes (still GICINI's): $0B there -- D-PSGINIT)
+  SAME (6 allowlisted)
+WARNING: Var SLTTBL is never used on line 27 of file /Users/joost/projects/zerobas/probes/bios/biosl/b6slots.asm
+===== b6slots nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=bd00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8200 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 41425aa500c30100000000000000000000000000000000000000000000000000
+  CAP ours: 41425aa500c30100000080000000000000000000000000000000000000000000
+  CAP E00B: ref=00 ours=80  (excused: EXPTBL slot 3 expanded: ours (RAM 3-0, disk 3-1, sub 3-2), the VG-8020's is not -- hardware, not the BIOS)
+  SAME (1 allowlisted)
+===== b6slots disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=e500 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8200 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 41425aa500c30100000000000000000000000000000000000000000000000000
+  CAP ours: 41425aa500c30100000080000000000000000000000000000000000000000000
+  CAP E00B: ref=00 ours=80  (excused: EXPTBL slot 3 expanded: ours (RAM 3-0, disk 3-1, sub 3-2), the VG-8020's is not -- hardware, not the BIOS)
+  SAME (1 allowlisted)
+===== b8save nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=bf00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8900 putpnt,getpnt=f0fbf0fb typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c39d3ac9c9
+  CAP ref : c900000000000000000000000000000000000001000000000000000000000000
+  CAP ours: c9c9000000000000000000000000000000000001000000000000000000000000
+  CAP A002: ref=00 ours=C9  (excused: $F37D with no disk interface: ours RET, the VG-8020 $00 -- filed (D-F37DNODISK); a ROM checks H.PHYD first, as this one does)
+  SAME (1 allowlisted)
+===== b8save disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=3a01 putpnt,getpnt=f0fbf0fb typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=f603 putpnt,getpnt=f1fbf1fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c39d3ac9c9
+  CAP ref : f7c3000040000000400000000040000100000101000000000000000000000000
+  CAP ours: f7c3000040000000400000000040000100000101000000000000000000000000
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
