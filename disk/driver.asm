@@ -510,9 +510,10 @@ install_p1blit:
 ; changes there; from $F37D (bdos_entry now routes $14 / $15 here) they reach the
 ; caller's own FCB, as the CF-3300's do (scratchpad/bdosfcb_run3.out: CR and the size).
 wrseq_rd:                                   ; $4775: BDOS $14 SEQREAD
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
                 push    de
+                pop     ix
+                push    de
+                call    srd_pos             ; DTA, and the record EX * 128 + CR (B2)
                 call    bdos_seqread
                 pop     ix                  ; IX = the FCB (POP keeps the flags)
                 or      a

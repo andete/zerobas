@@ -17614,14 +17614,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       wrseq_body (moved before $4558: its old region had 1 B). 📏 [`bdosfcb_run4.out`](scratchpad/bdosfcb_run4.out): SEQWRITE
       keeps CR and the size (row 5 identical; FCLOSE's FCB matches); bdos-acceptance 25/25,
       diskbasic-acceptance green; tests/test_wrseq_position.py passes IX as the entry
-      does. ➡️ **STAGE B2 (open):** SEQREAD after random calls reads from OUR sequential
-      counter (BDOS_SEQREC, reset by FOPEN), not the FCB's EX / CR: the CF-3300 reads
-      record 6 (CR = 6 from RDRND RR6) and leaves CR 7, ours reads record 0 and leaves CR
-      1 (row 23). Position SEQREAD from EX * 128 + CR each call (rrnd_position's path)
-      when it is not where the counter says -- and check the MSX-DOS side the same way
-      (a ladder program, SEQREAD after RDRND). Also: SEQWRITE's first records leave FCB
-      +26 / +28 at 0 until the first sector flushes; the CF-3300 sets the first cluster
-      at record 0 (rows 2-4).
+      does. ✅ **STAGE B2 (2026-11-10):** SEQREAD reads the record the FCB names,
+      EX * 128 + CR, as the CF-3300 does. srd_pos (wrseq_rd's first act) compares it with
+      BDOS_SEQREC, where our iterator stands, and re-positions through rrnd_position's
+      path (new entry rrnd_pos_a, the record in A) when they differ; seq_dirty sets
+      BDOS_SEQREC := $FFFF in rrnd_position and k47b2_seek, since RDRND / WRRND / RDBLK move
+      the iterator. Both entries are one routine, so MSX-DOS and $F37D get it alike. 📏
+      [`bdosfcb_run5.out`](scratchpad/bdosfcb_run5.out) row 23: record 6 read, CR 7 --
+      FCB identical (HL still differs: the register residual). DOSL-D6 now SEQREADs from
+      CR 2 and captures the record's byte, CR and EX: all match the CF-3300; a knife
+      (srd_pos returning at once) turned the row red on exactly those bytes. Its SETRND
+      answer is pinned (stock RR 1, ours 3): stock gave 1 from CR 1 too, so the old row
+      agreed by coincidence -- evidence for residual (2). ➡️ **OPEN (B3):** (a) seq_dirty
+      skips a write-open file (its SEQWRITE write-back counts on BDOS_SEQREC), so on an
+      FMAKE'd file a SEQREAD whose FCB record equals the counter while a random call moved
+      the iterator still reads on from the iterator; (b) records past 255 sync the counter
+      but are not re-positioned (rrnd_position's scope); (c) SEQWRITE's first records leave
+      FCB +26 / +28 at 0 until the first sector flushes; the CF-3300 sets the first cluster
+      at record 0 (bdosfcb rows 2-4).
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

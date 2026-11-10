@@ -4,11 +4,11 @@
 ; D6RAND.COM -- D-DOSLADDER rung D6 (TODO.md): a random-access file the way a small
 ; database uses one. On R.DAT (FMAKE): WRRND records 0..4 (each 128 x its number);
 ; RDRND record 2; RDRND past the end (record 7: A = 1); WRZER record 9 (a gap of 5..8
-; zero-filled); RDRND record 6 (inside that gap); FSIZE; one SEQREAD from record 0
+; zero-filled); RDRND record 6 (inside that gap); FSIZE; one SEQREAD from record 2
 ; then SETRND; RDBLK 3 records of 64 bytes from record 4 (RS := 64); WRBLK 2 records
 ; of 64 bytes at record 30; FCLOSE; FOPEN again and FSIZE.
 ; Captured, the contract only: every call's A, a 16-bit sum of every block read,
-; FSIZE's RR (+33..35), SETRND's RR, RDBLK's HL (records read), the size (+16..19)
+; FSIZE's RR (+33..35), SEQREAD's first byte, SETRND's RR, RDBLK's HL (records read), the size (+16..19)
 ; after FCLOSE and after the second FSIZE. No pointer is kept in IX across a BDOS
 ; call (D4's lesson). Self-loop at `done` -- the capture anchor.
 ;
@@ -82,12 +82,21 @@ wr_lp:
                 ld      (cap+13), a
                 ; --- SEQREAD from 0, SETRND -------------------------------------------
                 xor     a
-                ld      (fcb+12), a
-                ld      (fcb+32), a             ; EX = CR = 0
+                ld      (fcb+12), a             ; EX = 0
+                ld      a, 2
+                ld      (fcb+32), a             ; CR = 2: SEQREAD reads the record the
+                                                ; FCB names (D-BDOSFCB B2), not the one
+                                                ; after the last RDRND
                 ld      de, fcb
                 ld      c, $14
                 call    BDOS
                 ld      (cap+14), a
+                ld      a, (buf)
+                ld      (cap+33), a             ; its first byte: the record number
+                ld      hl, (fcb+32)
+                ld      (cap+34), hl            ; CR and RR's low byte after it
+                ld      a, (fcb+12)
+                ld      (cap+36), a             ; EX after it
                 ld      de, fcb
                 ld      c, $24                  ; SETRND
                 call    BDOS
@@ -211,8 +220,8 @@ buf:            ds      128, 0
 big:            ds      192, 0
 
 ; ---------------------------------------------------------------------------
-; captured block $0400-$041F
+; captured block $0480-$04A4
 ; ---------------------------------------------------------------------------
-                ds      $0400 - $, $00
-cap:            ds      33, $00
+                ds      $0480 - $, $00
+cap:            ds      37, $00
 cap_end:

@@ -194,6 +194,10 @@ ALLOWLIST = {
     # divergence in disk/docs/diskbasic-option-surface.md, "`$26` WRBLK shrink"). The
     # bytes downstream of that are stock's broken file; OURS is PINNED at each one
     # (an (ours, reason) entry), so the excuse cannot hide a regression of ours.
+    "DOSL-D6": {
+        0x048F: (0x03, "SETRND after SEQREAD from CR 2: stock RR 1, ours 3 = CR 3 (CR / EX match; "
+                       "D-BDOSFCB's SETRND residual -- stock answered 1 from CR 1 too)"),
+    },
     "DOSL-D7": {
         0x040B: (0x00, "FCLOSE after WRBLK-0 truncate: stock $FF (its truncate bug), ours 0"),
         0x0419: (0x0A, "SORTED.TXT record 9's byte: stock reads its freed cluster, ours 10"),

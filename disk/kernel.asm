@@ -7158,6 +7158,17 @@ dskchg_body:
                 ld      b, 1                ; "unchanged"
                 xor     a                   ; A = 0, Cy = 0
                 ret
+; seq_dirty -- D-BDOSFCB B2 (2026-11-10): a random call moved the read iterator, so
+; BDOS_SEQREC no longer says where it stands: $FFFF makes srd_pos re-position the
+; next SEQREAD from the FCB. Skipped for a write-open file, whose SEQWRITE write-back
+; counts on BDOS_SEQREC. Clobbers A, HL.
+seq_dirty:
+                ld      a, (BDOS_WRMODE)
+                or      a
+                ret     nz
+                ld      hl, $FFFF
+                ld      (BDOS_SEQREC), hl
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -7404,6 +7415,7 @@ ci_cache:
 ;        Cy = 0 positioned -- BDOS_BYTESLEFT, FAT_CURCLUS/FAT_CLUSSEC,
 ;        RDBLK_BUFPOS primed, FCB +28..31 := the cluster holding O and its index
 k47b2_seek:
+                call    seq_dirty           ; RDBLK moves the read iterator (B2)
                 ld      a, (FAT_SECPERCLUS)
                 or      a
                 jr      nz, k47b2_geom
@@ -7522,6 +7534,34 @@ frg_eofchk:
                                             ; fill. It was FAT_DBUF's whole 512 until
                                             ; D-FLDDESC -- at block+9 a 512 B fill
                                             ; would run into the next block)
+; srd_pos -- D-BDOSFCB B2 (2026-11-10), SEQREAD's first act (wrseq_rd, IX = the FCB).
+; The CF-3300 reads the record the FCB names, EX * 128 + CR: after RDRND RR 6 (CR 6)
+; it reads record 6 and leaves CR 7 (scratchpad/bdosfcb_run4.out, row 23). Ours read
+; on from its own iterator. BDOS_SEQREC is where that iterator stands ($FFFF after a
+; random call: seq_dirty); a different record is re-positioned by rrnd_position's
+; path. SCOPE: rrnd_position's, records 0..255; past that BDOS_SEQREC is synced and
+; the read goes on from the iterator. Also seeds BDOS_DTA, as wrseq_rd did inline.
+srd_pos:
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ld      a, (ix+12)          ; EX
+                ld      h, a
+                ld      a, (ix+32)          ; CR (0..127: bit 7 clear)
+                add     a, a
+                srl     h                   ; H = EX >> 1, CF = EX bit 0
+                rra
+                ld      l, a                ; HL = EX * 128 + CR
+                ld      de, (BDOS_SEQREC)
+                or      a
+                sbc     hl, de
+                ret     z                   ; the iterator is there already
+                add     hl, de
+                ld      (BDOS_SEQREC), hl
+                inc     h
+                dec     h
+                ret     nz                  ; past rrnd_position's scope
+                ld      a, l
+                jp      rrnd_pos_a
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
 ; --- S10.D: the RANDOM record engine's chain walk, in the free region between the
@@ -8546,6 +8586,10 @@ fcb_fatst:
 ; not a generic kernel copy-back artifact (contrast fdel_body's DE=$03D0,
 ; which the kernel already reproduced with no fdel_body code at all).
 rrnd_position:
+                call    seq_dirty           ; D-BDOSFCB B2: SEQREAD re-positions after this
+                ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
+rrnd_pos_a:                                 ; srd_pos: A = the record
+                ld      (RRND_RECSEC), a    ; held across mount / find (all clobber A)
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl      ; reseed our own DTA cell (M19 lesson:
                                             ; the kernel's real SETDTA only ever
@@ -8570,7 +8614,7 @@ rrnd_position:
                 ; scratchpad/dosl_d6_2.out). The FCB's +26 and +16..19 are kept current
                 ; by every write (wrblk_fcb_keep, wrrnd_extend) and filled by FOPEN.
                 call    fcb_fatst
-                ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
+                ld      a, (RRND_RECSEC)    ; A = the target record
                 push    af
                 call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)
                 pop     af

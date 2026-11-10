@@ -1,0 +1,6 @@
+
+===== DOSL-D6 (build_dosl_disk.py) =====
+  PASS  DOSL-D6 capture 0x0480:0x25: 0-byte-diff (all 1 allowlisted — SETRND after SEQREAD from CR 2: stock RR 1, ours 3 = CR 3 (CR / EX match; D-BDOSFCB's SETRND residual -- stock answered 1 from CR 1 too))
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.
