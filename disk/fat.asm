@@ -567,7 +567,7 @@ fwd_chk:
                 jr      nz, fwd_nowin
                 ld      a, CMD_WRITE
                 ld      (FDC_STATUS), a
-                jp      fdc_write_data_body
+                jr      fdc_write_data_body
 fwd_nowin:
                 ld      a, b
                 and     ST_NOTRDY

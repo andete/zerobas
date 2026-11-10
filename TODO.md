@@ -16980,6 +16980,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🏗️ **RULED (Joost 2026-11-10): FORMAT's prompt WORDING may differ; its keys and results
       may not** (scratchpad/LOOP-RESTART.md, the 11-10 table) -- e.g. reuse the ROM's own
       "...and strike a key when ready"; each difference is recorded as a ruled divergence.
+      🧱 **THE $4025 ENTRY, WRITTEN AND PARKED (2026-11-10): [`fmtentry_wip.patch`](scratchpad/fmtentry_wip.patch)** --
+      `k_4025: jp fmt_dos`, rh_init moved to $543C's slack, CALL FORMAT's new hk_format
+      (work area STREND .. FRETOP - 64; errors through dc_fail as the other hooks),
+      fmt_bkey (`ld ix,chget_getbyte / jp calbak`; chget_getbyte exported by
+      tools/gen_resident_abi.py), fmt_dlg / fmt_pr / fmt_key / fmt_echo and three strings.
+      It assembles to ~184 B against the ~66 B its region in front of $5FE5 has once the
+      old hk_format and "1=360k 2=720k? " go: **118 B OVER.** 🔴 **Moves are exhausted:**
+      defrag_plan.py --bin finds no region that reaches even 60 B -- the ~200 B still free
+      sit in slacks of 13 B or less, and every routine worth evicting is bigger than any
+      destination. ➡️ CARVE ~120 B, best INSIDE the region in front of $5FE5 (from $5E10),
+      then `git apply scratchpad/fmtentry_wip.patch`, build, the dialogue rows (BASIC and
+      MSX-DOS, scratchpad/fmtdialog_probe.py's steps) on both machines, and retire the
+      sub-ROM quick format (format_tenant, basic/format-body.inc) with its probes.
+      ✂️ **CARVE 33 (2026-11-10, +9 B; free 273 -> 282 B):** Route D for disk.rom --
+      scratchpad/disk_jr_route.py turns every in-range `jp [cc,]label` into `jr` and reverts
+      what the assembler rejects (EXCLUDED: code copied to RAM -- each `*tmpl*` .. `*_end`
+      block, init.asm, pageenv.asm, fmt_boot -- an equ / absolute target, the shared
+      basic/*.inc). 199 candidates, 15 in range; the 6 at pinned entries (k_509F, k_5465,
+      k_55FF, mb_5e10, the $77B8 / $782B veneers) were put back to `jp` -- a caller that
+      READS a published entry's jump operand is unmeasured -- so 9 kept. 🔎 Measured too:
+      the $7F80-$7FBF window really is dead (the registers mirror x8 across it: the
+      2026-07-04 FMAKE break), and the $5FE5 region has two movable routines (33 B). The
+      cheap families are spent: the ~120 B for the $4025 entry come from REWRITING routines.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

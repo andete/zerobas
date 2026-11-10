@@ -1,0 +1,211 @@
+diff --git a/disk/basic-resident-abi.inc b/disk/basic-resident-abi.inc
+index 0fc1169b..08b4fc8b 100644
+--- a/disk/basic-resident-abi.inc
++++ b/disk/basic-resident-abi.inc
+@@ -109,6 +109,7 @@ lrset_finish equ 070B8H
+ fch_ctx_addr equ 06EA7H
+ disk_error equ 06738H
+ read_line equ 045E6H
++chget_getbyte equ 0700AH
+ fch_close_all equ 06F67H
+ eval_int16_checked equ 04535H
+ check_expr_errors equ 04411H
+diff --git a/disk/equates.inc b/disk/equates.inc
+index 95894e5c..3b26ffdc 100644
+--- a/disk/equates.inc
++++ b/disk/equates.inc
+@@ -184,6 +184,8 @@ H_FOPEN         equ     $FE5D
+ ; call -- so the selector crosses in RAM (§6.6n).
+ FOPEN_SEL       equ     DISKOP_OP
+ HIMEM           equ     $FC4A   ; the published BASIC ceiling (MSX2 Technical Handbook,
++STREND          equ     $F6C6   ; PUBLISHED: the arrays' end -- CALL FORMAT's work area starts here (D-DSKFMT)
++FRETOP          equ     $F69B   ; the string heap's low boundary -- the work area ends below it (D-DSKFMT)
+                                 ; work area) -- D-FCBSHAPE S2 lowers it at init
+ SUB_BUILD       equ     0       ; this is the DISK build, not the sub-ROM
+ 
+diff --git a/disk/init.asm b/disk/init.asm
+index 831e7b43..3f47cc9b 100644
+--- a/disk/init.asm
++++ b/disk/init.asm
+@@ -59,15 +59,13 @@
+                 ; banner. (Swapping the two instead HANGS the machine: measured.)
+                 ds      $4022 - $, $00  ; pad up to the pinned $4022 entry
+                 jp      basent_body     ; $4022: BASENT -- leave DOS for disk BASIC
+-; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+-; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
+-; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
+-; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
+-rh_init:
+-                ld      hl, 0
+-                ld      (RND_HSEC), hl
+-                ret
+-                ds      $402D - $, $00  ; pad $4025-$402C (unused kernel-entry slots)
++                ds      $4025 - $, $00
++                ; 🔴 D-DOSFORMAT (2026-11-10): $4025 IS THE PUBLISHED FORMAT ENTRY -- MSX-DOS's
++                ; `format` hands the whole dialogue to it (scratchpad/fmttrace.out). This pad's
++                ; old comment called $4025-$402C "unused kernel-entry slots"; nobody had
++                ; measured that, and a defrag put rh_init here.
++k_4025:         jp      fmt_dos         ; $4025: FORMAT (kernel.asm)
++                ds      $402D - $, $00  ; pad $4028-$402C (not measured: check before using)
+                 jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
+                 ld      hl, GETWRK_AREA ; $4030: return our work-area base
+                 ret                     ; ($4033) HL = work area, all else preserved
+diff --git a/disk/kernel.asm b/disk/kernel.asm
+index 7612fb6e..de9b1321 100644
+--- a/disk/kernel.asm
++++ b/disk/kernel.asm
+@@ -1325,6 +1325,15 @@ bb_dskrst:
+                 xor     a
+                 ld      (CURDRV_CELL), a    ; drive A
+                 ret
++; (moved here from init.asm by the D-DSKFMT defrag)
++; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
++; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
++; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
++; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
++rh_init:
++                ld      hl, 0
++                ld      (RND_HSEC), hl
++                ret
+                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
+ k_543C:
+                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
+@@ -3599,32 +3608,98 @@ hkg_st:
+ ; 📍 SITED IN THE FILL ABOVE `ds $5FE5 - $` for hkc_resolve's reason: the tail
+ ; after runtime.asm is nearly full, and code here shifts nothing downstream.
+ hk_format:
+-                ld      hl,fmt_menu_text
+-                call    hke_pr              ; CHPUT the 0-terminated prompt (its CF=1 is ignored)
+-                ld      ix,read_line
+-                call    calbak              ; main: LINEBUF <- the typed choice (echoed)
+-                ld      a,(LINEBUF)
++                ; 🔴 D-DSKFMT (2026-11-10): CALL FORMAT is the CF-3300's -- the dialogue and
++                ; DSKFMT, as MSX-DOS's `format` ($4025); it was a quick format through the
++                ; sub-ROM (format_tenant), system area only, "1=360k 2=720k? ". The work area
++                ; is the free RAM between the arrays and the strings, less 64 B.
++                ld      hl,(FRETOP)
++                ld      de,(STREND)
++                or      a
++                sbc     hl,de
++                ld      bc,-64
++                add     hl,bc               ; Cy: 64 B or more
++                jr      c,hkfm_room
++                ld      hl,0                ; none: DSKFMT answers 14
++hkfm_room:
++                ld      b,h
++                ld      c,l
++                ld      hl,fmt_bkey         ; keys: ONE each, waited for in MAIN
++                call    fmt_dlg
++                ld      a,0
++                jp      nc,hk_claim_status  ; 0: done
++                call    dc_fail             ; the DSKIO code -> DISKOP_ERR (68 / 70 / 69)
++                ld      a,1                 ; 1: main's disk_error raises it
++                jp      hk_claim_status
++; fmt_bkey -- CALL FORMAT's key: INPUT$'s key source in main (no echo), so the wait
++; happens with main in page 1 (a page-1 tenant must not wait: basic/repl.asm).
++fmt_bkey:
++                ld      ix,chget_getbyte
++                jp      calbak
++; fmt_dos -- $4025, MSX-DOS's FORMAT: keys through our own CHGET body (page 0 is RAM
++; there); the work area is the TPA from $0100 (COMMAND.COM lives at its top).
++fmt_dos:
++                ld      hl,innoe_body
++                ld      de,$0100
++                ld      bc,$1E00
++; fmt_dlg -- the dialogue, from either: HL = the key routine, DE / BC = the work area.
++; The CF-3300's keys and their order: a drive key (echoed), a choice 1..4 (echoed;
++; other keys ignored -- unmeasured, TIER 6), any key to start (not echoed). Its WORDING
++; may differ (Joost 2026-11-10): "and strike a key when ready" is the ROM's own swap
++; prompt, where the CF-3300 says "Strike a key when ready". Out: Cy / A as DSKFMT.
++fmt_dlg:
++                ld      (FDC_DEST),hl       ; (free until DSKFMT runs)
++                push    de
++                push    bc
++                ld      hl,fmt_t_drive
++                call    fmt_pr
++                call    fmt_key
++                call    fmt_echo            ; the drive: one drive here, any key is A
++                ld      hl,choice_txt
++                call    fmt_pr
++                ld      hl,fmt_t_q
++                call    fmt_pr
++fd_choice:
++                call    fmt_key
+                 cp      '1'
+-                jr      z,hkfm_360
+-                cp      '2'
+-                jr      z,hkfm_720
+-                jr      hk_format           ; invalid -> re-prompt (like the CF-3300's '?')
+-hkfm_360:
+-                xor     a                   ; 0 -> 360k (format_tenant's GEOM select)
+-                jr      hkfm_go
+-hkfm_720:
+-                ld      a,1                 ; 1 -> 720k
+-hkfm_go:
+-                ld      (FMT_GEOMSEL),a
+-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT
+-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+-                jr      nc,hkfm_done        ; completed: FMT_RESULT is the tenant's own
+-                ld      a,1
+-                ld      (FMT_RESULT),a      ; absent -> the same face as a write error
+-hkfm_done:
+-                scf                         ; claimed
+-                ret
+-fmt_menu_text:  db      "1=360k 2=720k? ",0
++                jr      c,fd_choice
++                cp      '5'
++                jr      nc,fd_choice
++                push    af
++                call    fmt_echo
++                ld      hl,dsl_text_nl
++                call    fmt_pr
++                ld      hl,dsl_text_2 + 3   ; "and strike a key when ready", CR LF
++                call    fmt_pr
++                call    fmt_key             ; not echoed
++                pop     af
++                sub     '0'                 ; A = the choice
++                pop     bc
++                pop     hl
++                ld      d,0                 ; drive A
++                call    dskfmt_body
++                ret     c
++                ld      hl,fmt_t_done
++; fmt_pr -- print the 0-terminated string at HL (conout_emit_e: the BIOS paged in by
++; itself, so from BASIC and from MSX-DOS alike). Out: CF = 0.
++fmt_pr:
++                ld      a,(hl)
++                or      a
++                ret     z
++                ld      e,a
++                push    hl
++                call    conout_emit_e
++                pop     hl
++                inc     hl
++                jr      fmt_pr
++fmt_key:
++                ld      hl,(FDC_DEST)
++                jp      (hl)
++fmt_echo:
++                ld      e,a
++                jp      conout_emit_e
++fmt_t_drive:    db      "Drive name? (A,B) ",0
++fmt_t_q:        db      "? ",0
++fmt_t_done:     db      "Format complete",13,10,0
+ 
+ ; --- hk_system: CALL SYSTEM / _SYSTEM -- back to MSX-DOS (D-CALLSYSTEM; oracle: CF-3300) ---
+ ; Measured on the CF-3300 (scratchpad/callsystem_run.out, callsystem_dos2.out,
+diff --git a/tools/gen_resident_abi.py b/tools/gen_resident_abi.py
+index e466aa53..711313f0 100644
+--- a/tools/gen_resident_abi.py
++++ b/tools/gen_resident_abi.py
+@@ -397,6 +397,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
+     # prompt itself is CHPUT'd from disk.rom: its text is there, and a
+     # print_string call-back would read main page 1 at the text's address.
+     "read_line",                # LINEBUF <- one edited line, echoed
++    # D-DSKFMT ($4025 FORMAT): CALL FORMAT's dialogue takes ONE key per answer, as the
++    # CF-3300's does -- INPUT$'s key source, so the wait is in MAIN (repl.asm's rule:
++    # a page-1 tenant must not wait). No echo; HL kept; CF clear.
++    "chget_getbyte",
+     # D-CALLSYSTEM: CALL SYSTEM closes every file before handing over to MSX-DOS,
+     # as the CF-3300 does (scratchpad/callsystem_peek.out `dosfile`).
+     "fch_close_all",

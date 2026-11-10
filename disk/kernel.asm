@@ -2104,7 +2104,7 @@ hkm_walk:       call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 hkm_sec:        ld      hl,(FAT_DIRREM)
                 ld      a,h
                 or      l
-                jp      z,hkm_end           ; every root sector scanned
+                jr      z,hkm_end           ; every root sector scanned
                 push    bc
                 ld      de,(FAT_DIRSEC)
                 call    rd_dbuf
@@ -2163,7 +2163,7 @@ hkm_hit:        ld      a,c                 ; SP = the frame again
                 ldir                        ; the destination pattern, afresh
                 call    hkc_fill            ; ONE copy: A = 1 ok / 2 / 3 / 0
                 dec     a
-                jp      z,hkm_walk          ; copied: on from the next slot
+                jr      z,hkm_walk          ; copied: on from the next slot
                 inc     a
                 jr      hkm_out             ; the first failure ends the statement
 hkm_io:         ld      a,2
@@ -2833,7 +2833,7 @@ hcc_stamp:
                 push    ix
                 pop     hl
                 call    close_size_upd      ; the size, then fat_dir_update (carve 18)
-                jp      c, dwr_fail
+                jr      c, dwr_fail
 hcc_done:
                 scf                         ; claimed; main frees the channel
                 ret
@@ -3661,7 +3661,7 @@ hsy_lp:
                 ld      a,(de)
                 xor     (hl)
                 and     $DF                 ; the same letter, either case
-                jp      nz,hsy_syn          ; another name: Syntax error, as before
+                jr      nz,hsy_syn          ; another name: Syntax error, as before
                 inc     hl
                 inc     de
                 djnz    hsy_lp
@@ -4145,7 +4145,7 @@ wrblk_room:
                 call    rrnd_sector         ; DE = absolute logical sector to persist
                 call    wr_sbuf
                 pop     bc                  ; chunk (pop leaves the flags alone)
-                jp      c, wrblk_ioerr
+                jr      c, wrblk_ioerr
                 ld      hl, (WRBLK_REC)
                 add     hl, bc
                 ld      (WRBLK_REC), hl     ; offset += chunk (24-bit)
@@ -6370,7 +6370,7 @@ hkc_done:
                 ; rather than storing it, for the same reason: the tenant it
                 ; replaces wrote the cell itself, and two writers on one channel
                 ; is what §6.6aw's empty-drive `Syntax error` was.
-                jp      hk_claim_status     ; D-ERRKEEP: stores it, CF = 1
+                jr      hk_claim_status     ; D-ERRKEEP: stores it, CF = 1
 
 ; hkc_swap -- exchange the 11-byte names in DISK_FCB_NAME and COPY_SRC
 ; (D-COPYNAMEOPEN). Clobbers A, BC, DE, HL.
@@ -8417,7 +8417,7 @@ fdc_rd_status:
                                         ; fat.asm) -- byte-for-byte the read path's copy
                 ld      a, CMD_READ
                 ld      (FDC_STATUS), a
-                jp      fdc_read_data_body
+                jr      fdc_read_data_body
 ; (fdc_rd_nowin -- the FDC status -> DSKIO error code decode -- was a byte-for-byte
 ; copy of fat.asm's fwd_nowin; D-DISKCARVE5 (2026-11-08, scratchpad/diskngram.py)
 ; jumps there instead.)

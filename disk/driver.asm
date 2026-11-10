@@ -267,7 +267,7 @@ fdc_seek:
                 ld      (FDC_DATA), a
                 ld      a, CMD_SEEK
                 ld      (FDC_STATUS), a
-                jp      fdc_wait_ready
+                jr      fdc_wait_ready
                 ds      $43A4 - $, $00      ; net-zero: fdc_write_phys stays at $43A4
 
 ; fdc_write_phys — write one physical sector from (HL).
