@@ -31086,7 +31086,7 @@ the phase narrative above still have somewhere to land.
       filters by type, so `LOAD"CAS:"` steps over a tokenised file); the 09-27
       "keep the feature" ruling is superseded. Closed; nothing to change.
       🎚️ TIER 6 — `LOAD"CAS:"` on a tape that holds a tokenised program
-      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:13819 (T-B42728): *"KEEP THE
+      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:12894 (T-B42728): *"KEEP THE
       FEATURE"* — zerobas loads a tokenised tape via `LOAD"CAS:"`, the reference's
       hang is a stated divergence. D-CASTYPE then made every tape search filter by
       type, as the VG-8020 does, so `LOAD"CAS:"` now steps over a tokenised file —
@@ -35093,6 +35093,2531 @@ the phase narrative above still have somewhere to land.
       both sides equal -- and the correctly-rounded-vs-truth floors became "rows EQUAL to the
       reference" floors (SIN 24/42, COS 25/42) ([`math_rebase.out`](scratchpad/math_rebase.out)).
       Not caused by today's work: the same 55 failed with D-DBLNORM's fp_add change removed.
+
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## From `TODO.md` § Open — standing residuals (INDEX; this is the pickup list)
+
+- [x] 🎵 **THE VG-8020 STARTS A `PLAY`'S MUSIC WHEN THE STATEMENT RETURNS, A FEW TICKS IN;
+      ZEROBAS STARTS AT ONCE (D-PLAYSTART, split from D-PLAYRATE 2026-11-05).**
+      🎚️ TIER 5 — on-par timing: a song ends 2-11 ticks sooner here; the notes are the same.
+      🤖 **AUTONOMOUS** — measured on both references (A = TIME at PLAY's return, B - A =
+      the music: [`playrate_grid_3way.out`](scratchpad/playrate_grid_3way.out)). A is 2..11 for
+      16 notes, 0.3-0.7 a note, and depends on the tempo in a way not yet modelled (T100-T200
+      4-5, T32 / T64 / T255 10); the CF-3300's a jiffy or two longer. Measure what A follows
+      (notes, characters, the tempo command, the voice count) before building anything.
+      ✅ **CLOSED 2026-11-06 -- NOT A DEFECT: BOTH START AT THE SAME POINT.** The measurement
+      ([`playstart_grid.bas`](scratchpad/playstart_grid.bas) ->
+      [`playstart_grid.out`](scratchpad/playstart_grid.out), 30 rows x VG-8020 / CF-3300 /
+      zerobas) shows B - A (the music, from PLAY's return to PLAY(0)=0) IDENTICAL on the
+      VG-8020 and zerobas in every row that fits the queue (8 notes T32..T255: 41 both; 1 note:
+      6 both; T255L4: 89 both). So the music starts at the statement's return (or when the
+      queue fills) on both. A itself is the reference's PARSE time: ~0.4-0.5 tick a note (1 /
+      2 / 4 / 8 / 16 notes: 0 / 1 / 2 / 4 / 6), 2 voices 7, 3 voices 10, tempo nearly
+      irrelevant (3-6 across T32..T255); zerobas parses 8 notes in 1 tick. The "song ends
+      sooner" was zerobas's PLAY returning sooner -- FASTER than par, not a timing
+      divergence. 🔮 Predicted "A grows with notes ~0.6/note, tempo non-monotonic, voices
+      add": notes + voices HIT (0.4-0.5 a note), tempo MISSED (it barely matters; the earlier
+      grid's T32/T255 10s were 16-note rows near the queue's edge). docs/keywords/PLAY.md: the
+      difference removed, a What-we-found entry added.
+
+- [x] 🔧 **THE GATE PICKER PLANNED NO `PLAY` SUITE FOR A CHANGE TO sub/playparse.asm
+      (D-PICKPLAY, found 2026-11-05 by D-PLAYRATE's commit).**
+      🎚️ APPARATUS — a ROM change inside a sub-ROM tenant can reach zero of the suites that
+      exercise it: `make gates-plan` listed six unrelated emulator suites ("no enclosing ex_
+      handler: canary only") and none of playeq / playarr / playqueue / play / play-trace,
+      which were then run by hand (all green).
+      🤖 **AUTONOMOUS** — the picker and its selftest are ours. ➡️ Map a tenant source file to the keyword
+      whose handler calls it (sub/playparse.asm -> PLAY) and plan that keyword's suites, the
+      way an ex_ handler change already does; selftest it like D-PLANDATA's P16.
+      📏 **A SECOND INSTANCE (2026-11-05):** D-TANBIG changed sub/fp_sin.asm and ran FULL, which
+      does not hold the daily suites -- math-acceptance went red the next day, unseen. A math
+      tenant change should plan math-acceptance the same way.
+      ✅ **FIXED 2026-11-06.** tools/pick_gates.py `tenant_keywords()`: a sub-ROM file's labels
+      are matched against the index tables (`jp <label> ; index N (SUBROM_IDX_X)` in sub/*.asm,
+      sub2/*.asm) -- one hop too, when the entry lives in a file that calls into this one
+      (mw_sin in sub/mathwrap.asm -> sub/fp_sin.asm) -- and main's uses of that index name
+      the keyword: inside an `ex_<name>:` handler, or on a `db <NAME>_TOKEN, ...` dispatch
+      row. playparse -> PLAY; fp_sin -> SIN COS TAN ATN RND; the string heap (used by
+      everything, no handler / token row) stays unknown -> the canary, as before. Selftest
+      arms P18 / P18b / P18c green.
+
+- [x] 📄 **`INPUT#` / `LINE INPUT#` TREAT A LONE LF DIFFERENTLY FROM THE CF-3300 (D-INPLF, found
+      2026-11-05 by the program ladder's L5_files).**
+      🎚️ TIER 6 — data files with a LF that is not part of a CR LF pair (MSX writes CR LF; a
+      CR LF file reads the same on both).
+      🤖 **AUTONOMOUS** — measured, CF-3300 vs zerobas DISK ([`inplf_measure.out`](scratchpad/inplf_measure.out)):
+      (A) INPUT$ stops after a CR, so the next byte is its LF: INPUT# V reads **0** there and
+      the next INPUT# 36 (the LF ends an EMPTY field); here 36 then 81. (E) a number field
+      `1<LF>2<LF>3`: **123** there (the LFs ignored INSIDE a number), 1 here. (F) LINE INPUT#
+      over bare LFs KEEPS them (length 5) there, drops them here (3). (G) a string field over
+      the same bytes `[123]` on both; CR LF LF (H) equal. ➡️ The rule is not yet one rule (a
+      leading LF ends a field, an embedded one is skipped): measure the char classes first --
+      LF before / after spaces, digits, a quote, a comma, in LINE INPUT# -- then fix the
+      sequential reader (seqio tenant). Not a TIER 1 path: L5_files now reads 11 bytes so its
+      INPUT$ does not split a CR LF pair.
+      ✅ **MEASURED AND MOSTLY FIXED 2026-11-06.** A 19-case grid, one char class each
+      ([`inplf_grid.bas`](scratchpad/inplf_grid.bas) -> [`inplf_grid2.out`](scratchpad/inplf_grid2.out); `|` a lone LF, `^` CR, `~` a quote):
+      the CF-3300's rules are (1) an LF INSIDE a number read by INPUT # is skipped (`5|6` 56,
+      `-|5` -5, `5.|5` 5.5; zerobas stored it and ended the number) -- leading / around a comma
+      / after a CR the same on both; (2) an unquoted string FIELD drops it, a quoted one keeps
+      it (both, already); (3) LINE INPUT # KEEPS a lone LF in the line (`|AB` 3, `A|B` 3,
+      `AB||CD` 6), the LF of a CR LF pair is swallowed (`AB^|CD` -> CD), the second of `^||`
+      kept. Fix: disk/fat.asm din_num skips an LF in a number's body; basic/files.asm
+      read_into_strscr keeps an LF in LINE mode when the source is the DISK reader
+      (fat_io_seqbyte -- hk_chin pairs CR LF; the tape source does not, unmeasured, so tape
+      keeps the old rule). After: the grid SAME ([`inplf_after.out`](scratchpad/inplf_after.out)); inplf_measure still differs
+      ONLY in (A) -- INPUT$ took the CR, and the next INPUT # reads an EMPTY field (0) there
+      where zerobas skips the LF (36): the CR state survives INPUT$ on the reference. That
+      residual stays open here.
+      ✅ **THE RESIDUAL, FIXED 2026-11-08 -- CLOSED.** The reference remembers the CR INPUT$
+      handed over: the LF after it ends an EMPTY item for the next INPUT # (reads 0). A row
+      flag, DIN_CRPEND (bit 2 of DOUT_FLG on an INPUT row, disk/fat.asm): set when INPUT$
+      delivers a CR, cleared by din_take (any byte taken); din_num honours it before its
+      lead-in skip. Numbers only -- ~~a string field or LINE INPUT # after INPUT$'s CR keeps
+      today's rule, unmeasured~~ 🔴 corrected the same day: those ARE measured, by the same
+      program's cases C (LINE INPUT # after INPUT$(4) took the CR) and D (a string field
+      after INPUT$(17) ended on a CR), and they read the same on both machines before and
+      after -- today's rule IS the reference's there. rh_flush moved to the $75A5 hole to make the
+      room. After ([`inplf_after3.out`](scratchpad/inplf_after3.out)): inplf_measure's printer output identical on both
+      ("A 4  0  36"), the 19-case grid still identical; tests/test_seqin.py green. 🔴 The first cut of ris_lf sat in front of ris_keep and the
+      quote arm's `jr z,ris_setq` FELL INTO it: LINE INPUT # from TAPE lost its quotes
+      (castail-acceptance cas2-open `10 PRINTZQ9`, [`inplf_castail.out`](scratchpad/inplf_castail.out) after the move: 47/47).
+      (The grid's first draft wrote `""` in DATA, which MSX does
+      not escape: the CF-3300 said Syntax error in 1020 and zerobas accepted the line --
+      a malformed-DATA difference, not chased.)
+
+- [x] ⏱️ **ASCII PROGRAM FILES ON DISK -- `SAVE ...,A`, `RUN "file"` / `MERGE` of a text
+      program -- HOLD THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: UP TO ~450 MS AGAINST
+      ITS 223 MS (D-ASAVEDI, found 2026-11-01 by the program ladder's L5_house and L5_chain).**
+      🎚️ TIER 5 — timing parity, D-DISKDI's class: frames missed during a disk transfer
+      (TIME lags, a key pressed meanwhile can be lost), zerobas longer than the reference.
+      🤖 **AUTONOMOUS** — 📏 measured with the BASIC line at the end of each gap > 0.1 s
+      (a temporary watch in the runner, not kept): every zerobas gap over 223 ms is at
+      L5_house line 190, `SAVE "Q.BAS",A` -- 341 / 287 / 292 / 450 / 362 ms -- where the
+      CF-3300's worst on that line is 197 ms. COPY, LFILES, KILL, a tokenised SAVE, the
+      random file: inside the reference's envelope on both. L5_house sits in KNOWN_GAPS
+      under this name (run_programs.py), which fails the gate once the gaps are clean and
+      the entry is still there. Next: sample the PC during the long holes (disk.rom's own
+      code, ours) -- D-DISKDI's candidates were a multi-sector transfer under one DI or a
+      seek / settle wait under DI. Speed is paused for ROM space (Joost 10-20): filed,
+      not scheduled.
+      📏 **L5_chain (same day) widens it to the CLASS:** its only zerobas gaps over the
+      CF-3300's 223 ms are `RUN "P2.BAS"` loading a text program (258 ms) and `MERGE
+      "P4.BAS"` (233 ms); everything else in the run (OPEN / PRINT # / CLOSE of the files)
+      is inside the reference's envelope. All three sites move a TEXT program through the
+      line tokeniser or detokeniser -- 🎯 hypothesis, unmeasured: those run as sub-ROM
+      tenants under sr_slot's DI between sector transfers (D-GCDI3 listed "LIST's
+      detokeniser" among the DI tenants it never measured). Test: PC samples during a hole,
+      then the D-GCDI wrap (`ei / call body / di / ret`). L5_chain is in KNOWN_GAPS too.
+      📏 **MEASURED 2026-11-06, AND THE HYPOTHESIS WAS HALF RIGHT** ([`asavedi_pc_probe.py`](scratchpad/asavedi_pc_probe.py):
+      the ladder harness's own gap watch + 1 ms samples of PC / IFF / A8 / CURLIN, PCs named
+      against our builds only). **L5_house's SAVE ,A holes (161..357 ms) were ALL the
+      detokeniser** -- dk_entry / detok_kw, its keyword search, IFF 0 in ~95 % of samples
+      ([`asavedi_pc.out`](scratchpad/asavedi_pc.out)). **L5_chain's RUN / MERGE holes are NOT
+      the tokeniser** (tokenise_ei has run with interrupts live since D-TYPEBLIND): they sit in
+      disk.rom's fdc_rd_blk, a multi-sector read under one DI (258 ms;
+      [`asavedi_pc_chain.out`](scratchpad/asavedi_pc_chain.out)) -- D-DISKDI's class.
+      ✅ **THE DETOKENISER HALF FIXED 2026-11-06:** dtk_tenant (sub/detok.asm) runs its body with
+      interrupts live, tokenise_ei's wrapper and argument (+5 B sub page 0); LIST to the
+      screen gets the same. L5_house max hole 450 -> 173 ms (CF-3300 223), its KNOWN_GAPS
+      entry removed ([`asavedi_gate.out`](scratchpad/asavedi_gate.out)). ➡️ OPEN: the disk
+      half -- fdc_rd_blk's multi-sector DI (L5_chain stays in KNOWN_GAPS under that name).
+      ✅ **THE DISK HALF FIXED THE SAME DAY:** the probe's stack samples
+      ([`asavedi_pc_chain2.out`](scratchpad/asavedi_pc_chain2.out)) named the caller --
+      ascii_load -> dsk_aopen -> H_FOPEN -> disk.rom's hk_aopen, arriving DI through CLPRIM,
+      so FDC_IFF read 0 and every sector of the open's directory / FAT reads ran masked (not a
+      multi-sector transfer). hk_aopen and hk_agetb (disk/kernel.asm) take the interrupts back
+      at entry, D-HOOKDI's pattern (+2 B, disk.rom still exact). L5_chain 258 -> 99 ms
+      ([`asavedi_pc_chain3.out`](scratchpad/asavedi_pc_chain3.out)); all five disk rungs inside
+      the CF-3300's 223 ms (max 173), KNOWN_GAPS EMPTY ([`asavedi_gate2.out`](scratchpad/asavedi_gate2.out)).
+      A scan found ten more hk_* entries without an `ei` first; D-HOOKDI (2026-10-10) had
+      measured the verbs behind most of them clean (concepts/disk.md), so they are not filed
+      as defects -- the ladder's gap gate is what would show one. Docs: concepts/disk.md.
+
+- [x] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
+      REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
+      🎚️ TIER 6 — a documented form (BLOAD's `,offset`) colliding with the
+      disk-only `,S` flag: only a variable literally named S hits it.
+      🤖 **AUTONOMOUS** — but priced against the binding wall: do not spend main's
+      last bytes on it ahead of the tiers above.
+      📏 [`blds_diag.py`](scratchpad/blds_diag.py) →
+      [`blds_diag.out`](scratchpad/blds_diag.out), a 4 KB binary at &HC000: the
+      VG-8020 loads `BLOAD"CAS:X",S` with S=0 at its own address and with S=16
+      sixteen bytes higher -- `,S` is the offset VARIABLE there, as BSAVE's is on
+      tape (D-TAPETAIL). Ours: `load error`, nothing loaded. 🔮 Predicted: HIT.
+      🔧 Why it is not a two-line fix: main's `pcr_bload` (basic/bload.asm, page
+      1) parses the tail BEFORE the tenant knows the device and sets VRAM_FLAG
+      for `S`; the tape arm (bload-body.inc) then refuses. A device test there --
+      `CAS:` on the staged name, plus the diskless bare name, which is tape too --
+      is ~16-20 B of main (page 1 10 B, low 19 B on 2026-10-11).
+      ✅ **FIXED 2026-11-07, AND NOT IN MAIN:** the tail parse has moved to the sub ROM since
+      (sub2/loadsave.asm `ls_pcr_bload`, D-P0CB), and `ls_fname_cas` -- the tape test LOAD
+      and SAVE already use (CAS:, or a bare name with no disk) -- answers it: on the tape `S`
+      falls to the offset expression, anything else keeps the VRAM flag. +10 B, sub page 1
+      80 -> 70. 🔮 "S=0 at its address, S=16 sixteen higher, as the VG-8020": HIT
+      ([`blds_after.out`](scratchpad/blds_after.out)); blds_diag.out is the pre-fix knife (`load error` on both). Gate:
+      blds-acceptance (probes/basic/basic_probe_blds.py, 3/3, [`blds_gate.out`](scratchpad/blds_gate.out); the typed
+      echo `PRINT"[P";..` is fenced out, or two machines printing nothing would agree).
+
+- [x] 💽 **D-WILDSAVE -- A WILDCARD IN A NAME THAT SAVES OR LOADS: `Bad file name` ON THE CF-3300,
+      A FILE CALLED `P???????.BAS` (OR THE FIRST MATCH LOADED) HERE (found and fixed 2026-11-07
+      by typed session S14_diskbin)**
+      🎚️ TIER 3 — common errors: a `*` typed into SAVE or LOAD is an ordinary slip.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`wildsave.ses`](scratchpad/wildsave.ses) / [`wildload.ses`](scratchpad/wildload.ses) (scratch sessions; screens
+      [`wildsave_snap_cf.out`](scratchpad/wildsave_snap_cf.out), [`wildsave_snap_zb.out`](scratchpad/wildsave_snap_zb.out), [`wildload_snap_cf.out`](scratchpad/wildload_snap_cf.out),
+      [`wildload_snap_zb.out`](scratchpad/wildload_snap_zb.out)): on the CF-3300 SAVE, SAVE ,A, BSAVE, LOAD, RUN, MERGE and
+      BLOAD with `*` or `?` are `Bad file name` before any disk work, even when a file
+      matches; OPEN already was here (D-OPENWILD); NAME (both sides), KILL, FILES and COPY
+      take wildcards and agree. zerobas wrote `P???????.BAS`, `Q???????`, `B???????.BIN`
+      and LOAD / RUN / MERGE / BLOAD read the first match (MERGE of a tokenised one: 61).
+      ✅ **FIXED:** sub2/loadsave.asm `ls_fcb` (main's pdfcb_resume, then a `?` in the
+      FCB name raises 56) for RUN / LOAD / SAVE / BSAVE; the same check after MERGE's
+      pdfcb_resume (sub2/filestmt.asm) and in BLOAD's tenant (basic/bload-body.inc, BL_STAT =
+      56). NOT in pdfcb_resume itself: the disk kernel's COPY calls it too, and its first
+      cut there made `COPY "*.DAT" TO "*.BAK"` 56 (S14 caught it). The sub ROM moved, which
+      put sub2/frelive.asm's fl_fftab across a page: its lookup now carries into H (+3 B)
+      and the straddle assertion went. After: both scratch sessions, S14 and S15 SAME
+      ([`wildsave_after.out`](scratchpad/wildsave_after.out)); session S15_wildnames is the gate row. docs/keywords
+      SAVE / LOAD / BSAVE / BLOAD / MERGE / RUN updated.
+
+- [x] 🔧 **D-PADSLIDE -- A ZERO PAD BEFORE A PINNED DISK-ROM ENTRY CAN BE A NOP SLIDE THAT
+      MSX-DOS ENTERS (found 2026-11-06 by D-LOADFAT).**
+      🎚️ APPARATUS — the disk-ROM carves (D-COPYALL, D-LOADRUN, D-LOADFAT) put routines into
+      `ds $XXXX - $` pads, treating them as free; one of them ($476A..$477C) was MSX-DOS's
+      way to `$4775`, never pinned, and only p1dta-acceptance noticed. Every pad that took
+      code since D-COPYALL ($4462, $44F4, $456F, $501E, $55FF, $75A5, $7F7C regions, $4392,
+      $4257, $5552, $477D) passed the FULL battery's seven MSX-DOS suites, but those suites
+      are the only denominator, and a pad entered by a DOS call no suite makes stays unseen.
+      🤖 **AUTONOMOUS** — the DOS suites settle it.
+      ➡️ run every DOS suite (and CALL SYSTEM, a COM program or two)
+      with `scratchpad/hole477_probe.py`'s watch widened to EVERY remaining `ds` pad of
+      disk.rom; pin each entry found; and make the move tooling refuse a pad that was entered.
+      ✅ **SWEPT 2026-11-06: NO OTHER ENTRY.** [`padwatch.py`](scratchpad/padwatch.py) lists every still-empty pad from the
+      assembler's own addresses (57, 467 B), writes a TEMPORARY openMSX startup script that arms
+      ONLY under an env var and ONLY on zerobas's disk machine (our ROM's PC, never the
+      reference's), sets one native breakpoint per pad byte (counted only while page 1 shows
+      slot 3-1), runs the suites and removes the script. Positive control: `--also=4775-4778`
+      under p1dta catches `$4775` from `$D88A` ([`padwatch_control2.out`](scratchpad/padwatch_control2.out)). Sweep over
+      dosmode, dosdate, strout, dosbasic, p1dta, p1vec, callsystem, bdos, wrblkalt and
+      diskbasic: **all 10 green, 0 instructions in any empty pad**
+      ([`padwatch_sweep.out`](scratchpad/padwatch_sweep.out)). 🔴 Its first cut used a Tcl condition on EVERY instruction and
+      slowed five suites past their wall-clock waits -- zerobas read `None` on dosmode's DIR /
+      MODE rows ([`padwatch_dosmode.out`](scratchpad/padwatch_dosmode.out)) -- a red that was the apparatus, and a "0 entries"
+      that covered half the run; breakpoints fixed both. The denominator is these suites'
+      calls. ➡️ THE RULE for every later disk.rom move: run `padwatch.py` with `--also=` the
+      target pad BEFORE filling it (an entry there refuses the pad).
+
+- [x] 💽 **D-SDSBOOT -- SDSNAT1C.DSK STOPPED BOOTING ON zerobas (BOTH-RUN on 11-04 -> ZB-NOBOOT;
+      found 2026-11-07 by re-running the disk collection after the day's disk-ROM work)**
+      🎚️ TIER 1 — happy path: booting a disk (D-DISKRUN's denominator).
+      🤖 **AUTONOMOUS** — since 2026-11-07; Joost on the BIOS exit registers: *"if it does no
+      harm, why not?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07).
+      🔴 **REOPENED THE SAME DAY: THE "BOOTS AGAIN" BELOW WAS THE CLASSIFIER, NOT THE MACHINE.**
+      diskcorpus_run.py called a PC at $FD9A (the H.TIMI hook, one interrupt sampled) "the
+      disk's program has the machine"; the stored rows say the CF-3300 ends in SCREEN 2 with
+      a BASIC line running and zerobas in SCREEN 1 with none ([`diskcorpus_rescore.out`](scratchpad/diskcorpus_rescore.out)). The
+      rule is fixed (a PC from $F380 up is the BIOS's own RAM, not a program); re-scored,
+      SDSNAT1C is ZB-NOBOOT. What below STANDS: the bridge fix made the boot code's register
+      trace the CF-3300's for all 60 traced lines (the RDSLT / ENASLT / WRSLT registers are
+      right).
+      ✅ **CLOSED FOR REAL (2026-11-07, later): THE BOOT CODE'S BDOS CALLS WENT INTO ITS OWN RAM.**
+      Traced past $C0A5 (sdsboot_probe.py SDS_LO / SDS_HI / SDS_BP / SDS_PEEK;
+      [`sdsboot_wide_cf.out`](scratchpad/sdsboot_wide_cf.out), [`sdsboot_wide_zb.out`](scratchpad/sdsboot_wide_zb.out)): the PC sequence is the CF-3300's for all 98
+      of its hits; at $C053 the boot code jumps into the loaded program, which on zerobas
+      crashes and re-boots at 7.39 s. The last BDOS calls before it (SETDTA $0200, RDABS 15
+      sectors, SETDTA $2000, RDABS 36 sectors) NEVER reached rdabs_body here
+      ([`sdsboot_rdabs_zb.out`](scratchpad/sdsboot_rdabs_zb.out), [`sdsboot_bdos_zb.out`](scratchpad/sdsboot_bdos_zb.out)): $F37D's page-3 stub (f37d_tmpl, disk/kernel.asm)
+      sends a call made with page 0 NOT the BIOS to `jp $0005`, and by then $0005 read
+      `jp $9898` ([`sdsboot_0005_zb.out`](scratchpad/sdsboot_0005_zb.out), our own RAM): the boot code had copied the BIOS's
+      $0006 / $0007 -- the VDP ports, the bytes its RDSLT read -- into its own page-0 RAM.
+      The CF-3300's $F37D path does not go through $0005 (its ENASLT calls come from its own
+      high RAM). The stub now jumps to BR_BDOS, the page-3 bridge (same size; the stub still
+      ends exactly at DSK_MEDIA). After: SDSNAT1C ends in SCREEN 2 with BASIC line 0 running
+      at PC $05AE -- the CF-3300: SCREEN 2, line 0, $05B4 ([`sdsone_run4.out`](scratchpad/sdsone_run4.out)); judged by mode and
+      CURLIN this time, not by the class. 🔮 "the trace parts after the boot code": HIT. GAUNT,
+      UR-1 (ZB-NOBOOT) and Multiple (ZB-ONLY) are unchanged by it: their causes are others.
+      ~~✅ CLOSED 2026-11-07: SDSNAT1C BOOTS AGAIN (ZB-NOBOOT -> BOTH-RUN,~~ [`sdsone_run3.out`](scratchpad/sdsone_run3.out)~~),
+      ON THE CF-3300'S PATH~~ -- the boot code's register trace equals the CF-3300's on all 60
+      lines but the first (HL left by an earlier BDOS call, overwritten at once;
+      [`sdsboot_ena_zb5.out`](scratchpad/sdsboot_ena_zb5.out)). The last two splits were our page-3 bridge (the ➡️ at the end):
+      br_back (disk/runtime.asm) now hands ENASLT's A, RDSLT's D and WRSLT's D and A back
+      as the FINAL $A8 -- the BIOS computed them with page 0 still the BIOS ($FC where the
+      CF-3300 gives $FF) -- keyed on BR_TGT, so CALSLT / CALLF are untouched. The 26 B came
+      from D-DISKCARVE's first cut (cpmver / stime / gtime / verify bodies moved to empty pads,
+      the dirin / dskrst `jp` veneers removed: callers jump straight to the target).
+      📏 Disk collection after ([`diskcorpus_dc.out`](scratchpad/diskcorpus_dc.out), zerobas against the stored reference rows):
+      ~~TWO rows ZB-NOBOOT -> BOTH-RUN -- SDSNAT1C and GAUNT.DSK~~ -- 🔴 WITHDRAWN (2026-11-07,
+      the same day): both were the classifier counting a PC in the BIOS's RAM hooks as a
+      running program. GAUNT's screen is the identical banner on every build, and it flipped
+      class again on a layout-only carve; re-scored, SDSNAT1C, GAUNT and UR-1 are ZB-NOBOOT
+      and Multiple ZB-ONLY ([`diskcorpus_rescore.out`](scratchpad/diskcorpus_rescore.out)).
+      📏 Disk collection 2026-11-07 ([`diskcorpus_20261107.out`](scratchpad/diskcorpus_20261107.out)) against 11-04: two rows moved,
+      SDSNAT1C BOTH-RUN -> ZB-NOBOOT and ss-final ZB-ONLY -> FILES-EMPTY; both reproduce alone.
+      🔮 Predicted "the same tally +-1": MISSED by one. **NOT today's disk work**: bisected over
+      the 73 commits since the 11-04 run, first bad = **ccfceefd (D-TRAPCOST, a main-ROM
+      speed-up)**, its `widen_uint_to` fast path for magnitudes under 100: HEAD with that path
+      jumped over boots it (BOTH-RUN). 🔴 **AND IT IS TIMING, NOT A REGISTER CONTRACT:** the fast
+      path made to leave the slow path's exact registers (HL = 0, DE past the digits, A, B = 0,
+      C = N) still fails. [`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) (screen + work area +, with SDS_TRANS=1, every
+      RAM -> ROM transfer, PC only, our machine): good build ([`sdsboot_good_trans.out`](scratchpad/sdsboot_good_trans.out)) -- the
+      program's interrupt handler at $9900 returns into C-BIOS's ISR ($1906, the address the
+      $FD9F hook returns to) and the program runs on (PC $4F8B, SCREEN 1); bad build
+      ([`sdsboot_head_trans.out`](scratchpad/sdsboot_head_trans.out)) -- execution reaches $0000 at 4.357 s, page 3 reads $FF, PC parked
+      in C-BIOS. ~~Reading: a race in the loader (hook armed before $9900's code)~~ --
+      🔴 **WITHDRAWN THE SAME DAY: the probe's first hook run logged NOTHING about $9900
+      because `"$9900"` inside a Tcl string is a variable substitution -- the handler died
+      silently. A blank observation read as "never happens" [[an-unnamed-outcome-reads-as-no-outcome]].**
+      📏 **WHAT IS ACTUALLY MEASURED** ([`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) with SDS_A8 / SDS_HOOK / SDS_RING;
+      slot writes and PCs of the PROGRAM'S RAM code only on the reference):
+      • zerobas ([`sdsboot_a8_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_a8_C-BIOS_MSX1_EU_REPACK_DISK.out), [`sdsboot_i38_head.out`](scratchpad/sdsboot_i38_head.out)): the program's code at
+        $DDD8 / $DE1C toggles $A8 between $FC and $FF from 4.194 s, runs $9900 at 4.197 s
+        right after setting $FF (all four pages slot 3), and at 4.357 s an interrupt finds
+        page 0 = RAM: $0038 holds $FF, an RST 38 slide through page 1 up to $8000, then $0000.
+      • CF-3300 ([`sdsboot_a8_cf45.out`](scratchpad/sdsboot_a8_cf45.out)): the program's slot code runs from **$DEA5** at 11.75 s
+        ($FF, then $CF / $DF / $EF at 14.2 s), never $DDD8 / $DE1C, and never runs $9900.
+      So zerobas is on a DIFFERENT PATH from well before the crash, in both builds; the
+      11-04 "BOTH-RUN" was that wrong path not crashing, and ccfceefd's speed only moved
+      where an interrupt lands in the all-RAM window.
+      ~~➡️ next: where the two boots part~~ -- 📏 **FOUND (2026-11-07): IN BDOS'S RETURN
+      REGISTERS.** Correction first: forcing the CF-3300's boot-entry state (AF, BC, DRVINF,
+      $F30D, $F345) changed nothing, and RAM $0038 holds the same `C9` on both after the
+      all-RAM switch (interrupts off) -- the crash is the boot code JUMPING into page-0 RAM
+      that holds only $FF ($C053 -> $2400 on zerobas; the CF-3300 never reaches $C050).
+      [`sdsboot_probe.py`](scratchpad/sdsboot_probe.py) SDS_BOOTCODE (registers at every PC $C01E..$C056 of the boot
+      code, RAM; [`sdsboot_bootcode_National_CF-3300.out`](scratchpad/sdsboot_bootcode_National_CF-3300.out), [`sdsboot_bootcode_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_bootcode_C-BIOS_MSX1_EU_REPACK_DISK.out)): the boot
+      code calls BDOS ($F37D, C = the function) and the registers that come BACK differ --
+      SETDTA (C = $1A, DE = $C200): CF-3300 A = $08 B = $58 HL = $5808, zerobas A = $1A, HL
+      unchanged; then C = $2F (RDABS, DE = $059A): CF-3300 keeps DE = $059A, F = $42,
+      zerobas DE = $4F00, F = $44; the call after: CF-3300 DE = $000E HL = $0000, zerobas
+      DE = $0000 HL = $C9C9. The spec leaves these undefined; this boot code uses them, and
+      from $C04A on it reads $A8 = $FF (CF) / $FC (zerobas) and takes the other road.
+      ✅ **MEASURED AND ONE FIXED (2026-11-07):** [`bdosregs_probe.py`](scratchpad/bdosregs_probe.py) (a BASIC program POKEs a routine
+      that loads A / BC / DE / HL, calls $F37D and PRINTs every register back; our test code,
+      both machines; [`bdosregs_run.out`](scratchpad/bdosregs_run.out), [`bdosregs_run2.out`](scratchpad/bdosregs_run2.out)): SETDTA returns AF $0800 BC $581A
+      HL $5808 on the CF-3300 whatever goes in (zerobas: AF $1A4A, BC / HL untouched);
+      CONOUT returns BC $A702 HL $A741 there; **RDABS keeps DE (the sector) and leaves F = $42
+      there, where zerobas returned dskio's DE and F = $44.** rdabs_body (disk/fat.asm) now
+      keeps DE and ends with `sub a` (+2 B in the $4E4B region, 7 -> 5): AF / BC / DE / HL
+      all match ([`bdosregs_run3.out`](scratchpad/bdosregs_run3.out)); IX / IY are each machine's internals. 🔮 "RDABS matches,
+      SDSNAT1C gets further but maybe not home": HIT -- the boot code now runs IDENTICAL to
+      the CF-3300's up to $C047 ([`sdsboot_bootcode_zb2.out`](scratchpad/sdsboot_bootcode_zb2.out)), and still does not boot.
+      SETDTA's and CONOUT's leftover registers are not matched (internal values; no reader
+      known).
+      📏 **THE NEXT SPLIT IS THE BIOS'S, NOT OURS (2026-11-07,** [`sdsboot_ena_National_CF-3300.out`](scratchpad/sdsboot_ena_National_CF-3300.out),
+      [`sdsboot_ena_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/sdsboot_ena_C-BIOS_MSX1_EU_REPACK_DISK.out); SDS_ENASLT: ENASLT's arguments and the boot code's
+      registers at $C057..$C0A5): the boot code calls ENASLT ($0024, slot $83, pages 1 and 2)
+      and RDSLT ($000C, slot 0, addresses 6 and 7 -- both machines read $98) and then USES
+      registers the published contract calls destroyed: after ENASLT A comes back $FF on the
+      CF-3300 and $FC here; after RDSLT the CF-3300's BIOS leaves BC = $00FC and DE = $FF98
+      (C = the old $A8, E = the byte read, so it seems), the repacked C-BIOS leaves BC / DE
+      untouched ($30CF / $0030). From $C0A1 the CF-3300 goes on to ENASLT $87 / page 2;
+      zerobas returns to $C059 and the path that ends in page-0 RAM.
+      🙋 **FOR JOOST:** matching it means giving C-BIOS's RDSLT / ENASLT the CF-3300's EXIT
+      registers (published entries, values the spec leaves undefined, characterised black-box
+      -- more rows needed: which of BC / DE / A are functions of the inputs). Close to
+      D-BIOSINT ("won't fix": BIOS INTERNALS), but these are the published entries: in scope,
+      or does SDSNAT1C stay a ZB-NOBOOT row?
+      ✅ **RULED AND DONE (2026-11-07): RDSLT AND WRSLT LEAVE THE REFERENCE'S REGISTERS.**
+      [`slotregs_probe.py`](scratchpad/slotregs_probe.py) (a USR routine calls the entry and
+      stores AF BC DE HL; our test code, registers only; [`slotregs_run2.out`](scratchpad/slotregs_run2.out),
+      [`slotregs_wr.out`](scratchpad/slotregs_wr.out)): on the VG-8020 AND the CF-3300 (they agree wherever
+      both have the case) RDSLT and WRSLT leave D = the primary slot register at entry, E =
+      the byte; for a primary slot B = the slot shifted to the page and C = the page's mask,
+      for an expanded slot B = the primary slot register and C = the slot shifted to page 3;
+      WRSLT's A = the primary slot register. ENASLT already matched on all three.
+      `cbios-repack/rdslt-regs.patch`: one exit tail shared by the two routines, a 2 B
+      shorter SLTTBL store in select_subslot, C-BIOS's own search_roms_read (it kept the slot
+      in B across the read) through a keep-BC wrapper; every other label stays put. Our one
+      caller that kept a byte in E across two reads (try_text_slot, basic/basicrom.asm) now
+      stores each byte as it comes. Gate `slotregs-acceptance`
+      ([`basic_probe_slotregs.py`](probes/basic/basic_probe_slotregs.py), 10 rows, zerobas against the CF-3300;
+      [`slotregs_run.out`](scratchpad/slotregs_run.out) is the red pre-fix reading). 🔮 "the RDSLT rows match;
+      SDSNAT1C boots": HALF -- the registers match ([`slotregs_run4.out`](scratchpad/slotregs_run4.out)), SDSNAT1C is
+      still ZB-NOBOOT ([`sdsone_run.out`](scratchpad/sdsone_run.out)).
+      ➡️ **THE NEXT SPLIT IS OURS: THE PAGE-3 ENASLT BRIDGE** ([`sdsboot_ena_zb3.out`](scratchpad/sdsboot_ena_zb3.out) against
+      [`sdsboot_ena_National_CF-3300.out`](scratchpad/sdsboot_ena_National_CF-3300.out); the boot code is register-identical up to
+      there). With $A8 = $FF (all four pages RAM) the boot code's `ENASLT $83, page 1`
+      enters our RAM vector, the bridge pages the BIOS into page 0 and calls the BIOS's
+      ENASLT, which returns A = the $A8 it set -- $FC, page 0 still the BIOS -- and br_back
+      (disk/runtime.asm) puts page 0 back WITHOUT correcting A. The CF-3300 returns $FF, the
+      real final $A8. Fix: in br_back, when the bridged target (BR_TGT) is ENASLT, store the
+      $A8 it writes into the stacked A (~14 B in the int_h_hiram template -- the disk ROM
+      has no usable free byte, so it needs a carve first; RDSLT's and CALSLT's A must not
+      change, which is why it keys on BR_TGT, not on the value).
+      ✅ ss-final.dsk (ZB-ONLY -> FILES-EMPTY) is NOT a regression: it is the known
+      interrupt-timing case (D-DISKRUN, 2026-10-23: its outcome hangs on whether an interrupt
+      lands inside a BDOS page-1 copy, bisected to 1c884267), and FILES-EMPTY is the CF-3300's
+      own outcome there -- both sit at the prompt with an empty FILES.
+
+- [x] 🧮 **D-FNRAM -- A `DEF FN` CALL COST A BYTE LESS THAN THE REFERENCE'S, AND THE ACTUALS IT
+      HOLDS COST NOTHING IN `FRE(0)` (measured and fixed 2026-11-07)**
+      🎚️ TIER 4 — RAM usage (VG-8020): what memory a function call takes.
+      🤖 **AUTONOMOUS** — Joost on D-FNALIAS: *"measure what reference does? we try to match
+      RAM?"* (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-07).
+      📏 [`fnram_probe.py`](scratchpad/fnram_probe.py) (BASIC only: FRE(0) before a call against FRE(0) as
+      the body, and as the call's LAST actual; [`fnram_run.out`](scratchpad/fnram_run.out),
+      [`fnram_peak.out`](scratchpad/fnram_peak.out)): on the VG-8020 AND the CF-3300 (identical) a call
+      is 25 bytes for 0..9 formals of any type, each nested level 36, and FRE(0) as an
+      actual reads 27 + 12 per actual already read, single, double, string variable or
+      literal alike. zerobas: 24, 35, and 34 whatever the count. 🔮 "zerobas costs MORE
+      per argument (its 11-B parked entry)": MISSED -- in the body the cost is per CALL on
+      every machine; zerobas's FRE model (sub2/frelive.asm) charged an FN call as a
+      built-in function (10) and the parked actuals nothing, and its frame was 13 B.
+      ✅ **FIXED:** the FN frame is 14 B (a pad byte at its top, sub/deffn.asm: save /
+      restore / unwind) and the FRE model gives an FN call its own class (2) and pushes a
+      parked-actual entry (12) at each comma inside one, popped with the call's `)`. All
+      38 rows SAME ([`fnram_after2.out`](scratchpad/fnram_after2.out)); gate `fnram-acceptance`
+      ([`basic_probe_fnram.py`](probes/basic/basic_probe_fnram.py), 11 rows against the VG-8020). docs/keywords/FN.md
+      and FRE.md updated (FN.md's stale "D-FNALIAS open" Difference moved to What we found).
+
+- [x] ⌨️ **D-CLEARCONT -- `CONT` AFTER A TYPED `CLEAR` WENT BACK INTO THE PROGRAM (found
+      2026-11-06 by typed session S12_progedit).**
+      🎚️ TIER 3 — common errors: `CLEAR` at a `STOP` to free memory, then `CONT`, is a
+      thing users type; the reference refuses it and zerobas ran into a wiped FOR stack.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 VG-8020: `CLEAR` / `CONT` -> `Can't CONTINUE`; zerobas -> `NEXT without FOR in 40`
+      ([`sessions_S12_progedit.out`](scratchpad/sessions_S12_progedit.out)). CF-3300: the
+      same `Can't CONTINUE`, with `A=5` between two stops as the control that leaves CONT
+      live ([`clearcont_cf.ses`](scratchpad/clearcont_cf.ses),
+      [`clearcont_cf.out`](scratchpad/clearcont_cf.out)).
+      ✅ **FIXED 2026-11-06.** `clear_vars` (basic/vars.asm) drops CONTVALID: its callers are
+      exactly cold boot, RUN, NEW and CLEAR, all of which end the resume point. RUN's own store
+      went (+1 B net); NEW's stays because LOAD reaches `new_prog` without `clear_vars`. Row
+      `clear_vars: CONTVALID cleared` in tests/test_program.py; S12 SAME on both targets after.
+
+- [x] 📼 **D-TAPENEXT -- A TAPE SEARCH THAT FINDS NO HEADER: THE VG-8020 SEARCHES ON, ZEROBAS SAYS
+      `Device I/O error` AT ONCE (found 2026-11-06 by typed session S6_tape).**
+      🎚️ TIER 3 — common errors: what a cassette search does when the file is not (or no
+      longer) ahead on the tape -- a wrong name, a tape not rewound -- is the commonest tape
+      mistake there is.
+      🤖 **AUTONOMOUS** — the reference settles it; the apparatus question comes first.
+      📏 Scratch sessions on a tape RECORDED in the session (`{TCL cassetteplayer new}`), each
+      machine reading its own recording: [`tapeend_a.ses`](scratchpad/tapeend_a.ses) ->
+      [`tapeend_a.out`](scratchpad/tapeend_a.out), [`sessions_s6b.out`](scratchpad/sessions_s6b.out),
+      [`sessions_s6c.out`](scratchpad/sessions_s6c.out), [`sessions_s6d.out`](scratchpad/sessions_s6d.out):
+      (1) `CLOAD "PROG3"` continuing after `CLOAD "PROG1"`, `BLOAD "CAS:DATA"` after a rewind
+      (the second file), and every read after an ASCII `SAVE "CAS:"` -- the VG-8020 finds
+      NOTHING and searches until the 600 s limit (no `Skip :` row either); zerobas answers
+      `Device I/O error` within the step. (2) After an ASCII `SAVE "CAS:"` the VG-8020 did not
+      find even the FIRST file again (s6c). (3) The first file after a rewind, and an ASCII
+      file second after a CSAVE (MERGE "CAS:PROG2" in s6b), ARE found by both.
+      🔴 **REREAD (same day): most of (1) / (2) is likely the RECORDER, not BASIC.** A lone CSAVE
+      then a rewind read back NOTHING on the VG-8020 either, in three layouts out of four,
+      while one layout (CSAVE, BSAVE, rewind) found PROG1 -- an in-session recording is not
+      repeatable (S6_tape parked, D-SESSIONS). What survives every run: zerobas answers 19 at
+      once where the reference keeps searching.
+      ➡️ FIRST the apparatus: build the same tape with `probes/lib/cas_encode.py` (several files,
+      each type) instead of recording it, and repeat (1); if the reference then finds every
+      file, (1)/(2) were the in-session recording. THEN the real question, which every run
+      above shows either way: with no matching header ahead, zerobas raises 19 at once where
+      the reference keeps searching (until Ctrl-STOP) -- measure on a blank tape and on a tape
+      whose only file has another name, both machines.
+      ✅ **FIXED 2026-11-06.** On an ENCODED tape ([`tapenext_b.ses`](scratchpad/tapenext_b.ses), one ASCII file
+      OTHER from cas_encode -- no in-session recording): `LOAD "CAS:PROG1"` and `CLOAD "PROG1"`
+      print `Skip :OTHER` (LOAD) on both, then the VG-8020 waits until Ctrl-STOP and zerobas
+      raised 19 within 8 s ([`tapenext_b.out`](scratchpad/tapenext_b.out)). tapion (tape/tape.asm)
+      no longer fails on a 16-bit flat budget (CAS_FLATMAX ~5 s): every flat timeout (~3 ms
+      of silence) tests Ctrl-STOP through cas_stop (which waits for the release, as the
+      break does) and the wait goes on. The first cut tested STOP only when the budget ran
+      out and missed the 0.2 s press ([`tapenext_b2.out`](scratchpad/tapenext_b2.out)); after:
+      SAME ([`tapenext_b3.out`](scratchpad/tapenext_b3.out)). Committed as session
+      [`S6_tapesearch.ses`](probes/sessions/S6_tapesearch.ses); its tape is BUILT at run time from
+      `S6_other.bas` by a new `{TAPEASCII NAME file.bas}` step (media are never committed --
+      .gitignore `*.cas`). 🔮 Predicted "Skip :OTHER then waits on the VG-8020, 19 here right
+      after": HIT. docs/concepts/cassette.md updated (the "not compared" row is gone).
+      ⚠️ The recorder half ((1) / (2) above) stays apparatus: in-session recordings are not
+      replayable here; the D-TAPINBLK `notape` row goes through the same TAPION wait.
+
+- [x] ⌨️ **D-STOPKEY3 -- CTRL-STOP ALSO PUTS A ^C IN THE KEYBOARD BUFFER ON THE VG-8020, NOT HERE
+      (found 2026-11-06 by typed session S2_stopcont).**
+      🎚️ TIER 6 — rare: what INKEY$ reads when the user presses Ctrl-STOP during a program.
+      🤖 **AUTONOMOUS** — measured from RAM, both machines.
+      📏 [`stopkey_probe.py`](scratchpad/stopkey_probe.py) -> [`stopkey_run2.out`](scratchpad/stopkey_run2.out):
+      a write watch on KEYBUF ($FBF0..$FC17) while Ctrl-STOP is held over `10 GOTO 10`: the
+      VG-8020 writes `03` at $FBFF 46 ms in; zerobas (C-BIOS's keyboard interrupt) writes
+      nothing. After the break the buffer is EMPTY on both ([`stopkey_run.out`](scratchpad/stopkey_run.out)),
+      so the reference discards it at the break. Visible effect: `70 A$=INKEY$:IF A$="" THEN
+      70` stopped between its two statements reads A$ = CHR$(3) after CONT (`KEY 3` in
+      [`sessions_s2b.out`](scratchpad/sessions_s2b.out)); where the break lands decides it. ➡️ A C-BIOS repack
+      patch (the keyboard ISR's STOP arm queues $03) plus the buffer cleared at the break;
+      measure first whether STOP alone (no CTRL) queues anything, and what INKEY$ reads under
+      `STOP ON` / `ON STOP GOSUB`.
+      📏 **MEASURED (2026-11-07,** [`stopkey_probe.py`](scratchpad/stopkey_probe.py) gained `--noctrl` and `--prog=`): STOP
+      ALONE queues nothing on either machine, and both keep running ([`stopkey_noctrl.out`](scratchpad/stopkey_noctrl.out)).
+      Under `ON STOP GOSUB 100:STOP ON` the VG-8020 still writes `$03` at 46 ms and has
+      nothing pending 150 ms later -- the trap path drops it, as the break does; zerobas
+      writes nothing ([`stopkey_onstop.out`](scratchpad/stopkey_onstop.out)). A first run whose program was typed as one
+      overlong burst never RAN (CURLIN $FFFF on both) and so measured the PROMPT instead:
+      there too the VG-8020 queues `$03`. So the rule is "Ctrl-STOP always queues ^C; a break
+      or a STOP trap empties the buffer".
+      ➡️ **DESIGN (not built):** C-BIOS's scan never sets INTFLG (zerobas reads the matrix in
+      BREAKX), so the patch goes into `key_ascii` like ctrl-keys.patch: row 7's STOP with CTRL
+      held -> `$03`, without CTRL nothing (bytes before the font pad: island 1 moves, as for
+      patches 4 / 6 / 7). zerobas then needs the buffer emptied at the break (do_break), at
+      the STOP trap's dispatch, and in the line editor's Ctrl-STOP path (rl_break -- or the
+      `$03` reads as a second Ctrl-C after the abort and S2 / S9 would diverge). Re-run
+      S2_stopcont / S9_breaks and stopkey_probe after.
+      💰 **PRICED (2026-11-07):** the table half is free -- scode_tbl_otherkeys row 7, bit 4
+      (STOP) is `$00`; make it `$03`, the only `$03` in the rows 6-11 table (rows 0-5's
+      SHIFT+GRAPH table has one too, so the CTRL test must sit in the rows 6-11 arm of
+      key_ascii, not after it). The CTRL test is ~15 B BEFORE the font pad, and island 1
+      ($1AF5..$1BBF) had 5 B free on 2026-11-07: ~10 B of island 1 must move out first
+      (or the test goes after the font, which moves BASIC_ORG $2781 that a dozen tools
+      hard-code). Not started: a TIER 6 corner against an island relocation.
+      ✅ **BUILT 2026-11-08 -- NO ISLAND MOVE NEEDED.** D-KEYSKIP (cbios-repack #14) had freed 13 B
+      in front of island 1; patch #15 ([`ctrlstop-key.patch`](cbios-repack/ctrlstop-key.patch)) spends exactly them: STOP's
+      table entry `$03`, and key_ctl_none drops it unless CTRL is held (lp_strprn back at
+      $1AEB, island 1 untouched). zerobas empties the buffer in the line editor's Ctrl-STOP
+      path (rl_break), at the STOP trap's confirmed release (rp_* in basic/program.asm), and
+      when a line read begins with the breaking press still held (rl_release_kil,
+      basic/repl.asm -- BREAKX asked twice, D-STOPTEAR). 🔴 Two first cuts failed and were
+      caught: (1) emptying it at the END of do_break waited for the release there, so the
+      prompt came back only once the key was up (CURLIN $000A at release, where both machines
+      are at the prompt while it is held); (2) rl_release_kil at rl_loop BEFORE `ld (RL_HL),hl`
+      -- KILBUF loads HL, which is the line buffer pointer there: typed session S2_stopcont
+      hung (bisected: without the call, no hang). After ([`stopkey_after_plain.out`](scratchpad/stopkey_after_plain.out), [`stopkey_after_noctrl.out`](scratchpad/stopkey_after_noctrl.out),
+      [`stopkey_after_onstop.out`](scratchpad/stopkey_after_onstop.out)): ^C queued on both, STOP alone nothing on both, the ON STOP
+      trap leaves nothing pending; S2_stopcont / S8_input / S9_breaks SAME on both targets.
+      Left, RAM-only: the ^C sits in the buffer while the key is held here; the VG-8020
+      drops it at the break.
+
+- [x] 🐌 **D-CONCATLIT -- `A$="AB"+"CD"` IN A LOOP IS 1.25x THE CF-3300 (found 2026-11-06 by
+      the interpreter-speed re-measure, [`interpspeed_1106.out`](scratchpad/interpspeed_1106.out)).**
+      🎚️ TIER 5 — on-par speed: string concatenation of literals into a variable; the
+      last of the seven interpreter rows still over the CF-3300 (153 vs 122 jiffies).
+      📌 Owns the pin of [`interpspeed_probe.py`](scratchpad/interpspeed_probe.py) since the
+      interpreter-ratio item closed: its `c.str` row is the live divergence.
+      🤖 **AUTONOMOUS** — profile it on the host rig (a `q` case), then the lever.
+      📏 **PROFILED 2026-11-06** ([`concatlit_prof.out`](scratchpad/concatlit_prof.out),
+      [`concatlit_trace.out`](scratchpad/concatlit_trace.out); loopprof_host.py case `q`): model
+      ~19700 T/pass, of which FOUR sub-ROM crossings into the string-heap tenant ~4250 (22 %):
+      the first literal's snapshot (a temp copy, so the `+` can extend it), the append, then
+      let_ref's snapshot-keep -- which crosses only to learn its source is already a temp --
+      and the store. ➡️ The lever to try first: answer "already a temp" on the MAIN side
+      (the temp-descriptor stack's address range) before crossing; then whether a literal
+      needs its snapshot at all.
+      ✅ **ROUND 1 (2026-11-06): the temp test on the main side.** str_snapshot_keep
+      (basic/str-engine.asm) answers a source that is ALREADY a temp entry ([TEMPPOOL,
+      TEMPBASE), the tenant's own sh_hl_is_temp test) without the crossing -- op 16's as-is
+      arm (HL = the source, A = 0, Z). Model 19743 -> 18050 T/pass, 4 -> 3 crossings; the
+      machine row `c.str` **153 -> 141 jiffies (CF-3300 122, 1.25x -> 1.16x)** (🔮 ~141 HIT;
+      [`interpspeed_concat.out`](scratchpad/interpspeed_concat.out)), the other six rows within
+      a jiffy. tests/test_str_engine / str_fn / str_verbs / strvar / str_compare green.
+      ✅ **CLOSED 2026-11-07, ROUND 2: A LITERAL OPERAND 1 IS AN ALIAS SLOT -- `c.str` 136 -> 116
+      jiffies, 0.95x the CF-3300** ([`interpspeed_catlit2.out`](scratchpad/interpspeed_catlit2.out); every interpreter row is now at or
+      under the reference; 136 was today's re-measure, [`interpspeed_1107.out`](scratchpad/interpspeed_1107.out)). str_concat_tail's
+      operand 1 was snapshotted (a crossing that copied "AB" into a heap body) only so the first
+      `+` could extend it. A body in the PROGRAM TEXT never moves within a statement, so
+      str_alias_or_snap (basic/program.asm, page 1) pushes a temp slot [len][ptr into the text]
+      with no body; the first `+` (op 2) finds R is not the heap's top and takes its realloc
+      path -- ONE allocation of len1 + len2, both copied, R repointed: the same bytes, the same
+      peak and the same temp-slot count, one crossing fewer. The GC visits only in-range heap
+      roots (sg_inrange), as it does for D-LITREF's text pointers. A variable, a temp, the line
+      buffer or a full temp stack take the old snapshot (its overflow is the raise). Model (q)
+      16866 -> 14268 T/pass, 3 -> 2 crossings ([`catlit2_prof.out`](scratchpad/catlit2_prof.out); 🔮 -1700: MISSED on the good
+      side -- the snapshot's body copy and temp push went too). Page 1 took 40 B (2026-11-07).
+      tests/test_str_engine / str_fn / str_verbs / strvar / str_compare green. The round-2 idea
+      deferred on 11-06 (a combined first-append op) was not needed: the deferral's reason --
+      the snapshot is load-bearing for array elements and RVDESC -- does not apply to a text
+      body, which is the only one aliased.
+
+- [x] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
+      NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
+      ✅ **CLOSED 2026-11-06 -- RE-MEASURED, THE BAND IS GONE** ([`interpspeed_1106.out`](scratchpad/interpspeed_1106.out),
+      the same seven rows, jiffies, CF-3300 vs zerobas): FOR 1k / 2k / 4k **0.80 / 0.78 / 0.77x**,
+      the GOTO loop **0.99x**, FOR + `I=I+1` **0.84x**, `X=I*2+1` **0.68x** -- zerobas is now at or
+      below the CF-3300's time on six of seven -- and `A$="AB"+"CD"` **1.25x**, the one row
+      still over (now D-CONCATLIT, TIER 5). 🔮 Predicted FOR ~1.0 (MISS on the good side:
+      0.77-0.80), GOTO ~1.3 (0.99), strings ~1.2 (HIT), arith ~1.0 (0.68). The `%` FOR loop
+      (D-LOOPPROF) stays its own item. The history below is kept as the record of how.
+      🔴 **THE BAND WAS 2.5–3.1× UNTIL 2026-09-04, AND THE APPARATUS WAS PICKING
+      IT.** The seventh row, `FOR I=1 TO 2000:X=I*2+1:NEXT`, read `<NO OUTPUT>`
+      at the probe's 60-emulated-second budget and never entered the table below
+      — it needs ~64 s on zerobas. It is the **worst ratio in the set (3.81×)**,
+      so its absence pulled the reported ceiling down by 0.7×. A missing
+      measurement printed like a row with nothing to say, in a probe
+      `filed_row_sweep` cannot parse and therefore never adjudicated. Budget
+      widened to 150 s; all seven rows report. **The independent `width: TIME`
+      rows in `playfn_fixture_probe` had already read ~3.5×**, above the old
+      band, and nothing connected them. Measured 2026-09-02 (D-INTERPSPEED,
+      [`docs/spec-basic-interpspeed.md`](docs/spec-basic-interpspeed.md),
+      [`scratchpad/interpspeed_probe.py`](scratchpad/interpspeed_probe.py)).
+      **Measurement only, no code change.** `TIME` jiffies read from inside the
+      machine, so the harness step is not in the loop:
+
+          FOR I=1 TO 1000:NEXT          cf3300   96   zb  295   3.07x
+          FOR I=1 TO 2000:NEXT                  200       611   3.06x
+          FOR I=1 TO 4000:NEXT                  407      1242   3.05x
+          I=I+1:IF I<2000 THEN 30 (no FOR)      718      1797   2.50x
+          FOR J=1 TO 2000:I=I+1:NEXT            576      1692   2.94x
+          FOR I=1 TO 500:A$="AB"+"CD":NEXT      122       300   2.46x
+          FOR I=1 TO 2000:X=I*2+1:NEXT         1004      3826   3.81x  <- added 09-04
+          X=1                    (the floor)      0         0     --
+
+      ✅ **IT IS A RATIO, NOT AN OFFSET** — 3.07/3.06/3.05 across a 4x range of
+      loop counts; a per-statement overhead would shrink as the loop grows.
+      ✅ **IT IS NOT `FOR`/`NEXT`** — the `GOTO` row has no FOR machinery at all
+      and is still 2.50x. The subject is statement dispatch and expression
+      evaluation.
+      🟢 **AND THE CLOCK IS THE SAME**, which is the control that would have
+      dissolved the whole thing: neither machine XML carries a clock-frequency
+      tag and both are `<type>MSX`, so openMSX runs both at 3.58 MHz.
+      🎯 **THIS REFRAMES THE `PAINT` ITEM BELOW.** "1.9–2.0x slower" is measured
+      against a baseline of 1.0 that does not exist on this tree — at a 2.5–3.1x
+      interpreter, PAINT is **faster than the machine it runs on**. Not a
+      retraction (PAINT may have its own gap on top), but the number has to be
+      re-read against 2.5–3.1x.
+      🔴 **THE CALSLT MECHANISM WAS TESTED THE SAME DAY AND IS REFUTED — THE
+      THIRD PLAUSIBLE MECHANISM TO DIE ON 2026-09-02.** The hypothesis was that
+      the repack's sub-ROM eviction puts a cross-slot call on a per-statement
+      path.
+      ✅ **THERE IS SUCH A CALL, ON A HOTTER PATH THAN EXPECTED.** A bounded
+      call-graph walk: `exec_stmt`, `ex_next` and `ex_if` do NOT reach
+      `subrom_call`, but `ex_for` does — via `var_store_fac` →
+      `var_alloc_or_find` → `ary_engine_call`. And `var_alloc_or_find` is **not**
+      the array path despite its callee's name: it sets `op = 5 SCALAR_ALLOC` and
+      calls unconditionally, so **every scalar variable store crosses a slot.**
+      🔴 **AND IT COSTS NOTHING DISPROPORTIONATE.** Two measured rows differ by
+      exactly one scalar store per iteration — `FOR I=1 TO 2000:NEXT` (200/611)
+      and `FOR J=1 TO 2000:I=I+1:NEXT` (576/1692). The MARGINAL cost of the store
+      is 376 jiffies on the reference and 1081 on zb: **1081/376 = 2.87×**, the
+      same as the baseline and slightly BELOW it. A cross-slot call unique to
+      zerobas would put this far above 3.
+      🎯 **THE ORDERING AGREES**: `FOR`/`NEXT` (3.06×) does NOT cross a slot per
+      iteration (`ex_next` writes through the cached `FOR_CUR` address) while the
+      `GOTO` loop (2.50×) does. **The path that crosses a slot is the LESS slowed
+      of the two** — the opposite of what a dominant CALSLT cost predicts.
+      ⇒ **THE EVICTION IS NOT WHAT MAKES THIS TREE SLOW.** The factor is in the
+      interpreter's own RESIDENT code. That matters because "the repack bought
+      space with speed" is the intuitive story and it is wrong — un-evicting
+      tenants would not buy the speed back.
+      ⚠️ Not claimed: that the cross-slot scalar store is free, or that no other
+      tenant call is expensive. Only that this is not the explanation.
+      ⚠️ **WHETHER 3x MATTERS IS A CHARTER QUESTION, NOT A MEASUREMENT** — the
+      project targets *faithful* MSX1 BASIC and whether faithful includes speed
+      is Joost's call.
+      🔬 **HOW IT WAS FOUND, because the lesson generalises**: not by looking for
+      it. D-PUTTIME added a pure-CPU row purely to VALIDATE that `TIME` can see
+      CPU work before trusting it on disk work. The control was the finding.
+      📚 **REFERENCES (Joost, 2026-09-02): <https://shiar.nl/calc/z80/optimize>
+      and <https://www.smspower.org/Development/Z80ProgrammingTechniques>** —
+      Z80 size/speed idioms. Filed HERE rather than on a carve item on purpose:
+      the constant factor is in resident interpreter code (§5's CALSLT route is
+      refuted), so instruction-level work on the hot dispatch path is the shape
+      that could actually move it. ⚠️ Not read yet. ~~it changes nothing about
+      the charter question below — optimising is only worth starting once "does
+      faithful include speed?" is answered.~~ That question is answered below
+      (2026-09-22, reaffirmed 2026-09-24), so they are now readable at TIER 4.
+      🏗️ **RULED BY JOOST, 2026-09-22: YES — AND IT STAYS TIER 4.** His words,
+      answering *"does faithful include speed?"*: ***"yes but that is tier 4"***.
+      So speed IS part of faithful and the item is no longer gated on a ruling
+      — but its PRIORITY is unchanged, which is the operative half: it comes
+      after every TIER 1–3 item, and picking it ahead of one would be reading
+      the ruling as a promotion it explicitly is not.
+      🏗️ **REAFFIRMED BY JOOST, 2026-09-24: *"Yes, match the reference"*** —
+      asked again because the overnight loop carried this as open, which it
+      was not. Same answer, same tier. **And the T4 rung is now defined:
+      *"Track the ratio, set no bar yet"*** — a T4 row records zerobas ÷
+      reference and passes or fails on nothing (D-KWPROVEN).
+      🔢 **AND IT IS NOW TIER 5, NOT 4 (Joost, 2026-09-24, D-TIERSWAP)** — RAM
+      usage moved above it. His *"yes but that is tier 4"* was said in the old
+      numbering; its meaning — speed ranks after happy path, reasonable time
+      and common errors — is unchanged, and it now also ranks after RAM.
+      ⚠️ So the T4 named in the line above is T5 in the new numbering.
+      🤖 **AUTONOMOUS** — the charter question is answered, so the optimising
+      work this item gates is now startable at its own tier. §5's non-repack
+      comparison is already refuted; the live lead is D-SPEEDPROF's profile
+      (`es_scan` and the hot dispatch path), plus the two Z80 references Joost
+      filed on 2026-09-02, still unread.
+      🟢 **PROFILED, AND TWO DISPATCH FIXES LANDED — EVERY MEASURED ROW IS 17–26 %
+      FASTER FOR ZERO BYTES (D-SPEEDPROF, [`docs/spec-basic-speedprof.md`](docs/spec-basic-speedprof.md),
+      2026-09-11).** The item had a ratio and a refuted cause but no profile; a
+      PC-sampling rig ([`scratchpad/speedprof_rig.py`](scratchpad/speedprof_rig.py))
+      puts **16.9 %** of a bare `FOR`/`NEXT` loop in `es_scan`, the statement-table
+      walk, where `NEXT` was the **65th of 90** entries at 3 B of walk each — and
+      an ASSIGNMENT, the commonest statement of all, had no entry and walked the
+      whole table before reaching the `is_letter` fallback. Fixed: the hot twelve
+      move to the front of `stmt_table` (a permutation, 0 B) and `exec_stmt` tests
+      the letter range FIRST (`sub 'A' / cp 26 / jp c,ex_let`; the fallback's own
+      test is gone, net 0 B). Measured, two identical runs each:
+          `FOR I=1 TO 2000:NEXT`              623 → **507** (−18.6 %, 3.12× → **2.54×**)
+          `I=0:FOR J=1 TO 2000:I=I+1:NEXT`   1728 → **1415** (−18.1 %, 3.00× → **2.46×**)
+          `FOR I=1 TO 500:A$="AB"+"CD":NEXT`  303 → **225** (−25.7 %)
+          `I=I+1:IF I<2000 THEN 10` ×2000     1840 → **1529** (−16.9 %)
+      🔴 **THE LETTER TEST NOW RUNS BEFORE THE TABLE**, so no entry's token byte may
+      lie in `$41..$5A` — none does today, and `tests/test_stmt_dispatch.py`
+      asserts it rather than trusting the reading.
+      ➡️ **WHERE THE REST IS**: with real arithmetic the float pack dominates
+      (`fpm_inner` 15.4 %, `fpm_reduce_done` 12.0 %, `digit_mul` 6.6 %) and
+      `es_scan` falls to 7.9 %; ~20 % is BIOS (`BREAKX` per statement, which the
+      reference pays too). A token-keyed jump table would cost 256 B of page 1,
+      which has 1 B free — not a candidate until a carve pays for it.
+      🔴 **THE `BREAKX` HALF OF THAT SENTENCE IS REFUTED** (D-BRKFRAME below,
+      2026-09-11): the per-statement Ctrl-STOP poll was REMOVED outright and the
+      loop got **0.3 %** faster, which is inside the harness's own ±4-frame
+      variance. The BIOS share it was credited with was the READY prompt's `HALT`,
+      sampled after the program had ended. The rest of the reading stands.
+      🔴 **THE FIRST THREE PROFILES WERE OF THE WRONG WINDOW** — the harness types
+      the program through the first ~20 s of emulated time, so a window opening at
+      12 s profiled the tokeniser, and a `db` table (`ev_ff_argtab_len`) symbolised
+      at 65 % because the symboliser accepted ALL-CAPS equates as code. Both fixed
+      in the rig [[apparatus-is-part-of-the-measurement]].
+      🟢 **THE BIGGEST REMAINING CONSTANT WAS THE FLOAT MULTIPLY, AND IT IS 43 %
+      SMALLER (D-MULZERO, 2026-09-11).** D-SPEEDPROF left a profile and no cause;
+      decomposing the arithmetic row by component found it (marginal jiffies over
+      the bare loop, zb / CF-3300): `X=I` 575/162 **3.6×**, `X=I+1` 902/380
+      **2.4×**, **`X=I*2` 2719/577 — 4.7×**, `X=2*3` 546/339 **1.6×**. Not
+      dispatch, not the int path: the float MULTIPLY, which the profile puts at
+      ~47 % of that loop (`fpm_inner` 17.7 %, `fpm_reduce_done` 12.8 %,
+      `digit_mul` 7.1 %, `dmul_lp` 5.3 %).
+      **Two zero-skips, five bytes, no new table:** `fpm_outer` skips a whole
+      14-digit pass when the multiplicand digit is 0 (every partial product is 0
+      and no carry can propagate — `I` is 1–4 significant digits of 14), and
+      `digit_mul` counts down **J** instead of I — `i*j` is symmetric, the
+      operands are not, and counting the inner digit makes `*2` two iterations
+      instead of up to nine while giving `j=0` an early-out the old shape could
+      not have (it spun i times adding zero, thirteen times per pass).
+          `X=I*2`    3226 → **1837** jiffies (−43 %), ratio **4.7× → 2.3×**
+          `X=I*2+1`  3553 → **2165** (−39 %), ratio 3.55× → **2.16×**
+      🔴 **AND IT REFUTES THE ROUTINE'S OWN HEADER**, which rejected a lookup
+      table because *"a BASIC multiply statement runs this at most 196 times once,
+      not in a hot loop"* — the profiled loop calls it ~392 000 times. Corrected
+      in place, not deleted [[a-fix-falsifies-the-justification-beside-it]].
+      🟢 **AND THE UNPACK LOOP DROPPED ITS `push af`/`pop af` (same bytes, the low
+      region has 0 free): `X=I*2` 1837 → **1818**, `X=I*2+1` 2165 → **2140**.**
+      Small by design — the loop is 10.4 % of the profile and this is ~13 % of the
+      loop. **Cumulative for that row tonight: 3553 → 2140, −40 %.**
+      📏 **AND THE CALL COUNTS SAY WHERE THE REST IS**, measured with a breakpoint
+      counter over 20 iterations of `X=I*2+1`: `fp_mul` **1.0**/iteration,
+      `fp_add` **1.0**, `round_and_finalize` **4.0**, `digit_mul` **20.3** (was up
+      to 196), `widen_src` **9.1 — one per operand, every one with B=7**.
+      🎯 **B=7 ON ALL OF THEM MEANS EVERY OPERAND IS A 14-DIGIT DOUBLE, AND THAT IS
+      FAITHFUL** — MSX BASIC's default variable type IS double precision, so the
+      reference does the same BCD work and is simply faster at it. The tempting
+      *"compute singles as singles"* win does not exist; measured before it could
+      be proposed.
+      ➡️ **WHAT REMAINS IS STRUCTURAL**: one widen per OPERAND means a value just
+      computed is packed by `round_and_finalize` and unpacked again for the next
+      operator. Keeping a working form across a chained expression is a change to
+      the arithmetic core with real rounding risk — not started, and the float
+      suites are what would have to hold it.
+      🔴 **THE CTRL-STOP POLL IS NOT THE COST, AND THE PROFILE THAT SAID IT WAS
+      WAS READING THE PROMPT (D-BRKFRAME, [`docs/spec-basic-breakframe.md`](docs/spec-basic-breakframe.md),
+      2026-09-11). REFUTED, NO CODE SHIPPED.** Two things in it are measured and
+      keep: **`INTFLG` ($FC9B) is dead on this target** — a write watchpoint under
+      injected Ctrl-STOP caught the CF-3300's ISR maintaining it (12 writes,
+      `$036A`/`$036D`/`$03B6`) and C-BIOS writing it **once, at boot, from
+      `$0F24`** — so the reference's own break mechanism cannot be copied; and
+      **`NEWKEY` IS maintained, identically on both** (`$FF $FF` → `$FD $EF` →
+      `$FF $FF` across the same injection), so a two-bit-test poll is available.
+      It was built (+7 B, one shared tail) and **bought 0.2–0.9 %, at or below the
+      instrument's own noise** — the profiler reported 1052 frames for the very
+      build this table measures at 1056. Reverted; the 7 B carve raised to pay for
+      it was kept.
+      🔬 **THE RIG NOW REFUSES TO AVERAGE IDLE IN.** `$11A0` is the prompt's
+      `HALT`; a 40 s window over a 21 s program put **54.6 %** of all samples on
+      that one address and read as *"62.4 % of the loop is BIOS/ISR"*. Same loop,
+      a window that fits: `$11A0` is **absent from the top sixteen** and BIOS/ISR
+      is **23.6 %**. Two guards were tried and rejected before one worked — a
+      BASIC-POKEd run marker, which read 0 % in-run for a window that plainly
+      overlapped — an apparatus failing the way the thing it replaced failed — and
+      a constant-PC trim (idle is not one PC). ⚠️ I first wrote that the POKE had
+      taken the machine down, then ran it: `POKE &HE21F,7` reads back `7` on
+      zerobas AND on the CF-3300, so the write is fine and the SAMPLER's read is
+      the suspect. Left open, not asserted; nothing shipped depends on it. Shipped: the
+      most-sampled PC, if BIOS and ≥ 15 %, is the prompt — dropped, with a loud
+      `⚠️ IDLE DISCARDED` line. Knifed on the bad window; it recovers the good
+      window's table. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+      ➡️ **NEXT, AND IT IS NOT DISPATCH AND NOT BIOS.** The corrected profile of an
+      **empty** `FOR I=1 TO 9000:NEXT` — no arithmetic in the program text at all —
+      is **`d10_lp` + `d10_skip` 17.5 %**, the `wsrc_unpack` family **~15 %**,
+      `dtw_lp` 5.7 %, `NEXT` itself only 2.6 %. The loop variable is a 14-digit BCD
+      double (faithful — D-MULZERO's `B=7`), so every `NEXT` runs the whole
+      pack/unpack pipeline. **A divide-by-ten loop being the largest single entry
+      in a loop that only ever adds 1 is the next thing to explain.**
+      🔬 **COUNTED, 2026-09-13 (D-NEXTCOST): THE DIVIDE-BY-TEN IS REAL BUT IT IS
+      THE SMALLER HALF — an empty `NEXT` PACKS ONCE AND UNPACKS TWICE.** The
+      instrument for this question already existed and had never been run
+      ([`scratchpad/nextcost_counts.py`](scratchpad/nextcost_counts.py),
+      [readings](scratchpad/nextcost_counts.out)); it counts CALLS with breakpoints
+      at two loop lengths so every fixed cost cancels in the difference.
+      | per `NEXT` | calls |
+      |---|---|
+      | `wsrc_unpack` | **14.00** — 2 × `widen_src`, seven mantissa bytes each |
+      | `div10` | 2.61 — one per DECIMAL DIGIT of the counter (values 20–220 here; ~4 at 9000) |
+      | `widen_int_to` / `widen_uint_to` | 1.00 each |
+      | `round_and_finalize` | 1.00 |
+      | `cmp16_bits` | 3.00 |
+      | `fp_add` | **0.00** |
+      🎯 **`fp_add` AT ZERO IS THE KEY READING**: `ex_next` does its stepping and
+      its limit test in 16-BIT INTEGER arithmetic (`add hl,de`, `cmp16_bits`) and
+      never calls the float adder. So none of this work is arithmetic — it is
+      REPRESENTATION. The frame holds the counter as a word, the variable must hold
+      a faithful 14-digit BCD double, and `for_get`/`for_set` convert between them
+      on every single iteration: unpack the double to digits, step in binary, pack
+      it back through a division per decimal digit.
+      ➡️ **SO THE PROFILE'S TWO BIG ENTRIES ARE ONE MECHANISM, NOT TWO.** `d10_lp`
+      at 17.5 % and the `wsrc_unpack` family at ~15 % are the write half and the
+      read half of the same round trip, and `NEXT` itself is 2.6 % because the
+      loop logic genuinely is cheap.
+      ⚠️ **AND THE 14-DIGIT DOUBLE IS FAITHFUL** — D-MULZERO measured `B=7` on
+      every operand and MSX BASIC's default variable type IS double, so the
+      reference pays for the same representation and is simply faster at it. The
+      tempting *"keep the loop counter as an integer"* win would be a divergence,
+      not an optimisation.
+      🔴 **THE BYTE BUDGET IS THE BLOCKER, NOT THE IDEA.** Both candidate shapes are
+      in the low region, which measured **0 B free on 2026-09-13** (`make basic-reloc`
+      from a clean tree; page 1 read 7 B the same run): (a) `widen_uint_to` converts
+      binary → BCD by repeated `div10`, a 16-step shift loop PER DIGIT, where
+      subtracting descending powers of ten costs ~23 16-bit subtractions instead of
+      ~80 shift-and-compare steps — but it needs a 4-word table; (b) `widen_src`
+      unpacks all seven mantissa bytes even when the value has one significant
+      digit, which is exactly D-MULZERO's zero-skip shape and may be affordable.
+      **(b) is the one to price first** because it is the bigger entry and may cost
+      nothing. Neither is started; a carve pays for either.
+      🟢 **D-NEXTSKIP (2026-09-13): THE UNPACK LOOP PAYS FOR ITSELF — −1 B, AND THE
+      SPEED WIN IT WAS TRIED FOR DOES NOT EXIST.** Reported as a CARVE, because that
+      is what it measured as.
+      🔬 **WHAT WAS TRIED FIRST AND PRICED BY THE ASSEMBLER**: the zero-byte skip
+      shape (b) above — `or a` / `jr z` past the nibble split, since a loop counter
+      leaves five or six of seven mantissa bytes zero. **+3 B, and the build refused
+      it** with `STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL`. The region's
+      own assertion is the honest pricer; no estimate was needed.
+      🎯 **SO THE LOOP WAS MADE TO PAY FOR IT.** It stashed the source byte in `C`
+      and masked with a 2-byte immediate twice; now `C` holds the MASK and the byte
+      is RE-READ for its low nibble. `and c` is one byte where `and $0F` is two and
+      costs 4 T against 7, so dropping the stash pays for the second read twice
+      over: **−3 B inside the loop, +2 for the hoist, net −1 B** and ~7 T per
+      mantissa byte. `widen_src` already documents `C` as clobbered and nothing
+      after the loop reads it (`zero_fill` touches only A, B, HL).
+      🔴 **AND THE SPEED IS A NULL RESULT, MEASURED NOT ASSUMED**: `FOR I=1 TO
+      2000:NEXT` reads **507 jiffies — the same figure as before the change** — and
+      the arithmetic row 2136 against 2140, inside the harness's own ±4-frame
+      variance ([readings](scratchpad/nextskip_speed.out)). ~7 T on 14 mantissa
+      bytes is ~100 T against a ~15 000 T iteration: **0.7 %, below the noise
+      floor**, exactly as the T-state arithmetic predicted before the run.
+      ➡️ **WHY IT SHIPS ANYWAY, AND THE DISTINCTION MATTERS**: D-BRKFRAME's poll
+      COST 7 B for no measurable speed and was reverted; this SAVES a byte for no
+      measurable speed, in the region this item names as the blocker for the real
+      fix. It is a carve, and carves are what the next optimisation needs.
+      📏 **WHAT THE REAL FIX WOULD COST, now priced**: skipping ONE zero byte saves
+      ~11 T for 3 B — not worth it. Skipping the REST of the loop once the remaining
+      source bytes are zero is worth ~500 T per call (~4 % of a `NEXT` across both
+      widen_src calls) but needs a backward scan and a corrected pad count, ~10 B.
+      **That is the slice, and it needs a ~10 B carve in the low region.**
+      📏 **D-LOWCARVE (2026-09-13): THE ~10 B THE UNPACK SKIP NEEDS IS NOT LYING
+      AROUND IN THE LOW REGION — all three carve routes scanned, none pays.** Filed
+      so the next slice does not re-derive it; none of this is an argument that the
+      carve is impossible, only that the cheap routes are spent.
+      | route | scanned with | low-region yield |
+      |---|---|---|
+      | D (`jp` → `jr`) | [`scratchpad/jr_mapper.py`](scratchpad/jr_mapper.py) | **0 sites** — its 2 convertible sites are both in page 1 |
+      | dup-span / clone | `tools/clone_scout.py` | **0 candidate groups** |
+      | instruction PAIR | [`scratchpad/lowcarve_pairscan.py`](scratchpad/lowcarve_pairscan.py), [readings](scratchpad/lowcarve_pairscan.out) | **nothing worth taking** |
+      🔴 **WHY THE PAIR ROUTE PAYS NOTHING HERE, AND IT IS ARITHMETIC RATHER THAN
+      luck**: a pair only pays when it is at least 4 bytes, because the site that
+      replaces it becomes a 3-byte `call`. The low region's frequent pairs are all
+      2–3 B — `ld (hl),a`+`inc hl` ×16, `scf`+`ret` ×13, `or a`+`ret z` ×13,
+      `ld a,(hl)`+`cp ')'` ×11 — and the only 4-byte ones are thin: `ld a,(FPERR)`
+      +`or a` ×8 and `push hl`+`ld hl,(TKDEXP)` ×8, each netting **~3 B** after the
+      helper's own five bytes. Two of those together do not reach ten, and each is a
+      real edit needing its own battery. Contrast the 113 B that `inc hl`+`call
+      skip_spaces` — a four-byte pair standing at fifty sites — paid in main page 1.
+      ⚠️ **THE SCAN IS A HEURISTIC AND SAYS SO**: it normalises whitespace, treats a
+      label between two instructions as breaking adjacency, and skips directives —
+      it can miss a pair split across an `include` or spelled differently at two
+      sites. It ranks candidates; it does not prove absence.
+      ➡️ **SO THE UNPACK SKIP NEEDS AN ABSOLUTE CARVE OR A CHEAPER SHAPE**, and the
+      shape is worth re-examining first: the skip has to find the LAST non-zero
+      mantissa byte, because a zero byte is NOT proof the tail is zero (`1.00203`
+      has one mid-number), and it is that backward scan plus a corrected pad count
+      that costs the ten bytes. **A design that needs no pad correction — for
+      instance one that zero-fills the destination first and then unpacks only up to
+      the last non-zero byte — trades ~340 T of fill against ~500 T of skipping and
+      may not be worth it either. Price that before hunting bytes again.**
+      🔴 **AND THE CHEAPER SHAPE IS REFUTED BY ARITHMETIC BEFORE ANY CODE (same
+      day): PRE-ZEROING THE DESTINATION IS SLOWER THAN WHAT IT REPLACES.** The
+      appeal was that it removes the pad correction; the flaw is that it does not
+      remove the SCAN, which is where the bytes actually go. Per `widen_src` call,
+      at the post-D-NEXTSKIP loop's ~83 T per mantissa byte:
+      | shape | T-states |
+      |---|---|
+      | today: unpack all 7 bytes | 7 × 83 = **581** |
+      | backward scan + unpack 2 + pad fix | 168 + 166 + ~20 = **354** |
+      | zero-fill 14 + scan + unpack 2 | 364 + 168 + 166 = **698** — *worse than today* |
+      ➡️ **SO THE ONLY SHAPE THAT PAYS IS THE ~10 B ONE, AND IT BUYS ~3 %**: 227 T
+      saved per call is ~450 T of a ~15 000 T empty `NEXT` (two calls) and ~2 070 T
+      of a ~64 000 T `X=I*2+1` iteration (9.1 calls, D-MULZERO's count). Real, above
+      the ±4-frame noise, and **not worth an absolute carve at today's prices** —
+      D-LOWCARVE found the three cheap routes shut.
+      🎯 **THE HONEST SUMMARY OF THE `FOR`/`NEXT` LINE, so it is not re-opened by
+      instinct**: the cost is the BCD↔binary round trip, the 14-digit double that
+      forces it is FAITHFUL (D-MULZERO's `B=7`), the dispatch and BIOS explanations
+      are both refuted (D-SPEEDPROF, D-BRKFRAME), and what remains is ~3 % behind a
+      carve that does not exist. **This line is parked on price, not on ignorance.**
+      ⚠️ The one structural idea still unpriced is the item's own: a value just
+      computed is packed by `round_and_finalize` and unpacked again for the next
+      operator, so keeping a working form across a chained expression would remove
+      whole widen/pack pairs rather than shaving one. That is an arithmetic-core
+      change with real rounding risk and the float suites are what would have to
+      hold it — a project, not a slice.
+      🎚️ TIER 5 — on-par speed: ~~the interpreter is 2.5–3.8× slower~~ (2026-11-06: the four D-LOOPPROF loops read 72 / 78 / 19 / 24 ticks here against 70 / 98 / 7 / 24, [`loops4_time.out`](scratchpad/loops4_time.out); the `%` loop is the gap left) (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
+      ⏱ **PER-KEYWORD RATIOS NOW EXIST (D-KWTIME, 2026-09-24, `make kwtime`,
+      whole test program vs the VG-8020):** median **1.15×**; the slowest are
+      the transcendentals — **`SQR` 8.6×**, `SIN` 5.4×, `COS` 5.2×, `EXP` 3.6×,
+      `LOG` 3.6× — so the mathpack, not the dispatcher, is where the widest
+      gaps are. `SQR` is the one keyword near the T2 bar (10×). ⚠️ Graphics
+      rows read BELOW 1× because zerobas's `SCREEN` switch is 3.3× faster
+      (552 vs 167 ms) — see the whole-program-vs-keyword item under D-KWPROVEN.
+      ⏱ **AND THE KEYWORD ALONE (T5, D-KWT5ALONE, same day):** median 1.06×;
+      `PAINT` **2.1×** once the switch is subtracted; and two gaps the whole
+      rows hid entirely — **`WIDTH 37` costs 32.0 ms here and 0.71 ms on the
+      VG-8020** (≈45×), **`MOTOR OFF` 5.25 vs 0.51 ms** (≈10×). ~~❓ `WIDTH`'s
+      is worth a BEHAVIOUR row, not only a speed one … unmeasured.~~ ✅
+      **MEASURED AND FIXED THE SAME DAY (D-WIDTHKEEP, closed entry below
+      D-BOOTWIDTH):** it WAS behaviour — the reference keeps the screen; zerobas
+      cleared it. ⚠️ **But the 45× SURVIVES the fix**, and for a second reason:
+      kwtime's batch starts from a FRESH BOOT, where zerobas is at width 39 and
+      the reference at 37 — so `widthkw`'s `WIDTH 37` is a real change here and
+      a no-op there. After D-WIDTHKEEP the 45× measures D-BOOTWIDTH, not WIDTH.
+      ✅ **AND SPLIT BY FORM THE SAME DAY (D-KWT5FORM, below): `WIDTH` reads
+      0.73× on a real change (45.2 vs 31.8 ms — zerobas's re-init is FASTER),
+      and a same-width `WIDTH` is below measurement on BOTH machines.** Neither
+      of its effects was ever slow; the 45× was two contaminations in turn.
+      📏 **RE-MEASURED 2026-09-26 (loop, `scratchpad/sqrtime_run.out`): SQR IS NOT
+      THE GAP — DIVISION IS.** A loop timed in `TIME` ticks on both machines:
+      `SQR(I)` ×30 reads **173** on the VG-8020 and **42** here (zerobas ~4×
+      FASTER — the "SQR 8.6×" above is a stale / different-shape reading); `I/7`
+      ×300 reads **162** there and **637** here — **3.9× slower**. A PC-sample
+      profile of zerobas's SQR put ~70% of its time in `fp_div`'s restoring
+      long division over UNPACKED BCD (`dig15_sub_inplace`'s loop alone ~50%),
+      so division is the lever for SQR too. 🏎️ **First cut shipped:**
+      `dig15_sub_inplace` carried an `or a`, a `scf` and a `jr` that set a carry
+      the `sbc` / `add a,10` had already set — removed: **637 → 615** ticks
+      (−3.5%; predicted ~600, a smaller hit), −4 B of the low region (clean build 2026-09-26), 63/63 unit
+      files green. The real lever is structural (packed BCD, as the reference's
+      mathpack) and is not started.
+      🏎️ **DIVISION ON PAR (D-DIVPACK, 2026-10-20): `fp_div` works in PACKED BCD.** The
+      remainder and the divisor are packed two digits a byte in the existing `DIVREM` /
+      `DIVPAD` scratch; each quotient digit is still the same count of the same
+      subtractions (`sbc` + `daa`, only over the divisor's nonzero bytes; ×10 an `rld`
+      chain), so every digit is the old one by construction, and a one-digit divisor
+      (`I/7`, SQR's `/2`) divides the remainder's top byte in binary. Drafted by a
+      subagent (host only), measured here. `tests/test_fpdiv_fast.py` (new) runs the old
+      image beside the new: 200 000 random pairs (198 819 also against the exact quotient)
+      + ~2 700 hand / edge rows (exponent walls, rounding carry, guard digit,
+      unnormalised) + `eval` of `X/Y` in all nine type pairings and SQR / EXP / LOG / SIN /
+      COS / TAN / ATN / `^` -- FAC, FACTYP, FPERR, registers and every RAM byte outside
+      fp_div's scratch identical. (`tests/z80.py` gained DAA / RLD / RRD / EXX; EXX lets the
+      math tenants run on the host for the first time.) Outside the domain: mantissas with
+      A–F nibbles (only a POKE makes one) differ, and neither side's answer means anything.
+      ON THE MACHINE ([`divpack_before.out`](scratchpad/divpack_before.out) →
+      [`divpack_after.out`](scratchpad/divpack_after.out), TIME ticks): `A=I/7` ×300
+      **547 → 168 against the VG-8020's 163**; `A=I/3.14159` ×100 201 → 87 (71); SQR ×30
+      42 → 41 (174). float / math / tmfp / intarg acceptance green
+      ([`divpack_math.out`](scratchpad/divpack_math.out)). Low region 87 → 49 B free.
+      🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
+      2026-09-02: speed is a real defect), so what remains under it is measurable work.
+      ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
+      being 🤖 makes it pickable, not next.
+
+- [x] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
+      ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
+      [`docs/spec-basic-put3slow.md`](docs/spec-basic-put3slow.md)).**
+      🔴 **NOTHING HANGS.** Every reading behind the hang claim was taken at a
+      **2.5 s step**, and `step` is how long the harness waits before typing the
+      next line — so a statement needing longer reads as a blank screen.
+      **"Hung" and "slow" are the same observation at a fixed step.** Same
+      program, same machine, only the wait changed:
+
+          3 PUTs + LOF(1)      2.5s blank | 5s 128 | 10s 128 | 90s 128
+          4 PUTs + LOF(1)      2.5s blank | 5s 128 | 10s 128 | 90s 128
+          the filing's own LSET+STRING$+PUT x3 shape   -> OK from 5s up
+          PUT then DSKF(0)     2.5s blank | 5s 706 | 20s 706 | 90s 706
+
+      The answers are also CORRECT (706 is the CF-3300's own answer). That
+      dissolves "untrappable" too — the most alarming part of the filing — since
+      **no handler runs because there is no error.**
+      ✅ **THE DIVERGENCE IS REAL, AND IT IS PERFORMANCE.** The obvious worry is
+      the probe's own asymmetry (`SIDES` gives cf3300 `step=4.5`, zb `step=2.5`),
+      which would manufacture exactly this. **Controlled: the CF-3300 passes
+      every row at zerobas's own 2.5 s step.** So zb needs >2.5 s where the
+      reference needs <2.5 s. Bounded **>2.5 s and <5 s**, not pinned.
+      🔴 **BOTH PROPOSED MECHANISMS REFUTED.** A per-`PUT` cluster leak (growing
+      chain ⇒ longer `frnd_locate` walk each time) predicts falling free space:
+      `DSKF` after 1/2/3 writes reads **706 / 706 / 706 on both machines** — the
+      chain does not grow. And `fat_count_free`'s "cache keyed by `FWR_FIRST`"
+      (the same cell `frnd_locate` writes) initialises it to `$FFFF` on entry, so
+      it inherits nothing.
+      ⚠️ **A CLAIM I AM NOT MAKING:** that the third `PUT` is individually
+      slower. 1 and 2 pass at 2.5 s and 3 does not, but the harness types at
+      fixed intervals, so three writes of ~2.4 s each overrun **cumulatively**
+      with none of them growing. Flat-vs-rising is UNMEASURED, and the leak
+      refutation removes the only mechanism proposed for rising.
+      ➡️ **AT A 20 s STEP, ZB MATCHES THE CF-3300 ON ALL TWELVE ROWS.** There is
+      no behavioural divergence here at all.
+      ⚠️ **AND D-PUT3CONSUME's "DSKF AFTER ONE PUT DIES" (committed EARLIER THE
+      SAME DAY) IS WITHDRAWN BY THIS** — same cause, same correction. It returns
+      706, slowly.
+      ➡️ **WHAT WAS OWED:** the per-`PUT` cost, measured rather than bounded,
+      against the reference's. **MEASURED, TWICE, AND THE SECOND READING
+      OVERTURNS THE FIRST.**
+      🔴 **D-PUTCOST (2026-09-06) SAID "`PUT` IS NOT SLOWER" AND THAT IS WRONG —
+      ITS INSTRUMENT WAS BLIND.** It timed the work with the guest's own `TIME`
+      and read 1.71 ticks/PUT here against 2.14 on the CF-3300. ⚠️ `TIME` is
+      JIFFY, advanced by the **VBlank interrupt handler**, and disk routines run
+      stretches with interrupts DISABLED — so a `TIME` delta can under-count
+      precisely the interval in question. (That mechanism is a CANDIDATE; what is
+      MEASURED is that `TIME` and the harness disagree by an order of magnitude.)
+      ✅ **THE HARNESS'S OWN CLOCK SETTLES IT — D-RUNGAP, 2026-09-06,
+      [`scratchpad/rungap_probe.py`](scratchpad/rungap_probe.py).** `omsx_repl`'s
+      comment says *"the window a case's budget actually buys between RUN and
+      capture is exactly `step`"*, and `run_gap` sets that budget on its own. So
+      the smallest `run_gap` at which a row completes IS its cost, in emulated
+      seconds, comparable across machines and independent of JIFFY:
+
+          smallest run_gap that completes      cf3300     zb
+            1 PUT                                <=0.5   <=0.5
+            2 PUTs                               <=0.5   <=0.5
+            3 PUTs                               <=0.5     3.0
+
+      🎯 **THE THIRD `PUT` IS INDIVIDUALLY SLOW. THIS SURVIVED A RETRACTION AND
+      A RE-INSTATEMENT ON 2026-09-06, AND THE TWO INSTRUMENT BUGS BEHIND THAT
+      ARE THE PART WORTH READING** (D-RUNGAP → D-CLOSEFLUSH → D-PUTFLOOR).
+      Final, with BOTH bugs fixed, the refcache OFF, and three repeats per cell:
+
+          smallest run_gap that completes    cf3300      zb
+            1 write                           <=2.5    <=2.5
+            2 writes                          <=2.5    <=2.5
+            3 writes                          <=2.5      3.0
+            4 writes                          <=2.5     3.68
+
+      ⚠️ `<=2.5` is a FLOOR, not a value — see the first bug. The STEP at the
+      third write is real; its size is bounded below, not measured.
+      🔴 **BUG 1 — `run_gap` BELOW `step` IS A NO-OP, AND I BISECTED INTO IT.**
+      `omsx_repl` schedules the capture at `t`, which `emit` has ALREADY advanced
+      one `step` past the last injected line, and then does
+      `t = max(t, t_run + run_gap)`. So every reading I took below 2.5 was the
+      SAME experiment wearing a smaller number, and the "bisection" that replaced
+      my coarse ladder had no resolution there at all — it reported `0.05` for
+      cases that had simply run at the default budget. `LO` is `step` now and a
+      row at the floor prints *"completes within the default budget"* instead of
+      a number.
+      🔴 **BUG 2 — THE DISK IMAGE WAS SHARED BETWEEN PROGRAMS.** The mounted
+      `.dsk` path was keyed on `len(lines)` and the gap, so two different cases
+      with the same LINE COUNT got one image — and the emulator WRITES to it. The
+      second case started on a disk the first had modified, which is exactly why
+      the same experiment repeated cleanly WITHIN an invocation and disagreed
+      ACROSS them [[test-disk-mutation-gotcha]]. Keyed on a hash of the program
+      now.
+      ⚠️ **AND THE SHARED FIXTURE WAS CHECKED AND IS CLEAN** — `git status
+      disk/` is empty, so `disk/test720.dsk` itself was never mounted or
+      mutated; the collision was entirely among the per-case copies.
+      🔴 ~~**It is `CLOSE` after a write — one write is as bad as three — and the
+      write count never mattered.**~~ **THAT WAS D-CLOSEFLUSH AND IT IS
+      RETRACTED**: it rested on the two bugs above. With both fixed, cache off
+      and three repeats, `3 writes + GET` with **no close anywhere** reads
+      `<NO OUTPUT>` on zb ×3 while `1 write + GET` reads `BBB` ×3. The write
+      count is the subject after all.
+      ⚠️ **WHAT SURVIVES FROM THAT ROUND**: the reference does NOT finish
+      `3W + CLOSE + reopen + GET` at the default budget either — it reads
+      `<UNREADABLE: …>` — so a close after a write is separately expensive on
+      BOTH machines. That is its own question and not this one.
+      ⚠️ **AND WHY `p.put3` READ `<NO OUTPUT>` THIS MORNING AND `OK` NOW IS NOT
+      ESTABLISHED.** Two candidates, neither eliminated: the earlier readings
+      were unreliable, or D-STRADDLE's restructuring of `fat_rand_put` changed
+      it. The second is not the obvious answer it looks like — at LEN=128 the
+      new two-pass loop runs exactly one pass and is functionally equivalent —
+      but it is NOT the same code, and it also moved two words of RAM into
+      `$EA3A`. Recorded as open rather than attributed.
+      ⚠️ ~~**measured 2026-09-06 (D-PUTCOST), and `PUT` IS NOT SLOWER. The
+      performance framing is refuted by the same kind of reading that refuted
+      the hang.**~~ — struck: the performance framing STANDS, sharpened from
+      "PUT is slow" to "the third PUT is".
+      🎯 **ASK THE MACHINE, NOT THE HARNESS.** `step` measures how long the
+      harness waits before typing the next line; `TIME` is the VBlank counter
+      both machines keep, so `T=TIME : <work> : PRINT TIME-T` is a reading in the
+      guest's own 50 Hz ticks. [`scratchpad/putcost_probe.py`](scratchpad/putcost_probe.py):
+
+          slope (p.8 - p.1)/7      cf3300 2.14 ticks/PUT      zb 1.71  -> 0.80x
+          f.open  45 / 2      f.field 0 / 1      f.lset 1 / 1
+          f.close  0 / 1      f.lof   0 / 1      f.dskf 6 / 2
+          x.far200 2 / 2      x.far2nd 1 / 2     (extension allocates: not slow)
+          g.three1k  4 / 6    <- THE EXACT PROGRAM THAT READ <NO OUTPUT>
+
+      **Every component is fast on both machines, and the failing shape itself
+      runs in 6 ticks — 0.12 s — on zerobas.** The largest single figure in the
+      table is the CF-3300's own `OPEN` at 45 ticks.
+      🔬 **THE CONTROL IS WHAT MAKES THAT MEAN SOMETHING.** `c.tick`
+      (`FOR I=1 TO 1000:NEXT`) reads **97 on the CF-3300 and 301 here** — 3.1×,
+      squarely inside the separately-filed interpreter-speed band. So the ticks
+      ARE comparable, the interpreter IS slow, and the write path is not.
+      🔴 **SO WHAT MAKES THOSE ROWS READ `<NO OUTPUT>` AT step=2.5 IS NOT
+      EXECUTION TIME, AND I HAVE NOT ESTABLISHED WHAT IT IS.** A line-entry
+      hypothesis (a slower editor dropping injected keystrokes between typed
+      lines) fits, and is exactly the kind of mechanism-from-one-observation this
+      tree keeps paying for [[a-mechanism-inferred-from-one-observation]] — so it
+      is written here as a candidate, not a finding.
+      ⚠️ **AND MY ONE ATTEMPT TO GET A ROW FOR IT WAS BLIND**: reading `LIST`
+      instead of `RUN` to see whether the program ARRIVES intact matched **0
+      program lines on all three sides — including the CF-3300, which works**.
+      A readout that fails on its own positive control is the instrument, not the
+      machine [[readout-blind-to-its-own-subject]]; the LIST-format question has
+      to be solved before that row means anything.
+      ✅ **AND THE LIST-FORMAT ROW IS UNBLOCKED — LINE ENTRY IS REFUTED
+      (D-LINEENTRY, 2026-09-06,
+      [`scratchpad/lineentry_probe.py`](scratchpad/lineentry_probe.py)).** Typing
+      the six-line program and `LIST`ing it back gives **6/6 lines matching at
+      `step=2.5`**, the very step at which `RUN` prints nothing — so the program
+      ARRIVES intact and a dropped-keystroke explanation is dead.
+      🔴 **THE BLIND READER HAD TWO FAULTS AND THE CONTROL FOUND BOTH.** The
+      capture is the SCREEN — one string, no newlines, 40 columns to a row — so
+      `splitlines()` saw one line; and zerobas prints `ZB` with no trailing
+      newline, so its echo row is `ZBLIST` and its terminator a bare `ZB`, where
+      the reader matched `== "LIST"` and broke on `== "Ok"`. The CF-3300 passed
+      throughout, which is what said the fault was mine
+      [[readout-blind-to-its-own-subject]]. ⚠️ The probe's own summary counted
+      blind rows as failures too, and printed a FINDING off four rows that had
+      read nothing; blind and mangled are separate counts now, and a blind run
+      refuses [[an-unnamed-outcome-reads-as-no-outcome]].
+      📏 **AND THE SCREEN SAYS EXACTLY WHERE IT STOPS.** At `step=2.5` the last
+      row is `ZBRUN` and there is nothing after it; at `step=8.0` the next row is
+      `[BBB]`. The capture is taken before the output exists.
+      ➡️ **SO THE CAUSE IS NARROWED TO ONE PLACE AND STILL NOT NAMED**: not
+      execution (the guest's own `TIME` says 0.12 s), not line entry (the listing
+      is intact), but the wall time between `RUN` and the first output character.
+      🔴 **WHICH MAKES D-PUTCOST'S INSTRUMENT A SUSPECT, AND THAT IS WORTH SAYING
+      OUT LOUD.** `TIME` counts guest VBlanks; if openMSX stalls the guest clock
+      while it performs HOST file I/O, then `TIME` is blind to precisely the cost
+      in question and *"1.71 ticks per PUT"* would be true and irrelevant. ⚠️ A
+      CANDIDATE, not a finding — and my one attempt to measure host wall time
+      instead returned **0.3 s for a run that includes an 8 s boot**, which is
+      not a reading at all. The next row needs a host-side timer that is
+      demonstrated on a known-slow case first.
+      ⚠️ **AND THE HOST CLOCK I SAID WAS MISSING WAS ALREADY THERE.** The
+      previous note asked for "a host-side timer demonstrated on a known-slow
+      case first"; `run_gap` is that timer, it is documented in
+      `probes/lib/omsx_repl.py` beside the very rule it implements, and the
+      3-PUT row is its known-slow case. Reading the harness answered a question I
+      had filed as needing new apparatus.
+      📏 **THE SHAPE, SAME RECORD EVERY TIME so only the COUNT moves**: n=3 → 3.0,
+      n=4 → 4.0, n=5 → 6.0, n=6 → 6.0 (cf3300 ≤0.5 throughout). A step at the
+      third write plus roughly a second each thereafter — ⚠️ the gap ladder is
+      coarse and those are brackets, not points.
+      🔬 **FOUR CANDIDATES, EACH WITH A ROW, AND THREE ARE DEAD:**
+      • `s.nolset` — three `PUT`s and **no string temps at all** — is **3.0**, so
+        the STRING POOL is exonerated. (The original filing's note said the
+        failure *"needed all THREE temps ... it was the STRING POOL"*; that was
+        read at a fixed step under the hang framing and does not survive.)
+      • `s.lsetonly` — three temps and **no write** — is **0.5**, so garbage
+        collection is exonerated from the other side.
+      • `s.samerec` — three writes to **ONE record**, same sector, same offset —
+        is **3.0**, so it is the COUNT and not the geometry.
+      • `s.bigpool` — the same rung with **4× the pool** — is **3.0**: pool size
+        is irrelevant.
+      ⚠️ `s.spread` (three writes into THREE sectors) is **6.0**, twice
+      `s.samerec` — so geometry ADDS on top of the count even though it is not
+      the cause.
+      📏 **AND THE ENGINE'S OWN SECTOR TRAFFIC IS FLAT** — D-PUTIO,
+      [`scratchpad/putio_probe.py`](scratchpad/putio_probe.py), host-side with
+      `read_sector` / `write_sector` / `fat_dir_update` trapped and `frnd_locate`
+      stubbed so the chain walk cannot contribute: **one write, one directory
+      stamp and (after the first) one read-back per `PUT`, whatever N is**. So
+      the rising cost is NOT this engine issuing more I/O as writes accumulate.
+      ➡️ **STILL OPEN: WHY the third write and not the second.** What remains is
+      per-access latency with zerobas doing more accesses per write than the
+      reference — and `fat_dir_update` on EVERY `PUT` is the specific suspect,
+      because `frnd_update_size`'s own comment records that after `PUT #1,1` the
+      CF-3300 moves `LOF`'s field live while *"the on-disk DIRECTORY entry still
+      holds 0"*. ⚠️ **A CANDIDATE WHOSE ARITHMETIC DOES NOT YET FIT**: a constant
+      per-write overhead predicts a constant cost, and what is measured is a
+      STEP. D-PUTCOST's two earlier mechanisms are separately dead — `DSKF` reads
+      706/706/706 after 1/2/3 writes on both machines.
+      ✅ **THE EXCESS IS THE PER-`PUT` DIRECTORY STAMP, AND IT IS AN
+      UNFAITHFULNESS AS WELL AS A COST (D-DIRSTAMP2, 2026-09-06).** Knife K-DS1
+      cuts `fat_rand_put`'s `jp fat_dir_update` tail; re-run against the FIXED
+      probe with the refcache off:
+
+          smallest run_gap that completes    base    K-DS1
+            3 writes                          3.0     <=2.5
+            4 writes                         3.68      2.92
+            6 writes                         4.85      3.68
+
+      **~0.2 s per write, and three writes come back inside the default
+      budget.** 🔴 **My first run of this knife reported "changed nothing" and
+      that is RETRACTED** — it was driven by the probe before D-PUTFLOOR fixed
+      it, and a verdict of "no change" from an instrument that cannot resolve
+      the range it is scanning is not a refutation. The knife's own written
+      PREDICTION held exactly: it moves the figure without removing the shape.
+      🎯 **AND THE REFERENCE DOES NOT DO IT.** `frnd_update_size`'s own comment,
+      measured on the CF-3300 (`docs/lof-cf3300-characterization.md` §3): *"after
+      `PUT #1,1` the reference reports LOF = 256 while the on-disk DIRECTORY
+      entry still holds 0"*. It keeps `LOF`'s field live in RAM and stamps the
+      directory at `CLOSE`. zerobas reads AND writes the directory sector on
+      every random `PUT` — which is the measured excess AND a divergence with an
+      oracle row already behind it.
+      📏 **THE REAL I/O, COUNTED WITH `fat_dir_update` UNTRAPPED** (D-PUTIO's
+      count had it trapped, so its own sectors were invisible): **2 reads + 1
+      write per `PUT`**, linear — 2 accesses for one write, 8 for three. At
+      roughly 0.3 s per physical access that crosses the 2.5 s default budget at
+      exactly the third write, which is the "step" I chased for three commits.
+      ✅ **AND THE RESIDUAL IS NAMED: THE REFERENCE CACHES THE SECTOR AND THIS
+      ENGINE DOES NOT (D-PUTCACHE, 2026-09-06).** N writes, cache off, bisected
+      above the floor:
+
+          all writes to ONE record        n=3     n=6    n=12
+            cf3300                      <=2.5   <=2.5   <=2.5      FLAT
+            zb                            3.0    4.77    8.38      linear
+          each write to a DIFFERENT sector
+            cf3300                      <=2.5    3.59    6.11
+            zb                           3.76    6.78    17.2
+
+      🎯 **Twelve writes to the SAME sector cost the CF-3300 nothing measurable
+      and cost zerobas 8.38 s.** The reference keeps the sector in its buffer and
+      writes it back only when the target sector CHANGES; `fat_rand_put` does a
+      full read-modify-write per `PUT` whatever the target. Both machines scale
+      once the sector really does change, and there zerobas is ~2.8× (17.2
+      against 6.11).
+      🔬 **AND D-PUTCUT CORROBORATES IT FROM A COMPLETELY DIFFERENT ROW.** Its
+      cut-after-`PUT` image shows the CF-3300 with *"no chain, no data"* — the
+      record was never written because **it was still in the buffer**. A
+      performance reading and a crash-image reading, taken a day apart for
+      unrelated reasons, name the same mechanism.
+      📏 **SO THERE IS NO "STEP AT THE THIRD WRITE" AT ALL.** The cost is linear
+      in physical accesses (2 per `PUT`: the record read-modify-write plus the
+      directory stamp) and the 2.5 s default budget simply falls between the
+      second and third. Three commits chased a step that was an artefact of
+      where the threshold sat.
+      🙋 **BUT REMOVING THE STAMP IS A TRADE, NOT A FIX, AND THE TRADE IS HIS.**
+      D-PUTCUT (2026-09-05) measured exactly what the stamp buys, and it is not
+      nothing:
+      | | clean `CLOSE` | CUT after `PUT` |
+      |---|---|---|
+      | **zerobas** | entry, size=16, clus=3, FAT=EOC, record on disk | **IDENTICAL** |
+      | **CF-3300** | same | entry present, **clus=0, size=0, no chain, no data** |
+      Its conclusion: *"For zerobas the `CLOSE` changes nothing on disk at all;
+      everything the file needs is committed by the `PUT`"*, and **zerobas is
+      strictly the more robust of the two** — the dangling 0-byte entry is the
+      REFERENCE's. 🎯 So the per-`PUT` stamp is simultaneously (a) the measured
+      performance excess, (b) a divergence from the reference's behaviour, and
+      (c) the thing that makes this engine crash-safe where the reference is not.
+      Faithfulness says drop it; D-PUTCUT says it is the better behaviour.
+      **That is the same shape as the `LOAD"CAS:"` item — bug-for-bug fidelity
+      costing a working feature — and it is Joost's call, not a measurement.**
+      ⚠️ Nothing here proposes shipping the cut; K-DS1 is a diagnostic.
+      ⚠️ **AND THE PROBE'S OWN PROSE IS NOW WRONG IN A NEW WAY**: it still says
+      the failing rows are "BLIND FOR THAT REASON (they write three records)".
+      They are blind because they CLOSE. Corrected in
+      `scratchpad/reclen_probe.py`.
+      ~~🤖 AUTONOMOUS — the reference settles it; the subject is `CLOSE` after a
+      write, measured at 3.51 s there against >24 s here.~~
+      🔴 **THAT MARKER CITED A RETRACTED FIGURE (found 2026-09-27, loop).** The
+      ">24 s" is D-CLOSEFLUSH's, and `scratchpad/reclen_probe.py`'s own
+      printout records it as withdrawn by D-PUTFLOOR (two instrument bugs). The
+      live mechanism is D-PUTCACHE above: a full read-modify-write per `PUT`,
+      where the reference keeps the sector buffered. 💰 **THE LEVER IS PRICED
+      SHUT TODAY:** a write-through cache (skip the re-read of a sector still in
+      the shared buffer — crash-safety kept, unlike the 🙋 stamp trade) lands
+      in `fat_rand_put`, which is built into main page 1 AND sub page 1, and
+      those walls read 5 B and 0 B free (clean build 2026-09-27). It needs an
+      absolute carve in both first. ~~The directory-stamp half stays 🙋.~~
+      🏗️ **RULED BY JOOST 2026-09-27: FAITHFUL — STAMP AT CLOSE.** Drop the per-`PUT`
+      directory stamp and buffer the record sector like the reference: faster
+      and bug-for-bug faithful, and zerobas KNOWINGLY gives up D-PUTCUT's crash
+      safety (a cut after `PUT` will leave the reference's dangling 0-byte
+      entry). 🤖 **AUTONOMOUS now**; the acceptance rows are D-PUTCACHE's
+      same-record / different-sector ladders and D-PUTCUT's crash image, which
+      must now MATCH the CF-3300's.
+
+      ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
+      every characterisation below (PUT count, not layout; survives CLOSE; not
+      the LSET) reproduces; only the word "hangs" was wrong.
+      🔴 **THE THIRD `PUT` OF A SESSION HANGS ZEROBAS, UNTRAPPABLY — AND A
+      RANDOM-ACCESS WRITE LOOP IS AN ORDINARY MSX BASIC PROGRAM.** Measured
+      2026-08-30, [`docs/spec-basic-put3.md`](docs/spec-basic-put3.md),
+      probe `scratchpad/reclen_probe.py` (15 rows, CF-3300 vs repack).
+      ```
+      OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+      LSET A$=STRING$(128,"B") : PUT#1,1   ok
+                                 PUT#1,2   ok
+                                 PUT#1,3   cf3300 [OK]   zb <NO OUTPUT>
+      ```
+      🔴 **AND THE FIRST FILING CONFLATED TWO RULES — SEPARATED 2026-08-30.**
+      Every row paired an `LSET ... STRING$` with each `PUT`, so "the third PUT"
+      and "the third LSET" coincided on all of them. Four rows separate them:
+      three LSETs with ONE put is OK, three LSETs with NO put is OK, one LSET
+      with three puts DIES, and **no LSET at all with three puts DIES**. The
+      claim survives and the reproducer is now three statements with no string
+      handling anywhere. [[two-rules-that-coincide-on-every-row-you-have]]
+      ```
+      OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+      PUT#1,1 : PUT#1,1 : PUT#1,1
+      ```
+      ➡️ **PATH NARROWED, NOT READ**: `ex_put` (`basic/field.asm`) is
+      stack-balanced, so the subject is inside `fat_rand_put`
+      (`basic/randio-body.inc`) and its chain — `frnd_locate`, which extends the
+      cluster chain with `GP_FLAGS=1`, and the `fat_dir_update` tail.
+      🎯 **THREE FACTS, EACH WITH ITS OWN ROW.** It is the `PUT` COUNT and
+      nothing else (`p.same3` writes the SAME record three times and dies, so no
+      layout or straddle question is involved); it is CUMULATIVE ACROSS THE
+      SESSION (`p.close3` closes and reopens between writes and still dies, so
+      `CLOSE` does not release whatever is consumed); and it is NOT A TRAPPABLE
+      ERROR (`p.trap3`, with a handler the interpreter can reach, prints nothing
+      at all — the handler never runs). `p.put1` / `p.put2` / `p.trap2` are the
+      controls and all pass.
+      ✅ **CHARACTERISED FURTHER 2026-08-30** (spec §3a): three `GET`s are fine,
+      so it is `PUT`s and not disk ops; a `GET` between the second and third does
+      NOT reset it; `CLOSE` + `CLEAR` + reopen does NOT reset it; the count does
+      not move with record length (64 and 128 alike); it dies on a file that does
+      not exist yet; and `1,1,1` and `1,2,3` both die. **The third `PUT` of a
+      run, unconditionally.**
+      ✅ **THE "UNTRAPPABLE" CLAIM NOW RESTS ON A LIVE HANDLER, NOT ON SILENCE
+      (2026-08-30).** It was concluded from a row that printed NOTHING with a
+      handler in place — an ABSENCE, which is also what a broken fixture looks
+      like. `k.puttrap` arms the same handler, does TWO `PUT`s, then forces a
+      KNOWN `ERROR 7`, and traps it (`ERR 7 AT 60`) on both machines; `k.put3` is
+      the same program with the third `PUT` instead and still dies.
+      ⚠️ **FIXTURE CAVEAT THAT COST A PROBE: `MAXFILES=n` DISARMS `ON ERROR`** —
+      on BOTH machines (correct behaviour, not a divergence). An earlier run put
+      `MAXFILES=2` between the handler and the subject and read the untrapped
+      error as a finding.
+      🔴 **STILL OPEN: PER-CHANNEL OR GLOBAL?** The row is four `PUT`s spread
+      two-and-two over two channels, and it CANNOT BE WRITTEN on this machine —
+      D-OPEN2 (two disk channels are `Syntax error`) blocks it, which is the
+      reason the two-channel fixture kept failing.
+      ⚠️ **FOUR FIXTURE FAULTS IN ONE SITTING, THREE OF WHICH LOOKED LIKE
+      FINDINGS**: `ON ERROR GOTO 100` on a harness numbering 10,20,30…;
+      `OPEN … AS #2` under the default `MAXFILES=1`; and the two-channel
+      `Syntax error`. Budget for that when picking this up.
+      ✅ **RE-MEASURED 2026-09-02 (D-PUT3CONSUME,
+      [`scratchpad/put3consume_probe.py`](scratchpad/put3consume_probe.py)), AND
+      THE CLAIM SURVIVES A CONFOUND OF MY OWN MAKING.** The first design read
+      `DSKF(0)` at the end of every PUT ladder — and `DSKF` after a PUT turns out
+      to die on its own (below), so every "third PUT" row had two sufficient
+      causes. `x.put3lof` reads `LOF(1)` instead and touches no `DSKF`:
+      **3 PUTs `<NO OUTPUT>` on zb against `128` on the CF-3300, while 2 PUTs
+      read `128` on both.** The filed claim stands, now on a row that cannot mean
+      anything else. [[two-rules-that-coincide-on-every-row-you-have]]
+      🔴 **AND A SECOND, SIMPLER DEFECT WAS UNDER IT: `DSKF(0)` AFTER A SINGLE
+      `PUT` DIES.** One write, not three:
+
+          OPEN"TS.DAT"AS #1 LEN=128 : FIELD#1,128 AS A$
+          PUT#1,1 : PRINT"[";DSKF(0);"]"     cf3300 706   zb dies
+
+      `x.dskf0` (no PUT) reads 707 on both and `x.getdskf` (a GET, then DSKF)
+      reads 707 on zb, so it is the **PUT** that arms it, not any disk op — and
+      ONE is enough.
+      🎯 **THE FAILURE SIGNATURES DIFFER, AND THAT LOCALISES BOTH.** The 3-PUT
+      rows print **nothing at all** (`<NO OUTPUT>`) — they die before reaching
+      the `PRINT`. The DSKF rows print **`[`** and stop (`<UNREADABLE: [>`), so
+      the statement is reached and the machine dies **inside `DSKF(0)`**. That
+      distinction did not exist before 2026-09-02, when the probe's blank-face
+      fallback was made to carry the text: both readings used to be `<NO OUTPUT>`
+      and were indistinguishable.
+      ⚠️ **AND THE `d.lof*` LADDER SAYS THE FILE IS FINE**: `LOF(1)` reads 128
+      after one PUT and after two, on both machines. Whatever accumulates is not
+      visible in the file's length.
+      ⚠️ **A REFERENCE COLUMN I FIRST MIS-READ**: three CF-3300 rows showed
+      `<NO OUTPUT>` and looked like the ORACLE failing. They are
+      `<Input past end>` — a `GET` past EOF on a freshly-created empty file,
+      correct behaviour — and `basic_probe_fldwidth`'s error alphabet simply did
+      not contain that message. **An unreadable answer on the oracle side reads
+      as "the reference is broken", which is the worst direction for this class
+      of mistake to point.** Alphabet re-derived from the ROM's own `db` strings
+      and the loud fallback added.
+      ➡️ **NEXT: two separate hunts, and the DSKF one is cheaper.** `DSKF` needs
+      only ONE `PUT` to arm and dies inside a known, small routine, so whatever a
+      `PUT` corrupts is reachable from there; the 3-PUT hang may share the root.
+      ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
+      🎚️ TIER 5 — on-par speed: `PUT` (its untrappable-hang half is TIER 3)
+      🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
+      📏 **RE-MEASURED 2026-10-08 -- EVERY "DIES" READING WAS THE PROBE'S STEP,
+      AND THE SPEED GAP IS A WRITE CACHE.** `put3consume_probe.py` borrows
+      basic_probe_fldwidth's SIDES, which give ours a 2.5 s step and the CF-3300
+      4.5 s: at 2.5 s ours read `<UNREADABLE>` on `d.free1/2`, `d.lof2`, the
+      three-PUT rows and DSKF-after-PUT; at the reference's own 4.5 s **all 16
+      rows agree** ([`put3consume_step45.out`](scratchpad/put3consume_step45.out)).
+      No PUT corruption and no death inside `DSKF`: the claims above are
+      WITHDRAWN. 🔮 Predicted "readable and agreeing": HIT.
+      ⏱ [`putstopwatch.py`](scratchpad/putstopwatch.py), marker to marker, CLOSE
+      inside the timing ([`putstopwatch.out`](scratchpad/putstopwatch.out),
+      [`putstopwatch20.out`](scratchpad/putstopwatch20.out)):
+      | | ours | CF-3300 | |
+      |---|---|---|---|
+      | 3 PUTs + CLOSE | 2.26 s | 1.98 s | 1.14x |
+      | 20 PUTs + CLOSE | 15.24 s | 3.38 s | **4.5x** |
+      (A first cut ended the clock BEFORE CLOSE and read 2.26 s against 0.04 s:
+      the CF-3300 BUFFERS a PUT and pays at CLOSE; ours writes a sector,
+      ~0.75 s, at every PUT.) So the T5 gap grows with the PUT count, and it is
+      the same shape D-BLKIOPERCALL measured for WRBLK (the CF-3300 writes a
+      sector once, not per call): ➡️ **ONE WRITE-CACHE DESIGN SERVES BOTH** --
+      the record written into the channel's buffer, the sector written when
+      the next PUT / GET needs another one, or at CLOSE.
+      ✅ **D-PUTDIR, THE FIRST STEP (2026-10-08): THE DIRECTORY IS STAMPED AT CLOSE,
+      NOT PER PUT -- 4.5x -> 3.3x.** `frp_done` (basic/randio-body.inc, the sub
+      tenant) ended `jp fat_dir_update`, a directory read + write every PUT; the
+      CF-3300 leaves the entry alone until CLOSE (D-LOF §4c). Now CLOSE / END /
+      RUN stamp it once (`fdcc_rnd`, basic/files.asm, fatprim row 13), from the
+      channel's engine state. [`disk_probe_putdir.py`](probes/disk/disk_probe_putdir.py),
+      gate `putdir-acceptance`, reads the IMAGE: PUT then NO CLOSE -> the entry
+      **size 0, no cluster** on both (ours was 128 / allocated before); PUT +
+      CLOSE -> 128 / allocated on both; LOF 128 live on both
+      ([`putdir_after.out`](scratchpad/putdir_after.out)). 20 PUTs + CLOSE
+      15.24 -> **11.24 s** against the CF-3300's 3.38
+      ([`putdir_after20.out`](scratchpad/putdir_after20.out)); the 16
+      put3consume rows unchanged. 🔮 Predicted 9-10 s: PARTLY MISSED. 🔪 K-PD1
+      (the per-PUT stamp back) -> noclose, K-PD2 (no stamp at CLOSE) -> close,
+      each exactly ([`putdir_knives.out`](scratchpad/putdir_knives.out)). Main
+      page 1 101 -> 87 B (2026-10-08).
+      ➡️ Left: the sector read-modify-write per PUT -- the write cache proper.
+      📏 **RE-MEASURED 2026-11-06: 20 PUTs + CLOSE 10.58 s against the CF-3300's 3.38 (3.1x)**
+      ([`putstopwatch20_1106.out`](scratchpad/putstopwatch20_1106.out)). What is left is the
+      per-PUT read-modify-write of the record's sector: docs/spec-diskwcache.md's W4 (keep the
+      data sector in FAT_DBUF across calls), PARKED there for its audit -- every other
+      FAT_DBUF user (every channel, the mount, the directory work, the BDOS) must flush
+      first. A slice of its own, the audit before any code.
+      📏 **THE REFERENCE'S SHAPE, FIRST LOOK (2026-11-07,** fdccmd_probe.py on
+      [`put20_prog.bas`](scratchpad/put20_prog.bas): OPEN LEN=32, 20 x LSET + PUT, CLOSE**):** zerobas
+      ([`fdcput_zb.out`](scratchpad/fdcput_zb.out)) issues 24 write commands (`A0`), 29 reads and 53 seek-verifies --
+      about one sector write per PUT. The CF-3300 ([`fdcput_cf.out`](scratchpad/fdcput_cf.out)) issues 48 commands in all:
+      19 x `82`, 14 x `D0`, 8 x `A2`, 3 x `01`, 2 x `AA`, 2 x `8A`. ~~ITS COMMAND BYTES ARE NOT
+      DECODED~~ -- **DECODED 2026-11-08: they are the plain WD2793's** (`8x` read, `Ax` write);
+      the "in-place reads" I matched `A2` against were its SAVE (see D-LOADDIRECT's
+      correction). **THE REFERENCE'S PUT, READ:** across the 20 PUTs it writes a data sector
+      only TWICE (`AA` from its buffer at $ED95, each followed by an `8A` read) -- once per
+      512 B the 32-byte records fill -- and at CLOSE the directory (`A2` $EB95) and the FAT
+      (`A2` $E595 / $E795 / $E995, both copies). Ours writes the record's sector on EVERY PUT.
+      🔮 Predicted "~2-3 data writes": HIT. ➡️ **THE W4 DESIGN IS THE REFERENCE'S:** keep the
+      record's sector in the buffer, write it when a PUT / GET needs another sector, and at
+      CLOSE -- after the FAT_DBUF audit docs/spec-diskwcache.md asks for.
+      ✅ **THE AUDIT, DONE (2026-11-08, [docs/spec-diskwcache.md](docs/spec-diskwcache.md) "W4 FOR PUT"):** the buffer is
+      FAT_MBUF, not FAT_DBUF; all 37 references fill it through `read_sector` (PUT's own
+      fill_sec apart), so the held sector can be checked in ONE place.
+      ✅ **BOTH REFERENCE QUESTIONS SETTLED (2026-11-08):** (1) a disk swapped between a PUT
+      and CLOSE ([`diskswap.ses`](scratchpad/diskswap.ses), [`diskswap_cf.out`](scratchpad/diskswap_cf.out) / [`diskswap_zb.out`](scratchpad/diskswap_zb.out)): the CF-3300
+      writes the held record + directory + FAT onto the NEW disk (FILES lists R.DAT, GET
+      reads it back); zerobas had written it to the OLD disk at PUT time (`File not found`
+      on the new one) -- the cache is the faithful face, no guard needed. 🔮 Predicted
+      "the CF-3300 writes it to B": HIT. (2) its `8A` after each `AA` is a verify read of
+      the same sector. ➡️ NEXT: BUILD W4 for PUT -- the tag in the $EFDB..$EFF5 hole, the
+      check in read_sector, the flush at the channel close and MSX-DOS entry.
+      ✅ **D-PUTCACHE BUILT (2026-11-08).** `RND_HSEC` ($EDBB, 2 B -- the $EFDB..$EFF5 hole TODO
+      named was stale; tools/ram_map.py shows $EDBB..$EDFD free in the disk AND basic
+      components, beside D-LOADFAT's FAT_FCACHE) holds the sector a PUT left in FAT_MBUF
+      unwritten. `rh_check` (disk/driver.asm), read_sector's first act, serves a re-read of it
+      INTO FAT_MBUF and writes it out before anything else is read; `rh_flush` (disk/fat.asm)
+      writes it before PUT's fill_sec and at the BDOS block write's multiply (WRBLK_MUL* are
+      WBUF+500..511 -- 🔴 the audit's first pass MISSED them: FAT_MBUF has two more names,
+      FWBUF in main and WBUF in the disk build, and only the map's range view showed the
+      overlap); `rh_init` zeroes it at INIT. The CLOSE needs nothing of its own: its directory
+      stamp reads through read_sector. Disk ROM ~70 B. tests/test_rand_straddle.py and
+      test_rand_extend.py now trap DSKIO itself (they trapped read_sector, so the cache never
+      ran on the host) and gained "the last sector is held" rows and the cache's own
+      witness (16 PUTs into one sector: no I/O; a GET of one: no I/O; one write at the flush).
+      📏 32-byte records ([`fdcput_zb_cache.out`](scratchpad/fdcput_zb_cache.out)): **106 FDC commands -> 34** (6 writes; the CF-3300
+      10 incl. verifies). 🎯 Predicted 20 PUTs + CLOSE of 128 B, 10.58 s -> 3-4 s: **7.58 s --
+      a MISS** ([`putstopwatch20_cache.out`](scratchpad/putstopwatch20_cache.out); CF 3.38). ➡️ **WHY, AND THE NEXT LEVER:** past the
+      first cluster every PUT's frnd_locate walks the chain from the file's first cluster
+      through frnd_next -> fat_read_fat_sector, INTO FAT_MBUF -- evicting the held sector, so
+      each such PUT is a FAT read + a data re-read + a write ([`fdcput128_zb.out`](scratchpad/fdcput128_zb.out) / [`fdcput128_cf.out`](scratchpad/fdcput128_cf.out)).
+      Either a per-channel "last cluster index -> cluster" in the FCB row (a PUT in the same
+      cluster walks nothing) or a FAT walk through another buffer -- each its own audit.
+      🔴 **AND THE DISK SWAP STILL DIVERGES** ([`diskswap_zb_cache.out`](scratchpad/diskswap_zb_cache.out)): the held record now
+      reaches the new disk, but CLOSE re-reads the NEW disk's directory to stamp it, where
+      the CF-3300 writes its CACHED directory sector -- the new disk says `File not found`
+      here, lists R.DAT there. That is W3b's half (the directory / FAT written from the cache
+      at CLOSE).
+      🔴 **THE FULL BATTERY CAUGHT A MASKED GAP:** programs-acceptance's L5_stock, a 352 ms
+      frame gap against the CF-3300's 223 (D-GCDI's rule) -- the held sector was now written
+      inside the NEXT hook's read_sector (line 200's OPEN FOR OUTPUT), and a hook arrives
+      through CALSLT masked, so the write's rotational wait opened no D-FDCDI window.
+      `rh_flush` now `ei`s once something is held (D-LOADDI / D-HOOKDI's reasoning; the
+      BDOS / DOS paths never hold a sector and return before it): L5_stock max gap 0.097 s,
+      SAME. ⚠️ **FILED, NOT MEASURED:** anything that reaches DSKIO directly bypasses
+      read_sector and so does NOT flush a held sector -- `CALL SYSTEM`'s MSX-DOS boot, DSKI$,
+      a BDOS absolute read: a program that PUTs and enters MSX-DOS without CLOSE loses that
+      record here. What the CF-3300 does there is the question first.
+      ✅ **D-PUTWALK (2026-11-08): THE NEXT LEVER, BUILT.** frnd_locate's chain walk starts where
+      the channel's last one ended -- the row's +28..29 (last cluster accessed) and +30..31
+      (its index), where an MSX-DOS FCB keeps them and the kernel's own BDOS seek (ws_cid)
+      reads them; `frl_cache` / `frl_done` in disk/runtime.asm's hole (frnd_locate's region
+      had no room). +28..29 is zeroed before every walk and set only when one lands, so a
+      failed walk or an extension leaves no stale cache; dout_open zeroes the row, and
+      cluster 0 is never a data cluster. tests/test_rand_extend.py's new row: a PUT in the
+      SAME cluster reads 0 FAT sectors, the next cluster 1, one before the cache walks from
+      the first -- each landing where the chain says, its byte on the disk. (Its first cut
+      put the "next cluster" record past the end of the file: that PUT EXTENDS, and its FAT
+      I/O is the allocation's -- the row's expectation was wrong, not the walk.)
+      🎯 Predicted 20 PUTs + CLOSE of 128 B 7.58 -> 4-5 s: **2.76 s** ([`putstopwatch20_walk.out`](scratchpad/putstopwatch20_walk.out)) -- a
+      miss, the good way: **FASTER THAN THE CF-3300's 3.38**. FDC commands 125 -> 56
+      ([`fdcput128_zb_walk.out`](scratchpad/fdcput128_zb_walk.out); 13 writes, the CF-3300 9 + 4 with its verifies). L5_stock
+      SAME, max gap 0.097 s.
+      🟢 **CLOSED 2026-11-08 -- ON PAR, FASTER:** the item's own workload, both machines in one run
+      ([`putstopwatch20_close.out`](scratchpad/putstopwatch20_close.out)): 20 PUTs + CLOSE **2.76 s here, 3.38 s on the CF-3300**; 3 PUTs
+      + CLOSE 0.84 against 1.98. What stays open is NOT speed and is filed above: a disk
+      swapped before CLOSE (the directory half, W3b) and direct-DSKIO users not flushing a
+      held sector (unmeasured on the reference). Closing it ORPHANED five filed pins
+      (filed-pin-check): four were NO-VERDICT characterisations (put3consume / putio /
+      putcost / rungap) and leave with the item; reclen_probe's p.put3 / p.same3 /
+      p.close3 / p.trap3 -- blank on zerobas only because 3 PUTs outran the 2.5 s step --
+      now read OK on BOTH ([`reclen_after_putwalk.out`](scratchpad/reclen_after_putwalk.out), refcache off, DIFF 0/7), so that pin
+      leaves on the measurement.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] 🔴 **D-WRZER — BDOS $28 (WRZER) UNDER MSX-DOS RUNS OUR FAT-WRITE CODE WITH ITS REGISTERS
+      (found 2026-11-08 by D-ENTRYTIERS step 2)**
+      ✅ **THE ZERO FILL SHIPPED (2026-11-09).** wrzer_body (disk/kernel.asm, the region in front of
+      $75A5 after carve steps 1-2 -- mulacc_cmp, rdblk_rs, fac_comb on fnc_combine, the
+      recperclus_div / div_hl_bc pair: 8 -> 121 B; wrzer_body took 119): the caller's record
+      through wrrnd_body (it extends the file), then the caller's DTA -- its record on the disk
+      now -- zeroed and written by WRBLK to each gap record, RDBLK reads record RR back into
+      the DTA, RR put back, WRRND's success tail. 🔴 The first cut repositioned each gap record
+      with rrnd_position, which re-finds the file through the DIRECTORY -- not updated until
+      close after a WRBLK extension -- and answered A = 2 (scratchpad/wrzer_both3.out); WRBLK
+      positions from the FCB's own state. Also found and fixed: **RDRND past the end left CR
+      unset; the CF-3300 sets it to r0 MOD 128** (both FCBs' +32, $17 vs $14). 📏
+      ([`wrzer_gate3.out`](scratchpad/wrzer_gate3.out)): **WRZER.COM BYTE-IDENTICAL to the CF-3300 (1696 bytes: codes, both FCBs,
+      Z.DAT's zeroed records and R.DAT's untouched $CC)**; WRZER joins bdos-acceptance.
+      ⏱ ours reaches the end ~15 s later (57 s vs 43 s: one WRBLK per gap record) -- the
+      probe's settle went 50 -> 90; a TIER 5 note, not filed separately until a program shows it.
+      🔴 **THE FULL BATTERY CAUGHT A CARVE THAT WAS "SEMANTICALLY IDENTICAL" (2026-11-09):** fac_comb
+      as `call fnc_combine` / `ex de,hl` returned the same DE, A and flags, and every
+      fac_entry_from_wbuf caller visibly saves HL -- yet programs-acceptance went red on
+      L5_journal: its BSAVE ran 1.43 s of FDC work under DI (CF-3300 0.22 s; the gap bound),
+      scratchpad/wz_gappc.out. Bisected ([`wz_bis3.out`](scratchpad/wz_bis3.out) .. [`wz_bis6.out`](scratchpad/wz_bis6.out)): not the layout (+40 B
+      shift clean), not the stack depth (one call deeper clean), **HL** -- the old even
+      path left HL untouched, and with `push hl` / `pop hl` around the call it is clean. No
+      reader of that HL has been found. 🔎 FILED, TIER 6 (apparatus): find who reads HL after
+      fac_entry_from_wbuf on BSAVE's path (a breakpoint on fac_comb's ret, then the caller's
+      next HL use) -- a contract comment ("preserves nothing but DE") that is false.
+      🎚️ TIER 1 — happy path of an ENTRY POINT (Joost 2026-11-08: entry points outrank BASIC).
+      A program calling WRZER on zerobas can write a garbage FAT entry to the user's disk.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 `disk_probe_diff.py callwatch --in-func 0x28 --machine ours`
+      ([`wrzer_callwatch.out`](scratchpad/wrzer_callwatch.out); our own ROM's PCs only): MSX-DOS's kernel enters
+      our disk ROM at **$47D1 = fat_write_fat_entry_hot+16** -- mid-routine, the M26 / M28
+      collision class ($436C FDEL, $4392 FREN, $47BE WRBLK): $47D1 is WRZER's canonical entry
+      and we never planted one. From there it runs the FAT entry write (read_sector, dskio)
+      with WRZER's registers; the program then never reaches its anchor.
+      📏 **The CF-3300's answer** ([`bdosx9_stock.out`](scratchpad/bdosx9_stock.out), record 8 at $0440 and the FCB at
+      $04F0 after FCLOSE): FMAKE "ZERO.DAT", RS := 128, RR := 0, DTA = 128 B of $55, WRZER ->
+      **A = $00**, DE = $0514; the closed FCB: size **128**, first cluster $153, dated, +14..15 =
+      0. ➡️ **THE FIX:** (1) a `jp wrzer_body` AT $47D1, jumped over inside
+      fat_write_fat_entry_hot (`jr` + the 3-byte veneer, 5 B in the $47C1 fill) or the routine
+      moved; (2) `wrzer_body` = WRRND's write with the records an EXTENSION adds zero-filled
+      (the published contract) -- MEASURE the zero fill on the CF-3300 first (WRZER at RR = 3 of
+      an empty file: what records 0-2 hold), and what +14..15 = 0 after FCLOSE means. Witness:
+      bdosx9 into bdos-acceptance, byte-identical.
+      📏 **THE ZERO FILL, MEASURED (2026-11-08)** -- `probes/disk/wrzer.asm` (+ build_wrzer_disk.py):
+      the clusters the files will take are overwritten with $CC by WRABS first (a deleted file's
+      clusters are NOT reused -- the allocator moves forward, measured by the first two runs,
+      [`wrzer_stock.out`](scratchpad/wrzer_stock.out) / [`wrzer_stock2.out`](scratchpad/wrzer_stock2.out), both all-zero and blind); then record
+      20 of an empty file is written by WRZER (Z.DAT) and by WRRND (R.DAT) and records 0 / 8 /
+      16 / 20 read back ([`wrzer_stock3.out`](scratchpad/wrzer_stock3.out), CF-3300): **WRZER zero-fills every record
+      the extension adds; WRRND leaves the disk's bytes ($CC)**; record 20 is $55 in both, size
+      2688 (21 x 128). 🔮 HIT.
+      ✅ **THE CORRUPTION HALF FIXED (2026-11-08):** a `jp` at $47D1 (fat_write_fat_entry_hot
+      steps over it: `or a` / `jr fwe_cmp` / the veneer / `sbc hl,de`; 7 B from moving rh_init
+      beside rh_flush), INTERIM to wrrnd_body. The FAT write no longer runs with WRZER's
+      registers. bdosx9 cut after WRZER ([`bdosx9_bisect4.out`](scratchpad/bdosx9_bisect4.out)): ours reaches the anchor
+      now, FCLOSE after it matches -- but **WRZER answers A = $02, HL = $E8AD (CF-3300: A = $00,
+      HL = 0)**: wrrnd_body cannot extend a file (its M26 header: *"positioned past EOF -- FAT
+      growth is out of scope"*), so D-WRRNDEXT below is the rest of this item. The kernel
+      enters $47D1 with DE = $DA40 (its FCB copy), HL = $0080, A = $25, C = 0
+      ([`wrzer_entryregs.out`](scratchpad/wrzer_entryregs.out), ours). ➡️ LEFT: the zero fill, on top of D-WRRNDEXT.
+      📏 **THE ZERO FILL'S EXTENT (2026-11-08):** wrzer.asm now reads records 0 / 8 / 16 / 20 / 21
+      / 23 ([`wrzer_stock4.out`](scratchpad/wrzer_stock4.out), CF-3300): 21 and 23 answer RDRND A = 1 (past the end -- the
+      file is records 0..20), so what lies after the written record is NOT visible through the
+      FCB at all. What a program can see is exactly: the records from the OLD end of file up to
+      the written one read zero (WRRND: the disk's bytes). 📐 So the faithful-to-the-FCB shape
+      is: for each record from ceil(old size / 128) to RR - 1, a zero record through the same
+      past-EOF path (wrrnd_ext's WRBLK of one record), then the caller's. 🔴 OPEN: a 128-byte
+      ZERO source WRBLK's own work does not overwrite -- FAT_MBUF is reused for FAT sectors
+      mid-write (fat_alloc_cluster), SECTOR_BUF is WRBLK's read-modify-write buffer; options:
+      a zero run in this ROM read through the DTA (the DTA may be in page 1 = this ROM under
+      DOS? check P1_BLIT's rule), or a whole-sector zero path in WRBLK. Speed: one
+      read-modify-write a record (20 records ~ 20 RMWs). Not built.
+      📐 **NO ZERO SOURCE NEEDED (2026-11-09):** disk.rom has no 128-byte zero run (the only
+      long one, $7F7F..$7FD0, straddles the FDC window). Instead: WRZER = (1) R0 := ceil(+16..18
+      / 128); R0 >= RR -> plain wrrnd_body; (2) wrrnd_body with the caller's record -- it
+      extends the file (wrrnd_ext); (3) for R = R0 .. RR-1: RR := R, rrnd_position (in the file
+      now), ZERO the record in SECTOR_BUF in place (BDOS_RECIDX * 128), rrnd_sector /
+      write_sector; (4) RR back, wrrnd_body once more (re-writes the caller's record, so the
+      FCB's cluster cache ends as plain WRRND leaves it). ~95 B. 🔴 **ROOM IS THE BLOCKER:**
+      `scratchpad/pinguard.py --slack` on 2026-11-09 found 390 B free in all, but no hole over
+      14 B (the 82 B at $7FD1 is mostly the FDC window; $7FC0..$7FD0 = 17 B usable), and
+      movescout over $7000..$7F7C finds only bdos_close_wm (14) and dsm_bump (10) small enough
+      for an existing hole. Needs a carve (diskngram / djr) or the routine split over the
+      $5006 / $501E / $504E / $50D5 holes (14 + 13 + 13 + 10 B, `jr`-linked).
+      ✂️ **CARVE STEP 1 (2026-11-09):** two duplicates scratchpad/diskngram.py found, factored --
+      the 4-byte WRBLK_MULACC-vs-FAT_FILESIZE compare chain (wrblk_zero_path and
+      wrblk_size_max, 28 B each) into `mulacc_cmp`, and the record-size resolution
+      (bdos_rdblk and k47b2_body, 29 B each) into `rdblk_rs` (22 B: the FCB word loaded
+      straight into HL). The first cut kept rdblk_rs's 30-byte form and overran driver.asm's
+      $461D pin by 5 B (EMPTY ROM; pinguard named it). **The region in front of $75A5 holds
+      58 B now (was 8).** 📐 Sized concretely, the zero fill is ~110 B, not 95 (R0 from the
+      24-bit size, the per-record reposition / zero / write, RR put back on both exits): ~50 B
+      more in that region next -- fnc_combine / fac_comb (24 B x2) and the 11 B x3 groups
+      (wrblk_shrink / wsw_recperclus / wsww_recperclus) are in it.
+
+- [x] 🔴 **D-SFIRSTVOL — UNDER MSX-DOS, SFIRST ("????????.???") RETURNS THE DISK'S VOLUME LABEL;
+      THE CF-3300 SKIPS IT (found 2026-11-08 by bdosx9)**
+      ✅ **FIXED THE SAME DAY.** dirscan_match (disk/kernel.asm) skips an entry with attr bit 3,
+      beside the deleted-entry skip. Room: the region before runtime.asm's $7F7C pin had none
+      (`scratchpad/pinguard.py` -- a label before every pin, assembled in a copy -- named it,
+      10 B over), so seldsk_drv_body + curdrv_body went to the 8 B in front of $55E6 and
+      setdta_cache_body to the hole in front of $5552 (all three entered only by `jp` / the
+      `dw` table). 📏 bdosx9 ([`bdosx9_run4.out`](scratchpad/bdosx9_run4.out)): both DTAs BYTE-IDENTICAL now (SFIRST `LIST`,
+      SNEXT `OPENMSX1.MBK`); 10 bytes still differ, all WRZER's (D-WRRNDEXT). 🔮 HIT.
+      ⚠️ Only the label is measured: whether the CF-3300's SFIRST also hides HIDDEN / SYSTEM
+      entries is unmeasured (this disk has none) -- the next bdosx row when a disk with them
+      is built.
+      🎚️ TIER 1 — happy path of an entry point: every directory listing a DOS program makes
+      starts one entry early, and SNEXT stays one behind.
+      🤖 **AUTONOMOUS** — 📏 [`bdosx9_run3.out`](scratchpad/bdosx9_run3.out) DTA 1 ($0490): the CF-3300's first match is
+      `LIST` (attr $00); ours is the label entry `SandStone (` with attr **$28** (volume label +
+      archive). DTA 2 (SNEXT): CF-3300 `OPENMSX1.MBK`, ours `LIST`. bdosx9's records 4 / 5 (the
+      registers) agree, which is why the bisect runs -- which captured only the register table
+      -- did not see it. ➡️ sfirst_body / dirscan_match (disk/kernel.asm, M19): skip an entry
+      with attr bit 3 (volume label) -- after first measuring on the CF-3300 whether a search FCB
+      can ask for it at all (an attribute byte at FCB-7 is MSX-DOS 2's extended FCB, not DOS 1's)
+      and what BASIC's FILES does with the same disk on both (FILES may share the walk).
+
+- [x] 🔴 **D-SEQTWO — UNDER MSX-DOS, SEQREAD OF ONE FILE WHILE ANOTHER IS OPEN FOR WRITING NEVER
+      REACHES ITS END (found 2026-11-09 by D-DOSLADDER's D3, COPY)**
+      ✅ **FIXED THE SAME DAY -- step (1) alone.** wrseq_body split by ENTRY (disk/driver.asm):
+      k_4775 -> wrseq_rd (DTA reseed, bdos_seqread, the position write-back), k_477D ->
+      wrseq_body (DTA reseed, the write) -- 0 B net. Step (2), the per-FCB repositioning,
+      proved unneeded: the write keeps its own cells (BDOS_WRCLUS / WRBYTES / WRFIRST) and
+      leaves the read's iterator alone. 📏 [`dosl_d3_5.out`](scratchpad/dosl_d3_5.out): **D3 BYTE-IDENTICAL to the CF-3300**
+      (32 bytes: every A, both record counts and sums, sizes, FSIZE, the directory entry);
+      ours 41 s, the CF-3300 93 s. bdos-acceptance 20/20 with D3 in it; p1dta-acceptance
+      (SEQRD into page-1 RAM) green. 🔮 "~50 B, two steps": MISSED -- one step, 0 B.
+      🎚️ TIER 1 — happy path of the BDOS entry points: a program that copies a file through
+      FCB sequential I/O (FOPEN the source, FMAKE the copy, SEQREAD / SEQWRITE in turn)
+      loops forever on ours; the CF-3300 copies its 51 records in 93 s.
+      🤖 **AUTONOMOUS** — 📏 probes/disk/dosl/d3copy.asm ([`dosl_d3_2.out`](scratchpad/dosl_d3_2.out): the CF-3300's result;
+      ours never reaches `done` in 600 s, [`dosl_d3_4.out`](scratchpad/dosl_d3_4.out)); callwatch on our ROM
+      ([`dosl_d3_cw.out`](scratchpad/dosl_d3_cw.out)): 274 SEQREAD / SEQWRITE pairs and counting -- the source never ends.
+      THE CAUSE, read in disk/driver.asm: `$4775` (SEQREAD, measured) and `$477D` (SEQWRITE)
+      BOTH jump to wrseq_body, which picks read or write by BDOS_WRMODE -- "a file is open
+      for writing" -- NOT by the function called: once FMAKE opened C.COM, every SEQREAD of
+      COMMAND.COM ran the WRITE branch. Underneath, the read state (FAT iterator,
+      BDOS_BYTESLEFT, BDOS_SEQREC) is single-open-file global state, shared with the write
+      ("both are single-open-file global state", wrseq_body's own header). ➡️ (1) dispatch by
+      ENTRY: k_4775 -> the read branch, k_477D -> the write branch; (2) the read repositions
+      from the FCB (R = EX * 128 + CR, the way rdrnd_body does through rrnd_position) when
+      the global read state is not this FCB's -- first cluster (+26) and position compared --
+      keeping the fast path for a lone reader (COMMAND.COM loads, TYPE). ~50 B; the region in
+      front of $75A5 (151 B, gathered for D-DSKFMT) is where it fits. D3 joins bdos-acceptance
+      when this lands.
+
+- [x] 🧮 **D-NUMBUFASPCT — OUR NUMBUF ($F408..$F40F) SITS ON THE REFERENCE'S ASPCT1 / ASPCT2
+      ($F40B / $F40D) (found 2026-11-08 by D-BIOSCONTRACT)**
+      ✅ **FIXED 2026-11-09.** NUMBUF = FOUTBUF (FBUFFR+1, basic/sysvars.inc): integers are
+      formatted where the float formatter writes, the reference's own place. 📐 THE AUDIT: every
+      NUMBUF user (PRINT, STR$, PRINT USING's integer path, LIST / detok line numbers and
+      constants, AUTO's number, HEX$ / OCT$ / BIN$) formats a 16-bit integer and consumes it at
+      once; none runs while a float's FOUTBUF text or the SQRT_R / HORNER_* scratch is live
+      (an expression is evaluated before it is formatted; PRINT USING's float path renders in
+      the PUNUM tenant into PU_NUM). MIDS_DEST no longer aliases NUMBUF (WSTX since D-WSZERO
+      S14c; PROVENANCE's row was stale, fixed). ASPCT1 / ASPCT2 := $100 at cold start in
+      clear_usrtab (basic/usr.asm, the boot-only pass) -- 🔴 NOT beside ATRBYT in init as
+      planned: that region, before vars.asm's $475A pin, had no room, and 9 B there overran
+      the pin and EMPTIED the image (pasmo does not refuse a negative `ds`; split_islands
+      reported "image base $8000"). Also: a forward `equ` of NUMBUF on FOUTBUF was moved below
+      FOUTBUF's definition. 📏 [`biossweep_asp.out`](scratchpad/biossweep_asp.out): **GTASPC $100 / $100 SAME, also after `PRINT
+      12345;-321;STR$(777)`**; two biosregs-acceptance rows (87/87); `make ram-map-check` green
+      after `make ram-map-doc`.
+      Tape ([`asp_tape.out`](scratchpad/asp_tape.out)): Arkanoid NEAR 67 -> RUNS? 9674 (a whole-screen difference), the
+      rest drift. The second witness ([`asp_ark_new.out`](scratchpad/asp_ark_new.out), six capture times): both machines in
+      SCREEN 2 and in the SAME loop (PC $40D8) at T120 / T300 / T420 -- the game runs; the
+      capture lands in a different phase of its attract sequence (timing, the class in
+      memory a-running-titles-tape-verdict-tracks-timing). Knives identical.
+      🎚️ TIER 1 — the BIOS's published work area (GTASPC returns those cells; CIRCLE's aspect
+      lives there on the reference): Joost's entry-points-first ruling.
+      🤖 **AUTONOMOUS** — the VG-8020 holds $100 / $100 in ASPCT1 / ASPCT2 from the prompt on;
+      zerobas 0 / 0 (C-BIOS never sets them) -- and an init would not hold: our PRINT's
+      number-format scratch NUMBUF (basic/sysvars.inc, 8 B at $F408) overwrites them on the
+      first PRINT of a number. ➡️ Move NUMBUF to a cell the reference does not publish (a RAM
+      move: `make ram-map-check` + the FULL battery), then initialise ASPCT1 / ASPCT2 to $100
+      at the cold start (basic/interp.asm beside ATRBYT, 9 B), and GTASPC answers $100 / $100.
+      📐 **WHERE NUMBUF GOES (2026-11-08):** not into a "free" run below $F380 -- TXTMAX_NODISK is
+      $F380, so in the diskless build everything under it is PROGRAM RAM ($EDBF.. included). The
+      faithful home is the reference's own: FBUFFR+1 (FOUTBUF), where D-ADDR29 S1 already put
+      the FLOAT formatter's digits; basic/sysvars.inc's own note lists "zerobas formats INTEGERS
+      in NUMBUF, not here" as a remaining difference. So: format integers into FOUTBUF too and
+      NUMBUF goes away. ⚠️ AUDIT FIRST (24 NUMBUF users): FOUTBUF carries aliases (SQRT_R,
+      HORNER_CNT, HORNER_PTR; TKOVF = FBUFFR+0 is guarded) -- prove no path has an integer and a
+      float formatting live at once (PRINT USING's field, STR$ of an expression that formats
+      inside). Then the ASPCT init, the GTASPC row in biosregs-acceptance, `make ram-map-check`,
+      the FULL battery.
+
+- [x] 🔴 **D-AUXIN — BDOS $03 (AUXIN) UNDER MSX-DOS RAN OUR DIRECTORY-ENTRY WRITER (found and fixed
+      2026-11-08 by D-ENTRYTIERS step 2)**
+      🎚️ TIER 1 — happy path of an entry point.
+      📏 `probes/disk/auxinx.asm` (+ build_auxinx_disk.py) on both ([`auxinx_both1.out`](scratchpad/auxinx_both1.out)): the
+      CF-3300 returns **A = $1A** (CP/M's end of file -- no AUX device), ours A = 0. callwatch on
+      our ROM ([`auxin_callwatch.out`](scratchpad/auxin_callwatch.out)): the kernel enters **$546E -- 6 bytes into cr_copy1**,
+      which D-AUXOUT had moved into the span before $5474, and ran cr_copy2 / fat_dir_update
+      (the directory-entry writer). Before that move it landed in lstout_body: AUXIN was never
+      right. The D-WRZER / D-AUXOUT class again: a canonical entry never planted. ✅ `k_546E` /
+      auxin_body = `ld a, $1A` / `ret` at the pinned address; cr_copy1 moved to the hole before
+      $5E10. After ([`auxinx_both2.out`](scratchpad/auxinx_both2.out)): **A = $1A on both**; only F differs ($42 / $44),
+      outside the contract. 🔮 "$1A or $00, ours different or hung": HIT ($1A). ➡️ The next
+      such address is likelier found by sweeping EVERY BDOS function's kernel entry with
+      callwatch than one function at a time (D-ENTRYTIERS step 3).
+
+- [x] 🔴 **D-DRVINT — DRVINT ($FB21 / $FB22) WAS NEVER FILLED: A PROGRAM FINDING THE DISK ROM
+      THROUGH IT CALSLTED SLOT 0 (found 2026-11-08 by D-ENTRYTIERS)**
+      🎚️ TIER 1 — happy path of the disk-ROM entry points (the published way to find them).
+      ✅ **FIXED THE SAME DAY.** 📏 `probes/disk/dskent.asm` (MTOFF / DSKCHG / GETDPB through CALSLT
+      under MSX-DOS, slot from $FB22) never reached its anchor on ours, even cut down to MTOFF
+      alone; $FB20..$FB2F at the program's start ([`dskent_drvtbl.out`](scratchpad/dskent_drvtbl.out)): **CF-3300 $FB21 = 2,
+      $FB22 = $87; ours 0 / 0** (C-BIOS's fill). install_res_print (disk/kernel.asm, the $7F7C
+      region) now copies DRVCNT / DRVTBL+0 -- adjacent at $F347 / $F348, the same order -- to
+      $FB21 / $FB22 in one word (6 B); init calls it after DRVTBL+0 is set (a reorder, 0 B; the
+      init region had none -- `scratchpad/pinguard.py`). After ([`dskent_drvtbl2.out`](scratchpad/dskent_drvtbl2.out)): 0 of 16
+      bytes differ; dskent reaches its anchor. 🔮 HIT.
+
+- [x] 🔴 **D-DSKCHG — THE PUBLISHED DSKCHG ($4013) ALWAYS ANSWERS AN ERROR (found 2026-11-08 by
+      dskent.asm)**
+      ✅ **FIXED THE SAME DAY (second build).** 📏 The CF-3300 refreshes the DPB at HL on its
+      "unknown" answer ([`dskchg_stock2.out`](scratchpad/dskchg_stock2.out): the same 18 bytes GETDPB writes). dskchg ->
+      dskchg_body (disk/kernel.asm): HL / DE kept, a 16-bit JIFFY delta against DSK_STAMP; under
+      2 s -> B = 1, A = 0; else dc_unk (disk/driver.asm): getdpb on the caller's HL, B = 0.
+      fdc_prep stamps DSK_STAMP at every sector command (fdc_seek moved to the $43A4 pad; four
+      hdl_* `jp` -> `jr` for the $75A5 room). 📏 [`dskchg_ours3.out`](scratchpad/dskchg_ours3.out): **B / Cy IDENTICAL in all four
+      rows, the refreshed DPB BYTE-IDENTICAL**; A in the "unknown" rows ($03 vs $F9) and HL
+      differ -- outside the published contract (B, Cy, the DPB). 🔮 HIT on B / Cy / DPB.
+      🔴 **THE FIRST CUT'S BOOT HANG, BISECTED:** DSKCHG stubbed back -- still hung; the stamp
+      removed -- booted; the stamp with HL preserved -- hung: the CELL. DSK_STAMP had been put at
+      $EDBB, which is disk.rom's RND_HSEC (D-PUTCACHE's held-sector tag) -- declared only in
+      disk/equates.inc, so the BASIC-side ram_map.py component showed $EDBB.. "unattributed"
+      and that was taken as free. Every sector command wrote JIFFY into the tag, and the next
+      read "flushed" a phantom sector. DSK_STAMP is $EDBD now (free in BOTH components'
+      maps). Lesson: an unattributed run must be checked in BOTH components, and it is a
+      candidate, never free space (ram_map.py says so on every run).
+      🎚️ TIER 1 — happy path of a disk-ROM entry point (a program asking "was the disk
+      changed?" before trusting its buffers).
+      🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) records 1-2 (A = 0 drive A, B = 0, C = $F9, HL = a
+      buffer), the disk just read: **CF-3300 Cy = 0, B = 1 ("unchanged")** both times; **ours Cy =
+      1, B = 0**: `dskchg` (disk/fat.asm) is `scf` / `ret`. ➡️ The MSX2 TH contract (B = 1
+      unchanged / 0 unknown / -1 changed, Cy + A on error); ours knows a change through the
+      FDC's disk-change line or DSK_MEDIA -- measure the "changed" answer on the CF-3300 (a
+      swap between the two calls) before choosing.
+      📏 **MEASURED (2026-11-08) -- `probes/disk/dskchg.asm`** (+ build_dskchg_disk.py): DSKCHG through
+      CALSLT right after a read, then after 1 / 3 / 10 s idle (JIFFY), no swap
+      ([`dskchg_stock.out`](scratchpad/dskchg_stock.out)): **CF-3300 B = 1 ("unchanged"), A = 0 right after and at +1 s; B = 0
+      ("unknown"), A = $F9 at +3 s and +10 s; Cy = 0 always.** A timed scheme, cut-off between 1
+      and 3 s -- the SAFE one: it never says "unchanged" long after the last access, so a swap
+      in the meantime cannot make MSX-DOS trust stale buffers. 🔮 "1, 1, 0, 0": HIT. (The first
+      run hung: a CALSLT can return with interrupts off, so the wait loop got an `ei`.)
+      📐 **THE FIX:** a 16-bit JIFFY stamp of the last FDC access (2 B, disk-owned: the
+      unattributed run at $EDBB in ram_map.py) set in fdc_io_done (push hl / ld hl,(JIFFY) / ld
+      (stamp),hl / pop hl, 8 B -- an 8-bit stamp would wrap after ~5 s and say "unchanged" after
+      a swap: the dangerous direction); dskchg = elapsed < ~2 s -> B = 1, A = 0; else B = 0, A =
+      (DSK_MEDIA); Cy = 0 (~29 B). The cut-off in SECONDS (the CF-3300 is a 60 Hz machine, ours
+      runs 50 Hz). 💰 ~35 B in the $4E4B region, which has 13 -- behind the same carve as
+      D-CALSLTP0.
+      🔴 **BUILT AND REVERTED THE SAME DAY (2026-11-08) -- OURS STOPPED BOOTING MSX-DOS.** The
+      design above was built (fdc_prep set a 16-bit DSK_STAMP at $EDBB; fdc_seek moved to the
+      $43A4 pad for the room; dskchg -> dskchg_body in the $75A5 region after four hdl_* `jp` ->
+      `jr`) and assembled clean -- and no DOS program reached its anchor any more (dskchg.asm,
+      dskent.asm). Reverted to the committed tree, dskent reaches its anchor again. 🔴 **THE
+      DESIGN WAS INCOMPLETE, NOT ONLY THE CODE:** in the published DSKIO-layer contract a
+      DSKCHG that answers "unknown" (0) or "changed" (-1) must ALSO bring the DPB at HL up to
+      date -- the CF-3300's A = $F9 in its "unknown" rows is most likely the media byte of the
+      boot sector it re-read for that. MSX-DOS calls DSKCHG while booting; ours answered
+      "unknown" without a DPB (and clobbered HL / DE), where the old stub's Cy = 1 sent the
+      kernel another way. ➡️ First MEASURE: the CF-3300's DPB at HL after an "unknown" answer
+      (dskchg.asm capturing the DPB buffer, not only the registers) and which registers it
+      keeps; then the body: the "unknown" path = getdpb with the caller's HL (A / B / C set as
+      getdpb expects), B := 0; the "unchanged" path keeps HL / DE. More bytes than the 24 B
+      measured above -- price it first. ⚠️ The JIFFY question this run also raised (does JIFFY
+      advance under MSX-DOS on ours? the wait loop never ended) was NOT answered: the boot
+      failure came first. Ask it again with the reverted build.
+
+- [x] 🔴 **D-GETDPB — THE PUBLISHED GETDPB ($4016) LEAVES THE CALLER'S DPB UNWRITTEN (found
+      2026-11-08 by dskent.asm)**
+      ✅ **CLOSED BY D-CALSLTP0 (2026-11-08):** the DPB is the CF-3300's byte for byte now
+      ([`dskent_both3.out`](scratchpad/dskent_both3.out)). Its exit registers still differ (A / F / B / HL), outside the
+      published contract -- filed under D-ENTRYTIERS step (3), "exercised -> same", not as a
+      defect.
+      🎚️ TIER 1 — happy path of a disk-ROM entry point.
+      🤖 **AUTONOMOUS** — 📏 [`dskent_both2.out`](scratchpad/dskent_both2.out) record 3 + the buffer (A = 0, B = C = $F9, HL =
+      the buffer): **the CF-3300 fills DPB+1..+18** -- F9 / 0200 / 0F 04 / 01 02 / 0001 / 02 / 70 /
+      000E / 02CA / 03 / 0007 ([`dskent_stock.out`](scratchpad/dskent_stock.out)); **ours leaves every byte $EE** and
+      returns Cy = 0. Our getdpb (disk/fat.asm) DOES write from HL+1 after fat_mount, so the
+      call is not reaching those stores on this path -- trace it (our ROM's PCs from $4016,
+      callwatch / capture) before changing anything.
+      📏 **TRACED (2026-11-08): IT DOES REACH THEM -- WITH THE BIOS IN PAGE 0.** capture at our
+      getdpb ($4C73) on ours ([`getdpb_entry.out`](scratchpad/getdpb_entry.out)): reached with the probe's own registers (HL
+      = DE = $0420, BC = $F9F9), but memory at $0418.. reads CODE (`F3`, `FB`, `CD 27 0A`) where
+      the probe's $EE buffer lives: **page 0 is the main BIOS ROM while our disk ROM runs**, so
+      getdpb's stores went into ROM. The CF-3300 ran the same CALSLT with page 0 the program's
+      RAM. ➡️ **This is D-CALSLTP0 below, not a getdpb bug**; GETDPB is re-measured once it lands.
+
+- [x] 🔴 **D-CALSLTP0 — UNDER MSX-DOS, A ROUTINE CALSLTED IN THE DISK ROM RUNS WITH THE BIOS IN
+      PAGE 0 (found 2026-11-08 by D-GETDPB)**
+      ✅ **FIXED (2026-11-08).** br6 (disk/kernel.asm, the $75A5 region; 105 B in RAM at BR6_RAM
+      $DF18..$DF80, inside DOS_RESV_TOP) is CALSLT for a page-1 / page-2 target: the caller's
+      slot for that page computed from $A8 / EXPTBL / SLTTBL, BR_ENASLT the target in (the BIOS
+      mapped into page 0 for the switch ONLY), the target called with page 0 the caller's RAM,
+      BR_ENASLT the caller's slot back; the save word on the stack (`push iy` / `ex (sp),hl`),
+      so a nested CALSLT cannot clobber it. Page 0 / page 3 targets keep the BIOS's CALSLT. The
+      $001C stub is `jp BR_CALS`; install_dos_env ends `jp install_br6` (9 B before $4E4B;
+      cpmver_body moved to the hole before $607B for the region's 2 B). 📏 dskent.asm
+      ([`dskent_both3.out`](scratchpad/dskent_both3.out)): **GETDPB's DPB BYTE-IDENTICAL to the CF-3300's (18 bytes)**; what
+      still differs is DSKCHG (D-DSKCHG) and GETDPB's exit registers (A / F / B / HL -- not in
+      the published contract, which defines the DPB). 🔮 HIT.
+      🎚️ TIER 1 — happy path of every entry point a DOS program reaches through CALSLT ($001C)
+      with a buffer below $4000: GETDPB's DPB, DSKIO's transfer buffer, anything in the TPA's
+      first 16 KB. Data written there by the callee is LOST; data read from there is the BIOS.
+      🤖 **AUTONOMOUS** — 📏 [`getdpb_entry.out`](scratchpad/getdpb_entry.out) (above). The likeliest cause is ours, not the
+      program's: D-TPAP1 (2026-10-23) bridges the page-0 inter-slot entries to the MAIN BIOS
+      through a page-3 bridge (disk/pageenv.asm, br_go / br_frame), which puts the BIOS into page
+      0 to run C-BIOS's CALSLT -- and the callee then runs under that mapping. ➡️ First, measure:
+      (1) on both machines, $A8 / the page-0 slot AT the callee's first instruction (an I/O
+      register and slot state -- the permitted side) for a CALSLT from a .COM; (2) whether
+      D-P1RDBLK / P1_BLIT's page-1 bounce already covers the page-1 half and only page 0 is open;
+      (3) then the bridge's shape: restore page 0 = the caller's RAM before the target runs
+      (the CF-3300's face), keeping the BIOS only for the BIOS's own CALSLT work.
+      📐 **WHY IT IS NOT A ONE-LINE FIX (2026-11-08, from disk/pageenv.asm's D-TPAP1 header):** the
+      $001C stub maps the BIOS into page 0 and enters C-BIOS's OWN CALSLT, which runs from page
+      0, switches the target's page and calls it -- so the target runs under the BIOS in page 0
+      by construction, and page 0 cannot be handed back before the call (the target returns
+      into that code). The CF-3300's face (step 1 is already answered by D-GETDPB: its callee
+      wrote the program's page-0 buffer) needs OUR OWN CALSLT for a page-1 / page-2 target in
+      page-3 RAM: switch that page (expanded slots too -- br_p0in has the page-0 logic), call,
+      restore, page 0 untouched. ⚠️ RAM: the 2026-10-20 / 10-21 rulings say *no new RAM for
+      the page-0 call-back*; whether a CALSLT that FITS in the present bridge block (the
+      INT_H_HIRAM block; measure its free tail first) is inside that ruling, or needs Joost's,
+      is the first thing to settle -- 🙋 ask if it does not fit.
+      📏 **THE BLOCK, MEASURED (2026-11-08, build/disk.sym):** the bridge pieces run INT_H_HIRAM
+      $DDAE .. **$DF1C** (br5, the last, is 53 B from BR5_RAM $DEE7); DOS_RESV_TOP, the top of the
+      reservation we advertise to MSX-DOS in DRVTBL+1, is **$DF93** -- just below where the
+      CF-3300 keeps drive B:'s FAT ($DF94, D-FATRES). So **$DF1C..$DF92, 119 B, is inside our own
+      reservation and nothing of ours is declared there** (tools/ram_map.py does not cover it:
+      its window is $E000..$F380). A page-1 / page-2 CALSLT fits. That is not "new RAM" in the
+      HIMEM sense if MSX-DOS / COMMAND.COM never write it -- ➡️ NEXT: a write watch on
+      $DF1C..$DF92 across a DOS boot + a program run (the method that verified $DDAE), then the
+      code; extend ram_map.py's window to cover it so the next tenant is seen.
+      ✅ **WATCHED (2026-11-08):** `disk_probe_diff.py writewatch --no-gate` on $DF1C+64 and $DF5C+55,
+      ours, the bdosx9 disk (COMMAND.COM + BDOSX9's whole run, armed at $0100):
+      **0 writes in both** ([`df1c_ww_0xdf1c.out`](scratchpad/df1c_ww_0xdf1c.out), [`df1c_ww_0xdf5c.out`](scratchpad/df1c_ww_0xdf5c.out)). MSXDOS.SYS's own early init
+      is before the arm; it places its kernel below $DD0E. 🔮 "0 writes": HIT.
+      📐 **THE SHAPE:** page 3 cannot switch itself, so the expanded-slot work stays the BIOS's,
+      through the bridge that already wraps it: a new br piece at $DF1C, reached from the $001C
+      stub when the target page (IX >> 14) is 1 or 2 -- stash AF / BC / DE / HL; read the
+      caller's slot for that page ($A8 + SLTTBL when expanded); `call BR_ENASLT` with IYH / IX
+      (it maps the BIOS into page 0, switches, and puts page 0 back); restore the registers and
+      `call` the target with page 0 = the caller's RAM; stash its outputs; `BR_ENASLT` back to
+      the saved slot; return them. A page-0 / page-3 target keeps today's path. ~70 B of the
+      119. Witnesses: dskent.asm's GETDPB (its DPB written), bdos-acceptance, p1vec /
+      callsystem (both CALSLT from the TPA).
+      💰 **BLOCKED ON DISK-ROM BYTES (2026-11-08):** the page-3 RAM is there, the ROM is not. The
+      piece is a template LDIR'd by install_dos_env right after br5 (BR5_RAM + 53 = $DF1C,
+      contiguous: one more `ld hl / ld bc / ldir`, 8 B); the $001C stub (br_calslt_tmpl, 7 B)
+      becomes `jp BR_CALS`. Estimated: ~90 B of template (page test 10, the caller's page slot
+      from $A8 / SLTTBL ~25, two register stashes around two BR_ENASLT calls, the jp (ix) call,
+      the old path for page 0 / 3) + 8 B of install. Every disk-ROM region has <= 5 B
+      (`scratchpad/pinguard.py --slack`). ➡️ A ~100 B carve first -- the largest yet:
+      candidates are `scratchpad/movescout.py` over the whole ROM for routines to sub-ROM
+      eviction (D-ROMSIZE's method for main), or a shared CALSLT helper replacing the page-0
+      dance br_p0in already holds.
+      💰 **D-DISKCARVE4 (2026-11-08): +90 B in front of $75A5 (5 -> 95).** `scratchpad/diskngram.py`
+      (repeated byte runs in disk.rom, label boundaries ignored -- the third cut's scan,
+      re-runnable; [`diskngram_1108.out`](scratchpad/diskngram_1108.out)) ranked first a 33-byte run x4: the FAT12 locate
+      still inline in fat_next_cluster, fat_read_fat_sector and fat_alloc_cluster's loop
+      (basic/fat-prim-body.inc) beside D-DISKCARVE's own fat_locate. The third cut had left
+      them "because the sub ROM assembles this body" -- 🔴 STALE: the body's own header says
+      the sub ROM stopped including it on 2026-10-19 (D-ROMSIZE step 1). All three are `call
+      fat_locate` now (byte-for-byte the same sequence, the same outputs and clobbers). FAT /
+      WRBLK / RAND / LOAD / WRRND / WRSEQ unit tests green. The room is D-CALSLTP0's template's.
+      📐 **THE PIECE, WRITTEN OUT (2026-11-08), ~121 B after two trims:** br6 at BR5_RAM + 53 =
+      $DF1C, reached by `jp BR_CALS` from br_calslt_tmpl (7 -> 3 B, so the RAM tail gains 4: 123).
+      `push af` / `ld a,ixh` / `and $C0` / `jr z,old` (page 0: today's BR_GO path -- DOS programs
+      CALSLT the BIOS that way); push hl/de/bc; D = the page address, B = p (rlca x2); C = the
+      caller's primary for page p from `in a,($A8)` (a `bfield` helper: A >>= 2p, and 3); if
+      EXPTBL[C] bit 7: OR in (SLTTBL[C] >> 2p & 3) << 2 and $80; E = that slot; `ld
+      (BC_TMP),de`; `ld h,d / ld a,iyh / call BR_ENASLT` (the target in); pop the caller's
+      regs; `ld iy,(BC_TMP) / push iy` (IY is CALSLT's input only, free now; the save word
+      rides the STACK, so a callee that itself CALSLTs cannot clobber it); `call bc_jpix` (`jp
+      (ix)`); push the outputs; read the save word at SP+8; `ld h,d / ld a,e / call BR_ENASLT`
+      (the caller's slot back); pop the outputs; drop the save word; ret. The page-3 test is
+      dropped (CALSLT into page 3 is meaningless). Interrupts: BR_ENASLT leaves them off, as
+      the CF-3300's CALSLT returns (dskchg.asm needed an `ei` there). 💰 ROM: ~121 + install 8
+      against 95 + 13 -- ~30 B short in the $75A5 region: the next diskngram hit (34 B x3,
+      fat_advance+13 / frs_mul+16 / innoe_body+19) first.
+      💰 **D-DISKCARVE5 (2026-11-08): the $75A5 region 95 -> 126 B.** The 34 B x3 hit was gone (it
+      overlapped DISKCARVE4's locate); the rescan ([`diskngram_1108b.out`](scratchpad/diskngram_1108b.out)) showed fdc_rd_nowin
+      (disk/kernel.asm) and fwd_nowin (disk/fat.asm) are the SAME 33-byte FDC-status ->
+      DSKIO-error decoder: the read path's one `jr nz` is `jp nz, fwd_nowin` now and its copy is
+      gone ($7F7C region 4 -> 34 B), then fac_cached_entry (28 B, entered only by call) moved
+      there from the $75A5 region -- so D-CALSLTP0's ~121-byte template fits in ONE piece there
+      (one `ldir` in install_dos_env, 8 of the $4E4B region's 13 B).
+
+- [x] 🔴 **D-WRRNDEXT — UNDER MSX-DOS, WRRND ($22) AND WRZER ($28) CANNOT EXTEND A FILE: A = $02
+      WHERE THE CF-3300 WRITES (found 2026-11-08 by D-WRZER)**
+      ✅ **FIXED THE SAME DAY, AS DESIGNED.** rrnd_position's past-EOF exit goes to `wrrnd_ext`
+      (disk/kernel.asm): FCB +14..15 := 0, RR saved, `wrblk_body` with HL = 1, RR restored,
+      then WRRND's own success tail (`wrrnd_ok`); a failure keeps WRBLK's A. 36 B: the 30 that
+      D-DISKCARVE3 made plus pg0_mainrom_out moved into the hole before $75A5. 📏 wrzer.asm on
+      both ([`wrzer_both1.out`](scratchpad/wrzer_both1.out), ours one-sided [`wrzer_ours1.out`](scratchpad/wrzer_ours1.out)): **R.DAT now the CF-3300's --
+      records 0 / 8 / 16 the disk's $CC, record 20 $55, size 2688, first cluster $157**; every
+      call A = 0. **bdosx9 BYTE-IDENTICAL, 0 of 280** ([`bdosx9_run6.out`](scratchpad/bdosx9_run6.out)) -- it joins
+      bdos-acceptance (BDOSX9) and leaves the reach allowlist. 🔮 "R.DAT matches, Z.DAT's
+      zero fill still missing": HIT. What remains is D-WRZER's zero fill and D-RNDFCB below.
+
+- [x] 🔴 **D-RNDFCB — RDRND LEAVES TWO FCB FIELDS THE CF-3300 CHANGES (found 2026-11-08 by
+      D-WRRNDEXT)**
+      ✅ **CLOSED (2026-11-08): RDRND's FCB is the CF-3300's in every row.** (a) CR = r0 mod 128,
+      (b) +12 = RR >> 7 and +14 := 0, (c) +28..31 = the record's cluster and its chain index --
+      rdrnd_ex computes the record's sector in the file (RR >> 2) into WRBLK_CURSEC and enters
+      wrblk_fcb_keep's own cluster-cache tail (`wfk_cache`); FAT_CURCLUS is the record's
+      cluster there (rrnd_position left it). Room for (c): D-DISKCARVE7 below. 📏 rndfcb.asm
+      ([`rndfcb_ours4.out`](scratchpad/rndfcb_ours4.out)) against [`rndfcb_stock.out`](scratchpad/rndfcb_stock.out): **all 13 captured bytes identical for
+      all five file sizes, both reads**. 🔮 HIT. ⚠️ rndfcb.asm stays parked (not in
+      bdos-acceptance): ours needs ~400 s of settle for its 25 KB WRBLK (D-BLKIOPERCALL) where
+      the runner gives 50. WRRND's tail likely wants (b) / (c) too -- unmeasured, not touched.
+      💰 **D-DISKCARVE7 (2026-11-08): +25 B in the $75A5 region.** KILL, NAME and COPY opened
+      with the same 17-byte prologue (`ld hl,(FN_RESUME)` / fname_expr / pdfcb_resume through
+      two calbaks; scratchpad/diskngram.py 17 B x3) -- one `hk_fname2` now; a RAISE inside it
+      drops its frame with the statement, as main's error path resets SP.
+      🎚️ TIER 1 — the FCB is an entry point's contract: a program that sets a record size,
+      RDRNDs, then RDBLKs reads with a different record size on the two machines.
+      🤖 **AUTONOMOUS** — 📏 wrzer.asm's read-back half ([`wrzer_both1.out`](scratchpad/wrzer_both1.out)): after FOPEN, RS
+      := 128, then RDRND of records 0 / 8 / 16 / 20, the CF-3300's FCB has **+14..15 = 0** (RDRND
+      cleared the record size) and **+28..31 = the cluster record 20 lives in and its index**
+      ($156 / 2 for Z.DAT); ours keeps +14 = 128 and +28..31 at the first cluster / 0.
+      ➡️ rdrnd_body: clear +14..15, and keep +28..31 as wrblk_fcb_keep does for WRBLK. First
+      check whether WRRND within the file clears +14 too (bdosx3's shape, one row).
+      📐 **DESIGN (2026-11-08):** wrblk_fcb_keep's tail (from `ld hl, (FAT_CURCLUS)`, after its
+      `ret z`) already turns FAT_CURCLUS + a sector-in-file index into +28..31; give it a label
+      and have rdrnd_body's success path set WRBLK_CURSEC := r0 >> 2 (four 128-byte records a
+      sector; r0 is the only RR byte rrnd_position reads) and call it, then clear +14..15 --
+      ~22 B. 🔴 BYTES: the $7F7C region rdrnd_body sits in is full again after D-WRRNDEXT
+      (`scratchpad/pinguard.py --slack`), and the largest hole elsewhere is 9 B ($55FF); even
+      the 3-byte call needs a carve there first. Candidates in that region: wrseq_body_write's
+      tail and the rdb_* exits (check each is entered only by jp / call before moving it).
+      ~~✅ HALF 1 SHIPPED (2026-11-08): RDRND clears the record size.~~ 🔴 **WITHDRAWN BEFORE
+      COMMIT -- bdos-acceptance went red on it.** rdrnd_body's success path had stored its `xor a`
+      into +14..15 (6 B); BDOSX3 then differed at its FCB **+15: CF-3300 $03, ours $00**
+      (rf_x_bdos run: the scratch 384-byte file, three 128-byte records, after RDRND). So the
+      CF-3300's RDRND does NOT clear +14..15: in wrzer.asm (2688 B, 21 records, RDRND of records
+      0 / 8 / 16 / 20) it left 0 / 0, in BDOSX3 0 / 3. The CP/M FCB's +15 is RC, the record
+      count of the current extent -- the likeliest reading, unmeasured: characterise +12..15
+      after RDRND on files of 1, 3, 21, 128 and 200 records before any code. The clear is
+      reverted; the room-making moves below stay (the FULL battery passed with them).
+      📏 **CHARACTERISED (2026-11-08) -- `probes/disk/rndfcb.asm`** (+ build_rndfcb_disk.py): files
+      of 1 / 3 / 21 / 128 / 200 records by WRBLK, FOPEN, RDRND of the last record then record 0,
+      FCB +12..15 / +28..35 after each ([`rndfcb_stock.out`](scratchpad/rndfcb_stock.out), [`rndfcb_ours.out`](scratchpad/rndfcb_ours.out)). **+15 is
+      FOPEN's record count (min(N, 128)) and RDRND leaves it -- IDENTICAL on both machines in
+      every row**; the wrzer.asm "0" was the probe's own RS write. What differs: (a) **+32 CR =
+      r0 mod 128** on the CF-3300 (record 199 -> $47); ours stored raw r0 ($C7) -- FIXED here,
+      `and $7F` in rdrnd_body (2 B); (b) **+12 = RR >> 7** (record 199 -> 1; ours 0), and +14
+      cleared (wrzer.asm: $80 -> 0) -- the CP/M EX / S2 pair; (c) **+28..31 = the cluster the
+      record lives in and its index** (record 199 -> $198 / $18; ours keeps FOPEN's). 🔮 "+15 the
+      extent record count, +12 = 1 at record 199": both HIT as values, the first MISSED as to
+      WHO sets it (FOPEN, not RDRND). ➡️ (b) + (c), ~28 B, in the $7F7C region (9 B left after
+      (a)); WRRND's tail (wrrnd_ok) likely wants (a)-(c) too -- unmeasured, so not touched.
+      💰 **D-DISKCARVE6 (2026-11-08): room for (b) + (c).** `scratchpad/diskngram.py`'s top hit,
+      15 B x5, is the "next directory sector" step (FAT_DIRSEC += 1, FAT_DIRREM -= 1) in five
+      directory walks -- hkm_next, ff_skip, fdcr_entloop, df_nextent, dsm_skip (two of them
+      spelled without the space after the comma, so the first exact match found only three).
+      One `dir_nextsec` in the $75A5 region; every site follows it with an unconditional `jr`
+      (no flag read). Slack after: $75A5 0 -> 18 B, $7F7C 3 -> 14, $5E10 0 -> 11.
+      ✅ **(b) SHIPPED (2026-11-08): +12 = RR >> 7, +14 := 0** -- `rdrnd_ex` (16 B, the $75A5
+      region), called from rdrnd_body's success path. 📏 rndfcb.asm on ours
+      ([`rndfcb_ours3.out`](scratchpad/rndfcb_ours3.out)) against the CF-3300's: **every row identical but +28 / +30 on the
+      last-record reads of the 21 / 128 / 200-record files** -- (c), the cluster cache. 🔮 HIT.
+      ➡️ (c): ~20 B (WRBLK_CURSEC := RR >> 2, then wrblk_fcb_keep's tail from `ld hl,
+      (FAT_CURCLUS)`); check first that FAT_CURCLUS after bdos_seqread is the record's cluster.
+      ⏱ Ours reached the anchor at 176 s, the CF-3300 at 56 s (the WRBLK of 25 KB: D-BLKIOPERCALL). Room from `scratchpad/movescout.py` (routines in an
+      address range entered only by call / jp / dw, ending unconditionally): wrseq_body_write
+      (8 B) moved to the hole before $55FF, and pg0_mainrom_in -- only `jp br_mainin_tmpl` since
+      D-DISKCARVE -- is gone, its eight callers calling br_mainin_tmpl. 📏 wrzer.asm on both
+      ([`wrzer_both2.out`](scratchpad/wrzer_both2.out)): FCB +14..15 the CF-3300's on both files THERE (🔮 HIT on that probe,
+      wrong as a rule -- above). ➡️ The +12..15 characterisation first; then the cluster cache
+      (~16 B in the $7F7C region, which has 11 B now).
+
+
+      🎚️ TIER 1 — happy path of an entry point (random write past the end is how a CP/M-style
+      program grows a file).
+      🤖 **AUTONOMOUS** — wrrnd_body (disk/kernel.asm, M26) positions with rrnd_position and
+      refuses past EOF -- its header scoped FAT growth out. The growth machinery exists twice
+      already: WRBLK's (wrblk_read_or_extend_sector / wroe_ext) and BASIC PUT's (frnd_locate /
+      frl_ext). 🔴 bdos-acceptance's BDOSX3 exercises WRRND only INSIDE a file, which is why the
+      entry table counts WRRND "exercised": the table's own warning, met on its first day.
+      📏 Witness ready: `probes/disk/wrzer.asm`'s R.DAT half (record 20 of an empty file by
+      WRRND; the CF-3300 writes it, size 2688, the added records the disk's bytes). Needs
+      disk-ROM bytes (none free outside the FDC window): a carve first.
+      📐 **DESIGN (2026-11-08): WRRND past EOF = WRBLK of one 128-byte record.** wrblk_body already
+      extends a file from FCB state (wrblk_fcbstate, wroe_ext) and leaves the sectors an
+      extension skips UNWRITTEN -- the CF-3300's WRRND face ($CC kept, wrzer_stock3.out). So
+      wrrnd_body's past-EOF exit (`jr c, wrrnd_ioerr` after rrnd_position) goes to a wrapper:
+      save FCB +14..15, set 128; DE = the FCB, HL = 1, `call wrblk_body`; RR -= 1 (WRBLK
+      advanced it, WRRND does not); restore +14..15; map A. Within-file WRRND stays on its own
+      path (bdosx3 green on it). ~45 B -- the largest usable hole is 12 B (`scratchpad/pinguard.py
+      --slack`), so a carve first. ⚠️ The CF-3300 left +14..15 = 0 after WRZER + FCLOSE
+      (bdosx9 $04FE) where ours keeps 128: read which call zeroes it before copying it.
+      WRZER then = the same wrapper + zero sectors for the clusters wroe_ext adds.
+      💰 **D-DISKCARVE3 (2026-11-08): +30 B in front of $7F7C**, the region wrrnd_body lives in.
+      fat_have_free_cluster and getalloc_body carried the same 32-byte step verbatim (cluster
+      HL's FAT entry, its sector read into WBUF unless FAT_WRTMP2 says it is cached); it is
+      `fac_cached_entry` now, sited in fat_have_free_cluster's region ($75A5's, 12 -> 11 B), so
+      getalloc's region gains the whole copy (`scratchpad/pinguard.py --slack`: $7F7C 0 -> 30 B).
+      fat_alloc_cluster's similar step is NOT folded in: it flushes a dirty buffer first and
+      lives in basic/fat-prim-body.inc, which the sub ROM also assembles. 📏 bdosx9
+      ([`bdosx9_run5.out`](scratchpad/bdosx9_run5.out)): unchanged, ALLOC byte-identical, the same 10 WRZER bytes. 🔮 HIT.
+
+- [x] 🔴 **D-AUXOUT — BDOS $04 (AUXOUT) UNDER MSX-DOS STOPS OUR PROGRAM (found 2026-11-08 by
+      D-ENTRYTIERS step 2)**
+      ✅ **FIXED THE SAME DAY.** callwatch on our ROM ([`auxout_callwatch.out`](scratchpad/auxout_callwatch.out)): the kernel
+      enters **$5474 = lstout_body+12** -- AUXOUT's canonical entry, never planted (the D-WRZER
+      class); lstout_body then ran into our page-3 bridge. `k_5474` / `auxout_body` is now the
+      body itself at the pinned address, `ld a, e` / `ret` (no AUX device on either target; the
+      CF-3300 hands the char back in A). Room: the 12 B in front of $5474 hold cr_copy1 (+3 pad);
+      write_sector moved to the $5FE5 fill; mul_reclen's reclen-256 arm `ld l, 0` -> `ld l, e`
+      (E = 0 there, OPEN's LEN= is 1..256) for the last byte the $553C pin lacked -- found by
+      the pin-guard technique (an overrun empties the ROM). 📏 bdosx9 whole
+      ([`bdosx9_run3.out`](scratchpad/bdosx9_run3.out)): both reach the anchor with IDENTICAL registers; records 10-17 --
+      AUXOUT (B = H = $74 too) and all seven unused numbers -- byte-identical. 🔮 "AUXOUT A =
+      $41, B / H may differ": A HIT, the doubt MISSED (they match).
+      🎚️ TIER 1 — happy path of an entry point.
+      🤖 **AUTONOMOUS** — bdosx9 cut before the unused numbers ([`bdosx9_bisect4.out`](scratchpad/bdosx9_bisect4.out)):
+      after FCLOSE both machines agree; after AUXOUT (E = 'A') ours never reaches the anchor,
+      the CF-3300 does (AUXOUT returned A = $41 there, [`bdosx9_stock.out`](scratchpad/bdosx9_stock.out) record 10). ➡️ First:
+      `callwatch --in-func 0x04 --machine ours` -- which of OUR ROM's addresses the kernel
+      enters (most likely another canonical entry never planted, the D-WRZER class).
+
+- [x] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
+      found 2026-09-28).** ✅ **CLOSED 2026-11-06 by D-COPYALL (below in this block).**
+      🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
+      ~~🙋 **NEEDS-JOOST**~~ — the autonomous half (one match, no match, the destination
+      fill) SHIPPED 2026-09-28; ~~only the multi-match ruling (➡️ at the end) is left.~~
+      🏗️ **JOOST 2026-11-06: *"we first need to get clarity before we make a decision. When you
+      get back to that, feel free to use a fable agent to explore the issue."*** -- when picked
+      up: a Fable agent measures the multi-match cases on the CF-3300 (why fixture files copy
+      and freshly written files / an ON ERROR program give no reading), THEN the ruling.
+      📏 **CLARITY MEASURED 2026-11-06 (Fable agent, 30 cases, CF-3300,
+      [`copymulti_probe.py`](scratchpad/copymulti_probe.py), runs
+      [`copymulti_run1.out`](scratchpad/copymulti_run1.out) ..
+      [`copymulti_run4.out`](scratchpad/copymulti_run4.out)).** 🔴 **NOTHING HANGS, AND
+      FRESH-vs-FIXTURE AND ON ERROR MAKE NO DIFFERENCE** -- every "no reading" above was
+      `copywild_probe.py` reading the screen 8 s after RUN, while two file writes plus a
+      2-match COPY need ~10 s (`w_star_orig`, the old program verbatim: `[X1|X2OK]` lands at
+      +10.0..10.5 s). What multi-match COPY DOES on the CF-3300: it walks the root directory in
+      slot order and copies EVERY match (~1.5-2.5 s each), filling the destination per position
+      (fixed char stays, `?` takes the source's char, `*` the rest; `?` also matches a BLANK
+      position, so `PROG?.BAS` hits `PROG.BAS`). A PLAIN destination is rewritten once per
+      match, last match wins, no error (`*.BAS` -> `Z.TXT`). The walk is LIVE: a destination
+      appended AFTER the cursor is visited again, and if it matches the source pattern its
+      filled name is itself -> the self-copy raises 5 AFTER all real copies (`*.BAS` ->
+      `Z.BAS`, `*.TXT` -> `C*.TXT`, `*.*` -> `N*.*`: 6 copies, then 5). The separator: `KILL`
+      a file first so the destination takes a freed slot BEFORE the cursor, and the identical
+      `*.BAS` -> `Z.BAS` completes with NO error (`sm_slot`). So copy-acceptance's `c.wild`
+      (ERR 5) agrees FOR THE WRONG REASON: the reference makes three copies first.
+      Side findings: an UNRELATED open channel does not block COPY there (`open_other`);
+      copying a file that is itself open is `File still open`. The internal reason for the
+      trailing 5 is inferred from behaviour only (self-copy predicts all readings).
+      🙋 **THE RULING NOW HAS ITS FACTS (asked 2026-11-06):** (a) keep 5 for 2+ matches, or
+      (b) copy every match like the CF-3300, including the live-walk trailing 5 when the
+      destination matches the source pattern.
+      🏗️ **RULED (Joost, 2026-11-06): *"b, copy every match like the reference"*.**
+      ✅ **D-COPYALL SHIPPED 2026-11-06.** `hkc_resolve` (disk/kernel.asm) walks the root
+      directory: the first match at or after a cursor gets its real name as the source, the
+      typed destination pattern is restored, and the ordinary one-file path (`hkc_fill`) copies
+      it; then the walk re-reads the directory from the top. Live, so the reference's trailing
+      self-copy 5 and the freed-slot no-error case fall out with no special case. No new RAM:
+      both patterns and the cursor live in a 24-byte stack frame. 📍 The `$5602..$5E10` fill
+      (pinned by D-DISKRUN) overflowed by 56 B -- disk.rom assembled EMPTY -- so `hk_ochk`,
+      `hoc_dout`, `dout_row` and COPY's three result tails moved into holes in driver.asm /
+      kernel.asm, and the walk tests the attribute byte where `name_cmp` leaves HL (-6 B);
+      disk.rom 262 -> 176 B free. 📏 All 30 of the agent's cases re-run on zerobas
+      ([`copyall_zb.out`](scratchpad/copyall_zb.out), compared by
+      [`copyall_cmp.py`](scratchpad/copyall_cmp.py) -> [`copyall_cmp.out`](scratchpad/copyall_cmp.out)):
+      28/29 SAME (directory, sizes, bytes and screen text), the 29th (`w_star_orig`) same files
+      and result, only scrolled one line further (the probe sets no WIDTH: 37 vs 39 columns);
+      🔮 predicted >= 28 with `sm_slot` the likeliest miss: HIT, and `sm_slot` agrees.
+      ✅ **GATED:** copy-acceptance rows `c.wmany` (`*.BIN` -> `*.BAK`, two copies), `c.wplain`
+      (`*.BAS` -> `Z.TXT` = PROG3), `c.wslot` (KILL first: no error) and a byte check on
+      `c.wild` (Z.BAS = PROG3 before the 5) -- 15/15 agree, the CF-3300 column too
+      ([`copyall_survey.out`](scratchpad/copyall_survey.out)). Knife: HEAD's kernel.asm +
+      driver.asm (disk ROM `9c4d9824` -> `7ee6b38b`, restored) turns exactly those four
+      DIVERGENT, and `c.wild`'s FACE stays OK under it -- only the byte check sees it
+      ([`copyall_knife.out`](scratchpad/copyall_knife.out)).
+      ~~🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
+      multi-match case keeps raising 5; nothing autonomous is left.~~ (superseded 2026-11-06) Re-opens only
+      when Joost revisits it. 🅿️ Re-confirmed 2026-10-17: "copy to can remain parked".
+      📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
+      • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
+        (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
+      • NO match — `COPY "Z*.TXT" TO "C*.TXT"` is 53 there; zerobas: 5.
+      • 🔴 **CORRECTED SAME DAY — "TWO OR MORE MATCHES NEVER COMPLETE" WAS TOO
+        STRONG, AND ONE READING WAS MY PROBE'S ECHO.** `copywild_probe.py`'s regex
+        read the TYPED `PRINT"[|OK]"` when a case printed nothing ([[trapsvc-echo-fence]]);
+        fenced now (CHR$(91)), re-run ([`copywild_run5.out`](scratchpad/copywild_run5.out)):
+        three FIXTURE matches `PROG*.BAS` → `Q*.BAS` COMPLETE (line 40 runs); two
+        FRESHLY WRITTEN `A1`/`A2` → `C*.TXT` / `D?.TXT` / `G*.TXT` give no reading at
+        20–240 s ([`copywild_screen.out`](scratchpad/copywild_screen.out): blank after RUN);
+        `*.BAS` → a PLAIN `Z.BAS` is ERR 5 untrapped in copy-acceptance's fenced
+        survey ([`copy_survey.out`](scratchpad/copy_survey.out), which also confirms
+        its pinned `c.wild` against the CF-3300 today) but gives no reading inside an
+        ON ERROR program. Unasked: why fresh files and ON ERROR change the outcome.
+      ✅ **THE AUTONOMOUS HALF IS DONE (2026-09-28).** Measured first, three more
+      single-match shapes on the CF-3300 ([`copywild_run6.out`](scratchpad/copywild_run6.out)):
+      `COPY "A1.*" TO "E?.*"` → E1.TXT, `COPY "A1.T?T" TO "K1.TXT"` → K1.TXT, and —
+      the one that widened the rule — **`COPY "A1.TXT" TO "H?.TXT"` → H1.TXT: a '?'
+      in the DESTINATION takes the source's character even when the source is
+      plain.** zerobas made a file literally named `H?.TXT` there.
+      **FIX (disk/kernel.asm `hkc_body`, zero main bytes):** a '?' source is
+      COUNTED against the root directory (`hkc_resolve`, fat_find's walk and
+      `name_cmp`): 0 → 53, exactly 1 → its real name becomes the source, 2+ → 5 as
+      before; then every destination '?' is filled from the source, for a plain
+      source too, before the self-copy check. The count lives in `COPY_LEFT`
+      (COPY's own cell, set only after) and the one match is re-fetched with
+      `fat_find`, so no RAM is added.
+      📏 After ([`copywild_run7.out`](scratchpad/copywild_run7.out)): all five cases
+      agree. ✅ **GATED:** `copy-acceptance` rows `c.wild1` (`HI.*` → `H2.*`),
+      `c.wmid` (`T?ST.BIN`), `c.wnone` (53) and `c.fill` (`TEST.BIN` → `X???.BIN`),
+      each copy read BYTE-FOR-BYTE off the image — 12/12 agree with the CF-3300
+      ([`copywild_survey.out`](scratchpad/copywild_survey.out)). Knife: HEAD's
+      kernel.asm (disk ROM `6af04b37` → `d410d692`, restored) turns exactly those
+      four RED — `c.fill`'s error FACE even reads OK under the knife, and only the
+      byte check catches the literal `X???.BIN` ([`copywild_knife.out`](scratchpad/copywild_knife.out)).
+      ✅ **RULED (Joost, 2026-10-09): "stay error 5 for now".** Two or more
+      matches keep raising `Illegal function call` (5); not copying them all,
+      not matching the hang. "For now" -- a later ruling may revisit it; do not
+      re-ask meanwhile. The item stays open only as that recorded divergence.
+      ~~🙋 **WHAT REMAINS IS ONLY THE RULING BELOW** — two or more matches (5 today).~~
+      ➡️ **WAS FOR JOOST:** faithfulness would mean copying the reference's HANG for
+      two or more matches. The autonomous part is the single-match copy (dest
+      `?`/`*` filled from the source name) and the no-match 53; what to do for
+      several matches — refuse (5, today), copy them all, or match the hang — is
+      a ruling, not a measurement.
+      📏 [`copynameopen_run.out`](scratchpad/copynameopen_run.out) `c_wild` read 5 here
+      before D-COPYNAMEOPEN; it agrees now (64) only because the open check runs
+      first — with nothing open the refusal is still there. Its shape on the
+      CF-3300 with nothing open is unmeasured.
+
+- [x] ⏱ **D-T5TWINREM — A T5 "KEYWORD ALONE" READING INCLUDES THE TWIN'S `REM` STAND-IN,
+      AND THAT STAND-IN'S COST JUST CHANGED UNDER IT (found 2026-10-05 by space plan B-6; MEASURED)**
+      🎚️ TIER 5 — on-par speed: T5 is a ratio that never ticks, so no level moved,
+      but its readings are what the speed work will rank by.
+      📏 B-6 (D-STMTIDX) replaced `exec_stmt`'s linear table walk with an indexed
+      dispatch. Statement rows' T5 fell as expected (LOCATE 3× -> 1.5×, VPOKE
+      2.9× -> 1.8×, RESTORE 4.5× -> 3.7×). But FUNCTION rows ROSE together:
+      AND/OR/XOR/EQV/IMP +0.16..0.2×, PEEK 0.7× -> 1.2×, VPEEK 0.35× -> 0.79×,
+      INKEY$ 0.56× -> 1.3×.
+      🔬 The mechanism, from `twin_bodies` in
+      [`basic_probe_kwtime.py`](probes/basic/basic_probe_kwtime.py): the twin
+      DELETES the carrying statement, and a line left empty becomes `REM`. REM
+      was entry 59 of the old walk (~2000 cycles to find) and is ~160 now, so
+      the TWIN got faster by far more than the row's own PRINT (entry 8) did.
+      `zb row - zb twin` grew with no change to any function body. The OLD
+      readings were the distorted ones: they understated zerobas's cost.
+      ➡️ Decide what a twin's filler should cost. Options: subtract a measured
+      `REM`-line baseline on each side, or keep the emptied line's `:` / REM but
+      say in the sheet that the reading includes one statement dispatch.
+      Re-read the function T5 column after, never before.
+      🔴 **AND T5 IS NOT STABLE RUN TO RUN (2026-10-05, space plan B-11).** One
+      gates-fast after B-11 -- a change that touches only cold sub-ROM tenant
+      calls -- moved T5 on rows it cannot reach: RESTORE 3.7× -> 1.6×, WAIT
+      1.6× -> 4.2×, INKEY$ 1.3× -> 0.61×, RETURN 0.91× -> 1.4×, while every T2
+      cell held. A ratio of two small differences amplifies batch jitter; the
+      relative floor (NOISE_REL, 1% of the row) is evidently not enough. Until
+      this is fixed, a slice's speed cost has to be read by timing the rows ALONE
+      on both builds (B-10 did: `--only`), never off the sheet's T5 column.
+      🤖 **AUTONOMOUS** — apparatus; both sides are measurable.
+      ✅ **CLOSED 2026-11-06, BOTH HALVES.** (1) THE FILLER: since D-STMTIDX the emptied line's
+      `REM` is ONE indexed dispatch on both machines (not the old walk's entry 59), so it
+      stays, and the sheet says so: the T5 legend (tools/tier_table.py -> docs/tier-status.md)
+      now reads "a twin whose line the deletion empties runs one `REM` dispatch in its place
+      on both sides"; `twin_bodies`' docstring records why. (2) THE INSTABILITY: a ratio of
+      two differences carries both sides' jitter, NOISE/dr + NOISE/dz relative; `alone()`
+      (probes/basic/basic_probe_kwtime.py) now declines a reading wider than +-25 %
+      (`T5_UNC`), as it declines one below the floor. 🔮 Predicted 24 of 198 readings would
+      go `~` (computed from the pin): 24 -- vpoke (+-130 %), outkw, swap, locate, sound,
+      waitkw, lprintkw, ongoto, restorekw_b, nextkw, clearkw, let, ifkw ... Selftest arms
+      K28 (negative: vpoke's 0.84 / 0.71 ms -> no reading; positive: the same row at 10x
+      reads). The local pin's `alone` values were recomputed from its stored timings (a
+      derived field); the next kwtime run writes them itself.
+
+- [x] 🔌 **D-SYNCHR — `RST $08` (SYNCHR) IS STILL C-BIOS'S DEBUG STUB: IT PRINTS "SYNCHR" AND
+      RETURNS (found 2026-10-05 by space plan B-12; NOT MEASURED on a machine-code row)**
+      🎚️ TIER 6 — a published BIOS entry that machine-code routines and CALL
+      extension ROMs parse with, not a keyword. Re-tier if that surface is in
+      scope sooner.
+      🔬 C5 (the 2026-10-03 space hunt) noted that C-BIOS's `$0008` is `jp` onto
+      a debug stub ("NOTE: this implementation is still a stub!" in C-BIOS's own
+      source, which is ours to read). zerobas already implements `$10` CHRGTR and
+      `$18` OUTDO (tools/build_mainrom.py PATCH_RANGES); `$08` was never done.
+      C5 itself put a SPACE-SKIPPING SYNCHR there and was dropped for it
+      (Joost's 2026-10-04 rule: a published entry keeps its contract); B-12 took
+      the byte saving another way (C5-lite, `req_comma`) and left `$08` alone.
+      The published contract (MSX2 Technical Handbook, BIOS `$0008`): `(HL)` is
+      compared with the byte AFTER the RST; a mismatch is Syntax error; a match
+      continues as CHRGTR (HL+1, spaces skipped, A = the char, CY if a digit, Z
+      at end of statement). NO space skip before the compare.
+      ➡️ Measure first: a `DEFUSR` routine that sets HL at a typed `,` and does
+      `RST 8 / DB ","` (then `DB ";"` for the mismatch), on both references and
+      ours. Then implement it exactly at `$08` through PATCH_RANGES (~12 B; an
+      island, if one has room). Check the other RST vectors (`$20` DCOMPR, `$28`
+      GETYPR, `$30` CALLF) the same way.
+      🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **FIXED 2026-11-07.** 📏 Measured first ([`synchr_probe.py`](scratchpad/synchr_probe.py) -> [`synchr_run.out`](scratchpad/synchr_run.out); a DEFUSR
+      routine points HL at RAM and does `RST 8 / DB c`): both references alike -- `,5` ->
+      HL+1, A = '5', F = $23; `;` expected -> ERR 2; ` ,` -> ERR 2 (no space skip BEFORE the
+      compare); `, 5` -> HL+2. zerobas's stub diverged on three of the four. `synchr`
+      (basic/islands.asm, island 2) compares, steps the return address past the byte, raises
+      via stmt_error, and falls into chrgtr; `$0008` -> `jp synchr` (tools/build_mainrom.py
+      PATCH_RANGES, was C-BIOS's `jp $10ED`). And **chrgtr itself now runs in the classic
+      order** (`cp ':' / ret nc / cp ' ' / cp '0' / ccf / inc a / dec a`): the references'
+      F = $23 on a digit is exactly that, where ours had the same Z / C contract with other
+      undocumented bits -- and it is 4 B shorter. 🔮 "both rows match, F too": HIT
+      ([`synchr_after.out`](scratchpad/synchr_after.out)). Gate: synchr-acceptance (probes/basic/basic_probe_synchr.py, 4/4,
+      [`synchr_gate.out`](scratchpad/synchr_gate.out)); HEAD's readings in synchr_run.out are the knife. ➡️ Still open from this
+      item: `$20` DCOMPR (bios-regs.patch matched it), `$28` GETYPR, `$30` CALLF -- the same
+      DEFUSR measurement.
+      ✅ **`$28` GETYPR DONE THE SAME DAY.** [`getypr_probe.py`](scratchpad/getypr_probe.py) (a USR routine: RST 28h, then F and
+      VALTYP $F663 stored) -> [`getypr_run.out`](scratchpad/getypr_run.out): VALTYP was already right (2 / 4 / 8) but C-BIOS's
+      $0028 left F = $42 / $02 / $02 where both references give $AD / $01 / $04 -- exactly
+      the classic `ld a,(VALTYP) / cp 8 / jr nc / sub 3 / or a / scf`. `getypr` is in the
+      LOW region (basic/varfind.asm, +16 B, 72 -> 56: islands 1, 2 and 3/4 were all full);
+      $0028 -> `jp getypr` (PATCH_RANGES). 🔮 "all three match": HIT ([`getypr_after.out`](scratchpad/getypr_after.out));
+      synchr-acceptance gained g.int / g.sng / g.dbl / g.str, 8/8 ([`synchr_gate2.out`](scratchpad/synchr_gate2.out)). zerobas
+      never `rst $28`s itself, so nothing internal moves. ~~➡️ Left: `$30` CALLF.~~
+      📏 **`$30` CALLF MEASURED THE SAME DAY, AND LEFT AS IT IS** ([`callf_probe.py`](scratchpad/callf_probe.py) ->
+      [`callf_run2.out`](scratchpad/callf_run2.out): a USR routine RST 30h's into a routine of ours in page-3 RAM, the slot
+      computed in BASIC from $A8 / EXPTBL / $FFFF -- the first run used RAMAD3, a disk-ROM
+      cell the diskless VG-8020 never sets, and read nothing there, [`callf_run.out`](scratchpad/callf_run.out)): A / BC /
+      DE / HL pass through both ways on all three; the ONLY difference is the flags the
+      TARGET receives -- $44 (Z, P/V) on both references, $42 (Z, N) through C-BIOS's
+      CALSLT -- and the returned F differs only by that (the target's own `scf` keeps S / Z /
+      P). Not matched, deliberately: the flags at a CALLF target are undefined, and matching
+      them means changing what C-BIOS's CALSLT leaves -- the hot path of every hook and every
+      sub-ROM crossing -- for no reader. The RST-vector sweep this item asked for is done.
+
+- [x] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
+      THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**
+      🎚️ TIER 6 — every error / edge: a program writes its own quotes AND text
+      after them, or leaves one open.
+      🤖 **AUTONOMOUS** — the rules are measured; the shape needs a PEEK.
+      🔴 **D-INPQUOTE's filed rule was wrong in its last clause.** It said *"after
+      the closing quote the rest of the field up to its comma or CR is consumed"*.
+      Only the quote-then-CR case had ever been run
+      ([[a-justification-parenthesis-is-an-unrun-claim]]).
+      [`inpquote_run.out`](scratchpad/inpquote_run.out), CF-3300 → zerobas:
+      - `"AB"CD` then `NX`: A$ = AB on both, then the next LINE INPUT reads
+        **`CD`** there and `NX` here. After the closing quote the FIELD ENDS and
+        the rest belongs to the next read; a CR/LF right after the quote is still
+        consumed (`quoted`/`qcomma` agree).
+      - `"AB"CD,EF`: the next LINE INPUT reads **`CD,EF`** there and `EF` here.
+      - `"AB,CD` (unclosed): **CR and LF are DATA inside quotes.** A$ is 11 bytes,
+        through the next line to the end of file, and then the LINE INPUT is 55.
+        Here the field is `AB,CD` and the read goes on.
+      - Console `"AB"CD` → **`?Redo from start`** on the VG-8020; AB here.
+      🎯 **SHAPE:** after the closing quote, eat blanks and at most ONE comma, or
+      ONE CR with its LF, and leave anything else. That is a PEEK, which main's
+      reader has not got. The seqio tenant's `sq_numitem` already does exactly this
+      for a numeric item, so a disk string item belongs there too. The tape is a
+      peek of `CAL_*` (D-EOFCAS's); the console answers `?Redo` instead.
+      ✅ **DISK HALF FIXED 2026-11-05.** S10.C had since moved the disk reader into disk.rom
+      (hk_chin), so the "seqio tenant" above is stale: the string field is now H_CHIN op 5,
+      disk.rom din_str, beside din_num, with din_num's own dnm_tail / dnm_delim for what
+      follows the quote; main's inp_strread routes a DISK channel in field mode there
+      (LINE INPUT # and CAS: keep read_into_strscr). Three pieces in three holes (no hole
+      held 70 B): before $504E, $46BA, $4392. Main low region 414 -> 403 B at $3297; disk
+      free 540 -> 422 B (runs >= 16 B). All 14 file rows agree
+      ([`inpquote2_after.out`](scratchpad/inpquote2_after.out)); gate inpquote-acceptance
+      (probes/disk/disk_probe_inpquote.py) 14/14 ([`inpquote2_gate.out`](scratchpad/inpquote2_gate.out));
+      knife (HEAD's kernel / fat / driver / input / files) exactly qjunk, qjunkc, qopen
+      DIVERGE ([`inpquote2_knife.out`](scratchpad/inpquote2_knife.out)). 🔮 "all 14 agree"
+      HIT. ➡️ OPEN: the cassette (a CAL_* peek).
+      ✅ **CONSOLE HALF FIXED 2026-11-05.** Measured ([`inpquote_console.out`](scratchpad/inpquote_console.out)):
+      blanks and a comma may follow a typed closing quote (`"AB"  `, `"AB" ,CD`, `"AB",CD`
+      read AB); `"AB"CD`, `"AB" CD`, `"AB""` give no reading -- 🔮 "blanks / comma fine, any
+      other byte ?Redo" HIT. basic/files.asm ris_quoted: past the closing quote a non-blank
+      from linebuf_getbyte unwinds to inpc_redo3 (both console callers hold [varstart]
+      [textcur][key]); a cassette still drops it. +18 B of the $72D4 pad. Gate
+      inpredo-acceptance (probes/basic/basic_probe_inpredo.py): ⚠️ every row types a SECOND
+      answer, XY, so a redo row reads `[XY| 2 ] +Redo` and a hang cannot agree with it --
+      the first battery's three agreeing NO READINGs were not evidence. 7/7
+      ([`inpredo_gate.out`](scratchpad/inpredo_gate.out)); knife (HEAD's files.asm) exactly
+      the three redo rows DIVERGE ([`inpredo_knife.out`](scratchpad/inpredo_knife.out)).
+      📏 **CASSETTE HALF MEASURED 2026-11-07** ([`inpquote_cas_probe.py`](scratchpad/inpquote_cas_probe.py): each row an encoded tape --
+      cas_encode.build_cas_ascii, CR LF lines, Ctrl-Z end -- read by INPUT #1,A$ then LINE
+      INPUT #1,R$; VG-8020 vs zerobas NODISK; [`inpquote_cas_run.out`](scratchpad/inpquote_cas_run.out)): the tape follows the
+      disk's rules on the VG-8020 -- `"AB"CD` leaves CD for the next read, `"AB"CD,EF` leaves
+      CD,EF, an unclosed `"AB,CD` takes CR/LF as data to the end (11 B, then 55) -- and
+      zerobas diverges on exactly those three (qjunk, qjunkc, qopen); plain, quoted, qcomma,
+      qmid, qlead and `"AB"  ,CD` agree. 🔮 "those three, the rest SAME": HIT.
+      ➡️ **DESIGN (not built -- the put-back is the cost):** read_into_strscr (basic/files.asm)
+      needs (a) inside an open quote on a cassette, CR / LF kept as data (a STRSCR == '"'
+      test before ris_lp's CR / LF arms), and (b) past the closing quote, a non-blank non-comma
+      byte PUT BACK and the field ended. The cassette source is the sub tenant casget_tenant
+      (sub/casmatch.asm): stepping CAL_CNT back works inside a block but NOT across its last
+      byte, whose read refills and swaps the double buffer at once (a step back would re-run
+      the refill and read a FURTHER block). So it is a one-byte pushback cell that
+      cal_getbyte serves first (~25-35 B + 2 B of RAM, map and gate), measured against the
+      tape suites (castail / cas-ascii) before shipping.
+      ✅ **CASSETTE HALF FIXED THE SAME DAY -- AND WITH NO NEW RAM.** cal_getbyte
+      (basic/cload.asm) serves a held byte first; read_into_strscr (basic/files.asm) keeps
+      CR / LF as data inside an open quote when the source is cas_in_getbyte, and past a
+      closing quote puts the byte back (ris_putback) and ends the field. 🔴 The first build
+      gave the byte its own cell at $F023, a declared FREE-RAM run -- but that run is the
+      DISKLESS FLOOR ([TXTMAX, TXTMAX_NODISK) is program RAM on a machine without a disk,
+      exactly the machines that use tape), and ram-map-check's selftest A17 went red in the
+      FULL battery. It now rides in two cells the tape reader already owns: CAL_NEEDFILL
+      bit 7 = held (its own values are 0..2) and CAL_SAVE = the byte (it parks a byte only
+      inside a drain, never between reads); a tape open writes CAL_NEEDFILL := 0, dropping a
+      stale one. 🔮 "all nine SAME": HIT ([`inpquote_cas_after.out`](scratchpad/inpquote_cas_after.out); the no-RAM build [`inpquote_cas_after2.out`](scratchpad/inpquote_cas_after2.out)); the pre-fix
+      inpquote_cas_run.out is the knife (qjunk / qjunkc / qopen). Gate casquote-acceptance
+      (probes/basic/basic_probe_casquote.py). D-INPQUOTE2 is closed: disk, console and tape.
+
+
+- [x] 🔴 **D-TRAPNEVERON — `INTERVAL STOP` HOLDS A PERIOD BACK HERE WHEN THE TIMER WAS NOT
+      ON; THE VG-8020 HOLDS NOTHING (found 2026-11-05 by the trapstmt-acceptance fixture)**
+      🎚️ TIER 6 — whether a held-back `INTERVAL` event exists at all.
+      🤖 **AUTONOMOUS** — measured; read where zerobas's INTERVAL counter runs in STOP.
+      📏 [`trapneveron_probe.py`](scratchpad/trapneveron_probe.py) ->
+      [`trapneveron_run.out`](scratchpad/trapneveron_run.out): `10 ON INTERVAL=50 GOSUB
+      100:<arm>:T=TIME:H=-1`, 120 frames, `30 A=0:INTERVAL ON:A=1:A=2:B=A`. VG-8020 `stop`
+      (never ON) -1 2, `on` (ON, STOP) 1 2, `off` (ON, OFF, STOP) -1 2; zerobas 1 2 in all
+      three. 🔮 "stop -1 / on 1 / off -1 on the VG-8020, zerobas latches in `stop`" HIT;
+      "zerobas agrees on `off`" MISSED. So the reference's STOP keeps counting only from ON.
+      Next: does STOP from OFF then ON count a period that ends AFTER the ON (the counter
+      restarting at ON, or carrying)?
+      ✅ **FIXED 2026-11-07.** Bit 6 of the INTERVAL entry (the other traps' device edge
+      shadow, unused here; set_state preserves it through every transition) now means "the
+      period is running": ex_interval (basic/trapstmt.asm) sets it on ON, clears it on OFF,
+      leaves it on STOP, and the frame tick (basic/traps.asm) latches only while it is set
+      -- which also covers OFF, so the tick's state test became one `bit` (-3 B there, +11 in
+      ex_interval; low region 84 -> 72 B). 🔮 "stop -1 / on 1 / off -1 here too": HIT
+      ([`trapneveron_after.out`](scratchpad/trapneveron_after.out)). Gate: trapstmt-acceptance gained `neveron` and `onoffstop`
+      (a row starting at line 10 brings its own head), 6/6 agree ([`trapneveron_gate.out`](scratchpad/trapneveron_gate.out));
+      the old code's readings ([`trapneveron_run.out`](scratchpad/trapneveron_run.out), zerobas 1 1 1) are the knife.
+      tests/test_traps.py green. The counter's PHASE across OFF -> ON is still unmeasured
+      (it runs on unchanged, as before).
+      🎚️ TIER 6 — when a trap event is dispatched (a handler runs at the end of a
+      multi-statement line instead of between its statements).
+      🤖 **AUTONOMOUS** — a run-loop change, FULL-gated.
+      📏 `40 C=0:T0=TIME:INTERVAL ON:C=C+1:C=C+1:C=C+1:C=C+1` with an event latched: the
+      VG-8020's handler sees C=1, zerobas's C=4 -- every statement of the line ran
+      ([`traplatchwhen_run2.out`](scratchpad/traplatchwhen_run2.out) `mid`). The specs already
+      say "statement boundary" (docs/spec-basic-interrupt-traps.md, spec-traps-t5-interval.md
+      §6.1); the code checks TRAPPEND once per LINE (basic/program.asm rp_trapchk, before
+      `call exec`, which runs the whole line through exec_stmt's chain).
+      ➡️ Shape: a TRAPPEND test in exec_stmt (run mode only; one RAM load per statement --
+      price it against the tier-5 pins), leaving exec with the mid-line text pointer as the
+      trap GOSUB's return point (check_traps' frame: read what it records first), plus
+      D-TRAPLATCHWHEN's one-statement deferral after `X ON`. Measure a NON-latched event
+      mid-line too (an interval that falls due during a long line) before relying on the
+      latched rows alone.
+      📏 **MEASURED + BUILT + BACKED OUT, 2026-11-05 -- BLOCKED ON D-TRAPCOST (TIER 5).**
+      Non-latched ([`trapstmt_probe.py`](scratchpad/trapstmt_probe.py) -> [`trapstmt_run.out`](scratchpad/trapstmt_run.out),
+      ON INTERVAL=1, markers M=1..9 between a line's statements, the handler counts H(M)):
+      VG-8020 `0 32 37 42 29 28 40 41 40 163` -- every statement boundary; zerobas `0 .. 0
+      1547` -- the line's end only. 🔮 HIT. The fix was built (the WIP is
+      [`trapstmt_wip.patch`](scratchpad/trapstmt_wip.patch)): a TRAPPEND test in exec_stmt
+      before skipsp_test (3 instructions), es_trap beside check_traps (skips `:` and the
+      end of line, counts a TRAPPEND of 2 down, leaves exec as a GOTO to the handler with
+      the GOSUB frame resuming mid-line), trap_pend_late for `INTERVAL ON`, rp_trapchk's
+      line test removed, tgt_store_ref .. tsr_put moved past $4EF8 for room. It reproduced
+      every D-TRAPLATCHWHEN row (1 / 1 / 1 / 0 / 0). 🔴 **AND IT HUNG THE ROUND-1 PROGRAM**:
+      the handler `H(M)=H(M)+1:RETURN` costs 0.96 frames here against 0.39 on the VG-8020
+      ([`trapstmt_cost.out`](scratchpad/trapstmt_cost.out), 100 GOSUBs), so with ON
+      INTERVAL=1 the event has re-latched by RETURN and the resumed statement never runs.
+      The VG-8020 does the same with a handler that outlasts a frame -- no grace after
+      RETURN ([`trapstmt_slow.out`](scratchpad/trapstmt_slow.out): no output in 60 s). A
+      one-statement grace after the trap's RETURN unhung it ([`trapstmt_slow_after.out`](scratchpad/trapstmt_slow_after.out))
+      but left the round-1 program at ONE STATEMENT PER FRAME (still no output in 60 s,
+      [`trapstmt_after.out`](scratchpad/trapstmt_after.out)) where line-level dispatch gave
+      it a line. That trades this TIER 6 item for a TIER 2 / 5 regression, so it is NOT
+      shipped. ➡️ Make the trap path fast first (D-TRAPCOST), then apply the patch and
+      re-measure round 1 -- if a handler then fits a frame as on the reference, the grace
+      after RETURN can go too.
+
+- [x] 🔴 **D-FNSTR9 — A `DEF FN` CALL WITH NINE TEMPORARY STRING ACTUALS IS `String formula
+      too complex` HERE AND ANSWERS ON THE VG-8020 (found 2026-11-05 by the D-FNALIAS plan)**
+      🎚️ TIER 6 — `DEF FN` with many string arguments built from expressions.
+      🤖 **AUTONOMOUS** — measured; fix it inside D-FNALIAS's two-pass build (§7.1).
+      📏 [`fnstrtemp_run.out`](scratchpad/fnstrtemp_run.out): `DEF FNA$(A$,..,I$)=A$+I$`,
+      `X$=FNA$("1"+"",..,"9"+"")` -> VG-8020 `19`, zerobas ERR 16. With one pending
+      `MID$("Z",1)+(` around it the VG-8020 is ERR 16 too -- it parks the actuals on its
+      10-deep TEMPST, so the ceiling is real, zerobas's is just one call lower.
+      ✅ **FIXED 2026-11-07 inside D-FNALIAS's two-pass build:** the actuals are parked on
+      the temp stack as on the reference, and fn_sn keeps a result that is already a temp
+      instead of copying it -- the FN row now matches the VG-8020 at every k (k0 `19`, k1..k10
+      ERR 16; [`fnalias2_fnstrtemp_after.out`](scratchpad/fnalias2_fnstrtemp_after.out)). The no-FN control at k10 still differs: D-TEMPD10.
+
+- [x] 🐌 **D-TRAPCOST — A TRAP HANDLER'S ROUND TRIP COSTS ~2.5x THE VG-8020'S (found
+      2026-11-05 by D-TRAPSTMT)**
+      ✅ **CLOSED ON PAR (2026-11-08):** re-measured at HEAD ([`trapcost_cost10.out`](scratchpad/trapcost_cost10.out),
+      `trapstmt_probe.py --cost`): **zerobas 40 frames per 100 handler calls, VG-8020 39** (1.03x;
+      96 when filed). 🔮 "41, unchanged by today's `%`-only NEXT work": MISSED by one, low --
+      a frame of jitter or D-NXINPLACE's shorter nx_have test. What remains is one frame in a
+      hundred calls; the general interpreter gap it shared is D-LOOPPROF's.
+      🎚️ TIER 5 — on-par speed: `GOSUB` / `RETURN` + an array increment, and the trap
+      dispatch around it.
+      🤖 **AUTONOMOUS** — measure where the frames go first.
+      📏 [`trapstmt_cost.out`](scratchpad/trapstmt_cost.out): 100 x `GOSUB 100` with `100
+      H(M)=H(M)+1:RETURN` (DIM H(9), M=3) -- VG-8020 39 frames, zerobas 96. A trap fire adds
+      check_traps, gosub_push's ctl_alloc + ctl_reloc (the machine stack MOVED under the new
+      frame) and trap_return_check on top. It blocks D-TRAPSTMT: statement-level dispatch
+      livelocks or crawls under ON INTERVAL=1 while one handler costs a frame here.
+      ▶️ **SPEED PAUSE LIFTED (Joost 2026-11-05, entirely, no byte floor)** -- the 2026-10-20
+      pause ("pause working on speed and work on rom space first") is over; TIER 5 ranks above
+      TIER 6 again, and this item is the first one picked.
+      📏 **ROUND 1 (2026-11-05): 96 -> 77 FRAMES PER 100 CALLS (VG-8020 39).** Host profile
+      first ([`loopprof_host.py`](scratchpad/loopprof_host.py) case (e) ->
+      [`trapcost_prof.out`](scratchpad/trapcost_prof.out), model 62669 T/pass = 298 ticks/300
+      vs measured 288): the GOSUB / RETURN machinery itself is small (gosub_push + ctl_alloc
+      + ret_frame ~3 %); the BODY is the cost. Two shared-code fixes, both value-identical:
+      (1) `ary_mul16_checked` (sub/arrays.asm) skips the multiplier's leading 0 bits -- three
+      16-step loops per element access, ~14 % ([`trapcost_prof2.out`](scratchpad/trapcost_prof2.out),
+      🔮 "-5000 T" -> -4924 HIT); (2) `domain_convert_core` (basic/float-arith.asm) reads a
+      1..4-digit integer part from FAC's packed bytes -- seven full unpacks per pass, 17 %
+      ([`trapcost_trace.out`](scratchpad/trapcost_trace.out), 🔮 "~50500 T/pass" -> 50216 HIT;
+      `A=I+7` 29116 -> 22621 T/pass on the way). Machine:
+      [`trapcost_cost2.out`](scratchpad/trapcost_cost2.out) 77 frames (🔮 "~80" HIT). Gates:
+      tests/test_arrays.py sweeps the multiply (565 pairs), tests/test_float.py the converter
+      (142 values x 2 domains; a planted `sub 64` turns 11 rows red); tests/test_fpdiv_fast.py
+      now names CVT (= ARGB) and WSRC DEAD after the conversion -- the old code always
+      overwrote them there, so they only ever repeated FAC. Cost: sub page 0 23 B, low region
+      58 B. ➡️ NEXT: the rest is name scanning (is_letter / upcase 23 calls, var_str_type,
+      var_name_key) and 5 sub-ROM crossings a pass (scalar + array lookups); D-TRAPSTMT needs a
+      handler well inside one frame.
+      📏 **ROUND 2 (2026-11-05): 77 -> 66 FRAMES PER 100 CALLS** ([`trapcost_cost3.out`](scratchpad/trapcost_cost3.out),
+      🔮 "68" HIT). (3) `ary_mul16_checked` answers HL = 1 at once and `ary_resolve` skips the
+      LAST subscript's MULT update, which nothing reads ([`trapcost_prof5.out`](scratchpad/trapcost_prof5.out),
+      🔮 "~47900 T/pass" -> 47814 HIT; a planted always-skip turns 10 test_arrays rows red);
+      (4) `var_find_typed` walks the scalar chain IN MAIN when no FN call is live
+      (basic/varfind.asm, low region's end; it cost 60 B there on 2026-11-05, and the $475A
+      pin left vars.asm no room) -- a
+      ~370 T walk had paid ~1500 T of sub-ROM crossing ([`trapcost_prof6.out`](scratchpad/trapcost_prof6.out),
+      🔮 "~43500" -> 42943 HIT). tests/test_vars.py walks a hand-built mixed chain (a planted
+      numeric stride for a string entry runs away). Side effect worth noting: the EMPTY
+      `FOR I=1 TO 40:NEXT` loop models 4965 T/pass against the VG-8020's ~5040 -- on par.
+      ➡️ NEXT: case (e) 42943 vs ~24570 T/pass. Name scanning (is_letter / upcase / var_str_type /
+      var_name_key / str_eval_ix ~9 %), the two array resolves through the sub ROM (~2 x 3000 T
+      + 2 crossings), widen_and_finalize on the store.
+      📏 **ROUND 3 (2026-11-05): 66 -> 54 FRAMES PER 100 CALLS** ([`trapcost_cost4.out`](scratchpad/trapcost_cost4.out),
+      🔮 "54-56" HIT; model 42943 -> 35262 T/pass). (5) Name scanning as plain compares:
+      `is_letter` folds case with `and $DF` (no `call upcase`; also the sub ROM's clone),
+      `is_ident_cont` calls skip_spaces only ON a space, `deftbl_lookup` indexes DEFTBL's
+      one page (build guard) ([`trapcost3_prof1.out`](scratchpad/trapcost3_prof1.out) /
+      [`trapcost3_prof2.out`](scratchpad/trapcost3_prof2.out): 🔮 -1300 -> -1083 and -1600
+      -> -1168, both MISSES on the high side). (6) `ary_resolve_fast` (basic/files.asm, the
+      $6CF3 pad, 112 B): a ONE-subscript RESOLVE of an existing array, in range, answered in
+      main; every other case and every error still goes to the tenant
+      ([`trapcost3_prof3.out`](scratchpad/trapcost3_prof3.out), 🔮 ~35100 -> 35262 HIT).
+      (7) `var_alloc_or_find` asks the main-ROM walk first (basic/varfind.asm, 13 B): a store
+      to an existing scalar no longer crosses -- `A=I+7` 18392 -> 16781 T/pass
+      ([`trapcost3_prof4.out`](scratchpad/trapcost3_prof4.out), 🔮 -1300 -> -1611). Gate:
+      tests/test_ary_fast.py (13 in-range reads over 5 arrays against the tenant's
+      formula, 7 fall-throughs, the scalar hit / miss; a planted 2-byte string element turns
+      it red). tests/test_evalslope.py's plain-factor depth 18 -> 16 B (the nested
+      `call upcase` was the deepest point). ➡️ NEXT: case (e) 35262 vs ~24570 T/pass;
+      the profile is flat now (ev_f, exec_stmt, ev_logic, dcc_fast_lp, nx_pack / nx_pki
+      each 3-13 %), and str_eval_one still scans every numeric name once for nothing
+      before ev_f scans it again.
+      📏 **ROUND 4 (2026-11-05): 54 -> 50 FRAMES PER 100 CALLS** ([`trapcost_cost5.out`](scratchpad/trapcost_cost5.out),
+      🔮 "~50" HIT; model 35262 -> 32632 T/pass). (8) ev_f (basic/expr.asm) sends a NAME
+      (`A`..`Z`) to ev_f_var and a one-digit token ($11..$1A) to ev_f_digit before its ~25-
+      compare chain ([`trapcost4_prof1.out`](scratchpad/trapcost4_prof1.out): 🔮 -1500..-1900 ->
+      -1841 HIT). (9) str_eval_one (basic/strvar.asm) sends a name straight to its `$` test
+      ([`trapcost4_prof2.out`](scratchpad/trapcost4_prof2.out): 🔮 ~-600 -> -789). The $4EF8 pad
+      held 4 B after (8): var_load_fac / vlf_value (44 B, absolute jp / call only) moved from
+      basic/vars.asm into the $6CF3 pad to make room. ➡️ NEXT: 32632 vs ~24570 T/pass -- the
+      double name scan itself (str_eval_one's var_str_type, then ev_f's var_name_key).
+      📏 **ROUND 5 (2026-11-06): 50 -> 46 FRAMES PER 100 CALLS** ([`trapcost_cost6.out`](scratchpad/trapcost_cost6.out),
+      🔮 "~45" HIT; model 32632 -> 29768 T/pass, 🔮 "~-2000" -> -2864, a MISS on the good
+      side). (10) cl_opnd_lo (basic/expr.asm) scans a NAME once: var_name_key's VARTYPE says
+      string or not, a numeric name goes to ev_f_keyed (basic/files.asm: ev_f's guard + ev_f_var's
+      tail), a string name takes the old probe ([`trapcost5_prof1.out`](scratchpad/trapcost5_prof1.out)).
+      ⚠️ The cost it moves: a STRING variable at an operand's start is now scanned three times
+      (var_name_key here, then the probe's var_str_type and var_name_key), one more than before.
+      ✅ **ROUND 5b (2026-11-06): a STRING name is keyed once too** -- cl_opnd_lo enters
+      str_eval_one's string-variable arm after ITS var_name_key (seo_keyed, basic/strvar.asm)
+      through str_eval_keyed (basic/files.asm, + the `+` tail); the $4EF8 pad is now 0 B.
+      1000 x `B=-(A$="AB")`: 380 -> 369 frames (🔮 ~-8 -> -11), VG-8020 251
+      ([`strkey_time.out`](scratchpad/strkey_time.out)); string operand forms identical to the
+      VG-8020 ([`strkey_measure.out`](scratchpad/strkey_measure.out)). ➡️ NEXT: 29768 vs ~24570
+      T/pass on case (e); and a string compare is 1.47x the VG-8020 -- profile it (the host rig
+      cannot run the CMP tenant yet: zero passes).
+      ✅ **THE STRING-COMPARE LOOP (2026-11-06): 369 -> 332 frames per 1000 (VG-8020 251)**
+      ([`strcmp_time2.out`](scratchpad/strcmp_time2.out), 🔮 ~331 HIT). The rig could not run it
+      because it never seeded the string pool (`Out of string space`, zero passes) -- fixed in
+      loopprof_host.py (HIMEM / POOLSIZE seeded, a no-pass run says so, case (s) with its
+      measured ticks); its model reads 21213 T/pass against the measured 100 ticks / 300.
+      (11) str_get_key (basic/vars.asm) uses the main-ROM walk like numeric reads (one sub-ROM
+      crossing less a string read; 🔮 -1500 -> -1538 HIT; 17 B back to the $4EF8 pad).
+      (12) widen_uint_to (basic/float-arith.asm) builds a magnitude under 100 without div10 (a
+      16-step divide, ~850 T a digit) -- every small integer stored into a default-type
+      variable (🔮 -800 -> -850 HIT; +38 B low region). tests/test_float.py: magnitudes 0..1099
+      and every 7th to 65535, both signs (the full sweep passed once, 68 s); a 100-at-the-fast-
+      path knife turns it red. ➡️ NEXT: 21213 vs ~15750 T/pass -- div10 for the 3..5-digit
+      case (powers-of-ten subtraction), the CMP tenant crossings.
+      ✅ **(13) div10 (2026-11-06): a dividend under 256 takes 8 steps, not 16** (basic/float-
+      arith.asm and its sub-ROM clone in sub/detok.asm, +7 B each) -- number printing, STR$,
+      LIST's line numbers and the integer widen divide there. 1000 x `A$=STR$(I MOD 250)`:
+      403 -> 388 frames, VG-8020 379 (🔮 ~-13 -> -15 HIT, [`div10_time.out`](scratchpad/div10_time.out)).
+      tests/test_div10.py: every dividend 0..65535, both copies; a 7-step knife turns it red.
+      📏 **(14) THE 3..5-DIGIT WIDEN, MEASURED DEAD (2026-11-07).** widen_uint_to's slow path
+      rebuilt as powers-of-ten subtraction (in the $3297 pad, every resident-ABI address kept;
+      the full 0..65535 sweep byte-identical) changed the host model of cases (a), (b), (e)
+      and a 5-digit (e) by **0 T**: an integer result stored into a variable does not reach
+      widen_uint_to's >= 100 arm on any measured loop (case (e)'s counter stays under 40; a
+      5-digit counter goes through widen_fac_to). Reverted -- 65 B of pad for nothing
+      measured. tests/test_float.py keeps the 999 / 1000 / 9999 / 10000 ... edges it gained.
+      ➡️ So the lever filed above is not where (e)'s time is: re-profile (e) before the next
+      round (its model is 28237 T/pass today).
+      ✅ **(15) A ONE- OR TWO-DIGIT INTEGER PART IS THE PACKED BYTE (2026-11-07): 46 -> 43 FRAMES
+      PER 100 CALLS** (VG-8020 39; [`trapcost_cost8.out`](scratchpad/trapcost_cost8.out), 🔮 44-45: MISSED on the good
+      side). Re-profiled ([`trapcost_prof_1107.out`](scratchpad/trapcost_prof_1107.out)): the top label was domain_convert_core's
+      x10 loop, 2108 T a pass. dexp 1 / 2 -- a subscript, a small counter -- now reads digit 0
+      (and x10 + digit 1) from FAC's first packed byte without the loop. Model (e) 29038 ->
+      27685 T/pass, (a) 13827 -> 13481 ([`dcc2_prof.out`](scratchpad/dcc2_prof.out)); +31 B low region. tests/test_float.py's
+      truncation sweep gains every 1..99 and its +-.5, both signs (538 values, both domains).
+      ✅ **(16) A LOOP COUNTER UNDER 100 IS ONE PACKED PAIR (2026-11-07): 43 -> 41 FRAMES PER 100
+      CALLS** (VG-8020 39; [`trapcost_cost9.out`](scratchpad/trapcost_cost9.out)). A default-type FOR's NEXT unpacked and
+      repacked its variable through five-digit loops (nx_pki / nx_pack, basic/program.asm,
+      ~1100 T each a pass): one or two digits now read the first packed byte (the rest must be
+      0) and write `[$41|$42][pair][0][0]` from a subtract-10 split. Model (e) 27685 -> 26298,
+      (a) 13481 -> 12134, (d) 3693 T/pass ([`nxpk_prof.out`](scratchpad/nxpk_prof.out); 🔮 -1000..-1500: HIT, -1387).
+      Machine loops ([`loops4_time6.out`](scratchpad/loops4_time6.out), [`loops4_run.py`](scratchpad/loops4_run.py), VG-8020 69 / 97 / 7 / 24):
+      zerobas 67 / 75 / 13 / 21. Page 1 took 82 B (2026-11-07). tests/test_forfast.py F3 checks nx_pki / nx_pack
+      against Python over the int16 range; test_forint / test_intfast / test_control_flow green.
+      🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
+      open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 
 ## Done — storage transports
 

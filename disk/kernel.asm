@@ -8063,9 +8063,8 @@ dsm_found:
                 ;   DTA[1..11]  = entry[0..10]  (11-byte 8.3 name)
                 ;   DTA[12]     = 0  (FCB extent/EX)
                 ;   DTA[13]     = entry[11]     (attribute)
-                ;   DTA[14..22] = 0  (incl. the computed record-count field DIR
-                ;                 never reads; left 0 -- black-box confirmed unread)
-                ;   DTA[23..32] = entry[22..31] (time, date, first cluster, size)
+                ;   DTA[14]     = 0, DTA[15] computed (below)
+                ;   DTA[16..32] = entry[15..31] (raw: the CF-3300 copies 15..21 too)
                 ; The attribute at DTA[13] is what lets DIR filter volume-label /
                 ; subdir entries and count "nn files" correctly -- writing a verbatim
                 ; raw entry (attr at DTA[12]) mis-set that filter (the alternating-
@@ -8098,19 +8097,23 @@ dsm_found:
                 inc     de                  ; DE = DTA+13
                 ld      a, (hl)             ; entry[11] = attribute
                 ld      (de), a
-                ; DTA[14..22] stay 0; DTA[23..32] = entry[22..31]
+                ; DTA[14] stays 0; DTA[16..32] = entry[15..31] -- 🔴 D-DOSLADDER D4
+                ; (2026-11-09): the CF-3300 copies entry[15..21] raw too (a PC-made
+                ; disk's creation / access dates: probes/disk/dosl/d4dir.asm,
+                ; scratchpad/dosl_d4_3.out); this left DTA[16..22] zero. DIR never
+                ; reads them, which is why the black-box pin above missed it.
                 pop     hl                  ; HL = entry base
-                ld      bc, 22
-                add     hl, bc              ; HL = entry+22 (time/date/clus/size)
+                ld      bc, 15
+                add     hl, bc              ; HL = entry+15
                 ld      de, (DOS_DTAPTR)
                 ld      a, e
-                add     a, 23
+                add     a, 16
                 ld      e, a
                 jr      nc, dsm_nohc
                 inc     d
 dsm_nohc:
-                ld      bc, 10
-                ldir                        ; -> DTA[23..32]
+                ld      bc, 17
+                ldir                        ; -> DTA[16..32]
                 call    dsm_p1_post         ; D-P1SRCH: the 33 bytes to the real DTA
                 call    dsm_bump            ; BDOS_SRCHIDX := match-index + 1
                 xor     a                   ; A = $00 = found

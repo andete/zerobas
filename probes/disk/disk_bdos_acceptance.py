@@ -111,6 +111,9 @@ EXERCISERS = [
     # SFIRST; it found D-SEQTWO (ours never ended the copy). The CF-3300 takes 93 s.
     ("DOSL-D2", "build_dosl_disk.py", ["--prog", "d2type"]),
     ("DOSL-D3", "build_dosl_disk.py", ["--prog", "d3copy", "--settle", "150"]),
+    # D4: DIR -- "*.COM" through SFIRST / SNEXT (names, sizes, the first raw DTA),
+    # counts of "*.SYS" / "*.*", ALLOC. It found the DTA's entry[15..21] zeroed.
+    ("DOSL-D4", "build_dosl_disk.py", ["--prog", "d4dir", "--settle", "150"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
