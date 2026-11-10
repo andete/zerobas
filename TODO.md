@@ -17021,9 +17021,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ready", and one blank line fewer after the drive key (6 B; the region has 0).
       Unmeasured, TIER 6: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP;
       a failed format is main's `load error` (the old disposition).
-      ➡️ STILL OPEN: (b) our loader booting MSX-DOS from a disk formatted here; the sub-ROM's
-      quick format (format_tenant, basic/format-body.inc) is unused now -- retire it (sub-ROM
-      room, not disk); a standing row for MSX-DOS's `format` (fmtdialog_probe.py's steps).
+      ✅ **(b) DONE (2026-11-10): OUR LOADER BOOTS MSX-DOS, ON BOTH MACHINES.** scratchpad/fmtboot_probe.py
+      builds a 720K image as a format leaves it with OUR loader at $1E (read out of our own
+      build/disk.rom by fmt_boot / FMT_BOOTLEN), adds MSXDOS.SYS and COMMAND.COM, and boots:
+      the CF-3300 and ours both reach MSX-DOS 1.03 / COMMAND 1.08's date prompt
+      ([`fmtboot.out`](scratchpad/fmtboot.out)). Knife (FMTBOOT_KNIFE=1: the loader a bare `ret`): both fall to BASIC's
+      date prompt instead ([`fmtboot_knife.out`](scratchpad/fmtboot_knife.out)) -- it is the loader that loads MSXDOS.SYS.
+      ➡️ STILL OPEN: the sub-ROM's quick format (format_tenant, basic/format-body.inc) is unused
+      now -- retire it (sub-ROM room, not disk); standing rows for MSX-DOS's `format` and for
+      this boot (fmtdialog_probe.py / fmtboot_probe.py are the steps).
 
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**

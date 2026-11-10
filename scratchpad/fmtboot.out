@@ -1,0 +1,29 @@
+image: /tmp/zerobas/zbprobe_88276_yfj0uvzt/fmtboot/fmtboot.dsk  (loader 58 B at $1E)
+===== National_CF-3300 =====
+--- t=25.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date: .
+--- t=29.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date: .
+   END
+===== National_CF-3300_ZEROBASDISK =====
+--- t=25.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date: .
+--- t=29.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date: .
+   END

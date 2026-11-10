@@ -1,0 +1,14 @@
+KNIFE: the loader is a bare `ret`
+image: /tmp/zerobas/zbprobe_88651_kox2dnp4/fmtboot/fmtboot.dsk  (loader 58 B at $1E)
+===== National_CF-3300 =====
+--- t=25.0 (32 columns) ---
+   1|  Enter date (.-.-.):.
+--- t=25.5 (32 columns) ---
+   1|  Enter date (.-.-.):.
+   END
+===== National_CF-3300_ZEROBASDISK =====
+--- t=25.0 (40 columns) ---
+   0|  Enter date (M-D-Y):.
+--- t=25.5 (40 columns) ---
+   0|  Enter date (M-D-Y):.
+   END
