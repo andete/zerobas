@@ -799,6 +799,17 @@ bdos_close_write:
 bdos_close_err:
                 ld      a, $FF
                 ret
+; fcb_size_keep -- FCB (IX) +16..19 := BDOS_WRBYTES, the file's size so far. It stood
+; twice, in kernel.asm's wrblk_fcb_keep and wrseq_wr_writeback (D-DSKFMT carve 12,
+; 2026-11-10: -11 B). Clobbers HL.
+fcb_size_keep:
+                ld      hl, (BDOS_WRBYTES)
+                ld      (ix+16), l
+                ld      (ix+17), h
+                ld      hl, (BDOS_WRBYTES + 2)
+                ld      (ix+18), l
+                ld      (ix+19), h
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

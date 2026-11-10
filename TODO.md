@@ -16777,6 +16777,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is built a formatter now SHOWS the menu, then gets the stub's error (it got no menu
       before). Room left for the build, taken 2026-11-10 after D-BDOSSEQ's close moved
       into the $7F1E hole: no hole of 85 B any more, 243 B in runs of 16 B or more.
+      ✂️ **CARVES 12-14 (2026-11-10, ~41 B):** (12) fcb_size_keep -- FCB +16..19 := BDOS_WRBYTES,
+      twice inline (wrblk_fcb_keep, wrseq_wr_writeback), now one routine in the $7F7C hole;
+      (13) hk_openfind -- the file hooks' common start (EI, dout_open, fat_find of
+      DISK_FCB_NAME), three times inline (hk_finp, hk_fapp, hk_frnd), now in front of
+      $46BA (a failed dout_open still leaves by hfm_fail on the hook's own stack); (14)
+      hk_finp's size copy is hk_frnd's tail (hfr_size). check_disk_walls, taken 2026-11-10:
+      243 B in runs of 16 B or more (194 before 12). 12 file / disk suites and the bdosfcb /
+      bdosseq probes unchanged. ➡️ More from scratchpad/diskngram.py 12 (the shared
+      fat-prim / fatio bodies excluded).
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

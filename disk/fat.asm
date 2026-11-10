@@ -56,6 +56,20 @@ dst_put:
                 add     hl, de
                 ld      (hl), c
                 ret
+; hk_openfind -- the three file hooks' common start (hk_finp, hk_fapp, hk_frnd):
+; interrupts on (D-HOOKDI), dout_open (IX = the row, mounted), then fat_find of
+; DISK_FCB_NAME -- CF = not found, FAT_FIRSTCLUS / FAT_FILESIZE / the entry set. A
+; failed dout_open leaves by hfm_fail on the HOOK's stack (our return dropped), as
+; the inline copies did. D-DSKFMT carve 13, 2026-11-10 (-14 B).
+hk_openfind:
+                ei
+                call    dout_open
+                jr      c, hof_fail
+                ld      hl, DISK_FCB_NAME
+                jp      fat_find
+hof_fail:
+                pop     hl                  ; our return address
+                jp      hfm_fail
                 ds      $46BA - $, $00      ; pure $00 pad (M26, tier2-m26-spec.md
                                             ; §2.4: trace --resync confirmed $46BA is
                                             ; the kernel's real fixed $2F RDABS dispatch
@@ -635,24 +649,13 @@ DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..25
 ; $FE5D. Status 0 open (hfm_ok); 1 with the code pending. LOF / LOC read the
 ; row (H_CHIN ops 6 / 8, din_lofloc -- S10.E; hfm_ok mirrored them until then).
 hk_finp:
-                ei                          ; D-HOOKDI: the hook arrives DI
-                call    dout_open           ; IX = the row: the name, the block, mounted
-                jp      c, hfm_fail
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE
+                call    hk_openfind         ; IX = the row; FAT_FIRSTCLUS / FAT_FILESIZE
                 jp      c, hfa_nf           ; 53, pending
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (ix+26), l
                 ld      (ix+27), h
-                push    ix
-                pop     hl
-                ld      de, 16
-                add     hl, de
-                ex      de, hl              ; DE = the FCB's size, +16
-                ld      hl, FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; the whole 32-bit size
-                jp      hfm_ok              ; status 0
+                jp      hfr_size            ; the size into +16..19, status 0 (hk_frnd's
+                                            ; tail, kernel.asm: D-DSKFMT carve 14)
 
 ; din_lofloc -- A = C = 6 LOF / 8 LOC (S10.E, 2026-10-19): the live channel's
 ; value straight from its FCB row, for a DISK channel in any mode -- INPUT,

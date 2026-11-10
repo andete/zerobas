@@ -46,6 +46,26 @@ session and the loop resumes exactly where it stopped.
 | COPY TO, 2+ matches (RULED) | *"b, copy every match like the reference"* | D-COPYALL: after the Fable agent's 30-case measurement (copymulti_run1..4.out) every match is copied by a live directory walk, trailing self-copy 5 included -- SHIPPED 2026-11-06 |
 | gate tiers | *"Note that that is costing precious time to make actual progress."* | run the tier `make gates-plan` picks, no habitual HANDOFF=1; FULL only for code every program runs, the 5th commit, a real hand-off (memory full-battery-is-expensive-use-the-planned-tier) |
 
+## 🟢 STATE AS OF 2026-11-10 (evening) — THE CURRENT ONE (the 11-09 section below still holds)
+
+- **Way of working:** D-GATEWT -- commit locally, `tools/gate_wt.py` gates it in its own
+  worktree + openMSX share + temp root (/tmp/zerobas-gatewt), keep working AND probing here
+  (rulings table above). Push only on `GATEWT <sha> GREEN`.
+- **Pushed today:** D-BDOSFCB stages A, B, B2, B3(c), C; D-BDOSSEQ (a FMAKE'd file's random
+  write lost at FCLOSE; a 1 MB guard); D-BIOSLADDER CLOSED (B1-B8 in `make biosl-acceptance`:
+  a cartridge's CHGET at INIT, width 37 before the cartridge scan, the sub-ROM found before
+  the cartridges -- BEEP / key line from a cartridge -- and R11 at boot); D-GATEWT; CHOICE.
+- **Gating / just committed:** CRTCNT UNDER KEY ON (CRTCNT 24; the console bound CRTCNT +
+  CNSDFG through crt_rows / crt_cp pinned at $3283 / $328D, C-BIOS patch #17; no RAM).
+- **Open next, by tier (TIER 1):** D-BIOSCONTRACT's remainder (PNTINI / SCANR / SCANL need
+  room; STRTMS is low value -- our PLAY has its own packet format); D-DSKFMT (CHOICE done;
+  the build needs ~300 B: carve first -- no 85 B hole left); D-BDOSFCB B3 (a) / (b) and its
+  residuals (SETRND, BC); D-PSGINIT's last byte (the NMS 1200's boot-beep R0, pinned);
+  TIER 3: CLOSE / SEQREAD of an unopened FCB (D-BDOSSEQ note).
+- **Lessons today:** a byte scan of the BUILT images finds readers a source grep misses
+  (sub2/ is built into the sub-ROM); a gate over unpushed commits catches regressions in
+  ones written while the previous gate ran -- never push before its verdict.
+
 ## 🟢 STATE AS OF 2026-11-09 — THE CURRENT ONE (the 11-07 section below still holds)
 
 The entry-point ruling (2026-11-08) drives the queue: TIER 1 is the BIOS / disk-ROM /

@@ -2459,11 +2459,7 @@ hk_chclose_e:
 ; The size field keeps the file's size (LOF), the random record is LOC: 6 and 0
 ; after OPEN FOR APPEND on a 6 B file, as on the CF-3300 (applof_run.out).
 hk_fapp:
-                ei
-                call    dout_open
-                jp      c, hfm_fail         ; jp: D-FILESBARE's hkf_pat moved it
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
+                call    hk_openfind         ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
                 jr      nc, hfa_found
 hfa_nf:                                     ; S10.C: hk_finp's refusal too (disk/fat.asm)
                 ld      a, 53               ; not found: refused, `File not found`, as
@@ -2874,15 +2870,12 @@ wfs_geom:
 ; fill is gone; a PUT before any LSET writes those bytes, as the reference does.
 ; hk_fmake's tail: status 0 open; 1 with the code pending.
 hk_frnd:
-                ei
-                call    dout_open           ; IX = the row: the name, the block, mounted
-                jp      c, hfm_fail
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
+                call    hk_openfind         ; IX = the row; FAT_FIRSTCLUS / ... / the entry
                 jr      c, hfr_make
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (ix+DOUT_FIRST), l
                 ld      (ix+DOUT_FIRST+1), h
+hfr_size:                                   ; (hk_finp joins here: D-DSKFMT carve 14)
                 push    ix
                 pop     hl
                 ld      de, 16
@@ -5223,12 +5216,7 @@ wrseq_wr_writeback:
                 ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin
                 ; never needed this (FOPEN loads +16..19 from the dirent), but FMAKE
                 ; zeroes it, so the write session must grow it here.
-                ld      hl, (BDOS_WRBYTES)
-                ld      (ix+16), l
-                ld      (ix+17), h
-                ld      hl, (BDOS_WRBYTES + 2)
-                ld      (ix+18), l
-                ld      (ix+19), h
+                call    fcb_size_keep       ; +16..19 (D-DSKFMT carve 12: runtime.asm)
                 ; copy+26/27 := BDOS_WRFIRST (file's first cluster). Also maintained
                 ; per stock's post-WRSEQ FCB, and also zero after FMAKE.
                 ld      hl, (BDOS_WRFIRST)
@@ -7338,12 +7326,7 @@ ws_tail:
 ;   in:  IX = the FCB; BDOS_WRBYTES = the new size; FAT_FIRSTCLUS; and, when the
 ;        call positioned (WRBLK_CURVALID), FAT_CURCLUS / WRBLK_CURSEC
 wrblk_fcb_keep:
-                ld      hl, (BDOS_WRBYTES)
-                ld      (ix+16), l
-                ld      (ix+17), h
-                ld      hl, (BDOS_WRBYTES + 2)
-                ld      (ix+18), l
-                ld      (ix+19), h
+                call    fcb_size_keep       ; +16..19 (D-DSKFMT carve 12: runtime.asm)
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (ix+26), l
                 ld      (ix+27), h

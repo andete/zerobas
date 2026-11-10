@@ -116,19 +116,19 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $4558 | `(jp k_4558)` | no BDOS function named | disk/driver.asm:692 |
 | $456F | `k_456F` | BDOS $10 FCLOSE: exercised | disk/driver.asm:730 |
 | $461D | `k_461D` | BDOS $16 FMAKE: exercised | disk/driver.asm:886 |
-| $46BA | `k_46BA` | BDOS $2F RDABS: exercised | disk/fat.asm:59 |
-| $46C8 | `(jp k_46C8)` | no BDOS function named | disk/fat.asm:76 |
-| $46E6 | `bdos_create_failpop` | no BDOS function named | disk/fat.asm:105 |
-| $4720 | `k_4720` | BDOS $30 WRABS: exercised | disk/fat.asm:172 |
-| $4775 | `k_4775` | BDOS $14 RDSEQ: exercised | disk/fat.asm:274 |
-| $477D | `k_477D` | BDOS $15 WRSEQ: exercised | disk/fat.asm:276 |
-| $4788 | `k_4788` | BDOS $21 RDRND: exercised | disk/fat.asm:288 |
-| $4793 | `k_4793` | BDOS $22 WRRND: exercised | disk/fat.asm:308 |
-| $47B2 | `(jp k_47B2)` | no BDOS function named | disk/fat.asm:327 |
-| $47B9 | `(ds $47BE - $, $00)` | no BDOS function named | disk/fat.asm:329 |
-| $47BE | `k_47BE` | BDOS $26 WRBLK: exercised | disk/fat.asm:340 |
-| $47D1 | `k_47D1` | BDOS $28 WRZER: exercised | disk/fat.asm:361 |
-| $4C29 | `fdc_di_save` | no BDOS function named | disk/fat.asm:1281 |
+| $46BA | `k_46BA` | BDOS $2F RDABS: exercised | disk/fat.asm:73 |
+| $46C8 | `(jp k_46C8)` | no BDOS function named | disk/fat.asm:90 |
+| $46E6 | `bdos_create_failpop` | no BDOS function named | disk/fat.asm:119 |
+| $4720 | `k_4720` | BDOS $30 WRABS: exercised | disk/fat.asm:186 |
+| $4775 | `k_4775` | BDOS $14 RDSEQ: exercised | disk/fat.asm:288 |
+| $477D | `k_477D` | BDOS $15 WRSEQ: exercised | disk/fat.asm:290 |
+| $4788 | `k_4788` | BDOS $21 RDRND: exercised | disk/fat.asm:302 |
+| $4793 | `k_4793` | BDOS $22 WRRND: exercised | disk/fat.asm:322 |
+| $47B2 | `(jp k_47B2)` | no BDOS function named | disk/fat.asm:341 |
+| $47B9 | `(ds $47BE - $, $00)` | no BDOS function named | disk/fat.asm:343 |
+| $47BE | `k_47BE` | BDOS $26 WRBLK: exercised | disk/fat.asm:354 |
+| $47D1 | `k_47D1` | BDOS $28 WRZER: exercised | disk/fat.asm:375 |
+| $4C29 | `fdc_di_save` | no BDOS function named | disk/fat.asm:1284 |
 | $4E4B | `(jp k_4E4B)` | no BDOS function named | disk/kernel.asm:54 |
 | $4EDE | `(jp k_4EDE)` | no BDOS function named | disk/kernel.asm:171 |
 | $4FB8 | `sfirst` | BDOS $11 SFIRST (by its label): exercised | disk/kernel.asm:320 |
@@ -156,15 +156,15 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1624 |
 | $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1635 |
 | $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1658 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3304 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3676 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3797 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7160 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7553 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7643 |
-| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:802 |
-| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:806 |
-| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:820 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3297 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3669 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3790 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7148 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7536 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7626 |
+| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:813 |
+| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:817 |
+| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:831 |
 
 63 pinned addresses; 37 name a BDOS function, 26 do not.
 
