@@ -3281,6 +3281,26 @@ cr_copy1:
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (BDOS_WRFIRST), hl
                 jp      cr_copy2            ; disk/runtime.asm
+; wrblk_huge -- D-BDOSSEQ (2026-11-10): a WRBLK / WRZER / WRRND whose start RR x RS
+; is 1 MB or more -- RR's top byte set and RS >= 16 -- lies past any MSX disk: disk
+; full (A = 1), as the CF-3300 answers. wrblk_off24's 24-bit product WRAPPED there,
+; and the zero-record WRBLK applied the meaningless size (bdosset_probe.py, after our
+; SETRND's RR $080002). Called from wrblk_rs_ok with DE = RS; leaves on the FULL path
+; by dropping its own return.
+wrblk_huge:
+                ld      (WRBLK_RS), de      ; (wrblk_rs_ok's own store, moved here for room)
+                ld      a, (ix+35)
+                or      a
+                ret     z
+                ld      a, d
+                or      a
+                jr      nz, wh_full
+                ld      a, e
+                cp      16
+                ret     c
+wh_full:
+                pop     hl
+                jp      wrblk_full
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
 mb_5e10:
                 jp      basent_body
@@ -3939,7 +3959,7 @@ wrblk_body:
                 jr      nz, wrblk_rs_ok
                 ld      de, RECSIZE
 wrblk_rs_ok:
-                ld      (WRBLK_RS), de
+                call    wrblk_huge          ; WRBLK_RS := DE; D-BDOSSEQ: 1 MB on -> full
                 ; load RR (24-bit, copy+33..35) into WRBLK_REC
                 ld      a, (ix+33)
                 ld      (WRBLK_REC), a
@@ -7117,30 +7137,25 @@ dskchg_body:
                 ld      b, 1                ; "unchanged"
                 xor     a                   ; A = 0, Cy = 0
                 ret
-; seq_dirty -- the start of every random positioning (rrnd_position, k47b2_seek).
-; READ-open (D-BDOSFCB B2): the read iterator moves, so BDOS_SEQREC := $FFFF makes
-; srd_pos re-position the next SEQREAD from the FCB. WRITE-open (D-BDOSSEQ,
-; 2026-11-10): the SEQWRITE records still buffered go out FIRST -- the random call
-; reads its sector into that same buffer, and FCLOSE's flush then zero-padded over
-; what it wrote (FMAKE, SEQWRITE, WRRND RR 1, FCLOSE: record 1 read back $00 here,
-; $22 on the CF-3300 -- scratchpad/bdosseq_run2.out). A later SEQWRITE starts the next
-; sector, as one after a random call did not continue at CR anyway (B3). Clobbers
-; A, HL; when it flushes, BC and DE too (fat_flush_data_sector).
+; seq_flush / seq_dirty -- the start of a random positioning.
+; seq_dirty (k47b2_seek, RDBLK -- BASIC's own file reads come through here too): a
+; READ-open file's iterator moves, so BDOS_SEQREC := $FFFF makes srd_pos re-position
+; the next SEQREAD from the FCB (D-BDOSFCB B2); a WRITE-open one is left alone.
+; seq_flush (rrnd_position: the BDOS's RDRND / WRRND only) also, for a WRITE-open file,
+; writes the SEQWRITE records still buffered FIRST (D-BDOSSEQ, 2026-11-10): the random
+; call reads its sector into that same buffer, and FCLOSE's flush then zero-padded
+; over what it wrote (record 1 read back $00 here, $22 on the CF-3300 --
+; scratchpad/bdosseq_run2.out). 🔴 NOT from k47b2_seek: BDOS_WRMODE can read 1 there
+; while a BASIC output file is open, and flushing then broke BASIC's sequential files
+; (the first cut: inpquote-, programs-, kwsweep ... red in the FULL gate,
+; scratchpad/bisect_A_inpquote.out). Clobber A, HL; flushing, BC and DE too.
 seq_dirty:
                 ld      a, (BDOS_WRMODE)
                 or      a
-                jr      nz, sd_write
+                ret     nz
+sd_read:
                 ld      hl, $FFFF
                 ld      (BDOS_SEQREC), hl
-                ret
-sd_write:
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      a, h
-                or      l
-                ret     z                   ; nothing buffered
-                call    fat_flush_data_sector
-                ld      hl, 0
-                ld      (BDOS_WRBUFLEN), hl ; drained (flags kept: CF = the flush's)
                 ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
@@ -8569,7 +8584,8 @@ fcb_fatst:
 ; not a generic kernel copy-back artifact (contrast fdel_body's DE=$03D0,
 ; which the kernel already reproduced with no fdel_body code at all).
 rrnd_position:
-                call    seq_dirty           ; D-BDOSFCB B2: SEQREAD re-positions after this
+                call    seq_flush           ; B2 / D-BDOSSEQ: SEQREAD re-positions; a
+                                            ; write-open file's buffered records go out
                 ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
 rrnd_pos_a:                                 ; srd_pos: A = the record
                 ld      (RRND_RECSEC), a    ; held across mount / find (all clobber A)
@@ -8740,8 +8756,8 @@ rrnd_finish:                                ; shared tail: M20 dispatcher-flag r
 ; scratchpad/bdosx9_stock.out $04FE) -- with RR put back after (WRBLK advances it,
 ; WRRND does not), then WRRND's own success tail; a failure keeps WRBLK's A (1 full,
 ; 2 I/O). IX = the FCB copy (wrrnd_body set it).
-wrrnd_ext:
-                push    ix
+wrrnd_ext:                                  ; (a record past 1 MB: wrblk_huge answers
+                push    ix                  ; disk full, A = 1, passed on below -- D-BDOSSEQ)
                 pop     de                  ; DE = the FCB copy (wrblk_body's input)
                 xor     a
                 ld      (ix+14), a

@@ -1,0 +1,8 @@
+===== b7tape nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=e300 putpnt,getpnt=f0fbf0fb typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8b00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000001000000000000000000000000ff55aa01807e815a45524f42415321
+  CAP ours: 0000000001000000000000000000000000ff55aa01807e815a45524f42415321
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

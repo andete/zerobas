@@ -1,0 +1,22 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/projects/zerobas-gate/.omsx-share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/projects/zerobas-gate/.omsx-share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ROW num     CF=[5_| 2 |NX 0 ] ZB=[| 10 | 55 ] DIVERGES
+ROW lead    CF=[AB| 2 |NX 0 ] ZB=[| 11 | 55 ] DIVERGES
+ROW trail   CF=[AB__| 4 |NX 0 ] ZB=[| 11 | 55 ] DIVERGES
+ROW embed   CF=[A_B| 3 |NX 0 ] ZB=[| 10 | 55 ] DIVERGES
+ROW both    CF=[AB__| 4 |NX 0 ] ZB=[| 13 | 55 ] DIVERGES
+ROW quoted  CF=[__AB__| 6 |NX 0 ] ZB=[| 15 | 55 ] DIVERGES
+ROW comma   CF=[AB__| 4 |CD 0 ] ZB=[| 16 | 55 ] DIVERGES
+ROW empty   CF=[| 0 |NX 0 ] ZB=[| 7 | 55 ] DIVERGES
+ROW qcomma  CF=[A,B| 3 |NX 0 ] ZB=[| 12 | 55 ] DIVERGES
+ROW qjunk   CF=[AB| 2 |CD 0 ] ZB=[| 13 | 55 ] DIVERGES
+ROW qjunkc  CF=[AB| 2 |CD,EF 0 ] ZB=[| 16 | 55 ] DIVERGES
+ROW qopen   CF=[| 11 | 55 ] ZB=[| 13 | 55 ] DIVERGES
+ROW qmid    CF=[A#B#| 4 |NX 0 ] ZB=[| 11 | 55 ] DIVERGES
+ROW qlead   CF=[AB| 2 |NX 0 ] ZB=[| 13 | 55 ] DIVERGES
+refcache: REFS MODE (references replayed, zerobas measured), 14 REFERENCE reading(s) replayed, 0 reference miss, 14 zerobas reading(s) MEASURED, 0 zerobas replayed
+FAIL: INPUT # string fields (14 diverge)
+refcache: REFS MODE (references replayed, zerobas measured), 14 REFERENCE reading(s) replayed, 0 reference miss, 14 zerobas reading(s) MEASURED, 0 zerobas replayed
+make: *** [inpquote-acceptance] Error 1

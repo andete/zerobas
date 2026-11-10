@@ -34,8 +34,12 @@ is the verdict, `GATEWT <sha> GREEN` or `GATEWT <sha> RED: ...`):
   7. on green, the gate state copied back (the full-green record is what later
      skips are proven against).
 
-The emulator rule still holds: while this runs, NO emulator run in this checkout.
-Edits, builds, host unit tests and the static tools are fine.
+While this runs, this checkout may run emulator probes too (Joost, 2026-11-10: "I
+thought we solved that restriction?"): the worktree has its own machines and, through
+ZEROBAS_TMP, its own probe temp root. What can still collide is a suite with a
+hard-coded /tmp name (beeptrace, playtrace, zpu ...) run in BOTH places at once --
+so here, run probes and single suites, never the battery or a suite the gate is in
+the middle of. Builds, unit tests and the static tools were always fine.
 """
 from __future__ import annotations
 
@@ -45,6 +49,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -174,8 +179,15 @@ def run(a) -> int:
     share = os.path.join(WT, ".omsx-share")
     seed_share(share)
     copy_state(ROOT, WT)
+    # ZEROBAS_TMP: the probes' shared temp root (probe_tmp) is the worktree's own, so a
+    # probe run in the main checkout meanwhile cannot meet the gate's files there
+    # OUTSIDE every checkout: refcache-check's arms tell a repo-built ROM from a
+    # foreign one by path, and a temp root inside the worktree read as repo-built
+    # (KS2 / KS6 red, the first gate run with it)
+    tmp = os.path.join(tempfile.gettempdir(), "zerobas-gatewt")
+    os.makedirs(tmp, exist_ok=True)
     env = dict(os.environ, OPENMSX_USER_DATA=share, ZEROBAS_GATE_BASE=parent,
-               PYTHONUNBUFFERED="1")
+               ZEROBAS_TMP=tmp, PYTHONUNBUFFERED="1")
     fails = []
 
     # test-dsk: disk/test720.dsk and empty720.dsk are GENERATED and untracked, so a

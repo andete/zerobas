@@ -832,6 +832,12 @@ lha_kept:
 sub_first:
                 ld      a,1                 ; D-BOOTSCAN / B1: the key scan from here on
                 ld      (SCNCNT),a          ; (interp.asm's note, before init_ext_roms)
+                ld      a,11                ; D-PSGINIT (2026-11-10): R11 = $0B, as the
+                out     ($A0),a             ; VG-8020 has it when a cartridge starts (B5);
+                out     ($A1),a             ; its GICINI does NOT write R11 (a program's
+                                            ; R11 survives it there), so: once, at boot.
+                                            ; Register and value are both 11. No PSG
+                                            ; writer runs from the interrupt yet.
                 ld      a,$8B               ; slot 3-2
                 ld      (SCAN_SLOT),a
                 call    try_sub_slot

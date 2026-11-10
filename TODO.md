@@ -16557,7 +16557,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       commit was never pushed). (4) Knife: a gate in the worktree must keep its ROM hash
       and verdict while this checkout builds a different ROM.
 
-- [ ] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
+- [x] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
       (Joost's idea, 2026-11-10, after D-DOSLADDER's six fixes)**
       🎚️ TIER 1 — the main BIOS under REAL program patterns (the entry-point ruling,
       2026-11-08), which the one-entry rows (biosregs-acceptance) do not reach. Order:
@@ -16620,7 +16620,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300 behaviour the NMS 1200 does not have: the rung types a CR); its NODISK row:
       $F37D holds $C9 here, $00 on the VG-8020 (pinned, D-F37DNODISK). B5 sound: see
       D-PSGINIT (pinned until fixed). The harness grew `@matrix`, several `@vram`, `@disk`,
-      `@cap`, `@type-at`. ➡️ B7 (tape) is the one rung left.
+      `@cap`, `@type-at`.
+      ✅ **B7 (2026-11-10)** -- TAPOON / TAPOUT x 16 / TAPOOF, then TAPION / TAPIN x 16 / TAPIOF
+      on each machine's own fresh recording (the harness's `@tape` turns it round on the
+      program's TAPEREADY): every CF 0 and the bytes back, SAME on both rows
+      ([`biosl_b7_run1.out`](scratchpad/biosl_b7_run1.out), [`biosl_b7_run2.out`](scratchpad/biosl_b7_run2.out)). **THE LADDER IS COMPLETE**: B1-B8 in
+      `make biosl-acceptance`; what it found is fixed (B1's key scan and width, B5's BEEP
+      and R11) or filed on its own (CRTCNT UNDER KEY ON, D-PSGINIT's boot R0, D-F37DNODISK).
 
 - [ ] 🔴 **D-BDOSSEQ — PUSHED REGRESSION: $F37D WRRND ON AN FMAKE'D, STILL-OPEN FILE NEVER RETURNS
       (found 2026-11-10 by D-BDOSFCB stage C's check, scratchpad/bdosset_probe.py)**
@@ -16648,6 +16654,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sequence still stalls in WRRND -- there our SETRND leaves RR $080002 (residual 2), and
       wrblk_off24's 24-bit RR x RS wraps; the CF-3300 answers disk full (A = 1) for its huge
       RR. A guard (RR x RS past 24 bits -> A = 1) is the next step.
+      ✅ **CLOSED (2026-11-10):** wrblk_huge (the $5E10 hole; wrblk_rs_ok calls it, its RS
+      store moved in for room) answers disk full (A = 1) when RR's top byte is set and RS
+      >= 16 -- 1 MB on, past any MSX disk -- for WRBLK, WRZER and WRRND's growth alike, as
+      the CF-3300 answers its own huge RR. [`bdosset_run5.out`](scratchpad/bdosset_run5.out): zerobas runs bdosset to its
+      last row (done-flag a522); RNDWR and the WRBLK after it answer 1 as the CF-3300. A's
+      still apart there: SETDTA (A unspecified), SETRND (residual 2), ABSRD (the
+      references restarted there) and two error answers that were the same before
+      D-BDOSFCB ([`bdosset_6d55.out`](scratchpad/bdosset_6d55.out)): CLOSE of an unopened FCB (CF-3300 $FF, ours 0) and
+      SEQREAD of an unopened FCB (CF-3300 1 = end of file, ours 0 and a record from the
+      iterator's leftovers) -- 🎚️ TIER 3, common errors, open.
+      🔴 **THE FIRST CUT BROKE BASIC'S SEQUENTIAL FILES (caught by the FULL gate before any
+      push, 2026-11-10):** the flush of buffered SEQWRITE records sat in seq_dirty, which
+      k47b2_seek (RDBLK -- BASIC's own file reads) calls too, and BDOS_WRMODE can read 1
+      there while a BASIC output file is open: PRINT# / CLOSE / INPUT# came back empty
+      (inpquote-, programs-, kwsweep, diskbasic- ... red; bisected to that flush,
+      [`bisect_A_inpquote.out`](scratchpad/bisect_A_inpquote.out)). Now seq_flush (in front of $461D) does it, called only by
+      rrnd_position -- the BDOS's RDRND / WRRND -- and k47b2_seek keeps seq_dirty's old
+      read-only behaviour. All 11 suites green again; bdosseq_probe still as the CF-3300.
+      ⚠️ Left: a program mixing a BASIC output file with $F37D RDRND / WRRND could still
+      have BASIC's buffer flushed under it -- unmeasured, unlikely.
 
 - [ ] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B5)**
@@ -16667,8 +16693,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       session. sub_first (basic/missing.asm, page 1's tail: the stretch before the $475A
       pin is full) records it and installs its trampoline just before init_ext_roms, and
       now also holds D-BOOTSCAN's SCNCNT := 1 (B1). [`biosl_all_run3.out`](scratchpad/biosl_all_run3.out): BEEP's bytes
-      SAME; beep-, bootkey-, autorun-, subrom-acceptance green. ➡️ Left: GICINI's R11 ($0B)
-      and the NMS 1200's boot-beep R0 on the disk row.
+      SAME; beep-, bootkey-, autorun-, subrom-acceptance green.
+      ✅ **R11 (2026-11-10):** the VG-8020's GICINI does NOT write R11 -- a first cut that
+      made ours write it ($0B, a byte-neutral repack patch) went red on B5's SECOND GICINI,
+      where a program's R11 = 0 survives there ([`biosl_b5_gicini.out`](scratchpad/biosl_b5_gicini.out)); the $0B is
+      the VG-8020's boot state. sub_first now writes R11 = $0B once at boot (it cost 6 B of page 1, 2026-11-10).
+      [`biosl_b5_r11.out`](scratchpad/biosl_b5_r11.out): R11 SAME at INIT and after both GICINIs. ➡️ Left: R0 = $55 on the
+      VG-8020 + NMS 1200's row (its boot beep) -- disk-ROM boot state, pinned.
 
 - [ ] **D-F37DNODISK — WITH NO DISK INTERFACE $F37D HOLDS $C9 HERE, $00 ON THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B8's NODISK row)**

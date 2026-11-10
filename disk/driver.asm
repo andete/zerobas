@@ -869,6 +869,20 @@ rnd_loc:
                 ldir
                 pop     de                  ; DE = row+33 (CF = 0: add's)
                 ret
+; seq_flush -- rrnd_position's (disk/kernel.asm, beside seq_dirty: the comment there).
+; Here, in front of $461D, for room.
+seq_flush:
+                ld      a, (BDOS_WRMODE)
+                or      a
+                jp      z, sd_read
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing buffered
+                call    fat_flush_data_sector
+                ld      hl, 0
+                ld      (BDOS_WRBUFLEN), hl ; drained (flags kept: CF = the flush's)
+                ret
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
                 jp      bdos_create         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)

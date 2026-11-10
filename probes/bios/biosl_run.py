@@ -20,6 +20,9 @@ Its header comment may carry the harness settings, one per line:
     ; @type-at S TEXT   TEXT typed at S emulated seconds ('\\r' = Enter) -- e.g. our
                         disk machine's date question, which the VG-8020 + NMS 1200
                         does not ask (a CF-3300 behaviour our disk target keeps)
+    ; @tape             a fresh recording from boot (cassetteplayer new); when the
+                        program sets TAPEREADY (+$101) to 1 the harness rewinds, plays
+                        and acknowledges with 1 at +$102
     ; @disk empty       the disk row gets drive A = a fresh copy of disk/empty720.dsk
                         (`make test-dsk`); the NODISK row has no drive
 Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
@@ -57,9 +60,6 @@ ALLOW = {
     "b5sound": {
         0xE010: (0x8F, "R15 at INIT: bit 6 is the joystick-port select, left by the last "
                        "port read (VG-8020 $CF) -- I/O state, not a BIOS contract"),
-        0xE00C: (0x00, "R11 at INIT: the VG-8020's GICINI leaves $0B there -- D-PSGINIT"),
-        0xE01C: (0x00, "R11 after GICINI: the VG-8020 $0B -- D-PSGINIT"),
-        0xE02C: (0x00, "R11 after the tone writes (still GICINI's): $0B there -- D-PSGINIT"),
         0xE001: (0x00, "R0 at INIT, disk row: $55 on the VG-8020 + NMS 1200 (a beep at its "
                        "boot, kept by GICINI) -- D-PSGINIT"),
         0xE011: (0x00, "R0 after GICINI, disk row: $55 there -- D-PSGINIT"),
@@ -87,7 +87,7 @@ ROWS = {
 
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
-         "cap": DONE, "type_at": None}
+         "cap": DONE, "type_at": None, "tape": False}
     for m in re.finditer(r"^;\s*@([\w-]+)\s+(.*?)\s*$", asm_text, re.M):
         k, v = m.group(1), m.group(2)
         if k == "keys":
@@ -100,6 +100,8 @@ def settings(asm_text: str) -> dict:
         elif k == "type-at":                # SECONDS TEXT: typed at that emulated time
             t, _, txt = v.partition(" ")
             s["type_at"] = (float(t), txt)
+        elif k == "tape":                   # record from boot; play on TAPEREADY
+            s["tape"] = True
         elif k == "disk":                   # empty: a copy of disk/empty720.dsk
             s["disk"] = v
         elif k == "timeout":
@@ -143,11 +145,19 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     for i, (va, vn) in enumerate(st["vram"]):
         vram += (f'  binary scan [debug read_block VRAM {va} {vn}] H* vr\n'
                  f'  puts $f "VRAM{i} $vr"\n')
+    tape = ""
+    if st["tape"]:
+        wav = os.path.join(td, machine + ".wav")
+        tape = (f"cassetteplayer new {{{wav}}}\n"
+                "set ::taped 0\n")
+        keys += (f"  if {{$::taped == 0 && [debug read memory {DONE + 0x101}] == 1}} "
+                 f"{{ set ::taped 1; cassetteplayer rewind; cassetteplayer play; "
+                 f"debug write memory {DONE + 0x102} 1 }}\n")
     at = ""
     if st["type_at"]:
         t, txt = st["type_at"]
         at = f'after time {t} {{type "{txt}"}}\n'
-    tcl = ("set throttle off\nset ::typed 0\n" + at +
+    tcl = ("set throttle off\nset ::typed 0\n" + tape + at +
            "proc biosl_poll {} {\n" + keys +
            f"  if {{[debug read memory {DONE}] == 0xA5 || [machine_info time] > {st['timeout']}}} {{\n"
            f"    set f [open {{{out}}} w]\n"
@@ -156,11 +166,10 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
            '    puts $f "CAP $v"\n'
            '    puts $f "VDPR1 [debug read {VDP regs} 1]"\n'
            '    binary scan [debug read_block memory 0xFC9E 2] H* j\n'
-           '    binary scan [debug read_block memory 0xF3F8 4] H* kp\n'
            '    binary scan [debug read_block memory 0xF3F6 1] H* sc\n'
            '    binary scan [debug read_block memory 0xFBE5 11] H* nk\n'
            '    binary scan [debug read_block memory 0xFD9A 10] H* hk\n'
-           '    puts $f "SYS jiffy=$j putpnt,getpnt=$kp typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk"\n' + vram +
+           '    puts $f "SYS jiffy=$j typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk"\n' + vram +
            "    close $f\n    exit\n  }\n"
            "  after time 0.1 biosl_poll\n}\n"
            "after time 1 biosl_poll\n")

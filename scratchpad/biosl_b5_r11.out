@@ -1,0 +1,19 @@
+===== b5sound nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=c400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 00000000000000b80000000b0000bfcf00000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP ours: 00000000000000b80000000b0000bf8f00000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP E010: ref=CF ours=8F  (excused: R15 at INIT: bit 6 is the joystick-port select, left by the last port read (VG-8020 $CF) -- I/O state, not a BIOS contract)
+  SAME (1 allowlisted)
+===== b5sound disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=ed00 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8400 putpnt,getpnt=f0fbf0fb typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 55000000000000b80000000b0000bfcf55000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP ours: 00000000000000b80000000b0000bf8f00000000000000b80000000b00000000fe0100000000003e0f00000b000000001000100e000000000000000000000000fe010000000000b800000000100e000055000000000000b800000000100e
+  CAP E001: ref=55 ours=00  (excused: R0 at INIT, disk row: $55 on the VG-8020 + NMS 1200 (a beep at its boot, kept by GICINI) -- D-PSGINIT)
+  CAP E010: ref=CF ours=8F  (excused: R15 at INIT: bit 6 is the joystick-port select, left by the last port read (VG-8020 $CF) -- I/O state, not a BIOS contract)
+  CAP E011: ref=55 ours=00  (excused: R0 after GICINI, disk row: $55 there -- D-PSGINIT)
+  SAME (3 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
