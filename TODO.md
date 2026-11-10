@@ -17543,6 +17543,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       BLOAD path and the boot loader go through it -- the design question above.
       🏗️ **RULED (Joost 2026-11-10): "I think D-BDOSFCB makes sense"** -- TIER 1, and done
       BEFORE D-DSKFMT's build, as the combined fix and carve.
+      📏 **STEP 1 MEASURED (2026-11-10):** [`bdosfcb_probe.py`](scratchpad/bdosfcb_probe.py) runs, from a BASIC program
+      through $F37D, FMAKE + 4 SEQWRITE + FCLOSE, then FOPEN, RDRND, FSIZE, RDBLK at RR 1,
+      SETRND, WRRND / WRBLK / WRZER past the end, FCLOSE, FOPEN, reads back
+      ([`bdosfcb_run1.out`](scratchpad/bdosfcb_run1.out), CF-3300 and ours). **The CF-3300's $F37D BDOS IS MSX-DOS'S, FILE
+      STATE IN THE FCB:** FOPEN fills +12..31 (size 512, first cluster, +24 $40); SEQWRITE
+      keeps +32 CR and the size current; RDRND RR2 reads $33; FSIZE 4; RDBLK honours RR
+      ($22 / $33, RR -> 3); SETRND, WRRND, WRBLK, WRZER work and the file grows to 10
+      records; a SEQREAD after them continues from CR (record 6, $77). **Ours:** FOPEN
+      leaves +12..31 zero; $21 / $22 / $23 / $24 / $26 / $28 answer $FF; RDBLK ignores RR
+      ($11 / $22); SEQREAD restarts at record 0. ➡️ **THE PLAN, staged** (survey of both
+      paths: the kernel bodies read +16..19 / +25 / +26 / +28..31, which only the kernel's
+      FOPEN / FMAKE fill; the kernel's SEQ write-back stores to a FIXED $DA40, which is the
+      FCB under MSX-DOS and stray RAM from $F37D): (A) the $F37D FOPEN fills the FCB as the
+      kernel's does (fopen_fill_body), keeping bdos_open's own cells for the sequential
+      engine; route $21 $22 $23 $24 $26 $27 $28 to the kernel bodies (the boot loader's $27
+      at RR 0 rides the same body, as on the CF-3300). (B) the SEQ write-backs address the
+      FCB in IX, not $DA40 -- identical under MSX-DOS (DE = $DA40 there) -- and the $F37D
+      SEQREAD / SEQWRITE keep CR / the size in the FCB. (C) retire what is dead
+      (bdos_rdblk, rdb_recloop_body, ... ~255 B by the survey's count, some of it between
+      pins). Registers: compare each row's A / HL / BC to the CF-3300's here.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**
