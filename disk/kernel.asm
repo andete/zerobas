@@ -327,7 +327,7 @@ fmd_tab:        db      2, 112, low 720,  high 720,  2  ; $F8 1 side, 80 tracks,
 frl_xdone:
                 call    frl_flush
                 ret     c
-                jp      frl_walked
+                jp      frl_done
 frl_xfail:
                 push    af                  ; the failure (CF, the code pending)
                 call    frl_flush           ; what was claimed and linked reaches the
@@ -428,8 +428,7 @@ bd_step7:
                 call    boot_date
                 ei                      ; as the step-7 return always did
                 ret                     ; -> the BIOS boot scan -> BASIC
-bd_nosig:
-                jp      boot_date       ; the scan's masked state kept, as before
+; (bd_nosig -- a `jp boot_date` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 ; (moved here from runtime.asm by the D-DSKFMT defrag, 2026-11-09)
 ; bdos_close_wm -- D-WRBLKDIR (2026-11-08): BDOS_WRMODE is ONE global (FMAKE sets
 ; it), so with two FMAKE'd FCBs written by WRBLK the first FCLOSE came here and
@@ -1234,7 +1233,7 @@ bdos_tab:
                 db      BDOS_F_CLOSE
                 dw      bdos_close
                 db      BDOS_F_CREATE
-                dw      bdos_create
+                dw      bdos_create_body
                 db      BDOS_F_SETDTA
                 dw      bdos_setdta_body    ; + the $F23D cell
                 db      BDOS_F_SFIRST
@@ -5035,11 +5034,10 @@ k47b2_nextbyte:
                 or      (hl)
                 inc     hl
                 or      (hl)
-                jr      nz, k47b2_nextbyte_get      ; BDOS_BYTESLEFT != 0 -> fetch for real
+                jp      nz, rdblk_getbyte      ; BDOS_BYTESLEFT != 0 -> fetch for real
                 scf                                 ; BDOS_BYTESLEFT == 0 -> Cy=1, clean EOF
                 ret
-k47b2_nextbyte_get:
-                jp      rdblk_getbyte       ; tail-call: A=byte/Cy=0, or Cy=1 chain-end;
+; (k47b2_nextbyte_get -- a `jp rdblk_getbyte` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
                                             ; either way its own `ret` is our `ret` too
 
 
@@ -7728,7 +7726,7 @@ frl_have:
                 ld      hl, (GP_CLIDX)
                 ld      a, h
                 or      l
-                jr      z, frl_walked
+                jp      z, frl_done
                 dec     hl
                 ld      (GP_CLIDX), hl      ; one step fewer to walk
                 ld      hl, (GP_CLUS)
@@ -7755,8 +7753,7 @@ frl_have:
                 scf
                 ret     z                   ; GET: past the end
                 jp      frl_ext             ; PUT: disk/kernel.asm's $4E20 fill
-frl_walked:
-                jp      frl_done            ; D-PUTWALK: disk/runtime.asm, for room
+; (frl_walked -- a `jp frl_done` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 ; cr_dir -- D-WRBLKDIR (2026-11-08): close_read's write of a written file's entry --
 ; its size and first cluster, from the FCB, as the per-call update in wrblk_body did.
 ; The CF-3300 writes the entry at FCLOSE only. Reached only for a file the
@@ -8796,7 +8793,7 @@ rdrnd_body:
                 ld      (ix+32), a          ; disk/wrzer.asm's records 21 / 23 -- D-WRZER)
                 call    rrnd_position
                 jr      c, rrnd_eof
-                call    bdos_seqread        ; A=$00 record delivered / $01 EOF
+                call    bdos_seqread_body        ; A=$00 record delivered / $01 EOF
                 or      a
                 jr      nz, rrnd_finish     ; EOF from seqread -- pass A through, HL untested
                 ld      a, (ix+33)          ; CR (copy+32) := r0 MOD 128 (stock's random-op

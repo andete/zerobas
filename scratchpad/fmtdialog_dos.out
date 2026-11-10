@@ -1,0 +1,111 @@
+===== National_CF-3300 =====
+--- t=27.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) .
+--- t=31.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  12|  1 - 1 side
+  13|  2 - 2 sides
+  14|  3 - 1 side, double track
+  15|  4 - 2 sides,double track
+  17|  ? .
+--- t=35.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  12|  1 - 1 side
+  13|  2 - 2 sides
+  14|  3 - 1 side, double track
+  15|  4 - 2 sides,double track
+  17|  ? 1
+  18|  Strike a key when ready .
+--- t=110.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  12|  1 - 1 side
+  13|  2 - 2 sides
+  14|  3 - 1 side, double track
+  15|  4 - 2 sides,double track
+  17|  ? 1
+  18|  Strike a key when ready
+  19|  Format complete
+  21|  A>.
+--- t=114.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  10|  Drive name? (A,B) a
+  12|  1 - 1 side
+  13|  2 - 2 sides
+  14|  3 - 1 side, double track
+  15|  4 - 2 sides,double track
+  17|  ? 1
+  18|  Strike a key when ready
+  19|  Format complete
+  21|  A>.
+   END
+===== National_CF-3300_ZEROBASDISK =====
+--- t=27.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  11|  A>.
+--- t=31.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  11|  A>a.
+--- t=35.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  11|  A>a1.
+--- t=110.0 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  11|  A>a1 .
+--- t=114.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>format
+  11|  A>a1 .
+   END

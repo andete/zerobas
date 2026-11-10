@@ -16,8 +16,7 @@
 ; date 0821h, time 0 -- as the CF-3300, Joost 2026-10-01). No data
 ; cluster is allocated yet: the first cluster is allocated lazily on the first
 ; Sequential Write, so a zero-byte file occupies no clusters (matching MSX-DOS).
-bdos_create:
-                jp      bdos_create_body    ; Tier-2 3b: divert; veneer fills the gap
+; (bdos_create -- a `jp bdos_create_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 ; dsl_bcheck: drv_select's B: arm (D-BOOTKEYS CTRL, 2026-10-27; disk/kernel.asm):
 ; A := 1 when there are two logical drives, else `Bad drive name` -- one drive
 ; after a CTRL boot, as on the CF-3300 (scratchpad/bootctrl_run.out). Sited in
@@ -90,7 +89,7 @@ wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
                 ; BDOSX4 register snaps are unchanged; only the FCB position moves.
                 ; (wrseq_body_write, which held this, folded in here: D-BDOSFCB B)
                 push    de
-                call    bdos_seqwrite
+                call    bdos_seqwrite_body
                 pop     ix
                 or      a
                 call    z, wrseq_wr_writeback   ; advance FCB position on a written record
@@ -158,8 +157,7 @@ bdos_create_err:
 ; BDOS_WRBYTES accumulates the true byte count for Close to stamp into the dir
 ; entry. (CP/M / MSX-DOS sequential write delivers a fixed 128-byte record from
 ; the DTA — MSX2 TH FCB sequential I/O; record framing as the read side.)
-bdos_seqwrite:
-                jp      bdos_seqwrite_body  ; M26 WRABS (tier2-m26-spec.md): relocated --
+; (bdos_seqwrite -- a `jp bdos_seqwrite_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
                                             ; the old span here collided mid-instruction
                                             ; with the real $30 WRABS dispatch address,
                                             ; $4720 (trace --resync confirmed: it's the
@@ -1415,8 +1413,7 @@ lc_one:
 ; disk-change line, `diskbasic-acceptance` is 34/34 with it, and nothing in the
 ; tree has yet asked what the reference answers here. That is a row nobody has
 ; written, not a defect anybody has found.
-dskchg:
-                jp      dskchg_body         ; 🔴 D-DSKCHG (2026-11-08): measured, below
+; (dskchg -- a `jp dskchg_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 
 ; getdpb — build the Drive Parameter Block from the BPB ($4016 disk-ROM entry).
 ;

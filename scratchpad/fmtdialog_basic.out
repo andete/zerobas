@@ -1,0 +1,91 @@
+===== National_CF-3300 =====
+--- t=23.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) .
+  23|  color auto  goto  list  run
+--- t=28.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) a
+   8|  1 - 1 side
+   9|  2 - 2 sides
+  10|  3 - 1 side, double track
+  11|  4 - 2 sides,double track
+  13|  ? .
+  23|  color auto  goto  list  run
+--- t=32.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) a
+   8|  1 - 1 side
+   9|  2 - 2 sides
+  10|  3 - 1 side, double track
+  11|  4 - 2 sides,double track
+  13|  ? 1
+  14|  Strike a key when ready .
+  23|  color auto  goto  list  run
+--- t=45.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) a
+   8|  1 - 1 side
+   9|  2 - 2 sides
+  10|  3 - 1 side, double track
+  11|  4 - 2 sides,double track
+  13|  ? 1
+  14|  Strike a key when ready
+  23|  color auto  goto  list  run
+--- t=110.0 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) a
+   8|  1 - 1 side
+   9|  2 - 2 sides
+  10|  3 - 1 side, double track
+  11|  4 - 2 sides,double track
+  13|  ? 1
+  14|  Strike a key when ready
+  15|  Format complete
+  16|  Ok
+  17|  .
+  23|  color auto  goto  list  run
+--- t=114.5 (32 columns) ---
+   0|  MSX BASIC version 1.0
+   1|  Copyright 1983 by Microsoft
+   2|  23430 Bytes free
+   3|  Disk BASIC version 1.0
+   4|  Ok
+   5|  call format
+   6|  Drive name? (A,B) a
+   8|  1 - 1 side
+   9|  2 - 2 sides
+  10|  3 - 1 side, double track
+  11|  4 - 2 sides,double track
+  13|  ? 1
+  14|  Strike a key when ready
+  15|  Format complete
+  16|  Ok
+  17|  .
+  23|  color auto  goto  list  run
+   END

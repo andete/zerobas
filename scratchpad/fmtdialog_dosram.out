@@ -1,0 +1,28 @@
+===== National_CF-3300 =====
+--- RAM t=26 ---
+  F340: F3 83 83 83 83 07 FF 02 87 93 DF 0E DD 95 EF 95
+  F350: ED 95 EB 00 00 95 F1 AA F1 00 00 00 00 00 00 00
+  F360: 00 00 00 00 00 DB A8 C9 C3 57 DF C3 59 DF C3 70
+  F370: DF C3 27 F3 C3 2C F3 C3 00 00 C3 00 00 C3 31 F3
+--- t=26.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>.
+   END
+===== National_CF-3300_ZEROBASDISK =====
+--- RAM t=26 ---
+  F340: F3 83 83 83 83 FF FF 02 87 93 DF 0E DD 9F ED A4
+  F350: ED A9 ED 00 00 AE ED AA FF FF FF FF FF FF FF FF
+  F360: FF FF FF FF FF DB A8 C9 C3 AD DE C3 B3 DE C3 D0
+  F370: 41 C3 D0 41 C3 D0 41 C3 D0 41 C3 D0 41 C3 DA EF
+--- t=26.5 (32 columns) ---
+   1|  MSX-DOS version 1.03
+   2|  Copyright 1984 by Microsoft
+   4|  COMMAND version 1.08
+   6|  Current date is Sun 84-01-01
+   7|  Enter new date:
+   9|  A>.
+   END

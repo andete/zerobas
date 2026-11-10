@@ -16928,6 +16928,58 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       read); today it is the sub-ROM quick format (format_tenant), which then retires.
       (b) **our loader** (fmt_boot) must boot MSX-DOS from a disk formatted here once
       MSXDOS.SYS and COMMAND.COM are copied on -- not yet run.
+      📏 **(a) MEASURED (2026-11-10, scratchpad/fmtdialog_probe.py -> [`fmtdialog_basic.out`](scratchpad/fmtdialog_basic.out)):** the
+      CF-3300's CALL FORMAT says `Drive name? (A,B) ` (the key echoed), then CHOICE's text
+      (CR LF first; CR LF CR LF last), `? ` (the choice echoed), CR LF, `Strike a key when
+      ready ` (that key NOT echoed), CR LF, `Format complete`, CR LF, then Ok. Unmeasured
+      (TIER 6): a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP.
+      🔴 **D-DOSFORMAT (TIER 1, Joost asked 2026-11-10 "can we also format from MSX-DOS?"):
+      NO -- MSX-DOS's `FORMAT` does nothing on ours.** On the CF-3300 COMMAND 1.08's FORMAT
+      runs the SAME dialogue as CALL FORMAT; on ours `format` returns to A> at once, with
+      no prompt ([`fmtdialog_dos.out`](scratchpad/fmtdialog_dos.out)). So COMMAND.COM decides before its first prompt.
+      The disk work area at A> differs in $F345 (07 there, FF here), the four words after
+      DRVTBL, $F357..$F364 (0 there, FF here) and the jumps from $F368 (the CF-3300 has `jp
+      $F327`, `jp $F32C`, two `jp 0`, `jp $F331`; ours five `jp $41D0`)
+      ([`fmtdialog_dosram.out`](scratchpad/fmtdialog_dosram.out)). Poking each group to the CF-3300's values changed nothing.
+      🎯 **FOUND (scratchpad/fmttrace_probe.py -> [`fmttrace.out`](scratchpad/fmttrace.out), our ROM traced):** `format` calls
+      no CHOICE / DSKFMT -- it EXECUTES our $4025, $4028, $402B: **$4025 is the published
+      FORMAT entry** (the disk ROM runs the whole dialogue; COMMAND.COM only hands over), and
+      ours holds rh_init (`ld hl,0 / ld (RND_HSEC),hl / ret`), put there by D-DSKFMT defrag
+      step 1 (2026-11-09) into "$4025-$402C (unused kernel-entry slots)". So `format` cleared
+      a cache cell and returned. Before that move it was $00 pad sliding into the $402D
+      veneer -- broken then too. ➡️ **THE FIX:** rh_init out; `$4025: jp` a format body that
+      says what the CF-3300 says (the dialogue above, identical from BASIC and DOS) and calls
+      DSKFMT -- console through our own conout_body / innoe_body (they page the BIOS in
+      themselves, so both environments); the work area $0100.. under MSX-DOS (the TPA at the
+      prompt; COMMAND.COM lives at its top), STREND..SP under BASIC (an error under 7176 B);
+      CALL FORMAT then calls the same body and the sub-ROM quick format retires. 🔴 The pad's
+      comment called $4025-$402C "unused" -- a filed claim nobody measured; check $4028 /
+      $402A too before anything else is put there.
+      📐 **DESIGN (2026-11-10, ~196 B; hk_format + fmt_menu_text free ~61, so ~135 B to find):**
+      one body fmt_dlg (HL / BC = the work area): print `Drive name? (A,B) `, a key (echoed),
+      choice_txt, `? `, a key 1..4 (echoed; others ignored -- unmeasured, TIER 6), CR LF
+      `Strike a key when ready ` and a key (not echoed), then dskfmt_body (A = the choice, D =
+      0) and CR LF `Format complete` CR LF. Output through conout_body (it pages the BIOS in
+      itself: both environments); the KEY routine is the entry's choice, held in a scratch
+      cell free until DSKFMT runs (FDC_DEST): from $4025 (MSX-DOS: page 0 is RAM) innoe_body,
+      work area $0100 +$1E00; from hk_format (BASIC) `ld ix,chget_getbyte / jp calbak` -- the
+      wait in MAIN, as read_line's (a page-1 tenant must not wait; chget_getbyte is INPUT$'s
+      key source, no echo, HL kept -- export it in tools/gen_resident_abi.py) -- work area
+      STREND .. FRETOP - 64 (error 7 Out of memory under 7176 B: measure the CF-3300's). The
+      DSKFMT error codes under BASIC: map as dc_fail does (68 / 70 / 69) -- TIER 6 detail.
+      rh_init leaves $4025 for a 7 B slack. Then CALL FORMAT's probes (disk_probe_format.py,
+      diskbasic-acceptance's CALL FORMAT row) type the new dialogue, and a dosformat row
+      types MSX-DOS's `format` on both machines (fmtdialog_probe.py's steps).
+      ✂️ **CARVE 32 (2026-11-10, +30 B; free 243 -> 273 B):** eleven leftover `name: jp name_body`
+      veneers from old relocations retired -- fdc_read_data, fdc_write_data, dskfmt,
+      bdos_seqread, bdos_create, bdos_seqwrite, dskchg, bd_nosig, k47b2_nextbyte_get,
+      frl_walked, fdc_wp_fail; their callers jump to the body (three `jr` out of reach
+      became `jp`). Kept: a veneer AT a pin (it is the published entry) and one something
+      falls into. bdos, diskbasic, dosmode, fat-error, dout, programs, lof, recbig,
+      wrblkalt, boot5e10, dosdate, dskfmt (choice 1) and the unit tests green.
+      🏗️ **RULED (Joost 2026-11-10): FORMAT's prompt WORDING may differ; its keys and results
+      may not** (scratchpad/LOOP-RESTART.md, the 11-10 table) -- e.g. reuse the ROM's own
+      "...and strike a key when ready"; each difference is recorded as a ruled divergence.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

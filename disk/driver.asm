@@ -128,7 +128,7 @@ fdc_rp_attempt:
                 ld      hl, (FDC_DEST)  ; reload buffer start each attempt
                 ld      a, CMD_READ
                 ld      (FDC_STATUS), a
-                call    fdc_read_data
+                call    fdc_read_data_body
                 jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
                 call    fdc_again       ; last try: ends at fdc_io_done; else restored
@@ -184,8 +184,7 @@ fdc_ag_last:
 ; relocates cleanly. Real body now fdc_read_data_body (kernel.asm free
 ; tail); this span is net-zero pad with the fren_body veneer planted at
 ; the pinned offset so fdc_write_phys below stays at its exact address.
-fdc_read_data:
-                jp      fdc_read_data_body
+; (fdc_read_data -- a `jp fdc_read_data_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 ; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
 ; --- calbak: ONE inter-slot call back into main page 1 (MSX2 TH) ------------
 ; D-DISKVERB. IX = the main page-1 target (an address from the GENERATED
@@ -289,14 +288,14 @@ fdc_wp_attempt:
                 ; NOT READY; the body is in the kernel's corridor (this span has 7 B
                 ; before the $4462 pin).
                 call    fdc_wp_chkrdy   ; CY, A=2 when the drive is not ready
-                jp      c, fdc_wp_fail
+                jp      c, fdc_io_done
                 ; issue write-sector and transfer the data
                 ld      a, c
                 ld      (FDC_SECTOR), a
                 ld      hl, (FDC_DEST)  ; reload buffer start each attempt
                 ld      a, CMD_WRITE
                 ld      (FDC_STATUS), a
-                call    fdc_write_data
+                call    fdc_write_data_body
                 jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
                 ; 🔴 D-WPROTECT (2026-09-28): THIS WAS `cp 0`, AND IT CLEARED THE CARRY
@@ -311,11 +310,10 @@ fdc_wp_attempt:
                 ; A = 0 in the same 2 bytes and leaves Cy alone.
                 inc     a
                 dec     a               ; Z iff A = 0 (write protected); Cy KEPT
-                jr      z, fdc_wp_fail
+                jp      z, fdc_io_done
                 call    fdc_again       ; last try: ends at fdc_io_done; else restored
                 jr      fdc_wp_attempt
-fdc_wp_fail:
-                jp      fdc_io_done
+; (fdc_wp_fail -- a `jp fdc_io_done` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 
 ; fdc_write_data — transfer 512 bytes from (HL) to a write-sector command.
 ;   in:  HL = buffer; a WRITE command has just been written
@@ -328,8 +326,7 @@ fdc_wp_fail:
 ; reads the result-phase status: bit 6 ($40) on a Type-II write is WRITE FAULT /
 ; write-protect -> DSKIO write-protected (code 0); RNF/CRC/LOST/NOTRDY map exactly
 ; as the read path does.  (WD2793 DS: Write Sector, status register Type II.)
-fdc_write_data:
-                jp      fdc_write_data_body ; D-FDCDI: moved to disk/fat.asm's fill, where
+; (fdc_write_data -- a `jp fdc_write_data_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
                                             ; it waits for its first DRQ with interrupt
                                             ; windows (fdc_fdrq)
 
@@ -523,7 +520,7 @@ wrseq_rd:                                   ; $4775: BDOS $14 SEQREAD
                 pop     ix
                 push    de
                 call    srd_pos             ; DTA, and the record EX * 128 + CR (B2)
-                call    bdos_seqread
+                call    bdos_seqread_body
                 pop     ix                  ; IX = the FCB (POP keeps the flags)
                 or      a
                 call    z, wrseq_writeback  ; only on a delivered record (A=$00)
@@ -575,8 +572,7 @@ choice:
                 ret
 
 ; dskfmt — format disk: the CF-3300's four choices (D-DSKFMT, kernel.asm dskfmt_body).
-dskfmt:
-                jp      dskfmt_body
+; (dskfmt -- a `jp dskfmt_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 
 ; mtoff — turn off disk motor(s).
 ; Clear the National control latch: deselect the drive and drop the motor line.
@@ -643,8 +639,7 @@ bdos_open:
 ; tail still returns $00, so MSX-DOS actively zero-fills, not Ctrl-Z/stale data),
 ; code $00; the following read returns $01. CP/M FCB sequential-I/O record model
 ; (MSX2 TH, FCB sequential I/O) supplies the record framing.
-bdos_seqread:
-                jp      bdos_seqread_body   ; Tier-2 3b: divert; veneer fills the gap
+; (bdos_seqread -- a `jp bdos_seqread_body` veneer -- retired by D-DSKFMT carve 32: its callers jump there)
 ; (moved here from kernel.asm by the D-DSKFMT defrag)
 ; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
 ; D-NAMESTAMP (disk/docs/spec-diskcode-eviction.md §6.6aw). This was
@@ -884,7 +879,7 @@ seq_flush:
                 ret
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
-                jp      bdos_create         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)
+                jp      bdos_create_body         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)
 
 ; rdblk_getbyte — deliver the next byte of the open file in A, refilling
 ; SECTOR_BUF from the cluster chain when exhausted and decrementing BDOS_BYTESLEFT.

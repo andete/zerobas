@@ -27,10 +27,10 @@
 ; assert that the header above is exactly 16 bytes (pasmo errors if $ > $4010).
                 ds      $4010 - $, $00
                 jp      dskio           ; +$10  sector read/write    ($4010)
-                jp      dskchg          ; +$13  disk-change status   ($4013)
+                jp      dskchg_body          ; +$13  disk-change status   ($4013)
                 jp      getdpb          ; +$16  build DPB from BPB   ($4016)
                 jp      choice          ; +$19  format-choice string ($4019)
-                jp      dskfmt          ; +$1C  format disk          ($401C)
+                jp      dskfmt_body          ; +$1C  format disk          ($401C)
                 jp      mtoff           ; +$1F  motors off           ($401F)
 
 ; --- extended disk-ROM kernel entry: $4030 ($4000 + $30) -------------------
@@ -396,7 +396,7 @@ boot_disk_go:
                 cp      $EB
                 jr      z, boot_sig_ok
                 cp      $E9
-                jp      nz, bd_nosig    ; not a boot disk -> the date, then BASIC
+                jp      nz, boot_date    ; not a boot disk -> the date, then BASIC
 boot_sig_ok:
                 call    boot_call0      ; step 5, Cy = 0, under the DOS_TRY mark
                                         ; (disk/driver.asm; D-BASENTRUN's other half)
