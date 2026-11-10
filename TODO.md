@@ -16611,6 +16611,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in $75A5's, a run-length table of the WD2793 track image (gaps / sync / marks, ~40 B),
       the Write Track loop (~60 B), the boot sector (BPB + a minimal loader of our own) and
       the FAT / root zeroing (~70 B).
+      🏗️ **RULED (Joost 2026-11-10): ALL FOUR CHOICES, as the CF-3300** -- asked "full (~375 B,
+      the menu and choices 1-4) or reduced (~290 B, choice 4 only, CHOICE HL = 0)?": *"Indeed
+      we need to support the same as the cf-3300. A carve or re-read will be needed to reduce
+      size."* So the FULL version, the room from carving or re-reading OUR code, inside the
+      one page. (All four are MFM, 9 x 512 B a track: 180 / 360 / 360 / 720 KB.) The
+      ladder-first order question is moot: D-DOSLADDER closed the same day.
+      ✂️ **CARVE STEPS 7-8 (2026-11-10):** fcb_fatst -- FCB +26 -> FAT_FIRSTCLUS and +16..19 ->
+      FAT_FILESIZE, 27 B inline in wfs_geom and rrnd_position (D-RNDLIVE made the second) --
+      **$5E10's region 2 -> 26 B** (the helper sits in rrnd_position's, $7F7C 39 -> 35);
+      spc_div (the divide by FAT_SECPERCLUS, three times: wrblk_seek, k47b2_seek,
+      wfk_cache) and ci_cache (walk from the FCB's cached cluster or the first, twice:
+      wrblk_seek, k47b2_seek; Cy = from the first) -- **$77B8's region 5 -> 42 B**. Both
+      callers' registers after the old inline code checked: A / DE / HL are reloaded
+      before use, and wfk_cache still returns Cy = 1. Skipped as not identical: hk_finp /
+      hk_frnd's found tail (+26 against DOUT_FIRST = +40) and the 13 B write-state reset
+      (one copy in fatiocreate-body.inc, which sub/save.asm also includes). Unit tests 94/94,
+      bdos-acceptance 25/25 on each step.
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**

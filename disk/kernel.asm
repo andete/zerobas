@@ -2879,15 +2879,7 @@ wrblk_fcbstate:
 wfs_geom:
                 ld      hl, 2
                 ld      (FAT_ALLOCHINT), hl ; M30: the per-operation reset
-                ld      l, (ix+26)
-                ld      h, (ix+27)
-                ld      (FAT_FIRSTCLUS), hl
-                ld      l, (ix+16)
-                ld      h, (ix+17)
-                ld      (FAT_FILESIZE), hl
-                ld      l, (ix+18)
-                ld      h, (ix+19)
-                ld      (FAT_FILESIZE + 2), hl
+                call    fcb_fatst           ; the chain and the size, from the FCB
                 ld      a, (ix+25)          ; the entry's root index
                 push    af
                 rrca
@@ -7303,28 +7295,10 @@ wrblk_seek:
                 dec     a
                 and     l
                 ld      (WRBLK_RECSEC), a   ; the sector-in-cluster (spc is a power of two)
-                ld      a, (FAT_SECPERCLUS)
-ws_ci:
-                srl     a
-                jr      c, ws_cid
-                srl     h
-                rr      l
-                jr      ws_ci
-ws_cid:
+                call    spc_div             ; HL = ci
                 push    hl                  ; [ci]
-                ld      e, (ix+30)
-                ld      d, (ix+31)
-                or      a
-                sbc     hl, de              ; HL = ci - the FCB's index
-                ld      c, (ix+28)
-                ld      b, (ix+29)          ; BC = the FCB's running cluster
-                jr      c, ws_first
-                ld      a, b
-                or      a
-                jr      nz, ws_in
-                ld      a, c
-                cp      2
-                jr      nc, ws_in           ; a real cluster -> walk from it
+                call    ci_cache
+                jr      nc, ws_in           ; a real cached cluster -> walk from it
 ws_first:
                 pop     hl
                 push    hl                  ; HL = ci steps from the first cluster
@@ -7405,16 +7379,41 @@ wfk_cache:                                  ; (D-RNDFCB (c) enters here: rdrnd_e
                 ld      (ix+28), l
                 ld      (ix+29), h
                 ld      hl, (WRBLK_CURSEC)
-                ld      a, (FAT_SECPERCLUS)
-wfk_ci:
-                srl     a
-                jr      c, wfk_cid
-                srl     h
-                rr      l
-                jr      wfk_ci
-wfk_cid:
+                call    spc_div             ; (Cy = 1 out, as before)
                 ld      (ix+30), l
                 ld      (ix+31), h
+                ret
+
+; spc_div -- HL = a sector's index in the file -> HL = its cluster's index in the
+; chain (FAT_SECPERCLUS is a power of two). Out A = 0, Cy = 1. It stood three times,
+; inline, in wrblk_seek, k47b2_seek and wfk_cache (D-DSKFMT's carve, 2026-11-10).
+spc_div:
+                ld      a, (FAT_SECPERCLUS)
+spd_lp:
+                srl     a
+                ret     c
+                srl     h
+                rr      l
+                jr      spd_lp
+
+; ci_cache -- HL = ci, a cluster index; IX = the FCB, whose +28..29 hold the last
+; cluster accessed and +30..31 its index. Out Cy = 0: walk HL = ci - that index steps
+; from BC = that cluster; Cy = 1: walk from the first cluster (the cache is past ci,
+; or holds no real cluster). DE = the cached index; A clobbered. It stood twice,
+; inline, in wrblk_seek and k47b2_seek (D-DSKFMT's carve, 2026-11-10).
+ci_cache:
+                ld      e, (ix+30)
+                ld      d, (ix+31)
+                or      a
+                sbc     hl, de              ; HL = ci - the cached index
+                ld      c, (ix+28)
+                ld      b, (ix+29)          ; BC = the cached cluster
+                ret     c                   ; past ci
+                ld      a, b
+                or      a
+                ret     nz                  ; Cy = 0: a real cluster
+                ld      a, c
+                cp      2                   ; Cy = 1: 0 or 1, no cluster
                 ret
 
 ; k47b2_seek -- RDBLK's positioning (D-RDBLKSEEK), from k47b2_body's steps 6+7;
@@ -7463,30 +7462,11 @@ k47b2_geom:
                 dec     a
                 and     l
                 ld      (FAT_CLUSSEC), a
-                ld      a, (FAT_SECPERCLUS)
-k47b2_ci:
-                srl     a
-                jr      c, k47b2_ci_done
-                srl     h
-                rr      l
-                jr      k47b2_ci
-k47b2_ci_done:
+                call    spc_div             ; HL = ci
                 ld      (RDBLK_CNT), hl     ; ci, parked: step 8 reloads RDBLK_CNT per
                                             ; record, so it is free until then (no new RAM)
-                ; start from the FCB's running cluster when it is at or before ci
-                ld      e, (ix+30)
-                ld      d, (ix+31)
-                or      a
-                sbc     hl, de              ; HL = ci - idx
-                ld      c, (ix+28)
-                ld      b, (ix+29)          ; BC = that cluster
-                jr      c, k47b2_from_first
-                ld      a, b
-                or      a
-                jr      nz, k47b2_walk_in
-                ld      a, c
-                cp      2
-                jr      nc, k47b2_walk_in   ; a real cluster -> walk from it
+                call    ci_cache            ; the FCB's running cluster, at or before ci?
+                jr      nc, k47b2_walk_in   ; a real cached cluster -> walk from it
 k47b2_from_first:
                 ld      hl, (RDBLK_CNT)      ; walk ci steps from the first cluster
                 ld      c, (ix+26)
@@ -8565,6 +8545,21 @@ fdel_ioerr:
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
                 ret
 
+; fcb_fatst -- FAT_FIRSTCLUS := FCB +26..27, FAT_FILESIZE := FCB +16..19 (IX = the FCB).
+; It stood twice, inline, in wfs_geom and rrnd_position (D-DSKFMT's carve, 2026-11-10).
+; Out: HL = the size's high word; A, BC, DE untouched.
+fcb_fatst:
+                ld      l, (ix+26)
+                ld      h, (ix+27)
+                ld      (FAT_FIRSTCLUS), hl
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                ld      (FAT_FILESIZE), hl
+                ld      l, (ix+18)
+                ld      h, (ix+19)
+                ld      (FAT_FILESIZE+2), hl
+                ret
+
 ; rrnd_position / rrnd_sector / rdrnd_body / wrrnd_body — MSX-DOS-1 kernel
 ; RDRND ($21) / WRRND ($22) canonical entries $4788/$4793's real bodies (M26,
 ; tier2-m26-spec.md §2.3). CLEAN-ROOM. Entry is the same kernel FCB-copy
@@ -8638,15 +8633,7 @@ rrnd_position:
                 ; where the CF-3300 reads it (probes/disk/dosl/d6rand.asm,
                 ; scratchpad/dosl_d6_2.out). The FCB's +26 and +16..19 are kept current
                 ; by every write (wrblk_fcb_keep, wrrnd_extend) and filled by FOPEN.
-                ld      l, (ix+26)
-                ld      h, (ix+27)
-                ld      (FAT_FIRSTCLUS), hl
-                ld      l, (ix+16)
-                ld      h, (ix+17)
-                ld      (FAT_FILESIZE), hl
-                ld      l, (ix+18)
-                ld      h, (ix+19)
-                ld      (FAT_FILESIZE+2), hl
+                call    fcb_fatst
                 ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
                 push    af
                 call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)
