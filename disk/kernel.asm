@@ -1696,25 +1696,6 @@ verify_body:
                 ret
 ; (wrseq_body_write moved here by D-RNDFCB from the $7F7C region; entered only by
 ; driver.asm wrseq_body's `jp nz`.)
-wrseq_body_write:
-                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
-                ; the M33 read-branch FCB-position write-back. M33 advanced the
-                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
-                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
-                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
-                ; sequential WRITES too. Our file bytes were already correct (the
-                ; write-iterator tracks position internally); only the caller-visible
-                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
-                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
-                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
-                ; not-open, do NOT advance -- no record was stored). The twin is
-                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
-                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
-                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
-                call    bdos_seqwrite
-                or      a
-                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
-                ret
                 ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
 k_55FF:
                 jp      verify_body     ; $55FF: BDOS $2E VERIFY canonical entry (M22a)
@@ -4629,7 +4610,7 @@ seq_k_adv:
                 ld      (BDOS_SEQREC), hl
                 ld      a, l
                 and     $7F
-                ld      ($DA40+32), a
+                ld      (ix+32), a
                 push    hl
                 ld      b, 7
 ska_shr:
@@ -4637,7 +4618,7 @@ ska_shr:
                 rr      l
                 djnz    ska_shr             ; HL = K >> 7
                 ld      a, l
-                ld      ($DA40+12), a
+                ld      (ix+12), a
                 pop     hl
                 ret
 seq_k30:
@@ -4645,7 +4626,7 @@ seq_k30:
                 ld      a, (FAT_SECPERCLUS)
                 call    recperclus_div
                 ld      a, e
-                ld      ($DA40+30), a
+                ld      (ix+30), a
                 ret
 
 ; recperclus_div -- DE := HL / (A * RECPERSEC), A = FAT_SECPERCLUS on entry (the
@@ -4989,8 +4970,9 @@ k47b2_nextbyte_get:
                                             ; either way its own `ret` is our `ret` too
 
 ; wrseq_writeback — M33 (tier2-m33-m32-fcb-position-spec.md §2.2): mirror the
-; sequential-read iterator's position into the kernel FCB copy at the fixed
-; base $DA40 after a DELIVERED RDSEQ record (wrseq_body's read branch calls
+; sequential-read iterator's position into the FCB in IX (the fixed base $DA40
+; until D-BDOSFCB stage B, 2026-11-10; IX = DE at entry, which is $DA40 under
+; MSX-DOS and the caller's own FCB from $F37D) after a DELIVERED RDSEQ record (wrseq_body's read branch calls
 ; this only when A=$00; see wrseq_body above). K = BDOS_SEQREC after this
 ; call's increment (records delivered so far, 1-based).
 ;   copy+32 (CR)          := K mod 128
@@ -5012,7 +4994,8 @@ wrseq_writeback:
                 push    hl
                 ; copy+28/29 := FAT_CURCLUS (word)
                 ld      hl, (FAT_CURCLUS)
-                ld      ($DA40+28), hl
+                ld      (ix+28), l
+                ld      (ix+29), h
                 ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
                 pop     hl                  ; HL = K
                 call    seq_k30             ; +30 := (K-1)'s cluster index
@@ -5221,8 +5204,8 @@ wre_noext:
 
 ; wrseq_wr_writeback — Item 5 (spec-diskbasic-option-closure.md): the WRITE-side
 ; twin of wrseq_writeback. Mirrors the SAME FCB-position field set the read
-; branch advances, into the fixed FCB copy at $DA40, after a WRITTEN sequential
-; record (wrseq_body_write calls this only on A=$00). K = BDOS_SEQREC after this
+; branch advances, into the FCB in IX (the fixed $DA40 until D-BDOSFCB stage B),
+; after a WRITTEN sequential record (wrseq_body calls this only on A=$00). K = BDOS_SEQREC after this
 ; call's increment (records written so far, 1-based).
 ;   copy+32 (CR)      := K mod 128
 ;   copy+12 (EX)      := K div 128            (floppy -> fits a byte, §2.2)
@@ -5248,8 +5231,10 @@ wrseq_wr_writeback:
                 push    hl
                 ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
                 ld      hl, (BDOS_WRCLUS)
-                ld      ($DA40+28), hl
-                ld      hl, $DA40
+                ld      (ix+28), l
+                ld      (ix+29), h
+                push    ix
+                pop     hl
                 call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX8)
                 ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
                 pop     hl                  ; HL = K
@@ -5259,14 +5244,17 @@ wrseq_wr_writeback:
                 ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin
                 ; never needed this (FOPEN loads +16..19 from the dirent), but FMAKE
                 ; zeroes it, so the write session must grow it here.
-                ld      hl, BDOS_WRBYTES
-                ld      de, $DA40+16
-                ld      bc, 4
-                ldir
+                ld      hl, (BDOS_WRBYTES)
+                ld      (ix+16), l
+                ld      (ix+17), h
+                ld      hl, (BDOS_WRBYTES + 2)
+                ld      (ix+18), l
+                ld      (ix+19), h
                 ; copy+26/27 := BDOS_WRFIRST (file's first cluster). Also maintained
                 ; per stock's post-WRSEQ FCB, and also zero after FMAKE.
                 ld      hl, (BDOS_WRFIRST)
-                ld      ($DA40+26), hl
+                ld      (ix+26), l
+                ld      (ix+27), h
                 pop     hl
                 pop     de
                 pop     bc

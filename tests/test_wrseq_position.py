@@ -80,7 +80,9 @@ def run():
         m.poke(m.addr("FAT_SECPERCLUS"), bytes([SECPERCLUS]))
 
         # register-transparency sentinels (the property BDOSX3/BDOSX4 rely on)
-        cpu = m.call("wrseq_wr_writeback", a=0x99, bc=0x1234, de=0x5678, hl=0x9ABC)
+        # IX = the FCB: wrseq_body hands it over (DE at its entry, $DA40 under
+        # MSX-DOS) since D-BDOSFCB stage B -- it was the fixed $DA40 before.
+        cpu = m.call("wrseq_wr_writeback", a=0x99, bc=0x1234, de=0x5678, hl=0x9ABC, ix=FCB)
 
         cr = m.peek(FCB + 32)[0]
         ex = m.peek(FCB + 12)[0]

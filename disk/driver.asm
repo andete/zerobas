@@ -495,26 +495,29 @@ install_p1blit:
 ; FCBs / the boot path, so instead the read branch's tail-jump becomes a call
 ; + inline write-back + ret. Only on a DELIVERED record (A=$00 on return; on
 ; A=$01 EOF, §2.3, skip it -- stock's position stops at/after EOF). Body =
-; wrseq_writeback (free tail): writes copy+32/+12/+28/29/+30 from the fixed
-; FCB-copy base $DA40 (a constant here -- no register to preserve across the
-; call). A is stashed across the write-back and restored before ret so
+; wrseq_writeback (free tail): writes copy+32/+12/+28/29/+30 into the FCB in IX
+; (it was the fixed base $DA40 until D-BDOSFCB stage B -- the same address under
+; MSX-DOS, where DE = $DA40 -- and is DE at entry, popped into IX after the
+; body, so a $F37D caller's own FCB gets it). A is stashed across the write-back and restored before ret so
 ; bdos_seqread's pass-through A/HL exit contract is unchanged.
 ; 🔴 D-SEQTWO (2026-11-09): THE BRANCH IS THE ENTRY, NOT BDOS_WRMODE. This picked
 ; read or write by BDOS_WRMODE -- "a file is open for writing" -- so once a program
 ; FMAKE'd a copy, every SEQREAD ($4775) of its source ran the WRITE branch and the
 ; copy never ended (probes/disk/dosl/d3copy.asm; the CF-3300 copies it). $4775 is
 ; SEQREAD's entry and $477D SEQWRITE's (callwatch, per call): each its own branch.
+; D-BDOSFCB stage B (2026-11-10): the write-backs address the FCB in IX -- DE at entry,
+; kept across the body -- not the fixed $DA40. Under MSX-DOS DE IS $DA40, so nothing
+; changes there; from $F37D (bdos_entry now routes $14 / $15 here) they reach the
+; caller's own FCB, as the CF-3300's do (scratchpad/bdosfcb_run3.out: CR and the size).
 wrseq_rd:                                   ; $4775: BDOS $14 SEQREAD
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
+                push    de
                 call    bdos_seqread
+                pop     ix                  ; IX = the FCB (POP keeps the flags)
                 or      a
                 call    z, wrseq_writeback  ; only on a delivered record (A=$00)
                 ret
-wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
-                jp      wrseq_body_write    ; (`jp`: moved away from it, D-LOADRUN)
 ; rh_check -- D-PUTCACHE, read_sector's first act (basic/fat-prim-body.inc). The
 ; sector a PUT left unwritten in FAT_MBUF (RND_HSEC) is either the one being read
 ; INTO FAT_MBUF -- then the buffer already holds it: read_sector returns at once,
@@ -595,7 +598,7 @@ bdos_entry:
                 cp      BDOS_F_OPEN
                 jr      z, bdos_open
                 cp      BDOS_F_SEQRD
-                jp      z, bdos_seqread
+                jp      z, wrseq_rd         ; D-BDOSFCB: CR / EX in the caller's FCB
                 cp      BDOS_F_CLOSE
                 jp      z, bdos_close
                 cp      BDOS_F_SETDTA
@@ -603,7 +606,7 @@ bdos_entry:
                 cp      BDOS_F_CREATE
                 jp      z, bdos_create
                 cp      BDOS_F_SEQWR
-                jp      z, bdos_seqwrite
+                jp      z, wrseq_body       ; D-BDOSFCB: CR / the size in the FCB
                 cp      BDOS_F_RDBLK
                 jp      z, k47b2_body       ; D-BDOSFCB: RR-positioned, as the CF-3300
                 jp      bdos_more       ; D-BDOSBASIC: the rest (disk/kernel.asm)
@@ -659,6 +662,30 @@ bdos_open:
 ; (MSX2 TH, FCB sequential I/O) supplies the record framing.
 bdos_seqread:
                 jp      bdos_seqread_body   ; Tier-2 3b: divert; veneer fills the gap
+wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
+                ; the M33 read-branch FCB-position write-back. M33 advanced the
+                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
+                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
+                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
+                ; sequential WRITES too. Our file bytes were already correct (the
+                ; write-iterator tracks position internally); only the caller-visible
+                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
+                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
+                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
+                ; not-open, do NOT advance -- no record was stored). The twin is
+                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
+                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
+                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
+                ; (wrseq_body_write, which held this, folded in here: D-BDOSFCB B)
+                push    de
+                call    bdos_seqwrite
+                pop     ix
+                or      a
+                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
+                ret
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
 ; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;

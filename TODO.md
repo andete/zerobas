@@ -17607,6 +17607,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       target. tests/test_bdosbasic.py ($21 / $26 answer now) and tests/test_p1rdblk.py
       (drives dta_put, the store every block read uses) updated. bdos-acceptance 25/25,
       diskbasic-acceptance, p1dta-acceptance green.
+      ✅ **STAGE B (2026-11-10):** $14 / $15 from $F37D go to the kernel's wrseq_rd / wrseq_body,
+      whose write-backs (seq_k_adv, seq_k30, wrseq_writeback, wrseq_wr_writeback) store
+      into the FCB in IX -- DE at entry, popped after the body -- not the fixed $DA40 (the
+      same address under MSX-DOS, where DE = $DA40). wrseq_body_write folded into
+      wrseq_body (moved before $4558: its old region had 1 B). 📏 [`bdosfcb_run4.out`](scratchpad/bdosfcb_run4.out): SEQWRITE
+      keeps CR and the size (row 5 identical; FCLOSE's FCB matches); bdos-acceptance 25/25,
+      diskbasic-acceptance green; tests/test_wrseq_position.py passes IX as the entry
+      does. ➡️ **STAGE B2 (open):** SEQREAD after random calls reads from OUR sequential
+      counter (BDOS_SEQREC, reset by FOPEN), not the FCB's EX / CR: the CF-3300 reads
+      record 6 (CR = 6 from RDRND RR6) and leaves CR 7, ours reads record 0 and leaves CR
+      1 (row 23). Position SEQREAD from EX * 128 + CR each call (rrnd_position's path)
+      when it is not where the counter says -- and check the MSX-DOS side the same way
+      (a ladder program, SEQREAD after RDRND). Also: SEQWRITE's first records leave FCB
+      +26 / +28 at 0 until the first sector flushes; the CF-3300 sets the first cluster
+      at record 0 (rows 2-4).
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

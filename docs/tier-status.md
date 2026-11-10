@@ -112,10 +112,10 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $4392 | `k_4392` | BDOS $17 FREN: exercised | disk/driver.asm:252 |
 | $43A4 | `fdc_write_phys` | no BDOS function named | disk/driver.asm:263 |
 | $4462 | `(jp fopen_fill_body)` | no BDOS function named | disk/driver.asm:411 |
-| $44F4 | `choice` | no BDOS function named | disk/driver.asm:553 |
-| $4558 | `(jp k_4558)` | no BDOS function named | disk/driver.asm:662 |
-| $456F | `k_456F` | BDOS $10 FCLOSE: exercised | disk/driver.asm:700 |
-| $461D | `k_461D` | BDOS $16 FMAKE: exercised | disk/driver.asm:842 |
+| $44F4 | `choice` | no BDOS function named | disk/driver.asm:556 |
+| $4558 | `(jp k_4558)` | no BDOS function named | disk/driver.asm:689 |
+| $456F | `k_456F` | BDOS $10 FCLOSE: exercised | disk/driver.asm:727 |
+| $461D | `k_461D` | BDOS $16 FMAKE: exercised | disk/driver.asm:869 |
 | $46BA | `k_46BA` | BDOS $2F RDABS: exercised | disk/fat.asm:59 |
 | $46C8 | `(jp k_46C8)` | no BDOS function named | disk/fat.asm:76 |
 | $46E6 | `bdos_create_failpop` | no BDOS function named | disk/fat.asm:105 |
@@ -155,13 +155,13 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1562 |
 | $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1665 |
 | $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1676 |
-| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1718 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3344 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3716 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3837 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7173 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7537 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7627 |
+| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1699 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3325 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3697 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3818 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7161 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7525 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7615 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:770 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:774 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:788 |
