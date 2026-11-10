@@ -16534,6 +16534,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-RNDLIVE (the FCB-sourced random read) -- but a channel's PUT / GET do not go through
       BDOS, so MEASURE before believing either.
 
+- [ ] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
+      (Joost's idea, 2026-11-10, after D-DOSLADDER's six fixes)**
+      🎚️ TIER 1 — the main BIOS under REAL program patterns (the entry-point ruling,
+      2026-11-08), which the one-entry rows (biosregs-acceptance) do not reach. Order:
+      after D-BDOSFCB, before D-DSKFMT's build (the ladder needs no disk-ROM room).
+      🤖 **AUTONOMOUS** — D-DOSLADDER's shape: our own small programs, each writing its
+      results to a capture block, compared at a `done` anchor (D7's lessons: a run-time,
+      three-byte, slot-guarded arm -- probes/disk/build_dosl_disk.py). 🏗️ **RULED (Joost
+      2026-11-10): "yes tier-1, I think the rom approach is enough as otherwise we'd just
+      test basic as well"** -- ROM CARTRIDGES ONLY (`-cart`, a 16 KB AB-header image: our
+      cartridge boot too, and it runs on the diskless target -- a NODISK row per rung); no
+      BLOAD delivery, which would test BASIC's loader rather than the BIOS. VRAM dumps for the video rungs, the PSG
+      registers for sound. Rungs: B1 text (CHPUT, POSIT, CLS, CHGET with typed keys, ERAFNK,
+      the width / screen cells) · B2 VDP (CHGMOD / INIGRP, WRTVDP, LDIRVM, FILVRM, RDVRM,
+      sprites, CALPAT / CALATR) · B3 interrupts (an H.TIMI handler counting JIFFY, a
+      vblank-synced loop) · B4 input (GTSTCK, GTTRIG, SNSMAT, KILBUF, CHSNS) · B5 sound
+      (GICINI, WRTPSG / RDPSG, STRTMS / PUTQ -- already filed as differing) · B6 slots
+      (RDSLT, WRSLT, CALSLT, ENASLT: a ROM finding RAM in page 2) · B7 tape (TAPOON / TAPOUT,
+      then TAPION / TAPIN) · **B8 a save game on disk** (Joost, 2026-11-10: *"a rom that
+      e.g. uses the disk for save game"*) -- the ROM saves and reloads a block through the
+      $F37D BDOS (FMAKE, WRBLK, FCLOSE; FOPEN, RDBLK: the surface D-BDOSFCB is making whole)
+      and, as a second variant, through PHYDIO / DSKIO; on the disk target only, its NODISK
+      row checking what the ROM sees with no disk interface ($F37D unset). Clean-room: own
+      code.
+
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
       🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
