@@ -2771,12 +2771,7 @@ hcc_stamp:
                 ld      (FWR_FIRST), hl
                 push    ix
                 pop     hl
-                ld      de, 16
-                add     hl, de
-                ld      de, FWR_BYTES
-                ld      bc, 4
-                ldir                        ; the size
-                call    fat_dir_update
+                call    close_size_upd      ; the size, then fat_dir_update (carve 18)
                 jp      c, dwr_fail
 hcc_done:
                 scf                         ; claimed; main frees the channel
@@ -6810,15 +6805,7 @@ innoe_body:
                 push    hl
                 di
                 call    br_mainin_tmpl
-                call    $009F               ; CHGET: blocking; A := char (no echo)
-                push    af
-                call    pg0_mainrom_out
-                ei
-                pop     af
-                pop     hl
-                pop     de
-                pop     bc
-                ret
+                jp      dirio_chget         ; 💰 carve 15: CHGET + the shared exit (runtime.asm)
 ; fat_locate -- HL = a cluster -> HL = the absolute FAT sector holding its 12-bit entry;
 ; FAT_PARITY = cluster & 1, FAT_BYTEIDX = fatofs & $1FF (fatofs = cluster * 3/2, the
 ; Microsoft FAT spec's 12-bit packing). Clobbers A, DE. 💰 D-DISKCARVE (2026-11-07): the
@@ -8382,7 +8369,8 @@ wba_loop:
 ; (same fat_find precedent as fren_body -- BDOSX3 only exercises an exact
 ; name; '?' wildcard multi-delete is out of scope, confirmed at sign-off).
 ; PLACEMENT NOTE: this body first landed appended to disk/fat.asm's own end
-; (next to fren_ioerr/rdabs_ioerr/wrabs_ioerr, following those three's own
+; (next to fren_ioerr/rdabs_ioerr/wrabs_ioerr -- the last folded into rdabs_ioerr
+; by D-DSKFMT carve 17 -- following those three's own
 ; precedent), but that broke test_gdate.py/test_getdpb.py -- fat.asm's tail
 ; feeds straight into kernel.asm's own tightly-packed pinned-address
 ; corridor (GDATE $553C etc, disk/kernel.asm) with no slack for a body this

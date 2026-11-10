@@ -1808,7 +1808,7 @@ wrabs_body:
                 scf                         ; Cy=1 = write direction (MSX2 TH DSKIO)
                 call    dskio
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
-                jr      c, wrabs_ioerr
+                jr      c, rdabs_ioerr      ; 💰 D-DSKFMT carve 17: the same error tail
                 ld      a, b                ; A := original count
                 ld      c, a                ; C := count (pinned exit value)
                 xor     a
@@ -1816,11 +1816,4 @@ wrabs_body:
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      h, a
                 ld      l, a                ; H=L=$00 (pinned exit value)
-                ret
-wrabs_ioerr:
-                ld      b, a                ; preserve dskio's error code
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
-                ld      a, b                ; restore error code
-                scf
                 ret

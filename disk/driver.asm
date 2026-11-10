@@ -27,15 +27,15 @@ dskio:
                 jr      c, dskio_keep
                 ld      (DSK_MEDIA), a
 dskio_keep:
-                pop     af
-                jr      c, dskio_write
-                ; --- read path ---
+                ; 💰 D-DSKFMT carve 16: one setup for both directions (no `ld` touches
+                ; the flags); a zero count leaves by the loop head's own test.
                 ld      a, b
-                or      a
-                jr      z, dskio_ok     ; zero sectors -> nothing to do
                 ld      (FDC_CNT), a
                 ld      (FDC_LSEC), de
                 ld      (FDC_DEST), hl
+                pop     af              ; Cy = the direction
+                jr      c, dskio_write
+                ; --- read path ---
 dskio_next:
                 ld      a, (FDC_CNT)
                 or      a
@@ -65,12 +65,17 @@ dskio_next:
                 ld      hl, (P1_DEST)
                 ld      de, 512
                 add     hl, de
-                ld      (FDC_DEST), hl  ; advance real destination by 512
-                jr      dskio_adv
+                call    dskio_adv       ; advance real destination by 512, then the count
+                jr      dskio_next
 dskio_rd:
                 call    fdc_read_phys
                 jr      c, dskio_err
-                ld      (FDC_DEST), hl  ; HL = buf+512, advance for next sector
+                call    dskio_bump      ; HL = buf+512, advance for next sector
+                jr      dskio_next
+; 💰 D-DSKFMT carve 16: the per-sector advance, once for both directions.
+; dskio_bump: FDC_DEST := HL; FDC_LSEC += 1; FDC_CNT -= 1. dskio_adv skips the first.
+dskio_bump:
+                ld      (FDC_DEST), hl
 dskio_adv:
                 ld      hl, (FDC_LSEC)
                 inc     hl
@@ -78,7 +83,7 @@ dskio_adv:
                 ld      a, (FDC_CNT)
                 dec     a
                 ld      (FDC_CNT), a
-                jr      dskio_next
+                ret
 dskio_ok:
                 call    mtoff           ; spin the motor down
                 ld      b, 0            ; B = 0: all sectors done (DSKIO success contract)
@@ -94,15 +99,8 @@ dskio_err:
 ; --- write path -------------------------------------------------------------
 ; Mirrors the read loop's structure exactly: loop the sector count, convert each
 ; logical sector -> CHS via lsec_chs, and call fdc_write_phys (the write twin of
-; fdc_read_phys). On entry Cy = 1 (write direction); registers as for read.
+; fdc_read_phys). Entered from dskio's shared setup (carve 16), Cy = 1.
 dskio_write:
-                ld      a, b
-                or      a
-                jr      z, dskio_ok     ; zero sectors -> nothing to do
-                ld      (FDC_CNT), a
-                ld      (FDC_LSEC), de
-                ld      (FDC_DEST), hl
-dskio_wnext:
                 ld      a, (FDC_CNT)
                 or      a
                 jr      z, dskio_ok
@@ -112,14 +110,8 @@ dskio_wnext:
                 ld      hl, (FDC_DEST)
                 call    fdc_write_phys
                 jr      c, dskio_err
-                ld      (FDC_DEST), hl  ; HL advanced by 512 on success
-                ld      hl, (FDC_LSEC)
-                inc     hl
-                ld      (FDC_LSEC), hl
-                ld      a, (FDC_CNT)
-                dec     a
-                ld      (FDC_CNT), a
-                jr      dskio_wnext
+                call    dskio_bump      ; HL advanced by 512 on success
+                jr      dskio_write
 
 ; fdc_read_phys — read one physical sector into (HL).
 ;   in:  D = track, E = side (0/1), C = sector (1..9), HL = buffer

@@ -16786,6 +16786,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       243 B in runs of 16 B or more (194 before 12). 12 file / disk suites and the bdosfcb /
       bdosseq probes unchanged. ➡️ More from scratchpad/diskngram.py 12 (the shared
       fat-prim / fatio bodies excluded).
+      ✂️ **CARVE 15 (2026-11-10, ~30 B):** the console bodies shared one exit (push af,
+      pg0_mainrom_out, ei, pop af, pop hl/de/bc, ret) four times: const_body now jumps to
+      dirio_in_body's (its $FF/$00 is `add a,$FF / sbc a,a`), innoe_body (kernel.asm) is its
+      entry plus `jp dirio_chget` (CHGET + that exit), and conin_body calls innoe_body for
+      its read. check_disk_walls, taken 2026-11-10: 276 B in runs of 16 B or more (243
+      before). bdos-acceptance 25/25 and dosmode-acceptance unchanged.
+      ✂️ **CARVE 16 (2026-11-10, ~25 B):** DSKIO's two directions each opened with the same
+      setup (count, sector, address) and each closed a sector with the same advance: one
+      setup now runs before the direction test (no `ld` touches the flags; a zero count
+      leaves by the loop head's own test), and the advance is dskio_bump / dskio_adv.
+      check_disk_walls: 303 B in runs of 16 B or more. diskbasic, bdos, fat-error and
+      dosmode acceptance unchanged.
+      ✂️ **CARVE 17 (2026-11-10, 8 B):** wrabs_body's error tail was rdabs_body's byte for
+      byte; it jumps there now (the success exits stay apart: RDABS's F is `sub`'s $42 as
+      on the CF-3300, WRABS's is `xor`'s). check_disk_walls: 311 B in runs of 16 B or more.
+      ✂️ **CARVE 18 (2026-11-10, 12 B):** BASIC's CLOSE (hcc_stamp) copied the size from
+      +16..19 and called fat_dir_update exactly as bdos_close_write does; it calls that tail
+      (close_size_upd) now. dwr_fail reads DISKOP_ERR, not A, so the tail's A is harmless.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

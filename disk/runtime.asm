@@ -151,11 +151,11 @@ dirio_in_body:
                 call    br_mainin_tmpl
                 call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
                 or      a
-                jr      z, dirioin_empty
+                jr      z, dirioin_done     ; no key queued: A = 0 already
+; 💰 D-DSKFMT carve 15: innoe_body (kernel.asm) jumps in here after its own entry.
+dirio_chget:
                 call    $009F               ; CHGET: A := char (no echo, DIRIO contract)
-                jr      dirioin_done
-dirioin_empty:
-                xor     a                   ; no key queued -> A := 0
+; the shared exit of the console bodies: page the BIOS back out, keep A.
 dirioin_done:
                 push    af                  ; stash result across mainrom_out (clobbers A)
                 call    pg0_mainrom_out
@@ -178,18 +178,9 @@ const_body:
                 di
                 call    br_mainin_tmpl
                 call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
-                or      a
-                jr      z, const_notready
-                ld      a, $FF              ; MSX-DOS CONST contract: ready -> A=$FF
-const_notready:
-                push    af
-                call    pg0_mainrom_out
-                ei
-                pop     af
-                pop     hl
-                pop     de
-                pop     bc
-                ret
+                add     a, $FF              ; CF := (A != 0)
+                sbc     a, a                ; MSX-DOS CONST contract: ready -> A=$FF, else $00
+                jr      dirioin_done        ; 💰 carve 15: dirio_in_body's exit
 
 ; --- conin_body - the $5445 CONIN canonical entry (M22a) --------------------------
 ; Blocking read: CHGET ($009F), then echo via conout_body (E=char, its ABI) —
@@ -197,17 +188,12 @@ const_notready:
 ; A/E end up holding the char (conout_body's own A:=E return).
 ; CLEAN-ROOM: published CONIN contract (map.grauw.nl) + our own CHGET/conout_body
 ; primitives; no oracle bytes.
+; 💰 D-DSKFMT carve 15: the read is innoe_body's (the same CHGET with the same paging).
 conin_body:
                 push    bc
                 push    de
                 push    hl
-                di
-                call    br_mainin_tmpl
-                call    $009F               ; CHGET: blocking; A := char
-                push    af                  ; stash char across mainrom_out (clobbers A)
-                call    pg0_mainrom_out
-                ei
-                pop     af                  ; A := char
+                call    innoe_body          ; A := char, BIOS paged back out
                 ld      e, a                ; echo via conout_body (E = char, its ABI)
                 call    conout_body
                 pop     hl
@@ -787,6 +773,10 @@ bdos_close_write:
                 ; CF-3300 256 (scratchpad/bdosseq_run1.out). Every SEQWRITE keeps +16..19
                 ; equal to BDOS_WRBYTES (wrseq_wr_writeback), so this is that count when
                 ; nothing else grew the file.
+; 💰 D-DSKFMT carve 18: BASIC's CLOSE (kernel.asm hcc_stamp) calls in here with HL = its
+; channel (the size at +16..19 as in an FCB): out CF = fat_dir_update failed (A = $FF), else
+; A = $00.
+close_size_upd:
                 ld      de, 16
                 add     hl, de
                 ld      de, BDOS_WRBYTES
