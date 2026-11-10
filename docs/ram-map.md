@@ -705,7 +705,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
 | `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
 | `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |
-| `$FDEF` |  | `disk` | `H_DSKO` | DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK |  |
+| `$FDEF` |  | `disk` | `HOOK_LO/H_DSKO` | DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK |  |
 | `$FDF4` |  | `basic` | `H_SYST` | CALL SYSTEM handler (D-CALLSYSTEM): see disk/equates.inc |  |
 | `$FDF4` |  | `disk` | `H_SYST` |  |  |
 | `$FDF9` |  | `basic` | `H_NAME` | NAME handler (channel verbs, D-CHANHOOK) |  |

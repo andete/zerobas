@@ -67,6 +67,25 @@ dskchg_body:
                 ld      b, 1                ; "unchanged"
                 xor     a                   ; A = 0, Cy = 0
                 ret
+; (moved here from runtime.asm by the D-DSKFMT defrag)
+; --- conin_body - the $5445 CONIN canonical entry (M22a) --------------------------
+; Blocking read: CHGET ($009F), then echo via conout_body (E=char, its ABI) —
+; the published BDOS $01 CONIN contract (read-with-echo). B/C/D preserved;
+; A/E end up holding the char (conout_body's own A:=E return).
+; CLEAN-ROOM: published CONIN contract (map.grauw.nl) + our own CHGET/conout_body
+; primitives; no oracle bytes.
+; 💰 D-DSKFMT carve 15: the read is innoe_body's (the same CHGET with the same paging).
+conin_body:
+                push    bc
+                push    de
+                push    hl
+                call    innoe_body          ; A := char, BIOS paged back out
+                ld      e, a                ; echo via conout_body (E = char, its ABI)
+                call    conout_body
+                pop     hl
+                pop     de
+                pop     bc
+                ret
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
 ; 📌 In the $4E4E..$4EDE fill (check_disk_walls, 2026-10-21).
@@ -110,41 +129,6 @@ install_f37d:
                 ld      a, (HOOK_SLOT)
                 ld      (F37D_STUB + f37d_iy - f37d_tmpl + 3), a
                 jp      install_p1blit  ; D-P1RDBLK: dskio's page-1 bounce, every host
-; install_dos_env (D-TPAP1) -- at every DOS entry (lay_page0_env), on every host:
-; the $0038 handler and the slot bridges to INT_H_HIRAM (three pieces, end to end),
-; the $F368 hook bodies to WA_SEG, and $F368 / $F368+3 pointed at them. Built here
-; and not at INIT: WA_SEG and INT_H_HIRAM are BASIC's RAM until MSX-DOS starts.
-install_dos_env:
-                ld      hl, int_h_hiram_tmpl
-                ld      de, INT_H_HIRAM
-                ld      bc, int_h_hiram_end - int_h_hiram_tmpl
-                ldir
-                ld      hl, br1_tmpl
-                ld      bc, br1_end - br1_tmpl
-                ldir
-                ld      hl, br2_tmpl
-                ld      bc, br2_end - br2_tmpl
-                ldir
-                ld      a, $C3
-                ld      (WA_JMPTAB), a
-                ld      (WA_JMPTAB + 3), a
-                ld      ($0000), a          ; D-BOOTREGS: the warm boot goes on into the
-                ld      hl, $0005           ; BDOS with the caller's C, as on the CF-3300
-                ld      ($0001), hl         ; before MSXDOS.SYS (scratchpad/wboot_run.out)
-                ld      hl, WA_SEG_ROM
-                ld      (WA_JMPTAB + 1), hl
-                ld      hl, WA_SEG_RAM
-                ld      (WA_JMPTAB + 4), hl
-                ld      hl, wa_seg_rom_tmpl ; ... and the hook bodies right after br2
-                ld      bc, wa_seg_end_tmpl - wa_seg_rom_tmpl   ; (DE runs on: = WA_SEG)
-                ldir
-                ld      hl, br3_tmpl        ; ... then br3 (D-BOOTREGS)
-                ld      bc, br3_end - br3_tmpl
-                ldir
-                ld      hl, br5_tmpl        ; ... and br5
-                ld      bc, br5_end - br5_tmpl
-                ldir
-                jp      install_br6         ; ... and br6 (D-CALSLTP0)
 ; 💰 D-DISKCARVE (2026-11-07): three BDOS bodies moved here from disk/runtime.asm's
 ; $782B..$7F7C region (15 B), which the int_h_hiram template's ENASLT fix needed
 ; (D-SDSBOOT). Entered only by `jp` from the BDOS dispatch; this pad was empty and
@@ -163,17 +147,6 @@ stime_body:
                 ld      c, l
                 ret
 
-; --- gtime_body - the $55DB GTIME canonical entry (M22a) -------------------------
-; A := B := C := D := E := 0 — the oracle's pinned constant 00:00:00
-; (clockless-MSX1 default; deliberately NOT fed by STIME's stored value, which
-; would diverge from the observed oracle, §5.1 r3).
-gtime_body:
-                xor     a
-                ld      b, a
-                ld      c, a
-                ld      d, a
-                ld      e, a
-                ret
 
 ; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
 ; A := E (the published VERIFY contract: echo the requested on/off flag); B
@@ -1396,6 +1369,13 @@ k_5465:
 ; entry (same documented class as CHPUT $00A2 already called by conout_body); no oracle
 ; bytes decoded. Lives in the $5456-$5FE4 gap section (net-zero: absorbed by the
 ; `ds $5FE5 - $` pad below, so nothing downstream shifts / the FDC-window guard holds).
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; clr_f306 -- A := 0 (Z, CF = 0) and the dispatcher's HL-passthrough flag $F306 := 0
+; (the M20 rule). 💰 D-DSKFMT carve 30 (2026-11-10): the pair stood at fifteen sites.
+clr_f306:
+                xor     a
+                ld      ($F306), a
+                ret
                 ds      $546E - $, $00
 ; 🔴 D-AUXIN (2026-11-08): $546E IS BDOS $03 AUXIN's CANONICAL ENTRY. MSX-DOS's kernel
 ; CALLs it (disk_probe_diff.py callwatch --in-func 0x03, our ROM's PCs:
@@ -1716,6 +1696,11 @@ verify_body:
                 ret
 ; (wrseq_body_write moved here by D-RNDFCB from the $7F7C region; entered only by
 ; driver.asm wrseq_body's `jp nz`.)
+; (moved here from runtime.asm by the D-DSKFMT defrag)
+cr_copy2:                                   ; (cr_copy1's second half, disk/kernel.asm)
+                ld      hl, FAT_FILESIZE
+                call    to_wrbytes
+                jp      fat_dir_update
                 ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
 k_55FF:
                 jp      verify_body     ; $55FF: BDOS $2E VERIFY canonical entry (M22a)
@@ -3153,8 +3138,7 @@ sd_bad:
 gdate_body:
                 call    gdate_core
                 ld      b, a
-                xor     a
-                ld      ($F306), a          ; F = $44 (Z, P/V) from the xor
+                call     clr_f306   ; F = $44 (Z, P/V) from the xor
                 ld      a, b                ; A = day of week, flags untouched
                 ld      bc, 0
                 ret
@@ -3359,6 +3343,40 @@ rdrnd_ex:
                 rr      l
                 ld      (WRBLK_CURSEC), hl
                 jp      wfk_cache
+; (moved here from runtime.asm by the D-DSKFMT defrag)
+; --- dos_clear_screen - OI-3: blank the SCREEN-1 name table + home the cursor -----
+; Stock's DOS boot handoff clears the leftover BASIC power-on banner before the DOS
+; sign-on via a DIRECT name-table fill of spaces (characterised black-box: 0 CHPUT
+; form-feeds, no mode switch -- tier2-oi3-spec.md §2), and homes the cursor (stock's
+; CSRY/CSRX = $01/$01 at COMMAND.COM $0100). Ours never cleared, so it inherited BASIC's
+; screen (banner ROW10-13) and printed the sign-on from CSRY=$0F -> A> at ROW23. This
+; reproduces BOTH halves so ours' A> lands at ROW09 matching stock.
+;   (i) FILVRM ($0056): A=byte, BC=length, HL=VRAM addr -> fill VRAM[$1800..$1AFF] with
+;       $20 (768 = 32*24 SCREEN-1 name-table cells; namebase=$1800 confirmed by the
+;       `screen` probe on BOTH machines). Called via the main-ROM inter-slot path
+;       (pg0_mainrom_in/out) exactly as conout_body calls CHPUT: page 0 is RAM here
+;       (init.asm did page0_ram_in), so we page the main BIOS ROM back in from EXPTBL[0].
+;   (ii) cursor-home: CSRY ($F3DC) := 1, CSRX ($F3DD) := 1 (documented work-area sysvars).
+; STAY-DI (OI-3 §5.3): the caller (init.asm) holds DI across the whole page-0-RAM handoff
+; until MSXDOS.SYS is entered (init.asm:294); we restore page 0 but do NOT `ei` here, to
+; avoid an interrupt firing mid-handoff while $0038 is not yet the BIOS handler.
+; MUST preserve IX = $F195 (DRVA_DPB, required into MSXDOS.SYS, §8.31/M18) -- FILVRM does
+; not contractually preserve IX -> push/pop guards it.
+; CLEAN-ROOM: FILVRM $0056 + the $1800/768 SCREEN-1 name-table geometry + CSRY/CSRX
+; $F3DC/$F3DD are all documented MSX BIOS ABI / work-area sysvars (cited, not decoded).
+dos_clear_screen:
+                push    ix                  ; IX=$F195 (DRVA_DPB) must survive into MSXDOS.SYS
+                call    br_mainin_tmpl      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
+                ld      a, $20              ; A = space
+                ld      bc, $0300           ; BC = 768 = 32*24 name-table cells
+                ld      hl, $1800           ; HL = SCREEN-1 name-table base
+                call    $0056               ; FILVRM: VRAM[$1800..$1AFF] := $20
+                call    pg0_mainrom_out     ; restore page 0 = RAM (STAY-DI: no ei)
+                pop     ix
+                ld      a, $01
+                ld      ($F3DC), a          ; CSRY := 1 (home row, 1-based)
+                ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
+                ret
                 ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
 mb_5e10:
                 jp      basent_body
@@ -4158,8 +4176,7 @@ wrblk_ioerr2:
 wrblk_finish:                              ; shared tail: M20 dispatcher-flag rule, preserve A/HL
                 push    af
                 push    hl
-                xor     a
-                ld      ($F306), a
+                call     clr_f306
                 pop     hl
                 pop     af
                 ret
@@ -4955,8 +4972,7 @@ k47b2_return:
                 ld      b, h
                 ld      c, l
                 ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (§8.50)
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      a, e                ; A = the 0/1 EOF result (restored)
                 ret
 
@@ -5057,8 +5073,7 @@ srb_have_lo:
                 ; pinned by the acceptance capture, NOT part of the intended rr
                 ; divergence): stock passes the entry A=$25 dispatcher value
                 ; straight through and returns HL=$0000. Clear $F306 (M20 rule).
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule (A=0 here)
+                call     clr_f306   ; M20 dispatcher-flag rule (A=0 here)
                 ld      h, a                ; H = $00 (stock exit)
                 ld      a, $25              ; exit A = $25 (stock dispatcher passthrough)
                 ld      l, a                ; L = $25 (= A; stock's $24 exit HL = $0025,
@@ -5450,23 +5465,28 @@ hkcv_float:
 ; Texts measured on the CF-3300 (`ERROR 68/69/70` in a program): `Disk write
 ; protected`, `Disk I/O error`, `Disk offline`. D-DISKFULL (2026-10-02) adds 66,
 ; `Disk full`, read off the CF-3300's screen on a disk with no free cluster.
+; 💰 D-DSKFMT carve 28 (2026-11-10): "Disk " once, then the code's suffix -- the
+; (code - 66)-th 0-terminated string after it; 67 is not a disk message (an empty one
+; holds its place). No pointer table.
 hk_errp:
-                ld      hl, dk_errtab
-hke_lp:
-                ld      b, (hl)             ; the row's code; 0 ends the table
+                sub     66
+                cp      70 - 66 + 1
+                jr      nc, hke_no          ; not 66..70
+                cp      67 - 66
+                jr      z, hke_no           ; 67: not ours
+                ld      b, a
+                inc     b
+                ld      hl, dk_disk
+                call    hke_pr              ; "Disk "; HL = the first suffix
+hke_skip:
+                dec     b
+                jr      z, hke_pr
+hke_skp1:
+                ld      a, (hl)
                 inc     hl
-                ld      e, (hl)
-                inc     hl
-                ld      d, (hl)
-                inc     hl
-                ld      c, a
-                ld      a, b
                 or      a
-                jr      z, hke_no
-                cp      c
-                ld      a, c
-                jr      nz, hke_lp
-                ex      de, hl
+                jr      nz, hke_skp1
+                jr      hke_skip
 hke_pr:
                 ld      a, (hl)
                 inc     hl
@@ -5476,22 +5496,14 @@ hke_pr:
                 call    CHPUT
                 jr      hke_pr
 hke_no:
-                or      a                   ; CF=0: not ours
+                xor     a                   ; CF=0: not ours
                 ret
-dk_errtab:
-                db      66                  ; D-DISKFULL: the allocator leaves it pending
-                dw      dk_e66
-                db      68
-                dw      dk_e68
-                db      69
-                dw      dk_e69
-                db      70
-                dw      dk_e70
-                db      0
-dk_e66:         db      "Disk full", 0      ; CF-3300 text (disk_probe_diskfull.py)
-dk_e68:         db      "Disk write protected", 0
-dk_e69:         db      "Disk I/O error", 0
-dk_e70:         db      "Disk offline", 0
+dk_disk:        db      "Disk ", 0
+                db      "full", 0           ; 66 (D-DISKFULL; CF-3300 text, disk_probe_diskfull.py)
+                db      0                   ; 67: not a disk message
+                db      "write protected", 0    ; 68
+                db      "I/O error", 0      ; 69
+                db      "offline", 0        ; 70
 
 ; --- fdc_wp_chkrdy: the write path's NOT READY test (D-DISKERR) --------------
 ; Source: WD2793 data sheet via MSX2 Technical Handbook (type-I status bit 7 =
@@ -5566,56 +5578,75 @@ ibh_him:
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 ld      hl, hook_tab
 ibh_lp:
-                ld      c, (hl)             ; the hook cell
+                ld      a, (hl)             ; the hook cell's index ((cell - HOOK_LO) / 5)
+                inc     a
+                ret     z                   ; $FF terminates the table
+                dec     a
                 inc     hl
-                ld      b, (hl)
-                inc     hl
-                ld      a, b
-                or      c
-                ret     z                   ; $0000 terminates the table
                 ld      e, (hl)             ; ...and ITS OWN handler: the table is
-                inc     hl                  ; pairs now, because MKS$/MKD$ answer
-                ld      d, (hl)             ; with a real body while the rest only
-                inc     hl                  ; report presence
+                inc     hl                  ; pairs, because MKS$/MKD$ answer with a
+                ld      d, (hl)             ; real body while the rest only report
+                inc     hl                  ; presence
                 push    hl
-                ld      h, b
-                ld      l, c
+                ld      l, a
+                ld      h, 0
+                ld      b, h
+                ld      c, l
+                add     hl, hl
+                add     hl, hl
+                add     hl, bc              ; x 5: the MSX hooks are 5 B apart
+                ld      bc, HOOK_LO
+                add     hl, bc              ; HL = the hook cell
                 call    install_hook
                 pop     hl
                 jr      ibh_lp
 ; The seven conversion hooks, each one of the 35 slots the CF-3300's disk ROM
 ; claims (scratchpad/hookdiff_probe.py) and each named in the MSX2 TH table.
+; 💰 D-DSKFMT carve 27 (2026-11-10): a row is the cell's INDEX in the hook area (one
+; byte; every cell here is an MSX hook, 5 B apart, $FDEF..$FFAC) and the handler --
+; 3 B a row, not 4. tools/check_dead_code.py reads the `hookrow` lines.
+HOOK_LO         equ     H_DSKO              ; the lowest cell in the table
+hookrow         MACRO   cell, handler
+    IF (cell - HOOK_LO) - ((cell - HOOK_LO) / 5) * 5
+                db      HOOKROW_CELL_NOT_ON_A_5_BYTE_STEP
+    ENDIF
+    IF cell < HOOK_LO || (cell - HOOK_LO) / 5 > 254
+                db      HOOKROW_CELL_OUT_OF_RANGE
+    ENDIF
+                db      (cell - HOOK_LO) / 5
+                dw      handler
+                ENDM
 hook_tab:
-                dw      H_DSKF, hk_dskf     ; D-DSKFMOVE: body here, not just
+                hookrow H_DSKF, hk_dskf     ; D-DSKFMOVE: body here, not just
                                              ; its presence
-                dw      H_MKI,  hk_mki       ; DE crosses in STRSCR+1; a FLOAT
+                hookrow H_MKI,  hk_mki       ; DE crosses in STRSCR+1; a FLOAT
                                              ; argument is converted HERE (D-MKIRANGE)
-                dw      H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now
-                dw      H_MKD,  hk_mkfloat
-                dw      H_CVI,  hk_cv       ; D-CVMOVE: the conversion lives HERE
-                dw      H_CVS,  hk_cv       ; now, not just its presence -- so a
-                dw      H_CVD,  hk_cv       ; claiming ROM's answer is not overwritten
-                dw      H_NAME, hk_name      ; D-DISKVERB2: body here too
-                dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
+                hookrow H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now
+                hookrow H_MKD,  hk_mkfloat
+                hookrow H_CVI,  hk_cv       ; D-CVMOVE: the conversion lives HERE
+                hookrow H_CVS,  hk_cv       ; now, not just its presence -- so a
+                hookrow H_CVD,  hk_cv       ; claiming ROM's answer is not overwritten
+                hookrow H_NAME, hk_name      ; D-DISKVERB2: body here too
+                hookrow H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate
-                dw      H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
-                dw      H_LSET, hk_lrset     ; D-LRSETMOVE: both bodies HERE now
-                dw      H_RSET, hk_lrset     ; (one body; LRSET_JUST says which)
-                dw      H_FIELD, hk_field    ; D-FIELDMOVE: the trio is complete --
+                hookrow H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
+                hookrow H_LSET, hk_lrset     ; D-LRSETMOVE: both bodies HERE now
+                hookrow H_RSET, hk_lrset     ; (one body; LRSET_JUST says which)
+                hookrow H_FIELD, hk_field    ; D-FIELDMOVE: the trio is complete --
                                              ; body here, not just its presence
-                dw      H_DSKO, hk_dsk       ; D-DSKLOCAL: the sector I/O runs HERE now
-                dw      H_DSKI, hk_dsk       ; (a sub-ROM tenant behind a presence-only hook before)
-                dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
-                dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
-                dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
+                hookrow H_DSKO, hk_dsk       ; D-DSKLOCAL: the sector I/O runs HERE now
+                hookrow H_DSKI, hk_dsk       ; (a sub-ROM tenant behind a presence-only hook before)
+                hookrow H_COPY, hk_copy      ; D-DISKVERB3: body here too
+                hookrow H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
+                hookrow H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
                                              ; dispatch live HERE (main keeps the gate)
-                dw      H_SYST, hk_system    ; D-CALLSYSTEM: CALL SYSTEM, back to MSX-DOS
-                dw      H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
+                hookrow H_SYST, hk_system    ; D-CALLSYSTEM: CALL SYSTEM, back to MSX-DOS
+                hookrow H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
                                              ; (and SAVE ,A's, increment 3: _e below)
-                dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise; S10.D:
+                hookrow H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise; S10.D:
                                              ; a RANDOM channel's too, A = its mode)
-                dw      H_DGET, hk_dget      ; S10.D: GET / PUT's record I/O
-                dw      H_CHIN, hk_chin      ; S10.C: an INPUT channel's byte / EOF /
+                hookrow H_DGET, hk_dget      ; S10.D: GET / PUT's record I/O
+                hookrow H_CHIN, hk_chin      ; S10.C: an INPUT channel's byte / EOF /
                                              ; numeric item (disk/fat.asm)
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
@@ -5646,8 +5677,8 @@ hook_tab:
                 ; touching the drive. That is the fix §6.6p's own footnote
                 ; records, and it is what makes landing the row ahead of its
                 ; caller a safe intermediate state rather than a half-wired one.
-                dw      H_FOPEN, hk_dpload
-                dw      0
+                hookrow H_FOPEN, hk_dpload
+                db      $FF                 ; the end
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
 ; Layout source: MSX2 Technical Handbook §2 (inter-slot call / CALLF) --
@@ -6130,8 +6161,7 @@ hkn_a:
                 call    fat_find            ; locate the OLD file: FWR_DIRSEC / DIROFF
                 jr      c,hkn_nf
                 ld      hl,(FN_RESUME)
-                ld      ix,fname_expr
-                call    calbak              ; NEW name -> STRSCR, FN_RESUME moved
+                call    fname_ev            ; NEW name -> STRSCR, FN_RESUME moved
                 ld      hl,STRSCR + 1
                 ld      ix,parse_disk_fcb
                 call    calbak              ; new -> DISK_FCB_NAME
@@ -6259,10 +6289,7 @@ hkc_to:
                 cp      TO_TOKEN
                 jr      nz,hkc_noto         ; no `TO` -> ERR 5 (measured), not ERR 2
                 inc     hl
-                ld      ix,fname_expr
-                call    calbak              ; DESTINATION name
-                ld      ix,pdfcb_resume
-                call    calbak              ; -> DISK_FCB_NAME
+                call    fname_fcb           ; DESTINATION name -> DISK_FCB_NAME
                 ; 🔴 D-COPYNAMEOPEN (2026-09-28): an OPEN source OR destination is
                 ; 64 on the CF-3300 (scratchpad/killopen_probe.py c_srcin, c_srcout,
                 ; c_dstout, c_wild) and was copied here. Both names are parsed, so
@@ -6440,8 +6467,7 @@ hkf_chk:
                 jr      z,hkf_run           ; end of statement -> whole directory
                 cp      COLON
                 jr      z,hkf_run           ; `FILES:...` -> ditto
-                ld      ix,fname_expr
-                call    calbak              ; an EXPRESSION; may RAISE (ERR 13)
+                call    fname_ev            ; an EXPRESSION; may RAISE (ERR 13)
                 call    hkf_pat             ; D-FILESBARE: the name, or none (the fill)
 hkf_run:
                 pop     af                  ; the selector, asserted only now
@@ -6940,10 +6966,16 @@ br6_end:
 ; address is dropped with the statement, as the handler's own was.
 hk_fname2:
                 ld      hl,(FN_RESUME)      ; the cursor main staged for us
-                ld      ix,fname_expr
-                call    calbak              ; a string EXPRESSION -> STRSCR; may RAISE
+; fname_fcb -- a string EXPRESSION at HL -> STRSCR (may RAISE), then -> DISK_FCB_NAME
+; (8.3, wildcards); fname_ev -- the expression only. 💰 D-DSKFMT carve 29 (2026-11-10):
+; `ld ix,fname_expr / call calbak` stood at four sites, the pair with pdfcb_resume at two.
+fname_fcb:
+                call    fname_ev
                 ld      ix,pdfcb_resume
-                jp      calbak              ; -> DISK_FCB_NAME (8.3, wildcards)
+                jp      calbak
+fname_ev:
+                ld      ix,fname_expr
+                jp      calbak
 ; seq_flush / seq_dirty -- the start of a random positioning.
 ; seq_dirty (k47b2_seek, RDBLK -- BASIC's own file reads come through here too): a
 ; READ-open file's iterator moves, so BDOS_SEQREC := $FFFF makes srd_pos re-position
@@ -7813,16 +7845,14 @@ ga_scandone:
                 pop     de                       ; DE := rawTotal
                 dec     de
                 dec     de                       ; DE := total data clusters (final)
-                xor     a
-                ld      ($F306), a               ; clear dispatcher HL-passthrough flag
+                call     clr_f306   ; clear dispatcher HL-passthrough flag
                                                  ; (M20 REVISION 3 fix -- see $505D veneer)
                 ld      bc, $0200                ; BC := bytes/sector (final)
                 ld      a, (FAT_SECPERCLUS)      ; A := sectors/cluster (final)
                 or      a                        ; Cy = 0 (success)
                 ret
 ga_fail:
-                xor     a
-                ld      ($F306), a               ; clear here too (consistent with the
+                call     clr_f306   ; clear here too (consistent with the
                                                  ; success path; harmless -- A=0 already
                                                  ; forces free_bytes=0 either way)
                 ld      bc, $0200                ; BC := 512 (belt-and-braces)
@@ -8255,8 +8285,7 @@ fdel_more:
                 jr      z, fdel_more        ; another one gone
                 cp      $FF
                 ret     nz                  ; an I/O error: A = 2, as fdel_one left it
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      h, a
                 ld      l, a                ; HL = $0000 on success (pinned exit value)
                 ret
@@ -8294,16 +8323,14 @@ fdel_relocate:
                 ld      de, (FAT_DIRSEC)
                 call    wr_sbuf
                 jr      c, fdel_ioerr
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      h, a
                 ld      l, a                ; HL = $0000 on success (pinned exit value)
                 ret
 ; (fdel_miss -- byte-identical to disk/fat.asm's fren_miss -- removed by D-DISKCARVE,
 ; 2026-11-07: its three callers jump to fren_miss, A = $FF, CF set, $F306 = 0)
 fdel_ioerr:
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 scf
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
                 ret
@@ -8536,8 +8563,7 @@ wrrnd_ioerr:
                                             ; untested by BDOSX3 -- no negative-path record)
 rrnd_finish:                                ; shared tail: M20 dispatcher-flag rule, preserve A
                 push    af
-                xor     a
-                ld      ($F306), a
+                call     clr_f306
                 pop     af
                 ret
 ; 🔴 D-WRRNDEXT (2026-11-08): WRRND / WRZER PAST THE END OF THE FILE. rrnd_position

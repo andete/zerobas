@@ -16869,6 +16869,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       copy, catcopy, clearclose acceptance and the unit tests green. 🔴 One diskbasic
       run read STALE build/disk.rom and refused every row: carve 24's sources were
       edited while the suites ran (the preflight was right; nothing was mis-measured).
+      ✂️ **CARVES 27-31 + THE BINS (2026-11-10, total free 680 -> 741 B):** (27) hook_tab rows
+      are `hookrow cell, handler` -- the cell's INDEX in the 5-byte MSX hook area, one
+      byte, not two (the macro refuses a cell off the step or out of range;
+      tools/check_dead_code.py reads the hookrow lines); (28) the disk error messages
+      share one "Disk " and a list of suffixes, no pointer table; (29) fname_fcb /
+      fname_ev (the fname_expr / pdfcb_resume calbak pair, four sites); (30) clr_f306
+      (`xor a / ld ($F306),a`, fifteen sites); (31) one tail call. Then the BINS for the
+      split (Joost's ruling), all opened by moves: **$75A5 379 B** (FORMAT's code, the BPB
+      rows and the head table), **$4EDE 92 B** (the boot sector blob: install_dos_env ->
+      $7F7C, gtime_body -> $4257), **$4558 32 B** (the sector run table: wrseq_body ->
+      $46BA, seq_k30 -> $4C29), $55DB 13 B spare, 6 B slacks for the tail table.
+      🔴 Two more faults in the move tools, both fixed: (1) scratchpad/movescout.py and
+      defrag_plan.py took `ret nz` as an unconditional end (the pattern only refused `jp
+      cc,`), so fdel_body -- which FALLS INTO fdel_more -- moved; the dead-code sweep
+      caught the orphan and the move was undone. An audit of every move since defrag
+      step 1 (the block ends, and the code before every deleted label in those commits)
+      found no other. (2) move_routine.py took a block to the next LABEL, so seq_k30
+      dragged its pin's pad and the pinned veneer with it (fpl_split had dragged a pad
+      once already); a block now ends at a `ds $XXXX - $` line too, and every file's pads
+      and `jp k_XXXX` veneers were compared with HEAD after the moves.
+      dosmode, bdos, diskbasic, fat-error, dout, copy, catcopy, programs, clearclose,
+      namegate, lof, recbig, wrblkalt, boot5e10, dosbasic, dosdate and the unit tests
+      green. ➡️ **Next: the build, into these bins.**
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

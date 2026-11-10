@@ -22,7 +22,10 @@ def main():
         sys.exit(f"label {label}: found in {len(src)} files")
     lines = open(src[0]).read().split("\n")
     i = next(k for k, l in enumerate(lines) if l.startswith(label + ":"))
-    j = next((k for k in range(i + 1, len(lines)) if LABEL.match(lines[k])), len(lines))
+    # 🔴 a pin's `ds $XXXX - $` line ENDS a block too (2026-11-10: seq_k30 and, before
+    # it, fpl_split each dragged their pin's pad -- and seq_k30 the pinned veneer)
+    PADRE = re.compile(r"^\s+ds\s+\$[0-9A-Fa-f]{4}\s*-\s*\$", re.I)
+    j = next((k for k in range(i + 1, len(lines)) if LABEL.match(lines[k]) or PADRE.match(lines[k])), len(lines))
     while j > i + 1 and (lines[j - 1].strip() == "" or lines[j - 1].lstrip().startswith(";")):
         j -= 1                                   # leave the NEXT routine's comment where it is
     c = i

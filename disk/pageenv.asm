@@ -202,5 +202,17 @@ df_entptr:
                 ld      de,FAT_DBUF
                 add     hl,de
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; --- gtime_body - the $55DB GTIME canonical entry (M22a) -------------------------
+; A := B := C := D := E := 0 — the oracle's pinned constant 00:00:00
+; (clockless-MSX1 default; deliberately NOT fed by STIME's stored value, which
+; would diverge from the observed oracle, §5.1 r3).
+gtime_body:
+                xor     a
+                ld      b, a
+                ld      c, a
+                ld      d, a
+                ld      e, a
+                ret
                 ds      $4257 - $, $00      ; net-zero: keep dskio at its canonical offset
 

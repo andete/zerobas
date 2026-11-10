@@ -25,7 +25,9 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET = int(sys.argv[1], 16)
 LAB = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):")
-END = re.compile(r"^\s+(ret|jp|jr|reti)\b(?!\s+(nz|z|nc|c|po|pe|p|m)\s*,)", re.I)
+# 🔴 UNCONDITIONAL only: `ret` / `reti` alone, or `jp` / `jr` with no condition -- the old
+# pattern rejected `jp cc,` but passed `ret nz` (fdel_body, 2026-11-10, fell into fdel_more)
+END = re.compile(r"^\s+(?:(?:ret|reti)\s*$|(?:jp|jr)\s+(?!(?:nz|z|nc|c|po|pe|p|m)\s*,))", re.I)
 PIN = re.compile(r"^\s+ds\s+\$([0-9A-Fa-f]{4})\s*-\s*\$", re.I)
 JR = re.compile(r"^\s+(jr|djnz)\s+(?:(?:nz|z|nc|c)\s*,\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*$", re.I)
 
@@ -143,9 +145,11 @@ if len(sys.argv) > 2 and sys.argv[2] == "--bin":
     # the other regions' CURRENT free, never the target / the FDC window) that
     # leave it N bytes free. TARGETPIN names the region to keep out of it.
     N = int(sys.argv[3])
+    # --bin N [KEEP,KEEP..]: pins reserved for other blobs -- neither a bin nor a destination
+    KEEP = {int(x, 16) for x in sys.argv[4].split(",")} if len(sys.argv) > 4 else set()
     res = []
     for R in free:
-        if R in (TARGET, 0x7FC0):
+        if R in (TARGET, 0x7FC0) or R in KEEP:
             continue
         fr = dict(free)
         own = sorted([(s, nm) for s, nm, r in items if r == R], reverse=True)
@@ -153,7 +157,7 @@ if len(sys.argv) > 2 and sys.argv[2] == "--bin":
         for s, nm in own:
             if got >= N:
                 break
-            dsts = [p for p in fr if p not in (R, TARGET, 0x7FC0) and fr[p] >= s]
+            dsts = [p for p in fr if p not in (R, TARGET, 0x7FC0) and p not in KEEP and fr[p] >= s]
             if not dsts:
                 continue
             d = min(dsts, key=lambda p: fr[p])

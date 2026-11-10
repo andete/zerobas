@@ -182,24 +182,6 @@ const_body:
                 sbc     a, a                ; MSX-DOS CONST contract: ready -> A=$FF, else $00
                 jr      dirioin_done        ; 💰 carve 15: dirio_in_body's exit
 
-; --- conin_body - the $5445 CONIN canonical entry (M22a) --------------------------
-; Blocking read: CHGET ($009F), then echo via conout_body (E=char, its ABI) —
-; the published BDOS $01 CONIN contract (read-with-echo). B/C/D preserved;
-; A/E end up holding the char (conout_body's own A:=E return).
-; CLEAN-ROOM: published CONIN contract (map.grauw.nl) + our own CHGET/conout_body
-; primitives; no oracle bytes.
-; 💰 D-DSKFMT carve 15: the read is innoe_body's (the same CHGET with the same paging).
-conin_body:
-                push    bc
-                push    de
-                push    hl
-                call    innoe_body          ; A := char, BIOS paged back out
-                ld      e, a                ; echo via conout_body (E = char, its ABI)
-                call    conout_body
-                pop     hl
-                pop     de
-                pop     bc
-                ret
 
 ; (dirin_body -- gone or moved, D-DISKCARVE 2026-11-07)
 
@@ -565,39 +547,6 @@ dos_handoff_keep:
                 ld      (BASENT_REQ), hl    ; the mark as it was before
                 ret
 
-; --- dos_clear_screen - OI-3: blank the SCREEN-1 name table + home the cursor -----
-; Stock's DOS boot handoff clears the leftover BASIC power-on banner before the DOS
-; sign-on via a DIRECT name-table fill of spaces (characterised black-box: 0 CHPUT
-; form-feeds, no mode switch -- tier2-oi3-spec.md §2), and homes the cursor (stock's
-; CSRY/CSRX = $01/$01 at COMMAND.COM $0100). Ours never cleared, so it inherited BASIC's
-; screen (banner ROW10-13) and printed the sign-on from CSRY=$0F -> A> at ROW23. This
-; reproduces BOTH halves so ours' A> lands at ROW09 matching stock.
-;   (i) FILVRM ($0056): A=byte, BC=length, HL=VRAM addr -> fill VRAM[$1800..$1AFF] with
-;       $20 (768 = 32*24 SCREEN-1 name-table cells; namebase=$1800 confirmed by the
-;       `screen` probe on BOTH machines). Called via the main-ROM inter-slot path
-;       (pg0_mainrom_in/out) exactly as conout_body calls CHPUT: page 0 is RAM here
-;       (init.asm did page0_ram_in), so we page the main BIOS ROM back in from EXPTBL[0].
-;   (ii) cursor-home: CSRY ($F3DC) := 1, CSRX ($F3DD) := 1 (documented work-area sysvars).
-; STAY-DI (OI-3 §5.3): the caller (init.asm) holds DI across the whole page-0-RAM handoff
-; until MSXDOS.SYS is entered (init.asm:294); we restore page 0 but do NOT `ei` here, to
-; avoid an interrupt firing mid-handoff while $0038 is not yet the BIOS handler.
-; MUST preserve IX = $F195 (DRVA_DPB, required into MSXDOS.SYS, §8.31/M18) -- FILVRM does
-; not contractually preserve IX -> push/pop guards it.
-; CLEAN-ROOM: FILVRM $0056 + the $1800/768 SCREEN-1 name-table geometry + CSRY/CSRX
-; $F3DC/$F3DD are all documented MSX BIOS ABI / work-area sysvars (cited, not decoded).
-dos_clear_screen:
-                push    ix                  ; IX=$F195 (DRVA_DPB) must survive into MSXDOS.SYS
-                call    br_mainin_tmpl      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
-                ld      a, $20              ; A = space
-                ld      bc, $0300           ; BC = 768 = 32*24 name-table cells
-                ld      hl, $1800           ; HL = SCREEN-1 name-table base
-                call    $0056               ; FILVRM: VRAM[$1800..$1AFF] := $20
-                call    pg0_mainrom_out     ; restore page 0 = RAM (STAY-DI: no ei)
-                pop     ix
-                ld      a, $01
-                ld      ($F3DC), a          ; CSRY := 1 (home row, 1-based)
-                ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
-                ret
 
 ; ===== M22a: relocated bodies (freed their old low-region spans for the new
 ; CPMVER/DIRIN/GTIME/STIME/VERIFY canonical entries) + p0_env_tab's new home ===
@@ -747,10 +696,6 @@ frl_done:
                 call    clus_sec            ; (its adds cannot carry: CF = 0)
                 ld      (GP_PHYS), de
                 ret
-cr_copy2:                                   ; (cr_copy1's second half, disk/kernel.asm)
-                ld      hl, FAT_FILESIZE
-                call    to_wrbytes
-                jp      fat_dir_update
 ; bdos_close_write -- FCLOSE of a file open for write (disk/driver.asm bdos_close ->
 ; kernel.asm bdos_close_wm). Moved here by D-BDOSSEQ (2026-11-10), for room.
 bdos_close_write:
@@ -875,6 +820,42 @@ wrseq_wr_writeback:
                 pop     bc
                 pop     af
                 ret
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; install_dos_env (D-TPAP1) -- at every DOS entry (lay_page0_env), on every host:
+; the $0038 handler and the slot bridges to INT_H_HIRAM (three pieces, end to end),
+; the $F368 hook bodies to WA_SEG, and $F368 / $F368+3 pointed at them. Built here
+; and not at INIT: WA_SEG and INT_H_HIRAM are BASIC's RAM until MSX-DOS starts.
+install_dos_env:
+                ld      hl, int_h_hiram_tmpl
+                ld      de, INT_H_HIRAM
+                ld      bc, int_h_hiram_end - int_h_hiram_tmpl
+                ldir
+                ld      hl, br1_tmpl
+                ld      bc, br1_end - br1_tmpl
+                ldir
+                ld      hl, br2_tmpl
+                ld      bc, br2_end - br2_tmpl
+                ldir
+                ld      a, $C3
+                ld      (WA_JMPTAB), a
+                ld      (WA_JMPTAB + 3), a
+                ld      ($0000), a          ; D-BOOTREGS: the warm boot goes on into the
+                ld      hl, $0005           ; BDOS with the caller's C, as on the CF-3300
+                ld      ($0001), hl         ; before MSXDOS.SYS (scratchpad/wboot_run.out)
+                ld      hl, WA_SEG_ROM
+                ld      (WA_JMPTAB + 1), hl
+                ld      hl, WA_SEG_RAM
+                ld      (WA_JMPTAB + 4), hl
+                ld      hl, wa_seg_rom_tmpl ; ... and the hook bodies right after br2
+                ld      bc, wa_seg_end_tmpl - wa_seg_rom_tmpl   ; (DE runs on: = WA_SEG)
+                ldir
+                ld      hl, br3_tmpl        ; ... then br3 (D-BOOTREGS)
+                ld      bc, br3_end - br3_tmpl
+                ldir
+                ld      hl, br5_tmpl        ; ... and br5
+                ld      bc, br5_end - br5_tmpl
+                ldir
+                jp      install_br6         ; ... and br6 (D-CALSLTP0)
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)
@@ -888,8 +869,7 @@ fw_done:                                    ; Z = nothing renamed (fw_end's `or`
                 add     hl, sp              ; (keeps Z)
                 ld      sp, hl              ; the frame dropped
                 jp      z, fren_miss        ; nothing matched: $FF
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      h, a
                 ld      l, a                ; HL = 0, as the CF-3300 leaves it (BDOSX3 rec 14)
                 ret

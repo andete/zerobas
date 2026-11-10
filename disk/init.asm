@@ -787,8 +787,7 @@ build_resident:
                 ; anchor in pageenv.asm, verified: 3-pass/symbol-table assembly
                 ; silently emits an empty object file with no error). The actual
                 ; copy runs from the free tail, which has no such budget limit.
-                call    install_f365
-                ret
+                jp      install_f365
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)

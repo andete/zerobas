@@ -541,11 +541,11 @@ def disk_seeds(spans):
     out = {n for n in spans.nodes if n.startswith(PROLOGUE)}
     src = os.path.join('disk', 'kernel.asm')   # repo-relative, as DISK_ABI is
     txt = open(src, errors='replace').read() if os.path.exists(src) else ''
-    # the hook table's own rows: `dw H_xxx, hk_yyy`
-    hooks = set(re.findall(r'^\s*dw\s+H_[A-Z0-9_]+\s*,\s*([A-Za-z_][\w]*)',
+    # the hook table's own rows: `hookrow H_xxx, hk_yyy` (D-DSKFMT carve 27)
+    hooks = set(re.findall(r'^\s*hookrow\s+H_[A-Z0-9_]+\s*,\s*([A-Za-z_][\w]*)',
                            txt, re.M))
     if not hooks:
-        sys.exit("FAIL: no `dw H_*, hk_*` rows found in disk/kernel.asm -- the "
+        sys.exit("FAIL: no `hookrow H_*, hk_*` rows found in disk/kernel.asm -- the "
                  "hook-table scrape broke, and a disk sweep without the hook "
                  "bodies would report the whole ROM dead")
     out |= {h for h in hooks if h in spans.nodes}

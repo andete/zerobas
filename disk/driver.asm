@@ -646,30 +646,6 @@ bdos_open:
 ; (MSX2 TH, FCB sequential I/O) supplies the record framing.
 bdos_seqread:
                 jp      bdos_seqread_body   ; Tier-2 3b: divert; veneer fills the gap
-wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
-                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
-                ; the M33 read-branch FCB-position write-back. M33 advanced the
-                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
-                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
-                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
-                ; sequential WRITES too. Our file bytes were already correct (the
-                ; write-iterator tracks position internally); only the caller-visible
-                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
-                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
-                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
-                ; not-open, do NOT advance -- no record was stored). The twin is
-                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
-                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
-                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
-                ; (wrseq_body_write, which held this, folded in here: D-BDOSFCB B)
-                push    de
-                call    bdos_seqwrite
-                pop     ix
-                or      a
-                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
-                ret
 ; (moved here from kernel.asm by the D-DSKFMT defrag)
 ; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
 ; D-NAMESTAMP (disk/docs/spec-diskcode-eviction.md §6.6aw). This was
@@ -713,14 +689,6 @@ hkn_stamp:
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_DBUF
                 jp      write_sector        ; tail-call: its CF is our answer
-; (moved here from kernel.asm by the D-DSKFMT defrag)
-seq_k30:
-                dec     hl
-                ld      a, (FAT_SECPERCLUS)
-                call    recperclus_div
-                ld      a, e
-                ld      (ix+30), a
-                ret
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
 ; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;

@@ -70,6 +70,31 @@ hk_openfind:
 hof_fail:
                 pop     hl                  ; our return address
                 jp      hfm_fail
+; (moved here from driver.asm by the D-DSKFMT defrag)
+wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
+                ; the M33 read-branch FCB-position write-back. M33 advanced the
+                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
+                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
+                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
+                ; sequential WRITES too. Our file bytes were already correct (the
+                ; write-iterator tracks position internally); only the caller-visible
+                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
+                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
+                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
+                ; not-open, do NOT advance -- no record was stored). The twin is
+                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
+                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
+                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
+                ; (wrseq_body_write, which held this, folded in here: D-BDOSFCB B)
+                push    de
+                call    bdos_seqwrite
+                pop     ix
+                or      a
+                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
+                ret
                 ds      $46BA - $, $00      ; pure $00 pad (M26, tier2-m26-spec.md
                                             ; §2.4: trace --resync confirmed $46BA is
                                             ; the kernel's real fixed $2F RDABS dispatch
@@ -1290,6 +1315,15 @@ dir_nextsec:
                 dec     hl
                 ld      (FAT_DIRREM), hl
                 ret
+; (moved here from driver.asm by the D-DSKFMT defrag)
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+seq_k30:
+                dec     hl
+                ld      a, (FAT_SECPERCLUS)
+                call    recperclus_div
+                ld      a, e
+                ld      (ix+30), a
+                ret
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz
@@ -1663,8 +1697,7 @@ ffb_rcok:
                 ; read-iterator seeding above (wrseq_writeback increments it).
                 ld      hl, 0
                 ld      (BDOS_SEQREC), hl
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      hl, 0
                 ret
 ; (ffb_miss -- byte-identical to fren_miss below -- removed by D-DISKCARVE, 2026-11-07:
@@ -1734,14 +1767,12 @@ fre_out:
                 ret
 
 fren_miss:
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 scf
                 ld      a, $FF
                 ret
 fren_ioerr:
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 scf
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
                 ret
@@ -1787,8 +1818,7 @@ rdabs_body:
                 ret
 rdabs_ioerr:
                 ld      b, a                ; preserve dskio's error code
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                call     clr_f306   ; M20 dispatcher-flag rule
                 ld      a, b                ; restore error code
                 scf
                 ret

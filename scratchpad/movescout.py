@@ -34,7 +34,9 @@ for f in glob.glob(os.path.join(REPO, "disk", "*.asm")) + glob.glob(os.path.join
     src[f] = open(f, errors="replace").read().splitlines()
 
 LAB = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):")
-END = re.compile(r"^\s+(ret|jp|jr|reti)\b(?!\s+(nz|z|nc|c|po|pe|p|m)\s*,)", re.I)
+# 🔴 UNCONDITIONAL only: `ret` / `reti` alone, or `jp` / `jr` with no condition -- the old
+# pattern rejected `jp cc,` but passed `ret nz` (fdel_body, 2026-11-10, fell into fdel_more)
+END = re.compile(r"^\s+(?:(?:ret|reti)\s*$|(?:jp|jr)\s+(?!(?:nz|z|nc|c|po|pe|p|m)\s*,))", re.I)
 
 
 def code(l):
