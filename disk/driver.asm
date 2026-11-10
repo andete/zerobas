@@ -574,51 +574,20 @@ mtoff:
 ; CP/M-compatible calling convention (MSX2 TH, MSX-DOS BDOS conventions):
 ;   in:  C = call number, DE = FCB pointer (for FCB calls)
 ;   out: A = result
-; Implements the read-only FCB subset zerobas's BLOAD path needs: Open ($0F),
-; Sequential Read ($14), Close ($10). Any other call returns A=$FF.
-;
-; Position model (own design / simplification): only one file is open at a time.
-; The open file's chain position lives in the FAT iterator (fat_open / fat_read_
-; file_sector); BDOS_RECIDX tracks which 128-byte record of the current 512-byte
-; SECTOR_BUF the next read delivers; BDOS_BYTESLEFT (seeded from FAT_FILESIZE by
-; Open) bounds the partial final record and the EOF point by the true file size.
-; The FCB extent (+12) / current-record (+32) / record-count (+15) / alloc-map
-; (+16..31) bookkeeping fields are left untouched — a DOCUMENTED INTENTIONAL
-; DIVERGENCE from MSX-DOS (no bdos_entry caller reads them; differential-
-; characterised by disk_probe_bdos.py PART B). The drive (+0) and 8.3-name
-; (+1..+11) fields a reasonable caller reads stay byte-identical to MSX-DOS.
+; Every function goes through ONE table, bdos_tab (disk/kernel.asm); one not in it
+; answers A = $FF. 💰 D-DSKFMT carve 19 (2026-11-10): the ten functions this entry and
+; bdos_more tested one `cp` / `jp` at a time are rows of that table now (3 B a row
+; against 5). The table scan hands the handler DE, C and the caller's HL; A and B
+; are the scan's -- every handler loads them before use.
+; The file state lives in the caller's FCB, as MSX-DOS keeps it (D-BDOSFCB stages A-C:
+; FOPEN fills +12..31, SEQREAD / SEQWRITE keep CR / EX and the size there).
 ; See disk/PROVENANCE.md §BDOS interface.
 bdos_entry:
                 ld      a, c
-                cp      BDOS_F_OPEN
-                jr      z, bdos_open
-                cp      BDOS_F_SEQRD
-                jp      z, wrseq_rd         ; D-BDOSFCB: CR / EX in the caller's FCB
-                cp      BDOS_F_CLOSE
-                jp      z, bdos_close
-                cp      BDOS_F_SETDTA
-                jr      z, bdos_setdta
-                cp      BDOS_F_CREATE
-                jp      z, bdos_create
-                cp      BDOS_F_SEQWR
-                jp      z, wrseq_body       ; D-BDOSFCB: CR / the size in the FCB
-                cp      BDOS_F_RDBLK
-                jp      z, k47b2_body       ; D-BDOSFCB: RR-positioned, as the CF-3300
-                jp      bdos_more       ; D-BDOSBASIC: the rest (disk/kernel.asm)
+                jp      bdos_more2          ; bdos_tab's scan (disk/kernel.asm)
 
-; bdos_setdta ($1A) — set the Disk Transfer Area address.
-;   in:  DE = new DTA pointer
-;   out: (no documented result; A undefined per MSX-DOS) — we leave A as-is
-; Stores DE into BDOS_DTA; subsequent SeqReads copy each 128-byte record there
-; instead of the $0080 default. (MSX2 TH / MSX-DOS BDOS call table.)
-bdos_setdta:
-                jp      bdos_setdta_body    ; D-BDOSBASIC: + the $F23D cell (kernel.asm)
-
-; bdos_open ($0F) — open the file named in the FCB.
-; Mounts the volume (BPB), searches the root directory for the FCB's 11-byte 8.3
-; name (+1..+11), and primes the sequential iterator.
-;   in:  DE = FCB pointer
-;   out: A = $00 opened / $FF not found or I/O error (MSX2 TH, BDOS conventions)
+; (SETDTA $1A is bdos_tab's row for bdos_setdta_body, disk/kernel.asm: DE -> BDOS_DTA
+; and DOS_DTAPTR.)
 ; dta_init -- INIT: the DTA defaults to $0080 in BOTH cells: BDOS_DTA, which this
 ; ROM's sequential bodies read, and DOS_DTAPTR, which the kernel's random and block
 ; bodies read (they reseed BDOS_DTA from it). D-BDOSFCB, 2026-11-10: the $F37D BDOS
@@ -631,6 +600,9 @@ dta_init:
                 ld      (BDOS_DTA), hl
                 ld      (DOS_DTAPTR), hl
                 ret
+; bdos_open ($0F) -- open the file named in the FCB (bdos_tab's row).
+;   in:  DE = FCB pointer
+;   out: A = $00 opened / $FF not found or I/O error (MSX2 TH, BDOS conventions)
 bdos_open:
                 ; D-BDOSFCB (2026-11-10): the FCB is filled as the kernel's FOPEN fills
                 ; it -- +14..31, size, first cluster, the cluster cache, +24 / +25 --

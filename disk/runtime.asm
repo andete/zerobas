@@ -800,6 +800,31 @@ fcb_size_keep:
                 ld      (ix+18), l
                 ld      (ix+19), h
                 ret
+; 📍 D-RECBIG (2026-11-04): frnd_pass_len moved out of the $5602..$5E10 fill; D-DSKFMT
+; carve 19 (2026-11-10) moved it here from in front of $543C, for bdos_tab's rows.
+; frnd_pass_len -- BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC: the
+; bytes of the record that fit in the sector this pass holds. Clobbers A, DE, HL.
+frnd_pass_len:
+                ld      hl, 512
+                ld      de, (GP_WITHIN)
+                or      a
+                sbc     hl, de              ; HL = room in the sector (1..512)
+                ex      de, hl
+                ld      hl, (GP_LEFT)
+                or      a
+                sbc     hl, de              ; left - room
+                jr      nc, fpl_split       ; left >= room: this pass takes the room
+                add     hl, de              ; the rest fits: n = left, none over
+                ld      b, h
+                ld      c, l
+                ld      hl, 0
+                ld      (GP_LEFT), hl
+                ret
+fpl_split:
+                ld      (GP_LEFT), hl
+                ld      b, d
+                ld      c, e
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

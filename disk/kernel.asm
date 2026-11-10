@@ -178,14 +178,7 @@ gtime_body:
 ; walk, which fills the DTA through the work-area cell $F23D -- the cell the CF-3300's
 ; own SETDTA writes from BASIC (scratchpad/bdos_dtacell.out: $D100), so SETDTA sets
 ; it too. STROUT is the resident '$'-string printer. Anything else: A = $FF, as before.
-bdos_more:
-                cp      BDOS_F_SFIRST
-                jp      z, sfirst_body
-                cp      BDOS_F_SNEXT
-                jp      z, snext_body
-                cp      BDOS_F_STROUT
-                jp      z, RES_PRINT        ; '$'-terminated string at DE
-                jp      bdos_more2          ; slice 3a: the table below $543C
+; (bdos_more's three tests are bdos_tab rows since D-DSKFMT carve 19.)
 bdos_setdta_body:
                 ld      (BDOS_DTA), de
                 ld      (DOS_DTAPTR), de
@@ -1144,6 +1137,29 @@ k_53A7:
 ; leaves the character in A, VERSION HL = $0022, GTIME zeroes HL too, and DSKRST is
 ; NOT the DOS-side one (that marks MSX-DOS as booted, D-BOOTDATE).
 bdos_tab:
+                ; 💰 D-DSKFMT carve 19 (2026-11-10): the rows bdos_entry (disk/driver.asm)
+                ; and bdos_more tested by `cp` / `jp`, the block and sequential reads first
+                ; (BLOAD and the boot loaders call them most).
+                db      BDOS_F_RDBLK
+                dw      k47b2_body          ; RR-positioned, as the CF-3300 (D-BDOSFCB)
+                db      BDOS_F_SEQRD
+                dw      wrseq_rd            ; CR / EX in the caller's FCB (D-BDOSFCB)
+                db      BDOS_F_SEQWR
+                dw      wrseq_body          ; CR / the size in the FCB (D-BDOSFCB)
+                db      BDOS_F_OPEN
+                dw      bdos_open
+                db      BDOS_F_CLOSE
+                dw      bdos_close
+                db      BDOS_F_CREATE
+                dw      bdos_create
+                db      BDOS_F_SETDTA
+                dw      bdos_setdta_body    ; + the $F23D cell
+                db      BDOS_F_SFIRST
+                dw      sfirst_body
+                db      BDOS_F_SNEXT
+                dw      snext_body
+                db      BDOS_F_STROUT
+                dw      RES_PRINT           ; '$'-terminated string at DE
                 db      $02
                 dw      bb_conout
                 db      $06
@@ -1227,32 +1243,6 @@ bb_dskrst:
                 xor     a
                 ld      (CURDRV_CELL), a    ; drive A
                 ret
-
-; 📍 D-RECBIG (2026-11-04): frnd_pass_len moved here from the $5602..$5E10 fill.
-; frnd_pass_len -- BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC: the
-; bytes of the record that fit in the sector this pass holds. Clobbers A, DE, HL.
-frnd_pass_len:
-                ld      hl, 512
-                ld      de, (GP_WITHIN)
-                or      a
-                sbc     hl, de              ; HL = room in the sector (1..512)
-                ex      de, hl
-                ld      hl, (GP_LEFT)
-                or      a
-                sbc     hl, de              ; left - room
-                jr      nc, fpl_split       ; left >= room: this pass takes the room
-                add     hl, de              ; the rest fits: n = left, none over
-                ld      b, h
-                ld      c, l
-                ld      hl, 0
-                ld      (GP_LEFT), hl
-                ret
-fpl_split:
-                ld      (GP_LEFT), hl
-                ld      b, d
-                ld      c, e
-                ret
-
                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
 k_543C:
                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
@@ -2109,26 +2099,7 @@ close_read:
                 call    cr_dir              ; D-WRBLKDIR: size + first cluster, ONCE; HL = +25
                 jr      c, cr_err
                 ld      a, (hl)             ; A = the entry's index (+25)
-                push    af
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F                 ; A = index / 16
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FIRSTROOT)
-                add     hl, de
-                ex      de, hl              ; DE = the entry's sector
-                pop     af
-                and     $0F
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = (index mod 16) x 32
+                call    root_pos            ; DE = its sector, HL = its offset (carve 20)
                 push    hl
                 push    de
                 ld      hl, SECTOR_BUF
@@ -2797,17 +2768,26 @@ wfs_geom:
                 ld      (FAT_ALLOCHINT), hl ; M30: the per-operation reset
                 call    fcb_fatst           ; the chain and the size, from the FCB
                 ld      a, (ix+25)          ; the entry's root index
+                call    root_pos
+                ld      (BDOS_DIRSEC), de
+                ld      (BDOS_DIROFF), hl
+                or      a                   ; CF clear
+                ret
+; root_pos -- A = a root entry's index -> DE = its sector (FAT_FIRSTROOT + index / 16),
+; HL = its offset in that sector ((index mod 16) x 32). Clobbers A. 💰 D-DSKFMT carve 20
+; (2026-11-10): the same arithmetic stood inline in close_read and wfs_geom.
+root_pos:
                 push    af
                 rrca
                 rrca
                 rrca
                 rrca
-                and     $0F
+                and     $0F                 ; A = index / 16
                 ld      e, a
                 ld      d, 0
                 ld      hl, (FAT_FIRSTROOT)
                 add     hl, de
-                ld      (BDOS_DIRSEC), hl
+                ex      de, hl              ; DE = the entry's sector
                 pop     af
                 and     $0F
                 ld      l, a
@@ -2816,9 +2796,20 @@ wfs_geom:
                 add     hl, hl
                 add     hl, hl
                 add     hl, hl
-                add     hl, hl              ; (index mod 16) x 32
-                ld      (BDOS_DIROFF), hl
-                or      a                   ; CF clear
+                add     hl, hl              ; HL = (index mod 16) x 32
+                ret
+; dta_rec / dta_chunk -- SECTOR_BUF + HL := RECSIZE (dta_rec) or BC (dta_chunk) bytes
+; from the DTA (BDOS_DTA). Out: HL / DE past the source / the destination, BC = 0.
+; 💰 D-DSKFMT carve 22 (2026-11-10): it stood inline in bsw_m34_buffer, wrrnd_body and
+; wrblk's chunk copy.
+dta_rec:
+                ld      bc, RECSIZE
+dta_chunk:
+                ld      de, SECTOR_BUF
+                add     hl, de
+                ex      de, hl              ; DE = SECTOR_BUF + HL
+                ld      hl, (BDOS_DTA)      ; HL = the caller's bytes
+                ldir
                 ret
 
 
@@ -4011,12 +4002,8 @@ wrblk_room:
                 ld      b, h
                 ld      c, l                ; BC = chunk
                 pop     hl                  ; HL = within
-                ld      de, SECTOR_BUF
-                add     hl, de
-                ex      de, hl              ; DE = SECTOR_BUF + within
-                ld      hl, (BDOS_DTA)      ; HL = the caller's bytes
                 push    bc                  ; [chunk]
-                ldir
+                call    dta_chunk           ; SECTOR_BUF + within := the caller's bytes
                 ld      (BDOS_DTA), hl
                 call    rrnd_sector         ; DE = absolute logical sector to persist
                 ld      hl, SECTOR_BUF
@@ -7139,7 +7126,7 @@ sd_read:
 ; (b), read as data): +20..21 := the date 0821h and +22..23 := time 0 (Joost
 ; 2026-10-01, "Stamp as 3300"; BDOSX/BDOSX3/BDOSX6 read 0821h after a write to a
 ; file dated 0), and +24's 40h cleared (40h after FMAKE/FOPEN, 00h after a
-; write: --wseek's dump, BDOSX8). in: HL = the FCB; trashes DE, HL
+; write: --wseek's dump, BDOSX8). in: HL = the FCB; out HL = +24; trashes BC, DE
 fcb_mark_written:
                 push    hl
                 call    date_fat_word       ; DE = the DOS date (D-DOSDATE)
@@ -7161,18 +7148,11 @@ fcb_mark_written:
 ; (b), read as data after FMAKE): +20..21 the date 0821h (Joost 2026-10-01,
 ; "Stamp as 3300"), +24 40h, +25 the entry's index in the root directory. Time
 ; +22..23 stays 0. in: HL = the FCB, FWR_DIRSEC/FWR_DIROFF from fat_dir_create.
+; 💰 D-DSKFMT carve 21 (2026-11-10): the date is fcb_mark_written's, which also writes
+; +22..23 := 0 -- what they hold already (its one caller, bdos_create_body, clears
+; +16..31 first) -- and returns HL = +24.
 fmake_fcb_fill:
-                push    hl
-                call    date_fat_word       ; DE = the DOS date (D-DOSDATE)
-                pop     hl
-                ld      bc, 20
-                add     hl, bc
-                ld      (hl), e
-                inc     hl
-                ld      (hl), d             ; +20..21 = the DOS date
-                inc     hl
-                inc     hl
-                inc     hl
+                call    fcb_mark_written    ; +20..21 the DOS date, +22..23 0; HL = +24
                 ld      (hl), $40           ; +24
                 inc     hl
                 push    hl
@@ -8316,12 +8296,7 @@ bsw_first:
 bsw_m34_buffer:
                 ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
                 ld      hl, (BDOS_WRBUFLEN)
-                ld      de, SECTOR_BUF
-                add     hl, de              ; HL = dest in SECTOR_BUF
-                ex      de, hl              ; DE = dest
-                ld      hl, (BDOS_DTA)      ; HL = source record (settable DTA)
-                ld      bc, RECSIZE
-                ldir                        ; copy 128 bytes into the buffer
+                call    dta_rec             ; copy 128 bytes DTA -> the buffer
                 ; advance buffered length and total byte count by RECSIZE.
                 ld      hl, (BDOS_WRBUFLEN)
                 ld      de, RECSIZE
@@ -8676,21 +8651,11 @@ wrrnd_body:
                 ; SECTOR_BUF now holds the target sector (loaded by rrnd_position's seek
                 ; loop) -- overlay the caller's DTA record into it at BDOS_RECIDX*RECSIZE.
                 ld      a, (BDOS_RECIDX)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = BDOS_RECIDX * 128
-                ld      de, SECTOR_BUF
-                add     hl, de              ; HL -> target record within SECTOR_BUF
-                ex      de, hl              ; DE = dest in SECTOR_BUF
-                ld      hl, (BDOS_DTA)      ; HL = source record in the caller's DTA
-                ld      bc, RECSIZE
-                ldir
+                ld      h, a
+                ld      l, 0
+                srl     h
+                rr      l                   ; HL = BDOS_RECIDX * 128
+                call    dta_rec             ; the caller's record -> its place in SECTOR_BUF
                 call    rrnd_sector         ; DE = absolute logical sector to persist
                 ld      hl, SECTOR_BUF
                 call    write_sector

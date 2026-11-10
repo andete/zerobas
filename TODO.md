@@ -16804,6 +16804,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✂️ **CARVE 18 (2026-11-10, 12 B):** BASIC's CLOSE (hcc_stamp) copied the size from
       +16..19 and called fat_dir_update exactly as bdos_close_write does; it calls that tail
       (close_size_upd) now. dwr_fail reads DISKOP_ERR, not A, so the tail's A is harmless.
+      ✂️ **CARVE 19 (2026-11-10, ~36 B):** the $F37D BDOS tested ten functions one `cp` / `jp`
+      at a time (bdos_entry's seven, bdos_more's three) before scanning bdos_tab; they are
+      rows of that table now (3 B against 5; RDBLK / SEQREAD / SEQWRITE first), and
+      bdos_entry is `ld a,c / jp bdos_more2`. Every moved handler loads A / B before use
+      (the scan leaves them its own; DE, C and the caller's HL pass through). The table
+      grew into $543C's region, so frnd_pass_len moved to $7F7C's. check_disk_walls: 359
+      B in runs of 16 B or more; a 48 B hole now in front of $4558. bdos, diskbasic,
+      dosmode, boot5e10, programs and p1dta acceptance unchanged.
+      ✂️ **CARVE 20 (2026-11-10, 17 B):** root_pos (A = a root entry's index -> DE = its
+      sector, HL = its offset) -- the arithmetic stood inline in close_read and wfs_geom,
+      both in $5E10's region (now 54 B there). wfs_geom's exit DE is the sector now, not
+      index / 16: both wrblk_fcbstate callers reload DE first. check_disk_walls: 376 B in
+      runs of 16 B or more. bdos, wrblkalt, diskbasic and lof acceptance unchanged.
+      ✂️ **CARVE 21 (2026-11-10, 12 B):** fmake_fcb_fill's date is fcb_mark_written's -- a
+      call -- which also writes +22..23 := 0, what they hold already (bdos_create_body
+      clears +16..31 first), and returns HL = +24. bdos-acceptance unchanged.
+      ✂️ **CARVE 22 (2026-11-10, 16 B):** dta_rec / dta_chunk (SECTOR_BUF + HL := RECSIZE / BC
+      bytes from BDOS_DTA) for the copies inline in bsw_m34_buffer, wrrnd_body and WRBLK's
+      chunk loop; wrrnd_body's record x 128 is `srl h / rr l`. check_disk_walls: 404 B in
+      runs of 16 B or more. bdos, wrblkalt and dosmode acceptance unchanged.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,
