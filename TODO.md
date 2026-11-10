@@ -16534,6 +16534,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-RNDLIVE (the FCB-sourced random read) -- but a channel's PUT / GET do not go through
       BDOS, so MEASURE before believing either.
 
+- [ ] 🔀 **D-GATEWT — GATE A FROZEN COPY IN A WORKTREE, KEEP WORKING IN THIS ONE
+      (Joost, 2026-11-10: "we really need ... a way of working that allows work to
+      continue while we're waiting for long test runs")**
+      🎚️ TIER 2 — reasonable time: a full gate stopped all work for its whole run.
+      Ordered next, before D-BDOSFCB B3 and D-BIOSLADDER.
+      🤖 **AUTONOMOUS** — why "touch nothing while a gate runs" was needed: the installed
+      machines (`~/.openMSX/share/machines/*.xml`) name this checkout's `build/*.rom` by
+      absolute path, so even a plain `make` here changed what a running gate booted, and
+      `repack-machine` rewrote the shared XMLs. openMSX reads `OPENMSX_USER_DATA` (the
+      user share dir: machines, settings, systemroms), so a worktree can have its OWN
+      machines under the SAME names. Plan: (1) `openmsx_paths.find_user_share()` honours
+      `OPENMSX_USER_DATA`; every `find_user()/share` site and the hard-coded settings /
+      scripts paths use it. (2) `tools/gate_wt.py`: a detached worktree at HEAD beside
+      this checkout, a private share seeded from the user's (machine XMLs copied with this
+      checkout's path rewritten to the worktree's, everything else linked), a clean build
+      and `repack-machine` there, the gate tier named, the gate state files
+      (`gate_last_green.json`, `gate_pins/`) copied in and the green record copied back.
+      (3) The flow: stage → `make gates-plan` → commit LOCALLY → `gate_wt.py` in the
+      background → keep working here (edits, builds, host unit tests, static tools; NO
+      emulator run while the gate's runs) → green: push; red: fix, amend, re-gate (the
+      commit was never pushed). (4) Knife: a gate in the worktree must keep its ROM hash
+      and verdict while this checkout builds a different ROM.
+
 - [ ] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
       (Joost's idea, 2026-11-10, after D-DOSLADDER's six fixes)**
       🎚️ TIER 1 — the main BIOS under REAL program patterns (the entry-point ruling,

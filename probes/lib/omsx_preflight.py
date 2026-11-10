@@ -144,6 +144,8 @@ def machine_xml(name: str) -> str | None:
     places openMSX does: user dirs first (an installed machine SHADOWS a bundled
     one of the same name), then share dirs, then recursively under both."""
     seen: list[str] = []
+    if os.environ.get("OPENMSX_USER_DATA"):   # D-GATEWT: openMSX reads this one first
+        seen.append(os.path.join(os.environ["OPENMSX_USER_DATA"], "machines"))
     for u in openmsx_paths.USER_CANDIDATES:
         seen.append(os.path.join(u, "share", "machines"))
     for s in openmsx_paths.SHARE_CANDIDATES:

@@ -63,7 +63,7 @@ def install_machine() -> None:
                                recursive=True)
     if not logos:
         sys.exit("cbios_logo_msx1.rom not found in any openMSX share dir")
-    mdir = os.path.join(openmsx_paths.find_user(), "share", "machines")
+    mdir = os.path.join(openmsx_paths.find_user_share(), "machines")
     os.makedirs(mdir, exist_ok=True)
     cfg = f"""<?xml version="1.0" ?>
 <!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>

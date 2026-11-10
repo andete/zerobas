@@ -118,7 +118,7 @@ def install_machine() -> None:
     3-2 = zerobas-sub). Mirrors the slot-map amendment (RAM 3-0, sub 3-2)."""
     main = find_rom("cbios_main_msx1*.rom")
     logo = find_rom("cbios_logo_msx1.rom")
-    mdir = os.path.join(openmsx_paths.find_user(), "share", "machines")
+    mdir = os.path.join(openmsx_paths.find_user_share(), "machines")
     os.makedirs(mdir, exist_ok=True)
     cfg = f"""<?xml version="1.0" ?>
 <!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>

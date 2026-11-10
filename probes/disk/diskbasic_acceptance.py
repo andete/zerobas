@@ -191,7 +191,7 @@ def _machine_xml(machine: str) -> str:
     Guard §3.1.3 — a machine that does not resolve is a ~2h TIMEOUT cascade otherwise
     (openMSX dies instantly, but each probe only learns via its own --timeout)."""
     searched = []
-    for base in (os.path.join(openmsx_paths.find_user(), "share"),
+    for base in (openmsx_paths.find_user_share(),
                  openmsx_paths.find_share()):
         d = os.path.join(base, "machines")
         searched.append(d)

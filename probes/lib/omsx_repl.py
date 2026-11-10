@@ -528,7 +528,8 @@ def tcl_writes(body: str, addr: int) -> bool:
 # because the tear lasts microseconds. If it never validates, the flag is
 # omitted: back to today's behaviour, which is no worse, rather than handing
 # openMSX a file that is certainly broken.
-OMSX_SETTINGS = os.path.expanduser("~/.openMSX/share/settings.xml")
+OMSX_SETTINGS = os.path.join(os.environ.get("OPENMSX_USER_DATA")   # D-GATEWT
+                             or os.path.expanduser("~/.openMSX/share"), "settings.xml")
 SETTINGS_TRIES = 8
 
 HB_WALL = 3.0            # WALL seconds between heartbeats (host clock, not emulated)

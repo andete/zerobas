@@ -92,6 +92,18 @@ def find_user(explicit: str | None = None) -> str:
     return explicit or first_existing(USER_CANDIDATES, "openMSX user dir")
 
 
+def find_user_share(explicit: str | None = None) -> str:
+    """The user share dir openMSX itself reads: machines, settings.xml, systemroms.
+
+    `$OPENMSX_USER_DATA` when set -- openMSX honours that variable, and D-GATEWT
+    (tools/gate_wt.py) sets it so a gate worktree has machines of its OWN under the
+    same names; otherwise `<user dir>/share`."""
+    env = os.environ.get("OPENMSX_USER_DATA")
+    if env:
+        return env
+    return os.path.join(find_user(explicit), "share")
+
+
 def find_openmsx_binary(explicit: str | None = None) -> str:
     """Resolve the openMSX executable, PATH-first.
 

@@ -370,9 +370,9 @@ def main():
                      f"(run `make disk` first)")
 
     share = openmsx_paths.find_share(args.share)
-    user = openmsx_paths.find_user(args.user)
+    user_share = openmsx_paths.find_user_share(args.user)
     share_machines = os.path.join(share, "machines")
-    user_machines = os.path.join(user, "share", "machines")
+    user_machines = os.path.join(user_share, "machines")
 
     # MSX1 C-BIOS only -- zerobas is MSX1 BASIC.
     stock = sorted(p for p in glob.glob(os.path.join(share_machines, "C-BIOS_MSX1*.xml"))
@@ -468,7 +468,7 @@ def main():
         print(f"         remove them from {user_machines} when convenient.")
     # --- pluggable zerobas-disk extension (cross-host BIOS-independence) ------
     if disk_rom:
-        user_ext = os.path.join(user, "share", "extensions")
+        user_ext = os.path.join(user_share, "extensions")
         eout = os.path.join(user_ext, "zerobas-disk.xml")
         if args.dry_run:
             print("would write extensions/zerobas-disk.xml")

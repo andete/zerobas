@@ -242,7 +242,7 @@ def main() -> int:
         print(cfg)
         return 0
 
-    mdir = os.path.join(openmsx_paths.find_user(), "share", "machines")
+    mdir = os.path.join(openmsx_paths.find_user_share(), "machines")
     os.makedirs(mdir, exist_ok=True)
     name = MACHINE_NODISK if args.no_disk else MACHINE
     out = os.path.join(mdir, name + ".xml")

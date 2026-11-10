@@ -107,14 +107,20 @@ PYLIT = re.compile(r"""["']([A-Za-z_]\w*)\.py["']""")
 HANDLER = re.compile(r"^ex_(\w+):", re.M)
 
 
+# D-GATEWT: tools/gate_wt.py plans a COMMIT in its worktree, where nothing is staged:
+# it sets ZEROBAS_GATE_BASE to the commit's parent, and every diff below is taken
+# against that instead of HEAD.
+BASE = os.environ.get("ZEROBAS_GATE_BASE") or "HEAD"
+
+
 def git(*args):
     return subprocess.run(["git", "-C", ROOT, *args], capture_output=True,
                           text=True).stdout
 
 
 def changed_files():
-    """Tracked files changed against HEAD, staged or not (a staged ADD counts)."""
-    return sorted({l for l in git("diff", "--name-only", "HEAD").splitlines() if l})
+    """Tracked files changed against BASE (HEAD), staged or not (a staged ADD counts)."""
+    return sorted({l for l in git("diff", "--name-only", BASE).splitlines() if l})
 
 
 # D-SUITESWEEP side finding (2026-11-01): `check_todo_citations.py --fix` rewrites
@@ -143,7 +149,7 @@ def drop_citation_only(changed):
     """`changed` minus the .py / .tcl files whose diff is citation numbers only."""
     keep = []
     for f in changed:
-        if f.endswith((".py", ".tcl")) and citation_only(git("diff", "-U0", "HEAD", "--", f)):
+        if f.endswith((".py", ".tcl")) and citation_only(git("diff", "-U0", BASE, "--", f)):
             continue
         keep.append(f)
     return keep
@@ -214,7 +220,7 @@ def changed_handlers(path, text=None, hunks=None):
     if hunks is None:
         hunks = []
         for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@",
-                             git("diff", "-U0", "HEAD", "--", path), re.M):
+                             git("diff", "-U0", BASE, "--", path), re.M):
             start, n = int(m.group(1)), int(m.group(2) or 1)
             hunks.append((start, max(n, 1)))
     lines = text.splitlines()
@@ -328,7 +334,7 @@ def layout_moves(diff=None, value_of=None):
     2026-10-13). A comment-only edit, a constant (`GFX_DFCAP equ 8`) and a removed
     cell are not moves. `diff` / `value_of` are injectable for the selftest."""
     if diff is None:
-        diff = git("diff", "-U0", "HEAD", "--", *ROM_TREES)
+        diff = git("diff", "-U0", BASE, "--", *ROM_TREES)
     old, new = {}, {}
     for ln in diff.splitlines():
         if ln.startswith(("---", "+++")) or not ln[:1] in "+-":

@@ -233,7 +233,7 @@ def _machine_xml(machine: str) -> str | None:
         return None
     cands = []
     try:
-        cands.append(os.path.join(P.find_user(), "share", "machines", machine + ".xml"))
+        cands.append(os.path.join(P.find_user_share(), "machines", machine + ".xml"))
     except Exception:
         pass
     for share in getattr(P, "SHARE_CANDIDATES", []):
@@ -759,8 +759,11 @@ _NONDET = (
     ("env()", re.compile(r"\benv\(")),
 )
 _PATH_RE = re.compile(r"(/[^\s{}\"'\[\];]+)")
-OMSX_USER_SETTINGS = os.path.expanduser("~/.openMSX/share/settings.xml")
-OMSX_USER_SCRIPTS = os.path.expanduser("~/.openMSX/share/scripts")
+# D-GATEWT: openMSX reads $OPENMSX_USER_DATA as its user share dir when set.
+OMSX_USER_SHARE = (os.environ.get("OPENMSX_USER_DATA")
+                   or os.path.expanduser("~/.openMSX/share"))
+OMSX_USER_SETTINGS = os.path.join(OMSX_USER_SHARE, "settings.xml")
+OMSX_USER_SCRIPTS = os.path.join(OMSX_USER_SHARE, "scripts")
 # a direct entry's outputs above this many bytes are not stored (a recorded WAV
 # can be tens of MB; the store is JSON)
 DIRECT_MAX_BYTES = 16 * 1024 * 1024
@@ -892,7 +895,7 @@ def direct_key(cmd, outs, inouts=(), media=()):
         if a == "-ext" and j + 1 < len(argv):
             name = argv[j + 1]
             found = None
-            for root in (os.path.expanduser("~/.openMSX/share/extensions"),
+            for root in (os.path.join(OMSX_USER_SHARE, "extensions"),
                          *[os.path.join(s, "extensions") for s in _share_dirs()]):
                 c = os.path.join(root, name + ".xml")
                 if os.path.exists(c):
