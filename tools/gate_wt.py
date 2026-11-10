@@ -14,6 +14,8 @@ under the SAME names (tools/openmsx_paths.find_user_share and every site that us
 
 What a run does, in order (the log: scratchpad/gate_wt/<sha>.log, and its last line
 is the verdict, `GATEWT <sha> GREEN` or `GATEWT <sha> RED: ...`):
+  0. the base: the last PUSHED commit (`git merge-base REV @{upstream}`), so every
+     unpushed commit up to REV is planned and knifed together;
   1. a detached worktree at REV beside this checkout (`../zerobas-gate`, or
      $ZEROBAS_GATE_WT), reset hard and `git clean -fdx`'d: a CLEAN build every time;
   2. a private share in it: the user share's `machines/` and `extensions/` COPIED with
@@ -21,14 +23,14 @@ is the verdict, `GATEWT <sha> GREEN` or `GATEWT <sha> RED: ...`):
      user's own is never written), everything else (systemroms, scripts, ...) linked;
   3. the gate state run_gates keeps under scratchpad/ (gate_last_green.json,
      gate_pins/) copied in;
-  4. `make repack-machine` there;
+  4. `make repack-machine test-dsk` there (the test disks are generated, untracked);
   5. a commit touching basic/ sub/ disk/: the knives (kwknife --all, --allfn) and the
      tape corpus ($TAPECORPUS_DIR, required), as the loop does before a commit. A TRACKED file they change (the
      knife pin) is reported and copied to scratchpad/gate_wt/<sha>.changed/: the
      battery then gates the tree WITH it, and the commit is amended with those exact
      bytes before the push;
   6. the gate: `plan` (default) is pick_gates --run with ZEROBAS_GATE_BASE = REV's
-     parent; `full` is run_gates --full plus the five excluded suites;
+     base; `full` is run_gates --full plus the five excluded suites;
   7. on green, the gate state copied back (the full-green record is what later
      skips are proven against).
 
@@ -132,7 +134,9 @@ def main() -> int:
 def run(a) -> int:
     sha = git("rev-parse", a.rev).strip()
     short = sha[:8]
-    parent = git("rev-parse", sha + "~1").strip()
+    # the base is the last PUSHED commit: with two unpushed commits the parent alone
+    # would plan (and knife) only the second one
+    parent = git("merge-base", sha, "@{upstream}").strip()
     log_path = os.path.join(OUTDIR, f"{short}.log")
     log = open(log_path, "w", buffering=1)
 
@@ -161,7 +165,10 @@ def run(a) -> int:
                PYTHONUNBUFFERED="1")
     fails = []
 
-    if sh(["make", "-s", "repack-machine"], env, "build + repack"):
+    # test-dsk: disk/test720.dsk and empty720.dsk are GENERATED and untracked, so a
+    # cleaned worktree has none -- the knives' disk rows read NO-VERDICT without them
+    # (the first ROM run of this tool, 2026-11-10: 21 cuts)
+    if sh(["make", "-s", "repack-machine", "test-dsk"], env, "build + repack"):
         fails.append("build")
     changed = [f for f in git("diff", "--name-only", parent, sha).splitlines() if f]
     rom = any(f.startswith(ROM_TREES) for f in changed)

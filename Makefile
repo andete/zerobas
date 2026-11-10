@@ -1742,6 +1742,14 @@ gosuboom-acceptance: repack-machine
 biosregs-acceptance: repack-machine
 	python3 probes/basic/basic_probe_biosregs.py
 
+# biosl-acceptance  D-BIOSLADDER (Joost 2026-11-10): our own ROM cartridges on the
+#   main BIOS -- every rung in probes/bios/biosl/, VG-8020 against zerobas on the
+#   NODISK row and VG-8020 + NMS 1200 against zerobas on the disk row; the capture
+#   block and VRAM compared, excused bytes pinned to OUR value (biosl_run.py ALLOW).
+#   Repack-only; oracle-dependent.
+biosl-acceptance: repack-machine
+	python3 -u probes/bios/biosl_run.py --all
+
 ctllim-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctllim.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)

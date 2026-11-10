@@ -83,6 +83,15 @@ def render(lines):
     return out
 
 
+# D-BIOSLADDER B1 (2026-11-10): zerobas sets LINL40 = 37 BEFORE the extension-ROM
+# scan, as the VG-8020 does (a cartridge's -- and the disk ROM's -- INIT sees 37
+# there: probes/bios/biosl/b1text.asm, both rows), so MSX-DOS boots with 37 where
+# the CF-3300 keeps its own 39. Presentational (the screen at these rows is SCREEN 1,
+# LINLEN 29 on both), so the VG-8020's value ships (Joost 2026-09-04). Excused ONLY
+# on the two boot rows and ONLY as exactly 39 -> 37; every other cell must match.
+LINL40_SPLIT = ("boot", "date")
+
+
 def main():
     if not os.path.isfile(DOS):
         print(f"INSTRUMENT FAULT: no MSX-DOS 1 system disk at {DOS}")
@@ -97,6 +106,8 @@ def main():
             blind.append(tag)
         elif cf == zb:
             verdict = "SAME"
+        elif tag in LINL40_SPLIT and cf.replace("LINL40=39", "LINL40=37", 1) == zb:
+            verdict = "SAME (LINL40 37: the VG-8020's, pinned)"
         else:
             verdict = "DIVERGES"
             bad.append(tag)

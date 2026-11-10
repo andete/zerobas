@@ -154,6 +154,31 @@ init:
                 ld      (BROM_TEXT+1),a     ; D-BASICROM: no TEXT cartridge yet (the scan
                                             ; sets it; RAM survives a reset). Here, not in
                                             ; init_ext_roms: island 1 has no room for it
+                ; ⌨️ D-BOOTSCAN (2026-10-09): the keyboard answers from here on.
+                ; C-BIOS leaves the key-scan countdown SCNCNT so that the interrupt
+                ; wraps it before it scans: no key was read for the first ~5 s
+                ; (scratchpad/bootkey_run.out, keycells.out). 1 = scan at the next
+                ; interrupt. D-BIOSLADDER B1 (2026-11-10): HERE, BEFORE the
+                ; cartridge scan -- after it, a cartridge waiting for a key in its
+                ; INIT (CHGET) never got one, where the VG-8020 gives it at once
+                ; (probes/bios/biosl/b1text.asm). Not earlier, in C-BIOS's init:
+                ; that kept keys typed during the first second of boot, which the
+                ; VG-8020 drops -- openMSX's tape autorun then ran a stray line and
+                ; lost its RUN (autorun-acceptance, scratchpad/autorun_tokdiag_h2.out).
+                inc     a                   ; A = 1 (0 from the store above)
+                ld      (SCNCNT),a
+                ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
+                ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational
+                ; reference split (EU/PAL keeps text inside the overscan), so the
+                ; VG value ships on BOTH targets (Joost, 2026-09-04). zerobas booted
+                ; at 39 because nothing here wrote LINL40 and C-BIOS's default is
+                ; 39. show_title's INITXT below takes LINLEN from LINL40.
+                ; D-BIOSLADDER B1 (2026-11-10): BEFORE the cartridge scan -- the
+                ; VG-8020's LINL40 is already 37 when a cartridge's INIT runs; ours
+                ; was 39 there, so a ROM's own INITXT set up 39 columns
+                ; (probes/bios/biosl/b1text.asm, CAP+3).
+                ld      a,37
+                ld      (LINL40),a
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                 ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
                 ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,
@@ -222,14 +247,6 @@ bh_himem:
                 ; disk ROM lowers HIMEM after that reset.)
                 call    heap_reset
                 call    ctl_reset
-                ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
-                ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational
-                ; reference split (EU/PAL keeps text inside the overscan), so the
-                ; VG value ships on BOTH targets (Joost, 2026-09-04). zerobas booted
-                ; at 39 because nothing here wrote LINL40 and C-BIOS's default is
-                ; 39. show_title's INITXT below takes LINLEN from LINL40.
-                ld      a,37
-                ld      (LINL40),a
                 call    brom_screen         ; D-BASICROM: a TEXT cartridge boots in
                                             ; SCREEN 1 / WIDTH 29 with NO header (NZ)
                 call    z,show_title        ; startup header lines
@@ -254,14 +271,8 @@ bh_himem:
                 ld      (FNKSWI),a          ; reference's steady 1 (F1..F5), scratchpad/
                                             ; nset_probe.py; its interrupt flips it
                                             ; while SHIFT is held, which zerobas does not
-                ; ⌨️ D-BOOTSCAN (2026-10-09): the keyboard answers from the prompt
-                ; on. C-BIOS leaves the key-scan countdown SCNCNT at its power-on
-                ; $FF, and the interrupt decrements it to 0 before it scans, so
-                ; every key typed in the first ~5 s after power-on was LOST: ZB
-                ; showed 2.5 s before a key was taken; the VG-8020 takes one at
-                ; once -- its init clears the cell (scratchpad/bootkey_run.out,
-                ; keycells.out). 1 = scan at the next interrupt.
-                ld      (SCNCNT),a
+                ; (D-BOOTSCAN's `SCNCNT := 1` moved up, before init_ext_roms --
+                ; D-BIOSLADDER B1, 2026-11-10.)
                 ld      a,KEYOP_FNKPAINT
                 ld      (KEYARG),a
                 call    sr_inl0             ; D-STUBINL: paint row 23 (absent: stays blank)

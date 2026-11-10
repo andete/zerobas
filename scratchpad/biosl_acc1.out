@@ -1,0 +1,23 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+===== b1text nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=f200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=a200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 010f1d25180001040d0505090b0a02010018ff186142370201031800000000e0
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff176142370201031800000000e0
+  CAP E002: ref=0F ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  CAP E014: ref=18 ours=17  (excused: CRTCNT after DSPFNK: ours 23, the VG-8020 24 -- TODO.md 'CRTCNT UNDER KEY ON', filed TIER 1 (the scroll bound))
+  SAME (2 allowlisted)
+===== b1text disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=1a01 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=a200 putpnt,getpnt=f3fbf3fb typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 010f1d25180001040d0505090b0a02010018ff186142370201031800000000e0
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff176142370201031800000000e0
+  CAP E002: ref=0F ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  CAP E014: ref=18 ours=17  (excused: CRTCNT after DSPFNK: ours 23, the VG-8020 24 -- TODO.md 'CRTCNT UNDER KEY ON', filed TIER 1 (the scroll bound))
+  SAME (2 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

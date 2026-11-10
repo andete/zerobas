@@ -16581,6 +16581,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and, as a second variant, through PHYDIO / DSKIO; on the disk target only, its NODISK
       row checking what the ROM sees with no disk interface ($F37D unset). Clean-room: own
       code.
+      ✅ **HARNESS + B1 (2026-11-10):** probes/bios/biosl_run.py (a rung = our own 16 KB AB
+      cartridge in probes/bios/biosl/; DONE / CAP block / VRAM read back from RAM; keys
+      typed when the program raises KEYREADY; rows nodisk = VG-8020 vs REPACK_NODISK, disk
+      = VG-8020 + NMS 1200 vs REPACK_DISK; ALLOW pins OUR value) and `make
+      biosl-acceptance` (in the battery). **B1 TEXT** (CHPUT codes, POSIT, ESC Y / K / J,
+      ERAFNK / DSPFNK, KILBUF + CHGET, a scroll, the 40 x 24 name table) found TWO:
+      (1) a cartridge's INIT waiting in CHGET HUNG -- C-BIOS's init leaves SCNCNT where the
+      interrupt wraps it before it scans, so no key was read for ~5 s, and D-BOOTSCAN's
+      `SCNCNT := 1` ran only AFTER the cartridge scan; [`b1diag_run3.out`](scratchpad/b1diag_run3.out): a raw key-matrix
+      press seen by the VG-8020, never by ours. FIXED in basic/interp.asm: D-BOOTSCAN's
+      store moved BEFORE init_ext_roms (it cost 1 B of page 1, 2026-11-10). 🔴 A FIRST CUT patched C-BIOS's
+      init_ram instead (upstream C-BIOS 4aa7859, +4 B and every C-BIOS address above
+      $0F66 +4) and the FULL gate went red on autorun-acceptance: scanning from ~0.03 s
+      kept keys typed in the first second of boot, which the VG-8020 drops -- openMSX
+      typed a stray `'` CR at 0.38 s (after the tape insert), ours ran it as a line and
+      the autorun's RUN never came ([`autorun_tokdiag_h2.out`](scratchpad/autorun_tokdiag_h2.out): ours reaches
+      init_ext_roms at 2.65 s, so starting the scan there drops them as the VG-8020 does).
+      (2) LINL40 was 39 at a cartridge's INIT, the VG-8020's 37 -- interp.asm sets it BEFORE
+      init_ext_roms (0 B). The disk ROM's INIT is one of them, so MSX-DOS now boots with
+      37 where the CF-3300 has 39: dosmode-acceptance excuses exactly that on its two boot
+      rows (presentational -- SCREEN 1, LINLEN 29 on both; the VG-8020's value ships, Joost
+      2026-09-04; B1's disk row measured 37 at INIT on the VG-8020 + NMS 1200). 📏
+      [`biosl_acc1.out`](scratchpad/biosl_acc1.out): both rows SAME but two pinned bytes -- CSRY at INIT
+      (banner position, presentational) and CRTCNT after DSPFNK (the filed "CRTCNT UNDER
+      KEY ON" item, rediscovered). ➡️ Next: B2 VDP.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
