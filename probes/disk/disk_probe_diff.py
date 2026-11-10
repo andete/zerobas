@@ -472,11 +472,25 @@ def mode_capture(args) -> int:
         ob, sb = _block_from(o_recs, base), _block_from(s_recs, base)
         if ob and sb:
             md = [(base + i, sb[i], ob[i]) for i in range(min(len(ob), len(sb))) if sb[i] != ob[i]]
+            # the block's first 32 bytes, both sides, ALWAYS: an agreeing row must still
+            # show WHAT it agreed on (a case that agrees can agree on a failure)
+            print(f"\n  head stock: {' '.join(f'{b:02X}' for b in sb[:32])}")
+            print(f"  head ours : {' '.join(f'{b:02X}' for b in ob[:32])}")
             print(f"\n  memory {base:#06x}+{mem[1]}: {len(md)} of {min(len(ob),len(sb))} bytes differ")
             for addr, s, o in md[:48]:
                 print(f"    {addr:04X}: stock={s:02X} ours={o:02X}")
             if len(md) > 48:
                 print(f"    ... (+{len(md)-48} more)")
+            if md:
+                # every differing byte, as address RUNS -- the listing above stops at 48
+                runs, a0, prev = [], md[0][0], md[0][0]
+                for addr, _, _ in md[1:]:
+                    if addr != prev + 1:
+                        runs.append((a0, prev))
+                        a0 = addr
+                    prev = addr
+                runs.append((a0, prev))
+                print("    diff runs: " + ", ".join(f"{a:04X}" if a == b else f"{a:04X}-{b:04X}" for a, b in runs))
 
     print(f"\n  register diffs: {', '.join(diffs) if diffs else 'NONE'}")
     if args.expect:

@@ -16735,7 +16735,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       there on the diskless target, and whether the VG-8020's $00 is worth matching (a CALL
       $F37D there runs into $00s; ours returns).
 
-- [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
+- [x] 🔴 **D-SIDEWRITE — A WRITE TO A SINGLE-SIDED DISK LANDED ON ANOTHER SECTOR (found and
+      fixed 2026-11-10 by D-DSKFMT's choice 1 round trip)**
+      🎚️ TIER 1 — the happy path of a 1-side disk (media $F8 / $FC): any file written to one.
+      basic/fat-prim-body.inc's fatprim_write_sector passed DSKIO `C = $F9` ("media byte,
+      ignored") -- but since D-SIDES DSKIO SEATS by a C of $F8 or more, so every write
+      went where a 2-sided, 9-sector disk keeps that sector, while reads (read_sector, C =
+      0) used the mounted disk's seating. On a 1-sided disk the record MSX-DOS wrote read
+      back as the format's $E5 ([`dskfmt_use_c1_back.out`](scratchpad/dskfmt_use_c1_back.out)). Now `C = 0`, as read_sector's.
+      Witness: `make dskfmt-acceptance` choice 1 (a knife restoring $F9 fails it on ours
+      alone). The shared body is the sub-ROM's too.
+
+- [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) WAS A STUB (✅ BUILT 2026-11-10; CALL FORMAT and the
+      loader's boot still open, below): IT ANSWERED AN ERROR AND FORMATTED
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
       🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
       BASIC); MSX-DOS's FORMAT and any formatter call it.
@@ -16892,6 +16904,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       dosmode, bdos, diskbasic, fat-error, dout, copy, catcopy, programs, clearclose,
       namegate, lof, recbig, wrblkalt, boot5e10, dosbasic, dosdate and the unit tests
       green. ➡️ **Next: the build, into these bins.**
+      ✅ **BUILT (2026-11-10): DSKFMT FORMATS AS THE CF-3300 DOES, ALL FOUR CHOICES.** dskfmt_body
+      (kernel.asm, in front of $75A5, 4 B left) with its data in the other bins (fmt_sec
+      $4558, fmt_boot $4EDE, fmt_tail $5445); `dskfmt: jp dskfmt_body`. Per track and side
+      a WD2793 Write Track of a run-length image built once in the work area (each ID
+      field set per track); then the system area zeroed in the work area and written by
+      ONE DSKIO call. Out A = B = 0, Cy = 0; 12 for a choice outside 1..4, 14 for a work
+      area under 7176 B (unmeasured on the CF-3300: TIER 6 if they differ). 📏 **`make
+      dskfmt-acceptance`** (probes/disk/dskfmt_acceptance.py, new): per choice, both
+      machines, the program's own $A5 marker as the arm (a plain `done` anchor collided
+      with MSX-DOS's boot once the probe grew -- that first run read COMMAND.COM's
+      bytes); every differing byte must be CHOICE's
+      pointer or sector 0's boot CODE (ours is our own loader), DSKFMT's A / Cy / B 0 on
+      both, and MSX-DOS's BDOS must FMAKE, write, close, open and read back a record on
+      the new disk. **4/4 PASS** ([`dskfmt_acc.out`](scratchpad/dskfmt_acc.out)); a knife (D-SIDEWRITE's fix undone)
+      fails choice 1 on ours alone ([`dskfmt_acc_knife.out`](scratchpad/dskfmt_acc_knife.out)). probes/disk/dskfmt.asm gained
+      the BDOS round trip (zeroing +12 / +32 before FOPEN: the caller's job, and the
+      first try read EOF on the CF-3300 for that reason); disk_probe_diff.py now prints
+      every differing byte as RUNS (it stopped at 48) and the block's first 32 bytes on
+      both sides (an agreeing row must show what it agreed on).
+      ➡️ **OPEN, TIER 1:** (a) **CALL FORMAT** should be the CF-3300's: drive, the CHOICE
+      menu, "strike a key", DSKFMT -- MEASURE its prompts first (keys typed, the screen
+      read); today it is the sub-ROM quick format (format_tenant), which then retires.
+      (b) **our loader** (fmt_boot) must boot MSX-DOS from a disk formatted here once
+      MSXDOS.SYS and COMMAND.COM are copied on -- not yet run.
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

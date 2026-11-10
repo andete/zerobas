@@ -574,10 +574,9 @@ choice:
                 ld      hl, choice_txt
                 ret
 
-; dskfmt — format disk (write support deferred indefinitely; not a loader need).
+; dskfmt — format disk: the CF-3300's four choices (D-DSKFMT, kernel.asm dskfmt_body).
 dskfmt:
-                scf
-                ret
+                jp      dskfmt_body
 
 ; mtoff — turn off disk motor(s).
 ; Clear the National control latch: deselect the drive and drop the motor line.
@@ -689,6 +688,12 @@ hkn_stamp:
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_DBUF
                 jp      write_sector        ; tail-call: its CF is our answer
+; D-DSKFMT: one sector of the track -- sync, the ID mark ($F5 writes A1), C H R
+; (set per track by fmt_track) N = 2, the CRC ($F7), gap 2, sync, the data mark,
+; 512 x $E5, the CRC, gap 3. 14 runs; read by address (kernel.asm dskfmt_body).
+fmt_sec:
+                db      12, $00, 3, $F5, 1, $FE, 3, $00, 1, $02, 1, $F7, 22, $4E
+                db      12, $00, 3, $F5, 1, $FB, 0, $E5, 0, $E5, 1, $F7, 80, $4E
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
 ; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;

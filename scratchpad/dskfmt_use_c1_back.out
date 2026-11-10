@@ -1,0 +1,69 @@
+=== capture: regs+mem at occurrence #1 of 0x01fa ===
+  ALIGNED: both hit occurrence #1  (stock t=64.6967, ours t=36.3560, dt=28.3407)
+
+  reg   STOCK  OURS
+  PC    01FA   01FA
+  SP    D529   D529
+>>AF    A542   A51A
+>>BC    0000   8000
+>>DE    1880   1800
+>>HL    0180   0100
+>>IX    F195   DA40
+>>IY    DA40   0415
+
+  head stock: DD 21 19 40 CD 21 02 22 00 04 7C B5 28 1A 11 40 04 06 80 C5 D5 E5 3A 22 FB CD 0C 00 FB E1 D1 C1
+  head ours : E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5 E5
+
+  memory 0x1800+128: 125 of 128 bytes differ
+    1800: stock=DD ours=E5
+    1801: stock=21 ours=E5
+    1802: stock=19 ours=E5
+    1803: stock=40 ours=E5
+    1804: stock=CD ours=E5
+    1805: stock=21 ours=E5
+    1806: stock=02 ours=E5
+    1807: stock=22 ours=E5
+    1808: stock=00 ours=E5
+    1809: stock=04 ours=E5
+    180A: stock=7C ours=E5
+    180B: stock=B5 ours=E5
+    180C: stock=28 ours=E5
+    180D: stock=1A ours=E5
+    180E: stock=11 ours=E5
+    180F: stock=40 ours=E5
+    1810: stock=04 ours=E5
+    1811: stock=06 ours=E5
+    1812: stock=80 ours=E5
+    1813: stock=C5 ours=E5
+    1814: stock=D5 ours=E5
+    1816: stock=3A ours=E5
+    1817: stock=22 ours=E5
+    1818: stock=FB ours=E5
+    1819: stock=CD ours=E5
+    181A: stock=0C ours=E5
+    181B: stock=00 ours=E5
+    181C: stock=FB ours=E5
+    181D: stock=E1 ours=E5
+    181E: stock=D1 ours=E5
+    181F: stock=C1 ours=E5
+    1820: stock=12 ours=E5
+    1821: stock=13 ours=E5
+    1822: stock=23 ours=E5
+    1823: stock=B7 ours=E5
+    1824: stock=28 ours=E5
+    1825: stock=02 ours=E5
+    1826: stock=10 ours=E5
+    1827: stock=EB ours=E5
+    1828: stock=3A ours=E5
+    1829: stock=37 ours=E5
+    182A: stock=02 ours=E5
+    182B: stock=16 ours=E5
+    182C: stock=00 ours=E5
+    182D: stock=21 ours=E5
+    182E: stock=00 ours=E5
+    182F: stock=20 ours=E5
+    1830: stock=01 ours=E5
+    ... (+77 more)
+    diff runs: 1800-1814, 1816-1856, 1858, 185A-187F
+
+  register diffs: AF, BC, DE, HL, IX, IY

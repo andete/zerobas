@@ -157,6 +157,45 @@ stime_body:
 ; probes/disk/verifyx.asm). So neither persisting E nor coupling a verify-read into
 ; the write path is needed; doing so would make ours LESS faithful (extra reads
 ; stock never does) and is pointless on the emulator target (writes cannot fail).
+; D-DSKFMT: the boot sector a format writes -- the BPB (each choice's fields set by
+; dskfmt_body), then OUR loader at $C01E: with Cy = 0 nothing to set up; with Cy = 1
+; it loads MSXDOS.SYS at $0100 through the BDOS at $F37D (FOPEN, SETDTA, RDBLK of up
+; to $3F01 bytes at a record size of 1) and jumps there, IX (the DPB pointer the disk
+; ROM hands MSXDOS.SYS) kept; without MSXDOS.SYS it returns and the disk ROM goes on
+; to BASIC. Written for this format; nothing of the CF-3300's boot code.
+fmt_boot:
+                db      $EB, $FE, $90, "MSX_01  "
+                dw      512
+                db      0                   ; sectors / cluster (set)
+                dw      1                   ; reserved
+                db      2                   ; FATs
+                dw      0, 0                ; root entries, total sectors (set)
+                db      0                   ; the media ID (set)
+                dw      0, 9, 0, 0          ; sectors / FAT (set), / track, sides (set), hidden
+                ret     nc
+                push    ix
+                ld      de, BOOT_LOAD + fmt_bfcb - fmt_boot
+                ld      c, $0F
+                call    $F37D               ; FOPEN
+                inc     a
+                jr      z, fmt_bnone
+                ld      de, $0100
+                ld      c, $1A
+                call    $F37D               ; SETDTA
+                ld      hl, 1
+                ld      (BOOT_LOAD + fmt_bfcb - fmt_boot + 14), hl
+                ld      h, $3F              ; HL = $3F01 records of 1 byte
+                ld      de, BOOT_LOAD + fmt_bfcb - fmt_boot
+                ld      c, $27
+                call    $F37D               ; RDBLK
+                pop     ix
+                jp      $0100
+fmt_bnone:
+                pop     ix
+                ret
+fmt_bfcb:
+                db      0, "MSXDOS  SYS"
+FMT_BOOTLEN     equ     $ - fmt_boot
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -1290,6 +1329,9 @@ bb_dskrst:
                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
 k_543C:
                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
+; D-DSKFMT: the fill after the ninth sector, to the index and past it (768 x $4E).
+fmt_tail:
+                db      0, $4E, 0, $4E, 0, $4E
                 ds      $5445 - $, $00  ; pad up to the pinned $5445 CONIN entry (M22a)
 k_5445:
                 jp      conin_body      ; $5445: BDOS $01 CONIN canonical entry (M22a)
@@ -6996,6 +7038,251 @@ sd_read:
                 ld      hl, $FFFF
                 ld      (BDOS_SEQREC), hl
                 ret
+; ===== D-DSKFMT: DSKFMT ($401C), the CF-3300's four formats (2026-11-10) =====
+; dskfmt_body -- in A = the choice (1..4, CHOICE's menu), D = the drive (one drive
+; here), HL / BC = a work area and its size; out Cy = 0, A = B = 0 (the CF-3300's
+; answer, dskfmt_stock*.out); Cy = 1 with A = 12 (bad parameter), 14 (the work area
+; is too small) or a DSKIO code. Every track of every side gets a WD2793 Write Track
+; (IBM System 34 double density: 9 sectors of 512 B, data $E5), built once in the
+; work area and each ID field set per track; then the system area -- the boot
+; sector (the BPB: the format's contract, measured per choice; and OUR loader),
+; both FATs (the media ID, $FF, $FF) and an empty root -- zeroed in the work area
+; and written by ONE DSKIO call. Data in other holes (read by address): fmt_sec
+; ($4558), fmt_boot ($4EDE), fmt_tail ($5445). CLEAN-ROOM: the WD2793 data sheet's
+; Write Track bytes, the MSX2 TH DSKFMT contract, the measured BPBs; no reference
+; ROM byte, and the reference's own boot code is not copied (TODO D-DSKFMT).
+FMT_BUF         equ     8                   ; work area: +0 the choice (0..3), +1..7 its row
+FMT_SYS         equ     14 * 512            ; the largest system area (1 + 2 x 3 + 7)
+FMT_NEED        equ     FMT_BUF + FMT_SYS   ; (more than the track image's 6782 B)
+dskfmt_body:
+                dec     a
+                cp      4
+                ld      e, a
+                ld      a, 12
+                ccf
+                ret     c                   ; not a choice: bad parameter
+                push    hl
+                ld      hl, -FMT_NEED
+                add     hl, bc              ; Cy: BC >= FMT_NEED
+                pop     ix                  ; IX = the work area
+                ld      a, 14
+                ccf
+                ret     c                   ; not enough memory
+                ld      (ix+0), e
+                ld      a, e
+                add     a, a
+                add     a, a
+                add     a, a
+                sub     e                   ; x 7
+                ld      e, a
+                ld      d, 0
+                ld      hl, fmt_geo
+                add     hl, de
+                push    ix
+                pop     de
+                inc     de
+                ld      bc, 7
+                ldir                        ; +1..7 := the choice's row
+                call    fmt_buf
+                ex      de, hl              ; DE = the image
+                ld      hl, fmt_head
+                ld      c, 5
+                call    fmt_rle             ; the index gap
+                ld      b, 9
+fb_sec:
+                push    bc
+                ld      hl, fmt_sec
+                ld      c, 14
+                call    fmt_rle             ; a sector
+                pop     bc
+                djnz    fb_sec
+                ld      hl, fmt_tail
+                ld      c, 3
+                call    fmt_rle             ; fill to the index and past it
+                ld      d, b                ; B = 0: track 0
+ft_trk:
+                ld      e, 0
+ft_side:
+                call    fmt_track
+                jp      c, fmt_err
+                ld      a, (ix+0)
+                and     1                   ; two sides: choices 2 and 4
+                inc     a
+                inc     e
+                cp      e
+                jr      nz, ft_side
+                inc     d
+                ld      a, 40
+                bit     1, (ix+0)           ; 80 tracks: choices 3 and 4
+                jr      z, ft_40
+                add     a, a
+ft_40:
+                cp      d
+                jr      nz, ft_trk
+                ; the system area: zeroed, the boot sector, both FATs' first bytes
+                call    fmt_buf
+                push    hl
+                ld      d, h
+                ld      e, l
+                inc     de
+                ld      (hl), b             ; B = 0
+                ld      bc, FMT_SYS - 1
+                ldir
+                pop     hl
+                push    hl
+                ex      de, hl
+                ld      hl, fmt_boot
+                ld      bc, FMT_BOOTLEN
+                ldir                        ; sector 0: the template
+                pop     hl
+                push    hl
+                ld      bc, 8
+                add     hl, bc
+                ld      a, (ix+0)
+                add     a, '1'
+                ld      (hl), a             ; "MSX_0N", N = the choice
+                pop     hl
+                push    ix
+                pop     de
+                inc     de                  ; DE = the row
+                ld      bc, fmt_off
+fs_bpb:
+                push    hl
+                ld      a, (bc)
+                add     a, l
+                ld      l, a
+                adc     a, h
+                sub     l
+                ld      h, a                ; HL = the sector + the field's offset
+                ld      a, (de)
+                ld      (hl), a
+                pop     hl
+                inc     de
+                inc     bc
+                ld      a, c
+                cp      low (fmt_off + 7)
+                jr      nz, fs_bpb
+                inc     h
+                inc     h                   ; sector 1: FAT 1
+                ld      b, 2
+fs_fat:
+                ld      a, (ix+5)
+                ld      (hl), a             ; the media ID
+                inc     hl
+                ld      (hl), $FF
+                inc     hl
+                ld      (hl), $FF
+                dec     hl
+                dec     hl
+                ld      a, (ix+6)
+                add     a, a
+                add     a, h
+                ld      h, a                ; + the FAT's size: FAT 2
+                djnz    fs_fat
+                call    fmt_buf
+                ld      a, (ix+2)           ; root entries
+                rrca
+                rrca
+                rrca
+                rrca                        ; / 16 (64 / 112)
+                add     a, (ix+6)
+                add     a, (ix+6)
+                inc     a
+                ld      b, a                ; sectors: 1 + 2 x FAT + root
+                ld      c, (ix+5)           ; the media ID: DSKIO seats the sectors by it
+                ld      de, 0
+                xor     a
+                scf
+                jp      dskio               ; A = B = 0, Cy = 0 once written
+fmt_err:
+                push    af
+                call    mtoff
+                pop     af
+                ret
+fmt_buf:
+                push    ix
+                pop     hl
+                ld      bc, FMT_BUF
+                add     hl, bc
+                ret
+; fmt_track -- Write Track, track D / side E, from the image with each ID field set
+; first. Out Cy = 1, A = a DSKIO code (0 write protected, 2 not ready, 10 a fault).
+fmt_track:
+                push    de
+                call    fdc_prep            ; DI, drive A, side E, motor, settle
+                call    fdc_seek            ; to track D
+                call    fdc_wp_chkrdy
+                jr      c, ftk_done
+                call    fmt_buf
+                ld      bc, 146 + 16
+                add     hl, bc              ; sector 1's ID field
+                ld      bc, 652 - 2
+                ld      a, 1
+ftk_id:
+                ld      (hl), d             ; C: the track
+                inc     hl
+                ld      (hl), e             ; H: the side
+                inc     hl
+                ld      (hl), a             ; R: the sector (N = 2, in the table)
+                add     hl, bc
+                inc     a
+                cp      10
+                jr      nz, ftk_id
+                call    fmt_buf
+                ld      a, $F0              ; WD2793 Write Track
+                ld      (FDC_STATUS), a
+ftk_busy:
+                ld      a, (FDC_STATUS)
+                rrca
+                jr      nc, ftk_busy        ; until BUSY
+ftk_loop:
+                ld      a, (FDC_STATUS)
+                bit     1, a
+                jr      nz, ftk_byte        ; DRQ: the next byte
+                rrca
+                jr      c, ftk_loop         ; still BUSY
+                and     (ST_WP | ST_LOST) >> 1
+                jr      z, ftk_done         ; Cy = 0
+                and     ST_LOST >> 1
+                jr      z, ftk_wp           ; write protected: A = 0
+                ld      a, 10               ; write fault
+ftk_wp:
+                scf
+ftk_done:
+                pop     de
+                jp      fdc_io_done
+ftk_byte:
+                ld      a, (hl)
+                ld      (FDC_DATA), a
+                inc     hl
+                jr      ftk_loop
+; fmt_rle -- C runs (count, byte; a count of 0 is 256) from HL to DE.
+fmt_rle:
+                ld      b, (hl)
+                inc     hl
+                ld      a, (hl)
+                inc     hl
+fr_put:
+                ld      (de), a
+                inc     de
+                djnz    fr_put
+                dec     c
+                jr      nz, fmt_rle
+                ret
+; each choice's BPB fields, in fmt_off's order: sectors / cluster, root entries,
+; total sectors, the media ID, sectors / FAT, sides (the CF-3300's, measured:
+; dskfmt_stock1.out, dskfmt_stock_c2..c4.out)
+fmt_geo:
+                db      1, 64, $68, $01, $FC, 2, 1
+                db      2, 112, $D0, $02, $FD, 2, 2
+                db      2, 112, $D0, $02, $F8, 2, 1
+                db      2, 112, $A0, $05, $F9, 3, 2
+fmt_off:
+                db      13, 17, 19, 20, 21, 22, 26
+; the track: the index gap (80 x $4E), sync, the index mark ($F6 writes C2, then
+; $FC), gap 1 -- the WD2793 data sheet's Write Track bytes
+fmt_head:
+                db      80, $4E, 12, $00, 3, $F6, 1, $FC, 50, $4E
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

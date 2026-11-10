@@ -11,6 +11,11 @@
 ;   $0440  the choice string (128 B, read with RDSLT; $EE = not reached)
 ;   $04C0  sectors 0..7 read back through DSKIO (4 KB; the media byte for the reads
 ;          taken from the new boot sector)
+;   codes+21..26: the formatted disk in use through MSX-DOS's BDOS -- FMAKE, SEQWRITE,
+;          FCLOSE, FOPEN, SEQREAD's A, and 1 when the record read back is the one written
+;   codes+27: $A5 just before `done` -- arm the capture on it (--arm-check-addr 0x041B
+;          --arm-check-val 0xA5): with the round trip, `done` landed on an address
+;          MSX-DOS's boot runs, and the $0102 fingerprint matched there by chance
 ; Self-loop at `done` -- the disk_probe_diff.py capture anchor.
 ;
 ; CLEAN-ROOM: 100% own code; the published disk-ROM interface (CHOICE / DSKFMT /
@@ -25,6 +30,8 @@ RDSLT           equ     $000C
 CALSLT          equ     $001C
 DSKSLT          equ     $FB22
 WORK            equ     $2000                   ; DSKFMT's work area (TPA)
+BDOS            equ     $0005
+BACK            equ     $1800                   ; the record read back (after the format)
 
 start:
                 ld      ix, $4019               ; CHOICE
@@ -100,8 +107,61 @@ rd_next:
                 ld      a, e
                 cp      8
                 jr      nz, rd_lp
-done:
+                ; --- the formatted disk in USE, through MSX-DOS's own BDOS: reset, then
+                ; FMAKE T.DAT, SEQWRITE one record (this program's first 128 B), FCLOSE,
+                ; FOPEN, SEQREAD it into $1800, compare. codes+21..26: the five A's and
+                ; 1 = the record came back.
+                ld      c, $0D
+                call    BDOS                    ; DSKRST: forget the old disk
+                ld      de, fcb
+                ld      c, $16
+                call    BDOS                    ; FMAKE
+                ld      (codes+21), a
+                ld      de, $0100
+                ld      c, $1A
+                call    BDOS
+                ld      de, fcb
+                ld      c, $15
+                call    BDOS                    ; SEQWRITE
+                ld      (codes+22), a
+                ld      de, fcb
+                ld      c, $10
+                call    BDOS                    ; FCLOSE
+                ld      (codes+23), a
+                xor     a
+                ld      (fcb+12), a             ; extent 0 and current record 0: the
+                ld      (fcb+32), a             ; CALLER's to set (FOPEN leaves +32 alone)
+                ld      de, fcb
+                ld      c, $0F
+                call    BDOS                    ; FOPEN
+                ld      (codes+24), a
+                ld      de, BACK
+                ld      c, $1A
+                call    BDOS
+                ld      de, fcb
+                ld      c, $14
+                call    BDOS                    ; SEQREAD
+                ld      (codes+25), a
+                ld      hl, $0100
+                ld      de, BACK
+                ld      b, 128
+cmp_lp:
+                ld      a, (de)
+                cp      (hl)
+                jr      nz, cmp_out
+                inc     hl
+                inc     de
+                djnz    cmp_lp
+                ld      a, 1
+                ld      (codes+26), a
+cmp_out:
+                ld      a, $A5
+                ld      (codes+27), a           ; the arm marker: run with --arm-check-addr
+done:                                           ; 0x041B --arm-check-val 0xA5 (an anchor
                 jr      done
+
+fcb:            db      0, "T       DAT"
+                ds      25, 0
 
 ; xcall -- CALSLT the disk ROM at IX with A / BC / DE / HL as given; flags out.
 xcall:

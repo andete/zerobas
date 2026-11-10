@@ -66,7 +66,9 @@ STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
 REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/")
 EXCLUDED5 = ("bdos-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
-             "input-devices-acceptance", "lnblank-say-acceptance")
+             "input-devices-acceptance", "lnblank-say-acceptance",
+             "dskfmt-acceptance CHOICES=1,4")   # D-DSKFMT: the two extremes (1 side x 40,
+                                                # 2 x 80); all four take ~15 min
 
 
 def git(*args, cwd=ROOT, check=True):
@@ -230,8 +232,8 @@ def run(a) -> int:
             if sh(["python3", "tools/run_gates.py", "--full"], env, "gate FULL"):
                 fails.append("full battery")
             for t in EXCLUDED5:
-                if sh(["make", "-s", t], env, t):
-                    fails.append(t)
+                if sh(["make", "-s", *t.split()], env, t):
+                    fails.append(t.split()[0])
         elif a.tier == "scoped":
             if sh(["make", "-s", "gates-scoped"], env, "gate SCOPED"):
                 fails.append("gate")

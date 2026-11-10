@@ -906,6 +906,13 @@ probe: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 bdos-acceptance: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
+# D-DSKFMT / D-SIDEWRITE: DSKFMT formats as the CF-3300 (the BPB, both FATs, the root;
+# the boot CODE is our own loader) and the disk it makes works -- MSX-DOS's BDOS writes
+# a record to it and reads it back, both machines. CHOICES=1,4 for a short run (choice
+# 4 takes the CF-3300 ~3 minutes).
+dskfmt-acceptance: repack-machine
+	python3 probes/disk/dskfmt_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
+
 # Standing Disk-BASIC acceptance gate: the BASIC-side counterpart of bdos-acceptance.
 # Replays the self-asserting disk_probe_* differentials over the Disk-BASIC verb
 # surface (FILES/OPEN/FIELD/GET/PUT/SAVE/LOAD/...) and asserts each still converges to

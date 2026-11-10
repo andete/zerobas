@@ -55,13 +55,21 @@ session and the loop resumes exactly where it stopped.
   write lost at FCLOSE; a 1 MB guard); D-BIOSLADDER CLOSED (B1-B8 in `make biosl-acceptance`:
   a cartridge's CHGET at INIT, width 37 before the cartridge scan, the sub-ROM found before
   the cartridges -- BEEP / key line from a cartridge -- and R11 at boot); D-GATEWT; CHOICE.
-- **Gating / just committed:** CRTCNT UNDER KEY ON (CRTCNT 24; the console bound CRTCNT +
-  CNSDFG through crt_rows / crt_cp pinned at $3283 / $328D, C-BIOS patch #17; no RAM).
-- **Open next, by tier (TIER 1):** D-BIOSCONTRACT's remainder (PNTINI / SCANR / SCANL need
-  room; STRTMS is low value -- our PLAY has its own packet format); D-DSKFMT (CHOICE done;
-  the build needs ~300 B: carve first -- no 85 B hole left); D-BDOSFCB B3 (a) / (b) and its
-  residuals (SETRND, BC); D-PSGINIT's last byte (the NMS 1200's boot-beep R0, pinned);
+- **Then pushed:** CRTCNT UNDER KEY ON; D-DSKFMT carves 12-31 (+ ~280 B of disk-ROM room),
+  defrag step 7 and FORMAT's bins (Joost ruled SPLIT code / data); move-tool fixes
+  (forward moves, a `jr` leaving a block, `ret nz` as an end, a pin's pad dragged).
+- **Gating / just committed:** D-DSKFMT BUILT -- DSKFMT formats all four choices as the
+  CF-3300 (`make dskfmt-acceptance`, both machines, MSX-DOS round trip on the new disk);
+  D-SIDEWRITE (a write to a 1-sided disk went to the 2-sided place: fat-prim-body's
+  write_sector passed C = $F9, a media ID since D-SIDES).
+- **Open next, by tier (TIER 1):** D-DSKFMT's follow-ups -- CALL FORMAT as the CF-3300's
+  (MEASURE its dialogue first; retire the sub-ROM quick format), MSX-DOS's FORMAT command
+  (Joost asked; same measurement), our loader booting MSX-DOS from a disk formatted here;
+  D-BIOSCONTRACT's remainder (PNTINI / SCANR / SCANL need room; STRTMS low value);
+  D-BDOSFCB B3 (a) / (b) and its residuals (SETRND, BC); D-PSGINIT's last byte (pinned);
   TIER 3: CLOSE / SEQREAD of an unopened FCB (D-BDOSSEQ note).
+- **Disk-ROM room now:** read `python3 scratchpad/pinguard.py --slack` (never a number from
+  here); scratchpad/defrag_plan.py `--bin N [KEEP,..]` finds the fewest moves to open a bin.
 - **Lessons today:** a byte scan of the BUILT images finds readers a source grep misses
   (sub2/ is built into the sub-ROM); a gate over unpushed commits catches regressions in
   ones written while the previous gate ran -- never push before its verdict.

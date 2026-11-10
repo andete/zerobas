@@ -3196,7 +3196,8 @@ formatted with no prompt; the 360 KB geometry added the menu.*
 
 **How (BASIC owns the filesystem).** zerobas-BASIC already drives the standard $4010
 DSKIO read+write and owns FAT12, so `do_format` lays the structures down itself via
-`write_sector` (basic/fat.asm) — no dependence on zerobas-disk's DSKFMT (a stub). It
+`write_sector` (basic/fat.asm) — no dependence on zerobas-disk's DSKFMT (a stub then; a real
+formatter since D-DSKFMT, 2026-11-10, which CALL FORMAT is still to adopt). It
 clears the FAT + root-directory region, stamps each FAT copy's head (`[media][$FF][$FF]`),
 and writes the boot sector (BPB) last. This is the Phase-1.5 "BASIC owns the
 filesystem" model applied to formatting.

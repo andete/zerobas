@@ -172,7 +172,11 @@ read_sector:
 ; matters there -- disk/kernel.asm has a `write_sector` of its own.)
 fatprim_write_sector:
                 ld      b, 1            ; one sector
-                ld      c, $F9          ; media byte (ignored, single drive)
+                ld      c, 0            ; 🔴 D-SIDEWRITE (2026-11-10): NOT a media ID, as read_sector's --
+                                        ; it was $F9, which DSKIO takes as one since D-SIDES and seats
+                                        ; by: every write went to the 2-sided place while reads used
+                                        ; the mounted disk's, so a write to a SINGLE-SIDED disk landed
+                                        ; on another sector (DSKFMT choice 1's round trip read $E5)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio_calslt    ; tail-call, as read_sector above
