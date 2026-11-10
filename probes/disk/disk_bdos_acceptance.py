@@ -117,6 +117,10 @@ EXERCISERS = [
     # D5: REN / DEL -- a wildcard FREN, FREN of a missing file and onto an existing
     # name, wildcard FDEL; it found D-FRENWILD and D-FDELWILD (one match only).
     ("DOSL-D5", "build_dosl_disk.py", ["--prog", "d5rendel", "--settle", "150"]),
+    # D6: a random-access file -- WRRND / RDRND, WRZER, FSIZE, SETRND, RDBLK / WRBLK
+    # at RS 64, FCLOSE and re-open; it found D-RNDLIVE (RDRND of a just-written
+    # record answered "past the end").
+    ("DOSL-D6", "build_dosl_disk.py", ["--prog", "d6rand", "--settle", "200"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

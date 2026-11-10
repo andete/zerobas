@@ -151,6 +151,8 @@ def setup_fcb(m, name, r0, size):
     m.poke(FCB + 1, n83(name))
     m.poke_w(FCB + 14, RECSIZE)
     m.poke(FCB + 16, struct.pack("<I", size))
+    m.poke_w(FCB + 26, 5)                         # the first cluster, as FOPEN fills it
+                                                  # (D-RNDLIVE: RDRND / WRRND position from it)
     m.poke(FCB + 33, bytes([r0, 0, 0]))
 
 
@@ -197,7 +199,11 @@ def run():
     check(cpu.a == 0, f"  A={cpu.a} (want 0)")
     newsize = struct.unpack_from("<I", m.peek(FCB + 16, 4))[0]
     check(newsize == 768, f"  FCB size (ix+16..19) = {newsize} (want 768 = (5+1)*128)")
-    check(disk.dirent_size() == 768, f"  dirent size = {disk.dirent_size()} (want 768, PERSISTED)")
+    # D-RNDLIVE (2026-11-10): the ENTRY keeps its old size until FCLOSE, as on the
+    # CF-3300 -- FSIZE of the open file reads 0 there (probes/disk/dosl/d6rand.asm);
+    # M36's 256 -> 768 was observed AFTER FCLOSE, which MSX-DOS's kernel writes from
+    # the FCB (BDOSX6's re-FOPEN record proves the persisted size).
+    check(disk.dirent_size() == 256, f"  dirent size = {disk.dirent_size()} (want 256: written at FCLOSE)")
     # the record's data itself landed correctly (cluster 5 -> data[(5-2)*1024:])
     base = (5 - 2) * SECPERCLUS * SECSIZE + 640
     check(bytes(disk.data[base:base + RECSIZE]) == pattern, "  record 5's data landed at offset 640")

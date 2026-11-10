@@ -5221,48 +5221,18 @@ wrrnd_extend:
                 jr      c, wre_noext        ; newsize < oldsize -- no extension
                 jr      z, wre_noext        ; newsize == oldsize -- no extension
                 ; --- extending: HL = newsize; store into ix+16..19 (+18/+19 = 0) ---
-                push    hl                  ; preserve newsize across the dirent-persist work
                 ld      (ix+16), l
                 ld      (ix+17), h
                 ld      (ix+18), 0
                 ld      (ix+19), 0
-                ; --- Step 3: persist to the on-disk directory entry -----------------
-                ; Mirror fren_body's in-place idiom: ensure geometry is mounted, then
-                ; fat_find the file's own name (ix+1) -> HL = &dirent in SECTOR_BUF,
-                ; FAT_DIRSEC = its sector. Patch dirent+DIRENT_FILESIZE (+28..31) only
-                ; -- leave +26/27 (first cluster) and the name untouched (do NOT call
-                ; fat_dir_update: it rewrites first-cluster from BDOS_WRFIRST, which is
-                ; the SEQUENTIAL-write bookkeeping cell, not meaningful for a file
-                ; opened for random access -- WRRND must not touch first-cluster).
-                push    ix
-                pop     de
-                call    fat_mount
-                jr      c, wre_ioerr
-                push    ix
-                pop     de
-                inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
-                call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
-                jr      c, wre_ioerr
-                call    dir_stamp_date      ; a written file is dated as the CF-3300's
-                ld      de, DIRENT_FILESIZE
-                add     hl, de              ; HL -> dirent+28 (file size field)
-                pop     de                  ; DE = newsize (restore across fat_mount/fat_find)
-                ld      (hl), e
-                inc     hl
-                ld      (hl), d
-                inc     hl
-                ld      (hl), 0
-                inc     hl
-                ld      (hl), 0             ; dirent+28..31 = newsize (32-bit LE; hi word 0)
-                ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
-                call    write_sector
-                ret                         ; Cy propagates: 0 ok, 1 = wre_ioerr's caller test
-wre_ioerr:
-                pop     de                  ; discard the stacked newsize, keep the stack balanced
-                scf
+                or      a                   ; Cy = 0
                 ret
+                ; 🔴 D-RNDLIVE (2026-11-10): the directory entry is NOT written here any
+                ; more. The CF-3300 leaves it alone until FCLOSE -- FSIZE of an open file it
+                ; grew by random writes answers the entry's OLD size (0 in
+                ; probes/disk/dosl/d6rand.asm, scratchpad/dosl_d6_3.out) -- and FCLOSE
+                ; writes the size from the FCB (the same rung reads 2048 back after a
+                ; close and re-open). M36's persist step wrote it at once.
 wre_noext:
                 or      a                   ; Cy = 0 -- no extension needed, NOT an error
                 ret                         ; (the preceding sbc's Cy/Z must not leak to the caller)
@@ -8656,6 +8626,22 @@ rrnd_position:
                 inc     hl                  ; HL -> copy+1, the 8.3 name (fat_find's contract)
                 call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
                 ret     c                   ; no such file -> both callers' Cy path
+                ; 🔴 D-RNDLIVE (2026-11-10): the chain and the size come from the FCB, not
+                ; the directory. The entry is only rewritten at FCLOSE, so after WRRND /
+                ; WRBLK / WRZER grew an open file the directory still said its old size
+                ; (often 0): RDRND of a record just written answered "past the end" (A = 1)
+                ; where the CF-3300 reads it (probes/disk/dosl/d6rand.asm,
+                ; scratchpad/dosl_d6_2.out). The FCB's +26 and +16..19 are kept current
+                ; by every write (wrblk_fcb_keep, wrrnd_extend) and filled by FOPEN.
+                ld      l, (ix+26)
+                ld      h, (ix+27)
+                ld      (FAT_FIRSTCLUS), hl
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                ld      (FAT_FILESIZE), hl
+                ld      l, (ix+18)
+                ld      h, (ix+19)
+                ld      (FAT_FILESIZE+2), hl
                 ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
                 push    af
                 call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)

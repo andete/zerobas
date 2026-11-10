@@ -16420,6 +16420,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       frame, or build into the entry in place AFTER the collision scan. Room: the region in
       front of $75A5 (151 B). Must not touch the DTA or SFIRST / SNEXT's BDOS_SRCHIDX.
 
+- [x] 🔴 **D-RNDLIVE — UNDER MSX-DOS, RDRND OF A RECORD JUST WRITTEN TO AN OPEN FILE ANSWERED
+      "PAST THE END" (found and fixed 2026-11-10 by D-DOSLADDER's D6)**
+      🎚️ TIER 1 — happy path of BDOS $21 RDRND: a database writes records and reads them back
+      before it closes the file.
+      📏 probes/disk/dosl/d6rand.asm ([`dosl_d6_2.out`](scratchpad/dosl_d6_2.out)): after FMAKE and WRRND of records 0..4, RDRND of
+      record 2 gave A = 1 and an untouched buffer here, the record on the CF-3300; so did
+      RDRND inside a WRZER gap and a SEQREAD from record 0. rrnd_position re-found the file
+      through its DIRECTORY ENTRY -- rewritten only at FCLOSE -- so an open file grown by
+      writes looked empty (the D-WRZER lesson, again). ✅ It takes the first cluster (+26) and
+      the size (+16..19) from the FCB, which every write keeps current and FOPEN fills.
+      🔴 Then 1 byte remained: FSIZE of the open file -- the CF-3300 reads the entry's OLD size
+      (0), ours 5 records: with the chain now found, a WRRND at the end of the file took the
+      in-file path, whose wrrnd_extend (M36) wrote the new size to the ENTRY at once. M36's
+      evidence ("WRRND r0=5 -> FCLOSE", the entry 256 -> 768) was taken AFTER FCLOSE, which the
+      MSX-DOS kernel writes from the FCB; wrrnd_extend no longer writes the entry (BDOSX6's
+      re-FOPEN record still converges: the size is persisted at close).
+      📏 [`dosl_d6_4.out`](scratchpad/dosl_d6_4.out): **D6 BYTE-IDENTICAL (33 bytes)**; bdos-acceptance 23/23 with D6;
+      diskbasic-acceptance green; tests/test_rrnd_8bit_limit.py and test_wrrnd_extend.py fill
+      the FCB's +26 as FOPEN does, and the latter expects the entry unchanged until FCLOSE.
+
 - [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
       2026-11-09)**
       🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
@@ -16456,6 +16476,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 **D5 (REN / DEL) FOUND D-FRENWILD AND D-FDELWILD (2026-11-10)** -- both fixed; D5 is a
       bdos-acceptance row. Next: D6, a random-access file (WRRND / RDRND, WRZER, RDBLK /
       WRBLK, FSIZE, SETRND).
+      ✅ **D6 (RANDOM ACCESS) FOUND D-RNDLIVE (2026-11-10)** -- fixed; D6 is a bdos-acceptance row.
+      Its first cut "converged" on a FALSE ANCHOR on the CF-3300: COMMAND.COM was running at
+      the anchor address with the same arm byte ($02 at $0102); every rung now leads with
+      `jr start` / `db $Dn` (D2..D6; D2..D5 had verified real values, but carried the same
+      risk). Next: D7, the mini editor / sort.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

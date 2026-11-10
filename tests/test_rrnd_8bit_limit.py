@@ -34,7 +34,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-from test_rdblk_randrecord import make_file, new_machine  # noqa: E402  (shared harness)
+from test_rdblk_randrecord import _OPEN, make_file, new_machine  # noqa: E402  (shared harness)
 from test_wrblk_body_e2e import build, n83  # noqa: E402
 
 FCB = 0xDA40
@@ -65,6 +65,10 @@ def run():
     make_file(m, "REC8.DAT", data)
     m.poke(FCB, bytes(37))
     m.poke(FCB + 1, n83("REC8.DAT"))
+    # D-RNDLIVE (2026-11-10): RDRND positions from the FCB's first cluster (+26) and
+    # size (+16..19), which FOPEN fills -- as setup_fcb does for the RDBLK tests
+    m.poke_w(FCB + 26, _OPEN["first"])
+    m.poke(FCB + 16, _OPEN["size"].to_bytes(4, "little"))
     m.poke_w(FCB + 14, 200)                       # record size 200 -- must be IGNORED
     m.poke(FCB + 33, bytes([5, 7, 9]))            # r0=5, r1=7, r2=9 -- r1/r2 must be IGNORED
     m.poke_w(m.addr("DOS_DTAPTR"), DTA)
@@ -85,6 +89,10 @@ def run():
     make_file(m2, "REC8.DAT", data)
     m2.poke(FCB, bytes(37))
     m2.poke(FCB + 1, n83("REC8.DAT"))
+    # D-RNDLIVE (2026-11-10): RDRND positions from the FCB's first cluster (+26) and
+    # size (+16..19), which FOPEN fills -- as setup_fcb does for the RDBLK tests
+    m2.poke_w(FCB + 26, _OPEN["first"])
+    m2.poke(FCB + 16, _OPEN["size"].to_bytes(4, "little"))
     m2.poke_w(FCB + 14, 0)                         # record size 0 -> default 128
     m2.poke(FCB + 33, bytes([5, 0, 0]))
     m2.poke_w(m2.addr("DOS_DTAPTR"), DTA)

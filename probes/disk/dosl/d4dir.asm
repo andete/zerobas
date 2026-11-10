@@ -15,6 +15,9 @@
 
 BDOS            equ     $0005
 
+                jr      start
+                db      $D4                     ; $0102: the capture's arm signature (unique;
+                                                ; COMMAND.COM has $02 there -- D6's false anchor)
 start:
                 ld      de, dta
                 ld      c, $1A
