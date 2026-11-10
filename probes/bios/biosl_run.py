@@ -13,8 +13,15 @@ Its header comment may carry the harness settings, one per line:
                         machine that reaches INIT later loses no key
     ; @matrix ROW MASK  a raw key-matrix press (keymatrixdown, hex mask) for 0.3 s
                         at KEYREADY -- no `type` logic in between
-    ; @vram ADDR:LEN    a VRAM span to compare as well (hex, e.g. 0000:3C0)
+    ; @vram ADDR:LEN    a VRAM span to compare as well (hex, e.g. 0000:3C0); repeatable
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
+    ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
+                        -- a rung that lets the disk ROM start moves it below HIMEM
+    ; @type-at S TEXT   TEXT typed at S emulated seconds ('\\r' = Enter) -- e.g. our
+                        disk machine's date question, which the VG-8020 + NMS 1200
+                        does not ask (a CF-3300 behaviour our disk target keeps)
+    ; @disk empty       the disk row gets drive A = a fresh copy of disk/empty720.dsk
+                        (`make test-dsk`); the NODISK row has no drive
 Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
     nodisk  Philips_VG_8020         vs  C-BIOS_MSX1_EU_REPACK_NODISK
     disk    Philips_VG_8020_NMS1200 vs  C-BIOS_MSX1_EU_REPACK_DISK
@@ -47,6 +54,26 @@ DONE, CAP, CAPLEN, KEYREADY = 0xE000, 0xE001, 0xFF, 0xE100
 # here is excused only while ours still reads the pinned value -- the reference's is
 # free -- so a fix (or a regression) of ours shows up as a diff again.
 ALLOW = {
+    "b5sound": {
+        0xE010: (0x8F, "R15 at INIT: bit 6 is the joystick-port select, left by the last "
+                       "port read (VG-8020 $CF) -- I/O state, not a BIOS contract"),
+        0xE00C: (0x00, "R11 at INIT: the VG-8020's GICINI leaves $0B there -- D-PSGINIT"),
+        0xE01C: (0x00, "R11 after GICINI: the VG-8020 $0B -- D-PSGINIT"),
+        0xE02C: (0x00, "R11 after the tone writes (still GICINI's): $0B there -- D-PSGINIT"),
+        0xE051: (0xFE, "R0 after BEEP: the VG-8020 leaves $55 -- D-PSGINIT"),
+        0xE052: (0x01, "R1 after BEEP: the VG-8020 leaves $00 -- D-PSGINIT"),
+        0xE001: (0x00, "R0 at INIT, disk row: $55 on the VG-8020 + NMS 1200 (a beep at its "
+                       "boot, kept by GICINI) -- D-PSGINIT"),
+        0xE011: (0x00, "R0 after GICINI, disk row: $55 there -- D-PSGINIT"),
+    },
+    "b6slots": {
+        0xE00B: (0x80, "EXPTBL slot 3 expanded: ours (RAM 3-0, disk 3-1, sub 3-2), the "
+                       "VG-8020's is not -- hardware, not the BIOS"),
+    },
+    "b8save": {
+        0xA002: (0xC9, "$F37D with no disk interface: ours RET, the VG-8020 $00 -- filed "
+                       "(D-F37DNODISK); a ROM checks H.PHYD first, as this one does"),
+    },
     "b1text": {
         0xE002: (0x0A, "CSRY at INIT: where the boot banner left the cursor (VG-8020 "
                        "row 15, ours 10) -- presentational, a cartridge's CLS hides it"),
@@ -61,7 +88,8 @@ ROWS = {
 
 
 def settings(asm_text: str) -> dict:
-    s = {"keys": None, "matrix": None, "vram": None, "timeout": 30.0}
+    s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
+         "cap": DONE, "type_at": None}
     for m in re.finditer(r"^;\s*@([\w-]+)\s+(.*?)\s*$", asm_text, re.M):
         k, v = m.group(1), m.group(2)
         if k == "keys":
@@ -69,11 +97,18 @@ def settings(asm_text: str) -> dict:
         elif k == "matrix":                 # ROW MASK: a raw key-matrix press
             r, mk = v.split()
             s["matrix"] = (int(r), int(mk, 16))
+        elif k == "cap":                    # DONE's address (hex); CAP = +1, KEYREADY = +$100
+            s["cap"] = int(v, 16)
+        elif k == "type-at":                # SECONDS TEXT: typed at that emulated time
+            t, _, txt = v.partition(" ")
+            s["type_at"] = (float(t), txt)
+        elif k == "disk":                   # empty: a copy of disk/empty720.dsk
+            s["disk"] = v
         elif k == "timeout":
             s[k] = float(v)
         elif k == "vram":
             a, n = v.split(":")
-            s["vram"] = (int(a, 16), int(n, 16))
+            s["vram"].append((int(a, 16), int(n, 16)))
     return s
 
 
@@ -94,8 +129,9 @@ def build(rung: str, td: str) -> str:
     return rom
 
 
-def run(machine: str, rom: str, st: dict, td: str):
+def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     out = os.path.join(td, machine + ".txt")
+    DONE, CAP, KEYREADY = st["cap"], st["cap"] + 1, st["cap"] + 0x100
     keys = ""
     if st["keys"]:
         keys = (f"  if {{$::typed == 0 && [debug read memory {KEYREADY}] == 1}} "
@@ -106,10 +142,14 @@ def run(machine: str, rom: str, st: dict, td: str):
                  f"{{ set ::typed 1; keymatrixdown {r} {mk:#x}; "
                  f"after time 0.3 {{keymatrixup {r} {mk:#x}}} }}\n")
     vram = ""
-    if st["vram"]:
-        a, n = st["vram"]
-        vram = f'  binary scan [debug read_block VRAM {a} {n}] H* vr\n  puts $f "VRAM $vr"\n'
-    tcl = ("set throttle off\nset ::typed 0\n"
+    for i, (va, vn) in enumerate(st["vram"]):
+        vram += (f'  binary scan [debug read_block VRAM {va} {vn}] H* vr\n'
+                 f'  puts $f "VRAM{i} $vr"\n')
+    at = ""
+    if st["type_at"]:
+        t, txt = st["type_at"]
+        at = f'after time {t} {{type "{txt}"}}\n'
+    tcl = ("set throttle off\nset ::typed 0\n" + at +
            "proc biosl_poll {} {\n" + keys +
            f"  if {{[debug read memory {DONE}] == 0xA5 || [machine_info time] > {st['timeout']}}} {{\n"
            f"    set f [open {{{out}}} w]\n"
@@ -128,9 +168,17 @@ def run(machine: str, rom: str, st: dict, td: str):
            "after time 1 biosl_poll\n")
     script = os.path.join(td, machine + ".tcl")
     open(script, "w").write(tcl)
+    media = []
+    if disk and st["disk"]:
+        src = os.path.join(REPO, "disk", "empty720.dsk")
+        if not os.path.isfile(src):
+            sys.exit("@disk empty: disk/empty720.dsk is missing -- `make test-dsk`")
+        dsk = os.path.join(td, machine + ".dsk")
+        shutil.copyfile(src, dsk)
+        media = ["-diska", dsk]
     subprocess.run(omsx_preflight.guarded(
-        [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom,
-         "-command", "set renderer none; set sound_driver null", "-script", script]),
+        [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
+        ["-command", "set renderer none; set sound_driver null", "-script", script]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
     if not os.path.exists(out):
         return None
@@ -178,7 +226,8 @@ def one(rung: str, rows: str) -> int:
         rom = build(a.rung, td)
         for row in (("nodisk", "disk") if a.row == "both" else (a.row,)):
             ref_m, zb_m = ROWS[row]
-            ref, zb = run(ref_m, rom, st, td), run(zb_m, rom, st, td)
+            ref = run(ref_m, rom, st, td, disk=(row == "disk"))
+            zb = run(zb_m, rom, st, td, disk=(row == "disk"))
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
             bad = [n for n, g in (("ref", ref), ("ours", zb))
                    if not g or g.get("DONE") != "165"]
@@ -188,15 +237,20 @@ def one(rung: str, rows: str) -> int:
                 rc = max(rc, 2)
                 if not (ref and zb):
                     continue
-            d = diff("CAP", bytes.fromhex(ref["CAP"]), bytes.fromhex(zb["CAP"]), CAP)
-            if st["vram"]:
-                d += diff("VRAM", bytes.fromhex(ref["VRAM"]), bytes.fromhex(zb["VRAM"]),
-                          st["vram"][0])
+            d = diff("CAP", bytes.fromhex(ref["CAP"]), bytes.fromhex(zb["CAP"]), st["cap"] + 1)
+            for i, (va, _) in enumerate(st["vram"]):
+                d += diff("VRAM", bytes.fromhex(ref[f"VRAM{i}"]),
+                          bytes.fromhex(zb[f"VRAM{i}"]), va)
             print(f"  VDP R#1 at the dump: ref {ref.get('VDPR1')}, ours {zb.get('VDPR1')}")
             print(f"  ref : {ref.get('SYS')}\n  ours: {zb.get('SYS')}")
-            print(f"  CAP ref : {ref['CAP'][:64]}")
-            print(f"  CAP ours: {zb['CAP'][:64]}")
+            def trimmed(h):                 # up to the last non-zero byte, >= 32 B
+                b = bytes.fromhex(h)
+                end = max(32, len(b.rstrip(b"\0")))
+                return b[:end].hex()
+            print(f"  CAP ref : {trimmed(ref['CAP'])}")
+            print(f"  CAP ours: {trimmed(zb['CAP'])}")
             zbcap = bytes.fromhex(zb["CAP"])
+            CAP = st["cap"] + 1
             unexcused, excused = [], []
             for line in d:
                 addr = int(line.split()[1].rstrip(":"), 16)

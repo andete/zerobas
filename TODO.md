@@ -16605,7 +16605,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-09-04; B1's disk row measured 37 at INIT on the VG-8020 + NMS 1200). 📏
       [`biosl_acc1.out`](scratchpad/biosl_acc1.out): both rows SAME but two pinned bytes -- CSRY at INIT
       (banner position, presentational) and CRTCNT after DSPFNK (the filed "CRTCNT UNDER
-      KEY ON" item, rediscovered). ➡️ Next: B2 VDP.
+      KEY ON" item, rediscovered).
+      ✅ **B2-B6, B8 (2026-11-10)** -- one `biosl_run.py --all` run, both rows ([`biosl_all_run2.out`](scratchpad/biosl_all_run2.out)): B2 VDP
+      (CHGMOD 1 / 2 / 3, FILVRM / LDIRVM / RDVRM / WRTVRM / LDIRMV, CHGCLR, WRTVDP, GSPSIZ,
+      CALPAT / CALATR, CLRSPR; the shadows, table bases and VRAM -- NOT the pattern table:
+      the font is C-BIOS's own, every glyph differs by design) SAME; B3 interrupts (JIFFY,
+      an H.TIMI and an H.KEYI handler in the cartridge, a DI stretch, unhooking, STATFL)
+      SAME; B4 input (GTSTCK, GTTRIG, SNSMAT, CHSNS, CHGET, KILBUF around a raw key-matrix
+      press) SAME; B6 slots (RDSLT of its own header, page 3's RAM into page 2 by ENASLT,
+      WRSLT / RDSLT and their register contract) SAME but EXPTBL's slot 3 (hardware,
+      pinned); B8 the save game -- hooked on H.STKE by an RST 30h inter-slot call, $F37D
+      FMAKE / WRBLK / FCLOSE / FOPEN / RDBLK and PHYDIO write / read of the last sector, a
+      canary at $C000 -- SAME on the disk row (our disk machine asks the date first, a
+      CF-3300 behaviour the NMS 1200 does not have: the rung types a CR); its NODISK row:
+      $F37D holds $C9 here, $00 on the VG-8020 (pinned, D-F37DNODISK). B5 sound: see
+      D-PSGINIT (pinned until fixed). The harness grew `@matrix`, several `@vram`, `@disk`,
+      `@cap`, `@type-at`. ➡️ B7 (tape) is the one rung left.
+
+- [ ] 🔴 **D-BDOSSEQ — PUSHED REGRESSION: $F37D WRRND ON AN FMAKE'D, STILL-OPEN FILE NEVER RETURNS
+      (found 2026-11-10 by D-BDOSFCB stage C's check, scratchpad/bdosset_probe.py)**
+      🎚️ TIER 1 — happy path of a BDOS entry from BASIC (the entry-point ruling).
+      🤖 **AUTONOMOUS** — bdosset's sequence (FMAKE PROBE.TMP, one SEQWRITE, RENAME of a
+      missing file, SETRND, RDRND, then WRRND): the CF-3300 answers WRRND A = 1 (and FSIZE 0,
+      WRBLK 1, ...); zerobas never returns from WRRND ([`bdosset_head.out`](scratchpad/bdosset_head.out): done-flag stops
+      after RDRND). Bisected in the gate worktree: fine at 6d554edd (every random row $FF,
+      [`bdosset_6d55.out`](scratchpad/bdosset_6d55.out)), stalled at ba7204d7 ([`bdosset_ba72.out`](scratchpad/bdosset_ba72.out)) and at HEAD -- introduced by
+      D-BDOSFCB stage A (d0d2984d: $22 routed to wrrnd_body). bdos-acceptance and the DOS
+      ladder never ran this sequence. ⚠️ The uncommitted stage C (DELETE / RENAME to the
+      kernel bodies) changes the outcome -- the random rows then answer $FF at once -- so
+      stage C waits for this. ➡️ Next: a row-by-row probe of just this sequence; a trace
+      from a breakpoint CALLBACK with `debug step` deadlocks openMSX (wrrnd_hang.py, timed out).
+
+- [ ] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
+      (found 2026-11-10 by D-BIOSLADDER B5)**
+      🎚️ TIER 1 — main-BIOS entries on par (the entry-point ruling).
+      🤖 **AUTONOMOUS** — [`biosl_all_run1.out`](scratchpad/biosl_all_run1.out) b5sound: after GICINI the VG-8020 has R11 = $0B
+      (envelope period low), ours 0; after BEEP it leaves R0 / R1 = $0055, ours the tone the
+      program set before; on the VG-8020 + NMS 1200 R0 = $55 already at a cartridge's INIT and
+      after GICINI (a boot beep, which its GICINI leaves alone). R15 ($CF there, $8F here at
+      INIT) is the joystick-port select of the last read: pinned, not filed. All pinned in
+      biosl_run.py ALLOW until fixed. GICINI is C-BIOS's (a repack patch -- mind the address
+      cascade above $0F66); BEEP is ours (basic/biosfnk.asm bios_beep).
+
+- [ ] **D-F37DNODISK — WITH NO DISK INTERFACE $F37D HOLDS $C9 HERE, $00 ON THE VG-8020
+      (found 2026-11-10 by D-BIOSLADDER B8's NODISK row)**
+      🎚️ TIER 6 — a work-area cell nobody should call without checking H.PHYD first.
+      🤖 **AUTONOMOUS** — pinned in biosl_run.py ALLOW (b8save $A002). Find what writes $C9
+      there on the diskless target, and whether the VG-8020's $00 is worth matching (a CALL
+      $F37D there runs into $00s; ours returns).
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

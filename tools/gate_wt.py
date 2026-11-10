@@ -40,6 +40,7 @@ Edits, builds, host unit tests and the static tools are fine.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -96,6 +97,18 @@ def seed_share(dst: str) -> None:
             shutil.copyfile(s, d)           # openMSX rewrites it on exit: a COPY
         else:
             os.symlink(s, d)
+
+
+def stamp_only(old: str, new: str) -> bool:
+    """True when two JSON texts differ in nothing but a top-level "written" stamp."""
+    try:
+        a, b = json.loads(old), json.loads(new)
+    except ValueError:
+        return False
+    if isinstance(a, dict) and isinstance(b, dict):
+        a.pop("written", None)
+        b.pop("written", None)
+    return a == b
 
 
 def copy_state(src_root: str, dst_root: str) -> None:
@@ -182,6 +195,13 @@ def run(a) -> int:
         elif sh(["python3", "-u", "scratchpad/tapecorpus_run.py"], env, "tape corpus"):
             fails.append("tape corpus")
         moved = [f for f in git("diff", "--name-only", cwd=WT).splitlines() if f]
+        # a re-pin whose ONLY change is its "written" stamp is the same pin: restore it,
+        # so the battery gates exactly the commit and nothing needs an amend
+        for f in [m for m in moved if m.endswith(".json")]:
+            if stamp_only(git("show", f"HEAD:{f}", cwd=WT), open(os.path.join(WT, f)).read()):
+                git("checkout", "-q", "--", f, cwd=WT)
+                moved.remove(f)
+                say(f"(re-pinned {f}: only its \"written\" stamp moved -- restored)")
         if moved:
             keep = os.path.join(OUTDIR, f"{short}.changed")
             for f in moved:
