@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: disk-ROM fren_body ($17 FREN rename) collision pre-check, no
+"""Unit test: disk-ROM FREN ($17 rename) collision pre-check -- fren_wild since
+D-FRENWILD (2026-11-10; it was fren_body, which found one exact match) -- no
 emulator (mirrors test_fat_dir_create.py's synthetic-root-dir technique).
 
 M35 (tier2-m35-m36-tierc-fixes-spec.md): fren_body must refuse a rename onto
@@ -152,7 +153,7 @@ def run():
                  dir_entry("RENDST.TMP", cluster=9, size=200)])
     disk.install(m)
     setup_fcb(m, "RENSRC.TMP", "RENDST.TMP")
-    cpu = m.call("fren_body", de=FCB)
+    cpu = m.call("fren_wild", de=FCB)   # D-FRENWILD: the FREN body since 2026-11-10
     check(carry(cpu), "fren collision: Cy=1 (rename refused)")
     check(cpu.a == 0xFF, f"  A={cpu.a:#04x} (want 0xFF)")
     check(disk.entry(0) == n83("RENSRC.TMP"), "  slot 0 (RENSRC.TMP) untouched")
@@ -163,7 +164,7 @@ def run():
     disk2 = Disk([dir_entry("RENSRC.TMP", cluster=5, size=100)])
     disk2.install(m2)
     setup_fcb(m2, "RENSRC.TMP", "RENDST.TMP")
-    cpu2 = m2.call("fren_body", de=FCB)
+    cpu2 = m2.call("fren_wild", de=FCB)
     check(not carry(cpu2), "fren no-collision: Cy=0 (rename succeeds)")
     check(cpu2.a == 0, f"  A={cpu2.a:#04x} (want 0x00)")
     check(disk2.entry(0) == n83("RENDST.TMP"), "  slot 0 renamed to RENDST.TMP")

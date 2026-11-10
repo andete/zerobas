@@ -16386,8 +16386,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
-- [ ] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
+- [x] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
       (found 2026-11-10 by D-DOSLADDER's D5, REN / DEL)**
+      ✅ **FIXED THE SAME DAY, WITH ITS TWIN D-FDELWILD.** fren_wild (disk/kernel.asm): one pass over
+      the root BY INDEX (fr_entry, disk/fat.asm -- the old body's room; it skips the read
+      when FAT_DIRSEC already holds the sector), every name_cmp_wild match renamed with `?`
+      keeping the entry's own byte, the built name in a 12-byte stack frame, refused ($FF)
+      when it exists. Room: the region in front of $75A5 (151 -> 5 B), fw_refuse in the
+      $4C29 hole, fw_done in the 17 bytes between the FDC window and $7FD1 (exactly full).
+      🔴 **AND FDEL DELETED ONE MATCH ONLY** (D-FDELWILD): after FDEL "Z?.TMP" one .TMP file was
+      left here, none on the CF-3300. fdel_body now repeats fdel_one until nothing matches
+      ($FF only when the first pass finds nothing; an I/O error's 2 passed through). 🔴 A
+      register the gate pins: FREN's success left HL = the stack address (BDOSX3 rec 14,
+      H = $DB where the CF-3300 has 0) -- fw_done returns HL = 0 now (BDOSX3 needs one fewer
+      allowlist excuse). 📏 [`dosl_d5_3.out`](scratchpad/dosl_d5_3.out): **D5 BYTE-IDENTICAL**; bdos-acceptance with D5 (BDOSX3 /
+      BDOSX7's FREN rows green); diskbasic-acceptance 35/35 (NAME, KILL with wildcards).
       🎚️ TIER 1 — happy path of BDOS $17 FREN: `REN X?.TMP Z?.TMP` is how REN is used.
       🤖 **AUTONOMOUS** — 📏 probes/disk/dosl/d5rendel.asm ([`dosl_d5_1.out`](scratchpad/dosl_d5_1.out)): after FREN "X?.TMP" ->
       "Z?.TMP" the CF-3300 has Z1.TMP and Z2.TMP (A = 0; "Z?.TMP" counts 2); then FREN Y.TMP ->
@@ -16440,7 +16453,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       what COMMAND.COM's DIR READS, and DIR never reads those. The final copy now starts at
       entry[15] (0 B). 📏 [`dosl_d4_4.out`](scratchpad/dosl_d4_4.out): **D4 BYTE-IDENTICAL (108 bytes)**; bdos-acceptance 21/21
       with it; p1dta-acceptance green.
-      🔴 **D5 (REN / DEL) FOUND D-FRENWILD (2026-11-10)** -- parked until it lands.
+      🔴 **D5 (REN / DEL) FOUND D-FRENWILD AND D-FDELWILD (2026-11-10)** -- both fixed; D5 is a
+      bdos-acceptance row. Next: D6, a random-access file (WRRND / RDRND, WRZER, RDBLK /
+      WRBLK, FSIZE, SETRND).
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

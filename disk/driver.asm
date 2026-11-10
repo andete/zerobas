@@ -251,7 +251,7 @@ install_hook:
                 ret
                 ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
-                jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)
+                jp      fren_wild           ; $4392: BDOS $17 FREN canonical entry (M26; D-FRENWILD)
 ; fdc_seek -- D-DISKCARVE2's helper (seek to track D, wait); here since D-DSKCHG,
 ; whose stamp needed the bytes beside fdc_prep. Entered only by `call`.
 fdc_seek:

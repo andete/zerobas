@@ -4530,6 +4530,113 @@ wz_out:
                 ret
 
 
+; fren_wild -- BDOS $17 FREN (D-FRENWILD, 2026-11-10). The FCB holds the OLD name /
+; pattern at +1..11 and the NEW at +17..27. EVERY root entry matching the old pattern
+; (name_cmp_wild; volume labels and directories skipped) is renamed: new[k] = the
+; new pattern's byte, or the entry's own where that byte is `?` -- the CF-3300 turns
+; "X?.TMP" -> "Z?.TMP" into X1 -> Z1, X2 -> Z2 (probes/disk/dosl/d5rendel.asm,
+; scratchpad/dosl_d5_1.out). A built name that already exists is refused: A = $FF
+; (the CF-3300 refuses Y.TMP -> Z1.TMP). Nothing matched: A = $FF; an I/O error: 2.
+; ONE pass by entry index (fr_entry), so a renamed entry that still matches is not
+; visited again. The built name lives in a 12-byte stack frame (fat_find overwrites
+; FAT_DBUF; FAT_MBUF holds the FAT cache): at SP+4 inside the loop. Neither the DTA
+; nor SFIRST / SNEXT's BDOS_SRCHIDX is touched. (The old body found the OLD name with
+; fat_find -- an EXACT compare -- and copied the new pattern verbatim, `?` included.)
+fren_wild:
+                push    de
+                pop     ix                  ; IX = the FCB
+                call    fat_mount
+                jp      c, fren_miss
+                ld      hl, 0
+                ld      (FAT_DIRSEC), hl    ; no root sector held yet (fr_entry)
+                push    hl
+                push    hl
+                push    hl
+                push    hl
+                push    hl
+                push    hl                  ; the frame (12 B): SP+4 = the built name
+                push    hl                  ; [cnt]
+                push    hl                  ; [idx][cnt]
+fw_lp:
+                pop     hl
+                push    hl
+                call    fr_entry            ; HL = entry idx
+                jr      c, fw_end
+                ld      a, (hl)
+                or      a
+                jr      z, fw_end           ; the end mark
+                cp      $E5
+                jr      z, fw_next          ; deleted
+                push    hl
+                ld      de, 11
+                add     hl, de
+                ld      a, (hl)
+                and     $18                 ; a volume label or a directory
+                push    ix
+                pop     de
+                inc     de                  ; DE = the old pattern
+                pop     hl
+                jr      nz, fw_next
+                push    hl
+                call    name_cmp_wild
+                pop     de                  ; DE = the entry
+                jr      nz, fw_next
+                ld      hl, 4
+                add     hl, sp
+                ex      de, hl              ; DE = the frame, HL = the entry
+                push    ix
+                ld      b, 11
+fw_q:
+                ld      a, (ix+17)          ; the new pattern's byte ...
+                cp      '?'
+                jr      nz, fw_q1
+                ld      a, (hl)             ; ... or, for `?`, the entry's own
+fw_q1:
+                ld      (de), a
+                inc     hl
+                inc     de
+                inc     ix
+                djnz    fw_q
+                pop     ix
+                ld      hl, 4
+                add     hl, sp
+                call    fat_find            ; Cy = 0: the built name exists
+                jp      nc, fw_refuse       ; (disk/fat.asm, in the $4C29 hole)
+                pop     hl
+                push    hl
+                call    fr_entry            ; the entry again (fat_find read others)
+                jr      c, fw_io
+                ex      de, hl
+                ld      hl, 4
+                add     hl, sp
+                ld      bc, 11
+                ldir                        ; the new name into the entry
+                ld      de, (FAT_DIRSEC)
+                ld      hl, FAT_DBUF
+                call    write_sector
+                jr      c, fw_io
+                pop     hl
+                pop     de
+                inc     de                  ; one more renamed
+                push    de
+                push    hl
+fw_next:
+                pop     hl
+                inc     hl
+                push    hl
+                jr      fw_lp
+fw_end:
+                pop     hl
+                pop     de                  ; DE = how many renamed
+                ld      a, d
+                or      e                   ; Z: none
+                jp      fw_done             ; (disk/runtime.asm, above the FDC window)
+fw_io:
+                ld      hl, 16
+                add     hl, sp
+                ld      sp, hl
+                jp      fren_ioerr
+
 ; seq_k_adv -- BDOS_SEQREC += 1 = K; the kernel FCB copy's +32 CR := K AND $7F and
 ; +12 EX := K >> 7; HL = K. seq_k30 -- +30 := (K - 1) / records-per-cluster, from
 ; HL = K. Both stood twice, in wrseq_writeback and wrseq_wr_writeback (D-DSKFMT
@@ -8396,7 +8503,31 @@ wba_loop:
 ; write_sector never touch IX -- only fopen_fill_body/fren_body do, in
 ; disk/fat.asm), so re-deriving the name pointer for the second fat_find is
 ; just IX+1 again.
+; 🔴 D-FDELWILD (2026-11-10): EVERY MATCH IS DELETED, as on the CF-3300 -- FDEL "Z?.TMP"
+; over Z1.TMP and Z2.TMP left neither there and one here (probes/disk/dosl/d5rendel.asm,
+; scratchpad/dosl_d5_2.out). fdel_one deletes the first match; this repeats it until
+; none is left (a deleted entry is $E5 and no longer matches). $FF only when the
+; FIRST pass finds nothing; an I/O error (2) is passed through.
 fdel_body:
+                push    de
+                call    fdel_one
+                pop     de
+                or      a
+                ret     nz                  ; nothing matched ($FF) or an I/O error
+fdel_more:
+                push    de
+                call    fdel_one
+                pop     de
+                or      a
+                jr      z, fdel_more        ; another one gone
+                cp      $FF
+                ret     nz                  ; an I/O error: A = 2, as fdel_one left it
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      h, a
+                ld      l, a                ; HL = $0000 on success (pinned exit value)
+                ret
+fdel_one:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer (held throughout)
                 push    ix

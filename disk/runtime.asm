@@ -771,7 +771,21 @@ cr_copy2:                                   ; (cr_copy1's second half, disk/kern
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)
                 ENDIF
-                ds      $7FD1 - $, $00      ; skip OVER the dead $7F80-$7FBF FDC window
+                ds      $7FC0 - $, $00      ; skip OVER the dead $7F80-$7FBF FDC window
+; fw_done -- fren_wild's end (disk/kernel.asm): [idx][cnt] and the frame dropped; A =
+; $FF when nothing was renamed, else 0. Here, in the 17 bytes between the FDC window
+; and conout_emit_e's $7FD1 pin, for the room in front of $75A5 (D-FRENWILD).
+fw_done:                                    ; Z = nothing renamed (fw_end's `or`)
+                ld      hl, 12
+                add     hl, sp              ; (keeps Z)
+                ld      sp, hl              ; the frame dropped
+                jp      z, fren_miss        ; nothing matched: $FF
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      h, a
+                ld      l, a                ; HL = 0, as the CF-3300 leaves it (BDOSX3 rec 14)
+                ret
+                ds      $7FD1 - $, $00
 ; ===== M22b slice 2: conout_emit_e, ABOVE the FDC window =====================
 ; conout_body's stub + conout_tab (below the window) reach this by absolute call. The
 ; `ds` above pins it at $7FD1 -- above the window top $7FBF -- so its own instruction

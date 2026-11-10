@@ -114,6 +114,9 @@ EXERCISERS = [
     # D4: DIR -- "*.COM" through SFIRST / SNEXT (names, sizes, the first raw DTA),
     # counts of "*.SYS" / "*.*", ALLOC. It found the DTA's entry[15..21] zeroed.
     ("DOSL-D4", "build_dosl_disk.py", ["--prog", "d4dir", "--settle", "150"]),
+    # D5: REN / DEL -- a wildcard FREN, FREN of a missing file and onto an existing
+    # name, wildcard FDEL; it found D-FRENWILD and D-FDELWILD (one match only).
+    ("DOSL-D5", "build_dosl_disk.py", ["--prog", "d5rendel", "--settle", "150"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

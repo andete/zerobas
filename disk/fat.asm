@@ -1270,6 +1270,14 @@ br2_end:
 ; Keeps A (INIT's 0 is still needed after the call).
 ; (rh_init moved to disk/kernel.asm beside rh_flush, D-WRZER: this fill gave its
 ; 7 bytes to WRZER's $47D1 veneer.)
+; fw_refuse -- fren_wild's refusal (disk/kernel.asm): a built name already exists.
+; [idx][cnt] and the 12-byte frame dropped, A = $FF. (Here, in the $4C29 hole, for
+; the room in front of $75A5: D-FRENWILD.)
+fw_refuse:
+                ld      hl, 16
+                add     hl, sp
+                ld      sp, hl
+                jp      fren_miss
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz
@@ -1682,41 +1690,53 @@ ffb_rcok:
 ; so IX (the FCB pointer, loaded once at entry) survives this extra call
 ; unclobbered and is simply re-derived into DE for the real old-name find
 ; below, byte-unchanged from the pre-M35 body.
-fren_body:
-                push    de
-                pop     ix                  ; IX = FCB pointer
-                push    ix
+; fr_entry -- D-FRENWILD: HL = a root-directory entry index -> HL = that entry in
+; FAT_DBUF (its sector read, FAT_DIRSEC = it; the read SKIPPED when FAT_DIRSEC already
+; names it -- fat_find and this keep the two together); Cy = past the root, or the
+; read failed. Clobbers A, BC, DE.
+fr_entry:
+                push    hl
+                ld      b, 4
+fre_shr:
+                srl     h
+                rr      l
+                djnz    fre_shr             ; HL = the sector within the root
+                push    hl
+                call    fat_rootsecs
                 pop     de
-                call    fat_mount
-                jr      c, fren_miss
-                ; --- M35 collision pre-check: new name (FCB+17) must NOT already exist ---
-                push    ix
+                scf
+                sbc     hl, de              ; Cy: past the root (sector >= rootsecs)
+                jr      c, fre_out
+                ld      hl, (FAT_FIRSTROOT)
+                add     hl, de
+                ex      de, hl              ; DE = the sector
+                ld      hl, (FAT_DIRSEC)
+                or      a
+                sbc     hl, de
+                jr      z, fre_have         ; already in FAT_DBUF
+                ld      (FAT_DIRSEC), de
+                ld      hl, FAT_DBUF
+                call    read_sector
+                jr      c, fre_out
+fre_have:
                 pop     hl
-                ld      bc, 17
-                add     hl, bc              ; HL -> FCB+17 (new 8.3 name, fat_find's contract)
-                call    fat_find            ; Cy=0 -> new name FOUND (collision)
-                jr      nc, fren_miss       ; refuse the rename, stock-matching A=$FF exit
-                ; --- fall through: new name is free; proceed with the OLD-name find + rename ---
-                push    ix
-                pop     de
-                inc     de                  ; DE -> FCB+1 (old 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
-                call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
-                jr      c, fren_miss
-                ex      de, hl              ; DE = &matched dirent (write destination)
-                push    ix
-                pop     hl
-                ld      bc, 17
-                add     hl, bc              ; HL = FCB+17 (new 8.3 name, source)
-                ld      bc, 11
-                ldir                        ; overwrite the dirent's name in place
-                ld      de, (FAT_DIRSEC)
-                ld      hl, (DBUF_PTR)
-                call    write_sector
-                jr      c, fren_ioerr
-                xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      a, l
+                and     15
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; (index AND 15) * 32
+                ld      de, FAT_DBUF
+                add     hl, de              ; Cy = 0
                 ret
+fre_out:
+                pop     hl
+                scf
+                ret
+
 fren_miss:
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
