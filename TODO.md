@@ -16440,6 +16440,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       diskbasic-acceptance green; tests/test_rrnd_8bit_limit.py and test_wrrnd_extend.py fill
       the FCB's +26 as FOPEN does, and the latter expects the entry unchanged until FCLOSE.
 
+- [x] 🔴 **D-WRBLKTRUNC — WRBLK OF 0 RECORDS TRUNCATED THE CHAIN BUT NOT THE FCB, SO FCLOSE WROTE
+      THE OLD SIZE BACK (found and fixed 2026-11-10 by D-DOSLADDER's D7)**
+      🎚️ TIER 1 — happy path of BDOS $26 WRBLK with HL = 0, the documented way to set a file's
+      size: an editor or sort that rewrites a shorter file.
+      📏 probes/disk/dosl/d7sort.asm: SORTED.TXT written as 20 x 128 by one WRBLK, then WRBLK
+      of 0 at RR 10. The CF-3300 sets the FCB's size to 1280 and leaves the directory entry
+      to FCLOSE ([`dosl_d7_trunc_stock.out`](scratchpad/dosl_d7_trunc_stock.out)). Ours freed the tail cluster and wrote the ENTRY
+      (1280) but left FCB +16..19 at 2560 ([`dosl_d7_trunc_ours.out`](scratchpad/dosl_d7_trunc_ours.out)); FCLOSE writes the entry
+      from the FCB (cr_dir), so the file closed at 2560 B on a 2-cluster chain -- FSIZE 20
+      records where the CF-3300 says 10. ✅ wrblk_zero_path calls wrblk_fcb_keep, as the
+      record path does, instead of fat_dir_update (2 B less). 📏 [`dosl_d7_fix.out`](scratchpad/dosl_d7_fix.out): sizes and
+      FSIZE match; the 6 bytes left are the CF-3300's OWN truncate bug -- its FCLOSE answers
+      $FF and never writes the FAT chain, so the file's clusters read free and RDRND reads
+      them as garbage -- the signed-off divergence (disk/docs/diskbasic-option-surface.md,
+      "`$26` WRBLK shrink"), whose "ours correct" was not true until this fix. The gate pins
+      OUR value at each of those bytes (an `(ours, reason)` allowlist entry), so the excuse
+      cannot hide a regression of ours. Knife: the old two lines put back turn DOSL-D7 RED
+      on exactly the size and FSIZE bytes ([`d7row_knife.out`](scratchpad/d7row_knife.out)).
+
 - [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
       2026-11-09)**
       🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
@@ -16481,6 +16500,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the anchor address with the same arm byte ($02 at $0102); every rung now leads with
       `jr start` / `db $Dn` (D2..D6; D2..D5 had verified real values, but carried the same
       risk). Next: D7, the mini editor / sort.
+      🔴 **D7 (EDITOR / SORT) FOUND D-WRBLKTRUNC (2026-11-10)** -- fixed; D7 is a bdos-acceptance
+      row. Its first cuts "anchored" at t = 14.93 on the CF-3300, MID-FMAKE: `done` sat at
+      $0288 and a breakpoint is by ADDRESS, so it fired while the BDOS call had page 0
+      switched to the main ROM (the call log showed FMAKE at 14.9317 and all 81 calls running
+      on). Not a refcache replay (ZEROBAS_REFCACHE=0 gave the same). The capture now takes
+      `--at-cond '![pc_in_slot 0]'` and the rungs with an `armpt` arm on three bytes, slot-
+      guarded (probes/disk/build_dosl_disk.py). Next: D1, the console rung (CONOUT, STROUT,
+      BUFIN, version) -- the only one never built.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

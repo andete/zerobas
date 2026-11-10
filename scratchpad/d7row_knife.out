@@ -1,0 +1,20 @@
+
+===== DOSL-D7 (build_dosl_disk.py) =====
+  FAIL  DOSL-D7 capture 0x0400:0x20: BYTE DIFF (2 UNEXCUSED: 040D, 0414; 6 allowlisted; regs: AF, HL, IX)
+    --- probe tail ---
+
+  memory 0x0400+32: 8 of 32 bytes differ
+    040B: stock=FF ours=00
+    040D: stock=05 ours=0A
+    0414: stock=0A ours=14
+    0419: stock=E5 ours=0A
+    041A: stock=01 ours=00
+    041B: stock=EE ours=08
+    041C: stock=01 ours=00
+    041D: stock=EE ours=09
+
+  register diffs: AF, HL, IX
+
+===== BDOSX acceptance: 0/1 gated differentials converged (0 screen skipped) =====
+DIVERGENCE — the BDOS surface no longer matches stock:
+  - DOSL-D7 capture 0x0400:0x20: BYTE DIFF (2 UNEXCUSED: 040D, 0414; 6 allowlisted; regs: AF, HL, IX)

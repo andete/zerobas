@@ -5,7 +5,9 @@
 """Build the throwaway disk for one D-DOSLADDER rung (TODO.md): assemble
 probes/disk/dosl/<prog>.asm with pasmo, inject <PROG>.COM + an AUTOEXEC.BAT that
 runs it into a copy of an MSX-DOS 1 disk image (disk_probe_bdos.fat12_add), and
-print the disk_probe_diff.py capture command -- `done` the anchor, the 16-byte
+print the disk_probe_diff.py capture command -- `done` the anchor (armed on the byte at
+$0102: the program's ARMSIG, written there at run time and tested at its `armpt`
+label, when it defines one; else the file's own byte, tested at $0100), the 16-byte
 `cap` block (or the program's own `cap` .. `cap_end`) the compared region.
 
 Usage:
@@ -65,7 +67,17 @@ def main() -> int:
     print(f"done = {syms['done']:#06x}")
     print()
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {syms['done']:#06x} --arm-check-val {com[2]:#04x} "
+          f"--at {syms['done']:#06x} --at-cond '![pc_in_slot 0]' " + (
+              # armpt: ($0102) = ARMSIG AND the program's own `ld a, ARMSIG` at $0103.
+              # One byte alone is a coincidence class: D7's first try armed on the
+              # CF-3300's resident code, which passes $0108 with $D7 at $0102, and
+              # anchored before the .COM was even loaded (a one-byte arm test).
+              f"--arm-addr {syms['armpt']:#06x} --arm-cond '![pc_in_slot 0] && "
+              f"[debug read memory 0x0102] == {syms['ARMSIG']:#04x} && "
+              f"[debug read memory 0x0103] == 0x3e && "
+              f"[debug read memory 0x0104] == {syms['ARMSIG']:#04x}' "
+              if 'armpt' in syms else
+              f"--arm-check-val {syms.get('ARMSIG', com[2]):#04x} ") +
           f"--settle {args.settle} --machine both "
           f"--mem {syms['cap']:#06x}:{size:#x} --diska {out}")
     return 0

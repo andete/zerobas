@@ -238,7 +238,14 @@ def mode_callseq(args) -> int:
 
 # ---- mode: capture -------------------------------------------------------------
 def _capture_arm(at_addr: int, nth: int, mem: tuple[int, int] | None,
-                  arm_addr: int | None = None, arm_cond: str | None = None) -> str:
+                  arm_addr: int | None = None, arm_cond: str | None = None,
+                  at_cond: str | None = None) -> str:
+    # at_cond (opt-in): a Tcl condition on the ANCHOR breakpoint itself. An anchor below
+    # $4000 also fires when page 0 is switched to the main ROM inside a BDOS call (the
+    # breakpoint is by address, not by slot): D-DOSLADDER D7's `done` at $0288 "hit"
+    # mid-FMAKE on the CF-3300, and the block read was then not the program's memory.
+    # `--at-cond '![pc_in_slot 0]'` counts only hits in the program's own RAM.
+    atc = "{" + at_cond + "}" if at_cond else "{}"
     block = ""
     if mem:
         base, length = mem
@@ -266,7 +273,7 @@ debug set_bp {arm:#06x} {{}} {{
   if {{ {arm_cond} }} {{ set ::armed 1 }}
 }}
 set ::cn 0
-debug set_bp {at_addr:#06x} {{}} {{
+debug set_bp {at_addr:#06x} {atc} {{
   if {{!$::armed}} return
   incr ::cn
   if {{$::cn < {nth}}} return
@@ -277,7 +284,7 @@ debug set_bp {at_addr:#06x} {{}} {{
 """
     return f"""
 set ::cn 0
-debug set_bp {at_addr:#06x} {{}} {{
+debug set_bp {at_addr:#06x} {atc} {{
   incr ::cn
   if {{$::cn < {nth}}} return
   emit [ctx ANCHOR]
@@ -358,7 +365,7 @@ def mode_capture(args) -> int:
     arm_cond = args.arm_cond
     if arm_cond is None and args.arm_check_val is not None:
         arm_cond = f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
-    arm = _capture_arm(args.at, args.nth, mem, args.arm_addr, arm_cond)
+    arm = _capture_arm(args.at, args.nth, mem, args.arm_addr, arm_cond, args.at_cond)
 
     def _body(replay_path: str) -> str:
         """The --settle body. A side that reaches settle WITHOUT hitting the anchor is a
@@ -1248,6 +1255,9 @@ def main() -> int:
     common(p)
     p.add_argument("--at", type=lambda x: int(x, 0), required=True, help="anchor address")
     p.add_argument("--nth", type=int, default=1, help="stop at this occurrence")
+    p.add_argument("--at-cond", default=None,
+                   help="Tcl condition on the anchor breakpoint (e.g. '![pc_in_slot 0]': "
+                        "count only hits outside the main ROM's slot)")
     p.add_argument("--mem", default=None, help="memory range BASE:LEN (e.g. 0xF100:0x300)")
     p.add_argument("--machine", choices=("both", "ours", "stock"), default="both",
                    help="both (default, diff+alignment guard) or one side (one-sided black-box "

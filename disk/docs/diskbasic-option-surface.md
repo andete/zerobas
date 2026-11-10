@@ -100,7 +100,7 @@ is only as wide as the exercisers, and the gap below sits on a path none of them
 | fn | simplification | why it's fine |
 |---|---|---|
 | `$24` SETRND | ours computes the *correct* CP/M position; **stock is a broken `RR:=1` stub** | intentional signed-off divergence (m32 char §4) — ours is right where stock is broken |
-| `$26` WRBLK shrink | frees the tail + EOF-marks (FCLOSE-consistent) vs stock's FAT-corrupting bug | signed off; ours correct where stock breaks |
+| `$26` WRBLK shrink | frees the tail + EOF-marks and sets the FCB's size, the entry left to FCLOSE (FCLOSE-consistent) vs stock's FAT-corrupting bug (its FCLOSE answers `$FF` and never writes the chain) | signed off; ours correct where stock breaks -- **since D-WRBLKTRUNC (2026-11-10)**: before it, ours left the FCB's OLD size and FCLOSE wrote it back over the shortened chain (TODO.md, found by D-DOSLADDER's D7) |
 | `$27` RDBLK (boot path) | `bdos_rdblk` streams from record 0 | boot loaders always pass RR=0 → provable no-op (M31 Q2) |
 | `$2D` STIME | ignores D/E (sec/hundredths) + no range-validate (`A` always 0) | clockless MSX1; documented residual |
 | `$2E` VERIFY | flag stored, write-effect not coupled | **faithful** — black-box shows stock also no-ops |

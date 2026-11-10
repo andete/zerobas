@@ -250,8 +250,15 @@ def run():
     cpu = m.call("wrblk_body", de=FCB, hl=0)
     check(cpu.a == 0, f"HL=0 beyond-EOF: A={cpu.a} (want 0)")
     check((cpu.hl & 0xFFFF) == 0, f"  HL={cpu.hl & 0xFFFF} (want 0, preserved)")
+    # D-WRBLKTRUNC (2026-11-10): the FCB carries the new size, the entry waits for FCLOSE
+    # (the CF-3300, scratchpad/dosl_d7_trunc_stock.out) -- as case (ii)'s record path.
+    fsize = struct.unpack("<I", bytes(m.peek(FCB + 16, 4)))[0]
+    check(fsize == 512, f"  FCB size set to {fsize} (want 512 = RR*RS, no data written)")
     cluster, size = disk.dirent()
-    check(size == 512, f"  dirent size set to {size} (want 512 = RR*RS, no data written)")
+    check(size == 256, f"  dirent size still {size} before FCLOSE (want 256: written at close)")
+    check(close_fcb(m) == 0, "  FCLOSE: A=0")
+    cluster, size = disk.dirent()
+    check(size == 512, f"  dirent size set to {size} at FCLOSE (want 512 = RR*RS)")
     check(get_fat12(disk.fat, 5) >= 0x0FF8, "  chain untouched (still just cluster 5, EOC)")
     r0, r1, r2 = m.peek(FCB + 33, 3)
     check((r0, r1, r2) == (4, 0, 0), "  RR unchanged (+= 0)")
@@ -264,8 +271,13 @@ def run():
     setup_fcb(m, "DATA.BIN", rs=128, rr=2, disk=disk)     # RR*RS = 256 < old size 1536 -> shrink
     cpu = m.call("wrblk_body", de=FCB, hl=0)
     check(cpu.a == 0, f"HL=0 shrink: A={cpu.a} (want 0, SANE shrink succeeds)")
+    # D-WRBLKTRUNC: the FCB's size shrinks too -- before, only the entry did, and
+    # FCLOSE wrote the FCB's OLD size back over the shortened chain.
+    fsize = struct.unpack("<I", bytes(m.peek(FCB + 16, 4)))[0]
+    check(fsize == 256, f"  FCB size shrunk to {fsize} (want 256 = RR*RS)")
+    check(close_fcb(m) == 0, "  FCLOSE: A=0")
     cluster, size = disk.dirent()
-    check(size == 256, f"  dirent size shrunk to {size} (want 256 = RR*RS)")
+    check(size == 256, f"  dirent size {size} after FCLOSE (want 256 = RR*RS, not the old 1536)")
     check(get_fat12(disk.fat, 5) >= 0x0FF8, "  cluster 5 (holds byte 256) is now the EOC tail")
     check(get_fat12(disk.fat, 6) == 0, "  cluster 6 freed")
     check(get_fat12(disk.fat, 7) == 0, "  cluster 7 freed")

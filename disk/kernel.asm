@@ -4153,8 +4153,13 @@ wzp_shrink:
                 jr      c, wrblk_ioerr2
                 call    wrblk_set_wrfirst
 wzp_dirupdate:
-                call    fat_dir_update
-                jr      c, wrblk_ioerr2
+                ; D-WRBLKTRUNC (2026-11-10): the FCB, NOT the entry. This wrote the entry
+                ; (the new size) and left FCB +16..19 at the OLD one, and FCLOSE writes the
+                ; entry from the FCB (cr_dir): a 20-record file cut to 10 closed at 2560 B
+                ; on a 2-cluster chain (D-DOSLADDER D7, scratchpad/dosl_d7_trunc_ours.out).
+                ; The CF-3300 sets the FCB's size here and leaves the entry to FCLOSE
+                ; (scratchpad/dosl_d7_trunc_stock.out) -- as the record path does.
+                call    wrblk_fcb_keep
                 xor     a
                 ld      hl, (WRBLK_REQ)     ; = 0
                 jr      wrblk_finish

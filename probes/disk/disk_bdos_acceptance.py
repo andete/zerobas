@@ -121,6 +121,11 @@ EXERCISERS = [
     # at RS 64, FCLOSE and re-open; it found D-RNDLIVE (RDRND of a just-written
     # record answered "past the end").
     ("DOSL-D6", "build_dosl_disk.py", ["--prog", "d6rand", "--settle", "200"]),
+    # D7: an editor / sort -- SEQWRITE 20 records, SEQREAD them back, sort, one WRBLK
+    # of 20, truncate by WRBLK of 0 at RR 10, append by WRRND past the end, FSIZE,
+    # RDRND. It found D-WRBLKTRUNC (the truncated size never reached the FCB, so
+    # FCLOSE wrote the old size back over the shortened chain).
+    ("DOSL-D7", "build_dosl_disk.py", ["--prog", "d7sort", "--settle", "250"]),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
@@ -179,6 +184,20 @@ ALLOWLIST = {
     # (scratchpad/fcbfill_bdos_excused2.out), so keeping them would only have hidden
     # a regression at those bytes.
     "BDOSX": {},
+    # D-DOSLADDER D7: the CF-3300's own WRBLK-0 truncation leaves the file unclosable
+    # -- FCLOSE answers $FF, writes the entry and never the FAT chain, so SORTED.TXT's
+    # clusters read FREE on its disk (scratchpad/dosl_d7_trunc_stock.out; the signed-off
+    # divergence in disk/docs/diskbasic-option-surface.md, "`$26` WRBLK shrink"). The
+    # bytes downstream of that are stock's broken file; OURS is PINNED at each one
+    # (an (ours, reason) entry), so the excuse cannot hide a regression of ours.
+    "DOSL-D7": {
+        0x040B: (0x00, "FCLOSE after WRBLK-0 truncate: stock $FF (its truncate bug), ours 0"),
+        0x0419: (0x0A, "SORTED.TXT record 9's byte: stock reads its freed cluster, ours 10"),
+        0x041A: (0x00, "RDRND record 7: stock A=1 on its corrupted file, ours 0"),
+        0x041B: (0x08, "record 7's byte: stock none, ours 8"),
+        0x041C: (0x00, "RDRND record 8: stock A=1 on its corrupted file, ours 0"),
+        0x041D: (0x09, "record 8's byte: stock none, ours 9"),
+    },
     "BDOSX3": {
         0x044C: "regs rec14 FREN($17) L — register UNDEFINED on return (contract pins A only)",
         0x045B: "regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned)",
@@ -259,14 +278,20 @@ def gate(name: str, mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool
             if len(printed) < nbytes:
                 return False, (f"BYTE DIFF ({nbytes} byte(s); only {len(printed)} enumerated by the "
                                f"probe — too large to allowlist-verify, treated as real; regs: {regs})")
-            unexcused = [a for a in printed if a not in allow]
+            # An (ours, reason) entry excuses the REFERENCE's byte only: ours must still
+            # read the pinned value (DOSL-D7: stock's side is its own corrupted file).
+            ours_at = {int(a, 16): int(v, 16) for a, v in
+                       re.findall(r"^\s*([0-9A-Fa-f]{4}): stock=[0-9A-Fa-f]{2} ours=([0-9A-Fa-f]{2})", out, re.M)}
+            unexcused = [a for a in printed if a not in allow
+                         or (isinstance(allow[a], tuple) and ours_at.get(a) != allow[a][0])]
             if unexcused:
                 shown = ", ".join(f"{a:04X}" for a in unexcused[:8])
                 extra = f" (+{len(unexcused)-8} more)" if len(unexcused) > 8 else ""
                 excused = nbytes - len(unexcused)
                 return False, (f"BYTE DIFF ({len(unexcused)} UNEXCUSED: {shown}{extra}"
                                + (f"; {excused} allowlisted" if excused else "") + f"; regs: {regs})")
-            reasons = "; ".join(sorted({allow[a] for a in printed}))
+            reasons = "; ".join(sorted({allow[a][1] if isinstance(allow[a], tuple) else allow[a]
+                                        for a in printed}))
             return True, f"0-byte-diff (all {nbytes} allowlisted — {reasons})"
         note = f"; live-reg delta [{regs}] (benign epilogue)" if regs != "NONE" else ""
         tstr = f" (anchor t={anchor_t:.1f} ≥ keys-at)" if anchor_t is not None else ""
