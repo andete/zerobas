@@ -109,6 +109,10 @@ EXERCISERS = [
     # COMMAND.COM read sequentially to the end (records, byte sum, EX / size / CR).
     # D3: COPY -- COMMAND.COM to C.COM by SEQREAD / SEQWRITE in turn, re-read, FSIZE,
     # SFIRST; it found D-SEQTWO (ours never ended the copy). The CF-3300 takes 93 s.
+    # D1: the console -- STROUT, CONOUT, version, CURDRV, LOGIN, CONST / DIRIO with no key,
+    # GETDATE, then (keys typed at 40 s while it waits on CONST) BUFIN, CONIN of the key
+    # past the Enter, SELDSK's count. Byte-identical at its first run (dosl_d1_1.out).
+    ("DOSL-D1", "build_dosl_disk.py", ["--prog", "d1con", "--keys", "HELLO\\rX", "--settle", "80"]),
     ("DOSL-D2", "build_dosl_disk.py", ["--prog", "d2type"]),
     ("DOSL-D3", "build_dosl_disk.py", ["--prog", "d3copy", "--settle", "150"]),
     # D4: DIR -- "*.COM" through SFIRST / SNEXT (names, sizes, the first raw DTA),

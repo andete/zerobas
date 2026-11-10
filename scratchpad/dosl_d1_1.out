@@ -1,0 +1,16 @@
+=== capture: regs+mem at occurrence #1 of 0x0188 ===
+  ALIGNED: both hit occurrence #1  (stock t=40.5748, ours t=40.5548, dt=0.0201)
+
+  reg   STOCK  OURS
+  PC    0188   0188
+  SP    D529   D529
+>>AF    0200   0240
+  BC    0000   0000
+  DE    0418   0418
+  HL    019E   019E
+>>IX    F45E   F195
+  IY    DA40   DA40
+
+  memory 0x0400+32: 0 of 32 bytes differ
+
+  register diffs: AF, IX

@@ -16459,7 +16459,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cannot hide a regression of ours. Knife: the old two lines put back turn DOSL-D7 RED
       on exactly the size and FSIZE bytes ([`d7row_knife.out`](scratchpad/d7row_knife.out)).
 
-- [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
+- [x] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
       2026-11-09)**
       🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
       calls), which the one-function exercisers (bdosx..) do not reach: the entry-point ruling.
@@ -16508,6 +16508,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `--at-cond '![pc_in_slot 0]'` and the rungs with an `armpt` arm on three bytes, slot-
       guarded (probes/disk/build_dosl_disk.py). Next: D1, the console rung (CONOUT, STROUT,
       BUFIN, version) -- the only one never built.
+      ✅ **D1 (CONSOLE) BYTE-IDENTICAL AT ITS FIRST RUN (2026-11-10) -- THE LADDER IS COMPLETE.**
+      STROUT, CONOUT, version ($0022), CURDRV, LOGIN ($0003: A and the phantom B), CONST /
+      DIRIO with no key, GETDATE (1984-01-01), then -- keys typed at 40 s while it waits on
+      CONST (`build_dosl_disk.py --keys`) -- CONST $FF, BUFIN "HELLO" (count 5, the CR
+      stored), CONIN of the X typed past the Enter, CONST 0, SELDSK 2 drives
+      ([`dosl_d1_1.out`](scratchpad/dosl_d1_1.out) 0 of 32 differ; ours one-sided, the values real: [`dosl_d1_2.out`](scratchpad/dosl_d1_2.out)). D1..D7 are
+      all bdos-acceptance rows. Found along the way: D-SEQTWO, the SFIRST DTA bytes,
+      D-FRENWILD, D-FDELWILD, D-RNDLIVE, D-WRBLKTRUNC. Ladder closed; further rungs are new
+      items, not this one.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**

@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import shlex
 import os
 import shutil
 import subprocess
@@ -53,6 +54,10 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--tmp-dir", default=probe_tmp.ROOT)
     ap.add_argument("--settle", default="60")
+    ap.add_argument("--keys", default=None,
+                    help=r"console input for the rung (D1's BUFIN / CONIN; \r = Enter), typed "
+                         "at --keys-at -- the program waits on CONST, so the keys land in it")
+    ap.add_argument("--keys-at", default="40")
     args = ap.parse_args()
     out = args.out or probe_tmp.tmp(f"dosl_{args.prog}.dsk")
     com, syms = assemble(args.prog, args.tmp_dir)
@@ -79,6 +84,7 @@ def main() -> int:
               if 'armpt' in syms else
               f"--arm-check-val {syms.get('ARMSIG', com[2]):#04x} ") +
           f"--settle {args.settle} --machine both "
+          + (f"--keys {shlex.quote(args.keys)} --keys-at {args.keys_at} " if args.keys else "") +
           f"--mem {syms['cap']:#06x}:{size:#x} --diska {out}")
     return 0
 
