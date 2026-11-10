@@ -16628,6 +16628,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       hk_frnd's found tail (+26 against DOUT_FIRST = +40) and the 13 B write-state reset
       (one copy in fatiocreate-body.inc, which sub/save.asm also includes). Unit tests 94/94,
       bdos-acceptance 25/25 on each step.
+      ✂️ **CARVE STEPS 9-10 (2026-11-10):** new_taken -- "is the NEW name taken?" with
+      FWR_DIRSEC / DIROFF kept, 22 B inline in bb_rename (BASIC-side FREN) and hkn_a (NAME);
+      the flags survive its pops and `ret` -- **$55DB's region 3 -> 22 B**. mnt_find / mf_find
+      -- fat_mount then fat_find the FCB's name, a miss DROPPING the return address into
+      fren_miss (identical to the callers' `jp c, fren_miss`: none has anything else pushed,
+      fdel_one's free loop pops before each branch) -- in fopen_fill_body, fdel_one and
+      fdel_relocate. **Free in disk.rom: 328 B before step 7 -> 421 B.** Unit tests 94/94,
+      bdos-acceptance 25/25; NAME's three gates and the BASIC-side BDOS probe
+      (scratchpad/bdosset_probe.py zb: RENAME of a missing name $FF, a real one 0 and the
+      file then deletable) green.
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**

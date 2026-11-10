@@ -1555,16 +1555,7 @@ fopen_fill_body:
                 pop     ix                  ; IX = FCB pointer throughout
                 xor     a
                 ld      (ix+14), a          ; +14 unconditional pre-search clear (§0.1 facts 2/3)
-                push    ix
-                pop     de
-                call    fat_mount
-                jp      c, fren_miss    ; (ffb_miss, a byte-identical copy, is gone: D-DISKCARVE)
-                push    ix
-                pop     de
-                inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
-                call    fat_find            ; Cy=0 found; HL preserved = &matched dirent
-                jp      c, fren_miss    ; (ffb_miss, a byte-identical copy, is gone: D-DISKCARVE)
+                call    mnt_find            ; HL = &matched dirent (a miss -> fren_miss)
                 call    fcb_dirloc          ; +25 := the entry's index (D-WRBLKSEEK (b))
                 ; date/time (§0.1 addendum, confirmed against the FAT12 dir-entry
                 ; layout on our own test disk): FCB+20/21 := dirent+24/25 (date),

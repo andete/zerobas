@@ -1604,16 +1604,7 @@ bb_rename:                                  ; DE = FCB: old name at +1, new at +
                 ld      de, 17
                 add     hl, de
                 call    bb_name11           ; DISK_FCB_NAME := the new name
-                ld      hl, (FWR_DIRSEC)
-                push    hl
-                ld      hl, (FWR_DIROFF)
-                push    hl
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; CF clear: the new name is taken
-                pop     hl                  ; (POP and LD (nn),HL keep the flags)
-                ld      (FWR_DIROFF), hl
-                pop     hl
-                ld      (FWR_DIRSEC), hl
+                call    new_taken           ; CF clear: the new name is taken
                 jr      nc, bbr_fail
                 call    hkn_stamp
                 jr      c, bbr_fail
@@ -6261,21 +6252,28 @@ hkn_a:
                 ; since 2026-10-19, BDOS_DIRSEC / BDOS_DIROFF; the two call-backs
                 ; above touch neither, as COPY_CLUS's note in the ABI says of
                 ; COPY's.)
-                ld      hl,(FWR_DIRSEC)
-                push    hl
-                ld      hl,(FWR_DIROFF)
-                push    hl
-                ld      hl,DISK_FCB_NAME
-                call    fat_find            ; CF clear = the new name is taken
-                pop     hl                  ; (POP and LD (nn),HL touch no flag)
-                ld      (FWR_DIROFF),hl
-                pop     hl
-                ld      (FWR_DIRSEC),hl
+                call    new_taken           ; CF clear = the new name is taken
                 jr      nc,hkn_exists
                 call    hkn_stamp           ; LOCAL now -- no call-back, no sub-ROM
                 jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
+; new_taken -- is DISK_FCB_NAME (the NEW name) already in the directory? fat_find,
+; with FWR_DIRSEC / FWR_DIROFF (the OLD entry, which a rename then rewrites) kept.
+; Out: CF clear = taken; HL clobbered (POP and LD (nn),HL touch no flag). It stood
+; twice, inline, in bb_rename and hkn_a (D-DSKFMT's carve, 2026-11-10).
+new_taken:
+                ld      hl, (FWR_DIRSEC)
+                push    hl
+                ld      hl, (FWR_DIROFF)
+                push    hl
+                ld      hl, DISK_FCB_NAME
+                call    fat_find
+                pop     hl
+                ld      (FWR_DIROFF), hl
+                pop     hl
+                ld      (FWR_DIRSEC), hl
+                ret
 hkn_open:
                 ld      a,64                ; `File still open` (D-COPYNAMEOPEN)
                 jr      hkn_err
@@ -8485,16 +8483,7 @@ fdel_more:
 fdel_one:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer (held throughout)
-                push    ix
-                pop     de
-                call    fat_mount
-                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
-                push    ix
-                pop     de
-                inc     de                  ; DE -> FCB-copy+1 (target 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
-                call    fat_find            ; Cy=0 found; FAT_FIRSTCLUS/FAT_FILESIZE set
-                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
+                call    mnt_find            ; FAT_FIRSTCLUS/FAT_FILESIZE set (a miss -> fren_miss)
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      a, h
                 or      l
@@ -8520,12 +8509,7 @@ fdel_relocate:
                 ; SECTOR_BUF now holds FAT-sector content (clobbered by the chain
                 ; walk above, or untouched if this file was zero-length) -- re-run
                 ; fat_find for a fresh, valid dirent pointer + FAT_DIRSEC.
-                push    ix
-                pop     de
-                inc     de
-                ex      de, hl
-                call    fat_find
-                jp      c, fren_miss    ; (fdel_miss removed: D-DISKCARVE)
+                call    mf_find             ; (a miss -> fren_miss)
                 ld      (hl), $E5           ; CP/M delete marker (Microsoft FAT spec sec 3.1)
                 ld      de, (FAT_DIRSEC)
                 ld      hl, SECTOR_BUF
@@ -8548,6 +8532,28 @@ fdel_ioerr:
 ; fcb_fatst -- FAT_FIRSTCLUS := FCB +26..27, FAT_FILESIZE := FCB +16..19 (IX = the FCB).
 ; It stood twice, inline, in wfs_geom and rrnd_position (D-DSKFMT's carve, 2026-11-10).
 ; Out: HL = the size's high word; A, BC, DE untouched.
+; mnt_find -- IX = an FCB: fat_mount, then fat_find its name (+1). Found: returns,
+; HL = the entry, Cy = 0. Unreadable or not found: DROPS its return address and goes
+; to fren_miss (A = $FF, Cy = 1) -- so the caller's own caller gets that answer, as
+; the callers' `jp c, fren_miss` did; nothing else may be on the stack. mf_find skips
+; the mount. It stood in fopen_fill_body, fdel_one and (the find) fdel_relocate
+; (D-DSKFMT's carve, 2026-11-10).
+mnt_find:
+                push    ix
+                pop     de
+                call    fat_mount
+                jr      c, mf_miss
+mf_find:
+                push    ix
+                pop     de
+                inc     de                  ; DE -> FCB+1 (the 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find
+                ret     nc
+mf_miss:
+                pop     af                  ; (A and the flags are fren_miss's)
+                jp      fren_miss
+
 fcb_fatst:
                 ld      l, (ix+26)
                 ld      h, (ix+27)

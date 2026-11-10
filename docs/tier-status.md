@@ -153,15 +153,15 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5474 | `k_5474` | BDOS $04 AUXOUT: exercised | disk/kernel.asm:1356 |
 | $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1541 |
 | $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1568 |
-| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1680 |
-| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1691 |
-| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1733 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3359 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3731 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3852 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7181 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7545 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7635 |
+| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1671 |
+| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1682 |
+| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1724 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3350 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3722 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3843 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7179 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7543 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7633 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:770 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:774 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:788 |
