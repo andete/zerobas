@@ -1,0 +1,92 @@
+diff --git a/src/chput.asm b/src/chput.asm
+index 23c820e..2596713 100644
+--- a/src/chput.asm
++++ b/src/chput.asm
+@@ -1,3 +1,9 @@
++; zerobas repack (CRTCNT UNDER KEY ON, 2026-11-10): the console's bottom row is
++; CRTCNT + CNSDFG -- CNSDFG $FF while the function-key line is shown -- as the
++; VG-8020 bounds it (zerobas scratchpad/crtbound_probe.py); CRTCNT itself stays 24.
++; Every read of CRTCNT here calls zerobas's page-0 helpers at FIXED addresses
++; ($3283 crt_rows, $328D crt_cp: zerobas basic/float-arith.asm), the same bytes as
++; the instruction each replaces, so nothing moves.
+ ; CHPUT routine for C-BIOS
+ ;
+ ; Copyright (c) 2006 Eric Boon.  All rights reserved.
+@@ -112,7 +118,7 @@ chput_ctrl_tab:
+ ; -- Line Feed.
+ chput_ctrl_lf:
+                 ld      hl,(CSRY)
+-                ld      a,(CRTCNT)
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
+                 inc     l
+                 cp      l
+                 jr      nc,chput_ctrl_lf_done
+@@ -147,8 +153,8 @@ chput_esc_jj:
+                 call    chput_ctrl_cr           ; move to line start
+ chput_esc_jj_loop:
+                 ld      a,(CSRY)                ; while no at end of screen
+-                ld      hl,CRTCNT
+-                cp      (hl)
++                call      $328D         ; zerobas repack: A - (CRTCNT + CNSDFG) (crt_cp)
++                nop
+                 jr      nc,chput_esc_jj_done
+                 call    chput_ctrl_lf           ;   move to next line
+                 call    chput_esc_k             ;   clear till end of line
+@@ -180,8 +186,8 @@ chput_ctrl_right:
+                 jr      chput_right_left_ok
+ chput_ctrl_right_next:
+                 ld      a,(CSRY)
+-                ld      hl,CRTCNT
+-                cp      (hl)
++                call      $328D         ; zerobas repack: A - (CRTCNT + CNSDFG) (crt_cp)
++                nop
+                 ret     nc
+                 inc     a
+                 ld      (CSRY),a
+@@ -215,8 +221,8 @@ chput_esc_a:
+ chput_ctrl_down:
+ chput_esc_b:
+                 ld      a,(CSRY)
+-                ld      hl,CRTCNT
+-                cp      (hl)
++                call      $328D         ; zerobas repack: A - (CRTCNT + CNSDFG) (crt_cp)
++                nop
+                 ret     nc
+                 inc     a
+                 ld      (CSRY),a
+@@ -350,7 +356,7 @@ chput_esc_ll:
+                 ld      hl,(CSRY)               ; save current cursor pos
+                 push    hl
+                 ld      b,l
+-                ld      a,(CRTCNT)
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
+                 ld      (CSRY),a
+                 sub     b
+                 ld      b,a
+@@ -371,7 +377,7 @@ chput_esc_ll_loop_end:
+                 pop     hl                      ; restore cursor position
+                 ld      (CSRY),hl
+                 ld      h,0
+-                ld      a,(CRTCNT)              ; update LINTTB
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)              ; update LINTTB
+                 ld      d,a                     ; DE := (CRTCNT)
+                 ld      e,0
+                 sub     l                       ; BC := (CRTCNT) - (CSRY) - 1
+@@ -393,7 +399,7 @@ chput_esc_m:
+                 ld      hl,(CSRY)
+                 push    hl                      ; save cursor pos
+                 ld      b,l
+-                ld      a,(CRTCNT)
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
+                 sub     b
+                 ld      b,a
+                 inc     b
+@@ -425,7 +431,7 @@ chput_esc_m_loop_end:
+                 pop     hl                      ; L = the deleted row
+                 push    hl
+                 ld      h,0
+-                ld      a,(CRTCNT)
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
+                 sub     l
+                 jr      z,chput_esc_m_nomove
+                 ld      c,a

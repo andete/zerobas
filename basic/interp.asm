@@ -270,8 +270,8 @@ bh_himem:
                 ld      (CSR_ON),a          ; which the cursor tenant took for "shown"
                                             ; -- no cursor at the boot prompt, and its
                                             ; first removal wrote $FF to VRAM $FFFF
-                ld      a,CON_ROWS_KEYON
-                ld      (CRTCNT),a          ; reserve the bottom row
+                ld      a,CON_ROWS          ; 24, as the VG-8020: the key row is kept
+                ld      (CRTCNT),a          ; out by CNSDFG (crt_rows), not by CRTCNT
                 ld      a,$FF
                 ld      (CNSDFG),a          ; the documented "shown" flag
                 ld      a,1                 ; D-ADDR29: FNKSWI, the set shown -- the

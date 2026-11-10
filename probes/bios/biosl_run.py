@@ -75,8 +75,6 @@ ALLOW = {
     "b1text": {
         0xE002: (0x0A, "CSRY at INIT: where the boot banner left the cursor (VG-8020 "
                        "row 15, ours 10) -- presentational, a cartridge's CLS hides it"),
-        0xE014: (0x17, "CRTCNT after DSPFNK: ours 23, the VG-8020 24 -- TODO.md "
-                       "'CRTCNT UNDER KEY ON', filed TIER 1 (the scroll bound)"),
     },
 }
 ROWS = {

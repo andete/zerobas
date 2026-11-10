@@ -649,7 +649,11 @@ def disk_abi_seeds(spans):
 
 
 # fix (14): labels on the stubs basic/islands.asm patches INTO C-BIOS's code
-PATCH_ROOTS = ('cbios_chput_ttypos',)
+PATCH_ROOTS = ('cbios_chput_ttypos',
+               # CRTCNT UNDER KEY ON (2026-11-10): C-BIOS's CHPUT (cbios-repack/
+               # crtcnt-bound.patch) and the sub-ROM's line editor call it at its
+               # fixed $328D; no main label does
+               'crt_cp')
 # (15) PINNED ENTRIES (D-DISKREST slice 1, 2026-10-20): the labels at
 # tools/pin_plan.py's fixed addresses are entered by OTHER PEOPLE'S code -- a
 # program that CALLs $73E5 or jumps to $3297 because the reference has an entry

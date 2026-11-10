@@ -1,0 +1,10 @@
+ROW on_scroll VG=[[C 23  32  99  24 ]] ZB=[[C 23  32  99  23 ]] DIVERGES
+ROW off_scroll VG=[[C 24  32  32  24 ]] ZB=[None] DIVERGES
+ROW on_crt20 VG=[[C 19  32  99  20 ]] ZB=[[C 20  32  99  20 ]] DIVERGES
+ROW off_crt20 VG=[[C 20  32  32  20 ]] ZB=[[C 20  32  32  20 ]] SAME
+ROW on_loc23 VG=[[C 23  32  99  24 ]] ZB=[[C 23  32  99  23 ]] DIVERGES
+ROW off_loc23 VG=[[C 24  32  32  24 ]] ZB=[None] DIVERGES
+ROW on_crt20loc VG=[[C 19  32  99  20 ]] ZB=[[C 20  32  99  20 ]] DIVERGES
+
+1 SAME, 6 DIVERGE (on_scroll, off_scroll, on_crt20, on_loc23, off_loc23, on_crt20loc)
+refcache: 0 hit, 14 miss, 14 stored

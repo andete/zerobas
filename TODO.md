@@ -16385,6 +16385,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cell that reads differently: a program that PEEKs it, or POKEs 24 under KEY ON, sees our
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
+      🔬 **INVESTIGATED (2026-11-10; Joost: *"This needs further investigation."*)** --
+      scratchpad/crtbound_probe.py ([`crtbound_run2.out`](scratchpad/crtbound_run2.out)), CSRY after 30 lines / a LOCATE: the
+      VG-8020's console bound is **CRTCNT + CNSDFG** (CNSDFG 0 / $FF): KEY ON scrolls to
+      CSRY 23 with CRTCNT 24, KEY OFF to 24; with CRTCNT POKEd to 20 it is 19 under KEY ON
+      and 20 under KEY OFF -- it honours the cell AND subtracts the key row; LOCATE clamps
+      to the same bound (0,23 -> 23 under KEY ON). Ours bounds by CRTCNT alone (POKE 20
+      under KEY ON: 20, not 19). 🏗️ **RULED (Joost 2026-11-10): *"don't use extra RAM
+      for this different from the reference"*** -- no console-rows cell: the bound is
+      computed from CRTCNT and CNSDFG, as the reference does, in ROM: C-BIOS CHPUT's 8
+      reads (4 `ld a,(CRTCNT)`, 4 `ld hl,CRTCNT / cp (hl)`) and our 8 readers through
+      helpers (~24 B, page 0: a carve of island 1 first), then CRTCNT 24 always.
+      The two KEY OFF rows' missing zerobas reading is the probe's own doing, and the
+      same divergence again: each row restores the CRTCNT it found, 23 on our KEY ON boot,
+      AFTER KEY OFF -- the cursor on row 24 then sits under our bound and the result line
+      is overwritten; the values read before that (24 / 32 / 32 / 24) are the VG-8020's.
+      ✅ **FIXED (2026-11-10), no RAM:** crt_rows ($3283: A := CRTCNT + CNSDFG) and crt_cp
+      ($328D: A compared with it) pinned in the $3297 pad, page 0 -- C-BIOS's CHPUT calls
+      them (cbios-repack/crtcnt-bound.patch: its 5 `ld a,(CRTCNT)` and 3 `ld hl,CRTCNT / cp
+      (hl)` replaced with the same bytes, 27 changed, nothing moved), and so do BASIC's
+      screen editor, REPL and LOCATE clamp and the sub-ROM's line editor (5); DSPFNK /
+      ERAFNK, the boot and SCREEN store CRTCNT 24 always. [`crtbound_run3.out`](scratchpad/crtbound_run3.out): all 7 rows
+      SAME as the VG-8020, the POKEd CRTCNT included; B1's CRTCNT pin is gone.
+      🔴 Two readers were missed by the source search (`(CRTCNT)` over basic / sub / disk):
+      sub/readline.asm's rl_echo (`ld hl,CRTCNT / sub (hl)`) and sub2/edctrl.asm's ekx_row
+      (sub2/ is built into the sub-ROM) -- screditor's i.wrap read the prompt into a
+      wrapped INPUT (47 for 45). A scan of the BUILT images for $F3B1 operands found both;
+      now no ROM addresses CRTCNT but crt_rows itself. 10 console / editor suites green.
 
 - [x] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
       (found 2026-11-10 by D-DOSLADDER's D5, REN / DEL)**

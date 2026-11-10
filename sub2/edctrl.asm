@@ -185,7 +185,7 @@ ek_next:
                 or      a
                 ret
 ekx_row:
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 cp      b
                 scf
                 ret     z                   ; the last cell of the window

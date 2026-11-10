@@ -67,8 +67,8 @@ key_repaint:
                 ret     nc                  ; graphics modes have no key line
                                             ; (SCREEN 1 has one since D-KEYSCR1:
                                             ; ks_geom lays out its 32-column row)
-                ld      a,CON_ROWS_KEYON
-                ld      (CRTCNT),a          ; the bottom row stays reserved
+                ld      a,CON_ROWS          ; 24: the key row is reserved by CNSDFG
+                ld      (CRTCNT),a          ; (crt_rows), as on the VG-8020
                 ld      a,KEYOP_FNKPAINT
 ; key_op -- the keystr tenant (sub/keystr.asm) with A = the op (KEYOP_*), KEYARG
 ; set here; preserves HL and IX. sub2's KEY ON / KEY OFF (sub2/scrstmt.asm) call

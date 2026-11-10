@@ -196,7 +196,7 @@ rl_loop:
                 ; line (linemax's list-max: a LIST that filled the screen). The
                 ; prompt always opens a FRESH line, so on the bottom row both
                 ; entries are set to "ends" here; the tenant's own wraps re-mark.
-                ld      a,(CRTCNT)
+                call    crt_rows            ; the console's bottom row (CRTCNT + CNSDFG)
                 ld      hl,CSRY
                 cp      (hl)
                 jr      nz,rl_wait          ; not on the bottom row: the table is C-BIOS's own

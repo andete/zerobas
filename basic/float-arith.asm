@@ -312,7 +312,33 @@ dig15_shr:
 ; tools/pin_plan.py after an unconditional transfer; the `ds` is the pad, and
 ; `pin_plan.py --check` fails if it grows (Joost: no growing holes).
                 include "basic/biosfnk.asm"   ; D-BIOSCONTRACT: ERAFNK / DSPFNK, in this pad
-    IF BASICINT_PINS
+; 📌 CRT_ROWS $3283 / CRT_CP $328D (CRTCNT UNDER KEY ON, 2026-11-10): the console's
+; bottom row is CRTCNT + CNSDFG -- CNSDFG is 0, or $FF (-1) while the key line is
+; shown -- as the VG-8020 bounds it (scratchpad/crtbound_probe.py: CRTCNT 24 under
+; KEY ON scrolls to row 23; POKEd to 20, to 19). Joost 2026-11-10: no extra RAM, so
+; it is computed from the reference's own two cells. FIXED ADDRESSES: C-BIOS's CHPUT
+; calls them (cbios-repack/crtcnt-bound.patch) -- page 0, mapped whenever CHPUT
+; runs -- and so do BASIC's and the sub-ROM's readers (`call` in place of each
+; `ld a,(CRTCNT)` / `ld hl,CRTCNT : cp (hl)`, the same bytes).
+                ds      $3283 - $, $00
+crt_rows:                                   ; A := CRTCNT + CNSDFG; flags; HL kept
+                push    hl
+                ld      hl,CNSDFG
+                ld      a,(CRTCNT)
+                add     a,(hl)
+                pop     hl
+                ret
+crt_cp:                                     ; flags := A - (CRTCNT + CNSDFG); A, BC kept
+                push    bc
+                ld      b,a
+                call    crt_rows
+                ld      c,a
+                ld      a,b
+                cp      c
+                pop     bc
+                ret
+    IF BASICINT_PINS                        ; (crt_rows / crt_cp above are NOT under it:
+                                            ; every build calls them -- switch-build-check)
                 ds      $3297 - $, $00
 basicint_3297:
                 pop     hl

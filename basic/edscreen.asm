@@ -77,7 +77,7 @@ rl_lastrow:
                 ld      a,(CSRY)
                 ld      b,a
 rl_lr_lp:
-                ld      a,(CRTCNT)
+                call    crt_rows            ; the console's bottom row (CRTCNT + CNSDFG)
                 cp      b
                 ret     z                   ; the bottom row ends every line
                 ld      hl,LINTTB-1

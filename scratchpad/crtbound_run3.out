@@ -1,0 +1,10 @@
+ROW on_scroll VG=[[C 23  32  99  24 ]] ZB=[[C 23  32  99  24 ]] SAME
+ROW off_scroll VG=[[C 24  32  32  24 ]] ZB=[[C 24  32  32  24 ]] SAME
+ROW on_crt20 VG=[[C 19  32  99  20 ]] ZB=[[C 19  32  99  20 ]] SAME
+ROW off_crt20 VG=[[C 20  32  32  20 ]] ZB=[[C 20  32  32  20 ]] SAME
+ROW on_loc23 VG=[[C 23  32  99  24 ]] ZB=[[C 23  32  99  24 ]] SAME
+ROW off_loc23 VG=[[C 24  32  32  24 ]] ZB=[[C 24  32  32  24 ]] SAME
+ROW on_crt20loc VG=[[C 19  32  99  20 ]] ZB=[[C 19  32  99  20 ]] SAME
+
+7 SAME, 0 DIVERGE
+refcache: REFS MODE (references replayed, zerobas measured), 7 REFERENCE reading(s) replayed, 0 reference miss, 7 zerobas reading(s) MEASURED, 0 zerobas replayed

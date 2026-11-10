@@ -135,8 +135,8 @@ rl_char1:
 rl_echo:
                 ld      c,a                 ; C = the byte to echo
                 ld      a,(CSRY)
-                ld      hl,CRTCNT
-                sub     (hl)                ; Z iff the cursor is on the bottom row
+                call    CRT_CP              ; Z iff the cursor is on the console's bottom
+                nop                         ; row, CRTCNT + CNSDFG (main page 0, $328D)
                 jr      nz,rl_put
                 ld      a,c
                 cp      $20
@@ -256,7 +256,7 @@ rl_crlf:
                 call    CHPUT
                 ld      a,10
                 call    CHPUT
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 ld      hl,RL_LAST
                 cp      (hl)                ; NZ: the LF did not scroll, the table is intact
                 ld      a,1
@@ -274,7 +274,7 @@ rl_crlf:
 ; A = the mark for the row above the bottom, and the bottom row ends a line.
 rl_botfix:
                 ld      c,a
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 ld      hl,LINTTB-2
                 call    ek_hladd            ; (clobbers A, HL only)
                 ld      (hl),c              ; [bottom-2]
@@ -320,7 +320,7 @@ rl_shift_right:
                 ; --- grow the line by one row, below row B ---
                 ld      hl,(CSRY)           ; [the cursor: CSRY low, CSRX high]
                 push    hl
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 cp      b
                 jr      z,rsr_scroll        ; the line ends on the bottom row
                 ld      a,b
@@ -334,13 +334,13 @@ rl_shift_right:
                 ; `ld d,a / ld e,0` (CRTCNT * 256, not CRTCNT), so its lddr lands in
                 ; page-0 ROM and the table never moves. Shift it here: rows B+1 ..
                 ; CRTCNT-1 move to B+2 .. CRTCNT.
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 sub     b
                 dec     a                   ; the rows to move: CRTCNT - (B+1)
                 jr      z,rsr_marks         ; none: the new row is the bottom one
                 ld      c,a
                 push    bc
-                ld      a,(CRTCNT)
+                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 ld      hl,LINTTB-1
                 call    ek_hladd            ; DE -> LINTTB[bottom row - 1]
                 ld      d,h

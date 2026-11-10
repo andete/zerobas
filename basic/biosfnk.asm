@@ -36,8 +36,8 @@ bios_fnk:
                 push    bc
                 push    ix
                 ld      c,a                 ; C = 0 / $FF (= -1)
-                add     a,CON_ROWS          ; 24 / 23
-                ld      (CRTCNT),a
+                ld      a,CON_ROWS          ; 24 either way: the console's bound is
+                ld      (CRTCNT),a          ; CRTCNT + CNSDFG (crt_rows), as the VG-8020
                 ld      a,c
                 ld      (CNSDFG),a
                 ld      a,(SCRMOD)

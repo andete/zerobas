@@ -216,7 +216,7 @@ loc_col_set:
                 ; MECHANISM: POKEing it moves the scroll bound on BOTH machines
                 ; (sysvars.inc's table). The reference keeps 24 and subtracts
                 ; inside its BIOS; we have no BIOS to change, so we move the cell.
-                ld      a,(CRTCNT)
+                call    crt_rows            ; CRTCNT + CNSDFG, as the VG-8020 clamps
                 dec     a                   ; A = the last usable row
                 ld      b,a
                 ld      a,(LOC_ROW)

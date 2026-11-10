@@ -265,3 +265,9 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; THIS line in a copy of sub/ -- it was `pasmo --equ` over an IFNDEF, neither of
 ; which pasmo 0.5.3 has. The Makefile refuses if the edit did not land.)
 GFX_UNGUARDED           equ     0
+
+; CRT_ROWS -- main ROM page 0 (basic/float-arith.asm, a FIXED pin): A := CRTCNT +
+; CNSDFG, the console's bottom row as the VG-8020 bounds it. Mapped while a page-1
+; tenant (readline) runs. CRTCNT UNDER KEY ON, 2026-11-10.
+CRT_ROWS        equ     $3283
+CRT_CP          equ     $328D   ; flags := A - (CRTCNT + CNSDFG); A, BC kept

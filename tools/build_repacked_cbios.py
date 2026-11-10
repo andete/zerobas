@@ -115,11 +115,14 @@ PATCHES = [
     # SETC, STOREC, SETATR, READC and the four moves as the VG-8020; GRPPRT follows
     # MAPXYC's CLOC; the other stubs a bare `ret`.
     os.path.join(REPO, "cbios-repack", "graphics-cursor.patch"),
+    # CRTCNT UNDER KEY ON (2026-11-10): CHPUT's 8 reads of CRTCNT call zerobas's page-0
+    # helpers at $3283 / $328D (CRTCNT + CNSDFG, the VG-8020's bound); byte-neutral.
+    os.path.join(REPO, "cbios-repack", "crtcnt-bound.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "6e28f437b1f0f807b669ecbdfd79811a5898d212"
+REPACKED_SHA1 = "4c339d9823d06f8c4316e5620bb1d7afbbffc279"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

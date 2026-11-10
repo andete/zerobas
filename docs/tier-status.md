@@ -237,7 +237,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00C6 | POSIT | exercised | `biosregs-acceptance` |
 | $00C9 | FNKSB | exercised | `biosregs-acceptance` |
 | $00CC | ERAFNK | exercised | `biosregs-acceptance` |
-| $00CF | DSPFNK | exercised | `biosl-acceptance`, `biosregs-acceptance` |
+| $00CF | DSPFNK | exercised | `biosregs-acceptance` |
 | $00D2 | TOTEXT | exercised | `biosregs-acceptance` |
 | $00D5 | GTSTCK | exercised | `biosregs-acceptance` |
 | $00D8 | GTTRIG | exercised | `biosregs-acceptance` |
