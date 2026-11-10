@@ -16386,6 +16386,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
       always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
 
+- [ ] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
+      (found 2026-11-10 by D-DOSLADDER's D5, REN / DEL)**
+      🎚️ TIER 1 — happy path of BDOS $17 FREN: `REN X?.TMP Z?.TMP` is how REN is used.
+      🤖 **AUTONOMOUS** — 📏 probes/disk/dosl/d5rendel.asm ([`dosl_d5_1.out`](scratchpad/dosl_d5_1.out)): after FREN "X?.TMP" ->
+      "Z?.TMP" the CF-3300 has Z1.TMP and Z2.TMP (A = 0; "Z?.TMP" counts 2); then FREN Y.TMP ->
+      Z1.TMP is REFUSED (A = $FF -- the name exists), "?.TMP" counts 1, FDEL "?.TMP" deletes
+      Y.TMP. Ours: 4 of 16 bytes differ -- fren_body (disk/fat.asm) finds the OLD name with
+      fat_find (an EXACT compare: it matched the first `X?` it could, by name_cmp's rules)
+      and copies the NEW pattern verbatim, `?` included: one file becomes "Z?.TMP", X2.TMP
+      stays, so the M35 collision pre-check (exact) finds no "Z1" and Y.TMP -> Z1.TMP goes
+      through -- a DUPLICATE-NAME risk. ➡️ FREN = for EVERY entry matching the old pattern
+      (name_cmp_wild, one pass over the root BY INDEX, so a new name that also matches is
+      not visited twice): new[k] = pattern_new[k], or old[k] where the pattern has `?`; the
+      collision check on that built name (fat_find); rewrite the entry's 11 bytes; write its
+      sector. A = $FF when nothing matched or on a collision (what the CF-3300 does with the
+      matches renamed BEFORE a collision is unmeasured -- measure it). 📐 The built name needs
+      11 B of scratch that fat_find's read does not overwrite (FAT_DBUF = SECTOR_BUF;
+      FAT_MBUF holds the FAT cache; the kernel FCB copy has only +28..36 free) -- a stack
+      frame, or build into the entry in place AFTER the collision scan. Room: the region in
+      front of $75A5 (151 B). Must not touch the DTA or SFIRST / SNEXT's BDOS_SRCHIDX.
+
 - [ ] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
       2026-11-09)**
       🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
@@ -16419,6 +16440,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       what COMMAND.COM's DIR READS, and DIR never reads those. The final copy now starts at
       entry[15] (0 B). 📏 [`dosl_d4_4.out`](scratchpad/dosl_d4_4.out): **D4 BYTE-IDENTICAL (108 bytes)**; bdos-acceptance 21/21
       with it; p1dta-acceptance green.
+      🔴 **D5 (REN / DEL) FOUND D-FRENWILD (2026-11-10)** -- parked until it lands.
 
 - [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) IS A STUB: IT ANSWERS AN ERROR AND FORMATS
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
