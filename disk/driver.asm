@@ -605,7 +605,7 @@ bdos_entry:
                 cp      BDOS_F_SEQWR
                 jp      z, bdos_seqwrite
                 cp      BDOS_F_RDBLK
-                jp      z, bdos_rdblk
+                jp      z, k47b2_body       ; D-BDOSFCB: RR-positioned, as the CF-3300
                 jp      bdos_more       ; D-BDOSBASIC: the rest (disk/kernel.asm)
 
 ; bdos_setdta ($1A) — set the Disk Transfer Area address.
@@ -621,32 +621,28 @@ bdos_setdta:
 ; name (+1..+11), and primes the sequential iterator.
 ;   in:  DE = FCB pointer
 ;   out: A = $00 opened / $FF not found or I/O error (MSX2 TH, BDOS conventions)
+; dta_init -- INIT: the DTA defaults to $0080 in BOTH cells: BDOS_DTA, which this
+; ROM's sequential bodies read, and DOS_DTAPTR, which the kernel's random and block
+; bodies read (they reseed BDOS_DTA from it). D-BDOSFCB, 2026-11-10: the $F37D BDOS
+; reaches those bodies now, and DOS_DTAPTR was never set before a program's SETDTA
+; ($FFFF on a cold boot here). The CF-3300's own default is $DC6E, a buffer in its
+; disk work area (scratchpad/bdosfcb_run1.out era reading, TODO D-BDOSFCB); ours
+; keeps the documented $0080. Here and not in INIT: INIT's region had no room.
+dta_init:
+                ld      hl, DTA_DEFAULT
+                ld      (BDOS_DTA), hl
+                ld      (DOS_DTAPTR), hl
+                ret
 bdos_open:
+                ; D-BDOSFCB (2026-11-10): the FCB is filled as the kernel's FOPEN fills
+                ; it -- +14..31, size, first cluster, the cluster cache, +24 / +25 --
+                ; so the kernel's random and block bodies work on a file opened from
+                ; BASIC, as on the CF-3300 (scratchpad/bdosfcb_run1.out). fopen_fill_body
+                ; also seeds this ROM's sequential state (fat_open, BDOS_RECIDX,
+                ; BDOS_BYTESLEFT, BDOS_SEQREC), all this body did; IX is clobbered.
                 xor     a
                 ld      (BDOS_WRMODE), a    ; an Open is a READ open; clear write state
-                push    de              ; save FCB pointer across fat_mount
-                call    fat_mount
-                jr      c, bdos_open_failpop
-                pop     hl              ; HL = FCB
-                inc     hl              ; HL = FCB+1 = 11-byte 8.3 name field
-                call    fat_find
-                jr      c, bdos_open_err
-                call    fat_open
-                ld      a, RECPERSEC    ; buffer empty -> first read refills
-                ld      (BDOS_RECIDX), a
-                ; Seed the bytes-remaining counter from the true file size so
-                ; Sequential Read can bound the partial final record + EOF.
-                ld      hl, FAT_FILESIZE
-                ld      de, BDOS_BYTESLEFT
-                ld      bc, 4
-                ldir                    ; BDOS_BYTESLEFT = FAT_FILESIZE (4-byte LE)
-                xor     a               ; A = $00 success
-                ret
-bdos_open_failpop:
-                pop     hl              ; discard saved FCB pointer
-bdos_open_err:
-                ld      a, $FF
-                ret
+                jp      fopen_fill_body
 
 ; bdos_seqread ($14) — read the next 128-byte record into the DTA (BDOS_DTA).
 ; The record stream is bounded by the true file size in BDOS_BYTESLEFT (seeded
@@ -786,28 +782,11 @@ bsr_eof:
                 ld      a, $01          ; end-of-file
                 ret
 
-; bdos_rdblk ($27) — Random Block Read (RDBLK). The MSX-DOS-1 boot loads
-; MSXDOS.SYS through this (a3 §8.9): after Open + SetDTA it issues $27 with a huge
-; record count to pull the whole file in.
-;   in:  DE = FCB (already Open'd), HL = number of records to read
-;        record size  = FCB +14..15 (word; 0 -> default 128)
-;        start record = FCB +33..35 — SUPPORTED ONLY AS 0 (read from file start);
-;                       the boot always passes 0. A non-zero random seek is a
-;                       documented simplification (no boot path uses it).
-;        DTA          = BDOS_DTA (set by the preceding $1A); records land at
-;                       DTA, DTA+recsize, … within this one call (BDOS_DTA itself
-;                       is left unchanged for later calls).
-;   out: A  = $00 all requested records read / $01 EOF before all (partial)
-;        HL = number of records actually read
-;        BC = HL (the genuine BDOS $27 returns the count in both; MSXDOS.SYS
-;             init reads BC at its $024A sign branch — §8.32/§8.33)
-; Re-primes the file iterator to the start each call (idempotent random-record-0
-; semantics) and streams bytes from SECTOR_BUF, refilling via fat_read_file_sector.
-; Bounded by the true file size in BDOS_BYTESLEFT (reseeded from FAT_FILESIZE here).
-; See disk/PROVENANCE.md §BDOS interface.
-bdos_rdblk:
-                call    rdblk_rs
-                jr      rdb_rs_ok
+; bdos_rdblk ($27) is gone (D-BDOSFCB, 2026-11-10): the $F37D RDBLK is the kernel's
+; k47b2_body -- RR-positioned, the zero-padded last record, RR written back -- on
+; the FCB bdos_open now fills, as the CF-3300 answers it from BASIC
+; (scratchpad/bdosfcb_run1.out). The boot loader's RR 0 / RS 1 / huge-count call is
+; that same contract (k47b2_body's header). It re-primed from record 0 every call.
 ; rdblk_rs -- RDBLK_REQ := HL (the requested record count); RDBLK_RECSIZE := the
 ; FCB's (DE) record size at +14..15, 0 -> 128 (MSX-DOS block I/O). Shared with
 ; k47b2_body, which carried the same 29 B (D-WRZER's carve, 2026-11-09).
@@ -826,20 +805,6 @@ rdblk_rs:
 rrs_st:
                 ld      (RDBLK_RECSIZE), hl
                 ret
-rdb_rs_ok:
-                ; re-prime the read position to the file start (random record 0)
-                call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
-                ld      hl, FAT_FILESIZE    ; BDOS_BYTESLEFT = true file size
-                ld      de, BDOS_BYTESLEFT
-                ld      bc, 4
-                ldir
-                ld      hl, 512
-                ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
-                ld      hl, 0
-                ld      (RDBLK_DONE), hl    ; no records delivered yet
-                ld      hl, (BDOS_DTA)
-                ld      (RDBLK_DST), hl     ; local write pointer (BDOS_DTA preserved)
-                jp      rdb_recloop_body    ; Tier-2 3b: divert; veneer fills the gap (M24 slice B)
 ; --- MSX-DOS-1 kernel FMAKE-worker entry: $461D (M24 slice B;
 ; tier2-m24-fclose-multicluster-spec.md) --------------------------------------
 ; The RAM kernel's BDOS $16 FMAKE handling CALLs this page-1 entry with the
@@ -852,6 +817,28 @@ rdb_rs_ok:
 ; file. rdb_recloop..rdb_eof (unchanged, M21b) are relocated below to make
 ; room -- position-free, reached only by label from bdos_rdblk's own
 ; `jp rdb_recloop_body` fall-through above.
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; 📍 D-RECBIG (2026-11-04): rnd_loc and fac_mag moved here from the $5602..$5E10 fill, which the 32-bit record outgrew.
+; rnd_loc -- D-LOC: the row's random record +33..36 := GP_RECNO (32 bits; out: DE
+; = row+33). 🏗️ D-RECBIG (2026-11-04): LOC is the ROW's random record, where the
+; CF-3300's FCB keeps it (+33 = 2 after `GET#1,2`), read UNSIGNED by main's LOC
+; through H_CHIN op 8 (din_lofloc) and by D-RECAUTO's bare form (hdg_next). hk_dget
+; sets it to n - 1 before the I/O and to n after it succeeds -- the CF-3300's rule
+; (PUT #1,1E9: Disk full, LOC 999999999; PUT 5 then GET 9: Input past end, LOC 8).
+; The record's own k = n - 1 is therefore what frnd_off reads during the I/O.
+; IX = the row. Clobbers BC, HL.
+rnd_loc:
+                push    ix
+                pop     hl
+                ld      bc, 33
+                add     hl, bc
+                push    hl
+                ex      de, hl
+                ld      hl, GP_RECNO
+                ld      c, 4
+                ldir
+                pop     de                  ; DE = row+33 (CF = 0: add's)
+                ret
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
                 jp      bdos_create         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)

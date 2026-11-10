@@ -176,8 +176,7 @@ init:
                 ld      (SYSTEM + 1), hl    ; $F37D = C3 <stub lo> <hi> (install_f37d)
                 ; default the settable DTA to the MSX-DOS default ($0080) so a
                 ; SeqRead before any $1A behaves as MSX-DOS does.
-                ld      hl, DTA_DEFAULT
-                ld      (BDOS_DTA), hl
+                call    dta_init            ; both DTA cells := $0080 (disk/driver.asm)
                 ; --- populate RAMAD0-3 so MSX-DOS can re-page RAM into page 0 ---
                 ; The disk ROM's INIT owns the per-page RAM-slot table (§8.8/§8.16):
                 ; MSXDOS.SYS's resident init reads RAMAD0-3 ($F341-4) to map RAM into

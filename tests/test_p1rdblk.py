@@ -5,8 +5,11 @@ in the RAM under the disk ROM, and P1_BLIT is there to do it on every host.
 
 starsh2's boot loader maps RAM into page 1, sets the DTA to $4000 and reads its
 game with BDOS $27. The CF-3300 has the bytes at $4000 afterwards; zerobas had
-$FF there (scratchpad/starsh2_p1.out): rdb_recloop_body stored each byte with a
-plain `ld (hl),a`, which went to the disk ROM itself while it was mapped. And
+$FF there (scratchpad/starsh2_p1.out): the block read stored each byte with a
+plain `ld (hl),a`, which went to the disk ROM itself while it was mapped. Every
+block read stores through dta_put now (D-BDOSFCB, 2026-11-10: the $F37D RDBLK is the
+kernel's k47b2_body, whose transfer loop calls it; the old rdb_recloop_body is gone),
+so these rows drive dta_put, one byte per call, as that loop does. And
 P1_BLIT -- the page-3 routine that copies with page 1 switched to RAM -- was
 installed only behind the $FF gate, so not on the C-BIOS target at all.
 
@@ -54,18 +57,12 @@ def run():
 
     def machine(dst):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
-        q = list(data)
-
-        def getbyte(mach):
-            mach.cpu.a = q.pop(0)
-            mach.cpu.f &= ~1
-        m.trap("rdblk_getbyte", getbyte)
-        m.poke_w(m.addr("RDBLK_REQ"), 1)
-        m.poke_w(m.addr("RDBLK_RECSIZE"), len(data))
-        m.poke_w(m.addr("RDBLK_DONE"), 0)
         m.poke_w(m.addr("RDBLK_DST"), dst)
-        m.poke(m.addr("BDOS_BYTESLEFT"), (len(data)).to_bytes(4, "little"))
         return m
+
+    def record(m):
+        for b in data:
+            m.call("dta_put", a=b)
 
     # --- page 1: through P1_BLIT ------------------------------------------------
     dst = 0x4100
@@ -80,21 +77,22 @@ def run():
             page1_ram[c.de + i] = mach.mem[c.hl + i]
         c.hl, c.de, c.bc = c.hl + c.bc, c.de + c.bc, 0
     m.trap("P1_BLIT", p1blit)
-    c = m.call("rdb_recloop_body")
+    record(m)
     got = bytes(page1_ram.get(dst + i, 0xEE) for i in range(4))
     check(got == data and len(blits) == 4 and all(b[2] == 1 for b in blits),
           f"page-1 DTA ${dst:04X}: RAM gets {got.hex()} in {len(blits)} one-byte blits "
           f"(want {data.hex()}, 4)")
     check(bytes(m.mem[dst:dst + 4]) == rom_before,
           "page-1 DTA: the ROM image under it is untouched (no plain store)")
-    check(c.a == 0 and c.hl == 1, f"page-1 DTA: A={c.a:02X} HL={c.hl:04X} (want 00, 1 record)")
+    ptr = int.from_bytes(m.peek(m.addr("RDBLK_DST"), 2), "little")
+    check(ptr == dst + 4, f"page-1 DTA: the pointer moved to ${ptr:04X} (want past the record)")
 
     # --- page 2: plain stores ------------------------------------------------------
     dst = 0x8100
     m = machine(dst)
     blits = []
     m.trap("P1_BLIT", lambda mach: blits.append(1))
-    m.call("rdb_recloop_body")
+    record(m)
     check(m.peek(dst, 4) == data and not blits,
           f"page-2 DTA ${dst:04X}: {m.peek(dst, 4).hex()} stored directly, {len(blits)} blits "
           "(want the record, 0)")

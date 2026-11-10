@@ -17563,6 +17563,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SEQREAD / SEQWRITE keep CR / the size in the FCB. (C) retire what is dead
       (bdos_rdblk, rdb_recloop_body, ... ~255 B by the survey's count, some of it between
       pins). Registers: compare each row's A / HL / BC to the CF-3300's here.
+      ✅ **STAGE A (2026-11-10):** the $F37D FOPEN is `jp fopen_fill_body` after clearing
+      BDOS_WRMODE (the FCB filled as the kernel's FOPEN fills it); $27 goes to k47b2_body;
+      bdos_tab answers $21 $22 $23 $24 $26 $28 with the kernel bodies; dta_init seeds BOTH
+      DTA cells ($0080: DOS_DTAPTR, which the kernel bodies read, was $FFFF on a cold boot;
+      the CF-3300's default is $DC6E, a buffer in its own work area -- ours keeps $0080);
+      WRRND clears +14 as RDRND does (the CF-3300 does on an in-file WRRND). Retired:
+      bdos_open's body, bdos_rdblk, rdb_rs_ok, rdb_recloop_body. Room: rnd_loc, bb_gtime,
+      bb_version moved to clear two overruns ($543C, the table's six rows; $41EF, INIT).
+      **disk.rom free 429 -> 554 B.** 📏 [`bdosfcb_run3.out`](scratchpad/bdosfcb_run3.out): FOPEN's FCB, RDRND, FSIZE, RDBLK
+      (identical), WRRND, WRBLK, WRZER and their FCBs match the CF-3300. Residuals: (1)
+      SEQREAD / SEQWRITE keep CR and the size out of the FCB -- stage B; (2) SETRND: A $25
+      and RR $080002 here, A $12 and RR $400001 there (both from an RS-128 FCB; read the
+      kernel body's s2 use first); (3) BC after nearly every call ($0001 or the count
+      there, internal values here -- not in the published contracts); (4) RDRND of the
+      never-written record 4 reads $11 on the CF-3300 (its sector buffer's leftover: it
+      writes an extended sector without reading it), $E5 here -- reference garbage, not a
+      target. tests/test_bdosbasic.py ($21 / $26 answer now) and tests/test_p1rdblk.py
+      (drives dta_put, the store every block read uses) updated. bdos-acceptance 25/25,
+      diskbasic-acceptance, p1dta-acceptance green.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

@@ -1093,27 +1093,6 @@ dsm_p1_post:
                 ld      bc, 32
                 jp      P1_BLIT
 
-; 📍 D-RECBIG (2026-11-04): rnd_loc and fac_mag moved here from the $5602..$5E10 fill, which the 32-bit record outgrew.
-; rnd_loc -- D-LOC: the row's random record +33..36 := GP_RECNO (32 bits; out: DE
-; = row+33). 🏗️ D-RECBIG (2026-11-04): LOC is the ROW's random record, where the
-; CF-3300's FCB keeps it (+33 = 2 after `GET#1,2`), read UNSIGNED by main's LOC
-; through H_CHIN op 8 (din_lofloc) and by D-RECAUTO's bare form (hdg_next). hk_dget
-; sets it to n - 1 before the I/O and to n after it succeeds -- the CF-3300's rule
-; (PUT #1,1E9: Disk full, LOC 999999999; PUT 5 then GET 9: Input past end, LOC 8).
-; The record's own k = n - 1 is therefore what frnd_off reads during the I/O.
-; IX = the row. Clobbers BC, HL.
-rnd_loc:
-                push    ix
-                pop     hl
-                ld      bc, 33
-                add     hl, bc
-                push    hl
-                ex      de, hl
-                ld      hl, GP_RECNO
-                ld      c, 4
-                ldir
-                pop     de                  ; DE = row+33 (CF = 0: add's)
-                ret
 
 ; fac_mag -- HL = |FAC| TRUNCATED toward zero, for a FLOAT FAC (FACTYP 4 / 8);
 ; CF = 1 when the magnitude passes 65535. hk_mki's range: fac_mag32's value with
@@ -1127,6 +1106,33 @@ fac_mag:
                 scf
                 ret
 
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+; --- MSX-DOS-1 kernel console entries: $543C/$5445/$544E (M22a) ---------------
+; While processing BDOS CONST ($0B) / CONIN ($01) / INNOE ($08) the relocated
+; kernel CALLs these page-1 disk-ROM entries. All three were un-wired $00 pad,
+; NOP-sliding into the $5454 CONOUT veneer below — each would have emitted a
+; garbage char via CONOUT (E's leftover value) instead of polling/reading the
+; keyboard, without ever consuming a queued key (tier2-m22-cpmver-spec.md §4.5).
+; Bodies (const_body/conin_body/innoe_body, free tail) use the same CHSNS/CHGET
+; inter-slot primitives conin_line_body/conout_body already use.
+; CLEAN-ROOM: published CONST/CONIN/INNOE contracts (map.grauw.nl) + our own
+; pg0_mainrom_in/out inter-slot path; no stock routine internals decoded.
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+bb_gtime:
+                xor     a                   ; no clock: 00:00:00.00
+                ld      b, a
+                ld      c, a
+                ld      d, a
+                ld      e, a
+                ld      h, a
+                ld      l, a
+                ret
+; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
+bb_version:
+                ld      hl, $0022           ; MSX-DOS 1 answers version 2.2
+                ld      b, h
+                ld      a, l
+                ret
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -1154,6 +1160,18 @@ bdos_tab:
                 dw      bb_delete
                 db      $17
                 dw      bb_rename
+                db      $21                 ; D-BDOSFCB (2026-11-10): the kernel's random
+                dw      rdrnd_body          ; and block bodies, on the FCB the $F37D
+                db      $22                 ; FOPEN / FMAKE fill (they answered $FF)
+                dw      wrrnd_body
+                db      $23
+                dw      fsize_body
+                db      $24
+                dw      setrnd_body
+                db      $26
+                dw      wrblk_body
+                db      $28
+                dw      wrzer_body
                 db      $18
                 dw      login_body
                 db      $19
@@ -1205,35 +1223,11 @@ bb_conout:
                 call    conout_body         ; E = the character (AF kept)
                 ld      a, e                ; the references leave it in A
                 ret
-bb_version:
-                ld      hl, $0022           ; MSX-DOS 1 answers version 2.2
-                ld      b, h
-                ld      a, l
-                ret
 bb_dskrst:
                 xor     a
                 ld      (CURDRV_CELL), a    ; drive A
                 ret
-bb_gtime:
-                xor     a                   ; no clock: 00:00:00.00
-                ld      b, a
-                ld      c, a
-                ld      d, a
-                ld      e, a
-                ld      h, a
-                ld      l, a
-                ret
 
-; --- MSX-DOS-1 kernel console entries: $543C/$5445/$544E (M22a) ---------------
-; While processing BDOS CONST ($0B) / CONIN ($01) / INNOE ($08) the relocated
-; kernel CALLs these page-1 disk-ROM entries. All three were un-wired $00 pad,
-; NOP-sliding into the $5454 CONOUT veneer below — each would have emitted a
-; garbage char via CONOUT (E's leftover value) instead of polling/reading the
-; keyboard, without ever consuming a queued key (tier2-m22-cpmver-spec.md §4.5).
-; Bodies (const_body/conin_body/innoe_body, free tail) use the same CHSNS/CHGET
-; inter-slot primitives conin_line_body/conout_body already use.
-; CLEAN-ROOM: published CONST/CONIN/INNOE contracts (map.grauw.nl) + our own
-; pg0_mainrom_in/out inter-slot path; no stock routine internals decoded.
 ; 📍 D-RECBIG (2026-11-04): frnd_pass_len moved here from the $5602..$5E10 fill.
 ; frnd_pass_len -- BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC: the
 ; bytes of the record that fit in the sector this pass holds. Clobbers A, DE, HL.
@@ -8210,58 +8204,6 @@ ncw_next:
 
 ; --- M24 slice B relocated bodies (tier2-m24-fclose-multicluster-spec.md §6) --
 
-; rdb_recloop_body — verbatim relocation of disk/driver.asm's bdos_rdblk
-; record/byte move loop (rdb_recloop..rdb_eof, unchanged since M21b). Moved
-; here only because its old span's tail byte collided with the new $461D
-; FMAKE-worker canonical entry; reached solely by driver.asm's own
-; `jp rdb_recloop_body` fall-through (position-free, no external caller).
-rdb_recloop_body:
-                ld      hl, (RDBLK_DONE)
-                ld      de, (RDBLK_REQ)
-                or      a
-                sbc     hl, de
-                jr      z, rdb_ok           ; delivered every requested record
-                ld      hl, (RDBLK_RECSIZE)
-                ld      (RDBLK_CNT), hl     ; bytes still to copy for this record
-rdb_byteloop:
-                ld      hl, (RDBLK_CNT)
-                ld      a, h
-                or      l
-                jr      z, rdb_recdone      ; whole record copied
-                ; EOF when every file byte has been delivered (BYTESLEFT == 0)
-                ld      hl, (BDOS_BYTESLEFT)
-                ld      de, (BDOS_BYTESLEFT + 2)
-                ld      a, h
-                or      l
-                or      d
-                or      e
-                jr      z, rdb_eof
-                call    rdblk_getbyte       ; A = next file byte (advances buffer)
-                jr      c, rdb_eof          ; chain ended early (defensive)
-                call    dta_put             ; D-P1RDBLK: page-1 RAM under this ROM too
-                ld      hl, (RDBLK_CNT)
-                dec     hl
-                ld      (RDBLK_CNT), hl
-                jr      rdb_byteloop
-rdb_recdone:
-                ld      hl, (RDBLK_DONE)
-                inc     hl
-                ld      (RDBLK_DONE), hl
-                jr      rdb_recloop_body
-rdb_ok:
-                xor     a                   ; A = $00 all requested records read
-                ld      hl, (RDBLK_DONE)
-                ld      b, h                ; BC = HL = records read (§8.33): the genuine
-                ld      c, l                ; BDOS $27 returns the count in BOTH HL and BC,
-                ret                         ; and MSXDOS.SYS init reads BC (§8.32 $024A branch)
-rdb_eof:
-                ld      a, $01              ; A = $01 EOF before all requested
-                ld      hl, (RDBLK_DONE)    ; HL = records actually read
-                ld      b, h                ; BC = HL = records read (§8.33; see rdb_ok)
-                ld      c, l
-                ret
-
-
 ; fdc_read_data_body — relocated fdc_read_data (M26, tier2-m26-spec.md): its
 ; old span at driver.asm's $435A collided with the real kernel's canonical
 ; $17 FREN dispatch entry, $4392 (56 bytes into the original 74-byte body --
@@ -8723,6 +8665,9 @@ rrnd_eof:
 wrrnd_body:
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer
+                ld      (ix+14), 0          ; D-BDOSFCB: +14 := 0, as RDRND's rdrnd_ex does
+                                            ; -- the CF-3300 clears it on an in-file WRRND
+                                            ; too (scratchpad/bdosfcb_run2.out, row 12)
                 call    rrnd_position
                 jr      c, wrrnd_ext        ; past EOF: D-WRRNDEXT grows the file (WRBLK's
                                             ; machinery); M26 had scoped FAT growth out

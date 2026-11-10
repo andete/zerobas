@@ -137,7 +137,7 @@ def run():
               f"BDOS $17 RENAME, new name {'taken' if taken else 'free'}: A ${cpu.a:02X}, "
               f"finds {finds}, stamps {stamps} (want ${want:02X})")
 
-    for fn in (0x00, 0x21, 0x26, 0x31):     # ($30 WRABS answers since D-BDOSABS)
+    for fn in (0x00, 0x31):     # ($30 WRABS answers since D-BDOSABS; $21..$28 since D-BDOSFCB)
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         cpu = m.call("bdos_entry", c=fn, de=0xC0DA)
         check(cpu.a == 0xFF, f"BDOS ${fn:02X} (not answered yet): A = ${cpu.a:02X} (want $FF)")
