@@ -767,6 +767,38 @@ cr_copy2:                                   ; (cr_copy1's second half, disk/kern
                 ld      bc, 4
                 ldir
                 jp      fat_dir_update
+; bdos_close_write -- FCLOSE of a file open for write (disk/driver.asm bdos_close ->
+; kernel.asm bdos_close_wm). Moved here by D-BDOSSEQ (2026-11-10), for room.
+bdos_close_write:
+                xor     a
+                ld      (BDOS_WRMODE), a    ; the file is no longer open for write
+                push    de                  ; the FCB
+                ; flush any buffered partial sector (BDOS_WRBUFLEN > 0).
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      a, h
+                or      l                   ; (CF = 0)
+                call    nz, fat_flush_data_sector
+                pop     hl                  ; HL = the FCB (POP keeps CF)
+                jr      c, bdos_close_err
+                ; 🔴 D-BDOSSEQ (2026-11-10): the size comes from the FCB (+16..19), not
+                ; this session's own count. A WRRND / WRBLK past the end of a file still
+                ; open from FMAKE grows the FCB's size (wrblk_body), never BDOS_WRBYTES:
+                ; FMAKE, one SEQWRITE, WRRND RR 1, FCLOSE left 128 bytes here, the
+                ; CF-3300 256 (scratchpad/bdosseq_run1.out). Every SEQWRITE keeps +16..19
+                ; equal to BDOS_WRBYTES (wrseq_wr_writeback), so this is that count when
+                ; nothing else grew the file.
+                ld      de, 16
+                add     hl, de
+                ld      de, BDOS_WRBYTES
+                ld      bc, 4
+                ldir
+                call    fat_dir_update      ; write true size + first cluster
+                jr      c, bdos_close_err
+                xor     a                   ; A = $00 success
+                ret
+bdos_close_err:
+                ld      a, $FF
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

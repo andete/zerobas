@@ -94,48 +94,23 @@ def run():
     check(cpu.a == 0 and m.mem[0xF247] == 0 and m.mem[m.addr("BASENT_REQ")] != ord("S"),
           f"BDOS $0D DSKRST: A ${cpu.a:02X}, drive {m.mem[0xF247]} (want 0, A:, no DOS mark)")
 
-    # --- slice 3b: DELETE / RENAME ------------------------------------------
-    def fcb(m, at, old, new=None):
-        m.poke(at, bytes(37))
-        m.poke(at + 1, old.encode())
-        if new:
-            m.poke(at + 17, new.encode())
-    for cfs, want in (([0, 0, 1], 0x00), ([1], 0xFF)):
+    # --- slice 3b: DELETE / RENAME -- since D-BDOSFCB stage C (2026-11-10) the $F37D
+    # BDOS routes them to the KERNEL's bodies (fdel_body, fren_wild: every match, as the
+    # CF-3300); their own behaviour is the MSX-DOS ladder's (DOSL-D5). Here: the route --
+    # each is reached with DE = the caller's FCB, and its A comes back.
+    for fn, body, a_back in ((0x13, "fdel_body", 0x00), (0x13, "fdel_body", 0xFF),
+                             (0x17, "fren_wild", 0x00), (0x17, "fren_wild", 0xFF)):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
-        fcb(m, 0xC020, "PROBE?  TMP")
-        seq = list(cfs)
-        names = []
+        seen = []
 
-        def fdel(mach):
-            names.append(bytes(mach.mem[mach.addr("DISK_FCB_NAME"):mach.addr("DISK_FCB_NAME") + 11]))
-            mach.cpu.f = (mach.cpu.f & ~1) | seq.pop(0)
-        m.trap("fat_delete", fdel)
-        cpu = m.call("bdos_entry", c=0x13, de=0xC020)
-        check(cpu.a == want and len(names) == len(cfs) and names[0] == b"PROBE?  TMP",
-              f"BDOS $13 DELETE, fat_delete CF {cfs}: A ${cpu.a:02X}, {len(names)} call(s), "
-              f"name {names[:1]} (want ${want:02X})")
-    for taken, want, stamped in ((False, 0x00, 1), (True, 0xFF, 0)):
-        m = Machine(ROM, SYM, rom_base=DISK_BASE)
-        fcb(m, 0xC100, "PROBE   TMP", "PROBE2  TMP")
-        finds = []
-        stamps = []
-        m.trap("fat_mount", lambda mach: setattr(mach.cpu, "f", mach.cpu.f & ~1))
-
-        def ffind(mach, taken=taken):
-            name = bytes(mach.mem[mach.cpu.hl:mach.cpu.hl + 11])
-            finds.append(name)
-            found = name == b"PROBE   TMP" or taken
-            mach.cpu.f = (mach.cpu.f & ~1) | (0 if found else 1)
-        m.trap("fat_find", ffind)
-        m.trap("hkn_stamp", lambda mach: (stamps.append(bytes(
-            mach.mem[mach.addr("DISK_FCB_NAME"):mach.addr("DISK_FCB_NAME") + 11])),
-            setattr(mach.cpu, "f", mach.cpu.f & ~1)))
-        cpu = m.call("bdos_entry", c=0x17, de=0xC100)
-        check(cpu.a == want and len(stamps) == stamped
-              and (not stamped or stamps[0] == b"PROBE2  TMP")
-              and finds == [b"PROBE   TMP", b"PROBE2  TMP"],
-              f"BDOS $17 RENAME, new name {'taken' if taken else 'free'}: A ${cpu.a:02X}, "
-              f"finds {finds}, stamps {stamps} (want ${want:02X})")
+        def reach(mach, a_back=a_back):
+            seen.append(mach.cpu.de)
+            mach.cpu.a = a_back
+        m.trap(body, reach)
+        cpu = m.call("bdos_entry", c=fn, de=0xC100)
+        check(seen == [0xC100] and cpu.a == a_back,
+              f"BDOS ${fn:02X} -> {body}: reached with DE {[hex(d) for d in seen]}, "
+              f"A ${cpu.a:02X} (want DE $C100 once, A ${a_back:02X})")
 
     for fn in (0x00, 0x31):     # ($30 WRABS answers since D-BDOSABS; $21..$28 since D-BDOSFCB)
         m = Machine(ROM, SYM, rom_base=DISK_BASE)

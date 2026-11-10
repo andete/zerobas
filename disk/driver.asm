@@ -556,11 +556,13 @@ rhc_go:
                 ret                         ; gets its CF and A
                 ds      $44F4 - $, $00      ; pad the rest of the vacated span (net-zero)
 
-; choice — format-choice string (CHOICE entry point).
-; Return HL = 0 (no format-choice string): we support only one fixed 720 KB
-; geometry (MSX2 TH, disk ROM interface: HL = 0 means no choices offered).
+; choice — format-choice string (CHOICE entry point): HL -> the menu FORMAT prints,
+; $00-terminated. D-DSKFMT (2026-11-10): the CF-3300's four choices, measured as the
+; text a program is handed (scratchpad/dskfmt_stock2.out, _c2 .. _c4: 82 bytes, CR LF
+; first, ",double track" with no space, CR LF CR LF last). The text is in kernel.asm's
+; hole before $55DB (choice_txt). DSKFMT itself is still the stub below.
 choice:
-                ld      hl, 0
+                ld      hl, choice_txt
                 ret
 
 ; dskfmt — format disk (write support deferred indefinitely; not a loader need).
@@ -927,22 +929,6 @@ bdos_close:
 bdos_close_rd:
                 jp      close_read      ; read close: nothing to flush, but a WRITTEN
                                         ; file is re-dated (D-CLOSESTAMP)
-bdos_close_write:
-                xor     a
-                ld      (BDOS_WRMODE), a    ; the file is no longer open for write
-                ; flush any buffered partial sector (BDOS_WRBUFLEN > 0).
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      a, h
-                or      l
-                jr      z, bdos_close_dir   ; nothing buffered
-                call    fat_flush_data_sector
-                jr      c, bdos_close_err
-bdos_close_dir:
-                call    fat_dir_update      ; write true size + first cluster
-                jr      c, bdos_close_err
-                xor     a                   ; A = $00 success
-                ret
-bdos_close_err:
-                ld      a, $FF
-                ret
+; (bdos_close_write -- the write-mode close -- is in disk/runtime.asm, before $7F7C:
+; D-BDOSSEQ's size-from-the-FCB did not fit here.)
 

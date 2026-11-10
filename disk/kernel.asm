@@ -1156,10 +1156,10 @@ bdos_tab:
                 dw      bb_dskrst
                 db      $0E
                 dw      seldsk_drv_body
-                db      $13
-                dw      bb_delete
+                db      $13                 ; D-BDOSFCB C: the kernel's, every match
+                dw      fdel_body
                 db      $17
-                dw      bb_rename
+                dw      fren_wild
                 db      $21                 ; D-BDOSFCB (2026-11-10): the kernel's random
                 dw      rdrnd_body          ; and block bodies, on the FCB the $F37D
                 db      $22                 ; FOPEN / FMAKE fill (they answered $FF)
@@ -1561,59 +1561,10 @@ setdta_cache_body:
                 ret
                 ds      $5552 - $, $00
 k_5552:         jp      sdate_body
-; --- D-BDOSBASIC slice 3b: DELETE / RENAME at $F37D (oracle; MSX2 TH BDOS) ------
-; Both references delete and rename from a BASIC program (scratchpad/bdosset_run2.out:
-; RENAME PROBE.TMP -> PROBE2.TMP A = 0, DELETE PROBE2.TMP A = 0, a search for it then
-; $FF; a missing name $FF for both). The FAT work is KILL's and NAME's own:
-; fat_delete (wildcards, the first match each time) and hkn_stamp (the new name over
-; the old entry). RENAME takes the names as they are -- a '?' in the NEW name is not
-; resolved against the old one (unmeasured; own choice for now).
-bb_delete:                                  ; DE = FCB, the name (wildcards) at +1
-                ex      de, hl
-                inc     hl
-                call    bb_name11
-                ld      c, 0                ; C = deleted any
-bbd_loop:
-                push    bc
-                call    fat_delete          ; frees and $E5-marks the first match
-                pop     bc
-                jr      c, bbd_end
-                ld      c, 1
-                jr      bbd_loop
-bbd_end:
-                ld      a, c
-                dec     a                   ; deleted: 0; none: $FF
-                ret
-bb_rename:                                  ; DE = FCB: old name at +1, new at +17
-                push    de
-                ex      de, hl
-                inc     hl
-                call    bb_name11
-                call    fat_mount
-                jr      c, bbr_failpop
-                ld      hl, DISK_FCB_NAME
-                call    fat_find            ; the old one -> FWR_DIRSEC / FWR_DIROFF
-                jr      c, bbr_failpop
-                pop     hl
-                ld      de, 17
-                add     hl, de
-                call    bb_name11           ; DISK_FCB_NAME := the new name
-                call    new_taken           ; CF clear: the new name is taken
-                jr      nc, bbr_fail
-                call    hkn_stamp
-                jr      c, bbr_fail
-                xor     a
-                ret
-bbr_failpop:
-                pop     de
-bbr_fail:
-                ld      a, $FF
-                ret
-bb_name11:                                  ; DISK_FCB_NAME := the 11 bytes at HL
-                ld      de, DISK_FCB_NAME
-                ld      bc, 11
-                ldir
-                ret
+; (D-BDOSFCB stage C, 2026-11-10: bb_delete / bb_rename / bb_name11, the $F37D BDOS's
+; own DELETE and RENAME, are gone -- bdos_tab sends $13 / $17 to the kernel's fdel_body
+; and fren_wild, which take the same DE = FCB and match every entry as the CF-3300:
+; a '?' in RENAME's new name keeps the entry's own byte, where bb_rename copied it.)
 
 ; --- MSX-DOS-1 kernel GTIME/STIME/VERIFY entries: $55DB/$55E6/$55FF (M22a) ----
 ; While processing BDOS GTIME ($2C) / STIME ($2D) / VERIFY ($2E) the relocated
@@ -1662,6 +1613,14 @@ rnd_tab:
                 add     hl, de
                 ret
 
+; choice_txt -- CHOICE's menu (disk/driver.asm `choice`): the CF-3300's text, 82 bytes
+; with the $00. D-DSKFMT, 2026-11-10.
+choice_txt:
+                db      13, 10, "1 - 1 side"
+                db      13, 10, "2 - 2 sides"
+                db      13, 10, "3 - 1 side, double track"
+                db      13, 10, "4 - 2 sides,double track"
+                db      13, 10, 13, 10, 0
                 ds      $55DB - $, $00  ; pad up to the pinned $55DB GTIME entry (M22a)
 k_55DB:
                 jp      gtime_body      ; $55DB: BDOS $2C GTIME canonical entry (M22a)
@@ -7158,16 +7117,30 @@ dskchg_body:
                 ld      b, 1                ; "unchanged"
                 xor     a                   ; A = 0, Cy = 0
                 ret
-; seq_dirty -- D-BDOSFCB B2 (2026-11-10): a random call moved the read iterator, so
-; BDOS_SEQREC no longer says where it stands: $FFFF makes srd_pos re-position the
-; next SEQREAD from the FCB. Skipped for a write-open file, whose SEQWRITE write-back
-; counts on BDOS_SEQREC. Clobbers A, HL.
+; seq_dirty -- the start of every random positioning (rrnd_position, k47b2_seek).
+; READ-open (D-BDOSFCB B2): the read iterator moves, so BDOS_SEQREC := $FFFF makes
+; srd_pos re-position the next SEQREAD from the FCB. WRITE-open (D-BDOSSEQ,
+; 2026-11-10): the SEQWRITE records still buffered go out FIRST -- the random call
+; reads its sector into that same buffer, and FCLOSE's flush then zero-padded over
+; what it wrote (FMAKE, SEQWRITE, WRRND RR 1, FCLOSE: record 1 read back $00 here,
+; $22 on the CF-3300 -- scratchpad/bdosseq_run2.out). A later SEQWRITE starts the next
+; sector, as one after a random call did not continue at CR anyway (B3). Clobbers
+; A, HL; when it flushes, BC and DE too (fat_flush_data_sector).
 seq_dirty:
                 ld      a, (BDOS_WRMODE)
                 or      a
-                ret     nz
+                jr      nz, sd_write
                 ld      hl, $FFFF
                 ld      (BDOS_SEQREC), hl
+                ret
+sd_write:
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing buffered
+                call    fat_flush_data_sector
+                ld      hl, 0
+                ld      (BDOS_WRBUFLEN), hl ; drained (flags kept: CF = the flush's)
                 ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
