@@ -3118,6 +3118,13 @@ item — do **one item per session** to keep context lean.
       FAT_DBUF writer: fat_read_file_sector / frs_to, rd_dbuf, the RANDOM engine, BDOS reads,
       LOAD's first sector, FILES / KILL / NAME's directory reads); a missed one LOSES DATA,
       so the audit is a list with a gate row per writer, and the knife is "drop one flush".
+      📋 **AUDIT LIST BUILT (2026-11-11, [`dbuf_audit.out`](scratchpad/dbuf_audit.out)):** 66 code references to the shared
+      buffer (FAT_DBUF = SECTOR_BUF = FSECTOR_BUF) in ~45 routines -- fat_mount 6, getdpb /
+      fdl_marked / dsm_p1_pre / bb_mark 3 each, then the channel (dout_write, close_read,
+      cr_chkdir, hkn_stamp), the FAT walkers (fm_fatacc, fnc_straddle, fcf_*), LOAD (hd_rest,
+      hd_last) and the BDOS (bsr_partial, dta_chunk, fip_store). ➡️ Next: classify each by
+      hand (R read-into / C copy-into / W written-from / P pointer-only); every R and C site
+      takes the "flush the held half first" rule, W and P need none.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8034,7 +8041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:15069 (T-529ABE)`: a
+      `TODO.md:10474 (T-6FE392)8 (T-529ABE)` from `TODO.md:15076 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10780,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15076 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

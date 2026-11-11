@@ -1,0 +1,72 @@
+# D-WCACHE W3b audit (2026-11-11): every code reference to the shared sector buffer
+# (FAT_DBUF = SECTOR_BUF = FSECTOR_BUF, $E8AD..$EAAC) in the disk build's sources, with
+# its enclosing label and the next 2 instructions. Comments and equ lines excluded.
+# Class (by hand, below each row group): R = a sector is READ into it; W = it is
+# WRITTEN to disk from it; C = bytes copied into it; P = a pointer / parse of it.
+disk/disk.asm:71    ?                            IF SECTOR_BUF - FSECTOR_BUF      | db      DISK_SECTOR_BUF_IS_NOT_MAIN_FSECTOR_BUF / ENDIF
+disk/disk.asm:80    ?                            IF SECTOR_BUF + 512 - WBUF       | db      DISK_SHARED_BUFFERS_ARE_NOT_ADJACENT / ENDIF
+disk/driver.asm:55    dskio_next                   ld      hl, SECTOR_BUF           | ld      (FDC_DEST), hl / call    fdc_read_phys
+disk/driver.asm:60    dskio_next                   ld      hl, SECTOR_BUF           | ld      de, (P1_DEST) / ld      bc, 512
+disk/driver.asm:680   hkn_stamp                    ld      hl,FAT_DBUF              | ld      de,(FWR_DIROFF) / add     hl,de
+disk/driver.asm:687   hkn_stamp                    ld      hl,FAT_DBUF              | jp      write_sector
+disk/driver.asm:760   bsr_partial                  ld      de, SECTOR_BUF           | add     hl, de / ld      de, (BDOS_DTA)
+disk/driver.asm:907   rgb_have                     ld      de, SECTOR_BUF           | add     hl, de / ld      c, (hl)
+disk/fat.asm:1475  getdpb                       ld      a, (SECTOR_BUF + 21)     | ld      (hl), a / inc     hl
+disk/fat.asm:1481  getdpb                       ld      a, (SECTOR_BUF + BPB_BYTSPERSEC) | ld      (hl), a / inc     hl
+disk/fat.asm:1484  getdpb                       ld      a, (SECTOR_BUF + BPB_BYTSPERSEC + 1) | ld      (hl), a / inc     hl
+disk/fat.asm:1539  gdpb_popdone                 ld      a, (SECTOR_BUF + BPB_ROOTENTCNT) | ld      (hl), a / inc     hl
+disk/fat.asm:1758  fre_have                     ld      de, FAT_DBUF             | add     hl, de / ret
+disk/kernel.asm:230   fat_geom_read                ld      a, (FAT_DBUF)            | jr      nc, fgr_media / ld      a, $F9
+disk/kernel.asm:238   rd_dbuf                      ld      hl, FAT_DBUF             | jp      read_sector / wr_sbuf:
+disk/kernel.asm:242   wr_sbuf                      ld      hl, SECTOR_BUF           | jp      write_sector / fgr_media:
+disk/kernel.asm:254   fat_media                    ld      a, (FAT_DBUF)            | sub     $F8 / ret     c
+disk/kernel.asm:266   fat_media                    ld      hl, FAT_DBUF + 11        | ld      (hl), 0 / inc     hl
+disk/kernel.asm:1114  dsm_p1_pre                   ld      de, SECTOR_BUF + 256     | or      a / sbc     hl, de
+disk/kernel.asm:1117  dsm_p1_pre                   ld      hl, SECTOR_BUF + 256     | jr      c, dpp_set / ld      hl, SECTOR_BUF
+disk/kernel.asm:1119  dsm_p1_pre                   ld      hl, SECTOR_BUF           | dpp_set: / ld      (DOS_DTAPTR), hl
+disk/kernel.asm:2131  hkm_sec                      ld      hl,FAT_DBUF              | ld      b,16 / hkm_ent:        ld      a,(hl)
+disk/kernel.asm:2218  close_read                   ld      hl, SECTOR_BUF           | call    read_sector / pop     de
+disk/kernel.asm:2224  close_read                   ld      de, SECTOR_BUF           | add     hl, de / call    dir_stamp_date
+disk/kernel.asm:2603  hfa_clus                     ld      hl, FAT_DBUF             | bit     0, (ix+34) / jr      z, hfa_src
+disk/kernel.asm:2697  dout_write                   ld      de, FAT_DBUF             | bit     0, (ix+34) / jr      z, dwr_copy
+disk/kernel.asm:2702  dout_write                   ld      de, FAT_DBUF+256         | dwr_copy: / call    dout_pos
+disk/kernel.asm:2913  dta_chunk                    ld      de, SECTOR_BUF           | add     hl, de / ex      de, hl
+disk/kernel.asm:3476  bb_mark                      ld      de, SECTOR_BUF           | ld      bc, basent_tramp_end - basent_tramp / ldir
+disk/kernel.asm:3480  bb_mark                      jp      z, SECTOR_BUF + (bt_keep - basent_tramp) | jp      SECTOR_BUF
+disk/kernel.asm:3481  bb_mark                      jp      SECTOR_BUF               | basent_tramp:
+disk/kernel.asm:4661  fw_q1                        ld      hl, FAT_DBUF             | call    write_sector / jr      c, fw_io
+disk/kernel.asm:5710  fat_bufinit                  ld      hl, SECTOR_BUF           | ld      (DBUF_PTR), hl / ld      hl, WBUF
+disk/kernel.asm:6729  hd_last                      ld      hl,FAT_DBUF              | ld      bc,(FREAD_LEFT) / ldir
+disk/kernel.asm:7318  cr_chkdir                    ld      hl, SECTOR_BUF           | call    read_sector / pop     hl
+disk/kernel.asm:7324  cr_chkdir                    ld      bc, SECTOR_BUF           | add     hl, bc / ld      b, 11
+disk/kernel.asm:7391  fcb_dirloc                   ld      de, SECTOR_BUF           | or      a / sbc     hl, de
+disk/kernel.asm:8263  dsm_secloop                  ld      hl, SECTOR_BUF           | call    read_sector / jp      c, ds_none
+disk/kernel.asm:8271  dsm_secloop                  ld      hl, SECTOR_BUF           | ld      b, a / or      a
+disk/pageenv.asm:202   df_entptr                    ld      de,FAT_DBUF              | add     hl,de / ret
+disk/runtime.asm:621   hd_rest                      ld      hl,FAT_DBUF+1            | ld      de,(CLPTR) / ld      a,b
+basic/fat-prim-body.inc:199   fat_mount                    ld      a, (FAT_DBUF + BPB_BYTSPERSEC) | or      a / jr      nz, fat_mount_bad
+basic/fat-prim-body.inc:202   fat_mount                    ld      a, (FAT_DBUF + BPB_BYTSPERSEC + 1) | cp      2 / jr      nz, fat_mount_bad
+basic/fat-prim-body.inc:205   fat_mount                    ld      a, (FAT_DBUF + BPB_SECPERCLUS) | ld      (FAT_SECPERCLUS), a / ld      hl, (FAT_DBUF + BPB_RSVDSECCNT)
+basic/fat-prim-body.inc:207   fat_mount                    ld      hl, (FAT_DBUF + BPB_RSVDSECCNT) | ld      (FAT_FATSTART), hl / ld      a, (FAT_DBUF + BPB_NUMFATS)
+basic/fat-prim-body.inc:210   fat_mount                    ld      a, (FAT_DBUF + BPB_NUMFATS) | ld      (FAT_NUMFATS), a / ld      b, a
+basic/fat-prim-body.inc:213   fat_mount                    ld      de, (FAT_DBUF + BPB_FATSZ16) | ld      (FAT_SECPERFAT), de / ld      hl, 0
+basic/fat-prim-body.inc:223   fm_fatacc                    ld      hl, (FAT_DBUF + BPB_ROOTENTCNT) | add     hl, hl / add     hl, hl
+basic/fat-prim-body.inc:247   fm_fatacc                    ld      hl, (FAT_DBUF + 19)      | or      a / sbc     hl, de
+basic/fat-prim-body.inc:304   ff_secloop                   ld      hl, FAT_DBUF             | call    read_sector / ret     c
+basic/fat-prim-body.inc:307   ff_secloop                   ld      hl, FAT_DBUF             | ld      b, 16 / ff_entloop:
+basic/fat-prim-body.inc:350   ff_found                     ld      de, FAT_DBUF             | or      a / sbc     hl, de
+basic/fat-prim-body.inc:481   fat_next_cluster             ld      bc, FAT_DBUF             | ld      a, (FAT_DEFER) / rla
+basic/fat-prim-body.inc:515   fnc_straddle                 ld      hl, FAT_DBUF             | call    read_sector / ld      a, (FAT_DBUF)
+basic/fat-prim-body.inc:517   fnc_straddle                 ld      a, (FAT_DBUF)            | fnc_combine: / ld      (FAT_B1), a
+basic/fat-prim-body.inc:558   fat_read_file_sector         ld      hl, FAT_DBUF             | frs_to: / push    hl
+basic/fat-prim-body.inc:1057  fcf_loop                     ld      hl, FAT_DBUF             | call    read_sector / fcf_have:
+basic/fat-prim-body.inc:1072  fcf_have                     ld      de, FAT_DBUF             | add     hl, de / ld      a, (hl)
+basic/fat-prim-body.inc:1094  fcf_b1_same                  ld      de, FAT_DBUF             | add     hl, de / ld      a, (hl)
+basic/fat-prim-body.inc:1155  fat_flush_data_sector        ld      hl, FAT_DBUF             | add     hl, de / ffds_padloop:
+basic/fat-prim-body.inc:1212  ffds_haveclus                ld      hl, FAT_DBUF             | call    fatprim_write_sector / ret     c
+basic/fat-delete-body.inc:78    fdl_marked                   ld      hl, FAT_DBUF             | call    read_sector / ret     c
+basic/fat-delete-body.inc:82    fdl_marked                   ld      de, FAT_DBUF             | add     hl, de / ld      (hl), $E5
+basic/fat-delete-body.inc:86    fdl_marked                   ld      hl, FAT_DBUF             | jp      fatprim_write_sector
+basic/fatio-body.inc:92    fig_have                     ld      de, FAT_DBUF             | add     hl, de / ld      a, (hl)
+basic/fatiow-body.inc:79    fip_store                    ld      de, FAT_DBUF             | add     hl, de / ld      (hl), c
+# 66 references
