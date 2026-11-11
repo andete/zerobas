@@ -1,0 +1,16 @@
+biosregs rc=0
+ctrlkeys rc=0
+cursor rc=0
+keystr rc=0
+keyrepaint rc=0
+lnblank rc=0
+rg7 rc=0
+screditor rc=0
+stop-trap rc=0
+biosl rc=0
+initslot rc=0
+autorun rc=0
+bootkey rc=0
+expwrap rc=0
+
+[exited with code 0]

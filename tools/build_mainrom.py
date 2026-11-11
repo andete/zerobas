@@ -74,19 +74,19 @@ ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE))
 # D-CBIOS030 (2026-11-11): the old bytes below are C-BIOS 0.30's (+ our repack); the
 # vectors' targets moved, and the two code patches moved with their code ($1038 ->
 # $0FCB, $11CF -> $1162).
-PATCH_RANGES = {0x0008: bytes([0xC3, 0x80, 0x10]),     # RST 08h -> synchr (D-SYNCHR)
-                0x0010: bytes([0xC3, 0x92, 0x10]),     # RST 10h -> chrgtr
-                0x0018: bytes([0xC3, 0xAE, 0x10]),     # RST 18h -> outdo
-                0x0028: bytes([0xC3, 0xBA, 0x10]),     # RST 28h -> getypr
-                0x003E: bytes([0xC3, 0xEB, 0x10]),     # INIFNK -> basic/biosfnk.asm
-                0x00AE: bytes([0xC3, 0xBB, 0x14,       # PINLIN / INLIN / QINLIN
-                               0xC3, 0xD9, 0x14,       #  -> basic/biosfnk.asm
-                               0xC3, 0xD0, 0x14]),
-                0x00C0: bytes([0xC3, 0xDB, 0x15]),     # BEEP -> basic/biosfnk.asm
-                0x00CC: bytes([0xC3, 0x00, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
-                               0xC3, 0x12, 0x16]),     #  (D-BIOSCONTRACT)
-                0x0FCB: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
-                0x1162: bytes([0x3A, 0xDD, 0xF3])}     # CHPUT: TTYPOS = CSRX-1 (0-based)
+PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SYNCHR)
+                0x0010: bytes([0xC3, 0x9E, 0x10]),     # RST 10h -> chrgtr
+                0x0018: bytes([0xC3, 0xBA, 0x10]),     # RST 18h -> outdo
+                0x0028: bytes([0xC3, 0xC6, 0x10]),     # RST 28h -> getypr
+                0x003E: bytes([0xC3, 0xF7, 0x10]),     # INIFNK -> basic/biosfnk.asm
+                0x00AE: bytes([0xC3, 0xC7, 0x14,       # PINLIN / INLIN / QINLIN
+                               0xC3, 0xE5, 0x14,       #  -> basic/biosfnk.asm
+                               0xC3, 0xDC, 0x14]),
+                0x00C0: bytes([0xC3, 0xE7, 0x15]),     # BEEP -> basic/biosfnk.asm
+                0x00CC: bytes([0xC3, 0x0C, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
+                               0xC3, 0x1E, 0x16]),     #  (D-BIOSCONTRACT)
+                0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
+                0x116E: bytes([0x3A, 0xDD, 0xF3])}     # CHPUT: TTYPOS = CSRX-1 (0-based)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 

@@ -1,8 +1,8 @@
 diff --git a/src/main.asm b/src/main.asm
-index 11fb484..cb07f68 100644
+index 3ea2b5b..653a4d8 100644
 --- a/src/main.asm
 +++ b/src/main.asm
-@@ -625,115 +625,6 @@ romid:
+@@ -625,309 +625,6 @@ romid:
                  include "video.asm"
                  include "debug.asm"
  
@@ -115,17 +115,208 @@ index 11fb484..cb07f68 100644
 -                ; HL contains the start of the memory area (for BOTTOM variable).
 -                exx
 -                jp      chkram_done
+-
+-;--------------------------------
+-; $00DE GTPDL
+-; Function : Returns the value of a paddle
+-; Input    : A  - paddle number 1-12: odd numbers on port 1, even on port 2
+-; Output   : A  - value 0-255 (255 when no paddle is connected)
+-; Registers: All
+-; Remark   : A high-to-low edge on the port's pin 8 starts a pulse on the
+-;            paddle's pin (paddle 1/2 on pin 1, 3/4 on pin 2, ...) that is
+-;            as long as the paddle's value times 41 cycles: the time of one
+-;            pass of the counting loop.
+-gtpdl:
+-                dec     a
+-                srl     a               ; CF = port 2, A = R14 bit of the paddle
+-                ld      b,a
+-                sbc     a,a
+-                and     $50
+-                add     a,$10
+-                ld      e,a             ; E = port 1: $10 (pin 8),
+-                                        ;     port 2: $60 (select + pin 8)
+-                inc     b
+-                xor     a
+-                scf
+-gtpdl_mask:
+-                rla
+-                djnz    gtpdl_mask
+-                ld      d,a             ; D = R14 bit mask
+-                ld      a,$0F
+-                di
+-                call    rdpsg           ; A = R15
+-                and     $8F
+-                or      e
+-                out     (PSG_DATA),a    ; pin 8 high
+-                and     $CF
+-                out     (PSG_DATA),a    ; pin 8 low: starts the pulse
+-                ld      a,$0E
+-                out     (PSG_REGS),a
+-                ld      c,255
+-gtpdl_loop:
+-                ; 41 cycles per pass, M1 wait states included.
+-                in      a,(PSG_STAT)
+-                and     d
+-                jr      z,gtpdl_done
+-                dec     c
+-                jp      nz,gtpdl_loop
+-gtpdl_done:
+-                ld      a,c
+-                cpl                     ; A = 255 - C: the passes while high
+-                ei
+-                ret
+-
+-;--------------------------------
+-; $00DB GTPAD
+-; Function : Returns the state of a touch pad
+-; Input    : A  - 0-3: touch pad in port 1, 4-7: in port 2
+-;                 +0: $FF if the pad is touched (PADX/PADY updated), else $00
+-;                 +1: X of the last touch (PADX)
+-;                 +2: Y of the last touch (PADY)
+-;                 +3: $FF if the pen button is pressed, else $00
+-;                 8-19: light pen, mouse, trackball: MSX1: $00,
+-;                       MSX2: NEWPAD in the sub-ROM
+-; Output   : A  - value
+-; Registers: All
+-; Remark   : The pad's converter is read serially. Pin 8 selects it (CS, low),
+-;            pin 6 is the clock (SCK), pin 7 picks the channel of the next
+-;            conversion (SI: 0 = X, 1 = Y), pin 3 shifts out the result (SO),
+-;            pin 2 signals the end of a conversion (EOC). Pin 1 is low while
+-;            the pad is touched, pin 4 while the button is pressed.
+-gtpad:
+-                ld      b,a
+-                add     a,$F8
+-        IF MODEL_MSX = MODEL_MSX1
+-                jr      c,gtpad_done    ; 8-19: CF = 1: A = $00
+-        ELSE
+-                jr      c,gtpad_newpad  ; 8-19
+-        ENDIF
+-                and     3
+-                ld      hl,PADX
+-                dec     a
+-                jr      z,gtpad_read    ; X: PADX
+-                dec     hl
+-                dec     a
+-                jr      nz,gtpad_port   ; touched? or button
+-gtpad_read:
+-                ld      a,(hl)          ; Y: PADY = PADX - 1
+-                ret
+-
+-        IF MODEL_MSX != MODEL_MSX1
+-gtpad_newpad:
+-                ld      a,b
+-                ld      ix,$01AD        ; NEWPAD
+-                jp      extrom
+-        ENDIF
+-
+-gtpad_port:
+-                ; Port 1: SCK = R15 bit 0, SI = bit 1, CS = bit 4.
+-                ; Port 2: SCK = bit 2, SI = bit 3, CS = bit 5, select = bit 6.
+-                ; The other port's pins 6 and 7 stay high, its pin 8 low.
+-                ld      hl,$0110        ; H = SCK, L = CS
+-                ld      c,$0F           ; SI and SCK high, CS low
+-                ld      a,c             ; R15
+-                bit     2,b
+-                jr      z,gtpad_port1
+-                ld      hl,$0420
+-                set     6,c
+-gtpad_port1:
+-                di
+-                call    rdpsg
+-                and     $80             ; keep the kana lamp
+-                call    gtpad_out       ; C = R15: CS low, SI high, SCK high
+-                bit     0,b
+-                jr      z,gtpad_sense
+-                ; The pen button.
+-                in      a,(PSG_STAT)
+-                and     $08
+-                add     a,$F8           ; pressed (0): CF = 0
+-gtpad_done:
+-                sbc     a,a
+-                cpl                     ; CF = 0: $FF, else $00
+-                ei
+-                ret
+-
+-gtpad_sense:
+-                ; Two conversions: the first one's channel is unknown, the
+-                ; second is X. If touched, read X and Y twice, until both
+-                ; readings agree.
+-                ld      a,l
+-                add     a,h
+-                add     a,h
+-                ld      b,a             ; CS high, SI low: X next
+-gtpad_retry:
+-                call    gtpad_frame     ; B = 0 after a conversion
+-                call    gtpad_frame
+-                in      a,(PSG_STAT)
+-                rra                     ; CF = pin 1: not touched
+-                jr      c,gtpad_done
+-                call    gtpad_xy2
+-                push    de
+-                call    gtpad_xy2
+-                ex      (sp),hl
+-                sbc     hl,de           ; CF = 0 after gtpad_out
+-                pop     hl
+-                jr      nz,gtpad_retry
+-                ld      (PADY),de       ; PADY = E, PADX = D
+-                jr      gtpad_done      ; CF = 0: $FF
+-
+-; Read X and Y. Output: D = X, E = Y; X is next. Changes: AF, B, C
+-gtpad_xy2:
+-                call    gtpad_frame_si  ; X
+-                ld      d,e
+-                                        ; falls through: Y
+-
+-; Read one conversion and start the next.
+-; Input:   B = R15 bits to toggle first (gtpad_frame_si: SI),
+-;          C = R15, H = SCK, L = CS
+-; Output:  E = result, B = 0, R14 selected
+-; Changes: AF
+-gtpad_frame_si:
+-                ld      b,h
+-                sla     b               ; SI = SCK * 2
+-gtpad_frame:
+-                ld      a,b
+-                call    gtpad_out       ; CS high, SCK high, SI
+-gtpad_eoc:
+-                in      a,(PSG_STAT)
+-                and     $02
+-                jr      z,gtpad_eoc     ; wait for the end of the conversion
+-                ld      a,l
+-                call    gtpad_out       ; CS low: the result comes out
+-                ld      b,8
+-gtpad_bit:
+-                ld      a,h
+-                call    gtpad_out       ; SCK low
+-                in      a,(PSG_STAT)
+-                rra
+-                rra
+-                rra                     ; CF = SO
+-                rl      e
+-                ld      a,h
+-                call    gtpad_out       ; SCK high
+-                djnz    gtpad_bit
+-                ld      a,l             ; CS high: the next conversion starts
+-
+-; Toggle the R15 bits in A, write R15 and select R14.
+-gtpad_out:
+-                xor     c
+-                ld      c,a
+-                ld      a,$0F
+-                out     (PSG_REGS),a
+-                ld      a,c
+-                out     (PSG_DATA),a
+-                ld      a,$0E
+-                out     (PSG_REGS),a
+-                ret
  
  ; The game "Hacker" jumps directly to this location($0D02).
  ; Star force calls $0D0E.
-@@ -3188,6 +3079,120 @@ lp_strprn:
+@@ -3362,6 +3059,118 @@ lp_strprn:
  
                  jp      hang_up_mode
  
-+; zerobas repack (D-CBIOS030): CHKRAM moved here, in front of the font, from the
-+; $09D4 gap 0.30 put it in. zerobas's page-0 cassette body needs that gap
-+; ($09D4-$0D00) in one piece, as it was in 0.29; on MSX1 the area before the font
-+; has room for it (0.30's own note below is about MSX2 / MSX2+).
++; zerobas cbios-repack (D-CBIOS031): moved from before $0D01 -- zerobas's page-0 cassette body needs $09EE-$0CE2 in one piece.
 +; $0000 CHKRAM
 +; Function : Tests RAM and sets RAM slot for the system
 +; Registers: All
@@ -236,6 +427,73 @@ index 11fb484..cb07f68 100644
 +                exx
 +                jp      chkram_done
 +
++
                  ds      $1bbf - $
                  include "font.asm"
  ;
+@@ -3459,6 +3268,65 @@ vdp_bios:
+                 db      $00,$80,$70,$81,$00,$82,$01,$84
+                 db      $F5,$87,$00,$40
+ 
++; zerobas cbios-repack (D-CBIOS031): moved from before $0D01 -- zerobas's page-0 cassette body needs $09EE-$0CE2 in one piece.
++;--------------------------------
++; $00DE GTPDL
++; Function : Returns the value of a paddle
++; Input    : A  - paddle number 1-12: odd numbers on port 1, even on port 2
++; Output   : A  - value 0-255 (255 when no paddle is connected)
++; Registers: All
++; Remark   : A high-to-low edge on the port's pin 8 starts a pulse on the
++;            paddle's pin (paddle 1/2 on pin 1, 3/4 on pin 2, ...) that is
++;            as long as the paddle's value times 41 cycles: the time of one
++;            pass of the counting loop.
++gtpdl:
++                dec     a
++                srl     a               ; CF = port 2, A = R14 bit of the paddle
++                ld      b,a
++                sbc     a,a
++                and     $50
++                add     a,$10
++                ld      e,a             ; E = port 1: $10 (pin 8),
++                                        ;     port 2: $60 (select + pin 8)
++                inc     b
++                xor     a
++                scf
++gtpdl_mask:
++                rla
++                djnz    gtpdl_mask
++                ld      d,a             ; D = R14 bit mask
++                ld      a,$0F
++                di
++                call    rdpsg           ; A = R15
++                and     $8F
++                or      e
++                out     (PSG_DATA),a    ; pin 8 high
++                and     $CF
++                out     (PSG_DATA),a    ; pin 8 low: starts the pulse
++                ld      a,$0E
++                out     (PSG_REGS),a
++                ld      c,255
++gtpdl_loop:
++                ; 41 cycles per pass, M1 wait states included.
++                in      a,(PSG_STAT)
++                and     d
++                jr      z,gtpdl_done
++                dec     c
++                jp      nz,gtpdl_loop
++gtpdl_done:
++                ld      a,c
++                cpl                     ; A = 255 - C: the passes while high
++                ei
++                ret
++
++; $00DB GTPAD -- zerobas cbios-repack (D-CBIOS031): a STUB answering 0, as on C-BIOS 0.30.
++; 0.31's real GTPAD (touch pad, mouse, trackball; 146 B) has no page-0 room beside
++; zerobas's cassette body and BASIC's islands -- filed (TODO D-GTPAD).
++gtpad:
++                xor     a
++                ret
++
++
+ ; zerobas repack (WS-1): statements.asm is C-BIOS's placeholder for a ROM BASIC
+ ; that this ROM does not ship (multiple/rombas/rombas_niy + the runloop/statement
+ ; dispatch tables). It has zero references from anywhere else in the source, so

@@ -503,16 +503,16 @@ fperr_to_err:
                 jp      bios_dspfnk
 
 ; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
-; $1162 is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
-; "CSRX -> TTYPOS"; $11CF before C-BIOS 0.30, D-CBIOS030). PATCH_RANGES refuses
+; $116E is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
+; "CSRX -> TTYPOS"; $1162 on 0.30, $11CF before; D-CBIOS030 / D-CBIOS031). PATCH_RANGES refuses
 ; unless it reads 3A DD F3.
-                org     $1162
+                org     $116E
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
 
 ; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
-; $0FCA is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
-; hook"; $1037 before C-BIOS 0.30, D-CBIOS030); only its operand byte changes.
+; $0FD6 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
+; hook"; $0FCA on 0.30, $1037 before; D-CBIOS030 / D-CBIOS031); only its operand byte changes.
 ; PATCH_RANGES refuses unless it is $C3.
-                org     $0FCB
+                org     $0FD7
                 db      $C9

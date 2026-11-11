@@ -49,21 +49,6 @@ PATCHES = [
     # and before the scan-code tables); vdp_bios ends at $2765, not $2812, and
     # BASIC_ORG (basic/main.asm) / BASIC_BASE (build_mainrom.py) follow it.
     os.path.join(REPO, "cbios-repack", "eu-drop-dead-strings.patch"),
-    # D-SDSBOOT (2026-11-07, Joost: "if it does no harm, why not?"): RDSLT's and
-    # WRSLT's exit registers are the VG-8020's and the CF-3300's
-    # (scratchpad/slotregs_probe.py) -- D = the primary slot register at entry,
-    # E = the byte, BC = the slot shifted to the page and the page's mask (primary
-    # slot) or the primary slot register and the slot shifted to page 3 (expanded);
-    # WRSLT's A = the primary slot register. C-BIOS kept BC. A disk's boot code
-    # reads them. One shared exit tail pays for it; C-BIOS's own search_roms_read,
-    # which kept the slot in B across the read, calls a keep-BC wrapper. Every
-    # label outside RDSLT / WRSLT stays where it was (padding nops).
-    os.path.join(REPO, "cbios-repack", "rdslt-regs.patch"),
-    # D-KEYSKIP: the keyboard scan skips a row with no newly pressed key (C-BIOS's own
-    # TODO); the 88-bit walk was most of a ~3 ms interrupt (scratchpad/isrprof_runs.out).
-    os.path.join(REPO, "cbios-repack", "keyscan-skip.patch"),
-    # D-STOPKEY3: Ctrl-STOP queues ^C (), as on the VG-8020; STOP alone nothing.
-    os.path.join(REPO, "cbios-repack", "ctrlstop-key.patch"),
     # D-BIOSCONTRACT (2026-11-08): the graphics-cursor span RIGHTC .. SCANL rewritten
     # as one block of the SAME length (padded to print_debug): SCALXY, GTASPC, MAPXYC,
     # SETC, STOREC, SETATR, READC and the four moves as the VG-8020; GRPPRT follows
@@ -72,11 +57,6 @@ PATCHES = [
     # CRTCNT UNDER KEY ON (2026-11-10): CHPUT's 8 reads of CRTCNT call zerobas's page-0
     # helpers at $3283 / $328D (CRTCNT + CNSDFG, the VG-8020's bound); byte-neutral.
     os.path.join(REPO, "cbios-repack", "crtcnt-bound.patch"),
-    # D-INITSLOT (2026-11-11): search_roms_init's `push af` that keeps the slot ID across
-    # the INIT call came AFTER the VDP wait loop, so it saved the VDP status; moved up
-    # before it (C-BIOS commit f6849b44, 2010; upstream fix in release-0.31, draft PR #26).
-    # 0 bytes; the 5 bytes between the two positions shift by one.
-    os.path.join(REPO, "cbios-repack", "initslot-keep.patch"),
     # D-CBIOS030 (2026-11-11): 0.30 moved CHKRAM into the $09D4 gap (its $0D12 keyscan
     # entry took CHKRAM's old place); this moves it in front of the font, where MSX1 has
     # room, so zerobas's cassette body has $09D4-$0D00 in one piece again.
@@ -89,9 +69,9 @@ PATCHES = [
     os.path.join(REPO, "cbios-repack", "scan-from-basic.patch"),
 ]
 
-PINNED_TAG = "v0.30"
-PRISTINE_SHA1 = "8216de0c3e95b58d958e286f56ffdac47a8d0b90"
-REPACKED_SHA1 = "a6406b625774fc730b90f130e614dcc828ccf670"
+PINNED_TAG = "v0.31"
+PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
+REPACKED_SHA1 = "90e0034ec08184fa0042488c2baffece11adc884"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

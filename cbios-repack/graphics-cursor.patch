@@ -1,190 +1,47 @@
-diff --git a/src/main.asm b/src/main.asm
-index 8fd3945..f3411e0 100644
---- a/src/main.asm
-+++ b/src/main.asm
-@@ -2540,12 +2540,15 @@ calc_queue_address:
- ; Input    : A  - #00 is lamp on
- ;             not #00 is lamp off
- ; Registers: AF
-+; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): BOTH references -- the Philips
-+; VG-8020 and the National CF-3300 -- leave PPI port C bit 6 SET for A <> 0 and CLEAR
-+; for A = 0 (zerobas scratchpad/biossweep_b6.out, cap_cf.out); this had it inverted.
- chgcap:
-                 or      a
-                 in      a,(GIO_REGS)
--                res     6,a
--                jr      nz,chgcap_on
-                 set     6,a
-+                jr      nz,chgcap_on
-+                res     6,a
- chgcap_on:      out     (GIO_REGS),a
-                 ret
- 
 diff --git a/src/video.asm b/src/video.asm
-index bb11106..231574e 100644
+index 83d4a80..6c09d5c 100644
 --- a/src/video.asm
 +++ b/src/video.asm
-@@ -494,9 +494,6 @@ clrspr:
-                 or      a
-                 ret     z               ; no sprites in SCREEN0
- 
--; Clear sprite attribute table.
--                call    clrspr_attr
--
- ; Clear sprite colour table.
-                 ld      a,(SCRMOD)
-                 cp      4               ; sprite mode 1?
-@@ -523,7 +520,9 @@ clrspr_col_skip:
-         ELSE
-                 call    bigfil
-         ENDIF
--                ret
-+; Clear sprite attribute table -- LAST, as the VG-8020 leaves HL / BC / A from it
-+; (zerobas cbios-repack, D-BIOSCONTRACT 2026-11-09).
-+                jp      clrspr_attr
- 
- ;--------------------------------
- ; Clear sprite attribute table.
-@@ -542,31 +541,30 @@ clrspr_attr_spritemode1:
-                 ld      e,209           ; Y coordinate
- 
- clrspr_attr_spritemode_start:
-+; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): each sprite's X (+1) is KEPT,
-+; as on the VG-8020 (zerobas scratchpad/biossweep_clrspr.out) -- Y, then the address
-+; set again past X for the pattern number and colour. HL ends at ATRBAS + 128, BC
-+; at 32 / 128, A = the colour, as the VG-8020's.
-                 ld      hl,(ATRBAS)
-+                ld      a,(FORCLR)
-+                ld      d,a
-+                ld      bc,$2000        ; B = 32 = counter, C = pattern index
-+clrspr_attr_lp:
-         IF VDP = TMS99X8
-                 call    setwrt
-         ELSE
-                 call    nsetwr
-         ENDIF
--                ld      a,(FORCLR)
--                ld      d,a
--                ld      bc,$2000        ; B = 32 = counter, C = pattern index
--                di
--clrspr_attr_lp:
-                 ld      a,e
-                 out     (VDP_DATA),a    ; Y coordinate
--                ld      a,0
-+                inc     hl
-+                inc     hl              ; past X
-         IF VDP = TMS99X8
--                nop                     ; wait (at least) 29 t-states between VRAM accesses
--                nop                     ; only 2 nops, as ld a,0 is slow
-+                call    setwrt
-+        ELSE
-+                call    nsetwr
-         ENDIF
--                out     (VDP_DATA),a    ; X coordinate
-                 ld      a,c
--        IF VDP = TMS99X8
--                nop                     ; wait (at least) 29 t-states between VRAM accesses
--                nop
--                nop
--        ENDIF
-                 out     (VDP_DATA),a    ; pattern number
-                 inc     c
-                 call    gspsiz
-@@ -577,8 +575,9 @@ clrspr_attr_lp:
- clrspr_attr_8:
-                 ld      a,d
-                 out     (VDP_DATA),a    ; color
-+                inc     hl
-+                inc     hl
-                 djnz    clrspr_attr_lp
--                ei
-                 ret
- 
- ;--------------------------------
-@@ -840,18 +839,21 @@ settxt:
-                 call    wrtvdp          ; write VDP R#1
- 
-                 ; Set the VDP base address registers. This works because
--                ; TXTNAM, TXTCOL and TXTCGP are in same order as the VDP
--                ; base address registers.
-+                ; TXTNAM .. TXTPAT are in same order as the VDP base address
-+                ; registers.
-+                ; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-09): ALL FIVE, R#2
-+                ; to R#6, as the VG-8020 does -- it holds RG3SAV / RG5SAV / RG6SAV
-+                ; = 0 in SCREEN 0 (TXTCOL / TXTATR / TXTPAT are 0), where this
-+                ; skipped TXTCOL and never wrote R#5 / R#6, so the copies kept the
-+                ; previous mode's values (zerobas scratchpad/biossweep_b5.out).
-                 ld      de,TXTNAM
-                 ld      c,2
--
-+settxt_base:
-                 xor     a
--                call    set_base_address
--                inc     de              ; Skip TXTCOL.
--                inc     de
--                inc     c
--                xor     a
--                call    set_base_address
-+                call    set_base_address ; DE += 2, C += 1
-+                ld      a,c
-+                cp      7
-+                jr      nz,settxt_base
- 
-                 ret
- 
-@@ -1182,6 +1184,13 @@ grpprt_sc2:
-                 ld      de,(GRPACY)
-                 ld      bc,(GRPACX)
-                 call    mapxy
-+                ; zerobas cbios-repack (D-BIOSCONTRACT): MAPXYC answers as the VG-8020
-+                ; now -- CMASK is the pixel's own bit; this code wants every bit from
-+                ; it rightward ($FF >> (X AND 7)), which is CMASK * 2 - 1
-+                ld      a,(CMASK)
-+                add     a,a
-+                dec     a
-+                ld      (CMASK),a
- 
-                 ld      a,(FORCLR)
-                 ld      (ATRBYT),a
-@@ -1196,8 +1205,7 @@ grpprt_sc2:
-                 and     $07
- 
-                 ld      b,$00
--                ld      c,a
--                add     hl,bc
-+                ld      c,a             ; (CLOC carries Y AND 7 already: no add)
-                 call    grpprt_chr_x
- 
-                 ld      bc,$00F0
-@@ -2155,150 +2163,328 @@ getpat_loop:    push    bc
+@@ -2129,286 +2129,273 @@ getpat_loop:    push    bc
                  djnz    getpat_loop
                  ret
  
 +; ---------------------------------------------------------------------------
-+; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-08): the graphics-cursor span
-+; RIGHTC .. GTASPC, rewritten as one block of the SAME LENGTH (it sits before
-+; BASIC_ORG in the merged image; padded to pntini at the end). SCALXY and GTASPC
-+; are real now -- measured against the Philips VG-8020 (zerobas
-+; scratchpad/biossweep_sxy*.out); the entries not implemented YET are a bare
-+; `ret` (they were print_debug stubs that did nothing either), their debug
-+; calls and name strings giving the room. MAPXYC, SETC, STOREC, SETATR, READC
-+; and the four moves too; the span runs to print_debug since PNTINI / SCANR /
-+; SCANL joined the bare-`ret` list.
++; zerobas cbios-repack (D-BIOSCONTRACT, 2026-11-08; D-CBIOS031, 2026-11-11): the
++; graphics-cursor span RIGHTC .. SCANL is OURS, replacing C-BIOS's: SCALXY, GTASPC,
++; MAPXYC, SETC, STOREC, SETATR, READC, NSETCX and the four moves measured against the
++; Philips VG-8020 (zerobas scratchpad/biossweep_*.out), SCREEN 2 only (MSX1); PNTINI /
++; SCANR / SCANL a bare `ret` (not implemented yet). Kept over 0.31's own versions by
++; Joost's ruling ("keep ours but learn from ... upstream"); it is the shorter span,
++; which gives page 0 the room zerobas's cassette body needs.
 +; ---------------------------------------------------------------------------
  ;--------------------------------
--; $00FC RIGHTC
--; Function : Shifts screenpixel to the right
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--rightc:
+-; The graphics cursor: RIGHTC, LEFTC, UPC, DOWNC, TUPC and TDOWNC
+-;
+-; CLOC and CMASK hold the cursor (see MAPXYC):
+-;   SCREEN 2, 4: CLOC = the pattern byte, CMASK = the pixel's bit
+-;   SCREEN 3:    CLOC = the pattern byte, CMASK = $F0 (left block) or $0F
+-;   SCREEN 5-8:  CLOC = X, CMASK = Y
+-; In a pattern table, the 8 rows of a cell are 8 bytes in a row; the next
+-; cell to the right is 8 bytes on, the next cell row is $100 bytes on.
+-; So one pixel up or down is CLOC -/+ 1 within a cell, -/+ $F9 across a
+-; cell's top or bottom row. RIGHTC, LEFTC, UPC and DOWNC do just that in
+-; every mode, also in SCREEN 5-8; only TUPC and TDOWNC know about the
+-; bitmap modes, where they step Y.
+-;
+-; All six save HL and DE and end in one shared tail:
+-;   gc_rot:  A -> CMASK; on C continue at gc_move, else at gc_done
+-;   gc_move: CLOC += DE
+-;   gc_done: flags as after "and a" on A, restore DE and HL
+-; RIGHTC/LEFTC enter at gc_rot with A = the new mask, C = moving to the
+-; next/previous byte, DE = +/-8. UPC/DOWNC enter at gc_move with A = the
+-; row (0-7, so "and a" gives the flags of "and 7"), DE = the step.
+-; TUPC falls into UPC and TDOWNC into gc_edge: keep this order.
 +; $0123 NSETCX -- HL pixels from CLOC / CMASK rightward set as SETC does (SCREEN 2);
 +; CLOC / CMASK end where they started, as on the VG-8020 (zerobas
 +; scratchpad/biossweep_nsx.out). Registers not kept (the VG-8020 keeps none either).
 +nsetcx:
-                 push    hl
--                push    af
--                ld      hl,rightc_text
--                call    print_debug
++                push    hl
 +                call    fetchc
 +                ex      (sp),hl         ; (SP) = CLOC, HL = the count
 +                push    af              ; CMASK
@@ -197,59 +54,100 @@ index bb11106..231574e 100644
 +                ld      a,h
 +                or      l
 +                jr      nz,nsetcx_lp
-                 pop     af
--                pop     hl
++                pop     af
 +                pop     hl              ; falls into STOREC: CLOC / CMASK restored
-+
-+;--------------------------------
+ 
+ ;--------------------------------
+-; $00FC RIGHTC
+-; Function : Moves the graphics cursor one pixel to the right
+-; Output   : A - CMASK
+-; Registers: AF
+-; Remark   : SCREEN 3 and 5-8 use SCREEN 3's masks: $F0 and $0F
+-rightc:
+-                push    hl
+-                push    de
+-                ld      de,8
+-                call    gc_nibble
+-                rrca                    ; C set: on to the next byte
+-                                        ; ($E1 -> $F0 with C, $1E -> $0F)
+-gc_rot:
+-                ld      (CMASK),a
+-                jr      nc,gc_done
+-gc_move:
+-                ld      hl,(CLOC)
+-                add     hl,de
 +; $0117 STOREC -- CLOC := HL, CMASK := A
 +storec:
-+                ld      (CLOC),hl
+                 ld      (CLOC),hl
+-gc_done:
+-                and     a
+-                pop     de
+-                pop     hl
 +                ld      (CMASK),a
                  ret
--rightc_text:    db      "RIGHTC",0
  
  ;--------------------------------
 -; $00FF LEFTC
--; Function : Shifts screenpixel to the left
+-; Function : Moves the graphics cursor one pixel to the left
+-; Output   : A - CMASK
 -; Registers: AF
--; NOTE     : This implementation is still a stub!
+-; Remark   : SCREEN 3 and 5-8 use SCREEN 3's masks: $F0 and $0F
 -leftc:
 -                push    hl
--                push    af
--                ld      hl,leftc_text
--                call    print_debug
--                pop     af
--                pop     hl
+-                push    de
+-                ld      de,-8
+-                call    gc_nibble
+-                jr      c,leftc_bit
+-                xor     $99             ; $87 for the left half, else $78
+-leftc_bit:
+-                rlca                    ; C set: back to the previous byte
+-                jr      gc_rot          ; ($87 -> $0F with C, $78 -> $F0)
+-
+-; Output : A = CMASK, C set in SCREEN 0-2 and 4
+-;          SCREEN 3 and 5-8: A = $1E for the left half, else $E1
+-; Changes: AF
+-; Remark : $1E and $E1 make one rotation produce the other half's mask, and
+-;          the carry tells whether the cursor leaves the byte. Only bit 7 of
+-;          CMASK counts, also in SCREEN 5-8, where CMASK holds Y.
+-gc_nibble:
+-                ld      a,(SCRMOD)
+-                cp      3
+-        IF VDP != TMS99X8
+-                jr      z,gc_nibble_mask
+-                cp      5
+-gc_nibble_mask:
+-        ENDIF
+-                ld      a,(CMASK)
 +; $011A SETATR -- ATRBYT := A when A < 16; else Cy = 1 and ATRBYT kept (the VG-8020:
 +; F = $41 for A = 16 -- exactly `cp 16` / `ccf` / `ret c`)
 +setatr:
 +                cp      16
 +                ccf
-+                ret     c
+                 ret     c
+-                rla
+-                sbc     a,a             ; $FF for the left half
+-                xor     $E1
 +                ld      (ATRBYT),a
                  ret
--leftc_text:     db      "LEFTC",0
  
- ;--------------------------------
--; $0102 UPC
--; Function : Shifts screenpixel up
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--upc:
+-        IF VDP != TMS99X8
+-; TUPC and TDOWNC in SCREEN 5-8: step Y (CMASK) between 0 and 211.
+-tupc_bitmap:
++;--------------------------------
 +; $011D READC -- A = the colour of the pixel at CLOC / CMASK (SCREEN 2): the colour
 +; byte's foreground nibble when the pattern bit is set, else its background nibble.
 +; HL / DE / BC kept.
 +readc:
-                 push    hl
--                push    af
--                ld      hl,upc_text
--                call    print_debug
--                pop     af
--                pop     hl
++                push    hl
 +                push    bc
 +                call    gcell
-+                ld      a,(CMASK)
+                 ld      a,(CMASK)
+-                or      a
+-                scf
+-                ret     z               ; Y = 0: the top
+-                dec     a
+-                ld      (CMASK),a
+-                or      a
 +                and     b
 +                ld      a,c
 +                jr      z,readc_bg
@@ -270,15 +168,13 @@ index bb11106..231574e 100644
 +                call    rdvrm
 +                ld      c,a
                  ret
--upc_text:       db      "UPC",0
- 
- ;--------------------------------
--; $0105 TUPC
--; Function : Tests whether UPC is possible, if possible, execute UPC
--; Output   : C-flag set if operation would end outside the screen
--; Registers: AF
--; NOTE     : This implementation is still a stub!
--tupc:
+-tdownc_bitmap:
+-                ld      a,(CMASK)
+-                cp      211
+-                ccf
+-                ret     c               ; Y >= 211: the bottom
++
++;--------------------------------
 +; $0120 SETC -- the pixel at CLOC / CMASK set to ATRBYT (SCREEN 2), as the VG-8020
 +; (zerobas scratchpad/biossweep_setc.out): when ATRBYT is the cell's background
 +; colour the pattern bit is CLEARED and the colour byte kept, A = the pattern byte;
@@ -287,12 +183,11 @@ index bb11106..231574e 100644
 +; byte). HL / DE / BC kept.
 +setc:
                  push    hl
--                push    af
--                ld      hl,tupc_text
--                call    print_debug
--                pop     af
 +                push    bc
-+                push    de
+                 push    de
+-                inc     a
+-                jr      gc_rot          ; C is clear: Y + 1 is stored, nothing moves
+-        ENDIF
 +                call    gcell
 +                ld      a,(ATRBYT)
 +                ld      e,a
@@ -334,26 +229,34 @@ index bb11106..231574e 100644
 +                pop     de
 +readc_out:
 +                pop     bc
-                 pop     hl
-                 ret
--tupc_text:      db      "TUPC",0
++                pop     hl
++                ret
  
  ;--------------------------------
--; $0108 DOWNC
--; Function : Shifts screenpixel down
+-; $0105 TUPC
+-; Function : Moves the graphics cursor one pixel up, unless it is on the top
+-;            row; SCREEN 5-8: decrements Y (CMASK)
+-; Output   : C set on the top row; the cursor stays, A = 0
+-;            Else as UPC; SCREEN 5-8: A = Y
 -; Registers: AF
--; NOTE     : This implementation is still a stub!
--downc:
+-tupc:
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                cp      5
+-                jr      nc,tupc_bitmap
+-        ENDIF
+-                ld      a,(CLOC)
+-                and     7
+-                jr      nz,upc          ; not the cell's top row
+-                call    gc_row
+-                jp      m,gc_edge       ; the top cell row
+-                                        ; else on into UPC
 +; $00FC RIGHTC / $00FF LEFTC -- the graphics cursor one pixel right / left (SCREEN 2)
 +; CMASK rotated; on the byte's wrap CLOC moves by 8 (the next / previous character
 +; column). A = the new CMASK; HL / DE / BC kept. Measured on the Philips VG-8020
 +; (zerobas scratchpad/biossweep_cur.out).
 +rightc:
-                 push    hl
--                push    af
--                ld      hl,downc_text
--                call    print_debug
--                pop     af
++                push    hl
 +                ld      hl,CMASK
 +                rrc     (hl)
 +                push    de
@@ -373,16 +276,14 @@ index bb11106..231574e 100644
 +                ld      (CLOC),hl
 +leftc_out:
 +                pop     de
-                 pop     hl
-                 ret
--downc_text:     db      "DOWNC",0
++                pop     hl
++                ret
  
  ;--------------------------------
--; $010B TDOWNC
--; Function : Tests whether DOWNC is possible, if possible, execute DOWNC
--; Output   : C-flag set if operation would end outside the screen
+-; $0102 UPC
+-; Function : Moves the graphics cursor one pixel up
+-; Output   : A - the row in the cell (0-7) before the move
 -; Registers: AF
--; NOTE     : This implementation is still a stub!
 +; $0102 UPC / $0108 DOWNC -- the graphics cursor one pixel up / down (SCREEN 2)
 +; CLOC -/+ 1 inside the 8-row character cell; across the cell's top / bottom row
 +; CLOC -/+ $F9 (the row-7 / row-0 byte of the cell above / below). A = the old row
@@ -390,8 +291,8 @@ index bb11106..231574e 100644
 +; $0105 TUPC / $010B TDOWNC -- the same, except on the screen's top / bottom pixel
 +; row: no move, A = 0, F = $45 (Cy set) as the VG-8020 (zerobas
 +; scratchpad/biossweep_b3.out); elsewhere Cy clear.
-+upc:
-+                push    hl
+ upc:
+                 push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
 +                and     7
@@ -400,14 +301,25 @@ index bb11106..231574e 100644
 +                dec     hl
 +                jr      upc_st
 +upc_wrap:
-+                push    de
+                 push    de
+-                ld      de,-1
+-                ld      a,(CLOC)
 +                ld      de,-$F9
 +                jr      upc_add
 +tupc:
 +                push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
-+                and     7
+                 and     7
+-                jr      nz,gc_move      ; within the cell: CLOC - 1
+-                ld      e,7             ; DE = $FF07 = -$F9: row 7 of the
+-                jr      gc_move         ; cell above; A = 0
+-
+-;--------------------------------
+-; $0108 DOWNC
+-; Function : Moves the graphics cursor one pixel down
+-; Output   : A - the row in the cell (0-7) after the move
+-; Registers: AF
 +                jr      nz,upc_in
 +                inc     h
 +                dec     h
@@ -417,57 +329,154 @@ index bb11106..231574e 100644
 +                scf
 +                pop     hl
 +                ret
-+downc:
-+                push    hl
+ downc:
+                 push    hl
+-                push    de
+-                ld      de,1
+-                ld      a,(CLOC)
 +                ld      hl,(CLOC)
 +                ld      a,l
-+                inc     a
-+                and     7
+                 inc     a
+                 and     7
+-                jr      nz,gc_move      ; within the cell: CLOC + 1
+-                ld      e,$F9           ; DE = $F9: row 0 of the cell below;
+-                jr      gc_move         ; A = 0
+-
+-;--------------------------------
+-; $010B TDOWNC
+-; Function : Moves the graphics cursor one pixel down, unless it is on the
+-;            bottom row; SCREEN 5-8: increments Y (CMASK) up to 211
+-; Output   : C set on the bottom row; the cursor stays, A = 0 (SCREEN 5-8:
+-;            A = Y)
+-;            Else as DOWNC; SCREEN 5-8: A = Y
+-; Registers: AF
 +                jr      z,downc_wrap
 +downc_in:
 +                inc     hl
 +                jr      upc_st
  tdownc:
-                 push    hl
--                push    af
--                ld      hl,tdownc_text
--                call    print_debug
--                pop     af
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                cp      5
+-                jr      nc,tdownc_bitmap
+-        ENDIF
+-                ld      a,(CLOC)
++                push    hl
 +                ld      hl,(CLOC)
 +                ld      a,l
-+                inc     a
-+                and     7
+                 inc     a
+                 and     7
+-                jr      nz,downc        ; not the cell's bottom row
+-                call    gc_row
+-                jr      nc,downc        ; not the bottom cell row
+-gc_edge:                                ; TUPC and TDOWNC at the screen's edge
 +                jr      nz,downc_in
 +                ld      a,h
 +                cp      $17             ; the bottom cell row (192 / 8 - 1)
 +                jr      z,tupc_edge
-+                xor     a
+                 xor     a
+-                scf
+-                ret
+-
+-; Output : C set if the graphics cursor is on or beyond the last cell row of
+-;          the pattern table (GRPCGP, SCREEN 3: MLTCGP), S set if it is on the
+-;          first one or above the table
+-; Changes: AF
+-; Remark : The rows count from the table's base, also in SCREEN 3, as
+-;          measured on an NMS 8250. Measured on a VG-8020 (MSX1), TUPC and
+-;          TDOWNC in SCREEN 3 find the edges as if MLTCGP were 0; that only
+-;          shows when the SCREEN 3 pattern table is moved.
+-gc_row:
+-                push    hl
 +downc_wrap:
-+                push    de
+                 push    de
+-                ld      a,(SCRMOD)
+-                xor     3               ; also clears C for the sbc
+-                ld      hl,(GRPCGP)
+-                ld      a,$16           ; the last cell row - 1
+-                jr      nz,gc_row_base
+-                ld      hl,(MLTCGP)
+-                ld      a,4
+-gc_row_base:
+-                ex      de,hl
+-                ld      hl,(CLOC)
+-                sbc     hl,de           ; H = the cursor's cell row
+-                ccf
+-                jr      nc,gc_row_done  ; above the table: never the bottom
+-                cp      h               ; C if H > the last cell row - 1
+-gc_row_done:
+-                dec     h               ; S if H was 0, or above the table
 +                ld      de,$F9
 +upc_add:
 +                add     hl,de
 +                and     a               ; A = 0 here: F = $54 as the VG-8020 leaves it
-+                pop     de
+                 pop     de
 +upc_st:
 +                ld      (CLOC),hl
                  pop     hl
                  ret
--tdownc_text:    db      "TDOWNC",0
  
  ;--------------------------------
  ; $010E SCALXY
--; Function : Scales X and Y coordinates
--; NOTE     : This implementation is still a stub!
+-; Function : Clips a coordinate to the screen
+-; Input    : BC - X, DE - Y
+-; Output   : BC, DE - the coordinate; a negative one becomes 0, one beyond
+-;                     the last pixel becomes that pixel: X 255 (SCREEN 6, 7:
+-;                     511), Y 191 (SCREEN 5-8: 211); in SCREEN 3 both are
+-;                     then divided by 4, into blocks of 4x4 pixels
+-;            A      - $80 if nothing was clipped, else 0; C set likewise
+-; Registers: AF, BC, DE
 +; Function : Clips the X / Y coordinate to the screen
 +; Input    : BC = X, DE = Y
 +; Output   : BC / DE clipped (X 0..255, Y 0..191, negatives to 0), then both
 +;            divided by 4 in SCREEN 3; A = $80 if neither was clipped, else 0
 +; Registers: AF, BC, DE (HL kept)
  scalxy:
--                ld      bc,(GRPACX)
--                ld      de,(GRPACY)
-+                push    hl
+                 push    hl
+-                ld      h,1             ; nothing clipped yet
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                cp      5
+-                ld      a,191
+-                jr      c,scalxy_y
+-                ld      a,211
+-scalxy_y:
+-        ELSE
+-                ld      a,191
+-        ENDIF
+-                inc     d
+-                dec     d
+-                jr      nz,scalxy_yclip ; negative, or beyond 255
+-                cp      e
+-                jr      nc,scalxy_x     ; up to the last row
+-scalxy_yclip:
+-                bit     7,d
+-                ld      d,0
+-                ld      h,d             ; clipped
+-                ld      e,a
+-                jr      z,scalxy_x
+-                ld      e,d             ; negative: 0
+-scalxy_x:
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                sub     6
+-                cp      2
+-                sbc     a,a
+-                neg                     ; A = 1 in SCREEN 6 and 7, else 0
+-        ELSE
+-                xor     a
+-        ENDIF
+-                cp      b
+-                jr      nc,scalxy_scale ; B up to the last X's high byte
+-                bit     7,b
+-                ld      b,a
+-                ld      c,$FF           ; the last X
+-                ld      h,0             ; clipped
+-                jr      z,scalxy_scale
+-                ld      b,h
+-                ld      c,h             ; negative: 0
+-scalxy_scale:
+-                ; F is part of the result: S, Z and P/V from here
 +                ld      h,$80           ; "in range" until a clip says otherwise
 +                ld      a,b
 +                or      a
@@ -494,16 +503,22 @@ index bb11106..231574e 100644
 +scalxy_yc:
 +                ld      h,d
 +scalxy_yok:
-+                ld      a,(SCRMOD)
-+                cp      3
-+                jr      nz,scalxy_done
-+                srl     c
-+                srl     c
-+                srl     e
-+                srl     e
-+scalxy_done:
-+                ld      a,h
-+                pop     hl
+                 ld      a,(SCRMOD)
+-        IF VDP = TMS99X8
+-                cp      2
+-                jr      z,scalxy_done
+-        ELSE
+                 cp      3
+                 jr      nz,scalxy_done
+-        ENDIF
+                 srl     c
+                 srl     c
+                 srl     e
+@@ -2416,99 +2403,51 @@ scalxy_scale:
+ scalxy_done:
+                 ld      a,h
+                 pop     hl
+-                rrca                    ; $80 and C: nothing clipped
 +                ret
 +
 +;--------------------------------
@@ -517,169 +532,477 @@ index bb11106..231574e 100644
 +scanr:
 +scanl:
                  ret
--scalxy_text:    db      "SCALXY",0
  
  ;--------------------------------
  ; $0111 MAPXYC
--; Function : Places cursor at current cursor address
--; Input    : BC = X coordinate,DE=Y coordinate
--; Register : AF,D,HL
--; NOTE     : This is a test version
+-; Function : Places the graphics cursor at a coordinate
+-; Input    : BC - X, DE - Y; in SCREEN 3 in blocks of 4x4 pixels, as SCALXY
+-;            leaves them
+-; Output   : CLOC, HL - SCREEN 2-4: the address of the pattern byte
+-;                       SCREEN 5-8: X
+-;            CMASK    - SCREEN 2, 4: the pixel's bit
+-;                       SCREEN 3: $F0 for an even X, $0F for an odd X
+-;                       SCREEN 5-8: Y
+-;            A        - SCREEN 2, 4: L; D = X
+-;                       SCREEN 3: H, without the pattern table's base
+-;                       SCREEN 5-8: Y
+-; Registers: AF, D, HL
 +; Function : Places the graphics cursor at X / Y (SCREEN 2)
 +; Input    : BC = X coordinate, DE = Y coordinate
 +; Output   : CLOC = (Y AND $F8) * 32 + (Y AND 7) + (X AND $F8), CMASK = $80 >> (X AND 7);
 +;            A = the low byte of CLOC and D = X, as the VG-8020 leaves them
 +;            (zerobas scratchpad/biossweep_mxy.out); GRPACX / GRPACY untouched
  mapxy:
--                push    bc
--                ld      (GRPACX),bc
--                ld      (GRPACY),de
--                ld      hl,(GRPACY)
--                add     hl,hl
--                add     hl,hl
--                add     hl,hl
--                add     hl,hl
--                add     hl,hl
--                ld      l,$00
--                ld      b,$00
--
--                ld      a,$ff
--                ld      (CMASK),a
+-                ld      a,(SCRMOD)
+-        IF VDP != TMS99X8
+-                cp      5
+-                jr      nc,mapxy_bitmap
+-        ENDIF
+-                cp      3
+-                jr      z,mapxy_sc3
                  ld      a,c
--                and     $07
--                jr      z,mapxy_mask_ed
--                ld      b,a
--                ld      a,$ff
--mapxy_mask_lp:
--                and     a
--                rra
--                djnz    mapxy_mask_lp
-+                and     7
-+                inc     a
-+                ld      d,a
-+                ld      a,1
+                 and     7
+                 inc     a
+                 ld      d,a
+                 ld      a,1
+-mapxy_bit:
 +mapxy_mask:
-+                rrca
-+                dec     d
+                 rrca
+                 dec     d
+-                jr      nz,mapxy_bit
+-                ld      (CMASK),a       ; $80 >> (X AND 7)
 +                jr      nz,mapxy_mask
-                 ld      (CMASK),a
--mapxy_mask_ed:
-+                ld      a,e
-+                rrca
-+                rrca
-+                rrca
-+                and     $1F
++                ld      (CMASK),a
+                 ld      a,e
+                 rrca
+                 rrca
+                 rrca
+                 and     $1F
+-                ld      h,a             ; (Y AND $F8) * 32
+-                ld      d,c
+-                ld      a,c
+-                xor     e
+-                and     $F8
+-                xor     e
+-                ld      l,a             ; + (X AND $F8) + (Y AND 7)
+-                push    de
+-                ld      de,(GRPCGP)
+-                jr      mapxy_base
+-
+-; Also the sub-ROM's MAPXYC in SCREEN 2-4.
+-mapxy_sc3:
+-                ld      a,c
+-                rrca
+-                sbc     a,a
+-                xor     $F0
+-                ld      (CMASK),a       ; $F0 for an even X, $0F for an odd X
 +                ld      h,a
                  ld      a,c
-+                xor     e
+-                add     a,a
+-                add     a,a
+                 xor     e
                  and     $F8
--                ld      c,a
--                ld      b,$00
--                add     hl,bc
+-                xor     e
+-                ld      l,a             ; (X * 4 AND $F8) + (Y AND 7)
+-                ld      a,e
+-                rrca
+-                rrca
+-                rrca
+-                and     7
+-                ld      h,a             ; + (Y AND $38) * 32
+-                push    de
+-                ld      de,(MLTCGP)
+-mapxy_base:
+-                add     hl,de
+-                pop     de
+-                ld      (CLOC),hl
+-                ret
 -
-+                xor     e               ; (X AND $F8) OR (Y AND 7)
-+                ld      l,a
-                 ld      (CLOC),hl
--                pop     bc
-+                ld      d,c
-                 ret
--mapxy_text:    db      "MAPXY",0
- 
- ;--------------------------------
- ; $0114 FETCHC
-@@ -2309,136 +2495,10 @@ fetchc:
-                 ld      a,(CMASK)
-                 ld      hl,(CLOC)
-                 ret
--fetchc_text:    db      "FETCHC",0
+-        IF VDP != TMS99X8
+-mapxy_bitmap:
+-                ld      h,b
+-                ld      l,c             ; CLOC = X
+-                ld      a,e             ; CMASK = Y
+-        ENDIF
 -
 -;--------------------------------
 -; $0117 STOREC
--; Function : Record current cursor addresses mask pattern
--; Input    : HL - Cursor address
--;            A  - Mask pattern
--; NOTE     : This implementation is still a stub!
+-; Function : Sets the graphics cursor
+-; Input    : HL - CLOC, A - CMASK
 -storec:
--                push    hl
--                push    af
--                ld      hl,storec_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ret
--storec_text:    db      "STOREC",0
--
++                xor     e               ; (X AND $F8) OR (Y AND 7)
++                ld      l,a
+                 ld      (CLOC),hl
+-                ld      (CMASK),a
++                ld      d,c
+                 ret
+ 
+ ;--------------------------------
+@@ -2521,408 +2460,5 @@ fetchc:
+                 ld      hl,(CLOC)
+                 ret
+ 
 -;--------------------------------
 -; $011A SETATR
--; Function : Set attribute byte
--; NOTE     : This implementation is still a stub!
+-; Function : Sets the colour for SETC and NSETCX (ATRBYT)
+-; Input    : A  - the colour, 0-15
+-;                 SCREEN 8: 0-255
+-;                 SCREEN 6: 0-31; 0-15 become their 2-bit colour in both
+-;                 halves of the nibble, (A AND 3) * 5, 16-31 become A AND 15
+-; Output   : C set if the colour is out of range; ATRBYT then stays
+-; Registers: AF
 -setatr:
--                push    hl
+-        IF VDP != TMS99X8
 -                push    af
--                ld      hl,setatr_text
--                call    print_debug
+-                ld      a,(SCRMOD)
+-                cp      6
+-                jr      z,setatr_sc6
+-                cp      8
+-                jr      z,setatr_sc8
 -                pop     af
+-        ENDIF
+-                cp      16
+-                ccf
+-                ret     c
+-setatr_set:
+-                ld      (ATRBYT),a
+-                ret
+-        IF VDP != TMS99X8
+-setatr_sc8:
+-                pop     af
+-                and     a
+-                jr      setatr_set
+-setatr_sc6:
+-                pop     af
+-                cp      32
+-                ccf
+-                ret     c
+-                cp      16
+-                jr      c,setatr_sc6_low
+-                and     15
+-                jr      setatr_set
+-setatr_sc6_low:
+-                push    hl
+-                and     3
+-                ld      l,a
+-                add     a,a
+-                add     a,a
+-                add     a,l
+-                pop     hl
+-                jr      setatr_set
+-        ENDIF
+-
+-        IF CALL_SUB = YES
+-readc_bitmap:
+-                ld      ix,$0095        ; READC in the sub-ROM
+-                jr      gc_extrom
+-setc_bitmap:
+-                ld      ix,$009D        ; SETC in the sub-ROM
+-gc_extrom:
+-                jp      extrom
+-        ENDIF
+-        IF MODEL_MSX = MODEL_SUBROM
+-; READC and SETC in SCREEN 5-8, with the VDP's POINT and PSET commands at
+-; X = CLOC, Y = CMASK on the active page.
+-readc_bitmap:
+-                push    hl
+-                ld      a,32
+-                call    gc_vdp_xy       ; SX, SY
+-                ld      a,45
+-                call    gc_vdp_reg
+-                xor     a
+-                out     (VDP_REGS),a    ; ARG
+-                ld      a,$40
+-                out     (VDP_REGS),a    ; POINT
+-                call    gc_vdp_wait
+-                ld      a,7
+-                call    vdpsta          ; S#7: the colour
 -                pop     hl
 -                ret
--setatr_text:    db      "SETATR",0
+-setc_bitmap:
+-                ld      a,36
+-                call    gc_vdp_xy       ; DX, DY; HL = X
+-                ld      a,44
+-                call    gc_vdp_reg
+-                ld      a,(ATRBYT)
+-                out     (VDP_REGS),a    ; CLR
+-                xor     a
+-                out     (VDP_REGS),a    ; ARG
+-                ld      a,$50
+-                out     (VDP_REGS),a    ; PSET
+-                ei
+-                ret
+-
+-; Input  : A = the VDP register for X, followed by Y
+-; Output : HL = CLOC; interrupts disabled
+-; Changes: AF
+-gc_vdp_xy:
+-                call    gc_vdp_wait
+-                call    gc_vdp_reg
+-                ld      hl,(CLOC)
+-                ld      a,l
+-                out     (VDP_REGS),a
+-                ld      a,h
+-                out     (VDP_REGS),a
+-                ld      a,(CMASK)
+-                out     (VDP_REGS),a
+-                ld      a,(ACPAGE)
+-                out     (VDP_REGS),a
+-                ret
+-
+-; Select VDP register A for writes through port VDP_REGS, which count up.
+-; Changes: A; interrupts disabled
+-gc_vdp_reg:
+-                di
+-                out     (VDP_ADDR),a
+-                ld      a,$80 + 17
+-                out     (VDP_ADDR),a
+-                ret
+-
+-; Wait until the VDP has finished its command. Changes: F
+-gc_vdp_wait:
+-                push    af
+-gc_vdp_wait_lp:
+-                ld      a,2
+-                call    vdpsta
+-                rra
+-                jr      c,gc_vdp_wait_lp
+-                pop     af
+-                ret
+-        ENDIF
 -
 -;--------------------------------
 -; $011D READC
--; Function : Reads attribute byte of current screenpixel
--; NOTE     : This implementation is still a stub!
+-; Function : Reads the colour of the pixel at the graphics cursor
+-; Output   : A  - the colour
+-; Registers: AF
+-; Remark   : SCREEN 5-8: through the sub-ROM's READC; F is undefined then
 -readc:
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                cp      5
+-                jr      nc,readc_bitmap
+-        ENDIF
 -                push    hl
+-                push    bc
+-                call    fetchc
 -                push    af
--                ld      hl,readc_text
--                call    print_debug
+-                call    gc_cell
 -                pop     af
--                pop     hl
--                ret
--readc_text:     db      "READC",0
- 
+-                and     b
+-                ld      a,c
+-                jr      z,readc_bg      ; the bit is clear: the background
+-                rrca
+-                rrca
+-                rrca
+-                rrca
+-readc_bg:
+-                and     $0F
+-                jr      setc_pop
+-
 -;--------------------------------
 -; $0120 SETC
--; Function : Returns currenct screenpixel of specificed attribute byte
--; NOTE     : This implementation is still a stub!
+-; Function : Sets the pixel at the graphics cursor to the colour ATRBYT
+-; Output   : A  - the pattern byte written, or the colour byte if that changed
+-;                 SCREEN 3: the pattern byte; SCREEN 5-8: $50
+-; Registers: AF
+-; Remark   : SCREEN 2 and 4 hold two colours per 8 pixels: the bit of a pixel
+-;            in the pattern byte picks the colour byte's foreground (set) or
+-;            background (clear). SETC clears the bit if ATRBYT is the
+-;            background and sets it if it is the foreground. Else ATRBYT
+-;            becomes the foreground, and the bit is set; unless that would
+-;            set all 8 bits: then it becomes the background, and the bit is
+-;            cleared, which leaves the other 7 pixels as they were.
+-;            F: S, Z and P/V follow A. Measured on a VG-8020 and an NMS
+-;            8250, flag bits 3 and 5 are 0 when A is the pattern byte; here
+-;            they follow A.
 -setc:
+-        IF VDP != TMS99X8
+-                ld      a,(SCRMOD)
+-                cp      5
+-                jr      nc,setc_bitmap
+-        ENDIF
 -                push    hl
--                push    af
--                ld      hl,setc_text
--                call    print_debug
--                pop     af
+-                call    fetchc          ; HL = CLOC, A = CMASK
+-                jr      setc_cell
+-
+-; Sets the pixels of mask A in the pattern byte at HL, as SETC sets one.
+-; SCREEN 2 and 4 only. Registers: AF
+-setc_hl:
+-                push    hl
+-setc_cell:
+-                push    bc
+-                push    de
+-                push    hl              ; the pattern byte's address
+-                ld      d,a             ; D = the mask
+-                call    gc_cell
+-                ld      a,(ATRBYT)
+-                ld      e,a
+-                jr      c,setc_sc3
+-                and     $0F
+-                ld      e,a
+-                ld      a,b
+-                or      d
+-                ld      b,a             ; B = the pattern byte with the bit set
+-                xor     d
+-                ld      d,a             ; D = the pattern byte with the bit cleared
+-                ld      a,e
+-                rlca
+-                rlca
+-                rlca
+-                rlca
+-                or      e               ; ATRBYT in both nibbles
+-                xor     c               ; a nibble is 0 where the colour byte has ATRBYT
+-                ld      e,a
+-                and     $0F
+-                jr      z,setc_clear    ; ATRBYT is the background
+-                xor     e               ; A = the foreground nibble
+-                jr      z,setc_set      ; ATRBYT is the foreground
+-                inc     b
+-                jr      z,setc_full     ; all 8 bits would be set
+-                dec     b
+-                or      a               ; NZ: the colour byte changes
+-                jr      setc_set
+-setc_full:
+-                xor     e               ; A = the background nibble
+-setc_clear:
+-                ld      b,d             ; the bit cleared instead
+-setc_set:
+-                ld      e,a             ; E = the change to the colour byte, 0: none
+-                ld      a,b
+-                ex      (sp),hl         ; HL = the pattern byte's address
+-                call    wrtvrm          ; the pattern byte; F is kept
+-                pop     hl              ; the colour byte's address
+-                jr      z,setc_done
+-                ld      a,e
+-setc_colour:
+-                xor     c
+-                call    wrtvrm          ; the colour byte
+-setc_done:
+-                or      a
+-                pop     de
+-setc_pop:
+-                pop     bc
 -                pop     hl
 -                ret
--setc_text:      db      "SETC",0
+-setc_sc3:
+-                rlca                    ; SCREEN 3: ATRBYT into the nibble
+-                rlca
+-                rlca
+-                rlca
+-                or      e
+-                xor     c
+-                and     d
+-                pop     hl              ; the pattern byte's address, as HL
+-                jr      setc_colour
+-
+-; Input  : HL = the address of a pattern byte
+-; Output : B = the pattern byte, C = the colour byte for it, HL = its
+-;          address; SCREEN 3: C set, HL unchanged, B = $80, C = the pattern
+-;          byte, which holds two colours
+-; Changes: AF
+-gc_cell:
+-                call    rdvrm
+-                ld      c,a
+-                ld      b,$80
+-                ld      a,(SCRMOD)
+-                cp      3
+-                scf
+-                ret     z
+-                ld      b,c
+-                ld      a,h
+-                xor     $20             ; the colour byte is $2000 away
+-                ld      h,a
+-                call    rdvrm           ; C reset
+-                ld      c,a
+-                ret
 -
 -;--------------------------------
 -; $0123 NSETCX
--; Function : Set horizontal screenpixels
--; NOTE     : This implementation is still a stub!
+-; Function : Sets a row of pixels from the graphics cursor rightward to the
+-;            colour ATRBYT
+-; Input    : HL - the number of pixels; other modes than SCREEN 2 and 4
+-;                 only use L, with 0 as 256
+-; Registers: All
+-; Remark   : SCREEN 2 and 4: a byte at a time, and the cursor stays. A byte
+-;            with only some of its pixels in the row is set as SETC sets one
+-;            pixel, with all those pixels at once; also the first byte when
+-;            HL is 0 (none of its pixels), unless the row starts at the
+-;            byte's left edge. Every byte with all 8 pixels in the row gets
+-;            pattern $00 and colour byte ATRBYT. The registers it leaves
+-;            differ from those a VG-8020 or NMS 8250 leaves.
+-;            Other modes: SETC and RIGHTC for each pixel; the cursor ends
+-;            after the row. In SCREEN 5-8 that is of little use, as RIGHTC
+-;            there moves the cursor as in SCREEN 3.
 -nsetcx:
+-                ld      a,(SCRMOD)
+-                cp      3
+-                jr      z,nsetcx_px
+-        IF VDP != TMS99X8
+-                cp      5
+-                jr      nc,nsetcx_px
+-        ENDIF
+-                ; Per byte: C = its pixels from the row's start rightward, B =
+-                ; the same shifted right once per pixel counted off DE; then
+-                ; C - B are the pixels in the row (B = 0: all of C).
+-                ex      de,hl           ; DE = the count
+-                call    fetchc          ; HL = the byte's address
+-                add     a,a
+-                dec     a               ; the cursor's bit and all right of it
+-nsetcx_byte:
+-                ld      c,a
+-                ld      b,a
+-nsetcx_count:
+-                ld      a,d
+-                or      e
+-                jr      z,nsetcx_mask   ; no pixels left
+-                dec     de
+-                srl     b
+-                jr      nz,nsetcx_count ; the byte has more pixels
+-nsetcx_mask:
+-                ld      a,c
+-                sub     b               ; A = the byte's pixels in the row
+-                inc     b
+-                ret     z               ; none left at a byte's left edge: done
+-                inc     a
+-                jr      nz,nsetcx_setc  ; not all 8
+-                ; All 8: make the colour byte ATRBYT; then ATRBYT is its
+-                ; background, and SETC with mask $FF clears the pattern byte.
 -                push    hl
--                push    af
--                ld      hl,nsetcx_text
--                call    print_debug
--                pop     af
+-                ld      a,h
+-                xor     $20
+-                ld      h,a
+-                ld      a,(ATRBYT)
+-                call    wrtvrm
 -                pop     hl
+-                xor     a
+-nsetcx_setc:
+-                dec     a
+-                call    setc_hl
+-                ld      bc,8
+-                add     hl,bc           ; the next byte
+-                ld      a,$FF
+-                jr      nsetcx_byte
+-
+-; Other modes: a pixel at a time; only L counts, 0 as 256.
+-nsetcx_px:
+-                push    hl
+-                call    setc
+-                call    rightc
+-                pop     hl
+-                dec     l
+-                jr      nz,nsetcx_px
 -                ret
--nsetcx_text:    db      "NSETCX",0
 -
 -;--------------------------------
 -; $0126 GTASPC
--; Function : Gets screen relations
--; Output   : DE, HL
+-; Function : Gets the screen's aspect ratio, for CIRCLE
+-; Output   : DE - ASPCT1, HL - ASPCT2
 -; Registers: DE, HL
--; NOTE     : This implementation is still a stub!
 -gtaspc:
--                push    hl
--                push    af
--                ld      hl,gtaspc_text
--                call    print_debug
--                pop     af
--                pop     hl
+-                ld      de,(ASPCT1)
+-                ld      hl,(ASPCT2)
 -                ret
--gtaspc_text:    db      "GTASPC",0
 -
 -;--------------------------------
 -; $0129 PNTINI
@@ -722,9 +1045,5 @@ index bb11106..231574e 100644
 -                pop     hl
 -                ret
 -scanl_text:     db      "SCANL",0
-+        IF $ > $099A
-+                ERROR   "graphics-cursor span overran print_debug"
-+        ENDIF
-+                ds      $099A - $, $00  ; the span keeps its length: print_debug stays put
  
  ; vim:ts=8:expandtab:filetype=z8a:syntax=z8a:

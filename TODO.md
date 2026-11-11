@@ -16846,7 +16846,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       same name -- the CF-3300 writes the FCB's zero date there, ours stamps today's
       (dir_stamp_date); TIER 6.
 
-- [ ] 🧩 **D-CBIOS031 — REBASE THE REPACK ONTO C-BIOS v0.31 (Joost 2026-11-11: "cbios 0.31 got
+- [x] 🧩 **D-CBIOS031 — REBASE THE REPACK ONTO C-BIOS v0.31 (Joost 2026-11-11: "cbios 0.31 got
       released"; the 0.30 ruling: "we will need that eventually ... it'll get worse only")**
       🎚️ APPARATUS — the repack's base; every gate rides on it.
       🤖 **AUTONOMOUS** — surveyed 2026-11-11 in a throwaway v0.31 worktree (bed20e7):
@@ -16872,8 +16872,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       patch) for any optimisation or fix ours lacks; adopt what is better, with a gate row.
       Ours being the shorter graphics span also gives back the room the tape body needs
       (ours fitted before print_debug at $099A on 0.30).
+      ✅ **REBASED (2026-11-11, Joost: "go ahead").** tools/build_repacked_cbios.py pins v0.31
+      (PRISTINE_SHA1 0d7f546f..., REPACKED_SHA1 per the file); SEVEN patches. Retired, upstream:
+      initslot-keep (verbatim), and -- after upstream's versions held on every row that
+      measured ours -- rdslt-regs, keyscan-skip, ctrlstop-key (upstream's RDSLT / WRSLT is the
+      more compact, a shared slt_select: the "learn from upstream" half of the ruling).
+      RE-MADE: graphics-cursor (our RIGHTC .. SCANL span transplanted over 0.31's; 0.31 took
+      our GRPPRT / CHGCAP / CLRSPR / SETTXT fixes itself, so no remainder for those) and
+      chkram-move (CHKRAM in front of the font pad; 0.31's new GTPDL after vdp_bios, $2742;
+      GTPAD a 2-byte stub -- D-GTPAD below). Page 0 free after it: $0981-$0D00, the cassette
+      body's $09EE-$0CE2 in one piece. build_mainrom.py PATCH_RANGES holds 0.31's vector
+      bytes; islands.asm's two code patches moved with their code (H.OUTD $0FCB -> $0FD7,
+      TTYPOS $1162 -> $116E). 📏 [`cbios031_suites.out`](scratchpad/cbios031_suites.out): biosregs, ctrlkeys, cursor, keystr,
+      keyrepaint, lnblank, rg7, screditor, stop-trap, biosl, initslot, autorun, bootkey,
+      expwrap green (🔮 all green: HIT); then the FULL battery.
       Then: PATCH_RANGES / islands.asm addresses, REPACKED_SHA1, the README, the FULL gate
       (the 0.30 rebase's caught D-SCANBOOT).
+
+- [ ] 🕹️ **D-GTPAD — C-BIOS 0.31's REAL GTPAD HAS NO PAGE-0 ROOM; IT IS A STUB ANSWERING 0
+      (filed 2026-11-11 by D-CBIOS031)**
+      🎚️ TIER 1 — a main-BIOS entry's happy path (the entry-point ruling): GTPAD ($00DB)
+      reads a touch pad, mouse or trackball.
+      🤖 **AUTONOMOUS** — 0.31's GTPAD is 146 B; with zerobas's cassette body ($09EE-$0CE2)
+      and BASIC's islands ($0160-$01F5, $1AF5-$1BB6, $09D9-$09E5) page 0 has no run that
+      size (2026-11-11). It answers 0, as 0.30's stub did (no regression). Needs a carve
+      or a move of page-0 code; then measure GTPAD on the VG-8020 (PAD() rows, the knife
+      that reads PAD BLIND) before keeping upstream's.
 
 - [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
       D-DSKFMT's close)**
