@@ -1632,17 +1632,7 @@ gsv_xpos:
 gsv_ypos:
                 ld      (GFX_PX),hl         ; vx
                 ld      (GFX_PY),de         ; vy
-                ld      a,(GFX_ASPMAJ)
-                or      a
-                jr      z,gsv_scy
-                ld      hl,(GFX_PX)
-                call    gfx_circ_scale      ; minor is X (y-major)
-                ld      (GFX_PX),hl
-                jr      gsv_store
-gsv_scy:
-                ld      hl,(GFX_PY)
-                call    gfx_circ_scale      ; minor is Y (x-major, default)
-                ld      (GFX_PY),hl
+                call    gfx_asp_scale       ; the minor axis scaled (D-KWIDXCARVE)
 gsv_store:
                 pop     de                  ; dest base
                 ld      hl,(GFX_PX)
@@ -1773,24 +1763,30 @@ gco_e8tab:      db      $06                 ; (+x,+y)  octant 6
 ; (GFX_CXC+dx',GFX_CYC+dy') via gfx_plot_cur (its own clip + DI-guarded RMW).
 ; Clobbers everything.
 ; ---------------------------------------------------------------------------
+; gfx_asp_scale -- D-KWIDXCARVE (2026-11-11): the aspect's MINOR axis scaled in place,
+; GFX_PX when y-major (GFX_ASPMAJ <> 0, aspect > 1), else GFX_PY (x-major, the no-scale
+; default). It stood twice, in gsv_ypos and gfx_circ_emit_point (scratchpad n-gram scan,
+; 26 B each). Clobbers A, HL (and what gfx_circ_scale clobbers).
+gfx_asp_scale:
+                ld      a,(GFX_ASPMAJ)
+                or      a
+                jr      z,gas_y
+                ld      hl,(GFX_PX)
+                call    gfx_circ_scale      ; y-major: the minor axis is X
+                ld      (GFX_PX),hl
+                ret
+gas_y:
+                ld      hl,(GFX_PY)
+                call    gfx_circ_scale      ; x-major: the minor axis is Y
+                ld      (GFX_PY),hl
+                ret
+
 gfx_circ_emit_point:
                 ld      (GFX_PX),bc
                 ld      (GFX_PY),de
                 call    gfx_circ_keep       ; CF=1 iff this point survives (A=octant)
                 ret     nc
-                ld      a,(GFX_ASPMAJ)
-                or      a
-                jr      z,gcep_scaley
-                ; y-major (aspect>1): the MINOR axis is x
-                ld      hl,(GFX_PX)
-                call    gfx_circ_scale
-                ld      (GFX_PX),hl
-                jr      gcep_plot
-gcep_scaley:
-                ; x-major (aspect<=1, incl. the no-scale default): minor is y
-                ld      hl,(GFX_PY)
-                call    gfx_circ_scale
-                ld      (GFX_PY),hl
+                call    gfx_asp_scale       ; the minor axis scaled (D-KWIDXCARVE)
 gcep_plot:
                 ld      hl,(GFX_CXC)
                 ld      de,(GFX_PX)
