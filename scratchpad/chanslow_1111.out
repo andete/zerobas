@@ -1,0 +1,9 @@
+row                 ref ms     zb ms  zb/ref  alone  status
+kwtime: [disk] ref CURLIN bias -- fall-off 2.478 ms (spread 2.478..2.478) · END path 2.877 ms
+kwtime: [disk] zb CURLIN bias -- fall-off 0.274 ms (spread 0.274..0.274) · END path 0.400 ms
+t8bloadcolon      3656.901  2155.164    0.59   5.73  OK  [disk: National_CF-3300]
+rset              1458.867  1387.802    0.95      ~  OK  [disk: National_CF-3300]
+fieldkw           2989.514  1872.200    0.63      ~  OK  [disk: National_CF-3300]
+
+kwtime: OK=3  (3 rows, bar 10x; keyword-alone reading on 1; 0 timed via CURLIN, 0 via a type-ahead end)
+refcache: 1 hit, 5 miss, 5 stored, 1 replayed provenance

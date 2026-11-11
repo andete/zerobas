@@ -16575,6 +16575,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the defrag moves (a routine moved across a page-1 tenant or `jr` turned `jp`) and
       D-RNDLIVE (the FCB-sourced random read) -- but a channel's PUT / GET do not go through
       BDOS, so MEASURE before believing either.
+      📏 **RE-MEASURED 2026-11-11 ([`chanslow_1111.out`](scratchpad/chanslow_1111.out), `--only fieldkw,rset,t8bloadcolon`):**
+      the whole-row ratios are all under 1 -- BLOAD plain 0.59, RSET 0.95, FIELD 0.63 -- but
+      only BLOAD got an "alone" reading in this mode, and it is **5.73** (1.88 on 11-10).
+      🔴 The two runs are NOT on one scale: the 11-10 JSON holds seconds and a reference
+      of 4.50 s for this row, today's run milliseconds and 3.66 s, and the reference is
+      replayed from the store -- so the harness, not only zerobas, moved between them.
+      ➡️ Next: run the FULL kwtime (the alone figure needs its twin rows) twice on today's
+      build and once on 399776bf in the gate worktree, all three on the SAME harness, before
+      any bisect; the CF-3300's alone denominator for BLOAD plain is ~0.5 s, so it amplifies.
 
 - [x] 🔀 **D-GATEWT — GATE A FROZEN COPY IN A WORKTREE, KEEP WORKING IN THIS ONE
       (Joost, 2026-11-10: "we really need ... a way of working that allows work to
