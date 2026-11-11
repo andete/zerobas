@@ -17357,6 +17357,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       forfast / control_flow / statements / traps green. ➡️ What is left of the `%` pass:
       exec_stmt + es_idx (~550 T, the statement dispatch) and nx_again (~390: BREAKX, the STOP
       shadow, the SAVSTK re-base checks).
+      📏 **RE-PROFILED 2026-11-11 ([`loopprof_1111.out`](scratchpad/loopprof_1111.out), machine model):**
+      `A=I+7` 12.2k T a pass (VG ≈ 14.7k), `A=I*7` 14.2k (≈ 20.6k), the default empty loop
+      3.7k (≈ 5.0k) -- all three now FASTER than the VG-8020; only the empty `%` loop
+      lags, 2.4k (≈ 1.7k, 10 ticks against 7). Its pass: exec_stmt 416 + es_idx 138 (the
+      dispatch every statement pays), nx_again 387 (BREAKX, the STOP shadow, the SAVSTK
+      re-base -- each one needed), nxi ~620. Looked at and NOT taken: inlining exec_stmt's
+      `call check_fperr_only` (27 T a statement; cee_abort_fp discards its caller's return
+      address, so it cannot be a plain `jp`); Route D's 18 `jp` -> `jr` (a taken `jr` is 2 T
+      SLOWER, on hot loops such as PRINT's exp_loop -- a speed tier must not pay for room
+      that way, and page 1's pin pads hold ~1.7 KB anyway). ➡️ The remaining `%` gap
+      (~700 T) needs a design, not a peephole: a lighter dispatch for the statement after a
+      NEXT that loops back (the body's first statement), measured on a NON-empty body so it
+      is not a benchmark special case.
       The D-CONCATLIT round-2 design (a combined first-append op) was weighed the same day
       and deferred: ~6 %, and the snapshot is load-bearing for array elements / RVDESC.
       📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →
