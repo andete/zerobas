@@ -5802,6 +5802,21 @@ item — do **one item per session** to keep context lean.
       every FAT_MBUF reader still passes it. [`loadhold_after.out`](scratchpad/loadhold_after.out): 0.568 / 1.654 / 3.070 s.
       🔴 Lesson: a speed item's baseline ROTS -- re-measure before the first experiment; an
       unrelated ~85 T moved this loop by a second.
+      🔬 **WHERE THE MISSES ARE (2026-11-11, [`loadgap_drq.out`](scratchpad/loadgap_drq.out); `FDC_DRQ=1 scratchpad/fdccmd_probe.py`,
+      C = a command, D = its first data byte, J = an interrupt taken):** sectors 1-3 read back
+      to back (command -> data in 2-8 ms); sector 3's transfer ends ~164.448, a J lands at
+      164.4487 -- IN the ~3.5 ms gap before sector 4 -- and sector 4's command leaves at
+      164.4531, too late: its data starts 200 ms later. The 50 Hz interrupt drifts across the
+      22 ms sector slots and lands in the gap every few sectors: that is the miss, not the
+      FAT walk (a cluster boundary is not where they fall). It also explains the 11-08
+      experiment: a MASKED wait defers the interrupt to the transfer's end, i.e. INTO the gap.
+      💰 **THE SHAPE, PRICED (not built):** while LOAD chains sectors (hd_full), fdc_io_done
+      skips its `ei` and fdc_di_save keeps FDC_IFF "enabled", so a pending interrupt is
+      taken in the NEXT command's rotational-wait window (fdc_fdrq's) -- never between a
+      transfer's end and the next command; LOAD's end restores EI. ~20 B over fdc_io_done /
+      fdc_di_save (disk/fat.asm, $4C29 slack 1 B) and hd_full, plus a flag bit (FDC_IFF's
+      bit 7?): a carve first. 🔮 to score when built: misses well under 11 of 28, and TIME
+      still advancing during a LOAD (D-LOADDI's guard).
       🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
       SPENDING BYTES on it is not, and the byte budget is Joost's call.
       Measured 2026-09-18 by
@@ -7926,7 +7941,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10359 (T-6FE392)8 (T-529ABE)` from `TODO.md:14961 (T-529ABE)`: a
+      `TODO.md:10374 (T-6FE392)8 (T-529ABE)` from `TODO.md:14976 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10665,7 +10680,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14961 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
