@@ -1,0 +1,5 @@
+# D-KWIDX (2026-11-11): the 150-line program with and without SAVE "T.BAS",A, zerobas only
+# (the CF-3300's 114.1 / 115.6 s from scratchpad/asave_1111.out). Before: 119.3 / 148.6 s (SAVE 29.3 s).
+asctok_end C-BIOS_MSX1_EU_REPACK_DISK ENDED t=119.2
+asctok_save C-BIOS_MSX1_EU_REPACK_DISK ENDED t=133.1
+# => SAVE ,A 13.9 s (CF-3300 1.5 s: 9.3x). Predicted ~15 s: HIT.

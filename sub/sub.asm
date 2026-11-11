@@ -457,6 +457,7 @@ sil_no:
 ; resident repack copy, so the two are byte-identical by construction; the reloc
 ; build's byte-identity assert (tools/check_reloc.py) is the standing guard.
                 include "basic/kwtable.inc"
+                include "basic/kwidx.inc"   ; D-KWIDX: detok_kw's reverse index, generated (tools/gen_kwidx.py)
 
 ; --- pad page 0 to the $4000 boundary --------------------------------------
 ; __MEAS_SUB_P0_END is a ZERO-BYTE measurement label: page-0 free space is

@@ -572,48 +572,69 @@ dop_emit:
 ; --- detok_kw: single-byte keyword token -> its text (reverse kwtable) -------
 ; in:  A = token byte. out: CF set + the keyword text printed if a tlen==1 entry
 ; in kwtable carries this token; CF clear (nothing printed) otherwise. Preserves
-; the caller's HL (it walks the table via IX/IY). Reverse of match_kw.
+; the caller's HL. Found through basic/kwidx.inc (D-KWIDX), not a walk. Reverse of match_kw.
 detok_kw:
                 ld      c,a                 ; C = the wanted token byte
                 push    hl
                 push    bc
                 push    ix
-                ; 🐌 D-ASAVESPD (2026-11-06): the walk in HL, not IX / IY -- ~140 T an
-                ; entry against ~260. Every token of a LIST / ASCII SAVE scans this
-                ; table; the keyword search was ~65 % of a 150-line `SAVE ,A`
-                ; (scratchpad/asave_pc.out).
-                ld      hl,kwtable
-dk_entry:
-                ld      a,(hl)              ; keyword length (0 = end of table)
-                or      a
-                jr      z,dk_none
-                ld      b,a                 ; B = klen
+                ; 🐌 D-KWIDX (2026-11-11): an INDEX, not a walk. The walk (D-ASAVESPD's,
+                ; ~140 T an entry over 161 entries) was ~half of a 150-line `SAVE ,A`
+                ; (scratchpad/asave_pc3.out). basic/kwidx.inc, GENERATED from
+                ; kwtable.inc by tools/gen_kwidx.py (kwidx-check keeps it current):
+                ; kw_ord = the token's entry ordinal ($FF: none), kw_bkt = where entry
+                ; 16*k starts. Jump to the bucket, skip ord MOD 16 entries (~55 T each).
+                ; The SAME entry the walk found: the first tlen==1 entry with this token.
+                sub     $80
+                jr      c,dk_nokw           ; below $80: no keyword token
                 ld      e,a
                 ld      d,0
-                inc     hl                  ; HL -> the keyword chars
-                add     hl,de               ; HL -> [tlen]
-                ld      a,(hl)              ; tlen
-                cp      1                   ; only single-byte tokens match here
-                jr      nz,dk_next
-                inc     hl
-                ld      a,(hl)              ; the token byte
-                cp      c
-                jr      z,dk_hithl
-                inc     hl                  ; -> the next entry's [klen]
-                jr      dk_entry
-dk_next:
-                ; skip [tlen] + tlen token bytes -> next entry's [klen] (D = 0)
-                ld      e,a
-                inc     hl
+                ld      hl,kw_ord
                 add     hl,de
-                jr      dk_entry
-dk_hithl:
-                ld      e,b
-                inc     e                   ; E = klen + 1 (D = 0)
-                or      a
-                sbc     hl,de               ; HL -> the keyword chars
+                ld      a,(hl)              ; the ordinal
+                cp      $FF
+                jr      z,dk_nokw
+                ld      b,a
+                rrca
+                rrca
+                rrca
+                and     $1E                 ; (ord / 16) * 2: the bucket's word
+                ld      e,a
+                ld      hl,kw_bkt
+                add     hl,de
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL -> entry 16 * (ord / 16)
+                ld      a,b
+                and     KW_BUCKET - 1       ; entries left to skip
+                jr      z,dk_at
+                ld      b,a
+dk_skip:
+                ld      a,(hl)              ; klen
+                inc     a
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL -> [tlen]
+                ld      a,(hl)
+                inc     a
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL -> the next entry's [klen]
+                djnz    dk_skip
+dk_at:
+                ld      b,(hl)              ; B = klen
+                inc     hl
                 push    hl
-                pop     iy                  ; IY for the print loop (pchar keeps IY)
+                pop     iy                  ; IY -> the keyword chars (pchar keeps IY)
+                jr      dk_hit
+dk_nokw:
+                xor     a                   ; CF clear: not a keyword token
+                jr      dk_none
 dk_hit:
                 ; IY -> klen keyword chars; print B of them.
 dk_print:                                   ; (pchar keeps BC and IY)

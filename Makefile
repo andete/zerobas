@@ -225,6 +225,7 @@ SUB_SRC   := sub/sub.asm
 SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
+             basic/kwtable.inc basic/kwidx.inc \
              sub/printusing.asm basic/pu-render.inc sub/punum.asm \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc \
@@ -4400,6 +4401,12 @@ tiers-md:
 # writes it. There is no "before the pool" to read it in.
 # 🎯 After the pool is also the STRONGER invariant: the doc is compared against the
 # pin THIS battery just measured, not whatever was on disk when it started.
+# --- kwidx-check: basic/kwidx.inc is what tools/gen_kwidx.py makes of kwtable.inc ---
+# D-KWIDX: detok_kw (LIST, SAVE ,A) finds a token's keyword through this generated
+# index; a stale one prints the WRONG keyword. tests/test_kwidx.py checks every byte.
+kwidx-check:
+	python3 tools/gen_kwidx.py --check
+
 tiers-md-check:
 	@python3 tools/tier_table.py --keywords --markdown > build/tier-status.check.md
 	@if diff -u docs/tier-status.md build/tier-status.check.md; then \

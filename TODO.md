@@ -3085,6 +3085,18 @@ item — do **one item per session** to keep context lean.
       + bucket offsets every 16 entries (22 B) generated from kwtable.inc + sysvars.inc's
       *_TOKEN equates into kwidx.inc, a static check that regenerates and diffs it, and a
       host test that the index and the walk answer alike for every token.
+      ✅ **D-KWIDX BUILT (2026-11-11): SAVE ,A 29.3 -> 13.9 s (CF-3300 1.5 s: 9.3x -- UNDER T2's 10x).**
+      tools/gen_kwidx.py writes basic/kwidx.inc from kwtable.inc + sysvars.inc's token equates
+      (the build switches' IF blocks evaluated): kw_ord (128 B, token -> the first tlen==1
+      entry's ordinal, $FF none) and kw_bkt (every 16th entry's offset, 11 words); detok_kw
+      jumps to the bucket and skips <= 15 entries. Verified three ways: the generator's
+      output against the ASSEMBLED table (0 mismatches), tests/test_kwidx.py running detok_kw
+      on the host for all 256 byte values against the walk's answer (113 keywords, 0
+      mismatches), and `make kwidx-check` (static battery) regenerating and diffing. Knife
+      ([`kwidx_knife.out`](scratchpad/kwidx_knife.out)): $81's ordinal off by one -> test_kwidx prints STOP for END and
+      kwidx-check is RED. 📏 [`asave_kwidx.out`](scratchpad/asave_kwidx.out) (🔮 ~15 s: HIT). Sub page 0: 196 -> 22 B free.
+      LIST gets it too. ➡️ Left of the 9.3x: the disk side (~20 %, D-BLKIOPERCALL's write
+      cache) and the per-character channel output (~30 %).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8001,7 +8013,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10434 (T-6FE392)8 (T-529ABE)` from `TODO.md:15036 (T-529ABE)`: a
+      `TODO.md:10446 (T-6FE392)8 (T-529ABE)` from `TODO.md:15048 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10740,7 +10752,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15036 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
