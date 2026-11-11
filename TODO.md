@@ -3061,6 +3061,14 @@ item — do **one item per session** to keep context lean.
       search is ~half of the 29.3 s, so even a perfect index leaves ~15 s -- still ~10x the
       CF-3300's 1.5 s. ➡️ Profile the OTHER half first (asave_pc2.out's non-search samples)
       and price both halves together before carving.
+      📏 **PROFILED (2026-11-11, [`asave_pc3.out`](scratchpad/asave_pc3.out); 1 ms PC samples on line 10, 28.9 s):** the
+      keyword walk (dk_entry and its 16-byte neighbour bucket) ~14.5k samples, **~50 %**; disk
+      ~5.7k, **~20 %** -- fdq_win (the write's first-DRQ waits, a revolution each), frdw_poll /
+      fwd_wait, fat_rootsecs: alone ~4x the CF-3300's WHOLE SAVE, D-BLKIOPERCALL's
+      write-cache class; the rest ~8.7k, ~30 %, spread over the per-character channel output.
+      ➡️ So the plan is two slices, not one: (1) the ordinal index ((a) above, after the ~60 B
+      sub page 0 carve): -> ~14 s; (2) the write side's per-sector waits (D-BLKIOPERCALL's
+      step 2, a write cache); only both together can approach T2's 10x.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7977,7 +7985,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10410 (T-6FE392)8 (T-529ABE)` from `TODO.md:15012 (T-529ABE)`: a
+      `TODO.md:10418 (T-6FE392)8 (T-529ABE)` from `TODO.md:15020 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10716,7 +10724,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15020 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
