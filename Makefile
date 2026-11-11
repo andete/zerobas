@@ -1754,6 +1754,13 @@ biosregs-acceptance: repack-machine
 #   NODISK row and VG-8020 + NMS 1200 against zerobas on the disk row; the capture
 #   block and VRAM compared, excused bytes pinned to OUR value (biosl_run.py ALLOW).
 #   Repack-only; oracle-dependent.
+# D-INITSLOT (2026-11-11): the cartridge search keeps the slot ID across a cartridge's INIT
+# (cbios-repack/initslot-keep.patch): with a ROM in slot 1 whose INIT returns and one in
+# slot 2, both INITs run -- the VG-8020, the NMS 8250 and both zerobas machines; stock
+# C-BIOS (the control) skips slot 2.
+initslot-acceptance: repack-machine
+	python3 probes/bios/initslot_probe.py
+
 biosl-acceptance: repack-machine
 	python3 -u probes/bios/biosl_run.py --all
 

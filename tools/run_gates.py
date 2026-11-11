@@ -171,7 +171,7 @@ diskfre-acceptance deepexpr-acceptance fcb0-acceptance prec-acceptance dimedge-a
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
 resetboot-acceptance keyshift-acceptance
-opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance floorcensus-acceptance biosl-acceptance""".split()
+opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance floorcensus-acceptance biosl-acceptance initslot-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

@@ -17040,6 +17040,58 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       now -- retire it (sub-ROM room, not disk); standing rows for MSX-DOS's `format` and for
       this boot (fmtdialog_probe.py / fmtboot_probe.py are the steps).
 
+- [x] 🧩 **D-INITSLOT — THE CARTRIDGE SEARCH LOST THE SLOT ID ACROSS A CARTRIDGE'S INIT (Joost,
+      2026-11-11: a new C-BIOS repack patch)**
+      🎚️ TIER 1 — the BIOS boot path's happy path (a cartridge whose INIT returns).
+      C-BIOS's `search_roms_init` (src/main.asm) pushed the slot ID AFTER the VDP wait loop,
+      so `push af` saved the VDP status; when an INIT returned, `pop af` gave that as the
+      slot: the pointers were read from the wrong slot, SLTATR got a bogus entry, and the
+      search could skip later slots (C-BIOS commit f6849b44, 2010; upstream fix in
+      release-0.31, draft PR #26). ✅ **FIXED (2026-11-11):** cbios-repack/initslot-keep.patch
+      (#18) moves the `push af` before the existing `push af / pop iy` -- 0 bytes, $0EB4..$0EBC
+      only (measured against the previous repacked ROM), REPACKED_SHA1 23d9875d..., and
+      zerobas-main-eu.ips / .bps rebuilt. 📏 `make initslot-acceptance` (probes/bios/
+      initslot_probe.py, cartridges probes/bios/initslot/a.asm, b.asm): slot 1's INIT returns,
+      slot 2's writes a marker; write watchpoints counted only from each cartridge's own
+      slot (BASIC's page-1 ROM writes the same cells on the references, which a page-1 PC
+      alone let pass vacuously). Both INITs run on the VG-8020, the NMS 8250 and both zerobas
+      machines; stock C-BIOS, the control, runs slot 1's only. (zerobas's NODISK machine
+      later overwrites the marker cells itself -- a RAM read there shows $FF; the
+      watchpoints are the witness.)
+
+- [ ] 🧱 **D-CBIOS030 — REBASE THE REPACK ON C-BIOS 0.30 (Joost, 2026-11-11: "cbios 0.30 was released
+      ... it may be a good idea to rebase our changes on that?")**
+      🎚️ TIER 1 — the BIOS's stability (Joost 2026-11-08: "having the bios and such stable").
+      🤖 **AUTONOMOUS** — our 18 patches apply to the pinned v0.29-3-gb5ad9cb
+      (tools/build_repacked_cbios.py PINNED_TAG). v0.30 (46 commits on) changes src/main.asm
+      (+183 / -), chput.asm, video.asm, systemvars.asm, scancodes_jp.asm -- the files most
+      of our patches edit, and its init_ram change (#23) and boot strings move code. ➡️ Re-
+      apply each patch on v0.30 in order (git worktree, as the build does), resolve each
+      conflict against the patch's MEASURED intent (each README row), re-measure every
+      pinned address the patches fix (the font pad / island 1, vdp_bios's end -> BASIC_ORG /
+      BASIC_BASE, the $3283 / $328D helpers, $0D12), then PRISTINE_SHA1 / REPACKED_SHA1, the
+      patches, and the FULL battery plus biosl- and initslot-acceptance. Whether 0.30 has
+      upstreamed any of ours (or the INIT-slot fix: "release-0.31") decides which patches
+      retire.
+      💡 **AND LEARN FROM C-BIOS's IMPLEMENTATIONS (Joost, 2026-11-11: "they might be more compact"):**
+      reading C-BIOS (BSD-2-clause) for approach and algorithms is fine; its code does not go
+      into our 0BSD sources (cbios-repack/README.md decision D1: no C-BIOS bytes in this
+      repo) -- a compact idea is written fresh in ours, or, for a BIOS routine, lands as a
+      repack PATCH against C-BIOS itself (e.g. D-BIOSCONTRACT's PNTINI / SCANR / SCANL).
+      📏 **MEASURED (2026-11-11): 0.30 UPSTREAMED NINE OF OUR PATCHES.** Applied in order to a v0.30
+      worktree: OK as they stand -- eu-drop-statements, key-trap-hook, eu-drop-dead-strings,
+      rdslt-regs, keyscan-skip, graphics-cursor, initslot-keep; CONFLICT -- ins-del-keys,
+      home-key, ctrl-keys, linttb-scroll, vdp-reg7, calpat-de, bios-regs, bios-keyscan,
+      key-repeat, ctrlstop-key, crtcnt-bound. 0.30's CHANGELOG fixes nine of those itself:
+      INS / DEL (#7), HOME (#8), CTRL+key (#9), keyscan / repeat (#11, #12), wrapped lines
+      (#13, #14), SCREEN 0 background (#15), CALPAT (#17), CALATR / LDIRVM / LDIRMV / DCOMPR
+      (#18-#20), the $0D12 keyscan entry (#21). ➡️ So: RETIRE those nine (verify each by its
+      own acceptance row -- keystr, keyrep, lnblank, calatr, biosregs, D-BIOSINT -- not by the
+      changelog line); REWORK ctrlstop-key and crtcnt-bound against 0.30; keep the seven.
+      0.30 also frees ROM below the font (MSX1 245 -> 339 B, #6 / #16 / #23): the layout
+      zerobas pins against moves -- re-measure island 1, vdp_bios's end -> BASIC_ORG /
+      BASIC_BASE, the $3283 / $328D helpers, then the FULL battery.
+
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
       🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).

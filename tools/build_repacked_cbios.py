@@ -118,11 +118,16 @@ PATCHES = [
     # CRTCNT UNDER KEY ON (2026-11-10): CHPUT's 8 reads of CRTCNT call zerobas's page-0
     # helpers at $3283 / $328D (CRTCNT + CNSDFG, the VG-8020's bound); byte-neutral.
     os.path.join(REPO, "cbios-repack", "crtcnt-bound.patch"),
+    # D-INITSLOT (2026-11-11): search_roms_init's `push af` that keeps the slot ID across
+    # the INIT call came AFTER the VDP wait loop, so it saved the VDP status; moved up
+    # before it (C-BIOS commit f6849b44, 2010; upstream fix in release-0.31, draft PR #26).
+    # 0 bytes; the 5 bytes between the two positions shift by one.
+    os.path.join(REPO, "cbios-repack", "initslot-keep.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "4c339d9823d06f8c4316e5620bb1d7afbbffc279"
+REPACKED_SHA1 = "23d9875d0374d327075f9f9ff5de80dc1e57ed21"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
