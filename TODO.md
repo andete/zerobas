@@ -3107,6 +3107,17 @@ item — do **one item per session** to keep context lean.
       channel's block writes and write the directory entry at CLOSE (as the CF-3300 does,
       D-WRBLKDIR), not a general cross-call cache. 🔮 to score: the SAVE line's writes from
       39 toward ~12 (10 data + FAT + dir), the SAVE under ~10 s.
+      🔬 **WHY 39 (2026-11-11, read in disk/kernel.asm dout_write):** RS = 1 and 256 B records, so a
+      record is HALF a sector. A FIRST half is written padded at once and the cursor stepped
+      back; the SECOND half re-reads the sector (dout_secread: FAT_DBUF is shared, so the first
+      half cannot be trusted to still be there) and writes it whole -- 2 writes + 1 read per
+      data sector, plus the FAT as clusters are allocated. ➡️ THE SLICE: skip the first-half
+      write and HOLD it in FAT_DBUF, behind an ownership tag (channel + sector) that every
+      other FAT_DBUF user clears -- i.e. flushes the held half first -- with CLOSE and the
+      channel switch flushing too. That is the shared-buffer audit W3b / W4 names (every
+      FAT_DBUF writer: fat_read_file_sector / frs_to, rd_dbuf, the RANDOM engine, BDOS reads,
+      LOAD's first sector, FILES / KILL / NAME's directory reads); a missed one LOSES DATA,
+      so the audit is a list with a gate row per writer, and the knife is "drop one flush".
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8023,7 +8034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10456 (T-6FE392)8 (T-529ABE)` from `TODO.md:15058 (T-529ABE)`: a
+      `TODO.md:10467 (T-6FE392)8 (T-529ABE)` from `TODO.md:15069 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10762,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15058 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
