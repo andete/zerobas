@@ -1,0 +1,9 @@
+# D-CALLSTMT (2026-11-11): an unknown CALL name under the CF-3300's own BASIC, with its own
+# disk ROM (National_CF-3300) and with ours (National_CF-3300_ZEROBASDISK). Typed at the
+# prompt: `call foo`, `call systemx`, `print 1` (probes/disk/fmtdos_acceptance.py's
+# screen-polled steps; screens read from VRAM).
+National_CF-3300:              call foo -> Syntax error; call systemx -> Syntax error; print 1 -> 1; Ok
+National_CF-3300_ZEROBASDISK:  call foo -> Syntax error; call systemx -> Syntax error; print 1 -> 1; Ok
+# SAME. (Banner: the CF-3300's own disk ROM adds "Disk BASIC version 1.0" and 23430 Bytes
+# free; with ours the CF-3300's BASIC shows 28815 Bytes free and no disk line -- long
+# standing: our disk ROM provides the disk ENTRIES to another BASIC, not Disk BASIC.)

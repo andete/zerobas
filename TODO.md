@@ -17160,6 +17160,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CALL SYSTEM there (hk_system calls back into zerobas-BASIC: fch_close_all, disk_error
       -- under another BASIC it needs its own way), so it stays "not ours" (Syntax error);
       and what the CF-3300 answers for an unknown CALL name under its BASIC with ours.
+      ✅ **UNKNOWN NAMES (2026-11-11): SAME.** `CALL FOO` / `CALL SYSTEMX` are Syntax error under
+      the CF-3300's BASIC with its own disk ROM and with ours ([`callunk_run.out`](scratchpad/callunk_run.out)).
+      💰 **CALL SYSTEM THERE, PRICED (2026-11-11): ~60 B, ROOM BLOCKED.** stmt_hdl's sh_no
+      becomes `jp sh_sys` (3 B for 3 B); sh_sys in the $75A5 region (42 B free): PROCNM
+      against "SYSTEM" + 0, the BASIC text after it must end the statement (else CF = 1:
+      that BASIC's Syntax error), $F346 = 0 -> Illegal function call through the published
+      error entry (E = 5, CALBAS $406F, MSX2 TH -- that BASIC's own), no file close (that
+      BASIC has no files of ours), DI, then hk_system's key-row / boot-sector read / check
+      as a SUBROUTINE returning Cy (today it jumps to hsy_syn -> disk_error by calbak into
+      zerobas-BASIC, which would crash another BASIC): +6 B in front of $5FE5 (0 B free --
+      move frp_full or write_sector to the $55DB slack first). Total ~55-60 B against 42 +
+      13: a carve of ~20 B first.
       🔴 **AND A FIX TO D-DSKFMT'S CALL FORMAT, found writing this:** its work area ran from
       STREND to FRETOP - 64 -- but the BASIC stack lies between the arrays and the strings,
       so on a full machine that reached over the live stack (it worked with ~28 KB free
