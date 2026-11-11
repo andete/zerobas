@@ -3601,9 +3601,8 @@ hkg_st:
 ;     callable by absolute address while this ROM holds page 1; CALSLT nests,
 ;     and page 1 comes back to this ROM when the tenant returns.
 ;   in   nothing (FOPEN_SEL is not consulted; the gate stored nothing)
-;   out  FMT_GEOMSEL = 0 (360k) / 1 (720k), the tenant's selector
-;        FMT_RESULT  = 0 ok / 1 the tenant's write error, OR the sub-ROM absent
-;                      (folded into one disposition, docs/spec-evict-call-format.md §4)
+;   out  FMT_RESULT  = 0 ok / 1 failed (D-DSKFMT: the format is DSKFMT's; the
+;                      sub-ROM tenant this once dispatched to retired 2026-11-11)
 ;        CF = 1 (claimed), which is what chan_gate_bare tests
 ; 📍 SITED IN THE FILL ABOVE `ds $5FE5 - $` for hkc_resolve's reason: the tail
 ; after runtime.asm is nearly full, and code here shifts nothing downstream.
@@ -6982,7 +6981,8 @@ sd_read:
 ; here), HL / BC = a work area and its size; out Cy = 0, A = B = 0 (the CF-3300's
 ; answer, dskfmt_stock*.out); Cy = 1 with A = 12 (bad parameter), 14 (the work area
 ; is too small) or a DSKIO code. Every track of every side gets a WD2793 Write Track
-; (IBM System 34 double density: 9 sectors of 512 B, data $E5), built once in the
+; (IBM System 34 double density: 9 sectors of 512 B, data $40 -- the CF-3300's fill,
+; measured, not the usual $E5: D-FMTFILL), built once in the
 ; work area and each ID field set per track; then the system area -- the boot
 ; sector (the BPB: the format's contract, measured per choice; and OUR loader),
 ; both FATs (the media ID, $FF, $FF) and an empty root -- zeroed in the work area
@@ -7119,15 +7119,11 @@ fs_fat:
                 ld      h, a                ; + the FAT's size: FAT 2
                 djnz    fs_fat
                 call    fmt_buf
-                ld      a, (ix+2)           ; root entries
-                rrca
-                rrca
-                rrca
-                rrca                        ; / 16 (64 / 112)
-                add     a, (ix+6)
-                add     a, (ix+6)
-                inc     a
-                ld      b, a                ; sectors: 1 + 2 x FAT + root
+                ld      b, FMT_SYS / 512    ; 14 sectors on EVERY choice, as the CF-3300:
+                                            ; it zeroes logical 0..13 (the largest system
+                                            ; area) even where data starts at 9 or 12 --
+                                            ; measured all four choices, from MSX-DOS and
+                                            ; from BASIC (D-FMTFILL, scratchpad/fmtfill_ref.out)
                 ld      c, (ix+5)           ; the media ID: DSKIO seats the sectors by it
                 ld      de, 0
                 xor     a

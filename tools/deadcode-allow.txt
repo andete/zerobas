@@ -14,4 +14,3 @@
 # entry earns its place only when the code is deliberately kept for a reason the
 # sweep cannot know.
 
-sub  fmt_menu_text  Deliberately kept at its ORIGINAL pre-eviction position between fmt_boot and fmt_geom_byte to preserve the byte layout of basic/format-body.inc (its own comment says so). The menu itself stays main-resident (docs/spec-evict-call-format.md §2), so the sub-side copy is unreachable by design. 16 B of a ROM with 7411 B free — worth more as this gate's vacuity canary than as recovered bytes.

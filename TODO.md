@@ -16737,6 +16737,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`biosl_b5_r11.out`](scratchpad/biosl_b5_r11.out): R11 SAME at INIT and after both GICINIs. ➡️ Left: R0 = $55 on the
       VG-8020 + NMS 1200's row (its boot beep) -- disk-ROM boot state, pinned.
 
+- [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
+      D-DSKFMT's close)**
+      🎚️ TIER 6 — every error: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP
+      at each prompt, from MSX-DOS's `format` and from CALL FORMAT.
+      🤖 **AUTONOMOUS** — probes/disk/fmtdos_acceptance.py's screen-polled steps drive both
+      machines; compare what each prints and what the disk holds afterwards. Today a failed
+      format is main's `load error` from CALL FORMAT (the old disposition).
+
 - [ ] **D-F37DNODISK — WITH NO DISK INTERFACE $F37D HOLDS $C9 HERE, $00 ON THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B8's NODISK row)**
       🎚️ TIER 6 — a work-area cell nobody should call without checking H.PHYD first.
@@ -16755,7 +16763,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Witness: `make dskfmt-acceptance` choice 1 (a knife restoring $F9 fails it on ours
       alone). The shared body is the sub-ROM's too.
 
-- [ ] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) WAS A STUB (✅ BUILT 2026-11-10; CALL FORMAT and the
+- [x] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) WAS A STUB (✅ BUILT 2026-11-10; CALL FORMAT and the
       loader's boot still open, below): IT ANSWERED AN ERROR AND FORMATTED
       NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
       🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
@@ -17036,9 +17044,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the CF-3300 and ours both reach MSX-DOS 1.03 / COMMAND 1.08's date prompt
       ([`fmtboot.out`](scratchpad/fmtboot.out)). Knife (FMTBOOT_KNIFE=1: the loader a bare `ret`): both fall to BASIC's
       date prompt instead ([`fmtboot_knife.out`](scratchpad/fmtboot_knife.out)) -- it is the loader that loads MSXDOS.SYS.
-      ➡️ STILL OPEN: the sub-ROM's quick format (format_tenant, basic/format-body.inc) is unused
-      now -- retire it (sub-ROM room, not disk); standing rows for MSX-DOS's `format` and for
-      this boot (fmtdialog_probe.py / fmtboot_probe.py are the steps).
+      ✅ **CLOSED (2026-11-11): THE QUICK FORMAT RETIRED, THE STANDING ROWS BUILT -- AND THEY
+      FOUND ONE (D-FMTFILL).** (1) sub/format.asm + basic/format-body.inc deleted; sub-ROM
+      table row 10 is a retired `ret` (the indices after it stay put); sub page 1 46 -> 354 B
+      free. (2) `make fmtdos-acceptance` (probes/disk/fmtdos_acceptance.py): our loader boots
+      MSX-DOS on the CF-3300 and on ours; MSX-DOS's `format` is driven through the $4025
+      dialogue by polling the SCREEN for each prompt, and the two formatted images must be
+      byte-identical outside the boot code -- the WHOLE image, not sectors 0..7 as
+      dskfmt-acceptance compares. 🔴 **That found what DSKFMT wrote beyond sector 7 was not
+      the CF-3300's** ([`fmtfill_ref.out`](scratchpad/fmtfill_ref.out)): the CF-3300 fills every data sector with **$40**
+      (not the usual $E5) and zeroes logical **0..13 on EVERY choice** (the 720K system area's
+      size, so on choices 1-3 the first data sectors too) -- the same from MSX-DOS (choices
+      1-4) and from its own BASIC's CALL FORMAT (a different work area: a constant, not a
+      buffer's leftovers). Ours: $E5, and only the choice's own system area. Fixed under the
+      11-10 ruling ("what DSKFMT writes" stays exact): fmt_sec's data field $40 (0 B) and the
+      system-area write a constant 14 sectors (`ld b, FMT_SYS / 512`, -13 B: the computed
+      count went). [`fmtfill_after.out`](scratchpad/fmtfill_after.out): 5/5 rows, all four choices identical; the
+      boot row's knife (a `ret` loader) fails both machines ([`fmtdos_bootknife.out`](scratchpad/fmtdos_bootknife.out)).
+      Excluded from the battery like dskfmt-acceptance (the DOS disk; ~6 min); gate_wt.py
+      runs it with CHOICES=1,4 after every FULL battery. The dialogue's TIER 6 cases are
+      filed as D-FMTERR.
 
 - [x] 🧩 **D-INITSLOT — THE CARTRIDGE SEARCH LOST THE SLOT ID ACROSS A CARTRIDGE'S INIT (Joost,
       2026-11-11: a new C-BIOS repack patch)**

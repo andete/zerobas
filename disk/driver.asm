@@ -688,7 +688,7 @@ hkn_stamp:
 ; 512 x $E5, the CRC, gap 3. 14 runs; read by address (kernel.asm dskfmt_body).
 fmt_sec:
                 db      12, $00, 3, $F5, 1, $FE, 3, $00, 1, $02, 1, $F7, 22, $4E
-                db      12, $00, 3, $F5, 1, $FB, 0, $E5, 0, $E5, 1, $F7, 80, $4E
+                db      12, $00, 3, $F5, 1, $FB, 0, $40, 0, $40, 1, $F7, 80, $4E  ; data $40: the CF-3300's (D-FMTFILL)
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
 ; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;

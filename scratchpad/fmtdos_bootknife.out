@@ -1,0 +1,9 @@
+  KNIFE: the loader is a bare `ret`
+  boot: our loader, 58 B at $1E
+  FAIL  boot  National_CF-3300               date prompt NEVER
+    --- screen at TIMEOUT ---
+     1|  Enter date ( - - ):
+  FAIL  boot  National_CF-3300_ZEROBASDISK   date prompt NEVER
+    --- screen at TIMEOUT ---
+     0|  Enter date (M-D-Y):
+===== fmtdos-acceptance: 0/1 rows PASS =====

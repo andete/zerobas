@@ -1,0 +1,20 @@
+rm=0
+rc=0
+  boot: our loader, 58 B at $1E
+  PASS  boot  National_CF-3300               date prompt at t=11.8
+  PASS  boot  National_CF-3300_ZEROBASDISK   date prompt at t=9.0
+  PASS  format c1 National_CF-3300            prompts seen 6/6, Format complete at t=60.0
+  PASS  format c1 National_CF-3300_ZEROBASDISK prompts seen 6/6, Format complete at t=31.3
+  PASS  format: the two formatted images are identical outside the boot code
+  PASS  format c2 National_CF-3300            prompts seen 6/6, Format complete at t=96.5
+  PASS  format c2 National_CF-3300_ZEROBASDISK prompts seen 6/6, Format complete at t=46.3
+  PASS  format: the two formatted images are identical outside the boot code
+  PASS  format c3 National_CF-3300            prompts seen 6/6, Format complete at t=104.8
+  PASS  format c3 National_CF-3300_ZEROBASDISK prompts seen 6/6, Format complete at t=46.3
+  PASS  format: the two formatted images are identical outside the boot code
+  PASS  format c4 National_CF-3300            prompts seen 6/6, Format complete at t=177.3
+  PASS  format c4 National_CF-3300_ZEROBASDISK prompts seen 6/6, Format complete at t=78.3
+  PASS  format: the two formatted images are identical outside the boot code
+===== fmtdos-acceptance: 5/5 rows PASS =====
+
+[exited with code 0]

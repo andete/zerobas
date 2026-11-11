@@ -158,8 +158,8 @@ read_sector:
 ;   in:  DE = logical sector number, HL = buffer (512 bytes)
 ;   out: Cy = 0 ok, Cy = 1 error (A = DSKIO error code)
 ; Ported from disk.asm write_sector; identical body, cross-slot tail call.
-; NAMED fatprim_write_sector (not write_sector): sub/format.asm ALREADY
-; defines its own private write_sector (FORMAT's sub-local CALSLT write
+; NAMED fatprim_write_sector (not write_sector): sub/format.asm (retired
+; 2026-11-11) DID define its own private write_sector (FORMAT's sub-local CALSLT write
 ; path, with its own FMT_RESULT stash) in the SAME sub.rom assembly as
 ; this tenant (sub/fatprim.asm) -- pasmo has one flat global namespace, so
 ; the two cannot share the name. (The retired lean cart aliased `write_sector equ

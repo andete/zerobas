@@ -41,10 +41,10 @@
 ; tenant (playbook §3). The design is a SPLIT: this file keeps the CALL dispatch
 ; and the DISKSLOT_OK gate RESIDENT; the interactive menu + the tenant dispatch
 ; moved on to disk.rom (D-FMTHOOK, disk/kernel.asm hk_format behind H_FORM --
-; they were resident until 2026-10-04, space plan B-7); the bulk is a sub-ROM
-; PAGE-1 tenant (sub/format.asm format_tenant) that carries
-; its own sub-local CALSLT write path. The bulk's CODE is shared verbatim via
-; basic/format-body.inc (the c3fc2d8 printusing.asm pattern).
+; they were resident until 2026-10-04, space plan B-7). The bulk was a sub-ROM
+; PAGE-1 tenant (sub/format.asm format_tenant, basic/format-body.inc) until
+; 2026-11-11: since D-DSKFMT, hk_format runs the CF-3300's dialogue and disk.rom's
+; own DSKFMT, and that tenant was retired (its sub-table row is a `ret`).
 
 ; --- ex_call / _<name> — extended-statement dispatch -----------------------
 ; HL -> the CALL token (ex_call) or the '_' char (ex_call_us). CALL FORMAT is
@@ -120,10 +120,10 @@ fmf_no:
 ; IS something to choose, so zerobas prompts a minimal 1=360K / 2=720K menu (its own —
 ; zerobas-disk's CHOICE offers none) and reads the answer via the REPL line editor.
 ; Only the DISKSLOT_OK gate and the H_FORM crossing are resident now (D-FMTHOOK):
-; the menu and the dispatch to the sub-ROM page-1 tenant (sub/format.asm
-; format_tenant) run in disk.rom's hk_format, which marshals the 1-byte geometry
-; selector through RAM (FMT_GEOMSEL) and reads the tenant's answer back from
-; FMT_RESULT, exactly as this file did while the menu was resident.
+; the rest runs in disk.rom's hk_format -- since D-DSKFMT (2026-11-10) the
+; CF-3300's drive / CHOICE dialogue and DSKFMT -- which leaves its answer in
+; FMT_RESULT (0 ok / 1 failed). (The 1=360K / 2=720K menu above and the sub-ROM
+; quick format it dispatched to are history; the tenant retired 2026-11-11.)
 do_format:
                 ld      a,(DISKSLOT_OK)
                 or      a
@@ -131,8 +131,8 @@ do_format:
                 scf                         ; no disk -> error
                 ret
 fmt_menu:
-                ; D-FMTHOOK (C6-FORMAT, space plan B-7): the menu, the choice and
-                ; the dispatch to the sub-ROM format_tenant RUN IN DISK.ROM now
+                ; D-FMTHOOK (C6-FORMAT, space plan B-7): the dialogue and the
+                ; format (D-DSKFMT: DSKFMT; the sub-ROM tenant retired) RUN IN DISK.ROM now
                 ; (disk/kernel.asm hk_format), behind H_FORM $FFAC -- H.FORM in
                 ; the MSX2 TH hook table, the cell the published BIOS FORMAT entry
                 ; ($0147) goes through, and one of the 35 cells the CF-3300's disk
@@ -155,7 +155,7 @@ fmt_menu:
                 scf                         ; error -> Cy=1 (exc_go: load_error)
                 ret
 ; The "1=360k 2=720k? " text has no copy in MAIN any more: it lives in
-; disk/kernel.asm beside hk_format, and a second copy stays INSIDE
-; basic/format-body.inc (sub-ROM-only in the repack build, sub/format.asm).
+; disk/kernel.asm beside hk_format (and since D-DSKFMT not at all: the CF-3300's
+; dialogue replaced it; basic/format-body.inc's copy retired with the tenant).
 ; Its island copy (D-ISLDATA2, basic/islands.asm) went with it -- 17 B of the
 ; font island are free again.

@@ -546,20 +546,13 @@ sub_p1_table:
                                                 ;   mathpack-slice2.md §15). LAST
                                                 ;   slice-2 tenant. Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_rnd`.
-                jp      format_tenant           ; index 10 (SUBROM_IDX_FORMAT): CALL
-                                                ;   FORMAT's sector-build/write bulk
-                                                ;   (docs/spec-evict-call-format.md),
-                                                ;   evicted to fund error-handling
-                                                ;   S2b. A SPLIT design (not a whole
-                                                ;   leaf): the interactive menu +
-                                                ;   dispatch stay main-resident
-                                                ;   (basic/format.asm `do_format`);
-                                                ;   this tenant is the pure geometry
-                                                ;   -driven build/write engine, with
-                                                ;   its own sub-local CALSLT write
-                                                ;   path (main's write_sector is
-                                                ;   page-1-main-resident, invisible
-                                                ;   here).
+                ret                             ; index 10: RETIRED (D-DSKFMT, 2026-11-11).
+                nop                             ;   It was format_tenant, CALL FORMAT's
+                nop                             ;   quick format (system area only, 360k /
+                                                ;   720k); CALL FORMAT is now disk.rom's
+                                                ;   hk_format -- the CF-3300's dialogue and
+                                                ;   DSKFMT. The row keeps its 3 B so 11..
+                                                ;   stay put.
                 jp      scan_stmt_end           ; index 11 (SUBROM_IDX_SCANSTMT):
                                                 ;   RESUME NEXT's quote-aware
                                                 ;   statement-advance (sub/
@@ -862,12 +855,9 @@ sub_p1_ping:
 ; an fp record through the resident ops either).
                 include "fp_rnd.asm"
 
-; CALL FORMAT build/write engine (index 10 = format_tenant, sub/format.asm): the
-; TENTH page-1 tenant and the FIRST that is a SPLIT (not a whole leaf) — its
-; main-side counterpart (basic/format.asm) keeps the interactive menu resident.
-; Needs no resident-ABI import (unlike fp_sqrt/the transcendentals): it is a
-; pure RAM + BIOS(CALSLT) leaf, own header has the full rationale.
-                include "format.asm"
+; (index 10, format_tenant -- sub/format.asm + basic/format-body.inc, CALL
+; FORMAT's old quick format -- RETIRED 2026-11-11: disk.rom's hk_format runs the
+; CF-3300's dialogue and DSKFMT instead; see the table row.)
 
 ; scan_stmt_end (index 11 = SUBROM_IDX_SCANSTMT, sub/errtrap.asm): RESUME
 ; NEXT's statement-advance (error-handling S2b). A pure-leaf tenant (needs no

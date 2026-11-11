@@ -5,6 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — evict `CALL FORMAT` to a sub-ROM tenant (free page-1 to fund S2b)
 
+> 🪦 **RETIRED 2026-11-11 (D-DSKFMT).** CALL FORMAT is now disk.rom's `hk_format`: the
+> CF-3300's drive / CHOICE dialogue and the disk ROM's own DSKFMT. The tenant this spec
+> built (`sub/format.asm`, `basic/format-body.inc`) is deleted and sub-ROM table row 10
+> is a retired `ret`. What follows is the history of that eviction.
+
 Status: **SIGNED OFF 2026-07-19** (user, this session) — §8 decisions locked with the
 recommended defaults (split shape; menu resident; bare-DI unless a format visibly hangs;
 Sonnet impl + lead-run disk-byte differential). Funding slice for error-handling **S2b**: the S2b

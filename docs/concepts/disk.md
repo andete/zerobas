@@ -45,8 +45,9 @@ The test disk has the standard 720 KB layout that a CF-3300 writes for a
 value is the next cluster of the same file, and `FFF` ends the chain. Two
 entries share three bytes. `DSKF` counts the free entries, so its answer is in
 kilobytes on this disk: 706 on the fresh test disk, whose six files use 7
-clusters. `CALL FORMAT` also offers a 360 KB layout (media `&HFD`, 720
-sectors, 2 sectors a FAT).
+clusters. `CALL FORMAT` offers the CF-3300's four layouts: 1 or 2 sides,
+40 or 80 tracks (180, 360, 360 and 720 KB; media `&HFC`, `&HFD`, `&HF8`,
+`&HF9`).
 
 **The layout comes from the FAT's first byte, not the BPB.** That byte, the
 media ID, names one of eight standard formats (`&HF8`–`&HFF`), and the machine
@@ -156,7 +157,7 @@ CF-3300, slot 3-1), so a program can call it; zerobas fills it since
 | [`BLOAD`](../keywords/BLOAD.md), [`BSAVE`](../keywords/BSAVE.md) | memory images |
 | [`OPEN`](../keywords/OPEN.md), [`CLOSE`](../keywords/CLOSE.md), [`EOF`](../keywords/EOF.md), [`LOF`](../keywords/LOF.md), [`LOC`](../keywords/LOC.md) | file channels (`MAXFILES` sets how many) |
 | [`FIELD`](../keywords/FIELD.md), [`GET`](../keywords/GET.md), [`PUT`](../keywords/PUT.md), [`LSET`](../keywords/LSET.md), [`RSET`](../keywords/RSET.md) | random-access records |
-| `CALL FORMAT` | write an empty file system (360 KB or 720 KB) |
+| `CALL FORMAT` | format a disk: drive, then one of four layouts (180 KB to 720 KB) |
 
 The file formats (`&HFF` before a tokenised program, `&HFE` and three
 addresses before a `BSAVE` image) are on the keyword pages.
@@ -255,8 +256,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   more keys than the CF-3300 ([gate](../../probes/disk/disk_probe_fdcdi.py)).
 - **`ERROR 60` to `64` on the diskless build** print the disk texts; the
   VG-8020 prints `Unprintable error` (D-NODISKERRTXT, TIER 6).
-- **Own touches**: `CALL FORMAT` writes zerobas's boot code and disk name
-  (the rest matches) and asks for no drive; the banner's disk line is ours.
+- **Own touches**: a format writes zerobas's own boot code (the rest of the
+  disk matches the CF-3300's byte for byte, including the `&H40` it leaves in
+  every empty sector), and two of `FORMAT`'s prompts are worded differently
+  (a ruled, presentation-only difference); the banner's disk line is ours.
 
 ## What we found, and how
 

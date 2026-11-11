@@ -36,7 +36,7 @@
 ; ⚠️ NEITHER PRIMITIVE IS IN THIS FILE ANY MORE — the eviction moved the whole
 ; primitive/sector layer to the page-1 tenant, so the CALSLT bodies now live in
 ; basic/fat-prim-body.inc (read_sector/write_sector) and sub/format.asm (its own
-; private write path); D-SEEDHOLE2 removed the last two callerless shims that
+; private write path; retired 2026-11-11); D-SEEDHOLE2 removed the last two callerless shims that
 ; still carried those names here. The port's provenance below is unchanged --
 ; only the address of the code it describes is. Everything above the
 ; sector primitive — BPB parse, cluster-chain walk, 8.3 directory search, FAT12

@@ -67,7 +67,8 @@ REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/")
 EXCLUDED5 = ("bdos-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
              "input-devices-acceptance", "lnblank-say-acceptance",
-             "dskfmt-acceptance CHOICES=1,4")   # D-DSKFMT: the two extremes (1 side x 40,
+             "dskfmt-acceptance CHOICES=1,4",
+             "fmtdos-acceptance CHOICES=1,4")   # D-DSKFMT: the two extremes (1 side x 40,
                                                 # 2 x 80); all four take ~15 min
 
 

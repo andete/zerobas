@@ -191,10 +191,11 @@ area on both machines.
   as on the CF-3300; how zerobas behaves when DOS addresses B: has not been
   measured, and the swap prompt is still to be built
   ([disk](disk.md), D-DSKIB).
-- **Formatting from DOS.** The disk ROM's format entry (`DSKFMT`, `&H401C`)
-  reports failure and its geometry menu (`CHOICE`) offers nothing; what
-  `COMMAND.COM`'s `FORMAT` then does has not been measured. `CALL FORMAT` in
-  BASIC formats with its own code ([disk](disk.md)).
+- **Formatting from DOS.** `FORMAT` asks for the drive and one of the
+  CF-3300's four layouts, as there, and leaves the same disk: the two images
+  agree byte for byte except the boot code, which is zerobas's own and boots
+  MSX-DOS ([gate](../../probes/disk/fmtdos_acceptance.py)). `CALL FORMAT` in
+  BASIC runs the same dialogue ([disk](disk.md)).
 - **Memory mappers.** The CF-3300 is a plain 64 KB machine; the DOS hooks for
   switching memory segments are empty, as on the reference.
 

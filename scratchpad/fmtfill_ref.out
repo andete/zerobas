@@ -1,0 +1,14 @@
+# D-FMTFILL (2026-11-11): dominant byte per LOGICAL sector after a format, as runs
+# (scratchpad/fmt_fillmap.py). MSX-DOS 'format' on a copy of the DOS disk, choices 1-4,
+# probes/disk/fmtdos_acceptance.py --only format --choice N; then CALL FORMAT from the
+# CF-3300's own BASIC, choice 1, on disk/test720.dsk. BEFORE the fix (ours: $E5, the
+# choice's own system area).
+format_c1_National_CF-3300.dsk spt 9 heads 1 total 360 media FC: 0-1:mixed 2-2:00 3-3:mixed 4-13:00 14-359:40
+format_c1_National_CF-3300_ZEROBASDISK.dsk spt 9 heads 1 total 360 media FC: 0-1:mixed 2-2:00 3-3:mixed 4-8:00 9-359:E5
+format_c2_National_CF-3300.dsk spt 9 heads 2 total 720 media FD: 0-1:mixed 2-2:00 3-3:mixed 4-13:00 14-719:40
+format_c2_National_CF-3300_ZEROBASDISK.dsk spt 9 heads 2 total 720 media FD: 0-1:mixed 2-2:00 3-3:mixed 4-11:00 12-719:E5
+format_c3_National_CF-3300.dsk spt 9 heads 1 total 720 media F8: 0-1:mixed 2-2:00 3-3:mixed 4-13:00 14-719:40
+format_c3_National_CF-3300_ZEROBASDISK.dsk spt 9 heads 1 total 720 media F8: 0-1:mixed 2-2:00 3-3:mixed 4-11:00 12-719:E5
+format_c4_National_CF-3300.dsk spt 9 heads 2 total 1440 media F9: 0-1:mixed 2-3:00 4-4:mixed 5-13:00 14-1439:40
+format_c4_National_CF-3300_ZEROBASDISK.dsk spt 9 heads 2 total 1440 media F9: 0-1:mixed 2-3:00 4-4:mixed 5-13:00 14-1439:E5
+basic_c1_stock.dsk spt 9 heads 1 total 360 media FC: 0-1:mixed 2-2:00 3-3:mixed 4-13:00 14-359:40

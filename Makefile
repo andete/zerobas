@@ -94,7 +94,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/float-arith.asm basic/biosfnk.asm basic/subromcall.asm basic/edscreen.asm basic/input.asm \
          basic/arrays.asm basic/sound.asm basic/play.asm basic/graphics.asm basic/traps.asm \
          basic/missing.asm basic/trapstmt.asm basic/varfind.asm \
-         basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
+         basic/tokenise.inc basic/detok.inc basic/pu-render.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc basic/cascut-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
@@ -183,9 +183,6 @@ SUB_SRC   := sub/sub.asm
 # sub/strheap.asm did not rebuild sub.rom, so the machine probes ran the
 # reverted GC walk after the source was restored). Same staleness hazard as
 # kwtable.inc above, same fix (real prerequisites).
-# sub/format.asm + basic/format-body.inc (CALL FORMAT eviction, docs/spec-
-# evict-call-format.md): the build/write-engine tenant body + its shared
-# .inc with the lean cart's inline copy -- same staleness hazard, same fix.
 # sub/errtrap.asm (scan_stmt_end, error-handling S2b RESUME NEXT, docs/spec-
 # basic-error-handling-s2b-packet.md §5.5): same staleness hazard, same fix
 # ([[makefile-subparts-stale-tenant]] -- a sub include missing from SUB_PARTS
@@ -229,7 +226,6 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/printusing.asm basic/pu-render.inc sub/punum.asm \
-             sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc \
              sub/lineedit.asm \
@@ -385,11 +381,11 @@ subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 # ($2781-$3FFF), the BIOS, or the sub's own page 1. PAGE-1 TENANT WALK
 # (--page1, added for the CALL FORMAT eviction, docs/spec-evict-call-format.md
 # §6): the mirror of --page0 -- walks the SUB call graph from sub_p1_table
-# (fp_sqrt..fp_rnd, format_tenant) and fails on a callee that is main-BASIC
+# (fp_sqrt..fp_rnd, ...) and fails on a callee that is main-BASIC
 # page-1 (switched out) or the sub's own page-0 island (also unmapped). This
 # is DISTINCT from the unflagged default above, which only audits the
 # resident-ABI IMPORT LIST and never walks a tenant that imports nothing from
-# it (format_tenant is a pure RAM+BIOS leaf). All three are steps of
+# it (a pure RAM+BIOS leaf; format_tenant was one until its 2026-11-11 retirement). All three are steps of
 # `basic-reloc`.
 subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
@@ -912,6 +908,15 @@ bdos-acceptance: $(DISK_ROM)
 # 4 takes the CF-3300 ~3 minutes).
 dskfmt-acceptance: repack-machine
 	python3 probes/disk/dskfmt_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
+
+# --- fmtdos-acceptance: D-DSKFMT from MSX-DOS (D-FMTFILL) ---------------------
+# Our loader (the code DSKFMT writes at $1E) boots MSX-DOS on the CF-3300 and on
+# ours; MSX-DOS's `format` runs the $4025 dialogue and leaves the SAME image on
+# both (outside the boot code): the BPB, FATs, root, logical 0..13 zeroed and
+# every data sector $40. Needs the DOS disk (as bdos-acceptance); CHOICES=1,4
+# by default. tools/gate_wt.py runs it after every FULL battery.
+fmtdos-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 -u probes/disk/fmtdos_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
 
 # Standing Disk-BASIC acceptance gate: the BASIC-side counterpart of bdos-acceptance.
 # Replays the self-asserting disk_probe_* differentials over the Disk-BASIC verb
