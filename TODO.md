@@ -3052,6 +3052,15 @@ item — do **one item per session** to keep context lean.
       main page 1 from sub.sym, built after the sub-ROM (a build-order change); (c) a
       per-SAVE index in an existing scratch buffer SAVE ,A does not use (no new RAM -- needs
       that buffer audit). 1-byte OFFSETS do not work: 1189 B > 255 x 4, entries unaligned.
+      📏 **NARROWED (2026-11-11):** (b) is a BUILD CYCLE -- the sub-ROM already imports main's
+      resident ABI (sub/basic-resident-abi.inc from main's symbols), so main cannot also
+      depend on sub.sym. (c) has no buffer: LINEBUF ($F55E, 258 B) is the only idle-sized one
+      and a direct-mode `LIST` / `SAVE ,A` RUNS from it (`LIST:PRINT 1` would lose its own
+      line); FSECTOR_BUF (512 B) is busy writing the file during SAVE ,A and absent on the
+      diskless build. Left: (a), after a ~60 B carve in sub page 0. 🔴 **AND THE CEILING:** the
+      search is ~half of the 29.3 s, so even a perfect index leaves ~15 s -- still ~10x the
+      CF-3300's 1.5 s. ➡️ Profile the OTHER half first (asave_pc2.out's non-search samples)
+      and price both halves together before carving.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7968,7 +7977,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10401 (T-6FE392)8 (T-529ABE)` from `TODO.md:15003 (T-529ABE)`: a
+      `TODO.md:10410 (T-6FE392)8 (T-529ABE)` from `TODO.md:15012 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10707,7 +10716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
