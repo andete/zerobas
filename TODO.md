@@ -3097,6 +3097,16 @@ item — do **one item per session** to keep context lean.
       kwidx-check is RED. 📏 [`asave_kwidx.out`](scratchpad/asave_kwidx.out) (🔮 ~15 s: HIT). Sub page 0: 196 -> 22 B free.
       LIST gets it too. ➡️ Left of the 9.3x: the disk side (~20 %, D-BLKIOPERCALL's write
       cache) and the per-character channel output (~30 %).
+      📏 **THE DISK SIDE, COUNTED (2026-11-11, [`asave_fdc2.out`](scratchpad/asave_fdc2.out)):** the SAVE line's FDC commands --
+      CF-3300 **11** in 0.85 s (6 reads `82`, ONE multi-sector write `A2`, 4 `D0`); zerobas
+      **100** (49 seeks, 12 reads, **39 single-sector writes** `A0`) for a ~5 KB file of ~10
+      data sectors. Each sector is written several times: the ASCII channel moves 256 B
+      blocks through FCB block I/O (S10.B), so a block is a read-modify-write of its 512 B
+      sector plus directory work -- D-BLKIOPERCALL's "every WRBLK rewrites the directory".
+      ➡️ The write cache to build is aimed there: hold a half-written data sector across the
+      channel's block writes and write the directory entry at CLOSE (as the CF-3300 does,
+      D-WRBLKDIR), not a general cross-call cache. 🔮 to score: the SAVE line's writes from
+      39 toward ~12 (10 data + FAT + dir), the SAVE under ~10 s.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8013,7 +8023,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10446 (T-6FE392)8 (T-529ABE)` from `TODO.md:15048 (T-529ABE)`: a
+      `TODO.md:10456 (T-6FE392)8 (T-529ABE)` from `TODO.md:15058 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10752,7 +10762,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15058 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
