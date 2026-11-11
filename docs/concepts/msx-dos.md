@@ -302,6 +302,16 @@ area on both machines.
   the BIOS in, so only the width cell changed and the following lines came out
   at odd columns. It now pages the BIOS in for the call; the console cells and
   the screen after `MODE 40`, `DIR` and `MODE 32` match the CF-3300.
+- **Closing a file that was never opened damaged another file** (fixed
+  2026-11-11, D-BDOSUNOP). The CF-3300 closes a file control block only if
+  the directory entry it points at still carries its name; otherwise close
+  answers `&HFF` and writes nothing. zerobas wrote that entry regardless, so
+  closing a block for one file could zero the first cluster and size of
+  another. Separating the two candidate rules needed a file that exists but
+  was never opened. The gate written for it then found a second cause: after
+  a cold boot zerobas believed a file was open for writing, so the very first
+  close wrote a directory entry from leftover values. Reading the next record
+  of a never-opened block now answers end of file, as there.
 - **`CALL SYSTEM` was a `Syntax error`** (fixed 2026-10-09, D-CALLSYSTEM).
   Measured first, with and without a system disk and with disks swapped
   mid-session: the CF-3300 refuses with `Illegal function call` unless DOS
@@ -368,5 +378,8 @@ evidence in [tier2-bdos-coverage.md](../../disk/docs/tier2-bdos-coverage.md).
 - `make dosdate-acceptance`, `make strout-acceptance` — dates and stamps;
   function `&H09`.
 - `make wrblkalt-acceptance` — block reads and writes with two files open.
+- `make bdosunop-acceptance` — close and read-next on blocks never opened:
+  every answer, every block afterwards and the directory entries, against
+  the CF-3300.
 - `make diskbasic-acceptance` — its `AUTOEXEC` cell runs `AUTOEXEC.BAS`.
 - `make unit-test` — host tests of the FAT and date routines.

@@ -1,0 +1,5 @@
+KNIFE K1-namecheck (disk.rom 8d293c60): rc=1 --  FAIL 10 CLOSE nosuch, fresh A: CF-3300 FF ours 00; FAIL 10 CLOSE exists, fresh A: CF-3300 FF ours 00; FAIL 10 CLOSE after fail A: CF-3300 FF ours 00;
+KNIFE K2-wrmode1 (bdos_close back to `or a / jp nz`; disk.rom 04e6efa6): rc=1 -- FAIL  10 CLOSE nosuch, fresh    A: CF-3300 FF  ours 00; FAIL  FCB OP afterwards: +12.. CF-3300 0000000aba040000000000004000020002000000140000c100; FAIL  root entry 0 afterwards: CF-3300 4155544f455845434241532000000000000000000000000000000200ba040000;
+KNIFE K3-size0 (disk.rom 87bf25fd): rc=1 --  FAIL 14 SEQRD nosuch, fresh A: CF-3300 01 ours 00; FAIL FCB NO afterwards: +12.. CF-3300 00000000000000000000000000000000000000000000000000;
+
+# (K2 was first the INIT clear of BDOS_WRMODE; that fix moved programs-acceptance L5_house's DSKF gap to 0.5 s and was replaced by bdos_close's exact-1 test, re-knifed above.)

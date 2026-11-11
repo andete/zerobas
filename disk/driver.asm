@@ -518,6 +518,9 @@ install_p1blit:
 wrseq_rd:                                   ; $4775: BDOS $14 SEQREAD
                 push    de
                 pop     ix
+                call    srd_size0           ; D-BDOSUNOP: a size of 0 -- an FCB never
+                ld      a, 1                ; opened, or an empty file -- is end of
+                ret     z                   ; file, as on the CF-3300 (kernel.asm)
                 push    de
                 call    srd_pos             ; DTA, and the record EX * 128 + CR (B2)
                 call    bdos_seqread_body
@@ -930,10 +933,17 @@ rgb_dec:
 ; chain's end-of-chain marker (already linked as each cluster was allocated), and
 ; rewrite the directory entry with the true byte count (DIRENT_FILESIZE) and the
 ; first cluster (DIRENT_FIRSTCLUS). On any I/O failure return $FF.
+; 🔴 D-BDOSUNOP (2026-11-11): write-open is BDOS_WRMODE = 1 EXACTLY (FMAKE stores 1,
+; FOPEN 0). Nothing clears the cell at power-on, so after a cold boot it holds RAM's
+; $FF, and `or a / jp nz` sent the FIRST FCLOSE through $F37D to the write-mode close,
+; which wrote a directory entry from garbage globals (cluster $FFFF, size 0, over
+; AUTOEXEC.BAS -- probes/disk/bdosunop_acceptance.py). A clear at INIT fixed that too
+; but moved an unrelated masked FAT read in BASIC (programs-acceptance L5_house: a
+; 0.5 s interrupt gap in DSKF), so the test is narrowed here instead, byte for byte.
 bdos_close:
                 ld      a, (BDOS_WRMODE)
-                or      a
-                jp      nz, bdos_close_wm   ; D-WRBLKDIR: disk/runtime.asm, for room
+                dec     a
+                jp      z, bdos_close_wm    ; D-WRBLKDIR: disk/runtime.asm, for room
 bdos_close_rd:
                 jp      close_read      ; read close: nothing to flush, but a WRITTEN
                                         ; file is re-dated (D-CLOSESTAMP)

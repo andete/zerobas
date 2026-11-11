@@ -909,6 +909,15 @@ bdos-acceptance: $(DISK_ROM)
 dskfmt-acceptance: repack-machine
 	python3 probes/disk/dskfmt_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
 
+# --- bdosunop-acceptance: FCLOSE / SEQREAD of an FCB never opened (D-BDOSUNOP) ---
+# The CF-3300 closes only an FCB whose root index holds an entry with its NAME
+# ($FF and nothing written otherwise); SEQREAD of a size-0 FCB is end of file;
+# and no file is open for write after a cold boot. Ours zeroed AUTOEXEC.BAS's
+# cluster and size when a never-opened FCB was closed. CF-3300 vs ours: every
+# A, every FCB afterwards and root entries 0..1 of the disk.
+bdosunop-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 -u probes/disk/bdosunop_acceptance.py
+
 # --- fmtdos-acceptance: D-DSKFMT from MSX-DOS (D-FMTFILL) ---------------------
 # Our loader (the code DSKFMT writes at $1E) boots MSX-DOS on the CF-3300 and on
 # ours; MSX-DOS's `format` runs the $4025 dialogue and leaves the SAME image on

@@ -16714,7 +16714,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       references restarted there) and two error answers that were the same before
       D-BDOSFCB ([`bdosset_6d55.out`](scratchpad/bdosset_6d55.out)): CLOSE of an unopened FCB (CF-3300 $FF, ours 0) and
       SEQREAD of an unopened FCB (CF-3300 1 = end of file, ours 0 and a record from the
-      iterator's leftovers) -- 🎚️ TIER 3, common errors, open.
+      iterator's leftovers) -- 🎚️ TIER 3, common errors. ✅ FIXED 2026-11-11 as D-BDOSUNOP
+      (below) -- and one of the three causes was data loss.
       🔴 **THE FIRST CUT BROKE BASIC'S SEQUENTIAL FILES (caught by the FULL gate before any
       push, 2026-11-10):** the flush of buffered SEQWRITE records sat in seq_dirty, which
       k47b2_seek (RDBLK -- BASIC's own file reads) calls too, and BDOS_WRMODE can read 1
@@ -16751,6 +16752,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the VG-8020's boot state. sub_first now writes R11 = $0B once at boot (it cost 6 B of page 1, 2026-11-10).
       [`biosl_b5_r11.out`](scratchpad/biosl_b5_r11.out): R11 SAME at INIT and after both GICINIs. ➡️ Left: R0 = $55 on the
       VG-8020 + NMS 1200's row (its boot beep) -- disk-ROM boot state, pinned.
+
+- [x] 🔴 **D-BDOSUNOP — FCLOSE OF AN FCB NEVER OPENED OVERWROTE ANOTHER FILE'S DIRECTORY ENTRY
+      (found 2026-11-11 by D-BDOSSEQ's residual, fixed the same day)**
+      🎚️ TIER 3 — common errors: closing / reading an FCB that was never opened.
+      [`bdosunop_run1.out`](scratchpad/bdosunop_run1.out) .. [`bdosunop_run5.out`](scratchpad/bdosunop_run5.out) (scratchpad/bdosunop_probe.py). The filed reading
+      ($FF / 1 there, 0 / 0 here, NOSUCH.XYZ after a failed FOPEN) fit two rules -- the
+      CF-3300 SEARCHES the directory, or reads a mark FOPEN leaves -- and a file that EXISTS
+      but was never opened parts them. It is NEITHER: the CF-3300 goes to the entry at the
+      FCB's root index (+25; 0 when fresh) and closes only if that entry has the FCB's
+      NAME -- else $FF, nothing written ([`bdosunop_run3.out`](scratchpad/bdosunop_run3.out): a never-opened SECOND.DAT at
+      index 1 is $FF and untouched; a never-opened AUTOEXEC.BAS at index 0 is 0 and its
+      entry gets the FCB's zeros, on the CF-3300 too). 🔴 **Ours wrote entry +25 whatever its
+      name: closing a never-opened SECOND.DAT, or NOSUCH.XYZ, zeroed AUTOEXEC.BAS's first
+      cluster and size** -- another file's. Three fixes, each knifed red
+      ([`bdosunop_knives.out`](scratchpad/bdosunop_knives.out)): (1) cr_chkdir (kernel.asm, the $75A5 region): close_read
+      writes only an entry carrying the FCB's name; (2) SEQREAD of a size-0 FCB (+16..19)
+      is end of file, as the CF-3300 (srd_size0 in the $55DB slack, 3 lines in wrseq_rd);
+      (3) 🔴 **found by the standing gate's own disk: BDOS_WRMODE ($ED53) was never cleared
+      at boot** -- only FOPEN / FMAKE set it -- so after a cold boot it held RAM's $FF and
+      the FIRST FCLOSE through $F37D took the write-mode close, writing an entry from
+      garbage globals (cluster $FFFF, size 0, over AUTOEXEC.BAS); the scratch probe's disk
+      had hidden it. bdos_close now takes the write-mode close only for WRMODE = 1
+      EXACTLY (FMAKE's value; `dec a / jp z`, 0 B). 🔴 A first cut CLEARED the cell at
+      INIT instead, and the FULL gate went red on programs-acceptance: L5_house's DSKF ran
+      a 0.5 s masked FAT read (0.183 s before; the CF-3300 0.223) -- an unrelated BASIC
+      path moved by the boot value, root cause not chased; the narrower test leaves every
+      other reader as it was. Witness: `make bdosunop-acceptance`
+      (in the battery): every A, every FCB afterwards and root entries 0..1 the same as
+      the CF-3300's. ➡️ Not covered: a never-opened FCB whose +25 names an entry with the
+      same name -- the CF-3300 writes the FCB's zero date there, ours stamps today's
+      (dir_stamp_date); TIER 6.
 
 - [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
       D-DSKFMT's close)**

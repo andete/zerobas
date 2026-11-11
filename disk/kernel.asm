@@ -1712,6 +1712,15 @@ choice_txt:
                 db      13, 10, "3 - 1 side, double track"
                 db      13, 10, "4 - 2 sides,double track"
                 db      13, 10, 13, 10, 0
+; srd_size0 -- D-BDOSUNOP (2026-11-11): Z when the FCB in IX holds a file size of 0
+; (+16..19). SEQREAD of an FCB never opened answers 1 (end of file) on the CF-3300;
+; ours read a record from the iterator's leftovers (scratchpad/bdosunop_run4.out).
+srd_size0:
+                ld      a, (ix+16)
+                or      (ix+17)
+                or      (ix+18)
+                or      (ix+19)
+                ret
                 ds      $55DB - $, $00  ; pad up to the pinned $55DB GTIME entry (M22a)
 k_55DB:
                 jp      gtime_body      ; $55DB: BDOS $2C GTIME canonical entry (M22a)
@@ -2199,7 +2208,8 @@ close_read:
                 add     hl, de
                 bit     6, (hl)
                 jr      nz, cr_ok           ; not written since FOPEN: nothing to do
-                call    cr_dir              ; D-WRBLKDIR: size + first cluster, ONCE; HL = +25
+                call    cr_chkdir           ; D-BDOSUNOP: the entry must carry the FCB's name;
+                                            ; then D-WRBLKDIR's size + first cluster; HL = +25
                 jr      c, cr_err
                 ld      a, (hl)             ; A = the entry's index (+25)
                 call    root_pos            ; DE = its sector, HL = its offset (carve 20)
@@ -7290,6 +7300,43 @@ fmt_echo:
 fmt_t_drive:    db      "Drive name? (A,B) ",0
 fmt_t_q:        db      "? ",0
 fmt_t_done:     db      "Format complete",13,10,0
+; cr_chkdir -- D-BDOSUNOP (2026-11-11): FCLOSE writes a file's entry only if the entry at
+; the FCB's root index (+25) still carries the FCB's NAME. On the CF-3300, FCLOSE of an
+; FCB never opened answers $FF and writes nothing unless the entry at index 0 -- a fresh
+; FCB's +25 -- has that name; then 0, and the FCB's fields go there. Ours wrote entry
+; +25 whatever its name: closing a never-opened SECOND.DAT, or NOSUCH.XYZ after a failed
+; FOPEN, zeroed the FIRST entry's cluster and size, another file's
+; (scratchpad/bdosunop_run3.out). in DE = the FCB; out CF = no such entry (or an I/O
+; error) -- close_read's $FF -- else cr_dir's.
+cr_chkdir:
+                push    de
+                ld      hl, 25
+                add     hl, de
+                ld      a, (hl)             ; the root index
+                call    root_pos            ; DE = its sector, HL = its offset
+                push    hl
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                pop     hl
+                pop     de
+                ret     c
+                push    de
+                ld      bc, SECTOR_BUF
+                add     hl, bc              ; HL -> the entry
+                ld      b, 11
+ccd_lp:
+                inc     de                  ; the FCB's name, +1..11
+                ld      a, (de)
+                cp      (hl)
+                inc     hl
+                scf
+                jr      nz, ccd_out         ; another name: not this file's entry
+                djnz    ccd_lp
+                or      a
+ccd_out:
+                pop     de
+                ret     c
+                jp      cr_dir
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
