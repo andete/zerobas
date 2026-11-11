@@ -4,7 +4,14 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 RULINGS 2026-11-10 — READ FIRST (newest; amends the 11-08 table and the 2026-10-15 "Fill the gate wait" row)
+## 🟢 RULINGS 2026-11-11 — READ FIRST (newest)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| C-BIOS rebases keep OUR patches | *"I think the idea is to keep ours but learn from the optimizations and or fixes upstream has?"* (2026-11-11, on v0.31 having its own versions of rdslt-regs / keyscan-skip / ctrlstop-key / graphics-cursor) | D-CBIOS031: re-make our patches on 0.31 replacing upstream's versions; READ each upstream version first (BSD-2: ideas only) and adopt any optimisation or fix ours lacks, with a gate row. Patches upstream took verbatim (initslot-keep) retire. |
+| C-BIOS 0.31 is out | *"sidenote: cbios 0.31 got released"* (2026-11-11) | rebase per the 0.30 ruling ("we will need that eventually ... it'll get worse only") -- D-CBIOS031 |
+
+## 🟢 RULINGS 2026-11-10 — READ FIRST (amends the 11-08 table and the 2026-10-15 "Fill the gate wait" row)
 
 | ruling | Joost's words | consequence |
 |---|---|---|

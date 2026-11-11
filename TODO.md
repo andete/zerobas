@@ -16846,6 +16846,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       same name -- the CF-3300 writes the FCB's zero date there, ours stamps today's
       (dir_stamp_date); TIER 6.
 
+- [ ] 🧩 **D-CBIOS031 — REBASE THE REPACK ONTO C-BIOS v0.31 (Joost 2026-11-11: "cbios 0.31 got
+      released"; the 0.30 ruling: "we will need that eventually ... it'll get worse only")**
+      🎚️ APPARATUS — the repack's base; every gate rides on it.
+      🤖 **AUTONOMOUS** — surveyed 2026-11-11 in a throwaway v0.31 worktree (bed20e7):
+      0.31 upstreams `initslot-keep` (applies in reverse), and has its own `rdslt-regs`,
+      `keyscan-skip`, `ctrlstop-key` and most of `graphics-cursor` (MAPXYC, the cursor moves,
+      SCALXY / GTASPC, SETATR / READC / SETC, NSETCX, CHGCAP, SCREEN 0's base registers,
+      CLRSPR's X) -- those four patches no longer apply and must be judged BY BEHAVIOUR
+      (biosregs / ctrlkeys / stop-trap / keystr / cursor rows), not by diff; it adds GTPDL /
+      GTPAD. Still applying: eu-drop-statements, key-trap-hook, eu-drop-dead-strings,
+      crtcnt-bound, scan-from-basic (0.31 still scans from the first interrupt).
+      🔴 **THE TAPE BODY DOES NOT FIT AS IT IS:** merged against today's BASIC, "tape body
+      region $09EE-$0CE2 not free". 0.31's page 0 free (2026-11-11): $0160-$01FF 160 B,
+      $0B96-$0D00 363 B, $1A73-$1BC6 340 B, $2742- (C-BIOS ends 63 B below BASIC_BASE).
+      Under the tape gap: upstream's graphics tail and the PNTINI / SCANR / SCANL stubs to
+      $0A1E, print_debug $0A1F-$0A58 (58 B), CHKRAM $0A59-$0AD0 (120 B), GTPDL / GTPAD
+      $0AD1-$0B95 (197 B). The body (757 B, ending by $0D01) must start at or below $0A0C;
+      moving CHKRAM + GTPDL / GTPAD (317 B) into the font pad's 340 B frees $0A59..$0D00 =
+      680 B -- short by ~80 B.
+      🏗️ **RULED (Joost 2026-11-11): "keep ours but learn from the optimizations and or fixes
+      upstream has".** So our patches stay -- graphics-cursor, rdslt-regs, keyscan-skip,
+      ctrlstop-key are RE-MADE on 0.31, replacing upstream's versions -- and each upstream
+      version is READ first (BSD-2: ideas only, written fresh in ours or kept as a repack
+      patch) for any optimisation or fix ours lacks; adopt what is better, with a gate row.
+      Ours being the shorter graphics span also gives back the room the tape body needs
+      (ours fitted before print_debug at $099A on 0.30).
+      Then: PATCH_RANGES / islands.asm addresses, REPACKED_SHA1, the README, the FULL gate
+      (the 0.30 rebase's caught D-SCANBOOT).
+
 - [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
       D-DSKFMT's close)**
       🎚️ TIER 6 — every error: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP
