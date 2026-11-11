@@ -170,6 +170,8 @@ def run():
             reads.append(mm.cpu.de)
             orig(mm)
         m.traps[s["read_sector"]] = counting
+        if "read_sector_nh" in s:   # D-LOADHOLD: frs_to's door past the check
+            m.traps[s["read_sector_nh"]] = counting
         guard = bytes(m.mem[txtmax:txtmax + 16])
         m.call("hk_dpload")
         st = m.mem[s["DISKOP_STATUS"]]
@@ -202,6 +204,8 @@ def run():
                 dests.append(mm.cpu.hl)
             orig(mm)
         m.traps[s["read_sector"]] = counting
+        if "read_sector_nh" in s:   # D-LOADHOLD: frs_to's door past the check
+            m.traps[s["read_sector_nh"]] = counting
         m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
         m.poke(s["FOPEN_SEL"], s["FOPEN_SEL_LOAD"])
         m.poke_w(TXTTAB_CELL, 0x8001)
@@ -260,6 +264,8 @@ def run():
                 dests.append((mm.cpu.de, mm.cpu.hl))
             orig(mm)
         m.traps[s["read_sector"]] = logged
+        if "read_sector_nh" in s:   # D-LOADHOLD: frs_to's door past the check
+            m.traps[s["read_sector_nh"]] = logged
         m.poke(s["DISK_FCB_NAME"], D.name83("P.BAS"))
         m.poke(s["FOPEN_SEL"], s["FOPEN_SEL_LOAD"])
         m.poke_w(TXTTAB_CELL, 0x8001)

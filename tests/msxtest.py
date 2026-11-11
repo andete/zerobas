@@ -431,6 +431,13 @@ class Machine:
         """Replace a routine: when execution reaches it, run fn(self) then RET."""
         a = name_or_addr if isinstance(name_or_addr, int) else self.sym[name_or_addr]
         self.traps[a] = fn
+        # D-LOADHOLD (2026-11-11): read_sector has a second entry past its PUT-cache
+        # check (frs_to's); a test that replaces the routine replaces both doors.
+        for alias in self.TRAP_ALIASES.get(name_or_addr, ()):
+            if alias in self.sym:
+                self.traps[self.sym[alias]] = fn
+
+    TRAP_ALIASES = {"read_sector": ("read_sector_nh",)}
 
     # --- Tier-2 conveniences: capture what a routine sends to the BIOS ----
     def capture_chput(self, name="CHPUT"):

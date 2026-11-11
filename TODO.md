@@ -5790,6 +5790,18 @@ item — do **one item per session** to keep context lean.
       should leave -- so more sectors are missed than the windows' retries cost. Reverted;
       the windows pay for themselves. The lever is a SHORTER ISR (D-KEYSKIP was one) or a
       window placed away from the data start, not no window.
+      🔴 **D-LOADHOLD (2026-11-11): LOAD HAD SLIPPED BACK, AND A PUT-CACHE CHECK WAS ALL OF IT.**
+      Re-measured before starting here: 7 KB **1.65 -> 2.65 s**, 14 KB **3.07 -> 3.47 s** (1 KB
+      unchanged). Bisected in the gate worktree ([`loadhold_bisect.out`](scratchpad/loadhold_bisect.out)): L to 3c2709ad
+      (D-PUTCACHE: read_sector's first act is `call rh_check`), M to a6c09b83 (CRTCNT UNDER KEY
+      ON -- no disk code; it only moved where the misses fell). Blanking the call put both
+      back exactly (1.653 / 3.071 s): ~85 T a sector in rh_check's fast path cost 2 and 5
+      disk revolutions -- the per-sector loop sits on the edge of the next sector's arrival.
+      Fixed at 0 B: frs_to (a file's data sector: LOAD and every sequential reader) enters
+      read_sector past the check (read_sector_nh); the held sector lives in FAT_MBUF and
+      every FAT_MBUF reader still passes it. [`loadhold_after.out`](scratchpad/loadhold_after.out): 0.568 / 1.654 / 3.070 s.
+      🔴 Lesson: a speed item's baseline ROTS -- re-measure before the first experiment; an
+      unrelated ~85 T moved this loop by a second.
       🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
       SPENDING BYTES on it is not, and the byte budget is Joost's call.
       Measured 2026-09-18 by
@@ -7914,7 +7926,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10347 (T-6FE392)8 (T-529ABE)` from `TODO.md:14949 (T-529ABE)`: a
+      `TODO.md:10359 (T-6FE392)8 (T-529ABE)` from `TODO.md:14961 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10653,7 +10665,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14961 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

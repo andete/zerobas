@@ -1,0 +1,7 @@
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  case   bytes  emulated s  jiffies printed     = s
+  S       1055       0.568               29   0.580
+  M       7208       1.654               83   1.660
+  L      14369       3.070              154   3.080
+refcache: 1 hit, 3 miss, 1 of the hits were ZEROBAS readings, 3 stored

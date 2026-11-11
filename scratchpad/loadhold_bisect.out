@@ -1,0 +1,27 @@
+# D-LOADHOLD (2026-11-11): scratchpad/loadclock_probe.py zb (emulated s from the LOAD's start to the loaded program's first line), built per commit in the gate worktree.
+# 11-08 commit:
+629d36b0 D-KEYSKIP: C-BIOS keyboard scan skips rows with no: S=0.568 M=1.653 L=3.070 
+# today's commits (all the same):
+f57b8fa2 D-INITSLOT: C-BIOS repack patch #18 keeps the slot: S=0.568 M=2.654 L=3.467 
+2f8b21e4 D-CBIOS030: rebase the C-BIOS repack onto C-BIOS v: S=0.568 M=2.654 L=3.467 
+58b32d1e D-SCANBOOT: C-BIOS repack patch #20, the key scan : S=0.568 M=2.654 L=3.467 
+8c7b9fd9 Close D-DSKFMT: retire the quick format, add fmtdo: S=0.568 M=2.654 L=3.467 
+6313e5bd D-BDOSUNOP: FCLOSE of an FCB never opened no longe: S=0.568 M=2.654 L=3.467 
+# bisect on M > 2.0 s:
+6d42b784 D-BIOSCONTRACT: INLIN / PINLIN / QINLIN return the: S=0.568 M=1.654 L=3.467
+ba7204d7 D-BDOSFCB stage B2: SEQREAD reads the record the F: S=0.568 M=1.654 L=3.467
+501c50dc D-DSKFMT carves 19-22: ~81 B more disk-ROM room to: S=0.568 M=2.654 L=3.467
+03310c49 D-PSGINIT: BEEP and the key line did nothing from : S=0.568 M=1.654 L=3.467
+a6c09b83 CRTCNT UNDER KEY ON: CRTCNT stays 24; the console': S=0.568 M=2.654 L=3.467
+6b62265a D-BDOSSEQ: fix ec2deb02's regression to BASIC file: S=0.568 M=1.654 L=3.467
+FIRST BAD: a6c09b83 a6c09b83 2026-11-10 CRTCNT UNDER KEY ON: CRTCNT stays 24; the console's bottom row is CRTCNT + CNSDFG, as the VG-8020
+
+# bisect on L > 3.2 s:
+adcfe8ae D-DISKCARVE4: the three remaining inline FAT12 loc: S=0.568 M=1.654 L=3.467
+ac116f7f D-NXINPLACE: a % loop's NEXT steps and tests in th: S=0.568 M=1.654 L=3.467
+cceb02c7 D-INPLF closed: after INPUT$ takes a CR, its LF en: S=0.568 M=1.654 L=3.467
+3c2709ad D-PUTCACHE: a PUT's sector is held, written when a: S=0.568 M=1.654 L=3.467
+6c8763f4 Correct the CF-3300 LOAD readings: the A2 / AA run: S=0.568 M=1.653 L=3.070
+FIRST BAD: 3c2709ad 3c2709ad 2026-11-08 D-PUTCACHE: a PUT's sector is held, written when another is needed
+
+# experiment: read_sector's call rh_check blanked (nop x3): S=0.568 M=1.653 L=3.071

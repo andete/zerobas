@@ -144,6 +144,7 @@ dc_map:
 read_sector:
                 call    rh_check        ; D-PUTCACHE: a held PUT sector -- served or
                                         ; written out first (disk/driver.asm)
+read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's entry)
                 ld      b, 1            ; one sector
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's
@@ -560,7 +561,18 @@ frs_to:
                 call    frs_head
                 pop     hl                  ; the destination (flags kept)
                 ret     c                   ; no data cluster: end of file
-                call    read_sector
+                ; 🐌 D-LOADHOLD (2026-11-11): a file's data sector is read PAST rh_check.
+                ; The check's fast path (~85 T a sector, D-PUTCACHE) was enough to lose
+                ; disk revolutions in LOAD's per-sector loop: 7 KB 1.65 -> 2.65 s, 14 KB
+                ; 3.07 -> 3.47 s (scratchpad/loadhold_bisect.out, loadhold_after.out; bisected to 3c2709ad and
+                ; a6c09b83, which only moved where the misses fell). Safe here: the
+                ; held sector lives in FAT_MBUF, and this reads into FAT_DBUF or LOAD's
+                ; program area; FAT_MBUF readers (the FAT walk, GET, the directory)
+                ; still pass the check, so the hold is flushed before FAT_MBUF is
+                ; reused. The one read it skips -- the HELD sector itself into another
+                ; buffer -- needs one file open twice, which BASIC refuses ("File
+                ; already open").
+                call    read_sector_nh
                 ret     c
                 ld      hl, FAT_CLUSSEC
                 inc     (hl)
