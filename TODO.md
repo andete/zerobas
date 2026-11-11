@@ -3040,6 +3040,18 @@ item — do **one item per session** to keep context lean.
       MAIN page 1's pin pads (1099 B free in front of $6CF3 on 2026-11-11, which the tenant can read), generated with
       kwtable.inc so it cannot drift; detok_kw's change is a few bytes in sub page 0. LIST
       gets it too. 🔮 to score: SAVE ,A ~29 -> under ~15 s (the search was ~half, asave_pc2.out).
+      🔴 **CORRECTED THE SAME DAY: THE PLACEMENT ABOVE IS WRONG.** kwtable's ONLY copy is in the
+      sub-ROM's page 0 (sub/sub.asm includes it, check_kwtable_identity.py), measured
+      2026-11-11: 161 entries, 113 of them single-byte tokens, 1189 B at $3B16. An index in
+      MAIN page 1 would hold SUB-ROM addresses -- a cross-ROM link the build does not have
+      (main would need sub.sym). And re-sorting kwtable by token is out: match_kw takes the
+      FIRST full match, so its order is load-bearing for the tokeniser. ➡️ Candidates, to
+      price before choosing: (a) a 1-byte ORDINAL index in sub page 0 (128 B: token -> entry
+      number, then skip that many entries at ~40 T instead of comparing at ~140 -- ~6x), needs
+      ~60 B carved beside sub page 0's 69 B free (2026-11-11); (b) a generated kwidx.inc for
+      main page 1 from sub.sym, built after the sub-ROM (a build-order change); (c) a
+      per-SAVE index in an existing scratch buffer SAVE ,A does not use (no new RAM -- needs
+      that buffer audit). 1-byte OFFSETS do not work: 1189 B > 255 x 4, entries unaligned.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7956,7 +7968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10389 (T-6FE392)8 (T-529ABE)` from `TODO.md:14991 (T-529ABE)`: a
+      `TODO.md:10401 (T-6FE392)8 (T-529ABE)` from `TODO.md:15003 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10695,7 +10707,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14991 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
