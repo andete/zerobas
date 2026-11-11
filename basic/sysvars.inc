@@ -5711,12 +5711,13 @@ SUBROM_IDX_DEFFN     equ 14     ; deffn_tenant (sub/deffn.asm): DEF FN's
                                 ; RAM cell (LRSET_DEST/W/JUST, STRPTR) and
                                 ; there is no return value, which is exactly why this
                                 ; member of the cluster was the one taken.
-SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
+SUBROM_IDX_DEFTYPE   equ 10     ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
                                 ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
                                 ; G6 DRAW's resident half (docs/spec-eviction-g6-
-                                ; space.md). PAGE-0 table index 9 (the P0 and P1
+                                ; space.md). PAGE-1 table index 10 since D-KWIDXCARVE
+                                ; (2026-11-11; it was page-0 index 9 -- the P0 and P1
                                 ; tables number independently) -- IX =
-                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFTYPE.
+                                ; SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DEFTYPE.
 SUBROM_IDX_CASMATCH  equ 16     ; casmatch_tenant (sub/casmatch.asm): the
                                 ; cassette Tier-3 name-match/data-skip engine
                                 ; (docs/spec-eviction-g5-space.md) -- cas_open_match

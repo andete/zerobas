@@ -3075,6 +3075,16 @@ item — do **one item per session** to keep context lean.
       acceptance green. ~50 B more to carve for the 128 B index + its lookup. ⚠️ The scan's
       names at $280A / $2827 are main-ABI equates sharing sub addresses -- read sub.lst
       there, not sub.sym.
+      ✂️ **D-KWIDXCARVE 2 (2026-11-11, +107 B sub page 0: 89 -> 196 free; page 1 354 -> 244):** the
+      DEFtype tenant moved to sub PAGE 1 -- page-0 row 9 retired, page-1 row 10 (the quick
+      format's retired slot) is `jp deftype_tenant`, SUBROM_IDX_DEFTYPE = 10 and usr.asm
+      dispatches with sc_inl1; its letter test inline (the page-0 is_letter / upcase are
+      unmapped in page 1), and an assemble-time check that edt_codes stays inside one 256 B
+      page. The tenant-closure checks pass; unit tests, forvar / deffn / array acceptance
+      and kwsweep's DEF rows (all SUPPORTED) green. 🔮 THE INDEX, DESIGNED: ordinals (128 B)
+      + bucket offsets every 16 entries (22 B) generated from kwtable.inc + sysvars.inc's
+      *_TOKEN equates into kwidx.inc, a static check that regenerates and diffs it, and a
+      host test that the index and the walk answer alike for every token.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -7991,7 +8001,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10424 (T-6FE392)8 (T-529ABE)` from `TODO.md:15026 (T-529ABE)`: a
+      `TODO.md:10434 (T-6FE392)8 (T-529ABE)` from `TODO.md:15036 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10730,7 +10740,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15026 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15036 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

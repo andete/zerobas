@@ -170,10 +170,11 @@ sub_p0_table:
                                                 ;   arc). GFX_OP-selector dispatched (G2):
                                                 ;   0=floor self-test (G1) 1=PSET/PRESET plot
                                                 ;   2=POINT read. docs/spec-basic-graphics-g2.md.
-                jp      deftype_tenant          ; index 9 (SUBROM_IDX_DEFTYPE): DEFINT/
-                                                ;   DEFSNG/DEFDBL/DEFSTR (sub/deftype.asm),
-                                                ;   carved out of the resident to fund G6
-                                                ;   DRAW. docs/spec-eviction-g6-space.md.
+                ret                             ; index 9: RETIRED (D-KWIDXCARVE, 2026-11-11).
+                nop                             ;   It was deftype_tenant, now page-1 index
+                nop                             ;   10 (SUBROM_IDX_DEFTYPE): page 0 needed
+                                                ;   the room for SAVE ,A's keyword index.
+                                                ;   The row keeps its 3 B so 10.. stay put.
                 jp      readdata_tenant         ; index 10 (SUBROM_IDX_READVAL): the READ/DATA
                                                 ;   value engine (sub/readdata.asm) -- carved
                                                 ;   out to fund G7 sprites. Result rides back
@@ -365,7 +366,6 @@ tokenise_ei:
 ; draw self-test (docs/spec-basic-graphics-g1.md). Self-contained: touches only
 ; the VDP ports + page-3 RAM result cells, calls nothing else in this file.
                 include "graphics.asm"
-                include "deftype.asm"
 ; --- READ/DATA value engine (G7 eviction, docs/spec-eviction-g7-space.md) ---
 ; The largest of the three carves that fund G7's resident half. Its body is the
 ; shared basic/readdata-body.inc, and it brings page 0 its own tok_skip copy
@@ -546,9 +546,12 @@ sub_p1_table:
                                                 ;   mathpack-slice2.md §15). LAST
                                                 ;   slice-2 tenant. Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_rnd`.
-                ret                             ; index 10: RETIRED (D-DSKFMT, 2026-11-11).
-                nop                             ;   It was format_tenant, CALL FORMAT's
-                nop                             ;   quick format (system area only, 360k /
+                jp      deftype_tenant          ; index 10 (SUBROM_IDX_DEFTYPE): DEFINT/
+                                                ;   DEFSNG/DEFDBL/DEFSTR (sub/deftype.asm),
+                                                ;   moved here from page-0 row 9 by
+                                                ;   D-KWIDXCARVE (2026-11-11). Row 10 was
+                                                ;   format_tenant, CALL FORMAT's
+                                                ;   quick format (system area only, 360k /
                                                 ;   720k); CALL FORMAT is now disk.rom's
                                                 ;   hk_format -- the CF-3300's dialogue and
                                                 ;   DSKFMT. The row keeps its 3 B so 11..
@@ -854,6 +857,11 @@ sub_p1_ping:
 ; arga_pack_fac only (no widen_fac_to/widen_uint_to, since RND never widens
 ; an fp record through the resident ops either).
                 include "fp_rnd.asm"
+
+; DEFtype (index 10, sub/deftype.asm): moved here from page 0 by D-KWIDXCARVE
+; (2026-11-11) for SAVE ,A's keyword index; a pure parse + DEFTBL fill, its letter
+; test inline (the page-0 is_letter / upcase are unmapped here).
+                include "deftype.asm"
 
 ; (index 10, format_tenant -- sub/format.asm + basic/format-body.inc, CALL
 ; FORMAT's old quick format -- RETIRED 2026-11-11: disk.rom's hk_format runs the

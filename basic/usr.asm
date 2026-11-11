@@ -383,7 +383,8 @@ usr_undef:
 ; Everything else those three needed -- three kwtable rows and the token ->
 ; type-code lookup -- is SUB-ROM, which has room; this window does not.
 ex_deftype:
-                ; The body is a page-0 sub-ROM tenant (docs/spec-eviction-g6-space.md):
+                ; The body is a sub-ROM tenant (docs/spec-eviction-g6-space.md; page 1
+                ; since D-KWIDXCARVE, 2026-11-11 -- page 0 needed the room):
                 ; DEFtype is a pure parse + DEFTBL fill with no BIOS and no float
                 ; work, so its whole closure stays off page 0 -- the one thing a
                 ; page-0 tenant may not touch. It is also a COLD path (a declaration
@@ -391,8 +392,8 @@ ex_deftype:
                 ; nothing that matters. HL (the token cursor) goes in and comes back
                 ; through DEFT_PTR, since CALSLT clobbers the registers.
                 ld      (DEFT_PTR),hl
-                call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
-                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFTYPE)
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DEFTYPE) ; page 1 (D-KWIDXCARVE)
                 ld      a,(DEFT_STATUS)
                 or      a
                 jp      nz,stmt_error       ; malformed mnemonic / empty or reversed range

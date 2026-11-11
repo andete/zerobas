@@ -23,8 +23,9 @@
 ; repack-only, so the lean cart never had it by
 ; construction (no -body.inc dance needed, unlike the casmatch carve).
 ;
-; skip_spaces is duplicated sub-locally (5 instructions); `upcase` and
-; `is_letter` already exist in this page of the sub-ROM and are reused.
+; skip_spaces is duplicated sub-locally (5 instructions); is_letter / upcase's verdict
+; is inline in edt_letter (D-KWIDXCARVE: this tenant is in sub PAGE 1 now, where the
+; page-0 copies are unmapped).
 ;
 ; D-DEFINTTOK (2026-08-18) and D-DEFTYPETOK (2026-08-19) between them replaced
 ; the FIRST of those three edits entirely. All four DEF<type> verbs now crunch
@@ -136,8 +137,15 @@ edt_ok:
 ; Not a letter: drop the caller's return and fail the statement.
 edt_letter:
                 call    edt_skip_spaces
-                call    is_letter
-                jp      c,upcase
+                ; D-KWIDXCARVE (2026-11-11): the tenant moved to sub page 1, where the
+                ; page-0 is_letter / upcase are unmapped -- their verdict inline: `and $DF`
+                ; folds a..z onto A..Z (is_letter's own test) and leaves A upper-cased
+                and     $DF
+                cp      'A'
+                jr      c,edt_notl
+                cp      'Z'+1
+                ret     c                   ; a letter, upper-cased
+edt_notl:
                 pop     af
 edt_fail:
                 ld      a,1
@@ -175,6 +183,9 @@ edt_skip_spaces:
     ENDIF
 edt_codes:
                 db      DEFTBL_STR          ; $AB DEFSTR
+        IF ((edt_codes + 3) / 256) - (edt_codes / 256)
+                ERROR   "edt_codes crosses a 256-byte boundary (deftype_tenant's 8-bit add)"
+        ENDIF
                 db      2                   ; $AC DEFINT
                 db      4                   ; $AD DEFSNG
                 db      8                   ; $AE DEFDBL
