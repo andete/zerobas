@@ -16561,7 +16561,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-RNDLIVE (the FCB-sourced random read) -- but a channel's PUT / GET do not go through
       BDOS, so MEASURE before believing either.
 
-- [ ] 🔀 **D-GATEWT — GATE A FROZEN COPY IN A WORKTREE, KEEP WORKING IN THIS ONE
+- [x] 🔀 **D-GATEWT — GATE A FROZEN COPY IN A WORKTREE, KEEP WORKING IN THIS ONE
       (Joost, 2026-11-10: "we really need ... a way of working that allows work to
       continue while we're waiting for long test runs")**
       🎚️ TIER 2 — reasonable time: a full gate stopped all work for its whole run.
@@ -16583,6 +16583,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       emulator run while the gate's runs) → green: push; red: fix, amend, re-gate (the
       commit was never pushed). (4) Knife: a gate in the worktree must keep its ROM hash
       and verdict while this checkout builds a different ROM.
+      ✅ **DONE (2026-11-10):** steps (1)-(4) built (tools/gate_wt.py; openmsx_paths.find_user_share()
+      honours OPENMSX_USER_DATA; a private ZEROBAS_TMP outside every checkout); the knife
+      passed (this checkout's build/disk.rom replaced by random bytes during the worktree's
+      FULL battery: its ROM hash and verdict held). Every commit since has been gated this
+      way. 🟢 Step (3)'s "NO emulator run while the gate runs" was LIFTED the same day (Joost:
+      "I thought we solved that restriction?") -- probes and single suites run here; not the
+      battery, nor a suite the gate is running at that moment. Lessons in memory
+      (gate-in-a-worktree): never chain the push after the gate command; stage every file
+      the citation fixer rewrites.
 
 - [x] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
       (Joost's idea, 2026-11-10, after D-DOSLADDER's six fixes)**
