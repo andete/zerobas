@@ -46,14 +46,7 @@ fat_io_create:
                 ; path resumes (the sub-ROM tenant's sv_load_error `ret`s into its
                 ; loop) then wrote on from that. Neither fat_mount nor
                 ; fat_dir_create reads or writes any of these cells.
-                xor     a
-                ld      (FWR_SECIDX), a
-                ld      hl, 0
-                ld      (FWR_CLUS), hl
-                ld      (FWR_FIRST), hl
-                ld      (FWR_BUFLEN), hl
-                ld      (FWR_BYTES), hl
-                ld      (FWR_BYTES + 2), hl
+                call    wr_reset            ; D-WRRESET (disk/kernel.asm; the disk build's FWR_* = BDOS_WR*)
                 ; D-LOF (docs/spec-basic-lof-size-field.md §4a): the LOF field
                 ; too. FAT_FILESIZE is written ONLY by fat_find, i.e. only when a
                 ; file is FOUND, so before this a created channel reported

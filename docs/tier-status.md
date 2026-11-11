@@ -114,9 +114,9 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $43A4 | `fdc_write_phys` | no BDOS function named | disk/driver.asm:271 |
 | $4462 | `(jp fopen_fill_body)` | no BDOS function named | disk/driver.asm:417 |
 | $44F4 | `choice` | no BDOS function named | disk/driver.asm:566 |
-| $4558 | `(jp k_4558)` | no BDOS function named | disk/driver.asm:695 |
-| $456F | `k_456F` | BDOS $10 FCLOSE: exercised | disk/driver.asm:733 |
-| $461D | `k_461D` | BDOS $16 FMAKE: exercised | disk/driver.asm:883 |
+| $4558 | `(jp k_4558)` | no BDOS function named | disk/driver.asm:700 |
+| $456F | `k_456F` | BDOS $10 FCLOSE: exercised | disk/driver.asm:738 |
+| $461D | `k_461D` | BDOS $16 FMAKE: exercised | disk/driver.asm:888 |
 | $46BA | `k_46BA` | BDOS $2F RDABS: exercised | disk/fat.asm:97 |
 | $46C8 | `(jp k_46C8)` | no BDOS function named | disk/fat.asm:114 |
 | $46E6 | `bdos_create_failpop` | no BDOS function named | disk/fat.asm:143 |
@@ -152,17 +152,17 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5462 | `k_5462` | BDOS $07 DIRIN: exercised | disk/kernel.asm:1391 |
 | $546E | `k_546E` | BDOS $03 AUXIN: exercised | disk/kernel.asm:1429 |
 | $5474 | `k_5474` | BDOS $04 AUXOUT: exercised | disk/kernel.asm:1441 |
-| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1626 |
-| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1653 |
-| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1724 |
-| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1735 |
-| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1763 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3440 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3841 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3962 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7340 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7742 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7831 |
+| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1619 |
+| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1646 |
+| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1717 |
+| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1728 |
+| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1756 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3427 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3828 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3949 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7338 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7740 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7829 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:859 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:863 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:876 |

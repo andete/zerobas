@@ -692,6 +692,11 @@ hkn_stamp:
 fmt_sec:
                 db      12, $00, 3, $F5, 1, $FE, 3, $00, 1, $02, 1, $F7, 22, $4E
                 db      12, $00, 3, $F5, 1, $FB, 0, $40, 0, $40, 1, $F7, 80, $4E  ; data $40: the CF-3300's (D-FMTFILL)
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+set_rr:
+                ld      (ix+33), l
+                ld      (ix+34), h
+                ret
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
 ; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;

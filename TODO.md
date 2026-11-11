@@ -3137,6 +3137,12 @@ item — do **one item per session** to keep context lean.
       "a half is held?" test (an ~85 T one cost LOAD a revolution: D-LOADHOLD), so the held
       flag should be one byte tested once per sector. Gate rows: one per place (a channel
       half-written, then that place's operation, then the file read back).
+      ✂️ **ROOM FOR IT (2026-11-11, D-WRRESET, ~40 B of disk ROM):** the sequential writer's reset
+      (no cluster, empty buffer, 0 bytes) stood three times -- bdos_create_body, fat_io_create,
+      COPY's hkc_differ -- and is one `wr_reset` now (in front of $75A5, which set_rr's move
+      to the $4558 slack made room for). Slack after: $553C 19 B, $5E10 20 B, $75A5 4 B (2026-11-11).
+      COPY's copy gains the BUFLEN zeroing (right for a fresh destination). Unit tests,
+      diskbasic / bdosunop / wrblkalt / copy / catcopy / bdos acceptance green.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8053,7 +8059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10486 (T-6FE392)8 (T-529ABE)` from `TODO.md:15088 (T-529ABE)`: a
+      `TODO.md:10492 (T-6FE392)8 (T-529ABE)` from `TODO.md:15094 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10792,7 +10798,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

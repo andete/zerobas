@@ -1589,14 +1589,7 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 jp      c, bdos_create_err          ; jr->jp: relocated
                 call    fmake_fcb_fill  ; D-WRBLKSEEK (b): +20..21, +24, +25 as stock
                 ; prime the write iterator: no cluster yet, empty buffer, 0 bytes.
-                xor     a
-                ld      (BDOS_WRSECIDX), a
-                ld      hl, 0
-                ld      (BDOS_WRCLUS), hl
-                ld      (BDOS_WRFIRST), hl
-                ld      (BDOS_WRBUFLEN), hl
-                ld      (BDOS_WRBYTES), hl
-                ld      (BDOS_WRBYTES + 2), hl
+                call    wr_reset            ; D-WRRESET: no cluster, empty buffer, 0 bytes (HL = 0)
                 ; Item 5 (spec-diskbasic-option-closure.md): reset the per-open
                 ; sequential record counter for the WRITE session too, mirroring
                 ; the read-open reset in fopen_fill_body (fat.asm; M33 §2.1). A file
@@ -2015,13 +2008,7 @@ hkc_differ:     ld      hl,COPY_SRC
                 ld      hl,DISK_FCB_NAME
                 call    fat_dir_create
                 jp      c,hkc_io
-                xor     a
-                ld      (FWR_SECIDX),a
-                ld      hl,0
-                ld      (FWR_CLUS),hl
-                ld      (FWR_FIRST),hl
-                ld      (FWR_BYTES),hl
-                ld      (FWR_BYTES+2),hl
+                call    wr_reset            ; D-WRRESET (+ FWR_BUFLEN := 0: a fresh destination)
                 ld      hl,(COPY_CLUS)
                 ld      (FAT_FIRSTCLUS),hl
                 call    fat_open
@@ -4756,10 +4743,6 @@ hl_x32:
                 add     hl, hl
                 add     hl, hl
                 ret
-set_rr:
-                ld      (ix+33), l
-                ld      (ix+34), h
-                ret
 
 
 ; wrblk_shrink — HL_requested==0 and the target size (WRBLK_MULACC, already =
@@ -7337,6 +7320,21 @@ ccd_out:
                 pop     de
                 ret     c
                 jp      cr_dir
+; wr_reset -- D-WRRESET (2026-11-11): the sequential writer's state for a new file -- no
+; cluster, an empty buffer, 0 bytes. It stood three times (bdos_create_body,
+; fat_io_create, COPY's hkc_differ, which lacked only the BUFLEN store -- 0 is right
+; for a fresh destination too); one copy gives the disk ROM ~30 B for D-WCACHE.
+; out A = 0, HL = 0 (bdos_create_body's next store relies on HL = 0).
+wr_reset:
+                xor     a
+                ld      (BDOS_WRSECIDX), a
+                ld      hl, 0
+                ld      (BDOS_WRCLUS), hl
+                ld      (BDOS_WRFIRST), hl
+                ld      (BDOS_WRBUFLEN), hl
+                ld      (BDOS_WRBYTES), hl
+                ld      (BDOS_WRBYTES + 2), hl
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
