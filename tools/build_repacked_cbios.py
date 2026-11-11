@@ -81,11 +81,17 @@ PATCHES = [
     # entry took CHKRAM's old place); this moves it in front of the font, where MSX1 has
     # room, so zerobas's cassette body has $09D4-$0D00 in one piece again.
     os.path.join(REPO, "cbios-repack", "chkram-move.patch"),
+    # D-SCANBOOT (2026-11-11): 0.30 scans the keyboard from the first interrupt
+    # (commit 4aa7859), so a key down during the boot logo reached the first prompt --
+    # openMSX's tape autorun presses one at insertion and CLOAD's RUN was lost
+    # (autorun-acceptance). Back to 0.29's start: zerobas's cold start sets SCNCNT.
+    # `inc (hl)` -> `nop`, nothing moves.
+    os.path.join(REPO, "cbios-repack", "scan-from-basic.patch"),
 ]
 
 PINNED_TAG = "v0.30"
 PRISTINE_SHA1 = "8216de0c3e95b58d958e286f56ffdac47a8d0b90"
-REPACKED_SHA1 = "d1da5500e662c34cf2686b988cd3e1996d2ea740"
+REPACKED_SHA1 = "a6406b625774fc730b90f130e614dcc828ccf670"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

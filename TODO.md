@@ -17093,7 +17093,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       BASIC_BASE, the $3283 / $328D helpers, then the FULL battery.
       ✅ **REBASED (2026-11-11, Joost: "go ahead with the 0.30 rebase; we will need that eventually
       and 0.31 will be there soon, it'll get worse only").** tools/build_repacked_cbios.py pins
-      v0.30 (PRISTINE_SHA1 8216de0c..., REPACKED_SHA1 d1da5500...); TEN patches, from eighteen:
+      v0.30 (PRISTINE_SHA1 8216de0c..., REPACKED_SHA1 a6406b62...); TEN patches (eleven with D-SCANBOOT), from eighteen:
       the nine upstreamed ones retired and their files deleted; ctrlstop-key re-made (the
       STOP test in front of 0.30's HOME test in key_ascii's rows 6-11 path); crtcnt-bound
       re-made (3 `cp (hl)` + 3 `ld a,(CRTCNT)` sites, the same rule); and a NEW
@@ -17110,6 +17110,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       acceptance green on the 0.30 base -- the retired fixes, upstream now, behave as ours
       did -- then the FULL battery. ➡️ Free on 0.30: C-BIOS now ends at $2765, 28 B below
       BASIC_BASE ($2781) -- a lever for later (BASIC_ORG down), not taken here.
+      🔴 **THE FULL BATTERY CAUGHT ONE (D-SCANBOOT): autorun-acceptance 252/253, the
+      tokenised rows NOT-RUN on both builds.** 0.30 scans the keyboard from the first
+      interrupt (upstream 4aa7859); openMSX's tape autorun presses `'` + RETURN at
+      insertion (NEWKEY rows 2 / 7 at +0.07 s; none with autorun off), 0.29 had not
+      started its scan yet and dropped them, 0.30 queued them, and the extra line spent
+      the H.MAIN that types CLOAD's RUN. VG-8020: a key at 0.4 s dropped, at 1.5 s kept;
+      0.29: both dropped. Fixed by cbios-repack/scan-from-basic.patch (#20, `inc (hl)` ->
+      `nop`, 0 bytes): the first scan is again zerobas's cold start (D-BOOTSCAN). Witness:
+      autorun, bootkey, biosregs, keystr, initslot acceptance green; then the FULL battery.
 
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
