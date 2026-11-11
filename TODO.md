@@ -3125,6 +3125,18 @@ item — do **one item per session** to keep context lean.
       hd_last) and the BDOS (bsr_partial, dta_chunk, fip_store). ➡️ Next: classify each by
       hand (R read-into / C copy-into / W written-from / P pointer-only); every R and C site
       takes the "flush the held half first" rule, W and P need none.
+      ✅ **CLASSIFIED (2026-11-11, same file):** 8 R, 3 W, 1 C by context; the other 54 read by
+      hand -- nearly all P (parses of a sector already loaded). What PUTS NEW BYTES in the
+      buffer is five places: (1) every read with the buffer as destination (read_sector,
+      read_sector_nh -- LOAD's bypass since D-LOADHOLD --, rd_dbuf); (2) 🔴 dskio_next's
+      PAGE-1 BOUNCE: a DSKIO read to page 1 goes through SECTOR_BUF -- invisible to a
+      "who calls read_sector" search; (3) bb_mark's BASENT trampoline, copied in and run;
+      (4) fat_media's writes at +11; (5) the owner's own exits (CLOSE, channel switch).
+      ➡️ DESIGN: the flush lives in the READ PATHS' destination test (1, 2) -- D-PUTCACHE's
+      rh_check pattern -- plus explicit calls at 3, 4, 5; read_sector_nh must keep a cheap
+      "a half is held?" test (an ~85 T one cost LOAD a revolution: D-LOADHOLD), so the held
+      flag should be one byte tested once per sector. Gate rows: one per place (a channel
+      half-written, then that place's operation, then the file read back).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8041,7 +8053,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10474 (T-6FE392)8 (T-529ABE)` from `TODO.md:15076 (T-529ABE)`: a
+      `TODO.md:10486 (T-6FE392)8 (T-529ABE)` from `TODO.md:15088 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10780,7 +10792,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15076 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

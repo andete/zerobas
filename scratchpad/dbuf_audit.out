@@ -70,3 +70,18 @@ basic/fat-delete-body.inc:86    fdl_marked                   ld      hl, FAT_DBU
 basic/fatio-body.inc:92    fig_have                     ld      de, FAT_DBUF             | add     hl, de / ld      a, (hl)
 basic/fatiow-body.inc:79    fip_store                    ld      de, FAT_DBUF             | add     hl, de / ld      (hl), c
 # 66 references
+
+# CLASSIFIED (2026-11-11). By instruction context: R (a read with HL = the buffer) 8,
+# W (written from it) 3, C (an ldir into it) 1; the other 54 read by hand -- nearly all
+# P: parses of a sector already loaded (fat_mount / getdpb / fm_fatacc's BPB fields,
+# ff_* / cr_chkdir / close_read / fcb_dirloc / hkn_stamp's directory entries, fcf_* /
+# fnc_straddle / fig_have / fre_have / df_entptr's FAT and data bytes, hd_rest / hd_last /
+# bsr_partial / dta_chunk / rgb_have copying OUT of it, dsm_p1_pre / fat_bufinit pointers).
+# What LOADS NEW BYTES into the buffer -- where a held half must be flushed first:
+#   1. every sector read whose destination is the buffer: read_sector, read_sector_nh
+#      (frs_to: LOAD and the sequential readers, past rh_check since D-LOADHOLD), rd_dbuf
+#   2. dskio_next (driver.asm 55 / 60): a DSKIO read to a PAGE-1 destination bounces
+#      through SECTOR_BUF -- invisible to a "who calls read_sector" search
+#   3. bb_mark: the BASENT trampoline is copied into SECTOR_BUF and run there
+#   4. fat_media: writes FAT_DBUF+11..
+#   5. the owner itself (dout_write) and its exits: CLOSE, the channel switch
