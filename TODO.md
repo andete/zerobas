@@ -3030,6 +3030,16 @@ item — do **one item per session** to keep context lean.
       tape. tests/test_tokenise.py / test_list.py / test_program.py / test_statements.py
       green. ➡️ What stays open here: SAVE ,A's detokeniser search (the token -> entry index,
       a sub-ROM carve first).
+      🔴 **RE-MEASURED 2026-11-11 ([`asave_1111.out`](scratchpad/asave_1111.out)) -- SAVE ,A IS STILL ~19.5x:** the 150-line
+      program with and without `SAVE "T.BAS",A`: CF-3300 114.1 / 115.6 s (the SAVE 1.5 s),
+      zerobas 119.3 / 148.6 s (the SAVE **29.3 s**). That is past T2's 10x -- a TIER 2 gap
+      ("reasonable time") filed inside this TIER 5 item; the tape load itself is 1.05x.
+      💰 **WHERE THE INDEX CAN GO:** detok_kw runs in the sub-ROM's PAGE-0 tenant, which reaches
+      sub page 0 (69 B free on 2026-11-11), main page 1 and RAM -- NOT sub page 1 (354 B free on
+      2026-11-11, since the quick format retired). So the ~256 B token -> entry index belongs in
+      MAIN page 1's pin pads (1099 B free in front of $6CF3 on 2026-11-11, which the tenant can read), generated with
+      kwtable.inc so it cannot drift; detok_kw's change is a few bytes in sub page 0. LIST
+      gets it too. 🔮 to score: SAVE ,A ~29 -> under ~15 s (the search was ~half, asave_pc2.out).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -5817,6 +5827,11 @@ item — do **one item per session** to keep context lean.
       fdc_di_save (disk/fat.asm, $4C29 slack 1 B) and hd_full, plus a flag bit (FDC_IFF's
       bit 7?): a carve first. 🔮 to score when built: misses well under 11 of 28, and TIME
       still advancing during a LOAD (D-LOADDI's guard).
+      ⚠️ **BUT MEASURE BEFORE CARVING (noted the next day's pass, 2026-11-11):** D-LOADRUNS's
+      multi-sector DSKIO already had this shape -- no `ei` between sectors, interrupts only in
+      the waits -- and measured SLOWER (14 KB 3.45 s against 3.07, hd_full's comment). Build
+      the chain flag first in a throwaway tree with room borrowed from anything (it never
+      ships), score the 🔮, and carve only if it pays.
       🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
       SPENDING BYTES on it is not, and the byte budget is Joost's call.
       Measured 2026-09-18 by
@@ -7941,7 +7956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10374 (T-6FE392)8 (T-529ABE)` from `TODO.md:14976 (T-529ABE)`: a
+      `TODO.md:10389 (T-6FE392)8 (T-529ABE)` from `TODO.md:14991 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10680,7 +10695,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14991 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
