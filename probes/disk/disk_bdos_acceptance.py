@@ -194,10 +194,11 @@ ALLOWLIST = {
     # divergence in disk/docs/diskbasic-option-surface.md, "`$26` WRBLK shrink"). The
     # bytes downstream of that are stock's broken file; OURS is PINNED at each one
     # (an (ours, reason) entry), so the excuse cannot hide a regression of ours.
-    "DOSL-D6": {
-        0x048F: (0x03, "SETRND after SEQREAD from CR 2: stock RR 1, ours 3 = CR 3 (CR / EX match; "
-                       "D-BDOSFCB's SETRND residual -- stock answered 1 from CR 1 too)"),
-    },
+    # 🟢 2026-11-10, D-BDOSFCB residual (2): SETRND now answers as all three
+    # references do (RR = 1 + (RS >> 1) x 65536, Joost "Match the references"), so DOSL-D6's
+    # RR byte MATCHES and its excuse (ours pinned at 3) is gone: kept, it would have
+    # excused a regression back to the old CP/M rule.
+    "DOSL-D6": {},
     "DOSL-D7": {
         0x040B: (0x00, "FCLOSE after WRBLK-0 truncate: stock $FF (its truncate bug), ours 0"),
         0x0419: (0x0A, "SORTED.TXT record 9's byte: stock reads its freed cluster, ours 10"),

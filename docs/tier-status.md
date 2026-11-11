@@ -160,9 +160,9 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3430 |
 | $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3832 |
 | $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3953 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7337 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7739 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7828 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7297 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7699 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7788 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:859 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:863 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:876 |

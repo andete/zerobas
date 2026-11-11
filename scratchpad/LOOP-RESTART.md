@@ -60,16 +60,25 @@ session and the loop resumes exactly where it stopped.
 - **Then pushed:** CRTCNT UNDER KEY ON; D-DSKFMT carves 12-31 (+ ~280 B of disk-ROM room),
   defrag step 7 and FORMAT's bins (Joost ruled SPLIT code / data); move-tool fixes
   (forward moves, a `jr` leaving a block, `ret nz` as an end, a pin's pad dragged).
-- **Gating / just committed:** D-DSKFMT BUILT -- DSKFMT formats all four choices as the
-  CF-3300 (`make dskfmt-acceptance`, both machines, MSX-DOS round trip on the new disk);
-  D-SIDEWRITE (a write to a 1-sided disk went to the 2-sided place: fat-prim-body's
-  write_sector passed C = $F9, a media ID since D-SIDES).
-- **Open next, by tier (TIER 1):** D-DSKFMT's follow-ups -- CALL FORMAT as the CF-3300's
-  (MEASURE its dialogue first; retire the sub-ROM quick format), MSX-DOS's FORMAT command
-  (Joost asked; same measurement), our loader booting MSX-DOS from a disk formatted here;
-  D-BIOSCONTRACT's remainder (PNTINI / SCANR / SCANL need room; STRTMS low value);
-  D-BDOSFCB B3 (a) / (b) and its residuals (SETRND, BC); D-PSGINIT's last byte (pinned);
-  TIER 3: CLOSE / SEQREAD of an unopened FCB (D-BDOSSEQ note).
+- **Then pushed (all gated GREEN):** D-DSKFMT BUILT (DSKFMT, all four choices, `make
+  dskfmt-acceptance`); D-SIDEWRITE; the $4025 FORMAT entry -- MSX-DOS's `format` and CALL
+  FORMAT run the CF-3300's dialogue (wording may differ: Joost's ruling); our loader boots
+  MSX-DOS on both machines (fmtboot_probe.py); D-CALLSTMT's FORMAT half (the header's
+  STATEMENT handler: CALL FORMAT under the CF-3300's own BASIC); CALL FORMAT's work area
+  STREND .. SP - 256 (it reached over the stack). Carves 32-36 made the room.
+- **Disk ROM is FULL again:** $75A5 0 B, $5FE5 0 B; the rest in slacks of 13 B or less, and
+  moves cannot gather them (defrag_plan.py --bin finds no 60 B bin). New room = REWRITES
+  (carve 35 -- the WRBLK multiply in registers -- was worth 86 B; look for more RAM-held
+  arithmetic). Read `python3 scratchpad/pinguard.py --slack`, never a number from here.
+- **Open next, by tier (TIER 1):** D-BDOSFCB's SETRND residual (RR $080002 here, $400001
+  on the CF-3300, an RS-128 FCB) -- next; D-CALLSTMT's SYSTEM half (needs its own route
+  under another BASIC, and room); D-BIOSCONTRACT's remainder (PNTINI / SCANR / SCANL need
+  main room); D-DSKFMT housekeeping (retire the sub-ROM quick format; standing rows for
+  MSX-DOS `format` and the loader boot); D-PSGINIT's last byte (pinned). TIER 3: CLOSE /
+  SEQREAD of an unopened FCB (D-BDOSSEQ).
+- **Process lesson 2026-11-10:** never chain `git push` after the gate command -- guard it
+  (`case "$v" in *"<sha> GREEN"*) git push;; esac`); and stage EVERY file the citation
+  fixer rewrites (80ef5030 went out RED on an unstaged docs/ rewrite; b10f79f7 fixed it).
 - **Disk-ROM room now:** read `python3 scratchpad/pinguard.py --slack` (never a number from
   here); scratchpad/defrag_plan.py `--bin N [KEEP,..]` finds the fewest moves to open a bin.
 - **Lessons today:** a byte scan of the BUILT images finds readers a source grep misses

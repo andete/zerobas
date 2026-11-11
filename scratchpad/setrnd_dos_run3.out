@@ -1,0 +1,11 @@
+WARNING: Var start is never used on line 17 of file /Users/joost/projects/zerobas/scratchpad/setrnd_dos_seq.asm
+== stock (MSX-DOS $0005)
+  after 1 read     A=25  RR=00400001
+  after 2 reads    A=25  RR=00400001
+  after 3 reads    A=25  RR=00400001
+  after 4 reads    A=25  RR=00400001
+== ours (MSX-DOS $0005)
+  after 1 read     A=25  RR=00080001
+  after 2 reads    A=25  RR=00080002
+  after 3 reads    A=25  RR=00080003
+  after 4 reads    A=25  RR=00080004

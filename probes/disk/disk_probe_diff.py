@@ -472,10 +472,10 @@ def mode_capture(args) -> int:
         ob, sb = _block_from(o_recs, base), _block_from(s_recs, base)
         if ob and sb:
             md = [(base + i, sb[i], ob[i]) for i in range(min(len(ob), len(sb))) if sb[i] != ob[i]]
-            # the block's first 32 bytes, both sides, ALWAYS: an agreeing row must still
+            # the block's first 64 bytes, both sides, ALWAYS: an agreeing row must still
             # show WHAT it agreed on (a case that agrees can agree on a failure)
-            print(f"\n  head stock: {' '.join(f'{b:02X}' for b in sb[:32])}")
-            print(f"  head ours : {' '.join(f'{b:02X}' for b in ob[:32])}")
+            print(f"\n  head stock: {' '.join(f'{b:02X}' for b in sb[:64])}")
+            print(f"  head ours : {' '.join(f'{b:02X}' for b in ob[:64])}")
             print(f"\n  memory {base:#06x}+{mem[1]}: {len(md)} of {min(len(ob),len(sb))} bytes differ")
             for addr, s, o in md[:48]:
                 print(f"    {addr:04X}: stock={s:02X} ours={o:02X}")

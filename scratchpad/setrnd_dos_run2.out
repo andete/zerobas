@@ -1,0 +1,23 @@
+WARNING: Var start is never used on line 17 of file /Users/joost/projects/zerobas/scratchpad/setrnd_dos_rs.asm
+== stock (MSX-DOS $0005)
+  RS=1             A=25  RR=00000001
+  RS=2             A=25  RR=00010001
+  RS=3             A=25  RR=00010001
+  RS=4             A=25  RR=00020001
+  RS=64            A=25  RR=00200001
+  RS=127           A=25  RR=003F0001
+  RS=128           A=25  RR=00400001
+  RS=129           A=25  RR=00400001
+  RS=255           A=0D  RR=0D3B0D36
+  RS=128 again     A=65  RR=700D6C0D
+== ours (MSX-DOS $0005)
+  RS=1             A=25  RR=00001002
+  RS=2             A=25  RR=00002002
+  RS=3             A=25  RR=00003002
+  RS=4             A=25  RR=00004002
+  RS=64            A=25  RR=00040002
+  RS=127           A=25  RR=0007F002
+  RS=128           A=25  RR=00080002
+  RS=129           A=25  RR=00081002
+  RS=255           A=0D  RR=0D3B0D36
+  RS=128 again     A=65  RR=700D6C0D

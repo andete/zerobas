@@ -1,0 +1,23 @@
+WARNING: Var start is never used on line 17 of file /Users/joost/projects/zerobas/scratchpad/setrnd_dos.asm
+== stock (MSX-DOS $0005)
+  EX0 CR0          A=25  RR=00400001
+  EX0 CR1          A=25  RR=00400001
+  EX0 CR2          A=25  RR=00400001
+  EX0 CR5          A=25  RR=00400001
+  EX1 CR0          A=25  RR=00400001
+  EX1 CR3          A=25  RR=00400001
+  EX0 CR2 +24=0    A=25  RR=00400001
+  EX0 CR2 +13=1    A=25  RR=00400001
+  EX0 CR2 RS=1     A=25  RR=00000001
+  EX0 CR2 RR=$77   A=25  RR=00400001
+== ours (MSX-DOS $0005)
+  EX0 CR0          A=25  RR=00400001
+  EX0 CR1          A=25  RR=00400001
+  EX0 CR2          A=25  RR=00400001
+  EX0 CR5          A=25  RR=00400001
+  EX1 CR0          A=25  RR=00400001
+  EX1 CR3          A=25  RR=00400001
+  EX0 CR2 +24=0    A=25  RR=00400001
+  EX0 CR2 +13=1    A=25  RR=00400001
+  EX0 CR2 RS=1     A=25  RR=00000001
+  EX0 CR2 RR=$77   A=25  RR=00400001

@@ -18100,6 +18100,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-10) -- with the $7F0A one, two holes over CHOICE's 85 B. tests/test_bdosbasic.py
       checks the route. 📏 BASIC's $F37D RENAME ->PROBE2 and DELETE PROBE2 A = 0, as the
       CF-3300 (scratchpad/bdosset_probe.py, a completing run).
+      📏 **RESIDUAL (2) SETRND, MEASURED (2026-11-10, scratchpad/setrnd_probe.py -> [`setrnd_run1.out`](scratchpad/setrnd_run1.out)):**
+      ten rows on an open 4-record file, one input moved at a time. **The CF-3300's $F37D
+      SETRND ignores EX (+12), CR (+32), +13, +24 and the previous RR**: it writes r0 = 1,
+      r1 = 0, r2 = RS / 2 (RS 128 -> $400001, RS 1 -> $000001) and answers A = $12, every
+      row. **Ours** writes the documented EX x 128 + CR into r0 / r1 -- and a stray byte from
+      RS on top ($08 in r2 with RS 128, $10 in r1 with RS 1): the kernel body reads +14 as
+      CP/M's S2, which MSX-DOS uses for RS. ❓ So the reference does NOT compute the current
+      record here -- it looks like a reference bug. Open question for Joost: match it, or
+      follow the documented contract (and drop our stray RS byte)?
+      📏 **THROUGH MSX-DOS ($0005), MEASURED (Joost: "measure MSX-DOS first"; scratchpad/setrnd_dos.asm +
+      setrnd_dos_probe.py):** the CF-3300 does THE SAME -- RR $400001 for every EX / CR /
+      +13 / +24 / previous RR ([`setrnd_dos_run1.out`](scratchpad/setrnd_dos_run1.out)); over RS alone RR = 1 + (RS >> 1) x 65536
+      (RS 1, 2, 3, 4, 64, 127, 128, 129 -> r2 0, 1, 1, 2, $20, $3F, $40, $40; r1 0, r0 1)
+      ([`setrnd_dos_run2.out`](scratchpad/setrnd_dos_run2.out)); and it does not move after 1..4 SEQREADs either ([`setrnd_dos_run3.out`](scratchpad/setrnd_dos_run3.out)).
+      A = $25 there, as ours. Ours tracks the position (1, 2, 3, 4) but with (RS << 12) on
+      top (CP/M's S2 read at +14). So on the CF-3300 SETRND never reflects the file
+      position, through either door.
+      📏 **THE NMS 1200 TOO (Joost: "check with the NMS reference as well"; VG-8020 + NMS 1200, $F37D
+      from BASIC, [`setrnd_run_eu.out`](scratchpad/setrnd_run_eu.out)):** IDENTICAL -- RR $400001 for every EX / CR / +13 / +24
+      / previous RR, $000001 with RS 1, A = $12. Two disk ROMs from two makers agree: this
+      is the MSX-DOS 1 / Disk BASIC kernel's own SETRND, not a vendor slip.
+      📏 **AN MSX2 TOO (Joost: "perhaps also try on an MSX2 with disk", "NMS 8250 should work";
+      Philips NMS 8250, $F37D from BASIC, [`setrnd_run_nms8250.out`](scratchpad/setrnd_run_nms8250.out)):** IDENTICAL again -- RR
+      $400001 / $000001 (RS 1), A = $12. Three disk systems, MSX1 and MSX2, agree. (The FS-A1F
+      would not start here: its BIOS image's checksum differs from what openMSX expects.)
+      ✅ **FIXED (2026-11-10, Joost: "Match the references"):** setrnd_body writes RR = 1 + (RS >> 1) x
+      65536 (r0 1, r1 0, r2..r3 RS / 2) and exits A = L = $25, H = 0 (MSX-DOS's); $F37D's row
+      goes through bb_setrnd, A = L = $12 and H = RS's bit 0 at bit 7 (the CF-3300's HL $8012
+      at RS 1). The CP/M rule the body computed -- M32's "intentional, documented
+      divergence", +14 read as CP/M's S2 -- is retired, with DOSL-D6's allowlist excuse
+      (ours pinned at RR 3) in probes/disk/disk_bdos_acceptance.py and the $24 row of
+      disk/docs/tier2-bdos-coverage.md. 📏 All ten SETRND rows identical to the CF-3300 in A,
+      HL and the FCB through $F37D ([`setrnd_run3.out`](scratchpad/setrnd_run3.out)) and through MSX-DOS
+      ([`setrnd_dos_run4.out`](scratchpad/setrnd_dos_run4.out)); bdos-acceptance 25/25 with DOSL-D6 now a 0-byte diff, unexcused.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

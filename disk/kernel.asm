@@ -1265,7 +1265,7 @@ bdos_tab:
                 db      $23
                 dw      fsize_body
                 db      $24
-                dw      setrnd_body
+                dw      bb_setrnd           ; A = L = $12 from $F37D (D-BDOSFCB residual 2)
                 db      $26
                 dw      wrblk_body
                 db      $28
@@ -5029,83 +5029,43 @@ k47b2_nextbyte:
                                             ; either way its own `ret` is our `ret` too
 
 
-; setrnd_body — M32 (tier2-m33-m32-fcb-position-spec.md §3.2): the real BDOS
-; $24 SETRND canonical entry ($50C8's body). Entry: DE=IY=$DA40 (kernel FCB
-; copy), A=$25 (unused). Computes the CP/M func-36 random record:
-;   ex = copy+12 (extent low), s2 = copy+14 (extent high / module 128),
-;   cr = copy+32 (current record); rr(24-bit) = cr + ex*128 + s2*4096.
-; Written to copy+33 (r0, bits 0-7), copy+34 (r1, bits 8-15), copy+35 (r2,
-; bits 16-23). On a floppy s2 is always 0 and rr < 2^16 (r2 normally 0), but
-; the math is done in full 24-bit precision per spec (cheap, and correct for
-; any s2). INTENTIONAL, DOCUMENTED divergence from stock (§4): stock writes
-; the constant rr=1 here; ours computes the true position, which M33 now
-; keeps live in copy+12/+32 after every delivered RDSEQ record (before M33
-; those were stuck at 0, which would have made this compute 0 too).
-; Exit: A=$00, H=$00, L=$00 (M26 dispatcher-class default, §3.3), $F306
-; cleared (M24 rule, own inline epilogue -- same pattern as rrnd_finish,
-; kept local since this body lives far from that tail label).
+; setrnd_body — BDOS $24 SETRND ($50C8's body; $F37D's through bb_setrnd). 🔴 D-BDOSFCB
+; residual (2), ruled by Joost 2026-11-10 ("Match the references"): MEASURED on three
+; disk systems -- the CF-3300, the VG-8020 + NMS 1200 and the NMS 8250 (MSX2) -- through
+; $F37D and, on the CF-3300, through MSX-DOS's $0005 too (scratchpad/setrnd_probe.py,
+; setrnd_dos_probe.py): RR := 1 + (RS >> 1) x 65536 -- r0 = 1, r1 = 0, r2..r3 = RS / 2 --
+; whatever EX (+12), CR (+32), +13, +24 or the previous RR, and after any sequential
+; reads. It does NOT compute the current record. This body used to (the CP/M rule, cr
+; + ex x 128 + s2 x 4096, reading +14 -- MSX-DOS's RS -- as CP/M's S2): an
+; "intentional, documented divergence" (M32 §4), now retired by that ruling.
+; Entry DE = the FCB (the kernel's copy). Exit A = L = $25, H = 0 (the CF-3300's, through
+; MSX-DOS: the dispatcher's value passed through), $F306 cleared (M20 rule).
 setrnd_body:
                 push    de
-                pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
-                ; HL := cr + ex*128 (16-bit; cr<=127, ex<=255 -> max 32767, no
-                ; overflow past bit 15).
-                ld      a, (ix+12)          ; A = ex
-                ld      h, 0
+                pop     ix
+                ld      l, (ix+14)
+                ld      h, (ix+15)
+                srl     h
+                rr      l                   ; HL = RS / 2
+                ld      (ix+35), l          ; r2
+                ld      (ix+36), h          ; r3
+                ld      hl, 1
+                call    set_rr              ; r0 = 1, r1 = 0
+                call    clr_f306            ; M20 dispatcher-flag rule (A = 0)
+                ld      h, a                ; H = $00
+                ld      a, $25              ; A = L = $25 (MSX-DOS's, measured)
                 ld      l, a
-                call    hl_x128            ; HL = ex * 128
-                ld      a, (ix+32)          ; A = cr
-                add     a, l
+                ret
+; bb_setrnd -- SETRND from $F37D: the same RR; A = L = $12 there, on all three references
+; (scratchpad/setrnd_run*.out).
+bb_setrnd:
+                call    setrnd_body
+                ld      a, (ix+14)
+                rrca
+                and     $80
+                ld      h, a                ; H = RS's low bit, at bit 7 (RS 1: HL = $8012,
+                ld      a, $12              ; scratchpad/setrnd_run2.out)
                 ld      l, a
-                jr      nc, srb_nocarry1
-                inc     h
-srb_nocarry1:                               ; HL = cr + ex*128 (rr bits 0..15, s2 not yet added)
-                ; s2 contribution (24-bit): s2*4096 = ((s2 & $0F) << 12) [bits 0..15]
-                ; + (s2 >> 4) [bits 16..23] -- splits the byte shift-by-12 so no
-                ; intermediate exceeds 16 bits.
-                ld      a, (ix+14)          ; A = s2
-                ld      b, a                ; B = s2 (keep for the >>4 half below)
-                and     $0F
-                ld      c, a                ; C = s2 & $0F (0..15)
-                ld      d, 0
-                ld      e, c                ; DE = s2 & $0F
-                ld      a, e
-                or      d
-                jr      z, srb_no_lo_s2     ; low nibble 0 -> skip the <<12 shift/add
-                ; DE := (s2 & $0F) << 12 (12 doublings; DE <= 15 so DE never
-                ; exceeds 15*4096=61440, safely within 16 bits throughout)
-                ld      a, 12
-srb_shl12:
-                sla     e
-                rl      d
-                dec     a
-                jr      nz, srb_shl12       ; DE = (s2&$0F) * 4096
-                add     hl, de              ; HL += (s2&$0F)*4096 (Cy = carry into bit 16)
-                jr      srb_have_lo
-srb_no_lo_s2:
-                or      a                   ; Cy = 0 (nothing added)
-srb_have_lo:
-                ld      a, 0
-                adc     a, 0                ; A = 0/1 = the bit-16 carry, stashed before
-                                            ; the shifts below trash the flag
-                ld      c, a                ; C = stashed carry
-                ld      a, b                ; A = s2 again
-                srl     a
-                srl     a
-                srl     a
-                srl     a                   ; A = s2 >> 4 (bits 16..23 contribution)
-                add     a, c                ; propagate the stashed bit-16 carry
-                                            ; (s2>>4 <= 15, +1 carry never overflows a byte)
-                call      set_rr          ; r1
-                ld      (ix+35), a          ; r2
-                ; Epilogue — match stock's $24 EXIT registers exactly (§3.3, now
-                ; pinned by the acceptance capture, NOT part of the intended rr
-                ; divergence): stock passes the entry A=$25 dispatcher value
-                ; straight through and returns HL=$0000. Clear $F306 (M20 rule).
-                call     clr_f306   ; M20 dispatcher-flag rule (A=0 here)
-                ld      h, a                ; H = $00 (stock exit)
-                ld      a, $25              ; exit A = $25 (stock dispatcher passthrough)
-                ld      l, a                ; L = $25 (= A; stock's $24 exit HL = $0025,
-                                            ; pinned by the BDOSX snap: rec4 A@0361 + L@0367)
                 ret
 
 ; fat_have_free_cluster — M34 (tier2-m34-wrseq-diskfull-spec.md §3.2): scan-only,
