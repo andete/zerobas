@@ -134,6 +134,19 @@ def is_logo(rows) -> bool:
     return bool(rows) and all(r in LOGO_ROWS for r in rows)
 
 
+def is_unsettled(curlin, pc, mode, text) -> bool:
+    """🔴 2026-11-11: a BLANK text screen with CURLIN 0 and the PC in ROM is not a reading.
+    CURLIN 0 is also the work area BEFORE BASIC sets it, so one sample cannot tell a
+    machine still booting from a program that keeps a blank text screen (zerobas's
+    Seedofda / quinpl rows, the CF-3300's GAUNT row read RUNNING on exactly this).
+    UNSETTLED is reported as itself, never as RUNNING or PROMPT."""
+    if text is None:                  # a row that KEPT no screen is not a blank screen
+        return False
+    rows = [r for r in text if r.strip()]
+    return (not rows and curlin == 0 and mode in ("S0", "S1")
+            and not 0x8000 <= pc < 0xF380)
+
+
 def state_of(cap) -> str:
     """RUNNING: a BASIC program is executing (the published CURLIN, $F41C, is not
     $FFFF -- both machines keep it there), or the PC is in RAM, or the screen is a
@@ -148,6 +161,8 @@ def state_of(cap) -> str:
     # layout-only change with an identical screen.
     if is_logo(screen_text(cap)):
         return "PROMPT"
+    if is_unsettled(cap["curlin"], cap["pc"], mode_of(cap["regs"]), screen_text(cap)):
+        return "UNSETTLED"
     if (cap["curlin"] != 0xFFFF or 0x8000 <= cap["pc"] < 0xF380
             or mode_of(cap["regs"]) not in ("S0", "S1")):
         return "RUNNING"
@@ -172,6 +187,8 @@ def classify(ref, zb):
     if last not in zb:
         return "ERROR", None
     sr, sz = state_of(ref[last]), state_of(zb[last])
+    if "UNSETTLED" in (sr, sz):
+        return "UNSETTLED", ("ref" if sr == "UNSETTLED" else "") + ("zb" if sz == "UNSETTLED" else "")
     if sr == "RUNNING" and sz == "RUNNING":
         apart = sum(1 for x, y in zip(ref[last]["vram"], zb[last]["vram"]) if x != y)
         return "BOTH-RUN", apart
@@ -191,6 +208,8 @@ def summary_state(curlin, pc, mode, text=None) -> str:
     """state_of, from a stored row's summary fields instead of a capture."""
     if is_logo(text):
         return "PROMPT"
+    if is_unsettled(curlin, pc, mode, text):
+        return "UNSETTLED"
     if curlin != 0xFFFF or 0x8000 <= pc < 0xF380 or mode not in ("S0", "S1"):  # (state_of's rule)
         return "RUNNING"
     return "PROMPT"
@@ -214,7 +233,9 @@ def rerun_zb(a, names, times) -> int:
             sr = summary_state(old["ref_curlin"], old["ref_pc"], old["ref_mode"],
                                old.get("ref_text"))
             sz = state_of(zb[last])
-            if sr == "RUNNING" and sz == "RUNNING":
+            if "UNSETTLED" in (sr, sz):
+                cls = "UNSETTLED"
+            elif sr == "RUNNING" and sz == "RUNNING":
                 cls = "BOTH-RUN"
             elif sr == "RUNNING":
                 cls = "ZB-NOBOOT"
@@ -234,14 +255,59 @@ def rerun_zb(a, names, times) -> int:
         # the reference fields travel with every row (2026-11-01): a re-run's
         # output used to drop them, so each later re-run leaned on the FIRST full
         # run's file -- in /tmp, cleaned, and the whole chain went with it
-        row.update({k: old[k] for k in ("ref_curlin", "ref_pc", "ref_mode", "ref_files")
-                    if k in old})
+        # ref_text too (2026-11-11): without it every later re-run's is_logo /
+        # is_unsettled saw NO reference screen at all (diskcorpus_f37.json has none)
+        row.update({k: old[k] for k in ("ref_curlin", "ref_pc", "ref_mode", "ref_files",
+                                         "ref_text") if k in old})
         rows.append(row)
         print(f"[{i:3d}/{len(names)}] {old['class']:10s} -> {cls:10s} zb {row['zb_mode']} "
               f"pc={row['zb_pc']!s:>5s} curlin={row['zb_curlin']!s:>5s}  {n}", flush=True)
         json.dump({"times": times, "reuse_ref": a.reuse_ref, "results": rows, "tally": tally},
                   open(a.out, "w"), indent=1)
     print("TALLY", json.dumps(tally, sort_keys=True))
+    return 0
+
+
+def rescore(path, ref_path=None) -> int:
+    """--rescore: today's state rules over stored rows (2026-11-11, D-DISKRUN's UNSETTLED).
+    The FILES classes need the listing, which a stored row keeps; BOTH-RUN keeps no
+    VRAM distance here (the summary has none)."""
+    rows = json.load(open(path))["results"]
+    if ref_path:                      # the reference rows, where this file dropped them
+        refs = {x["image"]: x for x in json.load(open(ref_path))["results"]}
+        for r in rows:
+            src = refs.get(r["image"], {})
+            for k in ("ref_curlin", "ref_pc", "ref_mode", "ref_files", "ref_text"):
+                if k not in r and k in src:
+                    r[k] = src[k]
+    tally, moved = {}, []
+    for r in rows:
+        if "ref_text" not in r or "zb_text" not in r:
+            cls = r["class"]
+        else:
+            sr = summary_state(r["ref_curlin"], r["ref_pc"], r["ref_mode"], r["ref_text"])
+            sz = summary_state(r["zb_curlin"], r["zb_pc"], r["zb_mode"], r["zb_text"])
+            if "UNSETTLED" in (sr, sz):
+                cls = "UNSETTLED"
+            elif sr == "RUNNING" and sz == "RUNNING":
+                cls = "BOTH-RUN"
+            elif sr == "RUNNING":
+                cls = "ZB-NOBOOT"
+            elif sz == "RUNNING":
+                cls = "ZB-ONLY"
+            else:
+                fr, fz = r.get("ref_files") or [], r.get("zb_files") or []
+                cls = ("FILES-EMPTY" if not fr and not fz
+                       else "FILES-SAME" if fr == fz else "FILES-DIFF")
+            if cls != r["class"]:
+                moved.append(f"{r['image']}: {r['class']} -> {cls}  (ref {sr} {r['ref_mode']} "
+                             f"CURLIN {r['ref_curlin']} PC ${r['ref_pc']:04X}; zb {sz} "
+                             f"{r['zb_mode']} CURLIN {r['zb_curlin']} PC ${r['zb_pc']:04X})")
+        tally[cls] = tally.get(cls, 0) + 1
+    for m in moved:
+        print(m)
+    print(f"{len(rows)} rows, {len(moved)} moved: " +
+          ", ".join(f"{k} {v}" for k, v in sorted(tally.items())))
     return 0
 
 
@@ -261,7 +327,14 @@ def main() -> int:
     ap.add_argument("--classes", default="",
                     help="with --reuse-ref: only the images whose PREVIOUS class is in this "
                          "comma list (e.g. ZB-NOBOOT,ZB-ONLY,FILES-DIFF,FILES-EMPTY)")
+    ap.add_argument("--rescore", metavar="JSON",
+                    help="OFFLINE: re-classify a previous --out's stored rows with today's "
+                         "rules (both sides from their summary fields); no emulator, no disks")
+    ap.add_argument("--rescore-ref", metavar="JSON",
+                    help="with --rescore: take missing reference fields from this run's rows")
     a = ap.parse_args()
+    if a.rescore:
+        return rescore(a.rescore, a.rescore_ref)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     if not a.dir or not os.path.isdir(a.dir):
         sys.exit("give the collection with DISKCORPUS_DIR or --dir")

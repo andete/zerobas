@@ -2736,6 +2736,21 @@ item — do **one item per session** to keep context lean.
       with CURLIN 0 still reads RUNNING (zerobas's Seedofda / quinpl rows, the CF-3300's GAUNT
       row) -- CURLIN 0 is also the work area before BASIC sets it. Settle it with a later
       sample per row or a published "BASIC is up" cell, not a guess.
+      ✅ **SETTLED AS A CLASS OF ITS OWN (2026-11-11): UNSETTLED** ([`diskcorpus_unsettled.out`](scratchpad/diskcorpus_unsettled.out)).
+      diskcorpus_run.py's is_unsettled() -- a blank S0/S1 screen, CURLIN 0, the PC in ROM --
+      is reported as itself, never RUNNING; a row that kept NO screen is never read as blank.
+      🔴 **AND THE REFERENCE'S SCREEN HAD BEEN LOST FROM EVERY RE-RUN:** rerun_zb carried the
+      reference's CURLIN / PC / mode / files but not ref_text, so is_logo / is_unsettled saw no
+      reference screen at all in diskcorpus_f37.json; now carried, and `--rescore JSON
+      [--rescore-ref FULL_JSON]` re-classifies stored rows offline. The latest run re-scored:
+      **BOTH-RUN 117 -> 97, UNSETTLED 20** -- twenty "both run" rows rested on a blank screen.
+      Re-run with a third sample at 120 s (predicted: most settle -- MISS): 18 still
+      UNSETTLED, 2 ZB-ONLY (TestameB, quinpl). Most of the 18 sit with BOTH PCs in their disk
+      ROMs for 120 s on a blank screen (the ic* set: $761B on the CF-3300, $7AAC here) --
+      agreement on waiting, likely data disks of multi-disk sets, not a program running.
+      ➡️ Next: per row, what a USER sees (a key, a disk swap) -- not another sample. The PC
+      rule's own gap, filed here: under MSX-DOS page 0 is RAM, so a PC of $0005 (the BDOS
+      jump) is a running DOS program, not ROM (the xak rows of the older full run).
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -7899,7 +7914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10332 (T-6FE392)8 (T-529ABE)` from `TODO.md:14934 (T-529ABE)`: a
+      `TODO.md:10347 (T-6FE392)8 (T-529ABE)` from `TODO.md:14949 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10638,7 +10653,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14934 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

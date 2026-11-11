@@ -1,0 +1,51 @@
+# D-DISKRUN (2026-11-11): the UNSETTLED class (diskcorpus_run.py is_unsettled: a blank text
+# screen, CURLIN 0, the PC in ROM -- one sample cannot tell booting from running).
+# (1) OFFLINE re-score of the latest run (diskcorpus_f37.json, reference rows from the
+# full run): --rescore ... --rescore-ref ...
+DiscStation32D.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $4487; zb UNSETTLED S1 CURLIN 0 PC $4486)
+GAUNT.DSK: ZB-NOBOOT -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $0295; zb PROMPT S0 CURLIN 65535 PC $18F7)
+SNATCHE1.DSK: BOTH-RUN -> UNSETTLED  (ref RUNNING S1 CURLIN 0 PC $0D79; zb UNSETTLED S1 CURLIN 0 PC $6974)
+SNATCHE2.DSK: BOTH-RUN -> UNSETTLED  (ref RUNNING S1 CURLIN 0 PC $0D79; zb UNSETTLED S1 CURLIN 0 PC $6974)
+SNATCHE3.DSK: BOTH-RUN -> UNSETTLED  (ref RUNNING S1 CURLIN 0 PC $0D65; zb UNSETTLED S1 CURLIN 0 PC $6974)
+Seedofda.dsk: BOTH-RUN -> UNSETTLED  (ref PROMPT S1 CURLIN 0 PC $77F2; zb UNSETTLED S1 CURLIN 0 PC $1951)
+TestameA.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $0530; zb RUNNING S3 CURLIN 0 PC $7AB5)
+TestameB.dsk: ZB-ONLY -> UNSETTLED  (ref PROMPT S1 CURLIN 65535 PC $3D34; zb UNSETTLED S1 CURLIN 0 PC $06BE)
+UZIX.DSK: BOTH-RUN -> ZB-ONLY  (ref PROMPT S1 CURLIN 0 PC $77F0; zb RUNNING S2 CURLIN 0 PC $108B)
+YOUMAKOR.DSK: BOTH-RUN -> UNSETTLED  (ref RUNNING S2 CURLIN 0 PC $6F26; zb UNSETTLED S1 CURLIN 0 PC $6F26)
+ic2.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $7620; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic3.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic4.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic5.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic6.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic7.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+ic8.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761B; zb UNSETTLED S1 CURLIN 0 PC $7AAC)
+quinpl.dsk: BOTH-RUN -> UNSETTLED  (ref PROMPT S1 CURLIN 0 PC $77EC; zb UNSETTLED S1 CURLIN 0 PC $18F3)
+senigma.di2: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $0201; zb UNSETTLED S1 CURLIN 0 PC $0203)
+starsh2.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $761D; zb RUNNING S1 CURLIN 0 PC $7AAF)
+xak2eng1.dsk: BOTH-RUN -> UNSETTLED  (ref UNSETTLED S1 CURLIN 0 PC $1AF8; zb UNSETTLED S1 CURLIN 0 PC $1AF7)
+143 rows, 21 moved: BOTH-RUN 97, FILES-DIFF 8, FILES-EMPTY 1, FILES-SAME 11, UNSETTLED 20, ZB-NOBOOT 1, ZB-ONLY 5
+
+# (2) Those 20 images re-run on BOTH machines with a third sample at 120 s
+# (--times 20,45,120). Predicted: most settle to BOTH-RUN. MISS: none did.
+[  1/20] UNSETTLED  refzb  ref S1 pc=17543  zb S1 pc=17543  DiscStation32D.dsk
+[  2/20] UNSETTLED    ref  ref S1 pc=  661  zb S0 pc= 6254  GAUNT.DSK
+[  3/20] UNSETTLED     zb  ref S1 pc= 3449  zb S1 pc=26700  SNATCHE1.DSK
+[  4/20] UNSETTLED     zb  ref S1 pc= 3449  zb S1 pc=26700  SNATCHE2.DSK
+[  5/20] UNSETTLED     zb  ref S1 pc= 3429  zb S1 pc=26700  SNATCHE3.DSK
+[  6/20] UNSETTLED     zb  ref S1 pc=30706  zb S1 pc= 6274  Seedofda.dsk
+[  7/20] UNSETTLED    ref  ref S1 pc= 1328  zb S3 pc=31265  TestameA.dsk
+[  8/20] ZB-ONLY     None  ref S1 pc=15668  zb S1 pc=   56  TestameB.dsk
+[  9/20] UNSETTLED     zb  ref S2 pc=28454  zb S1 pc=28450  YOUMAKOR.DSK
+[ 10/20] UNSETTLED  refzb  ref S1 pc=30240  zb S1 pc=31263  ic2.dsk
+[ 11/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic3.dsk
+[ 12/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic4.dsk
+[ 13/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic5.dsk
+[ 14/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic6.dsk
+[ 15/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic7.dsk
+[ 16/20] UNSETTLED  refzb  ref S1 pc=30235  zb S1 pc=31256  ic8.dsk
+[ 17/20] ZB-ONLY     None  ref S1 pc=30700  zb S1 pc=39975  quinpl.dsk
+[ 18/20] UNSETTLED  refzb  ref S1 pc=  513  zb S1 pc=  515  senigma.di2
+[ 19/20] UNSETTLED    ref  ref S1 pc=30237  zb S2 pc=17876  starsh2.dsk
+[ 20/20] UNSETTLED  refzb  ref S1 pc= 6904  zb S1 pc= 6890  xak2eng1.dsk
+TALLY {"UNSETTLED": 18, "ZB-ONLY": 2}
+[exited with code 0]
