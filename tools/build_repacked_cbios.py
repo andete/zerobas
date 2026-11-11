@@ -34,67 +34,21 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Applied IN ORDER; each is a tracked 0BSD description of edits to BSD C-BIOS
 # source, never a copy of its bytes (decision D1). See cbios-repack/README.md.
 PATCHES = [
+    # 🔁 D-CBIOS030 (2026-11-11): REBASED ON v0.30. Nine patches retired -- 0.30 has
+    # them upstream (CHANGELOG #7-#21): ins-del-keys, home-key, ctrl-keys, linttb-scroll,
+    # vdp-reg7, calpat-de, bios-regs, bios-keyscan, key-repeat. ctrlstop-key and
+    # crtcnt-bound were re-made against 0.30's rewritten key_ascii / ESC L / ESC M.
     os.path.join(REPO, "cbios-repack", "eu-drop-statements.patch"),
     # interrupt-traps T3: the function-key DELIVERY hook (H_ZKEY $FFCF + a
     # 5-byte call at put_key_fnk). No published MSX hook can see -- let alone
     # divert -- the current frame's KEYBUF insertion, so BASIC's KEY trap needs
     # a seam that stock C-BIOS does not have. docs/spec-traps-t3-key.md SS4.
     os.path.join(REPO, "cbios-repack", "key-trap-hook.patch"),
-    # D-INSMODE: the INS and DEL keys produced NO character (row 8's table held
-    # $00 for both), so the screen editor could never see them; $12 / $7F.
-    os.path.join(REPO, "cbios-repack", "ins-del-keys.patch"),
-    # D-HOMEKEY: HOME gave $0C (CLS); an MSX gives $0B and CLS only with SHIFT.
-    # 12 bytes in key_ascii -- which moves the font pad (and island 1) to $1ADB.
-    os.path.join(REPO, "cbios-repack", "home-key.patch"),
     # C3-CBIOS-TAIL-STRINGS: drop the two boot strings the merged machine can
     # never print (str_nocart 143 B + str_basic 30 B, both AFTER the font pin
     # and before the scan-code tables); vdp_bios ends at $2765, not $2812, and
     # BASIC_ORG (basic/main.asm) / BASIC_BASE (build_mainrom.py) follow it.
     os.path.join(REPO, "cbios-repack", "eu-drop-dead-strings.patch"),
-    # D-CTRLKEYS: CTRL+letter read as the lowercase letter, not its control
-    # code. 23 bytes in key_ascii (rows 0-5, CTRL held: a byte >= $40 becomes
-    # byte AND $1F, one below $40 gives no character -- the VG-8020's answer
-    # for all 48 keys). They sit BEFORE the font pad: island 1 moves to $1AF2.
-    os.path.join(REPO, "cbios-repack", "ctrl-keys.patch"),
-    # D-LINTTBWRAP: a wrap on the bottom row (which scrolls) lost its "continues"
-    # mark -- chput_esc_m cleared the new bottom line BEFORE moving LINTTB up, and
-    # moved one entry too few. 3 bytes in chput.asm, before the font pad: island 1
-    # moves to $1AF5.
-    os.path.join(REPO, "cbios-repack", "linttb-scroll.patch"),
-    # D-RG7: register 7 is FORCLR*16+BAKCLR in SCREEN 0 (its low nibble is the
-    # text background) and BDRCLR alone in SCREEN 1..3; C-BIOS wrote
-    # FORCLR*16+BDRCLR everywhere, so `SCREEN 0:COLOR 15,4,7` was cyan, not blue.
-    # Byte-neutral in video.asm (SCREEN 1's colour-table byte is computed once),
-    # so the font pad -- and island 1 -- stay at $1AF5.
-    os.path.join(REPO, "cbios-repack", "vdp-reg7.patch"),
-    # D-CALPAT: CALPAT returns DE = the pattern offset, as the VG-8020 does
-    # (scratchpad/calatr_probe.py); C-BIOS left PATBAS in DE, and Demonia reads DE
-    # after the call. 2 bytes in video.asm (`ld de,(nn)` -> `ex de,hl / ld hl,(nn)`).
-    os.path.join(REPO, "cbios-repack", "calpat-de.patch"),
-    # D-BIOSREGS: four register contracts made the VG-8020's, all measured with
-    # scratchpad/calatr_probe.py and found by Demonia's call-by-call comparison:
-    # LDIRMV returns DE = the RAM end and BC = 0 (C-BIOS: DE = the VRAM start, BC =
-    # $0098); LDIRVM BC = 0; CALATR keeps A (C-BIOS: 4*A); DCOMPR returns A = H - D
-    # (or L - E; C-BIOS: H or L). Byte-neutral overall: the two VRAM loops' `jp nz`
-    # became `jr nz` (2 T more per byte, still past the 29 T C-BIOS keeps), which
-    # pays for CALATR's extra byte and LDIRVM's `ld c,b`. Code between LDIRMV and
-    # CALATR moves down 1 byte; every pad and island stays where it was.
-    os.path.join(REPO, "cbios-repack", "bios-regs.patch"),
-    # D-BIOSINT: $0D12 is the reference BIOS's keyboard-scan entry, which Buzz Off
-    # and Shark Hunter CALL; here it was chkram's first byte (the reset). $0D12
-    # becomes `jp kscan`; kscan (a key_in scan, then A = low PUTPNT - low GETPNT,
-    # HL = GETPNT, DE = KEYBUF, BC = $00FF, IX and AF' kept -- the VG-8020's
-    # answer, scratchpad/biosint_probe.py) and chkram's first instruction pair go
-    # after vdp_bios. Nothing from $0D16 to the font pad moves; C-BIOS ends 28 B
-    # later, at $2781, and BASIC_ORG / BASIC_BASE follow it.
-    os.path.join(REPO, "cbios-repack", "bios-keyscan.patch"),
-    # D-KEYREP (2026-10-23): a new key's auto-repeat delay is 13 scans, the
-    # VG-8020's and the CF-3300's REPCNT (C-BIOS: 5), and the repeat pass compares
-    # the matrix the scan just read instead of reading it again -- a key pressed
-    # between the two reads was queued with its delay overwritten by 1, so it
-    # came out twice (scratchpad/step7c_keyrep.out). Byte-neutral: a label and an
-    # operand; nothing moves.
-    os.path.join(REPO, "cbios-repack", "key-repeat.patch"),
     # D-SDSBOOT (2026-11-07, Joost: "if it does no harm, why not?"): RDSLT's and
     # WRSLT's exit registers are the VG-8020's and the CF-3300's
     # (scratchpad/slotregs_probe.py) -- D = the primary slot register at entry,
@@ -123,11 +77,15 @@ PATCHES = [
     # before it (C-BIOS commit f6849b44, 2010; upstream fix in release-0.31, draft PR #26).
     # 0 bytes; the 5 bytes between the two positions shift by one.
     os.path.join(REPO, "cbios-repack", "initslot-keep.patch"),
+    # D-CBIOS030 (2026-11-11): 0.30 moved CHKRAM into the $09D4 gap (its $0D12 keyscan
+    # entry took CHKRAM's old place); this moves it in front of the font, where MSX1 has
+    # room, so zerobas's cassette body has $09D4-$0D00 in one piece again.
+    os.path.join(REPO, "cbios-repack", "chkram-move.patch"),
 ]
 
-PINNED_TAG = "v0.29-3-gb5ad9cb"
-PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "23d9875d0374d327075f9f9ff5de80dc1e57ed21"
+PINNED_TAG = "v0.30"
+PRISTINE_SHA1 = "8216de0c3e95b58d958e286f56ffdac47a8d0b90"
+REPACKED_SHA1 = "d1da5500e662c34cf2686b988cd3e1996d2ea740"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

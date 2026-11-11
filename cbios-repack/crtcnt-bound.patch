@@ -1,5 +1,5 @@
 diff --git a/src/chput.asm b/src/chput.asm
-index 23c820e..2596713 100644
+index 014e0bb..97143e9 100644
 --- a/src/chput.asm
 +++ b/src/chput.asm
 @@ -1,3 +1,9 @@
@@ -54,39 +54,21 @@ index 23c820e..2596713 100644
                  ret     nc
                  inc     a
                  ld      (CSRY),a
-@@ -350,7 +356,7 @@ chput_esc_ll:
+@@ -349,7 +355,7 @@ chput_esc_ll:
+                 call    chput_ctrl_cr           ; move to start of line
                  ld      hl,(CSRY)               ; save current cursor pos
                  push    hl
-                 ld      b,l
 -                ld      a,(CRTCNT)
 +                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
                  ld      (CSRY),a
-                 sub     b
-                 ld      b,a
-@@ -371,7 +377,7 @@ chput_esc_ll_loop_end:
-                 pop     hl                      ; restore cursor position
-                 ld      (CSRY),hl
-                 ld      h,0
--                ld      a,(CRTCNT)              ; update LINTTB
-+                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)              ; update LINTTB
-                 ld      d,a                     ; DE := (CRTCNT)
-                 ld      e,0
-                 sub     l                       ; BC := (CRTCNT) - (CSRY) - 1
+                 ld      e,a
+                 sub     l                       ; A := lines from CSRY to bottom
 @@ -393,7 +399,7 @@ chput_esc_m:
+                 call    chput_ctrl_cr           ; move to start of line
                  ld      hl,(CSRY)
                  push    hl                      ; save cursor pos
-                 ld      b,l
--                ld      a,(CRTCNT)
-+                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
-                 sub     b
-                 ld      b,a
-                 inc     b
-@@ -425,7 +431,7 @@ chput_esc_m_loop_end:
-                 pop     hl                      ; L = the deleted row
-                 push    hl
-                 ld      h,0
--                ld      a,(CRTCNT)
-+                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)
+-                ld      a,(CRTCNT)              ; A := lines from CSRY to bottom
++                call      $3283         ; zerobas repack: CRTCNT + CNSDFG (crt_rows)              ; A := lines from CSRY to bottom
                  sub     l
-                 jr      z,chput_esc_m_nomove
-                 ld      c,a
+                 inc     a
+                 ; Move LINTTB up as well. One entry more than needed is

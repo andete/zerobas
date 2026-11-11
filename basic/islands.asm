@@ -258,7 +258,7 @@ outdo:
 ; C-BIOS's CHPUT ends `ld a,(CSRX) / ld (TTYPOS),a`, a 1-BASED cursor mirror;
 ; the VG-8020's TTYPOS is BASIC's 0-BASED print column (scratchpad/
 ; nset_probe.py: PRINT"ABC"; -> 3 there, 4 here). The merge replaces only the
-; `ld a,(CSRX)` at $11CF with a call to this, and C-BIOS's own store that
+; `ld a,(CSRX)` at $1162 with a call to this, and C-BIOS's own store that
 ; follows it writes the corrected A. chput_exit pops AF, so flags are free.
 ttypos_col:
                 ld      a,(CSRX)
@@ -503,14 +503,16 @@ fperr_to_err:
                 jp      bios_dspfnk
 
 ; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
-; $11CF is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
-; "CSRX -> TTYPOS"). PATCH_RANGES refuses unless it reads 3A DD F3.
-                org     $11CF
+; $1162 is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
+; "CSRX -> TTYPOS"; $11CF before C-BIOS 0.30, D-CBIOS030). PATCH_RANGES refuses
+; unless it reads 3A DD F3.
+                org     $1162
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
 
 ; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
-; $1037 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
-; hook"); only its operand byte changes. PATCH_RANGES refuses unless it is $C3.
-                org     $1038
+; $0FCA is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
+; hook"; $1037 before C-BIOS 0.30, D-CBIOS030); only its operand byte changes.
+; PATCH_RANGES refuses unless it is $C3.
+                org     $0FCB
                 db      $C9

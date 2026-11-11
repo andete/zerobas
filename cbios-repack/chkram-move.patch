@@ -1,0 +1,241 @@
+diff --git a/src/main.asm b/src/main.asm
+index 11fb484..cb07f68 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -625,115 +625,6 @@ romid:
+                 include "video.asm"
+                 include "debug.asm"
+ 
+-; $0000 CHKRAM
+-; Function : Tests RAM and sets RAM slot for the system
+-; Registers: All
+-; Remark   : After this, a jump must be made to INIT, for further initialisation.
+-; Note     : Placed before $0D01 because the area from $0D01 up to the font
+-;            at $1BBF is nearly full on MSX2 and MSX2+.
+-chkram:
+-                ; Initialize interface
+-                ld      a,$82
+-                out     (PPI_REGS),a
+-                ld      a,$50
+-                out     (GIO_REGS),a
+-
+-                ; Initialize memory bank
+-                xor     a
+-                out     (MAP_REG4),a
+-                inc     a
+-                out     (MAP_REG3),a
+-                inc     a
+-                out     (MAP_REG2),a
+-                inc     a
+-                out     (MAP_REG1),a
+-
+-                ; Select the longest contiguous memory area for pages 3 and 2.
+-                ld      hl,$FFFF        ; Keep the current best values in the
+-                exx                     ; alternative register set (HL and BC).
+-                ; For each primary slot:
+-                in      a,(PSL_STAT)
+-                or      $F0
+-                ld      b,a
+-chkram_pslot:
+-                ; Select primary slot.
+-                ld      a,b
+-                out     (PSL_STAT),a
+-                ; For each secondary slot:
+-                ; Note that we do not check if the secondary slot is actually
+-                ; available: in case there is no secondary slot, we do the same
+-                ; test four times for the same primary slot.
+-                ld      a,(SSL_REGS)
+-                cpl
+-                or      $F0
+-                ld      c,a
+-chkram_sslot:
+-                ld      a,c
+-                ld      (SSL_REGS),a
+-                ; Find the longest contiguous memory area for this slot
+-                ; configuration.  Note that there is always ROM in pages
+-                ; 1 and 0.
+-                ld      hl,$FF00
+-chkram_find:
+-                ld      a,$0F
+-                ld      (hl),a
+-                cp      (hl)
+-                jr      nz,chkram_find_end
+-                cpl
+-                ld      (hl),a
+-                cp      (hl)
+-                jr      nz,chkram_find_end
+-                dec     h
+-                jr      chkram_find
+-chkram_find_end:
+-                inc     h
+-                ; Update the best values.
+-                ld      a,h
+-                or      a
+-                jr      z,chkram_sslot_end
+-                exx
+-                cp      h
+-                jr      c,chkram_update
+-                jr      z,chkram_update
+-                exx
+-                jr      chkram_sslot_end
+-chkram_update:
+-                ld      l,0             ; Fix the L register to indicate that
+-                ld      h,a             ; RAM is found.
+-                exx
+-                ld      a,b
+-                exx
+-                ld      b,a
+-                exx
+-                ld      a,c
+-                exx
+-                ld      c,a
+-                exx
+-chkram_sslot_end:
+-                ld      a,c
+-                sub     $10
+-                ld      c,a
+-                jr      nc,chkram_sslot
+-chkram_pslot_end:
+-                ld      a,b
+-                sub     $10
+-                ld      b,a
+-                jr      nc,chkram_pslot
+-                ; Select the longest contiguous memory area.
+-                exx
+-                ld      a,l
+-                or      a
+-                jr      z,chkram_select
+-                ld      de,str_memory_err
+-                jp      print_error
+-chkram_select:
+-                ld      a,b
+-                out     (PSL_STAT),a
+-                ld      a,c
+-                ld      (SSL_REGS),a
+-                ; HL contains the start of the memory area (for BOTTOM variable).
+-                exx
+-                jp      chkram_done
+ 
+ ; The game "Hacker" jumps directly to this location($0D02).
+ ; Star force calls $0D0E.
+@@ -3188,6 +3079,120 @@ lp_strprn:
+ 
+                 jp      hang_up_mode
+ 
++; zerobas repack (D-CBIOS030): CHKRAM moved here, in front of the font, from the
++; $09D4 gap 0.30 put it in. zerobas's page-0 cassette body needs that gap
++; ($09D4-$0D00) in one piece, as it was in 0.29; on MSX1 the area before the font
++; has room for it (0.30's own note below is about MSX2 / MSX2+).
++; $0000 CHKRAM
++; Function : Tests RAM and sets RAM slot for the system
++; Registers: All
++; Remark   : After this, a jump must be made to INIT, for further initialisation.
++; Note     : Placed before $0D01 because the area from $0D01 up to the font
++;            at $1BBF is nearly full on MSX2 and MSX2+.
++chkram:
++                ; Initialize interface
++                ld      a,$82
++                out     (PPI_REGS),a
++                ld      a,$50
++                out     (GIO_REGS),a
++
++                ; Initialize memory bank
++                xor     a
++                out     (MAP_REG4),a
++                inc     a
++                out     (MAP_REG3),a
++                inc     a
++                out     (MAP_REG2),a
++                inc     a
++                out     (MAP_REG1),a
++
++                ; Select the longest contiguous memory area for pages 3 and 2.
++                ld      hl,$FFFF        ; Keep the current best values in the
++                exx                     ; alternative register set (HL and BC).
++                ; For each primary slot:
++                in      a,(PSL_STAT)
++                or      $F0
++                ld      b,a
++chkram_pslot:
++                ; Select primary slot.
++                ld      a,b
++                out     (PSL_STAT),a
++                ; For each secondary slot:
++                ; Note that we do not check if the secondary slot is actually
++                ; available: in case there is no secondary slot, we do the same
++                ; test four times for the same primary slot.
++                ld      a,(SSL_REGS)
++                cpl
++                or      $F0
++                ld      c,a
++chkram_sslot:
++                ld      a,c
++                ld      (SSL_REGS),a
++                ; Find the longest contiguous memory area for this slot
++                ; configuration.  Note that there is always ROM in pages
++                ; 1 and 0.
++                ld      hl,$FF00
++chkram_find:
++                ld      a,$0F
++                ld      (hl),a
++                cp      (hl)
++                jr      nz,chkram_find_end
++                cpl
++                ld      (hl),a
++                cp      (hl)
++                jr      nz,chkram_find_end
++                dec     h
++                jr      chkram_find
++chkram_find_end:
++                inc     h
++                ; Update the best values.
++                ld      a,h
++                or      a
++                jr      z,chkram_sslot_end
++                exx
++                cp      h
++                jr      c,chkram_update
++                jr      z,chkram_update
++                exx
++                jr      chkram_sslot_end
++chkram_update:
++                ld      l,0             ; Fix the L register to indicate that
++                ld      h,a             ; RAM is found.
++                exx
++                ld      a,b
++                exx
++                ld      b,a
++                exx
++                ld      a,c
++                exx
++                ld      c,a
++                exx
++chkram_sslot_end:
++                ld      a,c
++                sub     $10
++                ld      c,a
++                jr      nc,chkram_sslot
++chkram_pslot_end:
++                ld      a,b
++                sub     $10
++                ld      b,a
++                jr      nc,chkram_pslot
++                ; Select the longest contiguous memory area.
++                exx
++                ld      a,l
++                or      a
++                jr      z,chkram_select
++                ld      de,str_memory_err
++                jp      print_error
++chkram_select:
++                ld      a,b
++                out     (PSL_STAT),a
++                ld      a,c
++                ld      (SSL_REGS),a
++                ; HL contains the start of the memory area (for BOTTOM variable).
++                exx
++                jp      chkram_done
++
+                 ds      $1bbf - $
+                 include "font.asm"
+ ;

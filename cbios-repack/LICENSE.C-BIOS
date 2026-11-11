@@ -1,5 +1,5 @@
 C-BIOS licence -- reproduced verbatim from doc/cbios.txt of C-BIOS at the tag
-the patches in this directory are pinned to (v0.29-3-gb5ad9cb).
+the patches in this directory are pinned to (v0.30; v0.29-3-gb5ad9cb until 2026-11-11).
 
 zerobas's shipped patches (zerobas-main-eu.ips / .bps at the repo root) carry
 compiled bytes of C-BIOS source as edited by the patches here, so they

@@ -17059,7 +17059,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       later overwrites the marker cells itself -- a RAM read there shows $FF; the
       watchpoints are the witness.)
 
-- [ ] 🧱 **D-CBIOS030 — REBASE THE REPACK ON C-BIOS 0.30 (Joost, 2026-11-11: "cbios 0.30 was released
+- [x] 🧱 **D-CBIOS030 — REBASE THE REPACK ON C-BIOS 0.30 (Joost, 2026-11-11: "cbios 0.30 was released
       ... it may be a good idea to rebase our changes on that?")**
       🎚️ TIER 1 — the BIOS's stability (Joost 2026-11-08: "having the bios and such stable").
       🤖 **AUTONOMOUS** — our 18 patches apply to the pinned v0.29-3-gb5ad9cb
@@ -17091,6 +17091,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       0.30 also frees ROM below the font (MSX1 245 -> 339 B, #6 / #16 / #23): the layout
       zerobas pins against moves -- re-measure island 1, vdp_bios's end -> BASIC_ORG /
       BASIC_BASE, the $3283 / $328D helpers, then the FULL battery.
+      ✅ **REBASED (2026-11-11, Joost: "go ahead with the 0.30 rebase; we will need that eventually
+      and 0.31 will be there soon, it'll get worse only").** tools/build_repacked_cbios.py pins
+      v0.30 (PRISTINE_SHA1 8216de0c..., REPACKED_SHA1 d1da5500...); TEN patches, from eighteen:
+      the nine upstreamed ones retired and their files deleted; ctrlstop-key re-made (the
+      STOP test in front of 0.30's HOME test in key_ascii's rows 6-11 path); crtcnt-bound
+      re-made (3 `cp (hl)` + 3 `ld a,(CRTCNT)` sites, the same rule); and a NEW
+      chkram-move.patch -- 0.30 had moved CHKRAM into the $09D4 gap, which split the span
+      zerobas's page-0 cassette body needs (the first merge error: "tape body region
+      $09EE-$0CE2 not free"); moved in front of the font pad, the free map is the 0.29
+      one again ($0160-$01FF, $09D4-$0D00, $1AE9-$1BC6, $2765-). zerobas's two code
+      patches inside C-BIOS moved with their code (H.OUTD $1038 -> $0FCB, TTYPOS $11CF ->
+      $1162: basic/islands.asm), and build_mainrom.py's PATCH_RANGES holds 0.30's vector
+      bytes. A scan of zerobas's sources found no other hard-coded C-BIOS-internal
+      address. zerobas-main-eu.ips / .bps rebuilt; cbios-repack/README.md re-headed
+      (rows retired / re-made / 19 new). 📏 biosregs, ctrlkeys, cursor, keystr, keyrepaint,
+      lnblank, lnblank-say, rg7, screditor, stop-trap, biosl, initslot and expwrap
+      acceptance green on the 0.30 base -- the retired fixes, upstream now, behave as ours
+      did -- then the FULL battery. ➡️ Free on 0.30: C-BIOS now ends at $2765, 28 B below
+      BASIC_BASE ($2781) -- a lever for later (BASIC_ORG down), not taken here.
 
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
