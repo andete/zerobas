@@ -16889,7 +16889,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Then: PATCH_RANGES / islands.asm addresses, REPACKED_SHA1, the README, the FULL gate
       (the 0.30 rebase's caught D-SCANBOOT).
 
-- [ ] 🕹️ **D-GTPAD — C-BIOS 0.31's REAL GTPAD HAS NO PAGE-0 ROOM; IT IS A STUB ANSWERING 0
+- [x] 🕹️ **D-GTPAD — C-BIOS 0.31's REAL GTPAD HAS NO PAGE-0 ROOM; IT IS A STUB ANSWERING 0
       (filed 2026-11-11 by D-CBIOS031)**
       🎚️ TIER 1 — a main-BIOS entry's happy path (the entry-point ruling): GTPAD ($00DB)
       reads a touch pad, mouse or trackball.
@@ -16898,6 +16898,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       size (2026-11-11). It answers 0, as 0.30's stub did (no regression). Needs a carve
       or a move of page-0 code; then measure GTPAD on the VG-8020 (PAD() rows, the knife
       that reads PAD BLIND) before keeping upstream's.
+      ✅ **CLOSED THE SAME DAY: MOOT -- THE BIOS ENTRIES ARE ALREADY OURS.** The merged ROM's
+      $00DB is `jp $0C39` and $00DE `jp $0BFB`: tape/tape.asm repoints both vectors over
+      C-BIOS's (its "GTPAD ($00DB) / GTPDL ($00DE) jump vectors" block) to zerobas's own
+      GTPAD / GTPDL, measured bug-for-bug against the VG-8020 (the touch panel's X / Y latch,
+      the paddle's count rate) and held by input-devices-acceptance with devices PLUGGED.
+      C-BIOS's GTPAD stub and 0.31's GTPDL are dead in our image. Learned from upstream:
+      its GTPAD also reads a mouse / trackball (A = 8..19); ours answers 0 there -- MSX1
+      BASIC's PAD() stops at 7 (input-devices pad_8 = ERR 5), so nothing reachable differs.
+      ➡️ A lever, not filed as work: drop both dead copies in the repack (~53 B at $2742,
+      only useful together with BASIC_ORG moving down).
 
 - [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
       D-DSKFMT's close)**
