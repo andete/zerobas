@@ -16899,6 +16899,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             premises is wrong -- MAPXYC's coordinates in SCREEN 3, or the address formula: settle
             it first (MAPXYC alone, then CLOC / CMASK for a grid of points), then read the fill
             around CLOC, before anything is built for SCREEN 3.
+            ✅ **SETTLED -- AND A NEW DIVERGENCE (2026-11-12, [`mapxyc3_probe.py`](scratchpad/mapxyc3_probe.py) ->
+            [`mapxyc3_run.out`](scratchpad/mapxyc3_run.out)):** MAPXYC alone, four points. SCREEN 2: identical on both. **SCREEN 3:
+            the VG-8020's MAPXYC takes BLOCK coordinates (0..63 x 0..47), not pixels** -- (8,0) ->
+            $20, (0,32) -> $400, (50,55) -> $6CF / F0 (byte (x/2)*8 + (y/8)*256 + y%8, the left
+            nibble for even x); zerobas maps them as SCREEN 2 pixels (0/80, 8/80, 400/80,
+            637/20). So my SCREEN 3 PAINT rows passed pixels where blocks were wanted.
+            - [ ] **MAPXYC in SCREEN 3 takes block coordinates** (and very likely FETCHC / STOREC
+                  / the moves follow the same SCREEN 3 shape) -- 🎚️ TIER 1, a main-BIOS entry off
+                  the VG-8020 (the graphics-cursor family was fixed for SCREEN 2 only). Measure the
+                  family in SCREEN 3 the same way, then fix. The PAINT helpers' SCREEN 3 rows wait
+                  on it (re-run them in block coordinates: x 12, y 13 is about pixel (50,55)).
+                  🔴 **ZEROBAS-ONLY, AND A D-CBIOS031 MISS (2026-11-12, Joost asked whether C-BIOS
+                  has it):** C-BIOS 0.31's own MAPXYC (its video.asm `mapxy` / `mapxy_sc3`) DOES
+                  take SCREEN 3 block coordinates -- its header says "in SCREEN 3 in blocks of 4x4
+                  pixels", CMASK $F0 / $0F by X's parity. Ours is not that code:
+                  cbios-repack/graphics-cursor.patch replaces the whole RIGHTC..SCANL span with
+                  our own entries, measured against the VG-8020 in SCREEN 2 ONLY, and so dropped
+                  upstream's SCREEN 3 arm. The 2026-11-11 rebase ruling ("READ each upstream
+                  version first and adopt any optimisation or fix ours lacks") named
+                  graphics-cursor and this was missed. ➡️ The span gets SCREEN 3 arms written by us
+                  from the measured behaviour (C-BIOS's code is ideas only, BSD-2): MAPXYC first,
+                  then FETCHC / STOREC / the moves, each measured in SCREEN 3 against the VG-8020
+                  -- and re-read upstream 0.31's whole span for other arms ours lacks.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
