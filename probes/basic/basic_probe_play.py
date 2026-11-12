@@ -97,10 +97,14 @@ FN_CASES = [
 ]
 
 # --- INTEGRATION SELF-CHECK (zerobas only): (label, stmt, expected MUSICF) ------
+# D-BIOSRUNG / STRTMS (2026-11-12): a PLAY starts ALL THREE voices, whichever it
+# names -- the VG-8020 reads MUSICF 7 right after `PLAY "C"` (scratchpad/plycnt_run.out);
+# an unnamed voice queues its end marker and drops its bit at the next tick. These
+# rows read 1 and 3 under the old per-voice start.
 MUSICF_CASES = [
-    ("m_one",   'PLAY"CDE"',       1),   # voice 0 active
-    ("m_three", 'PLAY"C","E","G"', 7),   # voices 0,1,2 active
-    ("m_two",   'PLAY"C","E"',     3),   # voices 0,1 active
+    ("m_one",   'PLAY"CDE"',       7),
+    ("m_three", 'PLAY"C","E","G"', 7),
+    ("m_two",   'PLAY"C","E"',     7),
 ]
 
 

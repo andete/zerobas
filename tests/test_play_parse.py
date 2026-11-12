@@ -41,7 +41,7 @@ VCB_STRIDE = 0x25
 VCX_VCXLEN = 2
 VCX_VCXPTR = 3
 VCX_TEMPO = 17
-AUDIO_VMASK = AUDIO_STATUS = None   # read from SUB_SYM by build(): they sit in the
+AUDIO_VMASK = AUDIO_STATUS = ST_GO = None   # read from SUB_SYM by build(): they sit in the
                                     # moving workspace (a hard-coded copy went stale
                                     # at D-STRSCRBUF's one-page shift)
 
@@ -58,9 +58,10 @@ SRC = 0x8200  # where we place MML source strings (RAM, visible to a page-1 tena
 def build():
     subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
                    cwd=ROOT, check=True, capture_output=True)
-    global AUDIO_VMASK, AUDIO_STATUS
+    global AUDIO_VMASK, AUDIO_STATUS, ST_GO
     s = load_symbols(SUB_SYM)
     AUDIO_VMASK, AUDIO_STATUS = s["AUDIO_VMASK"], s["AUDIO_STATUS"]
+    ST_GO = s["st_go"]          # main's STRTMS body (basic/subromcall.asm), via the ABI
 
 
 def decode_queue(m, voice, start=None):
@@ -102,11 +103,22 @@ def decode_queue(m, voice, start=None):
     return out
 
 
+def machine():
+    """The sub ROM at 0. st_go lives in MAIN's page 0, which this harness does not load:
+    its five instructions are planted at the ABI address -- ld hl,PLYCNT / dec (hl) /
+    ld a,7 / ld (MUSICF),a / ret -- so PLAY's start (pt_publish) runs as on the machine."""
+    m = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    for i, b in enumerate([0x21, PLYCNT & 255, PLYCNT >> 8, 0x35, 0x3E, 7,
+                           0x32, MUSICF & 255, MUSICF >> 8, 0xC9]):
+        m.mem[ST_GO + i] = b
+    return m
+
+
 def parse(voices, seed=True):
     """Run the tenant on `voices` (list of up-to-3 MML byte strings; None = absent).
     Returns (machine, status). seed=True zeroes the work area so pt_init seeds the
     cold-boot defaults (TEMPOX==0 sentinel)."""
-    m = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    m = machine()
     if seed:
         for a in range(0xF800, 0xFC00):
             m.mem[a] = 0
@@ -255,10 +267,18 @@ def run():
     check("voice2 = G", decode_queue(m, 2), [note(G4), ("END",)])
     check("MUSICF = all three", m.mem[MUSICF] & 7, 7)
 
-    # --- empty voice (,,) : voice unchanged, bit clear -------------------------
+    # --- an unnamed voice (,E,): the VG-8020's PLAY starts ALL THREE (MUSICF 7 right
+    # after `PLAY "C"`, scratchpad/plycnt_run.out) and the unnamed ones queue only their
+    # end marker, where the voices sync (plycnt_run2.out: voices B / C PUT 1) ----------
     m, st = parse([None, b"E", None])
-    check("PLAY ,E, : only voice1", m.mem[MUSICF] & 7, 2)
+    check("PLAY ,E, : all three started", m.mem[MUSICF] & 7, 7)
     check("PLAY ,E, voice1 = E", decode_queue(m, 1), [note(E4), ("END",)])
+    check("PLAY ,E, voices 0 / 2: the end marker only",
+          (decode_queue(m, 0), decode_queue(m, 2)), ([("END",)], [("END",)]))
+    check("PLAY ,E, started at once: PLYCNT nets 0", m.mem[PLYCNT], 0)
+    m, st = parse([b""])
+    check('PLAY "": nothing queued, nothing started, nothing counted',
+          (m.mem[MUSICF], m.mem[PLYCNT], decode_queue(m, 0)), (0, 0, []))
 
     # --- spaces ignored --------------------------------------------------------
     m, st = parse([b"C D E"])
@@ -277,7 +297,7 @@ def run():
     check("... with the 25 notes that fit queued", len(decode_queue(m, 0)), 25)
 
     # --- persistence across PLAY statements (D4-B) -----------------------------
-    m = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    m = machine()
     for a in range(0xF800, 0xFC00):
         m.mem[a] = 0
 
@@ -296,7 +316,9 @@ def run():
     q = play_on(m, b"C")                  # a bare C should reuse octave 6, length 8
     check("state persists: 2nd PLAY C uses O6 L8",
           q, [note(6 * 12 + 0 - 12, length=8), ("END",)])
-    check("PLYCNT counted two PLAYs", m.mem[PLYCNT], 2)
+    check("PLYCNT: the first PLAY started at once (0), the second waits behind it (1) "
+          "-- the VG-8020's PLAY T32L1C:PLAY D reads 1 (scratchpad/plycnt_run.out)",
+          m.mem[PLYCNT], 1)
 
     # D-PLAYBARER / D-PLAYRDOT (2026-11-05): a bare R is a QUARTER whatever L says, R.
     # is ERR 5; an explicit length takes L's place and its dots; N0 is 5 ticks.

@@ -374,6 +374,16 @@ zks_paint:
                 push    ix
                 jp      zks_p2
 
+; st_go -- STRTMS's start (bios_strtms, basic/biosfnk.asm; D-BIOSRUNG / STRTMS): PLYCNT -
+; 1, MUSICF := 7. Also PLAY's start (the parser tenant through the resident ABI) and the
+; servicer's sync (through bios_strtms). Here because page 0 had no other 10 B.
+st_go:
+                ld      hl,PLYCNT
+                dec     (hl)
+                ld      a,7
+                ld      (MUSICF),a
+                ret
+
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
     ENDIF
@@ -512,6 +522,10 @@ fperr_to_err:
                 jp      bios_outdlp         ; OUTDLP: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $0159
                 jp      bios_calbas         ; CALBAS: C-BIOS's printed an error (D-BIOSRUNG)
+                org     $0099
+                jp      bios_strtms         ; STRTMS: C-BIOS's was a stub (D-BIOSRUNG)
+                org     $00F9
+                jp      bios_putq           ; PUTQ: pre-incrementing, as the VG-8020 (D-BIOSRUNG)
                 org     $008D
                 jp      bios_grpprt         ; GRPPRT: C-BIOS's drew in SCREEN 2 only (D-BIOSRUNG)
                 org     $0129

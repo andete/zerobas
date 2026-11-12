@@ -67,18 +67,21 @@ play_parse_tenant:
                 call    pt_parse
                 di                          ; the trampoline contract: DI before ret
                 ret
-; --- pt_fresh: a new PLAY -- per mentioned voice: drop an empty string (D-PLAYEMPTY:
-; no queue, no bit; the reference's MUSICF reads 0 right after `PLAY""`), else
-; snapshot the parse state (+13..+19, +22) into VCX_SNAP and zero VCX_DONE.
+; --- pt_fresh: a new PLAY. When every string is empty (or none is named) the PLAY
+; queues and counts NOTHING (D-PLAYEMPTY: the reference's MUSICF reads 0 right after
+; `PLAY""`); otherwise ALL THREE voices take part -- one not named, or named with "",
+; parses nothing and queues only its end marker (the VG-8020: `PLAY "C"` puts an FF on
+; voices B and C too, scratchpad/plycnt_run2.out), where the voices sync. Each voice's
+; parse state (+13..+19, +22) is snapshotted into VCX_SNAP and VCX_DONE zeroed.
 pt_fresh:
                 ld      bc,$0001            ; B = voice index 0, C = voice-0 mask bit
 pf_lp:
-                ld      a,(AUDIO_VMASK)
-                and     c
-                jr      z,pf_next
                 push    bc
                 call    pt_vcb_ix           ; IX = VCB base (preserves B)
                 pop     bc
+                ld      a,(AUDIO_VMASK)
+                and     c
+                jr      z,pf_empty          ; not named
                 ld      a,(ix+VCX_VCXLEN)
                 or      a
                 jr      nz,pf_snap
@@ -86,8 +89,9 @@ pf_lp:
                 cpl
                 ld      hl,AUDIO_VMASK
                 and     (hl)
-                ld      (hl),a              ; an empty string: not in this PLAY
-                jr      pf_next
+                ld      (hl),a              ; named with "": not a voice that counts
+pf_empty:
+                ld      (ix+VCX_VCXLEN),0   ; parses nothing: only its end marker
 pf_snap:
                 xor     a
                 ld      (ix+VCX_DONE),a
@@ -107,13 +111,21 @@ pf_snap:
                 ld      a,(ix+VCX_ENVDIRTY)
                 ld      (de),a              ; +22, the eighth byte
                 pop     bc
-pf_next:
                 rlc     c
                 inc     b
                 ld      a,b
                 cp      3
                 jr      c,pf_lp
+                ld      hl,AUDIO_VMASK
+                ld      a,(hl)
+                or      a
+                jr      z,pf_none
+                ld      (hl),7              ; every voice takes part
                 ret
+pf_none:
+                pop     hl                  ; nothing to play: no parse, no voice, no count --
+                di                          ; leave the tenant (the trampoline contract: DI);
+                ret                         ; AUDIO_STATUS stays main's 0
 ; --- pt_parse: one WINDOW over the voices still in AUDIO_VMASK -------------------
 ; A finished voice leaves AUDIO_VMASK; a full ring ends the window (PLAY_MORE).
 pt_parse:
@@ -131,7 +143,7 @@ pt_vloop:
                 pop     bc                  ; (ld sp does not touch the flags)
                 push    af                  ; the voice's result
                 push    bc
-                call    pt_publish          ; QD_PUT := the window's; start an idle voice
+                call    pt_publish          ; QD_PUT := the window's; start idle music
                 pop     bc
                 pop     af
                 ret     c                   ; error, or PLAY_MORE -- AUDIO_STATUS says which
@@ -151,9 +163,13 @@ pt_vnext:
                 xor     a
                 ld      (AUDIO_STATUS),a    ; 0 = ok
                 ret
-; --- pt_publish: B = voice, C = its bit. QD_PUT := VCX_WPUT; an idle voice (bit
-; clear, not waiting at an end marker) that has data starts. DI around MUSICF's
-; read-modify-write: the drain clears bits in it.
+; --- pt_publish: B = voice, C = its bit. QD_PUT := VCX_WPUT; when it queued
+; something and the music is idle, START it as the VG-8020's PLAY does -- STRTMS's
+; own st_go (basic/biosfnk.asm, page 0: mapped under this tenant): PLYCNT - 1, MUSICF
+; := 7. The statement's +1 comes at its end (pt_parse), so a PLAY that started nets 0
+; and one queued behind playing music leaves 1 for the sync (scratchpad/plycnt_run.out).
+; No tick runs between the two: htimi_guard skips the servicer while this tenant
+; holds page 1.
 pt_publish:
                 call    pt_vcb_ix
                 call    pt_qd
@@ -161,16 +177,10 @@ pt_publish:
                 ld      (iy+QD_PUT),a
                 cp      (iy+QD_GET)
                 ret     z                   ; nothing queued
-                ld      a,(iy+QD_PUTBAK)
+                ld      a,(MUSICF)
                 or      a
-                ret     nz                  ; waiting: the sync releases it
-                di
-                ld      hl,MUSICF
-                ld      a,(hl)
-                or      c
-                ld      (hl),a              ; playing (frames are 0: the next tick fetches)
-                ei
-                ret
+                ret     nz                  ; playing: this statement waits for the sync
+                jp      st_go
 
 ; --- pt_init: seed the PLAY defaults into all three VCBs and empty the rings --
 ; At cold boot, and again after BEEP / a break / an abort (psv_flush zeroes the
@@ -204,7 +214,7 @@ pi_lp:
 pi_q:
                 ld      (iy+QD_PUT),a
                 ld      (iy+QD_GET),a
-                ld      (iy+QD_PUTBAK),a
+                ld      (iy+QD_PUTBAK),a    ; BAKFLG 0, as the VG-8020's reads
                 ld      (iy+QD_SIZE),127    ; the VG-8020's value (a mask), measured
                 ld      (iy+QD_ADDR),l
                 ld      (iy+QD_ADDR+1),h

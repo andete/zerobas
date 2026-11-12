@@ -1,0 +1,11 @@
+Philips_VG short   [C 0 7 0 0 ] Ok colo
+Philips_VG behind  [C 0 7 1 1 ] Ok colo
+Philips_VG two_bh  [C 2 1 0 0 ] Ok colo
+Philips_VG long    [C 0 1 0 0 ] Ok colo
+Philips_VG after   [C 0 0 0 0 ] Ok colo
+C-BIOS_MSX short   [C 1 1 0 0 ] ZB colo
+C-BIOS_MSX behind  [C 1 1 2 1 ] ZB colo
+C-BIOS_MSX two_bh  [C 3 1 0 0 ] ZB colo
+C-BIOS_MSX long    [C 1 1 0 0 ] ZB colo
+C-BIOS_MSX after   [C 1 0 0 0 ] ZB colo
+refcache: 0 hit, 2 miss, 2 stored

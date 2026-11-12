@@ -97,7 +97,8 @@ psv_loop:
 psv_ret:
                 ld      a,(MUSICF)
                 or      a
-                call    z,psv_sync          ; nobody playing: release the waiting voices
+                call    z,bios_strtms       ; nobody playing: the sync -- the next PLAY
+                                            ; statement queued starts, or nothing
                 pop     iy
                 pop     ix
                 pop     hl
@@ -206,49 +207,24 @@ psv_get:
                 ld      h,a                 ; HL = base + get
                 ld      a,(hl)
                 ret
-; psv_end: a PLAY's end marker. The voice goes silent and WAITS (QD_PUTBAK = 1,
-; its MUSICF bit clear, so PLAY(n) reads 0 -- measured, scratchpad/
-; playsync_measure.out) until no voice is playing; play_service then releases
-; every waiting voice together (psv_sync). That is the VG-8020's sync: a voice
-; reaching its end marker waits for every voice still playing, even when the
-; next PLAY named only that voice.
+; psv_end: a PLAY's end marker. The voice goes silent and WAITS (its MUSICF bit
+; clear, so PLAY(n) reads 0 -- measured, scratchpad/playsync_measure.out) until no
+; voice is playing; play_service then calls STRTMS (bios_strtms, basic/biosfnk.asm),
+; which starts the next statement queued -- PLYCNT - 1, MUSICF := 7 -- or nothing.
+; That is the VG-8020's sync: a voice reaching its end marker waits for every voice
+; still playing, even when the next PLAY named only that voice.
 psv_end:
                 ld      a,b
                 add     a,8                 ; amplitude register 8+v
                 out     ($A0),a
                 xor     a
                 out     ($A1),a             ; amplitude 0 -> channel silent
-                inc     a
-                ld      (iy+QD_PUTBAK),a    ; waiting
                 ld      a,c
                 cpl                         ; ~(this voice's bit)
                 ld      e,a
                 ld      a,(MUSICF)
                 and     e
                 ld      (MUSICF),a          ; clear the voice's MUSICF bit
-                ret
-; psv_sync: no voice is playing -- every voice waiting at an end marker steps on
-; together; one with more queued plays it from the next frame (its frames are 0).
-psv_sync:
-                ld      iy,QUETAB
-                ld      bc,$0301            ; B = 3 voices, C = voice-0 bit
-pss_lp:
-                ld      a,(iy+QD_PUTBAK)
-                or      a
-                jr      z,pss_next
-                xor     a
-                ld      (iy+QD_PUTBAK),a
-                ld      a,(iy+QD_GET)
-                cp      (iy+QD_PUT)
-                jr      z,pss_next          ; nothing after the end marker: idle
-                ld      a,(MUSICF)
-                or      c
-                ld      (MUSICF),a
-pss_next:
-                ld      de,QD_STRIDE
-                add     iy,de
-                sla     c
-                djnz    pss_lp
                 ret
 ; psv_flush: BEEP, a break, an abort (psg_silence, basic/sound.asm, under its DI)
 ; reset PLAY as the VG-8020 does: the queues EMPTY -- they are rings kept across

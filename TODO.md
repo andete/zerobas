@@ -16545,7 +16545,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             SCRMOD) already match. 🔴 Found on the way: biosregs' `dsp0` / `era0` rows end in
             `END` before the register line, so they never compared registers -- the readout was
             blind to them; this records that the gap is deliberate now, not unseen.
-      - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
+      - [x] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
             🔭 **SCOPED 2026-11-12 -- NOT AN ENTRY-POINT FIX ALONE.** zerobas's PLAY fills the
             published queues (QUETAB / VOICAQ.. / MUSICF / PLYCNT, basic/sysvars.inc) but with
             its OWN packet format (sub/playparse.asm: "own-design PLAY_OP_* packet stream"),
@@ -16626,6 +16626,51 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             appended bytes in hex) 14 / 14 on both targets; knife (the M-unchanged skip ->
             `nop`s) -> RED on `M1000CM1000C` ([`playpkt_knife1.out`](scratchpad/playpkt_knife1.out); `M255C` stayed SAME -- 🔮 MISSED:
             the rows run in sequence, M was 1000 by then). ➡️ (3) STRTMS.
+            📏 **(3) MEASURED (2026-11-12, [`strtms_probe.py`](scratchpad/strtms_probe.py), [`plycnt_probe.py`](scratchpad/plycnt_probe.py), VG-8020):**
+            PUTQ'd packets + STRTMS play **only when PLYCNT >= 1** ([`strtms_run.out`](scratchpad/strtms_run.out) -- 🔮 MISSED: I
+            predicted a start); then MUSICF := 7 (all three voices), PLYCNT - 1, the note sounds
+            (R0 / R1 AC / 01, R8 88) ([`strtms_run2.out`](scratchpad/strtms_run2.out)); MUSICF already set -> nothing, PLYCNT kept;
+            PLYCNT 2 -> 1, and at the end of the queued statement the sync takes the next count
+            (MUSICF 7 again over empty rings) ([`strtms_run3.out`](scratchpad/strtms_run3.out)). So PLYCNT counts PLAY statements
+            queued and not yet started: `PLAY "C"` reads PLYCNT 0 / MUSICF **7** at once, a
+            second PLAY behind a long note PLYCNT 1, two behind 2 ([`plycnt_run.out`](scratchpad/plycnt_run.out)) -- **zerobas:
+            PLYCNT one higher every time (it only ever counts up) and MUSICF 1 after `PLAY "C"`**.
+            **PUTQ** ($00F9, never measured before) **pre-increments** like the rings (three bytes
+            at VOICAQ+1..3, PUT 3; C-BIOS's, still ours, writes at +0..2) and leaves HL = the
+            descriptor, BC = the new PUT, A = the buffer's low byte, Z / C clear ([`strtms_run4.out`](scratchpad/strtms_run4.out)).
+            ➡️ **THE BUILD (designed 2026-11-12):** one page-0 routine `bios_strtms`: MUSICF != 0
+            -> return; PLYCNT 0 -> return; else `st_go`: PLYCNT - 1, MUSICF := 7. It is the BIOS
+            entry, the servicer's sync (psv_sync becomes `jp bios_strtms`: its per-voice release
+            loop and the QD_PUTBAK "waiting" flag go -- the VG-8020's BAKFLG reads 0 throughout),
+            and the parser's start: at a window's end, when something was queued and MUSICF is
+            0, `st_go` (pt_publish no longer starts voices one by one); at the statement's end
+            PLYCNT + 1 (the early `st_go` and the late +1 net to 0 inside one DI tenant call or
+            across a full-ring wait, before any sync can see it). `PLAY ""` must count and start
+            nothing (the reference's MUSICF reads 0 after it). PUTQ: a page-0 replacement,
+            pre-incrementing, ~38 B. Room (2026-11-12): the crt_rows pad 53 B, the low region 26 B.
+            ✅ **(3) BUILT (2026-11-12).** One more reading first: the VG-8020's `PLAY "C"` puts an
+            end marker on voices B and C too (their PUT 1, [`plycnt_run2.out`](scratchpad/plycnt_run2.out)) -- every voice
+            takes part in every PLAY that plays anything. Built: `bios_strtms` / `st_go`
+            (see the placement note below) and
+            `bios_putq` (basic/biosfnk.asm, the crt_rows pad); $0099 / $00F9 patched. The servicer's
+            sync is `call z,bios_strtms` -- psv_sync's per-voice release loop and the QD_PUTBAK
+            "waiting" flag are gone (main page 1's pad at $6CF3 grew 83 B, read 2026-11-12). The parser: pt_fresh
+            gives an unnamed or "" voice length 0 (its end marker only) and leaves the tenant at
+            once when nothing plays (`PLAY ""`: no count, no start); pt_publish ends in `jp st_go`
+            when it queued something and MUSICF is 0; PLYCNT + 1 at the statement's end. `st_go`
+            is exported to the sub ROM through the resident ABI. After: [`strtms_run5.out`](scratchpad/strtms_run5.out) every row
+            SAME but `abc_busy` (MUSICF POKEd: our servicer runs a voice the VG-8020's does not --
+            no PLAY does that); [`plycnt_run3.out`](scratchpad/plycnt_run3.out) 6 / 6; [`playq_run9.out`](scratchpad/playq_run9.out) 34 / 34; the PLAY unit test
+            ALL PASS (its harness plants st_go's five instructions; `PLAY ,E,` now MUSICF 7 with
+            voices 0 / 2 an end marker each, PLYCNT 1 for a PLAY behind a PLAY, `PLAY ""` nothing);
+            play-acceptance's self-check MUSICF rows 1 / 3 -> 7 (the VG-8020's). Gate: **`make
+            strtms-acceptance`** ([`basic_probe_strtms.py`](probes/basic/basic_probe_strtms.py), 14 rows) 14 / 14 ([`strtms_gate1.out`](scratchpad/strtms_gate1.out)); knife (st_go's `dec
+            (hl)` -> `nop`, ROM hash moved) -> 8 rows RED ([`strtms_knife1.out`](scratchpad/strtms_knife1.out)). stub_scan -> **0**.
+            🔴 **switch-build-check went RED on the first placement** (bios_strtms + st_go in the
+            low region, 26 -> 6 B: the five switch-off builds overran it). Moved: bios_strtms's
+            check (13 B) into the crt_rows pad, st_go (10 B) into island 1's last 10 B
+            (basic/islands.asm). Room (2026-11-12): low region 26 B (unchanged), the crt_rows pad
+            53 -> 3 B, island 1 10 -> 0 B, sub page 1 -> 2 B; 7 / 7 switches assemble.
             - [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** --
                   🎚️ TIER 6 — `V5S3C` on voice A: the VG-8020 writes R9 = R10 = 0 with the note
                   ([`psgenv_run3.out`](scratchpad/psgenv_run3.out)); zerobas leaves them. Heard only after a SOUND 9 / 10 set

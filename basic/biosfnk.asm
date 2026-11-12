@@ -205,6 +205,65 @@ bios_grpprt:
                 pop     hl
                 ret
 
+; STRTMS ($0099) -- D-BIOSRUNG / STRTMS (2026-11-12). C-BIOS's was a print_debug stub.
+; Measured on the VG-8020 (scratchpad/strtms_run*.out, plycnt_run.out): PLYCNT counts
+; PLAY statements queued and not yet started; STRTMS with MUSICF != 0 or PLYCNT = 0 does
+; nothing, else st_go: PLYCNT - 1 and MUSICF := 7 -- all three voices fetch on. The same
+; code is PLAY's start (st_go, from the parser tenant, sub/playparse.asm) and the
+; servicer's sync, where every voice has reached its end marker (basic/playsvc.asm).
+; st_go sits in island 1 (basic/islands.asm): this pad and the low region had no room
+; for both halves (switch-build-check: the switch-off builds overran the low region).
+; A / HL / F changed.
+bios_strtms:
+                ld      a,(MUSICF)
+                or      a
+                ret     nz                  ; playing: nothing
+                ld      a,(PLYCNT)
+                or      a
+                ret     z                   ; no statement waiting
+                jp      st_go
+
+; PUTQ ($00F9) -- A = the queue (0..2), E = the byte. C-BIOS's writes at PUT and then
+; steps it; the VG-8020's steps FIRST (three bytes land at VOICAQ+1..3, PUT 3), as its
+; rings are read (scratchpad/strtms_run4.out). A full queue: Z, nothing written.
+; Leaves HL = the descriptor, BC = the new PUT, A = the buffer's low byte, Z / C clear,
+; DE kept -- as the VG-8020.
+bios_putq:
+                ld      c,a
+                add     a,a
+                add     a,c
+                add     a,a
+                add     a,low QUETAB
+                ld      l,a
+                ld      h,high QUETAB       ; HL = the descriptor (no carry: QUETAB is
+                ld      a,(hl)              ;   $F959, queue 2 at $F965)
+                inc     a                   ; PUT + 1 ...
+                inc     hl
+                inc     hl
+                inc     hl
+                and     (hl)                ; ... AND the size
+                dec     hl
+                dec     hl
+                cp      (hl)                ; = GET: full
+                dec     hl
+                ret     z
+                ld      (hl),a              ; PUT := it
+                ld      c,a
+                ld      b,0
+                push    hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = the buffer (A = its low byte)
+                add     hl,bc
+                ld      (hl),e
+                pop     hl
+                ret                         ; Z clear from the `cp`, C clear from `add hl,bc`
+
 bios_beep:
                 push    hl
                 push    ix

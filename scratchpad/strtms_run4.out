@@ -1,0 +1,3 @@
+ROW putq_pos   VG=[[C0011223300 3 0]] ZB=[[C1122330000 3 0]] DIVERGES
+ROW putq_regs  VG=[[R F959 3344 1 A75 F28]] ZB=[[R F975 3344 0 A75 F20]] DIVERGES
+refcache: 0 hit, 4 miss, 4 stored

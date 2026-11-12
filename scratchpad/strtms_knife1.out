@@ -1,0 +1,21 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ROW strtms_c   VG=[[C00000600007F75F9 000000 00]] ZB=[[C00000600007F75F9 000000 00]] SAME
+ROW putq_only  VG=[[C00000600007F75F9 000000 00]] ZB=[[C00000600007F75F9 000000 00]] SAME
+ROW abc_ff     VG=[[C00000600007F75F9 000000 00]] ZB=[[C00000600007F75F9 000000 00]] SAME
+ROW abc_ply1   VG=[[C07000600007F75F9 AC0188 00]] ZB=[[C07010600007F75F9 AC0188 07]] DIVERGES
+ROW a_ply1     VG=[[C07000600007F75F9 AC0188 06]] ZB=[[C07010600007F75F9 AC0188 06]] DIVERGES
+ROW abc_ply2   VG=[[C07010600007F75F9 AC0188 07]] ZB=[[C07020600007F75F9 AC0188 07]] DIVERGES
+ROW putq_pos   VG=[[C0011223300 3 0]] ZB=[[C0011223300 3 0]] SAME
+ROW putq_regs  VG=[[R F959 3344 1 A75 F28]] ZB=[[R F959 3344 1 A75 F28]] SAME
+ROW short      VG=[[C 0 7 0 0 ]] ZB=[[C 1 7 0 0 ]] DIVERGES
+ROW behind     VG=[[C 0 7 1 1 ]] ZB=[[C 1 7 2 1 ]] DIVERGES
+ROW two_bh     VG=[[C 2 1 0 0 ]] ZB=[[C 3 1 0 0 ]] DIVERGES
+ROW long       VG=[[C 0 1 0 0 ]] ZB=[[C 1 1 0 0 ]] DIVERGES
+ROW bc_put     VG=[[C 1 1 6 0 ]] ZB=[[C 1 1 6 0 ]] SAME
+ROW after      VG=[[C 0 0 0 0 ]] ZB=[[C 1 7 0 0 ]] DIVERGES
+FAIL: STRTMS / PUTQ / PLYCNT against the VG-8020 (6/14)
+refcache: 9 hit, 9 miss, 9 stored
+make: *** [strtms-acceptance] Error 1

@@ -76,6 +76,10 @@ REQUIRED_SUB = [
     "rl_vpoke",
     "rl_vaddr",
     "rl_lastrow",
+    # D-BIOSRUNG / STRTMS (2026-11-12): PLAY's start is the BIOS's STRTMS body -- the
+    # parser tenant calls its second entry (PLYCNT - 1, MUSICF := 7) when a window
+    # queued something while the music is idle (basic/biosfnk.asm).
+    "st_go",
 ]
 
 # --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------

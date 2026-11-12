@@ -173,7 +173,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**97 of 108** have a direct witness and are not stubs; **10 are NOT MEASURED**; **1 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
+**99 of 108** have a direct witness and are not stubs; **9 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -220,7 +220,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0090 | GICINI | exercised | `biosl-acceptance`, `gicini-acceptance` |
 | $0093 | WRTPSG | exercised | `biosregs-acceptance` |
 | $0096 | RDPSG | exercised | `biosregs-acceptance` |
-| $0099 | STRTMS | 🔴 STUB (print_debug) | — |
+| $0099 | STRTMS | exercised | `strtms-acceptance` |
 | $009C | CHSNS | exercised | `biosregs-acceptance` |
 | $009F | CHGET | exercised | `biosregs-acceptance` |
 | $00A2 | CHPUT | exercised | `biosregs-acceptance` |
@@ -252,7 +252,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00F0 | TAPOOF | NOT MEASURED | — |
 | $00F3 | STMOTR | exercised | `biosregs-acceptance` |
 | $00F6 | LFTQ | exercised | `biosregs-acceptance` |
-| $00F9 | PUTQ | NOT MEASURED | — |
+| $00F9 | PUTQ | exercised | `strtms-acceptance` |
 | $00FC | RIGHTC | exercised | `biosregs-acceptance` |
 | $00FF | LEFTC | exercised | `biosregs-acceptance`, `slotregs-acceptance` |
 | $0102 | UPC | exercised | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |

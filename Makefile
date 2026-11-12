@@ -1467,6 +1467,12 @@ outdlp-acceptance: repack-machine
 paintbios-acceptance: repack-machine
 	python3 probes/basic/basic_probe_paintbios.py --gate
 
+# D-BIOSRUNG / STRTMS (2026-11-12): STRTMS starts what PUTQ queued only when PLYCNT >= 1
+# (MUSICF := 7, PLYCNT - 1); PUTQ pre-increments; PLYCNT counts PLAY statements queued
+# and not yet started -- all as the VG-8020.
+strtms-acceptance: repack-machine
+	python3 probes/basic/basic_probe_strtms.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine
