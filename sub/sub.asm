@@ -232,12 +232,11 @@ sub_p0_table:
                                                 ;   into DETOKBUF for the resident
                                                 ;   stub to drain (D-PUEMIT). Evicted
                                                 ;   to buy back main page 1.
-                jp      lofu32_tenant           ; index 17 (SUBROM_IDX_LOFU32): LOF's
-                                                ;   32-bit size -> ARGA (D-LOFU32).
-                                                ;   RAM in, RAM out; the caller
-                                                ;   packs. A funding carve: the
-                                                ;   main-side form cost 98 B of
-                                                ;   page 1.
+                ret                             ; index 17: RETIRED (D-KWIDX2CARVE, 2026-11-12).
+                nop                             ;   It was lofu32_tenant, now page-1 index
+                nop                             ;   13 (SUBROM_IDX_LOFU32): page 0 needed
+                                                ;   the room. The row keeps its 3 B so 18..
+                                                ;   stay put.
                 jp      keystr_tenant           ; index 18 (SUBROM_IDX_KEYSTR): KEY
                                                 ;   n,"str" / KEY LIST / the ten
                                                 ;   measured defaults at cold boot
@@ -386,8 +385,6 @@ tokenise_ei:
 ; callee, is inlined here in 5 B.
                 include "lrsetst.asm"
                 include "deffn.asm"
-; --- LOF's 32-bit size -> ARGA (D-LOFU32 funding carve) -----------------------
-                include "lofu32.asm"
 ; --- KEY n,"str" / KEY LIST / function-key defaults (D-KEYSTR) ----------------
                 include "keystr.asm"
 
@@ -589,11 +586,12 @@ sub_p1_table:
                                                 ;   Main-ROM stubs are the
                                                 ;   resident shims in
                                                 ;   basic/fat.asm (repack).
-                ret                             ; index 13: RETIRED (D-DSKLOCAL, 2026-10-15).
-                nop                             ;   It was the dirverb tenant: KILL/NAME's
-                nop                             ;   directory I/O, then only DSKI$/DSKO$'s
-                                                ;   raw sector, which disk.rom's hk_dsk does
-                                                ;   now. The row keeps its 3 B so 14.. stay put.
+                jp      lofu32_tenant           ; index 13 (SUBROM_IDX_LOFU32): LOF's
+                                                ;   32-bit size -> ARGA (D-LOFU32), moved
+                                                ;   here from page-0 row 17 by D-KWIDX2CARVE
+                                                ;   (2026-11-12). RAM in, RAM out; no callee
+                                                ;   outside its own file. (Row 13 was the
+                                                ;   dirverb tenant, retired by D-DSKLOCAL.)
                 jp      play_parse_tenant       ; index 14 (SUBROM_IDX_PLAY_PARSE):
                                                 ;   the audio Slice-2a MML parser
                                                 ;   (sub/playparse.asm) -- a pure
@@ -863,6 +861,9 @@ sub_p1_ping:
 ; (2026-11-11) for SAVE ,A's keyword index; a pure parse + DEFTBL fill, its letter
 ; test inline (the page-0 is_letter / upcase are unmapped here).
                 include "deftype.asm"
+; LOF's 32-bit size -> ARGA (index 13, sub/lofu32.asm; D-LOFU32): moved here from page 0
+; by D-KWIDX2CARVE (2026-11-12). Self-contained: its only callees are its own.
+                include "lofu32.asm"
 
 ; (index 10, format_tenant -- sub/format.asm + basic/format-body.inc, CALL
 ; FORMAT's old quick format -- RETIRED 2026-11-11: disk.rom's hk_format runs the

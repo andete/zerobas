@@ -1,0 +1,6 @@
+# D-KWIDX2 (2026-11-12): the 150-line program with and without SAVE ,A, zerobas
+asctok_end ENDED t=119.2
+asctok_save ENDED t=129.1
+# => SAVE ,A 9.9 s (was 10.1; CF-3300 1.5). Predicted ~9.5: MISSED (smaller) -- the 6 % was a
+#    16-byte sampling bucket shared with neighbouring code, and this program uses few
+#    function tokens.

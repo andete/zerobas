@@ -1252,12 +1252,19 @@ def _selftest_tables(arm, probe_tmp):
     # --- the live tree: the scrape reaches each table's end -----------------
     if os.path.exists("sub/sub.asm") and os.path.exists("build/sub.sym"):
         ls = load_syms("build/sub.sym")
+        retired = 0
         for tab in ("sub_p0_table", "sub_p1_table"):
             rows, end = table_rows("sub/sub.asm", tab)
             ret = sum(1 for _, t, _ in rows if t is None)
+            retired += ret
             arm(f"L2 live {tab}: {len(rows)} rows ({ret} retired) to {end}, "
                 f"and the assembled size agrees",
-                ret >= 1 and check_table_extent(ls, tab, end, rows) is None)
+                check_table_extent(ls, tab, end, rows) is None)
+        # the scrape's RETIRED-row path must still run on live data somewhere (it
+        # was per table until D-KWIDX2CARVE, 2026-11-12, reused page 1's last
+        # retired row -- page 0 still has four)
+        arm(f"L3 live: {retired} retired row(s) across both tables -- the retired "
+            f"path is exercised", retired >= 1)
 
 
 def main() -> int:

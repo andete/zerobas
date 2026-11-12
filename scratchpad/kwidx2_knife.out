@@ -1,0 +1,5 @@
+# D-KWIDX2 knife: kw_ord2's $FF $82 ordinal off by one ($68 -> $69)
+PASS  detok_kw over kwidx.inc: 256 token bytes, 113 keywords, 0 mismatch(es)
+FAIL  token $FF $82: printed 'MID$', the walk's answer 'RIGHT$'
+FAIL  detok_kw2 over kw_ord2: 512 token pairs, 48 two-byte keywords, 1 mismatch(es)
+# restored: test_kwidx and kwidx-check green.

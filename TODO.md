@@ -3195,6 +3195,17 @@ item — do **one item per session** to keep context lean.
       slice: (1) a kw_ord2 index for detok_kw2 (~6 %, but sub page 0 has 22 B -- a carve);
       (2) multi-sector writes for a run of consecutive data sectors (D-BLKIOPERCALL's class:
       the CF-3300 writes the file in ONE command).
+      ✅ **D-KWIDX2 (2026-11-12): LEVER (1) BUILT -- SAVE ,A 10.1 -> 9.9 s.** Room: the LOF tenant (lofu32,
+      74 B, self-contained) moved to sub page 1 (page-0 row 17 retired, page-1 row 13 -- the
+      dirverb tenant's retired slot -- `jp lofu32_tenant`, expr.asm via sr_inl1; sub page 0
+      22 -> 96 B, page 1 244 -> 170). tools/gen_kwidx.py also emits kw_ord2 ($FF xx, xx in
+      $81..$B0, 48 B); detok_kw2 takes it for $FF + an in-range byte and walks for anything
+      else (the ':'-prefixed pair); detok_kw's locate is now dk_ordent, shared. test_kwidx now
+      also runs detok_kw2 for every first byte any two-byte entry uses x every second byte
+      (512 pairs, 0 mismatches); knife ([`kwidx2_knife.out`](scratchpad/kwidx2_knife.out)) -> RIGHT$ printed as MID$, RED.
+      📏 [`asave_kwidx2.out`](scratchpad/asave_kwidx2.out): 9.9 s (🔮 ~9.5: MISSED, smaller -- the 6 % was a 16-byte sampling
+      bucket shared with neighbours, and this program has few function tokens). Sub page 0
+      15 B free after it (2026-11-12). LOF / unit tests green.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8111,7 +8122,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10544 (T-6FE392)8 (T-529ABE)` from `TODO.md:15146 (T-529ABE)`: a
+      `TODO.md:10555 (T-6FE392)8 (T-529ABE)` from `TODO.md:15157 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10850,7 +10861,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15146 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15157 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

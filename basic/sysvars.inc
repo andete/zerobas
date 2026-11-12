@@ -5647,10 +5647,12 @@ SUBROM_IDX_FILESTMT  equ 19     ; file_tenant (sub2/filestmt.asm): OPEN / CLOSE 
                                 ; main back through the sub ROM's own p0cb. From
                                 ; zerobas-sub2's page-0 index 3 (SUB2_IDX_TRAPS)
                                 ; with D-SUB2RETIRE step 2e, 2026-11-04.
-SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's / LOC's
+SUBROM_IDX_LOFU32    equ 13     ; lofu32_tenant (sub/lofu32.asm): LOF's / LOC's
                                 ; 32-bit DE:HL (S10.E: was FAT_FILESIZE) -> ARGA as
                                 ; an unpacked FPNUM, for ev_ff_lof to pack as a
-                                ; double (D-LOFU32). PAGE 0: registers in, RAM out.
+                                ; double (D-LOFU32). PAGE 1 index 13 since
+                                ; D-KWIDX2CARVE (2026-11-12; page-0 17 before):
+                                ; registers in, RAM out.
 SUBROM_IDX_PUEMIT    equ 16     ; pu_emit_tenant (sub/printusing.asm): PRINT USING's
                                 ; numeric PAD + EMIT, built into DETOKBUF for the
                                 ; resident stub to drain (D-PUEMIT). PAGE-0 index

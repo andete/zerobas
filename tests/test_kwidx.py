@@ -25,7 +25,7 @@ def main() -> int:
     sub, sym = _build_subrom()
     if not isinstance(sym, dict):
         sym = {k: v for k, v in sym}
-    for need in ("detok_kw", "pchar", "kwtable", "kw_ord", "kw_bkt"):
+    for need in ("detok_kw", "detok_kw2", "pchar", "kwtable", "kw_ord", "kw_ord2", "kw_bkt"):
         if need not in sym:
             print(f"FAIL  symbol {need} missing from the sub-ROM build -- nothing measured")
             return 1
@@ -70,7 +70,43 @@ def main() -> int:
             fails += 1
     print(f"{'PASS' if not fails else 'FAIL'}  detok_kw over kwidx.inc: {checked} token bytes, "
           f"{len(want)} keywords, {fails} mismatch(es)")
-    return 1 if fails else 0
+    # D-KWIDX2: detok_kw2 (A = first byte, C = second) against the walk's rule -- the first
+    # tlen == 2 entry with both bytes; nothing printed when none. Every $FF xx, and every
+    # first byte any two-byte entry uses, with every second byte.
+    want2 = {}
+    for name, toks in ents:
+        if len(toks) == 2 and (toks[0], toks[1]) not in want2:
+            want2[(toks[0], toks[1])] = name
+    firsts = sorted({k[0] for k in want2} | {0xFF})
+    fails2 = checked2 = 0
+    for f in firsts:
+        for c in range(256):
+            cpu = Z80(mem)
+            cpu.sp = 0xF000
+            cpu.push(SENTINEL)
+            cpu.pc = sym["detok_kw2"]
+            cpu.a, cpu.c = f, c
+            out = []
+            for _ in range(40000):
+                if cpu.pc == SENTINEL:
+                    break
+                if cpu.pc == sym["pchar"]:
+                    out.append(chr(cpu.a))
+                    cpu.pc = cpu.pop()
+                    continue
+                cpu.step()
+            else:
+                print(f"FAIL  token ${f:02X} ${c:02X}: detok_kw2 did not return")
+                fails2 += 1
+                continue
+            got, exp = "".join(out), want2.get((f, c), "")
+            checked2 += 1
+            if got != exp:
+                print(f"FAIL  token ${f:02X} ${c:02X}: printed {got!r}, the walk's answer {exp!r}")
+                fails2 += 1
+    print(f"{'PASS' if not fails2 else 'FAIL'}  detok_kw2 over kw_ord2: {checked2} token pairs, "
+          f"{len(want2)} two-byte keywords, {fails2} mismatch(es)")
+    return 1 if fails or fails2 else 0
 
 
 if __name__ == "__main__":

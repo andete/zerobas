@@ -594,6 +594,15 @@ detok_kw:
                 ld      a,(hl)              ; the ordinal
                 cp      $FF
                 jr      z,dk_nokw
+                call    dk_ordent           ; B = klen, IY -> the chars
+                jr      dk_hit
+dk_nokw:
+                xor     a                   ; CF clear: not a keyword token
+                jr      dk_none
+; dk_ordent -- D-KWIDX2: kwtable entry number A (an ordinal from kw_ord / kw_ord2) ->
+; B = its klen, IY -> its chars. Jumps to the bucket (kw_bkt), skips A MOD 16 entries.
+; Clobbers A, DE, HL.
+dk_ordent:
                 ld      b,a
                 rrca
                 rrca
@@ -631,10 +640,7 @@ dk_at:
                 inc     hl
                 push    hl
                 pop     iy                  ; IY -> the keyword chars (pchar keeps IY)
-                jr      dk_hit
-dk_nokw:
-                xor     a                   ; CF clear: not a keyword token
-                jr      dk_none
+                ret
 dk_hit:
                 ; IY -> klen keyword chars; print B of them.
 dk_print:                                   ; (pchar keeps BC and IY)
@@ -658,6 +664,26 @@ detok_kw2:
                 push    hl
                 push    bc
                 push    ix
+                ; 🐌 D-KWIDX2 (2026-11-12): $FF + a second byte in KW2_LO.. -> kw_ord2,
+                ; generated with kw_ord (basic/kwidx.inc); anything else walks as before
+                ; (the ':'-prefixed pair, a byte outside the range, an unknown token)
+                inc     a
+                jr      nz,dk2_walk         ; not $FF
+                ld      a,c
+                sub     KW2_LO
+                jr      c,dk2_walk
+                cp      KW2_N
+                jr      nc,dk2_walk
+                ld      e,a
+                ld      d,0
+                ld      hl,kw_ord2
+                add     hl,de
+                ld      a,(hl)
+                cp      $FF
+                jr      z,dk2_walk
+                call    dk_ordent           ; B = klen, IY -> the chars
+                jr      dk_hit
+dk2_walk:
                 ld      ix,kwtable
 dk2_entry:
                 ld      a,(ix+0)            ; klen (0 = end)
