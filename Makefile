@@ -246,7 +246,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/basic-resident-abi.inc \
              sub2/grpprt.asm sub2/edctrl.asm sub2/frelive.asm \
              sub2/loadsave.asm sub2/tapeprog.asm \
-             sub2/scrstmt.asm sub2/pgmedit.asm sub/beep.asm \
+             sub2/scrstmt.asm sub2/pgmedit.asm sub/beep.asm sub/paintbios.asm \
              sub2/filestmt.asm
 SUB_ROM   := $(BUILD)/sub.rom
 
@@ -1460,6 +1460,12 @@ iscntc-acceptance: repack-machine
 # multiple of 8 of LPTPOS, as the VG-8020 (openMSX's printer logger as the readout).
 outdlp-acceptance: repack-machine
 	python3 probes/basic/basic_probe_outdlp.py --gate
+
+# D-BIOSRUNG (2026-11-12): PNTINI / SCANR / SCANL (C-BIOS's were bare `ret`s) as the
+# VG-8020 -- the count, the skip count, the cursor, BDRATR and the painted VRAM, SCREEN 2
+# and 3 (sub/paintbios.asm behind the page-0 stub in basic/biosfnk.asm).
+paintbios-acceptance: repack-machine
+	python3 probes/basic/basic_probe_paintbios.py --gate
 
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.

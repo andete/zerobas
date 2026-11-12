@@ -16842,8 +16842,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             (basic/biosfnk.asm, page 0, 7 B): IYH := EXPTBL[0], `jp CALSLT`; $0159 points there.
             biosregs-acceptance `calbas` (prog() gained `ix=`); knife K4 (`jp CALSLT` -> `ret`) ->
             RED ([`CAL_k4.out`](scratchpad/CAL_k4.out)). stub_scan 6 -> 5.
-      - [ ] PNTINI / SCANR / SCANL ($0129 / $012C / $012F): PAINT's helpers -- main room
-            (D-BIOSCONTRACT).
+      - [x] PNTINI / SCANR / SCANL ($0129 / $012C / $012F): PAINT's helpers -- main room
+            (D-BIOSCONTRACT). ✅ **BUILT (2026-11-12), steps (1) and (2) of the plan below:**
+            sub/paintbios.asm, ONE zerobas-sub page-1 tenant (SUBROM_IDX_PAINT 35, 164 B with its
+            table row -- sub page 1 170 -> 6 B free, read from clean) behind an 18 B page-0 stub
+            (basic/biosfnk.asm: the op in C, each entry's `ld c,n` swallowed by the previous
+            one's `db $21`), in the pad before the crt_rows pin ($3283), which the low-region
+            wall readout does not count (it still says 26 B; the pad had 71 B, now 53). The
+            tenant uses the BIOS's own READC / SETC / RIGHTC / LEFTC (CALSLT keeps slot-0 page 0
+            mapped) -- the cursor family fixed for SCREEN 3 the same day. Witness:
+            **`make paintbios-acceptance`** ([`basic_probe_paintbios.py`](probes/basic/basic_probe_paintbios.py), 15 rows, SCREEN 2 and 3:
+            HL, SCANR's DE, CLOC / CMASK, BDRATR, the painted VRAM; BC / A not compared) **15 / 15
+            SAME** ([`paintbios_gate1.out`](scratchpad/paintbios_gate1.out), 🔮 HIT). Knives, the ROM hash moving each time: SCANL's step
+            back off the border -> `ret z` -> RED on `l15_fill` / `b3_l_fill` (CUR) ([`paintbios_knife1.out`](scratchpad/paintbios_knife1.out);
+            `l9_edge` stays SAME, it stops at the edge -- 🔮 MISSED that one row); the whole-byte
+            rule cut -> RED on the three SCREEN 2 fill rows (PAT, COL), SCREEN 3 SAME
+            ([`paintbios_knife2.out`](scratchpad/paintbios_knife2.out)). 🔴 **The first knife was INERT** (sub.rom's hash unmoved): the
+            Makefile's sub.rom prerequisite list did not name the new file -- added; only the
+            hash around the plant caught it (an inert knife reads like a blind gate).
+            stub_scan: 4 -> **1** (STRTMS). ➡️ Step (3), PAINT onto the tenant, stays open below.
+            - [ ] **SCREEN 3 leaves unused VRAM unlike the VG-8020** -- 🎚️ TIER 6 — SCREEN 3's
+                  $2000.. reads $00 on the VG-8020, $F1 on zerobas; the pattern area past
+                  $0600 differs too (paintbios_run11.out's off-grid s3_* rows found a border
+                  there on the VG-8020 only). Only a VPEEK of VRAM the mode does not use sees it.
+            - [ ] **The low-region wall readout does not count the pad before crt_rows** --
+                  🎚️ TIER 6 — an instrument: `make basic-reloc` says "low region pin pads 0 B"
+                  while 53 B sit before the hand pin at $3283 (basic/float-arith.asm); D-
+                  BIOSCONTRACT's stubs live there unseen by any budget.
             🎚️ **FIRST IN THE QUEUE (Joost 2026-11-12: the BIOS stubs before the rest).** 🏗️
             Joost's idea (2026-11-12): *"could the implementation of paint use parts of those
             paint bios calls to save space?"* -- THE PLAN: (1) measure the three on the VG-8020
@@ -16899,6 +16924,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             premises is wrong -- MAPXYC's coordinates in SCREEN 3, or the address formula: settle
             it first (MAPXYC alone, then CLOC / CMASK for a grid of points), then read the fill
             around CLOC, before anything is built for SCREEN 3.
+            📏 **ROUND 5, SCREEN 3 IN BLOCKS (2026-11-12, [`paintbios_run6.out`](scratchpad/paintbios_run6.out), after MAPXYC's fix):**
+            borders at blocks 5 and 25 of block row 13, the cursor at block 12, paint 9, PNTINI A
+            15. **SCANR** fills blocks 12..24 (🔮 HIT), **HL = 13** (the count, start included),
+            the cursor ends ON the border (CLOC $165 / CMASK $0F, block 25), DE back as passed (0,
+            or 3 with a skip count of 3 -- no border block to step over here), BC = $0F01, A = 0.
+            **SCANL** fills blocks 6..11 (start excluded, as SCREEN 2), **HL = 6**, the cursor on
+            the LAST FILLED block (6, CMASK $F0), A = $F0, BC $0F01. ⚠️ **SCANR with B = 0 FILLED
+            too** in SCREEN 3 (🔮 not predicted -- in SCREEN 2 B = 0 changed no VRAM). ✅
+            **CONFIRMED** ([`paintbios_run7.out`](scratchpad/paintbios_run7.out), paint 7, fresh rows): B = 0 and B = 2 both fill
+            blocks 12..24, BC $0F01 either way -- in SCREEN 3 SCANR ignores B. zerobas: the
+            three are still bare `ret`s (nothing written).
+            📏 **ROUNDS 6-8, SCREEN 2's last questions (2026-11-12, [`paintbios_run8.out`](scratchpad/paintbios_run8.out), [`paintbios_run9.out`](scratchpad/paintbios_run9.out),
+            [`paintbios_run10.out`](scratchpad/paintbios_run10.out)):** paint = border = 9 (lines in 9). SCANR from x 50: the partial
+            end bytes get their pattern bits SET and colour byte **paint << 4 | old background**
+            ($94); every WHOLE byte between gets pattern $00 and colour byte **= the paint
+            colour** ($09) -- also over a colour byte of $C4: the foreground is CLEARED, not kept.
+            SCANL the same leftward (x 21..49, HL 29). Registers: SCANR HL = the count, DE as
+            passed, B = the last partial byte's fill mask ($F0), C = A = $05 (a leftover, origin
+            unread); SCANL DE 4, B $C0. **At the screen's edge with no border** SCANR from x 150
+            stops ON x 255 (HL 106, CLOC $6FF / CMASK 1), SCANL from x 10 on x 0 (HL 10, CMASK
+            $80); SCREEN 3 the same in blocks (block 63 / block 0). ➡️ The measurement is
+            complete for both screens (HL, DE, CLOC / CMASK, BDRATR, VRAM; BC / A leftovers
+            partly read): next is the build -- sub-ROM tenants behind page-0 stubs. 💡 A
+            tenant called through CALSLT into sub page 1 keeps slot-0 page 0 mapped, so it can
+            use the BIOS's own RDVRM / WRTVRM and the cursor family just fixed (READC, RIGHTC,
+            LEFTC) instead of carrying its own.
             ✅ **SETTLED -- AND A NEW DIVERGENCE (2026-11-12, [`mapxyc3_probe.py`](scratchpad/mapxyc3_probe.py) ->
             [`mapxyc3_run.out`](scratchpad/mapxyc3_run.out)):** MAPXYC alone, four points. SCREEN 2: identical on both. **SCREEN 3:
             the VG-8020's MAPXYC takes BLOCK coordinates (0..63 x 0..47), not pixels** -- (8,0) ->

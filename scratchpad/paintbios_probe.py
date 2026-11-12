@@ -55,19 +55,25 @@ ROWB = ",".join(f"&H{(55 // 8) * 256 + (x // 8) * 8 + 55 % 8:X}" for x in range(
 ROWB3 = ",".join(f"&H{(55 // 32) * 256 + (x // 8) * 8 + (55 // 4) % 8:X}" for x in range(16, 112, 8))
 
 
-def prog(c, extra="", scr=2):
+# ROUND 5: SCREEN 3 in BLOCK coordinates (MAPXYC takes blocks there, mapxyc3_run.out):
+# the borders at pixel x 20 / 100 are blocks 5 / 25, y 40..70 blocks 10..17; the cursor at
+# block (12, 13); the window is block row 13, blocks 4..27 (12 bytes, two blocks each)
+ROWB3B = ",".join(f"&H{(13 // 8) * 256 + (bx // 2) * 8 + 13 % 8:X}" for bx in range(4, 28, 2))
+
+
+def prog(c, extra="", scr=2, win=None, lc=15):
     n = len(c)
     rd = ('C=PEEK(&HF92A)+256*PEEK(&HF92B):M=PEEK(&HF92C):D=PEEK(&HFCB2):V$="":'
           f'FOR I=0 TO 11:READ A:V$=V$+RIGHT$("0"+HEX$(VPEEK(A)),2):'
           f'W$=W$+RIGHT$("0"+HEX$(VPEEK(A+&H2000)),2):NEXT')   # ROUND 3: the colour table too
     return ["NEW",
-            f"10 CLEAR 200,&HCFFF:SCREEN {scr}:LINE (100,40)-(100,70),15:LINE (20,40)-(20,70),15{extra}",
+            f"10 CLEAR 200,&HCFFF:SCREEN {scr}:LINE (100,40)-(100,70),{lc}:LINE (20,40)-(20,70),{lc}{extra}",
             f"20 FOR I=0 TO {n - 1}:READ X:POKE &HD000+I,X:NEXT",
             "30 DEFUSR=&HD000:Q=USR(0):" + rd,
             '40 SCREEN 0:S$="":FOR I=0 TO 3:S$=S$+" "+HEX$(PEEK(&HD101+2*I)*256+PEEK(&HD100+2*I)):NEXT',
             '50 PRINT"[R";S$;"]":PRINT"[C";HEX$(C);" ";HEX$(M);" ";HEX$(D);"]":PRINT"[C ";V$;"]":PRINT"[C ";W$;"]"',
             "60 DATA " + ",".join(str(b) for b in c),
-            "70 DATA " + (ROWB3 if scr == 3 else ROWB),
+            "70 DATA " + (win or (ROWB3 if scr == 3 else ROWB)),
             "RUN"]
 
 
@@ -99,6 +105,27 @@ ROWS = {
     "s3_r9_fill":   prog(code(50, 55, 15, 9, 0x012C, 1, 0), scr=3),
     "s3_r9_nofill": prog(code(50, 55, 15, 9, 0x012C, 0, 0), scr=3),
     "s3_l9_fill":   prog(code(50, 55, 15, 9, 0x012F, 1, 0), scr=3),
+    # ROUND 5: block coordinates
+    "b3_r_fill":    prog(code(12, 13, 15, 9, 0x012C, 1, 0), scr=3, win=ROWB3B),
+    "b3_r_nofill":  prog(code(12, 13, 15, 9, 0x012C, 0, 0), scr=3, win=ROWB3B),
+    "b3_l_fill":    prog(code(12, 13, 15, 9, 0x012F, 1, 0), scr=3, win=ROWB3B),
+    "b3_r_skip3":   prog(code(12, 13, 15, 9, 0x012C, 1, 3), scr=3, win=ROWB3B),
+    # ROUND 6: did B = 0 really fill in SCREEN 3? paint 7, B = 0 and B = 2
+    "b3_r7_b0":     prog(code(12, 13, 15, 7, 0x012C, 0, 0), scr=3, win=ROWB3B),
+    # ROUND 6: SCREEN 2 with paint = border = 9 (lines in 9): which nibble a whole-byte
+    # fill writes (round 3's 0F could not tell, paint was 15)
+    "r9_fill":      prog(code(50, 55, 9, 9, 0x012C, 1, 0), lc=9),
+    "l9_fill":      prog(code(50, 55, 9, 9, 0x012F, 1, 0), lc=9),
+    # ROUND 7: whole bytes whose foreground is NOT 0 (colour $C4 at x 56..95 of row 55)
+    # ROUND 8: no border before the screen's edge -- SCANR from x 150 (right of the x 100
+    # line), SCANL from x 10 (left of the x 20 line); SCREEN 3 the same in blocks
+    "r9_edge":      prog(code(150, 55, 9, 9, 0x012C, 1, 0), lc=9),
+    "l9_edge":      prog(code(10, 55, 9, 9, 0x012F, 1, 0), lc=9),
+    "b3_r_edge":    prog(code(40, 13, 15, 9, 0x012C, 1, 0), scr=3, win=ROWB3B),
+    "b3_l_edge":    prog(code(2, 13, 15, 9, 0x012F, 1, 0), scr=3, win=ROWB3B),
+    "r9_fgc":       prog(code(50, 55, 9, 9, 0x012C, 1, 0), lc=9,
+                         extra=":FOR I=&H263F TO &H265F STEP 8:VPOKE I,&HC4:NEXT"),
+    "b3_r7_b2":     prog(code(12, 13, 15, 7, 0x012C, 2, 0), scr=3, win=ROWB3B),
 }
 for _n, _p in ROWS.items():                       # the POKE count FROM the bytes
     _data = _p[6].split(" ", 1)[1].split(",")

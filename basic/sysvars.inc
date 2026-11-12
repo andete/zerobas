@@ -5875,6 +5875,9 @@ SUBROM_IDX_BEEP      equ 34     ; beep_tenant (sub/beep.asm): BEEP's body, direc
                                 ; out (main's ex_beep, basic/sound.asm). PAGE 1.
                                 ; From zerobas-sub2's page 0 index 1 (SUB2_IDX_BEEP,
                                 ; D-TOKOVF) with D-SUB2RETIRE step 2d, 2026-11-04.
+SUBROM_IDX_PAINT     equ 35     ; paint_tenant (sub/paintbios.asm): the BIOS's PNTINI /
+                                ; SCANR / SCANL, C = the op (0 / 1 / 2), from the page-0
+                                ; stub bios_scanr (basic/biosfnk.asm). PAGE 1. D-BIOSRUNG.
 ; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
 ; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
 ; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave

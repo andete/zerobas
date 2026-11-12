@@ -763,6 +763,9 @@ sub_p1_table:
                 jp      beep_tenant             ; index 34 (SUBROM_IDX_BEEP): the BEEP
                                                 ;   body (sub/beep.asm). From sub2's
                                                 ;   page 0 (SUB2_IDX_BEEP; step 2d).
+                jp      paint_tenant            ; index 35 (SUBROM_IDX_PAINT): the BIOS's
+                                                ;   PNTINI / SCANR / SCANL (sub/paintbios.asm,
+                                                ;   D-BIOSRUNG), C = the op.
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
@@ -1028,6 +1031,7 @@ p1cb:
                 include "sub2/scrstmt.asm"
                 include "sub2/pgmedit.asm"
                 include "beep.asm"
+                include "paintbios.asm"         ; D-BIOSRUNG: PNTINI / SCANR / SCANL
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same

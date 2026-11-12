@@ -512,6 +512,10 @@ fperr_to_err:
                 jp      bios_outdlp         ; OUTDLP: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $0159
                 jp      bios_calbas         ; CALBAS: C-BIOS's printed an error (D-BIOSRUNG)
+                org     $0129
+                jp      bios_pntini         ; PNTINI / SCANR / SCANL: C-BIOS's were bare
+                jp      bios_scanr          ;   `ret`s (D-BIOSRUNG; the sub-ROM's paint
+                jp      bios_scanl          ;   tenant, sub/paintbios.asm)
                 org     $00CC
                 jp      bios_erafnk
                 jp      bios_dspfnk
