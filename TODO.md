@@ -8170,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15205 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15219 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10631,7 +10631,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       uses, or (c) accept the body copy and fix the PRECEDENCE some other way.
       Each touches a load-bearing subsystem whose internal invariant has no
       external oracle — which is why this is now 🙋 and not 🤖.
-      🎚️ TIER 6 — which of two applicable errors wins (`String too long` precedence)
+      🔴 **2026-11-12: THE EVERYDAY FACE, MEASURED -- TIER 1 NOW, ON EVIDENCE.** Found by
+      D-BIOSRUNG's queue probe (a hex dump built as `V$=V$+RIGHT$("0"+HEX$(PEEK(..)),2)`,
+      `Out of string space` on zerobas only). [`strspace_probe.py`](scratchpad/strspace_probe.py) `--limit` ->
+      [`strspace_run5.out`](scratchpad/strspace_run5.out), default CLEAR 200, how far `V$=V$+op` grows before ERR 14:
+      | op | VG-8020 (no Q$ / a live 12 B Q$) | zerobas |
+      |---|---|---|
+      | `"AB"` (a literal) | 100 / 94 | 100 / 94 -- SAME (D-CONCATPEAK's in-place extend) |
+      | `RIGHT$("0"+HEX$(I),2)`, `HEX$(I+16)`, `("A"+"B")`, `RIGHT$("XAB",2)` | 100 / 94 | **66 / 62**, FRE("") 134 / 126 at the error |
+      Any COMPUTED right operand costs one more copy of the left one -- this item's operand-1
+      body snapshot, on the commonest string-building idiom there is, not a 128-byte corner.
+      A program that runs on the VG-8020 stops here: 🎚️ **TIER 1** (the precedence half stays
+      what it was). The cause is this item's, not re-derived: the routes are still (a) / (b) /
+      (c) above, and still Joost's.
+      🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
+      of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
       🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
       ladder's calendar showed `INSTR(1,T$+" "," ")` Out of string space here and
       fine on the VG-8020, and I tied it to THIS item's operand-1 body copy. It
@@ -10909,7 +10923,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16507,6 +16521,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             `END` before the register line, so they never compared registers -- the readout was
             blind to them; this records that the gap is deliberate now, not unseen.
       - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
+            🔭 **SCOPED 2026-11-12 -- NOT AN ENTRY-POINT FIX ALONE.** zerobas's PLAY fills the
+            published queues (QUETAB / VOICAQ.. / MUSICF / PLYCNT, basic/sysvars.inc) but with
+            its OWN packet format (sub/playparse.asm: "own-design PLAY_OP_* packet stream"),
+            drained by its own servicer (basic/playsvc.asm). A machine-code program that PUTQs
+            the REFERENCE's packets and calls STRTMS would feed our servicer bytes it does not
+            read, so STRTMS alone (MUSICF from the non-empty queues) would play garbage.
+            ➡️ Steps: (1) the reference's packet format, read from RAM after a VG-8020 `PLAY`
+            (QUETAB's rings and VOICAQ.. -- work-area RAM, readable; no ROM byte); (2) decide
+            -- our servicer reads the reference's format (PLAY then writes it too), or STRTMS
+            translates -- probably a question for Joost once (1) is measured, since it touches
+            PLAY's tested engine; (3) then STRTMS itself, measured (MUSICF / PLYCNT after it,
+            and the PSG registers read through RDPSG while it plays).
       - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
             ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
             ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7

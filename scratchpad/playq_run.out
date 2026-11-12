@@ -1,0 +1,17 @@
+Philips_VG c      [Q0606007F75F9]   [V0060198801ACFF000000000000000000000 00000000000000000000000000000] O
+Philips_VG cde    [Q1010007F75F9]   [V0060198801AC601988017D6019880153FF0 00000000000000000000000000000] O
+Philips_VG l8c    [Q0606007F75F9]   [V00600C8801ACFF000000000000000000000 00000000000000000000000000000] O
+Philips_VG o5c    [Q0606007F75F9]   [V0060198800D6FF000000000000000000000 00000000000000000000000000000] O
+Philips_VG v10c   [Q0606007F75F9]   [V0060198A01ACFF000000000000000000000 00000000000000000000000000000] O
+Philips_VG t200c  [Q0606007F75F9]   [V00600F8801ACFF000000000000000000000 00000000000000000000000000000] O
+Philips_VG r4     [Q0404007F75F9]   [V00201980FF0000000000000000000000000 00000000000000000000000000000] O
+Philips_VG n60    [Q0606007F75F9]   [V00601988006BFF000000000000000000000 00000000000000000000000000000] O
+C-BIOS_MSX c      [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX cde    [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX l8c    [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX o5c    [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX v10c   [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX t200c  [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX r4     [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX n60    [Q";Q$;"]":PRINT  [V";V$;"] " RUN Out of string space in 40 ZB color auto goto list run
+refcache: 0 hit, 2 miss, 2 stored
