@@ -1,0 +1,7 @@
+ROW grpprt2 VG=[[C 18  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 10  13 ] | [R 5566 3344 1122 A41]] DIVERGES
+ROW grpprt3 VG=[[C 42  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 10  13 ] | [R 5566 3344 1122 A41]] DIVERGES
+ROW grpprt3_cr VG=[[C 0  45 ] | [R 5566 3344 1122 AD]] ZB=[[C 10  13 ] | [R 5566 3344 1122 AD]] DIVERGES
+ROW grpprt1 VG=[[C 42  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 10  13 ] | [R 5566 3344 1122 A41]] DIVERGES
+
+FAIL: BIOS helper registers (0/4)
+refcache: 4 hit, 4 miss, 4 stored

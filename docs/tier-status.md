@@ -173,7 +173,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**96 of 108** have a direct witness and are not stubs; **11 are NOT MEASURED**; **1 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
+**97 of 108** have a direct witness and are not stubs; **10 are NOT MEASURED**; **1 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -216,7 +216,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0084 | CALPAT | exercised | `biosregs-acceptance` |
 | $0087 | CALATR | exercised | `biosregs-acceptance` |
 | $008A | GSPSIZ | exercised | `biosregs-acceptance` |
-| $008D | GRPPRT | NOT MEASURED | — |
+| $008D | GRPPRT | exercised | `biosregs-acceptance` |
 | $0090 | GICINI | exercised | `biosl-acceptance`, `gicini-acceptance` |
 | $0093 | WRTPSG | exercised | `biosregs-acceptance` |
 | $0096 | RDPSG | exercised | `biosregs-acceptance` |

@@ -1,0 +1,7 @@
+ROW grpprt2 VG=[[C 18  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 18  13 ] | [R 5566 3344 1122 A41]] SAME
+ROW grpprt3 VG=[[C 42  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 42  13 ] | [R 5566 3344 1122 A41]] SAME
+ROW grpprt3_cr VG=[[C 0  45 ] | [R 5566 3344 1122 AD]] ZB=[[C 0  45 ] | [R 5566 3344 1122 AD]] SAME
+ROW grpprt1 VG=[[C 42  13 ] | [R 5566 3344 1122 A41]] ZB=[[C 42  13 ] | [R 5566 3344 1122 A41]] SAME
+
+PASS: BIOS helper registers (4/4)
+refcache: 0 hit, 8 miss, 8 stored

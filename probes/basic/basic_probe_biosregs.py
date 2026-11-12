@@ -302,6 +302,25 @@ ROWS = {
                    after='PRINT:PRINT "[C";HEX$(VPEEK(&H3F10));"]"'),
     "outdo": prog(0x0018, 0x42, after="PRINT"),
 }
+# GRPPRT ($008D), D-BIOSRUNG 2026-11-12: the BIOS entry draws in EVERY mode with the pitch
+# from SCRMOD's bit 0 (SCREEN 1 and 3: 4x4 blocks, advance and CR 32; SCREEN 2: 8) -- the
+# cursor's move and the registers only: the glyph itself is the font's, and the font is
+# C-BIOS's on zerobas (scratchpad/grpprt3_run5.out).
+_GXY = ('X=PEEK(&HFCB7)+256*PEEK(&HFCB8):Y=PEEK(&HFCB9)+256*PEEK(&HFCBA):'
+        'SCREEN 0:PRINT:PRINT "[C";X;Y;"]"')
+
+
+def _grp(scr, ch):
+    return prog(0x008D, ch, before=f"SCREEN {scr}:POKE &HFCB7,10:POKE &HFCB8,0:"
+                                   "POKE &HFCB9,13:POKE &HFCBA,0", after=_GXY)
+
+
+ROWS.update({
+    "grpprt2":    _grp(2, 0x41),
+    "grpprt3":    _grp(3, 0x41),
+    "grpprt3_cr": _grp(3, 13),
+    "grpprt1":    _grp(1, 0x41),
+})
 
 
 def read(machine, p):

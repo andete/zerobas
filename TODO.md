@@ -16848,7 +16848,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             table row -- sub page 1 170 -> 6 B free, read from clean) behind an 18 B page-0 stub
             (basic/biosfnk.asm: the op in C, each entry's `ld c,n` swallowed by the previous
             one's `db $21`), in the pad before the crt_rows pin ($3283), which the low-region
-            wall readout does not count (it still says 26 B; the pad had 71 B, now 53). The
+            wall readout does not count (it still says 26 B; the pad had 89 B, then 71 -- 🔴 this
+            line first said "71, now 53": the 71 was read AFTER the stub went in). The
             tenant uses the BIOS's own READC / SETC / RIGHTC / LEFTC (CALSLT keeps slot-0 page 0
             mapped) -- the cursor family fixed for SCREEN 3 the same day. Witness:
             **`make paintbios-acceptance`** ([`basic_probe_paintbios.py`](probes/basic/basic_probe_paintbios.py), 15 rows, SCREEN 2 and 3:
@@ -16867,7 +16868,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   there on the VG-8020 only). Only a VPEEK of VRAM the mode does not use sees it.
             - [ ] **The low-region wall readout does not count the pad before crt_rows** --
                   🎚️ TIER 6 — an instrument: `make basic-reloc` says "low region pin pads 0 B"
-                  while 53 B sit before the hand pin at $3283 (basic/float-arith.asm); D-
+                  while 53 B (2026-11-12, after GRPPRT's stub) sit before the hand pin at $3283 (basic/float-arith.asm); D-
                   BIOSCONTRACT's stubs live there unseen by any budget.
             🎚️ **FIRST IN THE QUEUE (Joost 2026-11-12: the BIOS stubs before the rest).** 🏗️
             Joost's idea (2026-11-12): *"could the implementation of paint use parts of those
@@ -16995,8 +16996,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   is now FULL (0 B) and island 3 has 1 B spare: the PAINT helpers need room
                   elsewhere (the sub-ROM tenant plan stands). ➡️ Next: the PAINT helpers' SCREEN 3
                   rows in block coordinates (x 12, y 13).
-                  - [ ] **GRPPRT in SCREEN 3 is unmeasured** (it follows MAPXYC's CLOC, which now
+                  - [x] **GRPPRT in SCREEN 3 is unmeasured** (it follows MAPXYC's CLOC, which now
                         means blocks there) -- 🎚️ TIER 1, one row on both machines.
+                        ✅ **MEASURED AND FIXED (2026-11-12, [`grpprt3_probe.py`](scratchpad/grpprt3_probe.py)):** C-BIOS's
+                        GRPPRT (upstream's too) draws in SCREEN 2 only; in SCREEN 3 zerobas drew
+                        NOTHING, left GRPACX, and CR stepped 8 ([`grpprt3_run.out`](scratchpad/grpprt3_run.out)). The VG-8020's
+                        BIOS entry draws in EVERY mode with the pitch from SCRMOD's bit 0 -- SCREEN 3
+                        AND SCREEN 1: each font pixel a 4x4 block at (GRPACX/4, GRPACY/4), set
+                        pixels in FORCLR, unset ones untouched (over $99), advance and CR 32
+                        ([`grpprt3_run2.out`](scratchpad/grpprt3_run2.out) .. [`grpprt3_run4.out`](scratchpad/grpprt3_run4.out)) -- which is BASIC's own PRINT #-to-GRP:
+                        tenant exactly (sub2/grpprt.asm, D-OPENGRP). ➡️ $008D now jumps to an 18 B
+                        stub (basic/biosfnk.asm, the crt_rows pad, 71 -> 53 B, read 2026-11-12) that calls that tenant,
+                        byte in E, registers kept. After ([`grpprt3_run5.out`](scratchpad/grpprt3_run5.out)): GRPACX / GRPACY /
+                        registers SAME in SCREEN 1, 2 and 3; the glyph bytes differ only by the font
+                        (C-BIOS's `A` is 70 88 88 F8 .., the VG-8020's 20 50 88 88 F8 .. -- the
+                        font divergence already on file), placed on the same blocks. Gate:
+                        biosregs-acceptance `grpprt1 / 2 / 3 / 3_cr` (cursor + registers) 4 / 4
+                        ([`grpprt_gate1.out`](scratchpad/grpprt_gate1.out)); knife (the stub's call -> `nop`s, ROM hash moved) -> all
+                        four RED ([`grpprt_knife1.out`](scratchpad/grpprt_knife1.out)). SCREEN 2's biossweep rows unchanged ([`biossweep_grpprt.out`](scratchpad/biossweep_grpprt.out),
+                        the font only).
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**

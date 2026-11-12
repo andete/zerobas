@@ -89,6 +89,7 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x00C9: bytes([0xC3, 0xFB, 0x15]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x014D: bytes([0xC3, 0x21, 0x18]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0159: bytes([0xC3, 0x19, 0x1A]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x008D: bytes([0xC3, 0x49, 0x05]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0129: bytes([0xC3, 0x52, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
                                0xC3, 0x52, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s)
                                0xC3, 0x52, 0x09]),

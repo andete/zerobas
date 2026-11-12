@@ -183,6 +183,28 @@ bios_scanr:
                 pop     ix
                 ret
 
+; GRPPRT ($008D) -- D-BIOSRUNG (2026-11-12). C-BIOS's draws in SCREEN 2 only; on the
+; VG-8020 the BIOS entry draws in every mode with the pixel pitch from SCRMOD's bit 0
+; (SCREEN 3 -- and SCREEN 1 -- a 4x4 block per font pixel, the advance and CR 32;
+; scratchpad/grpprt3_run*.out), which is exactly BASIC's own PRINT #-to-GRP: tenant
+; (sub2/grpprt.asm, measured on the VG-8020 by D-OPENGRP). So the entry is that tenant,
+; byte in E. Registers kept, as the VG-8020 keeps them.
+bios_grpprt:
+                push    hl
+                push    de
+                push    bc
+                push    af
+                push    ix
+                ld      e,a
+                call    sr_inl1
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_GRPPRT)
+                pop     ix
+                pop     af
+                pop     bc
+                pop     de
+                pop     hl
+                ret
+
 bios_beep:
                 push    hl
                 push    ix
