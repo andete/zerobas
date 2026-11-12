@@ -16605,6 +16605,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   ⚠️ First measure whether the latch is set on the press EDGE or every frame held
                   (zerobas: 0 right after BREAKX saw the key, 3 five frames later -- the scan
                   latency, not yet the edge question).
+                  📏 **EDGE, ON BOTH (2026-11-12, [`latchedge_probe.py`](scratchpad/latchedge_probe.py) -> [`latchedge_run.out`](scratchpad/latchedge_run.out)):** wait for the
+                  latch, clear it, five frames held, again after the release. CTRL-STOP `3 0 0`
+                  -- latched ONCE, on the press; STOP `4 0 4` -- on the press and AGAIN after the
+                  release (the STOP pause's second edge?). VG-8020 and zerobas identical: the
+                  interrupt side needs nothing; the slice is the run loop's consumer only.
+                  🔴 **AND STOP DOES NOT PAUSE A PROGRAM HERE (2026-11-12, [`stoppause_probe.py`](scratchpad/stoppause_probe.py) ->
+                  [`stoppause_run3.out`](scratchpad/stoppause_run3.out)):** a 4.5 s TIME loop, STOP held 1 s from RUN+3.5 s -- the
+                  VG-8020 prints nothing (paused, waiting for the next STOP), zerobas runs on to
+                  `DONE`. The everyday "freeze the listing / the game" key does nothing. (Two
+                  timeline misses first, kept: a 3 s loop ended before the press, a 5 s one
+                  outlasted the capture -- the press lands at RUN + step + lead.)
+                  ➡️ **THE SLICE, ONE CONSUMER:** at each statement boundary, INTFLG != 0 goes
+                  through the logic isc_slow already has, measured as ISCNTC: 3 -> the break
+                  (rp_break's trap / real-break arms), 4 -> the pause (key up, then the next
+                  latch; CTRL-STOP there -> the break). BREAKX's level poll and D-STOPTEAR's
+                  confirming read retire with it; ON STOP's shadow re-derived on the latch (an
+                  edge already). 🎚️ TIER 1.
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
