@@ -1,0 +1,9 @@
+Philips_VG c201    RUN [M none 99 ] Ok color auto goto list run
+Philips_VG content RUN [M none] Ok color auto goto list run
+Philips_VG array   RUN [M 14 100 100 ] Ok color auto goto list run
+Philips_VG wv      RUN [M 14 67 73 ] Ok color auto goto list run
+C-BIOS_MSX c201    RUN [M 14 67 134 ] ZB color auto goto list run
+C-BIOS_MSX content RUN [M 14 67 BCDNOP 133 ] ZB color auto goto list run
+C-BIOS_MSX array   RUN [M 14 66 134 ] ZB color auto goto list run
+C-BIOS_MSX wv      RUN [M 14 61 79 ] ZB color auto goto list run
+refcache: 0 hit, 2 miss, 2 stored

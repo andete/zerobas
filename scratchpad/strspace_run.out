@@ -1,0 +1,7 @@
+Philips_VG noplay  RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+Philips_VG play    RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+Philips_VG simple  RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+C-BIOS_MSX noplay  RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+C-BIOS_MSX play    RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+C-BIOS_MSX simple  RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+refcache: 0 hit, 2 miss, 2 stored

@@ -8170,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15222 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15244 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10647,6 +10647,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       compatible, think harder (fable agent)"*** -- not one of (a) / (b) / (c) as a
       trade-off: the VG-8020's capacity exactly, no dangling pointer. A Fable design pass
       was run; its report lands here before anything is built.
+      📐 **THE DESIGN (2026-11-12, [`catalias_design.md`](scratchpad/catalias_design.md) -- D-CATALIAS):** the reference's
+      peak is old V$ + the new result = 2N+2, which fits all six measured capacities (100 /
+      94 / 80); ours is ~3N+5 (the operand-1 snapshot). (a) and (b) are BOTH DEAD on one GC
+      fact -- it moves each body once and needs root ptrs DISTINCT; a second root on V$'s
+      body is double-move corruption (sub/strheap.asm "phantom root"). Chosen: (c), an
+      INDIRECT bodiless slot pushed before operand 2 -- a scalar's descriptor ADDRESS (op
+      23) or an array element's offset (op 24, op 21's shape), never a heap pointer, so
+      never a GC root; resolved at op time, the realloc path only (never extend-in-place:
+      aliasing), the slot becoming the owned result as she_slice_ofs does; both error arms
+      neutralise an unresolved slot to `[0][0]`. COST (the design's estimate, 2026-11-12): ~70 B across page 1, the low region and sub
+      page 0 -- carve first. ➡️ **NEXT: measure on the VG-8020 first** -- `CLEAR 201` with
+      `CHR$(65)` (100 vs 101 separates the two sub-models), V$'s content after the error,
+      an array-element left operand and `W$=V$+op`; then build to the design's rows and
+      knives.
+      📏 **MEASURED 2026-11-12 ([`catalias_vg2.out`](scratchpad/catalias_vg2.out), `strspace_probe.py --design`):** VG-8020 /
+      zerobas -- `CLEAR 201` + CHR$(65): **100** (FRE 101) / 67 -> the **Tk-live** model (the
+      right-hand temporary stays live through the allocation); V$'s CONTENT after the error
+      intact (`BCD..UVW`, 100 B) / 67; an ARRAY element left operand **100** / 66 (as a scalar);
+      `W$=V$+STRING$(I,"B")` with V$ = 60: **67** / 61 -- 60 + old W$ 66 + new W$ 67 + Tk 7 =
+      200 exactly, Tk-live again. (A first run's 99-iteration loops never ran out on the
+      VG-8020: [`catalias_vg.out`](scratchpad/catalias_vg.out).) The design's open question is settled in its favour:
+      build it as written (Tk live), with these four rows added to its gate.
       🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
       of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
       🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
@@ -10926,7 +10948,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15222 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15244 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16793,6 +16815,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         -- then every consecutive sector op keeps D-FDCDI's windows. Witness:
                         programs-acceptance --gaps (L5_files) with step 2 applied, and the iff=
                         column staying 01 through line 40.
+                        ⚠️ **CORRECTION, SAME DAY: fdc_io_done DOES give the caller its IFF back**
+                        (disk/fat.asm fdc_io_done: `ei` when FDC_IFF != 0) -- so the interrupts go
+                        off BETWEEN the read's return and the write's fdc_di_save, somewhere on
+                        the write's path, not in DSKIO's exit. The stack sampler on HEAD
+                        (`asavedi_pc_probe.py L5_files --min=0.12 --stack` -> [`FW4_stack.out`](scratchpad/FW4_stack.out)) shows
+                        DSKIO reached through **dskio_calslt** (an inter-slot call) on line 100's
+                        OPEN -- a LEAD for where a write loses its EI, NOT a finding (two
+                        symbol-name inferences on this thread were already wrong). And a
+                        separate puzzle there: that 0.139 s gap sits INSIDE the windowed read
+                        poll (frdw_poll) with no JIFFY tick at all. ➡️ Next: the write's
+                        call stack at its fdc_di_save (a PC breakpoint there logging the stack
+                        and IFF), and whether frdw_poll's window takes an interrupt at all on
+                        that path.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before

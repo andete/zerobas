@@ -1,0 +1,24 @@
+ENDED t=35.3 gaps=19 max=0.139
+
+GAP 0.139 s: 138 samples, IFF=0 in 133; CURLIN 0064
+    86  PC ~7A10  A8=FC  basic-reloc:nx_fput+4 | disk:frdw_poll+17 | sub:ls_csav_speed+29
+    27  PC ~7A20  A8=FC  basic-reloc:nxi+14 | disk:fdc_rd_wait+8 | sub:lcsp_1200+1
+    13  PC ~6840  A8=FC  basic-reloc:arf_lp+17 | disk:fm_fatacc+46 | sub:tsb_data+19
+     2  PC ~43D0  A8=FC  basic-reloc:ee_raise+2 | disk:fdc_restore+4 | sub:ATAN_COEF+79
+     1  PC ~3660  A8=F0  basic-reloc:dcc_two+8 | sub:ks_eol+13
+     1  PC ~5870  A8=F0  basic-reloc:pchar+4 | disk:dout_pos+10 | sub:pqa_b1+3
+     1  PC ~5860  A8=F0  basic-reloc:print_dbwin+13 | disk:dout_live+4 | sub:pqa_sub+17
+     1  PC ~4D30  A8=F0  basic-reloc:stk_guard+3 | disk:ffb_rcok+12 | sub:flog_not_negone+5
+  stack at the middle sample (each word named against our builds):
+    430C  basic-reloc:set_errflg+2 | disk:fdc_rp_attempt+18 | sub:fsqn_down_go+33
+    42B4  basic-reloc:ex_let_str+31 | disk:dskio_rd+3 | sub:fsqn_r2_done+14
+    67B0  basic-reloc:basicint_play+0 | disk:dskio_calslt+3 | sub:svh_id+16
+    4EF6  basic-reloc:ev_ret_e+15 | disk:fat_geom_read+12 | sub:snk_have_f+18
+    67E6  basic-reloc:inpc_cont+15 | disk:fat_mount+3 | sub:bsv_cas_open+7
+    455E  basic-reloc:try_sub_slot+2 | disk:hk_ochk+3 | sub:p0_gb_illegal+7
+    F392  basic-reloc:CLPRIM+6 | disk:TXTMAX_NODISK+18 | sub:CLPRIM+6
+    F043  basic-reloc:FLD_END+42 | disk:DSK_CURDRV+33 | sub:FLD_END+42
+    2448  sub:gwp_pos+7
+    8702  
+    FE61  basic-reloc:H_FOPEN+4 | disk:H_FOPEN+4 | sub:H_FOPEN+4
+    670F  basic-reloc:cg_back+0 | disk:dk_disk+39 | sub:is_disk+12

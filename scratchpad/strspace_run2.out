@@ -1,0 +1,11 @@
+Philips_VG noplay  RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+Philips_VG play    RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+Philips_VG qthenv  RUN [S 64 124 ] Ok color auto goto list run
+Philips_VG qthenv_play RUN [S 64 124 ] Ok color auto goto list run
+Philips_VG simple  RUN [F 200 ] [S 64 136 ] Ok color auto goto list run
+C-BIOS_MSX noplay  RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+C-BIOS_MSX play    RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+C-BIOS_MSX qthenv  RUN Out of string space in 20 ZB color auto goto list run
+C-BIOS_MSX qthenv_play RUN Out of string space in 40 ZB color auto goto list run
+C-BIOS_MSX simple  RUN [F 200 ] [S 64 136 ] ZB color auto goto list run
+refcache: 0 hit, 2 miss, 2 stored

@@ -33,6 +33,25 @@ GROW = lambda pre: pre + ['ON ERROR GOTO 50', 'V$="":FOR I=1 TO 99:V$=V$+"AB":NE
 GROWX = lambda pre, op: pre + ['ON ERROR GOTO 50', f'V$="":FOR I=1 TO 99:V$=V$+{op}:NEXT',
                                 'PRINT "[M none";LEN(V$);"]":END',
                                 'PRINT "[M";ERR;LEN(V$);FRE("");"]":END']
+# D-CATALIAS, before building (scratchpad/catalias_design.md §6): the rows the design
+# says to measure on the VG-8020 first.
+def _grow_custom(pre, body, after):
+    return pre + ['ON ERROR GOTO 50', body, 'PRINT "[M none]":END', 'PRINT "[M";ERR;' + after + ';"]":END']
+LIMIT_D = {
+    # Tk-live (100) or Tk-freed (101)?
+    # (99 iterations never ran out on the VG-8020 -- catalias_vg.out: `[M none 99]`)
+    "c201": _grow_custom(['CLEAR 201'], 'V$="":FOR I=1 TO 150:V$=V$+CHR$(65):NEXT',
+                         'LEN(V$);FRE("")'),
+    # V$'s CONTENT intact after the error, not only its length
+    "content": _grow_custom(['Q$=""'], 'V$="":FOR I=1 TO 150:V$=V$+CHR$(65+(I MOD 26)):NEXT',
+                            'LEN(V$);LEFT$(V$,3);RIGHT$(V$,3);FRE("")'),
+    # an ARRAY element as the left operand
+    "array": _grow_custom(['DIM A$(2)'], 'A$(1)="":FOR I=1 TO 99:A$(1)=A$(1)+HEX$(I+16):NEXT',
+                          'LEN(A$(1));FRE("")'),
+    # a DIFFERENT target: W$=V$+op (V$ fixed at 60)
+    "wv": _grow_custom(['V$=STRING$(60,"A")'], 'W$="":FOR I=1 TO 99:W$=V$+STRING$(I,"B"):NEXT',
+                       'LEN(W$);FRE("")'),
+}
 LIMIT = {
     "rh_noq":  GROWX(['Q$=""'], 'RIGHT$("0"+HEX$(I),2)'),
     "rh_q12":  GROWX(['Q$=STRING$(12,65)'], 'RIGHT$("0"+HEX$(I),2)'),
@@ -61,6 +80,8 @@ def main():
         CASES = MATRIX
     if "--limit" in sys.argv:
         CASES = LIMIT
+    if "--design" in sys.argv:
+        CASES = LIMIT_D
     names = list(CASES)
     for mach in ("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_DISK"):
         raws = omsx_repl.run_cases(mach, [("stored", CASES[n]) for n in names],

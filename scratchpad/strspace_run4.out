@@ -1,0 +1,7 @@
+Philips_VG grow_noq RUN [M 14 100 100 ] Ok color auto goto list run
+Philips_VG grow_q12 RUN [M 14 94 94 ] Ok color auto goto list run
+Philips_VG grow_q40 RUN [M 14 80 80 ] Ok color auto goto list run
+C-BIOS_MSX grow_noq RUN [M 14 100 100 ] ZB color auto goto list run
+C-BIOS_MSX grow_q12 RUN [M 14 94 94 ] ZB color auto goto list run
+C-BIOS_MSX grow_q40 RUN [M 14 80 80 ] ZB color auto goto list run
+refcache: 0 hit, 2 miss, 2 stored
