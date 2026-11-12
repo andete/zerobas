@@ -82,9 +82,11 @@ odl_done:
                 pop     af
                 ret
 odl_fail:
+                ; D-LPTSTOP: the published face -- the VG-8020 says `Device I/O error`
+                ; (outdlp_fail_run5.out), through BASIC as its other errors
                 pop     af
-                scf
-                ret
+                ld      a,19                ; Device I/O error
+                jp      raise_error
 odl_tab:
                 ld      a,' '
                 call    odl_put

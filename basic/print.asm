@@ -630,6 +630,11 @@ pch_crt:
 pch_lpt:
                 ld      a,c
                 call    LPTOUT
+                ; D-LPTSTOP (2026-11-12): CTRL-STOP while the printer is not ready -> the
+                ; VG-8020's `Device I/O error` (LPRINT with no printer: outdlp_fail_run6.out).
+                ; raise_error resets SP, so pchar's saved registers need no unwinding.
+                ld      a,19                ; Device I/O error (flags kept; the char is
+                jp      c,raise_error       ; reloaded from C just below)
                 ; --- D-LPTVERB: maintain the printer column (LPOS's source) -----
                 ; R-LS2/R-LS6: LPOS counts the bytes ACTUALLY SENT, which is why
                 ; the counter lives here and not in ex_lprint -- TAB/SPC padding

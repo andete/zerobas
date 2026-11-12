@@ -16533,6 +16533,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             translates -- probably a question for Joost once (1) is measured, since it touches
             PLAY's tested engine; (3) then STRTMS itself, measured (MUSICF / PLYCNT after it,
             and the PSG registers read through RDPSG while it plays).
+            📏 **(1) READ 2026-11-12** ([`playq_run.out`](scratchpad/playq_run.out), VG-8020, voice A, after the PLAY had
+            ended): QUETAB's voice-0 descriptor `GET PUT 00 7F 75 F9` (size 127, buffer $F975);
+            the packets from VOICAQ+1 (decoded from the eight variants -- one change each):
+            | MML | packet | reading |
+            |---|---|---|
+            | `C` | `60 19 88 01 AC` | head `(3 << 5)` + 3 bytes follow the 2 duration bytes |
+            | `T200C` / `L8C` | `60 0F ..` / `60 0C ..` | byte 2 = duration (25 at T120 L4 -> 15, 12) |
+            | `V10C` | `.. 8A ..` | `$80 + volume` |
+            | `O5C` / `N60` | `.. 00 D6` / `.. 00 6B` | tone period, big-endian (O4 C = $01AC) |
+            | `R4` | `20 19 80` | 1 byte follows: volume 0 -- a rest |
+            | end of string | `FF` | |
+            ⚠️ A first reading, not yet a spec: envelopes (S / M), lengths over 255 and the
+            duration's high bits are not varied yet. zerobas's own stream (sub/playparse.asm
+            PLAY_OP_*) differs from this.
       - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
             ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
             ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7
@@ -16541,8 +16555,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             0): TAB -> spaces to the next multiple of 8 of LPTPOS; LPTPOS kept as pch_lpt keeps it.
             `make outdlp-acceptance` (probes/basic/basic_probe_outdlp.py) 2/2; knife K5 (TAB sent
             raw) -> both RED ([`ODL_k5.out`](scratchpad/ODL_k5.out)). stub_scan 5 -> 4.
-            - [ ] OUTDLP's FAILURE face: the published "Device I/O error" -- a printer not ready
+            - [x] OUTDLP's FAILURE face: the published "Device I/O error" -- a printer not ready
                   plus CTRL-STOP (or what ends LPTOUT's wait), measured; ours returns LPTOUT's CF.
+                  🔴 **FIRST TRY 2026-11-12, NO READING:** [`outdlp_fail_probe.py`](scratchpad/outdlp_fail_probe.py) -- no printer
+                  plugged, OUTDLP and (the control) plain LPTOUT called directly, CTRL-STOP held
+                  from RUN + ~3 s for 1 s and then 3 s: BOTH machines, BOTH entries, nothing after
+                  `RUN` ([`outdlp_fail_run.out`](scratchpad/outdlp_fail_run.out), [`outdlp_fail_run2.out`](scratchpad/outdlp_fail_run2.out)). The control's blank says it is the
+                  APPARATUS first: does a `holds` press reach a program blocked in LPTOUT's wait at
+                  all (where does the press land on a `direct` case's timeline)? Settle that
+                  with a row that SHOULD break -- then OUTDLP's face.
+                  ✅ **SETTLED AND FIXED 2026-11-12 -- D-LPTSTOP.** The apparatus first: a `direct`
+                  case's hold, and a 3 s one, broke not even `10 GOTO 10` ([`outdlp_fail_run3.out`](scratchpad/outdlp_fail_run3.out),
+                  [`outdlp_fail_run4.out`](scratchpad/outdlp_fail_run4.out)); stored programs with ctrlstop_probe.py's hold (lead 0.5 s, 2 s)
+                  do ([`outdlp_fail_run5.out`](scratchpad/outdlp_fail_run5.out)). Then, no printer + CTRL-STOP: the VG-8020's OUTDLP
+                  says **`Device I/O error`**, its LPTOUT RETURNS (A kept), its **LPRINT says
+                  `Device I/O error`** ([`outdlp_fail_run6.out`](scratchpad/outdlp_fail_run6.out)) -- and zerobas never returned from
+                  any of them. 🔴 **An LPRINT with no printer hung zerobas for good**: $00A5 is
+                  zerobas's own LPTOUT (tape/tape.asm), whose BUSY wait had no way out. Fixed:
+                  LPTOUT polls BREAKX in the wait (CY, A kept, nothing sent); pch_lpt (LPRINT /
+                  LLIST) and OUTDLP raise 19 on that CY. `make outdlp-acceptance` gains
+                  lprint_noprn / outdlp_noprn / loop_control (5/5). Knives: K6 (the BREAKX poll
+                  -> `nop`s) -> both no-printer rows RED (a hang); K7 (pch_lpt's `jp c`) ->
+                  lprint_noprn RED, outdlp_noprn still SAME ([`LPT_k6.out`](scratchpad/LPT_k6.out), [`LPT_k7.out`](scratchpad/LPT_k7.out)). outdlp,
+                  lpterrnl, lptverb, editverb, bdos, biosregs, programs, cassave, cas-ascii,
+                  iscntc, sessions green.
+            - [ ] 🔴 **AFTER MACHINE CODE HAS SEEN A CTRL-STOP, THE VG-8020's BASIC DOES NOT
+                  ALSO BREAK; ZEROBAS's DOES** (found 2026-11-12, [`outdlp_fail_fixed.out`](scratchpad/outdlp_fail_fixed.out)): a USR that
+                  loops on BREAKX until CTRL-STOP, or LPTOUT left by it, returns, and the
+                  program goes on to its end on the VG-8020 -- zerobas breaks at the next
+                  statement (`Break in 30` / `in 40`), the key still being held. The VG-8020
+                  breaks on INTFLG between statements; ours polls BREAKX's LEVEL (rp_exec). To
+                  measure: INTFLG right after such a BREAKX, and whether the latch is set on the
+                  press EDGE or every frame (intflg_isr_run6.out cannot tell: its loop ended with
+                  the key down). 🎚️ TIER 1 -- a program the reference finishes stops here.
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.

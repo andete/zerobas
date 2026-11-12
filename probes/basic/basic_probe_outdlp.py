@@ -53,8 +53,45 @@ def lines(table):
             "40 DATA " + ",".join(str(b) for b in c), "RUN"]
 
 
+# D-LPTSTOP (2026-11-12): NO PRINTER plugged, CTRL-STOP held -- the VG-8020 says `Device
+# I/O error` for LPRINT and for OUTDLP; zerobas's LPTOUT spun forever
+# (scratchpad/outdlp_fail_run5.out / _run6.out). Stored programs and the hold
+# ctrlstop_probe.py proved (lead 0.5 s, 2 s): a `direct` case's hold, or a 3 s one,
+# broke not even `10 GOTO 10` (outdlp_fail_run3.out / _run4.out).
+CTRL_STOP = ((6, 0x02), (7, 0x10))
+NOPRN = {
+    "lprint_noprn": ['LPRINT "A":PRINT "[C LPR]"'],
+    "outdlp_noprn": ["CLEAR 200,&HCFFF:FOR I=0 TO 5:READ X:POKE &HD000+I,X:NEXT",
+                     'DEFUSR=&HD000:Q=USR(0):PRINT "[C RET]"',
+                     "DATA 62,65,205,77,1,201"],          # ld a,"A" / call $014D / ret
+    "loop_control": ["GOTO 10"],                          # the hold breaks a program at all
+}
+
+
+def noprn(machine, prog):
+    scr = omsx_repl.run_cases(machine, [("stored", prog)], batch=False,
+                              reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+                              holds=[CTRL_STOP], hold_lead=0.5, hold_secs=2.0)[0]
+    if not scr:
+        return None
+    rows = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]
+    keep = [x for x in rows if x.startswith("[C") or "rror" in x or "Break" in x]
+    return " | ".join(keep) or "<NO OUTPUT>"
+
+
 def main():
     bad = blind = 0
+    for name, prog in NOPRN.items():
+        got = {side: noprn(mach, prog) for side, mach in MACHINES}
+        if not got["VG"] or not got["ZB"]:
+            verdict = "NO-READING"
+            blind += 1
+        elif got["VG"] == got["ZB"]:
+            verdict = "SAME"
+        else:
+            verdict = "DIVERGES"
+            bad += 1
+        print(f"ROW {name:13} VG=[{got['VG']}] ZB=[{got['ZB']}] {verdict}", flush=True)
     for name, table in CASES.items():
         got = {}
         for side, mach in MACHINES:
@@ -79,8 +116,8 @@ def main():
     if blind:
         print("INSTRUMENT FAULT: a side gave no reading")
         return 2
-    print(f"{'PASS' if not bad else 'FAIL'}: OUTDLP against the VG-8020 "
-          f"({len(CASES) - bad}/{len(CASES)})")
+    n = len(CASES) + len(NOPRN)
+    print(f"{'PASS' if not bad else 'FAIL'}: OUTDLP / LPTOUT against the VG-8020 ({n - bad}/{n})")
     return 1 if bad else 0
 
 

@@ -814,8 +814,14 @@ tapoof_lp:
 ; sequence observed on real hardware (disk/docs/tier2-lstout-characterisation.md
 ; §3.2), so a printer driven by our LPTOUT sees exactly the standard waveform.
 ;
+; 🔴 D-LPTSTOP (2026-11-12): THE WAIT CAN BE LEFT WITH CTRL-STOP. It could not: with no
+; printer the port reads BUSY forever, and this spun with no way out but a reset -- an
+; LPRINT typed by mistake hung the machine. The VG-8020's LPTOUT returns (A kept) on a
+; CTRL-STOP, its LPRINT then says `Device I/O error`, its OUTDLP the same
+; (scratchpad/outdlp_fail_probe.py, outdlp_fail_run5.out / _run6.out). BREAKX polled in
+; the wait; held -> CY set, nothing sent.
 ; In:      A = character to print
-; Out:     CY reset (success -- we block until READY, so we do not report failure)
+; Out:     CY reset = sent; CY set = CTRL-STOP while waiting (nothing sent)
 ; Changes: F only. A and every other register are preserved, per the published
 ;          LPTOUT contract (map.grauw.nl msxbios: "Affected: F"). We save the char
 ;          in B (restored) because reading the status port clobbers A.
@@ -823,6 +829,8 @@ lptout:
                 push    bc
                 ld      b,a             ; save char (A must be preserved on return)
 lptout_wait:
+                call    BREAKX          ; D-LPTSTOP: CTRL-STOP leaves the wait
+                jr      c,lptout_stop
                 in      a,(PRN_STAT)    ; 90H read: bit 1 = status
                 and     PRN_BUSY
                 jr      nz,lptout_wait  ; 1 = BUSY -> spin until READY (0)
@@ -835,6 +843,11 @@ lptout_wait:
                 ld      a,b             ; restore the character to A
                 pop     bc
                 or      a               ; CY = 0 (success)
+                ret
+lptout_stop:
+                ld      a,b             ; A kept, as the VG-8020's
+                pop     bc
+                scf                     ; CY = 1: not sent
                 ret
 
 ;================================================================================

@@ -224,7 +224,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $009C | CHSNS | exercised | `biosregs-acceptance` |
 | $009F | CHGET | exercised | `biosregs-acceptance` |
 | $00A2 | CHPUT | exercised | `biosregs-acceptance` |
-| $00A5 | LPTOUT | exercised | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance` |
+| $00A5 | LPTOUT | exercised | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
 | $00A8 | LPTSTT | exercised | `biosregs-acceptance` |
 | $00AB | CNVCHR | exercised | `biosregs-acceptance` |
 | $00AE | PINLIN | exercised | `biosregs-acceptance` |
