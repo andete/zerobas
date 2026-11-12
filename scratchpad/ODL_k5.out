@@ -1,0 +1,4 @@
+ROW tab     VG=[A       B       C\r\n  [P 0 ]] ZB=[A\x09B\x09C\r\n  [P 0 ]] DIVERGES
+ROW tabcol  VG=[ABC     D\r\n  [P 0 ]] ZB=[ABC\x09D\r\n  [P 0 ]] DIVERGES
+FAIL: OUTDLP against the VG-8020 (0/2)
+refcache: 0 hit, 4 miss, 4 stored

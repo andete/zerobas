@@ -86,6 +86,7 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                                0xC3, 0xE4, 0x15]),     #  (D-BIOSRUNG)
                 0x00C0: bytes([0xC3, 0xE7, 0x15]),     # BEEP -> basic/biosfnk.asm
                 0x00C9: bytes([0xC3, 0xFB, 0x15]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x014D: bytes([0xC3, 0x21, 0x18]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0159: bytes([0xC3, 0x19, 0x1A]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x00CC: bytes([0xC3, 0x0C, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
                                0xC3, 0x1E, 0x16]),     #  (D-BIOSCONTRACT)

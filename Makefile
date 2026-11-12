@@ -1456,6 +1456,11 @@ fnram-acceptance: repack-machine
 iscntc-acceptance: repack-machine
 	python3 probes/basic/basic_probe_iscntc.py --gate
 
+# D-BIOSRUNG (2026-11-12): OUTDLP sends to the printer with TAB expanded to the next
+# multiple of 8 of LPTPOS, as the VG-8020 (openMSX's printer logger as the readout).
+outdlp-acceptance: repack-machine
+	python3 probes/basic/basic_probe_outdlp.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine

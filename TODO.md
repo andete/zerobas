@@ -16507,7 +16507,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             `END` before the register line, so they never compared registers -- the readout was
             blind to them; this records that the gap is deliberate now, not unseen.
       - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
-      - [ ] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
+      - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
+            ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
+            ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7
+            spaces + `C\r\n`, `ABC TAB D` -> 5 spaces (to column 8), LPTPOS 0 after the CR
+            (🔮 HIT). C-BIOS's stub printed nothing. Built: bios_outdlp (basic/biosfnk.asm, page
+            0): TAB -> spaces to the next multiple of 8 of LPTPOS; LPTPOS kept as pch_lpt keeps it.
+            `make outdlp-acceptance` (probes/basic/basic_probe_outdlp.py) 2/2; knife K5 (TAB sent
+            raw) -> both RED ([`ODL_k5.out`](scratchpad/ODL_k5.out)). stub_scan 5 -> 4.
+            - [ ] OUTDLP's FAILURE face: the published "Device I/O error" -- a printer not ready
+                  plus CTRL-STOP (or what ends LPTOUT's wait), measured; ours returns LPTOUT's CF.
+            - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
+                  katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
             ✅ **FIXED 2026-11-12.** 🔴 Worse than a stub: C-BIOS's printed `ERROR:CALLED NON
             EXISTING BASIC.` and never returned ([`calbas_run.out`](scratchpad/calbas_run.out) -- zerobas gave NO capture). The

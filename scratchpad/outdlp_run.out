@@ -1,0 +1,3 @@
+ROW tab     VG=[A       B       C\r\n  [P 0 ]] ZB=[<nothing printed>  [P 0 ]] DIVERGES
+ROW tabcol  VG=[ABC     D\r\n  [P 0 ]] ZB=[<nothing printed>  [P 0 ]] DIVERGES
+refcache: 0 hit, 4 miss, 4 stored

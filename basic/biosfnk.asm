@@ -48,6 +48,53 @@ bios_calbas:
                 ld      iy,(EXPTBL - 1)     ; IYH = EXPTBL[0]: the main ROM's slot
                 jp      CALSLT
 
+; OUTDLP ($014D) -- D-BIOSRUNG (2026-11-12). C-BIOS's was a print_debug stub: nothing
+; reached the printer. Measured on the VG-8020 with openMSX's printer logger
+; (scratchpad/outdlp_probe.py, outdlp_run.out): `A TAB B TAB C CR LF` prints
+; `A` + 7 spaces + `B` + 7 spaces + `C\r\n`; `ABC TAB D` pads from column 3 to 8 --
+; a TAB is spaces to the next multiple of 8 of LPTPOS, and LPTPOS is 0 after the CR.
+; LPTPOS is kept as BASIC's LPRINT keeps it (pch_lpt, basic/print.asm: CR -> 0, LF
+; leaves it, else +1, saturating at 255). A failing LPTOUT returns its CF (⚠️ the
+; published Device I/O error, and a non-MSX printer's character transform, are NOT
+; measured yet -- TODO D-BIOSRUNG). A kept, as the contract's "Registers: F".
+bios_outdlp:
+                cp      9
+                jr      z,odl_tab
+odl_put:
+                push    af
+                call    LPTOUT
+                jr      c,odl_fail
+                pop     af
+                push    af
+                cp      13
+                jr      z,odl_home
+                cp      10
+                jr      z,odl_done
+                ld      a,(LPTPOS)
+                inc     a
+                jr      z,odl_done          ; 255 saturates, as pch_lpt
+                ld      (LPTPOS),a
+                jr      odl_done
+odl_home:
+                xor     a
+                ld      (LPTPOS),a
+odl_done:
+                pop     af
+                ret
+odl_fail:
+                pop     af
+                scf
+                ret
+odl_tab:
+                ld      a,' '
+                call    odl_put
+                ret     c
+                ld      a,(LPTPOS)
+                and     7
+                jr      nz,odl_tab
+                ld      a,9
+                ret
+
 bios_erafnk:
                 xor     a                   ; the line hidden
                 jr      bios_fnk
