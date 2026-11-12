@@ -16417,6 +16417,52 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
       unused numbers and AUXOUT get read (they ran after the fault here).
 
+- [ ] 🔴 **D-BIOSRUNG — THE MAIN-BIOS TABLE SAYS "EXERCISED" FOR ENTRIES THAT ARE STILL C-BIOS
+      STUBS: GIVE EVERY ENTRY A STATUS THAT CAN SAY "STUB" (Joost, 2026-11-12)**
+      🎚️ TIER 1 — the entry-point surface's happy path (the 2026-11-08 ruling: entry points
+      outrank BASIC). 🏗️ **JOOST 2026-11-12:** asked *"don't we also have a bios entry tier like
+      the keyword tier and the bdos tier ?"*; told the table only says exercised / NOT MEASURED,
+      he ruled *"yes, file it tier 1 and do it next, it seems this will introduce potentially a
+      bunch of new tier 1 failures"*.
+      🤖 **AUTONOMOUS** — our own built ROM and the VG-8020's registers settle it.
+      📏 **THE STUB SCAN, FIRST CUT (2026-11-12, session scratch):** each of the 108 published
+      entries followed through the jump table of OUR built main ROM (build/zerobas-main-eu.rom
+      -- our C-BIOS-based bytes, never the reference's) to its body; a stub is C-BIOS's
+      `push hl / push af / ld hl,text / call print_debug` or the bare `ret` that
+      graphics-cursor.patch leaves. **9 of 108:** STRTMS, ISCNTC, CKCNTC (ISCNTC's body), FNKSB,
+      PNTINI / SCANR / SCANL (bare `ret`), OUTDLP, CALBAS. 🔴 **THREE OF THEM READ "exercised"
+      in docs/tier-status.md** -- biosregs-acceptance's `iscntc` / `ckcntc` rows call them with
+      nothing pending (a stub that does nothing returns the same registers) and `fnksb_on` /
+      `fnksb_off` read a cell KEY ON / OFF had already set: each agrees for the wrong reason.
+      ➡️ **THE SLICE:** (1) tools/stub_scan.py (the scan above, with a refusal when it finds no
+      print_debug target -- a blind scan must not print "0 stubs") and a static check; (2)
+      entry_table.py's BIOS rows get a status that can say STUB, ahead of exercised -- a stub
+      is a TIER 1 failure whatever names it; (3) each stub then becomes its own TIER 1 row
+      to fix or to rule on (PNTINI / SCANR / SCANL need main room -- D-BIOSCONTRACT), and the
+      three wrong-reason rows get a state that separates a stub from the real entry (a STOP
+      pending; FNKSB after the cell is changed behind its back).
+      ✅ **(1) + (2) BUILT (2026-11-12).** tools/stub_scan.py follows each entry through the
+      built ROM's jump table; it refuses on a missing / wrongly sized image, on fewer than 100
+      entries decoding as a jump, and when the print_debug shape calls more than one routine.
+      tests/test_stub_scan.py (synthetic images: both shapes, a clean image, three refusals;
+      knife -- the bare-`ret` arm disabled -> FAIL, PNTINI unnamed). Positive control on the
+      PRISTINE 0.31 image: 21 stubs, and every one of the 19 routines C-BIOS 0.31's own source
+      marks "still a stub" is among them (+ CKCNTC, ISCNTC's body, and CALBAS, unmarked).
+      entry_table.py's BIOS rows now say `🔴 STUB (print_debug)` / `🔴 STUB (bare ret)` ahead of
+      exercised; docs/tier-status.md: **88 witnessed and not stubs, 11 NOT MEASURED, 9 STUBS**,
+      the 3 blind ones named.
+      ➡️ **(3) THE NINE, EACH A TIER 1 ROW (measure the VG-8020 first, black-box, registers +
+      RAM; then fix or bring to Joost):**
+      - [ ] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
+            biosregs has only reads the idle state.
+      - [ ] FNKSB ($00C9): the function-key line shown or erased by CNSDFG -- a row that changes
+            the cell behind its back.
+      - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
+      - [ ] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
+      - [ ] CALBAS ($0159): call a BASIC-interpreter address from any slot.
+      - [ ] PNTINI / SCANR / SCANL ($0129 / $012C / $012F): PAINT's helpers -- main room
+            (D-BIOSCONTRACT).
+
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
       🎚️ TIER 1 — happy path of main BIOS calls (Joost 2026-11-08: the entry points outrank BASIC).

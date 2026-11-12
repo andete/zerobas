@@ -392,28 +392,46 @@ BIOS = [(0x0000, "CHKRAM"), (0x0008, "SYNCHR"), (0x000C, "RDSLT"), (0x0010, "CHR
 
 
 def bios_rows():
+    # D-BIOSRUNG (2026-11-12): a STUB outranks "exercised" -- C-BIOS's stub body still in
+    # our built main ROM (tools/stub_scan.py) is a TIER 1 failure whatever row names it;
+    # three such rows had read "exercised" (a stub that does nothing agrees in the idle
+    # state). The scan REFUSES on a degenerate ROM, and that refusal is not caught here:
+    # tiers-md then leaves the page unchanged rather than printing "0 stubs".
+    import stub_scan
+    st = stub_scan.stubs()
     reach, pys = _gate_reach()
     asms = _probe_asms()
     out = []
     for addr, name in BIOS:
         pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
         gates = _witnesses(pat, reach, pys, asms)
-        out.append(dict(addr=addr, name=name, gates=sorted(gates),
-                        status="exercised" if gates else "NOT MEASURED"))
+        if addr in st:
+            status = f"🔴 STUB ({st[addr]['kind']})"
+        else:
+            status = "exercised" if gates else "NOT MEASURED"
+        out.append(dict(addr=addr, name=name, gates=sorted(gates), status=status,
+                        stub=addr in st))
     return out
 
 
 def fmt_bios_markdown():
     rs = bios_rows()
     nm = [r for r in rs if r["status"] == "NOT MEASURED"]
+    stubs = [r for r in rs if r["stub"]]
+    blind = [r for r in stubs if r["gates"]]
     out = ["## Entry points — the main BIOS calls", "",
            "The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by "
            "cbios-repack where a row differs). Exercised = a gate whose script (or a probe "
            "source it runs) names the entry or its address in code. Every BASIC program "
            "calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. "
            "Exercised is not same.", "",
-           f"**{len(rs) - len(nm)} of {len(rs)}** have a direct witness; **{len(nm)} are NOT "
-           "MEASURED**.", "",
+           f"**{len(rs) - len(nm) - len(stubs)} of {len(rs)}** have a direct witness and are not "
+           f"stubs; **{len(nm)} are NOT MEASURED**; **{len(stubs)} are STUBS** -- C-BIOS's stub "
+           "body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,"
+           "name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it "
+           f"(D-BIOSRUNG). {len(blind)} of the stubs ARE named by a gate, whose row therefore "
+           "cannot tell the stub from the entry: "
+           + (", ".join(r["name"] for r in blind) or "none") + ".", "",
            "| address | call | status | exercised by |", "|---|---|---|---|"]
     for r in rs:
         by = ", ".join(f"`{g}`" for g in r["gates"][:6]) + (" …" if len(r["gates"]) > 6 else "")

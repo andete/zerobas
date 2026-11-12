@@ -4,7 +4,13 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 RULINGS 2026-11-11 — READ FIRST (newest)
+## 🟢 RULINGS 2026-11-12 — READ FIRST (newest)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| a BIOS entry status that can say STUB, TIER 1, NEXT | *"don't we also have a bios entry tier like the keyword tier and the bdos tier ?"*, then *"yes, file it tier 1 and do it next, it seems this will introduce potentially a bunch of new tier 1 failures"* (2026-11-12) | D-BIOSRUNG (TODO.md): a stub scan of OUR built main ROM, entry_table.py's BIOS rows able to say STUB ahead of "exercised", each stub then its own TIER 1 row. First cut: 9 of 108 stubs, three of them "exercised" by rows that agree for the wrong reason |
+
+## 🟢 RULINGS 2026-11-11 — READ FIRST
 
 | ruling | Joost's words | consequence |
 |---|---|---|
