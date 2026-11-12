@@ -391,14 +391,19 @@ BIOS = [(0x0000, "CHKRAM"), (0x0008, "SYNCHR"), (0x000C, "RDSLT"), (0x0010, "CHR
         (0x0150, "GETVCP"), (0x0153, "GETVC2"), (0x0156, "KILBUF"), (0x0159, "CALBAS")]
 
 
-def bios_rows():
+def bios_rows(stubs=None):
     # D-BIOSRUNG (2026-11-12): a STUB outranks "exercised" -- C-BIOS's stub body still in
     # our built main ROM (tools/stub_scan.py) is a TIER 1 failure whatever row names it;
     # three such rows had read "exercised" (a stub that does nothing agrees in the idle
     # state). The scan REFUSES on a degenerate ROM, and that refusal is not caught here:
     # tiers-md then leaves the page unchanged rather than printing "0 stubs".
-    import stub_scan
-    st = stub_scan.stubs()
+    # `stubs`: a caller that needs only the table's SHAPE passes {} (tests/test_entry_table.py
+    # -- CI runs it before the merged main ROM exists, and the scan's refusal kept CI red
+    # on all three OSes for eleven pushes, 2026-11-12); None scans the built ROM.
+    if stubs is None:
+        import stub_scan
+        stubs = stub_scan.stubs()
+    st = stubs
     reach, pys = _gate_reach()
     asms = _probe_asms()
     out = []

@@ -88,7 +88,7 @@ check(set(pub) == {"DSKIO", "DSKCHG", "GETDPB", "CHOICE", "DSKFMT", "MTOFF"},
       "(d) the six published disk-ROM entries all have a row")
 
 # (e) the main BIOS table: the published jump table, $0000 .. $0159, no gap or repeat
-br = E.bios_rows()
+br = E.bios_rows(stubs={})   # the table's SHAPE only: CI has no merged main ROM here
 ad = [r["addr"] for r in br]
 check(ad == sorted(set(ad)) and ad[0] == 0x0000 and ad[-1] == 0x0159,
       f"(e) the BIOS table runs $0000..$0159 in order, {len(ad)} distinct entries")
