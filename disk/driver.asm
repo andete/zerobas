@@ -729,6 +729,10 @@ set_rr:
 ; COPY already use (Joost's rule 3: no private copy). A mount failure answers
 ; 0 -- say nothing -- so OPEN's own path meets and reports the same drive.
 hk_ochk:
+                ei                          ; D-FWDWIN (2026-11-12): a hook arrives through an
+                                            ; inter-slot call, interrupts OFF -- as hk_fmake
+                                            ; does, give the mount's reads their windows
+                                            ; (scratchpad/FW5_stack.out: masked here)
                 call    fat_mount           ; LOCAL, for hkk_open_check's reads
                 ld      a,0                 ; (flags kept)
                 jp      c,hdl_answer        ; no mount: nothing to say

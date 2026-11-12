@@ -52,6 +52,21 @@ debug set_watchpoint write_mem 0x7FB8 {[pc_in_slot 3]} __fc2
 debug set_watchpoint read_mem 0x7FBB {[pc_in_slot 3]} __fd
 debug set_watchpoint write_mem 0xFC9E {} __fj
 """
+if os.environ.get("FDC_STACK"):
+    # FDC_STACK=1 (2026-11-12, D-FWDWIN): a K row at every fdc_di_save (OUR disk ROM's,
+    # address from build/disk.sym) -- the CPU's IFF, FDC_IFF and the top 12 stack words,
+    # to find which caller reaches a write with interrupts already off. Our own code's
+    # addresses only.
+    _sym = {l.split()[0]: int(l.split()[2].rstrip("H"), 16)
+            for l in open(os.path.join(REPO, "build", "disk.sym")) if len(l.split()) >= 3}
+    r.GAP_TCL = r.GAP_TCL + """
+proc __fk {} {
+  set s ""
+  for {set i 0} {$i < 12} {incr i} { append s " " [format %%04X [__rd16 [expr {[reg sp] + 2*$i}]]] }
+  puts $::__cf "[format %%.4f [machine_info time]] K iff=[reg iff] fdciff=[format %%02X [peek 0xEFF7]] sp=[format %%04X [reg sp]]$s"
+}
+debug set_bp 0x%04X {[pc_in_slot 3]} __fk
+""" % _sym["fdc_di_save"]
 _pp = os.path.join(REPO, "probes", "programs", name + ".bas")
 text = open(_pp if os.path.exists(_pp) else os.path.join(REPO, "scratchpad", name + ".bas")).read()
 res = r.run(os.environ.get("FDC_MACH", r.DISK_ZB[0]), "fdccmd", text, gaps=True)

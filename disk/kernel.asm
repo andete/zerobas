@@ -6349,6 +6349,8 @@ hks_lp:
 ; duplicate Joost's 2026-09-29 rule forbids. Our own code.
 ;   out: CF=0 found; CF=1 with A = 2 (mount failed -> I/O) or 0 (missing -> 53)
 hk_srcfind:
+                ei                          ; D-FWDWIN: as hk_ochk (disk/driver.asm) -- the
+                                            ; mount's reads masked otherwise (FW5_stack.out)
                 push    hl
                 call    fat_mount
                 pop     hl

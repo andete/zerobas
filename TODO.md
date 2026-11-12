@@ -16929,6 +16929,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         call stack at its fdc_di_save (a PC breakpoint there logging the stack
                         and IFF), and whether frdw_poll's window takes an interrupt at all on
                         that path.
+                        📏 **DONE ON HEAD (2026-11-12, fdccmd_probe.py `FDC_STACK=1`: a breakpoint
+                        at our fdc_di_save logging the CPU's IFF and 12 stack words ->
+                        [`FW5_stack.out`](scratchpad/FW5_stack.out)):** on HEAD (no step 2) **every write runs with
+                        interrupts ON** -- all 15 `A0` commands FDC_IFF 01, the caller's IFF 1 at
+                        fdc_di_save (FW3's masked writes were step 2's). The ops HEAD runs masked
+                        are 9 READS, every one `fat_geom_read` inside `fat_mount`, reached from
+                        the hooks **`hk_ochk` / `hk_srcfind`** with interrupts already off -- the
+                        lead for HEAD's own gaps (max 0.139 s). ⚠️ And **step 2 no longer
+                        assembles on HEAD** (scratchpad/brklatch_step2_wip.patch applies, but
+                        an image region overruns -- `split_islands: image base $8000`: a `ds`
+                        went negative; page 0's pads were spent on the BIOS entries the same
+                        day). ✅ **Which region:** step 2 puts es_latch (20 B) in basic/input.asm,
+                        which assembles BEFORE the crt_rows pin ($3283): that span is bounded by
+                        the pin's pad (3 B since the BIOS entries, 2026-11-12), not by the low
+                        region's 26 B tail after the pins -- `ds $3283 - $` went negative (es_latch
+                        at $2EA7 in a scratch assembly). ➡️ Re-site es_latch in a low-region file
+                        AFTER the pins (basic/keytrap.asm, line 89 of main.asm) when step 2 is
+                        re-applied; then measure its masked writes with FDC_STACK, and why hk_ochk /
+                        hk_srcfind reach fat_mount masked on HEAD.
+                        ✅ **HEAD's half FIXED (2026-11-12):** a hook arrives through an inter-slot
+                        call with interrupts OFF; hk_fmake starts with `ei`, hk_ochk and hk_srcfind
+                        did not, so their fat_mount reads ran masked. Both now `ei` first (disk/
+                        driver.asm, disk/kernel.asm). After ([`FW7_stack_ei.out`](scratchpad/FW7_stack_ei.out)): **0 masked FDC
+                        entries** (9), L5_files' interrupt gaps **19 -> 10, max 0.139 -> 0.036 s**
+                        (🔮 HIT); diskbasic, bdos, diskascii, diskfull, asavechan, savedev green.
+                        ➡️ Left of D-FWDWIN: step 2's own masked writes, once es_latch is re-sited.
+                        - [ ] **No gate row pins "no FDC op runs masked"** -- 🎚️ TIER 2 — the
+                              FDC_STACK reading is a scratch probe; a row counting `K iff=0`
+                              entries over L5_files (expect 0) would catch a hook that loses its
+                              `ei`.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before
