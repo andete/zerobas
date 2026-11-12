@@ -3946,6 +3946,11 @@ H_ZKEY          equ     $FFCF   ; fn-key delivery hook, 5-byte JP vector (zkey_i
 ; (0 = pressed; C-BIOS seeds it $FF at boot). zkey_hook reads row 6 bit 0 = SHIFT
 ; to fold F1-F5 into F6-F10 -- C-BIOS does not fold it itself (D-T3-7, measured).
 NEWKEY          equ     $FBE5   ; key matrix snapshot, 11 B (row 6 bit 0 = SHIFT)
+; INTFLG / BASROM -- published work-area cells ISCNTC reads (D-BIOSRUNG, 2026-11-12).
+; INTFLG is a LATCH the keyboard interrupt sets, on both machines: 4 = STOP, 3 =
+; CTRL-STOP, still set ten frames after the release (scratchpad/intflg_isr_run6.out).
+INTFLG          equ     $FC9B   ; STOP / CTRL-STOP latch (1)
+BASROM          equ     $FBB1   ; != 0: a protected ROM BASIC, not breakable (1)
 ; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
 ; reliable because C-BIOS zeroes $F380.. at boot):
 PLAY_DEF_OCTAVE equ     4

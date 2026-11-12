@@ -173,7 +173,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**88 of 108** have a direct witness and are not stubs; **11 are NOT MEASURED**; **9 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 3 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: ISCNTC, CKCNTC, FNKSB.
+**90 of 108** have a direct witness and are not stubs; **11 are NOT MEASURED**; **7 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 1 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: FNKSB.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -231,8 +231,8 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00B1 | INLIN | exercised | `biosregs-acceptance` |
 | $00B4 | QINLIN | exercised | `biosregs-acceptance` |
 | $00B7 | BREAKX | exercised | `biosregs-acceptance` |
-| $00BA | ISCNTC | 🔴 STUB (print_debug) | `biosregs-acceptance` |
-| $00BD | CKCNTC | 🔴 STUB (print_debug) | `biosregs-acceptance` |
+| $00BA | ISCNTC | exercised | `biosregs-acceptance`, `iscntc-acceptance` |
+| $00BD | CKCNTC | exercised | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00C0 | BEEP | exercised | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
 | $00C3 | CLS | exercised | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `bloadofs-acceptance` … |
 | $00C6 | POSIT | exercised | `biosregs-acceptance` |

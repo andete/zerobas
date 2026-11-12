@@ -1,0 +1,5 @@
+Philips_VG_8020              stop      '[H 53 K 53 V 4 R 4 ] Ok color auto goto list run'
+Philips_VG_8020              ctrlstop  '[H 53 K 53 V 3 R 3 ] Ok color auto goto list run'
+C-BIOS_MSX1_EU_REPACK_DISK   stop      '[H 58 K 58 V 4 R 4 ] ZB color auto goto list run'
+C-BIOS_MSX1_EU_REPACK_DISK   ctrlstop  '[H 58 K 58 V 3 R 3 ] ZB color auto goto list run'
+refcache: 0 hit, 2 miss, 2 stored

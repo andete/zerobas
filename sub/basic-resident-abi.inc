@@ -15,14 +15,14 @@ fp_sub equ 03479H
 fp_mul equ 034A8H
 fp_div equ 03525H
 fp_cmp equ 035E5H
-dig15_iszero equ 030D2H
+dig15_iszero equ 030FCH
 arga_pack_fac equ 0331CH
 widen_fac_to equ 0371BH
 widen_uint_to equ 039B7H
-flt_to_int16 equ 0307FH
+flt_to_int16 equ 030A9H
 vars_reset equ 03BFFH
 penderr_set equ 02827H
-flt_fmt equ 02FBDH
+flt_fmt equ 02FE7H
 rl_vpeek equ 03AF4H
 rl_vpoke equ 03AFFH
 rl_vaddr equ 03B0CH
@@ -35,7 +35,7 @@ p0_bp_ret equ 067AEH   ; main's bp_ret
 p0_skip_spaces equ 042D3H   ; main's skip_spaces
 p0_exec_stmt equ 04133H   ; main's exec_stmt
 p0_gb_illegal equ 04557H   ; main's gb_illegal
-p0_eval_addr equ 02ECFH   ; main's eval_addr
+p0_eval_addr equ 02EF9H   ; main's eval_addr
 p0_ztrap_entry equ 05E0BH   ; main's ztrap_entry
 p0_skip_comma equ 042BEH   ; main's skip_comma
 p0_ex_key_stmt equ 03F5AH   ; main's ex_key_stmt
@@ -104,11 +104,11 @@ p0_cas_ascii_load equ 06579H   ; main's cas_ascii_load
 p0_load_commit_prog equ 06559H   ; main's load_commit_prog
 p0_dpl_err equ 065F1H   ; main's dpl_err
 p0_dpl_oom equ 06603H   ; main's dpl_oom
-p0_print_msg equ 07658H   ; main's print_msg
+p0_print_msg equ 0765CH   ; main's print_msg
 p0_err_verify equ 0656CH   ; main's err_verify
-p0_exa_loop equ 076D4H   ; main's exa_loop
+p0_exa_loop equ 076D8H   ; main's exa_loop
 p0_le_call_op equ 06EADH   ; main's le_call_op
 p0_print_string equ 045DCH   ; main's print_string
 p0_list_num equ 06377H   ; main's list_num
-p0_print_in_hl equ 0762EH   ; main's print_in_hl
+p0_print_in_hl equ 07632H   ; main's print_in_hl
 p0_rn_undefined equ 001B8H   ; main's rn_undefined

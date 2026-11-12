@@ -1,0 +1,5 @@
+ROW iscntc_f3          VG=[Break in 30] ZB=[[C 3 ] | [R 5566 3344 1122 A3]] DIVERGES
+ROW iscntc_f4_stop     VG=[[C 0 ] | [R 5566 3344 1122 A4]] ZB=[[C 4 ] | [R 5566 3344 1122 A4]] DIVERGES
+
+FAIL: ISCNTC / CKCNTC against the VG-8020 (0/2)
+refcache: 2 hit, 2 miss, 2 stored

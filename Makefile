@@ -1450,6 +1450,12 @@ slotregs-acceptance: repack-machine
 fnram-acceptance: repack-machine
 	python3 probes/basic/basic_probe_fnram.py --gate
 
+# D-BIOSRUNG (2026-11-12): ISCNTC / CKCNTC are the VG-8020's, not C-BIOS's stub --
+# CTRL-STOP pending breaks, STOP pending waits for a second press, BASROM != 0 returns,
+# A = INTFLG; and BASIC consumes INTFLG when it handles the key itself.
+iscntc-acceptance: repack-machine
+	python3 probes/basic/basic_probe_iscntc.py --gate
+
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.
 synchr-acceptance: repack-machine

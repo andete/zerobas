@@ -251,6 +251,42 @@ inp_readline:
 ; run loop's anchor (SAVSTK, set in program AND direct mode), do_break's record
 ; and message, then the anchor's `ret` -- the loop's own exit (fre_abort_low's
 ; argument, basic/arrays.asm).
+; isc_slow -- ISCNTC / CKCNTC with INTFLG != 0 (D-BIOSRUNG; the page-0 front is
+; bios_iscntc, basic/biosfnk.asm). 3 -> the break, through inp_break below (SP to the
+; run loop's anchor, `Break in <line>` with SAVTXT -- the VG-8020 breaks at the USR
+; line, iscntc_run3.out). 4 -> STOP's pause: first the key UP (NEWKEY row 7, STOP =
+; bit 4; INTFLG re-latches every frame it is down, and the VG-8020 does not return
+; from one long press, iscntc_run8.out), then INTFLG cleared and waited on: STOP again
+; -> return A = 4 with INTFLG 0 (iscntc_run4.out), CTRL-STOP -> the break. Any other
+; value is returned as read (not measured). Interrupts are left ENABLED: the wait
+; needs the keyboard interrupt.
+isc_slow:
+                cp      3
+                jr      z,isc_brk
+                cp      4
+                ret     nz
+                ei
+isc_up:
+                halt
+                ld      a,(NEWKEY+7)
+                and     $10
+                jr      z,isc_up            ; STOP still down
+                xor     a
+                ld      (INTFLG),a
+isc_dn:
+                halt
+                ld      a,(INTFLG)
+                or      a
+                jr      z,isc_dn
+                cp      3
+                jr      z,isc_brk
+                xor     a
+                ld      (INTFLG),a
+                ld      a,4
+                ret
+isc_brk:
+                xor     a
+                ld      (INTFLG),a          ; consumed, as the VG-8020's interpreter does
 inp_break:
                 ld      sp,(SAVSTK)
                 ld      hl,(SAVTXT)         ; CONT re-runs this INPUT

@@ -1,0 +1,5 @@
+ROW iscntc_f0_basrom VG=[[C 0 ] | [R 5566 3344 1122 A1]] ZB=[[C 0 ] | [R 5566 3344 1122 A5A]] DIVERGES
+ROW ckcntc_f0_basrom VG=[[C 0 ] | [R 5566 3344 1122 A1]] ZB=[[C 0 ] | [R 5566 3344 1122 A5A]] DIVERGES
+ROW iscntc_f3_basrom VG=[[C 3 ] | [R 5566 3344 1122 A1]] ZB=[[C 3 ] | [R 5566 3344 1122 A5A]] DIVERGES
+ROW ckcntc_f3_basrom VG=[[C 3 ] | [R 5566 3344 1122 A1]] ZB=[[C 3 ] | [R 5566 3344 1122 A5A]] DIVERGES
+refcache: 0 hit, 8 miss, 8 stored

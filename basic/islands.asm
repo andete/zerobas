@@ -496,6 +496,9 @@ fperr_to_err:
                 jp      bios_inlin          ; PINLIN: C-BIOS's INLIN never returned
                 jp      bios_inlin          ; INLIN
                 jp      bios_qinlin         ; QINLIN
+                org     $00BA
+                jp      bios_iscntc         ; ISCNTC: C-BIOS's was a stub (D-BIOSRUNG)
+                jp      bios_iscntc         ; CKCNTC: the same entry on the VG-8020
                 org     $00C0
                 jp      bios_beep           ; BEEP: C-BIOS's was a stub too
                 org     $00CC

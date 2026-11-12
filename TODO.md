@@ -16453,8 +16453,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the 3 blind ones named.
       ➡️ **(3) THE NINE, EACH A TIER 1 ROW (measure the VG-8020 first, black-box, registers +
       RAM; then fix or bring to Joost):**
-      - [ ] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
+      - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.
+            📏 **MEASURED 2026-11-12 ([`iscntc_probe.py`](scratchpad/iscntc_probe.py) -> [`iscntc_run3.out`](scratchpad/iscntc_run3.out)):** the stub
+            sets INTFLG ($FC9B) itself right before the call, records it after into $D10A and
+            clears it -- so a printed row means the entry RETURNED. VG-8020, both entries
+            alike: INTFLG 0 -> returns, registers kept; **3 (CTRL-STOP) -> `Break in 30`, never
+            returns**; **4 (STOP) -> no output in 20 s** (the published "wait for the next
+            STOP"). zerobas: returns in all three, INTFLG untouched -- **4 DIVERGE**.
+            🔴 Two probe faults first, both kept as cuts in the probe: INTFLG POKEd from BASIC
+            broke at the POKE's own line (the VG's interpreter checks it BETWEEN statements,
+            [`iscntc_run.out`](scratchpad/iscntc_run.out)), and with INTFLG still set after the call the interpreter broke
+            at the USR line whatever the entry did ([`iscntc_run2.out`](scratchpad/iscntc_run2.out)).
+            ➡️ **THE FIX NEEDS (each measured first):** (a) does the VG's keyboard ISR set INTFLG
+            3 / 4 on CTRL-STOP / STOP, and does ours (zerobas's BASIC reads the key itself, in
+            rp_break -- not INTFLG)? (b) the break through BASIC's own path, as inp_break does
+            (SP := SAVSTK, do_break with SAVTXT); (c) the STOP wait: what ends it (a second
+            STOP, CTRL-STOP -> break) and INTFLG after; (d) BASROM ($FBB1) != 0 -- the published
+            "no break in a protected ROM BASIC". Room: C-BIOS's stub body ($15D2) is ~11 B.
+            ✅ **FIXED 2026-11-12 -- `make iscntc-acceptance` 17/17 SAME.** Two more inputs measured
+            first: the keyboard interrupt LATCHES INTFLG on both machines (4 STOP / 3 CTRL-STOP,
+            still set ten frames after the release -- [`intflg_isr_probe.py`](scratchpad/intflg_isr_probe.py) -> [`intflg_isr_run6.out`](scratchpad/intflg_isr_run6.out); 🔮 "ours
+            stays 0" MISSED: C-BIOS's ISR sets it too), and the VG-8020 does NOT end the STOP wait
+            on one long press ([`iscntc_run8.out`](scratchpad/iscntc_run8.out)); BASROM != 0 returns at once with A = BASROM
+            ([`iscntc_run6.out`](scratchpad/iscntc_run6.out)); A on return is INTFLG ([`iscntc_run5.out`](scratchpad/iscntc_run5.out) -- the idle path diverged too,
+            hidden by biosregs' A = 0). 🔴 **And BASIC left the latch set:** `ON STOP GOSUB` + a
+            press, then PEEK(&HFC9B) -- VG 0, zerobas 3 ([`intflg_left_run.out`](scratchpad/intflg_left_run.out)); a later ISCNTC would
+            have broken on a press BASIC had already handled. Built: bios_iscntc (basic/biosfnk.asm,
+            page 0: BASROM, INTFLG, return) and isc_slow (basic/input.asm, beside inp_break: 3 ->
+            the break through inp_break, 4 -> key up by NEWKEY row 7, then INTFLG cleared and
+            waited on); the jump table's $00BA / $00BD point there (basic/islands.asm,
+            PATCH_RANGES); rp_break clears INTFLG. Gate: probes/basic/basic_probe_iscntc.py (the
+            16 rows + `basic_left`). Knives: K1 (the front's `jp isc_slow` -> `ret`) ->
+            iscntc_f3 / f4_stop RED ([`ISC_k1.out`](scratchpad/ISC_k1.out)); K2 (rp_break's clear -> `nop`s) -> basic_left
+            RED ([`ISC_k2.out`](scratchpad/ISC_k2.out)). stub_scan: 9 -> 7. ⚠️ Not measured: INTFLG values other than 0 / 3 /
+            4 (returned as read); a STOP pressed while BASIC runs (the run loop's pause) -- does
+            the VG-8020 leave INTFLG 0 after it too?
       - [ ] FNKSB ($00C9): the function-key line shown or erased by CNSDFG -- a row that changes
             the cell behind its back.
       - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).

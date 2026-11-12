@@ -1,0 +1,4 @@
+ROW basic_left         VG=[[L-1  0 ]] ZB=[[L-1  3 ]] DIVERGES
+
+FAIL: ISCNTC / CKCNTC against the VG-8020 (0/1)
+refcache: 1 hit, 1 miss, 1 stored

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **440** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **442** in the MSX standard work area at or above `$F380`.
 * **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -653,6 +653,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FB41` | 37 B | `basic` | `VCBA` | Voice Control Block, voice 0 (37 B) |  |
 | `$FB66` |  | `basic` | `VCBB` | Voice Control Block, voice 1 |  |
 | `$FB8B` |  | `basic` | `VCBC` | Voice Control Block, voice 2 |  |
+| `$FBB1` | 1 B | `basic` | `BASROM` | != 0: a protected ROM BASIC, not breakable (1) |  |
 | `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
 | `$FBCD` | 1 B | `basic` | `FNKSWI` | function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
@@ -678,6 +679,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC99` |  | `basic` | `GFX_DVAL` | $FC99: the resolved int16, or a string body ptr (2) |  |
 | `$FC9A` | 1 B | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$FC9A` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$FC9B` | 1 B | `basic` | `INTFLG` | STOP / CTRL-STOP latch (1) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FC9E` |  | `disk` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area; D-DSKCHG) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |

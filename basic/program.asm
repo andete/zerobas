@@ -758,6 +758,14 @@ end_line_end:
 ; 2026-10-17, in front of the $73AC pin; this header still describes it. It is
 ; entered only by `call`, from rp_exec.)
 rp_break:
+                ; D-BIOSRUNG (2026-11-12): CONSUME the interrupt's CTRL-STOP latch. The
+                ; VG-8020's interpreter reads INTFLG between statements and leaves it 0
+                ; once it has handled the key; this run loop reads the key through
+                ; BREAKX and left INTFLG at 3 -- `ON STOP GOSUB` + a press, then
+                ; PEEK(&HFC9B): VG 0, zerobas 3 (scratchpad/intflg_left_run.out). A
+                ; later ISCNTC then broke on a press BASIC had already handled.
+                xor     a
+                ld      (INTFLG),a
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
                 jr      nz,rp_do_break      ; reported as a bare "break" by do_break

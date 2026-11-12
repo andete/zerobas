@@ -59,6 +59,23 @@ bios_fnk_out:
 ; (sub/beep.asm, the body BASIC's BEEP runs) through subrom_call; the VG-8020's tone
 ; is pinned by beep-acceptance's `bios` case (a USR to $00C0). HL / IX kept (CALSLT
 ; spends the rest; the VG-8020 changes DE / BC too).
+; ISCNTC ($00BA) / CKCNTC ($00BD) -- D-BIOSRUNG (2026-11-12). C-BIOS's were print_debug
+; stubs that returned in every state. Measured on the VG-8020, called directly with the
+; state set by the caller's own code (scratchpad/iscntc_probe.py, iscntc_run3..8.out),
+; both entries alike: BASROM != 0 -> return, A = BASROM, INTFLG untouched; INTFLG 0 ->
+; return, A = 0; 3 (CTRL-STOP) -> `Break in <line>`; 4 (STOP) -> wait for the key to be
+; up and pressed AGAIN (a held key does not end it), then return A = 4, INTFLG 0 -- or a
+; CTRL-STOP there breaks. BC / DE / HL kept. The rare two (a break, a wait) need BASIC
+; and live in page 1 beside inp_break (basic/input.asm); this front is page 0.
+bios_iscntc:
+                ld      a,(BASROM)
+                or      a
+                ret     nz                  ; a protected ROM BASIC: A = BASROM
+                ld      a,(INTFLG)
+                or      a
+                ret     z                   ; nothing pending: A = 0
+                jp      isc_slow
+
 bios_beep:
                 push    hl
                 push    ix
