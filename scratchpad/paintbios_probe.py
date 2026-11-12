@@ -36,6 +36,15 @@ def code(x, y, border, paint, entry, fill, skip):
     return c
 
 
+def code2(x, y, col):
+    # first: as code() with SCANR, fill, DE = 0 -- minus its stores and ret; then MAPXYC
+    # again and SCANR with B = 1, DE = 5; the stores and ret
+    c = code(x, y, col, col, 0x012C, 1, 0)[:-15]
+    c += [0x01, x & 255, x >> 8, 0x11, y & 255, y >> 8, 0xCD, 0x11, 0x01,
+          0x06, 1, 0x11, 5, 0, 0xCD, 0x2C, 0x01]
+    return c + code(x, y, col, col, 0x012C, 1, 0)[-15:]
+
+
 # the row's pattern bytes: row 55 lives in char row 6 (y // 8), line 7 (y % 8); byte for
 # x is (y//8)*256 + (x//8)*8 + y%8
 ROWB = ",".join(f"&H{(55 // 8) * 256 + (x // 8) * 8 + 55 % 8:X}" for x in range(16, 112, 8))
@@ -44,13 +53,14 @@ ROWB = ",".join(f"&H{(55 // 8) * 256 + (x // 8) * 8 + 55 % 8:X}" for x in range(
 def prog(c, extra=""):
     n = len(c)
     rd = ('C=PEEK(&HF92A)+256*PEEK(&HF92B):M=PEEK(&HF92C):D=PEEK(&HFCB2):V$="":'
-          f'FOR I=0 TO 11:READ A:V$=V$+RIGHT$("0"+HEX$(VPEEK(A)),2):NEXT')
+          f'FOR I=0 TO 11:READ A:V$=V$+RIGHT$("0"+HEX$(VPEEK(A)),2):'
+          f'W$=W$+RIGHT$("0"+HEX$(VPEEK(A+&H2000)),2):NEXT')   # ROUND 3: the colour table too
     return ["NEW",
             f"10 CLEAR 200,&HCFFF:SCREEN 2:LINE (100,40)-(100,70),15:LINE (20,40)-(20,70),15{extra}",
             f"20 FOR I=0 TO {n - 1}:READ X:POKE &HD000+I,X:NEXT",
             "30 DEFUSR=&HD000:Q=USR(0):" + rd,
             '40 SCREEN 0:S$="":FOR I=0 TO 3:S$=S$+" "+HEX$(PEEK(&HD101+2*I)*256+PEEK(&HD100+2*I)):NEXT',
-            '50 PRINT"[R";S$;"]":PRINT"[C";HEX$(C);" ";HEX$(M);" ";HEX$(D);"]":PRINT"[C ";V$;"]"',
+            '50 PRINT"[R";S$;"]":PRINT"[C";HEX$(C);" ";HEX$(M);" ";HEX$(D);"]":PRINT"[C ";V$;"]":PRINT"[C ";W$;"]"',
             "60 DATA " + ",".join(str(b) for b in c),
             "70 DATA " + ROWB,
             "RUN"]
@@ -72,6 +82,9 @@ ROWS = {
     "l15_fill":   prog(code(50, 55, 15, 15, 0x012F, 1, 0)),
     "l15_nofill": prog(code(50, 55, 15, 15, 0x012F, 0, 0)),
     "r15_skip5":  prog(code(50, 55, 15, 15, 0x012C, 1, 5)),
+    # ROUND 3: SCANR TWICE from x = 50 -- fill, then a second scan with DE = 5 across the
+    # now-painted run: what the skip count does (the regs are the SECOND call's)
+    "r15_twice":  prog(code2(50, 55, 15)),
 }
 for _n, _p in ROWS.items():                       # the POKE count FROM the bytes
     _data = _p[6].split(" ", 1)[1].split(",")

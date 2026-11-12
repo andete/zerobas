@@ -16880,6 +16880,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             wrong: settle before building. Skip 5 on SCANR: HL 50, DE 5 back. ➡️ Next: the colour
             table (the same bytes at $2000 + offset), SCANL's flag, the skip count's meaning
             (a SCANR across already-painted pixels), SCREEN 3.
+            📏 **ROUND 3 ([`paintbios_run3.out`](scratchpad/paintbios_run3.out), VG-8020):** (1) **the whole-byte fill goes to
+            the COLOUR table**: the full bytes between the ends read colour `0F` (background
+            nibble = the paint colour) with the pattern left 00; the partial end bytes set
+            pattern bits and become `F4` (🔮 "$F0": MISSED -- the background nibble). (2) **SCANL
+            ALWAYS FILLS**: B = 0 and B = 1 give the same VRAM -- the fill switch is SCANR's
+            only (classic PAINT probes with SCANR, paints with SCANL). (3) **the skip count**: a
+            second SCANR from x = 50, now border-coloured, returned HL 0, DE 0 (the 5 used up)
+            and the cursor at x 54 -- it steps over border-coloured pixels while DE lasts,
+            finds no paintable run, stops. ➡️ Left: SCREEN 3 (PNTINI's A as the border there),
+            and the registers' exact exit state (BC / A) -- then the build.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
