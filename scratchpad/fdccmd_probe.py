@@ -25,7 +25,7 @@ if os.path.exists(dump):
 r.GAP_TCL = r.GAP_TCL + """
 set ::__cf [open {%s} w]
 proc __fc {} {
-  puts $::__cf "[format %%.4f [machine_info time]] C [format %%02X $::wp_last_value] [format %%04X [reg PC]] cl=[format %%04X [__rd16 0xF41C]] bc=[format %%04X [reg bc]] de=[format %%04X [reg de]] hl=[format %%04X [reg hl]]"
+  puts $::__cf "[format %%.4f [machine_info time]] C [format %%02X $::wp_last_value] [format %%04X [reg PC]] cl=[format %%04X [__rd16 0xF41C]] bc=[format %%04X [reg bc]] de=[format %%04X [reg de]] hl=[format %%04X [reg hl]] iff=[format %%02X [peek 0xEFF7]]"
 }
 proc __fs {} {
   puts $::__cf "[format %%.4f [machine_info time]] S [format %%02X $::wp_last_value]"

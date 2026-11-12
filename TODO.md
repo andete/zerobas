@@ -16775,6 +16775,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         is the caller masked, or the window budget spent? Then the fix (and the
                         read-modify-write of one FAT sector, a revolution each time, is itself a
                         speed lever: D-BLKIOPERCALL's class).
+                        ✅ **ANSWERED (2026-11-12, fdccmd_probe.py now logs FDC_IFF ($EFF7) at
+                        each command -> [`FW3_fdc.out`](scratchpad/FW3_fdc.out)):** line 40's FAT READ runs with
+                        FDC_IFF 01 (the caller had interrupts on: windows open); EVERY WRITE after
+                        it -- FAT sectors 2 and 5, the data sector -- with **00**. The caller's
+                        interrupts went off BETWEEN them: a sector op ends masked (fdc_fdrq
+                        "returns masked") and DSKIO's exit does not give the caller back its IFF,
+                        so the next DSKIO in the same hook captures "masked" and waits its whole
+                        revolution with interrupts off. Pre-existing (step 1 has the same path;
+                        step 2 only moved the phase onto a long wait). ➡️ **D-FWDWIN, THE FIX:
+                        DSKIO's exit restores the caller's IFF (`ei` when FDC_IFF says it was on)**
+                        -- then every consecutive sector op keeps D-FDCDI's windows. Witness:
+                        programs-acceptance --gaps (L5_files) with step 2 applied, and the iff=
+                        column staying 01 through line 40.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before
