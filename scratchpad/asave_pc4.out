@@ -1,0 +1,18 @@
+ENDED t=129.3 gaps=13 max=0.037
+samples by CURLIN: {'FFFF': 112602, '000A': 10147, '0000': 5377}
+
+CURLIN 000A: 10147 samples, IFF=0 in 4759
+   1334  PC ~4830  A8=FC  basic-reloc:deftbl_lookup+8 | disk:fdq_win+1 | sub:LOG_BP+44
+    331  PC ~4860  A8=FC  basic-reloc:for_get+9 | disk:fwd_wait+0 | sub:LOG_BP+92
+    329  PC ~0A10  A8=F3  basic-reloc:fperr_to_err+55 | sub:detok_kw2+7
+    276  PC ~2430  A8=F0  sub:gwp_pos+16
+    276  PC ~0A20  A8=F3  basic-reloc:fperr_to_err+71 | sub:dk2_entry+14
+    268  PC ~7A00  A8=FC  basic-reloc:nx_fcmp+12 | disk:frdw_poll+1 | sub:ls_fname_cas+15
+    255  PC ~2410  A8=F0  sub:gco_spoke+28
+    250  PC ~24D0  A8=F0  sub:gwp_full+6
+    248  PC ~2420  A8=F0  sub:gwp_pos+0
+    232  PC ~58A0  A8=F0  basic-reloc:pch_lpt_home+3 | disk:dop_z+25 | sub:pqa_ret+11
+    230  PC ~24C0  A8=F0  sub:gwp_raw+0
+    227  PC ~4820  A8=FC  basic-reloc:vsf_wb_copy+3 | disk:fat_rootsecs+9 | sub:LOG_BP+28
+    220  PC ~6E20  A8=FC  basic-reloc:ris_nb+0 | disk:fat_io_putbyte+19 | sub:pnt_isdig+2
+    216  PC ~24F0  A8=F0  sub:gwp_no_s+8
