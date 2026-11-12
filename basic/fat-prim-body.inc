@@ -876,41 +876,14 @@ fwe_byte1:
                 call    rd_fatsec           ; FAT_FATSEC := HL, read it into FAT_MBUF (Cy)
                 jr      c, fwe_err
                 ld      hl, FAT_MBUF           ; patch byte 0 of the next sector
-                ld      de, (FAT_WRTMP)
-                ld      a, (FAT_PARITY)
-                or      a
-                jr      nz, fwe_str_odd
-                ; even straddle: buf[0] = (buf[0] & $F0) | ((value >> 8) & $0F)
-                ld      a, (hl)
-                and     $F0
-                ld      b, a
-                ld      a, d
-                and     $0F
-                or      b
-                ld      (hl), a
-                jr      fwe_finish
-fwe_str_odd:
-                ; odd straddle: buf[0] = value[11:4] = (value >> 4) & $FF
-                ld      hl, FAT_MBUF
-                ld      a, e
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F                 ; high nibble of E -> low nibble of result
-                ld      b, a
-                ld      a, d
-                rlca
-                rlca
-                rlca
-                rlca
-                and     $F0                 ; D<<4 -> high nibble of result
-                or      b
-                ld      (hl), a
-                jr      fwe_finish
+                ; D-FWESHARE (2026-11-11): the same even / odd store as the same-sector
+                ; path below -- it stood here a second time (~41 B), HL being the only
+                ; difference (FAT_MBUF here, &buf[byteidx+1] there).
+                jr      fwe_b1_store
 fwe_b1_same:
                 ; second byte is buf[byteidx+1] in the same sector.
                 inc     hl                  ; HL = &buf[byteidx+1]
+fwe_b1_store:                               ; (the straddle path joins with HL = FAT_MBUF)
                 ld      de, (FAT_WRTMP)
                 ld      a, (FAT_PARITY)
                 or      a
