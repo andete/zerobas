@@ -16858,6 +16858,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             sub-ROM bytes back, and PAINT's fill order and stack use nearer the VG-8020's (its
             out-of-memory point on a complex shape). Witnesses for (3): graphics-, graphics-
             floor-acceptance and the PAINT rows.
+            📏 **FIRST VG-8020 READINGS (2026-11-12, [`paintbios_probe.py`](scratchpad/paintbios_probe.py) -> [`paintbios_run.out`](scratchpad/paintbios_run.out)):**
+            SCREEN 2, borders at x = 20 and 100 in colour 15, the cursor at (50,55) by MAPXYC,
+            PNTINI A = 15 with ATRBYT = 4. **In SCREEN 2 PNTINI ignores A: BDRATR became 4, the
+            PAINT colour** -- the SCREEN 2 rule that the boundary IS the paint colour. So these
+            rows asked SCANR to stop at colour 4 while the line was 15: it ran from x = 50 PAST the
+            x = 100 line, CLOC $667 / CMASK 4 (x = 101), HL 1, DE $FFCE, the line's pattern byte
+            read 00 afterwards; with B = 0 the same CLOC and HL but BC $0410; SCANL HL 0, DE
+            $2000, CLOC unmoved; skip 5: HL 0, DE 0, CMASK 2. zerobas: the bare `ret`s (HL = CLOC
+            from MAPXYC, DE as passed). ➡️ Next run: paint colour = border colour (15), the
+            natural SCREEN 2 PAINT case, before HL / DE are interpreted; then SCREEN 3 (where A
+            is the border).
+            📏 **ROUND 2, paint = border = 15 ([`paintbios_run2.out`](scratchpad/paintbios_run2.out), VG-8020):** SCANR fill from
+            x = 50: **HL 50** (x 50..99), cursor ON the border (CLOC $667 / CMASK 8 = x 100), DE 0;
+            the row's pattern changes only at the ends (`3F` x 50..55, `F8` x 96..100) -- the full
+            bytes between read 00, so a whole-byte fill evidently goes to the COLOUR table (read
+            it next). SCANR without fill: the same HL / cursor, no VRAM change, B $0F vs $F0.
+            SCANL fill: **HL 29** (x 21..49 -- it EXCLUDES its start pixel, SCANR includes it),
+            cursor on x 21 (the last painted, not the border), DE 4. ⚠️ SCANL with B = 0 changed
+            VRAM exactly as with B = 1 -- the flag means something else for SCANL, or the row is
+            wrong: settle before building. Skip 5 on SCANR: HL 50, DE 5 back. ➡️ Next: the colour
+            table (the same bytes at $2000 + offset), SCANL's flag, the skip count's meaning
+            (a SCANR across already-painted pixels), SCREEN 3.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
