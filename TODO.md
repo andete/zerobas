@@ -3173,6 +3173,19 @@ item — do **one item per session** to keep context lean.
       CF-3300 writes the FAT once at CLOSE. So the lever is D-WCACHE W3b's FAT hold across
       allocations (W3a already defers within one), not a data-sector cache. The carves
       (D-WRRESET, D-FWESHARE) stand -- the room is useful either way.
+      ✅ **D-ASAVEFAT (2026-11-12): SAVE ,A HOLDS THE FAT FOR THE WHOLE LISTING -- 13.9 -> 10.1 s (CF-3300
+      1.5 s: 6.7x).** The hold already existed: tokenised SAVE's D-SAVEFAT (FAT_DEFER bit 2,
+      fdh_rehold in ffds_alloc, sdw_end = frl_flush + fat_io_close at the end). SAVE ,A
+      never turned it on. Now hk_asav sets it after fat_io_create and hk_chclose_e's
+      no-channel close goes through sdw_end (+5 B, $5E10). 📏 [`asavefat_time.out`](scratchpad/asavefat_time.out): the SAVE
+      line's FDC commands 100 -> 56 (writes 39 -> 23, reads 12 -> 5) -- 🔮 "~20 writes,
+      several s": HIT. Knives ([`asavefat_knives.out`](scratchpad/asavefat_knives.out)): K1 (the close writes no held FAT)
+      -> asavedev RED; K2 (no flush on the disk-full exit) moved NOTHING, and the code says
+      why -- that exit is reached only through ffds_alloc's failure, whose ffds_undefer ->
+      frl_xfail already flushed -- so that flush was redundant and is gone. asavedev /
+      asavechan / diskfull / wcache / diskbasic / programs acceptance green. ➡️ Left of the
+      6.7x: the per-character output (~30 % of the old profile) and 23 writes against the
+      CF-3300's one multi-sector write.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8089,7 +8102,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10522 (T-6FE392)8 (T-529ABE)` from `TODO.md:15124 (T-529ABE)`: a
+      `TODO.md:10535 (T-6FE392)8 (T-529ABE)` from `TODO.md:15137 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10828,7 +10841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15124 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15137 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

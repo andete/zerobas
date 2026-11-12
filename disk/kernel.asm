@@ -2463,6 +2463,9 @@ df_first:
 hk_asav:
                 call    fat_io_create       ; mount, make or truncate, reset the cursor
                 jr      c, hfm_fail         ; status 1, the code pending
+                ld      a, 4                ; 🐌 D-ASAVEFAT (2026-11-12): hold the FAT sector for
+                ld      (FAT_DEFER), a      ; the whole listing, as tokenised SAVE does
+                                            ; (D-SAVEFAT); hk_chclose_e writes it at the end
                 xor     a
                 jp      hdl_answer          ; status 0, selector disarmed, claimed
 hk_chout_e:
@@ -2498,6 +2501,10 @@ hco_asav:
                 ld      de, 0
                 sbc     hl, de              ; the borrow into the high word
                 ld      (FWR_BYTES + 2), hl
+                                            ; (D-ASAVEFAT: no flush needed here -- a 66
+                                            ; comes only from ffds_alloc's failure, whose
+                                            ; ffds_undefer -> frl_xfail already wrote the
+                                            ; held FAT; knife K2 moved nothing for that)
                 call    fat_dir_update      ; size + first cluster, as close does
                 ld      a, 66               ; its successful DSKIO cleared the code
                 ld      (DISKOP_ERR), a
@@ -2515,7 +2522,7 @@ hk_chclose_e:
                 or      a
                 jp      nz, hk_chclose      ; a channel: Ctrl-Z, record, entry
                 ei
-                call    fat_io_close
+                call    sdw_end             ; D-ASAVEFAT: the held FAT out, then fat_io_close
                 jr      hco_tail
 
 ; hk_fapp -- OPEN FOR APPEND (H_FOPEN, FOPEN_SEL_APND), S10.B increment 2. A

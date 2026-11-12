@@ -1,0 +1,7 @@
+# D-ASAVEFAT knives (2026-11-12): SAVE ,A holds the FAT sector for the whole listing.
+KNIFE K1-noclose (disk.rom 012c4218): asavedev=2 diskfull=0 wcache=0
+KNIFE K2-nofullflush (disk.rom e93e994e): asavedev=0 diskfull=0 wcache=0
+# K1 (the close writes no held FAT): asavedev RED -- the close's flush is load-bearing.
+# K2 (no flush on the disk-full exit): nothing moved -- that exit is reached only via
+#   ffds_alloc's failure, whose ffds_undefer -> frl_xfail already flushed; the flush was
+#   redundant and is removed (asavedev / diskfull / wcache / asavechan green without it).

@@ -1,0 +1,3 @@
+asctok_end ENDED t=119.2
+asctok_save ENDED t=129.3
+# SAVE ,A = 129.3 - 119.2 = 10.1 s (was 13.9; CF-3300 1.5). FDC on the SAVE line: 100 -> 56 (writes 39 -> 23, reads 12 -> 5).
