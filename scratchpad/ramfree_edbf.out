@@ -1,0 +1,27 @@
+final screen:
+  |  SDR      COM     630 03-04-13  9:31p
+  |  SDR      TXT    3000 03-04-14  8:57p
+  |  SPLIT1   ASM    6476 03-04-23  6:07p
+  |  SCORES   HIG     540 99-08-16  1:36p
+  |  SPLIT1   COM     674 03-04-23  6:07p
+  |  SPLIT2   ASM    7012 03-04-23  6:07p
+  |  SPLIT2   COM     700 03-04-23  6:07p
+  |  SPLIT3   ASM    6751 03-04-23  6:07p
+  |  SPLIT3   COM     696 03-04-23  6:07p
+  |  SPLIT4   ASM    7379 03-04-23  6:07p
+  |  SPLIT4   COM     707 03-04-23  6:07p
+  |  P        TXT     781 84-01-01
+  |  R        DAT      96 84-01-01
+  |  Q        BAS      19 84-01-01
+  |  B        BIN    1031 84-01-01
+  |  README   TXT     687 99-08-16  2:01p
+  |  TEST     BAS    1793 02-01-25  9:58p
+  |  MOD      BAS    1793 02-01-25  9:58p
+  |  MUS      BAS    1793 02-01-25  9:58p
+  |  SCR0     BAS      51 02-03-22 12:14a
+  |  RYTHM    BAS    1799 02-03-25  6:03p
+  |  SIMPLE   BAS     104 02-04-11  4:17p
+  |        45 files   370688 bytes free
+  |  A>OP.B AST X
+
+control seen once; 0 other write(s) to $EDBF..$EDC0 over 21 steps -- FREE as measured

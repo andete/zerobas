@@ -1,0 +1,5 @@
+# D-WCACHE (2026-11-12): which routines run on SAVE ,A's line (CURLIN 10), breakpoints in our
+# disk ROM (pc_in_slot 3 1), asctok_save.bas, the validated-skip build (since reverted).
+rd_dbuf read_sector dh_clr read_sector dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr ffds dh_clr ffds dh_clr read_sector dh_clr read_sector dh_clr
+# => dout_write 0 times: SAVE ,A writes through fat_io_putbyte (basic/fatiow-body.inc),
+# one flush per full 512 B sector (ffds 17) plus a FAT read per cluster (read_sector 12).

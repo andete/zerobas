@@ -3159,6 +3159,20 @@ item — do **one item per session** to keep context lean.
       regions that matter (2026-11-11): $75A5 45 B, $5E10 20 B, $553C 19 B. test_fat_write_fat_entry
       (all four packing cases, every FAT copy), unit tests, wcache (the straddle rows fat-x /
       content-x) / diskbasic / copy / bdos acceptance green. The cache's room is there now.
+      🔴 **THE DIAGNOSIS WAS WRONG FOR SAVE ,A (2026-11-12, [`wcache_asave_trace.out`](scratchpad/wcache_asave_trace.out)).** A validated
+      skip of dout_write's second-half re-read (DBUF_HSEC at $EDBF -- measured free,
+      scratchpad/ramfree_edbf.out --, cleared by read_sector / fat_read_file_sector /
+      fat_flush_data_sector) was built and measured: SAVE ,A unchanged (133.1 s, 100 FDC
+      commands, 12 reads; 🔮 ~12 s and ~10 fewer reads: MISSED), and a breakpoint trace
+      showed why -- **dout_write never runs during SAVE ,A**: the listing goes through
+      fat_io_putbyte (basic/fatiow-body.inc), ONE flush per full 512 B sector (17) plus a
+      FAT read per cluster (12). The dout_write half-sector pattern is PRINT#'s, not SAVE's.
+      REVERTED, nothing shipped: no workload measured a benefit for its 44 B. ➡️ SAVE ,A's
+      disk waste is PER CLUSTER: of its 39 writes ~17 are data and ~22 FAT (each allocation
+      writes the FAT sector to both copies), and a FAT sector is re-read per cluster; the
+      CF-3300 writes the FAT once at CLOSE. So the lever is D-WCACHE W3b's FAT hold across
+      allocations (W3a already defers within one), not a data-sector cache. The carves
+      (D-WRRESET, D-FWESHARE) stand -- the room is useful either way.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8075,7 +8089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10508 (T-6FE392)8 (T-529ABE)` from `TODO.md:15110 (T-529ABE)`: a
+      `TODO.md:10522 (T-6FE392)8 (T-529ABE)` from `TODO.md:15124 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10814,7 +10828,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15110 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15124 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
