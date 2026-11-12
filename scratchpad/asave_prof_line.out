@@ -1,0 +1,18 @@
+ENDED t=125.3 gaps=12 max=0.037
+samples by CURLIN: {'FFFF': 112642, '000A': 6126, '0000': 5377}
+
+CURLIN 000A: 6126 samples, IFF=0 in 2532
+   1165  PC ~4830  A8=FC  basic-reloc:deftbl_lookup+8 | disk:fdq_win+1 | sub:LOG_BP+44
+    333  PC ~4860  A8=FC  basic-reloc:for_get+9 | disk:fwd_wait+0 | sub:LOG_BP+92
+    268  PC ~7A00  A8=FC  basic-reloc:nx_fcmp+12 | disk:frdw_poll+1 | sub:ls_csav_speed+13
+    214  PC ~6E30  A8=FC  basic-reloc:ris_keep+4 | disk:fip_store+14 | sub:pnt_x_e+1
+    202  PC ~4820  A8=FC  basic-reloc:vsf_wb_copy+3 | disk:fat_rootsecs+9 | sub:LOG_BP+28
+    201  PC ~6E20  A8=FC  basic-reloc:ris_nb+0 | disk:fat_io_putbyte+19 | sub:pnt_x_pt+1
+    179  PC ~5950  A8=FC  basic-reloc:ex_print_using+36 | disk:hco_asav+0 | sub:pqs_nm+15
+    173  PC ~0690  A8=F3  sub:pchar+18
+    168  PC ~0680  A8=F3  sub:pchar+2
+    165  PC ~6E40  A8=FC  basic-reloc:ris_keep+20 | disk:fwr_bytes_inc+13 | sub:pnt_x_epl+0
+    128  PC ~09E0  A8=F3  basic-reloc:fperr_to_err+7 | sub:dk_ordent+14
+    110  PC ~0700  A8=F3  sub:sd10_skip+2
+     99  PC ~7A10  A8=FC  basic-reloc:nx_fslow+12 | disk:frdw_poll+17 | sub:ls_csav_speed+29
+     92  PC ~06F0  A8=F3  sub:div10+6

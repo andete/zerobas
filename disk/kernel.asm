@@ -7358,6 +7358,24 @@ wr_reset:
                 ld      (BDOS_WRBYTES), hl
                 ld      (BDOS_WRBYTES + 2), hl
                 ret
+; sdw_end: the close of SAVE (basic/sv-diskwr.inc) and SAVE ,A (hk_chclose_e) under the
+; FAT hold (FAT_DEFER bit 2). The order is D-ASAVEEND's (2026-11-12): (1) the buffered
+; last sector FIRST, still under the hold -- it often starts a new cluster, and its
+; mark + link then join the held FAT sector; (2) that sector out (frl_flush), BEFORE
+; (3) the directory entry, whose work runs through FAT_MBUF. It was (2), then
+; fat_io_close's (1)+(3): the final allocation re-read the FAT sector just written and
+; wrote both copies again -- 3 FDC commands, ~0.4 s of a SAVE ,A
+; (scratchpad/asave_fdc_line.out). A failing data write still sends the held sector
+; out first (frl_xfail keeps the CF), as ffds_undefer does.
+sdw_end:
+                ld      hl, (FWR_BUFLEN)
+                ld      a, h
+                or      l                   ; CF = 0
+                call    nz, fat_flush_data_sector
+                jp      c, frl_xfail
+                call    frl_flush
+                ret     c
+                jp      fat_dir_update
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 

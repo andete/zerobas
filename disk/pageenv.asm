@@ -97,12 +97,6 @@ fdh_rehold:
                 or      1
                 ld      (FAT_DEFER), a
                 ret
-; sdw_end: disk_write_end's close -- the held FAT sector out BEFORE fat_io_close's
-; directory work, which runs through FAT_MBUF (basic/sv-diskwr.inc).
-sdw_end:
-                call    frl_flush
-                ret     c
-                jp      fat_io_close
                 ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)
 
 ; --- D-TPAP1 (2026-10-23): THE PAGE-0 INTER-SLOT ENTRIES, BRIDGED TO THE MAIN BIOS ---

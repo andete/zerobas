@@ -3238,6 +3238,22 @@ item — do **one item per session** to keep context lean.
       ([`AL_k1.out`](scratchpad/AL_k1.out)); K2 (FCH_ACTIVE dropped from the test) -> sessions S16_diskprog
       DIFF after RUN, its PRINT #2,USING ([`AL_k2.out`](scratchpad/AL_k2.out)). H_OUTD is no longer called per byte of
       a disk listing; on the published machine the disk ROM is that hook's tenant during one.
+      ✅ **D-ASAVEEND (2026-11-12): THE CLOSE IN THE RIGHT ORDER -- SAVE ,A 6.1 -> 5.7 s (~3.8x).** Re-profiled
+      after D-ASAVELINE ([`asave_prof_line.out`](scratchpad/asave_prof_line.out)): disk waits ~34 % of the SAVE line (fdq_win, fwd_wait,
+      frdw_poll), the disk-side byte path ~12 %, detok the rest. The FDC log ([`asave_fdc_line.out`](scratchpad/asave_fdc_line.out))
+      showed the FAT written TWICE at the end: sdw_end flushed the held FAT sector, then
+      fat_io_close's last partial sector started a new cluster and re-read the FAT and wrote
+      both copies again (R2 W2 W5). sdw_end (moved from pageenv.asm to the $75A5 region: 45 ->
+      27 B, $4217 4 -> 11 B, 2026-11-12) now writes the buffered last sector FIRST, still under
+      the hold, then frl_flush, then fat_dir_update; a failing data write still sends the held
+      sector out (frl_xfail keeps the CF). SAVE (sv-diskwr.inc) gets it too. 📏 [`asave_end.out`](scratchpad/asave_end.out)
+      5.7 s (🔮 ~5.7: HIT); [`asave_fdc_end.out`](scratchpad/asave_fdc_end.out): the SAVE line 23 W / 5 R -> 21 W / 4 R (the last
+      `A0` from fwd_chk is a lost-data retry of the directory write, D-FDCDI's class). Gates:
+      asavedev, asavechan, diskfull, wcache, diskascii, savedev, savedate, savetail, fullclash,
+      bsavevar, bdos, wrblkalt, diskbasic, programs green. No knife: the old order passes every
+      row too -- the FDC count is the witness. ➡️ Left: the per-sector rotational wait (each
+      data sector written alone, ~0.25 s apart -- the CF-3300 issues one multi-sector write) and
+      the per-byte disk path (fip_store / fat_io_putbyte / fwr_bytes_inc, ~12 %).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8154,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10587 (T-6FE392)8 (T-529ABE)` from `TODO.md:15189 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15205 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10893,7 +10909,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15189 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
