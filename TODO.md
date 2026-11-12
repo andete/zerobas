@@ -16761,6 +16761,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         a sector-ID read tells), or the masked fallback only after a real error,
                         not LOST DATA. Measure the retries first (a watchpoint on FDC_IFF's count
                         and the command register, as fdccmd_probe.py does); then re-gate step 2.
+                        📏 **MEASURED -- AND THE "LOST-DATA STREAK" IS NOT CONFIRMED EITHER
+                        (2026-11-12, `fdccmd_probe.py L5_files` with step 2 applied ->
+                        [`FW_fdc.out`](scratchpad/FW_fdc.out)):** 134 commands, NO restore command at all (the six
+                        "fdc_restore" PC samples were a routine NAME, not a recalibration -- a
+                        second wrong inference from a symbol). What line 40 really does: READ
+                        sector 2 (the FAT) at 25.981 s, WRITE sector 2 at 26.056 s, next command
+                        26.255 s -- a ~0.2 s write: writing back the sector it just read waits for
+                        it to come round again, nearly a revolution, and the sampler saw that wait
+                        MASKED (IFF 0 in fwd_wait). So fdc_fdrq did not open its windows for THIS
+                        write. ➡️ Next, measured not guessed: FDC_IFF and its retry count at that
+                        write's entry (a watchpoint on the command register reading FDC_IFF) --
+                        is the caller masked, or the window budget spent? Then the fix (and the
+                        read-modify-write of one FAT sector, a revolution each time, is itself a
+                        speed lever: D-BLKIOPERCALL's class).
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before
