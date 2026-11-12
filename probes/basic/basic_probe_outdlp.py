@@ -79,6 +79,14 @@ NOPRN = {
     "lptout_intflg": ["CLEAR 200,&HCFFF:FOR I=0 TO 23:READ X:POKE &HD000+I,X:NEXT",
                       'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);PEEK(&HD101);"]"',
                       "DATA 251,62,65,205,165,0,58,155,252,50,0,209,6,10,118,16,253,58,155,252,50,1,209,201"],
+    # D-BRKLATCH step 2: the break at the STATEMENT the latch lands before -- the USR
+    # loops on BREAKX, then waits (interrupts on) through the hold and the release, so
+    # the latch is set when it returns: the VG-8020 breaks at the USR's own statement,
+    # `Break in 20`; a line-start-only check broke one statement later
+    # (scratchpad/brkconsume_run.out).
+    "brk_midline": ["CLEAR 200,&HCFFF:FOR I=0 TO 42:READ X:POKE &HD000+I,X:NEXT",
+                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);"]"', 'PRINT "[C END]"',
+                    "DATA 251,205,183,0,48,251,58,155,252,50,0,209,6,5,118,16,253,58,155,252,50,1,209,118,58,236,251,230,16,40,248,6,5,118,16,253,58,155,252,50,2,209,201"],
 }
 for _n, _p in NOPRN.items():                              # the POKE count FROM the bytes
     if _p[0].startswith("CLEAR") and "READ" in _p[0]:

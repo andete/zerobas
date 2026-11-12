@@ -120,3 +120,25 @@ zkh_trap:
     ENDIF
 
     ENDIF
+
+; es_latch -- D-BRKLATCH step 2 (2026-11-12), page 0 AFTER the pins (page 1's last
+; region had 10 B; basic/input.asm, before the crt_rows pin, has its pad's 3 B): THE latch consumer, called with A = INTFLG
+; (non-zero) and HL = the statement about to run, from rp_exec AND from exec_stmt (every
+; statement: the VG-8020 broke at the USR's statement, `Break in 20`, where the
+; line-start-only check broke one statement later -- scratchpad/brkconsume_run.out). 4 ->
+; stop_pause, then on (or 3 from it); 3 -> rp_break below. RETURNS when the program goes
+; on (a pause ended, a STOP trap took the press); a break DROPS this call's return and
+; leaves through do_break, at the caller's own depth -- as ex_stop's `jr do_break` does
+; from a statement handler. A and HL only on the returning paths (KILBUF / trap_pend /
+; stop_pause touch nothing else): exec_stmt's dispatch keeps B / C.
+es_latch:
+                cp      3
+                jp      z,rp_break          ; page 1 (basic/program.asm)
+                cp      4
+                ret     nz                  ; no other value is latched (not measured)
+                push    hl
+                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
+                pop     hl
+                cp      3
+                ret     nz
+                jp      rp_break            ; A = 3 from the pause

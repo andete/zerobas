@@ -16858,8 +16858,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   ([`BL3_k8.out`](scratchpad/BL3_k8.out)), K9 (the OLDKEY store -> nops) -> GREEN on 8 rows, so lptout_intflg was
                   ADDED as its witness and reads `0 3` + a break under it ([`BL3_k9_intflg.out`](scratchpad/BL3_k9_intflg.out)). 14
                   break / trap suites green. ISCNTC's wait now shares stop_pause (no key-up).
-                  - [ ] STEP 2: the per-STATEMENT check (brkconsume: VG `Break in 20`, ours
+                  - [x] STEP 2: the per-STATEMENT check (brkconsume: VG `Break in 20`, ours
                         `in 30`) -- a break exit at exec_stmt's depth.
+                        ✅ **SHIPPED 2026-11-13.** Its blocker was L5_files' interrupt gap, and the
+                        gap was not step 2's: hk_ochk / hk_srcfind ran their mount reads masked
+                        (D-FWDWIN, fixed in 8ef12e5a). With that fix and step 2 applied: no FDC
+                        op masked, max gap 0.036 s ([`FW8_step2_stack.out`](scratchpad/FW8_step2_stack.out)); es_latch re-sited to
+                        basic/keytrap.asm (after the pins -- from basic/input.asm it overran the
+                        crt_rows pad the BIOS entries had spent); outdlp, iscntc, stop-trap,
+                        interval-trap, key-trap, trapstmt, direct-ctrl, sessions, lpterrnl, onerr0,
+                        input, editverb, biosregs and programs acceptance green; 7 / 7 switches.
+                        Low region 26 -> 7 B (2026-11-13).
                         🅿️ **BUILT, PARKED 2026-11-12 -- [`brklatch_step2_wip.patch`](scratchpad/brklatch_step2_wip.patch) (on 8c79b9ea).**
                         es_latch (page 0, beside stop_pause) is THE consumer: 3 -> rp_break
                         (now callable: the trap arm `ret`s, the break arms drop the caller's

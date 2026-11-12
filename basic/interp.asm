@@ -647,9 +647,11 @@ exec_stmt:
                 ; the line's end only (scratchpad/trapstmt_run.out). One RAM load in
                 ; the no-trap case, BEFORE skipsp_test so A needs no saving;
                 ; es_trap (basic/traps.asm) may not return.
-                ld      a,(TRAPPEND)
-                or      a
-                call    nz,es_trap
+                call    es_bound            ; 🔴 D-BRKLATCH step 2 (2026-11-12): the STOP /
+                                            ; CTRL-STOP latch at EVERY statement boundary,
+                                            ; as the VG-8020, then the trap test -- one
+                                            ; call (basic/program.asm): this region had no
+                                            ; room for both tests inline (it overran $8000)
                 call    skipsp_test ; leading spaces are skipped (spec §5)
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`

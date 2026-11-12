@@ -609,16 +609,8 @@ rp_exec:
                 ; history) have nothing left to do.
                 ld      a,(INTFLG)
                 or      a
-                jr      z,rp_trapchk
-                cp      3
-                jr      z,rp_break
-                cp      4
-                jr      nz,rp_trapchk       ; no other value is latched (not measured)
-                push    hl
-                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
-                pop     hl
-                cp      3
-                jr      z,rp_break
+                call    nz,es_latch         ; D-BRKLATCH step 2: the one consumer (below),
+                                            ; also called by exec_stmt at EVERY statement
                 jr      rp_trapchk
                 ; ~~Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
                 ; next press reads as a fresh 0->1 edge. This is the release observation
@@ -768,6 +760,19 @@ end_line_end:
 ; 📌 (derive_directf's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
 ; 2026-10-17, in front of the $73AC pin; this header still describes it. It is
 ; entered only by `call`, from rp_exec.)
+; es_bound -- exec_stmt's statement-boundary tests (D-BRKLATCH step 2): the latch, then
+; the traps. Entered by `call` from exec_stmt, so each `jp` below leaves at exec_stmt's
+; depth: es_latch's break path drops exactly that one frame (do_break's `ret` then leaves
+; exec, as ex_stop's does), and es_trap sees the stack it saw when exec_stmt called it.
+; A press es_latch hands to a STOP trap fires at the NEXT boundary.
+es_bound:
+                ld      a,(INTFLG)
+                or      a
+                jp      nz,es_latch         ; basic/input.asm
+                ld      a,(TRAPPEND)
+                or      a
+                ret     z
+                jp      es_trap
 rp_break:
                 ; D-BIOSRUNG (2026-11-12): CONSUME the interrupt's CTRL-STOP latch. The
                 ; VG-8020's interpreter reads INTFLG between statements and leaves it 0
@@ -837,7 +842,9 @@ rp_break:
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
-                jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
+                ret                         ; D-BRKLATCH step 2: back to es_latch's caller,
+                                            ; whose trap dispatch fires it (was `jp
+                                            ; rp_trapchk`, rp_exec's own); the old note:
                                             ; D-CURLIN's 16 B in derive_directf put
                                             ; the backward span past -128 (+1 B).
                                             ; The shipping build is back in reach
@@ -865,6 +872,8 @@ rp_real_break:
                 ; rp_break) and does not latch again while held -- no shadow to ask.
                 pop     hl                  ; HL = resume stmt ptr
 rp_do_break:
+                pop     de                  ; D-BRKLATCH step 2: drop es_latch's return --
+                                            ; do_break's `ret` leaves at the CALLER's depth
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
                 ; that was about to run -> the CONT resume point. do_break records
                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
