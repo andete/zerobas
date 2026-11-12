@@ -8,6 +8,8 @@ session and the loop resumes exactly where it stopped.
 
 | ruling | Joost's words | consequence |
 |---|---|---|
+| STRTMS: PLAY moves to the VG-8020's packet format | *"2 (a)"* (2026-11-12, asked: (a) our PLAY + its interrupt player switch to the reference's queue packet format, or (b) keep ours and let STRTMS translate) | (a): the queues carry the VG-8020's packets (TODO D-BIOSRUNG / STRTMS's decoded table: head byte, duration, $80+volume, big-endian tone period, rest = volume 0, $FF end), our PLAY writes them and our servicer reads them; then STRTMS as measured. TIER 1 |
+| string space: MUST be compatible | *"1 we need to be compatible, think harder (fable agent)"* (2026-11-12, on `V$=V$+<computed>` reaching 66 B of the VG-8020's 100 -- routes (a) GC root / (b) relax unique ownership / (c) keep the copy) | not a pick among the three: reach the VG-8020's capacity exactly, no dangling pointer. A Fable design pass was run (its report goes into the TODO item before any build) |
 | a BIOS entry status that can say STUB, TIER 1, NEXT | *"don't we also have a bios entry tier like the keyword tier and the bdos tier ?"*, then *"yes, file it tier 1 and do it next, it seems this will introduce potentially a bunch of new tier 1 failures"* (2026-11-12) | D-BIOSRUNG (TODO.md): a stub scan of OUR built main ROM, entry_table.py's BIOS rows able to say STUB ahead of "exercised", each stub then its own TIER 1 row. First cut: 9 of 108 stubs, three of them "exercised" by rows that agree for the wrong reason |
 
 ## 🟢 RULINGS 2026-11-11 — READ FIRST
@@ -2235,7 +2237,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12178 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12181 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

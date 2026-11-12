@@ -8170,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15219 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15222 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10643,7 +10643,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       body snapshot, on the commonest string-building idiom there is, not a 128-byte corner.
       A program that runs on the VG-8020 stops here: 🎚️ **TIER 1** (the precedence half stays
       what it was). The cause is this item's, not re-derived: the routes are still (a) / (b) /
-      (c) above, and still Joost's.
+      (c) above, and still Joost's. 🏗️ **RULED (Joost, 2026-11-12): *"we need to be
+      compatible, think harder (fable agent)"*** -- not one of (a) / (b) / (c) as a
+      trade-off: the VG-8020's capacity exactly, no dangling pointer. A Fable design pass
+      was run; its report lands here before anything is built.
       🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
       of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
       🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
@@ -10923,7 +10926,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15222 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16533,6 +16536,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             translates -- probably a question for Joost once (1) is measured, since it touches
             PLAY's tested engine; (3) then STRTMS itself, measured (MUSICF / PLYCNT after it,
             and the PSG registers read through RDPSG while it plays).
+            🏗️ **RULED (Joost, 2026-11-12): *"2 (a)"* -- our PLAY and its servicer switch to
+            the VG-8020's packet format** (the table below), then STRTMS as measured. TIER 1.
             📏 **(1) READ 2026-11-12** ([`playq_run.out`](scratchpad/playq_run.out), VG-8020, voice A, after the PLAY had
             ended): QUETAB's voice-0 descriptor `GET PUT 00 7F 75 F9` (size 127, buffer $F975);
             the packets from VOICAQ+1 (decoded from the eight variants -- one change each):
