@@ -3143,6 +3143,16 @@ item — do **one item per session** to keep context lean.
       to the $4558 slack made room for). Slack after: $553C 19 B, $5E10 20 B, $75A5 4 B (2026-11-11).
       COPY's copy gains the BUFLEN zeroing (right for a fresh destination). Unit tests,
       diskbasic / bdosunop / wrblkalt / copy / catcopy / bdos acceptance green.
+      🧩 **DESIGN REFINED (2026-11-11):** the held half needs its SECTOR, so a word, not a flag bit
+      (FAT_DEFER's bits 0 / 1 / 2 / 7 are taken anyway): DBUF_HSEC in $E5AC..$E5BF -- inside
+      disk.rom's reserved area and MEASURED unused (scratchpad/ramfree_e5ac.out), so no HIMEM
+      move (the RAM rung). dout_write's FIRST half sets it and skips the write; its SECOND half
+      skips dout_secread only when DBUF_HSEC is its own sector -- anything that flushed in
+      between cleared it, and the re-read happens as today, so a MISSED check costs a
+      revolution, never a sector. Checks: fat_read_file_sector's entry (NOT frs_to -- LOAD's
+      per-sector path stays as D-LOADHOLD left it), read_sector / rd_dbuf, dskio_next's page-1
+      bounce, bb_mark, fat_media, CLOSE / the channel switch. Estimate ~70 B against the ~43 B
+      D-WRRESET freed: one more carve first.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8059,7 +8069,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10492 (T-6FE392)8 (T-529ABE)` from `TODO.md:15094 (T-529ABE)`: a
+      `TODO.md:10502 (T-6FE392)8 (T-529ABE)` from `TODO.md:15104 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10798,7 +10808,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
