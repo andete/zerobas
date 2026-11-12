@@ -16574,6 +16574,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             ⚠️ A first reading, not yet a spec: envelopes (S / M), lengths over 255 and the
             duration's high bits are not varied yet. zerobas's own stream (sub/playparse.asm
             PLAY_OP_*) differs from this.
+            📏 **(1) COMPLETED 2026-11-12** ([`playq_run2.out`](scratchpad/playq_run2.out) .. [`playq_run4.out`](scratchpad/playq_run4.out), VG-8020 only -- zerobas's side
+            of this probe dies on `Out of string space`, D-CATALIAS's 66-char limit). **THE
+            FORMAT:** a NOTE is `[n << 5 | dur bits 12..8] [dur bits 7..0] [vol] ([M hi]
+            [M lo]) [tone hi] [tone lo]`, n = the bytes after the two duration bytes (3, or 5
+            with M); `T32L1C` -> `61 77` (375 ticks). **vol** = `$80 | $40 if the M bytes
+            follow | $10 in envelope mode | the volume, or the shape when $10`: `V10` `8A`,
+            `S8` `98`, `S0` `90`, `V0` `80` (still a note, tone sent). **M** is sent ONCE, on
+            the first note after an `M` command, in either mode (`M1000C` `C8 03 E8`,
+            `S0M1000CC` -> `D0 03 E8 ..` then `90` alone; but `M255C` read plain `88` -- M
+            equal to the default 255 sent nothing, see (b) below); a REST before that
+            note carries nothing and the M waits for the next note (`M1000R4C`). A **REST** is
+            `[$20 | dur hi] [dur lo] [$80]` whatever S says (`S0R4` `20 19 80`); `N0` is a rest
+            of 5 ticks (`20 05 80`, not L's length). **End** `FF`. The QUETAB descriptor is
+            `PUT GET BAKFLG SIZE ADDR` (`T32L1C` still playing: `06 05`), voice B's ring at
+            $F9F5, size $7F, the same format. Durations are interrupt ticks (T120 L4 = 25 on
+            this 50 Hz machine). ➡️ **Open before the build:** (a) is R13 rewritten on EVERY
+            envelope note (an envelope restart -- the packet has no "S changed" flag, only M's
+            $40; ours restarts only on S / M, the residual docs/audio-slice3-characterization.md
+            left open) -- count port $A1 writes with R13 selected through an openMSX I/O
+            watch, black-box; (b) M equal to its current value: `M255C` read `88`, so "M sent"
+            may mean "M changed", not "M named" -- one row (`M1000CM1000C`).
+            ✅ **(b) SETTLED** ([`playq_run5.out`](scratchpad/playq_run5.out)): `M1000CM1000C` sends the period once; `M1000CM2000C`
+            twice (`C8 07 D0`) -- M is sent when its VALUE CHANGES, not when it is named.
+            ✅ **(a) SETTLED** ([`psgenv_probe.py`](scratchpad/psgenv_probe.py) -> [`psgenv_run.out`](scratchpad/psgenv_run.out), an openMSX watch on $A0 / $A1): the
+            VG-8020 writes **R13 on EVERY envelope note** (`S0M5000CCC`: three writes, the
+            envelope restarted each time), and the value written is **the packet's whole vol
+            byte** (`D0`, then `90` -- the PSG keeps the low nibble: the "upper bits shifted per
+            note" the old trace saw); on a note with M it writes **R13 FIRST, then R11 / R12**.
+            zerobas writes R13 only when S is named, the bare shape, after R11 / R12 (🔮 HIT:
+            predicted per-note on the VG-8020, once here). ➡️ The format is now specified
+            end to end: (2) is the build -- sub/playparse.asm emits these packets, basic/
+            playsvc.asm decodes them (R13 per envelope note, before the period); then (3)
+            STRTMS.
       - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
             ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
             ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7
