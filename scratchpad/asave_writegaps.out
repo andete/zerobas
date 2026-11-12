@@ -1,0 +1,31 @@
+# SAVE ,A's FDC reads/writes on the SAVE line after D-ASAVEFAT (2026-11-12): time, command,
+# BC (B = track-ish / C = sector), DE (track / side), HL (buffer). Data writes go to consecutive
+# sectors but ~0.48 s apart: the PRODUCER, not the disk, sets the pace.
+104.1210 80 bc=0002 de=0000 hl=E8AD
+104.2102 80 bc=0008 de=0000 hl=EAAD
+104.3366 A0 bc=0008 de=0000 hl=EAAD
+104.9957 80 bc=0002 de=0000 hl=EAAD
+105.0700 A0 bc=0006 de=0001 hl=E8AD
+105.6131 A0 bc=0007 de=0001 hl=E8AD
+106.2677 A0 bc=0008 de=0001 hl=E8AD
+106.7464 A0 bc=0009 de=0001 hl=E8AD
+107.4274 A0 bc=0101 de=0100 hl=E8AD
+107.9079 A0 bc=0102 de=0100 hl=E8AD
+108.3888 A0 bc=0103 de=0100 hl=E8AD
+108.8439 A0 bc=0104 de=0100 hl=E8AD
+109.3235 A0 bc=0105 de=0100 hl=E8AD
+109.9987 A0 bc=0106 de=0100 hl=E8AD
+110.4746 A0 bc=0107 de=0100 hl=E8AD
+110.9545 A0 bc=0108 de=0100 hl=E8AD
+111.4465 A0 bc=0109 de=0100 hl=E8AD
+111.9015 A0 bc=0101 de=0101 hl=E8AD
+112.3917 A0 bc=0102 de=0101 hl=E8AD
+112.8684 A0 bc=0103 de=0101 hl=E8AD
+113.1722 A0 bc=0002 de=0000 hl=EAAD
+113.3477 A0 bc=0005 de=0000 hl=EAAD
+113.4143 80 bc=0002 de=0000 hl=EAAD
+113.5507 A0 bc=0002 de=0000 hl=EAAD
+113.7509 A0 bc=0005 de=0000 hl=EAAD
+113.8194 A0 bc=0104 de=0101 hl=E8AD
+113.9986 80 bc=0008 de=0000 hl=EAAD
+114.0786 A0 bc=0008 de=0000 hl=EAAD

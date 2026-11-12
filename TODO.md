@@ -3206,6 +3206,15 @@ item — do **one item per session** to keep context lean.
       📏 [`asave_kwidx2.out`](scratchpad/asave_kwidx2.out): 9.9 s (🔮 ~9.5: MISSED, smaller -- the 6 % was a 16-byte sampling
       bucket shared with neighbours, and this program has few function tokens). Sub page 0
       15 B free after it (2026-11-12). LOF / unit tests green.
+      🔴 **LEVER (2) WITHDRAWN (2026-11-12, [`asave_writegaps.out`](scratchpad/asave_writegaps.out)):** the data writes ARE consecutive sectors
+      -- but ~0.48 s apart, and a sector write takes milliseconds. The producer sets the pace:
+      ~1 ms per output byte, so a multi-sector write would save ~nothing. ➡️ **The real lever:
+      ONE INTER-SLOT CROSSING PER LINE, NOT PER CHARACTER.** Every byte of the listing leaves
+      main through H_CHOUT and crosses into disk.rom (hk_chout_e -> hco_asav -> fat_io_putbyte):
+      a CALSLT per byte (~900 T in C-BIOS alone, D-LOOPPROF's measure); the CF-3300's whole
+      SAVE is ~0.17 ms a byte. Design: hand disk.rom the detokenised LINE (DETOKBUF already
+      holds it) in one crossing and let it fat_io_putbyte the buffer in-ROM. That is an output-
+      path change (main's SAVE ,A loop + a buffer op behind the hook), to price before building.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8122,7 +8131,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10555 (T-6FE392)8 (T-529ABE)` from `TODO.md:15157 (T-529ABE)`: a
+      `TODO.md:10564 (T-6FE392)8 (T-529ABE)` from `TODO.md:15166 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10861,7 +10870,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15157 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15166 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
