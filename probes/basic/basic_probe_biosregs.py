@@ -46,10 +46,11 @@ import omsx_repl  # noqa: E402
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 
 
-def stub(addr, a, bc, de, hl, buf=None):
+def stub(addr, a, bc, de, hl, buf=None, ix=None):
     # ld bc / ld de / ld hl / ld a / call addr / ld ($D100),hl / ld ($D102),de /
-    # ld ($D104),bc / ld ($D106),a / ret
-    body = [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
+    # ld ($D104),bc / ld ($D106),a / ret  (ix: `ld ix,nn` first -- CALBAS's target)
+    pre = [0xDD, 0x21, ix & 255, ix >> 8] if ix is not None else []
+    body = pre + [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
             0x3E, a, 0xCD, addr & 255, addr >> 8,
             0x22, 0x00, 0xD1, 0xED, 0x53, 0x02, 0xD1, 0xED, 0x43, 0x04, 0xD1,
             0x32, 0x06, 0xD1]
@@ -63,8 +64,8 @@ def stub(addr, a, bc, de, hl, buf=None):
             + [0xDD, 0x22, 0x08, 0xD1, 0x2A, 0xFA, 0xF3, 0x22, 0xF8, 0xF3, 0xFB, 0xC9])
 
 
-def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after="", buf=None):
-    s = stub(addr, a, bc, de, hl, buf)
+def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after="", buf=None, ix=None):
+    s = stub(addr, a, bc, de, hl, buf) if ix is None else stub(addr, a, bc, de, hl, buf, ix=ix)
     ix = ';" IX";HEX$(PEEK(&HD109)*256+PEEK(&HD108))' if buf else ""
     return ["NEW",
             "10 CLEAR 200,&HCFFF" + (":" + before if before else ""),
@@ -294,6 +295,11 @@ ROWS = {
     "getvcp": prog(0x0150, 0, de=0, hl=0),
     "getvc2": prog(0x0153, 0, hl=0),
     "chput": prog(0x00A2, 0x41, after="PRINT"),
+    # D-BIOSRUNG (2026-11-12): CALBAS ($0159) -- C-BIOS's printed "ERROR:CALLED NON
+    # EXISTING BASIC." and stopped. IX = $004D (WRTVRM, the same entry in both ROMs):
+    # the cell written and HL / DE / BC / A back (scratchpad/calbas_run.out).
+    "calbas": prog(0x0159, 0x5A, hl=0x3F10, ix=0x004D, before="VPOKE &H3F10,0",
+                   after='PRINT:PRINT "[C";HEX$(VPEEK(&H3F10));"]"'),
     "outdo": prog(0x0018, 0x42, after="PRINT"),
 }
 

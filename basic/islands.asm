@@ -503,6 +503,8 @@ fperr_to_err:
                 jp      bios_beep           ; BEEP: C-BIOS's was a stub too
                 org     $00C9
                 jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
+                org     $0159
+                jp      bios_calbas         ; CALBAS: C-BIOS's printed an error (D-BIOSRUNG)
                 org     $00CC
                 jp      bios_erafnk
                 jp      bios_dspfnk

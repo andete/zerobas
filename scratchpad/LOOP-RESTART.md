@@ -89,6 +89,9 @@ session and the loop resumes exactly where it stopped.
   main room); D-DSKFMT housekeeping (retire the sub-ROM quick format; standing rows for
   MSX-DOS `format` and the loader boot); D-PSGINIT's last byte (pinned). TIER 3: CLOSE /
   SEQREAD of an unopened FCB (D-BDOSSEQ).
+- **Process lesson 2026-11-12:** the guard's `git push` pushes the BRANCH: a commit made
+  locally while the gate ran (6ae99402) went out with the previous sha's GREEN. Push the
+  gated sha: `case "$v" in *"$sha GREEN"*) git push origin "$sha":main;; esac`.
 - **Process lesson 2026-11-10:** never chain `git push` after the gate command -- guard it
   (`case "$v" in *"<sha> GREEN"*) git push;; esac`); and stage EVERY file the citation
   fixer rewrites (80ef5030 went out RED on an unstaged docs/ rewrite; b10f79f7 fixed it).

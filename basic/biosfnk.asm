@@ -38,6 +38,16 @@ bios_fnksb:
                 ret     z
                 jr      bios_dspfnk
 
+; CALBAS ($0159) -- D-BIOSRUNG (2026-11-12). C-BIOS's printed "ERROR:CALLED NON EXISTING
+; BASIC." and never returned (scratchpad/calbas_run.out). The published contract: call
+; the BASIC interpreter at IX from any slot. The VG-8020, called with IX = $004D
+; (WRTVRM, the same entry in both ROMs), A = $5A, HL = $3F10: the cell written, HL / DE /
+; BC / A back, IY 0 -- an inter-slot call into the main ROM's slot (EXPTBL's byte,
+; slot 0 here). IYH := that byte, then CALSLT.
+bios_calbas:
+                ld      iy,(EXPTBL - 1)     ; IYH = EXPTBL[0]: the main ROM's slot
+                jp      CALSLT
+
 bios_erafnk:
                 xor     a                   ; the line hidden
                 jr      bios_fnk

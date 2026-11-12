@@ -16508,7 +16508,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             blind to them; this records that the gap is deliberate now, not unseen.
       - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
       - [ ] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
-      - [ ] CALBAS ($0159): call a BASIC-interpreter address from any slot.
+      - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
+            ✅ **FIXED 2026-11-12.** 🔴 Worse than a stub: C-BIOS's printed `ERROR:CALLED NON
+            EXISTING BASIC.` and never returned ([`calbas_run.out`](scratchpad/calbas_run.out) -- zerobas gave NO capture). The
+            VG-8020 with IX = $004D (WRTVRM, the same entry in both ROMs), A = $5A, HL = $3F10:
+            the cell written, HL / DE / BC / A back, IY 0 ([`calbas_probe.py`](scratchpad/calbas_probe.py)). Built: bios_calbas
+            (basic/biosfnk.asm, page 0, 7 B): IYH := EXPTBL[0], `jp CALSLT`; $0159 points there.
+            biosregs-acceptance `calbas` (prog() gained `ix=`); knife K4 (`jp CALSLT` -> `ret`) ->
+            RED ([`CAL_k4.out`](scratchpad/CAL_k4.out)). stub_scan 6 -> 5.
       - [ ] PNTINI / SCANR / SCANL ($0129 / $012C / $012F): PAINT's helpers -- main room
             (D-BIOSCONTRACT).
 
