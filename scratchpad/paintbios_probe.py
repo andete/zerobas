@@ -50,19 +50,24 @@ def code2(x, y, col):
 ROWB = ",".join(f"&H{(55 // 8) * 256 + (x // 8) * 8 + 55 % 8:X}" for x in range(16, 112, 8))
 
 
-def prog(c, extra=""):
+# ROUND 4: SCREEN 3 (multicolour) -- each pattern byte two 4x4 blocks; byte for (x, y) is
+# (y//32)*256 + (x//8)*8 + (y//4)%8
+ROWB3 = ",".join(f"&H{(55 // 32) * 256 + (x // 8) * 8 + (55 // 4) % 8:X}" for x in range(16, 112, 8))
+
+
+def prog(c, extra="", scr=2):
     n = len(c)
     rd = ('C=PEEK(&HF92A)+256*PEEK(&HF92B):M=PEEK(&HF92C):D=PEEK(&HFCB2):V$="":'
           f'FOR I=0 TO 11:READ A:V$=V$+RIGHT$("0"+HEX$(VPEEK(A)),2):'
           f'W$=W$+RIGHT$("0"+HEX$(VPEEK(A+&H2000)),2):NEXT')   # ROUND 3: the colour table too
     return ["NEW",
-            f"10 CLEAR 200,&HCFFF:SCREEN 2:LINE (100,40)-(100,70),15:LINE (20,40)-(20,70),15{extra}",
+            f"10 CLEAR 200,&HCFFF:SCREEN {scr}:LINE (100,40)-(100,70),15:LINE (20,40)-(20,70),15{extra}",
             f"20 FOR I=0 TO {n - 1}:READ X:POKE &HD000+I,X:NEXT",
             "30 DEFUSR=&HD000:Q=USR(0):" + rd,
             '40 SCREEN 0:S$="":FOR I=0 TO 3:S$=S$+" "+HEX$(PEEK(&HD101+2*I)*256+PEEK(&HD100+2*I)):NEXT',
             '50 PRINT"[R";S$;"]":PRINT"[C";HEX$(C);" ";HEX$(M);" ";HEX$(D);"]":PRINT"[C ";V$;"]":PRINT"[C ";W$;"]"',
             "60 DATA " + ",".join(str(b) for b in c),
-            "70 DATA " + ROWB,
+            "70 DATA " + (ROWB3 if scr == 3 else ROWB),
             "RUN"]
 
 
@@ -85,6 +90,15 @@ ROWS = {
     # ROUND 3: SCANR TWICE from x = 50 -- fill, then a second scan with DE = 5 across the
     # now-painted run: what the skip count does (the regs are the SECOND call's)
     "r15_twice":  prog(code2(50, 55, 15)),
+    # ROUND 4: SCREEN 3 -- PNTINI's A is the border there (paint 4, border 15)
+    "s3_r_fill":  prog(code(50, 55, 15, 4, 0x012C, 1, 0), scr=3),
+    "s3_r_nofill": prog(code(50, 55, 15, 4, 0x012C, 0, 0), scr=3),
+    "s3_l_fill":  prog(code(50, 55, 15, 4, 0x012F, 1, 0), scr=3),
+    # paint 4 is SCREEN 3's default BACKGROUND -- a fill does not show (paintbios_run4.out);
+    # paint 9 instead
+    "s3_r9_fill":   prog(code(50, 55, 15, 9, 0x012C, 1, 0), scr=3),
+    "s3_r9_nofill": prog(code(50, 55, 15, 9, 0x012C, 0, 0), scr=3),
+    "s3_l9_fill":   prog(code(50, 55, 15, 9, 0x012F, 1, 0), scr=3),
 }
 for _n, _p in ROWS.items():                       # the POKE count FROM the bytes
     _data = _p[6].split(" ", 1)[1].split(",")

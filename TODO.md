@@ -16890,6 +16890,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             and the cursor at x 54 -- it steps over border-coloured pixels while DE lasts,
             finds no paintable run, stops. ➡️ Left: SCREEN 3 (PNTINI's A as the border there),
             and the registers' exact exit state (BC / A) -- then the build.
+            📏 **ROUND 4, SCREEN 3 ([`paintbios_run4.out`](scratchpad/paintbios_run4.out), [`paintbios_run5.out`](scratchpad/paintbios_run5.out)):** PNTINI A = 15
+            -> **BDRATR 15** (🔮 HIT: in SCREEN 3 A IS the border). The fill rows are NOT YET
+            READABLE: paint 4 was SCREEN 3's own background (invisible), and with paint 9 the
+            12-byte window at row 55 is still unchanged -- because MAPXYC(50,55) left the cursor at
+            CLOC **$6DF** / CMASK F0, far from (50,55) by the layout I assumed
+            ((y//32)*256 + (x//8)*8 + (y//4)%8). SCANR HL 4, SCANL HL 5 (blocks?). ⚠️ One of my two
+            premises is wrong -- MAPXYC's coordinates in SCREEN 3, or the address formula: settle
+            it first (MAPXYC alone, then CLOC / CMASK for a grid of points), then read the fill
+            around CLOC, before anything is built for SCREEN 3.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
