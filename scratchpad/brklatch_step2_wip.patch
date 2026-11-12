@@ -1,0 +1,133 @@
+diff --git a/basic/input.asm b/basic/input.asm
+index 0493797c..19076f17 100644
+--- a/basic/input.asm
++++ b/basic/input.asm
+@@ -269,6 +269,27 @@ isc_slow:
+                 cp      3
+                 ret     nz                  ; A = 4
+                 jr      isc_brk
++; es_latch -- D-BRKLATCH step 2 (2026-11-12), page 0 (page 1's last region had 10 B;
++; it overran $8000 there): THE latch consumer, called with A = INTFLG
++; (non-zero) and HL = the statement about to run, from rp_exec AND from exec_stmt (every
++; statement: the VG-8020 broke at the USR's statement, `Break in 20`, where the
++; line-start-only check broke one statement later -- scratchpad/brkconsume_run.out). 4 ->
++; stop_pause, then on (or 3 from it); 3 -> rp_break below. RETURNS when the program goes
++; on (a pause ended, a STOP trap took the press); a break DROPS this call's return and
++; leaves through do_break, at the caller's own depth -- as ex_stop's `jr do_break` does
++; from a statement handler. A and HL only on the returning paths (KILBUF / trap_pend /
++; stop_pause touch nothing else): exec_stmt's dispatch keeps B / C.
++es_latch:
++                cp      3
++                jp      z,rp_break          ; page 1 (basic/program.asm)
++                cp      4
++                ret     nz                  ; no other value is latched (not measured)
++                push    hl
++                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
++                pop     hl
++                cp      3
++                ret     nz
++                jp      rp_break            ; A = 3 from the pause
+ ; stop_pause -- STOP's pause, shared by ISCNTC (above) and the run loop (rp_exec,
+ ; D-BRKLATCH): INTFLG cleared, then waited on -- the pause ends on the NEXT latch, a
+ ; press OR the keyboard's auto-repeat, with the key still down; the release is not one.
+diff --git a/basic/interp.asm b/basic/interp.asm
+index dfe9377f..32ce539d 100644
+--- a/basic/interp.asm
++++ b/basic/interp.asm
+@@ -647,9 +647,11 @@ exec_stmt:
+                 ; the line's end only (scratchpad/trapstmt_run.out). One RAM load in
+                 ; the no-trap case, BEFORE skipsp_test so A needs no saving;
+                 ; es_trap (basic/traps.asm) may not return.
+-                ld      a,(TRAPPEND)
+-                or      a
+-                call    nz,es_trap
++                call    es_bound            ; 🔴 D-BRKLATCH step 2 (2026-11-12): the STOP /
++                                            ; CTRL-STOP latch at EVERY statement boundary,
++                                            ; as the VG-8020, then the trap test -- one
++                                            ; call (basic/program.asm): this region had no
++                                            ; room for both tests inline (it overran $8000)
+                 call    skipsp_test ; leading spaces are skipped (spec §5)
+                 ret     z                   ; end of line -> back to the prompt
+                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+diff --git a/basic/program.asm b/basic/program.asm
+index 981f51b0..67fe3456 100644
+--- a/basic/program.asm
++++ b/basic/program.asm
+@@ -609,16 +609,8 @@ rp_exec:
+                 ; history) have nothing left to do.
+                 ld      a,(INTFLG)
+                 or      a
+-                jr      z,rp_trapchk
+-                cp      3
+-                jr      z,rp_break
+-                cp      4
+-                jr      nz,rp_trapchk       ; no other value is latched (not measured)
+-                push    hl
+-                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
+-                pop     hl
+-                cp      3
+-                jr      z,rp_break
++                call    nz,es_latch         ; D-BRKLATCH step 2: the one consumer (below),
++                                            ; also called by exec_stmt at EVERY statement
+                 jr      rp_trapchk
+                 ; ~~Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
+                 ; next press reads as a fresh 0->1 edge. This is the release observation
+@@ -768,6 +760,19 @@ end_line_end:
+ ; 📌 (derive_directf's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
+ ; 2026-10-17, in front of the $73AC pin; this header still describes it. It is
+ ; entered only by `call`, from rp_exec.)
++; es_bound -- exec_stmt's statement-boundary tests (D-BRKLATCH step 2): the latch, then
++; the traps. Entered by `call` from exec_stmt, so each `jp` below leaves at exec_stmt's
++; depth: es_latch's break path drops exactly that one frame (do_break's `ret` then leaves
++; exec, as ex_stop's does), and es_trap sees the stack it saw when exec_stmt called it.
++; A press es_latch hands to a STOP trap fires at the NEXT boundary.
++es_bound:
++                ld      a,(INTFLG)
++                or      a
++                jp      nz,es_latch         ; basic/input.asm
++                ld      a,(TRAPPEND)
++                or      a
++                ret     z
++                jp      es_trap
+ rp_break:
+                 ; D-BIOSRUNG (2026-11-12): CONSUME the interrupt's CTRL-STOP latch. The
+                 ; VG-8020's interpreter reads INTFLG between statements and leaves it 0
+@@ -837,7 +842,9 @@ rp_break:
+                 call    trap_pend   ; wake the run-loop dispatcher
+ rp_brk_run:
+                 pop     hl                  ; HL = resume stmt ptr, intact
+-                jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
++                ret                         ; D-BRKLATCH step 2: back to es_latch's caller,
++                                            ; whose trap dispatch fires it (was `jp
++                                            ; rp_trapchk`, rp_exec's own); the old note:
+                                             ; D-CURLIN's 16 B in derive_directf put
+                                             ; the backward span past -128 (+1 B).
+                                             ; The shipping build is back in reach
+@@ -865,6 +872,8 @@ rp_real_break:
+                 ; rp_break) and does not latch again while held -- no shadow to ask.
+                 pop     hl                  ; HL = resume stmt ptr
+ rp_do_break:
++                pop     de                  ; D-BRKLATCH step 2: drop es_latch's return --
++                                            ; do_break's `ret` leaves at the CALLER's depth
+                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
+                 ; that was about to run -> the CONT resume point. do_break records
+                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
+diff --git a/probes/basic/basic_probe_outdlp.py b/probes/basic/basic_probe_outdlp.py
+index f1aa96fa..dd74f4b9 100644
+--- a/probes/basic/basic_probe_outdlp.py
++++ b/probes/basic/basic_probe_outdlp.py
+@@ -79,6 +79,14 @@ NOPRN = {
+     "lptout_intflg": ["CLEAR 200,&HCFFF:FOR I=0 TO 23:READ X:POKE &HD000+I,X:NEXT",
+                       'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);PEEK(&HD101);"]"',
+                       "DATA 251,62,65,205,165,0,58,155,252,50,0,209,6,10,118,16,253,58,155,252,50,1,209,201"],
++    # D-BRKLATCH step 2: the break at the STATEMENT the latch lands before -- the USR
++    # loops on BREAKX, then waits (interrupts on) through the hold and the release, so
++    # the latch is set when it returns: the VG-8020 breaks at the USR's own statement,
++    # `Break in 20`; a line-start-only check broke one statement later
++    # (scratchpad/brkconsume_run.out).
++    "brk_midline": ["CLEAR 200,&HCFFF:FOR I=0 TO 42:READ X:POKE &HD000+I,X:NEXT",
++                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);"]"', 'PRINT "[C END]"',
++                    "DATA 251,205,183,0,48,251,58,155,252,50,0,209,6,5,118,16,253,58,155,252,50,1,209,118,58,236,251,230,16,40,248,6,5,118,16,253,58,155,252,50,2,209,201"],
+ }
+ for _n, _p in NOPRN.items():                              # the POKE count FROM the bytes
+     if _p[0].startswith("CLEAR") and "READ" in _p[0]:

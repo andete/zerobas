@@ -16724,6 +16724,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   break / trap suites green. ISCNTC's wait now shares stop_pause (no key-up).
                   - [ ] STEP 2: the per-STATEMENT check (brkconsume: VG `Break in 20`, ours
                         `in 30`) -- a break exit at exec_stmt's depth.
+                        🅿️ **BUILT, PARKED 2026-11-12 -- [`brklatch_step2_wip.patch`](scratchpad/brklatch_step2_wip.patch) (on 8c79b9ea).**
+                        es_latch (page 0, beside stop_pause) is THE consumer: 3 -> rp_break
+                        (now callable: the trap arm `ret`s, the break arms drop the caller's
+                        frame and `jr do_break`, as ex_stop does from a handler), 4 -> the
+                        pause; rp_exec and exec_stmt both reach it -- exec_stmt through
+                        `call es_bound` (latch, then traps), because inline both tests overran
+                        $8000 (pasmo: "image base $8000"). Page 1 10 -> 30 B free. brkconsume
+                        SAME (`Break in 20` on both); outdlp gate 10/10 with `brk_midline`;
+                        knife K10 (es_bound's latch test) -> brk_midline `in 30` RED; 12 of 13
+                        break / trap suites green. 🔴 **NOT SHIPPED: programs-acceptance's
+                        L5_files** -- zerobas's longest frame-interrupt gap 0.285 s against the
+                        CF-3300's 0.223 (D-GCDI's rule), deterministic over three runs; step 1
+                        read 0.139 there (BL3_programs.out). A per-statement call shifts
+                        statement timing, and a disk wait under DI moved with it -- longer than
+                        a revolution, so likely a missed sector. ➡️ Find the gap's PC (the
+                        asavedi_pc_probe.py way, `--min=` on the gap) before shipping.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before
