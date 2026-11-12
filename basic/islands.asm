@@ -382,7 +382,8 @@ zks_paint:
 ; C-BIOS src/main.asm:631 pads `ds $0D01 - $` from the end of debug.asm up to its
 ; pinned compat ISR-exit tail at $0D01 ("Hacker" jumps to $0D02, Star Force calls
 ; $0D0E). zerobas's tape bodies take $09EE..tape_end of that run; what is left is
-; $09D9..$09ED (21 B, island 3). Island 4 ($0CC9.., the error-message table) is
+; $09E0..$09ED (14 B, island 3; $09D9 until D-BIOSRUNG's SCREEN 3 arms grew C-BIOS,
+; 2026-11-12). Island 4 ($0CC9.., the error-message table) is
 ; RETIRED (2026-10-15): TAPION's cycle verify (D-TAPLEAD's residual) needed the tape
 ; bodies to run to C-BIOS's compat tail at $0D01, the cap every other variant's
 ; tape patch already has, and err_msgtab went back to main page 1 (interp.asm).
@@ -396,7 +397,10 @@ zks_paint:
 ; growing tape silently replace a table's $00 bytes.
 ; (Space plan A3, docs/plan-main-rom-space-2026-10.md: C2-GAP1's islands, DT-2's
 ; tables -- DT-2 no longer fit islands 1/2 once A2/DT-3 had filled them.)
-                org     $09D9
+                org     $09E0               ; D-BIOSRUNG (2026-11-12): was $09D9 -- the
+                                            ; graphics-cursor span's SCREEN 3 arms grew
+                                            ; C-BIOS to $09E0; this table is 13 B
+                                            ; (12 without CLEARPOOL): $09E0..$09EC
 fperr_to_err:
                 db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
                                             ; own string, dl_overflow -- REUSED byte-for-byte)

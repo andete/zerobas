@@ -23,7 +23,7 @@ from .program import FarCall, Opaque, Program, load_pasmo_sym
 
 ZEROBAS_LO, ZEROBAS_HI = 0x2781, 0x7FFF
 HEADER = (0x4000, 0x400F)
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE))
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09E0, 0x09EE))
 INLINE_STUBS = {"sr_inl0": 1, "sr_inl1": 1, "sc_inl0": 1, "sc_inl1": 1}
 SUBROM_WRAPPERS = ["subrom_call", "sc_call", "sr_slot",
                    "sr_inl0", "sr_inl1", "sc_inl0", "sc_inl1"]

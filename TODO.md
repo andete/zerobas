@@ -16905,7 +16905,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             $20, (0,32) -> $400, (50,55) -> $6CF / F0 (byte (x/2)*8 + (y/8)*256 + y%8, the left
             nibble for even x); zerobas maps them as SCREEN 2 pixels (0/80, 8/80, 400/80,
             637/20). So my SCREEN 3 PAINT rows passed pixels where blocks were wanted.
-            - [ ] **MAPXYC in SCREEN 3 takes block coordinates** (and very likely FETCHC / STOREC
+            - [x] **MAPXYC in SCREEN 3 takes block coordinates** (and very likely FETCHC / STOREC
                   / the moves follow the same SCREEN 3 shape) -- 🎚️ TIER 1, a main-BIOS entry off
                   the VG-8020 (the graphics-cursor family was fixed for SCREEN 2 only). Measure the
                   family in SCREEN 3 the same way, then fix. The PAINT helpers' SCREEN 3 rows wait
@@ -16922,6 +16922,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   from the measured behaviour (C-BIOS's code is ideas only, BSD-2): MAPXYC first,
                   then FETCHC / STOREC / the moves, each measured in SCREEN 3 against the VG-8020
                   -- and re-read upstream 0.31's whole span for other arms ours lacks.
+                  ✅ **DONE (2026-11-12), the whole family:** [`scr3sweep_probe.py`](scratchpad/scr3sweep_probe.py) called each entry
+                  in SCREEN 3 on both machines ([`scr3sweep_run.out`](scratchpad/scr3sweep_run.out): 11 SAME, 15 not -- 🔮 predicted
+                  set HIT except `dc_bot`: DOWNC has no bottom stop on the VG-8020 either, only
+                  TDOWNC). The VG-8020's SCREEN 3: RIGHTC / LEFTC step one 4x4 block (CMASK $F0 <->
+                  $0F, CLOC +/- 8 on the wrap, no edge clamp); TDOWNC stops at cell row 5, not $17;
+                  MAPXYC as above with A = H, BC / DE kept; SETC writes ATRBYT into the nibble under
+                  CMASK, A = the new byte; READC returns that nibble; NSETCX leaves the cursor PAST
+                  the run (not restored, unlike SCREEN 2), HL = 0, A = CMASK. UPC / DOWNC / TUPC
+                  and the inside-cell moves already agreed (same stride as SCREEN 2). F after
+                  RIGHTC / LEFTC is the AND flags of the new CMASK in SCREEN 2 AND 3
+                  ([`scr3sweep_run3.out`](scratchpad/scr3sweep_run3.out), never captured before). ➡️ cbios-repack/graphics-cursor.patch
+                  gained SCREEN 3 arms written by us (an `is_sc3` test; RIGHTC / LEFTC rotate four
+                  times, whose last carry is the wrap) and an `and a` on the moves' exit: **95 B**,
+                  which C-BIOS gap 1 had as fill ($0981-$09D8, 88 B) plus 7 of island 3's 8 unused
+                  bytes -- island 3 (fperr_to_err, 13 B) now starts at $09E0 (basic/islands.asm,
+                  tools/build_mainrom.py ISLAND_RANGES, z80flow). **After: [`scr3sweep_run4.out`](scratchpad/scr3sweep_run4.out) 30 / 30 SAME**
+                  (🔮 HIT); the 145-row biossweep ([`biossweep_sc3fix.out`](scratchpad/biossweep_sc3fix.out)) reads every SCREEN 2
+                  cursor row as before. Upstream's removed notes add only that the VG-8020's
+                  TUPC / TDOWNC treat MLTCGP as 0 in SCREEN 3 -- ours does too. 🔴 C-BIOS gap 1
+                  is now FULL (0 B) and island 3 has 1 B spare: the PAINT helpers need room
+                  elsewhere (the sub-ROM tenant plan stands). ➡️ Next: the PAINT helpers' SCREEN 3
+                  rows in block coordinates (x 12, y 13).
+                  - [ ] **GRPPRT in SCREEN 3 is unmeasured** (it follows MAPXYC's CLOC, which now
+                        means blocks there) -- 🎚️ TIER 1, one row on both machines.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**

@@ -52,7 +52,8 @@ PATCHES = [
     # D-BIOSCONTRACT (2026-11-08): the graphics-cursor span RIGHTC .. SCANL rewritten
     # as one block of the SAME length (padded to print_debug): SCALXY, GTASPC, MAPXYC,
     # SETC, STOREC, SETATR, READC and the four moves as the VG-8020; GRPPRT follows
-    # MAPXYC's CLOC; the other stubs a bare `ret`.
+    # MAPXYC's CLOC; the other stubs a bare `ret`. SCREEN 3 arms (D-BIOSRUNG, 2026-11-12)
+    # grew it 95 B into gap 1: the C-BIOS code now ends at $09E0, where island 3 starts.
     os.path.join(REPO, "cbios-repack", "graphics-cursor.patch"),
     # CRTCNT UNDER KEY ON (2026-11-10): CHPUT's 8 reads of CRTCNT call zerobas's page-0
     # helpers at $3283 / $328D (CRTCNT + CNSDFG, the VG-8020's bound); byte-neutral.
@@ -71,7 +72,7 @@ PATCHES = [
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "90e0034ec08184fa0042488c2baffece11adc884"
+REPACKED_SHA1 = "657dc2ad0001d1f645ce2923d2ba7b236f133358"   # D-BIOSRUNG SCREEN 3 arms, 2026-11-12
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

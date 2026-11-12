@@ -1,0 +1,7 @@
+ROW s2_rc_mid VG=[[C108 8] | [R 5566 3344 1122 A8 F18]] ZB=[[C108 8] | [R 5566 3344 1122 A8 F42]] DIVERGES
+ROW s2_rc_wrap VG=[[C110 80] | [R 5566 3344 1122 A80 F90]] ZB=[[C110 80] | [R 5566 3344 1122 A80 F40]] DIVERGES
+ROW s2_lc_mid VG=[[C108 20] | [R 5566 3344 1122 A20 F30]] ZB=[[C108 20] | [R 5566 3344 1122 A20 F42]] DIVERGES
+ROW s2_lc_wrap VG=[[C100 1] | [R 5566 3344 1122 A1 F10]] ZB=[[C100 1] | [R 5566 3344 1122 A1 F51]] DIVERGES
+
+0 SAME, 4 not (s2_rc_mid, s2_rc_wrap, s2_lc_mid, s2_lc_wrap)
+refcache: 0 hit, 8 miss, 8 stored
