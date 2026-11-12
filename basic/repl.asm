@@ -132,10 +132,8 @@ repl_abort:
                 jr      repl_read
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
-; D-REREAD-EDGES: print_dbwin = HL := DB_WIN, then fall in (LIST and PRINT
-; USING drain the detok/literal window at three sites).
-print_dbwin:
-                ld      hl,DB_WIN
+; (print_dbwin, which drains DB_WIN here, lives beside pchar in print.asm --
+; D-ASAVELINE gave it SAVE ,A's one-crossing-per-window path.)
 print_string:
                 ld      a,(hl)
                 or      a

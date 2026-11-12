@@ -1,0 +1,22 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_asavedev.py
+== STOCK plain: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+== STOCK big: Q.BAS 2064 B b'10 REM ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDE'...
+== STOCK crt: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+== OURS plain: Q.BAS 7 B b'10 R\r\n\x1a'
+== OURS big: Q.BAS 188 B b'10 R\r\n20 R\r\n30 R\r\n40 R\r\n50 R\r\n60 R\r\n70 R\r\n80 R\r\n'...
+== OURS crt: Q.BAS 7 B b'10 R\r\n\x1a'
+DIVERGES plain: CF-3300 15 B vs ours 7 B, first difference at byte 4: b'EM HELLO\r\n\x1a' vs b'\r\n\x1a'
+DIVERGES big: CF-3300 2064 B vs ours 188 B, first difference at byte 4: b'EM ABCDEFGHIJKLM' vs b'\r\n20 R\r\n30 R\r\n40'
+DIVERGES crt: CF-3300 15 B vs ours 7 B, first difference at byte 4: b'EM HELLO\r\n\x1a' vs b'\r\n\x1a'
+
+FAIL: SAVE ,A writes the CF-3300's file (0/3)
+refcache: 3 hit, 3 miss, 3 stored
+make: *** [asavedev-acceptance] Error 1

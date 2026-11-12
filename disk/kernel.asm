@@ -2478,6 +2478,22 @@ hk_chout_e:
 hco_asav:
                 pop     af
                 ei                          ; as hk_chout's own entry
+                or      a
+                jr      nz, hco_byte        ; one byte
+                ; D-ASAVELINE: A = 0 is main's print_dbwin handing over a whole
+                ; 0-terminated window at HL (a listing never carries a $00). Each
+                ; byte takes the one-byte path below, a 66 or a DSKIO fault raising
+                ; from inside it exactly as before -- the unwind discards the frame.
+hco_blk:
+                ld      a, (hl)
+                or      a
+                jr      z, hco_tail         ; NC: the window drained, claimed
+                inc     hl
+                push    hl
+                call    hco_byte            ; returns only on success (CY, claimed)
+                pop     hl
+                jr      hco_blk
+hco_byte:
                 call    fat_io_putbyte
                 jr      nc, hco_tail
                 ; 🔴 D-ASAVEFULLSTAMP's RULE MOVED WITH SAVE ,A. A listing that

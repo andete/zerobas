@@ -3224,6 +3224,20 @@ item — do **one item per session** to keep context lean.
       sink is SAVE ,A's (PRDEST, PRDEV 0, no channel) -- main page 1 and disk.rom together, with
       a contract between them: a designed slice. SAVE ,A is under T2's 10x already (6.6x), so
       this is ordinary TIER 5.
+      ✅ **D-ASAVELINE (2026-11-12): BUILT -- SAVE ,A 9.9 -> 6.1 s (CF-3300 1.5: ~4.1x).** One crossing
+      per detok WINDOW, not per byte: basic/print.asm's new print_dbwin (moved from repl.asm, beside
+      pchar) tests PRDEST 1 + PRDEV 0 + FCH_ACTIVE 0 and then enters pchar with A = 0 and HL = DB_WIN;
+      pch_disk hands both to H_CHOUT unchanged, and disk.rom's hco_asav reads A = 0 as "a
+      0-terminated buffer at HL" (hco_blk), each byte through the old one-byte path (hco_byte) so a
+      66 / DSKIO fault raises exactly as before. Safe only for SAVE ,A: a listing never holds a $00,
+      a channel's $00 is a real PRINT# byte -- hence FCH_ACTIVE in the test. Room: disk.rom $5E10
+      15 -> 0 B; main page-1 pad at $6CF3 1093 -> 1073 B (2026-11-12). 📏 [`asave_line.out`](scratchpad/asave_line.out):
+      6.1 s (🔮 ~7.3: MISSED, bigger -- the per-byte path also paid pchar's push/dispatch and RST 18h's
+      H_OUTD call, not only the CALLF). Gates: asavedev, asavechan, diskfull, wcache, diskascii,
+      cas-ascii green. Knives: K1 (`inc hl` -> `dec hl` in hco_blk) -> asavedev 0/3 RED
+      ([`AL_k1.out`](scratchpad/AL_k1.out)); K2 (FCH_ACTIVE dropped from the test) -> sessions S16_diskprog
+      DIFF after RUN, its PRINT #2,USING ([`AL_k2.out`](scratchpad/AL_k2.out)). H_OUTD is no longer called per byte of
+      a disk listing; on the published machine the disk ROM is that hook's tenant during one.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -8140,7 +8154,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10573 (T-6FE392)8 (T-529ABE)` from `TODO.md:15175 (T-529ABE)`: a
+      `TODO.md:10587 (T-6FE392)8 (T-529ABE)` from `TODO.md:15189 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10879,7 +10893,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15175 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15189 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

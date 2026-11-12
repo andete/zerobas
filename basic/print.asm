@@ -560,6 +560,28 @@ print_strval_rel:
                 call    print_strval
                 jr      str_release_top
 
+; --- print_dbwin: drain DB_WIN (LIST, SAVE ,A, PRINT USING -- three sites) ----
+; D-ASAVELINE: when the sink is SAVE ,A's listing -- PRDEST 1, PRDEV 0 (disk),
+; NO channel live (FCH_ACTIVE 0) -- the whole window crosses into disk.rom ONCE:
+; pchar with A = 0 and HL = DB_WIN, which pch_disk hands to H_CHOUT unchanged.
+; disk.rom's hco_asav reads A = 0 as "a 0-terminated buffer at HL". Safe only
+; there: a listing never carries a $00 (it ends a tokenised line) and the window
+; is 0-terminated, while a CHANNEL's $00 is a real PRINT# byte -- which is why
+; FCH_ACTIVE is in the test. Each byte used to cost a CALLF (~1 ms a byte, the
+; priced 2.6 s of a 150-line SAVE ,A -- TODO D-ASAVELINE). H_OUTD is not called
+; per byte on this path: on the published machine the disk ROM itself is the
+; hook's tenant during a file listing, so nothing else is there to see it.
+print_dbwin:
+                ld      a,(PRDEST)
+                dec     a                   ; 1 -> 0
+                ld      hl,FCH_ACTIVE
+                or      (hl)
+                ld      hl,PRDEV
+                or      (hl)                ; 0 only for SAVE ,A's sink
+                ld      hl,DB_WIN
+                jr      z,pchar             ; A = 0: the window, one crossing
+                jp      print_string        ; any other sink: a byte at a time
+
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:
                 ld      a,13
