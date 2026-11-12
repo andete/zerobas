@@ -16671,6 +16671,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             check (13 B) into the crt_rows pad, st_go (10 B) into island 1's last 10 B
             (basic/islands.asm). Room (2026-11-12): low region 26 B (unchanged), the crt_rows pad
             53 -> 3 B, island 1 10 -> 0 B, sub page 1 -> 2 B; 7 / 7 switches assemble.
+            🔴 **The full gate went RED on gicini-acceptance's CONTROL row `m.one`** (MUSICF 7,
+            want 1). Not GICINI and not the model: both machines start all three voices and an
+            unnamed voice drops its bit at the first service tick ([`plycnt_run5.out`](scratchpad/plycnt_run5.out) .. [`plycnt_run7.out`](scratchpad/plycnt_run7.out):
+            `CLS:A=PEEK` 1 on both; gicini's exact `CLS:PRINT"[";PEEK` 1 on the VG-8020, 7 here)
+            -- whether a tick lands before the PEEK is the interpreter's SPEED, and the slower
+            VG-8020 always has one. The old per-voice start hid it (B / C never got a bit).
+            gicini's MUSICF rows now read only the voices they name (`AND 1` / `AND 3` / all):
+            36 / 36 on zerobas and on the VG-8020 (the WANT values unchanged).
             - [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** --
                   🎚️ TIER 6 — `V5S3C` on voice A: the VG-8020 writes R9 = R10 = 0 with the note
                   ([`psgenv_run3.out`](scratchpad/psgenv_run3.out)); zerobas leaves them. Heard only after a SOUND 9 / 10 set

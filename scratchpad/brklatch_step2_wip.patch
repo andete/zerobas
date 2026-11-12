@@ -1,35 +1,3 @@
-diff --git a/basic/input.asm b/basic/input.asm
-index 0493797c..19076f17 100644
---- a/basic/input.asm
-+++ b/basic/input.asm
-@@ -269,6 +269,27 @@ isc_slow:
-                 cp      3
-                 ret     nz                  ; A = 4
-                 jr      isc_brk
-+; es_latch -- D-BRKLATCH step 2 (2026-11-12), page 0 (page 1's last region had 10 B;
-+; it overran $8000 there): THE latch consumer, called with A = INTFLG
-+; (non-zero) and HL = the statement about to run, from rp_exec AND from exec_stmt (every
-+; statement: the VG-8020 broke at the USR's statement, `Break in 20`, where the
-+; line-start-only check broke one statement later -- scratchpad/brkconsume_run.out). 4 ->
-+; stop_pause, then on (or 3 from it); 3 -> rp_break below. RETURNS when the program goes
-+; on (a pause ended, a STOP trap took the press); a break DROPS this call's return and
-+; leaves through do_break, at the caller's own depth -- as ex_stop's `jr do_break` does
-+; from a statement handler. A and HL only on the returning paths (KILBUF / trap_pend /
-+; stop_pause touch nothing else): exec_stmt's dispatch keeps B / C.
-+es_latch:
-+                cp      3
-+                jp      z,rp_break          ; page 1 (basic/program.asm)
-+                cp      4
-+                ret     nz                  ; no other value is latched (not measured)
-+                push    hl
-+                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
-+                pop     hl
-+                cp      3
-+                ret     nz
-+                jp      rp_break            ; A = 3 from the pause
- ; stop_pause -- STOP's pause, shared by ISCNTC (above) and the run loop (rp_exec,
- ; D-BRKLATCH): INTFLG cleared, then waited on -- the pause ends on the NEXT latch, a
- ; press OR the keyboard's auto-repeat, with the key still down; the release is not one.
 diff --git a/basic/interp.asm b/basic/interp.asm
 index dfe9377f..32ce539d 100644
 --- a/basic/interp.asm
@@ -49,6 +17,36 @@ index dfe9377f..32ce539d 100644
                  call    skipsp_test ; leading spaces are skipped (spec §5)
                  ret     z                   ; end of line -> back to the prompt
                  ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+diff --git a/basic/keytrap.asm b/basic/keytrap.asm
+index 02744018..4c5c474c 100644
+--- a/basic/keytrap.asm
++++ b/basic/keytrap.asm
+@@ -120,3 +120,25 @@ zkh_trap:
+     ENDIF
+ 
+     ENDIF
++
++; es_latch -- D-BRKLATCH step 2 (2026-11-12), page 0 AFTER the pins (page 1's last
++; region had 10 B; basic/input.asm, before the crt_rows pin, has its pad's 3 B): THE latch consumer, called with A = INTFLG
++; (non-zero) and HL = the statement about to run, from rp_exec AND from exec_stmt (every
++; statement: the VG-8020 broke at the USR's statement, `Break in 20`, where the
++; line-start-only check broke one statement later -- scratchpad/brkconsume_run.out). 4 ->
++; stop_pause, then on (or 3 from it); 3 -> rp_break below. RETURNS when the program goes
++; on (a pause ended, a STOP trap took the press); a break DROPS this call's return and
++; leaves through do_break, at the caller's own depth -- as ex_stop's `jr do_break` does
++; from a statement handler. A and HL only on the returning paths (KILBUF / trap_pend /
++; stop_pause touch nothing else): exec_stmt's dispatch keeps B / C.
++es_latch:
++                cp      3
++                jp      z,rp_break          ; page 1 (basic/program.asm)
++                cp      4
++                ret     nz                  ; no other value is latched (not measured)
++                push    hl
++                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
++                pop     hl
++                cp      3
++                ret     nz
++                jp      rp_break            ; A = 3 from the pause
 diff --git a/basic/program.asm b/basic/program.asm
 index 981f51b0..67fe3456 100644
 --- a/basic/program.asm

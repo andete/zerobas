@@ -48,16 +48,25 @@ import basic_probe_deffn as D                                     # noqa: E402
 # unchanged, because a longer MML string fills the 128 B ring and makes PLAY
 # block, which is a different fixture again.
 LONG = "T32L1CDEFGAB"
-M = "PEEK(&HFB3F)"          # MUSICF: a published work-area address, so the same
-                            # expression names the same thing on all three sides
+M = "PEEK(&HFB3F) AND 1"    # MUSICF's voice-A bit: a published work-area address, so
+                            # the same expression names the same thing on all three sides.
+# 🔴 MASKED TO THE VOICES A ROW NAMES (D-BIOSRUNG / STRTMS, 2026-11-13): a PLAY starts ALL
+# THREE voices on the VG-8020 (MUSICF 7 straight after `PLAY "C"`), and an unnamed voice
+# drops its bit at the first service tick, when it reaches its end marker. Whether a tick
+# lands before the PEEK is the INTERPRETER'S SPEED, not GICINI: `CLS:A=PEEK(..)` read 1
+# here and `CLS:PRINT"[";PEEK(..)` 7 on the same build, both 1 on the slower VG-8020
+# (scratchpad/plycnt_run5.out .. _run7.out). The unnamed voices' bits are not this suite's
+# subject, so they are masked out.
+M2 = "PEEK(&HFB3F) AND 3"   # rows naming voices A and B
+M3 = "PEEK(&HFB3F)"         # rows naming all three
 
 CASES = {
     "m.ctl0":   ([], M),
     "m.sound":  (["SOUND 8,15"], M),
     "m.drain":  (['PLAY"L64C"', "FOR I=1 TO 900:NEXT"], M),
     "m.one":    ([f'PLAY"{LONG}"'], M),
-    "m.two":    ([f'PLAY"{LONG}","{LONG}"'], M),
-    "m.three":  ([f'PLAY"{LONG}","{LONG}","{LONG}"'], M),
+    "m.two":    ([f'PLAY"{LONG}","{LONG}"'], M2),
+    "m.three":  ([f'PLAY"{LONG}","{LONG}","{LONG}"'], M3),
     "m.skipb":  ([f'PLAY"{LONG}",,"{LONG}"'], M),
     "m.voiceb": ([f'PLAY,"{LONG}"'], M),
     "m.empty":  (['PLAY""'], M),

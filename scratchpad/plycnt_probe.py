@@ -23,13 +23,24 @@ CASES = {
     "long":   ['PLAY "T255L64CDEFGABCDEFGABCDEFGABCDEFGABCDEFGABCDEFGAB":A=PEEK(&HFB40):B=PEEK(&HFB3F):C=0:D=0', SHOW],
     # ROUND 2: do voices B and C get an end marker from `PLAY "C"`? (their PUT pointers)
     "bc_put": ['PLAY "C":A=PEEK(&HF95F):B=PEEK(&HF965):C=PEEK(&HF959):D=0', SHOW],
+    # ROUND 3: gicini's m.one -- MUSICF while voice A still plays a long note, B / C at
+    # their end markers (the VG-8020: 1)
+    "longone": ['PLAY "T32L1CDEFGAB":T=TIME', "IF TIME-T<150 THEN 20",
+                'A=PEEK(&HFB3F):B=PEEK(&HF95F):C=PEEK(&HF960):D=PEEK(&HF95A)', SHOW],
+    # ROUND 4: what lets a tick land between PLAY and the PEEK (gicini's m.one: CLS)
+    "t_cls":  ['PLAY "T32L1CDEFGAB"', 'CLS:A=PEEK(&HFB3F):B=0:C=0:D=0', SHOW],
+    "t_for":  ['PLAY "T32L1CDEFGAB"', 'FOR I=1 TO 20:NEXT:A=PEEK(&HFB3F):B=0:C=0:D=0', SHOW],
+    "t_next": ['PLAY "T32L1CDEFGAB"', 'A=PEEK(&HFB3F):B=0:C=0:D=0', SHOW],
+    # ROUND 5: gicini's m.one program, verbatim (stored, ON ERROR line first)
+    "gic_m1": ['ON ERROR GOTO 900', 'PLAY"T32L1CDEFGAB"', 'CLS:A=PEEK(&HFB3F):B=0:C=0:D=0', SHOW, 'END',
+               '900 PRINT "[E";ERR;ERL;"]":END'],
     "after":  ['PLAY "C":T=TIME', "IF TIME-T<60 THEN 20", 'A=PEEK(&HFB40):B=PEEK(&HFB3F):C=0:D=0', SHOW],
 }
 
 
 def main():
     names = sys.argv[1:] or list(CASES)
-    for mach in ("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"):
+    for mach in ("Philips_VG_8020", os.environ.get("PLY_ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
         raws = omsx_repl.run_cases(mach, [("stored", CASES[n]) for n in names],
                                    batch=False, run_gap=12.0)
         for n, raw in zip(names, raws):

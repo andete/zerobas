@@ -1,0 +1,7 @@
+Philips_VG t_cls   [C 1 0 0 0 ] Ok colo
+Philips_VG t_next  [C 7 0 0 0 ] Ok colo
+Philips_VG short   [C 0 7 0 0 ] Ok colo
+C-BIOS_MSX t_cls   [C 1 0 0 0 ] ZB colo
+C-BIOS_MSX t_next  [C 7 0 0 0 ] ZB colo
+C-BIOS_MSX short   [C 0 7 0 0 ] ZB colo
+refcache: 0 hit, 2 miss, 2 stored

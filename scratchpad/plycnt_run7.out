@@ -1,0 +1,2 @@
+omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; nothing was measured.
+  MIS-DELIVERED case 0 on Philips_VG_8020: typed 10,20,30,40,50,60, machine stored 10,20,30,40,50,60900 -- line(s) [60] never entered (the screen editor rejected a mangled echo). Body: ['ON ERROR GOTO 900', 'PLAY"T32L1CDEFGAB"', 'CLS:A=PEEK(&HFB3F):B=0:C=0:D=0', 'PRINT "[C";A;B;C;D;"]"', 'END', '900 PRINT "[E";ERR;ERL;"]":END']
