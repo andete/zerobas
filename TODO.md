@@ -16740,6 +16740,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         statement timing, and a disk wait under DI moved with it -- longer than
                         a revolution, so likely a missed sector. ➡️ Find the gap's PC (the
                         asavedi_pc_probe.py way, `--min=` on the gap) before shipping.
+                        📏 **FOUND (2026-11-12, `asavedi_pc_probe.py L5_files --min=0.25` with the
+                        patch applied -> [`S2G_gap.out`](scratchpad/S2G_gap.out)):** 265 of the 285 ms in **disk.rom's
+                        `fwd_wait`** -- the WRITE path's wait for its sector, IFF 0 throughout,
+                        CURLIN 40 (L5_files' first OPEN FOR OUTPUT). Not step 2's own code: the
+                        read side's waits take D-FDCDI's interrupt windows, the write side's do
+                        not, so a write waits up to a revolution under DI wherever its command
+                        happens to start -- step 2's one call a statement moved this one onto a
+                        near-full revolution. ~~➡️ D-FWDWIN: give fwd_wait the read side's
+                        windows~~ -- 🔴 **WRONG FIRST READING, corrected the same hour:** the write
+                        path ALREADY opens them (fdc_write_data_body calls fdc_fdrq), and line 40
+                        is PRINT #1 / #2 through hk_chout, whose entry does `ei`. The sampler's 6
+                        samples in **fdc_restore** (a recalibration -- errors happened) say what
+                        did: the first DRQ arrived while an interrupt was taken in a window ->
+                        LOST DATA -> windowed retries up to FDC_WINMAX -> the LAST attempt waits
+                        MASKED, as D-FDCDI designed, up to a revolution. Step 2's timing moved the
+                        interrupt's phase onto the sector's arrival. ➡️ **D-FWDWIN, re-scoped:**
+                        the window rule must not let a lost-data streak end in a masked
+                        revolution -- e.g. no window once the sector is near (the index pulse /
+                        a sector-ID read tells), or the masked fallback only after a real error,
+                        not LOST DATA. Measure the retries first (a watchpoint on FDC_IFF's count
+                        and the command register, as fdccmd_probe.py does); then re-gate step 2.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before

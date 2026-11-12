@@ -1,0 +1,8 @@
+ENDED t=35.5 gaps=18 max=0.285
+
+GAP 0.285 s: 285 samples, IFF=0 in 285; CURLIN 0028
+   265  PC ~4860  A8=FC  basic-reloc:for_get+9 | disk:fwd_wait+0 | sub:LOG_BP+92
+    12  PC ~4870  A8=FC  basic-reloc:str_get_key+5 | disk:fwd_byte+3 | sub:LOG_BP+108
+     6  PC ~43D0  A8=FC  basic-reloc:ex_resume+3 | disk:fdc_restore+4 | sub:ATAN_COEF+79
+     1  PC ~4820  A8=FC  basic-reloc:vsf_wb_copy+3 | disk:fat_rootsecs+9 | sub:LOG_BP+28
+     1  PC ~6C50  A8=FC  disk:ffds_haveclus+0 | sub:pnt_round+18
