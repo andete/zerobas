@@ -16661,6 +16661,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   EVERY FRAME through a press on the VG-8020 while a BASIC loop runs (a POKEd
                   frame logger on the H.TIMI hook -- work-area RAM, readable), to see which
                   latches the interpreter consumes and when.
+                  📏 **FIRST FRAME LOG (2026-11-12, [`framelog_probe.py`](scratchpad/framelog_probe.py) -> [`framelog_run.out`](scratchpad/framelog_run.out)):** our
+                  code on H.TIMI logs INTFLG + the BASIC loop's counter each frame (the dump's
+                  tail -- `F255/F0` alternating -- is unwritten RAM past the log's end, ignore
+                  it). VG-8020: the hook NEVER sees INTFLG non-zero -- the interpreter consumes
+                  the latch before the next frame's H.TIMI; the loop STALLS for 0.2 s and 1 s
+                  holds (to the capture), NOT AT ALL for 0.5 s, 35 frames for 2 s (then
+                  resumes). zerobas: INTFLG 4 appears and stays, no stall. ➡️ Next instrument:
+                  log NEWKEY row 7 (the key itself) beside the counter, to line the press /
+                  release frames up against the stall's start and end -- the 0.5 s row is the
+                  one no rule yet explains. (The offset assert in the probe caught a `jr nc`
+                  landing mid-instruction before it ran: the POKE-count lesson, applied.)
+                  📏 **ROUND 2, THE KEY ITSELF -- THE RULE (2026-11-12, `framelog_probe.py --key` ->
+                  [`framelog_key.out`](scratchpad/framelog_key.out)):** NEWKEY row 7 and the loop counter per frame, the pointer
+                  captured (written frames only). 🔴 **APPARATUS FIRST: the "0.5 s" row never
+                  pressed the key on EITHER machine, and the others were shorter than asked**
+                  (1.0 s -> 24 frames down, 2.0 s -> 75) -- `hold_secs` is not honoured as written,
+                  so pauselen's "0.5 s: no pause" was a non-press, and every hold-based row should
+                  log the key it thinks it pressed. With the REAL press lengths the VG-8020 is
+                  simple: a 24-frame press -- the loop stalls from the next frame to the end of
+                  the log (the RELEASE does not resume); a 75-frame press -- stall @166..@201, the
+                  program resumes 36 frames (~0.7 s) after the press **with the key still down**
+                  -- the keyboard's auto-repeat delivering the "next STOP" (and probably
+                  latchedge's `4 0 4` too). ➡️ **THE VG-8020's RULE: pause on a STOP latch, resume
+                  on the NEXT STOP latch -- a press OR an auto-repeat; the release is not one.**
+                  The parked patch's stop_pause (key up first, then a fresh latch) is wrong for a
+                  long press; ISCNTC's measured rows still agree with it (single taps). Before
+                  resuming: settle `hold_secs` (why "0.5" pressed nothing) and confirm the repeat
+                  latch on zerobas's interrupt (C-BIOS's repeat for STOP).
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.

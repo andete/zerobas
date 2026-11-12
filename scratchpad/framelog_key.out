@@ -1,0 +1,9 @@
+Philips_VG hold 0.2  198 frames: @0:up @165:DOWN [stall @166..END]
+Philips_VG hold 0.5  213 frames: @0:up
+Philips_VG hold 1.0  238 frames: @0:up @165:DOWN @189:up [stall @166..END]
+Philips_VG hold 2.0  288 frames: @0:up @165:DOWN [stall @166..@201] @240:up
+C-BIOS_MSX hold 0.2  195 frames: @0:up @163:DOWN
+C-BIOS_MSX hold 0.5  210 frames: @0:up
+C-BIOS_MSX hold 1.0  235 frames: @0:up @163:DOWN @187:up
+C-BIOS_MSX hold 2.0  285 frames: @0:up @163:DOWN @238:up
+refcache: 0 hit, 8 miss, 8 stored
