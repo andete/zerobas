@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **442** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **443** in the MSX standard work area at or above `$F380`.
 * **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -656,6 +656,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FBB1` | 1 B | `basic` | `BASROM` | != 0: a protected ROM BASIC, not breakable (1) |  |
 | `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
 | `$FBCD` | 1 B | `basic` | `FNKSWI` | function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1) |  |
+| `$FBDA` | 11 B | `basic` | `OLDKEY` | the key matrix as of the last scan, 11 B, active low (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
 | `$FC17` | 1 B | `basic` | `DISKOP_A` | tenant -> main: the primitive's real A output (LIMPNT, idle) (was $EE3A), |  |
 | `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |

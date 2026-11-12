@@ -265,21 +265,30 @@ isc_slow:
                 jr      z,isc_brk
                 cp      4
                 ret     nz
+                call    stop_pause          ; A = 4 (resumed, INTFLG 0) or 3 (CTRL-STOP)
+                cp      3
+                ret     nz                  ; A = 4
+                jr      isc_brk
+; stop_pause -- STOP's pause, shared by ISCNTC (above) and the run loop (rp_exec,
+; D-BRKLATCH): INTFLG cleared, then waited on -- the pause ends on the NEXT latch, a
+; press OR the keyboard's auto-repeat, with the key still down; the release is not one.
+; Measured: the VG-8020 resumes 36 frames into a held STOP (scratchpad/framelog_key.out),
+; zerobas's interrupt latches the first repeat 36 frames after the press and then every
+; 3 (repeatlatch_run.out). (A first cut waited for the key UP first -- wrong for a long
+; press, built on a probe that never pressed: framelog_key.out's apparatus note.)
+; Out: A = 4 -> resumed by STOP, INTFLG 0; A = 3 -> CTRL-STOP, INTFLG left 3 for the
+; caller's break. Interrupts left ENABLED (the wait needs the keyboard interrupt).
+stop_pause:
                 ei
-isc_up:
-                halt
-                ld      a,(NEWKEY+7)
-                and     $10
-                jr      z,isc_up            ; STOP still down
                 xor     a
                 ld      (INTFLG),a
-isc_dn:
+sp_dn:
                 halt
                 ld      a,(INTFLG)
                 or      a
-                jr      z,isc_dn
+                jr      z,sp_dn
                 cp      3
-                jr      z,isc_brk
+                ret     z                   ; CTRL-STOP: the caller breaks
                 xor     a
                 ld      (INTFLG),a
                 ld      a,4

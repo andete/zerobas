@@ -596,10 +596,31 @@ rp_exec:
                 ; itself moved to derive_directf just above; see its header for
                 ; why the high byte alone decides it.
                 call    derive_directf
-                call    BREAKX
                 pop     hl
-                jr      c,rp_break
-                ; Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
+                ; 🔴 D-BRKLATCH (2026-11-12): THE INTERRUPT'S LATCH, NOT THE KEY'S LEVEL.
+                ; The VG-8020's interpreter breaks on INTFLG at a statement boundary and
+                ; consumes it; this loop polled BREAKX and so broke on a press machine code
+                ; had already taken, and missed one latched while machine code waited
+                ; (scratchpad/brkconsume_run.out, outdlp_fail_fixed.out). INTFLG is an EDGE
+                ; latch on both (latchedge_run.out): 3 once per CTRL-STOP press, 4 per STOP
+                ; press. 4 PAUSES the program until the next STOP (stoppause_run3.out:
+                ; zerobas ran on), a CTRL-STOP there breaks. One press = one latch, so the
+                ; STOP entry's edge shadow and D-STOPTEAR's confirming read (below, kept as
+                ; history) have nothing left to do.
+                ld      a,(INTFLG)
+                or      a
+                jr      z,rp_trapchk
+                cp      3
+                jr      z,rp_break
+                cp      4
+                jr      nz,rp_trapchk       ; no other value is latched (not measured)
+                push    hl
+                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
+                pop     hl
+                cp      3
+                jr      z,rp_break
+                jr      rp_trapchk
+                ; ~~Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
                 ; next press reads as a fresh 0->1 edge. This is the release observation
                 ; the run-loop seam needs — rp_break is only reached when the key IS
                 ; down, so without it the shadow would latch on forever after the first
@@ -617,19 +638,9 @@ rp_exec:
                 ; BREAKX calls ~100 T apart cannot both straddle one 20 ms interrupt.
                 ; Only while the shadow is SET (a press was seen): the common boundary
                 ; with no recent press pays one `bit` and skips the store.
-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
-                bit     6,a                 ; ZTS_SHADOW set?
-                jr      z,rp_trapchk        ; no: nothing to release
-                push    hl
-                call    BREAKX              ; the confirming read
-                pop     hl
-                jr      c,rp_trapchk        ; still held: the first read was torn
-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
-                res     6,a                 ; ZTS_SHADOW — the level follows the key
-                ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ),a
-                push    hl                  ; D-STOPKEY3: the press that fired the STOP
-                call    KILBUF              ; trap is up -- its ^C goes, as on the
-                pop     hl                  ; VG-8020 (stopkey_onstop.out)
+                ; with no recent press pays one `bit` and skips the store.~~ (the release
+                ; block -- confirming BREAKX, shadow cleared, KILBUF -- retired by
+                ; D-BRKLATCH; the KILBUF moved to rp_break's trap arm)
 rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
                                             ; re-entered by rp_break after latching STOP.
                                             ; Gate is one RAM load in the no-trap case.
@@ -817,10 +828,12 @@ rp_break:
                 dec     hl
                 dec     hl                  ; HL back to the state byte
                 jr      z,rp_real_break     ; no handler -> the break happens normally
-                bit     6,(hl)              ; shadow: still down since the last sample?
-                jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
-                set     6,(hl)              ; 0->1 edge: latch the level...
-                set     7,(hl)              ; ...and the entry's PENDING
+                ; D-BRKLATCH: no edge test -- the latch IS one press. D-STOPKEY3's ^C
+                ; goes now (it went at the release before), as on the VG-8020.
+                push    hl
+                call    KILBUF
+                pop     hl
+                set     7,(hl)              ; the entry's PENDING
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
@@ -848,8 +861,8 @@ rp_real_break:
                 ; is still holding the key. Four of the probe's five cases pass
                 ; today and must keep passing: with the shadow never set on those
                 ; paths, this test is inert for them by construction, not by luck.
-                bit     6,(hl)              ; the trap already consumed this press?
-                jr      nz,rp_brk_run       ; yes -> no new edge, no break
+                ; D-BRKLATCH: a press the trap took was CONSUMED (INTFLG cleared at
+                ; rp_break) and does not latch again while held -- no shadow to ask.
                 pop     hl                  ; HL = resume stmt ptr
 rp_do_break:
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
@@ -2338,11 +2351,9 @@ nx_again:
                 ; shadow still set, takes the old road, where rp_exec breaks / releases
                 ; it exactly as before) and CURLIN for the line now running (DIRECTF
                 ; does not change: the FOR's line is in the same run).
-                call    BREAKX
-                jr      c,nx_again_run      ; Ctrl-STOP: the run loop breaks
-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
-                bit     6,a                 ; ZTS_SHADOW: rp_exec's release logic
-                jr      nz,nx_again_run
+                ld      a,(INTFLG)          ; D-BRKLATCH: a latched STOP / CTRL-STOP
+                or      a                   ; takes the old road, where rp_exec pauses
+                jr      nz,nx_again_run     ; or breaks
                 ; DIRECTF IS RE-DERIVED: a NEXT TYPED at the prompt continues a
                 ; PROGRAM's loop, and the body is program text (typed session
                 ; S3_editclear went red with the plain curlin_pub this had first).

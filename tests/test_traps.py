@@ -428,58 +428,55 @@ def t_stop_shadow(fails):
     fails = check(fails, "STOP set_state ON->ON: SHADOW kept",
                   m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
 
-    # 4. D-STOPTEAR (2026-10-20): rp_exec's release of the shadow must survive ONE
-    #    torn BREAKX read. C-BIOS's BREAKX selects the keyboard row and reads it with
-    #    interrupts on, so a keyboard ISR between the two can make a HELD Ctrl-STOP
-    #    read as up; released on that one read, the next poll took the same tap as a
-    #    fresh press and the handler fired twice (stop-trap-acceptance C, measured).
-    #    BREAKX is scripted; execution is stopped at rp_trapchk by raising.
+    # 4. D-BRKLATCH (2026-11-12) REPLACES D-STOPTEAR's release test: rp_exec no longer
+    #    polls BREAKX's level (one read could tear) -- it consumes the interrupt's EDGE
+    #    latch INTFLG ($FC9B): 3 -> rp_break, 4 -> stop_pause, 0 -> on. One press is one
+    #    latch, so the shadow release and its confirming read are gone; the press's ^C is
+    #    emptied when the trap TAKES the latch. BREAKX / KILBUF / stop_pause are scripted;
+    #    execution is stopped at rp_trapchk by raising.
     class _AtTrapchk(Exception):
         pass
 
     def stop_at_trapchk(mm):
         raise _AtTrapchk
 
-    kil = []
+    kil, brk, pause = [], [], []
 
-    def run_exec(reads):
-        seq, calls = list(reads), []
-        kil.clear()
-        # D-STOPKEY3 (2026-11-08): the confirmed release now empties the keyboard
-        # buffer (KILBUF, $0156 -- C-BIOS, which this host image does not carry): the
-        # press queued ^C there, and the VG-8020 leaves nothing pending after a trap.
+    def run_exec(intflg):
+        kil.clear(); brk.clear(); pause.clear()
+        m.poke(m.addr("INTFLG"), bytes([intflg]))
         m.trap("KILBUF", lambda mm: kil.append(1))
-        def breakx(mm):
-            down = seq.pop(0) if seq else False
-            calls.append(down)
-            mm.cpu.f = (mm.cpu.f | 1) if down else (mm.cpu.f & ~1)
-        m.trap("BREAKX", breakx)
+        m.trap("BREAKX", lambda mm: brk.append(1))
+        def sp(mm):
+            pause.append(1)
+            mm.cpu.a = 4                                # resumed by the next STOP
+        m.trap("stop_pause", sp)
         m.trap("derive_directf", lambda mm: None)
         m.trap("rp_trapchk", stop_at_trapchk)
+        m.poke(m.addr("DIRECTF"), b"\x00")
         try:
             m.call("rp_exec", hl=0x9C40)
         except _AtTrapchk:
-            pass
-        return calls
+            return True
+        return False
 
     reset_traps(m)
-    m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))   # in the handler, key seen down
-    calls = run_exec([False, True])                    # torn "up", then truly held
-    fails = check(fails, "STOP torn read: a 2nd BREAKX confirms", calls, [False, True])
-    fails = check(fails, "STOP torn read: SHADOW KEPT (no fresh edge next poll)",
-                  m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
-    fails = check(fails, "STOP torn read: the buffer is NOT emptied (still held)", len(kil), 0)
+    m.poke(e, bytes([ZTS_ON]))
+    reached = run_exec(0)
+    fails = check(fails, "latch 0: on to the dispatch", reached, True)
+    fails = check(fails, "latch 0: NO BREAKX at a statement boundary", len(brk), 0)
     reset_traps(m)
-    m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))
-    calls = run_exec([False, False])                   # released for real
-    fails = check(fails, "STOP real release: shadow cleared",
-                  m.peek(e)[0] & ZTS_SHADOW, 0)
-    fails = check(fails, "STOP real release: the press's ^C emptied (KILBUF once)", len(kil), 1)
+    m.poke(e, bytes([ZTS_ON]))
+    reached = run_exec(4)
+    fails = check(fails, "latch 4 (STOP): the pause, then on", (reached, len(pause)), (True, 1))
     reset_traps(m)
-    m.poke(e, bytes([ZTS_ON]))                         # no press seen: no shadow
-    calls = run_exec([False])
-    fails = check(fails, "STOP no shadow: ONE BREAKX (the common boundary pays no 2nd read)",
-                  calls, [False])
+    m.poke(e, bytes([ZTS_ON]))
+    m.poke_w(e + 1, HANDLER)
+    reached = run_exec(3)
+    fails = check(fails, "latch 3 + STOP ON + handler: no break, on to the dispatch", reached, True)
+    fails = check(fails, "latch 3: CONSUMED (INTFLG 0)", m.peek(m.addr("INTFLG"))[0], 0)
+    fails = check(fails, "latch 3: the press's ^C emptied once (KILBUF)", len(kil), 1)
+    fails = check(fails, "latch 3: the STOP entry PENDING", m.peek(e)[0] & ZTS_PENDING, ZTS_PENDING)
     return fails
 
 

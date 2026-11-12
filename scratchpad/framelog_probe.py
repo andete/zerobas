@@ -37,7 +37,7 @@ PROG = ["CLEAR 200,&HCFFF:FOR I=0 TO %d:READ X:POKE &HD000+I,X:NEXT" % (len(CODE
         "POKE &HD0F2,(PEEK(&HD0F2)+1) AND 255:GOTO 40",
         "DATA " + ",".join(str(b) for b in CODE)]
 assert len(CODE) == 26
-HOLDS = (0.2, 0.5, 1.0, 2.0)
+HOLDS = (0.7, 1.0, 2.0) if "--key" in sys.argv else (0.2, 0.5, 1.0, 2.0)   # --key: real presses 10 / 25 / 75 frames (hold - lead); 0.2 / 0.5 now RAISE
 
 
 def summarize_key(hexs):

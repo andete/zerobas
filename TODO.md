@@ -16698,6 +16698,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   and a press that would end at or before it starts now RAISES instead of reading
                   as a plausible "no effect". (kwsweep's and ctrlstop_probe's "2 s Ctrl-STOP" is
                   1.5 s.)
+                  ✅ **THE REPEAT LATCH, ON ZEROBAS TOO (2026-11-12, [`repeatlatch_probe.py`](scratchpad/repeatlatch_probe.py) ->
+                  [`repeatlatch_run.out`](scratchpad/repeatlatch_run.out)):** our code on H.TIMI logs INTFLG and clears it each frame
+                  through a 75-frame STOP press: the press latch @158, then repeats from @194 --
+                  **36 frames later, exactly the VG-8020's resume point** -- and every 3 frames to
+                  the release. So the rule is complete: **pause on a STOP latch, resume on the
+                  NEXT latch (press or repeat), no key-up wait.** ➡️ To resume the slice: apply
+                  brklatch_wip.patch, drop stop_pause's key-up loop (sp_up), and re-measure the
+                  pause rows WITH the key logged; ISCNTC's shipped wait (key up first) then
+                  changes with it -- its rows are single taps and should still agree.
+                  ✅ **STEP 1 SHIPPED (2026-11-12, D-BRKLATCH):** brklatch_wip.patch re-applied MINUS
+                  its two unfounded parts (LPTOUT's release-wait, its gate rows), with
+                  stop_pause's key-up wait dropped (the pause ends on the NEXT latch -- a press or
+                  the auto-repeat). Plus **BREAKX consumes a press it sees** (bios_breakx,
+                  basic/biosfnk.asm, page 0: C-BIOS's body, then STOP marked down in OLDKEY, so the
+                  scan sees no new edge and latches nothing -- C-BIOS latches INTFLG only for a key
+                  newly down against OLDKEY or a repeat): the VG-8020's face after LPTOUT's abort
+                  (INTFLG 0, still 0 ten frames on). The pause now matches the VG-8020 FRAME BY
+                  FRAME (stall @164..END vs @166..END for 10- and 25-frame presses, @164..@199 vs
+                  @166..@201 for 75 -- [`BL3_pause.out`](scratchpad/BL3_pause.out)). `make outdlp-acceptance` 9/9 (+ breakx_loop,
+                  lptout_noprn, stop_pause, lptout_intflg; the POKE counts asserted against the
+                  bytes); knives K8 (rp_exec's stop_pause call -> nops) -> stop_pause RED
+                  ([`BL3_k8.out`](scratchpad/BL3_k8.out)), K9 (the OLDKEY store -> nops) -> GREEN on 8 rows, so lptout_intflg was
+                  ADDED as its witness and reads `0 3` + a break under it ([`BL3_k9_intflg.out`](scratchpad/BL3_k9_intflg.out)). 14
+                  break / trap suites green. ISCNTC's wait now shares stop_pause (no key-up).
+                  - [ ] STEP 2: the per-STATEMENT check (brkconsume: VG `Break in 20`, ours
+                        `in 30`) -- a break exit at exec_stmt's depth.
+                  - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
+                        gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
+                        auto-repeat racing the return? Read it with the key logged before
+                        building on either.
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.

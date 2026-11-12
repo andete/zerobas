@@ -45,7 +45,9 @@ ROWS = {
     # the return to the key up: ~0 = it waited for the release, ~100 = it returned on
     # the press. ei / ld a,"A" / call $00A5 / ld bc,0 / up: inc bc / halt /
     # ld a,(NEWKEY+7) / and $10 / jr z,up / ld ($D100),bc / ret
-    "lptout_upframes": ["NEW", "10 CLEAR 200,&HCFFF:FOR I=0 TO 21:READ X:POKE &HD000+I,X:NEXT",
+    # 🔴 this row POKEd 22 of its 23 bytes (TO 21) until 2026-11-12 -- the missing `ret`
+    # gave the VG-8020 reading LPTOUT's release-wait was wrongly built on (BL_lptup.out)
+    "lptout_upframes": ["NEW", "10 CLEAR 200,&HCFFF:FOR I=0 TO 22:READ X:POKE &HD000+I,X:NEXT",
                         '20 DEFUSR=&HD000:Q=USR(0):N=PEEK(&HD100)+256*PEEK(&HD101):PRINT "[C";N<10;N>40;"]"',
                         "30 DATA 251,62,65,205,165,0,1,0,0,3,118,58,236,251,230,16,40,247,237,67,0,209",
                         "40 DATA 201", "RUN"],

@@ -274,6 +274,8 @@ rl_break:                                   ; Ctrl-STOP while a line is read: th
 ; keeping any typeahead. (Our break is seen in the matrix before the keyboard scan
 ; queues the ^C, so the break itself cannot empty it.)
 rl_release_kil:
+                xor     a                   ; D-BRKLATCH: a press at the prompt is the
+                ld      (INTFLG),a          ; prompt's -- it must not break the next RUN
                 call    BREAKX              ; held? -- asked TWICE when the first says up:
                 call    nc,BREAKX           ; one BREAKX can tear (D-STOPTEAR), and a missed
                 ret     nc                  ; press left its ^C to wreck the next line

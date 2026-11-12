@@ -65,13 +65,35 @@ NOPRN = {
                      'DEFUSR=&HD000:Q=USR(0):PRINT "[C RET]"',
                      "DATA 62,65,205,77,1,201"],          # ld a,"A" / call $014D / ret
     "loop_control": ["GOTO 10"],                          # the hold breaks a program at all
+    # D-BRKLATCH (2026-11-12): BASIC breaks on the interrupt's LATCH; BREAKX consumes a
+    # press it sees (the VG-8020's face), so machine code that took it does not also
+    # break the program; and STOP PAUSES a running program until the next STOP latch.
+    "breakx_loop": ["CLEAR 200,&HCFFF:FOR I=0 TO 5:READ X:POKE &HD000+I,X:NEXT",
+                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C BRKX]"', "DATA 205,183,0,48,251,201"],
+    "lptout_noprn": ["CLEAR 200,&HCFFF:FOR I=0 TO 5:READ X:POKE &HD000+I,X:NEXT",
+                     'DEFUSR=&HD000:Q=USR(0):PRINT "[C RET]"', "DATA 62,65,205,165,0,201"],
+    "stop_pause": ['T=TIME', 'IF TIME-T<225 THEN 20', 'PRINT "[C DONE]"'],
+    # BREAKX's consumption, witnessed: after LPTOUT's CTRL-STOP abort INTFLG is 0, and 0
+    # ten frames later with the key still down (without the OLDKEY marking: `0 3` and a
+    # break -- knife K9, scratchpad/BL3_k9_intflg.out).
+    "lptout_intflg": ["CLEAR 200,&HCFFF:FOR I=0 TO 23:READ X:POKE &HD000+I,X:NEXT",
+                      'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);PEEK(&HD101);"]"',
+                      "DATA 251,62,65,205,165,0,58,155,252,50,0,209,6,10,118,16,253,58,155,252,50,1,209,201"],
 }
+for _n, _p in NOPRN.items():                              # the POKE count FROM the bytes
+    if _p[0].startswith("CLEAR") and "READ" in _p[0]:
+        _n_bytes = len(_p[-1].split(" ", 1)[1].split(","))
+        assert f"TO {_n_bytes - 1}:" in _p[0], (_n, _n_bytes)
+# per-row key and (lead, secs): the press lasts secs - lead (omsx_repl's hold note).
+# stop_pause: 0.5 s, below the 36-frame auto-repeat -- the VG-8020 stays paused.
+KEY_OF = {"stop_pause": ((7, 0x10),)}
+HOLD_OF = {"stop_pause": (0.5, 1.0)}
 
 
-def noprn(machine, prog):
+def noprn(machine, prog, key=CTRL_STOP, hold=(0.5, 2.0)):
     scr = omsx_repl.run_cases(machine, [("stored", prog)], batch=False,
                               reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
-                              holds=[CTRL_STOP], hold_lead=0.5, hold_secs=2.0)[0]
+                              holds=[key], hold_lead=hold[0], hold_secs=hold[1])[0]
     if not scr:
         return None
     rows = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]
@@ -82,7 +104,8 @@ def noprn(machine, prog):
 def main():
     bad = blind = 0
     for name, prog in NOPRN.items():
-        got = {side: noprn(mach, prog) for side, mach in MACHINES}
+        got = {side: noprn(mach, prog, KEY_OF.get(name, CTRL_STOP), HOLD_OF.get(name, (0.5, 2.0)))
+               for side, mach in MACHINES}
         if not got["VG"] or not got["ZB"]:
             verdict = "NO-READING"
             blind += 1

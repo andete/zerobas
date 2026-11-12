@@ -3950,6 +3950,8 @@ NEWKEY          equ     $FBE5   ; key matrix snapshot, 11 B (row 6 bit 0 = SHIFT
 ; INTFLG is a LATCH the keyboard interrupt sets, on both machines: 4 = STOP, 3 =
 ; CTRL-STOP, still set ten frames after the release (scratchpad/intflg_isr_run6.out).
 INTFLG          equ     $FC9B   ; STOP / CTRL-STOP latch (1)
+OLDKEY          equ     $FBDA   ; the key matrix as of the last scan, 11 B, active low (1)
+CBIOS_BREAKX    equ     $15B6   ; C-BIOS's BREAKX body -- pinned by PATCH_RANGES' $00B7 bytes
 BASROM          equ     $FBB1   ; != 0: a protected ROM BASIC, not breakable (1)
 ; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
 ; reliable because C-BIOS zeroes $F380.. at boot):

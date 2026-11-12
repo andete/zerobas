@@ -496,7 +496,8 @@ fperr_to_err:
                 jp      bios_inlin          ; PINLIN: C-BIOS's INLIN never returned
                 jp      bios_inlin          ; INLIN
                 jp      bios_qinlin         ; QINLIN
-                org     $00BA
+                org     $00B7
+                jp      bios_breakx         ; BREAKX: a press it sees is consumed (D-BRKLATCH)
                 jp      bios_iscntc         ; ISCNTC: C-BIOS's was a stub (D-BIOSRUNG)
                 jp      bios_iscntc         ; CKCNTC: the same entry on the VG-8020
                 org     $00C0

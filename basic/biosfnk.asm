@@ -97,6 +97,22 @@ odl_tab:
                 ld      a,9
                 ret
 
+; BREAKX ($00B7) -- D-BRKLATCH (2026-11-12). C-BIOS's body reads CTRL+STOP; on the
+; VG-8020 a press BREAKX has seen does not ALSO reach the interrupt's latch -- after
+; LPTOUT's CTRL-STOP abort INTFLG reads 0, and 0 ten frames later, the key still down
+; (scratchpad/BL_lptintflg.out); only the auto-repeat latches it later (from 36 frames).
+; C-BIOS latches INTFLG only for a key the scan sees as NEWLY down against OLDKEY (or a
+; repeat), so marking STOP down in OLDKEY consumes the press the same way. CF / A as
+; C-BIOS's body leaves them.
+bios_breakx:
+                call    CBIOS_BREAKX
+                ret     nc
+                ld      a,(OLDKEY+7)
+                and     $EF                 ; STOP (row 7 bit 4) already down
+                ld      (OLDKEY+7),a
+                scf
+                ret
+
 bios_erafnk:
                 xor     a                   ; the line hidden
                 jr      bios_fnk
