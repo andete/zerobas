@@ -16588,6 +16588,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   measure: INTFLG right after such a BREAKX, and whether the latch is set on the
                   press EDGE or every frame (intflg_isr_run6.out cannot tell: its loop ended with
                   the key down). 🎚️ TIER 1 -- a program the reference finishes stops here.
+                  📏 **MEASURED 2026-11-12 -- IT DIVERGES BOTH WAYS** ([`brkconsume_probe.py`](scratchpad/brkconsume_probe.py) ->
+                  [`brkconsume_run.out`](scratchpad/brkconsume_run.out)): the USR loops on BREAKX, then waits with interrupts on
+                  through the hold and the release, clearing nothing. VG-8020 **`Break in 20`**
+                  (the USR line: the latch, set while the code waited, broke the program at the
+                  statement boundary); zerobas `[I 0 3 3 3]` + `[C END]` -- INTFLG latched 3 and
+                  STILL 3 after the release, no break, because the run loop polls BREAKX's LEVEL
+                  and the key was up by then. With breakx_loop (the USR returns AT ONCE, before
+                  the interrupt has latched the press): VG no break, zerobas `Break in 30`.
+                  ➡️ **THE READING: the VG-8020's BASIC breaks on the INTFLG LATCH at a statement
+                  boundary (and consumes it); ours on the key's level at that instant.** A
+                  DESIGNED SLICE: rp_exec's BREAKX poll -> the INTFLG latch (cheaper per statement
+                  too), with ON STOP's edge shadow (D-STOPEDGE), D-STOPTEAR's confirming read and
+                  rp_break's INTFLG clear (D-BIOSRUNG) re-derived on it; witnesses stop-trap,
+                  interval-trap, trapstmt, direct-ctrl, iscntc, outdlp, sessions, programs.
+                  ⚠️ First measure whether the latch is set on the press EDGE or every frame held
+                  (zerobas: 0 right after BREAKX saw the key, 3 five frames later -- the scan
+                  latency, not yet the edge question).
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
