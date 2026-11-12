@@ -16689,6 +16689,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   long press; ISCNTC's measured rows still agree with it (single taps). Before
                   resuming: settle `hold_secs` (why "0.5" pressed nothing) and confirm the repeat
                   latch on zerobas's interrupt (C-BIOS's repeat for STOP).
+                  ✅ **`hold_secs` SETTLED (2026-11-12):** run_cases counts the release from the
+                  same instant as the press's LEAD, not from the press -- the key is down for
+                  `hold_secs - hold_lead` (lead 0.5: 1.0 -> 0.5 s, 2.0 -> 1.5 s, 0.5 -> nothing, 0.2
+                  -> released before pressed, so held for good). The four gates that pass a lead
+                  (iscntc 0.5/1.0, outdlp 0.5/2.0, screditor 0.1/0.5, kwsweep `@0.5/2.0`) were
+                  measured with that meaning, so it is KEPT and stated in probes/lib/omsx_repl.py,
+                  and a press that would end at or before it starts now RAISES instead of reading
+                  as a plausible "no effect". (kwsweep's and ctrlstop_probe's "2 s Ctrl-STOP" is
+                  1.5 s.)
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.

@@ -789,6 +789,18 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # line has been consumed and the program is already looping.
             down = (max(boot, t - step) + 0.3 if hold_lead is None
                     else t + hold_lead)
+            # 🔴 2026-11-12 (scratchpad/framelog_key.out): THE RELEASE IS AT t + hold_secs,
+            # COUNTED FROM THE SAME t AS THE PRESS'S LEAD -- NOT from the press. So with a
+            # lead the key is down for hold_secs - hold_lead: lead 0.5 + hold 1.0 / 2.0 gave
+            # 24 / 75 frames; hold 0.5 pressed NOTHING (up and down at one instant) and hold
+            # 0.2 released BEFORE it pressed (the key then stayed down). Gates are measured
+            # with this meaning (iscntc, kwsweep, outdlp, screditor), so it is KEPT and
+            # stated; the degenerate case -- a press that ends at or before it starts --
+            # is refused instead of handed back as a plausible reading.
+            if hold_lead is not None and hold_secs <= hold_lead:
+                raise ValueError(f"hold_secs {hold_secs} <= hold_lead {hold_lead}: the key "
+                                 f"would be down for {hold_secs - hold_lead:+.1f} s -- the "
+                                 f"release is counted from the RUN slot, not from the press")
             for row, mask in keys:
                 body.append(f'after time {down:.1f} '
                             f'{{ keymatrixdown {row} {mask} }}')
