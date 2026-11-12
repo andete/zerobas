@@ -1,0 +1,231 @@
+diff --git a/basic/input.asm b/basic/input.asm
+index 1284a973..2d48f452 100644
+--- a/basic/input.asm
++++ b/basic/input.asm
+@@ -265,21 +265,31 @@ isc_slow:
+                 jr      z,isc_brk
+                 cp      4
+                 ret     nz
++                call    stop_pause          ; A = 4 (resumed, INTFLG 0) or 3 (CTRL-STOP)
++                cp      3
++                ret     nz                  ; A = 4
++                jr      isc_brk
++; stop_pause -- STOP's pause, shared by ISCNTC (above) and the run loop (rp_exec,
++; D-BRKLATCH): the key UP first (NEWKEY row 7, STOP = bit 4 -- INTFLG re-latches on
++; the release too, scratchpad/latchedge_run.out), then INTFLG cleared and waited on.
++; Out: A = 4 -> resumed by STOP, INTFLG 0; A = 3 -> CTRL-STOP, INTFLG left 3 for the
++; caller's break. Interrupts left ENABLED (the wait needs the keyboard interrupt).
++stop_pause:
+                 ei
+-isc_up:
++sp_up:
+                 halt
+                 ld      a,(NEWKEY+7)
+                 and     $10
+-                jr      z,isc_up            ; STOP still down
++                jr      z,sp_up             ; STOP still down
+                 xor     a
+                 ld      (INTFLG),a
+-isc_dn:
++sp_dn:
+                 halt
+                 ld      a,(INTFLG)
+                 or      a
+-                jr      z,isc_dn
++                jr      z,sp_dn
+                 cp      3
+-                jr      z,isc_brk
++                ret     z                   ; CTRL-STOP: the caller breaks
+                 xor     a
+                 ld      (INTFLG),a
+                 ld      a,4
+diff --git a/basic/program.asm b/basic/program.asm
+index 6ac8b40e..981f51b0 100644
+--- a/basic/program.asm
++++ b/basic/program.asm
+@@ -596,10 +596,31 @@ rp_exec:
+                 ; itself moved to derive_directf just above; see its header for
+                 ; why the high byte alone decides it.
+                 call    derive_directf
+-                call    BREAKX
+                 pop     hl
+-                jr      c,rp_break
+-                ; Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
++                ; 🔴 D-BRKLATCH (2026-11-12): THE INTERRUPT'S LATCH, NOT THE KEY'S LEVEL.
++                ; The VG-8020's interpreter breaks on INTFLG at a statement boundary and
++                ; consumes it; this loop polled BREAKX and so broke on a press machine code
++                ; had already taken, and missed one latched while machine code waited
++                ; (scratchpad/brkconsume_run.out, outdlp_fail_fixed.out). INTFLG is an EDGE
++                ; latch on both (latchedge_run.out): 3 once per CTRL-STOP press, 4 per STOP
++                ; press. 4 PAUSES the program until the next STOP (stoppause_run3.out:
++                ; zerobas ran on), a CTRL-STOP there breaks. One press = one latch, so the
++                ; STOP entry's edge shadow and D-STOPTEAR's confirming read (below, kept as
++                ; history) have nothing left to do.
++                ld      a,(INTFLG)
++                or      a
++                jr      z,rp_trapchk
++                cp      3
++                jr      z,rp_break
++                cp      4
++                jr      nz,rp_trapchk       ; no other value is latched (not measured)
++                push    hl
++                call    stop_pause          ; basic/input.asm: 4 resumed, 3 CTRL-STOP
++                pop     hl
++                cp      3
++                jr      z,rp_break
++                jr      rp_trapchk
++                ; ~~Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
+                 ; next press reads as a fresh 0->1 edge. This is the release observation
+                 ; the run-loop seam needs — rp_break is only reached when the key IS
+                 ; down, so without it the shadow would latch on forever after the first
+@@ -617,19 +638,9 @@ rp_exec:
+                 ; BREAKX calls ~100 T apart cannot both straddle one 20 ms interrupt.
+                 ; Only while the shadow is SET (a press was seen): the common boundary
+                 ; with no recent press pays one `bit` and skips the store.
+-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+-                bit     6,a                 ; ZTS_SHADOW set?
+-                jr      z,rp_trapchk        ; no: nothing to release
+-                push    hl
+-                call    BREAKX              ; the confirming read
+-                pop     hl
+-                jr      c,rp_trapchk        ; still held: the first read was torn
+-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+-                res     6,a                 ; ZTS_SHADOW — the level follows the key
+-                ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ),a
+-                push    hl                  ; D-STOPKEY3: the press that fired the STOP
+-                call    KILBUF              ; trap is up -- its ^C goes, as on the
+-                pop     hl                  ; VG-8020 (stopkey_onstop.out)
++                ; with no recent press pays one `bit` and skips the store.~~ (the release
++                ; block -- confirming BREAKX, shadow cleared, KILBUF -- retired by
++                ; D-BRKLATCH; the KILBUF moved to rp_break's trap arm)
+ rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
+                                             ; re-entered by rp_break after latching STOP.
+                                             ; Gate is one RAM load in the no-trap case.
+@@ -817,10 +828,12 @@ rp_break:
+                 dec     hl
+                 dec     hl                  ; HL back to the state byte
+                 jr      z,rp_real_break     ; no handler -> the break happens normally
+-                bit     6,(hl)              ; shadow: still down since the last sample?
+-                jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
+-                set     6,(hl)              ; 0->1 edge: latch the level...
+-                set     7,(hl)              ; ...and the entry's PENDING
++                ; D-BRKLATCH: no edge test -- the latch IS one press. D-STOPKEY3's ^C
++                ; goes now (it went at the release before), as on the VG-8020.
++                push    hl
++                call    KILBUF
++                pop     hl
++                set     7,(hl)              ; the entry's PENDING
+                 call    trap_pend   ; wake the run-loop dispatcher
+ rp_brk_run:
+                 pop     hl                  ; HL = resume stmt ptr, intact
+@@ -848,8 +861,8 @@ rp_real_break:
+                 ; is still holding the key. Four of the probe's five cases pass
+                 ; today and must keep passing: with the shadow never set on those
+                 ; paths, this test is inert for them by construction, not by luck.
+-                bit     6,(hl)              ; the trap already consumed this press?
+-                jr      nz,rp_brk_run       ; yes -> no new edge, no break
++                ; D-BRKLATCH: a press the trap took was CONSUMED (INTFLG cleared at
++                ; rp_break) and does not latch again while held -- no shadow to ask.
+                 pop     hl                  ; HL = resume stmt ptr
+ rp_do_break:
+                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
+@@ -2338,11 +2351,9 @@ nx_again:
+                 ; shadow still set, takes the old road, where rp_exec breaks / releases
+                 ; it exactly as before) and CURLIN for the line now running (DIRECTF
+                 ; does not change: the FOR's line is in the same run).
+-                call    BREAKX
+-                jr      c,nx_again_run      ; Ctrl-STOP: the run loop breaks
+-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+-                bit     6,a                 ; ZTS_SHADOW: rp_exec's release logic
+-                jr      nz,nx_again_run
++                ld      a,(INTFLG)          ; D-BRKLATCH: a latched STOP / CTRL-STOP
++                or      a                   ; takes the old road, where rp_exec pauses
++                jr      nz,nx_again_run     ; or breaks
+                 ; DIRECTF IS RE-DERIVED: a NEXT TYPED at the prompt continues a
+                 ; PROGRAM's loop, and the body is program text (typed session
+                 ; S3_editclear went red with the plain curlin_pub this had first).
+diff --git a/basic/repl.asm b/basic/repl.asm
+index 62919909..0b93fe2b 100644
+--- a/basic/repl.asm
++++ b/basic/repl.asm
+@@ -274,6 +274,8 @@ rl_break:                                   ; Ctrl-STOP while a line is read: th
+ ; keeping any typeahead. (Our break is seen in the matrix before the keyboard scan
+ ; queues the ^C, so the break itself cannot empty it.)
+ rl_release_kil:
++                xor     a                   ; D-BRKLATCH: a press at the prompt is the
++                ld      (INTFLG),a          ; prompt's -- it must not break the next RUN
+                 call    BREAKX              ; held? -- asked TWICE when the first says up:
+                 call    nc,BREAKX           ; one BREAKX can tear (D-STOPTEAR), and a missed
+                 ret     nc                  ; press left its ^C to wreck the next line
+diff --git a/probes/basic/basic_probe_outdlp.py b/probes/basic/basic_probe_outdlp.py
+index a6646170..1bba3adc 100644
+--- a/probes/basic/basic_probe_outdlp.py
++++ b/probes/basic/basic_probe_outdlp.py
+@@ -65,13 +65,26 @@ NOPRN = {
+                      'DEFUSR=&HD000:Q=USR(0):PRINT "[C RET]"',
+                      "DATA 62,65,205,77,1,201"],          # ld a,"A" / call $014D / ret
+     "loop_control": ["GOTO 10"],                          # the hold breaks a program at all
++    # D-BRKLATCH (2026-11-12): BASIC breaks on the interrupt's LATCH, not the key's level.
++    # A press machine code took through BREAKX does not break the program after it ...
++    "breakx_loop": ["CLEAR 200,&HCFFF:FOR I=0 TO 5:READ X:POKE &HD000+I,X:NEXT",
++                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C BRKX]"', "DATA 205,183,0,48,251,201"],
++    # ... LPTOUT's CTRL-STOP return comes once the key is UP, the press consumed ...
++    "lptout_noprn": ["CLEAR 200,&HCFFF:FOR I=0 TO 5:READ X:POKE &HD000+I,X:NEXT",
++                     'DEFUSR=&HD000:Q=USR(0):PRINT "[C RET]"', "DATA 62,65,205,165,0,201"],
++    "lptout_upframes": ["CLEAR 200,&HCFFF:FOR I=0 TO 22:READ X:POKE &HD000+I,X:NEXT",
++                        'DEFUSR=&HD000:Q=USR(0):N=PEEK(&HD100)+256*PEEK(&HD101):PRINT "[C";N<10;"]"',
++                        "DATA 251,62,65,205,165,0,1,0,0,3,118,58,236,251,230,16,40,247,237,67,0,209,201"],
++    # ... and STOP PAUSES a running program (a 4.5 s loop: the press lands inside it).
++    "stop_pause": ['T=TIME', 'IF TIME-T<225 THEN 20', 'PRINT "[C DONE]"'],
+ }
++KEY_OF = {"stop_pause": ((7, 0x10),)}                     # the rest: CTRL-STOP
+ 
+ 
+-def noprn(machine, prog):
++def noprn(machine, prog, key=CTRL_STOP):
+     scr = omsx_repl.run_cases(machine, [("stored", prog)], batch=False,
+                               reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+-                              holds=[CTRL_STOP], hold_lead=0.5, hold_secs=2.0)[0]
++                              holds=[key], hold_lead=0.5, hold_secs=2.0)[0]
+     if not scr:
+         return None
+     rows = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]
+@@ -82,7 +95,7 @@ def noprn(machine, prog):
+ def main():
+     bad = blind = 0
+     for name, prog in NOPRN.items():
+-        got = {side: noprn(mach, prog) for side, mach in MACHINES}
++        got = {side: noprn(mach, prog, KEY_OF.get(name, CTRL_STOP)) for side, mach in MACHINES}
+         if not got["VG"] or not got["ZB"]:
+             verdict = "NO-READING"
+             blind += 1
+diff --git a/tape/tape.asm b/tape/tape.asm
+index 20e64ffb..5e22ac3e 100644
+--- a/tape/tape.asm
++++ b/tape/tape.asm
+@@ -35,6 +35,7 @@
+ PSG_REGS:       equ     $A0             ; PSG register-select write port
+ PSG_WRITE:      equ     $A1             ; PSG value write port (R15 = general-output port B)
+ PSG_STAT:       equ     $A2             ; PSG value read port (CAS-in on R14 bit 7)
++INTFLG:         equ     $FC9B           ; the keyboard interrupt's STOP / CTRL-STOP latch
+ BREAKX:         equ     $00B7           ; published BIOS entry: CF = Ctrl-STOP held,
+                                         ; read from the matrix (interrupts may be off)
+ PPI_REGS:       equ     $AB             ; i8255 PPI control (BSR) register
+@@ -845,6 +846,17 @@ lptout_wait:
+                 or      a               ; CY = 0 (success)
+                 ret
+ lptout_stop:
++                ; D-BRKLATCH (2026-11-12): the VG-8020's LPTOUT returns only once
++                ; CTRL-STOP is UP again (fewer than 10 frames to the key-up, against
++                ; ~100 when returned on the press) and its press never reaches BASIC
++                ; (INTFLG 0, still 0 ten frames later -- scratchpad/BL_lptup.out,
++                ; BL_lptintflg.out). So: wait for the release, then consume the latch.
++                call    BREAKX
++                jr      c,lptout_stop
++                call    BREAKX          ; TWICE: one read can tear (D-STOPTEAR) -- with
++                jr      c,lptout_stop   ; one, the wait ended >40 frames early (BL_lpt2.out)
++                xor     a
++                ld      (INTFLG),a
+                 ld      a,b             ; A kept, as the VG-8020's
+                 pop     bc
+                 scf                     ; CY = 1: not sent

@@ -16622,6 +16622,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   latch; CTRL-STOP there -> the break). BREAKX's level poll and D-STOPTEAR's
                   confirming read retire with it; ON STOP's shadow re-derived on the latch (an
                   edge already). 🎚️ TIER 1.
+                  🅿️ **BUILT AND PARKED 2026-11-12 -- [`brklatch_wip.patch`](scratchpad/brklatch_wip.patch) (re-applies to 4b6aec33).**
+                  The patch: stop_pause factored out of isc_slow; rp_exec / nx_again consume
+                  INTFLG (3 -> rp_break, 4 -> stop_pause) instead of BREAKX's level; the shadow
+                  release, D-STOPTEAR's confirming read and rp_real_break's shadow test gone; the
+                  trap arm's KILBUF at the latch; the prompt clears INTFLG; LPTOUT's CTRL-STOP abort
+                  waits for the release (TWICE-read BREAKX -- one read tore >40 frames early) and
+                  clears the latch. Measured with it: STOP paused a program as the VG-8020
+                  (1 s hold), breakx_loop / lptout_noprn / lptout_intflg SAME, and 14 suites green
+                  (stop-trap, interval-trap, trapstmt, direct-ctrl, sessions, programs, input,
+                  key-trap, onerr0, iscntc, outdlp, biosregs, lpterrnl, editverb).
+                  🔴 **NOT SHIPPED -- TWO OF ITS FOUNDATIONS DID NOT HOLD:** (1) LPTOUT's "wait for
+                  the release" rested on lptout_upframes, whose scratch probe POKEd 22 of its 23
+                  bytes (the `ret` missing); coded correctly in the gate the VG-8020 answers
+                  `Break in 20` -- the press DOES reach BASIC there, and lptout_intflg's `0 0`
+                  reading needs re-reading next to it. (2) The STOP pause depends on the press
+                  LENGTH: a 1 s hold kept the VG-8020 paused, a 2 s one ended in `DONE` -- STOP
+                  latches on the RELEASE too (`4 0 4`), so a long press may end its own pause;
+                  ours, waiting on NEWKEY then clearing, behaves differently. And the per-statement
+                  granularity (brkconsume: VG `in 20`, ours `in 30`) needs a break exit at
+                  exec_stmt's depth, not designed yet.
+                  ➡️ **BEFORE RESUMING:** the STOP pause measured against press length (0.2 / 0.5
+                  / 1 / 2 s) and a SECOND press (two holds in one case -- run_cases takes one);
+                  LPTOUT's CTRL-STOP face re-measured with byte-checked probes (assert len(DATA)
+                  == the POKE count -- the bug that cost this); then the exec_stmt break exit.
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.

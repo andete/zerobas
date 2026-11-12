@@ -1,0 +1,21 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_outdlp.py --gate
+ROW lprint_noprn  VG=[Device I/O error in 10] ZB=[Device I/O error in 10] SAME
+ROW outdlp_noprn  VG=[Device I/O error in 20] ZB=[Device I/O error in 20] SAME
+ROW loop_control  VG=[Break in 10] ZB=[Break in 10] SAME
+ROW breakx_loop   VG=[[C BRKX]] ZB=[[C BRKX]] SAME
+ROW lptout_noprn  VG=[[C RET]] ZB=[[C RET]] SAME
+ROW lptout_upframes VG=[Break in 20] ZB=[[C-1 ]] DIVERGES
+ROW stop_pause    VG=[[C DONE]] ZB=[<NO OUTPUT>] DIVERGES
+ROW tab     VG=[A       B       C\r\n  [P 0 ]] ZB=[A       B       C\r\n  [P 0 ]] SAME
+ROW tabcol  VG=[ABC     D\r\n  [P 0 ]] ZB=[ABC     D\r\n  [P 0 ]] SAME
+FAIL: OUTDLP / LPTOUT against the VG-8020 (7/9)
+refcache: 7 hit, 11 miss, 3 of the hits were ZEROBAS readings, 11 stored
+make: *** [outdlp-acceptance] Error 1

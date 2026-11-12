@@ -1,0 +1,4 @@
+ROW lptout_upframes VG=[[C-1  0 ]] ZB=[[C-1  0 ]] SAME
+ROW lptout_noprn  VG=[[C RET] | [R 5566 3344 1122 A41]] ZB=[[C RET] | [R 5566 3344 1122 A41]] SAME
+ROW lptout_intflg VG=[[C 0  0 ]] ZB=[[C 0  0 ]] SAME
+refcache: 3 hit, 3 miss, 3 stored

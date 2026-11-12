@@ -31,6 +31,28 @@ ROWS = {
                     '20 DEFUSR=&HD000:Q=USR(0):PRINT "[C BRKX]"', "30 DATA 205,183,0,48,251,201",
                     "RUN"],
     "lprint_noprn": ["NEW", '10 LPRINT "A":PRINT "[C LPR]"', "RUN"],
+    # D-BRKLATCH: after LPTOUT's CTRL-STOP return, what is INTFLG -- at once, and ten
+    # frames later? (ld a,"A" / call $00A5 / ld a,(INTFLG) / ld ($D100),a / ld b,10 /
+    # halt / djnz / ld a,(INTFLG) / ld ($D101),a / ret) -- nothing cleared.
+    # ... and WHEN it returns: JIFFY ($FC9E) before the call and after the return. Held 2 s
+    # from about RUN+3.5: a return after the release reads ~100 frames apart.
+    # ei / ld hl,(JIFFY) / ld ($D102),hl / ld a,"A" / call $00A5 / ld hl,(JIFFY) /
+    # ld ($D104),hl / ret
+    "lptout_when": ["NEW", "10 CLEAR 200,&HCFFF:FOR I=0 TO 18:READ X:POKE &HD000+I,X:NEXT",
+                    '20 DEFUSR=&HD000:Q=USR(0):J=PEEK(&HD104)+256*PEEK(&HD105)-PEEK(&HD102)-256*PEEK(&HD103):PRINT "[C";J>60;"]"',
+                    "30 DATA 251,42,158,252,34,2,209,62,65,205,165,0,42,158,252,34,4,209,201", "RUN"],
+    # (lptout_when could not tell: it counts the wait BEFORE the press too.) Frames from
+    # the return to the key up: ~0 = it waited for the release, ~100 = it returned on
+    # the press. ei / ld a,"A" / call $00A5 / ld bc,0 / up: inc bc / halt /
+    # ld a,(NEWKEY+7) / and $10 / jr z,up / ld ($D100),bc / ret
+    "lptout_upframes": ["NEW", "10 CLEAR 200,&HCFFF:FOR I=0 TO 21:READ X:POKE &HD000+I,X:NEXT",
+                        '20 DEFUSR=&HD000:Q=USR(0):N=PEEK(&HD100)+256*PEEK(&HD101):PRINT "[C";N<10;N>40;"]"',
+                        "30 DATA 251,62,65,205,165,0,1,0,0,3,118,58,236,251,230,16,40,247,237,67,0,209",
+                        "40 DATA 201", "RUN"],
+    "lptout_intflg": ["NEW", "10 CLEAR 200,&HCFFF:FOR I=0 TO 23:READ X:POKE &HD000+I,X:NEXT",
+                      '20 DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);PEEK(&HD101);"]"',
+                      "30 DATA 251,62,65,205,165,0,58,155,252,50,0,209,6,10,118,16,253,58,155,252,50,1",
+                      "40 DATA 209,201", "RUN"],
 }
 CTRL_STOP = ((6, 0x02), (7, 0x10))
 

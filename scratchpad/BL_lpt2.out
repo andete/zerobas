@@ -1,0 +1,7 @@
+ROW lptout_noprn  VG=[[C RET] | [R 5566 3344 1122 A41]] ZB=[[C RET] | [R 5566 3344 1122 A41]] SAME
+ROW lptout_intflg VG=[[C 0  0 ]] ZB=[[C 0  0 ]] SAME
+ROW lptout_upframes VG=[[C-1  0 ]] ZB=[[C 0 -1 ]] DIVERGES
+ROW breakx_loop   VG=[[C BRKX]] ZB=[[C BRKX]] SAME
+ROW lprint_noprn  VG=[Device I/O error in 10] ZB=[Device I/O error in 10] SAME
+ROW outdlp_noprn  VG=[Device I/O error in 30] ZB=[Device I/O error in 30] SAME
+refcache: 6 hit, 6 miss, 6 stored
