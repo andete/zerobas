@@ -16646,6 +16646,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   / 1 / 2 s) and a SECOND press (two holds in one case -- run_cases takes one);
                   LPTOUT's CTRL-STOP face re-measured with byte-checked probes (assert len(DATA)
                   == the POKE count -- the bug that cost this); then the exec_stmt break exit.
+                  📏 **THE PAUSE AGAINST PRESS LENGTH (2026-11-12, [`pauselen_probe.py`](scratchpad/pauselen_probe.py) ->
+                  [`pauselen_run.out`](scratchpad/pauselen_run.out)):** a 4 s loop, STOP from RUN+3.5 s, capture RUN+4.5+h:
+                  | hold | VG-8020 | zerobas |
+                  |---|---|---|
+                  | 0.2 s | paused (nothing) | DONE 200 |
+                  | 0.5 s | DONE 200 (no pause seen) | DONE 200 |
+                  | 1.0 s | paused | DONE 200 |
+                  | 2.0 s | DONE **214** (paused, resumed on the release) | DONE 200 |
+                  NOT MONOTONIC in the press length: STOP latches on the press AND the release
+                  (`4 0 4`), and what the interpreter does depends on which of the two it samples
+                  at a statement boundary -- no one-line rule fits all four, and the WIP patch's
+                  (key up, then the next latch) does not reproduce it. ➡️ Next: INTFLG sampled
+                  EVERY FRAME through a press on the VG-8020 while a BASIC loop runs (a POKEd
+                  frame logger on the H.TIMI hook -- work-area RAM, readable), to see which
+                  latches the interpreter consumes and when.
             - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
                   katakana and graphic -> 1-byte transform, measured on the VG-8020.
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
