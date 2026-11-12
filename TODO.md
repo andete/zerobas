@@ -16844,6 +16844,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             RED ([`CAL_k4.out`](scratchpad/CAL_k4.out)). stub_scan 6 -> 5.
       - [ ] PNTINI / SCANR / SCANL ($0129 / $012C / $012F): PAINT's helpers -- main room
             (D-BIOSCONTRACT).
+            🎚️ **FIRST IN THE QUEUE (Joost 2026-11-12: the BIOS stubs before the rest).** 🏗️
+            Joost's idea (2026-11-12): *"could the implementation of paint use parts of those
+            paint bios calls to save space?"* -- THE PLAN: (1) measure the three on the VG-8020
+            (SCREEN 2 and 3: a BASIC-drawn border, the cursor placed by MAPXYC, PNTINI with A =
+            the border colour, SCANR / SCANL with B = the fill flag and DE = the skip count; read
+            HL, DE, CLOC / CMASK, BDRATR $FCB2 -- GFX_B shares it -- and the touched VRAM);
+            (2) build them as SUB-ROM tenants behind thin PAGE-0 stubs (~8 B each, as
+            bios_dspfnk's subrom_call -- a BIOS entry may be called with page 1 RAM; the low
+            region had 26 B free at last reading, 2026-11-12); (3) a SEPARATE slice moves PAINT
+            onto the same tenants -- the classic scan / skip-count algorithm, not a call swap
+            (gfx_paint_scan_row only tests its caller's [xL,xR]) -- dropping its own scanner:
+            sub-ROM bytes back, and PAINT's fill order and stack use nearer the VG-8020's (its
+            out-of-memory point on a complex shape). Witnesses for (3): graphics-, graphics-
+            floor-acceptance and the PAINT rows.
 
 - [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
