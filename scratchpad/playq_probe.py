@@ -55,6 +55,11 @@ CASES = {
     # ROUND 5: M named again with the same value / a new one
     "mmsame":   'M1000CM1000C',
     "mmnew":    'M1000CM2000C',
+    # ROUND 6: N0's 5 ticks -- from T, L, or neither?
+    "n0t60":    'T60N0',
+    "n0l8":     'L8N0',
+    "n0t255l1": 'T255L1N0',
+    "cn0":      'CN0',
 }
 
 
@@ -64,7 +69,7 @@ def prog(mml):
                 'Q$="":FOR I=0 TO 5:Q$=Q$+RIGHT$("0"+HEX$(PEEK(&HF95F+I)),2):NEXT',
                 'A=PEEK(&HF963)+256*PEEK(&HF964):V$="":FOR I=0 TO 15:V$=V$+RIGHT$("0"+HEX$(PEEK(A+I)),2):NEXT',
                 'PRINT "[Q";Q$;"]":PRINT "[V";V$;"]"']
-    return [f'PLAY "{mml}":T=TIME', "IF TIME-T<120 THEN 20",
+    return [f'CLEAR 500:PLAY "{mml}":T=TIME', "IF TIME-T<120 THEN 20",
             'Q$="":FOR I=0 TO 5:Q$=Q$+RIGHT$("0"+HEX$(PEEK(&HF959+I)),2):NEXT',
             'V$="":FOR I=0 TO 31:V$=V$+RIGHT$("0"+HEX$(PEEK(&HF975+I)),2):NEXT',
             'PRINT "[Q";Q$;"]":PRINT "[V";V$;"]"']

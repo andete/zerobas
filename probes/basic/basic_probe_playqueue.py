@@ -24,7 +24,10 @@ import run_programs                                  # noqa: E402
 PROGS = [("scratchpad/playqbytes_measure.bas", 16),
          ("scratchpad/playqbytes2_measure.bas", 11),
          ("scratchpad/plaympend_measure.bas", 3),
-         ("scratchpad/playqueue_gate.bas", 5)]
+         ("scratchpad/playqueue_gate.bas", 5),
+         # D-BIOSRUNG / STRTMS (2026-11-12): the bytes themselves -- the VG-8020's
+         # packet format, which our PLAY and its servicer switched to
+         ("scratchpad/playpkt_gate.bas", 14)]
 
 
 def main():

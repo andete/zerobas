@@ -24,10 +24,13 @@ ROWS = {
     "s8cde":   "S8M300CDE",
     "s0cs0c":  "S0M5000CS0C",
     "vcs0c":   "V10CS0M5000CC",
+    # ROUND 2: R8 too -- the amplitude an envelope note writes (V5, then S3)
+    "v5s3c":   "V5S3C",
 }
+LO = {"v5s3c": 8}
 
 
-def run(machine, mml):
+def run(machine, mml, lo=11):
     log = probe_tmp.tmp(f"psgenv_{machine[:6]}.log")
     if os.path.exists(log):
         os.remove(log)
@@ -36,7 +39,7 @@ def run(machine, mml):
            "set ::preg 0",
            "debug set_watchpoint write_io 0xA0 {} {set ::preg $::wp_last_value}",
            "debug set_watchpoint write_io 0xA1 {} "
-           "{if {$::preg >= 11 && $::preg <= 13} "
+           f"{{if {{$::preg >= {lo} && $::preg <= 13}} "
            "{puts $::pl \"$::preg $::wp_last_value [machine_info time]\"}}")
     case = ["NEW", f'10 PLAY "{mml}":T=TIME', "20 IF TIME-T<250 THEN 20",
             '30 PRINT "[D]"', "RUN"]
@@ -56,7 +59,7 @@ def run(machine, mml):
 def main():
     for name in sys.argv[1:] or list(ROWS):
         for side, m in MACHS:
-            print(f"ROW {name:7} {side} {run(m, ROWS[name])}", flush=True)
+            print(f"ROW {name:7} {side} {run(m, ROWS[name], LO.get(name, 11))}", flush=True)
     return 0
 
 

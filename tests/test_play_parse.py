@@ -48,8 +48,10 @@ AUDIO_VMASK = AUDIO_STATUS = None   # read from SUB_SYM by build(): they sit in 
 QD_STRIDE = 6
 QD_PUT, QD_GET, QD_PUTBAK, QD_SIZE, QD_ADDR = 0, 1, 2, 3, 4
 
-# D-PLAYQUEUE packet tags (byte 0's top two bits; basic/sysvars.inc PK_*)
-PK_NOTE, PK_NOTEP, PK_REST, PK_END = 0x00, 0x40, 0x80, 0xC0
+# The VG-8020's packet (basic/sysvars.inc PK_*, D-BIOSRUNG / STRTMS 2026-11-12):
+# NOTE [n<<5|dur hi][dur lo][vol]([M hi][M lo])[tone hi][tone lo], REST [$20|dur hi]
+# [dur lo][$80], END $FF
+PK_REST, PK_NOTE3, PK_END = 0x20, 0x60, 0xFF
 SRC = 0x8200  # where we place MML source strings (RAM, visible to a page-1 tenant)
 
 
@@ -62,44 +64,41 @@ def build():
 
 
 def decode_queue(m, voice, start=None):
-    """Walk voice's RING (QUETAB get .. put, wrapping at 128) -> decoded packets.
-    D-PLAYQUEUE's encoding, read back into the old tuple shapes: a REST is a silent
-    ("NOTE", 0, 0, frames); an S or M carried by a note comes first as
-    ("ENV", shape, envelope period) -- the period None when only S changed."""
+    """Walk voice's RING (QUETAB get .. put, wrapping at 128) -> decoded packets,
+    in the VG-8020's format, read back into tuples: a REST is a silent
+    ("NOTE", 0, 0, frames); an ENVELOPE note (vol bit 4: the servicer rewrites R13)
+    comes first as ("ENV", shape, the M period or None when no M bytes ride on it);
+    a note's amp is what the PSG keeps of the vol byte (5 bits)."""
     base = VOICAQ + voice * 128
     q = QUETAB + voice * 6
     p = m.mem[q + QD_GET] if start is None else start
     put = m.mem[q + QD_PUT]
 
-    def byte():
+    def byte():                  # PRE-increment: GET is the last byte read (the VG-8020)
         nonlocal p
-        b = m.mem[base + p]
         p = (p + 1) & 127
-        return b
+        return m.mem[base + p]
     out = []
     for _ in range(200):  # guard
         if p == put:
             break
         b0 = byte()
-        tag = b0 & 0xC0
-        if tag == PK_END:
+        if b0 == PK_END:
             out.append(("END",))
-        elif tag == PK_REST:
-            lo = byte()
-            out.append(("NOTE", 0, 0, lo | (byte() << 8)))
-        else:
-            plo = byte()
-            amp = byte()
-            flo = byte()
-            b4 = byte()
-            per = plo | ((b4 >> 4) << 8)
-            fr = flo | ((b4 & 0x0F) << 8)
-            if tag == PK_NOTEP:
-                elo = byte()
-                out.append(("ENV", (b0 >> 2) & 0x0F, elo | (byte() << 8)))
-            elif b0 & 2:
-                out.append(("ENV", (b0 >> 2) & 0x0F, None))
-            out.append(("NOTE", per, amp, fr))
+            continue
+        fr = ((b0 & 0x1F) << 8) | byte()
+        vol = byte()
+        if b0 < PK_NOTE3:
+            assert vol == 0x80, f"rest vol byte {vol:#x}"
+            out.append(("NOTE", 0, 0, fr))
+            continue
+        env = None
+        if vol & 0x40:
+            env = (byte() << 8) | byte()
+        if vol & 0x10:
+            out.append(("ENV", vol & 0x0F, env))
+        per = (byte() << 8) | byte()
+        out.append(("NOTE", per, vol & 0x1F, fr))
     return out
 
 
@@ -220,7 +219,7 @@ def run():
     # the differential could (D-KWPLAY, scratchpad/playnote_probe.py, both refs).
     m, st = parse([b"N40N0"])
     check("N40 then N0(rest)", decode_queue(m, 0),
-          [note(40), ("NOTE", 0, 0, mml_ref.note_frames(120, 4)), ("END",)])
+          [note(40), ("NOTE", 0, 0, 5), ("END",)])     # N0: 5 ticks (the VG-8020)
     m, st = parse([b"N96"])
     check("N96 reaches the 97th table entry", decode_queue(m, 0),
           [note(96), ("END",)])
@@ -231,14 +230,22 @@ def run():
     m, st = parse([b"C&C"])
     check("'&' tie unsupported -> ERR 5", st, 5)
 
-    # --- S/M ride on the next note (D-PLAYQUEUE: the reference queues S at 0 B,
-    # M at 2 B, measured); S sets envelope-mode amplitude $10|volume ------------
-    # (bit4 = follow envelope; the VG-8020 also writes the volume nibble -> default
-    # V8 gives $18. The PSG ignores bits 0-3 in envelope mode; the byte is faithful.)
+    # --- S/M ride on the next note (the reference queues S at 0 B, M at 2 B, and M
+    # only when its value changed); the vol byte is $80 | $40 (M) | $10 | the SHAPE,
+    # written whole to the amplitude register and R13 (the VG-8020: R8 = $93 for S3,
+    # scratchpad/psgenv_run2.out) -- the PSG keeps 5 bits, $13 ------------------
     m, st = parse([b"S3M1000C"])
     check("S3 M1000 C -> the note carries shape and period", decode_queue(m, 0),
-          [("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x18,
+          [("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x13,
            mml_ref.note_frames(120, 4)), ("END",)])
+    m, st = parse([b"S0M1000CM1000C"])
+    check("M named again with the same value sends nothing; every envelope note "
+          "restarts the envelope", decode_queue(m, 0),
+          [("ENV", 0, 1000), ("NOTE", mml_ref.note_period(C4), 0x10, mml_ref.note_frames(120, 4)),
+           ("ENV", 0, None), ("NOTE", mml_ref.note_period(C4), 0x10, mml_ref.note_frames(120, 4)),
+           ("END",)])
+    m, st = parse([b"M255C"])
+    check("M255 at the default sends nothing", decode_queue(m, 0), [note(C4), ("END",)])
 
     # --- three voices ----------------------------------------------------------
     m, st = parse([b"C", b"E", b"G"])
@@ -292,7 +299,7 @@ def run():
     check("PLYCNT counted two PLAYs", m.mem[PLYCNT], 2)
 
     # D-PLAYBARER / D-PLAYRDOT (2026-11-05): a bare R is a QUARTER whatever L says, R.
-    # is ERR 5; an explicit length takes L's place and its dots; N0 keeps L's length.
+    # is ERR 5; an explicit length takes L's place and its dots; N0 is 5 ticks.
     # Both references (scratchpad/playrate_dots2.out, playrate_rdot.out).
     q4 = mml_ref.note_frames(120, 4)
     rest = lambda fr: ("NOTE", 0, 0, fr)
@@ -307,7 +314,8 @@ def run():
     m, st = parse([b"L8R."])
     check("R. is ERR 5", st, 5)
     m, st = parse([b"L8N0"])
-    check("N0 keeps L's length", decode_queue(m, 0), [rest(mml_ref.note_frames(120, 8)), ("END",)])
+    check("N0 is 5 ticks whatever L says (the VG-8020, scratchpad/playq_run6.out)",
+          decode_queue(m, 0), [rest(5), ("END",)])
     m, st = parse([b"T255L64CR64"])
     check("the 5-frame floor: T255 L64 note and R64", decode_queue(m, 0)[1:],
           [rest(5), ("END",)])

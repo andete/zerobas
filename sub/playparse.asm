@@ -184,7 +184,9 @@ pi_lp:
                 ld      (ix+VCX_TEMPO),PLAY_DEF_TEMPO
                 ld      (ix+VCX_VOLUME),PLAY_DEF_VOLUME
                 ld      (ix+VCX_ENVSH),0
-                ld      (ix+VCX_ENVDIRTY),0 ; no S / M pending (BEEP drops one, measured)
+                ld      (ix+VCX_ENVPER),255 ; M255, the default (M255C sends nothing on
+                ld      (ix+VCX_ENVPER+1),0 ; the VG-8020, scratchpad/playq_run2.out)
+                ld      (ix+VCX_ENVDIRTY),0 ; no M pending (BEEP drops one, measured)
                 ld      (ix+VCX_FRAMES),0   ; no note running
                 ld      (ix+VCX_FRAMES+1),0
                 ld      de,VCB_STRIDE
@@ -374,63 +376,56 @@ pt_emit_pitch:
                 ex      de,hl               ; DE = frames
                 ld      hl,(PLY_LASTDUR)    ; HL = period
                 ld      a,(ix+VCX_ENVDIRTY)
-                and     2                   ; an M since the last note: +2 B
+                rlca
+                rlca
+                rlca                        ; $40 (an M since the last note) -> +2 B
                 add     a,5
                 call    pt_pkt
                 ret     c
-                ld      a,(ix+VCX_ENVSH)
-                and     $0F
-                add     a,a
-                add     a,a                 ; shape << 2
-                ld      c,(ix+VCX_ENVDIRTY)
-                bit     0,c
-                jr      z,pep_set
-                or      2                   ; envset: an S or M since the last note
-pep_set:
-                bit     1,c
-                jr      z,pep_tag
-                or      PK_NOTEP            ; an M: the period follows
-pep_tag:
-                call    pt_put              ; [tag | shape<<2 | envset<<1]
-                ld      a,l
-                call    pt_put              ; period low
-                call    pt_note_amp         ; A = amplitude (envelope-mode or volume)
+                ; THE VG-8020's NOTE (D-BIOSRUNG / STRTMS, scratchpad/playq_run*.out):
+                ; [n << 5 | frames 12..8] [frames 7..0] [vol] ([M hi] [M lo]) [tone hi]
+                ; [tone lo], n = the bytes after the two duration bytes: 3, or 5 with M
+                ld      a,(ix+VCX_ENVDIRTY)
+                ld      c,a                 ; C = $40 after an M that changed the period
+                add     a,$60               ; n = 3 ($60), or 5 ($A0) with the M bytes
+                or      d                   ; | frames 12..8
                 call    pt_put
                 ld      a,e
-                call    pt_put              ; frames low
-                ld      a,h
-                add     a,a
-                add     a,a
-                add     a,a
-                add     a,a                 ; period high << 4
-                or      d                   ; | frames high (< 16: 4095 frames)
+                call    pt_put              ; frames 7..0
+                call    pt_note_amp         ; A = $90 | shape, or $80 | volume
+                or      c                   ; | $40: the M bytes follow
                 call    pt_put
-                bit     1,c
-                jr      z,pep_done
+                bit     6,c
+                jr      z,pep_tone
+                ld      a,(ix+VCX_ENVPER+1)
+                call    pt_put              ; M, big-endian
                 ld      a,(ix+VCX_ENVPER)
                 call    pt_put
-                ld      a,(ix+VCX_ENVPER+1)
+pep_tone:
+                ld      a,h
+                call    pt_put              ; tone period, big-endian
+                ld      a,l
                 call    pt_put
 pep_done:
                 ld      (ix+VCX_ENVDIRTY),0 ; the envelope is carried
                 jp      pt_ch_loop
 
-; --- pt_note_amp: A = amplitude byte for the current voice ------------------
-; (its one caller hands A straight to pt_put, which reads no flags)
+; --- pt_note_amp: A = the note packet's vol byte, before M's $40 -------------
+; (the PSG gets it whole: R13 in envelope mode, its low 5 bits as the amplitude)
 pt_note_amp:
-                ld      a,(ix+VCX_VOLUME)
-                and     $0F
-                bit     7,(ix+VCX_ENVSH)    ; envelope mode?
-                ret     z
-                or      $10                 ; envelope mode: the PSG ignores bits 0-3,
-                ret                         ; but the VG-8020 still writes the volume nibble
-                                            ; alongside bit 4 (measured: S8 default-V -> $18)
+                ld      a,(ix+VCX_ENVSH)    ; $80 | shape in envelope mode (bits 4-6 0)
+                or      $10
+                ret     m                   ; envelope: $90 | the shape (S0 $90, S8 $98)
+                ld      a,(ix+VCX_VOLUME)   ; 0..15 (V refuses more)
+                or      $80                 ; $80 | the volume: V10 $8A, V0 $80 (a note)
+                ret
 
 ; --- pt_cmd_rest: queue a REST packet (3 B: tag, duration) for the parsed length
 ; 🎵 D-PLAYBARER (2026-11-05): a BARE `R` is a QUARTER whatever `L` says, and `R.`
 ; is ERR 5 -- both references (scratchpad/playrate_dots2.out, playrate_rest_3way.out,
 ; playrate_rdot.out: 8 bare R under L8 = 8 x R4 on the VG-8020 and the CF-3300; an
-; explicit R4. / R64. takes its dots). N0 keeps L's length (pt_rest_n0): unmeasured.
+; explicit R4. / R64. takes its dots). N0 is a rest of 5 ticks whatever T / L say
+; (pt_rest_n0; the VG-8020's queue, scratchpad/playq_run4.out / playq_run6.out).
 pt_cmd_rest:
                 call    pt_numeq            ; HL = an explicit length, CF=1
                 jr      c,pcr_len
@@ -445,17 +440,18 @@ pcr_len:
                 call    pt_length_k         ; HL = frames (the explicit length checked)
                 jr      pcr_pkt
 pt_rest_n0:
-                call    pt_length_eq        ; HL = frames
+                ld      hl,5                ; N0: 5 ticks (CF clear from the `or a`)
 pcr_pkt:
                 ret     c
                 ld      a,3
                 call    pt_pkt              ; REST: 3 B
                 ret     c
-                ld      a,PK_REST
+                ld      a,h
+                or      PK_REST             ; [$20 | frames 12..8] [frames 7..0] [$80]
                 call    pt_put
                 ld      a,l
                 call    pt_put
-                ld      a,h
+                ld      a,$80               ; volume 0, no tone
                 call    pt_put
                 jp      pt_ch_loop
 
@@ -465,7 +461,7 @@ pt_cmd_n:
                 cp      97
                 jp      nc,pt_illegal       ; > 96
                 or      a
-                jr      z,pt_rest_n0        ; N0 = rest (L's length)
+                jr      z,pt_rest_n0        ; N0 = a 5-tick rest
                 ; 🔴 NO `dec a` HERE: `N n` INDEXES pt_period AT n, NOT n-1.
                 ; Measured on both references (D-KWPLAY 2026-09-15, scratchpad/
                 ; playnote_probe.py): N1 sounds 3228 = pt_period[1] and N96 sounds 13
@@ -511,8 +507,8 @@ pt_cmd_env_shape:
                 jp      nc,pt_illegal
                 or      $80                 ; set envelope-mode bit
                 ld      (ix+VCX_ENVSH),a
-                ld      a,1                 ; S: the next note re-writes the shape
-                jr      pt_emit_env
+                jp      pt_ch_loop          ; S queues nothing: every envelope note
+                                            ; carries its shape (the vol byte)
 pt_cmd_env_per:
                 call    pt_numeq    
                 jp      nc,pt_illegal
@@ -525,9 +521,18 @@ pt_cmd_env_per:
                 ld      a,h
                 or      l
                 jp      z,pt_illegal        ; M0 -> ERR 5 on both refs (m.zero)
+                ld      a,(ix+VCX_ENVPER)
+                cp      l
+                jr      nz,pcm_new
+                ld      a,(ix+VCX_ENVPER+1)
+                cp      h
+                jp      z,pt_ch_loop        ; the same period: nothing sent (the VG-8020,
+                                            ; scratchpad/playq_run5.out: M is sent when
+                                            ; its VALUE changes, M255 at the default too)
+pcm_new:
                 ld      (ix+VCX_ENVPER),l
                 ld      (ix+VCX_ENVPER+1),h
-                ld      a,3                 ; M: the period too (NOTEP)
+                ld      a,$40               ; M: the next note carries the period
 
 ; --- pt_emit_env: S / M queue nothing of their own (D-PLAYQUEUE: measured, an S
 ; costs the reference's queue 0 B and an M 2 B, on the NEXT note). A = the
@@ -539,9 +544,8 @@ pt_emit_env:
 
 ; --- pt_length: parse optional length digits + dots -> HL = frame count ------
 ;   uses IX (VCX_TEMPO/VCX_NOTEL), MCLPTR/B. CF=1 (+ AUDIO_STATUS) on a bad length.
-pt_length_eq:                               ; D-PLAYEQ: R takes `=name;`, a note does not
-                call    pt_numeq
-                jr      pt_length_k
+; (pt_length_eq -- `call pt_numeq / jr pt_length_k` -- went with N0's L length: its last
+; caller; D-BIOSRUNG 2026-11-12. R takes `=name;` through pt_cmd_rest's own pt_numeq.)
 pt_length:
                 call    pt_number
 pt_length_k:
@@ -1634,17 +1638,15 @@ pt_put:
                 ld      l,(iy+QD_ADDR)
                 ld      h,(iy+QD_ADDR+1)
                 ld      a,(ix+VCX_WPUT)
-                ld      d,a
+                inc     a                   ; PRE-increment, as the VG-8020's rings (its
+                and     127                 ; first packet sits at index 1, PUT = the
+                ld      (ix+VCX_WPUT),a     ; last byte written: scratchpad/playq_run7.out)
                 add     a,l
                 ld      l,a
                 adc     a,h
                 sub     l
                 ld      h,a                 ; HL = base + WPUT
                 ld      (hl),e
-                ld      a,d
-                inc     a
-                and     127
-                ld      (ix+VCX_WPUT),a
 pp_done:
                 pop     de
                 pop     hl

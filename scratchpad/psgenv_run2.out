@@ -1,0 +1,23 @@
+ROW v5s3c   VG R11=B@0.00 R8=0@0.00 R9=0@0.00 R10=0@0.00 R8=93@21.85 R13=93@21.85 R9=0@21.85 R10=0@21.85 R8=0@22.35
+
+==========================================================================
+APPARATUS FAILURE -- openMSX preflight: NOTHING WAS MEASURED
+==========================================================================
+  machine : C-BIOS_MSX1_EU_REPACK_NODISK
+  config  : /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+
+  STALE       build/zerobas-main-eu.rom
+              `make -q build/zerobas-main-eu.rom` says it is out of date w.r.t. its sources
+  STALE       build/sub.rom
+              `make -q build/sub.rom` says it is out of date w.r.t. its sources
+
+  FIX: make repack-machine        (rebuilds the ROMs AND reinstalls the
+                                   machine config that points at them)
+
+  A probe booted against this machine would report the absence of the
+  ROM as the absence of the FEATURE -- a whole class of cases failing
+  identically, which reads exactly like a catastrophic regression.
+  Refused instead of measured.  (docs/spec-probe-preflight.md)
+==========================================================================
+
+refcache: 0 hit, 1 miss, 1 stored

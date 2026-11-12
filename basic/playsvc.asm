@@ -130,72 +130,59 @@ psv_fetch:
                 ld      a,(iy+QD_GET)
                 cp      (iy+QD_PUT)
                 ret     z                   ; nothing queued yet
+                ; THE VG-8020's PACKET (basic/sysvars.inc PK_*; D-BIOSRUNG / STRTMS):
+                ; [n << 5 | dur 12..8] [dur 7..0] [vol] ([M hi] [M lo]) [tone hi] [tone lo]
                 call    psv_get
                 cp      PK_END
-                jp      nc,psv_end
-                cp      PK_REST
-                jr      nc,psv_rest
-                push    af                  ; [byte 0: tag | shape<<2 | envset<<1]
-                call    psv_get
-                ld      e,a                 ; E = period low
-                call    psv_get
-                ld      d,a                 ; D = amplitude
-                push    de                  ; [b0][amp:per_lo]
-                call    psv_get
-                ld      e,a                 ; frames low
-                call    psv_get             ; per_hi<<4 | frames_hi
-                ld      d,a
-                and     $0F
+                jp      z,psv_end
+                ld      d,a                 ; D = byte 0
+                and     $1F
                 ld      (ix+VCX_FRAMES+1),a
-                ld      (ix+VCX_FRAMES),e
+                call    psv_get
+                ld      (ix+VCX_FRAMES),a
+                call    psv_get
+                ld      e,a                 ; E = the vol byte
                 ld      a,b
-                add     a,a                 ; A = 2v = tone-period LOW register
+                add     a,8                 ; A = 8+v = amplitude register
                 out     ($A0),a
-                pop     hl                  ; H = amplitude, L = period low
-                ld      a,l
-                out     ($A1),a
+                ld      a,e
+                out     ($A1),a             ; the amplitude := the WHOLE vol byte, FIRST
+                                            ; (the VG-8020: R8 = $93 for S3, before R13;
+                                            ; the PSG keeps 5 bits -- a rest's $80 is 0)
+                ld      a,d
+                cp      PK_NOTE3
+                jr      c,psv_tick          ; a rest (n = 1): nothing more
+                bit     4,e
+                jr      z,psv_nenv
+                ld      a,13
+                out     ($A0),a
+                ld      a,e
+                out     ($A1),a             ; R13 := the vol byte on EVERY envelope note --
+                                            ; the envelope restarts, as the VG-8020
+psv_nenv:
+                bit     6,e
+                jr      z,psv_tone          ; no M bytes
+                call    psv_get             ; M high
+                push    af
+                ld      a,11
+                out     ($A0),a
+                call    psv_get
+                out     ($A1),a             ; R11 := M low ...
+                ld      a,12
+                out     ($A0),a
+                pop     af
+                out     ($A1),a             ; ... then R12 := M high (the VG-8020's order)
+psv_tone:
                 ld      a,b
                 add     a,a
                 inc     a                   ; A = 2v+1 = tone-period HIGH register
                 out     ($A0),a
-                ld      a,d
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F
+                call    psv_get
                 out     ($A1),a
-                pop     af                  ; A = byte 0
-                ld      e,a
-                cp      PK_NOTEP
-                jr      c,psv_noper         ; NOTE: no envelope period follows
-                push    hl                  ; H = the amplitude (psv_get uses HL --
-                                            ; the first cut wrote the buffer's high
-                                            ; byte, $F9, as an envelope note's volume)
-                ld      a,11
-                out     ($A0),a
-                call    psv_get
-                out     ($A1),a             ; envelope period fine
-                ld      a,12
-                out     ($A0),a
-                call    psv_get
-                out     ($A1),a             ; envelope period coarse
-                pop     hl
-psv_noper:
-                bit     1,e
-                jr      z,psv_amp           ; no S or M since the last note
-                ld      a,13
-                out     ($A0),a
-                ld      a,e
-                rrca
-                rrca
-                and     $0F
-                out     ($A1),a             ; shape last -> restart the envelope
-psv_amp:
                 ld      a,b
-                add     a,8                 ; A = 8+v = amplitude register
+                add     a,a                 ; A = 2v = tone-period LOW register
                 out     ($A0),a
-                ld      a,h
+                call    psv_get
                 out     ($A1),a
 psv_tick:
                 ld      l,(ix+VCX_FRAMES)
@@ -204,27 +191,19 @@ psv_tick:
                 ld      (ix+VCX_FRAMES),l
                 ld      (ix+VCX_FRAMES+1),h
                 ret
-psv_rest:
-                call    psv_get
-                ld      (ix+VCX_FRAMES),a
-                call    psv_get
-                ld      (ix+VCX_FRAMES+1),a
-                ld      h,0                 ; amplitude 0: silent (the tone registers stay)
-                jr      psv_amp
 ; psv_get: A = the ring's next byte; QD_GET steps on, wrapping at 128. Uses HL.
 psv_get:
                 ld      l,(iy+QD_ADDR)
                 ld      h,(iy+QD_ADDR+1)
                 ld      a,(iy+QD_GET)
+                inc     a                   ; PRE-increment, as the VG-8020's rings
+                and     127                 ; (GET = the last byte read)
+                ld      (iy+QD_GET),a
                 add     a,l
                 ld      l,a
                 adc     a,h
                 sub     l
                 ld      h,a                 ; HL = base + get
-                ld      a,(iy+QD_GET)
-                inc     a
-                and     127
-                ld      (iy+QD_GET),a
                 ld      a,(hl)
                 ret
 ; psv_end: a PLAY's end marker. The voice goes silent and WAITS (QD_PUTBAK = 1,

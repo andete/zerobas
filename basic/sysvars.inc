@@ -3980,22 +3980,22 @@ PLY_LASTDUR     equ     $F971           ; QUEBAK+0 (2): saved write pointer acro
 PLY_PKMODE      equ     $F973           ; QUEBAK+2 (1): pt_put writes (1) or skips (0) the
                                         ; current packet -- D-PLAYQUEUE's windowed parse
                                         ; (was PLY_BUFEND, the linear buffer's end)
-; Queue packets (own encoding, D-PLAYQUEUE 2026-10-31). The voice queue is a
-; 128-byte RING (QUETAB put/get, QD_SIZE 127 as on the VG-8020), and the packet
-; SIZES are the reference's, measured from its QUETAB put pointer
-; (scratchpad/playqbytes_measure.out, playqbytes2_measure.out): a note 5 B,
-; plus 2 when an M period changed since the last note, a rest 3 B, and 1 B per
-; PLAY per voice -- the end marker, where the voices sync. The tag is byte 0's
-; top two bits:
-;   NOTE   [tag|shape<<2|envset<<1, per_lo, amp, dur_lo, per_hi<<4|dur_hi]
-;   NOTEP  NOTE + [envper_lo, envper_hi]  (an M since the last note)
-;   REST   [tag, dur_lo, dur_hi]
-;   END    [tag]
-; envset: an S or M since the last note -- the drain re-writes PSG R13 (shape).
-PK_NOTE         equ     $00
-PK_NOTEP        equ     $40
-PK_REST         equ     $80
-PK_END          equ     $C0
+; Queue packets: THE VG-8020's FORMAT (D-BIOSRUNG / STRTMS, Joost's ruling 2026-11-12,
+; "2 (a)": our PLAY and its servicer switch to it, so a program that PUTQs the
+; reference's packets and calls STRTMS plays; read from the VG-8020's rings after a PLAY,
+; scratchpad/playq_run*.out -- work-area RAM, black-box). The voice queue is a 128-byte
+; RING (QUETAB put/get, QD_SIZE 127 as on the VG-8020). Durations are interrupt ticks.
+;   NOTE  [n << 5 | dur 12..8] [dur 7..0] [vol] ([M hi] [M lo]) [tone hi] [tone lo]
+;         n = 3, or 5 with M; vol = $80 | $40 (the M bytes follow) | $10 (envelope
+;         mode, the low nibble the shape) | else the volume. M is sent on the first
+;         note after its VALUE changed.
+;   REST  [$20 | dur 12..8] [dur 7..0] [$80]
+;   END   [$FF]  -- one per PLAY per voice, where the voices sync
+; The servicer writes R13 = the whole vol byte on EVERY envelope note (the envelope
+; restarts), before R11 / R12 (scratchpad/psgenv_run.out).
+PK_REST         equ     $20             ; byte 0 of a rest (n = 1)
+PK_NOTE3        equ     $60             ; byte 0 of a note without M (n = 3)
+PK_END          equ     $FF
 PLAY_MORE       equ     $FE     ; AUDIO_STATUS: a voice's ring is full -- main waits a
                                 ; frame and calls the tenant again (the next window)
 

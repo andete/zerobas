@@ -16607,6 +16607,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             end to end: (2) is the build -- sub/playparse.asm emits these packets, basic/
             playsvc.asm decodes them (R13 per envelope note, before the period); then (3)
             STRTMS.
+            ✅ **(2) BUILT (2026-11-12).** The amplitude register too, first: R8 = the WHOLE vol
+            byte ($93 for `V5S3C` -- the PSG keeps 5 bits; the old "$10 | volume" belief came
+            from S8 at V8, which cannot tell shape from volume) before R13
+            ([`psgenv_run2.out`](scratchpad/psgenv_run2.out)). The rings are PRE-increment on the VG-8020 (its first packet at
+            index 1; PUT / GET = the last byte written / read). sub/playparse.asm emits the
+            VG-8020's packets (note, rest `[$20|hi][lo][$80]`, end $FF), M only when its value
+            changed (seeded 255), N0 a 5-tick rest; basic/playsvc.asm decodes them: R8 := the
+            vol byte, then R13 := the vol byte on every envelope note, then R11 / R12, then the
+            tone. sysvars.inc's PK_* rewritten. Sub page 1 had 6 B (2026-11-12): the parser was squeezed
+            (pt_note_amp from ENVSH's own $80 bit, ENVDIRTY holds M's $40 directly, S queues
+            nothing, the ring write pre-increments, pt_length_eq lost its last caller and went) --
+            **10 B left** (2026-11-12). After:
+            [`playq_run8.out`](scratchpad/playq_run8.out) **34 / 34 rows byte-identical** to the VG-8020 (🔮 HIT), [`psgenv_run3.out`](scratchpad/psgenv_run3.out) every
+            R11..R13 sequence SAME; tests/test_play_parse.py ALL PASS (decoder rewritten, N0 /
+            M-same / S3's $13 rows); play, play-trace, playqueue, playeq, playarr, sound, beep
+            acceptance green. Gate: playqueue-acceptance gains [`playpkt_gate.bas`](scratchpad/playpkt_gate.bas) (14 rows, the
+            appended bytes in hex) 14 / 14 on both targets; knife (the M-unchanged skip ->
+            `nop`s) -> RED on `M1000CM1000C` ([`playpkt_knife1.out`](scratchpad/playpkt_knife1.out); `M255C` stayed SAME -- 🔮 MISSED:
+            the rows run in sequence, M was 1000 by then). ➡️ (3) STRTMS.
+            - [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** --
+                  🎚️ TIER 6 — `V5S3C` on voice A: the VG-8020 writes R9 = R10 = 0 with the note
+                  ([`psgenv_run3.out`](scratchpad/psgenv_run3.out)); zerobas leaves them. Heard only after a SOUND 9 / 10 set
+                  them; unchanged by the format switch.
       - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
             ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
             ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7
