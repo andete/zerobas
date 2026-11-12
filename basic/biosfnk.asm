@@ -26,6 +26,18 @@ bios_inifnk:
                 xor     a                   ; op 0: the defaults
                 jr      bios_fnk_key
 
+; FNKSB ($00C9) -- D-BIOSRUNG (2026-11-12). C-BIOS's was a print_debug stub. Measured on
+; the VG-8020 with CNSDFG changed BEHIND BASIC's back (scratchpad/fnksb_probe.py,
+; fnksb_run*.out): KEY OFF + CNSDFG := $FF -> the key row PAINTED (a KILBUF call in its
+; place leaves it blank: FNKSB did it), with DSPFNK's registers exactly (HL kept, DE
+; $FC40, BC 0, A 0 -- biosregs' dsp0 row); KEY ON + CNSDFG := 0 -> nothing, A = 0
+; (CNSDFG's value, not the caller's). So: CNSDFG != 0 -> DSPFNK.
+bios_fnksb:
+                ld      a,(CNSDFG)
+                or      a
+                ret     z
+                jr      bios_dspfnk
+
 bios_erafnk:
                 xor     a                   ; the line hidden
                 jr      bios_fnk

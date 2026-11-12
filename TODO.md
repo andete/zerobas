@@ -16489,8 +16489,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             RED ([`ISC_k2.out`](scratchpad/ISC_k2.out)). stub_scan: 9 -> 7. ⚠️ Not measured: INTFLG values other than 0 / 3 /
             4 (returned as read); a STOP pressed while BASIC runs (the run loop's pause) -- does
             the VG-8020 leave INTFLG 0 after it too?
-      - [ ] FNKSB ($00C9): the function-key line shown or erased by CNSDFG -- a row that changes
+      - [x] FNKSB ($00C9): the function-key line shown or erased by CNSDFG -- a row that changes
             the cell behind its back.
+            ✅ **FIXED 2026-11-12.** Measured ([`fnksb_probe.py`](scratchpad/fnksb_probe.py) -> [`fnksb_run.out`](scratchpad/fnksb_run.out) .. [`fnksb_run4.out`](scratchpad/fnksb_run4.out)): KEY OFF +
+            CNSDFG := $FF -> the VG-8020 PAINTS the key row (a KILBUF call in its place leaves it
+            blank, so FNKSB did it); KEY ON + CNSDFG := 0 -> nothing (🔮 "erases": MISSED), A = 0
+            (CNSDFG's value). With the flag set its registers are DSPFNK's exactly (DE $FC40, BC 0,
+            A 0 -- biossweep_fnk.out's dsp0). Built: bios_fnksb (basic/biosfnk.asm, page 0):
+            CNSDFG != 0 -> bios_dspfnk; $00C9 points there. biosregs-acceptance `fnksb_off_ff` /
+            `fnksb_on_00`; knife K3 (the `jr bios_dspfnk` -> `ret`) -> fnksb_off_ff RED
+            ([`FNK_k3.out`](scratchpad/FNK_k3.out)). stub_scan 7 -> 6.
+            🎚️ **A CHOICE, RECORDED:** DSPFNK / ERAFNK / FNKSB's EXIT REGISTERS are not matched -- the
+            published contract says "Registers: all", and the VG-8020's leftovers (text-mode DSPFNK
+            DE $FC40 / BC 0 / A 0, ERAFNK DE $0399 / A $28) are not a contract a program can rely
+            on; matching them costs page-0 bytes. The graphics-mode exits (DE / BC kept, A =
+            SCRMOD) already match. 🔴 Found on the way: biosregs' `dsp0` / `era0` rows end in
+            `END` before the register line, so they never compared registers -- the readout was
+            blind to them; this records that the gap is deliberate now, not unseen.
       - [ ] STRTMS ($0099): start PLAY's queued music (with PUTQ, LFTQ: PLAY's queues).
       - [ ] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
       - [ ] CALBAS ($0159): call a BASIC-interpreter address from any slot.

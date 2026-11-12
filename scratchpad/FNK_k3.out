@@ -1,0 +1,7 @@
+ROW fnksb_on VG=[[CFF 6F]] ZB=[[CFF 6F]] SAME
+ROW fnksb_off VG=[[C0 20]] ZB=[[C0 20]] SAME
+ROW fnksb_off_ff VG=[[CFF 6F]] ZB=[[CFF 20]] DIVERGES
+ROW fnksb_on_00 VG=[[C0 6F]] ZB=[[C0 6F]] SAME
+
+FAIL: BIOS helper registers (3/4)
+refcache: 4 hit, 4 miss, 4 stored

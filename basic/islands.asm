@@ -501,6 +501,8 @@ fperr_to_err:
                 jp      bios_iscntc         ; CKCNTC: the same entry on the VG-8020
                 org     $00C0
                 jp      bios_beep           ; BEEP: C-BIOS's was a stub too
+                org     $00C9
+                jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $00CC
                 jp      bios_erafnk
                 jp      bios_dspfnk

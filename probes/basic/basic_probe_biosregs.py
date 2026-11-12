@@ -251,7 +251,14 @@ ROWS = {
                   after='X=PEEK(&HF3DD):Y=PEEK(&HF3DC):PRINT:PRINT "[C";X;Y;"]":END'),
     **{n: prog(0x00C9, 0, before=b,
                after='A=PEEK(&HF3DE):C=VPEEK(&H399):PRINT:PRINT "[C";HEX$(A);" ";HEX$(C);"]":END')
-       for n, b in (("fnksb_on", "KEY ON"), ("fnksb_off", "KEY OFF"))},
+       for n, b in (("fnksb_on", "KEY ON"), ("fnksb_off", "KEY OFF"),
+                    # D-BIOSRUNG (2026-11-12): the two above agreed with C-BIOS's STUB --
+                    # KEY ON / OFF had already done the work. CNSDFG changed BEHIND
+                    # BASIC's back separates them: $FF -> FNKSB paints the row, 0 -> it
+                    # leaves it (scratchpad/fnksb_run*.out). Registers are "all" in the
+                    # published contract and not compared (the END before [R]).
+                    ("fnksb_off_ff", "KEY OFF:POKE &HF3DE,255"),
+                    ("fnksb_on_00", "KEY ON:POKE &HF3DE,0"))},
     **{n: prog(a, 0, after='A$="":FOR I=0 TO 7:A$=A$+HEX$(PEEK(&HF3DF+I))+",":NEXT:M=PEEK(&HFCAF):'
                            'SCREEN 0:PRINT "[C";A$;M;"]":END')
        for n, a in (("sett32", 0x007B), ("setgrp", 0x007E), ("setmlt", 0x0081))},
