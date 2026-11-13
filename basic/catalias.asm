@@ -89,22 +89,10 @@ brk_release:
 ; boot_wa: interp.asm's cold start, BEFORE the cartridge scan (a cartridge's INIT already
 ; sees the VG-8020's values there, as LINL40 37 -- D-BIOSLADDER B1). Clobbers A.
 boot_wa:
-                ; D-TAPLEADN (2026-11-13): the cassette tables as both references hold them
-                ; from power-on -- CS120 ($F3FC) 53 5C 26 2D 0F, CS240 25 2D 0E 16 1F, and the
-                ; active LOW / HIGH / HEADER ($F406) a copy of CS120 (scratchpad/cstables.out);
-                ; zerobas had 15 zero bytes (tape/tape.asm's cas_seed filled only the two LOW
-                ; words, at TAPOON time).
-                ld      hl,bw_cas
-                ld      de,$F3FC
-                ld      bc,15
-                ldir
                 ld      a,37
                 ld      (LINL40),a
                 ld      a,1
                 ld      (CLIKSW),a
-bw_cas:         db      $53, $5C, $26, $2D, $0F         ; CS120: LOW, HIGH, HEADER
-                db      $25, $2D, $0E, $16, $1F         ; CS240
-                db      $53, $5C, $26, $2D, $0F         ; active = CS120
 ; set_clmlst: CLMLST := 14 if LINLEN >= 28, else 0. Clobbers A, F.
 set_clmlst:
                 ld      a,(LINLEN)

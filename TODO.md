@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15252 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15264 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11543,8 +11543,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
             ([`header_cell.out`](scratchpad/header_cell.out)): at 2400 ours was HALF the reference's leader. zerobas also held the
             whole cassette table at $F3FC as 15 zero bytes where both references hold CS120 /
             CS240 / the active copy from power-on ([`cstables.out`](scratchpad/cstables.out)). Fixed: TAPOON computes the leader
-            from the resolved baud (15 / 31 x 256 or x 1024; tape/tape.asm, tape bodies to $0CF2),
-            and boot_wa seeds the 15 bytes (basic/catalias.asm). After: 15360 / 3840 at 1200
+            from the resolved baud (15 / 31 x 256 or x 1024; tape/tape.asm, tape bodies to $0CF2).
+            (The 15-byte table seed was TRIED and taken out -- the item below.) After: 15360 / 3840 at 1200
             ([`leader_count_run2.out`](scratchpad/leader_count_run2.out)), 31743 / 7935 at 2400 on both ([`leader_count_2400b.out`](scratchpad/leader_count_2400b.out), the active
             entry POKEd from CS240). 🔴 It exposed a hole in D-TAPEBIOS's brk_release: BREAKX
             goes false once CTRL is up, and a STOP still held then latched a repeat -- caswbrk's
@@ -11552,6 +11552,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
             [`tapleadn_phold_seedonly.out`](scratchpad/tapleadn_phold_seedonly.out)). brk_release now waits for STOP itself (SNSMAT row 7 bit 4).
             Ten tape gates green after both ([`tapleadn2_caswbrk.out`](scratchpad/tapleadn2_caswbrk.out) and the nine beside it).
             ➡️ LEFT: between the header and the data the VG-8020 spends ~0.53 s more (BASIC's side).
+      - [ ] **The cassette tables ($F3FC, 15 B) read 0 at power-on; seeding them exposed a 0.53 s
+            MASKED FDC stretch** -- 🎚️ TIER 2 — both references hold CS120 53 5C 26 2D 0F, CS240
+            25 2D 0E 16 1F and the active copy from power-on ([`cstables.out`](scratchpad/cstables.out)); zerobas 15 zeros. A
+            boot_wa seed (an LDIR of the 15 bytes, basic/catalias.asm) was built and the full
+            battery went RED on programs-acceptance: L5_journal's longest frame-interrupt gap
+            0.528 s against the CF-3300's 0.223 ([`tapleadn_journalg1.out`](scratchpad/tapleadn_journalg1.out); D-GCDI's rule) -- and
+            0.036 without the seed ([`tapleadn_journal_noseed.out`](scratchpad/tapleadn_journal_noseed.out)), brk_release ruled out
+            ([`tapleadn_journal_nobrk.out`](scratchpad/tapleadn_journal_nobrk.out)). Nothing reads the tables but the tape code, so the seed
+            moved TIMING: a disk command now meets the drive at a moment that keeps the CPU
+            masked ~0.5 s. fdc_settle is ~0.9 ms and D-FDCDI's windows cover only the first-DRQ
+            wait, so the stretch is in another FDC wait. ➡️ Find it (the PC when a >0.3 s gap
+            ends, L5_journal with the seed), give that wait interrupt windows, then ship the seed.
       - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
             🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
             LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas
