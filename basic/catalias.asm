@@ -70,6 +70,51 @@ brk_release:
                 ld      (INTFLG),a
                 ret
 ; ---------------------------------------------------------------------------------------
+; D-CLMLST (2026-11-13): two published work-area cells BASIC keeps on the VG-8020 AND the
+; CF-3300 and zerobas never wrote (both 0 here; basic_probe_biosmode.py "already apart",
+; scratchpad/clmlst_probe1.out / clmlst_probe2.out):
+;   CLIKSW ($F3DB) = 1 at power-on -- the key click switch (`SCREEN ,,n` moves it after);
+;   CLMLST ($F3B2) = 14 at power-on, and recomputed by SCREEN / WIDTH from LINLEN:
+;     WIDTH 40 / 37 / 32 -> 14, WIDTH 20 -> 0 (LINLEN - LINLEN MOD 14 - 14, floored at 0).
+;   INITXT does NOT recompute it (a POKEd 99 survives on both references): BASIC does.
+; For MSX1 widths (1..40) that is 14 from 28 up, else 0.
+; boot_wa: interp.asm's cold start, BEFORE the cartridge scan (a cartridge's INIT already
+; sees the VG-8020's values there, as LINL40 37 -- D-BIOSLADDER B1). Clobbers A.
+boot_wa:
+                ld      a,37
+                ld      (LINL40),a
+                ld      a,1
+                ld      (CLIKSW),a
+; set_clmlst: CLMLST := 14 if LINLEN >= 28, else 0. Clobbers A, F.
+set_clmlst:
+                ld      a,(LINLEN)
+                cp      28
+                sbc     a,a                 ; $FF below 28, 0 from 28
+                cpl
+                and     14
+                ld      (CLMLST),a
+                ret
+; scr_call: program.asm's SCREEN / COLOR / WIDTH / KEY / DELETE / AUTO / RENUM call into the
+; SCRSTMT tenant, then CLMLST after SCREEN and WIDTH only (a CLMLST a program POKEd stays
+; through COLOR / KEY). In: C = the token. Out: as subrom_call (Cy = absent, DE / HL).
+scr_call:
+                push    bc
+                ld      ix,SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SCRSTMT
+                call    subrom_call         ; HL / C in; DE / HL out
+                pop     bc
+                push    af
+                ld      a,c
+                cp      SCREEN_TOKEN
+                jr      z,scc_clm
+                cp      WIDTH_TOKEN
+                jr      nz,scc_out
+scc_clm:
+                call    set_clmlst
+scc_out:
+                pop     af
+                ret
+
+; ---------------------------------------------------------------------------------------
 ; fperr_to_err -- the dense FPERR -> ERR byte map, moved here from island 3 ($09E0, basic/
 ; islands.asm) by D-SCALXYF (2026-11-13): C-BIOS's graphics span grew into it. Verbatim;
 ; still read only by fp_runtime_error's absolute `ld hl,fperr_to_err` (basic/interp.asm).

@@ -1,0 +1,4 @@
+VG boot-CLMLST CLIKSW | W32 W20 SCR1 W37 W40 | after COLOR (99 POKEd) = ['14', '1', '14', '0', '14', '14', '14', '99']
+ZB boot-CLMLST CLIKSW | W32 W20 SCR1 W37 W40 | after COLOR (99 POKEd) = ['14', '1', '14', '0', '14', '14', '14', '99']
+PASS: CLMLST / CLIKSW as BASIC keeps them
+refcache: 2 hit, 0 miss, 1 of the hits were ZEROBAS readings

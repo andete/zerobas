@@ -3536,8 +3536,7 @@ ex_color:
 ex_width:
 ex_key:
                 ld      c,a                 ; C = the statement token
-                ld      ix,SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SCRSTMT
-                call    subrom_call         ; HL / C in; DE / HL out (ex_scr's call)
+                call    scr_call            ; the SCRSTMT tenant (+ CLMLST, basic/catalias.asm)
                 jr      exs_tail            ; the same absent test and continuation
 ex_open:
 ex_close:

@@ -125,6 +125,8 @@ PSLTREG         equ     $A8     ; I/O port: primary slot select (page-1 field = 
 LINL40          equ     $F3AE   ; text columns for SCREEN 0 (WIDTH default)
 LINL32          equ     $F3AF   ; text columns for SCREEN 1 (WIDTH default)
 LINLEN          equ     $F3B0   ; current line length (active width)
+CLMLST          equ     $F3B2   ; PRINT's last comma-zone column: LINLEN - LINLEN MOD 14 - 14,
+                                ; floored at 0 (D-CLMLST: kept by SCREEN / WIDTH, 14 at boot)
 CURLIN          equ     $F41C   ; D-CURLIN (Joost, 2026-09-24): the PUBLISHED current
                                 ; line NUMBER, $FFFF in direct mode -- the reference's
                                 ; cell, which a program can PEEK. zerobas's own run loop

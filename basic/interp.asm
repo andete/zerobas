@@ -177,8 +177,7 @@ init:
                 ; VG-8020's LINL40 is already 37 when a cartridge's INIT runs; ours
                 ; was 39 there, so a ROM's own INITXT set up 39 columns
                 ; (probes/bios/biosl/b1text.asm, CAP+3).
-                ld      a,37
-                ld      (LINL40),a
+                call    boot_wa             ; LINL40 := 37, CLIKSW := 1, CLMLST := 14
                 ; D-BIOSLADDER B5 (2026-11-10): the sub-ROM FIRST. It sits in 3-2, after
                 ; a cartridge in slot 1 or 2, so a cartridge's INIT (which a game never
                 ; returns from) found SUBSLOT_OK 0: BEEP and the key line of ERAFNK /

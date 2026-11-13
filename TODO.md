@@ -16521,11 +16521,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       22 bytes, nothing moves; zerobas's own NAMBAS readers (the line editor, the key row) are
       text-mode only. After: **12 / 12 SAME** ([`biosmode_run2.out`](scratchpad/biosmode_run2.out)); CLS in SCREEN 2 still clears as
       the VG-8020's ([`grpbase_cls.out`](scratchpad/grpbase_cls.out)).
-      - [ ] **Two power-on work-area defaults differ: CLIKSW and CLMLST** -- 🎚️ TIER 3 —
+      - [x] **Two power-on work-area defaults differ: CLIKSW and CLMLST** -- 🎚️ TIER 3 —
             at the prompt after boot the VG-8020 has CLIKSW ($F3DB) = 1 (key click on) and
             CLMLST ($F3B2) = 14; zerobas 0 and 0 ([`biosmode_run2.out`](scratchpad/biosmode_run2.out), "already apart" on every
             row). Neither is an entry's answer -- BASIC's / the boot's initial state. ➡️ Which
             of our cold-start paths owns each cell, and what the CF-3300 holds.
+            ✅ **FIXED (2026-11-13, D-CLMLST):** both references hold CLMLST 14 / CLIKSW 1 at
+            power-on, and SCREEN / WIDTH recompute CLMLST from LINLEN (32 -> 14, 20 -> 0,
+            37 / 40 -> 14) while COLOR keeps a POKEd value ([`clmlst_probe1.out`](scratchpad/clmlst_probe1.out)); INITXT
+            itself does not touch it ([`clmlst_probe2.out`](scratchpad/clmlst_probe2.out)) -- so BASIC, not the BIOS. zerobas:
+            boot_wa (cold start, before the cartridge scan) and scr_call (after SCREEN / WIDTH
+            only), basic/catalias.asm; page 1 gained 4 B on 2026-11-13 (two call sites shortened). After:
+            identical to the VG-8020 ([`clmlst_probe3.out`](scratchpad/clmlst_probe3.out); 🔮 HIT); **`make clmlst-acceptance`**
+            ([`basic_probe_clmlst.py`](probes/basic/basic_probe_clmlst.py), [`clmlst_gate.out`](scratchpad/clmlst_gate.out)). The key click SOUND is not implemented
+            (C-BIOS has no click code either); CLIKSW now reads as the references'.
       📏 **The text-output entries (2026-11-13):** **`make biostext-acceptance`**
       ([`basic_probe_biostext.py`](probes/basic/basic_probe_biostext.py), biosmode's before / after method): CHPUT with 'A' and CR / LF /
       BS / TAB / HOME / CLS / cursor-right, POSIT, CLS, ERAFNK, DSPFNK, KILBUF over the screen

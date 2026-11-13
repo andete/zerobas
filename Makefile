@@ -3034,6 +3034,10 @@ biosmode-acceptance: repack-machine
 biostext-acceptance: repack-machine
 	python3 probes/basic/basic_probe_biostext.py
 
+# --- clmlst-acceptance: CLMLST / CLIKSW as BASIC keeps them (D-CLMLST) -----------------
+clmlst-acceptance: repack-machine
+	python3 probes/basic/basic_probe_clmlst.py
+
 # --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
 # Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
 initio-acceptance: repack-machine

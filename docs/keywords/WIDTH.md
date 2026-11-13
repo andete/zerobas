@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `WIDTH` — set the number of text columns
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -99,6 +99,13 @@ not the same.
 
 ## What we found, and how
 
+- **`WIDTH` did not keep `CLMLST`** (fixed 2026-11-13, D-CLMLST). On the
+  VG-8020 and the CF-3300, `WIDTH` and `SCREEN` set the work-area cell
+  `CLMLST` (`&HF3B2`, where `PRINT`'s last comma zone starts) from the new
+  width: 14 at `WIDTH 28` to `40`, 0 below. It is 14 at power-on. zerobas left
+  it at 0 ([`clmlst_probe1.out`](../../scratchpad/clmlst_probe1.out),
+  [`clmlst_probe3.out`](../../scratchpad/clmlst_probe3.out)). Only a program
+  that reads the cell with `PEEK` could see it.
 - **`WIDTH` resets `POS(0)` to 0** (fixed 2026-10-30, D-POSTTY); `CLS` and
   `SCREEN` do not. See [`POS`](POS.md).
 - **Five ways to break the screen without an error** (fixed 2026-07-28,
