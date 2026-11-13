@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11519,10 +11519,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       switched before BSAVE's data block was down -- the VG-8020 never found BLK, zerobas
       Device I/O error ([`sessions_S20_tape2.out`](scratchpad/sessions_S20_tape2.out)); with room for each save, both finish
       ([`sessions_S20_tape3.out`](scratchpad/sessions_S20_tape3.out)). 🔮 "SAME; the risk is the apparatus": HIT on both counts.
-      - [ ] **SAVE "CAS:" (ASCII) writes for longer on the VG-8020** -- 🎚️ TIER 5 — 6 s after
-            the command the VG-8020 was still writing a 2-line program where zerobas showed Ok
-            ([`sessions_S20_tape3.out`](scratchpad/sessions_S20_tape3.out), snapshot 10). Speed or tape length? Decode both recordings
-            and time them (probes/lib/cas_decode.py) before calling it either.
+      - [ ] **SAVE "CAS:" (ASCII): no pause between the header block and the data on zerobas** --
+            🎚️ TIER 6 — (filed as TIER 5 "the VG-8020 writes for longer": 6 s after the command
+            it was still writing where zerobas showed Ok, [`sessions_S20_tape3.out`](scratchpad/sessions_S20_tape3.out) snapshot 10).
+            📏 MEASURED, neither speed nor length ([`savecas_len_probe.py`](scratchpad/savecas_len_probe.py) -> [`savecas_len_run2.out`](scratchpad/savecas_len_run2.out)):
+            both machines record the SAME 272 bytes, but the VG-8020's signal is the header
+            block (6.57 s), **1.10 s of silence**, then the data block (3.95 s); zerobas's is
+            one continuous 10.90 s. The VG-8020 reads zerobas's tapes (tape-save's reference-load
+            leg), so this is the tape's LAYOUT, not a failure. ➡️ Whether CSAVE / BSAVE "CAS:"
+            pause there too, and whether the pause is the motor off (TAPOOF) between the blocks.
       ➡️ NEXT sessions: more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
       machine's LIST speed, so a screen-compared session would read the speed, not the
