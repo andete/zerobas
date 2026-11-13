@@ -174,6 +174,24 @@ def rows(its=()):
     return res, unreached
 
 
+def _bdos_vsref_line(real):
+    """D-ENTRYTIERS step 3 for the BDOS table: a function counts when a probe source that
+    calls it is run by a script that (transitively) boots a reference machine."""
+    _, pys = _gate_reach()
+    diff = _differential_scripts(pys)
+    yes, no = [], []
+    for r in real:
+        if r["status"] != "exercised":
+            continue
+        stems = [os.path.splitext(p)[0] for p in r["probes"]]
+        runners = {q for q, txt in pys.items() for st in stems if st and re.search(r"\b%s\b" % re.escape(st), txt)}
+        (yes if runners & diff else no).append(r["name"])
+    return (f"**Against a reference (D-ENTRYTIERS step 3):** {len(yes)} of the {len(yes) + len(no)} "
+            "exercised functions are called by a probe that a reference-booting script runs; "
+            f"{len(no)} only by zerobas-side runs: " + (", ".join(f"`{n}`" for n in no) or "none")
+            + ". Mechanical: a run that CAN compare, not proof this function's result is compared.")
+
+
 def fmt_markdown(its=()):
     rs, unreached = rows(its)
     real = [r for r in rs if r["name"] != "—"]
@@ -191,6 +209,7 @@ def fmt_markdown(its=()):
            f"**{len(real) - len(nm)} of {len(real)}** MSX-DOS 1 functions are exercised by "
            f"a gate; **{len(nm)} are NOT MEASURED**: "
            + ", ".join(f"`{r['name']}`" for r in nm) + ".", "",
+           _bdos_vsref_line(real), "",
            "| fn | name | status | exercised by | open item (tier) |",
            "|---|---|---|---|---|"]
     for r in rs:
@@ -374,9 +393,14 @@ def fmt_disk_markdown():
            "pin; D-WRZER and D-AUXOUT were two such addresses never planted). A pin's status is "
            "the BDOS function its comment names; a pin naming none is a kernel-internal entry "
            "this table cannot tie to a function yet. Same rule as above: exercised is not same.", "",
-           "| address | entry | status | exercised by |", "|---|---|---|---|"]
+           "| address | entry | status | vs reference | exercised by |", "|---|---|---|---|---|"]
+    reach, pys = _gate_reach()
+    asms, diff = _probe_asms(), _differential_scripts(pys)
     for r in pub:
-        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | "
+        pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (r["addr"], r["addr"], r["addr"], r["name"]), re.I)
+        wit = {w for w in _witness_scripts(pat, pys, asms) if reach.get(w)}
+        vr = "—" if not r["gates"] else ("yes" if wit & diff else "no")
+        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {vr} | "
                    + (", ".join(f"`{g}`" for g in r["gates"]) or "—") + " |")
     out += ["", "| pin | label | function and its status | source |", "|---|---|---|---|"]
     for r in pins:

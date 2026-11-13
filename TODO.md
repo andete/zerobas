@@ -16501,6 +16501,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       page 1 (basic/catalias.asm); the $0129 overlay guard follows C-BIOS's `ret`s 3 B on.
       After: **20 / 20 SAME** ([`biosflags_run2.out`](scratchpad/biosflags_run2.out); the GETYPR string row needed VALTYP put
       back before `Q=USR(0)`, a probe fault).
+      📏 **The other two tables (2026-11-13):** the same "vs reference" reading for the BDOS
+      table (a summary line: **42 of 42** exercised functions are called by a probe a
+      reference-booting script runs) and the six published disk-ROM entries (a column: **6 of 6**
+      yes). Tape corpus after D-SCALXYF: SAME 10 / NEAR 11 / RUNS? 20 / RESET 1, **no title
+      moved** ([`tapecorpus_scalxy.out`](scratchpad/tapecorpus_scalxy.out); 🔮 "no class worse": HIT). ➡️ Left of D-ENTRYTIERS:
+      per row, the COMPARED outputs against each entry's published contract (the flag-answering
+      group is done; RAM / VRAM-answering entries next), and the 27 pinned kernel addresses no
+      function names.
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.
