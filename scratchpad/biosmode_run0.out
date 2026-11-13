@@ -1,0 +1,4 @@
+ROW initxt   DIVERGES $F3B2:VG0E/ZB00 $F3DB:VG01/ZB00 $F927:VG38/ZB00 $F929:VG1B/ZB00
+ROW inigrp   DIVERGES $F3B2:VG0E/ZB00 $F3DB:VG01/ZB00 $F923:VG00/ZB18 $F925:VG08/ZB00
+FAIL: the screen-mode entries' work area (0/2)
+refcache: 0 hit, 4 miss, 4 stored

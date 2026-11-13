@@ -79,11 +79,16 @@ PATCHES = [
     # chance. +3 B: the span ends at $09E2, into island 3 (fperr_to_err moved to main
     # page 1); PNTINI / SCANR / SCANL's C-BIOS `ret`s move 3 B (build_mainrom's guard).
     os.path.join(REPO, "cbios-repack", "scalxy-flags.patch"),
+    # D-GRPBASE (2026-11-13): INIGRP / INIMLT leave NAMBAS / CGPBAS -- the text modes'
+    # bases -- alone, as the VG-8020 does (basic_probe_biosmode.py); C-BIOS's own CLS for
+    # SCREEN 2 / 3, which leaned on them, takes GRPCGP / MLTCGP. Padded in place: 22
+    # bytes change, nothing moves.
+    os.path.join(REPO, "cbios-repack", "grpbase.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "7f90ba0bc31728b57a0f60b011b4f1fdb45e05fb"   # D-SCALXYF, 2026-11-13
+REPACKED_SHA1 = "cf0040fb536d56f153285a862009c219924be6a7"   # D-GRPBASE, 2026-11-13
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

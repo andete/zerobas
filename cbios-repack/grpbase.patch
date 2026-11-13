@@ -1,0 +1,66 @@
+diff --git a/src/video.asm b/src/video.asm
+index 96577a5..6d94398 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -711,7 +711,10 @@ inigrp:
+                 call    chgclr
+ 
+                 ld      hl,(GRPNAM)
+-                ld      (NAMBAS),hl
++                ; zerobas D-GRPBASE (2026-11-13): NAMBAS / CGPBAS are the TEXT modes' bases;
++                ; on the VG-8020 INIGRP / INIMLT leave them alone (zerobas
++                ; probes/basic/basic_probe_biosmode.py) -- padded, nothing moves.
++                ds      3, 0            ; was ld (NAMBAS),hl
+                 call    setwrt
+                 ld      b,3
+                 xor     a
+@@ -723,8 +726,7 @@ inigrp_lp:
+                 djnz    inigrp_lp
+                 ei
+ 
+-                ld      hl,(GRPCGP)
+-                ld      (CGPBAS),hl
++                ds      6, 0            ; was ld hl,(GRPCGP) / ld (CGPBAS),hl (D-GRPBASE)
+ 
+                 ld      hl,(GRPATR)
+                 ld      (ATRBAS),hl
+@@ -764,7 +766,10 @@ inimlt:
+                 call    chgclr
+ 
+                 ld      hl,(MLTNAM)
+-                ld      (NAMBAS),hl
++                ; zerobas D-GRPBASE (2026-11-13): NAMBAS / CGPBAS are the TEXT modes' bases;
++                ; on the VG-8020 INIGRP / INIMLT leave them alone (zerobas
++                ; probes/basic/basic_probe_biosmode.py) -- padded, nothing moves.
++                ds      3, 0            ; was ld (NAMBAS),hl
+                 call    setwrt
+                 xor     a
+                 ld      c,6
+@@ -788,8 +793,7 @@ inimlt_loop3:
+                 jr      nz,inimlt_loop1
+                 ei
+ 
+-                ld      hl,(MLTCGP)
+-                ld      (CGPBAS),hl
++                ds      6, 0            ; was ld hl,(MLTCGP) / ld (CGPBAS),hl (D-GRPBASE)
+                 ld      hl,(MLTATR)
+                 ld      (ATRBAS),hl
+                 ld      hl,(MLTPAT)
+@@ -1972,7 +1976,7 @@ cls_text:
+ cls_screen2:
+                 xor     a
+                 ld      bc,$1800
+-                ld      hl,(CGPBAS)
++                ld      hl,(GRPCGP)     ; D-GRPBASE: not CGPBAS (text only)
+                 ld      l,a
+                 push    bc
+                 call    filvrm
+@@ -1992,7 +1996,7 @@ cls_screen3:
+                 rlca
+                 or      b
+                 ld      bc,$800
+-                ld      hl,(CGPBAS)
++                ld      hl,(MLTCGP)     ; D-GRPBASE: not CGPBAS (text only)
+                 jp      filvrm
+ 
+         IF VDP != TMS99X8

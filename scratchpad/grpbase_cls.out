@@ -1,0 +1,5 @@
+SCREEN 2 Philips_VG_8020  0 0 4 0 
+SCREEN 2 C-BIOS_MSX1_EU_REPACK_NODISK  0 0 4 0 
+SCREEN 3 Philips_VG_8020  68 68 244 0 
+SCREEN 3 C-BIOS_MSX1_EU_REPACK_NODISK None
+refcache: 0 hit, 4 miss, 3 stored, 1 refused (non-reading)

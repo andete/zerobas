@@ -3022,6 +3022,12 @@ p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 biosflags-acceptance: repack-machine
 	python3 probes/basic/basic_probe_biosflags.py
 
+# --- biosmode-acceptance: the screen-mode BIOS entries' WORK-AREA answer (D-GRPBASE) -------
+# INITXT .. INIMLT, SETTXT .. SETMLT, CHGMOD 0..3: what each call changes in $F3B0..$F3E6,
+# NAMBAS..ATRBAS, SCRMOD / OLDSCR, VG-8020 against zerobas (state already apart is listed).
+biosmode-acceptance: repack-machine
+	python3 probes/basic/basic_probe_biosmode.py
+
 # --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
 # Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
 initio-acceptance: repack-machine

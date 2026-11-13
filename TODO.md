@@ -16509,6 +16509,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       per row, the COMPARED outputs against each entry's published contract (the flag-answering
       group is done; RAM / VRAM-answering entries next), and the 27 pinned kernel addresses no
       function names.
+      🎯 **D-GRPBASE -- THE SCREEN-MODE ENTRIES' WORK AREA (2026-11-13):** new **`make
+      biosmode-acceptance`** ([`basic_probe_biosmode.py`](probes/basic/basic_probe_biosmode.py)): INITXT .. INIMLT, SETTXT .. SETMLT,
+      CHGMOD 0..3 called from SCREEN 0; $F3B0..$F3E6, NAMBAS..ATRBAS and SCRMOD / OLDSCR copied
+      BEFORE and AFTER the call, and a row compares only what either machine's call changed
+      (a first cut compared absolute values and called the starting state the entries' fault,
+      [`biosmode_run0.out`](scratchpad/biosmode_run0.out)). **INIGRP / INIMLT (and CHGMOD 2 / 3) DIVERGED**: C-BIOS set NAMBAS /
+      CGPBAS to the graphics tables, the VG-8020 leaves them at the SCREEN 0 values
+      ([`biosmode_run1.out`](scratchpad/biosmode_run1.out)). **cbios-repack/grpbase.patch** (#23): those stores padded in place,
+      C-BIOS's SCREEN 2 / 3 CLS (the one reader that leaned on them) from GRPCGP / MLTCGP --
+      22 bytes, nothing moves; zerobas's own NAMBAS readers (the line editor, the key row) are
+      text-mode only. After: **12 / 12 SAME** ([`biosmode_run2.out`](scratchpad/biosmode_run2.out)); CLS in SCREEN 2 still clears as
+      the VG-8020's ([`grpbase_cls.out`](scratchpad/grpbase_cls.out)).
+      - [ ] **Two power-on work-area defaults differ: CLIKSW and CLMLST** -- 🎚️ TIER 3 —
+            at the prompt after boot the VG-8020 has CLIKSW ($F3DB) = 1 (key click on) and
+            CLMLST ($F3B2) = 14; zerobas 0 and 0 ([`biosmode_run2.out`](scratchpad/biosmode_run2.out), "already apart" on every
+            row). Neither is an entry's answer -- BASIC's / the boot's initial state. ➡️ Which
+            of our cold-start paths owns each cell, and what the CF-3300 holds.
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.
