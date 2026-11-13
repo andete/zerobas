@@ -1,0 +1,110 @@
+$0000 CHKRAM   basic_probe_cloadverr.py basic_probe_curgeo.py basic_probe_key_trap.py basic_probe_sound.py basic_probe_stop_trap.py basic_probe_strig_trap.py build_dskfmt_disk.py disk_probe_autoexec.py disk_probe_dskf.py disk_probe_eof.py disk_probe_field.py disk_probe_files_wildcard.py disk_probe_getput.py disk_probe_inputdollar.py disk_probe_load_ascii.py disk_probe_merge.py disk_probe_mkicvi.py disk_probe_save_ascii.py diskbasic_probe_lof.py
+$0008 SYNCHR   basic_probe_synchr.py
+$000C RDSLT    basic_probe_slotregs.py build_dskfmt_disk.py disk_probe_p1vec.py
+$0010 CHRGTR   basic_probe_biosregs.py
+$0014 WRSLT    basic_probe_slotregs.py disk_probe_p1vec.py
+$0018 OUTDO    basic_probe_biosregs.py
+$001C CALSLT   basic_probe_subrom_boot.py build_dskchg_disk.py build_dskent_disk.py build_dskfmt_disk.py disk_probe_p1vec.py
+$0020 DCOMPR   basic_probe_biosregs.py
+$0024 ENASLT   basic_probe_slotregs.py disk_probe_p1vec.py
+$0028 GETYPR   basic_probe_biosregs.py
+$0030 CALLF    disk_probe_bootenv.py disk_probe_p1vec.py
+$0038 KEYINT   
+$003B INITIO   basic_probe_initio.py
+$003E INIFNK   basic_probe_biosregs.py
+$0041 DISSCR   basic_probe_biosregs.py
+$0044 ENASCR   basic_probe_biosregs.py
+$0047 WRTVDP   basic_probe_biosregs.py
+$004A RDVRM    basic_probe_biosregs.py
+$004D WRTVRM   basic_probe_biosregs.py
+$0050 SETRD    basic_probe_biosregs.py
+$0053 SETWRT   basic_probe_biosregs.py
+$0056 FILVRM   basic_probe_biosregs.py
+$0059 LDIRMV   basic_probe_biosregs.py
+$005C LDIRVM   basic_probe_biosregs.py
+$005F CHGMOD   basic_probe_screenerr.py
+$0062 CHGCLR   basic_probe_biosregs.py
+$0066 NMI      
+$0069 CLRSPR   basic_probe_biosregs.py
+$006C INITXT   basic_probe_biosregs.py
+$006F INIT32   basic_probe_biosregs.py
+$0072 INIGRP   basic_probe_biosregs.py
+$0075 INIMLT   basic_probe_biosregs.py
+$0078 SETTXT   basic_probe_biosregs.py
+$007B SETT32   basic_probe_biosregs.py
+$007E SETGRP   basic_probe_biosregs.py
+$0081 SETMLT   basic_probe_biosregs.py
+$0084 CALPAT   basic_probe_biosregs.py
+$0087 CALATR   basic_probe_biosregs.py
+$008A GSPSIZ   basic_probe_biosregs.py
+$008D GRPPRT   basic_probe_biosregs.py
+$0090 GICINI   basic_probe_gicini.py basic_probe_initio.py biosl_run.py
+$0093 WRTPSG   basic_probe_biosregs.py basic_probe_initio.py
+$0096 RDPSG    basic_probe_biosregs.py basic_probe_initio.py
+$0099 STRTMS   basic_probe_strtms.py
+$009C CHSNS    basic_probe_biosregs.py
+$009F CHGET    basic_probe_biosregs.py
+$00A2 CHPUT    basic_probe_biosregs.py
+$00A5 LPTOUT   basic_probe_lnblank.py basic_probe_outdlp.py disk_probe_lstout_cbios.py disk_probe_open_device.py
+$00A8 LPTSTT   basic_probe_biosregs.py
+$00AB CNVCHR   basic_probe_biosregs.py
+$00AE PINLIN   basic_probe_biosregs.py
+$00B1 INLIN    basic_probe_biosregs.py
+$00B4 QINLIN   basic_probe_biosregs.py
+$00B7 BREAKX   basic_probe_biosregs.py
+$00BA ISCNTC   basic_probe_biosregs.py basic_probe_iscntc.py
+$00BD CKCNTC   basic_probe_biosregs.py basic_probe_iscntc.py
+$00C0 BEEP     basic_probe_beep.py basic_probe_crunch.py basic_probe_gicini.py basic_probe_lnblank.py biosl_run.py
+$00C3 CLS      basic_probe_abort_depth.py basic_probe_arrays.py basic_probe_arrdim.py basic_probe_binfre.py basic_probe_clearpool.py basic_probe_ctlcross.py basic_probe_ctllim.py basic_probe_ctrlkeys.py basic_probe_cursor.py basic_probe_deepexpr.py basic_probe_deffn.py basic_probe_dimedge.py basic_probe_direct_ctrl.py basic_probe_diskalias.py basic_probe_error_trap.py basic_probe_float_arith.py basic_probe_float_fmt.py basic_probe_float_vars.py basic_probe_gicini.py basic_probe_graphics.py basic_probe_inpredo.py basic_probe_input.py basic_probe_input_devices.py basic_probe_lineerr.py basic_probe_linemax.py basic_probe_listflt.py basic_probe_litref.py basic_probe_lnblank.py basic_probe_locarg.py basic_probe_logicops.py basic_probe_math_conv.py basic_probe_mid_stmt.py basic_probe_missing.py basic_probe_namegate.py basic_probe_nodiskopen.py basic_probe_nodiskverbs.py basic_probe_onerr0.py basic_probe_opengrp.py basic_probe_parennest.py basic_probe_penderr.py basic_probe_postty.py basic_probe_prec.py basic_probe_prnumwrap.py basic_probe_readref.py basic_probe_screditor.py basic_probe_screenerr.py basic_probe_stackpool.py basic_probe_stmtpend.py basic_probe_str_cmp.py basic_probe_str_domain.py basic_probe_str_fn.py basic_probe_string.py basic_probe_tapetail.py basic_probe_time.py basic_probe_tmfp.py basic_probe_trapdepth.py basic_probe_trapsvc.py basic_probe_width.py basic_probe_wprotect.py basic_probe_wszero.py biosl_run.py disk_probe_bloadofs.py disk_probe_bsavevar.py disk_probe_fat_error_disposition.py disk_probe_inpquote.py disk_probe_inputdn.py disk_probe_loaddi.py disk_probe_loadtail.py disk_probe_savetail.py diskbasic_probe_lof.py diskbasic_probe_nodiskerr.py error_acceptance.py run_sessions.py
+$00C6 POSIT    basic_probe_biosregs.py
+$00C9 FNKSB    basic_probe_biosregs.py
+$00CC ERAFNK   basic_probe_biosregs.py
+$00CF DSPFNK   basic_probe_biosregs.py
+$00D2 TOTEXT   basic_probe_biosregs.py
+$00D5 GTSTCK   basic_probe_biosregs.py
+$00D8 GTTRIG   basic_probe_biosregs.py
+$00DB GTPAD    basic_probe_biosregs.py
+$00DE GTPDL    basic_probe_biosregs.py
+$00E1 TAPION   basic_probe_tapionlead.py bios_probe_tapdiff.py
+$00E4 TAPIN    bios_probe_tapdiff.py
+$00E7 TAPIOF   bios_probe_tapdiff.py
+$00EA TAPOON   bios_probe_tapdiff.py
+$00ED TAPOUT   bios_probe_tapdiff.py
+$00F0 TAPOOF   bios_probe_tapdiff.py
+$00F3 STMOTR   basic_probe_biosregs.py
+$00F6 LFTQ     basic_probe_biosregs.py
+$00F9 PUTQ     basic_probe_strtms.py
+$00FC RIGHTC   basic_probe_biosregs.py
+$00FF LEFTC    basic_probe_biosregs.py basic_probe_slotregs.py
+$0102 UPC      basic_probe_biosregs.py build_dosl_disk.py disk_probe_diff.py disk_probe_rdblk_roundtrip.py
+$0105 TUPC     basic_probe_biosregs.py
+$0108 DOWNC    basic_probe_biosregs.py
+$010B TDOWNC   basic_probe_biosregs.py
+$010E SCALXY   basic_probe_biosregs.py
+$0111 MAPXYC   basic_probe_biosregs.py
+$0114 FETCHC   basic_probe_biosregs.py
+$0117 STOREC   basic_probe_biosregs.py
+$011A SETATR   basic_probe_biosregs.py
+$011D READC    basic_probe_biosregs.py
+$0120 SETC     basic_probe_biosregs.py
+$0123 NSETCX   basic_probe_biosregs.py
+$0126 GTASPC   basic_probe_biosregs.py
+$0129 PNTINI   basic_probe_paintbios.py
+$012C SCANR    basic_probe_paintbios.py
+$012F SCANL    basic_probe_paintbios.py
+$0132 CHGCAP   basic_probe_biosregs.py
+$0135 CHGSND   basic_probe_biosregs.py
+$0138 RSLREG   basic_probe_biosregs.py disk_probe_p1vec.py
+$013B WSLREG   basic_probe_slotregs.py
+$013E RDVDP    basic_probe_biosregs.py
+$0141 SNSMAT   bios_probe_tapdiff.py disk_probe_bootenv.py
+$0144 PHYDIO   disk_probe_phydio.py diskbasic_acceptance.py
+$0147 FORMAT   basic_probe_cassave.py basic_probe_castail.py basic_probe_crunch.py basic_probe_float_fmt.py basic_probe_graphics_floor.py basic_probe_lineerr.py basic_probe_lnblank.py basic_probe_locarg.py basic_probe_penderr.py basic_probe_screenerr.py basic_probe_stmtpend.py basic_probe_str_fn.py basic_probe_subrom_boot.py basic_probe_tmfp.py disk_probe_diff.py disk_probe_files.py disk_probe_format.py disk_probe_strout.py disk_probe_wcache.py diskbasic_acceptance.py diskbasic_probe_badfnum.py fmtdos_acceptance.py omsx_run.py
+$014A ISFLIO   basic_probe_biosregs.py
+$014D OUTDLP   basic_probe_outdlp.py
+$0150 GETVCP   basic_probe_biosregs.py
+$0153 GETVC2   basic_probe_biosregs.py
+$0156 KILBUF   basic_probe_biosregs.py
+$0159 CALBAS   basic_probe_biosregs.py
+
+most-used witness scripts: [('basic_probe_biosregs.py', 77), ('bios_probe_tapdiff.py', 7), ('disk_probe_p1vec.py', 6), ('basic_probe_slotregs.py', 5), ('basic_probe_initio.py', 4), ('basic_probe_lnblank.py', 4), ('build_dskfmt_disk.py', 3), ('basic_probe_screenerr.py', 3)]

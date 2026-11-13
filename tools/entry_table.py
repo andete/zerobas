@@ -266,6 +266,37 @@ def _witnesses(pat, reach, pys, asms):
     return gates
 
 
+# D-ENTRYTIERS step (3): is a witness a DIFFERENTIAL? A script counts when its code -- or
+# that of a probe script it names, transitively -- boots a reference machine (the
+# VG-8020, the CF-3300, or the shared side tables). Mechanical and generous: it says the
+# gate CAN compare with a reference, not that the row's own result is compared.
+REFNAME = re.compile(r"Philips_VG_8020|National_CF-3300|probe_sides|REF_MACHINE|\bREF\s*=\s*\"")
+
+
+def _differential_scripts(pys):
+    direct = {p for p, txt in pys.items() if REFNAME.search(txt)}
+    out = set(direct)
+    changed = True
+    while changed:
+        changed = False
+        for p, txt in pys.items():
+            # a script that names a differential one -- by file name (`run(... x.py)`)
+            # or by module stem (`import x as B`)
+            if p not in out and any(re.search(r"\b%s\b" % re.escape(q[:-3]), txt) for q in out):
+                out.add(p)
+                changed = True
+    return out
+
+
+def _witness_scripts(pat, pys, asms):
+    """The probe scripts (not gates) that name the entry -- or run a probe .asm that does."""
+    hit = {p for p, txt in pys.items() if pat.search(txt)}
+    for a, txt in asms.items():
+        if pat.search(txt):
+            hit |= {p for p, ptxt in pys.items() if a in ptxt}
+    return hit
+
+
 def published_rows():
     reach, pys = _gate_reach()
     asms = _probe_asms()
@@ -416,9 +447,12 @@ def bios_rows(stubs=None):
     reach, pys = _gate_reach()
     asms = _probe_asms()
     out = []
+    diff = _differential_scripts(pys)
     for addr, name in BIOS:
         pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
         gates = _witnesses(pat, reach, pys, asms)
+        wit = {w for w in _witness_scripts(pat, pys, asms) if reach.get(w)}
+        vsref = bool(wit & diff)
         if addr in st:
             status = f"🔴 STUB ({st[addr]['kind']})"
         elif gates:
@@ -426,7 +460,7 @@ def bios_rows(stubs=None):
         else:
             status = BIOS_RULED.get(addr, "NOT MEASURED")
         out.append(dict(addr=addr, name=name, gates=sorted(gates), status=status,
-                        stub=addr in st))
+                        stub=addr in st, vsref=vsref if gates else None))
     return out
 
 
@@ -451,10 +485,19 @@ def fmt_bios_markdown():
            f"(D-BIOSRUNG). {len(blind)} of the stubs ARE named by a gate, whose row therefore "
            "cannot tell the stub from the entry: "
            + (", ".join(r["name"] for r in blind) or "none") + ".", "",
-           "| address | call | status | exercised by |", "|---|---|---|---|"]
+           f"**Against a reference (D-ENTRYTIERS step 3):** {sum(1 for r in rs if r['vsref'])} of "
+           f"the {sum(1 for r in rs if r['gates'])} witnessed rows are named by a probe that also "
+           "boots a reference machine (the VG-8020 / CF-3300); the other "
+           f"{sum(1 for r in rs if r['gates'] and not r['vsref'])} are witnessed by zerobas-only "
+           "probes (a self-check or a unit row): "
+           + (", ".join(r["name"] for r in rs if r["gates"] and not r["vsref"]) or "none")
+           + ". Mechanical: a probe that CAN compare, not proof that this row's result is compared.",
+           "",
+           "| address | call | status | vs reference | exercised by |", "|---|---|---|---|---|"]
     for r in rs:
         by = ", ".join(f"`{g}`" for g in r["gates"][:6]) + (" …" if len(r["gates"]) > 6 else "")
-        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {by or '—'} |")
+        vr = "yes" if r["vsref"] else ("no" if r["vsref"] is False else "—")
+        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {vr} | {by or '—'} |")
     return "\n".join(out) + "\n"
 
 

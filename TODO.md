@@ -16477,6 +16477,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       going (that run was discarded and re-run). **THE MAIN-BIOS TABLE: 106 of 108 directly
       witnessed, 2 ruled (KEYINT, NMI), 0 NOT MEASURED, 0 stubs.** ➡️ Step (3), EXERCISED ->
       SAME: per row, does its gate COMPARE the entry's result with a reference.
+      📏 **STEP (3), FIRST PASS (2026-11-13):** docs/tier-status.md's BIOS table gains a "vs
+      reference" column (tools/entry_table.py: a witness counts when the probe naming the entry
+      -- or one it imports / runs, by file name or module stem -- boots the VG-8020 / CF-3300).
+      **106 of 106 witnessed rows: yes.** A first cut said 101 (STRTMS, PUTQ, PNTINI / SCANR /
+      SCANL "no"): it matched `x.py`, and those probes `import basic_probe_biosregs as B` -- the
+      stem. 🔴 The rule is generous by construction (a probe that CAN compare), so the biggest
+      group was checked by hand: **70 rows rest on basic_probe_biosregs.py alone, and every one
+      of those 70 entries is CALLED by a biosregs row** (its `CD lo hi` targets), whose reading
+      the probe compares VG-8020 == zerobas ([`bios_vsref_witnesses.out`](scratchpad/bios_vsref_witnesses.out), [`bios_vsref_called.out`](scratchpad/bios_vsref_called.out)).
+      Not proven by this pass: WHICH registers a row compares (biosregs leaves F out where
+      neither machine documents it). ➡️ Per-row: the compared outputs against each entry's
+      published contract.
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.

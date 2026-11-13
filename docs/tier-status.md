@@ -176,116 +176,118 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **106 of 108** have a direct witness and are not stubs; **2 are RULED** not to need one (KEYINT, NMI); **0 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
-| address | call | status | exercised by |
-|---|---|---|---|
-| $0000 | CHKRAM | exercised | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
-| $0008 | SYNCHR | exercised | `synchr-acceptance` |
-| $000C | RDSLT | exercised | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
-| $0010 | CHRGTR | exercised | `biosregs-acceptance` |
-| $0014 | WRSLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0018 | OUTDO | exercised | `biosregs-acceptance` |
-| $001C | CALSLT | exercised | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
-| $0020 | DCOMPR | exercised | `biosregs-acceptance` |
-| $0024 | ENASLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0028 | GETYPR | exercised | `biosregs-acceptance` |
-| $0030 | CALLF | exercised | `bootenv-acceptance`, `p1vec-acceptance` |
-| $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — |
-| $003B | INITIO | exercised | `initio-acceptance` |
-| $003E | INIFNK | exercised | `biosregs-acceptance` |
-| $0041 | DISSCR | exercised | `biosregs-acceptance` |
-| $0044 | ENASCR | exercised | `biosregs-acceptance` |
-| $0047 | WRTVDP | exercised | `biosregs-acceptance` |
-| $004A | RDVRM | exercised | `biosregs-acceptance` |
-| $004D | WRTVRM | exercised | `biosregs-acceptance` |
-| $0050 | SETRD | exercised | `biosregs-acceptance` |
-| $0053 | SETWRT | exercised | `biosregs-acceptance` |
-| $0056 | FILVRM | exercised | `biosregs-acceptance` |
-| $0059 | LDIRMV | exercised | `biosregs-acceptance` |
-| $005C | LDIRVM | exercised | `biosregs-acceptance` |
-| $005F | CHGMOD | exercised | `screenerr-acceptance` |
-| $0062 | CHGCLR | exercised | `biosregs-acceptance` |
-| $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — |
-| $0069 | CLRSPR | exercised | `biosregs-acceptance` |
-| $006C | INITXT | exercised | `biosregs-acceptance` |
-| $006F | INIT32 | exercised | `biosregs-acceptance` |
-| $0072 | INIGRP | exercised | `biosregs-acceptance` |
-| $0075 | INIMLT | exercised | `biosregs-acceptance` |
-| $0078 | SETTXT | exercised | `biosregs-acceptance` |
-| $007B | SETT32 | exercised | `biosregs-acceptance` |
-| $007E | SETGRP | exercised | `biosregs-acceptance` |
-| $0081 | SETMLT | exercised | `biosregs-acceptance` |
-| $0084 | CALPAT | exercised | `biosregs-acceptance` |
-| $0087 | CALATR | exercised | `biosregs-acceptance` |
-| $008A | GSPSIZ | exercised | `biosregs-acceptance` |
-| $008D | GRPPRT | exercised | `biosregs-acceptance` |
-| $0090 | GICINI | exercised | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
-| $0093 | WRTPSG | exercised | `biosregs-acceptance`, `initio-acceptance` |
-| $0096 | RDPSG | exercised | `biosregs-acceptance`, `initio-acceptance` |
-| $0099 | STRTMS | exercised | `strtms-acceptance` |
-| $009C | CHSNS | exercised | `biosregs-acceptance` |
-| $009F | CHGET | exercised | `biosregs-acceptance` |
-| $00A2 | CHPUT | exercised | `biosregs-acceptance` |
-| $00A5 | LPTOUT | exercised | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
-| $00A8 | LPTSTT | exercised | `biosregs-acceptance` |
-| $00AB | CNVCHR | exercised | `biosregs-acceptance` |
-| $00AE | PINLIN | exercised | `biosregs-acceptance` |
-| $00B1 | INLIN | exercised | `biosregs-acceptance` |
-| $00B4 | QINLIN | exercised | `biosregs-acceptance` |
-| $00B7 | BREAKX | exercised | `biosregs-acceptance` |
-| $00BA | ISCNTC | exercised | `biosregs-acceptance`, `iscntc-acceptance` |
-| $00BD | CKCNTC | exercised | `biosregs-acceptance`, `iscntc-acceptance` |
-| $00C0 | BEEP | exercised | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
-| $00C3 | CLS | exercised | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `bloadofs-acceptance` … |
-| $00C6 | POSIT | exercised | `biosregs-acceptance` |
-| $00C9 | FNKSB | exercised | `biosregs-acceptance` |
-| $00CC | ERAFNK | exercised | `biosregs-acceptance` |
-| $00CF | DSPFNK | exercised | `biosregs-acceptance` |
-| $00D2 | TOTEXT | exercised | `biosregs-acceptance` |
-| $00D5 | GTSTCK | exercised | `biosregs-acceptance` |
-| $00D8 | GTTRIG | exercised | `biosregs-acceptance` |
-| $00DB | GTPAD | exercised | `biosregs-acceptance` |
-| $00DE | GTPDL | exercised | `biosregs-acceptance` |
-| $00E1 | TAPION | exercised | `tapebios-acceptance`, `tapionlead-acceptance` |
-| $00E4 | TAPIN | exercised | `tapebios-acceptance` |
-| $00E7 | TAPIOF | exercised | `tapebios-acceptance` |
-| $00EA | TAPOON | exercised | `tapebios-acceptance` |
-| $00ED | TAPOUT | exercised | `tapebios-acceptance` |
-| $00F0 | TAPOOF | exercised | `tapebios-acceptance` |
-| $00F3 | STMOTR | exercised | `biosregs-acceptance` |
-| $00F6 | LFTQ | exercised | `biosregs-acceptance` |
-| $00F9 | PUTQ | exercised | `strtms-acceptance` |
-| $00FC | RIGHTC | exercised | `biosregs-acceptance` |
-| $00FF | LEFTC | exercised | `biosregs-acceptance`, `slotregs-acceptance` |
-| $0102 | UPC | exercised | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
-| $0105 | TUPC | exercised | `biosregs-acceptance` |
-| $0108 | DOWNC | exercised | `biosregs-acceptance` |
-| $010B | TDOWNC | exercised | `biosregs-acceptance` |
-| $010E | SCALXY | exercised | `biosregs-acceptance` |
-| $0111 | MAPXYC | exercised | `biosregs-acceptance` |
-| $0114 | FETCHC | exercised | `biosregs-acceptance` |
-| $0117 | STOREC | exercised | `biosregs-acceptance` |
-| $011A | SETATR | exercised | `biosregs-acceptance` |
-| $011D | READC | exercised | `biosregs-acceptance` |
-| $0120 | SETC | exercised | `biosregs-acceptance` |
-| $0123 | NSETCX | exercised | `biosregs-acceptance` |
-| $0126 | GTASPC | exercised | `biosregs-acceptance` |
-| $0129 | PNTINI | exercised | `paintbios-acceptance` |
-| $012C | SCANR | exercised | `paintbios-acceptance` |
-| $012F | SCANL | exercised | `paintbios-acceptance` |
-| $0132 | CHGCAP | exercised | `biosregs-acceptance` |
-| $0135 | CHGSND | exercised | `biosregs-acceptance` |
-| $0138 | RSLREG | exercised | `biosregs-acceptance`, `p1vec-acceptance` |
-| $013B | WSLREG | exercised | `slotregs-acceptance` |
-| $013E | RDVDP | exercised | `biosregs-acceptance` |
-| $0141 | SNSMAT | exercised | `bootenv-acceptance`, `tapebios-acceptance` |
-| $0144 | PHYDIO | exercised | `diskbasic-acceptance` |
-| $0147 | FORMAT | exercised | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
-| $014A | ISFLIO | exercised | `biosregs-acceptance` |
-| $014D | OUTDLP | exercised | `outdlp-acceptance` |
-| $0150 | GETVCP | exercised | `biosregs-acceptance` |
-| $0153 | GETVC2 | exercised | `biosregs-acceptance` |
-| $0156 | KILBUF | exercised | `biosregs-acceptance` |
-| $0159 | CALBAS | exercised | `biosregs-acceptance` |
+**Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
+
+| address | call | status | vs reference | exercised by |
+|---|---|---|---|---|
+| $0000 | CHKRAM | exercised | yes | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
+| $0008 | SYNCHR | exercised | yes | `synchr-acceptance` |
+| $000C | RDSLT | exercised | yes | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
+| $0010 | CHRGTR | exercised | yes | `biosregs-acceptance` |
+| $0014 | WRSLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0018 | OUTDO | exercised | yes | `biosregs-acceptance` |
+| $001C | CALSLT | exercised | yes | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
+| $0020 | DCOMPR | exercised | yes | `biosregs-acceptance` |
+| $0024 | ENASLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0028 | GETYPR | exercised | yes | `biosregs-acceptance` |
+| $0030 | CALLF | exercised | yes | `bootenv-acceptance`, `p1vec-acceptance` |
+| $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — |
+| $003B | INITIO | exercised | yes | `initio-acceptance` |
+| $003E | INIFNK | exercised | yes | `biosregs-acceptance` |
+| $0041 | DISSCR | exercised | yes | `biosregs-acceptance` |
+| $0044 | ENASCR | exercised | yes | `biosregs-acceptance` |
+| $0047 | WRTVDP | exercised | yes | `biosregs-acceptance` |
+| $004A | RDVRM | exercised | yes | `biosregs-acceptance` |
+| $004D | WRTVRM | exercised | yes | `biosregs-acceptance` |
+| $0050 | SETRD | exercised | yes | `biosregs-acceptance` |
+| $0053 | SETWRT | exercised | yes | `biosregs-acceptance` |
+| $0056 | FILVRM | exercised | yes | `biosregs-acceptance` |
+| $0059 | LDIRMV | exercised | yes | `biosregs-acceptance` |
+| $005C | LDIRVM | exercised | yes | `biosregs-acceptance` |
+| $005F | CHGMOD | exercised | yes | `screenerr-acceptance` |
+| $0062 | CHGCLR | exercised | yes | `biosregs-acceptance` |
+| $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — |
+| $0069 | CLRSPR | exercised | yes | `biosregs-acceptance` |
+| $006C | INITXT | exercised | yes | `biosregs-acceptance` |
+| $006F | INIT32 | exercised | yes | `biosregs-acceptance` |
+| $0072 | INIGRP | exercised | yes | `biosregs-acceptance` |
+| $0075 | INIMLT | exercised | yes | `biosregs-acceptance` |
+| $0078 | SETTXT | exercised | yes | `biosregs-acceptance` |
+| $007B | SETT32 | exercised | yes | `biosregs-acceptance` |
+| $007E | SETGRP | exercised | yes | `biosregs-acceptance` |
+| $0081 | SETMLT | exercised | yes | `biosregs-acceptance` |
+| $0084 | CALPAT | exercised | yes | `biosregs-acceptance` |
+| $0087 | CALATR | exercised | yes | `biosregs-acceptance` |
+| $008A | GSPSIZ | exercised | yes | `biosregs-acceptance` |
+| $008D | GRPPRT | exercised | yes | `biosregs-acceptance` |
+| $0090 | GICINI | exercised | yes | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
+| $0093 | WRTPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
+| $0096 | RDPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
+| $0099 | STRTMS | exercised | yes | `strtms-acceptance` |
+| $009C | CHSNS | exercised | yes | `biosregs-acceptance` |
+| $009F | CHGET | exercised | yes | `biosregs-acceptance` |
+| $00A2 | CHPUT | exercised | yes | `biosregs-acceptance` |
+| $00A5 | LPTOUT | exercised | yes | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
+| $00A8 | LPTSTT | exercised | yes | `biosregs-acceptance` |
+| $00AB | CNVCHR | exercised | yes | `biosregs-acceptance` |
+| $00AE | PINLIN | exercised | yes | `biosregs-acceptance` |
+| $00B1 | INLIN | exercised | yes | `biosregs-acceptance` |
+| $00B4 | QINLIN | exercised | yes | `biosregs-acceptance` |
+| $00B7 | BREAKX | exercised | yes | `biosregs-acceptance` |
+| $00BA | ISCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
+| $00BD | CKCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
+| $00C0 | BEEP | exercised | yes | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
+| $00C3 | CLS | exercised | yes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `bloadofs-acceptance` … |
+| $00C6 | POSIT | exercised | yes | `biosregs-acceptance` |
+| $00C9 | FNKSB | exercised | yes | `biosregs-acceptance` |
+| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance` |
+| $00CF | DSPFNK | exercised | yes | `biosregs-acceptance` |
+| $00D2 | TOTEXT | exercised | yes | `biosregs-acceptance` |
+| $00D5 | GTSTCK | exercised | yes | `biosregs-acceptance` |
+| $00D8 | GTTRIG | exercised | yes | `biosregs-acceptance` |
+| $00DB | GTPAD | exercised | yes | `biosregs-acceptance` |
+| $00DE | GTPDL | exercised | yes | `biosregs-acceptance` |
+| $00E1 | TAPION | exercised | yes | `tapebios-acceptance`, `tapionlead-acceptance` |
+| $00E4 | TAPIN | exercised | yes | `tapebios-acceptance` |
+| $00E7 | TAPIOF | exercised | yes | `tapebios-acceptance` |
+| $00EA | TAPOON | exercised | yes | `tapebios-acceptance` |
+| $00ED | TAPOUT | exercised | yes | `tapebios-acceptance` |
+| $00F0 | TAPOOF | exercised | yes | `tapebios-acceptance` |
+| $00F3 | STMOTR | exercised | yes | `biosregs-acceptance` |
+| $00F6 | LFTQ | exercised | yes | `biosregs-acceptance` |
+| $00F9 | PUTQ | exercised | yes | `strtms-acceptance` |
+| $00FC | RIGHTC | exercised | yes | `biosregs-acceptance` |
+| $00FF | LEFTC | exercised | yes | `biosregs-acceptance`, `slotregs-acceptance` |
+| $0102 | UPC | exercised | yes | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
+| $0105 | TUPC | exercised | yes | `biosregs-acceptance` |
+| $0108 | DOWNC | exercised | yes | `biosregs-acceptance` |
+| $010B | TDOWNC | exercised | yes | `biosregs-acceptance` |
+| $010E | SCALXY | exercised | yes | `biosregs-acceptance` |
+| $0111 | MAPXYC | exercised | yes | `biosregs-acceptance` |
+| $0114 | FETCHC | exercised | yes | `biosregs-acceptance` |
+| $0117 | STOREC | exercised | yes | `biosregs-acceptance` |
+| $011A | SETATR | exercised | yes | `biosregs-acceptance` |
+| $011D | READC | exercised | yes | `biosregs-acceptance` |
+| $0120 | SETC | exercised | yes | `biosregs-acceptance` |
+| $0123 | NSETCX | exercised | yes | `biosregs-acceptance` |
+| $0126 | GTASPC | exercised | yes | `biosregs-acceptance` |
+| $0129 | PNTINI | exercised | yes | `paintbios-acceptance` |
+| $012C | SCANR | exercised | yes | `paintbios-acceptance` |
+| $012F | SCANL | exercised | yes | `paintbios-acceptance` |
+| $0132 | CHGCAP | exercised | yes | `biosregs-acceptance` |
+| $0135 | CHGSND | exercised | yes | `biosregs-acceptance` |
+| $0138 | RSLREG | exercised | yes | `biosregs-acceptance`, `p1vec-acceptance` |
+| $013B | WSLREG | exercised | yes | `slotregs-acceptance` |
+| $013E | RDVDP | exercised | yes | `biosregs-acceptance` |
+| $0141 | SNSMAT | exercised | yes | `bootenv-acceptance`, `tapebios-acceptance` |
+| $0144 | PHYDIO | exercised | yes | `diskbasic-acceptance` |
+| $0147 | FORMAT | exercised | yes | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
+| $014A | ISFLIO | exercised | yes | `biosregs-acceptance` |
+| $014D | OUTDLP | exercised | yes | `outdlp-acceptance` |
+| $0150 | GETVCP | exercised | yes | `biosregs-acceptance` |
+| $0153 | GETVC2 | exercised | yes | `biosregs-acceptance` |
+| $0156 | KILBUF | exercised | yes | `biosregs-acceptance` |
+| $0159 | CALBAS | exercised | yes | `biosregs-acceptance` |
 
 ## Every keyword and its status
 
