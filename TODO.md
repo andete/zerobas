@@ -17287,6 +17287,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       statement, $F346 = 0 -> E = 5 through CALBAS $406F, then hk_system's key-row / read /
       boot part as a subroutine that RETURNS on failure, +4 B in front of $5FE5) -- a carve of
       ~40 B first.
+      ✂️ **CARVE STEP 12 (2026-11-13):** sav_full (tokenised SAVE's Disk full, 14 B in front of
+      $5FE5) was byte for byte the tail of BSAVE's bsv_full (basic/sv-bsvdisk.inc, disk.rom
+      only) -- now a label inside it ([`diskngram.py`](scratchpad/diskngram.py)'s 15 B x2 pair). **In front of $5FE5:
+      0 -> 14 B on 2026-11-13** (a zero-run count from the image; the wall readout lists runs of
+      16+). Written out, sh_sys is ~55-60 B against ~10 there (after the +4 B subroutine
+      change) and 26 in front of $75A5, and its error routes do not split -- **still ~25 B
+      short**. Parked there: the case is another BASIC driving OUR disk ROM.
       - [x] **tools/check_disk_walls.py counts the dead FDC window $7F80-$7FBF as free** --
             🎚️ APPARATUS — its "largest usable hole" today is that window (65 B at $7F7F, the 1 B
             before it real). A reading that offers unfetchable memory as room cost one RED gate

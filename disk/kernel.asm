@@ -3546,12 +3546,7 @@ sav_fits:
                 add     hl,de               ; HL = marker + image - 1 (the image is
                                             ; TXTBASE..PRGEND+1), CF = bit 16
                 jr      fat_fits            ; A = 0 fits, $FF does not
-sav_full:
-                call    fat_io_close        ; the marker alone, stamped
-                jp      c,sv_load_error     ; its code is already pending
-                ld      a,66                ; Disk full
-                ld      (DISKOP_ERR),a
-                jp      sv_load_error
+; (sav_full is bsv_full's tail since D-CALLSTMT's carve, 2026-11-13: basic/sv-bsvdisk.inc)
 
 ; (hk_aopen/hk_agetb sited here since D-SAVEFULLSTAMP (2026-10-02): the region
 ;  pinned at $75A5 needed their bytes for fat_count_upto's early exit)

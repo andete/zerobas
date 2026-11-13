@@ -123,6 +123,10 @@ bsv_fin:
 bsv_full:
                 ld      a,$1A
                 call    disk_putbyte
+; sav_full -- tokenised SAVE's Disk full (basic/sv-savdisk.inc, D-SAVEFULLSTAMP): the
+; marker alone closed, stamped, then 66 -- byte for byte this tail, so it IS this tail
+; (D-CALLSTMT carve, 2026-11-13: its 14 B copy in front of $5FE5 went).
+sav_full:
                 call    fat_io_close        ; header + Ctrl-Z, stamped
                 jp      c,sv_load_error     ; its code is already pending
                 ld      a,66                ; Disk full
