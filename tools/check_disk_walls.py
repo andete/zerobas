@@ -50,6 +50,9 @@ def pins(src_dir: str) -> list[int]:
     return sorted(found)
 
 
+DEAD_LO, DEAD_HI = 0x7F80, 0x7FC0      # the FDC window: never room (see main)
+
+
 def runs(b: bytes, fill: int, minlen: int):
     out, i = [], 0
     while i < len(b):
@@ -83,6 +86,13 @@ def main() -> int:
               "would be meaningless, so none are printed")
         return 2
 
+    # 🔴 $7F80-$7FBF is the FDC's memory-mapped window (disk/runtime.asm skips it with a
+    # `ds $7FC0 - $`): $00 bytes there in the image, but no code placed there can be
+    # fetched -- cr_copy1 broke bdos-acceptance there (2026-11-13). Never counted as room.
+    b = bytearray(b)
+    for k in range(DEAD_LO - BASE, DEAD_HI - BASE):
+        b[k] = 0xFF
+    b = bytes(b)
     free = runs(b, 0x00, minlen)
     total = sum(n for _, n in free)
     print(f"OK: disk ROM {len(b)} B, mapped ${BASE:04X}-${BASE + len(b) - 1:04X}, "

@@ -17277,6 +17277,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas-BASIC, which would crash another BASIC): +6 B in front of $5FE5 (0 B free --
       move frp_full or write_sector to the $55DB slack first). Total ~55-60 B against 42 +
       13: a carve of ~20 B first.
+      📏 **RE-PRICED (2026-11-13): THE "65 B AT $7F7F" IS NOT ROOM.** `make basic-reloc` reads
+      disk.rom's largest hole as $7F7F-$7FBF, 65 B -- but $7F80-$7FBF is the FDC's memory-mapped
+      window (disk/runtime.asm: "skip OVER the dead $7F80-$7FBF FDC window"): code placed there
+      cannot be fetched, which is also why cr_copy1 broke bdos-acceptance there on 11-13. The
+      real room on 2026-11-13: ~12 B in front of $75A5 and ~0 in front of $5FE5 (moving
+      hk_format, 14 B, to $75A5 trades one for the other -- tried and reverted). CALL SYSTEM
+      under another BASIC needs sh_sys (~45 B: PROCNM vs "SYSTEM", the tail must end the
+      statement, $F346 = 0 -> E = 5 through CALBAS $406F, then hk_system's key-row / read /
+      boot part as a subroutine that RETURNS on failure, +4 B in front of $5FE5) -- a carve of
+      ~40 B first.
+      - [x] **tools/check_disk_walls.py counts the dead FDC window $7F80-$7FBF as free** --
+            🎚️ APPARATUS — its "largest usable hole" today is that window (65 B at $7F7F, the 1 B
+            before it real). A reading that offers unfetchable memory as room cost one RED gate
+            (cr_copy1, 11-13) and one plan (this item). Exclude $7F80-$7FBF from the scan.
+            ✅ **FIXED the same day:** the scan masks $7F80-$7FBF; `make basic-reloc` now reads
+            disk.rom's free as 26 B in one run, $758B-$75A4, on 2026-11-13 (it read 91 B).
       🔴 **AND A FIX TO D-DSKFMT'S CALL FORMAT, found writing this:** its work area ran from
       STREND to FRETOP - 64 -- but the BASIC stack lies between the arrays and the strings,
       so on a full machine that reached over the live stack (it worked with ~28 KB free
