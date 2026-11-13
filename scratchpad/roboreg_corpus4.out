@@ -1,0 +1,4 @@
+[  1/1] BOTH-RUN    4734  ref S2 pc= 1460  zb S2 pc= 1464  SDSNAT1C.DSK
+TALLY {"BOTH-RUN": 1}
+refcache: 1 hit, 1 miss, 1 stored
+refcache: 1 hit, 1 miss, 1 stored

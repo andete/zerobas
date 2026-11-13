@@ -2751,7 +2751,7 @@ item — do **one item per session** to keep context lean.
       ➡️ Next: per row, what a USER sees (a key, a disk swap) -- not another sample. The PC
       rule's own gap, filed here: under MSX-DOS page 0 is RAM, so a PC of $0005 (the BDOS
       jump) is a running DOS program, not ROM (the xak rows of the older full run).
-- [ ] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
+- [x] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
       11-12 (found 2026-11-13 by a full disk-corpus re-run)**
       🎚️ TIER 1 — a disk that ran on zerobas (and runs on the CF-3300) no longer does.
       🤖 **AUTONOMOUS** — [`diskcorpus_20261113.out`](scratchpad/diskcorpus_20261113.out) (HEAD 98af0fb3): BOTH-RUN 92, UNSETTLED 22, ZB-NOBOOT 3
@@ -2850,6 +2850,25 @@ item — do **one item per session** to keep context lean.
       disk ROM ($4C58, mid-load) -- the load itself writing over the hooks -- then `FF`s and the
       same storm by 14 s. The CF-3300's hooks stay `C9` through its load. ➡️ A write watch on
       $FD9A with the disk ROM's PC / the sector being read, on both machines.
+      🎯 **SDSNAT1C'S CAUSE, FIXED (2026-11-13):** the write of $FD at $FD9A is OUR
+      `fdc_rd_byte` (disk/driver.asm) with HL $FD9A, 237 bytes into a block starting at
+      **$FCAD = SECTOR_BUF + 10 x 512** ([`roboirq_sds2.out`](scratchpad/roboirq_sds2.out)). DSKIO entry logs ([`roboirq_sds4.out`](scratchpad/roboirq_sds4.out)):
+      the game's reads are the CF-3300's, register for register (DE $059A / $000E / $0570 /
+      $0490, HL $C200 / $C2CA / $0200 / $2000, B 2 / 1 / 15 / 36) -- the last one runs from page 0
+      INTO PAGE 1. **D-DSKFMT carve 16 (5de7ca8f, 2026-11-10 -- inside the 11-07..11-12 window)
+      made the page-1 bounce arm `call dskio_adv`, which skips `ld (FDC_DEST),hl`:** after any
+      page-1 sector FDC_DEST stayed SECTOR_BUF, so the next sector went to $E8AD, then $EAAD ...
+      up through the hooks. Now `call dskio_bump`; dskio_adv (its only caller) is gone.
+      🔴 **NO GATE COULD SEE IT:** every page-1 probe read ONE sector or record. New
+      **`make p1multi-acceptance`** ([`disk_probe_p1multi.py`](probes/disk/disk_probe_p1multi.py), in the battery): our own USR
+      routine reads 2 sectors into $7E00 -- on the UNFIXED build zerobas has `F0 0E 36 FF` at
+      $8000 where the CF-3300 has the pattern ([`p1multi_run2.out`](scratchpad/p1multi_run2.out), DIVERGES), fixed SAME
+      ([`p1multi_run3.out`](scratchpad/p1multi_run3.out)) -- a knife that cuts. After: **SDSNAT1C BOTH-RUN, ROBOCOP BOTH-RUN**
+      ([`roboreg_corpus4.out`](scratchpad/roboreg_corpus4.out), [`roboreg_corpus5.out`](scratchpad/roboreg_corpus5.out)). ✅ **CLOSED: both disks of the item run.**
+      Three zerobas faults stacked under one symptom ($5C11 unpinned, RUN with SAVSTK never
+      written + USR through 0, the bounce arm) -- two of them from the same carve window, the
+      class "a mechanical carve breaks an invariant it was not about". UR-1 is NOT this item
+      (ZB-NOBOOT on 11-07 already).
       - [ ] **diskcorpus_run.py's "last sample" sorts tags as STRINGS** -- 🎚️ APPARATUS — `sorted(t
             for t in caps)` puts `T120` before `T45`, so the 2026-11-11 third sample at 120 s was
             never the one read as last: that row set's UNSETTLED reading rests on the 45 s sample.
@@ -8274,7 +8293,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10707 (T-6FE392)8 (T-529ABE)` from `TODO.md:15382 (T-529ABE)`: a
+      `TODO.md:10726 (T-6FE392)8 (T-529ABE)` from `TODO.md:15401 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11086,7 +11105,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15382 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15401 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

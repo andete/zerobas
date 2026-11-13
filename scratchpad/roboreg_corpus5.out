@@ -1,0 +1,4 @@
+[  1/1] BOTH-RUN    5544  ref S1 pc=32105  zb S2 pc= 4138  ROBOCOP.DSK
+TALLY {"BOTH-RUN": 1}
+refcache: 1 hit, 1 miss, 1 stored
+refcache: 1 hit, 1 miss, 1 stored

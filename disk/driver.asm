@@ -65,7 +65,12 @@ dskio_next:
                 ld      hl, (P1_DEST)
                 ld      de, 512
                 add     hl, de
-                call    dskio_adv       ; advance real destination by 512, then the count
+                call    dskio_bump      ; the real destination + 512, then the count
+                                        ; 🔴 D-ROBOREG: carve 16 had `call dskio_adv`
+                                        ; here, which skips the FDC_DEST store -- every
+                                        ; sector after a page-1 one landed at
+                                        ; SECTOR_BUF + 512 * n, SDSNAT1C's 36-sector read
+                                        ; into $2000 running up over the hooks ($FCAD..)
                 jr      dskio_next
 dskio_rd:
                 call    fdc_read_phys
@@ -73,10 +78,10 @@ dskio_rd:
                 call    dskio_bump      ; HL = buf+512, advance for next sector
                 jr      dskio_next
 ; 💰 D-DSKFMT carve 16: the per-sector advance, once for both directions.
-; dskio_bump: FDC_DEST := HL; FDC_LSEC += 1; FDC_CNT -= 1. dskio_adv skips the first.
+; dskio_bump: FDC_DEST := HL; FDC_LSEC += 1; FDC_CNT -= 1. Both read arms MUST store the
+; destination: the page-1 arm's FDC_DEST is SECTOR_BUF until this puts the real one back.
 dskio_bump:
                 ld      (FDC_DEST), hl
-dskio_adv:
                 ld      hl, (FDC_LSEC)
                 inc     hl
                 ld      (FDC_LSEC), hl

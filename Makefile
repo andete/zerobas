@@ -3010,6 +3010,12 @@ dosdate-acceptance: repack-machine
 p1dta-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1dta.py
 
+# --- p1multi-acceptance: a 2-sector DSKIO read from page 1 into page 2 (D-ROBOREG) ------
+# Our own USR routine reads sectors S, S+1 into $7E00 through DSKIO: the second must be at
+# $8000 on both machines. D-DSKFMT carve 16 sent it to the bounce buffer + 512 (2026-11-10).
+p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
+
 # --- p1vec-acceptance: a DOS program's page 1, and the page-0 slot entries (D-TPAP1) ----
 # Our own .COM stores into page 1 and calls RDSLT / WRSLT / CALSLT / CALLF / ENASLT from
 # the TPA; every answer must equal the CF-3300's (zerobas ran the TPA with the disk ROM

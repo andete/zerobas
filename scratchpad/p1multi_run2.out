@@ -1,0 +1,4 @@
+ROW REF F/A + $8000[0,1,255,511] = [0 42 07 24 EA EA]  want Cy 0 and 07 24 EA EA  SAME
+ROW ZB  F/A + $8000[0,1,255,511] = [0 44 F0 0E 36 FF]  want Cy 0 and 07 24 EA EA  DIVERGES
+FAIL: a 2-sector DSKIO read from page 1 into page 2
+refcache: 1 hit, 1 miss, 1 stored

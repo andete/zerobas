@@ -1,0 +1,21 @@
+ROW REF F/A + $8000[0,1,255,511] = [0 42 07 24 EA EA]  want Cy 0 and 07 24 EA EA  SAME
+
+==========================================================================
+APPARATUS FAILURE -- openMSX preflight: NOTHING WAS MEASURED
+==========================================================================
+  machine : C-BIOS_MSX1_EU_REPACK_DISK
+  config  : /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+
+  STALE       build/disk.rom
+              `make -q build/disk.rom` says it is out of date w.r.t. its sources
+
+  FIX: make repack-machine        (rebuilds the ROMs AND reinstalls the
+                                   machine config that points at them)
+
+  A probe booted against this machine would report the absence of the
+  ROM as the absence of the FEATURE -- a whole class of cases failing
+  identically, which reads exactly like a catastrophic regression.
+  Refused instead of measured.  (docs/spec-probe-preflight.md)
+==========================================================================
+
+refcache: 1 hit, 0 miss

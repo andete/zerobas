@@ -65,6 +65,10 @@ def run(machine, image, end):
            "set ::ring {}",
            "set ::rd 0",
            "set ::nu 0",
+           "set ::nd 0",
+           "debug set_bp 0x4010 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] DSKIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
+           "debug set_bp 0x0144 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] PHYDIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
+           "debug set_bp 0x4257 {$::nd < 80 && [string match C-BIOS* {MACH}]} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] ZDSKIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x54E9 {[pc_in_slot 0] && [machine_info time] > 5.0 && $::nu < 30} {incr ::nu; binary scan [debug read_block memory 0xF39A 20] H* ut; binary scan [debug read_block memory [reg sp] 8] H* st; puts $::wf \"[format %.4f [machine_info time]] USR cl=[__rd16 0xF41C] af=[format %04X [reg af]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] usrtab=$ut st=$st\"; flush $::wf}",
            "debug set_bp 0xFFFF {[machine_info time] > 5.0} {binary scan [debug read_block memory [expr {[reg sp] - 8}] 24] H* st; puts $::wf \"[format %.6f [machine_info time]] PFFFF sp=[format %04X [reg sp]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] bc=[format %04X [reg bc]] af=[format %04X [reg af]] ix=[format %04X [reg ix]] iy=[format %04X [reg iy]] a8=[format %02X [debug read ioports 0xA8]] ffff=[format %02X [debug read memory 0xFFFF]] st-8=$st\"; flush $::wf}",
            "debug set_condition {[machine_info time] > 5.1260 && $::rd == 0} {lappend ::ring [format %04X:%X:%04X [reg pc] [pc_in_slot 0] [reg sp]]; if {[llength $::ring] > 300} {set ::ring [lrange $::ring 100 end]}}",
@@ -85,7 +89,7 @@ def run(machine, image, end):
         tcl.append(f"after time {t} {{ __s {t} }}")
         t += 0.5
     tcl.append(f"after time {end + 0.3} {{ exit }}")
-    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
+    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("MACH", machine).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
     subprocess.run([D.OMSX, "-machine", machine, "-diska", dsk, "-command",
                     "set renderer none; set sound_driver null", "-script", os.path.join(td, "s.tcl")],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60 + end * 3)
