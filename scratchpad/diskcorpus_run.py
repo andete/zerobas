@@ -55,7 +55,7 @@ def run_one(machine: str, image: str, times: list[float], typed: str | None = No
              "  close $f",
              "}"]
     for k, t in enumerate(times):
-        lines.append(f"after time {t} {{ __cap T{int(t)} }}")
+        lines.append(f"after time {t} {{ __cap T{t:g} }}")   # T20, T4.25 (roboseries)
     end = times[-1] + 0.5
     if typed:
         # after the last capture, type a command at whatever is on screen and capture

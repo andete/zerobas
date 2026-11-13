@@ -1,0 +1,83 @@
+REF T   3.0 pc=77EC curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  3.25 pc=77F5 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   3.5 pc=77F2 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  3.75 pc=77F0 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   4.0 pc=77BC curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  4.25 pc=77BC curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   4.5 pc=77BB curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  4.75 pc=77BB curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   5.0 pc=77BB curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  5.25 pc=77BB curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   5.5 pc=77BB curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  5.75 pc=77B8 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   6.0 pc=77F3 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  6.25 pc=77F4 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   6.5 pc=77F4 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  6.75 pc=77F4 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   7.0 pc=01BE curlin=    0 S1 
+REF T  7.25 pc=01F2 curlin=    0 S1 
+REF T   7.5 pc=028F curlin=    0 S1 
+REF T  7.75 pc=0299 curlin=    0 S1 
+REF T   8.0 pc=029E curlin=    0 S1 
+REF T  8.25 pc=77BB curlin=    0 S1 
+REF T   8.5 pc=77BB curlin=    0 S1 
+REF T  8.75 pc=77BB curlin=    0 S1 
+REF T   9.0 pc=7723 curlin=    0 S1 
+REF T  9.25 pc=7723 curlin=    0 S1 
+REF T   9.5 pc=761C curlin=    0 S1 
+REF T  9.75 pc=761B curlin=    0 S1   ROBOCOP DISK VERSION 89
+REF T  10.0 pc=77BB curlin=    0 S1   ROBOCOP DISK VERSION 89
+REF T 10.25 pc=EFEC curlin=    0 S1   ROBOCOP DISK VERSION 89
+REF T  10.5 pc=7622 curlin=    0 S1   ROBOCOP DISK VERSION 89
+REF T 10.75 pc=1138 curlin=    5 S1             TECLE [CONTROL] !
+REF T  11.0 pc=1134 curlin=    5 S1             TECLE [CONTROL] !
+REF T 11.25 pc=2762 curlin=    5 S1             TECLE [CONTROL] !
+REF T  11.5 pc=1135 curlin=    5 S1             TECLE [CONTROL] !
+REF T 11.75 pc=1136 curlin=    5 S1             TECLE [CONTROL] !
+REF T  12.0 pc=1133 curlin=    5 S1             TECLE [CONTROL] !
+REF T 12.25 pc=1134 curlin=    5 S1             TECLE [CONTROL] !
+REF T  12.5 pc=1135 curlin=    5 S1             TECLE [CONTROL] !
+REF T 12.75 pc=1137 curlin=    5 S1             TECLE [CONTROL] !
+REF T  13.0 pc=1133 curlin=    5 S1             TECLE [CONTROL] !
+ZB T   3.0 pc=7A18 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T  3.25 pc=7A1D curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T   3.5 pc=43D7 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T  3.75 pc=43D9 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T   4.0 pc=43D4 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T  4.25 pc=43D4 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T   4.5 pc=656E curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T  4.75 pc=43D4 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T   5.0 pc=64E5 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T  5.25 pc=1860 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   5.5 pc=1862 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  5.75 pc=FD9A curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   6.0 pc=1854 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  6.25 pc=1856 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   6.5 pc=1858 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  6.75 pc=185B curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   7.0 pc=185D curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  7.25 pc=1860 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   7.5 pc=1862 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  7.75 pc=FD9A curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   8.0 pc=1854 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  8.25 pc=1856 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   8.5 pc=1858 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  8.75 pc=185B curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   9.0 pc=185C curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  9.25 pc=185E curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T   9.5 pc=1862 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  9.75 pc=FD9A curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  10.0 pc=0038 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 10.25 pc=1855 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  10.5 pc=1857 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 10.75 pc=185A curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  11.0 pc=185C curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 11.25 pc=185E curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  11.5 pc=1860 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 11.75 pc=FD9A curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  12.0 pc=0038 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 12.25 pc=1855 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  12.5 pc=1857 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T 12.75 pc=1859 curlin=65535 S1   ROBOCOP DISK VERSION 89
+ZB T  13.0 pc=185C curlin=65535 S1   ROBOCOP DISK VERSION 89
+refcache: 0 hit, 2 miss, 2 stored

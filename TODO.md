@@ -2751,6 +2751,40 @@ item — do **one item per session** to keep context lean.
       ➡️ Next: per row, what a USER sees (a key, a disk swap) -- not another sample. The PC
       rule's own gap, filed here: under MSX-DOS page 0 is RAM, so a PC of $0005 (the BDOS
       jump) is a running DOS program, not ROM (the xak rows of the older full run).
+- [ ] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
+      11-12 (found 2026-11-13 by a full disk-corpus re-run)**
+      🎚️ TIER 1 — a disk that ran on zerobas (and runs on the CF-3300) no longer does.
+      🤖 **AUTONOMOUS** — [`diskcorpus_20261113.out`](scratchpad/diskcorpus_20261113.out) (HEAD 98af0fb3): BOTH-RUN 92, UNSETTLED 22, ZB-NOBOOT 3
+      (ROBOCOP, SDSNAT1C, UR-1), ZB-ONLY 5, FILES-SAME 11, FILES-DIFF 8, FILES-EMPTY 2 (🔮 "BOTH-RUN
+      >= 92": HIT). UR-1 was already ZB-NOBOOT on 11-07 (diskcorpus_f37.out); **ROBOCOP and SDSNAT1C
+      were BOTH-RUN there and fail on HEAD every time (3 / 3, 2 / 2)**. ROBOCOP on HEAD: SCREEN 1 with
+      only its title `ROBOCOP DISK VERSION 89`, CURLIN 65535, PC $1857 (the BIOS area: a key wait?);
+      the CF-3300 shows `TECLE [CONTROL] !` with CURLIN 0. Not D-FWDWIN's `ei` (removed: still
+      fails). 🔴 **THE BISECT IS NOT TRUSTWORTHY** ([`robocop_bisect.out`](scratchpad/robocop_bisect.out)): it named f6dcb920
+      (D-WRRESET), but its parent eb03a41a read BOTH-RUN once and ZB-NOBOOT once -- the older builds
+      FLIP (PC $6AAB or $0038 at the sample), HEAD fails deterministically: a timing-sensitive load,
+      the D-BD2FRAGILE / D-TAPLEAD class, whose margin a build change moves. ➡️ Next: what the
+      CF-3300 does between the title and its prompt (CURLIN / PC samples on both from the boot),
+      whether zerobas's CURLIN 65535 is a BASIC prompt or machine code started from direct mode
+      waiting in CHGET, and the first point the two diverge -- not another bisect.
+      📏 **THE TIME SERIES (2026-11-13, [`roboseries_probe.py`](scratchpad/roboseries_probe.py) -> [`roboseries_run1.out`](scratchpad/roboseries_run1.out), [`roboseries_run2.out`](scratchpad/roboseries_run2.out)):**
+      the CF-3300 shows the title at ~9.75 s, runs BASIC line 5 (`TECLE [CONTROL] !`) from 10.75 s,
+      and with no key REBOOTS (the MSX logo again at ~16 s and ~32 s) -- a loop. zerobas shows the
+      title at 3 s and from 5.25 s on samples ONLY the interrupt path: PC cycling $1854-$1862
+      (C-BIOS's `keyint`, the $0038 handler's body -- the scratch listing of the same repacked
+      image, sha 657dc2ad), the H.KEYI hook at $FD9A and $0038 itself, CURLIN 65535, no `Ok`.
+      Reading: the CPU never leaves the interrupt handler (an interrupt nobody acknowledges, or
+      one re-raised at once), and BASIC's line 5 is never reached. keyint calls H.KEYI BEFORE it
+      reads the VDP status (both upstream and ours), so a game hook on H.KEYI decides. ➡️ Next:
+      the C-BIOS 0.30 / 0.31 rebase (D-CBIOS030 / D-CBIOS031, 2026-11-11) sits in the range and
+      replaced C-BIOS's own keyboard / interrupt code -- compare keyint / the key scan of the 0.29
+      repack against 0.31 (C-BIOS source, ideas only), and watch VDP status reads ($99) and
+      H.KEYI calls per frame on both builds.
+      - [ ] **diskcorpus_run.py's "last sample" sorts tags as STRINGS** -- 🎚️ APPARATUS — `sorted(t
+            for t in caps)` puts `T120` before `T45`, so the 2026-11-11 third sample at 120 s was
+            never the one read as last: that row set's UNSETTLED reading rests on the 45 s sample.
+            Sort by the number.
+
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -8170,7 +8204,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15278 (T-529ABE)`: a
+      `TODO.md:10637 (T-6FE392)8 (T-529ABE)` from `TODO.md:15312 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10982,7 +11016,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15312 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
