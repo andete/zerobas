@@ -87,8 +87,18 @@ brk_release:
 ;   INITXT does NOT recompute it (a POKEd 99 survives on both references): BASIC does.
 ; For MSX1 widths (1..40) that is 14 from 28 up, else 0.
 ; boot_wa: interp.asm's cold start, BEFORE the cartridge scan (a cartridge's INIT already
-; sees the VG-8020's values there, as LINL40 37 -- D-BIOSLADDER B1). Clobbers A.
+; sees the VG-8020's values there, as LINL40 37 -- D-BIOSLADDER B1). Clobbers AF, BC,
+; DE, HL.
 boot_wa:
+                ; D-TAPLEADN (2026-11-13): the cassette tables as both references hold them
+                ; from power-on -- CS120 ($F3FC) 53 5C 26 2D 0F, CS240 25 2D 0E 16 1F, and the
+                ; active LOW / HIGH / HEADER ($F406) a copy of CS120 (scratchpad/cstables.out);
+                ; zerobas had 15 zero bytes (tape/tape.asm's cas_seed filled only the two LOW
+                ; words, at TAPOON time).
+                ld      hl,bw_cas
+                ld      de,$F3FC
+                ld      bc,15
+                ldir
                 ld      a,37
                 ld      (LINL40),a
                 ld      a,1
@@ -102,6 +112,9 @@ set_clmlst:
                 and     14
                 ld      (CLMLST),a
                 ret
+bw_cas:         db      $53, $5C, $26, $2D, $0F         ; CS120: LOW, HIGH, HEADER
+                db      $25, $2D, $0E, $16, $1F         ; CS240
+                db      $53, $5C, $26, $2D, $0F         ; active = CS120
 ; scr_call: program.asm's SCREEN / COLOR / WIDTH / KEY / DELETE / AUTO / RENUM call into the
 ; SCRSTMT tenant, then CLMLST after SCREEN and WIDTH only (a CLMLST a program POKEd stays
 ; through COLOR / KEY). In: C = the token. Out: as subrom_call (Cy = absent, DE / HL).

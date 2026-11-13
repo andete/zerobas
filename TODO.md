@@ -10912,7 +10912,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15286 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11558,8 +11558,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
             [`tapleadn_phold_seedonly.out`](scratchpad/tapleadn_phold_seedonly.out)). brk_release now waits for STOP itself (SNSMAT row 7 bit 4).
             Ten tape gates green after both ([`tapleadn2_caswbrk.out`](scratchpad/tapleadn2_caswbrk.out) and the nine beside it).
             ➡️ LEFT: between the header and the data the VG-8020 spends ~0.53 s more (BASIC's side).
-      - [ ] **The cassette tables ($F3FC, 15 B) read 0 at power-on; seeding them exposed a 0.53 s
-            MASKED FDC stretch** -- 🎚️ TIER 2 — both references hold CS120 53 5C 26 2D 0F, CS240
+      - [x] **The cassette tables ($F3FC, 15 B) read 0 at power-on; seeding them exposed a 0.53 s
+            MASKED FDC stretch** -- 🎚️ TIER 2 — ✅ **SHIPPED 2026-11-13 (D-CASSEED), see the end.** both references hold CS120 53 5C 26 2D 0F, CS240
             25 2D 0E 16 1F and the active copy from power-on ([`cstables.out`](scratchpad/cstables.out)); zerobas 15 zeros. A
             boot_wa seed (an LDIR of the 15 bytes, basic/catalias.asm) was built and the full
             battery went RED on programs-acceptance: L5_journal's longest frame-interrupt gap
@@ -11586,6 +11586,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
             reproduces it) before the seed ships. Two more single `ld a,i` sites:
             p1_blit_tmpl (disk/kernel.asm, the page-1 bounce's RAM template) and br_back_tmpl
             (disk/runtime.asm) -- both RAM templates with an installed size to keep.
+            ✅ **D-CASSEED (2026-11-13): THE ERR 65 DOES NOT REPRODUCE.** The seed re-applied on
+            today's tree -- ROM sources byte-identical to the build that gave ERR 65 (`git diff
+            1fb60f86 HEAD` touches only disk/fat.asm's D-IFFREAD, which that build had) -- and
+            L5_journal run TWELVE times from a fresh build: SAME every time, t=49.4, 44 gaps, max
+            0.036 s, identical figures run to run ([`WR_journal1.out`](scratchpad/WR_journal1.out) .. [`WR_journal12.out`](scratchpad/WR_journal12.out)). run_programs
+            feeds keys through KEYBUF and gives each run its own copy of disk/empty720.dsk, so
+            the run is deterministic; the ERR 65 run (t=47.2, 32 gaps) came from a build that
+            cannot be reconstructed, and the "windowed-read fault" reading of it is WITHDRAWN as
+            unsupported -- no fault was ever isolated. 🔴 And the seed as first written had its
+            own defect: `bw_cas` sat in boot_wa's FALL-THROUGH, so its 15 data bytes ran as
+            code (`ld d,e` / `ld h,$2D` / `rrca` / ...) on the way into set_clmlst -- harmless
+            register traffic, but not the code that was reviewed. The table now follows
+            set_clmlst's `ret` (basic/catalias.asm). The boot sweep (`make sysvarsweep
+            ONLY=s0-boot`, [`WR_svs2.out`](scratchpad/WR_svs2.out)) no longer lists $F3FC..$F40A in BASE-DIFF: the 15 B read
+            as both references'. The sweep itself had stopped at import -- D-WSZERO S8 renamed
+            the VALTYP symbol VALTYP_PUB (probes/basic/basic_probe_sysvarsweep.py, one row).
+            ➡️ LEFT (filed, not this item): p1_blit_tmpl / br_back_tmpl's single `ld a,i`.
+      - [ ] **Two more single-`ld a,i` IFF reads: p1_blit_tmpl (disk/kernel.asm, the page-1
+            bounce's RAM template) and br_back_tmpl (disk/runtime.asm)** -- 🎚️ TIER 2 — the
+            class D-IFFREAD fixed in fdc_di_save: an interrupt accepted DURING the `ld a,i` reads
+            P/V 0 though interrupts were on, so the restore leaves the CPU masked (a frame-
+            interrupt gap, D-GCDI's rule). Not yet SEEN at either site; both are RAM templates
+            with an installed size to keep, so the second read (+3 B each with the jump) needs
+            room in the installed area first.
       - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
             🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
             LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas

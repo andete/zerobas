@@ -206,7 +206,9 @@ def _sym(name):
 
 
 REHOMED = [
-    ("VALTYP", 0xF663,  1, _sym("VALTYP"), "REJECT-UNOBSERVABLE"),
+    # D-WSZERO S8 re-homed it onto the published cell and renamed the symbol
+    # VALTYP_PUB; `_sym("VALTYP")` then stopped the whole sweep at import time.
+    ("VALTYP", 0xF663,  1, _sym("VALTYP_PUB"), "REJECT-UNOBSERVABLE"),
     ("ERRFLG", 0xF414,  1, 0xF414, "HONOURED"),
     ("FRETOP", 0xF69B,  2, _sym("FRETOP"), "REJECT-GROUP"),
     ("SAVTXT", 0xF6AF,  2, _sym("SAVTXT"), "REJECT-UNOBSERVABLE"),
