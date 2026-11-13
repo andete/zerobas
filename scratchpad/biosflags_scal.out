@@ -1,0 +1,9 @@
+scal_in VG (65, 128)
+scal_in ZB (147, 128)
+scal_x VG (64, 0)
+scal_x ZB (147, 0)
+scal_y VG (64, 0)
+scal_y ZB (147, 0)
+scal_ng VG (64, 0)
+scal_ng ZB (147, 0)
+refcache: 0 hit, 8 miss, 8 stored

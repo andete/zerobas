@@ -183,13 +183,13 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0000 | CHKRAM | exercised | yes | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
 | $0008 | SYNCHR | exercised | yes | `synchr-acceptance` |
 | $000C | RDSLT | exercised | yes | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
-| $0010 | CHRGTR | exercised | yes | `biosregs-acceptance` |
+| $0010 | CHRGTR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0014 | WRSLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
 | $0018 | OUTDO | exercised | yes | `biosregs-acceptance` |
 | $001C | CALSLT | exercised | yes | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
-| $0020 | DCOMPR | exercised | yes | `biosregs-acceptance` |
+| $0020 | DCOMPR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0024 | ENASLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0028 | GETYPR | exercised | yes | `biosregs-acceptance` |
+| $0028 | GETYPR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0030 | CALLF | exercised | yes | `bootenv-acceptance`, `p1vec-acceptance` |
 | $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — |
 | $003B | INITIO | exercised | yes | `initio-acceptance` |
@@ -224,16 +224,16 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0093 | WRTPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
 | $0096 | RDPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | yes | `strtms-acceptance` |
-| $009C | CHSNS | exercised | yes | `biosregs-acceptance` |
+| $009C | CHSNS | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $009F | CHGET | exercised | yes | `biosregs-acceptance` |
 | $00A2 | CHPUT | exercised | yes | `biosregs-acceptance` |
 | $00A5 | LPTOUT | exercised | yes | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
-| $00A8 | LPTSTT | exercised | yes | `biosregs-acceptance` |
+| $00A8 | LPTSTT | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00AB | CNVCHR | exercised | yes | `biosregs-acceptance` |
 | $00AE | PINLIN | exercised | yes | `biosregs-acceptance` |
 | $00B1 | INLIN | exercised | yes | `biosregs-acceptance` |
 | $00B4 | QINLIN | exercised | yes | `biosregs-acceptance` |
-| $00B7 | BREAKX | exercised | yes | `biosregs-acceptance` |
+| $00B7 | BREAKX | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00BA | ISCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00BD | CKCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00C0 | BEEP | exercised | yes | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
@@ -262,7 +262,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0105 | TUPC | exercised | yes | `biosregs-acceptance` |
 | $0108 | DOWNC | exercised | yes | `biosregs-acceptance` |
 | $010B | TDOWNC | exercised | yes | `biosregs-acceptance` |
-| $010E | SCALXY | exercised | yes | `biosregs-acceptance` |
+| $010E | SCALXY | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0111 | MAPXYC | exercised | yes | `biosregs-acceptance` |
 | $0114 | FETCHC | exercised | yes | `biosregs-acceptance` |
 | $0117 | STOREC | exercised | yes | `biosregs-acceptance` |

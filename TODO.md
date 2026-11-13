@@ -16489,6 +16489,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Not proven by this pass: WHICH registers a row compares (biosregs leaves F out where
       neither machine documents it). ➡️ Per-row: the compared outputs against each entry's
       published contract.
+      🎯 **D-SCALXYF -- FLAG-ANSWERING ENTRIES (2026-11-13):** biosregs compares A / BC / DE / HL
+      and leaves F out, so an entry whose published OUTPUT is a flag had no row reading its
+      answer. New **`make biosflags-acceptance`** ([`basic_probe_biosflags.py`](probes/basic/basic_probe_biosflags.py), 20 rows: DCOMPR
+      x4, CHRGTR x5, GETYPR x4, CHSNS, BREAKX, LPTSTT, SCALXY x4 -- F masked to the documented
+      bits). **SCALXY DIVERGED** ([`biosflags_run1.out`](scratchpad/biosflags_run1.out); 🔮 "SCALXY or LPTSTT": HIT on SCALXY):
+      clipped, the VG-8020 answers Cy clear, ours set -- full F ([`biosflags_scal.out`](scratchpad/biosflags_scal.out)): VG $41 in
+      range / $40 clipped, ours $93 always. graphics-cursor.patch's rewrite (ours, D-BIOSRUNG)
+      had dropped C-BIOS's final `rrca`. **cbios-repack/scalxy-flags.patch** (#22): `ld a,h /
+      cp a / rlca / ld a,h`, +3 B -- into island 3, whose fperr_to_err table moved to main
+      page 1 (basic/catalias.asm); the $0129 overlay guard follows C-BIOS's `ret`s 3 B on.
+      After: **20 / 20 SAME** ([`biosflags_run2.out`](scratchpad/biosflags_run2.out); the GETYPR string row needed VALTYP put
+      back before `Q=USR(0)`, a probe fault).
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.

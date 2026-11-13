@@ -1,0 +1,22 @@
+ROW dcmp_lt  VG=(1, 255) ZB=(1, 255) (F&$41) SAME
+ROW dcmp_eq  VG=(64, 0) ZB=(64, 0) (F&$41) SAME
+ROW dcmp_gt  VG=(0, 1) ZB=(0, 1) (F&$41) SAME
+ROW dcmp_hi  VG=(0, 17) ZB=(0, 17) (F&$41) SAME
+ROW chr_dig  VG=(1, 53) ZB=(1, 53) (F&$41, A) SAME
+ROW chr_ltr  VG=(0, 65) ZB=(0, 65) (F&$41, A) SAME
+ROW chr_col  VG=(64, 58) ZB=(64, 58) (F&$41, A) SAME
+ROW chr_end  VG=(64, 0) ZB=(64, 0) (F&$41, A) SAME
+ROW chr_spc  VG=(1, 55) ZB=(1, 55) (F&$41, A) SAME
+ROW typ_int  VG=(133, 255) ZB=(133, 255) (F&$C5) SAME
+ROW typ_str  VG=(69, 0) ZB=(69, 0) (F&$C5) SAME
+ROW typ_sng  VG=(1, 1) ZB=(1, 1) (F&$C5) SAME
+ROW typ_dbl  VG=(4, 5) ZB=(4, 5) (F&$C5) SAME
+ROW chsns_e  VG=(64, 0) ZB=(64, 0) (F&$40) SAME
+ROW brkx_up  VG=(0, 16) ZB=(0, 16) (F&$01) SAME
+ROW lptstt   VG=(64, 0) ZB=(64, 0) (F&$40, A) SAME
+ROW scal_in  VG=(1, 128) ZB=(1, 128) (F&$01) SAME
+ROW scal_x   VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+ROW scal_y   VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+ROW scal_ng  VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+PASS: flag-answering BIOS entries (20/20)
+refcache: 16 hit, 24 miss, 24 stored

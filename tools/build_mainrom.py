@@ -67,7 +67,7 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # $0CCF, and gone when its residual's cycle verify took the rest -- err_msgtab is
 # back in main page 1. ISLAND4_LO stays as the tape's CAP: C-BIOS's compat tail.
 ISLAND4_LO = 0x0D01
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09E0, 0x09EE))
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09E3, 0x09EE))   # island 3: $09E3 since D-SCALXYF (empty)
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).
@@ -93,9 +93,9 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x008D: bytes([0xC3, 0x49, 0x05]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0099: bytes([0xC3, 0x09, 0x11]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x00F9: bytes([0xC3, 0xE7, 0x17]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x0129: bytes([0xC3, 0x52, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
-                               0xC3, 0x52, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s)
-                               0xC3, 0x52, 0x09]),
+                0x0129: bytes([0xC3, 0x55, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
+                               0xC3, 0x55, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 3 B
+                               0xC3, 0x55, 0x09]),     #  on since D-SCALXYF)
                 0x00CC: bytes([0xC3, 0x0C, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
                                0xC3, 0x1E, 0x16]),     #  (D-BIOSCONTRACT)
                 0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput

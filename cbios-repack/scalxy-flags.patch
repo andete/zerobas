@@ -1,0 +1,19 @@
+diff --git a/src/video.asm b/src/video.asm
+index 9b2d6c7..96577a5 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -2447,6 +2447,14 @@ scalxy_yok:
+                 srl     e
+                 srl     e
+ scalxy_done:
++                ; zerobas D-SCALXYF (2026-11-13): F IS the answer, as on the VG-8020
++                ; (zerobas probes/basic/basic_probe_biosflags.py): $41 when nothing was
++                ; clipped, $40 when something was -- Z set, S / P/V clear, Cy = in range.
++                ; `cp a` makes Z = 1 and S / P/V / Cy = 0; `rlca` then sets only Cy (A's
++                ; bit 7, $80 = in range); A is reloaded, which leaves F alone.
++                ld      a,h
++                cp      a
++                rlca
+                 ld      a,h
+                 pop     hl
+                 ret

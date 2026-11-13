@@ -3016,6 +3016,12 @@ p1dta-acceptance: repack-machine
 p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
 
+# --- biosflags-acceptance: BIOS entries whose published OUTPUT is a flag (D-SCALXYF) ------
+# DCOMPR / CHRGTR / GETYPR / CHSNS / BREAKX / LPTSTT / SCALXY, F masked to the documented
+# bits, VG-8020 against zerobas (biosregs compares A / BC / DE / HL only).
+biosflags-acceptance: repack-machine
+	python3 probes/basic/basic_probe_biosflags.py
+
 # --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
 # Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
 initio-acceptance: repack-machine

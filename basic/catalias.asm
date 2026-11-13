@@ -69,6 +69,83 @@ brk_release:
                 xor     a
                 ld      (INTFLG),a
                 ret
+; ---------------------------------------------------------------------------------------
+; fperr_to_err -- the dense FPERR -> ERR byte map, moved here from island 3 ($09E0, basic/
+; islands.asm) by D-SCALXYF (2026-11-13): C-BIOS's graphics span grew into it. Verbatim;
+; still read only by fp_runtime_error's absolute `ld hl,fperr_to_err` (basic/interp.asm).
+fperr_to_err:
+                db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
+                                            ; own string, dl_overflow -- REUSED byte-for-byte)
+                db      11                  ; FPERR 2: division by zero (err_fp_divzero)
+                db      5                   ; FPERR 3: illegal function call -- math pack
+                                            ; slice 1b SQR(x<0)/LOG, and the deferred
+                                            ; ASC domain check (ev_f_ifc). A REAL ENTRY
+                                            ; since D-MSGEXACT: it was a `db 0` placeholder
+                                            ; while FPERR=3 was intercepted upstream to get
+                                            ; a LOWERCASE message. Same ERR 5, same string
+                                            ; as FPERR=8 now -- knife K3 cuts this slot.
+                db      2                   ; FPERR 4: syntax error (D-F2-3 empty
+                                            ; parenthesised/argument expression; reuses
+                                            ; stmt_error's own ERR-2 table entry)
+                db      9                   ; FPERR 5: subscript out of range -- arrays
+                                            ; slice-1 (§4.1 #3/#8): index out of range, or
+                                            ; wrong dimension count
+                db      7                   ; FPERR 6: out of memory (DIM/auto-dim OOM via
+                                            ; ary_errmap). A REAL ENTRY since D-MSGEXACT --
+                                            ; was a `db 0` placeholder while FPERR=6 was
+                                            ; intercepted upstream to get the CAPITALISED
+                                            ; message; that is now the only spelling.
+                db      10                  ; FPERR 7: redimensioned array -- arrays
+                                            ; slice-1 (§4.1 #4): a second DIM of a live array
+                db      5                   ; FPERR 8: illegal function call -- arrays
+                                            ; slice-1 (§4.1 #9): negative subscript; arrays'
+                                            ; OWN reference-verbatim capitalised
+                                            ; "Illegal function call" (basic/arrays.asm
+                                            ; err_illegal_fn_arr; §9.5 pins the array error
+                                            ; surface oracle-exact, unlike the lowercase
+                                            ; shared FPERR=3 SQR/LOG keep) -- ERR-5's table
+                                            ; entry still points at THAT string, not FPERR=3's
+                db      16                  ; FPERR 9: string formula too complex -- arrays
+                                            ; slice-4a (docs/spec-basic-arrays-slice4a-
+                                            ; string-heap.md §6/§11): temp-descriptor stack
+                                            ; overflow (basic/str-engine.asm err_too_complex,
+                                            ; low region)
+                db      13                  ; FPERR 10: type mismatch -- a string function
+                                            ; given a NON-string arg (LEN(5)/ASC(5)/VAL(5));
+                                            ; ev_f_tmm (expr.asm) defers this via FPERR=10.
+                                            ; Same ERR-13 table entry type_mismatch_error uses.
+    IF CLEARPOOL
+                db      14                  ; FPERR 11 (= FPERR_STROOM, sysvars.inc):
+                                            ; OUT OF STRING SPACE -- the string heap could
+                                            ; not allocate, which with the D-CLP partition
+                                            ; ON means the pool `CLEAR n` sized ran out.
+                                            ; ⚠️ Deliberately NOT FPERR=6/ERR 7: an ARRAY
+                                            ; that will not fit is out of MEMORY, and the
+                                            ; probe's oos-vs-oom row pins the two apart.
+                                            ; Unlike 3 and 6 this needs no special case in
+                                            ; fp_runtime_error -- ERR 14 has exactly one
+                                            ; message (err_out_of_str, str-engine.asm) and
+                                            ; flows through the generic err_msgtab lookup.
+    ENDIF
+                db      24                  ; FPERR_MISSOP (sysvars.inc, D-MISSOP): MISSING
+                                            ; OPERAND -- a factor was REQUIRED and the
+                                            ; statement ended instead (end of line, ':', or
+                                            ; a byte that cannot start one). Deferred by
+                                            ; ev_f_err, expr.asm. ⚠️ THIS `db` MUST FOLLOW
+                                            ; the CLEARPOOL block, not sit inside it: the
+                                            ; table is DENSE and FPERR_MISSOP's value moves
+                                            ; with the switch (12 with CLEARPOOL, 11
+                                            ; without), which is why the equ lives beside
+                                            ; FPERR_STROOM rather than being a literal.
+                db      15                  ; FPERR_STRLONG (= FPERR_MISSOP+1, sysvars.inc,
+                                            ; D-STRLONG): STRING TOO LONG -- a `+` fold whose
+                                            ; combined length exceeds STRMAX. sh_append used
+                                            ; to clamp it to 255 and return that; both
+                                            ; references raise here instead. Same DENSE-table
+                                            ; caveat as the entry above: this `db` must stay
+                                            ; LAST, because FPERR_MISSOP moves with CLEARPOOL
+                                            ; and this code is defined relative to it.
+
 ; --- sct_op: str_concat_tail's APPEND call. In: A = [op] (2, 22, or 23: the chain's
 ; first `+` after a variable left operand), DE = R. BC := R -- the result's slot, blk+6
 ; (sub/strheap.asm she_out) -- then op 23 resolves the variable (sct_resolve), and

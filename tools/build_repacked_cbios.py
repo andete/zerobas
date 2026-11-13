@@ -73,11 +73,17 @@ PATCHES = [
     # The 7 bytes come from C-BIOS's INIFNK stub right behind it, dead under
     # zerobas's own $003E: nothing after it moves.
     os.path.join(REPO, "cbios-repack", "initio.patch"),
+    # D-SCALXYF (2026-11-13): SCALXY answers in F as the VG-8020 does -- $41 when nothing
+    # was clipped, $40 when something was (Z set, S / P/V clear, Cy = in range);
+    # graphics-cursor.patch's rewrite had dropped C-BIOS's final `rrca` and left F to
+    # chance. +3 B: the span ends at $09E2, into island 3 (fperr_to_err moved to main
+    # page 1); PNTINI / SCANR / SCANL's C-BIOS `ret`s move 3 B (build_mainrom's guard).
+    os.path.join(REPO, "cbios-repack", "scalxy-flags.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "8f772ec1f4ce9ffbea262a6c4d9605f973c6a9c6"   # D-INITIO, 2026-11-13
+REPACKED_SHA1 = "7f90ba0bc31728b57a0f60b011b4f1fdb45e05fb"   # D-SCALXYF, 2026-11-13
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
