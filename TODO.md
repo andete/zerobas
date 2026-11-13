@@ -2769,6 +2769,12 @@ item — do **one item per session** to keep context lean.
       DRVINF 02 87, [`facusr_run9.out`](scratchpad/facusr_run9.out)). D-DRVINT was measured under MSX-DOS only; the new
       **`make drvinf-acceptance`** ([`disk_probe_drvinf.py`](probes/disk/disk_probe_drvinf.py)) reads it from Disk BASIC: unfixed 3 vs 2
       FAIL ([`drvinf_run1.out`](scratchpad/drvinf_run1.out)), fixed PASS ([`drvinf_run2.out`](scratchpad/drvinf_run2.out)).
+      📏 **RE-RUN AFTER THE DAY'S FIXES (2026-11-13 evening, after D-IFFREAD; zerobas only against
+      the morning's reference rows, [`diskcorpus_iffread.out`](scratchpad/diskcorpus_iffread.out)):** BOTH-RUN 98, **ZB-NOBOOT 0**,
+      FILES-SAME 11, UNSETTLED 19, ZB-ONLY 5 -- two rows up, none down (🔮 "no row worse": HIT):
+      **UR-1.dsk ZB-NOBOOT -> BOTH-RUN** (ZB-NOBOOT since 11-07; which of the day's fixes did it is
+      not isolated -- D-ROBOREG's bounce / SAVSTK / USR, D-DRVCOUNT, D-TAPEBIOS, D-IFFREAD all
+      landed before this run) and facdemo3 ZB-ONLY -> FILES-SAME (D-DRVCOUNT).
       - [ ] **diskcorpus_run.py's "last sample" sorts tags as STRINGS** -- 🎚️ APPARATUS — `sorted(t
             for t in caps)` puts `T120` before `T45`, so the 2026-11-11 third sample at 120 s was
             never the one read as last: that row set's UNSETTLED reading rests on the 45 s sample.
@@ -10906,7 +10912,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15286 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
