@@ -2780,6 +2780,41 @@ item — do **one item per session** to keep context lean.
       replaced C-BIOS's own keyboard / interrupt code -- compare keyint / the key scan of the 0.29
       repack against 0.31 (C-BIOS source, ideas only), and watch VDP status reads ($99) and
       H.KEYI calls per frame on both builds.
+      📏 **THE MECHANISM, TRACED (2026-11-13, [`roboirq_probe.py`](scratchpad/roboirq_probe.py) -> [`roboirq_run1.out`](scratchpad/roboirq_run1.out) ..
+      [`roboirq_run6.out`](scratchpad/roboirq_run6.out); PC breakpoints at the published IRQ vector / hook and at OUR OWN
+      fre_abort_low, I/O and RAM watches -- no game byte read):** (1) zerobas from 5.5 s takes
+      **~20,000 interrupts a second with 0 VDP status reads** -- the CF-3300 one status read per
+      interrupt; (2) because **H.KEYI ($FD9A) reads `FF FF FF FF FF`** (RST 38h): each IRQ calls it,
+      re-enters $0038, and SP walks down through all of RAM; (3) the first write there is
+      keyint's own push with SP = $FD9A, and SP got there from **$0000: our fre_abort_low's
+      `ld sp,(SAVSTK)` with SAVSTK = 0** (at 5.0595 s, CURLIN 0); (4) the abort is a **Syntax
+      error** (HL = err_syntax) raised by **eval, called through calbak from the disk ROM's
+      hk_dget (+27: GET / PUT's record expression)**, the stack under it in RAM ($86A7 / $8704,
+      the CF-3300's CURLIN 0 / line-0 phase). So TWO zerobas faults meet: an error raised while
+      **SAVSTK is still 0** turns into a runaway instead of an error message, and **the GET / PUT
+      record expression raises a Syntax error where the CF-3300 goes on**. ➡️ Next: (a) on which
+      path a program runs with SAVSTK unset (the disk boot's autorun?) -- a breakpoint at run_prog
+      / dl_cmd's `ld (SAVSTK),sp` and at the program's first statement; (b) the text at FN_RESUME
+      when hk_dget evaluates (main's gp_common sets it) against the CF-3300's acceptance.
+      🎯 **THE CAUSE (2026-11-13, [`roboirq_run8.out`](scratchpad/roboirq_run8.out), [`roboirq_run9.out`](scratchpad/roboirq_run9.out)):** no BASIC program is running
+      yet (SAVSTK's only write before the crash is the boot's clear) -- the game's own boot
+      code (return address $86A7) does **CALSLT to the disk ROM's $5C11** (IY = $87, our 3-1), with
+      A = $F1, BC = 0, DE = $8780, HL = $8680 -- and **the CF-3300 makes the IDENTICAL call** (same
+      registers, same caller) at 10.7 s, then runs line 5. On the CF-3300 $5C11 is a routine at a
+      fixed address of its disk kernel; **in ours it is 13 B into hk_dget**, which reads main's
+      text pointer, evaluates it (Syntax error) and raises through calbak with SAVSTK 0 -> SP
+      $0000 -> the stack walks over the hooks -> the storm. The 11-07 build had something
+      harmless at $5C11; disk-ROM carves in the range moved code across it (hence the flips
+      between builds). **D-ROBOREG IS A MISSING PINNED KERNEL ENTRY**, the class of the 66 pins
+      disk/*.asm already carries. ➡️ Next: measure $5C11 on the CF-3300 as a black box -- our own
+      code calls it through CALSLT with the game's registers (and varied ones) and records the
+      registers out and the RAM it changes ($8680.. / $8780..) -- then pin our body at $5C11. And
+      SDSNAT1C: check whether it calls an unpinned address too (the same probe).
+      📏 **SDSNAT1C IS ANOTHER CAUSE (2026-11-13, [`roboirq_sds1.out`](scratchpad/roboirq_sds1.out)):** no CALSLT to the disk ROM
+      before its crash; at 13.5 s the hook area already reads `FD EC BE FC FE` with the PC in our
+      disk ROM ($4C58, mid-load) -- the load itself writing over the hooks -- then `FF`s and the
+      same storm by 14 s. The CF-3300's hooks stay `C9` through its load. ➡️ A write watch on
+      $FD9A with the disk ROM's PC / the sector being read, on both machines.
       - [ ] **diskcorpus_run.py's "last sample" sorts tags as STRINGS** -- 🎚️ APPARATUS — `sorted(t
             for t in caps)` puts `T120` before `T45`, so the 2026-11-11 third sample at 120 s was
             never the one read as last: that row set's UNSETTLED reading rests on the 45 s sample.
@@ -8204,7 +8239,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10637 (T-6FE392)8 (T-529ABE)` from `TODO.md:15312 (T-529ABE)`: a
+      `TODO.md:10672 (T-6FE392)8 (T-529ABE)` from `TODO.md:15347 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11016,7 +11051,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15312 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15347 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

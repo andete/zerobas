@@ -1,0 +1,41 @@
+REF 0.5 0371 65535 0 0 0 hk=ffffffffff sp=3000
+REF 1.0 7D63 0 0 0 0 hk=c9c9c9c9c9 sp=F374
+REF 1.5 081A 0 19 19 19 hk=c9c9c9c9c9 sp=F09A
+REF 2.0 7D10 0 30 30 30 hk=c9c9c9c9c9 sp=F09E
+REF 2.5 7D0E 0 30 30 30 hk=c9c9c9c9c9 sp=F09E
+REF 3.0 77EC 0 12 12 12 hk=c9c9c9c9c9 sp=F082
+REF 3.5 77F2 0 0 0 0 hk=c9c9c9c9c9 sp=F082
+REF 4.0 77BC 0 13 13 13 hk=c9c9c9c9c9 sp=EEBB
+REF 4.5 77BB 0 30 30 30 hk=c9c9c9c9c9 sp=EEBB
+REF 5.0 77BB 0 30 30 30 hk=c9c9c9c9c9 sp=EEBB
+REF 5.5 77BB 0 30 30 30 hk=c9c9c9c9c9 sp=EEBB
+REF 6.0 77F3 0 30 30 30 hk=c9c9c9c9c9 sp=EEBD
+REF 0.0001 SP pc=0327 sp=0000 st=f3c3d702bf1b9898 cl=65535 hl=0000 de=C000 savstk=FFFF
+REF 0.3200 W pc=036A sp=3000 st=eb0c0d20 v=00 hl=FD9A de=FF00 bc=0101
+REF 0.3200 W pc=036D sp=3000 st=eb0c0d20 v=FF hl=FD9A de=FF00 bc=0101
+REF 0.6359 W pc=03B6 sp=F000 st=ffffffff v=00 hl=FD99 de=FD9A bc=0230
+REF 0.6396 W pc=7C82 sp=F376 st=ffffffff v=C9 hl=FD9A de=FD9B bc=022F
+ZB 0.5 102A 0 22 22 23 hk=c9c9c9c9c9 sp=F2FE
+ZB 1.0 102A 0 25 25 25 hk=c9c9c9c9c9 sp=F2FE
+ZB 1.5 102A 0 25 25 25 hk=c9c9c9c9c9 sp=F2FE
+ZB 2.0 102A 0 25 25 25 hk=c9c9c9c9c9 sp=F2FE
+ZB 2.5 102A 0 25 25 25 hk=c9c9c9c9c9 sp=F2FE
+ZB 3.0 7A18 0 10 10 11 hk=c9c9c9c9c9 sp=F50F
+ZB 3.5 43D7 0 0 0 0 hk=c9c9c9c9c9 sp=F503
+ZB 4.0 43D4 0 0 0 0 hk=c9c9c9c9c9 sp=F503
+ZB 4.5 656E 0 0 0 0 hk=c9c9c9c9c9 sp=F517
+ZB 5.0 64E5 0 0 0 0 hk=c9c9c9c9c9 sp=F519
+ZB 5.5 1862 65535 8709 8706 3 hk=ffffffffff sp=CFF3
+ZB 6.0 1854 65535 9889 9889 0 hk=ffffffffff sp=30EF
+ZB 0.0503 W pc=0EC6 sp=F2FE st=2e0df0ff v=00 hl=FD99 de=FD9A bc=0264
+ZB 0.0550 W pc=0ED8 sp=F2FE st=2e0dc9c9 v=C9 hl=FD9A de=F380 bc=0000
+ZB 5.0595 SP pc=3BDE sp=0000 st=f3c3731abf1b9898 cl=0 hl=3BA4 de=0000 savstk=0000
+ZB 5.0609 W pc=1854 sp=FD9A st=ffffffff v=A4 hl=3BA4 de=0000 bc=0B00
+ZB 5.1992 W pc=1862 sp=FD99 st=ffffffff v=18 hl=981B de=BF1A bc=73C3
+ZB 5.3373 W pc=1856 sp=FD99 st=ffffffff v=73 hl=981B de=BF1A bc=73C3
+ZB 5.4754 W pc=1862 sp=FD99 st=ffffffff v=18 hl=3BA4 de=0000 bc=0B00
+ZB 5.6135 W pc=185C sp=FD99 st=ffffffff v=73 hl=981B de=BF1A bc=73C3
+ZB 5.7515 W pc=1856 sp=FD99 st=ffffffff v=73 hl=981B de=BF1A bc=73C3
+ZB 5.8896 W pc=1862 sp=FD99 st=ffffffff v=18 hl=3BA4 de=0000 bc=0B00
+ZB 6.0277 W pc=185C sp=FD99 st=ffffffff v=73 hl=981B de=BF1A bc=73C3
+ZB 6.1658 W pc=1856 sp=FD99 st=ffffffff v=73 hl=981B de=BF1A bc=73C3
