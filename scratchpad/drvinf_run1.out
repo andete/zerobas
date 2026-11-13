@@ -1,0 +1,4 @@
+ROW REF PEEK($FB21) PEEK($FB22) = ['2', '135']
+ROW ZB  PEEK($FB21) PEEK($FB22) = ['3', '135']
+FAIL: DRVINF under Disk BASIC (count REF 2 / ZB 3, slot nonzero on both)
+refcache: 1 hit, 1 miss, 1 stored

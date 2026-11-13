@@ -39,7 +39,7 @@ TXTMAX_NODISK equ 0F380H   ; NOT-A-CELL: the diskless build's text ceiling
 PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)
 DSV_END equ 0EF5BH   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)
-DISKSLOT_OK equ 0FB21H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+DISKSLOT_OK equ 0FB21H   ; nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT)
 CURPTR equ 0F7BCH   ; current load pointer (2 bytes) -- SWPTMP+0
 EXECPTR equ 0F7C0H   ; execution address   (2 bytes) -- SWPTMP+4
 VRAM_FLAG equ 0F664H   ; 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6)

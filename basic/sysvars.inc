@@ -3064,7 +3064,7 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; DISK-ONLY: +1..+11: 8.3 name field (11
 ; PROVENANCE.md §disk-ROM slot capture.
 DISKSLOT        equ     $FB22   ; disk ROM slot id for CALSLT (1)
                                   ; D-WSZERO S8: the reference's DRVINF+1 (the interface's slot) (was $EF54)
-DISKSLOT_OK     equ     $FB21   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+DISKSLOT_OK     equ     $FB21   ; nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT)
                                   ; D-WSZERO S8: the reference's DRVINF (drive count; every reader tests nonzero) (was $EF55)
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
 ; BSAVE/BLOAD) -- also cassette ASCII load's CAL_CURHI (below): a BSAVE/BLOAD

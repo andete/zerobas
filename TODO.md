@@ -552,20 +552,11 @@ item — do **one item per session** to keep context lean.
       that phase (tier 5 speed work, paused); until then, run Boulder Dash II on every
       low-region change (the tape corpus does) and treat a hang there as this item, not
       as a wrong value.
-      🔴 **A SECOND PROGRAM OF THE CLASS, ON DISK (2026-11-13): facdemo3.di2.** The
-      zerobas-only corpus re-run after D-ROBOREG ([`diskcorpus_20261113b.out`](scratchpad/diskcorpus_20261113b.out)) moved it
-      FILES-SAME -> ZB-ONLY: the CF-3300 (and zerobas before) ends with `Syntax error in 290`;
-      zerobas now loops in the second program's line 15 (a FOR / NEXT, PC in our NEXT code,
-      machine code at $C0xx on the stack) where the CF-3300 leaves it in 6 ms
-      ([`facusr_run2.out`](scratchpad/facusr_run2.out), [`facusr_run3.out`](scratchpad/facusr_run3.out)). Isolated by reverting one file at a time
-      ([`facdemo3_run3.out`](scratchpad/facdemo3_run3.out): the dskio fix is not it; [`facdemo3_run4.out`](scratchpad/facdemo3_run4.out): reverting
-      basic/usr.asm alone restores FILES-SAME). **No USR runs** (usr_call never hit, USRTAB the
-      default &H475A on both) -- what changed is that removing the zero guard SHIFTED page 1's
-      code by 8 B from $54E9 to the $6CF3 pin, so the program's behaviour hangs on WHERE our code
-      sits, not on any value: this item's class. The "files" `0.1` in that row is a scrape of a
-      still-running screen, not a written disk. ➡️ Which page-1 address its machine code calls
-      or reads (a RAM -> page-1 entry log during line 15, [`facusr_run5.out`](scratchpad/facusr_run5.out)'s 40-row cap
-      cut it short) -- then whether it is a published entry to pin.
+      📏 **facdemo3.di2 WAS FILED HERE (2026-11-13) AND IS NOT THIS CLASS** -- withdrawn the
+      same day: its line 15 loops over **PEEK(&HFB21)** (the only PEEK it makes there,
+      [`facusr_run7.out`](scratchpad/facusr_run7.out)), and DRVINF read **3 on zerobas, 2 on the CF-3300** ([`facusr_run8.out`](scratchpad/facusr_run8.out)).
+      The 8-byte usr.asm shift only changed HOW the extra drive went wrong; FILES-SAME before
+      was agreement for the wrong reason. Fixed as D-DRVCOUNT (below the D-DISKRUN corpus note).
 
 - [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
       FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
@@ -2769,7 +2760,15 @@ item — do **one item per session** to keep context lean.
       the same day's reference rows):** BOTH-RUN 92 -> 97, ZB-NOBOOT 3 -> 1 (UR-1 alone, 🔮 HIT),
       UNSETTLED 22 -> 19 (xak2eng3 / 4 / 5 now BOTH-RUN -- the page-1 bounce fix), and ONE row
       worse, facdemo3 FILES-SAME -> ZB-ONLY (🔮 "no row worse": MISS) -- filed under
-      D-BD2FRAGILE, a layout-sensitive program, not a wrong value.
+      D-BD2FRAGILE, a layout-sensitive program, not a wrong value. 🔴 **WRONG -- IT WAS A WRONG
+      VALUE (D-DRVCOUNT, fixed the same day):** DRVINF ($FB21) read 3 under Disk BASIC, the
+      CF-3300 2. D-DRVINT (11-08) made our disk INIT write the drive count there, and main's
+      slot scan then `inc`ed the same cell (it is also main's DISKSLOT_OK): 2 + 1. Main now
+      turns 0 -> 1 and $FF -> 0 and keeps a count the disk ROM wrote (basic/islands.asm; every
+      reader tests nonzero only). facdemo3 FILES-SAME again ([`facdemo3_run5.out`](scratchpad/facdemo3_run5.out), 🔮 HIT, and
+      DRVINF 02 87, [`facusr_run9.out`](scratchpad/facusr_run9.out)). D-DRVINT was measured under MSX-DOS only; the new
+      **`make drvinf-acceptance`** ([`disk_probe_drvinf.py`](probes/disk/disk_probe_drvinf.py)) reads it from Disk BASIC: unfixed 3 vs 2
+      FAIL ([`drvinf_run1.out`](scratchpad/drvinf_run1.out)), fixed PASS ([`drvinf_run2.out`](scratchpad/drvinf_run2.out)).
 - [x] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
       11-12 (found 2026-11-13 by a full disk-corpus re-run)**
       🎚️ TIER 1 — a disk that ran on zerobas (and runs on the CF-3300) no longer does.

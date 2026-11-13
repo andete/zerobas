@@ -79,8 +79,17 @@ try_init_slot:
                 ; cell, so a normal INIT makes it 1; a disk ROM that SHIFT told to
                 ; stay out (as the CF-3300's does: no Disk BASIC, HIMEM $F380 --
                 ; scratchpad/bootkeys_run.out) left $FF, which wraps to 0: no disk.
+                ; 🔴 D-DRVCOUNT (2026-11-13): the cell is DRVINF, and since D-DRVINT our
+                ; disk ROM's INIT writes the drive count there (2, as the CF-3300 holds):
+                ; a plain `inc` made it 3, and facdemo3.di2's drive loop ran on where the
+                ; CF-3300's ends (scratchpad/facusr_run7.out / run8.out). 0 -> 1 and $FF
+                ; -> 0 as before; a count the disk ROM wrote stays.
                 ld      hl,DISKSLOT_OK
-                inc     (hl)
+                ld      a,(hl)
+                inc     a
+                cp      2
+                ret     nc                  ; the disk ROM set the drive count: keep it
+                ld      (hl),a
                 ret
 
 

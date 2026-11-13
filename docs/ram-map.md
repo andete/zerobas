@@ -640,8 +640,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FAFE` |  | `basic` | `GFX_DTMP` | $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2) |  |
 | `$FB00` | 2 B | `basic` | `GFX_DSP` | $FB00: tenant entry SP -- an error deep in the (2 B) |  |
 | `$FB20` | 1 B | `disk` | `HOKVLD` | bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B) |  |
-| `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
-| `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
+| `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT) |  |
+| `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | nonzero = DISKSLOT valid (1 B; the disk ROM's drive count once INIT ran -- D-DRVCOUNT) |  |
 | `$FB22` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
 | `$FB35` |  | `basic` | `AUDIO_VMASK` | $FB35 main->tenant: voices-present bitmask |  |
 | `$FB36` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output (SAVSP, idle) (was $EE3B) |  |

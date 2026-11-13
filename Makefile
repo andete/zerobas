@@ -3016,6 +3016,11 @@ p1dta-acceptance: repack-machine
 p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
 
+# --- drvinf-acceptance: DRVINF ($FB21 / $FB22) as Disk BASIC reads it (D-DRVCOUNT) -------
+# The drive count must be the CF-3300's: main's DISKSLOT_OK `inc` made it 3 (2026-11-13).
+drvinf-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_drvinf.py
+
 # --- p1vec-acceptance: a DOS program's page 1, and the page-0 slot entries (D-TPAP1) ----
 # Our own .COM stores into page 1 and calls RDSLT / WRSLT / CALSLT / CALLF / ENASLT from
 # the TPA; every answer must equal the CF-3300's (zerobas ran the TPA with the disk ROM

@@ -19,6 +19,11 @@ sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 import diskcorpus_run as D  # noqa: E402
 
 
+def _sym(n):
+    return int([l.split()[2] for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "basic-reloc.sym"))
+                if l.split()[:1] == [n]][0].rstrip("Hh"), 16)
+
+
 USRCALL = int([l.split()[2] for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "basic-reloc.sym"))
                 if l.split()[:1] == ["usr_call"]][0].rstrip("Hh"), 16)
 
@@ -72,7 +77,10 @@ def run(machine, image, end):
            "set ::nd 0",
            "set ::pr 0",
            "set ::ntr 0",
-           "debug set_condition {[machine_info time] > 5.0 && $::ntr < 40} {set pc [reg pc]; set r [expr {$pc >= 0x8000}]; if {!$r && $::pr} {incr ::ntr; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.6f [machine_info time]] RAM2ROM pc=[format %04X $pc] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] cl=[__rd16 0xF41C] st=$st\"}; set ::pr $r}",
+           "set ::pk [dict create]",
+           "after time 4.0 {binary scan [debug read_block memory 0xFB21 12] H* d; puts $::wf \"4.0000 DRVINF $d\"; flush $::wf}",
+           "after time 12.0 {binary scan [debug read_block memory 0xFB21 12] H* d; puts $::wf \"12.0000 DRVINF $d\"; flush $::wf}",
+           "debug set_bp PEEKRD {[pc_in_slot 0] && [string match C-BIOS* {MACH}] && [machine_info time] > 3.0} {set k [format %04X [reg hl]]; if {![dict exists $::pk $k] && [dict size $::pk] < 40} {dict set ::pk $k 1; puts $::wf \"[format %.4f [machine_info time]] PEEK a=$k v=[format %02X [debug read memory [reg hl]]] cl=[__rd16 0xF41C]\"; flush $::wf}}",
            "after time 7.0 {binary scan [debug read_block memory [reg sp] 64] H* st; puts $::wf \"7.0000 STK pc=[format %04X [reg pc]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x4010 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] DSKIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x0144 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] PHYDIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
@@ -97,7 +105,7 @@ def run(machine, image, end):
         tcl.append(f"after time {t} {{ __s {t} }}")
         t += 0.5
     tcl.append(f"after time {end + 0.3} {{ exit }}")
-    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("MACH", machine).replace("USRCALL", "0x%04X" % USRCALL).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
+    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("MACH", machine).replace("USRCALL", "0x%04X" % USRCALL).replace("PEEKRD", "0x%04X" % (_sym("ev_ff_posany") - 4)).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
     subprocess.run([D.OMSX, "-machine", machine, "-diska", dsk, "-command",
                     "set renderer none; set sound_driver null", "-script", os.path.join(td, "s.tcl")],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60 + end * 3)
