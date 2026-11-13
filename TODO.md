@@ -552,6 +552,20 @@ item — do **one item per session** to keep context lean.
       that phase (tier 5 speed work, paused); until then, run Boulder Dash II on every
       low-region change (the tape corpus does) and treat a hang there as this item, not
       as a wrong value.
+      🔴 **A SECOND PROGRAM OF THE CLASS, ON DISK (2026-11-13): facdemo3.di2.** The
+      zerobas-only corpus re-run after D-ROBOREG ([`diskcorpus_20261113b.out`](scratchpad/diskcorpus_20261113b.out)) moved it
+      FILES-SAME -> ZB-ONLY: the CF-3300 (and zerobas before) ends with `Syntax error in 290`;
+      zerobas now loops in the second program's line 15 (a FOR / NEXT, PC in our NEXT code,
+      machine code at $C0xx on the stack) where the CF-3300 leaves it in 6 ms
+      ([`facusr_run2.out`](scratchpad/facusr_run2.out), [`facusr_run3.out`](scratchpad/facusr_run3.out)). Isolated by reverting one file at a time
+      ([`facdemo3_run3.out`](scratchpad/facdemo3_run3.out): the dskio fix is not it; [`facdemo3_run4.out`](scratchpad/facdemo3_run4.out): reverting
+      basic/usr.asm alone restores FILES-SAME). **No USR runs** (usr_call never hit, USRTAB the
+      default &H475A on both) -- what changed is that removing the zero guard SHIFTED page 1's
+      code by 8 B from $54E9 to the $6CF3 pin, so the program's behaviour hangs on WHERE our code
+      sits, not on any value: this item's class. The "files" `0.1` in that row is a scrape of a
+      still-running screen, not a written disk. ➡️ Which page-1 address its machine code calls
+      or reads (a RAM -> page-1 entry log during line 15, [`facusr_run5.out`](scratchpad/facusr_run5.out)'s 40-row cap
+      cut it short) -- then whether it is a published entry to pin.
 
 - [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
       FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
@@ -2751,6 +2765,11 @@ item — do **one item per session** to keep context lean.
       ➡️ Next: per row, what a USER sees (a key, a disk swap) -- not another sample. The PC
       rule's own gap, filed here: under MSX-DOS page 0 is RAM, so a PC of $0005 (the BDOS
       jump) is a running DOS program, not ROM (the xak rows of the older full run).
+      📏 **ZEROBAS-ONLY RE-RUN AFTER D-ROBOREG (2026-11-13, [`diskcorpus_20261113b.out`](scratchpad/diskcorpus_20261113b.out), against
+      the same day's reference rows):** BOTH-RUN 92 -> 97, ZB-NOBOOT 3 -> 1 (UR-1 alone, 🔮 HIT),
+      UNSETTLED 22 -> 19 (xak2eng3 / 4 / 5 now BOTH-RUN -- the page-1 bounce fix), and ONE row
+      worse, facdemo3 FILES-SAME -> ZB-ONLY (🔮 "no row worse": MISS) -- filed under
+      D-BD2FRAGILE, a layout-sensitive program, not a wrong value.
 - [x] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
       11-12 (found 2026-11-13 by a full disk-corpus re-run)**
       🎚️ TIER 1 — a disk that ran on zerobas (and runs on the CF-3300) no longer does.
@@ -8293,7 +8312,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10726 (T-6FE392)8 (T-529ABE)` from `TODO.md:15401 (T-529ABE)`: a
+      `TODO.md:10745 (T-6FE392)8 (T-529ABE)` from `TODO.md:15420 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11105,7 +11124,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15401 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15420 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

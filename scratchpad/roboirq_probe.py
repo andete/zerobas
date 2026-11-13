@@ -19,6 +19,10 @@ sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 import diskcorpus_run as D  # noqa: E402
 
 
+USRCALL = int([l.split()[2] for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "basic-reloc.sym"))
+                if l.split()[:1] == ["usr_call"]][0].rstrip("Hh"), 16)
+
+
 def run(machine, image, end):
     td = tempfile.mkdtemp(prefix="roboirq_")
     dsk = os.path.join(td, "d.dsk")
@@ -55,7 +59,7 @@ def run(machine, image, end):
            "set ::pd 0",
            "debug set_watchpoint write_mem 0xF41D {} {if {$::pd == 1} {set ::pd 2; binary scan [debug read_block memory 0x8001 0x680] H* pg; set g [open {PDUMP} w]; puts $g $pg; close $g}}",
            # every CURLIN value change after 3 s (the line sequence), up to 60
-           "debug set_watchpoint write_mem 0xF41D {} {if {[machine_info time] > 3.0 && $::nl < 60} {set c [__rd16 0xF41C]; if {$c != $::lastcl} {set ::lastcl $c; incr ::nl; puts $::wf \"[format %.4f [machine_info time]] CL $c\"; flush $::wf}}}",
+           "debug set_watchpoint write_mem 0xF41D {} {if {[machine_info time] > 3.0 && $::nl < 60} {set c [__rd16 0xF41C]; if {$c != $::lastcl} {set ::lastcl $c; incr ::nl; binary scan [debug read_block memory 0xF39A 4] H* ut; puts $::wf \"[format %.4f [machine_info time]] CL $c usrtab=$ut\"; flush $::wf}}}",
            "debug set_watchpoint write_mem 0xF41C {} {if {$::l5 == 0 && $::wp_last_value == 5} {set ::l5 1; binary scan [debug read_block memory 0xFBE5 11] H* nk; puts $::wf \"[format %.4f [machine_info time]] L5 newkey=$nk\"; flush $::wf}}",
            # every SAVSTK write ($F6B1, the run loop's SP anchor): when, from where, CURLIN
            "set ::nw 0",
@@ -66,10 +70,14 @@ def run(machine, image, end):
            "set ::rd 0",
            "set ::nu 0",
            "set ::nd 0",
+           "set ::pr 0",
+           "set ::ntr 0",
+           "debug set_condition {[machine_info time] > 5.0 && $::ntr < 40} {set pc [reg pc]; set r [expr {$pc >= 0x8000}]; if {!$r && $::pr} {incr ::ntr; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.6f [machine_info time]] RAM2ROM pc=[format %04X $pc] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] cl=[__rd16 0xF41C] st=$st\"}; set ::pr $r}",
+           "after time 7.0 {binary scan [debug read_block memory [reg sp] 64] H* st; puts $::wf \"7.0000 STK pc=[format %04X [reg pc]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x4010 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] DSKIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x0144 {$::nd < 80} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] PHYDIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
            "debug set_bp 0x4257 {$::nd < 80 && [string match C-BIOS* {MACH}]} {incr ::nd; binary scan [debug read_block memory [reg sp] 6] H* st; puts $::wf \"[format %.4f [machine_info time]] ZDSKIO af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] sp=[format %04X [reg sp]] a8=[format %02X [debug read ioports 0xA8]] st=$st\"; flush $::wf}",
-           "debug set_bp 0x54E9 {[pc_in_slot 0] && [machine_info time] > 5.0 && $::nu < 30} {incr ::nu; binary scan [debug read_block memory 0xF39A 20] H* ut; binary scan [debug read_block memory [reg sp] 8] H* st; puts $::wf \"[format %.4f [machine_info time]] USR cl=[__rd16 0xF41C] af=[format %04X [reg af]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] usrtab=$ut st=$st\"; flush $::wf}",
+           "debug set_bp USRCALL {[pc_in_slot 0] && [string match C-BIOS* {MACH}] && [machine_info time] > 5.0 && $::nu < 30} {incr ::nu; binary scan [debug read_block memory 0xF39A 20] H* ut; binary scan [debug read_block memory [reg sp] 8] H* st; puts $::wf \"[format %.4f [machine_info time]] USR cl=[__rd16 0xF41C] af=[format %04X [reg af]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] usrtab=$ut st=$st\"; flush $::wf}",
            "debug set_bp 0xFFFF {[machine_info time] > 5.0} {binary scan [debug read_block memory [expr {[reg sp] - 8}] 24] H* st; puts $::wf \"[format %.6f [machine_info time]] PFFFF sp=[format %04X [reg sp]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] bc=[format %04X [reg bc]] af=[format %04X [reg af]] ix=[format %04X [reg ix]] iy=[format %04X [reg iy]] a8=[format %02X [debug read ioports 0xA8]] ffff=[format %02X [debug read memory 0xFFFF]] st-8=$st\"; flush $::wf}",
            "debug set_condition {[machine_info time] > 5.1260 && $::rd == 0} {lappend ::ring [format %04X:%X:%04X [reg pc] [pc_in_slot 0] [reg sp]]; if {[llength $::ring] > 300} {set ::ring [lrange $::ring 100 end]}}",
            "debug set_watchpoint write_mem 0x8100 {} {if {$::nw < 40} {incr ::nw; if {$::rd == 0 && [machine_info time] > 5.13} {set ::rd 1; puts $::wf \"RING [join $::ring { }]\"}; puts $::wf \"[format %.4f [machine_info time]] W8 a=[format %04X $::wp_last_address] v=[format %02X $::wp_last_value] pc=[format %04X [reg pc]] sp=[format %04X [reg sp]] hl=[format %04X [reg hl]] de=[format %04X [reg de]] bc=[format %04X [reg bc]] a8=[format %02X [debug read ioports 0xA8]]\"; flush $::wf}}",
@@ -89,7 +97,7 @@ def run(machine, image, end):
         tcl.append(f"after time {t} {{ __s {t} }}")
         t += 0.5
     tcl.append(f"after time {end + 0.3} {{ exit }}")
-    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("MACH", machine).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
+    open(os.path.join(td, "s.tcl"), "w").write("\n".join(tcl).replace("WFDIR", td).replace("MACH", machine).replace("USRCALL", "0x%04X" % USRCALL).replace("PDUMP", os.path.join(os.environ.get("PDUMP_DIR", td), machine[:6] + "_prog.hex")) + "\n")
     subprocess.run([D.OMSX, "-machine", machine, "-diska", dsk, "-command",
                     "set renderer none; set sound_driver null", "-script", os.path.join(td, "s.tcl")],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60 + end * 3)
