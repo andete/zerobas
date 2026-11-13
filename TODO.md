@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15202 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11510,8 +11510,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       function. `FOR K=5 TO 1` runs its body ONCE on the VG-8020 (K=6 after); zerobas the
       same. 🔮 Predicted "one divergence in which line an error names (Out of DATA: the
       READ's or the DATA's)": MISS -- both name the READ, 100.
-      ➡️ NEXT sessions: tape (CSAVE / CLOAD, the VG-8020, parked on the recorder apparatus)
-      and more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
+      ✅ **S20_tape (2026-11-13): SAME** ([`S20_tape.ses`](probes/sessions/S20_tape.ses), [`sessions_S20_tape4.out`](scratchpad/sessions_S20_tape4.out)): the cassette round
+      trip typed at the prompt -- CSAVE / CLOAD + LIST + RUN, SAVE "CAS:" / LOAD + LIST, BSAVE /
+      BLOAD "CAS:" with a checksum (9520 on both) -- on the VG-8020 and both zerobas targets,
+      openMSX's recorder switched from record to play inside the session ({TCL cassetteplayer
+      play / rewind}). The "recorder apparatus" park was the session's own pacing: the
+      runner's idle test also holds DURING a tape write, so with 2 s waits the recorder was
+      switched before BSAVE's data block was down -- the VG-8020 never found BLK, zerobas
+      Device I/O error ([`sessions_S20_tape2.out`](scratchpad/sessions_S20_tape2.out)); with room for each save, both finish
+      ([`sessions_S20_tape3.out`](scratchpad/sessions_S20_tape3.out)). 🔮 "SAME; the risk is the apparatus": HIT on both counts.
+      - [ ] **SAVE "CAS:" (ASCII) writes for longer on the VG-8020** -- 🎚️ TIER 5 — 6 s after
+            the command the VG-8020 was still writing a 2-line program where zerobas showed Ok
+            ([`sessions_S20_tape3.out`](scratchpad/sessions_S20_tape3.out), snapshot 10). Speed or tape length? Decode both recordings
+            and time them (probes/lib/cas_decode.py) before calling it either.
+      ➡️ NEXT sessions: more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
       machine's LIST speed, so a screen-compared session would read the speed, not the
       break -- that needs a row that reads the break's outcome without the cut point.
