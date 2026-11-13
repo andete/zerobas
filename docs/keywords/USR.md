@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `USR` and `DEF USR` — call a machine-code routine
 
-> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known difference.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -104,8 +104,15 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
   started them at 0 and refused to jump through 0, so `USR(0)` printed 0 and
   `USR("A")` printed `A`. The slots now start at `&H475A`, where zerobas has
   the same error entry ([`usrdef_run.out`](../../scratchpad/usrdef_run.out),
-  [`usrdef_gate.out`](../../scratchpad/usrdef_gate.out)). A slot set to 0 with
-  `DEFUSR=0` is still refused rather than jumped to.
+  [`usrdef_gate.out`](../../scratchpad/usrdef_gate.out)).
+
+- **`DEFUSR=0` then `USR` raised an error instead of resetting the machine**
+  (fixed 2026-11-13, D-ROBOREG). A slot set to 0 is jumped to, like any other:
+  `DEFUSR=0:A=USR(0)` restarts the MSX. The disk game ROBOCOP restarts itself
+  this way to load its next stage, and the CF-3300 reaches address 0 from that
+  line ([`roboirq_fix15.out`](../../scratchpad/roboirq_fix15.out)). zerobas
+  refused, ran on to the next line, and stopped with `Out of memory`
+  ([`roboirq_fix16.out`](../../scratchpad/roboirq_fix16.out)).
 
 - **A routine could not hand back a string** (fixed 2026-11-01,
   D-USRSTRRES). On the VG-8020 a routine that leaves the type at 3 makes

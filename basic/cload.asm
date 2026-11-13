@@ -206,9 +206,27 @@ dr_lineno:
 ; ⚠️ autoexec_run (below) keeps a plain `jp run_prog` DELIBERATELY: it is called
 ; from `init`, before the REPL, where SAVSTK has never been written -- and it has
 ; no enclosing loop to corrupt, so it has no defect A to fix.
+;
+; 🔴 D-ROBOREG (2026-11-13): SAVSTK = 0 -- NEVER WRITTEN -- IS A REAL ENTRY STATE.
+; ROBOCOP.DSK's boot code loads a BASIC program and jumps to basicint_run ($73AC)
+; from the disk boot, BEFORE the prompt ever ran, so nothing had written the anchor
+; (the C-BIOS cold start leaves it $0000): `ld sp,(SAVSTK)` made SP $0000, the
+; next `ret` took $FFFF and the machine re-booted, its RAM scan leaving $F0 at
+; every $xx00 of the loaded program (scratchpad/roboirq_fix9.out, fix13.out:
+; `SP pc=6558 sp=0000 ... savstk=0000`). The CF-3300 runs the program. With no
+; anchor there is no prompt depth to return to, so the caller's own stack stays
+; and the program's `ret` goes to the prompt, as a cold start's would.
 run_prog_top:
-                ld      sp,(SAVSTK)         ; the prompt-clean depth
+                ld      hl,(SAVSTK)
+                ld      a,h
+                or      l
+                jr      z,rpt_cold          ; never written: no prompt depth yet
+                ld      sp,hl               ; the prompt-clean depth
                 jp      run_prog            ; ...its `ret` now returns to the REPL
+rpt_cold:
+                ld      hl,repl
+                push    hl                  ; the program's end reaches the prompt
+                jp      run_prog
 
                 include "basic/cascap-body.inc"     ; cas_capture_name (shared with
                                                     ; the sub BLOAD tenant, D-CASBIN)

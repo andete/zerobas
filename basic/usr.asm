@@ -300,7 +300,12 @@ ev_usr_index:
 
 ; --- usr_call: call USRTAB[A] with the argument in DAC; the result is DAC ---
 ; in:  A = index, DE = argument. out: DE = result. IX (the cursor) preserved.
-; Refuses to jump if the vector is 0 (un-DEF'd) — a $0000 jump resets the MSX.
+; 🔴 D-ROBOREG (2026-11-13): a vector of 0 IS JUMPED TO -- `DEFUSR=0:A=USR(0)` is the
+; MSX reset, and ROBOCOP.DSK's loader re-boots itself that way: the CF-3300 reaches
+; $0000 from the program's line (scratchpad/roboirq_fix15.out, RST0), zerobas raised
+; instead and ran on into the next line (roboirq_fix16.out, USR usrtab=0000). The
+; zero guard predates D-USRDEF, when the slots started at 0; an unset slot is
+; &H475A now, the error entry, so nothing un-DEF'd reaches a 0 here.
 usr_call:
                 push    ix                  ; the cursor must survive the routine
                 add     a,a                 ; index * 2 (0..18)
@@ -309,10 +314,7 @@ usr_call:
                 ld      l,a                 ; HL = slot
                 ld      c,(hl)
                 inc     hl
-                ld      b,(hl)              ; BC = routine address
-                ld      a,b
-                or      c
-                jr      z,usr_undef         ; vector not set -> error, no jump
+                ld      b,(hl)              ; BC = routine address (0 too: a reset)
                 ; 🏗️ D-ADDR29 DAC (2026-09-25): the PUBLISHED convention, as the
                 ; VG-8020 measures -- the argument in DAC with its type in VALTYP,
                 ; HL = DAC, A = VALTYP. The HL-argument convention this replaces
@@ -349,10 +351,6 @@ ur_disp:
                 jp      z,fac_typ_int16
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
-usr_undef:
-                pop     ix                  ; restore the cursor
-                jp      errmark_ret0        ; expression-error marker, DE = 0
-
 ; --- ex_deftype: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------
 ; (repack build only; docs/spec-basic-float-core.md §11.1) HL -> the statement's
 ; OWN token, one of DEFSTR/DEFINT/DEFSNG/DEFDBL ($AB..$AE) -- interp.asm's

@@ -2827,6 +2827,24 @@ item — do **one item per session** to keep context lean.
       REBOOTS at 5.5 s, then a second storm at 8 s with the hooks reading `00 39 00 39 00`. The
       CF-3300 runs the program's line 5 there. ➡️ Next: TXTTAB / VARTAB / PRGEND at
       basicint_run's entry on both machines, and where relink's walk goes (our own code's PCs).
+      ✅ **ROBOCOP RUNS (2026-11-13): TWO MORE ZEROBAS FAULTS, BOTH FIXED.** (1) **`run_prog_top`
+      loaded SP from a NEVER-WRITTEN SAVSTK.** The game reaches basicint_run from its DISK BOOT,
+      before any prompt, so SAVSTK was still $0000: `ld sp,(SAVSTK)` made SP $0000, the next `ret`
+      took $FFFF and the machine re-booted, C-BIOS's RAM scan leaving `$F0` at every $xx00 of the
+      loaded program (a write watch on $8100 / $8200: PC $1AA3 / $1AA8 with SP $FFFC at 5.13 s,
+      after `SP pc=6558 sp=0000 savstk=0000` -- [`roboirq_fix9.out`](scratchpad/roboirq_fix9.out), [`roboirq_fix13.out`](scratchpad/roboirq_fix13.out); the relink
+      and "sub ROM line editor" reading above was this). Now SAVSTK 0 keeps the caller's stack
+      and pushes `repl` (basic/cload.asm) -- zerobas then ran line 5 at 5.13 s, as the CF-3300 does
+      ([`roboirq_fix14.out`](scratchpad/roboirq_fix14.out), 🔮 HIT: no RAM scan, first CURLIN 5). (2) **`USR` refused a vector
+      of 0.** Line 5 ends in `USR` with USRTAB[0] = $0000 -- the MSX reset idiom: the CF-3300
+      reaches $0000 from the line (RST0 at 14.45 s) and re-boots into the game's next stage;
+      zerobas raised and ran on to line 10 and `Out of memory in 1` ([`roboirq_fix15.out`](scratchpad/roboirq_fix15.out),
+      [`roboirq_fix16.out`](scratchpad/roboirq_fix16.out)). The guard predated D-USRDEF (unset slots are &H475A now); removed
+      (basic/usr.asm). After both: ROBOCOP **BOTH-RUN** ([`roboreg_corpus2.out`](scratchpad/roboreg_corpus2.out)). 📏 Seen, not
+      acted on: the CF-3300's boot RAM check RESTORES each byte it tests ($8200: $C7, then $38
+      back), C-BIOS's leaves $0F / $F0 -- ROBOCOP does not need its RAM to survive (it runs), and
+      the C-BIOS side is Joost's to drive. **SDSNAT1C still ZB-NOBOOT** ([`roboreg_corpus3.out`](scratchpad/roboreg_corpus3.out)):
+      the item stays open on it.
       📏 **SDSNAT1C IS ANOTHER CAUSE (2026-11-13, [`roboirq_sds1.out`](scratchpad/roboirq_sds1.out)):** no CALSLT to the disk ROM
       before its crash; at 13.5 s the hook area already reads `FD EC BE FC FE` with the PC in our
       disk ROM ($4C58, mid-load) -- the load itself writing over the hooks -- then `FF`s and the
@@ -8256,7 +8274,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10689 (T-6FE392)8 (T-529ABE)` from `TODO.md:15364 (T-529ABE)`: a
+      `TODO.md:10707 (T-6FE392)8 (T-529ABE)` from `TODO.md:15382 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11068,7 +11086,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15364 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15382 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

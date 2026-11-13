@@ -208,21 +208,25 @@ def run():
               f"  (want HL=DAC, A=2, DAC+2={arg:#06x}, VALTYP=2, result {arg:#06x})")
 
     # =========================================================================
-    # ev_usr with un-DEF'd vector: ERRMARK=$DD, returns DE=0
+    # ev_usr with a ZERO vector: jumped to, like any other (D-ROBOREG 2026-11-13)
     # =========================================================================
-    # usr_call: if BC=0 (un-DEF'd), jumps to usr_undef which sets ERRMARK=$DD
-    # and returns DE=0 without jumping to user code.
+    # `DEFUSR=0:A=USR(0)` is the MSX reset: the CF-3300 reaches $0000 from it
+    # (scratchpad/roboirq_fix15.out). usr_call used to refuse a 0 vector with
+    # ERRMARK=$DD; an unset slot is &H475A since D-USRDEF, so 0 is only ever a
+    # DEFUSR=0. The trap at $0000 returns like the other targets.
     m.poke(s["USRTAB"], bytes(20))   # all slots zero
     m.mem[s["ERRMARK"]] = 0x00
+    hit = []
+    m.trap(0x0000, lambda machine, hit=hit: hit.append(machine.cpu.hl))
     stream = bytes([s["USR_TOKEN"]]) + b'(' + digit_tok(0) + b')'
     m.poke(IBUF, stream)
     cpu = m.call("ev_usr", ix=IBUF)
     errmark = m.mem[s["ERRMARK"]]
-    ok = errmark == 0xDD and cpu.de == 0
+    ok = len(hit) == 1 and hit[0] == s["DAC"] and errmark == 0x00
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  USR0(0) un-DEF'd"
-          f" -> ERRMARK={errmark:#04x}, DE={cpu.de:#06x}"
-          f"  (want ERRMARK=0xdd, DE=0)")
+    print(f"{'PASS' if ok else 'FAIL'}  USR0(0) with USRTAB[0]=0"
+          f" -> jumped to $0000 {len(hit)} time(s), ERRMARK={errmark:#04x}"
+          f"  (want 1 jump with HL=DAC, ERRMARK=0)")
 
     print()
     print("ALL PASS — ex_def stores USR vector; ev_usr calls it with the argument in DAC"
