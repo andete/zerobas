@@ -3038,6 +3038,12 @@ biostext-acceptance: repack-machine
 clmlst-acceptance: repack-machine
 	python3 probes/basic/basic_probe_clmlst.py
 
+# --- biosvram-acceptance: BIOS entries that answer in VRAM (D-ENTRYTIERS step 3) ---------
+# FILVRM / WRTVRM / LDIRVM / LDIRMV / CLRSPR / CHGCLR, the windows read back with our own
+# port code, VG-8020 against zerobas.
+biosvram-acceptance: repack-machine
+	python3 probes/basic/basic_probe_biosvram.py
+
 # --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
 # Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
 initio-acceptance: repack-machine

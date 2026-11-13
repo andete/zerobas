@@ -200,16 +200,16 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0044 | ENASCR | exercised | yes | `biosregs-acceptance` |
 | $0047 | WRTVDP | exercised | yes | `biosregs-acceptance` |
 | $004A | RDVRM | exercised | yes | `biosregs-acceptance` |
-| $004D | WRTVRM | exercised | yes | `biosregs-acceptance` |
+| $004D | WRTVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0050 | SETRD | exercised | yes | `biosregs-acceptance` |
 | $0053 | SETWRT | exercised | yes | `biosregs-acceptance` |
-| $0056 | FILVRM | exercised | yes | `biosregs-acceptance` |
-| $0059 | LDIRMV | exercised | yes | `biosregs-acceptance` |
-| $005C | LDIRVM | exercised | yes | `biosregs-acceptance` |
+| $0056 | FILVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0059 | LDIRMV | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
+| $005C | LDIRVM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $005F | CHGMOD | exercised | yes | `biosmode-acceptance`, `screenerr-acceptance` |
-| $0062 | CHGCLR | exercised | yes | `biosregs-acceptance` |
+| $0062 | CHGCLR | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — |
-| $0069 | CLRSPR | exercised | yes | `biosregs-acceptance` |
+| $0069 | CLRSPR | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $006C | INITXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance` |
 | $006F | INIT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance` |
 | $0072 | INIGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance` |

@@ -16535,6 +16535,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             identical to the VG-8020 ([`clmlst_probe3.out`](scratchpad/clmlst_probe3.out); 🔮 HIT); **`make clmlst-acceptance`**
             ([`basic_probe_clmlst.py`](probes/basic/basic_probe_clmlst.py), [`clmlst_gate.out`](scratchpad/clmlst_gate.out)). The key click SOUND is not implemented
             (C-BIOS has no click code either); CLIKSW now reads as the references'.
+      📏 **The VRAM-answering entries (2026-11-13):** **`make biosvram-acceptance`**
+      ([`basic_probe_biosvram.py`](probes/basic/basic_probe_biosvram.py)): FILVRM, WRTVRM, LDIRVM, LDIRMV, CLRSPR, CHGCLR in SCREEN 1,
+      each VRAM window seeded and read back with OUR OWN port code (never an entry under test) --
+      **6 / 6 SAME** ([`biosvram_run1.out`](scratchpad/biosvram_run1.out), [`biosvram_run2.out`](scratchpad/biosvram_run2.out): the LDIRVM row's first run POKEd 258, a
+      probe fault). Tape corpus after D-CLMLST: SAME 9 / NEAR 11 / RUNS? 22 / **RESET 0** --
+      Demonia RESET -> RUNS?, its timing flip again ([`tapecorpus_clmlst.out`](scratchpad/tapecorpus_clmlst.out); 🔮 "no class
+      worse": HIT).
       📏 **The text-output entries (2026-11-13):** **`make biostext-acceptance`**
       ([`basic_probe_biostext.py`](probes/basic/basic_probe_biostext.py), biosmode's before / after method): CHPUT with 'A' and CR / LF /
       BS / TAB / HOME / CLS / cursor-right, POSIT, CLS, ERAFNK, DSPFNK, KILBUF over the screen
