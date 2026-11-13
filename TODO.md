@@ -8170,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15244 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15249 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10669,6 +10669,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       200 exactly, Tk-live again. (A first run's 99-iteration loops never ran out on the
       VG-8020: [`catalias_vg.out`](scratchpad/catalias_vg.out).) The design's open question is settled in its favour:
       build it as written (Tk live), with these four rows added to its gate.
+      💰 **ROOM CARVED (2026-11-13):** the low region had 7 B against the design's ~16; basic/
+      poke.asm (17 B, wholly promotable per tools/promote_scout.py) moved into page 1 in
+      front of the $6CF3 pin, whose pad absorbs it -- low region 7 -> 24 B, the $6CF3 pad
+      1151 -> 1134 B, 7 / 7 switches (read 2026-11-13). Sub page 0 (15 B) still takes the
+      design's main-resolve variant (~10 B sub, +12 B main).
       🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
       of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
       🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
@@ -10948,7 +10953,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15244 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

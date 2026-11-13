@@ -132,7 +132,6 @@ DISK_BUILD      equ     0
 ; except inside a page-0 CALSLT (where no MAIN code runs at all). It is the
 ; other direction -- leaving something in page 1 that the ISR or a page-1 tenant
 ; needs -- that this tree has been bitten by (basic/subromcall.asm htimi_guard).
-                include "basic/poke.asm"
                 include "basic/sound.asm"
 ; D-MISSOP: PROMOTED FROM PAGE 1 (7 B). `show_title` is a two-instruction stub
 ; -- `ld ix,<tenant slot>` + `jp subrom_call` -- whose only callee, subrom_call,
@@ -479,6 +478,12 @@ __MEAS_LOW_END:
 ; `fat_io_close` + the FAT12 substrate). The disk verbs in bload.asm / cload.asm /
 ; save.asm call this; it must be assembled before them.
                 include "basic/fat.asm"
+
+; POKE (D-CATALIAS's room, 2026-11-13): PROMOTED from the low region into page 1, in
+; front of the $6CF3 pin, whose pad absorbs its 17 B -- the low region's 7 B could not
+; hold D-CATALIAS's main share. tools/promote_scout.py: poke.asm wholly promotable (no
+; fallthrough in or out, no `jr` across, no data, nothing the ISR / a tenant reaches).
+                include "basic/poke.asm"
 
 ; BLOAD's main half: the ,R handoff (load_handoff) and the sub-ROM call
 ; (bload_sub); the statement's parse is sub2/loadsave.asm's (D-P0CB slice C2).
