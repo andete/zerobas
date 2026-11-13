@@ -16490,8 +16490,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
       unused numbers and AUXOUT get read (they ran after the fault here).
 
-- [ ] 🔴 **D-BIOSRUNG — THE MAIN-BIOS TABLE SAYS "EXERCISED" FOR ENTRIES THAT ARE STILL C-BIOS
+- [x] 🔴 **D-BIOSRUNG — THE MAIN-BIOS TABLE SAYS "EXERCISED" FOR ENTRIES THAT ARE STILL C-BIOS
       STUBS: GIVE EVERY ENTRY A STATUS THAT CAN SAY "STUB" (Joost, 2026-11-12)**
+      ✅ **CLOSED 2026-11-13: `tools/stub_scan.py` reads 0 of 108 published entries as stubs**
+      (the last four, PNTINI / SCANR / SCANL and STRTMS, built 2026-11-12; docs/tier-status.md
+      lists every entry exercised or NOT MEASURED). The open children below keep their own
+      tiers.
       🎚️ TIER 1 — the entry-point surface's happy path (the 2026-11-08 ruling: entry points
       outrank BASIC). 🏗️ **JOOST 2026-11-12:** asked *"don't we also have a bios entry tier like
       the keyword tier and the bdos tier ?"*; told the table only says exercised / NOT MEASURED,
@@ -17198,7 +17202,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         four RED ([`grpprt_knife1.out`](scratchpad/grpprt_knife1.out)). SCREEN 2's biossweep rows unchanged ([`biossweep_grpprt.out`](scratchpad/biossweep_grpprt.out),
                         the font only).
 
-- [ ] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
+- [x] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
       DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
       🎚️ TIER 1 — happy path of main BIOS calls (Joost 2026-11-08: the entry points outrank BASIC).
       🤖 **AUTONOMOUS** — `scratchpad/biossweep_probe.py` (basic_probe_biosregs.py's stub: A / BC
@@ -17464,6 +17468,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (sub2/ is built into the sub-ROM) -- screditor's i.wrap read the prompt into a
       wrapped INPUT (47 for 45). A scan of the BUILT images for $F3B1 operands found both;
       now no ROM addresses CRTCNT but crt_rows itself. 10 console / editor suites green.
+      ✅ **CLOSED 2026-11-13:** this item's own "left of the list" ended at STRTMS, shipped
+      2026-11-12 with PUTQ; the SCREEN 3 half of the cursor family and PNTINI / SCANR / SCANL
+      the same day (D-BIOSRUNG). What biossweep still reads apart ([`biossweep_sc3fix.out`](scratchpad/biossweep_sc3fix.out)) is
+      register leftovers with no documented contract and the C-BIOS font, both on file.
 
 - [x] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
       (found 2026-11-10 by D-DOSLADDER's D5, REN / DEL)**
@@ -17736,7 +17744,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `make biosl-acceptance`; what it found is fixed (B1's key scan and width, B5's BEEP
       and R11) or filed on its own (CRTCNT UNDER KEY ON, D-PSGINIT's boot R0, D-F37DNODISK).
 
-- [ ] 🔴 **D-BDOSSEQ — PUSHED REGRESSION: $F37D WRRND ON AN FMAKE'D, STILL-OPEN FILE NEVER RETURNS
+- [x] 🔴 **D-BDOSSEQ — PUSHED REGRESSION: $F37D WRRND ON AN FMAKE'D, STILL-OPEN FILE NEVER RETURNS
       (found 2026-11-10 by D-BDOSFCB stage C's check, scratchpad/bdosset_probe.py)**
       🎚️ TIER 1 — happy path of a BDOS entry from BASIC (the entry-point ruling).
       🤖 **AUTONOMOUS** — bdosset's sequence (FMAKE PROBE.TMP, one SEQWRITE, RENAME of a
@@ -17783,8 +17791,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       read-only behaviour. All 11 suites green again; bdosseq_probe still as the CF-3300.
       ⚠️ Left: a program mixing a BASIC output file with $F37D RDRND / WRRND could still
       have BASIC's buffer flushed under it -- unmeasured, unlikely.
+      ✅ **RE-VERIFIED AND CLOSED 2026-11-13** on HEAD ([`bdosset_head2.out`](scratchpad/bdosset_head2.out)): bdosset runs to
+      `done`, WRRND / WRBLK / WRZER answering A = 1 as the CF-3300; only ABSRD's row differs,
+      where the two references differ from each other too. The checkbox had stayed open
+      after the 2026-11-10 close.
+      - [ ] **A BASIC output file and $F37D RDRND / WRRND in one program** -- 🎚️ TIER 6 —
+            the seq_flush note above: unmeasured, a program would have to mix the two.
 
-- [ ] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
+- [x] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
       (found 2026-11-10 by D-BIOSLADDER B5)**
       🎚️ TIER 1 — main-BIOS entries on par (the entry-point ruling).
       🤖 **AUTONOMOUS** — [`biosl_all_run1.out`](scratchpad/biosl_all_run1.out) b5sound: after GICINI the VG-8020 has R11 = $0B
@@ -17809,6 +17823,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the VG-8020's boot state. sub_first now writes R11 = $0B once at boot (it cost 6 B of page 1, 2026-11-10).
       [`biosl_b5_r11.out`](scratchpad/biosl_b5_r11.out): R11 SAME at INIT and after both GICINIs. ➡️ Left: R0 = $55 on the
       VG-8020 + NMS 1200's row (its boot beep) -- disk-ROM boot state, pinned.
+      ✅ **CLOSED 2026-11-13:** GICINI and BEEP answer as the VG-8020 (both fixed 2026-11-10);
+      what remains is a disk ROM's own boot beep, not a main-BIOS entry.
+      - [ ] **The NMS 1200 disk ROM beeps at boot (R0 = $55 at a cartridge's INIT); zerobas's
+            disk ROM does not** -- 🎚️ TIER 6 — a boot-state register only a cartridge's INIT
+            can read before anything else writes the PSG; pinned in biosl_run.py's ALLOW.
 
 - [x] 🔴 **D-BDOSUNOP — FCLOSE OF AN FCB NEVER OPENED OVERWROTE ANOTHER FILE'S DIRECTORY ENTRY
       (found 2026-11-11 by D-BDOSSEQ's residual, fixed the same day)**
@@ -19302,7 +19321,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       incomplete run; give the other harnesses the same check (a FAIL can only
       hide an over-move there, never fake a PASS, but that is still blindness).
 
-- [ ] 🔴 **D-BDOSFCB — THE REST OF THE $F37D ANSWER SET FROM BASIC: THE RANDOM RECORD FUNCTIONS AND
+- [x] 🔴 **D-BDOSFCB — THE REST OF THE $F37D ANSWER SET FROM BASIC: THE RANDOM RECORD FUNCTIONS AND
       THE FCB-STATE ANSWERS (split from D-BDOSBASIC, 2026-10-22)**
       🎚️ TIER 1 — the $F37D BDOS surface's happy path, re-tiered by Joost 2026-11-10 under the
       2026-11-08 entry-point ruling (was TIER 6 "latent: no program yet calls these"); both
@@ -19440,6 +19459,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       disk/docs/tier2-bdos-coverage.md. 📏 All ten SETRND rows identical to the CF-3300 in A,
       HL and the FCB through $F37D ([`setrnd_run3.out`](scratchpad/setrnd_run3.out)) and through MSX-DOS
       ([`setrnd_dos_run4.out`](scratchpad/setrnd_dos_run4.out)); bdos-acceptance 25/25 with DOSL-D6 now a 0-byte diff, unexcused.
+      ✅ **CLOSED 2026-11-13:** stages A, B, B2 and C and SETRND shipped (2026-11-10), and the
+      bdosset sequence runs to `done` on HEAD ([`bdosset_head2.out`](scratchpad/bdosset_head2.out), A's as the CF-3300 but
+      ABSRD's, where the references differ too). What is left is B3's latent pair:
+      - [ ] **B3 (a) / (b): SEQREAD after a random move on an FMAKE'd file, and a repositioned
+            record past 255** -- 🎚️ TIER 6 — no measured program does either (above): (a) a
+            SEQREAD whose FCB record equals the counter reads on from the iterator; (b) records
+            past 255 sync the counter without being re-positioned.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**
