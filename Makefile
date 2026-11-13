@@ -87,7 +87,7 @@ SRC   := basic/main.asm
 # Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
 DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm \
          basic/grpdev.asm basic/basicrom.asm \
-         basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
+         basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/catalias.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
@@ -1472,6 +1472,11 @@ paintbios-acceptance: repack-machine
 # and not yet started -- all as the VG-8020.
 strtms-acceptance: repack-machine
 	python3 probes/basic/basic_probe_strtms.py --gate
+
+# D-CATALIAS (2026-11-13): V$=V$+<computed> reaches the VG-8020's string-space capacity
+# (100 / 94 / 80, was 66) through an indirect variable slot -- with its safety rows.
+catalias-acceptance: repack-machine
+	python3 probes/basic/basic_probe_catalias.py --gate
 
 # D-SYNCHR (2026-11-07): RST 08h SYNCHR is the published entry, not C-BIOS's debug stub,
 # and RST 10h CHRGTR leaves the reference's exact flags.

@@ -217,6 +217,13 @@ she_dest:
                 ld      l,(iy+SHB_DEST)
                 ld      h,(iy+SHB_DEST+1)
                 ret
+; she_out: APPEND's RESULT descriptor, blk+6 (main passes BC). It is R itself for an
+; operand-1 temp; for a variable left operand (D-CATALIAS) R -- blk+4 -- is the VARIABLE,
+; read only, and the result goes into the expression's own slot.
+she_out:
+                ld      l,(iy+SHB_NUM)
+                ld      h,(iy+SHB_NUM+1)
+                ret
 she_putp:
                 ld      (iy+SHB_PTR),l
                 ld      (iy+SHB_PTR+1),h
@@ -1747,7 +1754,7 @@ sap_realloc:
                 call    sap_copy_clamped    ; copy min(lenTk,remaining) of Tk's body
                 pop     af                  ; A = total     [newbody]
                 pop     de                  ; DE = newbody  [ ]
-                call    she_dest
+                call    she_out             ; the result's slot (R, or D-CATALIAS's slot)
                 ld      (hl),a              ; R.len = total
                 inc     hl
                 ld      (hl),e
@@ -1756,7 +1763,7 @@ sap_realloc:
                 xor     a
                 jr      sap_err0            ; SH_ERR = 0, then release
 sap_empty:
-                call    she_dest
+                call    she_out
                 xor     a
                 ld      (hl),a              ; R.len = 0
                 inc     hl

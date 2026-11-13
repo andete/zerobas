@@ -8170,7 +8170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15249 (T-529ABE)`: a
+      `TODO.md:10603 (T-6FE392)8 (T-529ABE)` from `TODO.md:15278 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10600,7 +10600,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ BUDGET — ROM/speed idiom
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended.
 
-- [ ] 🙋 **THE `String too long` PRECEDENCE RESIDUAL — RE-MARKED 🙋 ON
+- [x] 🙋 **THE `String too long` PRECEDENCE RESIDUAL — RE-MARKED 🙋 ON
       2026-08-29: THE FILED ROUTE HAS A GC HAZARD, AND ITS OBVIOUS REPAIR IS
       CLOSED BY A STATED INVARIANT.** Filed 2026-08-28 by D-STRLONG
       ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md) §5).
@@ -10674,6 +10674,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       front of the $6CF3 pin, whose pad absorbs it -- low region 7 -> 24 B, the $6CF3 pad
       1151 -> 1134 B, 7 / 7 switches (read 2026-11-13). Sub page 0 (15 B) still takes the
       design's main-resolve variant (~10 B sub, +12 B main).
+      ✅ **BUILT (2026-11-13).** basic/catalias.asm (main page 1, in front of the $6CF3 pin):
+      `sas_var` -- str_alias_or_snap's variable arm (CLEARPOOL): a scalar ([VARTAB,ARYTAB)) or
+      an array element ([ARYTAB,STREND)) pushes a 3-byte slot [len][word] -- the descriptor's
+      ADDRESS (>= $8000) or the element's offset from ARYTAB (< $8000), never a heap pointer,
+      so never a GC root -- and marks str_concat_tail's [op] 23; `sct_op` (the append call,
+      moved out of the low region with `se2_fin`: str-engine.asm sits before the crt_rows
+      pin, whose pad has 3 B) passes BC = R and, for op 23, `sct_resolve`s the word at OP
+      TIME into DE (op 22, the realloc arm -- never extend-in-place, which would alias V$),
+      zeroing the slot first; `se2_fin` zeroes an unresolved slot on a malformed operand 2.
+      sub/strheap.asm: `she_out` (blk+6) takes sh_append's two result writes (+7 B; sub page 0
+      15 -> 8 B). The design's main-resolve variant needed no new sub op at all. After:
+      [`catalias_run1.out`](scratchpad/catalias_run1.out) the 8 capacity rows **100 / 94 / 80 = the VG-8020** (was 66 / 62;
+      🔮 HIT); [`catalias_run2.out`](scratchpad/catalias_run2.out) the 4 design rows SAME (CLEAR 201 100 / FRE 101, V$'s content
+      `BCD..UVW`, an array element 100, `W$=V$+op` 67); [`catalias_run5.out`](scratchpad/catalias_run5.out) the 12 safety rows SAME
+      (a GC during the op, aliasing, V$+V$, V$+(V$+"C"), a new scalar shifting the arrays,
+      DEF FN with V$ as its parameter, OOM inside `MID$(V$+Q$,2)` with Q$ / V$ intact, String
+      too long). string, clearpool, concat3, catusr, catcopy, deepexpr, litref, stackpool,
+      instr128, strparen, prstrfn acceptance green; unit tests 97 / 97 (test_str_engine's
+      200+200 row now reads the slot's "" and checks A$ intact -- the design's neutral
+      value). Gate: **`make catalias-acceptance`** ([`basic_probe_catalias.py`](probes/basic/basic_probe_catalias.py), 24 rows) 24 /
+      24; knives (ROM hash moved each time): K1 (sas_var -> the snapshot) -> 9 rows RED
+      ([`catalias_knife1.out`](scratchpad/catalias_knife1.out)); K2 (op 2 instead of 22) -> the 3 grow rows RED ([`catalias_knife2.out`](scratchpad/catalias_knife2.out) --
+      🔮 MISSED: I named the aliasing row, whose V$ is a text literal, never the heap top).
+      🔴 basic/catalias.asm was missing from the Makefile's DEPS -- K2's restore did not
+      rebuild; the hash caught it, and deps-check now lists 49 / 49.
+      ✅ **AND THE PRECEDENCE HALF WITH IT** (the design predicted it): with no operand-1 copy
+      before sh_append's length test, `f.128` / `f.200` / `s.200` read `String too long` as both
+      references -- [`catalias_strlong.out`](scratchpad/catalias_strlong.out) **DIFF vs references 0 / 20** (was 3), and every
+      CLEAR in the sweep. This item is CLOSED.
       🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
       of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
       🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
@@ -10953,7 +10982,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

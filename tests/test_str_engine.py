@@ -195,18 +195,24 @@ def run():
     #    What str_eval returns is UNCHANGED in shape: CF=1 (a string operand WAS
     #    recognised -- only its value errored), VALTYP=1, and STRPTR -> R, the
     #    partial accumulator, which is still a valid temp because the length is
-    #    tested BEFORE any allocation. R therefore holds operand 1 untouched.
+    #    tested BEFORE any allocation.
+    #    🔁 D-CATALIAS (2026-11-13): with a VARIABLE left operand R is no longer a
+    #    copy of it but the expression's own slot, made "" before the op (the
+    #    design's neutral value: scratchpad/catalias_design.md) -- so the partial
+    #    value is "" here, not A$. Never observable: a pending error refuses every
+    #    store (ssk_go / fperr_test). A$ itself must be untouched.
     reset_strtab()
     a200 = b"a" * 200
     set_var("A", a200)
     cpu, ptr, dlen, dbytes = eval_expr("A$+A$")
     got_fperr = m.mem[FPERR]
-    ok = (carry(cpu) and in_temp(ptr)
-          and dbytes == a200 and got_fperr == FPERR_STRLONG)
+    a_bytes = eval_expr("A$")[3]           # A$ alone: its own descriptor's bytes
+    ok = (carry(cpu) and in_temp(ptr) and dlen == 0
+          and got_fperr == FPERR_STRLONG and a_bytes == a200)
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  200+200 raises String too long (no clamp): "
-          f"CF={int(carry(cpu))} len={dlen} "
-          f"FPERR={got_fperr} (want {FPERR_STRLONG}) R-intact={dbytes == a200}")
+          f"CF={int(carry(cpu))} len={dlen} (want 0, the slot) "
+          f"FPERR={got_fperr} (want {FPERR_STRLONG}) A$-intact={a_bytes == a200}")
 
     # 6b) 🟢 THE GREEN CONTROL ON THE SAME APPARATUS. Exactly STRMAX bytes is
     #    LEGAL and must stay legal -- without this row, a fix that raised one

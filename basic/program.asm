@@ -2762,7 +2762,11 @@ npi_x10:
 str_alias_or_snap:
                 ld      hl,(STRPTR)
                 call    desc_in_text        ; Z: the body is program text
+    IF CLEARPOOL
+                jp      nz,sas_var          ; D-CATALIAS: a variable stays put (basic/catalias.asm)
+    ELSE
                 jp      nz,str_snapshot_arg
+    ENDIF
                 ld      de,(TEMPPT)
                 ld      hl,TEMPBASE-3
                 or      a

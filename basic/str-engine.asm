@@ -844,8 +844,10 @@ sct_loop:
                 add     hl,sp
                 ld      a,(hl)              ; A = [op]          [op][R][cursor]
                 ld      (hl),SH_OP_APPEND2  ; the next `+` is a later step
-                ld      hl,(STRPTR)         ; HL = the operand (any stable descriptor)
-                call    sh_go_g             ; op 2 / 22 (APPEND): A = ERR (D-DEEPEXPR:
+                call    sct_op              ; basic/catalias.asm (page 1: this region has
+                                            ; no room): BC := R, a variable slot resolved
+                                            ; (D-CATALIAS), then sh_go_g with HL = the
+                                            ; operand -- op 2 / 22 (APPEND): A = ERR (D-DEEPEXPR:
                                             ; a skip's 6 maps to STRLONG below and
                                             ; loses to the 7 already pending; R
                                             ; is untouched)
@@ -904,9 +906,9 @@ se2_arm:
                 call    penderr_set         ; first-error-wins
                 pop     de                  ; DE = R                 [op]
                 pop     bc                  ; [ ]
-                ld      (STRPTR),de         ; the partial result IS the value
-                scf                         ; success-shaped: no re-drive
-                ret
+                jp      se2_fin             ; basic/catalias.asm: STRPTR := R (an unresolved
+                                            ; variable slot made "" first), CF set -- the
+                                            ; partial result IS the value, no re-drive
 sct_append_err:
                 ; SH_ERR = 1 (heap OOM), 2 (temp overflow) or 3 (D-STRLONG: the
                 ; combined length is over STRMAX). Result = R (the partial

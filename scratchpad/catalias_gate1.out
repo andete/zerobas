@@ -1,0 +1,30 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ROW rh_noq    VG=[M 14 100 100 ] ZB=[M 14 100 100 ] SAME
+ROW rh_q12    VG=[M 14 94 94 ] ZB=[M 14 94 94 ] SAME
+ROW hex_q12   VG=[M 14 94 94 ] ZB=[M 14 94 94 ] SAME
+ROW cat_q12   VG=[M 14 94 94 ] ZB=[M 14 94 94 ] SAME
+ROW rt_q12    VG=[M 14 94 94 ] ZB=[M 14 94 94 ] SAME
+ROW grow_noq  VG=[M 14 100 100 ] ZB=[M 14 100 100 ] SAME
+ROW grow_q12  VG=[M 14 94 94 ] ZB=[M 14 94 94 ] SAME
+ROW grow_q40  VG=[M 14 80 80 ] ZB=[M 14 80 80 ] SAME
+ROW c201      VG=[M 14 100 101 ] ZB=[M 14 100 101 ] SAME
+ROW content   VG=[M 14 100 BCDUVW 100 ] ZB=[M 14 100 BCDUVW 100 ] SAME
+ROW array     VG=[M 14 100 100 ] ZB=[M 14 100 100 ] SAME
+ROW wv        VG=[M 14 67 73 ] ZB=[M 14 67 73 ] SAME
+ROW gc_op     VG=[C 130 AC 170 ] ZB=[C 130 AC 170 ] SAME
+ROW alias     VG=[CABC ZBCX] ZB=[CABC ZBCX] SAME
+ROW vv        VG=[CABAB] ZB=[CABAB] SAME
+ROW vnest     VG=[CABABC] ZB=[CABABC] SAME
+ROW w_vv      VG=[CAB ABABAB] ZB=[CAB ABABAB] SAME
+ROW ary_new   VG=[C 63 NNN] ZB=[C 63 NNN] SAME
+ROW ary_gc    VG=[C 130 AC 170 ] ZB=[C 130 AC 170 ] SAME
+ROW fn_par    VG=[CQ QPZ] ZB=[CQ QPZ] SAME
+ROW fn_cat    VG=[CQPZ] ZB=[CQPZ] SAME
+ROW oom_mid   VG=[C 14 KEEP 150 A] ZB=[C 14 KEEP 150 A] SAME
+ROW empty     VG=[C 0 X] ZB=[C 0 X] SAME
+ROW len255    VG=[C 15 200 ] ZB=[C 15 200 ] SAME
+PASS: V$=V$+X capacity and safety against the VG-8020 (24/24)
+refcache: 0 hit, 2 miss, 2 stored

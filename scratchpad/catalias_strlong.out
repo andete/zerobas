@@ -1,0 +1,36 @@
+CTL    ctl.cat    want 'ABCD'   got 'ABCD'
+CTL    ctl.num    want '2'      got '2'
+CTL    ctl.str    want 'HI'     got 'HI'
+
+row                         vg8020                  cf3300                      zb   verdict
+f.len3           <String too long>       <String too long>       <String too long>   SAME 
+f.right          <String too long>       <String too long>       <String too long>   SAME 
+f.128                 ERR 15 AT 60            ERR 15 AT 60            ERR 15 AT 60   SAME 
+f.200                 ERR 15 AT 60            ERR 15 AT 60            ERR 15 AT 60   SAME 
+s.200            <String too long>       <String too long>       <String too long>   SAME 
+s.300            <String too long>       <String too long>       <String too long>   SAME 
+s.400            <String too long>       <String too long>       <String too long>   SAME 
+s.500            <String too long>       <String too long>       <String too long>   SAME 
+s.600            <String too long>       <String too long>       <String too long>   SAME 
+s.900            <String too long>       <String too long>       <String too long>   SAME 
+e.255                          255                     255                     255   SAME 
+e.256            <String too long>       <String too long>       <String too long>   SAME 
+e.255x3                        255                     255                     255   SAME 
+e.256x3          <String too long>       <String too long>       <String too long>   SAME 
+v.mid            <String too long>       <String too long>       <String too long>   SAME 
+x.oom2       <Out of string space>   <Out of string space>   <Out of string space>   SAME 
+x.oom3       <Out of string space>   <Out of string space>   <Out of string space>   SAME 
+x.long4          <String too long>       <String too long>       <String too long>   SAME 
+x.longtail       <String too long>       <String too long>       <String too long>   SAME 
+d.fre                          200                     200                     200   SAME 
+
+DIFF vs references: 0/20
+
+--- D1 (silent clamp) vs D2 (precedence), from the CLEAR sweep ---
+  CLEAR 200  zb='<String too long>'          ✅ String too long (matches both references)
+  CLEAR 300  zb='<String too long>'          ✅ String too long (matches both references)
+  CLEAR 400  zb='<String too long>'          ✅ String too long (matches both references)
+  CLEAR 500  zb='<String too long>'          ✅ String too long (matches both references)
+  CLEAR 600  zb='<String too long>'          ✅ String too long (matches both references)
+  CLEAR 900  zb='<String too long>'          ✅ String too long (matches both references)
+refcache: 0 hit, 69 miss, 69 stored

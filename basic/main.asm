@@ -484,6 +484,7 @@ __MEAS_LOW_END:
 ; hold D-CATALIAS's main share. tools/promote_scout.py: poke.asm wholly promotable (no
 ; fallthrough in or out, no `jr` across, no data, nothing the ISR / a tenant reaches).
                 include "basic/poke.asm"
+                include "basic/catalias.asm"    ; D-CATALIAS: V$=V$+X's variable slot
 
 ; BLOAD's main half: the ,R handoff (load_handoff) and the sub-ROM call
 ; (bload_sub); the statement's parse is sub2/loadsave.asm's (D-P0CB slice C2).

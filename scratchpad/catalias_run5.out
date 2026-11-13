@@ -1,0 +1,13 @@
+ROW gc_op    VG=[C 130 AC 170 ] ZB=[C 130 AC 170 ] SAME
+ROW alias    VG=[CABC ZBCX] ZB=[CABC ZBCX] SAME
+ROW vv       VG=[CABAB] ZB=[CABAB] SAME
+ROW vnest    VG=[CABABC] ZB=[CABABC] SAME
+ROW w_vv     VG=[CAB ABABAB] ZB=[CAB ABABAB] SAME
+ROW ary_new  VG=[C 63 NNN] ZB=[C 63 NNN] SAME
+ROW ary_gc   VG=[C 130 AC 170 ] ZB=[C 130 AC 170 ] SAME
+ROW fn_par   VG=[CQ QPZ] ZB=[CQ QPZ] SAME
+ROW fn_cat   VG=[CQPZ] ZB=[CQPZ] SAME
+ROW oom_mid  VG=[C 14 KEEP 150 A] ZB=[C 14 KEEP 150 A] SAME
+ROW empty    VG=[C 0 X] ZB=[C 0 X] SAME
+ROW len255   VG=[C 15 200 ] ZB=[C 15 200 ] SAME
+refcache: 0 hit, 2 miss, 2 stored
