@@ -260,7 +260,7 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
 RDBLK_RRSTART   equ     $ED9C   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $ED85   ; saved page-1 destination word (dskio bounce path)
-P1_BLIT         equ     $EFFE   ; installed blit routine (24 B, D-TPAPTAIL (b)) -- declared
+P1_BLIT         equ     $EFFE   ; installed blit routine (27 B, D-TPAPTAIL (b); D-IFFREAD2) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
                                 ; contiguous, and claims past this 36 B run
@@ -277,7 +277,8 @@ P1_BLIT         equ     $EFFE   ; installed blit routine (24 B, D-TPAPTAIL (b)) 
 ; the split is what separated the two.
 ; 🎯 THE TWO BLOCKS NO LONGER HAVE TO BE CONTIGUOUS, because no single free run
 ; is big enough for 54 B: the source-vouched runs are $EA60..$EA91 (50 B) and
-; $EFFE..$F021 (36 B), and $EA9C..$EAFF (100 B, bounded by FN_RTYPE below and
+; $EFFE..$F021 (36 B -- 🔴 27 B by 2026-11-14: FLD_END sits at $F019 now, D-IFFREAD2's
+; assert in disk.asm), and $EA9C..$EAFF (100 B, bounded by FN_RTYPE below and
 ; LINEBUF above). So the blit goes to $EE40 and the hook bodies to $EA9C, and
 ; `install_resident` (disk/kernel.asm, the free tail) does TWO LDIRs.
 ; ⚠️ THE CHAIN BELOW FOLLOWS WA_SEG, SO IT MOVES TOO: CONOUT_CHAR, PG_SV_A8, the

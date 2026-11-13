@@ -111,6 +111,9 @@ def main() -> int:
     for n, start, end, nxt, room in rows[:6]:
         print(f"      ${start:04X}-${end - 1:04X}  {n:5d} B fill   "
               f"next pin ${nxt:04X}   room-before-pin {room} B")
+    if not rows:        # D-IFFREAD2 (2026-11-14): a FULL ROM is a reading, not a crash
+        print(f"    measure: largest usable hole = 0 B (no 0x00 run >= {minlen} B)")
+        return 0
     big = rows[0]
     print(f"    measure: largest usable hole = {big[0]} B at ${big[1]:04X} "
           f"(bounded by ${big[3]:04X})")

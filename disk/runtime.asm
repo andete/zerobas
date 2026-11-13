@@ -422,7 +422,9 @@ br_back_tmpl:
                 ex      (sp), hl            ; H = the caller's $A8
                 push    af                  ; the callee's answer
                 ld      a, i                ; P/V = IFF2
-                push    af
+                jp      pe, BR_BACK + (brb_iff - br_back_tmpl) ; the RAM copy (absolute)
+                ld      a, i                ; D-IFFREAD2: a false 0 is possible, ask again
+brb_iff:        push    af
                 di
                 ld      a, h
                 and     $03

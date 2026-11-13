@@ -96,3 +96,11 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
                 include "fat.asm"
                 include "kernel.asm"
                 include "runtime.asm"
+                ; D-IFFREAD2 (2026-11-14): the two RAM templates that grew by a second
+                ; `ld a,i` -- here, below every label they use (D-PASMO053).
+    IF P1_BLIT + (p1_blit_end - p1_blit_tmpl) > FLD_END ; $EFFE..$F018: FLD_END is at $F019
+                db      DISK_P1_BLIT_OVERRUNS_ITS_RAM_RUN
+    ENDIF
+    IF BR6_RAM + (br6_end - br6_tmpl) > DOS_RESV_TOP    ; the page-3 bridges' reservation
+                db      DISK_SLOT_BRIDGES_OVERRUN_DOS_RESV_TOP
+    ENDIF

@@ -10912,7 +10912,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15324 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11603,13 +11603,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
             as both references'. The sweep itself had stopped at import -- D-WSZERO S8 renamed
             the VALTYP symbol VALTYP_PUB (probes/basic/basic_probe_sysvarsweep.py, one row).
             ➡️ LEFT (filed, not this item): p1_blit_tmpl / br_back_tmpl's single `ld a,i`.
-      - [ ] **Two more single-`ld a,i` IFF reads: p1_blit_tmpl (disk/kernel.asm, the page-1
+      - [x] **Two more single-`ld a,i` IFF reads: p1_blit_tmpl (disk/kernel.asm, the page-1
             bounce's RAM template) and br_back_tmpl (disk/runtime.asm)** -- 🎚️ TIER 2 — the
             class D-IFFREAD fixed in fdc_di_save: an interrupt accepted DURING the `ld a,i` reads
             P/V 0 though interrupts were on, so the restore leaves the CPU masked (a frame-
             interrupt gap, D-GCDI's rule). Not yet SEEN at either site; both are RAM templates
             with an installed size to keep, so the second read (+3 B each with the jump) needs
             room in the installed area first.
+            ✅ **D-IFFREAD2 (2026-11-14): BOTH ASK TWICE NOW**, as fdc_di_save -- `ld a,i / jp pe /
+            ld a,i`, the `jp` aimed at the RAM copy (P1_BLIT / BR_BACK + offset). ROOM: (1) the
+            blit's installed run was 27 B, not the 36 init.asm still claimed (FLD_END moved to
+            $F019 under it); one `push af` now carries both the sub-slot state and the IFF
+            flag (`di` / `ld a,(nn)` / `cpl` leave P/V alone), so the blit stays 27 B; (2) the
+            bridge chain grew 5 B to $DF86, under DOS_RESV_TOP $DF93; (3) the disk ROM's 10 B
+            came from moving wrbytes_add_recsize (18 B, one `call`) into the 26 B hole in
+            front of the $75A5 pin -- the disk ROM's largest 0x00 run is now under 16 B.
+            Two new build asserts at the end of disk/disk.asm (the blit against FLD_END, the
+            chain against DOS_RESV_TOP), each KNIFED: tightened by a byte, each broke the build.
+            tools/check_disk_walls.py crashed on a ROM with no run of 16 B or more; it now
+            reports 0. p1multi-acceptance and p1vec-acceptance PASS ([`IR_p1multi.out`](scratchpad/IR_p1multi.out),
+            [`IR_p1vec.out`](scratchpad/IR_p1vec.out)). ⚠️ NO ROW WITNESSES THE FIX: the false read needs an interrupt
+            accepted during one particular instruction, and neither site was ever SEEN to fail.
       - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
             🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
             LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas

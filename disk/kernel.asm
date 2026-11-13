@@ -7387,6 +7387,23 @@ sdw_end:
                 call    frl_flush
                 ret     c
                 jp      fat_dir_update
+; wrbytes_add_recsize — BDOS_WRBYTES += RECSIZE, 4-byte little-endian add.
+; 📍 D-IFFREAD2 (2026-11-14): MOVED HERE from after bdos_seqwrite_body (its one
+; caller, a `call`), for the 10 B the two IFF re-reads need past $782B.
+wrbytes_add_recsize:
+                ld      hl, BDOS_WRBYTES
+                ld      a, (hl)
+                add     a, RECSIZE
+                ld      (hl), a
+                inc     hl
+                ld      b, 3                ; carry through the upper 3 bytes
+wba_loop:
+                ld      a, (hl)
+                adc     a, 0
+                ld      (hl), a
+                inc     hl
+                djnz    wba_loop
+                ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -7965,19 +7982,26 @@ k_782B:         ret
 ; from the mirror) would put the disk ROM back under the LDIR and lose the rest of
 ; the copy. DI around the window, and the caller's interrupt state back after.
 ;   (A and the flags are not kept; they never were.)
+; 🔴 D-IFFREAD2 (2026-11-14): ASKED TWICE, as fdc_di_save (D-IFFREAD). On an NMOS Z80
+; (and openMSX) an interrupt ACCEPTED during `ld a,i` reads P/V 0 though interrupts were
+; on; only a false 0 is possible, and by the second read the handler has returned with
+; EI -- so PE from either read is the truth. One read here would leave the caller masked.
+; ONE push carries both: `di`, `ld a,(nn)` and `cpl` leave P/V alone, so the pushed F
+; is still the IFF read's. That pays for the second read -- the installed copy has
+; 27 B ($EFFE..$F018, FLD_END at $F019), and this is 27.
 p1_blit_tmpl:
                 ld      a, i                ; P/V = IFF2: were interrupts on?
-                push    af
-                di
+                jp      pe, P1_BLIT + (pb_iff - p1_blit_tmpl) ; the RAM copy (absolute)
+                ld      a, i                ; a false 0 is possible: ask again
+pb_iff:         di
                 ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
-                cpl                         ; A = actual sub-slot write value
-                push    af                  ; save original state for restore
+                cpl                         ; A = actual sub-slot write value (P/V kept)
+                push    af                  ; A = the sub-slot state, F's P/V = IFF2
                 and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
                 ld      ($FFFF), a          ; page 1 now maps to RAM
                 ldir
                 pop     af                  ; A = original sub-slot write value
                 ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
-                pop     af
                 ret     po                  ; they were off: leave them off
                 ei
                 ret
@@ -8609,21 +8633,7 @@ bsw_err:
                 ld      a, $FF
                 ret
 
-; wrbytes_add_recsize — BDOS_WRBYTES += RECSIZE, 4-byte little-endian add.
-wrbytes_add_recsize:
-                ld      hl, BDOS_WRBYTES
-                ld      a, (hl)
-                add     a, RECSIZE
-                ld      (hl), a
-                inc     hl
-                ld      b, 3                ; carry through the upper 3 bytes
-wba_loop:
-                ld      a, (hl)
-                adc     a, 0
-                ld      (hl), a
-                inc     hl
-                djnz    wba_loop
-                ret
+; (wrbytes_add_recsize moved in front of the $75A5 pin by D-IFFREAD2, for room.)
 
 ; fdel_body — MSX-DOS-1 kernel FDEL ($13) canonical entry $436C's real body
 ; (M26, tier2-m26-spec.md sec 2.2). CLEAN-ROOM, single exact-match only
