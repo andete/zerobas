@@ -4,7 +4,21 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 RULINGS 2026-11-12 — READ FIRST (newest)
+## 🟢 RULINGS + STATE 2026-11-13 — READ FIRST (newest)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| BIOS gaps first, for C-BIOS upstream | *"I want to finish up all remaining C-BIOS msx1 bios calls next for C-BIOS. It makes sense to first close the gaps in ZeroBAS."* | the BIOS-entry track (D-ENTRYTIERS) outranks other TIER 1 work; every fix lands as a cbios-repack patch or a zerobas body Joost can lift upstream |
+| the four NOT-MEASURED BIOS rows | *"keyint indirectly ... NMI doesn't matter ... WSLREG could have a test ; INITIO is a strange one ; the tape ones we should definitely cover"* | KEYINT / NMI RULED in tools/entry_table.py (BIOS_RULED); WSLREG and INITIO measured and gated |
+| tape timing | *"a test reading a .cas as openmsx encodes that to a wav that is at the maximum speed reference can decode"* | tapebios-acceptance's `cas` row (3744 baud, exact on both) |
+
+**State at the end of 2026-11-13** (the 11-12 tables below still hold):
+- D-ROBOREG CLOSED (ROBOCOP, SDSNAT1C run): $5C11 pin, run_prog_top with SAVSTK 0, USR through 0, the page-1 dskio bounce (+ p1multi-acceptance).
+- D-DRVCOUNT (DRVINF 3 -> 2, drvinf-acceptance). D-TAPEBIOS (tapebios-acceptance, Ctrl-STOP returns at the press; set_errflg waits). D-INITIO, D-SCALXYF, D-GRPBASE (cbios-repack #21-#23). D-CLMLST (CLMLST / CLIKSW).
+- The entry tables: BDOS 42/42, disk ROM 6/6, BIOS 106/108 + 2 ruled, all "vs reference"; new contract gates: biosflags, biosmode, biostext, biosvram, initio, slotregs (WSLREG rows).
+- ➡️ NEXT on the BIOS track: the entries whose answer is in none of flag / work area / VRAM (per-row contract), and the 27 pinned disk-kernel addresses no BDOS function names. Open, filed: Demonia's latent timing crash (traced, cause not found), omsx_repl's chunk-ends-on-backslash Tcl hazard (APPARATUS).
+
+## 🟢 RULINGS 2026-11-12 — READ FIRST
 
 | ruling | Joost's words | consequence |
 |---|---|---|
