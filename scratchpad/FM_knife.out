@@ -1,0 +1,8 @@
+fdc_di_save at $4C29; machine C-BIOS_MSX1_EU_REPACK_DISK; programs L5_files
+  L5_files     ENDED      fdc_di_save entries   66  masked   9  MASKED
+      6.1636 K iff=0
+      6.2510 K iff=0
+      24.3698 K iff=0
+      25.0100 K iff=0
+      28.3813 K iff=0
+FAIL: 1 program(s) ran an FDC operation masked, or measured nothing

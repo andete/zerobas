@@ -1,0 +1,7 @@
+fdc_di_save at $4C29; machine C-BIOS_MSX1_EU_REPACK_DISK; programs L5_chain L5_files L5_house L5_journal L5_stock
+  L5_chain     ENDED      fdc_di_save entries   53  masked   0  ok
+  L5_files     ENDED      fdc_di_save entries   66  masked   0  ok
+  L5_house     ENDED      fdc_di_save entries  150  masked   0  ok
+  L5_journal   ENDED      fdc_di_save entries  106  masked   0  ok
+  L5_stock     ENDED      fdc_di_save entries   66  masked   0  ok
+PASS: every FDC operation of every disk program started with interrupts on

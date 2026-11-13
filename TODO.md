@@ -17158,10 +17158,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         entries** (9), L5_files' interrupt gaps **19 -> 10, max 0.139 -> 0.036 s**
                         (🔮 HIT); diskbasic, bdos, diskascii, diskfull, asavechan, savedev green.
                         ➡️ Left of D-FWDWIN: step 2's own masked writes, once es_latch is re-sited.
-                        - [ ] **No gate row pins "no FDC op runs masked"** -- 🎚️ TIER 2 — the
+                        - [x] **No gate row pins "no FDC op runs masked"** -- 🎚️ TIER 2 — the
                               FDC_STACK reading is a scratch probe; a row counting `K iff=0`
                               entries over L5_files (expect 0) would catch a hook that loses its
                               `ei`.
+                              ✅ **D-FDCMASKED (2026-11-14): `make fdcmasked-acceptance`**
+                              (probes/disk/disk_probe_fdcmasked.py, in run_gates' list): a PC
+                              breakpoint at our fdc_di_save reads the CPU's IFF over EVERY `# @DISK`
+                              program of probes/programs, not L5_files alone -- 441 entries, 0
+                              masked ([`FM_run1.out`](scratchpad/FM_run1.out); 🔮 HIT). A program with no entry is
+                              REFUSED, not passed. KNIFED: hk_ochk's and hk_srcfind's `ei` made
+                              `nop` -> L5_files 9 masked, FAIL ([`FM_knife.out`](scratchpad/FM_knife.out)) -- the 9 FW5 found.
                   - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
                         gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
                         auto-repeat racing the return? Read it with the key logged before

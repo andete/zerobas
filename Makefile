@@ -3016,6 +3016,14 @@ p1dta-acceptance: repack-machine
 p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
 
+# --- fdcmasked-acceptance: no FDC operation of a disk program starts masked (D-FDCMASKED) --
+# A breakpoint at our fdc_di_save reads the CPU's IFF over every `# @DISK` program of
+# probes/programs; any IFF 0 fails (hk_ochk / hk_srcfind lost their `ei` until D-FWDWIN:
+# 9 masked in L5_files -- the knife, scratchpad/FM_knife.out). Zerobas only: the count
+# is of OUR driver's entries.
+fdcmasked-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_fdcmasked.py
+
 # --- biosflags-acceptance: BIOS entries whose published OUTPUT is a flag (D-SCALXYF) ------
 # DCOMPR / CHRGTR / GETYPR / CHSNS / BREAKX / LPTSTT / SCALXY, F masked to the documented
 # bits, VG-8020 against zerobas (biosregs compares A / BC / DE / HL only).
