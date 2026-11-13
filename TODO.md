@@ -3390,6 +3390,26 @@ item — do **one item per session** to keep context lean.
       RUNS? 21, RESET 0** (42 titles). Three moved, all up: Boulder Dash RUNS? -> NEAR, Hustler
       RUNS? -> NEAR, Demonia RESET -> RUNS?; none lost a class. 🔮 "RESET 0, nothing
       regresses" HIT.
+      📼 **Demonia RESET AGAIN (2026-11-13, after D-INITIO) -- AND NOW REPRODUCED ON THE CURRENT
+      BUILD, SO CHASED** ([`tapecorpus_initio.out`](scratchpad/tapecorpus_initio.out): SAME 10, NEAR 11, RUNS? 20, RESET 1; 🔮 "no class
+      worse" MISSED; Elite RUNS? -> SAME). Deterministic ([`demonia_run1.out`](scratchpad/demonia_run1.out)); reverting
+      initio.patch -> RUNS? ([`demonia_run2.out`](scratchpad/demonia_run2.out)), but so does NOT the value: variant A (reg 15
+      only), B (reg 11 only) and **C (no PSG change at all -- 7 NOPs, the same layout)** all
+      RESET ([`demonia_A.out`](scratchpad/demonia_A.out), [`demonia_B.out`](scratchpad/demonia_B.out), [`demonia_C.out`](scratchpad/demonia_C.out)). And INITIO runs at boot, so every
+      timing after it moves: the game's own INITIO calls (it calls it, from $A747, during its
+      load) already arrive 0.09 s apart from the pre-patch run ([`demonia_trace3_head.out`](scratchpad/demonia_trace3_head.out) /
+      [`demonia_trace3_pre.out`](scratchpad/demonia_trace3_pre.out)). 📏 **The crash, traced (scratchpad/demonia_probe.py, registers / RAM
+      only):** at 279.0973 s the game's OWN RAM code moves SP to $E1AC -- RAM it never wrote,
+      $FF -- and returns to $FFFF; executing there pushes $0000 and the machine resets ([`demonia_trace5.out`](scratchpad/demonia_trace5.out),
+      [`demonia_trace6.out`](scratchpad/demonia_trace6.out): the only writes to $E1A8.. are that push). The SP value is in no work-area
+      cell ([`demonia_trace7.out`](scratchpad/demonia_trace7.out)); no data read of the moved ROM bytes ([`demonia_trace2.out`](scratchpad/demonia_trace2.out)). 🔴 A
+      hypothesis RULED OUT: a BIOS call returning with interrupts enabled where the reference
+      leaves them off (a game borrowing SP under DI) -- 14 entries the game calls in its last
+      60 ms, called under DI, return with the SAME IFF on the VG-8020 and here ([`bioseif_probe.py`](scratchpad/bioseif_probe.py)
+      -> [`bioseif_run1.out`](scratchpad/bioseif_run1.out)). Standing: a timing-selected path in the game's own code; the input that
+      selects it is not found. D-INITIO stays (two references agree on it). ➡️ Which value the
+      game's code turns into SP $E1AC -- a PC ring over its RAM code in the last 0.1 ms before
+      279.0973 (the transitions log shows only BIOS crossings), then where that value came from.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -10886,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15182 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15202 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
