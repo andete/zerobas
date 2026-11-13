@@ -19028,6 +19028,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       carries it. Both read `[C2]`; the knife (`CONT:contkw`) moves it to
       UNREADABLE — LOAD-BEARING. ⚪ UNPROVEN is now **empty**.
 
+      📏 **RE-RUN 2026-11-13 (after the day's BIOS / disk ROM changes):** `make kwsweep` --
+      SUMMARY SUPPORTED 987, DIVERGENT 1, WEAK (excluded) 3 ([`kwsweep_1113.out`](scratchpad/kwsweep_1113.out)); the one
+      DIVERGENT row, `chanfor`, had the REFERENCE's screen garbled (a column of `|`, the key
+      row) where zerobas printed `1 2 3 10 20 30`, and alone reads SUPPORTED
+      ([`kwsweep_chanfor1.out`](scratchpad/kwsweep_chanfor1.out)) -- a capture fault of the long run, not a keyword gap. No MISSING.
 - [x] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
       Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
       `CLEAR 300,TXTTAB+1000` both references have **148** free bytes and refuse
