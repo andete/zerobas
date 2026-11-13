@@ -16753,8 +16753,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   lprint_noprn RED, outdlp_noprn still SAME ([`LPT_k6.out`](scratchpad/LPT_k6.out), [`LPT_k7.out`](scratchpad/LPT_k7.out)). outdlp,
                   lpterrnl, lptverb, editverb, bdos, biosregs, programs, cassave, cas-ascii,
                   iscntc, sessions green.
-            - [ ] 🔴 **AFTER MACHINE CODE HAS SEEN A CTRL-STOP, THE VG-8020's BASIC DOES NOT
+            - [x] 🔴 **AFTER MACHINE CODE HAS SEEN A CTRL-STOP, THE VG-8020's BASIC DOES NOT
                   ALSO BREAK; ZEROBAS's DOES** (found 2026-11-12, [`outdlp_fail_fixed.out`](scratchpad/outdlp_fail_fixed.out)): a USR that
+                  ✅ **CLOSED 2026-11-13:** both halves of the slice shipped -- step 1 (the INTFLG
+                  latch consumer, the STOP pause on the next latch) 2026-11-12, step 2 (the latch at
+                  EVERY statement boundary, 2f63dd8b) today; outdlp-acceptance's brk_midline reads
+                  `Break in 20` on both machines. The history below stays as written.
                   loops on BREAKX until CTRL-STOP, or LPTOUT left by it, returns, and the
                   program goes on to its end on the VG-8020 -- zerobas breaks at the next
                   statement (`Break in 30` / `in 40`), the key still being held. The VG-8020
