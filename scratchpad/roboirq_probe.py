@@ -39,7 +39,7 @@ def run(machine, image, end):
            "debug set_bp 0x3BDA {[pc_in_slot 0]} {binary scan [debug read_block memory [reg sp] 24] H* st; "
            "puts $::wf \"[format %.4f [machine_info time]] AB sp=[format %04X [reg sp]] hl=[format %04X [reg hl]] a=[format %02X [reg a]] st=$st cl=[__rd16 0xF41C] savstk=[format %04X [__rd16 0xF6B1]]\"; flush $::wf}",
            # every CALSLT ($001C) and CALLF ($0030) before the crash: target IX / slot IY / caller
-           "debug set_bp 0x001C {[pc_in_slot 0] && [machine_info time] > 3.0} {puts $::wf \"[format %.4f [machine_info time]] CS ix=[format %04X [reg ix]] iy=[format %04X [reg iy]] ret=[format %04X [__rd16 [reg sp]]]\"; flush $::wf}",
+           "debug set_bp 0x001C {[pc_in_slot 0] && [machine_info time] > 3.0} {binary scan [debug read_block memory [reg sp] 24] H* st; puts $::wf \"[format %.4f [machine_info time]] CS ix=[format %04X [reg ix]] iy=[format %04X [reg iy]] ret=[format %04X [__rd16 [reg sp]]] st=$st\"; flush $::wf}",
            # the disk-ROM address the game calls ($5C11): who, with what registers
            "debug set_bp 0x5C11 {[machine_info time] > 3.0} {binary scan [debug read_block memory [reg sp] 8] H* st; puts $::wf \"[format %.4f [machine_info time]] K5 af=[format %04X [reg af]] bc=[format %04X [reg bc]] de=[format %04X [reg de]] hl=[format %04X [reg hl]] ix=[format %04X [reg ix]] iy=[format %04X [reg iy]] sp=[format %04X [reg sp]] st=$st\"; flush $::wf}",
            # every SAVSTK write ($F6B1, the run loop's SP anchor): when, from where, CURLIN

@@ -152,22 +152,23 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $5462 | `k_5462` | BDOS $07 DIRIN: exercised | disk/kernel.asm:1391 |
 | $546E | `k_546E` | BDOS $03 AUXIN: exercised | disk/kernel.asm:1429 |
 | $5474 | `k_5474` | BDOS $04 AUXOUT: exercised | disk/kernel.asm:1441 |
-| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1619 |
-| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1646 |
-| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1717 |
-| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1728 |
-| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1756 |
-| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3450 |
-| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3851 |
-| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3972 |
-| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7381 |
-| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7783 |
-| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7872 |
+| $553C | `gdate_handler` | BDOS $2A GDATE (by its label): exercised | disk/kernel.asm:1641 |
+| $5552 | `k_5552` | no BDOS function named | disk/kernel.asm:1668 |
+| $55DB | `k_55DB` | BDOS $2C GTIME: exercised | disk/kernel.asm:1739 |
+| $55E6 | `k_55E6` | BDOS $2D STIME: exercised | disk/kernel.asm:1750 |
+| $55FF | `k_55FF` | BDOS $2E VERIFY: exercised | disk/kernel.asm:1778 |
+| $5C11 | `k_5C11` | no BDOS function named | disk/kernel.asm:3040 |
+| $5E10 | `mb_5e10` | no BDOS function named | disk/kernel.asm:3464 |
+| $5FE5 | `(jp k_5FE5)` | no BDOS function named | disk/kernel.asm:3865 |
+| $607B | `(jp k_607B)` | BDOS $0C CPMVER: exercised | disk/kernel.asm:3986 |
+| $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7395 |
+| $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7797 |
+| $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7886 |
 | $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:859 |
 | $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:863 |
 | $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:876 |
 
-64 pinned addresses; 37 name a BDOS function, 27 do not.
+65 pinned addresses; 37 name a BDOS function, 28 do not.
 
 ## Entry points — the main BIOS calls
 

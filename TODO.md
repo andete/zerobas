@@ -2810,6 +2810,23 @@ item — do **one item per session** to keep context lean.
       code calls it through CALSLT with the game's registers (and varied ones) and records the
       registers out and the RAM it changes ($8680.. / $8780..) -- then pin our body at $5C11. And
       SDSNAT1C: check whether it calls an unpinned address too (the same probe).
+      📏 **$5C11 MEASURED ON THE CF-3300 (2026-11-13, [`k5c11_probe.py`](scratchpad/k5c11_probe.py) -> [`k5c11_run2.out`](scratchpad/k5c11_run2.out), [`k5c11_run3.out`](scratchpad/k5c11_run3.out)):**
+      our own code CALSLTs it from Disk BASIC (an empty data disk): HL $DE77, DE $DC65, BC $0102,
+      A $C9 out for EVERY input varied (A 00 / 01 / F1, BC 0 / 1 / $0302, DE / HL moved), no byte
+      of $C000-$C2FF changed -- nothing the caller can see depends on the call.
+      ✅ **PINNED (2026-11-13):** `k_5C11: ret` at $5C11 (disk/kernel.asm, inside hk_dget behind a
+      `jr` over it; cr_copy1 moved to the $553C hole for the 5 B -- 🔴 a first cut put it in the
+      $7FC0 hole (disk/runtime.asm's relocated-template region) and bdos-acceptance went RED,
+      BDOSX / BDOSX3 never reaching their anchors: that hole is no home for code the BDOS kernel
+      calls; in front of $553C, 25 / 25). After
+      ([`roboirq_fix1.out`](scratchpad/roboirq_fix1.out)): the call returns, and the corpus classifies ROBOCOP **BOTH-RUN**
+      again (2 / 2, the 11-07 reading) -- 🔮 HIT on the class, but **NOT a running game yet**:
+      🔴 **A SECOND FAULT BEHIND IT** ([`roboirq_fix2.out`](scratchpad/roboirq_fix2.out)): the game then jumps to our pinned
+      **basicint_run** ($73AC, the reference's RUN-without-argument), whose `relink` reaches the
+      sub ROM's line editor (sr_slot <- sc_call <- dfl_set <- basicint_run+11) -- and the machine
+      REBOOTS at 5.5 s, then a second storm at 8 s with the hooks reading `00 39 00 39 00`. The
+      CF-3300 runs the program's line 5 there. ➡️ Next: TXTTAB / VARTAB / PRGEND at
+      basicint_run's entry on both machines, and where relink's walk goes (our own code's PCs).
       📏 **SDSNAT1C IS ANOTHER CAUSE (2026-11-13, [`roboirq_sds1.out`](scratchpad/roboirq_sds1.out)):** no CALSLT to the disk ROM
       before its crash; at 13.5 s the hook area already reads `FD EC BE FC FE` with the PC in our
       disk ROM ($4C58, mid-load) -- the load itself writing over the hooks -- then `FF`s and the
@@ -8239,7 +8256,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10672 (T-6FE392)8 (T-529ABE)` from `TODO.md:15347 (T-529ABE)`: a
+      `TODO.md:10689 (T-6FE392)8 (T-529ABE)` from `TODO.md:15364 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11051,7 +11068,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15347 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15364 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

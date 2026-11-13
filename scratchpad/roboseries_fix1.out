@@ -1,0 +1,21 @@
+REF T   2.0 pc=7D10 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   4.0 pc=77BC curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   6.0 pc=77F3 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T   8.0 pc=029E curlin=    0 S1 
+REF T  10.0 pc=77BB curlin=    0 S1   ROBOCOP DISK VERSION 89
+REF T  12.0 pc=1133 curlin=    5 S1             TECLE [CONTROL] !
+REF T  14.0 pc=0288 curlin=    5 S1             TECLE [CONTROL] !
+REF T  16.0 pc=0BE7 curlin=    0 S1            MS
+REF T  18.0 pc=77F3 curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+REF T  20.0 pc=77BC curlin=    0 S1            MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+ZB T   2.0 pc=102A curlin=    0 S2 
+ZB T   4.0 pc=43D4 curlin=    0 S1   ROBOCOP DISK VERSION 89
+ZB T   6.0 pc=102A curlin=    0 S2 
+ZB T   8.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  10.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  12.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  14.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  16.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  18.0 pc=0038 curlin=14592 S1   ROBOCOP D
+ZB T  20.0 pc=0038 curlin=14592 S1   ROBOCOP D
+refcache: 0 hit, 2 miss, 2 stored

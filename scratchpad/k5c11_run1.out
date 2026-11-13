@@ -1,0 +1,4 @@
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 22 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+REF game   <NO [K> P
+ZB game   <NO [K> RUN Type mismatch in 30 ZB color auto goto list run
+refcache: 0 hit, 2 miss, 1 stored

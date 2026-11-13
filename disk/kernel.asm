@@ -1616,6 +1616,28 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
 ; no stock bytes. $553C fell inside fac_loop_body; that body is relocated just
 ; below (label-referenced via fat.asm `jp fac_loop_body`; net-zero -- the tail
 ; `ds $5FE5 - $` absorbs the shift). See docs/tier2-gdate-spec.md.
+; (moved here from runtime.asm by the D-DSKFMT defrag)
+; (moved here from kernel.asm by the D-DSKFMT defrag)
+; 🎯 D-DISKRUN mb.dsk (Joost 2026-10-27: "Start BASIC (NMS 1200)"): $5E10 IS PINNED.
+; mb.dsk's boot code CALLs this fixed address in its step-5 call (scratchpad/mb_5e10.out,
+; DE = $7368, HL = $E646 on both machines). On the VG-8020 + NMS 1200 it starts BASIC
+; and AUTOEXEC.BAS runs, with no date question (scratchpad/mbtime_run.out: the banner
+; at T6, AUTOEXEC.BAS's own `Illegal function call in 20` by T9); the CF-3300 hangs
+; there. Here $5E10 was the middle of basent_body and the machine rebooted for ever.
+; It is basent_body itself: under boot_call0's DOS_TRY mark that is the boot-loader
+; restart ('B','D'), which skips the DOS boot and asks the date only when the disk has
+; no AUTOEXEC.BAS -- mb.dsk has one. A pad, then the jump: no new behaviour.
+; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
+; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
+; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
+; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
+; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room; cr_copy1 is
+; here since D-AUXIN, which needed $546E -- inside cr_copy1's old span -- for AUXIN.
+; Entered only by `call` (cr_dir).
+cr_copy1:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                jp      cr_copy2            ; disk/runtime.asm
                 ds      $553C - $, $00      ; pad to the canonical _GDATE entry
 gdate_handler:
                 jp      gdate_body          ; D-DOSDATE: the STORED date, not a constant
@@ -3014,6 +3036,18 @@ hk_dget:
                 push    bc                  ; [B = GET / PUT, C = the channel]
                 ld      hl, (FN_RESUME)
                 call    hkp_sp              ; A = the first non-blank
+                jr      hdg_cmp             ; over the pinned $5C11 below
+                ds      $5C11 - $, $00
+; 📌 k_5C11 -- D-ROBOREG (2026-11-13): a CF-3300 disk-kernel address that software CALLS.
+; ROBOCOP.DSK's boot code CALSLTs $5C11 (IY $87) with A $F1, BC 0, DE $8780, HL $8680 on
+; the CF-3300 as here (scratchpad/roboirq_run9.out); there it returns with no effect our
+; own calls could see -- registers out the same for every input, no byte of the caller's
+; buffers changed (scratchpad/k5c11_run2.out, k5c11_run3.out). Here it was 13 B into
+; hk_dget: an eval of main's text pointer, a Syntax error raised with SAVSTK 0, the stack
+; over the hooks and an interrupt storm. A bare `ret`, as the other bodiless canonical
+; entries (k_4919 ..).
+k_5C11:         ret
+hdg_cmp:
                 cp      ','
                 jr      nz, hdg_next
                 inc     hl
@@ -3352,26 +3386,6 @@ basent_pending:
                 cp      'D'
                 ret
 
-; 🎯 D-DISKRUN mb.dsk (Joost 2026-10-27: "Start BASIC (NMS 1200)"): $5E10 IS PINNED.
-; mb.dsk's boot code CALLs this fixed address in its step-5 call (scratchpad/mb_5e10.out,
-; DE = $7368, HL = $E646 on both machines). On the VG-8020 + NMS 1200 it starts BASIC
-; and AUTOEXEC.BAS runs, with no date question (scratchpad/mbtime_run.out: the banner
-; at T6, AUTOEXEC.BAS's own `Illegal function call in 20` by T9); the CF-3300 hangs
-; there. Here $5E10 was the middle of basent_body and the machine rebooted for ever.
-; It is basent_body itself: under boot_call0's DOS_TRY mark that is the boot-loader
-; restart ('B','D'), which skips the DOS boot and asks the date only when the disk has
-; no AUTOEXEC.BAS -- mb.dsk has one. A pad, then the jump: no new behaviour.
-; cr_copy1 / cr_copy2 -- D-WRBLKDIR's third part: fat_dir_update writes FWR_FIRST /
-; FWR_BYTES (BDOS_WRFIRST / BDOS_WRBYTES), which still hold the LAST-WRITTEN file's
-; values at a close -- so the closed FCB's (wrblk_fcbstate loaded them into
-; FAT_FIRSTCLUS / FAT_FILESIZE) go there first. 🔴 Without it the first run gave ALT1
-; ALT2's cluster (wrblkalt-acceptance). Split across two holes, for room; cr_copy1 is
-; here since D-AUXIN, which needed $546E -- inside cr_copy1's old span -- for AUXIN.
-; Entered only by `call` (cr_dir).
-cr_copy1:
-                ld      hl, (FAT_FIRSTCLUS)
-                ld      (BDOS_WRFIRST), hl
-                jp      cr_copy2            ; disk/runtime.asm
 ; wrblk_huge -- D-BDOSSEQ (2026-11-10): a WRBLK / WRZER / WRRND whose start RR x RS
 ; is 1 MB or more -- RR's top byte set and RS >= 16 -- lies past any MSX disk: disk
 ; full (A = 1), as the CF-3300 answers. wrblk_off24's 24-bit product WRAPPED there,
