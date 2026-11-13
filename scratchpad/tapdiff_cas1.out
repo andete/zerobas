@@ -1,0 +1,5 @@
+CAS VG: [C Cy1 Cy2 Cy-end read sum] = None  (want (0, 0, 0, 534, 9277991))
+CAS ZB: [C Cy1 Cy2 Cy-end read sum] = None  (want (0, 0, 0, 534, 9277991))
+ROW cas NO-REFERENCE
+INSTRUMENT FAULT: the VG-8020 gave no reading
+refcache: 0 hit, 2 miss, 2 stored

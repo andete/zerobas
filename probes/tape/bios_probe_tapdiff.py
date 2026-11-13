@@ -15,6 +15,8 @@ machine code (USR), on each machine:
          after the last TAPOUT and after TAPOOF, plus how many TAPOUTs ran.
   read   the VG-8020's OWN write recording played into both: TAPION, TAPIN x 64, TAPIOF.
          Compared: Cy after TAPION / any TAPIN / TAPIOF, and the 64 bytes read.
+  cas    a .cas of our own (openMSX plays it at 3744 baud, the VG-8020's fastest) read
+         as BLOAD reads it: TAPION, the header, TAPION again, the data -- every byte exact.
   break  no tape: TAPION, Ctrl-STOP pressed while it waits -- Cy, INTFLG, an ON STOP trap
          and whether the key is still down when TAPION returns (SNSMAT row 7).
   wbreak a long TAPOUT run (1500 bytes) broken with Ctrl-STOP in its data -- the same.
@@ -23,7 +25,7 @@ machine code (USR), on each machine:
 Registers other than Cy are stored and printed, not compared (no published contract).
 Black box: our own code and bytes, the recorded signal; nothing of the reference is read.
 
-    python3 -u probes/tape/bios_probe_tapdiff.py [write|read|break|wbreak|rbreak ...]
+    python3 -u probes/tape/bios_probe_tapdiff.py [write|read|cas|break|wbreak|rbreak ...]
 
 Exit 0 all agree; 1 a divergence; 2 the reference gave no reading.
 """
@@ -127,6 +129,55 @@ RLONG = asm([*call(TAPION), 0xF5, 0xE1, 0x22, 0x00, 0xD2, 0x01, LONG & 255, LONG
              *call(TAPIOF), 0x3A, INTFLG & 255, INTFLG >> 8, 0x32, 0x08, 0xD2, 0xFB, 0xC9])
 assert WLONG[16] == 0x7E and RLONG[16] == 0xE5   # the loop heads
 
+# cas: a .cas of our own, which openMSX plays at 3744 baud -- the fastest the VG-8020
+# decodes, so TAPION's threshold and TAPIN's bit timing have no slack (Joost 2026-11-13).
+# A BSAVE-shaped file (cas_encode.build_cas): the header block (10 x $D0 + the name, 16
+# bytes) and the data block (start / end / exec + CASN bytes) -- every byte value, then
+# long runs of 0-bits and 1-bits, then alternating ones. Read as BLOAD reads it: TAPION,
+# 16 x TAPIN, TAPION again (the relock between blocks), 6 + CASN x TAPIN, TAPIOF.
+CASN = 512
+CASDATA = bytes(range(256)) + bytes(64) + b"\xff" * 64 + b"\x55\xaa" * 64
+assert len(CASDATA) == CASN
+CASRD = asm([*call(TAPION), 0xF5, 0xE1, 0x22, 0x00, 0xD2, ("jr", "c", "out"),
+             0x21, 0x00, 0x90, 0x06, 16,
+             ("L", "h"), 0xE5, 0xC5, *call(TAPIN), 0xC1, 0xE1, ("jr", "c", "out"),
+             0x77, 0x23, ("djnz", "h"),
+             0xE5, *call(TAPION), 0xF5, 0xD1, 0xED, 0x53, 0x0A, 0xD2, 0xE1, ("jr", "c", "out"),
+             0x01, (6 + CASN) & 255, (6 + CASN) >> 8,
+             ("L", "d"), 0xE5, 0xC5, *call(TAPIN), 0xC1, 0xE1, ("jr", "c", "out"),
+             0x77, 0x23, 0x0B, 0x78, 0xB1, ("jr", "nz", "d"),
+             ("L", "out"), 0x22, 0x0C, 0xD2, 0xF5, 0xE1, 0x22, 0x02, 0xD2,
+             *call(TAPIOF), 0xFB, 0xC9])
+RXC = re.compile(r"\[C((?:\s+-?\d+){5})\s*\]")
+
+
+def cas_want():
+    """(the bytes TAPIN must return, their weighted sum as the BASIC side computes it)."""
+    import cas_encode
+    blob = cas_encode.build_cas("ZBCAS", 0xA000, 0xA000, CASDATA)
+    sync = bytes([0x1F, 0xA6, 0xDE, 0xBA, 0xCC, 0x13, 0x7D, 0x74])
+    blocks = [b for b in blob.split(sync) if b]
+    want = blocks[0][:16] + blocks[1][:6 + CASN]
+    return blob, want, sum(b * (i % 251 + 1) for i, b in enumerate(want))
+
+
+def cas_row(machine, casfile):
+    """[C Cy-TAPION1 Cy-TAPION2 Cy-end bytes-read sum]."""
+    lines = ["NEW", "10 CLEAR 200,&H8FFF",
+             f"20 FOR I=0 TO {len(CASRD) - 1}:READ X:POKE &HD000+I,X:NEXT",
+             "30 FOR I=&HD200 TO &HD20D:POKE I,255:NEXT:DEFUSR=&HD000:Q=USR(0)",
+             "40 P=PEEK(&HD20C)+256*PEEK(&HD20D)-36864:S=0:IF P<0 OR P>1000 THEN P=-1:GOTO 50",
+             "45 FOR I=0 TO P-1:S=S+PEEK(&H9000+I)*(I MOD 251+1):NEXT",
+             '50 PRINT "[C";PEEK(&HD200) AND 1;PEEK(&HD20A) AND 1;PEEK(&HD202) AND 1;P;S;"]"',
+             "60 DATA " + ",".join(str(b) for b in CASRD), "RUN"]
+    raw = omsx_repl.run_cases(machine, [("direct", lines)], batch=False,
+                              reset=("", "SCREEN 0"),
+                              prologue=(f"cassetteplayer insert {{{casfile}}}",),
+                              step=3.0, run_gap=30.0, timeout=600.0)[0] or ""
+    m = RXC.findall(re.sub(r"\s+", " ", raw))
+    return tuple(int(x) for x in m[-1].split()) if m else None
+
+
 RXL = re.compile(r"\[L((?:\s+-?\d+){6})\s*\]")
 
 
@@ -218,7 +269,7 @@ def break_row(machine):
 
 
 def main():
-    rows = sys.argv[1:] or ["write", "read", "break", "wbreak", "rbreak"]
+    rows = sys.argv[1:] or ["write", "read", "cas", "break", "wbreak", "rbreak"]
     bad = blind = 0
     ref_wav = None
     want_sum = sum(b * (i + 1) for i, b in enumerate(PAT))
@@ -264,6 +315,23 @@ def main():
             same = b["ZB"] == b["VG"]
             bad += not same
             print(f"ROW break {'SAME' if same else 'DIVERGES'}")
+    if "cas" in rows:
+        blob, want, wsum = cas_want()
+        casf = probe_tmp.tmp("tapdiff_3744.cas")
+        open(casf, "wb").write(blob)
+        exp = (0, 0, 0, len(want), wsum)
+        c = {side: cas_row(m, casf) for side, m in (("VG", REF), ("ZB", OURS))}
+        for side in ("VG", "ZB"):
+            print(f"CAS {side}: [C Cy1 Cy2 Cy-end read sum] = {c[side]}  (want {exp})", flush=True)
+        if not c["VG"]:
+            blind += 1
+            print("ROW cas NO-REFERENCE")
+        else:
+            # both must read the file exactly, not merely agree
+            same = c["ZB"] == c["VG"] == exp
+            bad += not same
+            print(f"ROW cas {'SAME' if same else 'DIVERGES'}"
+                  f"{'' if c['VG'] == exp else ' (the VG-8020 itself did not read it whole)'}")
     if "wbreak" in rows or "rbreak" in rows:
         # a long write with no break on the VG-8020 makes the recording rbreak reads
         lw = probe_tmp.tmp("tapdiff_long_VG.wav")

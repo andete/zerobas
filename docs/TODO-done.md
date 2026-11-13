@@ -31086,7 +31086,7 @@ the phase narrative above still have somewhere to land.
       filters by type, so `LOAD"CAS:"` steps over a tokenised file); the 09-27
       "keep the feature" ruling is superseded. Closed; nothing to change.
       🎚️ TIER 6 — `LOAD"CAS:"` on a tape that holds a tokenised program
-      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:13380 (T-B42728): *"KEEP THE
+      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at ../TODO.md:13142 (T-B42728): *"KEEP THE
       FEATURE"* — zerobas loads a tokenised tape via `LOAD"CAS:"`, the reference's
       hang is a stated divergence. D-CASTYPE then made every tape search filter by
       type, as the VG-8020 does, so `LOAD"CAS:"` now steps over a tokenised file —
@@ -37619,6 +37619,1559 @@ the phase narrative above still have somewhere to land.
       🟢 **D-TRAPSTMT IS UNBLOCKED AND SHIPPED (2026-11-05)** at 66 frames: the item stays
       open as plain TIER 5 speed (66 vs the VG-8020's 39 per 100 calls; 54 after round 3).
 
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## From `TODO.md` § Open — standing residuals (INDEX; this is the pickup list)
+
+- [x] 🔴 **D-ROBOREG — ROBOCOP.DSK AND SDSNAT1C.DSK STOPPED RUNNING ON ZEROBAS BETWEEN 11-07 AND
+      11-12 (found 2026-11-13 by a full disk-corpus re-run)**
+      🎚️ TIER 1 — a disk that ran on zerobas (and runs on the CF-3300) no longer does.
+      🤖 **AUTONOMOUS** — [`diskcorpus_20261113.out`](scratchpad/diskcorpus_20261113.out) (HEAD 98af0fb3): BOTH-RUN 92, UNSETTLED 22, ZB-NOBOOT 3
+      (ROBOCOP, SDSNAT1C, UR-1), ZB-ONLY 5, FILES-SAME 11, FILES-DIFF 8, FILES-EMPTY 2 (🔮 "BOTH-RUN
+      >= 92": HIT). UR-1 was already ZB-NOBOOT on 11-07 (diskcorpus_f37.out); **ROBOCOP and SDSNAT1C
+      were BOTH-RUN there and fail on HEAD every time (3 / 3, 2 / 2)**. ROBOCOP on HEAD: SCREEN 1 with
+      only its title `ROBOCOP DISK VERSION 89`, CURLIN 65535, PC $1857 (the BIOS area: a key wait?);
+      the CF-3300 shows `TECLE [CONTROL] !` with CURLIN 0. Not D-FWDWIN's `ei` (removed: still
+      fails). 🔴 **THE BISECT IS NOT TRUSTWORTHY** ([`robocop_bisect.out`](scratchpad/robocop_bisect.out)): it named f6dcb920
+      (D-WRRESET), but its parent eb03a41a read BOTH-RUN once and ZB-NOBOOT once -- the older builds
+      FLIP (PC $6AAB or $0038 at the sample), HEAD fails deterministically: a timing-sensitive load,
+      the D-BD2FRAGILE / D-TAPLEAD class, whose margin a build change moves. ➡️ Next: what the
+      CF-3300 does between the title and its prompt (CURLIN / PC samples on both from the boot),
+      whether zerobas's CURLIN 65535 is a BASIC prompt or machine code started from direct mode
+      waiting in CHGET, and the first point the two diverge -- not another bisect.
+      📏 **THE TIME SERIES (2026-11-13, [`roboseries_probe.py`](scratchpad/roboseries_probe.py) -> [`roboseries_run1.out`](scratchpad/roboseries_run1.out), [`roboseries_run2.out`](scratchpad/roboseries_run2.out)):**
+      the CF-3300 shows the title at ~9.75 s, runs BASIC line 5 (`TECLE [CONTROL] !`) from 10.75 s,
+      and with no key REBOOTS (the MSX logo again at ~16 s and ~32 s) -- a loop. zerobas shows the
+      title at 3 s and from 5.25 s on samples ONLY the interrupt path: PC cycling $1854-$1862
+      (C-BIOS's `keyint`, the $0038 handler's body -- the scratch listing of the same repacked
+      image, sha 657dc2ad), the H.KEYI hook at $FD9A and $0038 itself, CURLIN 65535, no `Ok`.
+      Reading: the CPU never leaves the interrupt handler (an interrupt nobody acknowledges, or
+      one re-raised at once), and BASIC's line 5 is never reached. keyint calls H.KEYI BEFORE it
+      reads the VDP status (both upstream and ours), so a game hook on H.KEYI decides. ➡️ Next:
+      the C-BIOS 0.30 / 0.31 rebase (D-CBIOS030 / D-CBIOS031, 2026-11-11) sits in the range and
+      replaced C-BIOS's own keyboard / interrupt code -- compare keyint / the key scan of the 0.29
+      repack against 0.31 (C-BIOS source, ideas only), and watch VDP status reads ($99) and
+      H.KEYI calls per frame on both builds.
+      📏 **THE MECHANISM, TRACED (2026-11-13, [`roboirq_probe.py`](scratchpad/roboirq_probe.py) -> [`roboirq_run1.out`](scratchpad/roboirq_run1.out) ..
+      [`roboirq_run6.out`](scratchpad/roboirq_run6.out); PC breakpoints at the published IRQ vector / hook and at OUR OWN
+      fre_abort_low, I/O and RAM watches -- no game byte read):** (1) zerobas from 5.5 s takes
+      **~20,000 interrupts a second with 0 VDP status reads** -- the CF-3300 one status read per
+      interrupt; (2) because **H.KEYI ($FD9A) reads `FF FF FF FF FF`** (RST 38h): each IRQ calls it,
+      re-enters $0038, and SP walks down through all of RAM; (3) the first write there is
+      keyint's own push with SP = $FD9A, and SP got there from **$0000: our fre_abort_low's
+      `ld sp,(SAVSTK)` with SAVSTK = 0** (at 5.0595 s, CURLIN 0); (4) the abort is a **Syntax
+      error** (HL = err_syntax) raised by **eval, called through calbak from the disk ROM's
+      hk_dget (+27: GET / PUT's record expression)**, the stack under it in RAM ($86A7 / $8704,
+      the CF-3300's CURLIN 0 / line-0 phase). So TWO zerobas faults meet: an error raised while
+      **SAVSTK is still 0** turns into a runaway instead of an error message, and **the GET / PUT
+      record expression raises a Syntax error where the CF-3300 goes on**. ➡️ Next: (a) on which
+      path a program runs with SAVSTK unset (the disk boot's autorun?) -- a breakpoint at run_prog
+      / dl_cmd's `ld (SAVSTK),sp` and at the program's first statement; (b) the text at FN_RESUME
+      when hk_dget evaluates (main's gp_common sets it) against the CF-3300's acceptance.
+      🎯 **THE CAUSE (2026-11-13, [`roboirq_run8.out`](scratchpad/roboirq_run8.out), [`roboirq_run9.out`](scratchpad/roboirq_run9.out)):** no BASIC program is running
+      yet (SAVSTK's only write before the crash is the boot's clear) -- the game's own boot
+      code (return address $86A7) does **CALSLT to the disk ROM's $5C11** (IY = $87, our 3-1), with
+      A = $F1, BC = 0, DE = $8780, HL = $8680 -- and **the CF-3300 makes the IDENTICAL call** (same
+      registers, same caller) at 10.7 s, then runs line 5. On the CF-3300 $5C11 is a routine at a
+      fixed address of its disk kernel; **in ours it is 13 B into hk_dget**, which reads main's
+      text pointer, evaluates it (Syntax error) and raises through calbak with SAVSTK 0 -> SP
+      $0000 -> the stack walks over the hooks -> the storm. The 11-07 build had something
+      harmless at $5C11; disk-ROM carves in the range moved code across it (hence the flips
+      between builds). **D-ROBOREG IS A MISSING PINNED KERNEL ENTRY**, the class of the 66 pins
+      disk/*.asm already carries. ➡️ Next: measure $5C11 on the CF-3300 as a black box -- our own
+      code calls it through CALSLT with the game's registers (and varied ones) and records the
+      registers out and the RAM it changes ($8680.. / $8780..) -- then pin our body at $5C11. And
+      SDSNAT1C: check whether it calls an unpinned address too (the same probe).
+      📏 **$5C11 MEASURED ON THE CF-3300 (2026-11-13, [`k5c11_probe.py`](scratchpad/k5c11_probe.py) -> [`k5c11_run2.out`](scratchpad/k5c11_run2.out), [`k5c11_run3.out`](scratchpad/k5c11_run3.out)):**
+      our own code CALSLTs it from Disk BASIC (an empty data disk): HL $DE77, DE $DC65, BC $0102,
+      A $C9 out for EVERY input varied (A 00 / 01 / F1, BC 0 / 1 / $0302, DE / HL moved), no byte
+      of $C000-$C2FF changed -- nothing the caller can see depends on the call.
+      ✅ **PINNED (2026-11-13):** `k_5C11: ret` at $5C11 (disk/kernel.asm, inside hk_dget behind a
+      `jr` over it; cr_copy1 moved to the $553C hole for the 5 B -- 🔴 a first cut put it in the
+      $7FC0 hole (disk/runtime.asm's relocated-template region) and bdos-acceptance went RED,
+      BDOSX / BDOSX3 never reaching their anchors: that hole is no home for code the BDOS kernel
+      calls; in front of $553C, 25 / 25). After
+      ([`roboirq_fix1.out`](scratchpad/roboirq_fix1.out)): the call returns, and the corpus classifies ROBOCOP **BOTH-RUN**
+      again (2 / 2, the 11-07 reading) -- 🔮 HIT on the class, but **NOT a running game yet**:
+      🔴 **A SECOND FAULT BEHIND IT** ([`roboirq_fix2.out`](scratchpad/roboirq_fix2.out)): the game then jumps to our pinned
+      **basicint_run** ($73AC, the reference's RUN-without-argument), whose `relink` reaches the
+      sub ROM's line editor (sr_slot <- sc_call <- dfl_set <- basicint_run+11) -- and the machine
+      REBOOTS at 5.5 s, then a second storm at 8 s with the hooks reading `00 39 00 39 00`. The
+      CF-3300 runs the program's line 5 there. ➡️ Next: TXTTAB / VARTAB / PRGEND at
+      basicint_run's entry on both machines, and where relink's walk goes (our own code's PCs).
+      ✅ **ROBOCOP RUNS (2026-11-13): TWO MORE ZEROBAS FAULTS, BOTH FIXED.** (1) **`run_prog_top`
+      loaded SP from a NEVER-WRITTEN SAVSTK.** The game reaches basicint_run from its DISK BOOT,
+      before any prompt, so SAVSTK was still $0000: `ld sp,(SAVSTK)` made SP $0000, the next `ret`
+      took $FFFF and the machine re-booted, C-BIOS's RAM scan leaving `$F0` at every $xx00 of the
+      loaded program (a write watch on $8100 / $8200: PC $1AA3 / $1AA8 with SP $FFFC at 5.13 s,
+      after `SP pc=6558 sp=0000 savstk=0000` -- [`roboirq_fix9.out`](scratchpad/roboirq_fix9.out), [`roboirq_fix13.out`](scratchpad/roboirq_fix13.out); the relink
+      and "sub ROM line editor" reading above was this). Now SAVSTK 0 keeps the caller's stack
+      and pushes `repl` (basic/cload.asm) -- zerobas then ran line 5 at 5.13 s, as the CF-3300 does
+      ([`roboirq_fix14.out`](scratchpad/roboirq_fix14.out), 🔮 HIT: no RAM scan, first CURLIN 5). (2) **`USR` refused a vector
+      of 0.** Line 5 ends in `USR` with USRTAB[0] = $0000 -- the MSX reset idiom: the CF-3300
+      reaches $0000 from the line (RST0 at 14.45 s) and re-boots into the game's next stage;
+      zerobas raised and ran on to line 10 and `Out of memory in 1` ([`roboirq_fix15.out`](scratchpad/roboirq_fix15.out),
+      [`roboirq_fix16.out`](scratchpad/roboirq_fix16.out)). The guard predated D-USRDEF (unset slots are &H475A now); removed
+      (basic/usr.asm). After both: ROBOCOP **BOTH-RUN** ([`roboreg_corpus2.out`](scratchpad/roboreg_corpus2.out)). 📏 Seen, not
+      acted on: the CF-3300's boot RAM check RESTORES each byte it tests ($8200: $C7, then $38
+      back), C-BIOS's leaves $0F / $F0 -- ROBOCOP does not need its RAM to survive (it runs), and
+      the C-BIOS side is Joost's to drive. **SDSNAT1C still ZB-NOBOOT** ([`roboreg_corpus3.out`](scratchpad/roboreg_corpus3.out)):
+      the item stays open on it.
+      📏 **SDSNAT1C IS ANOTHER CAUSE (2026-11-13, [`roboirq_sds1.out`](scratchpad/roboirq_sds1.out)):** no CALSLT to the disk ROM
+      before its crash; at 13.5 s the hook area already reads `FD EC BE FC FE` with the PC in our
+      disk ROM ($4C58, mid-load) -- the load itself writing over the hooks -- then `FF`s and the
+      same storm by 14 s. The CF-3300's hooks stay `C9` through its load. ➡️ A write watch on
+      $FD9A with the disk ROM's PC / the sector being read, on both machines.
+      🎯 **SDSNAT1C'S CAUSE, FIXED (2026-11-13):** the write of $FD at $FD9A is OUR
+      `fdc_rd_byte` (disk/driver.asm) with HL $FD9A, 237 bytes into a block starting at
+      **$FCAD = SECTOR_BUF + 10 x 512** ([`roboirq_sds2.out`](scratchpad/roboirq_sds2.out)). DSKIO entry logs ([`roboirq_sds4.out`](scratchpad/roboirq_sds4.out)):
+      the game's reads are the CF-3300's, register for register (DE $059A / $000E / $0570 /
+      $0490, HL $C200 / $C2CA / $0200 / $2000, B 2 / 1 / 15 / 36) -- the last one runs from page 0
+      INTO PAGE 1. **D-DSKFMT carve 16 (5de7ca8f, 2026-11-10 -- inside the 11-07..11-12 window)
+      made the page-1 bounce arm `call dskio_adv`, which skips `ld (FDC_DEST),hl`:** after any
+      page-1 sector FDC_DEST stayed SECTOR_BUF, so the next sector went to $E8AD, then $EAAD ...
+      up through the hooks. Now `call dskio_bump`; dskio_adv (its only caller) is gone.
+      🔴 **NO GATE COULD SEE IT:** every page-1 probe read ONE sector or record. New
+      **`make p1multi-acceptance`** ([`disk_probe_p1multi.py`](probes/disk/disk_probe_p1multi.py), in the battery): our own USR
+      routine reads 2 sectors into $7E00 -- on the UNFIXED build zerobas has `F0 0E 36 FF` at
+      $8000 where the CF-3300 has the pattern ([`p1multi_run2.out`](scratchpad/p1multi_run2.out), DIVERGES), fixed SAME
+      ([`p1multi_run3.out`](scratchpad/p1multi_run3.out)) -- a knife that cuts. After: **SDSNAT1C BOTH-RUN, ROBOCOP BOTH-RUN**
+      ([`roboreg_corpus4.out`](scratchpad/roboreg_corpus4.out), [`roboreg_corpus5.out`](scratchpad/roboreg_corpus5.out)). ✅ **CLOSED: both disks of the item run.**
+      Three zerobas faults stacked under one symptom ($5C11 unpinned, RUN with SAVSTK never
+      written + USR through 0, the bounce arm) -- two of them from the same carve window, the
+      class "a mechanical carve breaks an invariant it was not about". UR-1 is NOT this item
+      (ZB-NOBOOT on 11-07 already).
+- [x] 🙋 **THE `String too long` PRECEDENCE RESIDUAL — RE-MARKED 🙋 ON
+      2026-08-29: THE FILED ROUTE HAS A GC HAZARD, AND ITS OBVIOUS REPAIR IS
+      CLOSED BY A STATED INVARIANT.** Filed 2026-08-28 by D-STRLONG
+      ([`docs/spec-basic-strlong.md`](docs/spec-basic-strlong.md) §5).
+      📏 **RE-MEASURED 2026-08-29, still 3 DIFF of 20** (`f.128` `f.200`
+      `s.200`): zb reports `Out of string space` (ERR 14) where both references
+      report `String too long` (ERR 15). ⚠️ **`FRE("")` is 200 on all three
+      sides**, so `X$=STRING$(128,"A"):PRINT LEN(X$+X$)` — no `CLEAR` at all —
+      is a real user-visible case, not a corner.
+      🎯 **THE CAUSE IS EXACT AND WAS CONFIRMED IN THE CODE:** `sh_append`
+      already tests the length FIRST and raises correctly (D-STRLONG). The
+      failure is EARLIER — `str_concat_tail`'s unconditional
+      `call str_snapshot_to_temp` copies operand 1's BODY, which exhausts a
+      200 B pool holding a 128 B operand before `sh_append` is ever entered.
+      🔴 **THE FILED ROUTE IS UNSAFE AS WRITTEN.** It says to save operand 1's
+      3-byte descriptor instead of copying its body, on the grounds that *"only
+      the DESCRIPTOR is at risk, never the body"*. **That is false for a heap
+      body.** GC compacts and MOVES heap bodies, fixing up only the descriptors
+      it can ENUMERATE — `sg_walk_temps` / `_fnframe` / `_scalars` / `_arrays`.
+      A private scratch copy is none of those, so operand 2's evaluation can GC
+      and leave the saved `ptr` dangling: **silent corruption, not an error.**
+      🔴 **AND THE OBVIOUS REPAIR IS CLOSED.** Making the copy an enumerated root
+      means pushing it on the temp-descriptor stack — but `sh_src_is_temp`'s
+      header states the invariant a temp entry is **"UNIQUELY OWNED (nothing
+      else holds its body)"**, and D-CLP rests on it twice. Aliasing a variable's
+      body from a temp entry breaks it.
+      ➡️ **SO THE REMAINING ROUTES ARE ALL DECISIONS, NOT MEASUREMENTS:** (a) a
+      new GC root kind, (b) relax unique-ownership and re-verify D-CLP's two
+      uses, or (c) accept the body copy and fix the PRECEDENCE some other way.
+      Each touches a load-bearing subsystem whose internal invariant has no
+      external oracle — which is why this is now 🙋 and not 🤖.
+      🔴 **2026-11-12: THE EVERYDAY FACE, MEASURED -- TIER 1 NOW, ON EVIDENCE.** Found by
+      D-BIOSRUNG's queue probe (a hex dump built as `V$=V$+RIGHT$("0"+HEX$(PEEK(..)),2)`,
+      `Out of string space` on zerobas only). [`strspace_probe.py`](scratchpad/strspace_probe.py) `--limit` ->
+      [`strspace_run5.out`](scratchpad/strspace_run5.out), default CLEAR 200, how far `V$=V$+op` grows before ERR 14:
+      | op | VG-8020 (no Q$ / a live 12 B Q$) | zerobas |
+      |---|---|---|
+      | `"AB"` (a literal) | 100 / 94 | 100 / 94 -- SAME (D-CONCATPEAK's in-place extend) |
+      | `RIGHT$("0"+HEX$(I),2)`, `HEX$(I+16)`, `("A"+"B")`, `RIGHT$("XAB",2)` | 100 / 94 | **66 / 62**, FRE("") 134 / 126 at the error |
+      Any COMPUTED right operand costs one more copy of the left one -- this item's operand-1
+      body snapshot, on the commonest string-building idiom there is, not a 128-byte corner.
+      A program that runs on the VG-8020 stops here: 🎚️ **TIER 1** (the precedence half stays
+      what it was). The cause is this item's, not re-derived: the routes are still (a) / (b) /
+      (c) above, and still Joost's. 🏗️ **RULED (Joost, 2026-11-12): *"we need to be
+      compatible, think harder (fable agent)"*** -- not one of (a) / (b) / (c) as a
+      trade-off: the VG-8020's capacity exactly, no dangling pointer. A Fable design pass
+      was run; its report lands here before anything is built.
+      📐 **THE DESIGN (2026-11-12, [`catalias_design.md`](scratchpad/catalias_design.md) -- D-CATALIAS):** the reference's
+      peak is old V$ + the new result = 2N+2, which fits all six measured capacities (100 /
+      94 / 80); ours is ~3N+5 (the operand-1 snapshot). (a) and (b) are BOTH DEAD on one GC
+      fact -- it moves each body once and needs root ptrs DISTINCT; a second root on V$'s
+      body is double-move corruption (sub/strheap.asm "phantom root"). Chosen: (c), an
+      INDIRECT bodiless slot pushed before operand 2 -- a scalar's descriptor ADDRESS (op
+      23) or an array element's offset (op 24, op 21's shape), never a heap pointer, so
+      never a GC root; resolved at op time, the realloc path only (never extend-in-place:
+      aliasing), the slot becoming the owned result as she_slice_ofs does; both error arms
+      neutralise an unresolved slot to `[0][0]`. COST (the design's estimate, 2026-11-12): ~70 B across page 1, the low region and sub
+      page 0 -- carve first. ➡️ **NEXT: measure on the VG-8020 first** -- `CLEAR 201` with
+      `CHR$(65)` (100 vs 101 separates the two sub-models), V$'s content after the error,
+      an array-element left operand and `W$=V$+op`; then build to the design's rows and
+      knives.
+      📏 **MEASURED 2026-11-12 ([`catalias_vg2.out`](scratchpad/catalias_vg2.out), `strspace_probe.py --design`):** VG-8020 /
+      zerobas -- `CLEAR 201` + CHR$(65): **100** (FRE 101) / 67 -> the **Tk-live** model (the
+      right-hand temporary stays live through the allocation); V$'s CONTENT after the error
+      intact (`BCD..UVW`, 100 B) / 67; an ARRAY element left operand **100** / 66 (as a scalar);
+      `W$=V$+STRING$(I,"B")` with V$ = 60: **67** / 61 -- 60 + old W$ 66 + new W$ 67 + Tk 7 =
+      200 exactly, Tk-live again. (A first run's 99-iteration loops never ran out on the
+      VG-8020: [`catalias_vg.out`](scratchpad/catalias_vg.out).) The design's open question is settled in its favour:
+      build it as written (Tk live), with these four rows added to its gate.
+      💰 **ROOM CARVED (2026-11-13):** the low region had 7 B against the design's ~16; basic/
+      poke.asm (17 B, wholly promotable per tools/promote_scout.py) moved into page 1 in
+      front of the $6CF3 pin, whose pad absorbs it -- low region 7 -> 24 B, the $6CF3 pad
+      1151 -> 1134 B, 7 / 7 switches (read 2026-11-13). Sub page 0 (15 B) still takes the
+      design's main-resolve variant (~10 B sub, +12 B main).
+      ✅ **BUILT (2026-11-13).** basic/catalias.asm (main page 1, in front of the $6CF3 pin):
+      `sas_var` -- str_alias_or_snap's variable arm (CLEARPOOL): a scalar ([VARTAB,ARYTAB)) or
+      an array element ([ARYTAB,STREND)) pushes a 3-byte slot [len][word] -- the descriptor's
+      ADDRESS (>= $8000) or the element's offset from ARYTAB (< $8000), never a heap pointer,
+      so never a GC root -- and marks str_concat_tail's [op] 23; `sct_op` (the append call,
+      moved out of the low region with `se2_fin`: str-engine.asm sits before the crt_rows
+      pin, whose pad has 3 B) passes BC = R and, for op 23, `sct_resolve`s the word at OP
+      TIME into DE (op 22, the realloc arm -- never extend-in-place, which would alias V$),
+      zeroing the slot first; `se2_fin` zeroes an unresolved slot on a malformed operand 2.
+      sub/strheap.asm: `she_out` (blk+6) takes sh_append's two result writes (+7 B; sub page 0
+      15 -> 8 B). The design's main-resolve variant needed no new sub op at all. After:
+      [`catalias_run1.out`](scratchpad/catalias_run1.out) the 8 capacity rows **100 / 94 / 80 = the VG-8020** (was 66 / 62;
+      🔮 HIT); [`catalias_run2.out`](scratchpad/catalias_run2.out) the 4 design rows SAME (CLEAR 201 100 / FRE 101, V$'s content
+      `BCD..UVW`, an array element 100, `W$=V$+op` 67); [`catalias_run5.out`](scratchpad/catalias_run5.out) the 12 safety rows SAME
+      (a GC during the op, aliasing, V$+V$, V$+(V$+"C"), a new scalar shifting the arrays,
+      DEF FN with V$ as its parameter, OOM inside `MID$(V$+Q$,2)` with Q$ / V$ intact, String
+      too long). string, clearpool, concat3, catusr, catcopy, deepexpr, litref, stackpool,
+      instr128, strparen, prstrfn acceptance green; unit tests 97 / 97 (test_str_engine's
+      200+200 row now reads the slot's "" and checks A$ intact -- the design's neutral
+      value). Gate: **`make catalias-acceptance`** ([`basic_probe_catalias.py`](probes/basic/basic_probe_catalias.py), 24 rows) 24 /
+      24; knives (ROM hash moved each time): K1 (sas_var -> the snapshot) -> 9 rows RED
+      ([`catalias_knife1.out`](scratchpad/catalias_knife1.out)); K2 (op 2 instead of 22) -> the 3 grow rows RED ([`catalias_knife2.out`](scratchpad/catalias_knife2.out) --
+      🔮 MISSED: I named the aliasing row, whose V$ is a text literal, never the heap top).
+      🔴 basic/catalias.asm was missing from the Makefile's DEPS -- K2's restore did not
+      rebuild; the hash caught it, and deps-check now lists 49 / 49.
+      ✅ **AND THE PRECEDENCE HALF WITH IT** (the design predicted it): with no operand-1 copy
+      before sh_append's length test, `f.128` / `f.200` / `s.200` read `String too long` as both
+      references -- [`catalias_strlong.out`](scratchpad/catalias_strlong.out) **DIFF vs references 0 / 20** (was 3), and every
+      CLEAR in the sweep. This item is CLOSED.
+      🎚️ TIER 1 — a program that runs on the reference stops: `V$=V$+<computed>` reaches 66 B
+      of 100 (2026-11-12, above); the `String too long` precedence half alone was TIER 6
+      🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
+      ladder's calendar showed `INSTR(1,T$+" "," ")` Out of string space here and
+      fine on the VG-8020, and I tied it to THIS item's operand-1 body copy. It
+      was not: assignment, `LEN`, `LEFT$` and `ASC` of the same `T$+" "` all fit
+      (concatenation already extends in place, D-CONCATPEAK); only `INSTR`
+      failed, because INSTR copied its own arguments. Fixed there as D-CATCOPY
+      ([`catcopy_measure.out`](scratchpad/catcopy_measure.out)). This item is
+      the error-precedence residual it always was
+      [[a-mechanism-inferred-from-one-observation]].
+      ~~🙋 **NEEDS-JOOST**~~ — a refactor of the string heap's ownership rules.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE OWNERSHIP REFACTOR.** The length check must see the
+      operands before any copy; design around the GC hazard above.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] 🔴 **D-BIOSRUNG — THE MAIN-BIOS TABLE SAYS "EXERCISED" FOR ENTRIES THAT ARE STILL C-BIOS
+      STUBS: GIVE EVERY ENTRY A STATUS THAT CAN SAY "STUB" (Joost, 2026-11-12)**
+      ✅ **CLOSED 2026-11-13: `tools/stub_scan.py` reads 0 of 108 published entries as stubs**
+      (the last four, PNTINI / SCANR / SCANL and STRTMS, built 2026-11-12; docs/tier-status.md
+      lists every entry exercised or NOT MEASURED). The open children below keep their own
+      tiers.
+      🎚️ TIER 1 — the entry-point surface's happy path (the 2026-11-08 ruling: entry points
+      outrank BASIC). 🏗️ **JOOST 2026-11-12:** asked *"don't we also have a bios entry tier like
+      the keyword tier and the bdos tier ?"*; told the table only says exercised / NOT MEASURED,
+      he ruled *"yes, file it tier 1 and do it next, it seems this will introduce potentially a
+      bunch of new tier 1 failures"*.
+      🤖 **AUTONOMOUS** — our own built ROM and the VG-8020's registers settle it.
+      📏 **THE STUB SCAN, FIRST CUT (2026-11-12, session scratch):** each of the 108 published
+      entries followed through the jump table of OUR built main ROM (build/zerobas-main-eu.rom
+      -- our C-BIOS-based bytes, never the reference's) to its body; a stub is C-BIOS's
+      `push hl / push af / ld hl,text / call print_debug` or the bare `ret` that
+      graphics-cursor.patch leaves. **9 of 108:** STRTMS, ISCNTC, CKCNTC (ISCNTC's body), FNKSB,
+      PNTINI / SCANR / SCANL (bare `ret`), OUTDLP, CALBAS. 🔴 **THREE OF THEM READ "exercised"
+      in docs/tier-status.md** -- biosregs-acceptance's `iscntc` / `ckcntc` rows call them with
+      nothing pending (a stub that does nothing returns the same registers) and `fnksb_on` /
+      `fnksb_off` read a cell KEY ON / OFF had already set: each agrees for the wrong reason.
+      ➡️ **THE SLICE:** (1) tools/stub_scan.py (the scan above, with a refusal when it finds no
+      print_debug target -- a blind scan must not print "0 stubs") and a static check; (2)
+      entry_table.py's BIOS rows get a status that can say STUB, ahead of exercised -- a stub
+      is a TIER 1 failure whatever names it; (3) each stub then becomes its own TIER 1 row
+      to fix or to rule on (PNTINI / SCANR / SCANL need main room -- D-BIOSCONTRACT), and the
+      three wrong-reason rows get a state that separates a stub from the real entry (a STOP
+      pending; FNKSB after the cell is changed behind its back).
+      ✅ **(1) + (2) BUILT (2026-11-12).** tools/stub_scan.py follows each entry through the
+      built ROM's jump table; it refuses on a missing / wrongly sized image, on fewer than 100
+      entries decoding as a jump, and when the print_debug shape calls more than one routine.
+      tests/test_stub_scan.py (synthetic images: both shapes, a clean image, three refusals;
+      knife -- the bare-`ret` arm disabled -> FAIL, PNTINI unnamed). Positive control on the
+      PRISTINE 0.31 image: 21 stubs, and every one of the 19 routines C-BIOS 0.31's own source
+      marks "still a stub" is among them (+ CKCNTC, ISCNTC's body, and CALBAS, unmarked).
+      entry_table.py's BIOS rows now say `🔴 STUB (print_debug)` / `🔴 STUB (bare ret)` ahead of
+      exercised; docs/tier-status.md: **88 witnessed and not stubs, 11 NOT MEASURED, 9 STUBS**,
+      the 3 blind ones named.
+      ➡️ **(3) THE NINE, EACH A TIER 1 ROW (measure the VG-8020 first, black-box, registers +
+      RAM; then fix or bring to Joost):**
+- [x] 🔴 **D-BIOSCONTRACT — C-BIOS's SCALXY / GTASPC / READC (and likely DOWNC / MAPXYC) ANSWER
+      DIFFERENTLY FROM THE VG-8020 (found 2026-11-08 by D-ENTRYTIERS step 5's first BIOS batch)**
+      🎚️ TIER 1 — happy path of main BIOS calls (Joost 2026-11-08: the entry points outrank BASIC).
+      🤖 **AUTONOMOUS** — `scratchpad/biossweep_probe.py` (basic_probe_biosregs.py's stub: A / BC
+      / DE / HL in, the entry called DIRECTLY by a USR stub, HL / DE / BC / A printed; F not
+      compared) over 34 safe entries ([`biossweep_1108.out`](scratchpad/biossweep_1108.out)): **20 SAME, 13 DIVERGE, POSIT no
+      reading** (it moves the cursor; the probe's print is overwritten -- needs its own shape).
+      🔴 **Contract outputs that differ:** SCALXY ($010E, BC = 300 / DE = 200 in SCREEN 2: VG-8020
+      returns the CLIPPED BC = 255 / DE = 191, C-BIOS 0 / 0); GTASPC ($0126: VG DE = HL = $100,
+      C-BIOS leaves them); READC ($011D: VG A = 4, the colour at the cursor; C-BIOS 0); DOWNC
+      ($0108: VG A = 1, C-BIOS 0 -- check whether A is its contract or a side effect); MAPXYC
+      ($0111: HL / DE / A differ -- its real outputs are CLOC / CMASK, capture the RAM).
+      ⚠️ **Only side registers differ** (the documented answer agrees): GTSTCK, GTTRIG, GTPDL,
+      GTPAD, SNSMAT, CHGCLR -- the D-BIOSREGS class (Demonia read such a register), lower first.
+      ➡️ C-BIOS is our BSD dependency: read its source for each, fix as cbios-repack patches
+      (bios-regs.patch's way), turn the batch's SAME + fixed rows into biosregs-acceptance rows,
+      and extend the batch past these 34 (the 85 NOT MEASURED rows of the BIOS table).
+      🔴 **THE SOURCE SAYS WHY (2026-11-08):** in the pinned C-BIOS (v0.29-3-gb5ad9cb, our BSD
+      dependency) SCALXY returns GRPACX / GRPACY unclipped, and READC, GTASPC, DOWNC are
+      `print_debug` STUBS ("This implementation is still a stub!"). The pinned tag's src/main.asm
+      + src/video.asm hold **34 stubbed MSX1 entries** ([`cbios_stubs_1108.out`](scratchpad/cbios_stubs_1108.out)): the whole
+      GRAPHICS-CURSOR family (RIGHTC LEFTC UPC TUPC DOWNC TDOWNC SCALXY STOREC SETATR READC SETC
+      NSETCX GTASPC PNTINI SCANR SCANL -- 16), function keys and misc (GETYPR INIFNK STRTMS
+      ISCNTC BEEP FNKSB ERAFNK DSPFNK GTPAD GTPDL OUTDLP), the tape six (TAPION .. TAPOOF), and
+      CHKRAM. A machine-code program that draws through the published BIOS graphics entries
+      draws NOTHING on zerobas. ➡️ (1) INVENTORY first: which of the 34 still answer as stubs
+      in OUR built main ROM -- the zerobas tape patch and cbios-repack likely replaced some (the
+      tape six; GTPAD / GTPDL already gave the VG-8020's A) -- one biossweep row each, the
+      stub's tell is "registers unchanged, nothing done". (2) The graphics family: point the
+      entries at the graphics code BASIC already carries in the same image (PSET / POINT / PAINT
+      work on the same VRAM layout) rather than writing it twice -- main ROM is nearly full
+      (page 1 was 36 B free and the low region 26 B on 2026-11-08, `make basic-reloc`). (3) Each fix: a biosregs-acceptance row, VG-8020 SAME.
+      📏 **(1) THE INVENTORY, STATIC (2026-11-08):** of the 34, our build REPLACES 10 -- the tape
+      six (tape/tape.asm), GTPAD / GTPDL (the tape image + tools/build_mainrom.py), GETYPR
+      (build_mainrom.py), CHKRAM (bios-keyscan.patch) -- by a grep of cbios-repack/*.patch,
+      tools/build_mainrom.py, tools/build_patches.py and tape/*.asm for each routine. **24 are
+      still C-BIOS's stubs in our main ROM:** the graphics-cursor 16 and INIFNK, STRTMS,
+      ISCNTC, BEEP, FNKSB, ERAFNK, DSPFNK, OUTDLP. BASIC does its own beep / function keys /
+      graphics internally; these are the PUBLISHED entries a machine-code program calls.
+      ➡️ Behavioural confirmation (a biossweep row each: "registers unchanged, nothing done"),
+      then the graphics family against BASIC's own PSET / POINT code -- first read which of
+      BASIC's routines keep CLOC / CMASK / GRPACX the BIOS way.
+      📐 **THE ROOM IS THE STUBS THEMSELVES (2026-11-08).** BASIC's graphics (sub/graphics.asm)
+      do keep CLOC / CMASK (gfx_calc_addr publishes them) but take x / y in E / D -- not the BIOS
+      entries' calling conventions -- and the sub ROM has no room (69 B / 21 B free on
+      2026-11-08). But each C-BIOS stub is ~11 B of `push hl / push af / ld hl,text / call
+      print_debug / pop / pop / ret` plus its name string (~6 B): **the 16 graphics stubs hold
+      ~270 B of main ROM that does nothing**. A cbios-repack patch replacing those bodies IN
+      PLACE (video.asm) funds the real routines: RIGHTC / LEFTC / UPC / DOWNC move CLOC / CMASK
+      by a pixel (RIGHTC ~19 B: CMASK rrca, CLOC += 8 on the wrap), TUPC / TDOWNC the same with
+      Cy at the screen edge, STOREC / FETCHC the two cells, SETATR := A, GTASPC two constants,
+      SCALXY clip to 0..255 / 0..191 with Cy, READC / SETC the VRAM colour byte at CLOC, NSETCX
+      a run of HL pixels; PNTINI / SCANR / SCANL (PAINT's support) are the large ones, last.
+      Semantics per entry: its published contract, then a black-box VG-8020 biossweep row in
+      SCREEN 2 and SCREEN 3 -- one entry, one row, one commit. Island / pin rules of
+      cbios-repack apply (C-BIOS labels move only within the pad; REPACKED_SHA1).
+      📏 **SCALXY / GTASPC, MEASURED (2026-11-08,** [`biossweep_sxy.out`](scratchpad/biossweep_sxy.out), [`biossweep_sxy2.out`](scratchpad/biossweep_sxy2.out),
+      VG-8020): SCALXY clips BC (x) to 0..255 and DE (y) to 0..191, a negative to 0; in SCREEN 3
+      it then divides BOTH by 4 (300 / 200 -> 63 / 47; 100 / 100 -> 25 / 25); **A = $80 when
+      nothing was clipped, 0 when either coordinate was** (x-only and y-only both give 0); HL
+      kept. GTASPC returns DE = ASPCT1 ($F40B), HL = ASPCT2 ($F40D) -- and **those cells hold
+      $100 / $100 on the VG-8020 from the prompt on, 0 / 0 on zerobas**: the fix also needs
+      them initialised. ⚠️ SIZE: C-BIOS's video.asm sits BEFORE BASIC_ORG in the merged image
+      (eu-drop-dead-strings' note), so the patch must keep the span downc .. gtaspc the SAME
+      LENGTH: rewrite it as one block (the stubs not yet implemented become a bare `ret`,
+      dropping print_debug and the name strings -- that is the room) and `ds`-pad to the
+      original pntini address, read from the pristine build's symbols first.
+      ✅ **SCALXY SHIPPED (2026-11-08), GTASPC TO THE CONTRACT:** `cbios-repack/graphics-cursor.patch`
+      (last in PATCHES; REPACKED_SHA1 updated) rewrites $083F..$0965 -- RIGHTC .. GTASPC -- as
+      one block padded to pntini ($0966, unmoved; the build differs only at $0100..$0964, the
+      jump-table targets and the span). SCALXY as measured; GTASPC = DE := ASPCT1, HL := ASPCT2;
+      MAPXYC / FETCHC verbatim; the other ten a bare `ret` for now. 📏 [`biossweep_sxy3.out`](scratchpad/biossweep_sxy3.out):
+      **all 7 SCALXY rows SAME as the VG-8020**; five of them are biosregs-acceptance rows now.
+      GTASPC still reads 0 / 0: see D-NUMBUFASPCT.
+      ✅ **RIGHTC / LEFTC / UPC / DOWNC SHIPPED (2026-11-08), SCREEN 2.** Measured first (CLOC / CMASK
+      POKEd, the entry called, both cells read; [`biossweep_cur.out`](scratchpad/biossweep_cur.out)): RIGHTC / LEFTC rotate
+      CMASK and move CLOC by 8 on the wrap, A = the new CMASK; UPC / DOWNC move CLOC by 1 inside
+      the 8-row cell and by $F9 across it, A = the old row (UPC) / (old row + 1) AND 7 (DOWNC);
+      HL / DE / BC kept. In the same graphics-cursor span (pntini still $0966). 📏
+      [`biossweep_cur2.out`](scratchpad/biossweep_cur2.out): **all 8 rows SAME**; 6 are biosregs-acceptance rows. ⚠️ SCREEN 3
+      (4 x 4 blocks) not yet measured -- these are SCREEN 2's semantics. Left of the family:
+      TUPC / TDOWNC, STOREC, SETATR, READC, SETC, NSETCX, PNTINI / SCANR / SCANL.
+      ✅ **STOREC / SETATR / READC SHIPPED (2026-11-08).** Measured ([`biossweep_b3.out`](scratchpad/biossweep_b3.out)): STOREC
+      CLOC := HL, CMASK := A; SETATR ATRBYT := A when A < 16, else Cy = 1 and ATRBYT kept (F
+      $41 = `cp 16` / `ccf` / `ret c`); READC A = the colour byte's foreground nibble when the
+      pattern bit is set, else its background nibble (C-BIOS's rdvrm, HL / DE / BC kept). 📏
+      [`biossweep_b4.out`](scratchpad/biossweep_b4.out): **all SAME, SETATR's F included**; four are biosregs-acceptance rows.
+      🔴 **AN OVERRUN THE ASSEMBLER DID NOT REFUSE:** with TUPC / TDOWNC too the span ran ~29 B past
+      pntini (FETCHC at $0976 > $0966) and pasmo built it anyway -- a negative `ds` was not an
+      error there; read off the symbol table before testing. TUPC / TDOWNC came back out (bare
+      `ret`) and an `IF $ > $0966` / ERROR guard was added. Measured, waiting on ~15 B of the
+      span (RIGHTC / LEFTC and UPC / DOWNC can share their CLOC tails): TUPC / TDOWNC = no move,
+      A = 0, F = $45 (Cy) on the screen's top / bottom row, else UPC / DOWNC. ⚠️ SETC's pattern
+      half was misread (the probe VPEEKed after SCREEN 0, which rebuilds the pattern table):
+      re-measure reading VRAM before leaving SCREEN 2.
+      ✅ **SETC AND MAPXYC SHIPPED (2026-11-08), SCREEN 2.** SETC re-measured with VRAM read inside
+      SCREEN 2 ([`biossweep_setc.out`](scratchpad/biossweep_setc.out)): ATRBYT = the cell's background -> the pattern bit
+      CLEARED, colour kept, A = the pattern byte; else the bit SET and, unless ATRBYT is already
+      the foreground, colour := ATRBYT << 4 | background, A = that colour byte (else A = the
+      pattern byte); HL / DE / BC kept. MAPXYC measured ([`biossweep_mxy.out`](scratchpad/biossweep_mxy.out)): CLOC = (Y AND $F8)
+      * 32 + (Y AND 7) + (X AND $F8), CMASK = $80 >> (X AND 7), A = CLOC's low byte, D = X,
+      GRPACX / GRPACY untouched -- C-BIOS's "test version" left out Y AND 7, set every bit
+      rightward in CMASK and stored GRPACX / GRPACY. **C-BIOS's own GRPPRT ($008D) relied on
+      both quirks**: `grpprt_sc2` now turns CMASK back into its rightward mask (CMASK * 2 - 1)
+      and drops its own Y AND 7 add. 📏 [`biossweep_after.out`](scratchpad/biossweep_after.out): **SETC 4/4 and MAPXYC 4/4 SAME**
+      (six are biosregs-acceptance rows); GRPPRT's glyph lands on the VG-8020's rows and bit
+      columns, only the glyph itself differs (C-BIOS's font). Room: PNTINI / SCANR / SCANL
+      (print_debug stubs, 52 B) joined the bare-`ret` list and the span now pads to print_debug
+      ($099A); MAPXYC's rewrite is shorter; READC and SETC share one cell read. Left: TUPC /
+      TDOWNC (measured above), NSETCX, PNTINI / SCANR / SCANL, SCREEN 3.
+      ✅ **TUPC / TDOWNC SHIPPED (2026-11-08).** Room from RIGHTC / LEFTC sharing one body (DE = +-8),
+      UPC / DOWNC sharing the wrap and store tail, and `set 5,h` / `res 5,h` for the colour
+      address. 📏 [`biossweep_tud2.out`](scratchpad/biossweep_tud2.out): **all 10 rows SAME, F included** -- and the
+      new inner-edge rows found **UPC / DOWNC's own F wrong across a cell edge** (VG $54, the
+      `and 7` flags; ours the `add hl,de`'s) that no row saw, because biosregs never captured
+      F for them: one `and a` on the shared wrap path. `prog_f` moved into
+      basic_probe_biosregs.py; four F rows there (35/35). The span has 2 B left. Left: NSETCX,
+      PNTINI / SCANR / SCANL, SCREEN 3, the 8 non-graphics stubs.
+      ✅ **NSETCX SHIPPED (2026-11-09), SCREEN 2.** Measured ([`biossweep_nsx.out`](scratchpad/biossweep_nsx.out)): HL pixels from
+      CLOC / CMASK rightward set exactly as SETC sets / clears them, colour bytes per byte,
+      and **CLOC / CMASK END WHERE THEY STARTED**. Ours: a SETC + RIGHTC loop between FETCHC
+      and a fall-through into STOREC. Room (the span is now FULL, 0 B): SCALXY's clips via
+      `rla` (-12 B), MAPXYC's (X AND $F8) OR (Y AND 7) as `xor e / and $F8 / xor e` (-4),
+      TDOWNC falling into DOWNC's wrap (-3), SETC's pattern write inlined and READC on
+      SETC's pop tail (-2), PNTINI / SCANR / SCANL on GTASPC's `ret`. 📏
+      [`biossweep_nsx2.out`](scratchpad/biossweep_nsx2.out): **NSETCX's VRAM and CLOC / CMASK SAME on the four HL >= 1 rows; all
+      27 earlier graphics rows still SAME**; three NSETCX rows in biosregs-acceptance (38/38),
+      which compare VRAM and the cells only.
+      ⚠️ **NSETCX's residuals (TIER 6 side, filed here):** (a) the registers -- the VG-8020
+      leaves HL / DE / BC / A / F all changed (e.g. HL = $2110, DE = $400F after 12 pixels
+      from $108), ours HL = CLOC, A = CMASK; matching them means matching its byte-wise
+      algorithm, and the span has no room. (b) **HL = 0: the VG-8020 still writes the first
+      byte's colour** (pattern untouched); ours does nothing. Left of the family: PNTINI /
+      SCANR / SCANL, SCREEN 3; then the 8 non-graphics stubs. Any further graphics byte
+      needs room from OUTSIDE the span first.
+      📏 **BATCH 5 (2026-11-09): 35 MORE ENTRIES, CALLED DIRECTLY** ([`biossweep_b5.out`](scratchpad/biossweep_b5.out),
+      [`biossweep_b5b.out`](scratchpad/biossweep_b5b.out)) -- the NOT MEASURED rows safe to call (no input wait, tape, disk,
+      printer or slot switch): **13 SAME** (GSPSIZ, WRTPSG, CHRGTR, GETYPR, ISCNTC, CKCNTC,
+      STMOTR, LFTQ, CHGSND, GETVCP, GETVC2, CHPUT, OUTDO), **22 DIVERGE**. With the first
+      batch's SAME rows, **29 went into biosregs-acceptance (67/67)**: the BIOS table reads 62
+      of 108 with a direct witness (was 34). 🔮 ~15 SAME / 20 DIVERGE: MISSED low on
+      divergence (and CHPUT / OUTDO first gave no reading -- their output shared the
+      result's line; an instrument fault, fixed with a newline). **Contract divergences, by
+      reach** (the rest differ in side registers only -- HL / DE after the mode setters,
+      PUTQ's, INITIO's, CHGCAP's A -- the D-BIOSREGS class, later):
+      (a) **ERAFNK / DSPFNK are stubs**: CNSDFG ($F3DE) after ERAFNK is 0 on the VG-8020, after
+      DSPFNK $FF; ours unchanged. A program's own KEY OFF / KEY ON through the BIOS does
+      nothing. (b) **INIFNK is a stub**: the VG-8020 fills FNKSTR ($F87F: "co"...); ours
+      leaves it. (c) **SCREEN 0's VDP copies**: after INITXT / SETTXT / TOTEXT (and in BASIC's
+      SCREEN 0) the VG-8020 holds RG3SAV / RG5SAV / RG6SAV = 0; ours keeps the previous mode's
+      $80 / $36 / $07. (d) **CLRSPR** keeps each sprite's X on the VG-8020 (attribute +1);
+      ours zeroes it. (e) **BEEP, STRTMS**: registers differ, the SOUND is the contract and
+      is unmeasured -- C-BIOS's are stubs (no beep; PLAY's queues not started). ➡️ (a) / (b)
+      / (e) first: point the entries at the code BASIC already runs for KEY OFF / KEY ON /
+      its function-key defaults / BEEP (same image) where the calling conventions allow.
+      Still NOT MEASURED: the input waits (CHGET, PINLIN, INLIN, QINLIN), tape six, PHYDIO /
+      FORMAT, OUTDLP / LPTOUT, CALSLT-class slot calls, NMI / KEYINT, POSIT, WSLREG, CALBAS.
+      ✅ **(a) ERAFNK / DSPFNK SHIPPED (2026-11-09).** Measured in full first ([`biossweep_fnk.out`](scratchpad/biossweep_fnk.out)):
+      ERAFNK -> CNSDFG 0 and row 23 blanked; DSPFNK -> CNSDFG $FF and the row painted; in SCREEN
+      2 only the cells change, VRAM untouched; **CRTCNT 24 after BOTH**. basic/biosfnk.asm (44 B
+      of the $3297 low-region pin pad -- page 0, since a caller's page 1 may be RAM) does
+      BASIC's KEY OFF / KEY ON work there; the main ROM's islands overlay points the
+      jump-table slots $00CC / $00CF at it (tools/build_mainrom.py PATCH_RANGES checks C-BIOS's
+      old `jp`s); sub2/scrstmt.asm's KEY OFF / KEY ON now only call the BIOS (sub page 1 +25
+      B). 📏 [`biossweep_fnk2.out`](scratchpad/biossweep_fnk2.out): **CNSDFG, the row and VRAM SAME in all four; four
+      biosregs-acceptance rows (71/71).** 🔮 HIT, misses none.
+      ✅ **(b) INIFNK AND (e) BEEP SHIPPED (2026-11-09)**, beside them in basic/biosfnk.asm (+20 B of
+      the pad) with the jump-table slots $003E / $00C0 overlaid the same way. INIFNK = the
+      keystr tenant's op 0, the defaults the cold boot writes: 📏 biosregs-acceptance's
+      `inifnk` row (two slots zeroed, INIFNK, a weighted sum over all 160 bytes of FNKSTR)
+      SAME, 72/72 ([`biossweep_inifnk.out`](scratchpad/biossweep_inifnk.out): HL / BC / A are side values). BEEP = the
+      sub-ROM's BEEP tenant (BASIC's own body): 📏 beep-acceptance's new `bios` case (a USR
+      to $00C0) gives the VG-8020's PSG transient, 5/5 -- it was SILENT before. ⚠️ `print
+      chr$(7)` (CHPUT's BEL, which calls C-BIOS's internal beep, not the jump table) gave NO
+      reading on the VG-8020 with that probe's onset anchor -- unmeasured, not claimed.
+      Left of this list: (c) the text-mode VDP copies, (d) CLRSPR's X, STRTMS.
+      ✅ **(c) THE TEXT-MODE VDP COPIES SHIPPED (2026-11-09).** C-BIOS's settxt wrote R#2 and R#4 only
+      (it skipped TXTCOL and never wrote R#5 / R#6), so SCREEN 0 kept the previous mode's
+      RG3SAV / RG5SAV / RG6SAV. It now writes R#2..R#6 from TXTNAM..TXTPAT in a loop (3 B
+      SHORTER; cbios-repack/graphics-cursor.patch) -- TXTCOL / TXTATR / TXTPAT are 0 on both
+      ([`biossweep_txttab.out`](scratchpad/biossweep_txttab.out)), so the copies read the VG-8020's 0 / 1 / 0 / 0. 📏
+      [`biossweep_txt.out`](scratchpad/biossweep_txt.out): **the register copies and SCRMOD SAME in all 8 rows** (DISSCR /
+      ENASCR / WRTVDP whole; the mode setters' HL / DE differ -- the VG-8020 walks the table
+      with HL, ours with DE: side values). Nine biosregs-acceptance rows (81/81).
+      🔮 Predicted the tape corpus unchanged: MISSED, for the better -- **Ballblazer went RUNS?
+      (791 VRAM bytes apart) -> SAME (byte-identical)** and Arkanoid's NEAR 65 -> 32 bytes
+      ([`txt_tape.out`](scratchpad/txt_tape.out); tally 9 SAME / 11 NEAR / 22 RUNS?, was 8 / 11 / 23). Not traced which copy
+      they read (the software is run, never decoded); RG5SAV / RG6SAV (sprite tables) are
+      the likely ones.
+      ✅ **(d) CLRSPR / INIT32 / INIGRP / INIMLT KEEP EACH SPRITE'S X (2026-11-09).** Measured
+      ([`biossweep_clrspr.out`](scratchpad/biossweep_clrspr.out), [`biossweep_spa.out`](scratchpad/biossweep_spa.out)): the VG-8020 writes Y $D1, the pattern number (x4 at
+      size 16) and FORCLR, and leaves X; its mode inits do the same (they share C-BIOS's
+      clrspr_attr). C-BIOS wrote X = 0. clrspr_attr now sets the address twice per sprite
+      (Y, then past X), and CLRSPR clears the patterns FIRST and the attributes last, so HL
+      ($1B80), BC and A end as the VG-8020's. 4 B shorter (the span: 7 B free). 📏
+      [`biossweep_clrspr2.out`](scratchpad/biossweep_clrspr2.out): **the attribute bytes and the pattern byte SAME in all six rows**
+      (DE differs: the VG-8020 keeps D and leaves the colour in E -- side). Four
+      biosregs-acceptance rows (85/85). Left of this list: STRTMS.
+      🔴 **THE TAPE VERDICTS OF RUNNING TITLES TRACK TIMING, NOT ONLY CORRECTNESS -- (c)'s note
+      above OVERCLAIMED.** With (d) ([`spr_tape.out`](scratchpad/spr_tape.out)) the tally stayed 9 / 11 / 22 but the titles
+      moved both ways: Ballblazer SAME -> RUNS? (279), Mutant Monty NEAR 1 -> SAME, Elite RUNS?
+      173 -> NEAR 18, Arkanoid 32 -> 67. The runner is deterministic for a fixed ROM (three
+      ROM changes that did not touch these paths gave byte-identical runs), so any change
+      to code a game RUNS shifts where its snapshot lands; "Ballblazer became SAME because
+      of RG5SAV / RG6SAV" was a guess, not a measurement. Read a running title's move as a
+      cause only with a second witness.
+      📏 **BATCH 6 (2026-11-09), THE INPUT WAITS AND THE REST** ([`biossweep_b6.out`](scratchpad/biossweep_b6.out)): keys put in KEYBUF
+      ($FBF0, GETPNT / PUTPNT around them) so CHGET / INLIN return at once. SAME in their cells:
+      SETT32 / SETGRP / SETMLT (register copies), GTSTCK / GTPAD / GTPDL (A), CHGCLR (RG7SAV),
+      CHGET, POSIT (CSRX / CSRY), FNKSB (with KEY ON and OFF). Two contract faults, both fixed:
+      ✅ **INLIN / PINLIN / QINLIN NEVER RETURNED.** C-BIOS's INLIN is a skeleton (its Return
+      handler `inlin_cr` is a bare `ret` back into the key loop): "AB" echoed, then the
+      program hung. basic/biosfnk.asm maps main page 1 to primary slot 0 (htimi_guard's way)
+      and runs BASIC's own line editor (read_line), then HL = BUF - 1, A = $0D; QINLIN
+      prints "? " first; the slots $00AE / $00B1 / $00B4 overlaid as before. 📏
+      [`biossweep_inlin.out`](scratchpad/biossweep_inlin.out): **BUF, HL and A SAME on all three, and QINLIN's screen ("? AB")
+      identical**; DE / BC are side values. ⚠️ Measured from BASIC only: under MSX-DOS
+      (CALSLT, page 1 = RAM) the wrapper maps the main ROM in, but read_line's sub-ROM tenant
+      needs SUBSLOT, which BASIC's init sets -- unmeasured there.
+      ✅ **CHGCAP HAD THE CAPS LAMP INVERTED.** Both references -- the VG-8020 and the CF-3300
+      ([`cap_cf.out`](scratchpad/cap_cf.out); that machine carries OUR disk ROM, so refcache classes it zerobas, but its
+      MAIN BIOS is the National's: it read C0 / C40 while ours read the inverse) -- leave PPI
+      port C bit 6 SET for A <> 0, CLEAR for A = 0; C-BIOS had it the other way round
+      (set / res swapped in cbios-repack). Sixteen biosregs-acceptance rows (104/104). **The
+      BIOS table: 90 of 108 witnessed**; the 18 left are KEYINT / NMI / INITIO, the tape
+      five, WSLREG / CALBAS, PHYDIO, OUTDLP, PUTQ / STRTMS (PLAY's queues), GRPPRT (its font
+      differs from the VG-8020's) and PNTINI / SCANR / SCANL (not implemented; no room).
+      ✅ **PHYDIO WITNESSED (2026-11-09):** probes/disk/disk_probe_phydio.py -- sector 0 of drive A
+      read directly through $0144 from Disk BASIC, the National_CF-3300 against ours:
+      **the 512 bytes (checksum + three of them), Cy, A and B (0 left) SAME**; HL ($D200 vs
+      1) and C ($3C vs 1) differ, outside the contract ([`phydio_1109.out`](scratchpad/phydio_1109.out)). A
+      diskbasic-acceptance row ("PHYDIO", live). The BIOS table: 91 of 108.
+      🖥️ **FILED -- CRTCNT UNDER KEY ON (found the same day, [`biossweep_crt.out`](scratchpad/biossweep_crt.out)):** the VG-8020
+      holds CRTCNT ($F3B1) = 24 at boot, after KEY OFF AND after KEY ON -- it keeps the key
+      row out of the scroll through CNSDFG. zerobas writes 23 under KEY ON (boot, KEY ON,
+      DSPFNK) and bounds its console scroll by CRTCNT (D-SCROLLBOUND). A published work-area
+      cell that reads differently: a program that PEEKs it, or POKEs 24 under KEY ON, sees our
+      key row scroll away. Fix = the console's scroll bound from CNSDFG, then CRTCNT 24
+      always; TIER 1 under the entry-point ruling (published work area), after (b) / (e).
+      🔬 **INVESTIGATED (2026-11-10; Joost: *"This needs further investigation."*)** --
+      scratchpad/crtbound_probe.py ([`crtbound_run2.out`](scratchpad/crtbound_run2.out)), CSRY after 30 lines / a LOCATE: the
+      VG-8020's console bound is **CRTCNT + CNSDFG** (CNSDFG 0 / $FF): KEY ON scrolls to
+      CSRY 23 with CRTCNT 24, KEY OFF to 24; with CRTCNT POKEd to 20 it is 19 under KEY ON
+      and 20 under KEY OFF -- it honours the cell AND subtracts the key row; LOCATE clamps
+      to the same bound (0,23 -> 23 under KEY ON). Ours bounds by CRTCNT alone (POKE 20
+      under KEY ON: 20, not 19). 🏗️ **RULED (Joost 2026-11-10): *"don't use extra RAM
+      for this different from the reference"*** -- no console-rows cell: the bound is
+      computed from CRTCNT and CNSDFG, as the reference does, in ROM: C-BIOS CHPUT's 8
+      reads (4 `ld a,(CRTCNT)`, 4 `ld hl,CRTCNT / cp (hl)`) and our 8 readers through
+      helpers (~24 B, page 0: a carve of island 1 first), then CRTCNT 24 always.
+      The two KEY OFF rows' missing zerobas reading is the probe's own doing, and the
+      same divergence again: each row restores the CRTCNT it found, 23 on our KEY ON boot,
+      AFTER KEY OFF -- the cursor on row 24 then sits under our bound and the result line
+      is overwritten; the values read before that (24 / 32 / 32 / 24) are the VG-8020's.
+      ✅ **FIXED (2026-11-10), no RAM:** crt_rows ($3283: A := CRTCNT + CNSDFG) and crt_cp
+      ($328D: A compared with it) pinned in the $3297 pad, page 0 -- C-BIOS's CHPUT calls
+      them (cbios-repack/crtcnt-bound.patch: its 5 `ld a,(CRTCNT)` and 3 `ld hl,CRTCNT / cp
+      (hl)` replaced with the same bytes, 27 changed, nothing moved), and so do BASIC's
+      screen editor, REPL and LOCATE clamp and the sub-ROM's line editor (5); DSPFNK /
+      ERAFNK, the boot and SCREEN store CRTCNT 24 always. [`crtbound_run3.out`](scratchpad/crtbound_run3.out): all 7 rows
+      SAME as the VG-8020, the POKEd CRTCNT included; B1's CRTCNT pin is gone.
+      🔴 Two readers were missed by the source search (`(CRTCNT)` over basic / sub / disk):
+      sub/readline.asm's rl_echo (`ld hl,CRTCNT / sub (hl)`) and sub2/edctrl.asm's ekx_row
+      (sub2/ is built into the sub-ROM) -- screditor's i.wrap read the prompt into a
+      wrapped INPUT (47 for 45). A scan of the BUILT images for $F3B1 operands found both;
+      now no ROM addresses CRTCNT but crt_rows itself. 10 console / editor suites green.
+      ✅ **CLOSED 2026-11-13:** this item's own "left of the list" ended at STRTMS, shipped
+      2026-11-12 with PUTQ; the SCREEN 3 half of the cursor family and PNTINI / SCANR / SCANL
+      the same day (D-BIOSRUNG). What biossweep still reads apart ([`biossweep_sc3fix.out`](scratchpad/biossweep_sc3fix.out)) is
+      register leftovers with no documented contract and the C-BIOS font, both on file.
+
+- [x] 🔴 **D-FRENWILD — UNDER MSX-DOS, A WILDCARD FREN RENAMES ONE FILE TO A NAME WITH A LITERAL `?`
+      (found 2026-11-10 by D-DOSLADDER's D5, REN / DEL)**
+      ✅ **FIXED THE SAME DAY, WITH ITS TWIN D-FDELWILD.** fren_wild (disk/kernel.asm): one pass over
+      the root BY INDEX (fr_entry, disk/fat.asm -- the old body's room; it skips the read
+      when FAT_DIRSEC already holds the sector), every name_cmp_wild match renamed with `?`
+      keeping the entry's own byte, the built name in a 12-byte stack frame, refused ($FF)
+      when it exists. Room: the region in front of $75A5 (151 -> 5 B), fw_refuse in the
+      $4C29 hole, fw_done in the 17 bytes between the FDC window and $7FD1 (exactly full).
+      🔴 **AND FDEL DELETED ONE MATCH ONLY** (D-FDELWILD): after FDEL "Z?.TMP" one .TMP file was
+      left here, none on the CF-3300. fdel_body now repeats fdel_one until nothing matches
+      ($FF only when the first pass finds nothing; an I/O error's 2 passed through). 🔴 A
+      register the gate pins: FREN's success left HL = the stack address (BDOSX3 rec 14,
+      H = $DB where the CF-3300 has 0) -- fw_done returns HL = 0 now (BDOSX3 needs one fewer
+      allowlist excuse). 📏 [`dosl_d5_3.out`](scratchpad/dosl_d5_3.out): **D5 BYTE-IDENTICAL**; bdos-acceptance with D5 (BDOSX3 /
+      BDOSX7's FREN rows green); diskbasic-acceptance 35/35 (NAME, KILL with wildcards).
+      🎚️ TIER 1 — happy path of BDOS $17 FREN: `REN X?.TMP Z?.TMP` is how REN is used.
+      🤖 **AUTONOMOUS** — 📏 probes/disk/dosl/d5rendel.asm ([`dosl_d5_1.out`](scratchpad/dosl_d5_1.out)): after FREN "X?.TMP" ->
+      "Z?.TMP" the CF-3300 has Z1.TMP and Z2.TMP (A = 0; "Z?.TMP" counts 2); then FREN Y.TMP ->
+      Z1.TMP is REFUSED (A = $FF -- the name exists), "?.TMP" counts 1, FDEL "?.TMP" deletes
+      Y.TMP. Ours: 4 of 16 bytes differ -- fren_body (disk/fat.asm) finds the OLD name with
+      fat_find (an EXACT compare: it matched the first `X?` it could, by name_cmp's rules)
+      and copies the NEW pattern verbatim, `?` included: one file becomes "Z?.TMP", X2.TMP
+      stays, so the M35 collision pre-check (exact) finds no "Z1" and Y.TMP -> Z1.TMP goes
+      through -- a DUPLICATE-NAME risk. ➡️ FREN = for EVERY entry matching the old pattern
+      (name_cmp_wild, one pass over the root BY INDEX, so a new name that also matches is
+      not visited twice): new[k] = pattern_new[k], or old[k] where the pattern has `?`; the
+      collision check on that built name (fat_find); rewrite the entry's 11 bytes; write its
+      sector. A = $FF when nothing matched or on a collision (what the CF-3300 does with the
+      matches renamed BEFORE a collision is unmeasured -- measure it). 📐 The built name needs
+      11 B of scratch that fat_find's read does not overwrite (FAT_DBUF = SECTOR_BUF;
+      FAT_MBUF holds the FAT cache; the kernel FCB copy has only +28..36 free) -- a stack
+      frame, or build into the entry in place AFTER the collision scan. Room: the region in
+      front of $75A5 (151 B). Must not touch the DTA or SFIRST / SNEXT's BDOS_SRCHIDX.
+
+- [x] 🔴 **D-RNDLIVE — UNDER MSX-DOS, RDRND OF A RECORD JUST WRITTEN TO AN OPEN FILE ANSWERED
+      "PAST THE END" (found and fixed 2026-11-10 by D-DOSLADDER's D6)**
+      🎚️ TIER 1 — happy path of BDOS $21 RDRND: a database writes records and reads them back
+      before it closes the file.
+      📏 probes/disk/dosl/d6rand.asm ([`dosl_d6_2.out`](scratchpad/dosl_d6_2.out)): after FMAKE and WRRND of records 0..4, RDRND of
+      record 2 gave A = 1 and an untouched buffer here, the record on the CF-3300; so did
+      RDRND inside a WRZER gap and a SEQREAD from record 0. rrnd_position re-found the file
+      through its DIRECTORY ENTRY -- rewritten only at FCLOSE -- so an open file grown by
+      writes looked empty (the D-WRZER lesson, again). ✅ It takes the first cluster (+26) and
+      the size (+16..19) from the FCB, which every write keeps current and FOPEN fills.
+      🔴 Then 1 byte remained: FSIZE of the open file -- the CF-3300 reads the entry's OLD size
+      (0), ours 5 records: with the chain now found, a WRRND at the end of the file took the
+      in-file path, whose wrrnd_extend (M36) wrote the new size to the ENTRY at once. M36's
+      evidence ("WRRND r0=5 -> FCLOSE", the entry 256 -> 768) was taken AFTER FCLOSE, which the
+      MSX-DOS kernel writes from the FCB; wrrnd_extend no longer writes the entry (BDOSX6's
+      re-FOPEN record still converges: the size is persisted at close).
+      📏 [`dosl_d6_4.out`](scratchpad/dosl_d6_4.out): **D6 BYTE-IDENTICAL (33 bytes)**; bdos-acceptance 23/23 with D6;
+      diskbasic-acceptance green; tests/test_rrnd_8bit_limit.py and test_wrrnd_extend.py fill
+      the FCB's +26 as FOPEN does, and the latter expects the entry unchanged until FCLOSE.
+
+- [x] 🔴 **D-WRBLKTRUNC — WRBLK OF 0 RECORDS TRUNCATED THE CHAIN BUT NOT THE FCB, SO FCLOSE WROTE
+      THE OLD SIZE BACK (found and fixed 2026-11-10 by D-DOSLADDER's D7)**
+      🎚️ TIER 1 — happy path of BDOS $26 WRBLK with HL = 0, the documented way to set a file's
+      size: an editor or sort that rewrites a shorter file.
+      📏 probes/disk/dosl/d7sort.asm: SORTED.TXT written as 20 x 128 by one WRBLK, then WRBLK
+      of 0 at RR 10. The CF-3300 sets the FCB's size to 1280 and leaves the directory entry
+      to FCLOSE ([`dosl_d7_trunc_stock.out`](scratchpad/dosl_d7_trunc_stock.out)). Ours freed the tail cluster and wrote the ENTRY
+      (1280) but left FCB +16..19 at 2560 ([`dosl_d7_trunc_ours.out`](scratchpad/dosl_d7_trunc_ours.out)); FCLOSE writes the entry
+      from the FCB (cr_dir), so the file closed at 2560 B on a 2-cluster chain -- FSIZE 20
+      records where the CF-3300 says 10. ✅ wrblk_zero_path calls wrblk_fcb_keep, as the
+      record path does, instead of fat_dir_update (2 B less). 📏 [`dosl_d7_fix.out`](scratchpad/dosl_d7_fix.out): sizes and
+      FSIZE match; the 6 bytes left are the CF-3300's OWN truncate bug -- its FCLOSE answers
+      $FF and never writes the FAT chain, so the file's clusters read free and RDRND reads
+      them as garbage -- the signed-off divergence (disk/docs/diskbasic-option-surface.md,
+      "`$26` WRBLK shrink"), whose "ours correct" was not true until this fix. The gate pins
+      OUR value at each of those bytes (an `(ours, reason)` allowlist entry), so the excuse
+      cannot hide a regression of ours. Knife: the old two lines put back turn DOSL-D7 RED
+      on exactly the size and FSIZE bytes ([`d7row_knife.out`](scratchpad/d7row_knife.out)).
+
+- [x] 🪜 **D-DOSLADDER — A LADDER OF MSX-DOS PROGRAMS, CF-3300 AGAINST OURS (Joost's idea,
+      2026-11-09)**
+      🎚️ TIER 1 — the BDOS surface under REAL program patterns (sequences, file state across
+      calls), which the one-function exercisers (bdosx..) do not reach: the entry-point ruling.
+      🤖 **AUTONOMOUS** — probes/programs' shape (L1..L5 BASIC programs, run_programs.py) at the
+      BDOS level: our own small .COM programs, each writing its results to a capture block
+      (and the screen), run on the National_CF-3300 and ours with fat12_add + AUTOEXEC.BAT and
+      disk_probe_diff.py capture at `done`; one runner, one gate (dosprog-acceptance). Rungs:
+      D1 hello / echo (CONOUT, STROUT, BUFIN, version) · D2 type (FOPEN, sequential read to
+      EOF) · D3 copy (FMAKE, SEQWRITE, FCLOSE, re-read) · D4 dir (SFIRST / SNEXT over
+      wildcards, sizes, ALLOC) · D5 ren / del (FREN, FDEL with wildcards, the error paths) ·
+      D6 a random-access database (WRRND / RDRND, WRZER, RDBLK / WRBLK, FSIZE, SETRND) · D7 a
+      mini editor / sort (many files, append, truncate by WRBLK of 0). Clean-room: own code.
+      ⏳ Order against D-DSKFMT's carve: asked of Joost 2026-11-09, unanswered at filing.
+      ✅ **D2 (TYPE) SHIPPED, D3 (COPY) FOUND D-SEQTWO (2026-11-09).** probes/disk/build_dosl_disk.py
+      --prog NAME builds any rung from probes/disk/dosl/NAME.asm (the `cap` block compared;
+      bdos-acceptance's EXERCISERS take extra build arguments now). D2: COMMAND.COM read to
+      the end -- FOPEN 0, 51 records, byte sum $6C2A, EOF A = 1, FCLOSE 0, size 6528, CR 51
+      -- **byte-identical on both** ([`dosl_d2_1.out`](scratchpad/dosl_d2_1.out)); a bdos-acceptance row. D3: above. D3 joined
+      bdos-acceptance when D-SEQTWO landed (settle 150: the CF-3300 takes 93 s). Next rungs:
+      D4 dir (SFIRST / SNEXT over wildcards, ALLOC), D5 ren / del, D6 a random-access file.
+      ✅ **D4 (DIR) SHIPPED (2026-11-09), AND IT FOUND A DTA DIFFERENCE.** "*.COM" through SFIRST /
+      SNEXT on what the boot disk holds -- each name and size, the first match's raw DTA --,
+      counts of "*.SYS" and "*.*", ALLOC. The first cut kept its output pointer in IX across
+      BDOS calls: the CF-3300 returns IX = its DPB, so the names went into the system area
+      and the REFERENCE hung -- a probe bug, found by moving the capture anchor back through
+      the program (the reference's ROM is never traced); the pointer lives in RAM now. Then
+      5 bytes differed ([`dosl_d4_3.out`](scratchpad/dosl_d4_3.out)): **the CF-3300's SFIRST DTA carries the directory
+      entry's bytes 15..21 RAW at DTA[16..22]** (on this PC-made image, the VFAT creation /
+      access dates); dsm_found (disk/kernel.asm) zeroed them -- its layout was pinned against
+      what COMMAND.COM's DIR READS, and DIR never reads those. The final copy now starts at
+      entry[15] (0 B). 📏 [`dosl_d4_4.out`](scratchpad/dosl_d4_4.out): **D4 BYTE-IDENTICAL (108 bytes)**; bdos-acceptance 21/21
+      with it; p1dta-acceptance green.
+      🔴 **D5 (REN / DEL) FOUND D-FRENWILD AND D-FDELWILD (2026-11-10)** -- both fixed; D5 is a
+      bdos-acceptance row. Next: D6, a random-access file (WRRND / RDRND, WRZER, RDBLK /
+      WRBLK, FSIZE, SETRND).
+      ✅ **D6 (RANDOM ACCESS) FOUND D-RNDLIVE (2026-11-10)** -- fixed; D6 is a bdos-acceptance row.
+      Its first cut "converged" on a FALSE ANCHOR on the CF-3300: COMMAND.COM was running at
+      the anchor address with the same arm byte ($02 at $0102); every rung now leads with
+      `jr start` / `db $Dn` (D2..D6; D2..D5 had verified real values, but carried the same
+      risk). Next: D7, the mini editor / sort.
+      🔴 **D7 (EDITOR / SORT) FOUND D-WRBLKTRUNC (2026-11-10)** -- fixed; D7 is a bdos-acceptance
+      row. Its first cuts "anchored" at t = 14.93 on the CF-3300, MID-FMAKE: `done` sat at
+      $0288 and a breakpoint is by ADDRESS, so it fired while the BDOS call had page 0
+      switched to the main ROM (the call log showed FMAKE at 14.9317 and all 81 calls running
+      on). Not a refcache replay (ZEROBAS_REFCACHE=0 gave the same). The capture now takes
+      `--at-cond '![pc_in_slot 0]'` and the rungs with an `armpt` arm on three bytes, slot-
+      guarded (probes/disk/build_dosl_disk.py). Next: D1, the console rung (CONOUT, STROUT,
+      BUFIN, version) -- the only one never built.
+      ✅ **D1 (CONSOLE) BYTE-IDENTICAL AT ITS FIRST RUN (2026-11-10) -- THE LADDER IS COMPLETE.**
+      STROUT, CONOUT, version ($0022), CURDRV, LOGIN ($0003: A and the phantom B), CONST /
+      DIRIO with no key, GETDATE (1984-01-01), then -- keys typed at 40 s while it waits on
+      CONST (`build_dosl_disk.py --keys`) -- CONST $FF, BUFIN "HELLO" (count 5, the CR
+      stored), CONIN of the X typed past the Enter, CONST 0, SELDSK 2 drives
+      ([`dosl_d1_1.out`](scratchpad/dosl_d1_1.out) 0 of 32 differ; ours one-sided, the values real: [`dosl_d1_2.out`](scratchpad/dosl_d1_2.out)). D1..D7 are
+      all bdos-acceptance rows. Found along the way: D-SEQTWO, the SFIRST DTA bytes,
+      D-FRENWILD, D-FDELWILD, D-RNDLIVE, D-WRBLKTRUNC. Ladder closed; further rungs are new
+      items, not this one.
+
+- [x] 🐌 **D-CHANSLOW — THE DAILY kwtime MOVED THREE DISK-BASIC CHANNEL ROWS THE WRONG WAY
+      BETWEEN 399776bf AND 224cb519 (found 2026-11-10 by `make gates-sweeps`)**
+      🎚️ TIER 5 — on-par speed: RSET's "alone" ratio crossed 1 (slower than the CF-3300).
+      🤖 **AUTONOMOUS** — docs/tier-status.md, regenerated by the sweep: FIELD bind-buffer
+      0.71x -> 0.94x, RSET right-justify (unmeasured) -> 1.1x, BLOAD plain 1.5x -> 1.9x; KILL
+      0.81x -> 0.7x the other way. kwtime is EMULATED time, deterministic -- not noise. The
+      "alone" figure is (zb - twin_zb) / (ref - twin_ref), the keyword without its setup
+      program, so a small denominator amplifies; the raw rows are kept in
+      [`kwtime-2026-11-10.json`](scratchpad/kwtime-2026-11-10.json) (`fieldkw`, `rset`, `t8bloadcolon`). No earlier kwtime.json was archived
+      and zerobas readings are never cached, so ➡️ BISECT by building the commits between
+      (the disk-ROM defrag steps 1-6, D-SEQTWO, D-FRENWILD / D-FDELWILD, D-RNDLIVE,
+      D-WRBLKTRUNC) and running `basic_probe_kwtime.py --only` on those rows. Suspect first:
+      the defrag moves (a routine moved across a page-1 tenant or `jr` turned `jp`) and
+      D-RNDLIVE (the FCB-sourced random read) -- but a channel's PUT / GET do not go through
+      BDOS, so MEASURE before believing either.
+      📏 **RE-MEASURED 2026-11-11 ([`chanslow_1111.out`](scratchpad/chanslow_1111.out), `--only fieldkw,rset,t8bloadcolon`):**
+      the whole-row ratios are all under 1 -- BLOAD plain 0.59, RSET 0.95, FIELD 0.63 -- but
+      only BLOAD got an "alone" reading in this mode, and it is **5.73** (1.88 on 11-10).
+      🔴 The two runs are NOT on one scale: the 11-10 JSON holds seconds and a reference
+      of 4.50 s for this row, today's run milliseconds and 3.66 s, and the reference is
+      replayed from the store -- so the harness, not only zerobas, moved between them.
+      ➡️ Next: run the FULL kwtime (the alone figure needs its twin rows) twice on today's
+      build and once on 399776bf in the gate worktree, all three on the SAME harness, before
+      any bisect; the CF-3300's alone denominator for BLOAD plain is ~0.5 s, so it amplifies.
+      ✅ **CLOSED 2026-11-11: THE MOVE HAS REVERSED, ON ONE HARNESS.** The FULL `make kwtime` on
+      today's build ([`kwtime-2026-11-11.json`](scratchpad/kwtime-2026-11-11.json)), against [`kwtime-2026-11-10.json`](scratchpad/kwtime-2026-11-10.json) -- the SAME
+      reference values (FIELD 4.609, RSET 1.837, BLOAD 4.496, KILL 2.833), so one scale:
+      alone FIELD 0.94 -> **0.71**, BLOAD plain 1.88 -> **1.03**, KILL 0.70 -> **0.81** (each back to,
+      or better than, its pre-11-10 value); RSET alone unmeasured again (no twin reading, as
+      before 11-10); whole-row ratios 0.54 / 0.47 / 0.48 / 1.23. Status counts identical
+      (871 OK, the same 7 HANG rows, 5 UNTIMEABLE). The `--only` run's BLOAD 5.73 was the
+      apparatus: `--only` lacks the full run's twin context. 🔴 Lesson: an "alone" ratio is
+      read from a FULL run, and two runs are compared only when their reference columns
+      match. Not bisected: the commits that moved the rows are behind HEAD, and the reading
+      the item was filed on is gone.
+
+- [x] 🔀 **D-GATEWT — GATE A FROZEN COPY IN A WORKTREE, KEEP WORKING IN THIS ONE
+      (Joost, 2026-11-10: "we really need ... a way of working that allows work to
+      continue while we're waiting for long test runs")**
+      🎚️ TIER 2 — reasonable time: a full gate stopped all work for its whole run.
+      Ordered next, before D-BDOSFCB B3 and D-BIOSLADDER.
+      🤖 **AUTONOMOUS** — why "touch nothing while a gate runs" was needed: the installed
+      machines (`~/.openMSX/share/machines/*.xml`) name this checkout's `build/*.rom` by
+      absolute path, so even a plain `make` here changed what a running gate booted, and
+      `repack-machine` rewrote the shared XMLs. openMSX reads `OPENMSX_USER_DATA` (the
+      user share dir: machines, settings, systemroms), so a worktree can have its OWN
+      machines under the SAME names. Plan: (1) `openmsx_paths.find_user_share()` honours
+      `OPENMSX_USER_DATA`; every `find_user()/share` site and the hard-coded settings /
+      scripts paths use it. (2) `tools/gate_wt.py`: a detached worktree at HEAD beside
+      this checkout, a private share seeded from the user's (machine XMLs copied with this
+      checkout's path rewritten to the worktree's, everything else linked), a clean build
+      and `repack-machine` there, the gate tier named, the gate state files
+      (`gate_last_green.json`, `gate_pins/`) copied in and the green record copied back.
+      (3) The flow: stage → `make gates-plan` → commit LOCALLY → `gate_wt.py` in the
+      background → keep working here (edits, builds, host unit tests, static tools; NO
+      emulator run while the gate's runs) → green: push; red: fix, amend, re-gate (the
+      commit was never pushed). (4) Knife: a gate in the worktree must keep its ROM hash
+      and verdict while this checkout builds a different ROM.
+      ✅ **DONE (2026-11-10):** steps (1)-(4) built (tools/gate_wt.py; openmsx_paths.find_user_share()
+      honours OPENMSX_USER_DATA; a private ZEROBAS_TMP outside every checkout); the knife
+      passed (this checkout's build/disk.rom replaced by random bytes during the worktree's
+      FULL battery: its ROM hash and verdict held). Every commit since has been gated this
+      way. 🟢 Step (3)'s "NO emulator run while the gate runs" was LIFTED the same day (Joost:
+      "I thought we solved that restriction?") -- probes and single suites run here; not the
+      battery, nor a suite the gate is running at that moment. Lessons in memory
+      (gate-in-a-worktree): never chain the push after the gate command; stage every file
+      the citation fixer rewrites.
+
+- [x] 🪜 **D-BIOSLADDER — A LADDER OF MACHINE-CODE PROGRAMS ON THE MAIN BIOS, VG-8020 AGAINST OURS
+      (Joost's idea, 2026-11-10, after D-DOSLADDER's six fixes)**
+      🎚️ TIER 1 — the main BIOS under REAL program patterns (the entry-point ruling,
+      2026-11-08), which the one-entry rows (biosregs-acceptance) do not reach. Order:
+      after D-BDOSFCB, before D-DSKFMT's build (the ladder needs no disk-ROM room).
+      🤖 **AUTONOMOUS** — D-DOSLADDER's shape: our own small programs, each writing its
+      results to a capture block, compared at a `done` anchor (D7's lessons: a run-time,
+      three-byte, slot-guarded arm -- probes/disk/build_dosl_disk.py). 🏗️ **RULED (Joost
+      2026-11-10): "yes tier-1, I think the rom approach is enough as otherwise we'd just
+      test basic as well"** -- ROM CARTRIDGES ONLY (`-cart`, a 16 KB AB-header image: our
+      cartridge boot too, and it runs on the diskless target -- a NODISK row per rung); no
+      BLOAD delivery, which would test BASIC's loader rather than the BIOS. VRAM dumps for the video rungs, the PSG
+      registers for sound. Rungs: B1 text (CHPUT, POSIT, CLS, CHGET with typed keys, ERAFNK,
+      the width / screen cells) · B2 VDP (CHGMOD / INIGRP, WRTVDP, LDIRVM, FILVRM, RDVRM,
+      sprites, CALPAT / CALATR) · B3 interrupts (an H.TIMI handler counting JIFFY, a
+      vblank-synced loop) · B4 input (GTSTCK, GTTRIG, SNSMAT, KILBUF, CHSNS) · B5 sound
+      (GICINI, WRTPSG / RDPSG, STRTMS / PUTQ -- already filed as differing) · B6 slots
+      (RDSLT, WRSLT, CALSLT, ENASLT: a ROM finding RAM in page 2) · B7 tape (TAPOON / TAPOUT,
+      then TAPION / TAPIN) · **B8 a save game on disk** (Joost, 2026-11-10: *"a rom that
+      e.g. uses the disk for save game"*) -- the ROM saves and reloads a block through the
+      $F37D BDOS (FMAKE, WRBLK, FCLOSE; FOPEN, RDBLK: the surface D-BDOSFCB is making whole)
+      and, as a second variant, through PHYDIO / DSKIO; on the disk target only, its NODISK
+      row checking what the ROM sees with no disk interface ($F37D unset). Clean-room: own
+      code.
+      ✅ **HARNESS + B1 (2026-11-10):** probes/bios/biosl_run.py (a rung = our own 16 KB AB
+      cartridge in probes/bios/biosl/; DONE / CAP block / VRAM read back from RAM; keys
+      typed when the program raises KEYREADY; rows nodisk = VG-8020 vs REPACK_NODISK, disk
+      = VG-8020 + NMS 1200 vs REPACK_DISK; ALLOW pins OUR value) and `make
+      biosl-acceptance` (in the battery). **B1 TEXT** (CHPUT codes, POSIT, ESC Y / K / J,
+      ERAFNK / DSPFNK, KILBUF + CHGET, a scroll, the 40 x 24 name table) found TWO:
+      (1) a cartridge's INIT waiting in CHGET HUNG -- C-BIOS's init leaves SCNCNT where the
+      interrupt wraps it before it scans, so no key was read for ~5 s, and D-BOOTSCAN's
+      `SCNCNT := 1` ran only AFTER the cartridge scan; [`b1diag_run3.out`](scratchpad/b1diag_run3.out): a raw key-matrix
+      press seen by the VG-8020, never by ours. FIXED in basic/interp.asm: D-BOOTSCAN's
+      store moved BEFORE init_ext_roms (it cost 1 B of page 1, 2026-11-10). 🔴 A FIRST CUT patched C-BIOS's
+      init_ram instead (upstream C-BIOS 4aa7859, +4 B and every C-BIOS address above
+      $0F66 +4) and the FULL gate went red on autorun-acceptance: scanning from ~0.03 s
+      kept keys typed in the first second of boot, which the VG-8020 drops -- openMSX
+      typed a stray `'` CR at 0.38 s (after the tape insert), ours ran it as a line and
+      the autorun's RUN never came ([`autorun_tokdiag_h2.out`](scratchpad/autorun_tokdiag_h2.out): ours reaches
+      init_ext_roms at 2.65 s, so starting the scan there drops them as the VG-8020 does).
+      (2) LINL40 was 39 at a cartridge's INIT, the VG-8020's 37 -- interp.asm sets it BEFORE
+      init_ext_roms (0 B). The disk ROM's INIT is one of them, so MSX-DOS now boots with
+      37 where the CF-3300 has 39: dosmode-acceptance excuses exactly that on its two boot
+      rows (presentational -- SCREEN 1, LINLEN 29 on both; the VG-8020's value ships, Joost
+      2026-09-04; B1's disk row measured 37 at INIT on the VG-8020 + NMS 1200). 📏
+      [`biosl_acc1.out`](scratchpad/biosl_acc1.out): both rows SAME but two pinned bytes -- CSRY at INIT
+      (banner position, presentational) and CRTCNT after DSPFNK (the filed "CRTCNT UNDER
+      KEY ON" item, rediscovered).
+      ✅ **B2-B6, B8 (2026-11-10)** -- one `biosl_run.py --all` run, both rows ([`biosl_all_run2.out`](scratchpad/biosl_all_run2.out)): B2 VDP
+      (CHGMOD 1 / 2 / 3, FILVRM / LDIRVM / RDVRM / WRTVRM / LDIRMV, CHGCLR, WRTVDP, GSPSIZ,
+      CALPAT / CALATR, CLRSPR; the shadows, table bases and VRAM -- NOT the pattern table:
+      the font is C-BIOS's own, every glyph differs by design) SAME; B3 interrupts (JIFFY,
+      an H.TIMI and an H.KEYI handler in the cartridge, a DI stretch, unhooking, STATFL)
+      SAME; B4 input (GTSTCK, GTTRIG, SNSMAT, CHSNS, CHGET, KILBUF around a raw key-matrix
+      press) SAME; B6 slots (RDSLT of its own header, page 3's RAM into page 2 by ENASLT,
+      WRSLT / RDSLT and their register contract) SAME but EXPTBL's slot 3 (hardware,
+      pinned); B8 the save game -- hooked on H.STKE by an RST 30h inter-slot call, $F37D
+      FMAKE / WRBLK / FCLOSE / FOPEN / RDBLK and PHYDIO write / read of the last sector, a
+      canary at $C000 -- SAME on the disk row (our disk machine asks the date first, a
+      CF-3300 behaviour the NMS 1200 does not have: the rung types a CR); its NODISK row:
+      $F37D holds $C9 here, $00 on the VG-8020 (pinned, D-F37DNODISK). B5 sound: see
+      D-PSGINIT (pinned until fixed). The harness grew `@matrix`, several `@vram`, `@disk`,
+      `@cap`, `@type-at`.
+      ✅ **B7 (2026-11-10)** -- TAPOON / TAPOUT x 16 / TAPOOF, then TAPION / TAPIN x 16 / TAPIOF
+      on each machine's own fresh recording (the harness's `@tape` turns it round on the
+      program's TAPEREADY): every CF 0 and the bytes back, SAME on both rows
+      ([`biosl_b7_run1.out`](scratchpad/biosl_b7_run1.out), [`biosl_b7_run2.out`](scratchpad/biosl_b7_run2.out)). **THE LADDER IS COMPLETE**: B1-B8 in
+      `make biosl-acceptance`; what it found is fixed (B1's key scan and width, B5's BEEP
+      and R11) or filed on its own (CRTCNT UNDER KEY ON, D-PSGINIT's boot R0, D-F37DNODISK).
+
+- [x] 🔴 **D-BDOSSEQ — PUSHED REGRESSION: $F37D WRRND ON AN FMAKE'D, STILL-OPEN FILE NEVER RETURNS
+      (found 2026-11-10 by D-BDOSFCB stage C's check, scratchpad/bdosset_probe.py)**
+      🎚️ TIER 1 — happy path of a BDOS entry from BASIC (the entry-point ruling).
+      🤖 **AUTONOMOUS** — bdosset's sequence (FMAKE PROBE.TMP, one SEQWRITE, RENAME of a
+      missing file, SETRND, RDRND, then WRRND): the CF-3300 answers WRRND A = 1 (and FSIZE 0,
+      WRBLK 1, ...); zerobas never returns from WRRND ([`bdosset_head.out`](scratchpad/bdosset_head.out): done-flag stops
+      after RDRND). Bisected in the gate worktree: fine at 6d554edd (every random row $FF,
+      [`bdosset_6d55.out`](scratchpad/bdosset_6d55.out)), stalled at ba7204d7 ([`bdosset_ba72.out`](scratchpad/bdosset_ba72.out)) and at HEAD -- introduced by
+      D-BDOSFCB stage A (d0d2984d: $22 routed to wrrnd_body). bdos-acceptance and the DOS
+      ladder never ran this sequence. ⚠️ The uncommitted stage C (DELETE / RENAME to the
+      kernel bodies) changes the outcome -- the random rows then answer $FF at once -- so
+      stage C waits for this. ➡️ Next: a row-by-row probe of just this sequence; a trace
+      from a breakpoint CALLBACK with `debug step` deadlocks openMSX (wrrnd_hang.py, timed out).
+      ✅ **THE DATA LOSS FIXED (2026-11-10).** scratchpad/bdosseq_probe.py drops SETRND (RR
+      POKEd): FMAKE, one SEQWRITE, WRRND RR 1, WRRND RR 0, FCLOSE, FOPEN, RDRND 0 / 1. It did
+      not hang, but the file came back 128 bytes with record 1 = $00 where the CF-3300 has
+      256 and $22 ([`bdosseq_run1.out`](scratchpad/bdosseq_run1.out)): (1) the write-mode FCLOSE wrote the SEQWRITE session's own
+      byte count, never grown by WRRND -- now the FCB's +16..19 (bdos_close_write, moved
+      to disk/runtime.asm's $7F1E hole for room); (2) its zero-padded flush of the pending
+      SEQWRITE buffer -- the sector buffer the random call had just used -- wrote over
+      record 1: seq_dirty now flushes that buffer FIRST, at every random positioning of a
+      write-open file. [`bdosseq_run3.out`](scratchpad/bdosseq_run3.out): every A / FCB / DTA byte as the CF-3300 (BC
+      aside); bdosfcb unchanged, bdos-acceptance green. ➡️ **STILL OPEN:** bdosset's own
+      sequence still stalls in WRRND -- there our SETRND leaves RR $080002 (residual 2), and
+      wrblk_off24's 24-bit RR x RS wraps; the CF-3300 answers disk full (A = 1) for its huge
+      RR. A guard (RR x RS past 24 bits -> A = 1) is the next step.
+      ✅ **CLOSED (2026-11-10):** wrblk_huge (the $5E10 hole; wrblk_rs_ok calls it, its RS
+      store moved in for room) answers disk full (A = 1) when RR's top byte is set and RS
+      >= 16 -- 1 MB on, past any MSX disk -- for WRBLK, WRZER and WRRND's growth alike, as
+      the CF-3300 answers its own huge RR. [`bdosset_run5.out`](scratchpad/bdosset_run5.out): zerobas runs bdosset to its
+      last row (done-flag a522); RNDWR and the WRBLK after it answer 1 as the CF-3300. A's
+      still apart there: SETDTA (A unspecified), SETRND (residual 2), ABSRD (the
+      references restarted there) and two error answers that were the same before
+      D-BDOSFCB ([`bdosset_6d55.out`](scratchpad/bdosset_6d55.out)): CLOSE of an unopened FCB (CF-3300 $FF, ours 0) and
+      SEQREAD of an unopened FCB (CF-3300 1 = end of file, ours 0 and a record from the
+      iterator's leftovers) -- 🎚️ TIER 3, common errors. ✅ FIXED 2026-11-11 as D-BDOSUNOP
+      (below) -- and one of the three causes was data loss.
+      🔴 **THE FIRST CUT BROKE BASIC'S SEQUENTIAL FILES (caught by the FULL gate before any
+      push, 2026-11-10):** the flush of buffered SEQWRITE records sat in seq_dirty, which
+      k47b2_seek (RDBLK -- BASIC's own file reads) calls too, and BDOS_WRMODE can read 1
+      there while a BASIC output file is open: PRINT# / CLOSE / INPUT# came back empty
+      (inpquote-, programs-, kwsweep, diskbasic- ... red; bisected to that flush,
+      [`bisect_A_inpquote.out`](scratchpad/bisect_A_inpquote.out)). Now seq_flush (in front of $461D) does it, called only by
+      rrnd_position -- the BDOS's RDRND / WRRND -- and k47b2_seek keeps seq_dirty's old
+      read-only behaviour. All 11 suites green again; bdosseq_probe still as the CF-3300.
+      ⚠️ Left: a program mixing a BASIC output file with $F37D RDRND / WRRND could still
+      have BASIC's buffer flushed under it -- unmeasured, unlikely.
+      ✅ **RE-VERIFIED AND CLOSED 2026-11-13** on HEAD ([`bdosset_head2.out`](scratchpad/bdosset_head2.out)): bdosset runs to
+      `done`, WRRND / WRBLK / WRZER answering A = 1 as the CF-3300; only ABSRD's row differs,
+      where the two references differ from each other too. The checkbox had stayed open
+      after the 2026-11-10 close.
+- [x] 🔊 **D-PSGINIT — GICINI AND BEEP LEAVE THE PSG DIFFERENTLY FROM THE VG-8020
+      (found 2026-11-10 by D-BIOSLADDER B5)**
+      🎚️ TIER 1 — main-BIOS entries on par (the entry-point ruling).
+      🤖 **AUTONOMOUS** — [`biosl_all_run1.out`](scratchpad/biosl_all_run1.out) b5sound: after GICINI the VG-8020 has R11 = $0B
+      (envelope period low), ours 0; after BEEP it leaves R0 / R1 = $0055, ours the tone the
+      program set before; on the VG-8020 + NMS 1200 R0 = $55 already at a cartridge's INIT and
+      after GICINI (a boot beep, which its GICINI leaves alone). R15 ($CF there, $8F here at
+      INIT) is the joystick-port select of the last read: pinned, not filed. All pinned in
+      biosl_run.py ALLOW until fixed. GICINI is C-BIOS's (a repack patch -- mind the address
+      cascade above $0F66); BEEP is ours (basic/biosfnk.asm bios_beep).
+      ✅ **BEEP FIXED (2026-11-10) -- and the cause was bigger:** our BEEP already sets R0 /
+      R1 = $0055; from a cartridge's INIT it never RAN. The sub-ROM (3-2) was recorded by
+      the boot scan only AFTER the cartridges' INITs (slot 1 / 2 come first), so
+      subrom_call found SUBSLOT_OK 0 and returned: BEEP and ERAFNK / DSPFNK's key line did
+      nothing from a cartridge -- and a game never returns from its INIT, so for the whole
+      session. sub_first (basic/missing.asm, page 1's tail: the stretch before the $475A
+      pin is full) records it and installs its trampoline just before init_ext_roms, and
+      now also holds D-BOOTSCAN's SCNCNT := 1 (B1). [`biosl_all_run3.out`](scratchpad/biosl_all_run3.out): BEEP's bytes
+      SAME; beep-, bootkey-, autorun-, subrom-acceptance green.
+      ✅ **R11 (2026-11-10):** the VG-8020's GICINI does NOT write R11 -- a first cut that
+      made ours write it ($0B, a byte-neutral repack patch) went red on B5's SECOND GICINI,
+      where a program's R11 = 0 survives there ([`biosl_b5_gicini.out`](scratchpad/biosl_b5_gicini.out)); the $0B is
+      the VG-8020's boot state. sub_first now writes R11 = $0B once at boot (it cost 6 B of page 1, 2026-11-10).
+      [`biosl_b5_r11.out`](scratchpad/biosl_b5_r11.out): R11 SAME at INIT and after both GICINIs. ➡️ Left: R0 = $55 on the
+      VG-8020 + NMS 1200's row (its boot beep) -- disk-ROM boot state, pinned.
+      ✅ **CLOSED 2026-11-13:** GICINI and BEEP answer as the VG-8020 (both fixed 2026-11-10);
+      what remains is a disk ROM's own boot beep, not a main-BIOS entry.
+- [x] 🔴 **D-BDOSUNOP — FCLOSE OF AN FCB NEVER OPENED OVERWROTE ANOTHER FILE'S DIRECTORY ENTRY
+      (found 2026-11-11 by D-BDOSSEQ's residual, fixed the same day)**
+      🎚️ TIER 3 — common errors: closing / reading an FCB that was never opened.
+      [`bdosunop_run1.out`](scratchpad/bdosunop_run1.out) .. [`bdosunop_run5.out`](scratchpad/bdosunop_run5.out) (scratchpad/bdosunop_probe.py). The filed reading
+      ($FF / 1 there, 0 / 0 here, NOSUCH.XYZ after a failed FOPEN) fit two rules -- the
+      CF-3300 SEARCHES the directory, or reads a mark FOPEN leaves -- and a file that EXISTS
+      but was never opened parts them. It is NEITHER: the CF-3300 goes to the entry at the
+      FCB's root index (+25; 0 when fresh) and closes only if that entry has the FCB's
+      NAME -- else $FF, nothing written ([`bdosunop_run3.out`](scratchpad/bdosunop_run3.out): a never-opened SECOND.DAT at
+      index 1 is $FF and untouched; a never-opened AUTOEXEC.BAS at index 0 is 0 and its
+      entry gets the FCB's zeros, on the CF-3300 too). 🔴 **Ours wrote entry +25 whatever its
+      name: closing a never-opened SECOND.DAT, or NOSUCH.XYZ, zeroed AUTOEXEC.BAS's first
+      cluster and size** -- another file's. Three fixes, each knifed red
+      ([`bdosunop_knives.out`](scratchpad/bdosunop_knives.out)): (1) cr_chkdir (kernel.asm, the $75A5 region): close_read
+      writes only an entry carrying the FCB's name; (2) SEQREAD of a size-0 FCB (+16..19)
+      is end of file, as the CF-3300 (srd_size0 in the $55DB slack, 3 lines in wrseq_rd);
+      (3) 🔴 **found by the standing gate's own disk: BDOS_WRMODE ($ED53) was never cleared
+      at boot** -- only FOPEN / FMAKE set it -- so after a cold boot it held RAM's $FF and
+      the FIRST FCLOSE through $F37D took the write-mode close, writing an entry from
+      garbage globals (cluster $FFFF, size 0, over AUTOEXEC.BAS); the scratch probe's disk
+      had hidden it. bdos_close now takes the write-mode close only for WRMODE = 1
+      EXACTLY (FMAKE's value; `dec a / jp z`, 0 B). 🔴 A first cut CLEARED the cell at
+      INIT instead, and the FULL gate went red on programs-acceptance: L5_house's DSKF ran
+      a 0.5 s masked FAT read (0.183 s before; the CF-3300 0.223) -- an unrelated BASIC
+      path moved by the boot value, root cause not chased; the narrower test leaves every
+      other reader as it was. Witness: `make bdosunop-acceptance`
+      (in the battery): every A, every FCB afterwards and root entries 0..1 the same as
+      the CF-3300's. ➡️ Not covered: a never-opened FCB whose +25 names an entry with the
+      same name -- the CF-3300 writes the FCB's zero date there, ours stamps today's
+      (dir_stamp_date); TIER 6.
+
+- [x] 🧩 **D-CBIOS031 — REBASE THE REPACK ONTO C-BIOS v0.31 (Joost 2026-11-11: "cbios 0.31 got
+      released"; the 0.30 ruling: "we will need that eventually ... it'll get worse only")**
+      🎚️ APPARATUS — the repack's base; every gate rides on it.
+      🤖 **AUTONOMOUS** — surveyed 2026-11-11 in a throwaway v0.31 worktree (bed20e7):
+      0.31 upstreams `initslot-keep` (applies in reverse), and has its own `rdslt-regs`,
+      `keyscan-skip`, `ctrlstop-key` and most of `graphics-cursor` (MAPXYC, the cursor moves,
+      SCALXY / GTASPC, SETATR / READC / SETC, NSETCX, CHGCAP, SCREEN 0's base registers,
+      CLRSPR's X) -- those four patches no longer apply and must be judged BY BEHAVIOUR
+      (biosregs / ctrlkeys / stop-trap / keystr / cursor rows), not by diff; it adds GTPDL /
+      GTPAD. Still applying: eu-drop-statements, key-trap-hook, eu-drop-dead-strings,
+      crtcnt-bound, scan-from-basic (0.31 still scans from the first interrupt).
+      🔴 **THE TAPE BODY DOES NOT FIT AS IT IS:** merged against today's BASIC, "tape body
+      region $09EE-$0CE2 not free". 0.31's page 0 free (2026-11-11): $0160-$01FF 160 B,
+      $0B96-$0D00 363 B, $1A73-$1BC6 340 B, $2742- (C-BIOS ends 63 B below BASIC_BASE).
+      Under the tape gap: upstream's graphics tail and the PNTINI / SCANR / SCANL stubs to
+      $0A1E, print_debug $0A1F-$0A58 (58 B), CHKRAM $0A59-$0AD0 (120 B), GTPDL / GTPAD
+      $0AD1-$0B95 (197 B). The body (757 B, ending by $0D01) must start at or below $0A0C;
+      moving CHKRAM + GTPDL / GTPAD (317 B) into the font pad's 340 B frees $0A59..$0D00 =
+      680 B -- short by ~80 B.
+      🏗️ **RULED (Joost 2026-11-11): "keep ours but learn from the optimizations and or fixes
+      upstream has".** So our patches stay -- graphics-cursor, rdslt-regs, keyscan-skip,
+      ctrlstop-key are RE-MADE on 0.31, replacing upstream's versions -- and each upstream
+      version is READ first (BSD-2: ideas only, written fresh in ours or kept as a repack
+      patch) for any optimisation or fix ours lacks; adopt what is better, with a gate row.
+      Ours being the shorter graphics span also gives back the room the tape body needs
+      (ours fitted before print_debug at $099A on 0.30).
+      ✅ **REBASED (2026-11-11, Joost: "go ahead").** tools/build_repacked_cbios.py pins v0.31
+      (PRISTINE_SHA1 0d7f546f..., REPACKED_SHA1 per the file); SEVEN patches. Retired, upstream:
+      initslot-keep (verbatim), and -- after upstream's versions held on every row that
+      measured ours -- rdslt-regs, keyscan-skip, ctrlstop-key (upstream's RDSLT / WRSLT is the
+      more compact, a shared slt_select: the "learn from upstream" half of the ruling).
+      RE-MADE: graphics-cursor (our RIGHTC .. SCANL span transplanted over 0.31's; 0.31 took
+      our GRPPRT / CHGCAP / CLRSPR / SETTXT fixes itself, so no remainder for those) and
+      chkram-move (CHKRAM in front of the font pad; 0.31's new GTPDL after vdp_bios, $2742;
+      GTPAD a 2-byte stub -- D-GTPAD below). Page 0 free after it: $0981-$0D00, the cassette
+      body's $09EE-$0CE2 in one piece. build_mainrom.py PATCH_RANGES holds 0.31's vector
+      bytes; islands.asm's two code patches moved with their code (H.OUTD $0FCB -> $0FD7,
+      TTYPOS $1162 -> $116E). 📏 [`cbios031_suites.out`](scratchpad/cbios031_suites.out): biosregs, ctrlkeys, cursor, keystr,
+      keyrepaint, lnblank, rg7, screditor, stop-trap, biosl, initslot, autorun, bootkey,
+      expwrap green (🔮 all green: HIT); then the FULL battery.
+      Then: PATCH_RANGES / islands.asm addresses, REPACKED_SHA1, the README, the FULL gate
+      (the 0.30 rebase's caught D-SCANBOOT).
+
+- [x] 🕹️ **D-GTPAD — C-BIOS 0.31's REAL GTPAD HAS NO PAGE-0 ROOM; IT IS A STUB ANSWERING 0
+      (filed 2026-11-11 by D-CBIOS031)**
+      🎚️ TIER 1 — a main-BIOS entry's happy path (the entry-point ruling): GTPAD ($00DB)
+      reads a touch pad, mouse or trackball.
+      🤖 **AUTONOMOUS** — 0.31's GTPAD is 146 B; with zerobas's cassette body ($09EE-$0CE2)
+      and BASIC's islands ($0160-$01F5, $1AF5-$1BB6, $09D9-$09E5) page 0 has no run that
+      size (2026-11-11). It answers 0, as 0.30's stub did (no regression). Needs a carve
+      or a move of page-0 code; then measure GTPAD on the VG-8020 (PAD() rows, the knife
+      that reads PAD BLIND) before keeping upstream's.
+      ✅ **CLOSED THE SAME DAY: MOOT -- THE BIOS ENTRIES ARE ALREADY OURS.** The merged ROM's
+      $00DB is `jp $0C39` and $00DE `jp $0BFB`: tape/tape.asm repoints both vectors over
+      C-BIOS's (its "GTPAD ($00DB) / GTPDL ($00DE) jump vectors" block) to zerobas's own
+      GTPAD / GTPDL, measured bug-for-bug against the VG-8020 (the touch panel's X / Y latch,
+      the paddle's count rate) and held by input-devices-acceptance with devices PLUGGED.
+      C-BIOS's GTPAD stub and 0.31's GTPDL are dead in our image. Learned from upstream:
+      its GTPAD also reads a mouse / trackball (A = 8..19); ours answers 0 there -- MSX1
+      BASIC's PAD() stops at 7 (input-devices pad_8 = ERR 5), so nothing reachable differs.
+      ➡️ A lever, not filed as work: drop both dead copies in the repack (~53 B at $2742,
+      only useful together with BASIC_ORG moving down).
+
+- [x] 🔴 **D-SIDEWRITE — A WRITE TO A SINGLE-SIDED DISK LANDED ON ANOTHER SECTOR (found and
+      fixed 2026-11-10 by D-DSKFMT's choice 1 round trip)**
+      🎚️ TIER 1 — the happy path of a 1-side disk (media $F8 / $FC): any file written to one.
+      basic/fat-prim-body.inc's fatprim_write_sector passed DSKIO `C = $F9` ("media byte,
+      ignored") -- but since D-SIDES DSKIO SEATS by a C of $F8 or more, so every write
+      went where a 2-sided, 9-sector disk keeps that sector, while reads (read_sector, C =
+      0) used the mounted disk's seating. On a 1-sided disk the record MSX-DOS wrote read
+      back as the format's $E5 ([`dskfmt_use_c1_back.out`](scratchpad/dskfmt_use_c1_back.out)). Now `C = 0`, as read_sector's.
+      Witness: `make dskfmt-acceptance` choice 1 (a knife restoring $F9 fails it on ours
+      alone). The shared body is the sub-ROM's too.
+
+- [x] 🔴 **D-DSKFMT — THE PUBLISHED DSKFMT ($401C) WAS A STUB (✅ BUILT 2026-11-10; CALL FORMAT and the
+      loader's boot still open, below): IT ANSWERED AN ERROR AND FORMATTED
+      NOTHING (found 2026-11-09 by D-ENTRYTIERS, the last disk-ROM entry without a witness)**
+      🎚️ TIER 1 — happy path of a disk-ROM entry point (Joost 2026-11-08: entry points outrank
+      BASIC); MSX-DOS's FORMAT and any formatter call it.
+      🤖 **AUTONOMOUS** — disk/driver.asm `dskfmt: scf / ret` ("write support deferred
+      indefinitely; not a loader need"); CHOICE answers HL = 0 (no choice string). ➡️ (1)
+      MEASURE the CF-3300 first, on a SCRATCH copy of the boot image (a probe formats drive A
+      from RAM, then reads sectors 0..13 back through DSKIO into the capture block): what
+      CHOICE returns, which A selects what, and the boot sector / FAT / root it writes. (2)
+      Build: WD2793 Write Track per track (the ID fields, gaps, sync), then the boot sector,
+      both FATs and an empty root -- a few hundred bytes. 🔴 ROOM IS THE BLOCKER:
+      `scratchpad/pinguard.py --slack` on 2026-11-09 found no disk.rom hole over 14 B (390 B
+      scattered). 🏗️ **RULED (Joost 2026-11-09): the disk ROM stays ONE page, as on the
+      reference** -- *"we should be able to fit all of disk rom in its one page like on
+      reference."* So the room is CARVED (D-WRZER's carve steps 1-2 found 113 B the same day
+      from duplicated spans; scratchpad/diskngram.py lists more), never a second page.
+      📏 **(1) MEASURED ON THE CF-3300 (2026-11-09)** -- probes/disk/dskfmt.asm (+ build_dskfmt_disk.py)
+      formats drive A of a throwaway copy from RAM under MSX-DOS ([`dskfmt_stock1.out`](scratchpad/dskfmt_stock1.out),
+      [`dskfmt_stock2.out`](scratchpad/dskfmt_stock2.out), [`dskfmt_both1.out`](scratchpad/dskfmt_both1.out)): **CHOICE** returns HL -> a menu, CR LF first:
+      "1 - 1 side" / "2 - 2 sides" / "3 - 1 side, double track" / "4 - 2 sides,double
+      track" (no space after that comma), ending CR LF CR LF. **DSKFMT choice 1** (D = 0,
+      HL = a $2000 work area): A = 0, Cy = 0, B = 0; then the disk reads back media **$FC**
+      -- 1 side, 9 sectors/track, 360 sectors, 1 sector/cluster, 1 reserved, 2 FATs of 2
+      sectors, 64 root entries; each FAT starts `FC FF FF` then zeros; the root is zeros;
+      sector 0 carries "MSX_01" and the BPB, AND THE REFERENCE'S OWN BOOT CODE -- which we
+      must NOT copy: ours writes its own loader (the BPB, FATs and root are the contract).
+      Ours: CHOICE HL = 0, DSKFMT A = 1, Cy = 1 (the stub).
+      📏 **ALL FOUR CHOICES (2026-11-09; build_dskfmt_disk.py --choice N,
+      [`dskfmt_stock_c2.out`](scratchpad/dskfmt_stock_c2.out) .. [`dskfmt_stock_c4.out`](scratchpad/dskfmt_stock_c4.out)):** every one answers A = 0, Cy = 0, B = 0; OEM
+      name "MSX_0N"; 512 B sectors, 9 per track, 1 reserved, 2 FATs, each starting
+      `<media> FF FF` then zeros, an all-zero root:
+      choice 1 $FC 1 side 40 tracks 360 sectors 1 sector/cluster FAT 2 sectors root 64;
+      choice 2 $FD 2 sides 40 tracks 720 sectors 2 / cluster FAT 2 root 112;
+      choice 3 $F8 1 side 80 tracks 720 sectors 2 / cluster FAT 2 root 112;
+      choice 4 $F9 2 sides 80 tracks 1440 sectors 2 / cluster FAT 3 root 112 (the CF-3300
+      takes 181 s; the probe's settle is 300). ➡️ Next: the room (a carve pass, one page),
+      then the build -- WD2793 Write Track per track, our own boot loader, the BPB, FATs, root.
+      ✅ **CHOICE (2026-11-10):** HL -> the CF-3300's menu (choice_txt, 82 B with the $00, in
+      the hole D-BDOSFCB stage C opened before $55DB); tests/test_choice.py. ⚠️ Until DSKFMT
+      is built a formatter now SHOWS the menu, then gets the stub's error (it got no menu
+      before). Room left for the build, taken 2026-11-10 after D-BDOSSEQ's close moved
+      into the $7F1E hole: no hole of 85 B any more, 243 B in runs of 16 B or more.
+      ✂️ **CARVES 12-14 (2026-11-10, ~41 B):** (12) fcb_size_keep -- FCB +16..19 := BDOS_WRBYTES,
+      twice inline (wrblk_fcb_keep, wrseq_wr_writeback), now one routine in the $7F7C hole;
+      (13) hk_openfind -- the file hooks' common start (EI, dout_open, fat_find of
+      DISK_FCB_NAME), three times inline (hk_finp, hk_fapp, hk_frnd), now in front of
+      $46BA (a failed dout_open still leaves by hfm_fail on the hook's own stack); (14)
+      hk_finp's size copy is hk_frnd's tail (hfr_size). check_disk_walls, taken 2026-11-10:
+      243 B in runs of 16 B or more (194 before 12). 12 file / disk suites and the bdosfcb /
+      bdosseq probes unchanged. ➡️ More from scratchpad/diskngram.py 12 (the shared
+      fat-prim / fatio bodies excluded).
+      ✂️ **CARVE 15 (2026-11-10, ~30 B):** the console bodies shared one exit (push af,
+      pg0_mainrom_out, ei, pop af, pop hl/de/bc, ret) four times: const_body now jumps to
+      dirio_in_body's (its $FF/$00 is `add a,$FF / sbc a,a`), innoe_body (kernel.asm) is its
+      entry plus `jp dirio_chget` (CHGET + that exit), and conin_body calls innoe_body for
+      its read. check_disk_walls, taken 2026-11-10: 276 B in runs of 16 B or more (243
+      before). bdos-acceptance 25/25 and dosmode-acceptance unchanged.
+      ✂️ **CARVE 16 (2026-11-10, ~25 B):** DSKIO's two directions each opened with the same
+      setup (count, sector, address) and each closed a sector with the same advance: one
+      setup now runs before the direction test (no `ld` touches the flags; a zero count
+      leaves by the loop head's own test), and the advance is dskio_bump / dskio_adv.
+      check_disk_walls: 303 B in runs of 16 B or more. diskbasic, bdos, fat-error and
+      dosmode acceptance unchanged.
+      ✂️ **CARVE 17 (2026-11-10, 8 B):** wrabs_body's error tail was rdabs_body's byte for
+      byte; it jumps there now (the success exits stay apart: RDABS's F is `sub`'s $42 as
+      on the CF-3300, WRABS's is `xor`'s). check_disk_walls: 311 B in runs of 16 B or more.
+      ✂️ **CARVE 18 (2026-11-10, 12 B):** BASIC's CLOSE (hcc_stamp) copied the size from
+      +16..19 and called fat_dir_update exactly as bdos_close_write does; it calls that tail
+      (close_size_upd) now. dwr_fail reads DISKOP_ERR, not A, so the tail's A is harmless.
+      ✂️ **CARVE 19 (2026-11-10, ~36 B):** the $F37D BDOS tested ten functions one `cp` / `jp`
+      at a time (bdos_entry's seven, bdos_more's three) before scanning bdos_tab; they are
+      rows of that table now (3 B against 5; RDBLK / SEQREAD / SEQWRITE first), and
+      bdos_entry is `ld a,c / jp bdos_more2`. Every moved handler loads A / B before use
+      (the scan leaves them its own; DE, C and the caller's HL pass through). The table
+      grew into $543C's region, so frnd_pass_len moved to $7F7C's. check_disk_walls: 359
+      B in runs of 16 B or more; a 48 B hole now in front of $4558. bdos, diskbasic,
+      dosmode, boot5e10, programs and p1dta acceptance unchanged.
+      ✂️ **CARVE 20 (2026-11-10, 17 B):** root_pos (A = a root entry's index -> DE = its
+      sector, HL = its offset) -- the arithmetic stood inline in close_read and wfs_geom,
+      both in $5E10's region (now 54 B there). wfs_geom's exit DE is the sector now, not
+      index / 16: both wrblk_fcbstate callers reload DE first. check_disk_walls: 376 B in
+      runs of 16 B or more. bdos, wrblkalt, diskbasic and lof acceptance unchanged.
+      ✂️ **CARVE 21 (2026-11-10, 12 B):** fmake_fcb_fill's date is fcb_mark_written's -- a
+      call -- which also writes +22..23 := 0, what they hold already (bdos_create_body
+      clears +16..31 first), and returns HL = +24. bdos-acceptance unchanged.
+      ✂️ **CARVE 22 (2026-11-10, 16 B):** dta_rec / dta_chunk (SECTOR_BUF + HL := RECSIZE / BC
+      bytes from BDOS_DTA) for the copies inline in bsw_m34_buffer, wrrnd_body and WRBLK's
+      chunk loop; wrrnd_body's record x 128 is `srl h / rr l`. check_disk_walls: 404 B in
+      runs of 16 B or more. bdos, wrblkalt and dosmode acceptance unchanged.
+      🧱 **DEFRAG STEP 7 (2026-11-10, Joost: "move other routines around to create a
+      continuous space"):** nine routines left the region in front of $75A5 for the pin
+      holes (wrseq_wr_writeback -> $7F7C; hkn_stamp, seq_k30 -> $4558; rdrnd_ex -> $5E10;
+      mulacc_cmp -> $77B8; dskchg_body -> $4E4B; new_taken -> $436C; wrseq_writeback ->
+      $4FB8; dir_nextsec -> $4C29; innoe_body -> $53A7). **That region: 52 -> 298 B, ONE
+      hole** -- FORMAT's build goes there whole. 🔴 scratchpad/move_routine.py had two
+      faults, both fixed: (1) a move FORWARD within one file took the pin's line before
+      deleting the source block, so mulacc_cmp landed inside frl_div (the build overran
+      $782B; every earlier marker was checked -- each follows an unconditional exit, so
+      no earlier move hit it); (2) it moved hk_auto / hk_kill, whose last `jr` goes to
+      their own continuation -- it now REFUSES a block with a `jr` / `djnz` that leaves it
+      (and so refused auto_find). Each insertion follows an unconditional exit.
+      📏 **THE BUILD, DRAFTED AND ASSEMBLED (2026-11-10): ~440 B, NOT ~290.** A standalone draft
+      (the WD2793 Write Track loop with each ID field set per track, a run-length track
+      image built in the caller's work area, every track and side, the system area --
+      boot sector, both FATs, the root -- zeroed in the work area and written by ONE
+      DSKIO call, the BPB from a 7-byte row per choice, our own loader: FOPEN
+      MSXDOS.SYS, SETDTA $0100, RDBLK, `jp $0100`, IX kept) assembled to 522 B; tightened
+      it is ~440 B. Room: the 298 B hole in front of $75A5 and ~100 B scattered -- so
+      ~150 B more must be CARVED (the ngram duplicates are down to 5-7 B each) and
+      gathered there. ➡️ **And CALL FORMAT (hk_format) should become what the CF-3300's
+      is -- the CHOICE menu, then DSKFMT:** today it is a QUICK format (system area only,
+      no Write Track, "1=360k 2=720k? ") through the sub-ROM's format_tenant
+      (sub/format.asm, basic/format-body.inc), which retires with it (~20 B back here).
+      The Write Track loop cannot live in the sub-ROM: the FDC registers are in the disk
+      interface's own page 1.
+      📏 **Draft v2, assembled: 331 B of code + 167 B of data = 498 B** (main body 224, fmt_track
+      81, small routines 26; run-length tables 42, BPB rows + offsets 35, boot sector 90).
+      🏗️ **RULED (Joost 2026-11-10): SPLIT CODE AND DATA** (data is read by address, so it
+      can sit in any hole). But a ~90 B second bin is needed for the boot blob or
+      fmt_track and the 28 B tables compete for the same slacks -- the cleaner road
+      is to carve INSIDE the $75A5 region ($607B..$75A5), which grows the target hole
+      directly (carves 23-26 took it 298 -> 326 B). scratchpad/defrag_plan.py plans a
+      gathering (best: 379 B, 118 moves -- not worth it) and, with --bin N, the fewest
+      evictions that open an N-byte bin.
+      ✂️ **CARVES 23-26 (2026-11-10, +91 B in all; total free 589 -> 680 B):** (23)
+      to_wrbytes / copy4 -- the 4-byte LDIR stood at eleven sites, five into BDOS_WRBYTES
+      (wrblk_size_max now picks the source and falls into it); (24) rd_dbuf -- `ld
+      hl,FAT_DBUF / call read_sector` at seven sites, the tail of fat_geom_read is the
+      helper -- and wr_sbuf for four SECTOR_BUF writes; (25) hl_x128 / hl_x32 for seven
+      `add hl,hl` chains; (26) set_rr for eight `ld (ix+33),l / ld (ix+34),h`. bdos,
+      diskbasic, lof, wrblkalt, programs, recbig, dosmode, boot5e10, fat-error, dout,
+      copy, catcopy, clearclose acceptance and the unit tests green. 🔴 One diskbasic
+      run read STALE build/disk.rom and refused every row: carve 24's sources were
+      edited while the suites ran (the preflight was right; nothing was mis-measured).
+      ✂️ **CARVES 27-31 + THE BINS (2026-11-10, total free 680 -> 741 B):** (27) hook_tab rows
+      are `hookrow cell, handler` -- the cell's INDEX in the 5-byte MSX hook area, one
+      byte, not two (the macro refuses a cell off the step or out of range;
+      tools/check_dead_code.py reads the hookrow lines); (28) the disk error messages
+      share one "Disk " and a list of suffixes, no pointer table; (29) fname_fcb /
+      fname_ev (the fname_expr / pdfcb_resume calbak pair, four sites); (30) clr_f306
+      (`xor a / ld ($F306),a`, fifteen sites); (31) one tail call. Then the BINS for the
+      split (Joost's ruling), all opened by moves: **$75A5 379 B** (FORMAT's code, the BPB
+      rows and the head table), **$4EDE 92 B** (the boot sector blob: install_dos_env ->
+      $7F7C, gtime_body -> $4257), **$4558 32 B** (the sector run table: wrseq_body ->
+      $46BA, seq_k30 -> $4C29), $55DB 13 B spare, 6 B slacks for the tail table.
+      🔴 Two more faults in the move tools, both fixed: (1) scratchpad/movescout.py and
+      defrag_plan.py took `ret nz` as an unconditional end (the pattern only refused `jp
+      cc,`), so fdel_body -- which FALLS INTO fdel_more -- moved; the dead-code sweep
+      caught the orphan and the move was undone. An audit of every move since defrag
+      step 1 (the block ends, and the code before every deleted label in those commits)
+      found no other. (2) move_routine.py took a block to the next LABEL, so seq_k30
+      dragged its pin's pad and the pinned veneer with it (fpl_split had dragged a pad
+      once already); a block now ends at a `ds $XXXX - $` line too, and every file's pads
+      and `jp k_XXXX` veneers were compared with HEAD after the moves.
+      dosmode, bdos, diskbasic, fat-error, dout, copy, catcopy, programs, clearclose,
+      namegate, lof, recbig, wrblkalt, boot5e10, dosbasic, dosdate and the unit tests
+      green. ➡️ **Next: the build, into these bins.**
+      ✅ **BUILT (2026-11-10): DSKFMT FORMATS AS THE CF-3300 DOES, ALL FOUR CHOICES.** dskfmt_body
+      (kernel.asm, in front of $75A5, 4 B left) with its data in the other bins (fmt_sec
+      $4558, fmt_boot $4EDE, fmt_tail $5445); `dskfmt: jp dskfmt_body`. Per track and side
+      a WD2793 Write Track of a run-length image built once in the work area (each ID
+      field set per track); then the system area zeroed in the work area and written by
+      ONE DSKIO call. Out A = B = 0, Cy = 0; 12 for a choice outside 1..4, 14 for a work
+      area under 7176 B (unmeasured on the CF-3300: TIER 6 if they differ). 📏 **`make
+      dskfmt-acceptance`** (probes/disk/dskfmt_acceptance.py, new): per choice, both
+      machines, the program's own $A5 marker as the arm (a plain `done` anchor collided
+      with MSX-DOS's boot once the probe grew -- that first run read COMMAND.COM's
+      bytes); every differing byte must be CHOICE's
+      pointer or sector 0's boot CODE (ours is our own loader), DSKFMT's A / Cy / B 0 on
+      both, and MSX-DOS's BDOS must FMAKE, write, close, open and read back a record on
+      the new disk. **4/4 PASS** ([`dskfmt_acc.out`](scratchpad/dskfmt_acc.out)); a knife (D-SIDEWRITE's fix undone)
+      fails choice 1 on ours alone ([`dskfmt_acc_knife.out`](scratchpad/dskfmt_acc_knife.out)). probes/disk/dskfmt.asm gained
+      the BDOS round trip (zeroing +12 / +32 before FOPEN: the caller's job, and the
+      first try read EOF on the CF-3300 for that reason); disk_probe_diff.py now prints
+      every differing byte as RUNS (it stopped at 48) and the block's first 32 bytes on
+      both sides (an agreeing row must show what it agreed on).
+      ➡️ **OPEN, TIER 1:** (a) **CALL FORMAT** should be the CF-3300's: drive, the CHOICE
+      menu, "strike a key", DSKFMT -- MEASURE its prompts first (keys typed, the screen
+      read); today it is the sub-ROM quick format (format_tenant), which then retires.
+      (b) **our loader** (fmt_boot) must boot MSX-DOS from a disk formatted here once
+      MSXDOS.SYS and COMMAND.COM are copied on -- not yet run.
+      📏 **(a) MEASURED (2026-11-10, scratchpad/fmtdialog_probe.py -> [`fmtdialog_basic.out`](scratchpad/fmtdialog_basic.out)):** the
+      CF-3300's CALL FORMAT says `Drive name? (A,B) ` (the key echoed), then CHOICE's text
+      (CR LF first; CR LF CR LF last), `? ` (the choice echoed), CR LF, `Strike a key when
+      ready ` (that key NOT echoed), CR LF, `Format complete`, CR LF, then Ok. Unmeasured
+      (TIER 6): a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP.
+      🔴 **D-DOSFORMAT (TIER 1, Joost asked 2026-11-10 "can we also format from MSX-DOS?"):
+      NO -- MSX-DOS's `FORMAT` does nothing on ours.** On the CF-3300 COMMAND 1.08's FORMAT
+      runs the SAME dialogue as CALL FORMAT; on ours `format` returns to A> at once, with
+      no prompt ([`fmtdialog_dos.out`](scratchpad/fmtdialog_dos.out)). So COMMAND.COM decides before its first prompt.
+      The disk work area at A> differs in $F345 (07 there, FF here), the four words after
+      DRVTBL, $F357..$F364 (0 there, FF here) and the jumps from $F368 (the CF-3300 has `jp
+      $F327`, `jp $F32C`, two `jp 0`, `jp $F331`; ours five `jp $41D0`)
+      ([`fmtdialog_dosram.out`](scratchpad/fmtdialog_dosram.out)). Poking each group to the CF-3300's values changed nothing.
+      🎯 **FOUND (scratchpad/fmttrace_probe.py -> [`fmttrace.out`](scratchpad/fmttrace.out), our ROM traced):** `format` calls
+      no CHOICE / DSKFMT -- it EXECUTES our $4025, $4028, $402B: **$4025 is the published
+      FORMAT entry** (the disk ROM runs the whole dialogue; COMMAND.COM only hands over), and
+      ours holds rh_init (`ld hl,0 / ld (RND_HSEC),hl / ret`), put there by D-DSKFMT defrag
+      step 1 (2026-11-09) into "$4025-$402C (unused kernel-entry slots)". So `format` cleared
+      a cache cell and returned. Before that move it was $00 pad sliding into the $402D
+      veneer -- broken then too. ➡️ **THE FIX:** rh_init out; `$4025: jp` a format body that
+      says what the CF-3300 says (the dialogue above, identical from BASIC and DOS) and calls
+      DSKFMT -- console through our own conout_body / innoe_body (they page the BIOS in
+      themselves, so both environments); the work area $0100.. under MSX-DOS (the TPA at the
+      prompt; COMMAND.COM lives at its top), STREND..SP under BASIC (an error under 7176 B);
+      CALL FORMAT then calls the same body and the sub-ROM quick format retires. 🔴 The pad's
+      comment called $4025-$402C "unused" -- a filed claim nobody measured; check $4028 /
+      $402A too before anything else is put there.
+      📐 **DESIGN (2026-11-10, ~196 B; hk_format + fmt_menu_text free ~61, so ~135 B to find):**
+      one body fmt_dlg (HL / BC = the work area): print `Drive name? (A,B) `, a key (echoed),
+      choice_txt, `? `, a key 1..4 (echoed; others ignored -- unmeasured, TIER 6), CR LF
+      `Strike a key when ready ` and a key (not echoed), then dskfmt_body (A = the choice, D =
+      0) and CR LF `Format complete` CR LF. Output through conout_body (it pages the BIOS in
+      itself: both environments); the KEY routine is the entry's choice, held in a scratch
+      cell free until DSKFMT runs (FDC_DEST): from $4025 (MSX-DOS: page 0 is RAM) innoe_body,
+      work area $0100 +$1E00; from hk_format (BASIC) `ld ix,chget_getbyte / jp calbak` -- the
+      wait in MAIN, as read_line's (a page-1 tenant must not wait; chget_getbyte is INPUT$'s
+      key source, no echo, HL kept -- export it in tools/gen_resident_abi.py) -- work area
+      STREND .. FRETOP - 64 (error 7 Out of memory under 7176 B: measure the CF-3300's). The
+      DSKFMT error codes under BASIC: map as dc_fail does (68 / 70 / 69) -- TIER 6 detail.
+      rh_init leaves $4025 for a 7 B slack. Then CALL FORMAT's probes (disk_probe_format.py,
+      diskbasic-acceptance's CALL FORMAT row) type the new dialogue, and a dosformat row
+      types MSX-DOS's `format` on both machines (fmtdialog_probe.py's steps).
+      ✂️ **CARVE 32 (2026-11-10, +30 B; free 243 -> 273 B):** eleven leftover `name: jp name_body`
+      veneers from old relocations retired -- fdc_read_data, fdc_write_data, dskfmt,
+      bdos_seqread, bdos_create, bdos_seqwrite, dskchg, bd_nosig, k47b2_nextbyte_get,
+      frl_walked, fdc_wp_fail; their callers jump to the body (three `jr` out of reach
+      became `jp`). Kept: a veneer AT a pin (it is the published entry) and one something
+      falls into. bdos, diskbasic, dosmode, fat-error, dout, programs, lof, recbig,
+      wrblkalt, boot5e10, dosdate, dskfmt (choice 1) and the unit tests green.
+      🏗️ **RULED (Joost 2026-11-10): FORMAT's prompt WORDING may differ; its keys and results
+      may not** (scratchpad/LOOP-RESTART.md, the 11-10 table) -- e.g. reuse the ROM's own
+      "...and strike a key when ready"; each difference is recorded as a ruled divergence.
+      🧱 **THE $4025 ENTRY, WRITTEN AND PARKED (2026-11-10): [`fmtentry_wip.patch`](scratchpad/fmtentry_wip.patch)** --
+      `k_4025: jp fmt_dos`, rh_init moved to $543C's slack, CALL FORMAT's new hk_format
+      (work area STREND .. FRETOP - 64; errors through dc_fail as the other hooks),
+      fmt_bkey (`ld ix,chget_getbyte / jp calbak`; chget_getbyte exported by
+      tools/gen_resident_abi.py), fmt_dlg / fmt_pr / fmt_key / fmt_echo and three strings.
+      It assembles to ~184 B against the ~66 B its region in front of $5FE5 has once the
+      old hk_format and "1=360k 2=720k? " go: **118 B OVER.** 🔴 **Moves are exhausted:**
+      defrag_plan.py --bin finds no region that reaches even 60 B -- the ~200 B still free
+      sit in slacks of 13 B or less, and every routine worth evicting is bigger than any
+      destination. ➡️ CARVE ~120 B, best INSIDE the region in front of $5FE5 (from $5E10),
+      then `git apply scratchpad/fmtentry_wip.patch`, build, the dialogue rows (BASIC and
+      MSX-DOS, scratchpad/fmtdialog_probe.py's steps) on both machines, and retire the
+      sub-ROM quick format (format_tenant, basic/format-body.inc) with its probes.
+      ✂️ **CARVE 33 (2026-11-10, +9 B; free 273 -> 282 B):** Route D for disk.rom --
+      scratchpad/disk_jr_route.py turns every in-range `jp [cc,]label` into `jr` and reverts
+      what the assembler rejects (EXCLUDED: code copied to RAM -- each `*tmpl*` .. `*_end`
+      block, init.asm, pageenv.asm, fmt_boot -- an equ / absolute target, the shared
+      basic/*.inc). 199 candidates, 15 in range; the 6 at pinned entries (k_509F, k_5465,
+      k_55FF, mb_5e10, the $77B8 / $782B veneers) were put back to `jp` -- a caller that
+      READS a published entry's jump operand is unmeasured -- so 9 kept. 🔎 Measured too:
+      the $7F80-$7FBF window really is dead (the registers mirror x8 across it: the
+      2026-07-04 FMAKE break), and the $5FE5 region has two movable routines (33 B). The
+      cheap families are spent: the ~120 B for the $4025 entry come from REWRITING routines.
+      ✂️ **CARVES 34-36 (2026-11-10, +141 B in the $75A5 region):** (34) skip_sp -- the blank-skip
+      loop stood three times (NAME's `AS`, COPY's `TO`, FILES); (35) wrblk_mul_rr_rs computes
+      RR x RS in REGISTERS (DE:HL, BC = RS; wmr_byte shifts in one byte of RR, a sentinel
+      bit for its counter) instead of byte-at-a-time RAM arithmetic -- the same 32-bit
+      product, tests/test_wrblk_fsize.py unchanged and green; (36) wrblk_off24 is that
+      product's low three bytes (wmr_core), not a second RAM loop.
+      ✅ **(a) DONE (2026-11-10): THE $4025 FORMAT ENTRY AND CALL FORMAT.** The parked patch went
+      in with the dialogue next to DSKFMT (the $75A5 region: 0 B left) and hk_format (37 B
+      left in front of $5FE5) setting FMT_RESULT, which main's do_format reads (basic/
+      format.asm). 📏 MSX-DOS's `format` on ours: the dialogue, the format, `Format
+      complete`, A> ([`fmtdialog_dos_ours.out`](scratchpad/fmtdialog_dos_ours.out)); CALL FORMAT on ours ([`fmtdialog_basic_ours.out`](scratchpad/fmtdialog_basic_ours.out)).
+      probes/disk/disk_probe_format.py types the new dialogue (one key per answer; 720K =
+      choice 4, 360K = choice 2): both geometries PASS, BPB / FAT head / a file round
+      trip -- it is diskbasic-acceptance's CALL FORMAT row. Differences left, presentation
+      only (Joost's 11-10 ruling): "and strike a key when ready" for "Strike a key when
+      ready", and one blank line fewer after the drive key (6 B; the region has 0).
+      Unmeasured, TIER 6: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP;
+      a failed format is main's `load error` (the old disposition).
+      ✅ **(b) DONE (2026-11-10): OUR LOADER BOOTS MSX-DOS, ON BOTH MACHINES.** scratchpad/fmtboot_probe.py
+      builds a 720K image as a format leaves it with OUR loader at $1E (read out of our own
+      build/disk.rom by fmt_boot / FMT_BOOTLEN), adds MSXDOS.SYS and COMMAND.COM, and boots:
+      the CF-3300 and ours both reach MSX-DOS 1.03 / COMMAND 1.08's date prompt
+      ([`fmtboot.out`](scratchpad/fmtboot.out)). Knife (FMTBOOT_KNIFE=1: the loader a bare `ret`): both fall to BASIC's
+      date prompt instead ([`fmtboot_knife.out`](scratchpad/fmtboot_knife.out)) -- it is the loader that loads MSXDOS.SYS.
+      ✅ **CLOSED (2026-11-11): THE QUICK FORMAT RETIRED, THE STANDING ROWS BUILT -- AND THEY
+      FOUND ONE (D-FMTFILL).** (1) sub/format.asm + basic/format-body.inc deleted; sub-ROM
+      table row 10 is a retired `ret` (the indices after it stay put); sub page 1 46 -> 354 B
+      free. (2) `make fmtdos-acceptance` (probes/disk/fmtdos_acceptance.py): our loader boots
+      MSX-DOS on the CF-3300 and on ours; MSX-DOS's `format` is driven through the $4025
+      dialogue by polling the SCREEN for each prompt, and the two formatted images must be
+      byte-identical outside the boot code -- the WHOLE image, not sectors 0..7 as
+      dskfmt-acceptance compares. 🔴 **That found what DSKFMT wrote beyond sector 7 was not
+      the CF-3300's** ([`fmtfill_ref.out`](scratchpad/fmtfill_ref.out)): the CF-3300 fills every data sector with **$40**
+      (not the usual $E5) and zeroes logical **0..13 on EVERY choice** (the 720K system area's
+      size, so on choices 1-3 the first data sectors too) -- the same from MSX-DOS (choices
+      1-4) and from its own BASIC's CALL FORMAT (a different work area: a constant, not a
+      buffer's leftovers). Ours: $E5, and only the choice's own system area. Fixed under the
+      11-10 ruling ("what DSKFMT writes" stays exact): fmt_sec's data field $40 (0 B) and the
+      system-area write a constant 14 sectors (`ld b, FMT_SYS / 512`, -13 B: the computed
+      count went). [`fmtfill_after.out`](scratchpad/fmtfill_after.out): 5/5 rows, all four choices identical; the
+      boot row's knife (a `ret` loader) fails both machines ([`fmtdos_bootknife.out`](scratchpad/fmtdos_bootknife.out)).
+      Excluded from the battery like dskfmt-acceptance (the DOS disk; ~6 min); gate_wt.py
+      runs it with CHOICES=1,4 after every FULL battery. The dialogue's TIER 6 cases are
+      filed as D-FMTERR.
+
+- [x] 🧩 **D-INITSLOT — THE CARTRIDGE SEARCH LOST THE SLOT ID ACROSS A CARTRIDGE'S INIT (Joost,
+      2026-11-11: a new C-BIOS repack patch)**
+      🎚️ TIER 1 — the BIOS boot path's happy path (a cartridge whose INIT returns).
+      C-BIOS's `search_roms_init` (src/main.asm) pushed the slot ID AFTER the VDP wait loop,
+      so `push af` saved the VDP status; when an INIT returned, `pop af` gave that as the
+      slot: the pointers were read from the wrong slot, SLTATR got a bogus entry, and the
+      search could skip later slots (C-BIOS commit f6849b44, 2010; upstream fix in
+      release-0.31, draft PR #26). ✅ **FIXED (2026-11-11):** cbios-repack/initslot-keep.patch
+      (#18) moves the `push af` before the existing `push af / pop iy` -- 0 bytes, $0EB4..$0EBC
+      only (measured against the previous repacked ROM), REPACKED_SHA1 23d9875d..., and
+      zerobas-main-eu.ips / .bps rebuilt. 📏 `make initslot-acceptance` (probes/bios/
+      initslot_probe.py, cartridges probes/bios/initslot/a.asm, b.asm): slot 1's INIT returns,
+      slot 2's writes a marker; write watchpoints counted only from each cartridge's own
+      slot (BASIC's page-1 ROM writes the same cells on the references, which a page-1 PC
+      alone let pass vacuously). Both INITs run on the VG-8020, the NMS 8250 and both zerobas
+      machines; stock C-BIOS, the control, runs slot 1's only. (zerobas's NODISK machine
+      later overwrites the marker cells itself -- a RAM read there shows $FF; the
+      watchpoints are the witness.)
+
+- [x] 🧱 **D-CBIOS030 — REBASE THE REPACK ON C-BIOS 0.30 (Joost, 2026-11-11: "cbios 0.30 was released
+      ... it may be a good idea to rebase our changes on that?")**
+      🎚️ TIER 1 — the BIOS's stability (Joost 2026-11-08: "having the bios and such stable").
+      🤖 **AUTONOMOUS** — our 18 patches apply to the pinned v0.29-3-gb5ad9cb
+      (tools/build_repacked_cbios.py PINNED_TAG). v0.30 (46 commits on) changes src/main.asm
+      (+183 / -), chput.asm, video.asm, systemvars.asm, scancodes_jp.asm -- the files most
+      of our patches edit, and its init_ram change (#23) and boot strings move code. ➡️ Re-
+      apply each patch on v0.30 in order (git worktree, as the build does), resolve each
+      conflict against the patch's MEASURED intent (each README row), re-measure every
+      pinned address the patches fix (the font pad / island 1, vdp_bios's end -> BASIC_ORG /
+      BASIC_BASE, the $3283 / $328D helpers, $0D12), then PRISTINE_SHA1 / REPACKED_SHA1, the
+      patches, and the FULL battery plus biosl- and initslot-acceptance. Whether 0.30 has
+      upstreamed any of ours (or the INIT-slot fix: "release-0.31") decides which patches
+      retire.
+      💡 **AND LEARN FROM C-BIOS's IMPLEMENTATIONS (Joost, 2026-11-11: "they might be more compact"):**
+      reading C-BIOS (BSD-2-clause) for approach and algorithms is fine; its code does not go
+      into our 0BSD sources (cbios-repack/README.md decision D1: no C-BIOS bytes in this
+      repo) -- a compact idea is written fresh in ours, or, for a BIOS routine, lands as a
+      repack PATCH against C-BIOS itself (e.g. D-BIOSCONTRACT's PNTINI / SCANR / SCANL).
+      📏 **MEASURED (2026-11-11): 0.30 UPSTREAMED NINE OF OUR PATCHES.** Applied in order to a v0.30
+      worktree: OK as they stand -- eu-drop-statements, key-trap-hook, eu-drop-dead-strings,
+      rdslt-regs, keyscan-skip, graphics-cursor, initslot-keep; CONFLICT -- ins-del-keys,
+      home-key, ctrl-keys, linttb-scroll, vdp-reg7, calpat-de, bios-regs, bios-keyscan,
+      key-repeat, ctrlstop-key, crtcnt-bound. 0.30's CHANGELOG fixes nine of those itself:
+      INS / DEL (#7), HOME (#8), CTRL+key (#9), keyscan / repeat (#11, #12), wrapped lines
+      (#13, #14), SCREEN 0 background (#15), CALPAT (#17), CALATR / LDIRVM / LDIRMV / DCOMPR
+      (#18-#20), the $0D12 keyscan entry (#21). ➡️ So: RETIRE those nine (verify each by its
+      own acceptance row -- keystr, keyrep, lnblank, calatr, biosregs, D-BIOSINT -- not by the
+      changelog line); REWORK ctrlstop-key and crtcnt-bound against 0.30; keep the seven.
+      0.30 also frees ROM below the font (MSX1 245 -> 339 B, #6 / #16 / #23): the layout
+      zerobas pins against moves -- re-measure island 1, vdp_bios's end -> BASIC_ORG /
+      BASIC_BASE, the $3283 / $328D helpers, then the FULL battery.
+      ✅ **REBASED (2026-11-11, Joost: "go ahead with the 0.30 rebase; we will need that eventually
+      and 0.31 will be there soon, it'll get worse only").** tools/build_repacked_cbios.py pins
+      v0.30 (PRISTINE_SHA1 8216de0c..., REPACKED_SHA1 a6406b62...); TEN patches (eleven with D-SCANBOOT), from eighteen:
+      the nine upstreamed ones retired and their files deleted; ctrlstop-key re-made (the
+      STOP test in front of 0.30's HOME test in key_ascii's rows 6-11 path); crtcnt-bound
+      re-made (3 `cp (hl)` + 3 `ld a,(CRTCNT)` sites, the same rule); and a NEW
+      chkram-move.patch -- 0.30 had moved CHKRAM into the $09D4 gap, which split the span
+      zerobas's page-0 cassette body needs (the first merge error: "tape body region
+      $09EE-$0CE2 not free"); moved in front of the font pad, the free map is the 0.29
+      one again ($0160-$01FF, $09D4-$0D00, $1AE9-$1BC6, $2765-). zerobas's two code
+      patches inside C-BIOS moved with their code (H.OUTD $1038 -> $0FCB, TTYPOS $11CF ->
+      $1162: basic/islands.asm), and build_mainrom.py's PATCH_RANGES holds 0.30's vector
+      bytes. A scan of zerobas's sources found no other hard-coded C-BIOS-internal
+      address. zerobas-main-eu.ips / .bps rebuilt; cbios-repack/README.md re-headed
+      (rows retired / re-made / 19 new). 📏 biosregs, ctrlkeys, cursor, keystr, keyrepaint,
+      lnblank, lnblank-say, rg7, screditor, stop-trap, biosl, initslot and expwrap
+      acceptance green on the 0.30 base -- the retired fixes, upstream now, behave as ours
+      did -- then the FULL battery. ➡️ Free on 0.30: C-BIOS now ends at $2765, 28 B below
+      BASIC_BASE ($2781) -- a lever for later (BASIC_ORG down), not taken here.
+      🔴 **THE FULL BATTERY CAUGHT ONE (D-SCANBOOT): autorun-acceptance 252/253, the
+      tokenised rows NOT-RUN on both builds.** 0.30 scans the keyboard from the first
+      interrupt (upstream 4aa7859); openMSX's tape autorun presses `'` + RETURN at
+      insertion (NEWKEY rows 2 / 7 at +0.07 s; none with autorun off), 0.29 had not
+      started its scan yet and dropped them, 0.30 queued them, and the extra line spent
+      the H.MAIN that types CLOAD's RUN. VG-8020: a key at 0.4 s dropped, at 1.5 s kept;
+      0.29: both dropped. Fixed by cbios-repack/scan-from-basic.patch (#20, `inc (hl)` ->
+      `nop`, 0 bytes): the first scan is again zerobas's cold start (D-BOOTSCAN). Witness:
+      autorun, bootkey, biosregs, keystr, initslot acceptance green; then the FULL battery.
+
+- [x] 🔴 **D-BDOSFCB — THE REST OF THE $F37D ANSWER SET FROM BASIC: THE RANDOM RECORD FUNCTIONS AND
+      THE FCB-STATE ANSWERS (split from D-BDOSBASIC, 2026-10-22)**
+      🎚️ TIER 1 — the $F37D BDOS surface's happy path, re-tiered by Joost 2026-11-10 under the
+      2026-11-08 entry-point ruling (was TIER 6 "latent: no program yet calls these"); both
+      references answer them ([`bdosset_run.out`](scratchpad/bdosset_run.out), [`bdosset_run2.out`](scratchpad/bdosset_run2.out)).
+      🤖 **AUTONOMOUS** — measure each against the probe's rows first.
+      - $21 RNDRD, $22 RNDWR, $23 FSIZE, $24 SETRND, $26 WRBLK, $28 WRZER: $FF here. DOS-side
+        bodies exist for FSIZE ($501E), SETRND ($50C8) and WRBLK ($47BE), written for the DOS
+        kernel's FCB copy and register setup -- re-measure their contracts before reusing them.
+      - The FCB-state answers: $10 CLOSE of an FCB never opened ($FF on both references, 0
+        here), $14 SEQRD from one (1 = end of file there, 0 here -- it read zerobas's single
+        internal file), $27 RDBLK's counts (A = 1, HL = 0 there against A = 0, HL = 1). MSX-DOS
+        1 keeps a file's state IN THE FCB; zerobas's BASIC-side bdos_entry keeps one file's state
+        in its own cells. Matching these means moving that state into the FCB -- a design
+        question, not a patch.
+      - ALLOC's free count after the probe's CREATE / SEQWR ($02C7 here, $02C4 there): what
+        those calls allocate differs.
+      🔎 **2026-11-10, while carving for D-DSKFMT:** (1) tools/entry_table.py keys the BDOS
+      table by FUNCTION NUMBER, so one row merges the MSX-DOS surface ($0005, the kernel's
+      k_ bodies) and this one ($F37D, driver.asm's bdos_entry): $21 / $22 / $26 read
+      EXERCISED from the DOS side while this side answers $FF -- a row agreeing for the
+      wrong reason. (2) THE CARVE ANGLE: bdos_entry is a second, simplified BDOS (one file's
+      state in its own cells) beside the kernel bodies; routing it to the kernel's FCB-state
+      bodies would retire bdos_rdblk + rdb_recloop_body (~100 B) and more, room D-DSKFMT
+      needs. Its callers: disk/kernel.asm:82 installs it, :1431 calls it; the main ROM's
+      BLOAD path and the boot loader go through it -- the design question above.
+      🏗️ **RULED (Joost 2026-11-10): "I think D-BDOSFCB makes sense"** -- TIER 1, and done
+      BEFORE D-DSKFMT's build, as the combined fix and carve.
+      📏 **STEP 1 MEASURED (2026-11-10):** [`bdosfcb_probe.py`](scratchpad/bdosfcb_probe.py) runs, from a BASIC program
+      through $F37D, FMAKE + 4 SEQWRITE + FCLOSE, then FOPEN, RDRND, FSIZE, RDBLK at RR 1,
+      SETRND, WRRND / WRBLK / WRZER past the end, FCLOSE, FOPEN, reads back
+      ([`bdosfcb_run1.out`](scratchpad/bdosfcb_run1.out), CF-3300 and ours). **The CF-3300's $F37D BDOS IS MSX-DOS'S, FILE
+      STATE IN THE FCB:** FOPEN fills +12..31 (size 512, first cluster, +24 $40); SEQWRITE
+      keeps +32 CR and the size current; RDRND RR2 reads $33; FSIZE 4; RDBLK honours RR
+      ($22 / $33, RR -> 3); SETRND, WRRND, WRBLK, WRZER work and the file grows to 10
+      records; a SEQREAD after them continues from CR (record 6, $77). **Ours:** FOPEN
+      leaves +12..31 zero; $21 / $22 / $23 / $24 / $26 / $28 answer $FF; RDBLK ignores RR
+      ($11 / $22); SEQREAD restarts at record 0. ➡️ **THE PLAN, staged** (survey of both
+      paths: the kernel bodies read +16..19 / +25 / +26 / +28..31, which only the kernel's
+      FOPEN / FMAKE fill; the kernel's SEQ write-back stores to a FIXED $DA40, which is the
+      FCB under MSX-DOS and stray RAM from $F37D): (A) the $F37D FOPEN fills the FCB as the
+      kernel's does (fopen_fill_body), keeping bdos_open's own cells for the sequential
+      engine; route $21 $22 $23 $24 $26 $27 $28 to the kernel bodies (the boot loader's $27
+      at RR 0 rides the same body, as on the CF-3300). (B) the SEQ write-backs address the
+      FCB in IX, not $DA40 -- identical under MSX-DOS (DE = $DA40 there) -- and the $F37D
+      SEQREAD / SEQWRITE keep CR / the size in the FCB. (C) retire what is dead
+      (bdos_rdblk, rdb_recloop_body, ... ~255 B by the survey's count, some of it between
+      pins). Registers: compare each row's A / HL / BC to the CF-3300's here.
+      ✅ **STAGE A (2026-11-10):** the $F37D FOPEN is `jp fopen_fill_body` after clearing
+      BDOS_WRMODE (the FCB filled as the kernel's FOPEN fills it); $27 goes to k47b2_body;
+      bdos_tab answers $21 $22 $23 $24 $26 $28 with the kernel bodies; dta_init seeds BOTH
+      DTA cells ($0080: DOS_DTAPTR, which the kernel bodies read, was $FFFF on a cold boot;
+      the CF-3300's default is $DC6E, a buffer in its own work area -- ours keeps $0080);
+      WRRND clears +14 as RDRND does (the CF-3300 does on an in-file WRRND). Retired:
+      bdos_open's body, bdos_rdblk, rdb_rs_ok, rdb_recloop_body. Room: rnd_loc, bb_gtime,
+      bb_version moved to clear two overruns ($543C, the table's six rows; $41EF, INIT).
+      **disk.rom free 429 -> 554 B.** 📏 [`bdosfcb_run3.out`](scratchpad/bdosfcb_run3.out): FOPEN's FCB, RDRND, FSIZE, RDBLK
+      (identical), WRRND, WRBLK, WRZER and their FCBs match the CF-3300. Residuals: (1)
+      SEQREAD / SEQWRITE keep CR and the size out of the FCB -- stage B; (2) SETRND: A $25
+      and RR $080002 here, A $12 and RR $400001 there (both from an RS-128 FCB; read the
+      kernel body's s2 use first); (3) BC after nearly every call ($0001 or the count
+      there, internal values here -- not in the published contracts); (4) RDRND of the
+      never-written record 4 reads $11 on the CF-3300 (its sector buffer's leftover: it
+      writes an extended sector without reading it), $E5 here -- reference garbage, not a
+      target. tests/test_bdosbasic.py ($21 / $26 answer now) and tests/test_p1rdblk.py
+      (drives dta_put, the store every block read uses) updated. bdos-acceptance 25/25,
+      diskbasic-acceptance, p1dta-acceptance green.
+      ✅ **STAGE B (2026-11-10):** $14 / $15 from $F37D go to the kernel's wrseq_rd / wrseq_body,
+      whose write-backs (seq_k_adv, seq_k30, wrseq_writeback, wrseq_wr_writeback) store
+      into the FCB in IX -- DE at entry, popped after the body -- not the fixed $DA40 (the
+      same address under MSX-DOS, where DE = $DA40). wrseq_body_write folded into
+      wrseq_body (moved before $4558: its old region had 1 B). 📏 [`bdosfcb_run4.out`](scratchpad/bdosfcb_run4.out): SEQWRITE
+      keeps CR and the size (row 5 identical; FCLOSE's FCB matches); bdos-acceptance 25/25,
+      diskbasic-acceptance green; tests/test_wrseq_position.py passes IX as the entry
+      does. ✅ **STAGE B2 (2026-11-10):** SEQREAD reads the record the FCB names,
+      EX * 128 + CR, as the CF-3300 does. srd_pos (wrseq_rd's first act) compares it with
+      BDOS_SEQREC, where our iterator stands, and re-positions through rrnd_position's
+      path (new entry rrnd_pos_a, the record in A) when they differ; seq_dirty sets
+      BDOS_SEQREC := $FFFF in rrnd_position and k47b2_seek, since RDRND / WRRND / RDBLK move
+      the iterator. Both entries are one routine, so MSX-DOS and $F37D get it alike. 📏
+      [`bdosfcb_run5.out`](scratchpad/bdosfcb_run5.out) row 23: record 6 read, CR 7 --
+      FCB identical (HL still differs: the register residual). DOSL-D6 now SEQREADs from
+      CR 2 and captures the record's byte, CR and EX: all match the CF-3300; a knife
+      (srd_pos returning at once) turned the row red on exactly those bytes. Its SETRND
+      answer is pinned (stock RR 1, ours 3): stock gave 1 from CR 1 too, so the old row
+      agreed by coincidence -- evidence for residual (2). ➡️ **OPEN (B3):** (a) seq_dirty
+      skips a write-open file (its SEQWRITE write-back counts on BDOS_SEQREC), so on an
+      FMAKE'd file a SEQREAD whose FCB record equals the counter while a random call moved
+      the iterator still reads on from the iterator; (b) records past 255 sync the counter
+      but are not re-positioned (rrnd_position's scope); ✅ (c) DONE 2026-11-10: bdos_seqwrite_body claims the
+      FIRST cluster at record 0 (bsw_first: fat_alloc_cluster, BDOS_WRFIRST / BDOS_WRCLUS),
+      so the write-back gives +26 / +28 from the first SEQWRITE; the flush finds the
+      cluster and writes into it; no free cluster still answers A = 1 before buffering.
+      📏 [`bdosfcb_run6.out`](scratchpad/bdosfcb_run6.out) rows 2-4: FCB identical (only
+      HL / BC, the register residual). (a) and (b) stay open -- latent: no measured
+      program writes, randomly moves, then SEQREADs one FMAKE'd file, nor SEQREADs a
+      repositioned record past 255.
+      ✂️ **STAGE C (2026-11-10):** bdos_tab sends $13 DELETE / $17 RENAME to the kernel's
+      fdel_body / fren_wild (same DE = FCB; every match, a `?` in RENAME's new name keeps
+      the entry's byte -- the CF-3300's, D-FDELWILD / D-FRENWILD) and bb_delete,
+      bb_rename and bb_name11 are gone: a 95 B hole at $557C (check_disk_walls, taken
+      2026-11-10) -- with the $7F0A one, two holes over CHOICE's 85 B. tests/test_bdosbasic.py
+      checks the route. 📏 BASIC's $F37D RENAME ->PROBE2 and DELETE PROBE2 A = 0, as the
+      CF-3300 (scratchpad/bdosset_probe.py, a completing run).
+      📏 **RESIDUAL (2) SETRND, MEASURED (2026-11-10, scratchpad/setrnd_probe.py -> [`setrnd_run1.out`](scratchpad/setrnd_run1.out)):**
+      ten rows on an open 4-record file, one input moved at a time. **The CF-3300's $F37D
+      SETRND ignores EX (+12), CR (+32), +13, +24 and the previous RR**: it writes r0 = 1,
+      r1 = 0, r2 = RS / 2 (RS 128 -> $400001, RS 1 -> $000001) and answers A = $12, every
+      row. **Ours** writes the documented EX x 128 + CR into r0 / r1 -- and a stray byte from
+      RS on top ($08 in r2 with RS 128, $10 in r1 with RS 1): the kernel body reads +14 as
+      CP/M's S2, which MSX-DOS uses for RS. ❓ So the reference does NOT compute the current
+      record here -- it looks like a reference bug. Open question for Joost: match it, or
+      follow the documented contract (and drop our stray RS byte)?
+      📏 **THROUGH MSX-DOS ($0005), MEASURED (Joost: "measure MSX-DOS first"; scratchpad/setrnd_dos.asm +
+      setrnd_dos_probe.py):** the CF-3300 does THE SAME -- RR $400001 for every EX / CR /
+      +13 / +24 / previous RR ([`setrnd_dos_run1.out`](scratchpad/setrnd_dos_run1.out)); over RS alone RR = 1 + (RS >> 1) x 65536
+      (RS 1, 2, 3, 4, 64, 127, 128, 129 -> r2 0, 1, 1, 2, $20, $3F, $40, $40; r1 0, r0 1)
+      ([`setrnd_dos_run2.out`](scratchpad/setrnd_dos_run2.out)); and it does not move after 1..4 SEQREADs either ([`setrnd_dos_run3.out`](scratchpad/setrnd_dos_run3.out)).
+      A = $25 there, as ours. Ours tracks the position (1, 2, 3, 4) but with (RS << 12) on
+      top (CP/M's S2 read at +14). So on the CF-3300 SETRND never reflects the file
+      position, through either door.
+      📏 **THE NMS 1200 TOO (Joost: "check with the NMS reference as well"; VG-8020 + NMS 1200, $F37D
+      from BASIC, [`setrnd_run_eu.out`](scratchpad/setrnd_run_eu.out)):** IDENTICAL -- RR $400001 for every EX / CR / +13 / +24
+      / previous RR, $000001 with RS 1, A = $12. Two disk ROMs from two makers agree: this
+      is the MSX-DOS 1 / Disk BASIC kernel's own SETRND, not a vendor slip.
+      📏 **AN MSX2 TOO (Joost: "perhaps also try on an MSX2 with disk", "NMS 8250 should work";
+      Philips NMS 8250, $F37D from BASIC, [`setrnd_run_nms8250.out`](scratchpad/setrnd_run_nms8250.out)):** IDENTICAL again -- RR
+      $400001 / $000001 (RS 1), A = $12. Three disk systems, MSX1 and MSX2, agree. (The FS-A1F
+      would not start here: its BIOS image's checksum differs from what openMSX expects.)
+      ✅ **FIXED (2026-11-10, Joost: "Match the references"):** setrnd_body writes RR = 1 + (RS >> 1) x
+      65536 (r0 1, r1 0, r2..r3 RS / 2) and exits A = L = $25, H = 0 (MSX-DOS's); $F37D's row
+      goes through bb_setrnd, A = L = $12 and H = RS's bit 0 at bit 7 (the CF-3300's HL $8012
+      at RS 1). The CP/M rule the body computed -- M32's "intentional, documented
+      divergence", +14 read as CP/M's S2 -- is retired, with DOSL-D6's allowlist excuse
+      (ours pinned at RR 3) in probes/disk/disk_bdos_acceptance.py and the $24 row of
+      disk/docs/tier2-bdos-coverage.md. 📏 All ten SETRND rows identical to the CF-3300 in A,
+      HL and the FCB through $F37D ([`setrnd_run3.out`](scratchpad/setrnd_run3.out)) and through MSX-DOS
+      ([`setrnd_dos_run4.out`](scratchpad/setrnd_dos_run4.out)); bdos-acceptance 25/25 with DOSL-D6 now a 0-byte diff, unexcused.
+      ✅ **CLOSED 2026-11-13:** stages A, B, B2 and C and SETRND shipped (2026-11-10), and the
+      bdosset sequence runs to `done` on HEAD ([`bdosset_head2.out`](scratchpad/bdosset_head2.out), A's as the CF-3300 but
+      ABSRD's, where the references differ too). What is left is B3's latent pair:
 ## Done — storage transports
 
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.

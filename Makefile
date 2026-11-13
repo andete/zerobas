@@ -3019,7 +3019,8 @@ p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 # --- tapebios-acceptance: the six cassette BIOS entries called DIRECTLY (D-TAPEBIOS) ------
 # TAPION / TAPIN / TAPIOF / TAPOON / TAPOUT / TAPOOF from our own machine code, the VG-8020
 # against zerobas: a write decoded from the recording, a read of the VG-8020's recording,
-# and Ctrl-STOP during TAPION / TAPIN / TAPOUT (Cy, INTFLG, the key still down on return).
+# a .cas of our own read at openMSX's 3744 baud (the reference's fastest), and Ctrl-STOP
+# during TAPION / TAPIN / TAPOUT (Cy, INTFLG, the key still down on return).
 tapebios-acceptance: repack-machine
 	python3 probes/tape/bios_probe_tapdiff.py
 
