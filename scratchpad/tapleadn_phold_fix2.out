@@ -1,0 +1,4 @@
+== phold   VG-8020 E19 in 15 X        ours E19 in 15 X
+
+PASS: a tape write broken with Ctrl-STOP (1/1)
+refcache: 0 hit, 2 miss, 2 stored

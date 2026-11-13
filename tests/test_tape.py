@@ -340,14 +340,19 @@ def test_tapout_cycle_count(m, fails):
 
 
 def test_tapoon_header(m, fails):
-    """tapoon: emit a header carrier — CAS_SHORTLEN cycles (A=0) or CAS_LONGLEN
-    (A!=0) — and turn the motor on first."""
+    """tapoon: turn the motor on, then emit a header carrier of HEADER x 256 cycles (A=0)
+    or HEADER x 1024 (A!=0), HEADER the references' 15 at 1200 baud and 31 at 2400 --
+    3840 / 15360 and 7936 / 31744 (D-TAPLEADN, 2026-11-13: counted on the VG-8020's own
+    recordings, scratchpad/leader_count_run1.out / leader_count_2400b.out; it was a fixed
+    4000 / 16000 at both bauds)."""
     s = m.sym
-    for sel, want_len, label in [
-        (0x00, s["CAS_SHORTLEN"], "short"),
-        (0x01, s["CAS_LONGLEN"],  "long"),
+    for sel, want_len, label, b1200 in [
+        (0x00, 15 * 256, "short @1200", True),
+        (0x01, 15 * 1024, "long @1200", True),
+        (0x00, 31 * 256, "short @2400", False),
+        (0x01, 31 * 1024, "long @2400", False),
     ]:
-        set_baud_area(m, baud1200=True)      # cas_baud resolves deterministically
+        set_baud_area(m, baud1200=b1200)     # cas_baud resolves deterministically
         count = [0]
         m.trap("cas_cycle", lambda mm, count=count: count.__setitem__(0, count[0] + 1))
         out = m.record_out()

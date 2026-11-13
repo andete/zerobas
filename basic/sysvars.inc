@@ -125,6 +125,7 @@ PSLTREG         equ     $A8     ; I/O port: primary slot select (page-1 field = 
 LINL40          equ     $F3AE   ; text columns for SCREEN 0 (WIDTH default)
 LINL32          equ     $F3AF   ; text columns for SCREEN 1 (WIDTH default)
 LINLEN          equ     $F3B0   ; current line length (active width)
+SNSMAT          equ     $0141   ; BIOS: A = keyboard row A's bits (0 = down) -- published (MSX2 TH)
 CLMLST          equ     $F3B2   ; PRINT's last comma-zone column: LINLEN - LINLEN MOD 14 - 14,
                                 ; floored at 0 (D-CLMLST: kept by SCREEN / WIDTH, 14 at boot)
 CURLIN          equ     $F41C   ; D-CURLIN (Joost, 2026-09-24): the PUBLISHED current

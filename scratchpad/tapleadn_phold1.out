@@ -1,0 +1,5 @@
+== phold   VG-8020 E19 in 15 X        ours E19 in 15 X Break in 90
+DIVERGES phold: VG-8020 E19 in 15 X vs ours E19 in 15 X Break in 90
+
+FAIL: a tape write broken with Ctrl-STOP (0/1)
+refcache: 0 hit, 2 miss, 2 stored

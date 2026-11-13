@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15230 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15252 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11536,9 +11536,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
             wait state makes it 30 ([`savecas_len_after.out`](scratchpad/savecas_len_after.out)). After: the leader starts at 0.567 s on
             both ([`savecas_len_after2.out`](scratchpad/savecas_len_after2.out)); ten tape gates green (tapebios, cassave, caswbrk, casrbrk,
             casbrk, cas-ascii, casbin, tapionlead, tapetail, castail; 🔮 "all green": HIT).
-            ➡️ LEFT, timing only: the header block runs 6.86 s here against 6.57 s (a longer
-            leader), and between the header and the data the VG-8020 spends ~0.53 s more
-            (1.10 s against our 0.57) -- BASIC's side of the save, not TAPOON.
+            ✅ **D-TAPLEADN, THE LONGER LEADER (2026-11-13):** counted ([`leader_count_probe.py`](scratchpad/leader_count_probe.py)):
+            the VG-8020 writes 15359 / 3839 leader cycles (long / short) at 1200, ours 16000 /
+            4000 ([`leader_count_run1.out`](scratchpad/leader_count_run1.out)) -- the reference's is HEADER x 1024 / x 256, HEADER being
+            the published work-area cell, 15 at 1200 and **31 at 2400** on both references
+            ([`header_cell.out`](scratchpad/header_cell.out)): at 2400 ours was HALF the reference's leader. zerobas also held the
+            whole cassette table at $F3FC as 15 zero bytes where both references hold CS120 /
+            CS240 / the active copy from power-on ([`cstables.out`](scratchpad/cstables.out)). Fixed: TAPOON computes the leader
+            from the resolved baud (15 / 31 x 256 or x 1024; tape/tape.asm, tape bodies to $0CF2),
+            and boot_wa seeds the 15 bytes (basic/catalias.asm). After: 15360 / 3840 at 1200
+            ([`leader_count_run2.out`](scratchpad/leader_count_run2.out)), 31743 / 7935 at 2400 on both ([`leader_count_2400b.out`](scratchpad/leader_count_2400b.out), the active
+            entry POKEd from CS240). 🔴 It exposed a hole in D-TAPEBIOS's brk_release: BREAKX
+            goes false once CTRL is up, and a STOP still held then latched a repeat -- caswbrk's
+            phold row read `Break in 90` ([`tapleadn_phold1.out`](scratchpad/tapleadn_phold1.out); the table seed alone passed,
+            [`tapleadn_phold_seedonly.out`](scratchpad/tapleadn_phold_seedonly.out)). brk_release now waits for STOP itself (SNSMAT row 7 bit 4).
+            Ten tape gates green after both ([`tapleadn2_caswbrk.out`](scratchpad/tapleadn2_caswbrk.out) and the nine beside it).
+            ➡️ LEFT: between the header and the data the VG-8020 spends ~0.53 s more (BASIC's side).
+      - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
+            🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
+            LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas
+            SCREEN's fourth argument leaves the slots untouched, so a program that SCREEN ,,,2s
+            and CSAVEs writes 1200 baud. CSAVE ,n sets the LOW word only (sub2/loadsave.asm
+            ls_csav_speed; HIGH / HEADER stay). The sub ROM has ~2 B free.
+      - [ ] **The 2400-baud high tone is 5013 Hz here, 4811 Hz on the VG-8020** -- 🎚️ TIER 6 —
+            [`leader_count_2400b.out`](scratchpad/leader_count_2400b.out); CAS_HHALF24 (tape/tape.asm) was never measured against an oracle,
+            as its own comment says. The 1200 tones are 2390 / 2393 Hz.
       ➡️ NEXT sessions: more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
       machine's LIST speed, so a screen-compared session would read the speed, not the

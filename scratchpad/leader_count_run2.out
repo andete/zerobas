@@ -1,0 +1,5 @@
+long  VG: 15359 leader cycles, 6.419 s (2393 Hz)
+long  ZB: 15360 leader cycles, 6.428 s (2390 Hz)
+short VG: 3839 leader cycles, 1.605 s (2393 Hz)
+short ZB: 3840 leader cycles, 1.607 s (2389 Hz)
+refcache: 0 hit, 4 miss, 4 stored

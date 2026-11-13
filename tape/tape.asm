@@ -133,16 +133,18 @@ MOTOR_OFF:      equ     $09             ; PPI BSR command: Port C bit 4 := 1 (mo
 ; 🔴 THE DUTY FIX AND THE LEADER LENGTH ARE COUPLED, MEASURED, AND NOT OBVIOUS:
 ; with the reference-matching duty and the OLD 4000-cycle leader the VG-8020
 ; stops decoding our header entirely -- worse than the lopsided waveform it
-; replaced. The standard 16000-cycle leader restores it. Shorten CAS_LONGLEN and
-; this waveform stops being readable; the two constants must move together.
+; replaced. The standard 16000-cycle leader restores it. Shorten the long leader far and
+; this waveform stops being readable; the two must move together. (D-TAPLEADN, 2026-11-13:
+; the leader is now the reference's HEADER x 1024 -- 15360 at 1200 -- in TAPOON itself;
+; tapebios / cassave's reference-load leg re-read it.)
 CAS_HHALF:      equ     52              ; 1200 baud high tone ~2400 Hz half cycle
 CAS_LHALF:      equ     106             ; 1200 baud low  tone ~1200 Hz half cycle
 CAS_HHALF24:    equ     24              ; 2400 baud high tone ~4800 Hz half cycle
 CAS_LHALF24:    equ     CAS_HHALF       ; 2400's low tone IS 1200's high tone --
                                         ; an identity, so it cannot drift apart
 
-CAS_LONGLEN:    equ     16000           ; long header (new file), full hi-freq cycles
-CAS_SHORTLEN:   equ     4000            ; short header (between blocks)
+; (CAS_LONGLEN 16000 / CAS_SHORTLEN 4000 retired by D-TAPLEADN: TAPOON computes the
+; leader from the baud, HEADER x 1024 / x 256.)
 ; The three low-half corrections, each solved from the model above against the
 ; reference's own figures. CAS_DUTY applies to EVERY cycle (the ret/call
 ; overhead); the other two additionally absorb the per-bit tail on the two bit
@@ -715,13 +717,25 @@ tpo_dly2:
                 dec     e
                 jr      nz,tpo_dly1
                 call    cas_short       ; C = leader carrier half (cached baud)
+                ; D-TAPLEADN (2026-11-13): the leader is HEADER x 256 cycles (short) or x 1024
+                ; (long), HEADER being the work area's 15 at 1200 baud and 31 at 2400 on the
+                ; VG-8020 and the CF-3300 -- 3840 / 15360 cycles at 1200 (counted on the
+                ; VG-8020's recordings: 3839 / 15359, the first cycle after the silence
+                ; uncounted -- scratchpad/leader_count_run1.out, header_cell.out). Ours was a
+                ; fixed 4000 / 16000 at BOTH bauds -- half the reference's leader at 2400. From
+                ; the resolved baud, not the cell: our CSAVE ,n / SCREEN ,,,n set only ACT_LOW.
+                ld      a,(CASBAUD)     ; 0 = 1200, $FF = 2400
+                or      a
+                ld      d,15
+                jr      z,tpo_hdr
+                ld      d,31
+tpo_hdr:
+                ld      e,0             ; DE = HEADER x 256: the short leader
                 pop     af
                 or      a               ; selector zero -> short header
-                jr      z,tapoon_short
-                ld      de,CAS_LONGLEN
-                jr      tapoon_emit
-tapoon_short:
-                ld      de,CAS_SHORTLEN
+                jr      z,tapoon_emit
+                sla     d
+                sla     d               ; DE = HEADER x 1024: the long leader
 tapoon_emit:
                 call    cas_cycle
                 dec     de

@@ -66,6 +66,14 @@ set_errflg:
 brk_release:
                 call    BREAKX
                 jr      c,brk_release
+                ; ... and until STOP ITSELF is up: BREAKX goes false as soon as CTRL is,
+                ; and a STOP still held then latched a repeat after the drop below --
+                ; `Break in 90` in caswbrk's phold row once D-TAPLEADN moved where the press
+                ; lands (scratchpad/tapleadn_phold1.out); the VG-8020 runs the handler on.
+                ld      a,7
+                call    SNSMAT              ; row 7: bit 4 = STOP, 0 = down
+                and     $10
+                jr      z,brk_release
                 xor     a
                 ld      (INTFLG),a
                 ret
@@ -81,10 +89,22 @@ brk_release:
 ; boot_wa: interp.asm's cold start, BEFORE the cartridge scan (a cartridge's INIT already
 ; sees the VG-8020's values there, as LINL40 37 -- D-BIOSLADDER B1). Clobbers A.
 boot_wa:
+                ; D-TAPLEADN (2026-11-13): the cassette tables as both references hold them
+                ; from power-on -- CS120 ($F3FC) 53 5C 26 2D 0F, CS240 25 2D 0E 16 1F, and the
+                ; active LOW / HIGH / HEADER ($F406) a copy of CS120 (scratchpad/cstables.out);
+                ; zerobas had 15 zero bytes (tape/tape.asm's cas_seed filled only the two LOW
+                ; words, at TAPOON time).
+                ld      hl,bw_cas
+                ld      de,$F3FC
+                ld      bc,15
+                ldir
                 ld      a,37
                 ld      (LINL40),a
                 ld      a,1
                 ld      (CLIKSW),a
+bw_cas:         db      $53, $5C, $26, $2D, $0F         ; CS120: LOW, HIGH, HEADER
+                db      $25, $2D, $0E, $16, $1F         ; CS240
+                db      $53, $5C, $26, $2D, $0F         ; active = CS120
 ; set_clmlst: CLMLST := 14 if LINLEN >= 28, else 0. Clobbers A, F.
 set_clmlst:
                 ld      a,(LINLEN)

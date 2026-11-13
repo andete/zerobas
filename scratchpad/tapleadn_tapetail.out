@@ -1,0 +1,18 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ok   bsaves    'OK'           ours 'OK'
+ok   bsavesx   'OK'           ours 'OK'
+ok   dbsaves   'OK'           ours 'OK'
+ok   bsavesbig 'E 6 30'       ours 'E 6 30'
+ok   dbsavesbig 'E 6 30'       ours 'E 6 30'
+ok   dbsavebig 'E 6 30 N'     ours 'E 6 30 N'
+ok   dbsavestr 'E 13 30 N'    ours 'E 13 30 N'
+ok   savejunk  'E 2 30'       ours 'E 2 30'
+ok   csavespd  'E 5 30'       ours 'E 5 30'
+ok   csavejunk 'E 2 30'       ours 'E 2 30'
+ok   csaveok   'OK'           ours 'OK'
+
+PASS: the tape save tails as on the VG-8020 (0 divergence(s))
+refcache: 11 hit, 11 miss, 11 stored
