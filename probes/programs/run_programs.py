@@ -188,6 +188,34 @@ proc __jw {} {
 }
 debug set_watchpoint write_mem 0xFC9E {} __jw
 """
+# ZB_GAPTRACE=FILE (an investigation switch, never set by a gate): sample PC / SP / $A8
+# every 2 ms of emulated time and, when a run gap over 0.3 s closes, append the samples
+# that fell inside it to FILE -- which routine held the CPU masked (D-TAPLEADN's 0.53 s).
+GAP_TRACE_TCL = r"""
+set ::__ring {}
+proc __samp {} {
+  binary scan [debug read_block memory [reg sp] 12] H* st
+  lappend ::__ring [list [machine_info time] [reg pc] [reg sp] [debug read ioports 0xA8] $st [debug read memory 0xEFF7] [reg iff]]
+  if {[llength $::__ring] > 600} { set ::__ring [lrange $::__ring 300 end] }
+  after time 0.002 __samp
+}
+after time 1.0 __samp
+rename __jw __jw_base
+proc __jw {} {
+  set t [machine_info time]
+  if {$::__jrun && $t - $::__jt > 0.3} {
+    set f [open {TRACEFILE} a]
+    puts $f "GAP [format %.3f $::__jt] .. [format %.3f $t]"
+    foreach r $::__ring {
+      if {[lindex $r 0] >= $::__jt - 0.15 && [lindex $r 0] <= $t} {
+        puts $f [format "%.4f pc=%04X sp=%04X a8=%02X st=%s fdciff=%d iff=%s" {*}$r]
+      }
+    }
+    close $f
+  }
+  __jw_base
+}
+"""
 GAP_OUT = "gaps=[llength $::__gaps] max=[expr {[llength $::__gaps] ? [lindex [lsort -real -decreasing $::__gaps] 0] : 0}]"
 
 
@@ -223,6 +251,8 @@ def run(machine, name, text, gaps=False, typing="inject"):
                          .replace("KEYPROC", key_proc())
                          .replace("TYPECMD", "__key" if typing == "inject" else "type")
                          .replace("GAPWATCH", (GAP_TCL if gaps else "") +
+                                  ((GAP_TRACE_TCL.replace("TRACEFILE", os.environ["ZB_GAPTRACE"])
+                                    if gaps and os.environ.get("ZB_GAPTRACE") else "")) +
                                   (DATE_TCL if needs_disk(text) else ""))
                          .replace("GAPOUT", GAP_OUT if gaps else ""))
     cmd = [OMSX, "-machine", machine, "-command",

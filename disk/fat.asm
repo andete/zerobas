@@ -1331,15 +1331,24 @@ seq_k30:
 ; records the caller's IFF2 then masks; fdc_io_done restores it on every exit,
 ; leaving the result (A = error code, Cy, HL) untouched. (`ld a,i` puts IFF2 in
 ; P/V; the entry clobbers A, but fdc_read_phys/fdc_write_phys take no A input.)
+; 🔴 D-IFFREAD (2026-11-13): ASKED TWICE. On an NMOS Z80 (and openMSX) an interrupt
+; ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on -- one such read
+; recorded "masked", fdc_io_done then left the CPU masked, and every later sector of the
+; save inherited it: a 0.528 s frame-interrupt gap in L5_journal against the CF-3300's
+; 0.223 (scratchpad/fdcgap_trace4.out: FDC_IFF 1 on one sector, 0 on the next, IFF 0 from
+; there). A wrong read is only ever a false 0, and by the second read the handler has
+; returned with EI -- so a 1 from either is the truth. The last read's flags survive the
+; `di` and the `ld a,0`.
 fdc_di_save:
                 ld      a, i            ; P/V = IFF2 (interrupts enabled?)
+                jp      pe, fdc_dis_x   ; PE -> IFF2 was set
+                ld      a, i            ; a false 0 is possible: ask again
+fdc_dis_x:
                 di
-                jp      pe, fdc_di_on   ; PE -> IFF2 was set
-                xor     a               ; were masked: remember 0
-                ld      (FDC_IFF), a
-                ret
-fdc_di_on:
-                ld      a, 1            ; were enabled: remember 1
+                ld      a, 0            ; (no flags touched)
+                jp      po, fdc_dis_st  ; PO -> masked: remember 0
+                inc     a               ; enabled: remember 1
+fdc_dis_st:
                 ld      (FDC_IFF), a
                 ret
 

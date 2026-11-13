@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15264 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11562,8 +11562,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
             ([`tapleadn_journal_nobrk.out`](scratchpad/tapleadn_journal_nobrk.out)). Nothing reads the tables but the tape code, so the seed
             moved TIMING: a disk command now meets the drive at a moment that keeps the CPU
             masked ~0.5 s. fdc_settle is ~0.9 ms and D-FDCDI's windows cover only the first-DRQ
-            wait, so the stretch is in another FDC wait. ➡️ Find it (the PC when a >0.3 s gap
-            ends, L5_journal with the seed), give that wait interrupt windows, then ship the seed.
+            wait, so the stretch is in another FDC wait.
+            🎯 **FOUND (2026-11-13, D-IFFREAD):** a PC / SP / IFF sampler in the gap
+            (probes/programs/run_programs.py, ZB_GAPTRACE=FILE) -- the stretch is the DRQ waits
+            fwd_wait / fdc_rd_wait of the FAT / directory writes closing a save (hkds_go ->
+            disk_write_end), with FDC_IFF 0: one sector recorded FDC_IFF 1, the next 0, and IFF
+            stayed 0 from there ([`fdcgap_trace4.out`](scratchpad/fdcgap_trace4.out)). fdc_di_save read the caller's state with ONE
+            `ld a,i` -- the NMOS erratum: an interrupt accepted DURING it reads P/V 0 though
+            interrupts were on; fdc_io_done then left the CPU masked and every later sector
+            inherited it. Now asked twice (disk/fat.asm; +1 B). With the seed: the longest gap
+            0.036 s ([`iffread_journal_seed.out`](scratchpad/iffread_journal_seed.out)) -- but **a new difference: `NAME "COPY.TXT" AS
+            "OLD.TXT"` answers ERR 65 (File already exists) where the CF-3300 has none** (its line
+            190), and only with seed + fix together; the fix alone is SAME
+            ([`iffread_journal_noseed.out`](scratchpad/iffread_journal_noseed.out)). Reading: the false read had masked these transfers BY
+            ACCIDENT; with D-FDCDI's windows working as designed, at the seed's timing one
+            directory read comes back wrong. ➡️ That windowed-read fault (L5_journal + the seed
+            reproduces it) before the seed ships. Two more single `ld a,i` sites:
+            p1_blit_tmpl (disk/kernel.asm, the page-1 bounce's RAM template) and br_back_tmpl
+            (disk/runtime.asm) -- both RAM templates with an installed size to keep.
       - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
             🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
             LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas
