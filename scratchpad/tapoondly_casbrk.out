@@ -1,0 +1,14 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+== dload  VG-8020 Device I/O error   ours Device I/O error
+== pload  VG-8020 E19 in 20          ours E19 in 20
+== pcload VG-8020 E19 in 20          ours E19 in 20
+== prun   VG-8020 E19 in 20          ours E19 in 20
+== popen  VG-8020 E19 in 20          ours E19 in 20
+== pmerge VG-8020 E19 in 20          ours E19 in 20
+== pbload VG-8020 E19 in 20          ours E19 in 20
+
+PASS: a tape search broken with Ctrl-STOP (7/7)
+refcache: 7 hit, 7 miss, 7 stored

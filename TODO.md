@@ -10906,7 +10906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15230 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11526,8 +11526,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
             both machines record the SAME 272 bytes, but the VG-8020's signal is the header
             block (6.57 s), **1.10 s of silence**, then the data block (3.95 s); zerobas's is
             one continuous 10.90 s. The VG-8020 reads zerobas's tapes (tape-save's reference-load
-            leg), so this is the tape's LAYOUT, not a failure. ➡️ Whether CSAVE / BSAVE "CAS:"
-            pause there too, and whether the pause is the motor off (TAPOOF) between the blocks.
+            leg), so this is the tape's LAYOUT, not a failure.
+            📏 **ALL THREE VERBS, AND THE BIOS (2026-11-13):** CSAVE and BSAVE "CAS:" the same
+            shape ([`savecas_len_csave.out`](scratchpad/savecas_len_csave.out), [`savecas_len_bsave.out`](scratchpad/savecas_len_bsave.out)), and a DIRECT TAPOON + TAPOUT x 64
+            from our own code: the VG-8020's signal starts **0.567 s after the motor**, ours at
+            once ([`tapoon_delay_run1.out`](scratchpad/tapoon_delay_run1.out)) -- TAPOON's motor spin-up, a BIOS behaviour. ✅ **D-TAPOONDLY:**
+            tape/tape.asm's TAPOON waits 0.567 s, motor on, before the leader (13 B; the tape bodies
+            had 36 B to $0D01). A first count assumed 26 T a pass and gave 0.654 s -- the MSX's M1
+            wait state makes it 30 ([`savecas_len_after.out`](scratchpad/savecas_len_after.out)). After: the leader starts at 0.567 s on
+            both ([`savecas_len_after2.out`](scratchpad/savecas_len_after2.out)); ten tape gates green (tapebios, cassave, caswbrk, casrbrk,
+            casbrk, cas-ascii, casbin, tapionlead, tapetail, castail; 🔮 "all green": HIT).
+            ➡️ LEFT, timing only: the header block runs 6.86 s here against 6.57 s (a longer
+            leader), and between the header and the data the VG-8020 spends ~0.53 s more
+            (1.10 s against our 0.57) -- BASIC's side of the save, not TAPOON.
       ➡️ NEXT sessions: more disk (the CF-3300 via `# @DISK`). NOT a break inside a scrolling LIST
       (2026-11-07): the screen after the break shows WHERE LIST was cut, which is each
       machine's LIST speed, so a screen-compared session would read the speed, not the

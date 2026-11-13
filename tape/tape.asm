@@ -697,6 +697,23 @@ tapoon:
                 ld      a,1
                 call    stmotr          ; motor on
                 di                      ; waveform timing must not be jittered
+                ; D-TAPOONDLY (2026-11-13): the motor runs SILENT for 0.567 s before the
+                ; leader, as on the VG-8020 -- every SAVE / CSAVE / BSAVE "CAS:" and a direct
+                ; TAPOON recording starts its signal 0.567 s after the motor (zerobas
+                ; scratchpad/tapoon_delay_run1.out, savecas_len_*.out); ours started at once.
+                ; 2 x 33827 x 30 T = 2.03 M T-states, 0.567 s at 3.58 MHz -- 30, not 26: the
+                ; MSX adds one wait state to every M1 (a 26 T count measured 0.654 s,
+                ; scratchpad/savecas_len_after.out).
+                ld      e,2
+tpo_dly1:
+                ld      bc,33827
+tpo_dly2:
+                dec     bc
+                ld      a,b
+                or      c
+                jr      nz,tpo_dly2
+                dec     e
+                jr      nz,tpo_dly1
                 call    cas_short       ; C = leader carrier half (cached baud)
                 pop     af
                 or      a               ; selector zero -> short header

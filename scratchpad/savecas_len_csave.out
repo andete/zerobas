@@ -1,0 +1,6 @@
+VG: 10.89 s of tape, 69 bytes decoded (d3d3d3d3d3d3d3d3d3d3505247202020)
+   signal   0.569 ..   7.135  (6.566 s)
+   signal   8.252 ..  10.342  (2.090 s)
+ZB: 9.03 s of tape, 69 bytes decoded (the same)
+   signal   0.000 ..   9.033  (9.033 s)
+refcache: 0 hit, 2 miss, 2 stored

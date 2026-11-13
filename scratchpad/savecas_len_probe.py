@@ -6,7 +6,7 @@ LONGER than zerobas's, or the same tape written slower? Each machine records to 
 tape; the WAV's length (seconds) and its decoded bytes (probes/lib/cas_decode.py) are
 compared, plus where the signal is silent. Black box: the recorded signal only.
 
-    python3 -u scratchpad/savecas_len_probe.py
+    python3 -u scratchpad/savecas_len_probe.py [save|csave|bsave]
 """
 import os, sys, wave
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,11 +30,13 @@ def segments(path):
     out.append((st / fr, pv / fr))
     return fr, out
 
-PROG = ["NEW", '10 PRINT "TAPE SESSION"', "20 FOR I=1 TO 3:PRINT I*11:NEXT",
-        'SAVE "CAS:ASC"', "@WAIT20"]
+BASE = ["NEW", '10 PRINT "TAPE SESSION"', "20 FOR I=1 TO 3:PRINT I*11:NEXT"]
+VERBS = {"save": 'SAVE "CAS:ASC"', "csave": 'CSAVE "PRG"', "bsave": 'BSAVE "CAS:BLK",&HD000,&HD00F'}
+VERB = sys.argv[1] if len(sys.argv) > 1 else "save"
+PROG = BASE + [VERBS[VERB], "@WAIT20"]
 ref = b""
 for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
-    wav = probe_tmp.tmp(f"savecas_{side}.wav")
+    wav = probe_tmp.tmp(f"savecas_{VERB}_{side}.wav")
     if os.path.exists(wav):
         os.remove(wav)
     omsx_repl.run_cases(m, [("direct", PROG)], batch=False, reset=("", "SCREEN 0"),

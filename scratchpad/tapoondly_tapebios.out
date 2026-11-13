@@ -1,0 +1,25 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+WRITE VG: [T [16, 16, 16, 16, 0, 16, 0, 0]] key (0, 0, 0, 0, 0)  decoded 64 B, pattern FOUND
+WRITE ZB: [T [68, 0, 8, 31, 0, 68, 9, 0]] key (0, 0, 0, 0, 0)  decoded 64 B, pattern FOUND
+ROW write SAME
+READ VG: [T [36, 34, 16, 42, 0, 16, 0, 269600]] key (0, 0, 0, 0, 269600)  (want left 0, sum 269600)
+READ ZB: [T [66, 124, 40, 42, 0, 68, 9, 269600]] key (0, 0, 0, 0, 269600)  (want left 0, sum 269600)
+ROW read SAME
+BREAK VG: [B Cy INTFLG trapped STOP-up] = (1, 0, 0, 0)
+BREAK ZB: [B Cy INTFLG trapped STOP-up] = (1, 0, 0, 0)
+ROW break SAME
+CAS VG: [C Cy1 Cy2 Cy-end read sum] = (0, 0, 0, 534, 9277991)  (want (0, 0, 0, 534, 9277991))
+CAS ZB: [C Cy1 Cy2 Cy-end read sum] = (0, 0, 0, 534, 9277991)  (want (0, 0, 0, 534, 9277991))
+ROW cas SAME
+WLONG VG (no break): [L open loop left STOP-up INTFLG trapped] = (0, 0, 0, 16, 0, 0)
+WBREAK VG: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1071, 0, 0, 0)
+WBREAK ZB: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1115, 0, 0, 0)
+ROW wbreak SAME
+RBREAK VG: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1070, 0, 0, 0)
+RBREAK ZB: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1084, 0, 0, 0)
+ROW rbreak SAME
+PASS: the cassette BIOS entries against the VG-8020
+refcache: 1 hit, 12 miss, 12 stored
