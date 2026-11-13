@@ -1,0 +1,5 @@
+BREAK VG: [B Cy INTFLG trapped STOP-up] = (1, 0, 0, 0)
+BREAK ZB: [B Cy INTFLG trapped STOP-up] = (1, 0, 0, 16)
+ROW break DIVERGES
+FAIL: the cassette BIOS entries against the VG-8020
+refcache: 0 hit, 2 miss, 2 stored

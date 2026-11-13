@@ -1,0 +1,11 @@
+WRITE VG: [T [16, 16, 16, 16, 0, 16, 0, 0]] key (0, 0, 0, 0, 0)  decoded 64 B, pattern FOUND
+WRITE ZB: [T [68, 0, 8, 31, 0, 68, 9, 0]] key (0, 0, 0, 0, 0)  decoded 64 B, pattern FOUND
+ROW write SAME
+READ VG: [T [36, 34, 16, 42, 0, 16, 0, 269600]] key (0, 0, 0, 0, 269600)  (want left 0, sum 269600)
+READ ZB: [T [66, 124, 40, 42, 0, 68, 9, 269600]] key (0, 0, 0, 0, 269600)  (want left 0, sum 269600)
+ROW read SAME
+BREAK VG: [T None] key None
+BREAK ZB: [T [1, 16, 1, 16, 0, 68, 9, 530385]] key (1, 1, 0, 0, 530385)
+ROW break NO-REFERENCE
+INSTRUMENT FAULT: the VG-8020 gave no reading
+refcache: 0 hit, 6 miss, 6 stored

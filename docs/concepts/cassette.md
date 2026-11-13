@@ -322,8 +322,13 @@ because every byte has a long start bit and short stop bits, so a `TAPION`
 called while a file's data is still playing waits for the next real leader
 (D-TAPLEAD, 2026-10-14 and 2026-10-15); `tapout` frames each byte with two stop bits; `stmotr` drives the relay.
 `tapout` and `tapin` before each byte, and `tapion` on each attempt to lock
-on, ask `BREAKX` whether Ctrl-STOP is down; if it is, they wait for the key to
-come up and return with carry set (`cas_stop`).
+on, ask `BREAKX` whether Ctrl-STOP is down; if it is, they return with carry
+set at once, the key still down -- as the VG-8020's entries do when called
+directly (D-TAPEBIOS, 2026-11-13: `make tapebios-acceptance`; they used to
+wait for the release first). BASIC does the waiting: recording a `Device I/O
+error` waits for the key to come up and drops a key repeat latched meanwhile
+(`set_errflg` / `brk_release`, [basic/catalias.asm](../../basic/catalias.asm)),
+so an `ON ERROR` handler is not broken at its first statement.
 
 The BASIC side shares one search. `cas_capture_name`
 ([basic/cascap-body.inc](../../basic/cascap-body.inc)) puts the wanted name

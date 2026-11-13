@@ -394,18 +394,12 @@ cas_level:
                 ret
 
 ;--------------------------------
-; cas_stop: CF = Ctrl-STOP is down -- and then it returns only once the key is
-; up again (cas_stop_w), so the press is CONSUMED, as on the VG-8020: it runs
-; the ON ERROR handler at once and breaks it only if the key is still down
-; ~0.7 s later (D-CASWBRK, scratchpad/caswbrk_hold_tap.out). Changes: AF
-cas_stop:
-                call    BREAKX
-                ret     nc
-cas_stop_w:
-                call    BREAKX
-                jr      c,cas_stop_w    ; Ctrl-STOP still down
-                scf                     ; CF = broken
-                ret
+; (cas_stop -- "CF = Ctrl-STOP, returning only once the key is up" -- is GONE, D-TAPEBIOS
+; 2026-11-13: called DIRECTLY, the VG-8020's TAPION, TAPIN and TAPOUT all return with
+; Cy set WHILE THE KEY IS STILL DOWN (probes/tape/bios_probe_tapdiff.py, SNSMAT row 7 at
+; the return: scratchpad/tapdiff_break3.out, tapdiff_lbreak1.out). The release-wait it
+; did is BASIC's (D-CASWBRK's handler-not-broken rule): raise_error waits for the key
+; when it raises 19, basic/interp.asm.)
 
 ;--------------------------------
 ; cas_half: time one CAS-in half-period -- wait for the next edge, counting.
@@ -534,7 +528,7 @@ tapion_relock:
 tapion_wait:
                 call    cas_half        ; CF set = flat (silence / spin-up)
                 jr      nc,tapion_skip0 ; a real edge -> carrier present
-                call    cas_stop        ; CF = Ctrl-STOP (waits for its release)
+                call    BREAKX          ; CF = Ctrl-STOP (returns at once, the key down)
                 ret     c               ; -> fail: the caller's Device I/O error
                 jr      tapion_wait
 tapion_skip0:
@@ -647,7 +641,7 @@ tapin:
                 ; VG-8020 (a BLOAD broken in its data: `19 in 15` there, read on
                 ; to the end here, scratchpad/casrbrk_diag2.out). Before the
                 ; hunt, which only looks for a LONG half: the stop bits' slack.
-                call    cas_stop
+                call    BREAKX          ; CF = Ctrl-STOP (returns at once, the key down)
                 ret     c
                 call    cas_level       ; D = current level
                 ld      hl,0            ; 16-bit start-bit hunt timeout
@@ -772,13 +766,10 @@ tapout_next:
                 call    cas_cycle_last
                 or      a               ; CF = 0: success
                 ret
-; The press that breaks the write is CONSUMED: the VG-8020 runs the ON ERROR
-; handler at once and breaks it only if the key is still down ~0.7 s later
-; (its key repeat; scratchpad/caswbrk_hold_tap.out, INTFLG). zerobas's run loop
-; polls the key's LEVEL, so a handler entered with the key down broke at its
-; first statement -- hence wait here for the release (a tap: same screen).
+; Ctrl-STOP: Cy set, returned at once with the key still down, as the VG-8020's
+; (D-TAPEBIOS). The wait for the release that D-CASWBRK put here is raise_error's
+; now (error 19), where BASIC's ON ERROR handler needs it.
 tapout_brk:
-                call    cas_stop_w      ; until the key is up; CF = failed
                 pop     de              ; drop the byte (CF kept)
                 ret
 

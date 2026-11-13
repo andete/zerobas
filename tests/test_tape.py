@@ -512,8 +512,10 @@ def test_tapion_silence_and_dead(m, fails):
     fails += not waited
     print(f"{'PASS' if waited else 'FAIL'}  tapion dead/flat tape, no Ctrl-STOP: "
           f"still waiting after 2M steps = {waited} (want True)")
-    # ... and Ctrl-STOP pressed (BREAKX CF = 1 on its 50th call, then released)
-    # ends it with CF = 1 -- the caller's Device I/O error.
+    # ... and Ctrl-STOP pressed (BREAKX CF = 1 on its 50th call) ends it with CF = 1 --
+    # the caller's Device I/O error -- AT THE PRESS, the key still down, as the VG-8020's
+    # TAPION (D-TAPEBIOS 2026-11-13, probes/tape/bios_probe_tapdiff.py; it waited for the
+    # release, a 51st call, until then -- BASIC's set_errflg waits now).
     m3 = machine()
     m3.cpu.io_in = lambda port: 0x00
     calls = [0]
@@ -526,11 +528,11 @@ def test_tapion_silence_and_dead(m, fails):
             mm.cpu.f &= ~0x01
     m3.trap("BREAKX", breakx)
     cpu = m3.call("tapion", max_steps=2_000_000)
-    ok = carry(cpu) and calls[0] == 51
+    ok = carry(cpu) and calls[0] == 50
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  tapion dead/flat tape, Ctrl-STOP: "
-          f"CF={int(carry(cpu))}, BREAKX calls {calls[0]} (want 1 = fail, 51: the "
-          f"press and its release)")
+          f"CF={int(carry(cpu))}, BREAKX calls {calls[0]} (want 1 = fail, 50: returned "
+          f"at the press)")
     return fails
 
 

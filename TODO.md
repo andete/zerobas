@@ -16630,6 +16630,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the likeliest split: MISSED, it is identical; "WRZER a likely gap": HIT. Not in
       bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
       unused numbers and AUXOUT get read (they ran after the fault here).
+      📼 **D-TAPEBIOS, THE SIX CASSETTE ENTRIES (2026-11-13; Joost: *"the tape ones we should
+      definitely cover indeed with tests"* -- context: he finishes C-BIOS's remaining MSX1 BIOS
+      calls upstream next, zerobas's gaps first).** New **`make tapebios-acceptance`**
+      ([`bios_probe_tapdiff.py`](probes/tape/bios_probe_tapdiff.py), our own machine code, VG-8020 vs zerobas, five rows): **write**
+      (TAPOON / 64 x TAPOUT / TAPOOF, the recording decoded) and **read** (the VG-8020's recording,
+      TAPION / 64 x TAPIN / TAPIOF) were SAME at once ([`tapdiff_run1.out`](scratchpad/tapdiff_run1.out); 🔮 HIT). **Ctrl-STOP
+      DIVERGED in all three waiting entries**: the VG-8020's TAPION, TAPIN and TAPOUT return with
+      Cy set WHILE THE KEY IS STILL DOWN (SNSMAT row 7 read the moment they return); ours waited
+      for the release first ([`tapdiff_break3.out`](scratchpad/tapdiff_break3.out), [`tapdiff_lbreak1.out`](scratchpad/tapdiff_lbreak1.out); the first reading, `Break in
+      40` on the VG-8020 only, [`tapdiff_break1.out`](scratchpad/tapdiff_break1.out), was that same held key reaching BASIC). The
+      wait was D-CASWBRK's, put in the BIOS so an ON ERROR handler is not broken by the held key
+      -- a BASIC rule. Fixed: tape/tape.asm's cas_stop is gone (the entries call BREAKX and
+      return); **set_errflg** waits for the release on error 19 and drops a key repeat latched
+      during the hold (brk_release; set_errflg moved to basic/catalias.asm with it -- raise_error's
+      span had no room before the $475A pin). 🔴 Two cuts that failed first, each caught by the
+      BASIC break gates: the wait in raise_error (the deferred raises record through set_errflg
+      without passing it) and a wait without the INTFLG drop (C-BIOS's auto-repeat latched the
+      held key once interrupts ran): `Break in 90` on 6-9 rows. After: tapdiff **5 / 5 SAME**
+      ([`tapdiff_run2.out`](scratchpad/tapdiff_run2.out)); caswbrk 8/8, casrbrk 15/15, casbrk 7/7 ([`tapebios_caswbrk.out`](scratchpad/tapebios_caswbrk.out),
+      [`tapebios_casrbrk.out`](scratchpad/tapebios_casrbrk.out), [`tapebios_casbrk.out`](scratchpad/tapebios_casbrk.out)). The BIOS table: **104 of 108** witnessed. ➡️ Joost's
+      rulings for the other four: KEYINT covered INDIRECTLY (mark it so), NMI not used on MSX
+      (out of scope), **WSLREG a direct test**, **INITIO: measure what it does first**.
 
 - [x] 🔴 **D-BIOSRUNG — THE MAIN-BIOS TABLE SAYS "EXERCISED" FOR ENTRIES THAT ARE STILL C-BIOS
       STUBS: GIVE EVERY ENTRY A STATUS THAT CAN SAY "STUB" (Joost, 2026-11-12)**

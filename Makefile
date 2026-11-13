@@ -3016,6 +3016,13 @@ p1dta-acceptance: repack-machine
 p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
 
+# --- tapebios-acceptance: the six cassette BIOS entries called DIRECTLY (D-TAPEBIOS) ------
+# TAPION / TAPIN / TAPIOF / TAPOON / TAPOUT / TAPOOF from our own machine code, the VG-8020
+# against zerobas: a write decoded from the recording, a read of the VG-8020's recording,
+# and Ctrl-STOP during TAPION / TAPIN / TAPOUT (Cy, INTFLG, the key still down on return).
+tapebios-acceptance: repack-machine
+	python3 probes/tape/bios_probe_tapdiff.py
+
 # --- drvinf-acceptance: DRVINF ($FB21 / $FB22) as Disk BASIC reads it (D-DRVCOUNT) -------
 # The drive count must be the CF-3300's: main's DISKSLOT_OK `inc` made it 3 (2026-11-13).
 drvinf-acceptance: repack-machine $(DISK_TEST_DSK)

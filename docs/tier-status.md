@@ -174,7 +174,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**99 of 108** have a direct witness and are not stubs; **9 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
+**104 of 108** have a direct witness and are not stubs; **4 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -245,12 +245,12 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00D8 | GTTRIG | exercised | `biosregs-acceptance` |
 | $00DB | GTPAD | exercised | `biosregs-acceptance` |
 | $00DE | GTPDL | exercised | `biosregs-acceptance` |
-| $00E1 | TAPION | exercised | `tapionlead-acceptance` |
-| $00E4 | TAPIN | NOT MEASURED | — |
-| $00E7 | TAPIOF | NOT MEASURED | — |
-| $00EA | TAPOON | NOT MEASURED | — |
-| $00ED | TAPOUT | NOT MEASURED | — |
-| $00F0 | TAPOOF | NOT MEASURED | — |
+| $00E1 | TAPION | exercised | `tapebios-acceptance`, `tapionlead-acceptance` |
+| $00E4 | TAPIN | exercised | `tapebios-acceptance` |
+| $00E7 | TAPIOF | exercised | `tapebios-acceptance` |
+| $00EA | TAPOON | exercised | `tapebios-acceptance` |
+| $00ED | TAPOUT | exercised | `tapebios-acceptance` |
+| $00F0 | TAPOOF | exercised | `tapebios-acceptance` |
 | $00F3 | STMOTR | exercised | `biosregs-acceptance` |
 | $00F6 | LFTQ | exercised | `biosregs-acceptance` |
 | $00F9 | PUTQ | exercised | `strtms-acceptance` |
@@ -277,7 +277,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0138 | RSLREG | exercised | `biosregs-acceptance`, `p1vec-acceptance` |
 | $013B | WSLREG | NOT MEASURED | — |
 | $013E | RDVDP | exercised | `biosregs-acceptance` |
-| $0141 | SNSMAT | exercised | `bootenv-acceptance` |
+| $0141 | SNSMAT | exercised | `bootenv-acceptance`, `tapebios-acceptance` |
 | $0144 | PHYDIO | exercised | `diskbasic-acceptance` |
 | $0147 | FORMAT | exercised | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
 | $014A | ISFLIO | exercised | `biosregs-acceptance` |

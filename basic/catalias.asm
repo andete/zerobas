@@ -25,6 +25,50 @@
 ; Under CLEARPOOL only (op 22 is a CLEARPOOL row; without it op 2 would extend V$'s own
 ; body in place). Clean-room: own design, no reference code read.
 
+; ---------------------------------------------------------------------------------------
+; (moved here from basic/interp.asm, D-TAPEBIOS 2026-11-13: raise_error's span before the
+; $475A pin had no room for the Ctrl-STOP release wait set_errflg now does; both are
+; reached by `call` only.)
+; --- set_errflg: A = an ERR code -> call H.ERRO, then ERR := the code -------
+; 🏗️ D-HERRO (2026-10-27). The VG-8020 calls the published error hook H.ERRO
+; ($FFB1) once on EVERY error -- trapped or not, from ERROR or BASIC itself --
+; BEFORE ERR is stored, with E = the code, and takes the code back from E
+; (a hook doing `ld e,5` turns ERROR 7 into Illegal function call):
+; scratchpad/herro_probe.py / herro2_probe.py. zerobas never called it. Every
+; site that recorded an error with `ld (ERRFLG),a` calls this instead, the same
+; 3 bytes. ⚠️ The editor rejects that print a FIXED message (line too large,
+; line-buffer overflow, CONT at the prompt) keep it even if a hook rewrites E.
+; Out: A = the (possibly rewritten) code. Clobbers DE.
+set_errflg:
+                ld      e,a
+                call    H_ERRO              ; RET unless something hooked it
+                ld      a,e
+                ; 📼 D-TAPEBIOS (2026-11-13): a Device I/O error waits for Ctrl-STOP to be
+                ; RELEASED. The tape BIOS returns at the press with the key down, as the
+                ; VG-8020's does (probes/tape/bios_probe_tapdiff.py); zerobas's run loop
+                ; polls the key's LEVEL, so an ON ERROR handler entered with it down
+                ; would break at its first statement, where the VG-8020 runs it
+                ; (D-CASWBRK, scratchpad/caswbrk_hold_tap.out). HERE, not in raise_error:
+                ; the deferred raises (a sub-ROM tenant's 19 at the statement boundary)
+                ; record through this routine without passing raise_error's entry.
+                ; F is kept: this routine never touched it before.
+                push    af
+                cp      19
+                call    z,brk_release
+                pop     af
+                ld      (ERRFLG),a
+                ret
+; brk_release -- D-TAPEBIOS: return once Ctrl-STOP is up, the whole hold consumed: BREAKX
+; marks the press seen (D-BRKLATCH), and a key auto-repeat that latched INTFLG while the
+; key was held (C-BIOS repeats from ~36 frames; the BIOS used to wait with interrupts
+; off, so none ran) is dropped -- the VG-8020 runs a handler entered under a 0.9 s hold
+; to its end (caswbrk `phold`). Changes AF.
+brk_release:
+                call    BREAKX
+                jr      c,brk_release
+                xor     a
+                ld      (INTFLG),a
+                ret
 ; --- sct_op: str_concat_tail's APPEND call. In: A = [op] (2, 22, or 23: the chain's
 ; first `+` after a variable left operand), DE = R. BC := R -- the result's slot, blk+6
 ; (sub/strheap.asm she_out) -- then op 23 resolves the variable (sct_resolve), and

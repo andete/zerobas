@@ -1358,22 +1358,8 @@ fp_runtime_error:
 ; ONELIN stores the handler line's LINK address (find_line_bc's return
 ; convention, a CURLINE-shaped value), exactly what rp_goto expects.
 ; Clobbers A, DE, HL (and SP, on the trap path only).
-; --- set_errflg: A = an ERR code -> call H.ERRO, then ERR := the code -------
-; 🏗️ D-HERRO (2026-10-27). The VG-8020 calls the published error hook H.ERRO
-; ($FFB1) once on EVERY error -- trapped or not, from ERROR or BASIC itself --
-; BEFORE ERR is stored, with E = the code, and takes the code back from E
-; (a hook doing `ld e,5` turns ERROR 7 into Illegal function call):
-; scratchpad/herro_probe.py / herro2_probe.py. zerobas never called it. Every
-; site that recorded an error with `ld (ERRFLG),a` calls this instead, the same
-; 3 bytes. ⚠️ The editor rejects that print a FIXED message (line too large,
-; line-buffer overflow, CONT at the prompt) keep it even if a hook rewrites E.
-; Out: A = the (possibly rewritten) code. Clobbers DE.
-set_errflg:
-                ld      e,a
-                call    H_ERRO              ; RET unless something hooked it
-                ld      a,e
-                ld      (ERRFLG),a
-                ret
+; (set_errflg and brk_release live in basic/catalias.asm, in front of the $6CF3 pin:
+; D-TAPEBIOS's release wait had no room before the $475A pin, 2026-11-13.)
 raise_error:
                 call    set_errflg          ; D-HERRO: the hook, then ERR
                 ; 🖨️ D-LPTERRNL (2026-11-05): AN ERROR ENDS A PARTIAL PRINTER LINE,

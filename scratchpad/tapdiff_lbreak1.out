@@ -1,0 +1,9 @@
+WLONG VG (no break): [L open loop left STOP-up INTFLG trapped] = (0, 0, 0, 16, 0, 0)
+WBREAK VG: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1071, 0, 0, 0)
+WBREAK ZB: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1053, 16, 0, 0)
+ROW wbreak DIVERGES
+RBREAK VG: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1070, 0, 0, 0)
+RBREAK ZB: [L open loop left STOP-up INTFLG trapped] = (0, 1, 1084, 16, 0, 0)
+ROW rbreak DIVERGES
+FAIL: the cassette BIOS entries against the VG-8020
+refcache: 0 hit, 5 miss, 5 stored
