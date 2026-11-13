@@ -3028,6 +3028,12 @@ biosflags-acceptance: repack-machine
 biosmode-acceptance: repack-machine
 	python3 probes/basic/basic_probe_biosmode.py
 
+# --- biostext-acceptance: the text-output BIOS entries' WORK-AREA answer (D-ENTRYTIERS) ----
+# CHPUT (a character + six control codes), POSIT, CLS, ERAFNK, DSPFNK, KILBUF: what each call
+# changes in the screen block, the key-buffer pointers and LINTTB (as zero / non-zero).
+biostext-acceptance: repack-machine
+	python3 probes/basic/basic_probe_biostext.py
+
 # --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
 # Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
 initio-acceptance: repack-machine

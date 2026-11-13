@@ -16526,6 +16526,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             CLMLST ($F3B2) = 14; zerobas 0 and 0 ([`biosmode_run2.out`](scratchpad/biosmode_run2.out), "already apart" on every
             row). Neither is an entry's answer -- BASIC's / the boot's initial state. ➡️ Which
             of our cold-start paths owns each cell, and what the CF-3300 holds.
+      📏 **The text-output entries (2026-11-13):** **`make biostext-acceptance`**
+      ([`basic_probe_biostext.py`](probes/basic/basic_probe_biostext.py), biosmode's before / after method): CHPUT with 'A' and CR / LF /
+      BS / TAB / HOME / CLS / cursor-right, POSIT, CLS, ERAFNK, DSPFNK, KILBUF over the screen
+      block, PUTPNT / GETPNT and LINTTB -- **13 / 13 SAME** ([`biostext_run2.out`](scratchpad/biostext_run2.out)). LINTTB is read as
+      published (zero = continued row): the VG-8020 keeps $18, $17 .. and ERAFNK writes $AF to the
+      last row where zerobas keeps $01 -- same meaning, a first cut compared the values
+      ([`biostext_run1.out`](scratchpad/biostext_run1.out)). Tape corpus after D-GRPBASE: SAME 9 / NEAR 11 / RUNS? 21 / RESET 1
+      -- Elite SAME -> RUNS?, the timing / phase flip TODO's corpus table already names it in
+      ([`tapecorpus_grpbase.out`](scratchpad/tapecorpus_grpbase.out); 🔮 "no class worse": MISS by that one).
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.

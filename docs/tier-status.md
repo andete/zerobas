@@ -228,7 +228,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0099 | STRTMS | exercised | yes | `strtms-acceptance` |
 | $009C | CHSNS | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $009F | CHGET | exercised | yes | `biosregs-acceptance` |
-| $00A2 | CHPUT | exercised | yes | `biosregs-acceptance` |
+| $00A2 | CHPUT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $00A5 | LPTOUT | exercised | yes | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
 | $00A8 | LPTSTT | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00AB | CNVCHR | exercised | yes | `biosregs-acceptance` |
@@ -239,11 +239,11 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00BA | ISCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00BD | CKCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00C0 | BEEP | exercised | yes | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
-| $00C3 | CLS | exercised | yes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `bloadofs-acceptance` … |
-| $00C6 | POSIT | exercised | yes | `biosregs-acceptance` |
+| $00C3 | CLS | exercised | yes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biostext-acceptance` … |
+| $00C6 | POSIT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $00C9 | FNKSB | exercised | yes | `biosregs-acceptance` |
-| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance` |
-| $00CF | DSPFNK | exercised | yes | `biosregs-acceptance` |
+| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
+| $00CF | DSPFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $00D2 | TOTEXT | exercised | yes | `biosregs-acceptance` |
 | $00D5 | GTSTCK | exercised | yes | `biosregs-acceptance` |
 | $00D8 | GTTRIG | exercised | yes | `biosregs-acceptance` |
@@ -288,7 +288,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $014D | OUTDLP | exercised | yes | `outdlp-acceptance` |
 | $0150 | GETVCP | exercised | yes | `biosregs-acceptance` |
 | $0153 | GETVC2 | exercised | yes | `biosregs-acceptance` |
-| $0156 | KILBUF | exercised | yes | `biosregs-acceptance` |
+| $0156 | KILBUF | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $0159 | CALBAS | exercised | yes | `biosregs-acceptance` |
 
 ## Every keyword and its status
