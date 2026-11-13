@@ -174,7 +174,7 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**104 of 108** have a direct witness and are not stubs; **4 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
+**106 of 108** have a direct witness and are not stubs; **2 are RULED** not to need one (KEYINT, NMI); **0 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
 | address | call | status | exercised by |
 |---|---|---|---|
@@ -189,8 +189,8 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0024 | ENASLT | exercised | `p1vec-acceptance`, `slotregs-acceptance` |
 | $0028 | GETYPR | exercised | `biosregs-acceptance` |
 | $0030 | CALLF | exercised | `bootenv-acceptance`, `p1vec-acceptance` |
-| $0038 | KEYINT | NOT MEASURED | — |
-| $003B | INITIO | NOT MEASURED | — |
+| $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — |
+| $003B | INITIO | exercised | `initio-acceptance` |
 | $003E | INIFNK | exercised | `biosregs-acceptance` |
 | $0041 | DISSCR | exercised | `biosregs-acceptance` |
 | $0044 | ENASCR | exercised | `biosregs-acceptance` |
@@ -204,7 +204,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $005C | LDIRVM | exercised | `biosregs-acceptance` |
 | $005F | CHGMOD | exercised | `screenerr-acceptance` |
 | $0062 | CHGCLR | exercised | `biosregs-acceptance` |
-| $0066 | NMI | NOT MEASURED | — |
+| $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — |
 | $0069 | CLRSPR | exercised | `biosregs-acceptance` |
 | $006C | INITXT | exercised | `biosregs-acceptance` |
 | $006F | INIT32 | exercised | `biosregs-acceptance` |
@@ -218,9 +218,9 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0087 | CALATR | exercised | `biosregs-acceptance` |
 | $008A | GSPSIZ | exercised | `biosregs-acceptance` |
 | $008D | GRPPRT | exercised | `biosregs-acceptance` |
-| $0090 | GICINI | exercised | `biosl-acceptance`, `gicini-acceptance` |
-| $0093 | WRTPSG | exercised | `biosregs-acceptance` |
-| $0096 | RDPSG | exercised | `biosregs-acceptance` |
+| $0090 | GICINI | exercised | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
+| $0093 | WRTPSG | exercised | `biosregs-acceptance`, `initio-acceptance` |
+| $0096 | RDPSG | exercised | `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | `strtms-acceptance` |
 | $009C | CHSNS | exercised | `biosregs-acceptance` |
 | $009F | CHGET | exercised | `biosregs-acceptance` |
@@ -275,7 +275,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0132 | CHGCAP | exercised | `biosregs-acceptance` |
 | $0135 | CHGSND | exercised | `biosregs-acceptance` |
 | $0138 | RSLREG | exercised | `biosregs-acceptance`, `p1vec-acceptance` |
-| $013B | WSLREG | NOT MEASURED | — |
+| $013B | WSLREG | exercised | `slotregs-acceptance` |
 | $013E | RDVDP | exercised | `biosregs-acceptance` |
 | $0141 | SNSMAT | exercised | `bootenv-acceptance`, `tapebios-acceptance` |
 | $0144 | PHYDIO | exercised | `diskbasic-acceptance` |

@@ -1,0 +1,30 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+== rd6    cf3300  AF=98A4 BC=00FC DE=F098 HL=0006
+== rd6    zb      AF=98A4 BC=00FC DE=F098 HL=0006
+== rdram  cf3300  AF=D3A4 BC=F0C0 DE=F0D3 HL=F380
+== rdram  zb      AF=D3A4 BC=F0C0 DE=F0D3 HL=F380
+== rdr1   cf3300  AF=FFAC BC=F0C0 DE=F0FF HL=4000
+== rdr1   zb      AF=FFAC BC=F0C0 DE=F0FF HL=4000
+== rdr0   cf3300  AF=FFA4 BC=F0C0 DE=F0FF HL=0100
+== rdr0   zb      AF=FFA4 BC=F0C0 DE=F0FF HL=0100
+== rdr2   cf3300  AF=00A4 BC=F0C0 DE=F000 HL=8000
+== rdr2   zb      AF=F0A4 BC=F0C0 DE=F0F0 HL=8000
+== rdb1   cf3300  AF=E5A4 BC=00F3 DE=F0E5 HL=4000
+== rdb1   zb      AF=41A4 BC=00F3 DE=F041 HL=4000
+== ena2   cf3300  AF=F0A4 BC=30CF DE=FF30 HL=8000
+== ena2   zb      AF=F0A4 BC=30CF DE=FF30 HL=8000
+== enar1  cf3300  AF=FCAC BC=0CF3 DE=FF0C HL=4000
+== enar1  zb      AF=FCAC BC=0CF3 DE=FF0C HL=4000
+== wr3    cf3300  AF=F0A4 BC=F0C0 DE=F05A HL=D200
+== wr3    zb      AF=F0A4 BC=F0C0 DE=F05A HL=D200
+== wr2    cf3300  AF=F0A4 BC=F0C0 DE=F0A5 HL=A000
+== wr2    zb      AF=F0A4 BC=F0C0 DE=F0A5 HL=A000
+== wsl2   cf3300  [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wsl2   zb      [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wslsame cf3300  [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wslsame zb      [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+slotregs: 12/12 rows agree
+refcache: 15 hit, 9 miss, 3 of the hits were ZEROBAS readings, 9 stored

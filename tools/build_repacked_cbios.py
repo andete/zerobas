@@ -68,11 +68,16 @@ PATCHES = [
     # (autorun-acceptance). Back to 0.29's start: zerobas's cold start sets SCNCNT.
     # `inc (hl)` -> `nop`, nothing moves.
     os.path.join(REPO, "cbios-repack", "scan-from-basic.patch"),
+    # D-INITIO (2026-11-13): INITIO writes PSG register 15 := $CF (C-BIOS: $8F) and
+    # register 11 := $0B, as the VG-8020 AND the CF-3300 do (basic_probe_initio.py).
+    # The 7 bytes come from C-BIOS's INIFNK stub right behind it, dead under
+    # zerobas's own $003E: nothing after it moves.
+    os.path.join(REPO, "cbios-repack", "initio.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "657dc2ad0001d1f645ce2923d2ba7b236f133358"   # D-BIOSRUNG SCREEN 3 arms, 2026-11-12
+REPACKED_SHA1 = "8f772ec1f4ce9ffbea262a6c4d9605f973c6a9c6"   # D-INITIO, 2026-11-13
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

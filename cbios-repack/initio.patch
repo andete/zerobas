@@ -1,0 +1,45 @@
+diff --git a/src/main.asm b/src/main.asm
+index 593f112..ae3ec7e 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1545,12 +1545,17 @@ callf:
+ ;Function:  Initialises the device
+ ;Registers: All
+ initio:
+-                ld      e,$8F           ; strobe off, triggers on
++                ; zerobas D-INITIO (2026-11-13), measured black-box on the VG-8020 AND the
++                ; CF-3300 (zerobas probes/basic/basic_probe_initio.py, initio_run3.out /
++                ; initio_cf.out): INITIO writes PSG register 15 := $CF (bit 6 set; C-BIOS
++                ; wrote $8F) and register 11 := $0B (C-BIOS left it), then the GICINI
++                ; teardown -- GICINI itself touches neither (called directly on both).
++                ld      e,$CF           ; strobe off, triggers on, bit 6 as both references
+                 ld      a,$0F
+                 call    wrtpsg
+-
+-                ; TODO: What else must be initialized here?
+-
++                ld      e,$0B           ; envelope period low byte, as both references
++                ld      a,11
++                call    wrtpsg
+                 jp      gicini
+ 
+ ;--------------------------------
+@@ -1558,15 +1563,11 @@ initio:
+ ; Function : Initialises the contents of the function keys
+ ; Registers: All
+ ;NOTE: this implementation is still a stub!
++; zerobas: $003E is zerobas's own INIFNK (its islands overlay), so this stub never
++; runs; it gives INITIO's 7 new bytes above back (18 -> 11), so nothing after it moves.
+ inifnk:
+-                push    hl
+-                push    af
+-                ld      hl,inifnk_text
+-                call    print_debug
+-                pop     af
+-                pop     hl
+                 ret
+-inifnk_text:    db      "INIFNK",0
++                ds      10, 0
+ 
+ ;--------------------------------
+ ; $0099 STRTMS

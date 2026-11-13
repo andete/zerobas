@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 r"""slotregs-acceptance -- D-SDSBOOT (2026-11-07): the EXIT registers of the published
-slot entries RDSLT ($000C), WRSLT ($0014) and ENASLT ($0024), zerobas against the
+slot entries RDSLT ($000C), WRSLT ($0014), ENASLT ($0024) and (2026-11-13) WSLREG
+($013B, the `wsl*` rows below), zerobas against the
 CF-3300. A USR routine (our own test code, page 3) loads A / HL (BC = $1234, DE =
 $5678 as markers, or E = the byte for WRSLT), calls the entry and stores AF BC DE HL;
 BASIC prints them. Registers and RAM only -- the black-box contract, nothing read
@@ -57,6 +58,59 @@ def prog(tag, entry, hl, slot, restore, de):
             f"50 DATA {','.join(str(b) for b in c)}", "RUN"])
 
 
+# WSLREG ($013B), D-TAPEBIOS's follow-up (Joost 2026-11-13: "WSLREG could have a test"):
+# A = the value for the primary slot register. Ours: save $A8; call WSLREG with BC / DE /
+# HL markers; store AF BC DE HL; read $A8 back; restore the saved $A8 ourselves (page 2
+# holds the BASIC program) and return. The value is page 3's slot put into page 2 too
+# (the RAM page 3 lives in, so this code and the stack stay mapped), or the current
+# register unchanged. Printed RELATIVE to the value -- A XOR value, $A8-after XOR value
+# -- since the two machines' slot layouts differ; F / BC / DE / HL as they are. F enters
+# as $A5 (a first cut left it as BASIC's USR handed it in, and compared THAT: $44 on the
+# CF-3300, $42 here -- the entry state, not WSLREG's; scratchpad/wslreg_run3.out).
+WSLREG = 0x013B
+
+
+def wsl_code():
+    return [0xDB, 0xA8, 0x32, 0x19, 0xD1,                     # in a,($A8) / ld ($D119),a
+            0x11, 0xA5, 0x00, 0xD5, 0xF1,                    # ld de,<value>:$A5 / push de /
+                                                             # pop af: A = value (POKEd at
+                                                             # $D007), F = $A5 known on entry
+            0x21, 0xBC, 0x9A, 0x01, 0x34, 0x12, 0x11, 0x78, 0x56,
+            0xCD, WSLREG & 0xFF, WSLREG >> 8,                # call WSLREG
+            0xED, 0x43, 0x12, 0xD1, 0xED, 0x53, 0x14, 0xD1, 0x22, 0x16, 0xD1,
+            0xF5, 0xE1, 0x22, 0x10, 0xD1,
+            0xDB, 0xA8, 0x32, 0x18, 0xD1,                     # in a,($A8) / ld ($D118),a
+            0x3A, 0x19, 0xD1, 0xD3, 0xA8, 0xC9]               # restore $A8, ret
+
+
+# (INT(P/64), not P\\64: omsx_repl types a line inside Tcl braces, in chunks, and a chunk
+# ending on a backslash escapes its own closing brace -- "missing close-brace", no run)
+WSL_CASES = [("wsl2", "(P AND &HCF) OR ((INT(P/64) AND 3)*16)"), ("wslsame", "P")]
+
+
+def wsl_prog(tag, value):
+    c = wsl_code()
+    w = lambda a: f'PEEK(&H{a:04X})+256*PEEK(&H{a + 1:04X})'
+    return (["10 CLEAR 200,&HCFFF", f"20 FOR I=0 TO {len(c)-1}:READ B:POKE &HD000+I,B:NEXT",
+             f"25 P=INP(&HA8):V={value}:POKE &HD007,V", "30 DEFUSR=&HD000:X=USR(0)",
+             f'40 PRINT CHR$(91);"{tag}";(PEEK(&HD111)) XOR V;PEEK(&HD110);{w(0xD112)};'
+             f'{w(0xD114)};{w(0xD116)};PEEK(&HD118) XOR V;CHR$(93):END',
+             f"50 DATA {','.join(str(b) for b in c)}", "RUN"])
+
+
+def fence_n(tag, cap, n):
+    c = cap or ""; k = len(c)
+    while True:
+        i = c.rfind("[" + tag, 0, k)
+        if i < 0:
+            return None
+        j = c.find("]", i + 1)
+        if j > 0 and '";' not in c[i:j]:
+            v = c[i + len(tag) + 1:j].split()
+            return [int(x) for x in v] if len(v) == n and all(x.lstrip("-").isdigit() for x in v) else None
+        k = i
+
+
 def fence(tag, cap):
     """The PRINTED `[tag n n n n]`, never the typed line (it carries `";`)."""
     c = cap or ""; k = len(c)
@@ -105,6 +159,23 @@ def main():
         if (r[0] & mf, r[1], r[2] & md, r[3]) != (z[0] & mf, z[1], z[2] & md, z[3]):
             bad.append(f"{tag}: zerobas AF={z[0]:04X} BC={z[1]:04X} DE={z[2]:04X} HL={z[3]:04X}, "
                        f"CF-3300 AF={r[0]:04X} BC={r[1]:04X} DE={r[2]:04X} HL={r[3]:04X}")
+    for tag, value in WSL_CASES:
+        if only and tag not in only:
+            continue
+        n += 1
+        got = {}
+        for side in ("cf3300", "zb"):
+            cap = omsx_repl.run_cases(cfg[side]["machine"], [(tag, wsl_prog(tag, value))],
+                                      batch=False, boot=cfg[side]["boot"], reset=cfg[side]["reset"],
+                                      run_gap=8.0)[0]
+            got[side] = fence_n(tag, cap, 6)
+            print(f"== {tag:6s} {side:7s} [A^v F BC DE HL A8^v] = {got[side]}", flush=True)
+        if got["cf3300"] is None:
+            bad.append(f"{tag}: the CF-3300 printed no reading")
+        elif got["zb"] is None:
+            bad.append(f"{tag}: zerobas printed no reading")
+        elif got["zb"] != got["cf3300"]:
+            bad.append(f"{tag}: zerobas {got['zb']}, CF-3300 {got['cf3300']}")
     if gate:
         print(f"slotregs: {n - len(bad)}/{n} rows agree" + ("" if not bad else "; " + "; ".join(bad)))
         return 1 if bad else 0

@@ -1,0 +1,6 @@
+== wsl2   cf3300  [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wsl2   zb      [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wslsame cf3300  [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+== wslsame zb      [A^v F BC DE HL A8^v] = [0, 165, 4660, 22136, 39612, 0]
+slotregs: 2/2 rows agree
+refcache: 0 hit, 4 miss, 4 stored

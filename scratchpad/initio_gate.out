@@ -1,0 +1,35 @@
+=== call $003B, SOUND values shifted by 0, mixer $B8
+F A C B E D L H:
+  VG ['54', 'FF', '34', '12', 'B', '56', 'BC', '9A']
+  ZB ['9', '7', '34', '12', 'B8', '56', 'BC', '9A']
+PSG 0..15:
+  VG ['B', '30', '55', '7A', '9F', 'C4', 'E9', 'B8', '0', '0', '0', 'B', 'C7', 'EC', 'BF', 'CF']
+  ZB ['B', '30', '55', '7A', '9F', 'C4', 'E9', 'B8', '0', '0', '0', 'B', 'C7', 'EC', 'BF', 'CF']
+port $AA:
+  VG ['5A']
+  ZB ['5A']
+ROW SAME
+=== call $003B, SOUND values shifted by 100, mixer $92
+F A C B E D L H:
+  VG ['54', 'FF', '34', '12', 'B', '56', 'BC', '9A']
+  ZB ['9', '7', '34', '12', 'B8', '56', 'BC', '9A']
+PSG 0..15:
+  VG ['6F', '94', 'B9', 'DE', '3', '28', '4D', 'B8', '0', '0', '0', 'B', '2B', '50', 'BF', 'CF']
+  ZB ['6F', '94', 'B9', 'DE', '3', '28', '4D', 'B8', '0', '0', '0', 'B', '2B', '50', 'BF', 'CF']
+port $AA:
+  VG ['5A']
+  ZB ['5A']
+ROW SAME
+=== call $0090, SOUND values shifted by 100, mixer $92
+F A C B E D L H:
+  VG ['A5', '0', '34', '12', '78', '56', 'BC', '9A']
+  ZB ['9', '7', '34', '12', 'B8', '56', 'BC', '9A']
+PSG 0..15:
+  VG ['6F', '94', 'B9', 'DE', '3', '28', '4D', 'B8', '0', '0', '0', '6', '2B', '50', 'BF', '5A']
+  ZB ['6F', '94', 'B9', 'DE', '3', '28', '4D', 'B8', '0', '0', '0', '6', '2B', '50', 'BF', '5A']
+port $AA:
+  VG ['5A']
+  ZB ['5A']
+ROW SAME
+PASS: INITIO's PSG / port $AA against the VG-8020
+refcache: 6 hit, 0 miss, 3 of the hits were ZEROBAS readings

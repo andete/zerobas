@@ -391,6 +391,15 @@ BIOS = [(0x0000, "CHKRAM"), (0x0008, "SYNCHR"), (0x000C, "RDSLT"), (0x0010, "CHR
         (0x0150, "GETVCP"), (0x0153, "GETVC2"), (0x0156, "KILBUF"), (0x0159, "CALBAS")]
 
 
+# Joost's per-entry rulings (2026-11-13) for rows no gate calls DIRECTLY, and why that is
+# not a gap. A ruled row with a direct witness still reads "exercised"; a STUB outranks both.
+BIOS_RULED = {
+    0x0038: "covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, "
+            "ON INTERVAL, PLAY, TIME -- runs through it)",
+    0x0066: "out of scope (Joost 2026-11-13: NMI is not used on MSX)",
+}
+
+
 def bios_rows(stubs=None):
     # D-BIOSRUNG (2026-11-12): a STUB outranks "exercised" -- C-BIOS's stub body still in
     # our built main ROM (tools/stub_scan.py) is a TIER 1 failure whatever row names it;
@@ -412,8 +421,10 @@ def bios_rows(stubs=None):
         gates = _witnesses(pat, reach, pys, asms)
         if addr in st:
             status = f"🔴 STUB ({st[addr]['kind']})"
+        elif gates:
+            status = "exercised"
         else:
-            status = "exercised" if gates else "NOT MEASURED"
+            status = BIOS_RULED.get(addr, "NOT MEASURED")
         out.append(dict(addr=addr, name=name, gates=sorted(gates), status=status,
                         stub=addr in st))
     return out
@@ -422,6 +433,7 @@ def bios_rows(stubs=None):
 def fmt_bios_markdown():
     rs = bios_rows()
     nm = [r for r in rs if r["status"] == "NOT MEASURED"]
+    ruled = [r for r in rs if not r["stub"] and not r["gates"] and r["addr"] in BIOS_RULED]
     stubs = [r for r in rs if r["stub"]]
     blind = [r for r in stubs if r["gates"]]
     out = ["## Entry points — the main BIOS calls", "",
@@ -430,8 +442,10 @@ def fmt_bios_markdown():
            "source it runs) names the entry or its address in code. Every BASIC program "
            "calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. "
            "Exercised is not same.", "",
-           f"**{len(rs) - len(nm) - len(stubs)} of {len(rs)}** have a direct witness and are not "
-           f"stubs; **{len(nm)} are NOT MEASURED**; **{len(stubs)} are STUBS** -- C-BIOS's stub "
+           f"**{len(rs) - len(nm) - len(ruled) - len(stubs)} of {len(rs)}** have a direct witness "
+           f"and are not stubs; **{len(ruled)} are RULED** not to need one ("
+           + ", ".join(r["name"] for r in ruled) + f"); **{len(nm)} are NOT MEASURED**; "
+           f"**{len(stubs)} are STUBS** -- C-BIOS's stub "
            "body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,"
            "name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it "
            f"(D-BIOSRUNG). {len(blind)} of the stubs ARE named by a gate, whose row therefore "

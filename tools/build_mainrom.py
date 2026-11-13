@@ -78,7 +78,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0010: bytes([0xC3, 0x9E, 0x10]),     # RST 10h -> chrgtr
                 0x0018: bytes([0xC3, 0xBA, 0x10]),     # RST 18h -> outdo
                 0x0028: bytes([0xC3, 0xC6, 0x10]),     # RST 28h -> getypr
-                0x003E: bytes([0xC3, 0xF7, 0x10]),     # INIFNK -> basic/biosfnk.asm
+                0x003E: bytes([0xC3, 0xFE, 0x10]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
+                                                       #  stub is 7 B on since D-INITIO)
                 0x00AE: bytes([0xC3, 0xC7, 0x14,       # PINLIN / INLIN / QINLIN
                                0xC3, 0xE5, 0x14,       #  -> basic/biosfnk.asm
                                0xC3, 0xDC, 0x14]),

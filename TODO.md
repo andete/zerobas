@@ -16424,6 +16424,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`tapdiff_cas3.out`](scratchpad/tapdiff_cas3.out); 🔮 HIT). Two probe faults on the way, both mine: a garbage count
       looping 65535 times when unguarded, and `-&H9000` -- a SIGNED -28672 in MSX BASIC
       ([`tapdiff_cas2.out`](scratchpad/tapdiff_cas2.out)). All six rows SAME ([`tapdiff_run3.out`](scratchpad/tapdiff_run3.out)).
+      ✅ **THE RULINGS IN THE TABLE + WSLREG (2026-11-13):** tools/entry_table.py's BIOS_RULED
+      prints KEYINT "covered INDIRECTLY" and NMI "out of scope" (a direct witness would still
+      read "exercised"; a stub outranks both). **WSLREG**: two rows in slotregs-acceptance
+      (`wsl2`: page 3's slot into page 2; `wslsame`), our code restoring $A8 itself -- A kept,
+      $A8 = the value, BC / DE / HL / F kept, **identical on the CF-3300** ([`wslreg_run4.out`](scratchpad/wslreg_run4.out);
+      slotregs 12/12, [`wslreg_gate.out`](scratchpad/wslreg_gate.out)). Two probe faults first: F compared as BASIC's USR
+      left it ($44 / $42, the entry state, [`wslreg_run3.out`](scratchpad/wslreg_run3.out)) -- now loaded as $A5; and a
+      `P\64` that stopped the CF-3300 run with Tcl's "missing close-brace" (two runs). The table:
+      **105 of 108 witnessed, 2 ruled, 1 NOT MEASURED (INITIO)**. ➡️ INITIO: measure first.
+      - [ ] **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -- 🎚️ APPARATUS —
+            `slot()` braces each chunk (`{text}`), and a chunk ending on a backslash escapes its own
+            closing brace: the run dies at boot with "missing close-brace" and reads as MISSING.
+            Whether a line hits it depends only on where MAX_DIRECT cuts; slotregs' SLOTCALC
+            (`P\16`, `P\64`) is safe by its lengths today. Fix: split so no chunk ends on `\`
+            (Tcl byte-identical for every line that does not).
+      ✅ **D-INITIO -- THE LAST ROW (2026-11-13; Joost: *"INITIO is a strange one"*):**
+      measured before deciding ([`basic_probe_initio.py`](probes/basic/basic_probe_initio.py): SOUND sets every PSG register to our
+      own values, then INITIO from our code; the 16 registers via RDPSG and port $AA after).
+      Neither machine resets regs 0-6, 12, 13 or $AA; both write mixer 7 := $B8 and amplitudes
+      8-10 := 0 (GICINI's). **The VG-8020 also writes reg 11 := $0B, and reg 15 := $CF where
+      C-BIOS writes $8F (bit 6)** ([`initio_run1.out`](scratchpad/initio_run1.out) .. [`initio_run3.out`](scratchpad/initio_run3.out); 🔮 "C-BIOS differs in at
+      least one register": HIT). GICINI called directly touches neither (the control), and
+      **the CF-3300 agrees with the VG-8020 byte for byte** ([`initio_cf.out`](scratchpad/initio_cf.out)). Fixed in
+      **cbios-repack/initio.patch** (#21): two writes, 7 B, paid by C-BIOS's INIFNK stub behind
+      it (dead under our $003E; build_mainrom.py's guard for that vector updated). After:
+      PSG / $AA identical in all three runs ([`initio_run4.out`](scratchpad/initio_run4.out)); **`make initio-acceptance`** gates
+      it ([`initio_gate.out`](scratchpad/initio_gate.out)). The exit registers still differ (both references F $54, A $FF,
+      E $0B; ours otherwise) -- no documented contract, printed only. 🔴 My own mistakes on the
+      way: a 5-byte count for a 7-byte insertion (2561 bytes of the ROM moved, caught by a
+      byte diff before it went anywhere), and editing tracked files while a static run was
+      going (that run was discarded and re-run). **THE MAIN-BIOS TABLE: 106 of 108 directly
+      witnessed, 2 ruled (KEYINT, NMI), 0 NOT MEASURED, 0 stubs.** ➡️ Step (3), EXERCISED ->
+      SAME: per row, does its gate COMPARE the entry's result with a reference.
 
       - [x] ISCNTC / CKCNTC ($00BA / $00BD, one body): a STOP / CTRL-STOP pending -- the row
             biosregs has only reads the idle state.

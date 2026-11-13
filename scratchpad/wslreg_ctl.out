@@ -1,0 +1,4 @@
+== rd6    cf3300  AF=98A4 BC=00FC DE=F098 HL=0006
+== rd6    zb      AF=98A4 BC=00FC DE=F098 HL=0006
+slotregs: 1/1 rows agree
+refcache: 1 hit, 1 miss, 1 stored

@@ -3016,6 +3016,11 @@ p1dta-acceptance: repack-machine
 p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1multi.py
 
+# --- initio-acceptance: INITIO ($003B) called directly, its PSG / port $AA (D-INITIO) --------
+# Both references write PSG 15 := $CF and 11 := $0B; GICINI ($0090) is the control.
+initio-acceptance: repack-machine
+	python3 probes/basic/basic_probe_initio.py
+
 # --- tapebios-acceptance: the six cassette BIOS entries called DIRECTLY (D-TAPEBIOS) ------
 # TAPION / TAPIN / TAPIOF / TAPOON / TAPOUT / TAPOOF from our own machine code, the VG-8020
 # against zerobas: a write decoded from the recording, a read of the VG-8020's recording,
