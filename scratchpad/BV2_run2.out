@@ -1,0 +1,4 @@
+ROW wrtvdp7 VG=[00f000000100005a] ZB=[00f000000100005a] SAME
+
+PASS: the VDP registers after the BIOS mode / screen entries (1/1)
+refcache: 0 hit, 2 miss, 2 stored

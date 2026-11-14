@@ -16487,7 +16487,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ **(3) CLOSED 2026-11-14:** biosregs gained stmotr0b / stmotr1b / stmotrffb (port $AA bit 4) and chgsnd0b
       / chgsnd1b (bit 7): **5 / 5 SAME as the VG-8020** ([`BC_run1.out`](scratchpad/BC_run1.out)) -- no bug, an unmeasured contract
       now gated (each pair expects different bits, so an entry that ignored A fails one).
-      ➡️ NEXT: (2) LPTOUT through outdlp's printer-logger apparatus, (5) the VDP registers through the debugger.
+      ✅ **(5) CLOSED 2026-11-14:** new `make biosvdp-acceptance` (probes/basic/basic_probe_biosvdp.py; omsx_repl gained
+      a `("vdpregs",)` capture -- R0..R7 through openMSX's `vdpreg`, the emulated chip, no ROM byte): DISSCR,
+      ENASCR, WRTVDP (R7 := $5A, not its default), CHGMOD 0..3, INITXT / INIT32 / INIGRP / INIMLT, SETTXT /
+      SETT32 / SETGRP / SETMLT, TOTEXT, CHGCLR -- each called through biosregs' USR stub, the program then
+      looping so BASIC's prompt cannot reset the mode: **17 / 17 SAME as the VG-8020** ([`BV2_run1.out`](scratchpad/BV2_run1.out),
+      [`BV2_run2.out`](scratchpad/BV2_run2.out) for WRTVDP's discriminating value). No bug; the chip now gated, not only the shadows.
+      ➡️ NEXT: (2) LPTOUT through outdlp's printer-logger apparatus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**

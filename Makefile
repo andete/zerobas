@@ -3032,6 +3032,11 @@ fdcmasked-acceptance: repack-machine
 seqmix-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_seqmix.py
 
+# --- biosvdp-acceptance: the VDP's own R0..R7 after the BIOS mode / screen entries (D-BIOSCONTRACT2) ---
+# biosregs / biosmode compared only the RAM shadows; this reads the chip (openMSX `vdpreg`).
+biosvdp-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_biosvdp.py
+
 # --- casbaud-acceptance: the active cassette set after SCREEN ,,,n / CSAVE ,n (D-CASBAUD) ---
 # The VG-8020 copies the whole 5-byte CS120 / CS240 set into $F406; zerobas ignored SCREEN's
 # fourth argument and set CSAVE's LOW word alone (the knife: scratchpad/CB_knife.out).

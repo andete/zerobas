@@ -306,6 +306,9 @@ def _cap_expr(capture) -> str:
         # (loop forever) so the capture reads before the prompt corrupts VRAM.
         _, addr, length = capture
         return f"[__hex_v {addr} {length}]"
+    if isinstance(capture, tuple) and capture and capture[0] == "vdpregs":
+        # ("vdpregs",) -> the VDP's R0..R7 as 16 hex digits (D-BIOSCONTRACT2)
+        return "[__hex_vdp]"
     if isinstance(capture, tuple) and capture and capture[0] == "mem_abs":
         # ("mem_abs", [(addr,len),...]) -> absolute CPU-memory segments concatenated
         # as one hex string (graphics tenant RAM: GFX_*, GXPOS/GYPOS, CLOC/CMASK).
@@ -938,6 +941,11 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         " return $h }\n"
         "proc __hex_m {a l} { binary scan [debug read_block memory $a $l] H* h;"
         " return $h }\n"
+        # __hex_vdp: the VDP's own registers R0..R7 (openMSX's `vdpreg`, the emulated chip's
+        # state -- no ROM byte), D-BIOSCONTRACT2: the BIOS's mode / screen entries were
+        # compared only through their RAM shadows (RG0SAV..RG7SAV).
+        "proc __hex_vdp {} { set h {}; for {set i 0} {$i < 8} {incr i} {"
+        " append h [format %02x [vdpreg $i]] }; return $h }\n"
         # __file_hex: a HOST file as hex -- the printer-log readout (D-EDITVERB).
         # A missing file is the empty string, which is DATA ("the machine printed
         # nothing"), not a failure: it is the correct reading for `LLIST 30-20`.
