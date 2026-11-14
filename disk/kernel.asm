@@ -3781,18 +3781,8 @@ hsy_row:
                 ld      a,' '
                 call    $0056               ; FILVRM: the bottom row, blank
 hsy_rd:
-                xor     a                   ; Cy = 0: read drive A's sector 0 to $C000,
-                ld      b,1                 ; as INIT does
-                ld      c,a
-                ld      d,a
-                ld      e,a
-                ld      hl,BOOT_LOAD
-                call    dskio
-                jr      c,hsy_syn
-                ld      a,(BOOT_LOAD)
-                cp      $EB
-                jr      z,hsy_boot
-                cp      $E9
+                call    boot_rd             ; drive A's sector 0 to $C000, as INIT does
+                jr      c,hsy_syn           ; (disk/runtime.asm, D-DISKCARVE3)
                 jr      nz,hsy_syn
 hsy_boot:
                 or      a                   ; Cy = 0: the step-5 call
@@ -8276,22 +8266,22 @@ ga_fail:
 
 ; sfirst_body — BDOS SFIRST ($11): find the FIRST matching root-dir entry.
 ;   in:  DE -> search FCB (name pattern at DE+1) ; out: A=$00 found / $FF none
+; ✂️ D-DISKCARVE3 (2026-11-14): SFIRST IS "CURSOR := 0, THEN SNEXT" (13 B). The cursor is
+; reset BEFORE the mount now, so a SFIRST whose mount fails (a disk error, A = $FF) leaves
+; it at 0 where it used to keep the old one -- an SNEXT after a failed SFIRST is a scan of
+; a disk that just failed either way. fat_mount and the DTA copy do not read it.
 sfirst_body:
-                inc     de                  ; DE -> the 11-byte 8.3 pattern (FCB+1)
-                ld      (FAT_NAMEPTR), de   ; dirscan_match compares against this
-                call    fat_mount           ; (re)parse BPB -> FAT_FIRSTROOT/FAT_FIRSTDATA
-                jp      c, ds_none          ; disk error -> no entry
                 ld      hl, 0
                 ld      (BDOS_SRCHIDX), hl  ; scan cursor := entry 0
-                jr      dirscan_match
+                ; falls into snext_body
 
 ; snext_body — BDOS SNEXT ($12): resume from BDOS_SRCHIDX, find the NEXT match.
 ;   in:  DE -> search FCB (name pattern at DE+1) ; out: A=$00 found / $FF exhausted
 snext_body:
                 inc     de                  ; DE -> the 11-byte 8.3 pattern (FCB+1)
-                ld      (FAT_NAMEPTR), de
-                call    fat_mount           ; geometry back into scratch (idempotent)
-                jp      c, ds_none
+                ld      (FAT_NAMEPTR), de   ; dirscan_match compares against this
+                call    fat_mount           ; (re)parse BPB -> FAT_FIRSTROOT/FAT_FIRSTDATA
+                jp      c, ds_none          ; disk error -> no entry
                 ; fall through: BDOS_SRCHIDX already points at the next entry.
 
 ; dirscan_match — walk the root dir from BDOS_SRCHIDX; on the first entry matching

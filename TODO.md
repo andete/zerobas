@@ -18246,6 +18246,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       lines; spec-diskwcache.md's W4 calls it "the widest audit, and it comes last"). ➡️ Picked
       up only with that audit; the FAT-per-cluster read waits on the same kind of tag for
       FAT_MBUF.
+      ✂️ **D-DISKCARVE3 (2026-11-14): +26 B of disk ROM, for this.** (1) SFIRST is "cursor := 0,
+      then SNEXT" (sfirst_body falls into snext_body: 13 B; the one change -- a SFIRST whose mount
+      FAILS leaves the cursor 0, where it kept the old one); (2) boot_rd (disk/runtime.asm, in
+      front of $7F7C): drive A's boot-sector read + signature test stood twice, in init.asm's
+      boot_disk_go and in hk_system; both now call it, A / F at the boot call as before. Room
+      after it (2026-11-14): 32 B in front of $5FE5, 24 B in front of $41EF (from 0 runs of
+      16+). Unit tests, bdos / callsystem / bootenv / diskbasic / dosbasic acceptance green.
       🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
       `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
       mounts when the geometry was never read. FCB +25 (filled since

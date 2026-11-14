@@ -858,6 +858,27 @@ install_dos_env:
                 ld      bc, br5_end - br5_tmpl
                 ldir
                 jp      install_br6         ; ... and br6 (D-CALSLTP0)
+; boot_rd -- ✂️ D-DISKCARVE3 (2026-11-14), here in front of the $7F7C pin for room: read drive A's boot sector (sector 0) to
+; BOOT_LOAD ($C000) and test its signature; stood twice, in init.asm's boot_disk_go and in hk_system
+; (disk/kernel.asm). Out: CF = the read failed; else Z = $EB or $E9 (A = that byte, NC,
+; the flags `cp` left -- what both callers saw before), NZ / NC = not a boot sector.
+; Clobbers BC, DE, HL as DSKIO does.
+boot_rd:
+                xor     a               ; drive A, Cy = 0 -> read
+                ld      b, 1            ; one sector
+                ld      c, a            ; media byte (ignored, single-drive)
+                ld      d, a
+                ld      e, a            ; logical sector 0 (the boot sector)
+                ld      hl, BOOT_LOAD   ; -> $C000 (page-3 RAM)
+                call    dskio
+                ret     c
+                ld      a, (BOOT_LOAD)  ; first byte = boot signature?
+                cp      $EB
+                ret     z
+                cp      $E9
+                ret     z
+                or      $FF             ; neither: NZ, NC
+                ret
                 ds      $7F7C - $, $00
 k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)

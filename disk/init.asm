@@ -383,19 +383,10 @@ boot_disk:
                 jr      nz, boot_disk_go
                 jp      basent_resume       ; HL = the mark; returns to the scan
 boot_disk_go:
-                xor     a               ; drive A
-                ld      b, 1            ; one sector
-                ld      c, a            ; media byte (ignored, single-drive)
-                ld      de, 0           ; logical sector 0 (the boot sector)
-                ld      hl, BOOT_LOAD   ; -> $C000 (page-3 RAM)
-                or      a               ; Cy = 0 -> read
-                call    dskio
+                call    boot_rd         ; drive A's sector 0 -> $C000, its signature
                 ret     c               ; no disk / read error -> BASIC
-                ld      a, (BOOT_LOAD)  ; first byte = boot signature?
-                cp      $EB
-                jr      z, boot_sig_ok
-                cp      $E9
                 jp      nz, boot_date    ; not a boot disk -> the date, then BASIC
+                                        ; (Z: falls into boot_sig_ok, A / F as before)
 boot_sig_ok:
                 call    boot_call0      ; step 5, Cy = 0, under the DOS_TRY mark
                                         ; (disk/driver.asm; D-BASENTRUN's other half)
