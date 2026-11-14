@@ -17530,7 +17530,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
-      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 9 ticks against 7 on 2026-11-14 (the rest is level now).
+      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 84 ticks against 73 over 3000 passes on 2026-11-14 (the rest is faster than the VG-8020).
       🤖 **AUTONOMOUS** — each lever is a slice; results must stay byte-identical.
       📏 **RE-MEASURED 2026-11-06 ON BOTH MACHINES** ([`loops4_time.out`](scratchpad/loops4_time.out),
       the four cases x300 in TIME ticks, VG-8020 / zerobas): `A=I+7` **70 / 72**, `A=I*7`
@@ -17698,9 +17698,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       default loop gained a tick, the `%` loop LOST one (9 -> 10) although its pass is 37 T
       shorter: 300 passes are ~10 ticks, so the loop's start against the 50 Hz interrupt moves
       a reading by one when layout shifts (🔮 "% 9, default 18": MISSED by that tick).
-      ➡️ The `%` loop's rest (~2050 T against ~1470): nx_again's checks (~360 T), the int16
-      step (~620), the dispatch of NEXT (~660). A longer-run timing (3000 passes) would read
-      these small steps without the tick.
+      📏 **3000 PASSES (2026-11-14, `LOOPS4_N=3000 scratchpad/loops4_run.py`, [`loops4_n3000.out`](scratchpad/loops4_n3000.out)):** VG-8020
+      715 / 986 / 73 / 240, zerobas 684 / 779 / **88** / 199 -- the reading without the tick:
+      every loop but the empty `%` one is FASTER than the VG-8020; that one 1.21x.
+      ✅ **D-ESINLINE (2026-11-14): exec_stmt's three per-statement calls inline.** The FPERR test
+      (`ld a,(FPERR) / or a / call nz,check_fperr_only` -- the same call when a code is
+      pending, so its abort discards the same return word), es_bound's latch / trap tests (each
+      handler still reached by a `call` from exec_stmt, so es_latch's break path and es_trap see
+      the depth es_bound's `jp` gave them; a latch still skips that boundary's trap test, es_bl)
+      and skipsp_test (`call skip_spaces / or a`). es_bound is gone from program.asm. Room: the
+      $475A pad D-ESIDXAL opened, 188 -> 168 B; page 1's tail 32 -> 47 (2026-11-14). Model
+      ([`EI_after.out`](scratchpad/EI_after.out)): **-106 T a pass** in the empty loops (one full statement + the `:`'s
+      dispatch), -212 in `A=I+7` (🔮 ~1900 for (c): MISSED, 1944 -- the `:` path counted twice).
+      Trap / error suites (trapstmt, interval, stop, key, strig, sprite, error-trap, trapdepth,
+      trapsvc, error) green; unit tests 97 / 97. Machine, 3000 passes ([`loops4_n3000b.out`](scratchpad/loops4_n3000b.out)):
+      zerobas **675 / 769 / 84 / 195** (🔮 `%` ~85: HIT) -- the `%` loop 1.15x the VG-8020's 73.
+      ➡️ The `%` loop's rest (~1944 T against ~1530): nx_again's checks (~360 T), the int16
+      step (~620), the dispatch of NEXT (~550).
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

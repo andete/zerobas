@@ -760,19 +760,8 @@ end_line_end:
 ; 📌 (derive_directf's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
 ; 2026-10-17, in front of the $73AC pin; this header still describes it. It is
 ; entered only by `call`, from rp_exec.)
-; es_bound -- exec_stmt's statement-boundary tests (D-BRKLATCH step 2): the latch, then
-; the traps. Entered by `call` from exec_stmt, so each `jp` below leaves at exec_stmt's
-; depth: es_latch's break path drops exactly that one frame (do_break's `ret` then leaves
-; exec, as ex_stop's does), and es_trap sees the stack it saw when exec_stmt called it.
-; A press es_latch hands to a STOP trap fires at the NEXT boundary.
-es_bound:
-                ld      a,(INTFLG)
-                or      a
-                jp      nz,es_latch         ; basic/input.asm
-                ld      a,(TRAPPEND)
-                or      a
-                ret     z
-                jp      es_trap
+; (es_bound -- the boundary's latch / trap tests -- is inline in exec_stmt since
+; D-ESINLINE, 2026-11-14.)
 rp_break:
                 ; D-BIOSRUNG (2026-11-12): CONSUME the interrupt's CTRL-STOP latch. The
                 ; VG-8020's interpreter reads INTFLG between statements and leaves it 0

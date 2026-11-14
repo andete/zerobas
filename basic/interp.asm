@@ -628,7 +628,12 @@ exec_stmt:
                 ; re-raise the code that entered it.
                 ; ⚠️ Cold boot must still zero the cell (power-on RAM is
                 ; garbage) -- see the cold-only hook above.
-                call    check_fperr_only    ; the FIRST fault outranks the rest
+                ; 🐌 D-ESINLINE (2026-11-14): tested IN PLACE, and only a pending code
+                ; takes the call -- the same `call`, so check_fperr_only's abort
+                ; discards the same return word it always did. ~26 T a statement.
+                ld      a,(FPERR)
+                or      a
+                call    nz,check_fperr_only ; the FIRST fault outranks the rest
                                             ; of the statement, including its end
                 ld      de,TEMPPOOL         ; arrays slice-4a §6: the temp-descriptor
                 ld      (TEMPPT),de        ; stack is emptied at every statement
@@ -646,13 +651,24 @@ exec_stmt:
                 ; the line's end only (scratchpad/trapstmt_run.out). One RAM load in
                 ; the no-trap case, BEFORE skipsp_test so A needs no saving;
                 ; es_trap (basic/traps.asm) may not return.
-                call    es_bound            ; 🔴 D-BRKLATCH step 2 (2026-11-12): the STOP /
-                                            ; CTRL-STOP latch at EVERY statement boundary,
-                                            ; as the VG-8020, then the trap test -- one
-                                            ; call (basic/program.asm): this region had no
-                                            ; room for both tests inline (it overran $8000)
+                ; 🔴 D-BRKLATCH step 2 (2026-11-12): the STOP / CTRL-STOP latch at EVERY
+                ; statement boundary, as the VG-8020, then the trap test. 🐌 D-ESINLINE
+                ; (2026-11-14): inline -- they were `call es_bound` (basic/program.asm),
+                ; for want of room here, which D-ESIDXAL's move of stmt_table freed.
+                ; Each handler is still reached by a `call` from exec_stmt, so it sees
+                ; the depth es_bound's `jp` gave it (es_latch's break path drops that
+                ; one frame; es_trap the stack exec_stmt called it with), and a latch
+                ; still skips the trap test at that boundary (es_bl). A press es_latch
+                ; hands to a STOP trap fires at the NEXT boundary.
+                ld      a,(INTFLG)
+                or      a
+                jr      nz,es_bl
+                ld      a,(TRAPPEND)
+                or      a
+                call    nz,es_trap          ; basic/traps.asm; may not return
 es_disp:
-                call    skipsp_test ; leading spaces are skipped (spec §5)
+                call    skip_spaces         ; leading spaces are skipped (spec §5) --
+                or      a                   ; skipsp_test inline (D-ESINLINE)
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
                 ; chain this replaces charged 5 B per statement token before it did
@@ -714,6 +730,9 @@ es_sep:
                 inc     hl
                 ld      (SAVTXT),hl         ; the statement after the `:` starts here
                 jr      es_disp
+es_bl:
+                call    es_latch            ; basic/keytrap.asm (A = INTFLG)
+                jr      es_disp             ; no trap test at this boundary
 ; 🐌 D-ESIDXAL (2026-11-14): the rows of stmt_table (basic/field.asm) never cross a
 ; 256-byte page (asserted there), so the row's address is H = the table's page, L =
 ; its low byte + 2 x row -- no 16-bit add, no push / pop of the cursor: 138 -> 101 T

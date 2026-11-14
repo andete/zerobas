@@ -5,12 +5,16 @@ import os, re, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl, probe_sides                               # noqa: E402
-lines = [l for l in open(os.path.join(REPO, "scratchpad", "loops4_time.bas")).read().splitlines()
+# LOOPS4_N (2026-11-14): the pass count (default 300). 300 passes are ~10 ticks for the
+# `%` loop, so a layout shift moves a reading by one (D-ESIDXAL); 3000 reads the small steps.
+N = int(os.environ.get("LOOPS4_N", "300"))
+lines = [l.replace("TO 300", f"TO {N}")
+         for l in open(os.path.join(REPO, "scratchpad", "loops4_time.bas")).read().splitlines()
          if l.strip() and not l.startswith("60")]
 prog = ["NEW"] + lines + ['60 PRINT CHR$(91);"T";A1;A2;A3;A4;CHR$(93)', "RUN"]
 cfg = probe_sides.sides("vg8020", "zbnodisk") if "zbnodisk" in probe_sides.MACHINES else None
 sides = [("Philips_VG_8020", None), ("C-BIOS_MSX1_EU_REPACK_NODISK", None)]
 for mach, _ in sides:
-    cap = omsx_repl.run_cases(mach, [("t", prog)], batch=False, run_gap=12.0)[0] or ""
+    cap = omsx_repl.run_cases(mach, [("t", prog)], batch=False, run_gap=12.0 * N / 300)[0] or ""
     got = [m for m in re.findall(r"\[T([^\]]*)\]", cap) if '";' not in m]
     print(mach, " ".join(got[-1].split()) if got else "<none>", flush=True)
