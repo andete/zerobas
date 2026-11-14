@@ -3283,6 +3283,10 @@ item — do **one item per session** to keep context lean.
       row too -- the FDC count is the witness. ➡️ Left: the per-sector rotational wait (each
       data sector written alone, ~0.25 s apart -- the CF-3300 issues one multi-sector write) and
       the per-byte disk path (fip_store / fat_io_putbyte / fwr_bytes_inc, ~12 %).
+      📏 **RE-MEASURED 2026-11-14 ([`asave_1114.out`](scratchpad/asave_1114.out), after the day's interpreter work --
+      D-SEPONCE / D-ESIDXAL / D-ESINLINE):** the 150-line program 119.2 s, with SAVE ,A 125.1 --
+      **the SAVE 5.9 s** (5.7 on 11-12; CF-3300 1.5): unchanged within a run's spread, as
+      expected -- the statement dispatch is not SAVE ,A's path. The levers above stand.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
@@ -10912,7 +10916,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15324 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15328 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
