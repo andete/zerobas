@@ -1,0 +1,29 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 -u probes/basic/basic_probe_biosvdp.py
+ROW disscr VG=[00b00000010000f4] ZB=[00b00000010000f4] SAME
+ROW enascr VG=[00e0068000360704] ZB=[00e0068000360704] SAME
+ROW wrtvdp7 VG=[00f000000100005a] ZB=[00f000000100005a] SAME
+ROW chgmod0 VG=[00f00000010000f4] ZB=[00f00000010000f4] SAME
+ROW chgmod1 VG=[00e0068000360704] ZB=[00e0068000360704] SAME
+ROW chgmod2 VG=[02e006ff03360704] ZB=[02e006ff03360704] SAME
+ROW chgmod3 VG=[00e8020000360704] ZB=[00e8020000360704] SAME
+ROW initxt VG=[00f0000001000041] ZB=[00f0000001000041] SAME
+ROW init32 VG=[00e0068000360706] ZB=[00e0068000360706] SAME
+ROW inigrp VG=[02e006ff03360706] ZB=[02e006ff03360706] SAME
+ROW inimlt VG=[00e8020000360706] ZB=[00e8020000360706] SAME
+ROW settxt VG=[00f00000010000f4] ZB=[00f00000010000f4] SAME
+ROW sett32 VG=[00e00680003607f4] ZB=[00e00680003607f4] SAME
+ROW setgrp VG=[02e006ff033607f4] ZB=[02e006ff033607f4] SAME
+ROW setmlt VG=[00e80200003607f4] ZB=[00e80200003607f4] SAME
+ROW totext VG=[00f00000010000f4] ZB=[00f00000010000f4] SAME
+ROW chgclr VG=[00f0000001000041] ZB=[00f0000001000041] SAME
+
+PASS: the VDP registers after the BIOS mode / screen entries (17/17)
+refcache: 17 hit, 17 miss, 17 stored

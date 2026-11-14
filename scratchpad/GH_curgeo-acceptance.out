@@ -1,0 +1,23 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_curgeo.py --gate \
+	         
+D-CURGEO — the block cursor's name table (VRAM: QZ = the PRINT, vis/alt = $FF cells)   sides: vg8020, cf3300, zb, zbnd
+==============================================================================
+ok   s0.ctrl    vg8020='QZ@405 vis[480] alt[]'  cf3300='QZ@405 vis[480] alt[]'  zb='QZ@405 vis[480] alt[]'  zbnd='QZ@405 vis[480] alt[]'   [POSITIVE CONTROL]
+ok   s0.poke    vg8020='QZ@405 vis[480] alt[]'  cf3300='QZ@405 vis[480] alt[]'  zb='QZ@405 vis[480] alt[]'  zbnd='QZ@405 vis[480] alt[]'
+ok   s0.poke2   vg8020='QZ@405 vis[480] alt[]'  cf3300='QZ@405 vis[480] alt[]'  zb='QZ@405 vis[480] alt[]'  zbnd='QZ@405 vis[480] alt[]'
+ok   s1.ctrl    vg8020='QZ@325 vis[384] alt[]'  cf3300='QZ@325 vis[384] alt[]'  zb='QZ@325 vis[384] alt[]'  zbnd='QZ@325 vis[384] alt[]'   [POSITIVE CONTROL]
+ok   s1.poke    vg8020='QZ@325 vis[384] alt[]'  cf3300='QZ@325 vis[384] alt[]'  zb='QZ@325 vis[384] alt[]'  zbnd='QZ@325 vis[384] alt[]'
+ok   s1.poke2   vg8020='QZ@325 vis[384] alt[]'  cf3300='QZ@325 vis[384] alt[]'  zb='QZ@325 vis[384] alt[]'  zbnd='QZ@325 vis[384] alt[]'
+ROWS: 6 printed, 6 scored — 6 agree, 0 diverge, 0 without a reference
+==============================================================================
+DENOMINATOR: (mode: SCREEN 0 / SCREEN 1) x (POKE: none / same line / own line), each read as PRINT position + $FF cells in the visible and the POKEd table, on both references and both zerobas builds.
+NOT COVERED, named rather than implied: a POKEd TXTCGP/T32CGP (the cursor's PATTERN half), a POKEd NAMBAS itself, and WIDTH other than 40 / 32.
+refcache: 12 hit, 12 miss, 12 stored

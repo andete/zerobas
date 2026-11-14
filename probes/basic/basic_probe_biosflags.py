@@ -16,6 +16,10 @@ Each row: our code loads the inputs, calls the entry, stores F and A; BASIC prin
   BREAKX $00B7   no key down                   C (Ctrl-STOP)                   mask $01
   LPTSTT $00A8   no printer                    A and Z                         mask $40
   SCALXY $010E   BC = x, DE = y in / out       C (clipped: reset)              mask $01
+  CNVCHR $00AB   plain / $01 / $01+$41 / $01+$30  Z, C and A (graphic code)    mask $41
+  ISFLIO $014A   no file open                  Z, A = 0                        mask $40
+  GSPSIZ $008A   SCREEN 1,0 / 1,2              C (16x16), A = the size         mask $01
+  SETATR $011A   A = 5 / A = $20               C (bad attribute)               mask $01
 
 Black box: registers only.
 
@@ -34,6 +38,8 @@ MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 DCOMPR, CHRGTR, GETYPR, CHSNS, BREAKX, LPTSTT, SCALXY = (0x0020, 0x0010, 0x0028, 0x009C,
                                                          0x00B7, 0x00A8, 0x010E)
 VALTYP = 0xF663
+# D-BIOSCONTRACT2 gap 7 (2026-11-14): flag answers this gate did not read
+CNVCHR, ISFLIO, GSPSIZ, SETATR = 0x00AB, 0x014A, 0x008A, 0x011A
 
 
 def code(entry, a=0, bc=0, de=0, hl=0, valtyp=None):
@@ -71,6 +77,19 @@ ROWS = {
     "scal_x":  (code(SCALXY, bc=300, de=100), 0x01, False, "SCREEN 2"),
     "scal_y":  (code(SCALXY, bc=100, de=250), 0x01, False, "SCREEN 2"),
     "scal_ng": (code(SCALXY, bc=0xFFF0, de=100), 0x01, False, "SCREEN 2"),
+    # D-BIOSCONTRACT2 gap 7 (2026-11-14). CNVCHR: A in -> Z / C say header / converted /
+    # plain, A the code; the second call after a header byte ($01) is the graphic path.
+    "cnv_plain": (code(CNVCHR, a=0x41), 0x41, True, ""),
+    "cnv_hdr":   (code(CNVCHR, a=0x01), 0x41, True, ""),
+    "cnv_graph": ([0x3E, 0x01, 0xCD, CNVCHR & 255, CNVCHR >> 8] + code(CNVCHR, a=0x41),
+                  0x41, True, ""),
+    "cnv_nogfx": ([0x3E, 0x01, 0xCD, CNVCHR & 255, CNVCHR >> 8] + code(CNVCHR, a=0x30),
+                  0x41, True, ""),                                     # header, then not $40..$5F
+    "isflio":    (code(ISFLIO), 0x40, True, ""),                       # no file open
+    "gspsiz8":   (code(GSPSIZ), 0x01, True, "SCREEN 1,0"),             # 8x8: Cy clear
+    "gspsiz16":  (code(GSPSIZ), 0x01, True, "SCREEN 1,2"),             # 16x16: Cy set
+    "setatr_ok": (code(SETATR, a=5), 0x01, False, "SCREEN 2"),
+    "setatr_bad": (code(SETATR, a=0x20), 0x01, False, "SCREEN 2"),     # > 15: Cy
 }
 
 

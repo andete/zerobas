@@ -1,0 +1,40 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_biosflags.py
+ROW dcmp_lt  VG=(1, 255) ZB=(1, 255) (F&$41) SAME
+ROW dcmp_eq  VG=(64, 0) ZB=(64, 0) (F&$41) SAME
+ROW dcmp_gt  VG=(0, 1) ZB=(0, 1) (F&$41) SAME
+ROW dcmp_hi  VG=(0, 17) ZB=(0, 17) (F&$41) SAME
+ROW chr_dig  VG=(1, 53) ZB=(1, 53) (F&$41, A) SAME
+ROW chr_ltr  VG=(0, 65) ZB=(0, 65) (F&$41, A) SAME
+ROW chr_col  VG=(64, 58) ZB=(64, 58) (F&$41, A) SAME
+ROW chr_end  VG=(64, 0) ZB=(64, 0) (F&$41, A) SAME
+ROW chr_spc  VG=(1, 55) ZB=(1, 55) (F&$41, A) SAME
+ROW typ_int  VG=(133, 255) ZB=(133, 255) (F&$C5) SAME
+ROW typ_str  VG=(69, 0) ZB=(69, 0) (F&$C5) SAME
+ROW typ_sng  VG=(1, 1) ZB=(1, 1) (F&$C5) SAME
+ROW typ_dbl  VG=(4, 5) ZB=(4, 5) (F&$C5) SAME
+ROW chsns_e  VG=(64, 0) ZB=(64, 0) (F&$40) SAME
+ROW brkx_up  VG=(0, 16) ZB=(0, 16) (F&$01) SAME
+ROW lptstt   VG=(64, 0) ZB=(64, 0) (F&$40, A) SAME
+ROW scal_in  VG=(1, 128) ZB=(1, 128) (F&$01) SAME
+ROW scal_x   VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+ROW scal_y   VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+ROW scal_ng  VG=(0, 0) ZB=(0, 0) (F&$01) SAME
+ROW cnv_plain VG=(65, 65) ZB=(65, 65) (F&$41, A) SAME
+ROW cnv_hdr  VG=(64, 1) ZB=(64, 1) (F&$41, A) SAME
+ROW cnv_graph VG=(1, 1) ZB=(1, 1) (F&$41, A) SAME
+ROW cnv_nogfx VG=(65, 48) ZB=(65, 48) (F&$41, A) SAME
+ROW isflio   VG=(64, 0) ZB=(64, 0) (F&$40, A) SAME
+ROW gspsiz8  VG=(0, 8) ZB=(0, 8) (F&$01, A) SAME
+ROW gspsiz16 VG=(1, 32) ZB=(1, 32) (F&$01, A) SAME
+ROW setatr_ok VG=(0, 5) ZB=(0, 5) (F&$01) SAME
+ROW setatr_bad VG=(1, 32) ZB=(1, 32) (F&$01) SAME
+PASS: flag-answering BIOS entries (29/29)
+refcache: 29 hit, 29 miss, 29 stored

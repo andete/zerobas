@@ -88,11 +88,19 @@ PATCHES = [
     # F = $BB; not ready A = 0, F = $42 (zerobas basic_probe_outdlp.py, lptstt_rdy).
     # `ccf / sbc a,a` gives both; 4 B shorter, padded: 7 bytes change, nothing moves.
     os.path.join(REPO, "cbios-repack", "lptstt-flags.patch"),
+    # D-CNVCHRF (2026-11-14): CNVCHR's Z as the VG-8020 -- a converted graphic code NZ + C,
+    # a plain / non-graphic one Z + C, the header Z + NC (C-BIOS had the first two swapped;
+    # zerobas basic_probe_biosflags.py cnv_*). Same size: 8 bytes change, nothing moves.
+    os.path.join(REPO, "cbios-repack", "cnvchr-flags.patch"),
+    # D-GRPHEDCLS (2026-11-14): the text-mode clear (cls_text: INITXT, INIT32, CHGMOD 0 / 1,
+    # a text CLS) sets GRPHED := 0 as the VG-8020 does; 4 B from INIMLT's D-GRPBASE pad, so
+    # the code between that pad and cls_text moves 4 B and nothing after it moves.
+    os.path.join(REPO, "cbios-repack", "grphed-cls.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "55438438853490d8649f6b4d2a6a7e613df7c37e"   # D-LPTSTTF, 2026-11-14
+REPACKED_SHA1 = "4f8459c0d4ac929146ab8db7ae74806218b1b5b9"   # D-GRPHEDCLS, 2026-11-14
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

@@ -1,0 +1,27 @@
+diff --git a/src/video.asm b/src/video.asm
+index 6d94398..caf72bb 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -793,7 +793,8 @@ inimlt_loop3:
+                 jr      nz,inimlt_loop1
+                 ei
+ 
+-                ds      6, 0            ; was ld hl,(MLTCGP) / ld (CGPBAS),hl (D-GRPBASE)
++                ds      2, 0            ; was ld hl,(MLTCGP) / ld (CGPBAS),hl (D-GRPBASE);
++                                        ; 4 of its 6 B fund cls_text's GRPHED clear (D-GRPHEDCLS)
+                 ld      hl,(MLTATR)
+                 ld      (ATRBAS),hl
+                 ld      hl,(MLTPAT)
+@@ -1954,6 +1955,12 @@ cls_text:
+                 ld      hl,(NAMBAS)
+                 ld      a,$20
+                 call    filvrm
++                ; zerobas D-GRPHEDCLS (2026-11-14): the text-mode clear ends a pending graphic
++                ; header, as on the VG-8020 -- GRPHED (CNVCHR's state) reads 0 after INITXT,
++                ; INIT32, CHGMOD 0 / 1 and a text CLS there, 1 after INIGRP / INIMLT /
++                ; TOTEXT / SETTXT (zerobas scratchpad/CV_grphed2.out). Paid from INIMLT's pad.
++                xor     a
++                ld      (GRPHED),a
+ 
+         IF MODEL_MSX = MODEL_SUBROM
+                 ld      hl,$0101

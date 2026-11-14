@@ -1,0 +1,4 @@
+ROW setwrt  SAME  VG 777777777777c33c7777777777777777
+ROW setrd   SAME  VG 9a9b
+PASS: VRAM-answering BIOS entries (2/2)
+refcache: 0 hit, 4 miss, 4 stored

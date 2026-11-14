@@ -1,0 +1,5 @@
+ROW cnv_plain VG=(65, 65) ZB=(65, 65) (F&$41, A) SAME
+ROW cnv_hdr  VG=(64, 1) ZB=(64, 1) (F&$41, A) SAME
+ROW cnv_graph VG=(1, 1) ZB=(1, 1) (F&$41, A) SAME
+ROW cnv_nogfx VG=(65, 48) ZB=(65, 48) (F&$41, A) SAME
+PASS: flag-answering BIOS entries (4/4)

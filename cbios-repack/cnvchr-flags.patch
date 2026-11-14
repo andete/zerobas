@@ -1,0 +1,45 @@
+diff --git a/src/chput.asm b/src/chput.asm
+index 97143e9..9af521a 100644
+--- a/src/chput.asm
++++ b/src/chput.asm
+@@ -64,8 +64,10 @@ chput_exit:
+ chput_decode_char:                              
+                 call    cnvchr                  ; Graphic character?
+                 ret     nc                      ; NC  -> graphic extension hdr
+-                jr      z,chput_putchar         ; C,Z -> graphic character
+-                push    af                      ; (C,NZ -> normal char)
++                ; zerobas D-CNVCHRF (2026-11-14): CNVCHR now answers as the VG-8020 --
++                ; a converted graphic code is C + NZ, a normal one C + Z (main.asm).
++                jr      nz,chput_putchar        ; C,NZ -> graphic character
++                push    af                      ; (C,Z -> normal char)
+                 ld      a,(ESCCNT)              ; ESC sequence?
+                 or      a
+                 jp      nz,chput_escape
+diff --git a/src/main.asm b/src/main.asm
+index 4b8d19a..bf98b68 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1745,14 +1745,18 @@ cnvchr_handlegfx:
+                 cp      $60
+                 jr      nc,cnvchr_nogfx
+                 sub     $40                     ; graphic char
+-                cp      a                       ; set Z (and NC)
+-                jr      cnvchr_normal
++                ; zerobas D-CNVCHRF (2026-11-14): the VG-8020's flags (zerobas
++                ; probes/basic/basic_probe_biosflags.py, cnv_*): a CONVERTED code is
++                ; NZ + C, a plain or non-graphic one Z + C, the header Z + NC. C-BIOS had
++                ; the Z sense of the first two swapped. A is 0..$1F here, so `cp $FF`
++                ; is NZ and borrows (C) for every one of them, 0 included.
++                cp      $FF
++                jr      cnvchr_normal_exit
+ 
+ cnvchr_nogfx:
+-                cp      $50                     ; A is definitely not #50
+-                                                ; so this sets NZ :-)
+ cnvchr_normal:
+-                scf                             ; NZ/Z already ok, now set C
++                cp      a                       ; Z: not a graphic code
++                scf                             ; and C
+ cnvchr_normal_exit:
+                 pop     hl
+                 ret

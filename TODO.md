@@ -16503,8 +16503,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sbc a,a` after the busy bit is shifted into Cy (the flags read as a result, no ROM byte): **cbios-repack #24
       `lptstt-flags.patch`**, 4 B shorter, padded -- 7 bytes change, nothing moves (byte-diffed); REPACKED_SHA1
       5543843885.... After: outdlp 12 / 12 ([`LT_outdlp.out`](scratchpad/LT_outdlp.out)), biosflags green.
-      ➡️ NEXT: (1) FORMAT -- but its body is the DISK ROM's (H.FORM): only the main-BIOS side is in focus; then (4)
-      OUTDO's output, (6) SETRD / SETWRT's pointer, (7) the flags biosflags misses.
+      ✅ **(6) CLOSED 2026-11-14:** biosvram-acceptance gained `setwrt` (HL $1006, then OUR OWN two OUT $98: $C3 $3C at
+      $1006 / $1007 -- the pointer and its auto-increment) and `setrd` (HL $1009 over seeded $9A $9B, OUR OWN two
+      IN $98 -> $9A $9B), DI around call and port I/O: **2 / 2 SAME as the VG-8020** ([`SW_run1.out`](scratchpad/SW_run1.out)). No bug.
+      ✅ **(7) PART CLOSED 2026-11-14 -- AND TWO REAL DIFFERENCES (D-CNVCHRF, D-GRPHEDCLS).** biosflags gained
+      isflio / gspsiz8 / gspsiz16 / setatr_ok / setatr_bad -- SAME ([`FL_run1.out`](scratchpad/FL_run1.out)) -- and cnv_plain /
+      cnv_hdr / cnv_graph / cnv_nogfx, which **DIVERGED** ([`FL_run1.out`](scratchpad/FL_run1.out), [`FL_run2.out`](scratchpad/FL_run2.out)): C-BIOS's CNVCHR had
+      the Z sense of the plain and converted answers swapped. **cbios-repack #25 `cnvchr-flags.patch`**, CHPUT's
+      own test inverted with it (the first cut alone broke every typed line). cnv_hdr then read nothing on
+      zerobas ([`CV_run3.out`](scratchpad/CV_run3.out)): GRPHED survived BASIC's CLS. Measured directly ([`CV_grphed2.out`](scratchpad/CV_grphed2.out)): the
+      VG-8020 clears GRPHED in INITXT / INIT32 / CHGMOD 0, 1 / a text CLS, in nothing else; C-BIOS never.
+      **cbios-repack #26 `grphed-cls.patch`** (cls_text clears it, 4 B from INIMLT's pad; the video block
+      moves 4 B, GRPPRT's guard follows) + new `make grphed-acceptance`: 12 / 12 SAME ([`GH_gate.out`](scratchpad/GH_gate.out)),
+      CNVCHR 4 / 4 ([`GH_cnv.out`](scratchpad/GH_cnv.out)); the screen / BIOS suites and unit tests green on the moved image
+      ([`GH_biosflags-acceptance.out`](scratchpad/GH_biosflags-acceptance.out) and its GH_* siblings). Left of (7): the INLIN family's Cy on STOP, BREAKX held.
+      ➡️ NEXT: (4) OUTDO's output and PRTFLG path; (7)'s remainder; (8)-(10); (1) FORMAT -- its body is the DISK
+      ROM's (H.FORM): only the main-BIOS side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**

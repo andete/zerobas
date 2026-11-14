@@ -15,6 +15,8 @@ RAM, and BASIC prints it after SCREEN 0. Compared byte for byte.
   ldirmv   VRAM $1000.. -> RAM DE $C100, BC 16  (the RAM is read, not VRAM)
   clrspr   sprite attribute table (ATRBAS) and the first 32 B of the patterns (PATBAS)
   chgclr   FORCLR 6 / BAKCLR 1 / BDRCLR 13 POKEd, then CHGCLR: the colour table $2000..$201F
+  setwrt   HL $1006, then our own OUT $98 twice ($C3 $3C)      W = $1000..$100F
+  setrd    HL $1009 over $9A $9B, then our own IN $98 twice     RAM $C200..$C201
 
 Black box: VRAM / RAM read through the ports and memory; registers not compared.
 
@@ -31,6 +33,7 @@ import omsx_repl  # noqa: E402
 
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 FILVRM, WRTVRM, LDIRVM, LDIRMV, CLRSPR, CHGCLR = 0x0056, 0x004D, 0x005C, 0x0059, 0x0069, 0x0062
+SETRD, SETWRT = 0x0050, 0x0053
 
 
 def vfill(addr, n, val):
@@ -66,6 +69,19 @@ ROWS = {
     "clrspr": (vfill(0x1B00, 32, 0x55) + vfill(0x3800, 32, 0x66), call(CLRSPR),
                [(0x1B00, 32), (0x1B7C, 4), (0x3800, 32)], [], ""),
     "chgclr": ([], call(CHGCLR), [(0x2000, 32)], [], "POKE &HF3E9,6:POKE &HF3EA,1:POKE &HF3EB,13"),
+    # D-BIOSCONTRACT2 gap 6 (2026-11-14): SETWRT / SETRD answer in the VDP's ADDRESS POINTER,
+    # which only registers had been diffed for. SETWRT HL = $1006, then OUR OWN two OUT $98
+    # ($C3, $3C: the pointer and its auto-increment); SETRD HL = $1009 over $9A $9B seeded,
+    # then OUR OWN two IN $98 into RAM. DI around call + port I/O: nothing moves the pointer
+    # in between.
+    "setwrt": (vfill(0x1000, 16, 0x77),
+               [0xF3] + call(SETWRT, [("hl", 0x1006)])
+               + [0x3E, 0xC3, 0xD3, 0x98, 0x3E, 0x3C, 0xD3, 0x98, 0xFB],
+               [(0x1000, 16)], [], ""),
+    "setrd": (vfill(0x1000, 16, 0x77) + vfill(0x1009, 1, 0x9A) + vfill(0x100A, 1, 0x9B),
+              [0xF3] + call(SETRD, [("hl", 0x1009)])
+              + [0xDB, 0x98, 0x32, 0x00, 0xC2, 0xDB, 0x98, 0x32, 0x01, 0xC2, 0xFB],
+              [], [(0xC200, 2)], "POKE &HC200,0:POKE &HC201,0"),
 }
 
 

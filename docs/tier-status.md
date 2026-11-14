@@ -201,26 +201,26 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0047 | WRTVDP | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance` |
 | $004A | RDVRM | exercised | yes | `biosregs-acceptance` |
 | $004D | WRTVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0050 | SETRD | exercised | yes | `biosregs-acceptance` |
-| $0053 | SETWRT | exercised | yes | `biosregs-acceptance` |
+| $0050 | SETRD | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0053 | SETWRT | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0056 | FILVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0059 | LDIRMV | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
 | $005C | LDIRVM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $005F | CHGMOD | exercised | yes | `biosmode-acceptance`, `biosvdp-acceptance`, `screenerr-acceptance` |
+| $005F | CHGMOD | exercised | yes | `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
 | $0062 | CHGCLR | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
 | $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — |
 | $0069 | CLRSPR | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $006C | INITXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $006F | INIT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0072 | INIGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0075 | INIMLT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0078 | SETTXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $007B | SETT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
+| $006C | INITXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $006F | INIT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0072 | INIGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0075 | INIMLT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0078 | SETTXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $007B | SETT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $007E | SETGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
 | $0081 | SETMLT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
 | $0084 | CALPAT | exercised | yes | `biosregs-acceptance` |
 | $0087 | CALATR | exercised | yes | `biosregs-acceptance` |
-| $008A | GSPSIZ | exercised | yes | `biosregs-acceptance` |
+| $008A | GSPSIZ | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $008D | GRPPRT | exercised | yes | `biosregs-acceptance` |
 | $0090 | GICINI | exercised | yes | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
 | $0093 | WRTPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
@@ -231,7 +231,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00A2 | CHPUT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $00A5 | LPTOUT | exercised | yes | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
 | $00A8 | LPTSTT | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $00AB | CNVCHR | exercised | yes | `biosregs-acceptance` |
+| $00AB | CNVCHR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00AE | PINLIN | exercised | yes | `biosregs-acceptance` |
 | $00B1 | INLIN | exercised | yes | `biosregs-acceptance` |
 | $00B4 | QINLIN | exercised | yes | `biosregs-acceptance` |
@@ -242,9 +242,9 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00C3 | CLS | exercised | yes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biostext-acceptance` … |
 | $00C6 | POSIT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
 | $00C9 | FNKSB | exercised | yes | `biosregs-acceptance` |
-| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
+| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $00CF | DSPFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
-| $00D2 | TOTEXT | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance` |
+| $00D2 | TOTEXT | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $00D5 | GTSTCK | exercised | yes | `biosregs-acceptance` |
 | $00D8 | GTTRIG | exercised | yes | `biosregs-acceptance` |
 | $00DB | GTPAD | exercised | yes | `biosregs-acceptance` |
@@ -268,7 +268,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0111 | MAPXYC | exercised | yes | `biosregs-acceptance` |
 | $0114 | FETCHC | exercised | yes | `biosregs-acceptance` |
 | $0117 | STOREC | exercised | yes | `biosregs-acceptance` |
-| $011A | SETATR | exercised | yes | `biosregs-acceptance` |
+| $011A | SETATR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $011D | READC | exercised | yes | `biosregs-acceptance` |
 | $0120 | SETC | exercised | yes | `biosregs-acceptance` |
 | $0123 | NSETCX | exercised | yes | `biosregs-acceptance` |
@@ -284,11 +284,11 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0141 | SNSMAT | exercised | yes | `bootenv-acceptance`, `tapebios-acceptance` |
 | $0144 | PHYDIO | exercised | yes | `diskbasic-acceptance` |
 | $0147 | FORMAT | exercised | yes | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
-| $014A | ISFLIO | exercised | yes | `biosregs-acceptance` |
+| $014A | ISFLIO | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $014D | OUTDLP | exercised | yes | `outdlp-acceptance` |
 | $0150 | GETVCP | exercised | yes | `biosregs-acceptance` |
 | $0153 | GETVC2 | exercised | yes | `biosregs-acceptance` |
-| $0156 | KILBUF | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
+| $0156 | KILBUF | exercised | yes | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $0159 | CALBAS | exercised | yes | `biosregs-acceptance` |
 
 ## Every keyword and its status

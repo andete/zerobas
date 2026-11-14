@@ -1,0 +1,3 @@
+ROW cnv_nogfx VG=(65, 48) ZB=(1, 48) (F&$41, A) DIVERGES
+FAIL: flag-answering BIOS entries (0/1)
+refcache: 0 hit, 2 miss, 2 stored

@@ -1,0 +1,19 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_biosvram.py
+ROW filvrm  SAME  VG 111111115a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a11111111
+ROW wrtvrm  SAME  VG 22222222a52222222222222222222222
+ROW ldirvm  SAME  VG 3333031425364758697a8b9cadbecfe0f102333333333333
+ROW ldirmv  SAME  VG ffff44444444444444444444444444444444ffff
+ROW clrspr  SAME  VG d155000fd155010fd155020fd155030fd155040fd155050fd155060fd155070fd1001f0f0000000000000000000000000000000000000000000000000000000000000000
+ROW chgclr  SAME  VG 6161616161616161616161616161616161616161616161616161616161616161
+ROW setwrt  SAME  VG 777777777777c33c7777777777777777
+ROW setrd   SAME  VG 9a9b
+PASS: VRAM-answering BIOS entries (8/8)
+refcache: 8 hit, 8 miss, 8 stored

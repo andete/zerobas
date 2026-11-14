@@ -1,0 +1,31 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_input.py 
+--- reference oracle lock (Philips_VG_8020, §1 contract) ---
+PASS  numeric        got=' 42 ' want=' 42 '
+PASS  numeric.neg    got='-7 ' want='-7 '
+PASS  string         got='HELLO' want='HELLO'
+PASS  multi          got=' 3  4 ' want=' 3  4 '
+PASS  line           got=' A,B C' want=' A,B C'
+PASS  prompt.semi    got='ZZ' want='ZZ'
+PASS  redo.bad       got=' 5 ' want=' 5 '
+PASS  extra.toomany  got=' 5 ' want=' 5 '
+
+--- zerobas == reference (C-BIOS_MSX1_EU_REPACK_DISK) ---
+PASS  numeric        zb=' 42 ' ref=' 42 '
+PASS  numeric.neg    zb='-7 ' ref='-7 '
+PASS  string         zb='HELLO' ref='HELLO'
+PASS  multi          zb=' 3  4 ' ref=' 3  4 '
+PASS  line           zb=' A,B C' ref=' A,B C'
+PASS  prompt.semi    zb='ZZ' ref='ZZ'
+PASS  redo.bad       zb=' 5 ' ref=' 5 '
+PASS  extra.toomany  zb=' 5 ' ref=' 5 '
+
+ALL PASS -- reference matches §1, zerobas matches reference
+refcache: 1 hit, 1 miss, 1 stored

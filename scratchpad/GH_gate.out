@@ -1,0 +1,13 @@
+ROW initxt   VG=0 ZB=0 SAME
+ROW init32   VG=0 ZB=0 SAME
+ROW inigrp   VG=1 ZB=1 SAME
+ROW inimlt   VG=1 ZB=1 SAME
+ROW chgmod0  VG=0 ZB=0 SAME
+ROW chgmod1  VG=0 ZB=0 SAME
+ROW totext   VG=1 ZB=1 SAME
+ROW settxt   VG=1 ZB=1 SAME
+ROW sett32   VG=1 ZB=1 SAME
+ROW cls      VG=0 ZB=0 SAME
+ROW erafnk   VG=1 ZB=1 SAME
+ROW kilbuf   VG=1 ZB=1 SAME
+PASS: GRPHED after the screen entries (12/12)

@@ -3037,6 +3037,11 @@ seqmix-acceptance: repack-machine
 biosvdp-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_biosvdp.py
 
+# --- grphed-acceptance: GRPHED ($FCA6) after the screen entries (D-GRPHEDCLS) ---
+# the text-mode clear ends a pending CNVCHR graphic header on the VG-8020; nothing else does.
+grphed-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_grphed.py
+
 # --- casbaud-acceptance: the active cassette set after SCREEN ,,,n / CSAVE ,n (D-CASBAUD) ---
 # The VG-8020 copies the whole 5-byte CS120 / CS240 set into $F406; zerobas ignored SCREEN's
 # fourth argument and set CSAVE's LOW word alone (the knife: scratchpad/CB_knife.out).
