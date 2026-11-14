@@ -545,7 +545,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `LOAD` | TIER 5 | 🔭 | on-par speed, on `LOAD`. | T-084697 |
 | `RUN` | TIER 5 | 🤖 | on-par speed of loading an ASCII program from tape (within T2's 10×) | T-8B4AF8 |
 | — | TIER 5 | 🤖 | re-tagged 2026-10-10 from TIER 2 (*"reasonable time; it is | T-206016 |
-| — | TIER 5 | 🤖 | the `%` FOR loop, 10 ticks against 7 on 2026-11-14 (the rest is level now). | T-D2BDCA |
+| — | TIER 5 | 🤖 | the `%` FOR loop, 9 ticks against 7 on 2026-11-14 (the rest is level now). | T-D2BDCA |
 | — | TIER 5 | 🤖 | inside T2's 10×, so this is the ratio, not the rung. | T-D2E1F5 |
 | `CALL` | TIER 6 | 🤖 | `CALL SYSTEM` after the system file is deleted | T-7ECAB3 |
 | `CALL` | TIER 6 | 🤖 | `CALL SYSTEM` after a disk swap | T-FFE18F |

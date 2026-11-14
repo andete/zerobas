@@ -2109,6 +2109,11 @@ nx_comma:
 nx_head:
                 ld      (FOR_CUR+1),a       ; park the sentinel; for_name overwrites it
                 rst    $10                ; past the NEXT token (or past the `,`)
+                ; 🐌 D-NXBARE (2026-11-14): CHRGTR's Z is exactly "0 or `:`" -- the
+                ; terminator nx_notletter accepts after is_letter fails -- and leaves
+                ; A = that byte, NC, as nx_notletter's own tests did. A bare NEXT goes
+                ; straight on (~90 T a pass; a `NEXT I` pays the 7 T of this jr).
+                jr      z,nx_find
                 call    is_letter
                 jr      nc,nx_notletter     ; no variable -- the parked sentinel stands
                 ; D-NXARY (docs/spec-basic-nxary.md, 21 rows, BOTH references

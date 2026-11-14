@@ -17524,7 +17524,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
-      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 10 ticks against 7 on 2026-11-14 (the rest is level now).
+      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 9 ticks against 7 on 2026-11-14 (the rest is level now).
       🤖 **AUTONOMOUS** — each lever is a slice; results must stay byte-identical.
       📏 **RE-MEASURED 2026-11-06 ON BOTH MACHINES** ([`loops4_time.out`](scratchpad/loops4_time.out),
       the four cases x300 in TIME ticks, VG-8020 / zerobas): `A=I+7` **70 / 72**, `A=I*7`
@@ -17671,8 +17671,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       side). The nine trap suites green (trapstmt, interval, stop, key, strig, sprite,
       error, trapdepth, trapsvc). Unit tests: test_stmt_dispatch names es_sep for `:`;
       the old-vs-new differentials (test_forfast / forint / intfast) collapse CONSECUTIVE
-      IDENTICAL snapshots, which the old image took twice per `:`. ➡️ The `%` loop's rest
-      (10 against 7, ~550 T a pass) is still the per-statement dispatch.
+      IDENTICAL snapshots, which the old image took twice per `:`.
+      ✅ **D-NXBARE (2026-11-14): a bare NEXT skips is_letter.** nx_head's RST 10 (CHRGTR)
+      already returns Z exactly on 0 / `:` -- the terminator nx_notletter accepted after
+      is_letter failed -- with A = that byte and NC, as its own tests left them; `jr
+      z,nx_find` right after it (basic/program.asm, +2 B). Model ([`NB_after.out`](scratchpad/NB_after.out)): **-112 T
+      a pass** in every case (🔮 ~90: HIT, bigger); empty `%` loop 2199 -> 2087. Machine
+      ([`loops4_time9.out`](scratchpad/loops4_time9.out)): 64 / 70 / 10 / 19 -> **63 / 70 / 9 / 19** (VG-8020 69 / 97 / 7 / 24).
+      Unit tests 97 / 97. ➡️ The `%` loop's rest (9 against 7): nx_again's checks (~360 T),
+      the int16 step (~620), the dispatch of NEXT (~700).
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6
