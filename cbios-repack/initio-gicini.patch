@@ -1,0 +1,31 @@
+diff --git a/src/main.asm b/src/main.asm
+index bf98b68..73c70d0 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1556,7 +1556,16 @@ initio:
+                 ld      e,$0B           ; envelope period low byte, as both references
+                 ld      a,11
+                 call    wrtpsg
+-                jp      gicini
++                ; zerobas D-GICINIQ (2026-11-14): GICINI through the JUMP TABLE, so a ROM
++                ; that replaces it is honoured (zerobas's resets the PLAY queues), and
++                ; INITIO's exit registers as both references leave them (initio_run4.out):
++                ; F = $54 (Z, H, P/V), A = $FF; E = $0B from the R11 write above (GICINI
++                ; keeps every register); BC / D / HL the caller's.
++                call    $0090
++                xor     a
++                and     a               ; F = $54
++                ld      a,$FF
++                ret
+ 
+ ;--------------------------------
+ ; $003E INIFNK
+@@ -1567,7 +1576,7 @@ initio:
+ ; runs; it gives INITIO's 7 new bytes above back (18 -> 11), so nothing after it moves.
+ inifnk:
+                 ret
+-                ds      10, 0
++                ds      5, 0            ; D-GICINIQ took 5 of the 10 (INITIO's tail)
+ 
+ ;--------------------------------
+ ; $0099 STRTMS

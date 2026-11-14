@@ -39,7 +39,7 @@ p0_gb_illegal equ 044AFH   ; main's gb_illegal
 p0_eval_addr equ 02EF2H   ; main's eval_addr
 p0_ztrap_entry equ 05DB1H   ; main's ztrap_entry
 p0_skip_comma equ 0421FH   ; main's skip_comma
-p0_ex_key_stmt equ 03F5CH   ; main's ex_key_stmt
+p0_ex_key_stmt equ 03F0CH   ; main's ex_key_stmt
 p0_stmt_error equ 0424BH   ; main's stmt_error
 p0_raise_error equ 0426BH   ; main's raise_error
 p0_pdf_badname equ 027B7H   ; main's pdf_badname

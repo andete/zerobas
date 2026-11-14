@@ -350,6 +350,57 @@ ndd_tape:
 ; reason -- every low-region pin is already behind it.
                 include "basic/varfind.asm"
 
+; bios_gicini -- GICINI ($0090). D-GICINIQ (2026-11-14), D-BIOSCONTRACT2 gap 9: the
+; VG-8020's GICINI, called directly over a work area dirtied with $55
+; (scratchpad/GI_run1.out), leaves MUSICF and PLYCNT 0, each voice queue's descriptor
+; rewritten whole -- PUT / GET / BAKFLG 0, size 127, its buffer address (the dirtied
+; size and address are rewritten too: scratchpad/GI_run2.out) -- and every register as
+; it found them (scratchpad/initio_run4.out's control row: AF $00A5, E kept). C-BIOS's
+; wrote the PSG only, so a program that stopped its music with GICINI heard zerobas's
+; interrupt go on draining the queues. MUSICF first: the PLAY service's fast-out then
+; skips the queues being emptied. Voice 0's tempo := 0 is zerobas's own "reseed" sign
+; (psv_flush, basic/playsvc.asm): the next PLAY starts from the defaults, as the
+; VG-8020's reset voice blocks do -- whose BYTES differ from zerobas's encoding (filed).
+; C-BIOS's body then writes the PSG. Page 0: a caller's page 1 may be RAM.
+bios_gicini:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                xor     a
+                ld      (MUSICF),a
+                ld      (PLYCNT),a
+                ld      (VCBA+VCX_TEMPO),a
+                ld      hl,QUETAB
+                ld      de,VOICAQ
+                ld      b,3
+bgi_lp:
+                ld      (hl),a              ; QD_PUT
+                inc     hl
+                ld      (hl),a              ; QD_GET
+                inc     hl
+                ld      (hl),a              ; QD_PUTBAK
+                inc     hl
+                ld      (hl),127            ; QD_SIZE (a mask), as PLAY's seed
+                inc     hl
+                ld      (hl),e              ; QD_ADDR: VOICAQ / VOICBQ / VOICCQ
+                inc     hl
+                ld      (hl),d
+                inc     hl
+                ld      a,e
+                add     a,128               ; DE += 128, the next voice's buffer
+                ld      e,a
+                jr      nc,bgi_nc
+                inc     d
+bgi_nc:         xor     a
+                djnz    bgi_lp
+                call    CBIOS_GICINI
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ret
+
 ; outdo_dest -- OUTDO's ($0018) destination, after its hook. D-OUTDOPRT (2026-11-14):
 ; with PRTFLG ($F416) non-zero the VG-8020's OUTDO prints -- `A TAB B CR LF` reaches
 ; the printer as `A` + 7 spaces + `B\r\n`, and `ABC TAB D` leaves LPTPOS 9: OUTDLP's

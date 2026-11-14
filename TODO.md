@@ -16544,12 +16544,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       both, DIRECT: latch rows (our code sets PSG R7 output, writes R14, calls GTSTCK / GTTRIG ports 1 / 2) and plug
       rows (GTPDL 1..6 with a paddle, GTPAD 0..7 with an arkanoidpad, ports A / B): **8 / 8 SAME** ([`BQ_run4.out`](scratchpad/BQ_run4.out)),
       every answer non-zero. All four entries L3. **Gap (8) CLOSED.**
+      ✅ **(9) CLOSED 2026-11-14 -- A REAL DIFFERENCE (D-GICINIQ).** biosq's `gicini_state` dirties QUETAB / QUEBAK,
+      QUEUEN..PLYCNT and the three voice blocks with $55, calls GICINI, reads them back: the VG-8020 rewrites each
+      voice queue's descriptor whole (0 0 0 $7F + its buffer), MUSICF / PLYCNT 0, the voice blocks to their PLAY
+      defaults; C-BIOS's GICINI wrote the PSG only -- a program stopping its music with GICINI heard zerobas's
+      interrupt drain on ([`GI_run1.out`](scratchpad/GI_run1.out)). New `bios_gicini` (basic/main.asm, $0090 overlaid) does it, keeps every register
+      as the VG-8020 does, then C-BIOS's body writes the PSG. Funded by PROMOTING ex_strig_stmt and ex_on_interval
+      (trap statements, page 1 only) from the low region into the $6CF3 page-1 pin pad (879 -> 798 B, read
+      2026-11-14); low free was 9, then 35 B on 2026-11-14. ex_strig_stmt alone left 4 B, and switch-build-check went
+      RED: every switch-off build was 3 B over on 2026-11-14, so ex_on_interval went up too. cbios-repack #27:
+      INITIO calls GICINI through the jump table and leaves F $54 / A $FF / E $0B as both references; initio-
+      acceptance now diffs the exit registers: 3 / 3 ([`GI_initio.out`](scratchpad/GI_initio.out)), gicini_state SAME ([`GI_run3.out`](scratchpad/GI_run3.out)).
+      🔭 FILED: the voice blocks' BYTES -- the VG-8020 leaves VOLUMX $88 / ENVLPX $FF / ENVPRX 0 / TEMPOX 120,
+      zerobas's PLAY keeps its own encoding (volume 8, envelope 0, M 255, tempo 0 = "reseed"): a BASIC-side
+      sysvar-fidelity item, out of the BIOS focus; the row shows them, does not compare them.
+      🔭 FILED: tools/promote_scout.py lists bios_putq / bios_inlin / odl_put / bios_fnk as PROMOTABLE -- BIOS
+      entry bodies a program may call with RAM in page 1, so they must stay in page 0. The scout has no BIOS-entry
+      seeds; nothing was promoted from that list.
       📊 **LEVEL COLUMN (Joost 2026-11-14, "yes add the level column"):** docs/tier-status.md's BIOS table
       gains a contract level per entry -- L1 called, L2 happy path, L3 full contract, L4 errors / edges (L5 speed
       unscored under the focus) -- from `tools/bios_levels.py`; each claim names its proving gate, and a claim whose
       gate no longer witnesses the entry REFUSES the page (tests/test_entry_table.py (f)). Gaps (8)-(10) are the
       L2 rows.
-      ➡️ NEXT: (8)-(10); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ➡️ NEXT: (10) SCREEN 3; the other L2 rows (bios_levels.py); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

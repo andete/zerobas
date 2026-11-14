@@ -112,20 +112,6 @@ ei_keep:
                                             ; the next statement (D-TRAPLATCHWHEN)
                 jp      pop_exec
 
-; --- ON INTERVAL = <expr> GOSUB [<line>] -----------------------------------------
-ex_on_interval:
-                call    skip_eq             ; A = the next non-blank; Z iff `=`
-                jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
-                inc     hl
-                call    eval_addr           ; DE = n (checked address domain)
-                call    check_fperr_only    ; outside -32768..65535 -> Overflow (ERR 6)
-                ld      a,d
-                or      e
-                jp      z,gb_illegal        ; ON INTERVAL=0 -> Illegal function call
-                ld      (ZINTVAL),de        ; the period...
-                ld      (ZINTCNT),de        ; ...and RELOAD the live counter
-                ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
-                jr      tt_eos_gosub        ; GOSUB [<line>], as ON STOP's
     ENDIF
 
 ; --- ON STRIG GOSUB [<l0>][,<l1>...] / ON KEY GOSUB <l1>[,<l2>...] ----------------
@@ -174,32 +160,6 @@ tt_eostr_idx:
                 jp      nc,trap_syntax      ; a 6th STRIG slot -> trappable ERR 2
                 jr      tt_eostr_lp
 
-; --- STRIG(n) ON | OFF | STOP -----------------------------------------------------
-ex_strig_stmt:
-                call    inc_skip_paren      ; past the STRIG selector byte; Z iff `(`
-                jp      nz,trap_syntax
-                call    inc_eval            ; DE = n; HL past the expression
-                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
-                cp      5                   ; triggers 0..4
-                jp      nc,gb_illegal       ; STRIG(5..255) -> ERR 5
-                add     a,ZTI_STRIG0
-                call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
-                push    de                  ; the exec-continue cursor
-                ld      b,a
-                cp      ZTS_ON
-                jr      nz,tt_noseed        ; not enabling
-                ld      a,(hl)
-                and     ZTS_STATE_MASK
-                cp      ZTS_ON              ; ZF=1 iff already ON -> not a transition
-                jr      tt_flag
-tt_noseed:      xor     a                   ; ZF = 1 -> do not seed
-tt_flag:        push    af                  ; carry the decision across set_state
-                ld      a,b                 ; A = the new state
-                call    set_state           ; maintains the TRAPENA "# ON" count
-                pop     af
-                jr      z,tt_px
-                set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
-tt_px:          jp      pop_exec
 
 ; --- KEY(n) ON | OFF | STOP -------------------------------------------------------
 ; A CONTINUATION: sub2's scr_key (sub2/scrstmt.asm) peeks the `(` after KEY and
@@ -220,7 +180,7 @@ ex_key_stmt:
                 call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
                 push    de                  ; the exec-continue cursor
                 call    set_state           ; main's trap_state_done: set_state, then
-                jr      tt_px               ; pop_exec
+                jp      pop_exec            ; (tt_px went up with ex_strig_stmt)
 
 ; tt_entry_paren -- STRIG(n) / KEY(n)'s shared middle: A = the ZTRAP index ->
 ; `)` required, then ON | OFF | STOP. Out: HL = the entry pointer, DE = the cursor

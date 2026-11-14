@@ -81,9 +81,10 @@ def read(machine, k=0, mix=0xB8, entry=INITIO):
 def main():
     # (K, mixer): the plain set, then every value moved and the mixer off its default;
     # the GICINI run is the control that says which writes are INITIO's own.
-    # Compared: the sixteen PSG registers and port $AA. Printed, not compared: the exit
-    # registers (no documented contract; the VG-8020 and the CF-3300 both leave F $54,
-    # A $FF, E $0B -- initio_cf.out -- C-BIOS's differ).
+    # Compared: the sixteen PSG registers, port $AA, and (D-GICINIQ, 2026-11-14, gap 9) the
+    # exit registers: both references leave INITIO's F $54, A $FF, E $0B (initio_cf.out)
+    # and GICINI's every register as it found them; C-BIOS's differed until
+    # cbios-repack #27 and bios_gicini.
     bad = blind = 0
     for kk, mix, entry in ((0, 0xB8, INITIO), (100, 0x92, INITIO), (100, 0x92, GICINI)):
         got = {side: read(m, kk, mix, entry) for side, m in MACHINES}
@@ -96,13 +97,14 @@ def main():
             blind += 1
             print("ROW NO-REFERENCE")
             continue
-        same = (got["ZB"]["P"], got["ZB"]["A"]) == (got["VG"]["P"], got["VG"]["A"])
+        same = ((got["ZB"]["P"], got["ZB"]["A"], got["ZB"]["R"])
+                == (got["VG"]["P"], got["VG"]["A"], got["VG"]["R"]))
         bad += not same
         print(f"ROW {'SAME' if same else 'DIVERGES'}")
     if blind:
         print("INSTRUMENT FAULT: the VG-8020 gave no reading")
         return 2
-    print(f"{'PASS' if not bad else 'FAIL'}: INITIO's PSG / port $AA against the VG-8020")
+    print(f"{'PASS' if not bad else 'FAIL'}: INITIO's PSG / port $AA / exit registers against the VG-8020")
     return 1 if bad else 0
 
 

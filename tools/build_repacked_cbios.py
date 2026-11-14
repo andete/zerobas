@@ -96,11 +96,12 @@ PATCHES = [
     # a text CLS) sets GRPHED := 0 as the VG-8020 does; 4 B from INIMLT's D-GRPBASE pad, so
     # the code between that pad and cls_text moves 4 B and nothing after it moves.
     os.path.join(REPO, "cbios-repack", "grphed-cls.patch"),
+    os.path.join(REPO, "cbios-repack", "initio-gicini.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "4f8459c0d4ac929146ab8db7ae74806218b1b5b9"   # D-GRPHEDCLS, 2026-11-14
+REPACKED_SHA1 = "e2b5d143dc3c4efbaef90993bb47059ec750d73c"   # D-GICINIQ, 2026-11-14
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 24; L3 full contract: 77; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 22; L3 full contract: 79; L4 errors / edges: 3; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -196,7 +196,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0028 | GETYPR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0030 | CALLF | exercised | yes | L2 happy path | IX / IY / AF' on return | `bootenv-acceptance`, `p1vec-acceptance` |
 | $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — | — | — |
-| $003B | INITIO | exercised | yes | L2 happy path | exit registers printed, not diffed (gap 9) | `initio-acceptance` |
+| $003B | INITIO | exercised | yes | L3 full contract | exit registers diffed since D-GICINIQ | `initio-acceptance` |
 | $003E | INIFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $0041 | DISSCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
 | $0044 | ENASCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
@@ -224,7 +224,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0087 | CALATR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $008A | GSPSIZ | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $008D | GRPPRT | exercised | yes | L2 happy path | the glyph drawn | `biosregs-acceptance` |
-| $0090 | GICINI | exercised | yes | L2 happy path | QUETAB / PLYCNT (gap 9) | `biosl-acceptance`, `biosq-acceptance`, `gicini-acceptance`, `initio-acceptance` |
+| $0090 | GICINI | exercised | yes | L3 full contract | queues / MUSICF / PLYCNT compared; the voice blocks' BYTES are zerobas PLAY's own encoding (filed, BASIC-side) | `biosl-acceptance`, `biosq-acceptance`, `gicini-acceptance`, `initio-acceptance` |
 | $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | yes | L3 full contract | — | `strtms-acceptance` |

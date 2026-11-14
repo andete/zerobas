@@ -804,6 +804,56 @@ vlf_found_int:
                 ld      d,(hl)
                 ret
 
+; D-GICINIQ (2026-11-14): PROMOTED here from basic/trapstmt.asm (the low region) into
+; this page-1 pin pad, to fund bios_gicini there. A statement handler: page 1 is
+; always BASIC's when it runs, and ex_on / ex_ff_stmt reach it by `jp`.
+; --- STRIG(n) ON | OFF | STOP -----------------------------------------------------
+ex_strig_stmt:
+                call    inc_skip_paren      ; past the STRIG selector byte; Z iff `(`
+                jp      nz,trap_syntax
+                call    inc_eval            ; DE = n; HL past the expression
+                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
+                cp      5                   ; triggers 0..4
+                jp      nc,gb_illegal       ; STRIG(5..255) -> ERR 5
+                add     a,ZTI_STRIG0
+                call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
+                push    de                  ; the exec-continue cursor
+                ld      b,a
+                cp      ZTS_ON
+                jr      nz,tt_noseed        ; not enabling
+                ld      a,(hl)
+                and     ZTS_STATE_MASK
+                cp      ZTS_ON              ; ZF=1 iff already ON -> not a transition
+                jr      tt_flag
+tt_noseed:      xor     a                   ; ZF = 1 -> do not seed
+tt_flag:        push    af                  ; carry the decision across set_state
+                ld      a,b                 ; A = the new state
+                call    set_state           ; maintains the TRAPENA "# ON" count
+                pop     af
+                jr      z,tt_px
+                set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
+tt_px:          jp      pop_exec
+
+; D-GICINIQ (2026-11-14): ex_on_interval PROMOTED here from basic/trapstmt.asm as well --
+; the switch-off builds needed 3 B more of the low region than ex_strig_stmt alone freed.
+; Reached only from ex_on (basic/program.asm, page 1) by `jp c`.
+    IF TRAPS_T5
+; --- ON INTERVAL = <expr> GOSUB [<line>] -----------------------------------------
+ex_on_interval:
+                call    skip_eq             ; A = the next non-blank; Z iff `=`
+                jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
+                inc     hl
+                call    eval_addr           ; DE = n (checked address domain)
+                call    check_fperr_only    ; outside -32768..65535 -> Overflow (ERR 6)
+                ld      a,d
+                or      e
+                jp      z,gb_illegal        ; ON INTERVAL=0 -> Illegal function call
+                ld      (ZINTVAL),de        ; the period...
+                ld      (ZINTCNT),de        ; ...and RELOAD the live counter
+                ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
+                jp      tt_eos_gosub        ; GOSUB [<line>], as ON STOP's (low region)
+    ENDIF
+
 ; 📌 D-BASICINT PIN $6CF3 (2026-10-15): games (Harry Fox) drop BLOAD,R's return
 ; address and `jp $6CF3`, the reference's continuation, which then runs the rest
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row

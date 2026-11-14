@@ -458,6 +458,8 @@ st_go:
                 jp      bios_outdlp         ; OUTDLP: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $0159
                 jp      bios_calbas         ; CALBAS: C-BIOS's printed an error (D-BIOSRUNG)
+                org     $0090
+                jp      bios_gicini         ; GICINI: C-BIOS's wrote the PSG only (D-GICINIQ)
                 org     $0099
                 jp      bios_strtms         ; STRTMS: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $00F9

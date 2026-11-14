@@ -144,6 +144,29 @@ DEVICE = {
 }
 
 
+# D-BIOSCONTRACT2 gap 9: GICINI's ($0090) work-area state. Our code DIRTIES QUETAB / QUEBAK
+# ($F959, 28 B), QUEUEN / MUSICF / PLYCNT ($FB3E, 3 B) and the three voice control blocks
+# ($FB41, 111 B) with $55, calls GICINI, and the cells are captured from RAM afterwards.
+GI_SEGS = [(0xF959, 28), (0xFB3E, 3), (0xFB41, 111)]
+
+
+def gicini_dirty_code():
+    c = [0xF3]
+    for a, n in GI_SEGS:
+        c += [0x21, a & 255, a >> 8, 0x36, 0x55, 0x11, (a + 1) & 255, (a + 1) >> 8,
+              0x01, (n - 1) & 255, (n - 1) >> 8, 0xED, 0xB0]          # fill n bytes with $55
+    return c + call(GICINI) + [0xF3, 0xC9]   # DI on return: nothing plays a dirty queue
+
+
+def read_mem(machine, c, segs):
+    prog = ["NEW", "10 CLEAR 200,&HCFFF",
+            f"20 FOR I=0 TO {len(c) - 1}:READ X:POKE &HD000+I,X:NEXT",
+            "30 DEFUSR=&HD000:Q=USR(0)", "40 GOTO 40",
+            "50 DATA " + ",".join(str(b) for b in c), "RUN"]
+    return omsx_repl.run_cases(machine, [("direct", prog)], batch=False, reset=("", "SCREEN 0"),
+                               step=3.0, run_gap=8.0, capture=("mem_abs", segs))[0]
+
+
 def code(body):
     # the result words zeroed first: putqfull stores ONE byte at $D100, and $D101's power-on
     # garbage ($00 on the VG-8020, $FF here) read as a divergence (scratchpad/BQ_run1.out)
@@ -164,10 +187,19 @@ def read(machine, c, prologue=()):
 
 
 def main():
-    only = sys.argv[1:] or list(ROWS) + list(HELD) + list(DEVICE)
+    only = sys.argv[1:] or list(ROWS) + list(HELD) + list(DEVICE) + ["gicini_state"]
     bad = blind = 0
     for name in only:
-        if name in DEVICE:
+        if name == "gicini_state":
+            raw = {side: read_mem(m, gicini_dirty_code(), GI_SEGS) for side, m in MACHINES}
+            # compared: QUETAB / QUEBAK and QUEUEN / MUSICF / PLYCNT (the first 31 bytes).
+            # The voice blocks are SHOWN, not compared: zerobas's PLAY keeps its own encoding
+            # there (VOLUMX 8 not $88, ENVLPX 0 not $FF, tempo 0 = "reseed") -- filed,
+            # BASIC-side (TODO D-BIOSCONTRACT2 gap 9).
+            got = {side: (r[:62] if r else None) for side, r in raw.items()}
+            print(f"    (voice blocks, not compared) VG={(raw['VG'] or '')[62:]}\n"
+                  f"    (voice blocks, not compared) ZB={(raw['ZB'] or '')[62:]}")
+        elif name in DEVICE:
             body, plug = DEVICE[name]
             got = {side: read(m, code(body), plug) for side, m in MACHINES}
         elif name in HELD:

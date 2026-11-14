@@ -78,8 +78,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0010: bytes([0xC3, 0x9E, 0x10]),     # RST 10h -> chrgtr
                 0x0018: bytes([0xC3, 0xBA, 0x10]),     # RST 18h -> outdo
                 0x0028: bytes([0xC3, 0xC6, 0x10]),     # RST 28h -> getypr
-                0x003E: bytes([0xC3, 0xFE, 0x10]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
-                                                       #  stub is 7 B on since D-INITIO)
+                0x003E: bytes([0xC3, 0x03, 0x11]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
+                                                       #  stub is 12 B on since D-INITIO + D-GICINIQ)
                 0x00AE: bytes([0xC3, 0xC7, 0x14,       # PINLIN / INLIN / QINLIN
                                0xC3, 0xE5, 0x14,       #  -> basic/biosfnk.asm
                                0xC3, 0xDC, 0x14]),
@@ -93,6 +93,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x008D: bytes([0xC3, 0x45, 0x05]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG;
                                                        #  its C-BIOS body 4 B down since D-GRPHEDCLS)
                 0x0099: bytes([0xC3, 0x09, 0x11]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x0090: bytes([0xC3, 0xCB, 0x16]),     # GICINI -> basic/main.asm bios_gicini
+                                                       #  (D-GICINIQ; = CBIOS_GICINI)
                 0x00F9: bytes([0xC3, 0xE7, 0x17]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0129: bytes([0xC3, 0x55, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
                                0xC3, 0x55, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 3 B
