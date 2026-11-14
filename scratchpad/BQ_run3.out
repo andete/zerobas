@@ -1,0 +1,5 @@
+ROW stick_r   VG=[3] ZB=[3] SAME
+ROW stick_ur  VG=[2] ZB=[2] SAME
+ROW stick_l   VG=[7] ZB=[7] SAME
+ROW trig0     VG=[255] ZB=[255] SAME
+PASS: the queue / voice entries out of the idle state (4/4)

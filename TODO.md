@@ -16536,7 +16536,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       LFTQ with 3 bytes queued (and queues 0 / 1 apart), PUTQ until it answers Z (127 bytes, LFTQ then 0), GETVCP
       voices 1 / 2, GETVC2 voice 2 offset 5: **6 / 6 SAME as the VG-8020** ([`BQ_run2.out`](scratchpad/BQ_run2.out)). No bug. The first run's one
       split was the APPARATUS: a result byte the code never wrote ([`BQ_run1.out`](scratchpad/BQ_run1.out)); the words are zeroed first now.
-      Left of (8): the joystick / paddle / pad entries with a device plugged.
+      ✅ Then GTSTCK stick 0 with RIGHT / UP+RIGHT / LEFT held (3 / 2 / 7) and GTTRIG trigger 0 with SPACE held (255),
+      the key-matrix bits pressed by the harness, the code HALT-looping until the entry answers: **4 / 4 SAME**
+      ([`BQ_run3.out`](scratchpad/BQ_run3.out)). 🔭 FILED, NOT FAKED: ports 1 / 2 (a joystick) and GTPAD / GTPDL (pad, paddle) -- openMSX's
+      devices take their input from the HOST, which the harness cannot drive; those four stay L2 until it can.
       📊 **LEVEL COLUMN (Joost 2026-11-14, "yes add the level column"):** docs/tier-status.md's BIOS table
       gains a contract level per entry -- L1 called, L2 happy path, L3 full contract, L4 errors / edges (L5 speed
       unscored under the focus) -- from `tools/bios_levels.py`; each claim names its proving gate, and a claim whose

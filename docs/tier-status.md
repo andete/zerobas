@@ -247,10 +247,10 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $00CF | DSPFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
 | $00D2 | TOTEXT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $00D5 | GTSTCK | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
-| $00D8 | GTTRIG | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
-| $00DB | GTPAD | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
-| $00DE | GTPDL | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
+| $00D5 | GTSTCK | exercised | yes | L2 happy path | stick 0 with keys held compared; ports 1 / 2 need a host-driven joystick the harness cannot press | `biosq-acceptance`, `biosregs-acceptance` |
+| $00D8 | GTTRIG | exercised | yes | L2 happy path | trigger 0 (SPACE) held compared; ports 1 / 2 as GTSTCK | `biosq-acceptance`, `biosregs-acceptance` |
+| $00DB | GTPAD | exercised | yes | L2 happy path | with a pad plugged: a host-driven device | `biosregs-acceptance` |
+| $00DE | GTPDL | exercised | yes | L2 happy path | with a paddle plugged: a host-driven device | `biosregs-acceptance` |
 | $00E1 | TAPION | exercised | yes | L3 full contract | — | `tapebios-acceptance`, `tapionlead-acceptance` |
 | $00E4 | TAPIN | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
 | $00E7 | TAPIOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
