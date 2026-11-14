@@ -17434,8 +17434,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SEQWRITE) went MISALIGNED: it now takes **153.2 s against the CF-3300's 93.0**
       ([`SMX_d3_400b.out`](scratchpad/SMX_d3_400b.out), capture byte-identical) and its window was 150 s -- now 220, and the
       harness prints BOTH sides' times (the min alone hid ours).
-      ➡️ LEFT, filed: the write-through's cost (below); and from the design's own list -- a
-      BASIC output channel between $F37D SEQWRITEs.
+      ➡️ LEFT, filed: the write-through's cost (below). 🏗️ RULED (Joost 2026-11-14): a BASIC
+      output channel between $F37D SEQWRITEs is *"an unsupported corner case"* -- a
+      recorded difference, not chased.
       ✅ **D-SEQMIX3 (2026-11-14): TWO FILES READ ALTERNATELY BY SEQREAD** (a merge / compare;
       [`seqmix_inter1.out`](scratchpad/seqmix_inter1.out), `SEQMIX_READ=interleave`): SEQREAD A after FOPEN B read B's records ($AA,
       $BB where the CF-3300 gives $11, $22) -- srd_pos trusted the one iterator whenever the
@@ -17466,11 +17467,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             flush it when anyone else reads into the shared buffer (dskio / read_sector) --
             the W4 audit's tag ([`dbuf_audit2.md`](scratchpad/dbuf_audit2.md)) with a dirty bit; the reads that bypass
             read_sector are why it must sit in dskio.
+            🏗️ RULED (Joost 2026-11-14): *"leave at tier 5"*.
 
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
       🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
-      🙋 **WAITING ON JOOST since 2026-11-14 -- the scope question at the end of this block.**
+      🏗️ **RULED 2026-11-14 (*"ideally yes"*): in scope -- see the end of this block.**
       🤖 **AUTONOMOUS** — National_CF-3300_ZEROBASDISK (the stock machine, our disk ROM) answers
       `call format` with Syntax error at once: that BASIC dispatches CALL to the disk ROM's
       STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
@@ -17523,11 +17525,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       missing LAYER, and its price (~40 B: sh_sys + a carve; found today: sfirst/snext share
       13 B, the boot-sector read + signature check twice in init.asm / hk_system ~13 B) comes
       out of a disk ROM with 0 B in runs of 16+.
-      🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
+      🏗️ **RULED (Joost 2026-11-14): *"ideally yes"*** -- another MSX BASIC driving our disk ROM IS
+      a target, so the scope is the Disk BASIC statement layer in disk.rom; and *"we should
+      stick to the final alotted space"*: inside the 16 KB, carving first (the disk ROM ships
+      before the rest of zerobas). ➡️ NEXT: inventory which statements fail there (the
+      callsystem rows did OPEN / KILL; run every disk statement under
+      National_CF-3300_ZEROBASDISK against National_CF-3300) and price the layer.
+      ~~🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
       yes, the scope is Disk BASIC's statement layer in disk.rom (the CF-3300's ROM holds
       it in the same 16 KB), not CALL SYSTEM alone. If no, CALL FORMAT under another BASIC
       (done) is where it stops, and these rows are a RULED difference. The carve above is
-      not spent until he answers.
+      not spent until he answers.~~
       - [x] **tools/check_disk_walls.py counts the dead FDC window $7F80-$7FBF as free** --
             🎚️ APPARATUS — its "largest usable hole" today is that window (65 B at $7F7F, the 1 B
             before it real). A reading that offers unfetchable memory as room cost one RED gate
@@ -17802,6 +17810,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       stop-trap / direct-ctrl / iscntc / interval-trap / trapstmt acceptance and unit tests green.
       ➡️ The `%` loop's rest (~1917 T against ~1530): nx_again's re-base checks (~330 T), the
       int16 step (~620), the dispatch of NEXT (~550).
+      🏗️ **JOOST (2026-11-14): *"investigate what the references do ?"*** -- before a frame redesign,
+      black-box the references' FOR frame: the stack RAM a `FOR I%=1 TO N` pushes (size,
+      what it holds: the variable's address? the limit / step pre-converted?), read through
+      the debugger on the VG-8020 (and the CF-3300), RAM only -- never a ROM byte.
+      📏 **READ (2026-11-14, [`forframe_probe.py`](scratchpad/forframe_probe.py) -> [`forframe_run1.out`](scratchpad/forframe_run1.out); the CF-3300's run did not reach
+      its prompt by typed keys at 8 or 25 s -- unread, [`forframe_run2.out`](scratchpad/forframe_run2.out)):** the VG-8020's
+      `FOR I%=1 TO 32000` frame, just below STKTOP $F0A0, stable across two samples: the FOR
+      token ($82), **a POINTER to I%'s value** ($8019; I%'s entry is at VARTAB $8016), a step-
+      sign byte, 10 bytes of $9F $00 (room the int loop leaves unused -- float limit / step
+      slots, by its size), the body's text pointer, **step 1 and limit 32000 as plain int16**,
+      line 10, the text pointer again. **So the reference's int frame keeps what ours keeps**
+      (D-NXCACHE's cached entry, int16 limit / step): the frame LAYOUT is not where its 1.15x
+      comes from -- it is the per-pass path (nx_again's checks ~330 T, the int16 step ~620,
+      NEXT's dispatch ~550, against ~1530 for the whole VG-8020 pass). ➡️ Shorten that path
+      rather than redesign the frame: e.g. NEXT's step without the cached-entry re-fetch and
+      re-bias (nxi_take ~350 T for an add / store / signed compare).
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

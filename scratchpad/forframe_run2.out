@@ -1,0 +1,7 @@
+=== National_CF-3300
+A sp=C1DC stktop=DCB3 vartab=8003
+  stack[stktop-64..stktop): 4702c8fcc0fc2412ae0c020d6f000000acfcfc001403d501fffcec01acfc017c795e00000383c4fc4001c65992f314f04702c8fcc0f000f3cffe9d62237d0000
+  vars[vartab..+16): ffffffffffffffffffffffffffffffff
+B sp=C1DA stktop=DCB3 vartab=8003
+  stack[stktop-64..stktop): 4702c8fcc0fc2412ae0c020d6f000000acfcfc001403d501fffcec01acfc017c795e00000383c4fc4001c65992f314f04702c8fcc0f000f3cffe9d62237d0000
+  vars[vartab..+16): ffffffffffffffffffffffffffffffff

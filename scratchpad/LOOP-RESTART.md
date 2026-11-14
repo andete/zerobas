@@ -4,7 +4,17 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE 2026-11-14 — READ FIRST (newest; no new rulings)
+## 🟢 RULINGS 2026-11-14 (evening) — READ FIRST (newest)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| another MSX BASIC driving OUR disk ROM | *"ideally yes"* (asked: target, or stop at CALL FORMAT?) | D-CALLSTMT is in scope, and it is the Disk BASIC STATEMENT LAYER in disk.rom (OPEN / KILL / FILES ... under the CF-3300's own BASIC, `--zb-machine National_CF-3300_ZEROBASDISK`), not CALL SYSTEM alone -- all inside the 16 KB (next row) |
+| the disk ROM's space | *"as the disk rom is intended for earlier release than all of zerobas, yes, we should stick to the final alotted space"* | the disk ROM ships BEFORE the rest of zerobas: everything fits its one 16 KB page as released; every disk feature or speed item is preceded by a carve when it does not fit (the 11-09 "one page" ruling, reaffirmed) |
+| SEQWRITE write-through's cost | *"leave at tier 5"* | D-SEQMIX's speed debt (COPY by SEQREAD / SEQWRITE 153 s vs 93) stays TIER 5 |
+| the `%` FOR loop (1.15x the VG-8020) | *"investigate what the references do ?"* | before any frame redesign: BLACK-BOX the references' FOR frame -- the stack RAM a `FOR I%` pushes, read through the debugger on the VG-8020 (RAM is readable; never a ROM byte) -- and let that shape the design |
+| a BASIC output file between `$F37D` SEQWRITEs | *"seems an unsupported corner case"* | RULED unsupported: recorded as a difference, not chased |
+
+## 🟢 STATE 2026-11-14 — (no new rulings in this section)
 
 - 🙋 **OPEN QUESTION FOR JOOST (filed in TODO D-CALLSTMT):** is "another MSX BASIC driving OUR disk
   ROM" a target? Measured: under the CF-3300's own BASIC with our disk ROM, CALL SYSTEM is 1 / 12

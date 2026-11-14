@@ -1,0 +1,14 @@
+=== Philips_VG_8020
+A sp=F07F stktop=F0A0 vartab=8016
+  stack[stktop-64..stktop): 2412c0ffc0ff8402ffffffffffffffffffffffff040601000100590601007d69462765014682198001ff9f009f009f009f009f0011800100007d0a0011800000
+  vars[vartab..+16): 0249007e0600ffff0000ffff0000ffff
+B sp=F083 stktop=F0A0 vartab=8016
+  stack[stktop-64..stktop): 2412c0242412ae0c02c0ff8402ffffffffffffffffffffffff9b021101007d6594659a0b4682198001ff9f009f009f009f009f0011800100007d0a0011800000
+  vars[vartab..+16): 024900566500ffff0000ffff0000ffff
+=== National_CF-3300
+A sp=C1E2 stktop=DCB3 vartab=8003
+  stack[stktop-64..stktop): 4702c8fcc0fc2412ae0c020d6f000000acfcfc001403d501fffcec01acfc017c795e00000383c4fc4001c65992f314f04702c8fcc0f000f3cffe9d62237d0000
+  vars[vartab..+16): ffffffffffffffffffffffffffffffff
+B sp=C1D8 stktop=DCB3 vartab=8003
+  stack[stktop-64..stktop): 4702c8fcc0fc2412ae0c020d6f000000acfcfc001403d501fffcec01acfc017c795e00000383c4fc4001c65992f314f04702c8fcc0f000f3cffe9d62237d0000
+  vars[vartab..+16): ffffffffffffffffffffffffffffffff
