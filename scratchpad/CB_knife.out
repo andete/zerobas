@@ -1,0 +1,5 @@
+VG boot=535C262D0F  SCREEN ,,,2=252D0E161F  SCREEN ,,,1=535C262D0F  CSAVE ,2=252D0E161F
+ZB boot=535C262D0F  SCREEN ,,,2=535C262D0F  SCREEN ,,,1=535C262D0F  CSAVE ,2=252D262D0F
+
+FAIL: the active cassette set (2/4 as the VG-8020); differs: SCREEN ,,,2, CSAVE ,2
+refcache: 1 hit, 1 miss, 1 stored

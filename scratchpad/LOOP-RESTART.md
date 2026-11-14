@@ -8,7 +8,9 @@ session and the loop resumes exactly where it stopped.
 
 | ruling | Joost's words | consequence |
 |---|---|---|
-| another MSX BASIC driving OUR disk ROM | *"ideally yes"* (asked: target, or stop at CALL FORMAT?) | D-CALLSTMT is in scope, and it is the Disk BASIC STATEMENT LAYER in disk.rom (OPEN / KILL / FILES ... under the CF-3300's own BASIC, `--zb-machine National_CF-3300_ZEROBASDISK`), not CALL SYSTEM alone -- all inside the 16 KB (next row) |
+| ⚠️ SUPERSEDED the same evening by the next row | | |
+| another MSX BASIC driving OUR disk ROM -- FINAL | *"(b) record as a known gap"*, and *"the first user of the disk rom will be C-BIOS without basic, so what matters most is the bios and bdos calls"* | D-CALLSTMT CLOSED as a recorded difference (17 / 18 rows, foreign_probe.py). The disk ROM's PRIORITY is its BIOS-level entries and the BDOS: BDOS correctness and the BDOS speed items (D-BLKIOPERCALL, SEQWRITE write-through, the RDBLK read tag) outrank anything BASIC-facing in disk.rom |
+| another MSX BASIC driving OUR disk ROM (first answer) | *"ideally yes"* (asked: target, or stop at CALL FORMAT?) | D-CALLSTMT is in scope, and it is the Disk BASIC STATEMENT LAYER in disk.rom (OPEN / KILL / FILES ... under the CF-3300's own BASIC, `--zb-machine National_CF-3300_ZEROBASDISK`), not CALL SYSTEM alone -- all inside the 16 KB (next row) |
 | the disk ROM's space | *"as the disk rom is intended for earlier release than all of zerobas, yes, we should stick to the final alotted space"* | the disk ROM ships BEFORE the rest of zerobas: everything fits its one 16 KB page as released; every disk feature or speed item is preceded by a carve when it does not fit (the 11-09 "one page" ruling, reaffirmed) |
 | SEQWRITE write-through's cost | *"leave at tier 5"* | D-SEQMIX's speed debt (COPY by SEQREAD / SEQWRITE 153 s vs 93) stays TIER 5 |
 | the `%` FOR loop (1.15x the VG-8020) | *"investigate what the references do ?"* | before any frame redesign: BLACK-BOX the references' FOR frame -- the stack RAM a `FOR I%` pushes, read through the debugger on the VG-8020 (RAM is readable; never a ROM byte) -- and let that shape the design |
@@ -2279,7 +2281,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12287 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12299 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

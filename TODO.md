@@ -10916,7 +10916,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15328 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15340 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11628,12 +11628,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
             reports 0. p1multi-acceptance and p1vec-acceptance PASS ([`IR_p1multi.out`](scratchpad/IR_p1multi.out),
             [`IR_p1vec.out`](scratchpad/IR_p1vec.out)). ⚠️ NO ROW WITNESSES THE FIX: the false read needs an interrupt
             accepted during one particular instruction, and neither site was ever SEEN to fail.
-      - [ ] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
+      - [x] **SCREEN ,,,n does not select the cassette baud; CSAVE ,n sets only ACT_LOW** --
             🎚️ TIER 3 — on both references `SCREEN ,,,2` copies CS240 (5 B) into the active
             LOW / HIGH / HEADER slots ($F406) and ,,,1 copies CS120 ([`cstables.out`](scratchpad/cstables.out)); on zerobas
             SCREEN's fourth argument leaves the slots untouched, so a program that SCREEN ,,,2s
             and CSAVEs writes 1200 baud. CSAVE ,n sets the LOW word only (sub2/loadsave.asm
             ls_csav_speed; HIGH / HEADER stay). The sub ROM has ~2 B free.
+            ✅ **D-CASBAUD (2026-11-14):** cas_sel (sub2/loadsave.asm) copies the selected 5-byte set
+            (CS120 / CS240, seeded at boot since D-CASSEED) into $F406; SCREEN's slot 3 (sub2/
+            scrstmt.asm) and CSAVE ,n call it. Room: `ld ix,p0_skipsp_test / call p1cb` stood six
+            times in loadsave.asm -> ls_skipsp (a `jp p1cb` tail returns to the caller's site, as
+            CLPRIM returns to whatever is on the stack); sub page 1 2 -> 9 B free WITH the feature
+            (2026-11-14). New `make casbaud-acceptance` (probes/basic/basic_probe_casbaud.py): boot,
+            SCREEN ,,,2, ,,,1, CSAVE ,2 -- 4 / 4 as the VG-8020 ([`CB_run2.out`](scratchpad/CB_run2.out); 🔮 HIT); KNIFED
+            against the old sub2 -> ,,,2 and CSAVE ,2 DIVERGE ([`CB_knife.out`](scratchpad/CB_knife.out)).
+      - [ ] **D-CSAVEREST — `CSAVE` in a program skips the REST OF ITS LINE** -- 🎚️ TIER 1 —
+            the happy path of saving from a program: `20 CSAVE "X":PRINT "[C]"` then `30 PRINT
+            "[D]"` prints [C] and [D] on the VG-8020, only [D] here (found 2026-11-14 writing
+            casbaud-acceptance; present on HEAD before D-CASBAUD). 🤖 AUTONOMOUS.
       - [ ] **The 2400-baud high tone is 5013 Hz here, 4811 Hz on the VG-8020** -- 🎚️ TIER 6 —
             [`leader_count_2400b.out`](scratchpad/leader_count_2400b.out); CAS_HHALF24 (tape/tape.asm) was never measured against an oracle,
             as its own comment says. The 1200 tones are 2390 / 2393 Hz.
@@ -17469,10 +17481,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             read_sector are why it must sit in dskio.
             🏗️ RULED (Joost 2026-11-14): *"leave at tier 5"*.
 
-- [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
+- [x] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
       🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
-      🏗️ **RULED 2026-11-14 (*"ideally yes"*): in scope -- see the end of this block.**
+      🏗️ **RULED 2026-11-14: first *"ideally yes"*, then *"(b) record as a known gap"* -- CLOSED, see the end.**
       🤖 **AUTONOMOUS** — National_CF-3300_ZEROBASDISK (the stock machine, our disk ROM) answers
       `call format` with Syntax error at once: that BASIC dispatches CALL to the disk ROM's
       STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
@@ -17544,6 +17556,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       layer (several KB of carving -- not visible today); (b) "ideally" means not now:
       record these rows as the known gap; (c) a subset (which statements matter most under
       a foreign BASIC: LOAD / RUN / FILES?) priced one by one.
+      🏗️ **RULED (Joost 2026-11-14): *"(b) record as a known gap"*** -- and why: *"the first user of
+      the disk rom will be C-BIOS without basic, so what matters most is the bios and bdos
+      calls"*. CLOSED as a RECORDED DIFFERENCE: under another MSX BASIC, our disk ROM answers
+      17 of foreign_probe.py's 18 rows differently (the table above); CALL FORMAT works there.
+      Not chased. The disk ROM's priority is its BIOS-level entries (DSKIO / DSKCHG / GETDPB /
+      CHOICE / DSKFMT / ...) and the BDOS -- every TIER 5 BDOS speed item (D-BLKIOPERCALL, the
+      SEQWRITE write-through, the RDBLK read tag) ranks with that.
       ~~🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
       yes, the scope is Disk BASIC's statement layer in disk.rom (the CF-3300's ROM holds
       it in the same 16 KB), not CALL SYSTEM alone. If no, CALL FORMAT under another BASIC

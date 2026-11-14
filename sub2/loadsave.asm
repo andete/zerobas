@@ -514,8 +514,7 @@ ls_comma_eval:
 ; run (tapetail's csaveok).
 ls_csave:
                 inc     hl                  ; past the CSAVE token (main's ex_csave)
-                ld      ix,p0_skipsp_test
-                call    p1cb
+                call    ls_skipsp
                 jr      z,lcs_noname        ; bare CSAVE -> Missing operand
                 cp      COLON
                 jr      z,lcs_noname        ; `CSAVE:` -> Missing operand
@@ -537,8 +536,7 @@ lcs_noname:
 ; (TAPOON's cas_seed seeds the tables). > 255 or not 1/2 is 5, junk after it 2
 ; (D-TAPETAIL, VG-8020). In: HL past the name. Out: HL advanced.
 ls_csav_speed:
-                ld      ix,p0_skipsp_test
-                call    p1cb
+                call    ls_skipsp
                 ret     z                   ; end of statement -> no speed
                 cp      COLON
                 ret     z                   ; ':' separator -> no speed
@@ -551,18 +549,11 @@ ls_csav_speed:
                 or      a
                 jp      nz,ls_illegal       ; > 255 -> 5
                 ld      a,e
-                cp      1
-                jr      z,lcsp_1200
+                dec     a                   ; 1 / 2 -> 0 / 1
                 cp      2
-                jp      nz,ls_illegal       ; only ,1 / ,2: `CSAVE "X",3` is 5
-                ld      de,CAS_LOW_2400     ; selected active-LOW word
-                jr      lcsp_apply
-lcsp_1200:
-                ld      de,CAS_LOW_1200
-lcsp_apply:
-                ld      (ACT_LOW),de        ; active LOW = the selected rate
-                ld      ix,p0_skipsp_test
-                call    p1cb                ; HL is past the speed
+                jp      nc,ls_illegal       ; only ,1 / ,2: `CSAVE "X",3` is 5
+                call    cas_sel             ; D-CASBAUD: all 5 B of the set, as SCREEN ,,,n
+                call    ls_skipsp                ; HL is past the speed
                 ret     z                   ; clean end
                 cp      COLON
                 ret     z
@@ -571,6 +562,30 @@ lcsp_apply:
 ; ===========================================================================
 ; the shared parse helpers
 ; ===========================================================================
+; ls_skipsp -- ✂️ D-CASBAUD (2026-11-14): `ld ix,p0_skipsp_test / call p1cb` stood six
+; times here (sub page 1, 2 B free); a `jp p1cb` tail returns to the CALLER's site, as the
+; inline `call` did (p1cb's CLPRIM returns to whatever is on the stack). Z = end of
+; statement, A = the first non-space, HL past the spaces.
+ls_skipsp:
+                ld      ix,p0_skipsp_test
+                jp      p1cb
+; cas_sel -- 🔴 D-CASBAUD (2026-11-14): A = 0 (1200) / 1 (2400) -> the 5-byte cassette set
+; (LOW, HIGH, HEADER) into the active slots at $F406, as both references do for SCREEN
+; ,,,n and CSAVE ,n (scratchpad/cstables.out: ,,,2 copies CS240 whole). zerobas set the LOW
+; word alone (CSAVE) or nothing (SCREEN). The tables are seeded at boot (D-CASSEED).
+; HL kept; A, F, BC, DE clobbered.
+cas_sel:
+                push    hl
+                ld      hl,CS240_LOW
+                or      a
+                jr      nz,css_cp
+                ld      hl,CS120_LOW
+css_cp:
+                ld      de,ACT_LOW
+                ld      bc,5
+                ldir
+                pop     hl
+                ret
 ; ls_fname_dev -- main's fname_dev (D-NGRAM16): the filename EXPRESSION, then
 ; "is it the tape?". out: Z = "CAS:" (HL past it) -- or no disk ROM at all
 ; (D-NODISKVERBS; a `d:` name raises 56 there); NZ = the disk (HL restored).
@@ -605,8 +620,7 @@ ls_pcr_noquote:
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load
-                ld      ix,p0_skipsp_test
-                call    p1cb
+                call    ls_skipsp
                 jr      z,lpn_ok            ; end of statement -> plain load
                 cp      COLON
                 jr      z,lpn_ok            ; statement separator -> plain load
@@ -649,8 +663,7 @@ ls_pcr_bload:
                 xor     a
                 ld      (RUNFLAG),a
                 ld      (VRAM_FLAG),a
-                ld      ix,p0_skipsp_test
-                call    p1cb
+                call    ls_skipsp
                 jr      z,lpb_done          ; `BLOAD "f"`
                 cp      COLON
                 jr      z,lpb_done
@@ -691,8 +704,7 @@ lpb_ofs:
                 ld      ix,p0_check_expr_errors
                 call    p1cb                ; a string 13, past 65535 6
                 ld      (BL_OFS),de
-                ld      ix,p0_skipsp_test
-                call    p1cb
+                call    ls_skipsp
                 jr      z,lpb_done
                 cp      COLON
                 jp      nz,ls_syntax

@@ -279,7 +279,7 @@ scs_spr:                                    ; A = the op
 ; spr_extra_arg). GFX_SARGN = the slot, maintained at each comma above.
 ;   slot 1  the sprite size, 0..3 (D-SCRERR: `SCREEN 1,99` is ERR 5 on both)
 ;   slot 2  the key click, stored RAW into CLIKSW (D-SCRCLICK: `,,2` -> 2 on both)
-;   slot 3  the cassette baud rate, 1..2, validated and IGNORED (D-SCRBAUD)
+;   slot 3  the cassette baud rate, 1..2: validated, then its 5-byte set made active (D-CASBAUD)
 ;   slot 4  the printer: ignored
 ; C carries the bound so slots 1 and 3 share one test, then says which slot.
 scs_extra_arg:
@@ -301,7 +301,7 @@ scs_bound:
                 jp      nc,ls_illegal       ; ERR 5 -- out of this slot's domain
                 dec     c
                 dec     c                   ; 4 -> 2 (size), 2 -> 0 (baud)
-                ret     z                   ; baud is validated and then IGNORED
+                jp      z,cas_sel           ; D-CASBAUD: baud 0 / 1 -> the cassette set
                 ld      (GFX_SSIZE),a       ; A = E, checked against C above
                 ld      a,12                ; tenant: apply the size bits to register 1
                 jr      scs_spr

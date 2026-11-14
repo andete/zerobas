@@ -3032,6 +3032,12 @@ fdcmasked-acceptance: repack-machine
 seqmix-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_seqmix.py
 
+# --- casbaud-acceptance: the active cassette set after SCREEN ,,,n / CSAVE ,n (D-CASBAUD) ---
+# The VG-8020 copies the whole 5-byte CS120 / CS240 set into $F406; zerobas ignored SCREEN's
+# fourth argument and set CSAVE's LOW word alone (the knife: scratchpad/CB_knife.out).
+casbaud-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_casbaud.py
+
 # --- biosflags-acceptance: BIOS entries whose published OUTPUT is a flag (D-SCALXYF) ------
 # DCOMPR / CHRGTR / GETYPR / CHSNS / BREAKX / LPTSTT / SCALXY, F masked to the documented
 # bits, VG-8020 against zerobas (biosregs compares A / BC / DE / HL only).
