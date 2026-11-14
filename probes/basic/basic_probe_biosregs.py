@@ -243,6 +243,14 @@ ROWS = {
                                     "POKE &HF3F8,&HF1:POKE &HF3F9,&HFB"),
     **{n: prog(0x0132, a, after='PRINT "[C";HEX$(INP(&HAA) AND &H40);"]":END')
        for n, a in (("chgcap0", 0), ("chgcap1", 1))},
+    # D-BIOSCONTRACT2 (2026-11-14, scratchpad/bios_contract_inventory.md gap 3): STMOTR's and
+    # CHGSND's whole answer is a port C ($AA) bit -- bit 4 the cassette motor (0 = on), bit 7
+    # the 1-bit sound output -- and only their registers were diffed. A = $FF is STMOTR's
+    # "toggle"; the motor is off at power-on on both machines, so $FF reads as "on" there.
+    **{n: prog(0x00F3, a, after='PRINT "[C";HEX$(INP(&HAA) AND &H10);"]":END')
+       for n, a in (("stmotr0b", 0), ("stmotr1b", 1), ("stmotrffb", 0xFF))},
+    **{n: prog(0x0135, a, after='PRINT "[C";HEX$(INP(&HAA) AND &H80);"]":END')
+       for n, a in (("chgsnd0b", 0), ("chgsnd1b", 1))},
     **{n: prog(a, r, after='PRINT "[C";HEX$(PEEK(&HD106));"]":END')
        for n, a, r in (("gtstck0a", 0x00D5, 0), ("gtstck1a", 0x00D5, 1),
                        ("gtpad0a", 0x00DB, 0), ("gtpdl1a", 0x00DE, 1))},

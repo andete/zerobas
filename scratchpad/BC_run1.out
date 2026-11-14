@@ -1,0 +1,8 @@
+ROW stmotr0b VG=[[C10]] ZB=[[C10]] SAME
+ROW stmotr1b VG=[[C0]] ZB=[[C0]] SAME
+ROW stmotrffb VG=[[C0]] ZB=[[C0]] SAME
+ROW chgsnd0b VG=[[C0]] ZB=[[C0]] SAME
+ROW chgsnd1b VG=[[C80]] ZB=[[C80]] SAME
+
+PASS: BIOS helper registers (5/5)
+refcache: 0 hit, 10 miss, 10 stored

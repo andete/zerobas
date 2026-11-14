@@ -16468,6 +16468,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       And a first cut of the row NAMES collided (`colour-explicit` /
       `colour-default` cut to six letters); the duplicate-key guard refused it.
 
+- [ ] 🎯 **D-BIOSCONTRACT2 — THE 108 BIOS ROWS ARE WITNESSED; THEIR CONTRACTS ARE NOT ALL COMPARED (filed
+      2026-11-14 under Joost's focus ruling: *"Any work done from now on till we broaden the scope again
+      should be on MSX1 BIOS calls."*)**
+      🎚️ TIER 1 — the BIOS entry surface (Joost 2026-11-08 / 11-13: entry points first, for C-BIOS upstream).
+      🤖 **AUTONOMOUS** — black box: registers, work area, VRAM, PSG / VDP registers, ports, printer logger.
+      📋 **THE QUEUE: [`bios_contract_inventory.md`](scratchpad/bios_contract_inventory.md)** -- per entry, what a caller can observe, which gate DIFFS
+      it against a reference, and the gap (a read-only agent's reading of every gate source; tier-status's
+      "exercised by" only says a gate NAMES an entry). Ranked gaps: (1) FORMAT -- nothing compared; (2)
+      LPTOUT -- no direct comparing call; (3) STMOTR / CHGSND -- a port $AA bit, only registers diffed; (4)
+      OUTDO's output and PRTFLG path; (5) the VDP REGISTERS after DISSCR / ENASCR / WRTVDP / CHGMOD /
+      INI* / SET* / TOTEXT / CHGCLR (only RAM shadows diffed); (6) SETRD / SETWRT's address pointer; (7) flags
+      BF misses (CNVCHR, ISFLIO, GSPSIZ, SETATR, the INLIN family's Cy on STOP, BREAKX held); (8) non-idle
+      states (LPTSTT ready, LFTQ / GETVCP non-empty, PUTQ full, devices); (9) GICINI's queues, INITIO's exit
+      registers; (10) SCREEN 3 variants of the cursor / MAPXYC / READC / SETC / NSETCX entries. Plus
+      entry_table.py's own faults (biosl's rungs never credited; spurious CHKRAM / LEFTC / FORMAT witnesses;
+      subrom-acceptance backs CALSLT with no reference).
+      ✅ **(3) CLOSED 2026-11-14:** biosregs gained stmotr0b / stmotr1b / stmotrffb (port $AA bit 4) and chgsnd0b
+      / chgsnd1b (bit 7): **5 / 5 SAME as the VG-8020** ([`BC_run1.out`](scratchpad/BC_run1.out)) -- no bug, an unmeasured contract
+      now gated (each pair expects different bits, so an entry that ignored A fails one).
+      ➡️ NEXT: (2) LPTOUT through outdlp's printer-logger apparatus, (5) the VDP registers through the debugger.
+
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**
       🎚️ TIER 1 — ⬆️ RE-TAGGED THE SAME DAY: Joost, *"having the bios and such stable and on par is
