@@ -43,9 +43,9 @@ MC = [0x3A, 0xF0, 0xC0, 0x4F, 0xED, 0x5B, 0xF2, 0xC0, 0x2A, 0xF4, 0xC0, 0xCD, 0x
 
 def rows(read):
     """(function, HL, DTA fill or NONE, name the FCB first, RS or -1, RR or -1, FCB 0=A 1=B, what)"""
-    rd = ((0x27, 1, 0xEE, 0, 128, 0, 1, "RDBLK B RR0") if read == "rdblk"
-          else (0x14, 0, 0xEE, 0, -1, -1, 1, "SEQREAD B"))
-    return [
+    rd = ((0x14, 0, 0xEE, 0, -1, -1, 1, "SEQREAD B") if read == "seqread"
+          else (0x27, 1, 0xEE, 0, 128, 0, 1, "RDBLK B RR0"))
+    r = [
         (0x1A, 0, NONE, 0, -1, -1, 0, "SETDTA"),
         (0x16, 0, NONE, 1, -1, -1, 1, "FMAKE B"),
         (0x15, 0, 0xAA, 0, -1, -1, 1, "SEQWRITE B 0"),
@@ -67,16 +67,25 @@ def rows(read):
         (0x0F, 0, NONE, 1, -1, -1, 1, "FOPEN B"),
         (0x21, 0, 0xEE, 0, 128, 0, 1, "RDRND B RR0"),
     ]
+    if read == "close":
+        # D-SEQMIX2: the SOURCE closed before the writer's last record (a copy that ends
+        # with an EOF mark): B's second FCLOSE moves to right after the read.
+        last = max(i for i, x in enumerate(r) if x[7] == "FCLOSE B")
+        r = r[:last] + r[last + 1:]
+        i = next(i for i, x in enumerate(r) if x[7] == "RDBLK B RR0") + 1
+        r = r[:i] + [(0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B")] + r[i:]
+    return r
 
 
-# The CF-3300's readings (seqmix_run3.out / seqmix_fix_*.out, both read shapes alike):
-# row -> (A register, FCB +16..19 size, FCB +26..27 first cluster, DTA[0]); None = not checked.
+# The CF-3300's readings (seqmix_run3.out / seqmix_fix_*.out / seqmix_close3.out, all three
+# shapes alike): the LAST row of that label -> (A register, FCB +16..19 size, FCB +26..27 first
+# cluster, DTA[0]); None = not checked.
 EXPECT = {
-    14: (0x00, 0x100, 5, None),     # FOPEN A: 2 records, cluster 5
-    15: (0x00, None, None, 0x11),   # RDRND A RR0
-    16: (0x00, None, None, 0x22),   # RDRND A RR1
-    18: (0x00, 0x200, 4, None),     # FOPEN B: its entry untouched, 4 records, cluster 4
-    19: (0x00, None, None, 0xAA),   # RDRND B RR0
+    "FOPEN A": (0x00, 0x100, 5, None),       # 2 records, cluster 5
+    "RDRND A RR0": (0x00, None, None, 0x11),
+    "RDRND A RR1": (0x00, None, None, 0x22),
+    "FOPEN B": (0x00, 0x200, 4, None),       # its entry untouched: 4 records, cluster 4
+    "RDRND B RR0": (0x00, None, None, 0xAA),
 }
 
 
@@ -165,14 +174,15 @@ def run(img, n):
 
 def main():
     bad = blind = 0
-    for read in ("rdblk", "seqread"):
+    for read in ("rdblk", "seqread", "close"):
         rws = rows(read)
         flag, v = run(image(program(rws)), len(rws))
         if not flag or flag[0] != 0xA5 or flag[1] != len(rws) - 1:
             print(f"ROW {read} NO READING (done-flag {flag.hex() if flag else None})")
             blind += 1
             continue
-        for i, (a_want, size_want, clus_want, dta_want) in EXPECT.items():
+        for label, (a_want, size_want, clus_want, dta_want) in EXPECT.items():
+            i = max(k for k, x in enumerate(rws) if x[7] == label)
             r = v[REC * i:REC * i + REC]
             fcb = r[10:47]
             got = (r[1], int.from_bytes(fcb[16:20], "little"),
@@ -186,7 +196,7 @@ def main():
         print(f"\nNO READING on {blind} shape(s)")
         return 2
     print(f"\n{'PASS' if not bad else 'FAIL'}: SEQWRITE with another file read between "
-          f"({10 - bad}/10 as the CF-3300)")
+          f"({15 - bad}/15 as the CF-3300)")
     return 1 if bad else 0
 
 

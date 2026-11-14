@@ -71,6 +71,7 @@ hof_fail:
                 jp      hfm_fail
 ; (moved here from driver.asm by the D-DSKFMT defrag)
 wrseq_body:                                 ; $477D: BDOS $15 SEQWRITE
+                call    seq_load            ; D-SEQMIX2: this file's own state (driver.asm)
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
                 ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of

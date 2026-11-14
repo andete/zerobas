@@ -79,6 +79,14 @@ if os.environ.get("SEQMIX_READ") == "seq":
     # the copy loop's usual read: SEQREAD (which runs seq_flush first) instead of RDBLK
     ROWS = [(0x14, 0, 0xEE, 0, -1, -1, 1, "SEQRD B rec0") if r[0] == 0x27 else r for r in ROWS]
 
+if os.environ.get("SEQMIX_READ") == "close":
+    # the source closed BEFORE the writer's last record (a copy that writes an EOF mark):
+    # FCLOSE B moves between the read and SEQWRITE A rec1
+    _last = max(i for i, r in enumerate(ROWS) if r[7] == "FCLOSE B")
+    _r = [r for i, r in enumerate(ROWS) if i != _last]       # only the SECOND close moves
+    _i = next(i for i, r in enumerate(_r) if r[0] == 0x27) + 1
+    ROWS = _r[:_i] + [(0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B (early)")] + _r[_i:]
+
 if __name__ == "__main__":
     F.ROWS = [r[:6] + (r[7],) for r in ROWS]    # main() reads (f, ..., what); run() reads len(ROWS)
     F.program = program

@@ -441,8 +441,7 @@ bd_step7:
 ; (scratchpad/seqmix_run3.out). Nothing is buffered any more (SEQWRITE writes through),
 ; so every FCLOSE closes from its own FCB: +26 / +16..19 at +25 (close_read, cr_dir).
 bdos_close_wm:
-                ld      (BDOS_WRMODE), a    ; (A = 0, bdos_close's `dec a`) not for write
-                jp      bdos_close_rd
+                jp      bcw_own             ; (the ownership test is in front of $5FE5)
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
@@ -3848,6 +3847,26 @@ write_sector:                           ; relocated (its entry once collided wit
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio           ; tail-call: dskio returns to our caller
+; bcw_own -- 🔴 D-SEQMIX2 (2026-11-14): FCLOSE ends write mode only for the WRITER'S OWN
+; file. BDOS_WRMODE is one global; a copy that closed its SOURCE before the destination's
+; last SEQWRITE had that write answered $FF and the record lost (scratchpad/
+; seqmix_close2.out: the CF-3300 2 records, zerobas 1). Same file = its FCB's first cluster
+; (+26) is the writer's (BDOS_WRFIRST) -- tested BEFORE close_read, whose cr_copy1 rewrites
+; BDOS_WRFIRST. In: DE = the FCB. A, F, BC, HL clobbered; DE kept for close_read.
+bcw_own:
+                ld      hl, 26
+                add     hl, de
+                ld      a, (hl)
+                inc     hl
+                ld      h, (hl)
+                ld      l, a                ; HL = the closed file's first cluster
+                ld      bc, (BDOS_WRFIRST)
+                or      a
+                sbc     hl, bc
+                jp      nz, bdos_close_rd   ; another file: the writer stays open
+                xor     a
+                ld      (BDOS_WRMODE), a    ; the writer's own file: no longer for write
+                jp      bdos_close_rd
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
 ; --- S10.D: the RANDOM record writer, in the free region after the $5FE5 veneer

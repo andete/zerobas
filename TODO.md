@@ -17434,10 +17434,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SEQWRITE) went MISALIGNED: it now takes **153.2 s against the CF-3300's 93.0**
       ([`SMX_d3_400b.out`](scratchpad/SMX_d3_400b.out), capture byte-identical) and its window was 150 s -- now 220, and the
       harness prints BOTH sides' times (the min alone hid ours).
-      ➡️ LEFT, filed: the write-through's cost (below); and from the design's own list -- any
-      FCLOSE clears BDOS_WRMODE (a still-open writer's next SEQWRITE answers $FF, as before);
-      another file's WRBLK / FCLOSE between SEQWRITEs rewrites BDOS_WRFIRST / WRBYTES; a BASIC
-      output channel between $F37D SEQWRITEs; CR from the shared BDOS_SEQREC.
+      ➡️ LEFT, filed: the write-through's cost (below); and from the design's own list -- a
+      BASIC output channel between $F37D SEQWRITEs; CR from the shared BDOS_SEQREC.
+      ✅ **D-SEQMIX2 (2026-11-14): the SOURCE CLOSED BEFORE THE WRITER'S LAST RECORD** -- a copy
+      that ends with an EOF mark ([`seqmix_close2.out`](scratchpad/seqmix_close2.out), `SEQMIX_READ=close`): FCLOSE B cleared the
+      ONE BDOS_WRMODE, so SEQWRITE A rec1 answered **$FF** and A.DAT kept 1 record (CF-3300: 2).
+      Fixed: (1) bdos_close_wm -> bcw_own (kernel.asm, in front of $5FE5): write mode ends only
+      when the closed FCB's +26 is the writer's BDOS_WRFIRST, tested before close_read (whose
+      cr_copy1 rewrites it); (2) seq_load (driver.asm, the $461D hole): every SEQWRITE reloads
+      BDOS_WRFIRST / BDOS_WRBYTES from its own FCB (+26, +16..19), which another file's FCLOSE /
+      WRBLK rewrite. [`seqmix_close3.out`](scratchpad/seqmix_close3.out): every row as the CF-3300 (🔮 HIT). seqmix-acceptance
+      gained the shape (15 rows, keyed by label): PASS; KNIFED against D-SEQMIX alone -> the 2
+      early-close rows DIVERGE ([`SMX2_knife.out`](scratchpad/SMX2_knife.out)). Unit tests, bdos (D3 151.7 s, in its window) /
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull /
+      wcache / callsystem acceptance green. Disk ROM after: 24 B in front of $41EF, the rest
+      under 16 (2026-11-14).
       - [ ] **SEQWRITE writes through: COPY by SEQREAD / SEQWRITE 153 s against 93** -- 🎚️ TIER 5 —
             on-par speed. Each record re-reads and writes its sector (the CF-3300 writes a
             sector once). The lever: hold the partial sector as DIRTY with an owner tag and

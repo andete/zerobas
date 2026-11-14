@@ -882,6 +882,26 @@ rnd_loc:
                 ret
 ; (seq_flush -- the buffered SEQWRITE records out before a random positioning -- is gone:
 ; D-SEQMIX, 2026-11-14, SEQWRITE writes through and nothing stays buffered.)
+; seq_load -- 🔴 D-SEQMIX2 (2026-11-14): the writer's first cluster and byte count come
+; from ITS FCB at every SEQWRITE (+26, +16..19 -- kept there each record by
+; wrseq_wr_writeback), not from globals another file's FCLOSE / WRBLK rewrites (cr_copy1 /
+; cr_copy2, wrblk_set_wrfirst). In: DE = the FCB (kept). A, F, BC, HL clobbered.
+seq_load:
+                push    de
+                ld      hl, 26
+                add     hl, de
+                ld      a, (hl)
+                inc     hl
+                ld      h, (hl)
+                ld      l, a
+                ld      (BDOS_WRFIRST), hl
+                pop     hl
+                push    hl
+                ld      bc, 16
+                add     hl, bc
+                call    to_wrbytes          ; BDOS_WRBYTES := FCB +16..19
+                pop     de
+                ret
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
                 jp      bdos_create_body         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)
