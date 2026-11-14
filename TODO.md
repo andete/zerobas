@@ -17389,6 +17389,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       there on the diskless target, and whether the VG-8020's $00 is worth matching (a CALL
       $F37D there runs into $00s; ours returns).
 
+- [ ] 🔴 **D-SEQMIX — A SEQWRITE FILE LOSES ITS DATA WHEN ANOTHER FILE IS READ BETWEEN ITS WRITES
+      (found 2026-11-14 while pricing D-BLKIOPERCALL's read tag)**
+      🎚️ TIER 1 — a BDOS entry point's happy path (Joost 2026-11-08: entry points first): the plainest
+      file copy -- read one file, SEQWRITE another -- writes the wrong bytes or an EMPTY file.
+      🤖 **AUTONOMOUS** — the CF-3300 settles it.
+      📏 [`seqmix_probe.py`](scratchpad/seqmix_probe.py) (bdosfcb_probe's machinery from BASIC's $F37D, two FCBs): B.DAT made with a
+      full sector of $AA and closed; FOPEN B; FMAKE A.DAT; SEQWRITE A rec0 $11 (buffered); a READ
+      of B; SEQWRITE A rec1 $22; FCLOSE A and B; FOPEN A and RDRND RR0 / RR1.
+      • the read is **RDBLK** ([`seqmix_run1.out`](scratchpad/seqmix_run1.out)): CF-3300 $11 / $22; **zerobas $AA / $22** -- A's buffered
+        record was overwritten by B's sector in the shared buffer (k47b2_seek does not seq_flush,
+        by design: D-BDOSSEQ found BASIC's own reads come through there).
+      • the read is **SEQREAD** ([`seqmix_run2.out`](scratchpad/seqmix_run2.out), `SEQMIX_READ=seq`): CF-3300 $11 / $22; **zerobas A.DAT
+        reopens with size 0, first cluster 0 -- EMPTY**, both RDRNDs A=01. SEQREAD runs seq_flush
+        (D-BDOSSEQ), and then the writer's GLOBAL state (size / chain, not the FCB's) is B's by
+        FCLOSE time -- the "FCB authoritative for every writer" design D-WRBLKDIR named
+        (2026-11-08: WRBLK / WRRND are; WRSEQ keeps its size in globals) and left open.
+      ➡️ The design that note asks for: WRSEQ keeps its file's state IN ITS FCB (+16 size, +26 /
+      +28 cluster, the record) as WRBLK / WRRND do; its partial sector survives another file's
+      use of the shared buffer (flushed by whoever reads into it, re-read when the writer
+      resumes mid-sector -- the CF-3300's dirty-buffer shape); FCLOSE writes the entry from the
+      closed FCB. Witnesses: this probe both ways (to a gate), wrblkalt / bdos acceptance, the
+      roundtrip probe, tests/test_wrseq_position.py. Price the disk-ROM bytes first (no 16 B
+      run left on 2026-11-14 apart from D-DISKCARVE3's 32 + 24).
+
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
       🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
