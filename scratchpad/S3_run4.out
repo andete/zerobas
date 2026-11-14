@@ -1,0 +1,3 @@
+ROW tdownc_h18 VG=[[C180F 10] | [R 5566 3344 1122 A0 F45]] ZB=[[C1908 10] | [R 5566 3344 1122 A0 F54]] DIVERGES
+
+FAIL: BIOS helper registers (0/1)

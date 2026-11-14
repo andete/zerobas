@@ -16566,7 +16566,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       unscored under the focus) -- from `tools/bios_levels.py`; each claim names its proving gate, and a claim whose
       gate no longer witnesses the entry REFUSES the page (tests/test_entry_table.py (f)). Gaps (8)-(10) are the
       L2 rows.
-      ➡️ NEXT: (10) SCREEN 3; the other L2 rows (bios_levels.py); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **(10) CLOSED 2026-11-14 -- A REAL DIFFERENCE (D-TDOWNCGE).** biosregs gained the SCREEN 3 rows of RIGHTC /
+      LEFTC / UPC / DOWNC / TUPC / TDOWNC / MAPXYC / READC / SETC / NSETCX (CMASK a nibble): 18 / 19 SAME
+      ([`S3_run1.out`](scratchpad/S3_run1.out)). TDOWNC diverged: the VG-8020 stops for CLOC high byte $17 in SCREEN 3 as well as 5 --
+      two rules fit (5 or $17 / anything >= 5), so rows H = 8, $16 and SCREEN 2's $18 separated them: >= the
+      bottom row, both modes ([`S3_run2.out`](scratchpad/S3_run2.out)..[`S3_run4.out`](scratchpad/S3_run4.out)). cbios-repack #28 `tdownc-ge.patch`: `jr z` -> `jr c` against the row
+      less one, same size; 12 / 12 ([`S3_run5.out`](scratchpad/S3_run5.out)). Ten entries to L3. **ALL TEN RANKED GAPS ARE CLOSED.**
+      ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

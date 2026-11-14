@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 22; L3 full contract: 79; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 12; L3 full contract: 89; L4 errors / edges: 3; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -260,20 +260,20 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00F3 | STMOTR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $00F6 | LFTQ | exercised | yes | L3 full contract | a non-empty queue, two queues apart | `biosq-acceptance`, `biosregs-acceptance` |
 | $00F9 | PUTQ | exercised | yes | L3 full contract | filled until Z: 127 bytes | `biosq-acceptance`, `strtms-acceptance` |
-| $00FC | RIGHTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
-| $00FF | LEFTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance`, `slotregs-acceptance` |
-| $0102 | UPC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
-| $0105 | TUPC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
-| $0108 | DOWNC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
-| $010B | TDOWNC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $00FC | RIGHTC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
+| $00FF | LEFTC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance`, `slotregs-acceptance` |
+| $0102 | UPC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
+| $0105 | TUPC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
+| $0108 | DOWNC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
+| $010B | TDOWNC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
 | $010E | SCALXY | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0111 | MAPXYC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0111 | MAPXYC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
 | $0114 | FETCHC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $0117 | STOREC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $011A | SETATR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
-| $011D | READC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
-| $0120 | SETC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
-| $0123 | NSETCX | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $011D | READC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
+| $0120 | SETC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
+| $0123 | NSETCX | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
 | $0126 | GTASPC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $0129 | PNTINI | exercised | yes | L3 full contract | — | `paintbios-acceptance` |
 | $012C | SCANR | exercised | yes | L3 full contract | — | `paintbios-acceptance` |

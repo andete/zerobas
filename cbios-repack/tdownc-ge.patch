@@ -1,0 +1,24 @@
+diff --git a/src/video.asm b/src/video.asm
+index caf72bb..dcbdce1 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -2396,12 +2396,16 @@ tdownc:
+                 and     7
+                 jr      nz,downc_in
+                 call    is_sc3
+-                ld      a,$17           ; the bottom cell row (192 / 8 - 1)
++                ; zerobas D-TDOWNCGE (2026-11-14): the edge is the bottom cell row OR
++                ; BELOW it -- the VG-8020 answers "no move, Cy" for H = $17 and $18 in
++                ; SCREEN 2, and for H = 5, 8, $16, $17 in SCREEN 3 (zerobas
++                ; scratchpad/S3_run2..4.out); `cp h / jr z` stopped at the last row only
++                ld      a,$17 - 1       ; the bottom cell row (192 / 8 - 1), less one
+                 jr      nz,tdownc_bot
+-                ld      a,5             ; SCREEN 3: 48 / 8 - 1
++                ld      a,5 - 1         ; SCREEN 3: 48 / 8 - 1, less one
+ tdownc_bot:
+                 cp      h
+-                jr      z,tupc_edge
++                jr      c,tupc_edge     ; H >= the bottom row
+                 xor     a
+ downc_wrap:
+                 push    de

@@ -165,7 +165,8 @@ ROWS = {
                  after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
                        'HEX$(PEEK(&HF92C));"]"')
        for n, addr, lo, hi in (("tupc_top", 0x0105, 8, 0), ("tupc_wrap", 0x0105, 8, 1),
-                               ("tdownc_bot", 0x010B, 15, 0x17), ("tdownc_wrap", 0x010B, 15, 1))},
+                               ("tdownc_bot", 0x010B, 15, 0x17), ("tdownc_wrap", 0x010B, 15, 1),
+                               ("tdownc_h18", 0x010B, 15, 0x18))},   # past the bottom (gap 10)
     # NSETCX (scratchpad/biossweep_nsx2.out): HL pixels from pixel 2 of $108 across two
     # bytes, as SETC sets / clears them, CLOC / CMASK back where they started. The
     # registers it leaves are NOT compared (`END` before the [R] print): the VG-8020
@@ -178,6 +179,40 @@ ROWS = {
                      'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(C);" ";HEX$(D);" ";'
                      'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]":END')
        for n, atr, pat in (("nsx_new", 6, 0), ("nsx_bg", 15, 255), ("nsx_fg", 4, 0))},
+    # D-BIOSCONTRACT2 gap 10 (2026-11-14): the same entries in SCREEN 3 (multicolour), which
+    # only SCREEN 2 had compared. CMASK is a NIBBLE there ($F0 the left block, $0F the right);
+    # READC / SETC / NSETCX read and write a pattern byte's nibble as a colour.
+    **{n: prog(addr, 0, before=f"SCREEN 3:POKE &HF92A,{lo}:POKE &HF92B,{hi}:POKE &HF92C,{m}",
+               after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
+                     'HEX$(PEEK(&HF92C));"]"')
+       for n, addr, lo, hi, m in (("rc3_mid", 0x00FC, 8, 1, 0xF0), ("rc3_wrap", 0x00FC, 8, 1, 0x0F),
+                                  ("lc3_mid", 0x00FF, 8, 1, 0x0F), ("lc3_wrap", 0x00FF, 8, 1, 0xF0),
+                                  ("uc3_mid", 0x0102, 11, 1, 0xF0), ("uc3_wrap", 0x0102, 8, 1, 0xF0),
+                                  ("dc3_mid", 0x0108, 11, 1, 0xF0), ("dc3_wrap", 0x0108, 15, 1, 0xF0))},
+    **{n: prog_f(addr, 0, before=f"SCREEN 3:POKE &HF92A,{lo}:POKE &HF92B,{hi}:POKE &HF92C,&HF0",
+                 after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
+                       'HEX$(PEEK(&HF92C));"]"')
+       for n, addr, lo, hi in (("tupc3_top", 0x0105, 8, 0), ("tupc3_wrap", 0x0105, 8, 1),
+                               ("tdownc3_bot", 0x010B, 15, 0x17), ("tdownc3_wrap", 0x010B, 15, 1),
+                               ("tdownc3_b5", 0x010B, 15, 5),     # SCREEN 3's real last cell row
+                               ("tdownc3_h8", 0x010B, 15, 8), ("tdownc3_h16", 0x010B, 15, 0x16))},
+    **{n: prog(0x0111, 0, bc=x, de=y, before="SCREEN 3:POKE &HFCB7,0:POKE &HFCB8,0",
+               after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
+                     'HEX$(PEEK(&HF92C));" ";HEX$(PEEK(&HFCB7)+256*PEEK(&HFCB8));"]"')
+       for n, x, y in (("mxy3_13", 13, 21), ("mxy3_max", 63, 47))},
+    **{n: prog(0x011D, 0, before=f"SCREEN 3:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,{m}:"
+                "VPOKE &H108,&H4F", after="SCREEN 0")
+       for n, m in (("readc3_hi", 0xF0), ("readc3_lo", 0x0F))},
+    **{n: prog(0x0120, 0, before=f"SCREEN 3:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,{m}:"
+                "VPOKE &H108,&H4F:POKE &HF3F2,6",
+               after='P=VPEEK(&H108):SCREEN 0:PRINT "[C";HEX$(P);"]"')
+       for n, m in (("setc3_hi", 0xF0), ("setc3_lo", 0x0F))},
+    "nsx3": prog(0x0123, 0, hl=5,
+                 before="SCREEN 3:POKE &HF92A,8:POKE &HF92B,1:POKE &HF92C,&H0F:"
+                        "VPOKE &H108,&H44:VPOKE &H110,&H44:VPOKE &H118,&H44:POKE &HF3F2,6",
+                 after='P=VPEEK(&H108):Q=VPEEK(&H110):R=VPEEK(&H118):SCREEN 0:'
+                       'PRINT "[C";HEX$(P);" ";HEX$(Q);" ";HEX$(R);" ";'
+                       'HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";HEX$(PEEK(&HF92C));"]":END'),
     # ERAFNK / DSPFNK (D-BIOSCONTRACT, basic/biosfnk.asm; scratchpad/biossweep_fnk2.out):
     # CNSDFG and the key row's first characters (SCREEN 0) or the VRAM byte under it
     # (SCREEN 2, untouched). Cells only (`END` before the [R] print): DE / A are side

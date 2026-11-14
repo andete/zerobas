@@ -97,11 +97,14 @@ PATCHES = [
     # the code between that pad and cls_text moves 4 B and nothing after it moves.
     os.path.join(REPO, "cbios-repack", "grphed-cls.patch"),
     os.path.join(REPO, "cbios-repack", "initio-gicini.patch"),
+    # D-TDOWNCGE (2026-11-14): TDOWNC stops at the bottom cell row OR below it, as the
+    # VG-8020 in SCREEN 2 and 3 -- `jr z` -> `jr c` against the row less one; same size.
+    os.path.join(REPO, "cbios-repack", "tdownc-ge.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "e2b5d143dc3c4efbaef90993bb47059ec750d73c"   # D-GICINIQ, 2026-11-14
+REPACKED_SHA1 = "2f4bb8810338e46acc96c08ecab5435e5e82e0d0"   # D-TDOWNCGE, 2026-11-14
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
