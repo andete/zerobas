@@ -7784,11 +7784,8 @@ srd_pos:
                 srl     h                   ; H = EX >> 1, CF = EX bit 0
                 rra
                 ld      l, a                ; HL = EX * 128 + CR
-                ld      de, (BDOS_SEQREC)
-                or      a
-                sbc     hl, de
-                ret     z                   ; the iterator is there already
-                add     hl, de
+                call    srd_same            ; D-SEQMIX3 (disk/pageenv.asm, for room)
+                ret     z                   ; this file's iterator, there already
                 ld      (BDOS_SEQREC), hl
                 inc     h
                 dec     h

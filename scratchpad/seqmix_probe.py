@@ -87,6 +87,30 @@ if os.environ.get("SEQMIX_READ") == "close":
     _i = next(i for i, r in enumerate(_r) if r[0] == 0x27) + 1
     ROWS = _r[:_i] + [(0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B (early)")] + _r[_i:]
 
+if os.environ.get("SEQMIX_READ") == "interleave":
+    # D-SEQMIX3: TWO files read alternately by SEQREAD (a merge / compare): the shared
+    # BDOS_SEQREC against each FCB's own record
+    ROWS = [
+        (0x1A, 0, NONE, 0, -1, -1, 0, "SETDTA $D400"),
+        (0x16, 0, NONE, 1, -1, -1, 0, "FMAKE A.DAT"),
+        (0x15, 0, 0x11, 0, -1, -1, 0, "SEQWR A rec0 $11"),
+        (0x15, 0, 0x22, 0, -1, -1, 0, "SEQWR A rec1 $22"),
+        (0x10, 0, NONE, 0, -1, -1, 0, "FCLOSE A"),
+        (0x16, 0, NONE, 1, -1, -1, 1, "FMAKE B.DAT"),
+        (0x15, 0, 0xAA, 0, -1, -1, 1, "SEQWR B rec0 $AA"),
+        (0x15, 0, 0xBB, 0, -1, -1, 1, "SEQWR B rec1 $BB"),
+        (0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B"),
+        (0x0F, 0, NONE, 1, -1, -1, 0, "FOPEN A"),
+        (0x0F, 0, NONE, 1, -1, -1, 1, "FOPEN B"),
+        (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQRD A (want $11)"),
+        (0x14, 0, 0xEE, 0, -1, -1, 1, "SEQRD B (want $AA)"),
+        (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQRD A (want $22)"),
+        (0x14, 0, 0xEE, 0, -1, -1, 1, "SEQRD B (want $BB)"),
+        (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQRD A (want EOF)"),
+        (0x10, 0, NONE, 0, -1, -1, 0, "FCLOSE A"),
+        (0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B"),
+    ]
+
 if __name__ == "__main__":
     F.ROWS = [r[:6] + (r[7],) for r in ROWS]    # main() reads (f, ..., what); run() reads len(ROWS)
     F.program = program

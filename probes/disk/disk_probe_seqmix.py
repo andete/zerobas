@@ -89,6 +89,38 @@ EXPECT = {
 }
 
 
+# D-SEQMIX3: TWO files read alternately by SEQREAD (a merge / compare). The iterator was
+# one, and SEQREAD A after FOPEN B read B's records (the CF-3300: A's, scratchpad/
+# seqmix_inter1.out). Its own rows and expectations.
+INTER = [
+    (0x1A, 0, NONE, 0, -1, -1, 0, "SETDTA"),
+    (0x16, 0, NONE, 1, -1, -1, 0, "FMAKE A"),
+    (0x15, 0, 0x11, 0, -1, -1, 0, "SEQWRITE A 0"),
+    (0x15, 0, 0x22, 0, -1, -1, 0, "SEQWRITE A 1"),
+    (0x10, 0, NONE, 0, -1, -1, 0, "FCLOSE A"),
+    (0x16, 0, NONE, 1, -1, -1, 1, "FMAKE B"),
+    (0x15, 0, 0xAA, 0, -1, -1, 1, "SEQWRITE B 0"),
+    (0x15, 0, 0xBB, 0, -1, -1, 1, "SEQWRITE B 1"),
+    (0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B"),
+    (0x0F, 0, NONE, 1, -1, -1, 0, "FOPEN A"),
+    (0x0F, 0, NONE, 1, -1, -1, 1, "FOPEN B"),
+    (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQREAD A 0"),
+    (0x14, 0, 0xEE, 0, -1, -1, 1, "SEQREAD B 0"),
+    (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQREAD A 1"),
+    (0x14, 0, 0xEE, 0, -1, -1, 1, "SEQREAD B 1"),
+    (0x14, 0, 0xEE, 0, -1, -1, 0, "SEQREAD A 2"),
+    (0x10, 0, NONE, 0, -1, -1, 0, "FCLOSE A"),
+    (0x10, 0, NONE, 0, -1, -1, 1, "FCLOSE B"),
+]
+EXPECT_INTER = {
+    "SEQREAD A 0": (0x00, None, 4, 0x11),    # A's first cluster stays A's (4)
+    "SEQREAD B 0": (0x00, None, 5, 0xAA),
+    "SEQREAD A 1": (0x00, None, 4, 0x22),
+    "SEQREAD B 1": (0x00, None, 5, 0xBB),
+    "SEQREAD A 2": (0x01, None, 4, None),    # end of file
+}
+
+
 def program(rws):
     def name(fcb, n):
         return (f'FOR I=0 TO 36:POKE &H{fcb:X}+I,0:NEXT:N$="{n}":'
@@ -174,14 +206,17 @@ def run(img, n):
 
 def main():
     bad = blind = 0
-    for read in ("rdblk", "seqread", "close"):
-        rws = rows(read)
+    total = 0
+    for read in ("rdblk", "seqread", "close", "interleave"):
+        rws = INTER if read == "interleave" else rows(read)
+        exp = EXPECT_INTER if read == "interleave" else EXPECT
         flag, v = run(image(program(rws)), len(rws))
         if not flag or flag[0] != 0xA5 or flag[1] != len(rws) - 1:
             print(f"ROW {read} NO READING (done-flag {flag.hex() if flag else None})")
             blind += 1
             continue
-        for label, (a_want, size_want, clus_want, dta_want) in EXPECT.items():
+        for label, (a_want, size_want, clus_want, dta_want) in exp.items():
+            total += 1
             i = max(k for k, x in enumerate(rws) if x[7] == label)
             r = v[REC * i:REC * i + REC]
             fcb = r[10:47]
@@ -196,7 +231,7 @@ def main():
         print(f"\nNO READING on {blind} shape(s)")
         return 2
     print(f"\n{'PASS' if not bad else 'FAIL'}: SEQWRITE with another file read between "
-          f"({15 - bad}/15 as the CF-3300)")
+          f"({total - bad}/{total} as the CF-3300)")
     return 1 if bad else 0
 
 

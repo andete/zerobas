@@ -68,6 +68,27 @@ lpe_loop:
 ; (docs/tier2-m22-cpmver-spec.md §4.1). The table's $0030 entry now points
 ; DIRECTLY at callf_body_body (label reference, position-free); moving the
 ; table or deleting the veneer changes nothing about lay_page0_env's own loop.
+; srd_same -- 🔴 D-SEQMIX3 (2026-11-14), srd_pos's "is the iterator there already?": Z only
+; when BDOS_SEQREC is this record AND the iterator's file is this FCB's (its first
+; cluster, +26, = FAT_FIRSTCLUS; two files never share one). The iterator is one: with A
+; and B open, SEQREAD A after FOPEN B saw CR 0 = BDOS_SEQREC 0 and read on from B's --
+; $AA / $BB where the CF-3300 gives A's $11 / $22 (scratchpad/seqmix_inter1.out); the
+; re-position (rrnd_pos_a) finds this FCB's file (D-RDRNDMULTI). In: HL = the record,
+; IX = the FCB. Out: Z / NZ, HL kept; DE clobbered. The second `sbc` needs no `or a`:
+; the `add hl,de` before it ran on HL = 0, so it cannot carry.
+srd_same:
+                ld      de, (BDOS_SEQREC)
+                or      a
+                sbc     hl, de
+                add     hl, de              ; (Z from the sbc survives `add hl`)
+                ret     nz
+                push    hl
+                ld      l, (ix+26)
+                ld      h, (ix+27)
+                ld      de, (FAT_FIRSTCLUS)
+                sbc     hl, de
+                pop     hl
+                ret
                 ds      $41EF - $, $00      ; pad (frees the old table tail + callf_body jp)
 k_41EF:
                 jp      cpmver_body         ; $41EF: BDOS $0C CPMVER canonical entry (M22a)

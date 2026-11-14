@@ -17435,7 +17435,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`SMX_d3_400b.out`](scratchpad/SMX_d3_400b.out), capture byte-identical) and its window was 150 s -- now 220, and the
       harness prints BOTH sides' times (the min alone hid ours).
       ➡️ LEFT, filed: the write-through's cost (below); and from the design's own list -- a
-      BASIC output channel between $F37D SEQWRITEs; CR from the shared BDOS_SEQREC.
+      BASIC output channel between $F37D SEQWRITEs.
+      ✅ **D-SEQMIX3 (2026-11-14): TWO FILES READ ALTERNATELY BY SEQREAD** (a merge / compare;
+      [`seqmix_inter1.out`](scratchpad/seqmix_inter1.out), `SEQMIX_READ=interleave`): SEQREAD A after FOPEN B read B's records ($AA,
+      $BB where the CF-3300 gives $11, $22) -- srd_pos trusted the one iterator whenever the
+      RECORD matched (0 = 0). Now srd_same (disk/pageenv.asm, the 24 B in front of $41EF --
+      exactly 24, one `or a` dropped with its reason) also requires the iterator's file to be
+      this FCB's (+26 = FAT_FIRSTCLUS); else rrnd_pos_a re-positions from this FCB's own file
+      (D-RDRNDMULTI). [`seqmix_inter2.out`](scratchpad/seqmix_inter2.out): every row as the CF-3300 (🔮 HIT). seqmix-acceptance gained
+      the shape (20 rows): PASS; KNIFED -> the 2 A reads DIVERGE ([`SMX3_knife.out`](scratchpad/SMX3_knife.out)). Unit tests, bdos /
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull / wcache /
+      programs acceptance green. Past record 255 srd_pos still reads on from the iterator
+      (rrnd_position's scope, unchanged). Disk ROM: no run of 16 B+ left (2026-11-14).
       ✅ **D-SEQMIX2 (2026-11-14): the SOURCE CLOSED BEFORE THE WRITER'S LAST RECORD** -- a copy
       that ends with an EOF mark ([`seqmix_close2.out`](scratchpad/seqmix_close2.out), `SEQMIX_READ=close`): FCLOSE B cleared the
       ONE BDOS_WRMODE, so SEQWRITE A rec1 answered **$FF** and A.DAT kept 1 record (CF-3300: 2).
