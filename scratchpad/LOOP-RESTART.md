@@ -4,6 +4,23 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🟢 STATE 2026-11-14 — READ FIRST (newest; no new rulings)
+
+- 🙋 **OPEN QUESTION FOR JOOST (filed in TODO D-CALLSTMT):** is "another MSX BASIC driving OUR disk
+  ROM" a target? Measured: under the CF-3300's own BASIC with our disk ROM, CALL SYSTEM is 1 / 12
+  SAME, and OPEN / KILL fail too -- Disk BASIC's statements live in zerobas's MAIN ROM. No disk-ROM
+  bytes spent until he answers (carves priced: sfirst/snext 13 B, the boot-sector read ~13 B).
+- Shipped: D-CASSEED (cassette tables at boot), D-IFFREAD2 (p1_blit / br_back read IFF twice),
+  D-FDCMASKED (`make fdcmasked-acceptance`), D-SEPONCE (a `:` is one boundary), D-NXBARE,
+  D-ESIDXAL (stmt_table at $7111 in the $72D4 pad; pin_plan now checks $3283 / $475A),
+  D-ESINLINE (exec_stmt's three calls inline).
+- TIER 5 state: loops at 3000 passes (`LOOPS4_N=3000 scratchpad/loops4_run.py`) VG-8020
+  715 / 986 / 73 / 240, zerobas 675 / 769 / 84 / 195 -- only the empty `%` loop is slower
+  (1.15x); SAVE ,A 5.9 s vs 1.5; LOAD on par to 14 KB, 1.58x per byte. All three are design work
+  now (see their TODO blocks' last ➡️).
+- The disk ROM has NO 0x00 run of 16 B+ (2026-11-14); main page 1's pads: 168 B at $475A
+  (new room), 879 at $6CF3, 275 at $72D4.
+
 ## 🟢 RULINGS + STATE 2026-11-13 — READ FIRST (newest)
 
 | ruling | Joost's words | consequence |

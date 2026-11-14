@@ -17717,8 +17717,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Trap / error suites (trapstmt, interval, stop, key, strig, sprite, error-trap, trapdepth,
       trapsvc, error) green; unit tests 97 / 97. Machine, 3000 passes ([`loops4_n3000b.out`](scratchpad/loops4_n3000b.out)):
       zerobas **675 / 769 / 84 / 195** (🔮 `%` ~85: HIT) -- the `%` loop 1.15x the VG-8020's 73.
-      ➡️ The `%` loop's rest (~1944 T against ~1530): nx_again's checks (~360 T), the int16
-      step (~620), the dispatch of NEXT (~550).
+      ✅ **D-NXLATCH (2026-11-14): nx_again's INTFLG test is gone.** It sent a latched STOP /
+      CTRL-STOP down the old road to rp_exec; since D-BRKLATCH step 2 exec_stmt reads the latch
+      at every boundary itself, and nx_again enters exec_stmt at the body's first statement --
+      the same boundary. Model ([`NL_after.out`](scratchpad/NL_after.out)): **-27 T a pass** in every case (🔮 HIT);
+      stop-trap / direct-ctrl / iscntc / interval-trap / trapstmt acceptance and unit tests green.
+      ➡️ The `%` loop's rest (~1917 T against ~1530): nx_again's re-base checks (~330 T), the
+      int16 step (~620), the dispatch of NEXT (~550).
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

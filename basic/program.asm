@@ -2354,9 +2354,11 @@ nx_again:
                 ; shadow still set, takes the old road, where rp_exec breaks / releases
                 ; it exactly as before) and CURLIN for the line now running (DIRECTF
                 ; does not change: the FOR's line is in the same run).
-                ld      a,(INTFLG)          ; D-BRKLATCH: a latched STOP / CTRL-STOP
-                or      a                   ; takes the old road, where rp_exec pauses
-                jr      nz,nx_again_run     ; or breaks
+                ; 🐌 D-NXLATCH (2026-11-14): no INTFLG test here any more. It sent a
+                ; latched STOP / CTRL-STOP down the old road to rp_exec; since D-BRKLATCH
+                ; step 2 exec_stmt reads the latch at EVERY statement boundary itself
+                ; (es_bl -> es_latch, basic/interp.asm), and this path enters exec_stmt
+                ; at the body's first statement -- the same boundary, handled there.
                 ; DIRECTF IS RE-DERIVED: a NEXT TYPED at the prompt continues a
                 ; PROGRAM's loop, and the body is program text (typed session
                 ; S3_editclear went red with the plain curlin_pub this had first).
