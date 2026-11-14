@@ -84,11 +84,15 @@ PATCHES = [
     # SCREEN 2 / 3, which leaned on them, takes GRPCGP / MLTCGP. Padded in place: 22
     # bytes change, nothing moves.
     os.path.join(REPO, "cbios-repack", "grpbase.patch"),
+    # D-LPTSTTF (2026-11-14): LPTSTT answers in F as the VG-8020 does -- ready A = $FF,
+    # F = $BB; not ready A = 0, F = $42 (zerobas basic_probe_outdlp.py, lptstt_rdy).
+    # `ccf / sbc a,a` gives both; 4 B shorter, padded: 7 bytes change, nothing moves.
+    os.path.join(REPO, "cbios-repack", "lptstt-flags.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "cf0040fb536d56f153285a862009c219924be6a7"   # D-GRPBASE, 2026-11-13
+REPACKED_SHA1 = "55438438853490d8649f6b4d2a6a7e613df7c37e"   # D-LPTSTTF, 2026-11-14
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

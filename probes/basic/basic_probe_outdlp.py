@@ -28,12 +28,12 @@ from basic_probe_editverb import prn_reading  # noqa: E402
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK"))
 
 
-def code(table):
-    # ld hl,TBL / lp: ld a,(hl) / or a / jr z,dn / push hl / call $014D / pop hl /
+def code(table, entry=0x014D):
+    # ld hl,TBL / lp: ld a,(hl) / or a / jr z,dn / push hl / call ENTRY / pop hl /
     # inc hl / jr lp / dn: ld a,($F415) / ld ($D100),a / ret / TBL: bytes, 0
     tbl = 0xD000 + 22
     c = [0x21, tbl & 255, tbl >> 8,
-         0x7E, 0xB7, 0x28, 0x08, 0xE5, 0xCD, 0x4D, 0x01, 0xE1, 0x23, 0x18, 0xF4,
+         0x7E, 0xB7, 0x28, 0x08, 0xE5, 0xCD, entry & 255, entry >> 8, 0xE1, 0x23, 0x18, 0xF4,
          0x3A, 0x15, 0xF4, 0x32, 0x00, 0xD1, 0xC9]
     assert len(c) == 22
     return c + list(table) + [0]
@@ -42,11 +42,21 @@ def code(table):
 CASES = {
     "tab": [0x41, 9, 0x42, 9, 0x43, 13, 10],          # A TAB B TAB C CR LF
     "tabcol": [0x41, 0x42, 0x43, 9, 0x44, 13, 10],    # TAB from column 3
+    # D-BIOSCONTRACT2 (2026-11-14): LPTOUT ($00A5) to a READY printer -- only its no-printer
+    # abort (lptout_noprn / lptout_intflg below) was compared. The same table through
+    # LPTOUT: a TAB goes out as $09 (OUTDLP expands it), and LPTPOS is OUTDLP's, not LPTOUT's.
+    "lptout_tab": ([0x41, 9, 0x42, 13, 10], 0x00A5),
 }
+# LPTSTT ($00A8) with the logger plugged (always ready): its A and F (gap 8: only the
+# no-printer state was compared). `push af / pop hl / ld ($D100),hl` -> D100 = F, D101 = A.
+LPTSTT_CODE = [0xCD, 0xA8, 0x00, 0xF5, 0xE1, 0x22, 0x00, 0xD1, 0xC9]
 
 
 def lines(table):
-    c = code(table)
+    entry = 0x014D
+    if isinstance(table, tuple):
+        table, entry = table
+    c = code(table, entry)
     return ["10 CLEAR 200,&HCFFF",
             f"20 FOR I=0 TO {len(c) - 1}:READ X:POKE &HD000+I,X:NEXT",
             '30 DEFUSR=&HD000:Q=USR(0):PRINT "[P";PEEK(&HD100);"]"',
@@ -144,10 +154,31 @@ def main():
             verdict = "DIVERGES"
             bad += 1
         print(f"ROW {name:7} VG=[{got['VG']}] ZB=[{got['ZB']}] {verdict}", flush=True)
+    got = {}
+    for side, mach in MACHINES:
+        log = probe_tmp.tmp(f"zb_outdlp_{side}_lptstt.log")
+        plug = (f"set printerlogfilename {{{log}}}", "plug printerport logger")
+        prog = ["NEW", "10 CLEAR 200,&HCFFF",
+                f"20 FOR I=0 TO {len(LPTSTT_CODE) - 1}:READ X:POKE &HD000+I,X:NEXT",
+                '30 DEFUSR=&HD000:Q=USR(0):PRINT "[P";PEEK(&HD101);PEEK(&HD100) AND &HC1;"]"',
+                "40 DATA " + ",".join(str(b) for b in LPTSTT_CODE), "RUN"]
+        raw = omsx_repl.run_cases(mach, [("direct", prog)], batch=False, reset=(), boot=8.0,
+                                  step=2.5, prologue=plug, capture=("screen_printer", log))[0]
+        scr, _, _ = (raw or "").partition("7c")
+        txt = bytes.fromhex(scr).decode("latin1") if scr else ""
+        i = txt.rfind("[P")
+        got[side] = txt[i:i + 14].strip() if i >= 0 else None
+    if not got["VG"] or not got["ZB"]:
+        verdict, blind = "NO-READING", blind + 1
+    elif got["VG"] == got["ZB"]:
+        verdict = "SAME"
+    else:
+        verdict, bad = "DIVERGES", bad + 1
+    print(f"ROW lptstt_rdy (A, F & S/Z/C) VG=[{got['VG']}] ZB=[{got['ZB']}] {verdict}", flush=True)
     if blind:
         print("INSTRUMENT FAULT: a side gave no reading")
         return 2
-    n = len(CASES) + len(NOPRN)
+    n = len(CASES) + len(NOPRN) + 1
     print(f"{'PASS' if not bad else 'FAIL'}: OUTDLP / LPTOUT against the VG-8020 ({n - bad}/{n})")
     return 1 if bad else 0
 

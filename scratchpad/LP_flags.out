@@ -1,0 +1,9 @@
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 8 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 8 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+Philips_VG_8020 printer [P 255  187 ] 
+Philips_VG_8020 none [P 0  66 ]    
+National_CF-3300 printer <none>
+National_CF-3300 none <none>
+C-BIOS_MSX1_EU_REPACK_NODISK printer [P 255  188 ] 
+C-BIOS_MSX1_EU_REPACK_NODISK none [P 0  84 ]    
+refcache: 0 hit, 6 miss, 4 stored

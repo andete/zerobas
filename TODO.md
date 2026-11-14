@@ -16493,7 +16493,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SETT32 / SETGRP / SETMLT, TOTEXT, CHGCLR -- each called through biosregs' USR stub, the program then
       looping so BASIC's prompt cannot reset the mode: **17 / 17 SAME as the VG-8020** ([`BV2_run1.out`](scratchpad/BV2_run1.out),
       [`BV2_run2.out`](scratchpad/BV2_run2.out) for WRTVDP's discriminating value). No bug; the chip now gated, not only the shadows.
-      ➡️ NEXT: (2) LPTOUT through outdlp's printer-logger apparatus.
+      ✅ **(2) LPTOUT / (8) LPTSTT READY, 2026-11-14 -- AND A REAL DIFFERENCE (D-LPTSTTF).** The inventory's "LPTOUT:
+      none directly" was wrong: outdlp-acceptance's lptout_noprn / lptout_intflg call `$00A5` from DATA bytes
+      (decimal -- entry_table.py's name scan cannot see them); its ABORT path was compared. Added: `lptout_tab`
+      (LPTOUT to the always-ready logger: `A\x09B\r\n`, the TAB NOT expanded, LPTPOS untouched) -- SAME; and
+      `lptstt_rdy` (LPTSTT with the logger: A and F & $C1) -- **DIVERGED** ([`LP_run1.out`](scratchpad/LP_run1.out)): the VG-8020
+      returns ready A = $FF **F = $BB**, not ready A = 0 **F = $42** ([`LP_flags.out`](scratchpad/LP_flags.out); the CF-3300's scrape was
+      in the wrong VRAM plane, unread); C-BIOS gave $BC / $54 -- Cy always clear. Both readings are exactly `ccf /
+      sbc a,a` after the busy bit is shifted into Cy (the flags read as a result, no ROM byte): **cbios-repack #24
+      `lptstt-flags.patch`**, 4 B shorter, padded -- 7 bytes change, nothing moves (byte-diffed); REPACKED_SHA1
+      5543843885.... After: outdlp 12 / 12 ([`LT_outdlp.out`](scratchpad/LT_outdlp.out)), biosflags green.
+      ➡️ NEXT: (1) FORMAT -- but its body is the DISK ROM's (H.FORM): only the main-BIOS side is in focus; then (4)
+      OUTDO's output, (6) SETRD / SETWRT's pointer, (7) the flags biosflags misses.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**

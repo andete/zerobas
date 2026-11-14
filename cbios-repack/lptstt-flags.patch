@@ -1,0 +1,27 @@
+diff --git a/src/main.asm b/src/main.asm
+index ae3ec7e..4b8d19a 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1699,13 +1699,16 @@ lptstt:
+                 call    H_LPTS
+                 in      a,(PRN_STAT)
+                 rra
+-                rra
+-                ld      a,$FF
+-                jr      nc,lptstt_end
+-                cpl
+-lptstt_end:
+-                and     a
++                rra                             ; Cy = busy
++                ; zerobas D-LPTSTTF (2026-11-14): the VG-8020's whole F, not only A / Z
++                ; (zerobas probes/basic/basic_probe_outdlp.py, lptstt_rdy): ready A = $FF,
++                ; F = $BB (S, Y, H, X, N, Cy); not ready A = 0, F = $42 (Z, N). `ccf / sbc
++                ; a,a` gives exactly those; C-BIOS's `cpl / and a` gave the right A / Z
++                ; with F $BC / $54. 4 B shorter: padded, nothing after it moves.
++                ccf
++                sbc     a,a
+                 ret
++                ds      4
+ 
+ ;--------------------------------
+ ; $00AB CNVCHR
