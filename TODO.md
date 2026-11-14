@@ -17528,9 +17528,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🏗️ **RULED (Joost 2026-11-14): *"ideally yes"*** -- another MSX BASIC driving our disk ROM IS
       a target, so the scope is the Disk BASIC statement layer in disk.rom; and *"we should
       stick to the final alotted space"*: inside the 16 KB, carving first (the disk ROM ships
-      before the rest of zerobas). ➡️ NEXT: inventory which statements fail there (the
-      callsystem rows did OPEN / KILL; run every disk statement under
-      National_CF-3300_ZEROBASDISK against National_CF-3300) and price the layer.
+      before the rest of zerobas).
+      📏 **INVENTORY (2026-11-14, [`foreign_probe.py`](scratchpad/foreign_probe.py) -> [`foreign_run1.out`](scratchpad/foreign_run1.out)): 1 / 18 SAME.** Under the
+      CF-3300's own BASIC, our disk ROM answers SAVE / LOAD / RUN / MERGE / OPEN / LOAD of a
+      missing file with `Internal error`, a random OPEN / FIELD / PUT with `Syntax error`,
+      KILL / NAME / COPY with `Type mismatch`, DSKF / DSKI$ with `Illegal function call`, and
+      FILES / LFILES list the files then `Illegal function call`; only MAXFILES matches.
+      That is the design: disk.rom serves DSKIO, the DOS kernel and the helpers zerobas's MAIN
+      ROM calls -- it has NO Disk BASIC statement layer behind the hooks a stock BASIC calls.
+      💰 **WHAT "IDEALLY YES" COSTS:** a whole Disk BASIC in disk.rom -- every statement above
+      plus the file-I/O hooks a stock BASIC reaches (the CF-3300 holds its own in the same
+      16 KB with its kernel) -- several KB, against a disk ROM with no free run of 16 B
+      (2026-11-14) and the ruling that its 16 KB is final. 🙋 **ASK JOOST: the two rulings
+      conflict at this size.** Options: (a) carve the kernel / helpers hard and build the
+      layer (several KB of carving -- not visible today); (b) "ideally" means not now:
+      record these rows as the known gap; (c) a subset (which statements matter most under
+      a foreign BASIC: LOAD / RUN / FILES?) priced one by one.
       ~~🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
       yes, the scope is Disk BASIC's statement layer in disk.rom (the CF-3300's ROM holds
       it in the same 16 KB), not CALL SYSTEM alone. If no, CALL FORMAT under another BASIC

@@ -1,0 +1,57 @@
+ROW files DIVERGES
+   CF=[FILES | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | color   auto    goto    list    run]
+   ZD=[FILES | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Illegal function call | color   auto    goto    list    run]
+ROW dskf DIVERGES
+   CF=[PRINT DSKF(0) |  706 | color   auto    goto    list    run]
+   ZD=[PRINT DSKF(0) | Illegal function call | color   auto    goto    list    run]
+ROW save DIVERGES
+   CF=[10 PRINT "HI" | SAVE "P.BAS" | NEW | LOAD "P.BAS" | LIST | 10 PRINT "HI" | color   auto    goto    list    run]
+   ZD=[10 PRINT "HI" | SAVE "P.BAS" | Internal error | NEW | LOAD "P.BAS" | Internal error | LIST | color   auto    goto    list    run]
+ROW savea DIVERGES
+   CF=[10 PRINT "HI" | SAVE "PA.BAS",A | NEW | LOAD "PA.BAS" | LIST | 10 PRINT "HI" | color   auto    goto    list    run]
+   ZD=[10 PRINT "HI" | SAVE "PA.BAS",A | Internal error | NEW | LOAD "PA.BAS" | Internal error | LIST | color   auto    goto    list    run]
+ROW run DIVERGES
+   CF=[10 PRINT "RAN" | SAVE "R.BAS" | NEW | RUN "R.BAS" | RAN | color   auto    goto    list    run]
+   ZD=[10 PRINT "RAN" | SAVE "R.BAS" | Internal error | NEW | RUN "R.BAS" | Internal error | color   auto    goto    list    run]
+ROW merge DIVERGES
+   CF=[10 PRINT "A" | SAVE "M.BAS",A | NEW | 20 PRINT "B" | MERGE "M.BAS" | LIST | 10 PRINT "A" | 20 PRINT "B" | color   auto    goto    list    run]
+   ZD=[10 PRINT "A" | SAVE "M.BAS",A | Internal error | NEW | 20 PRINT "B" | MERGE "M.BAS" | Internal error | LIST | 20 PRINT "B" | color   auto    goto    list    run]
+ROW openw DIVERGES
+   CF=[OPEN "T.TXT" FOR OUTPUT AS 1 | PRINT #1,"LINE" | CLOSE | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+   ZD=[OPEN "T.TXT" FOR OUTPUT AS 1 | Internal error | PRINT #1,"LINE" | File not OPEN | CLOSE | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+ROW openr DIVERGES
+   CF=[OPEN "T.TXT" FOR OUTPUT AS 1:PRINT #1,"L | INE":CLOSE | OPEN "T.TXT" FOR INPUT AS 1:LINE INPUT # | 1,A$:PRINT EOF(1);LOF(1);"[";A$;"]":CLOS | E | -1  7 [LINE] | color   auto    goto    list    run]
+   ZD=[OPEN "T.TXT" FOR OUTPUT AS 1:PRINT #1,"L | INE":CLOSE | Internal error | OPEN "T.TXT" FOR INPUT AS 1:LINE INPUT # | 1,A$:PRINT EOF(1);LOF(1);"[";A$;"]":CLOS | E | Internal error | color   auto    goto    list    run]
+ROW append DIVERGES
+   CF=[OPEN "T.TXT" FOR OUTPUT AS 1:PRINT #1,"A | ":CLOSE | OPEN "T.TXT" FOR APPEND AS 1:PRINT #1,"B | ":CLOSE | OPEN "T.TXT" FOR INPUT AS 1:INPUT #1,A$, | B$:PRINT A$;B$:CLOSE | AB | color   auto    goto    list    run]
+   ZD=[OPEN "T.TXT" FOR OUTPUT AS 1:PRINT #1,"A | ":CLOSE | Internal error | OPEN "T.TXT" FOR APPEND AS 1:PRINT #1,"B | ":CLOSE | Internal error | OPEN "T.TXT" FOR INPUT AS 1:INPUT #1,A$, | B$:PRINT A$;B$:CLOSE | Internal error | color   auto    goto    list    run]
+ROW random DIVERGES
+   CF=[OPEN "R.DAT" AS 1 LEN=16:FIELD 1,16 AS F | $:LSET F$="REC":PUT 1,2:CLOSE | OPEN "R.DAT" AS 1 LEN=16:FIELD 1,16 AS F | $:GET 1,2:PRINT "[";F$;"]";LOC(1):CLOSE | [REC             ] 2 | color   auto    goto    list    run]
+   ZD=[OPEN "R.DAT" AS 1 LEN=16:FIELD 1,16 AS F | $:LSET F$="REC":PUT 1,2:CLOSE | Syntax error | OPEN "R.DAT" AS 1 LEN=16:FIELD 1,16 AS F | $:GET 1,2:PRINT "[";F$;"]";LOC(1):CLOSE | Syntax error | color   auto    goto    list    run]
+ROW kill DIVERGES
+   CF=[OPEN "K.TXT" FOR OUTPUT AS 1:CLOSE | KILL "K.TXT" | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+   ZD=[OPEN "K.TXT" FOR OUTPUT AS 1:CLOSE | Internal error | KILL "K.TXT" | Type mismatch | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+ROW name DIVERGES
+   CF=[OPEN "N.TXT" FOR OUTPUT AS 1:CLOSE | NAME "N.TXT" AS "M.TXT" | FILES "?.TXT" | M       .TXT | color   auto    goto    list    run]
+   ZD=[OPEN "N.TXT" FOR OUTPUT AS 1:CLOSE | Internal error | NAME "N.TXT" AS "M.TXT" | Type mismatch | FILES "?.TXT" | Type mismatch | color   auto    goto    list    run]
+ROW copy DIVERGES
+   CF=[OPEN "C.TXT" FOR OUTPUT AS 1:PRINT #1,"X | ":CLOSE | COPY "C.TXT" TO "D.TXT" | FILES "?.TXT" | C       .TXT D       .TXT | color   auto    goto    list    run]
+   ZD=[OPEN "C.TXT" FOR OUTPUT AS 1:PRINT #1,"X | ":CLOSE | Internal error | COPY "C.TXT" TO "D.TXT" | Type mismatch | FILES "?.TXT" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Illegal function call | color   auto    goto    list    run]
+ROW bsave DIVERGES
+   CF=[BSAVE "B.BIN",&HC000,&HC00F | BLOAD "B.BIN" | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+   ZD=[<APPARATUS: omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; no>]
+ROW maxfiles SAME
+   CF=[MAXFILES=3 | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+   ZD=[MAXFILES=3 | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+ROW dski DIVERGES
+   CF=[A$=DSKI$(0,0):PRINT LEN(A$);ASC(A$) |  0 | Illegal function call | color   auto    goto    list    run]
+   ZD=[A$=DSKI$(0,0):PRINT LEN(A$);ASC(A$) | Illegal function call | color   auto    goto    list    run]
+ROW lfiles DIVERGES
+   CF=[LFILES | color   auto    goto    list    run]
+   ZD=[LFILES | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run]
+ROW notfound DIVERGES
+   CF=[LOAD "NOSUCH.BAS" | File not found | color   auto    goto    list    run]
+   ZD=[LOAD "NOSUCH.BAS" | Internal error | color   auto    goto    list    run]
+
+1/18 SAME; diverging: files dskf save savea run merge openw openr append random kill name copy bsave dski lfiles notfound
+refcache: 0 hit, 35 miss, 35 stored
