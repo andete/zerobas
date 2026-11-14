@@ -10916,7 +10916,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15340 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15346 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11642,10 +11642,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
             (2026-11-14). New `make casbaud-acceptance` (probes/basic/basic_probe_casbaud.py): boot,
             SCREEN ,,,2, ,,,1, CSAVE ,2 -- 4 / 4 as the VG-8020 ([`CB_run2.out`](scratchpad/CB_run2.out); 🔮 HIT); KNIFED
             against the old sub2 -> ,,,2 and CSAVE ,2 DIVERGE ([`CB_knife.out`](scratchpad/CB_knife.out)).
-      - [ ] **D-CSAVEREST — `CSAVE` in a program skips the REST OF ITS LINE** -- 🎚️ TIER 1 —
+      - [x] **D-CSAVEREST — `CSAVE` in a program skips the REST OF ITS LINE** -- 🎚️ TIER 1 —
             the happy path of saving from a program: `20 CSAVE "X":PRINT "[C]"` then `30 PRINT
             "[D]"` prints [C] and [D] on the VG-8020, only [D] here (found 2026-11-14 writing
             casbaud-acceptance; present on HEAD before D-CASBAUD). 🤖 AUTONOMOUS.
+            ✅ **FIXED 2026-11-14:** BSAVE "CAS:" had it too, SAVE "CAS:" did not -- it ENDS the run
+            on both machines ([`CR_run1.out`](scratchpad/CR_run1.out)). ls_sv_tenant (sub2/loadsave.asm, CSAVE's and BSAVE
+            "CAS:"'s only exit) continued with ls_ret, a handler `ret` that ends the LINE; it
+            keeps the cursor across the save engine now and continues at exec_stmt (+3 B; sub
+            page 1 6 B free, 2026-11-14). casbaud-acceptance gained the three mid-line rows: 7 / 7
+            ([`CR_gate.out`](scratchpad/CR_gate.out)); KNIFED -> CSAVE / BSAVE rows DIVERGE, SAVE's stays SAME ([`CR_knife.out`](scratchpad/CR_knife.out)).
       - [ ] **The 2400-baud high tone is 5013 Hz here, 4811 Hz on the VG-8020** -- 🎚️ TIER 6 —
             [`leader_count_2400b.out`](scratchpad/leader_count_2400b.out); CAS_HHALF24 (tape/tape.asm) was never measured against an oracle,
             as its own comment says. The 1200 tones are 2390 / 2393 Hz.

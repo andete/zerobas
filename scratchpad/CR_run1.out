@@ -1,0 +1,7 @@
+csave C-BIOS_MSX1_EU RUN | [A] | [C] | [D] | ZB | color  auto   goto   list   run
+csave Philips_VG_802 RUN | [A] | [C] | [D] | Ok | color  auto   goto   list   run
+savecas C-BIOS_MSX1_EU RUN | [A] | ZB | color  auto   goto   list   run
+savecas Philips_VG_802 RUN | [A] | Ok | color  auto   goto   list   run
+bsavecas C-BIOS_MSX1_EU RUN | [A] | [C] | [D] | ZB | color  auto   goto   list   run
+bsavecas Philips_VG_802 RUN | [A] | [C] | [D] | Ok | color  auto   goto   list   run
+refcache: 3 hit, 3 miss, 3 stored

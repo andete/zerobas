@@ -1,0 +1,7 @@
+VG boot=535C262D0F  SCREEN ,,,2=252D0E161F  SCREEN ,,,1=535C262D0F  CSAVE ,2=252D0E161F
+ZB boot=535C262D0F  SCREEN ,,,2=252D0E161F  SCREEN ,,,1=535C262D0F  CSAVE ,2=252D0E161F
+VG CSAVE mid-line=[A][C][D]  BSAVE "CAS:" mid-line=[A][C][D]  SAVE "CAS:" mid-line=[A]
+ZB CSAVE mid-line=[A][C][D]  BSAVE "CAS:" mid-line=[A][C][D]  SAVE "CAS:" mid-line=[A]
+
+PASS: the active cassette set (7/7 as the VG-8020)
+refcache: 7 hit, 1 miss, 3 of the hits were ZEROBAS readings, 1 stored

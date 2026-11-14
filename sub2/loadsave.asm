@@ -454,10 +454,18 @@ lbs_cas:
                 ld      (EXECPTR),de
 lbs_cas_open:
                 ld      a,SV_OP_BSV_CAS     ; BSAVE -> tape
+; 🔴 D-CSAVEREST (2026-11-14): THE STATEMENT GOES ON AFTER THE SAVE. Its continuation was
+; ls_ret -- a handler `ret`, which ends the LINE: `20 CSAVE "X":PRINT "[C]"` (and BSAVE
+; "CAS:") skipped the PRINT, where the VG-8020 runs it (casbaud-acceptance's first cut).
+; Now the cursor is kept across the engine and the line continues at exec_stmt. Only CSAVE
+; and BSAVE "CAS:" come here; SAVE "CAS:" ENDS the run on both machines, by its own path.
 ls_sv_tenant:                               ; main's `jp sv_tenant`: the tape engine,
+                push    hl                  ; the cursor: past the statement
                 ld      ix,p0_sv_tenant     ; which raises 19 on a break and otherwise
-                call    p1cb                ; RETURNED FROM THE HANDLER (`ret z`) --
-                jp      ls_ret              ; so this statement's continuation is a `ret`
+                call    p1cb                ; returns
+                pop     hl
+                ld      de,p0_exec_stmt     ; the line goes on (main's exec_stmt)
+                ret
 
 ; ls_opt4 -- main's bsave_opt4: the disk BSAVE's 4th slot.
 ; out: A = 0 none (HL at the terminator) / 1 ",S" (HL past the S) / 2 the exec

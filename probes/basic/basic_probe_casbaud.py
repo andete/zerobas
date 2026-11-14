@@ -34,6 +34,28 @@ PROG = ["NEW",
 ROWS = (("B", "boot"), ("2", "SCREEN ,,,2"), ("1", "SCREEN ,,,1"), ("C", "CSAVE ,2"))
 
 
+# D-CSAVEREST (2026-11-14): a tape save mid-line. CSAVE and BSAVE "CAS:" go on with the
+# rest of their line on the VG-8020; zerobas ended the line (its continuation was a handler
+# `ret`). SAVE "CAS:" ENDS the run on both -- the row that keeps a fix from overreaching.
+REST = {
+    "CSAVE mid-line": '20 CSAVE "X":PRINT "[C]"',
+    'BSAVE "CAS:" mid-line': '20 BSAVE "CAS:Z",&HC000,&HC00F:PRINT "[C]"',
+    'SAVE "CAS:" mid-line': '20 SAVE "CAS:Y":PRINT "[C]"',
+}
+
+
+def rest_rows(m):
+    out = {}
+    for what, line in REST.items():
+        prog = ["NEW", '10 PRINT "[A]"', line, '30 PRINT "[D]"', "RUN"]
+        raw = omsx_repl.run_cases(m, [("direct", prog)], batch=False, reset=("",),
+                                  step=3.0, run_gap=40.0)[0] or ""
+        flat = re.sub(r"\s+", "", raw)
+        tail = flat[flat.rfind("RUN"):] if "RUN" in flat else ""
+        out[what] = "".join(re.findall(r"\[[ACD]\]", tail)) or None
+    return out
+
+
 def main():
     got = {}
     for side, m in MACHINES:
@@ -42,12 +64,16 @@ def main():
         flat = re.sub(r"\s+", "", raw)
         got[side] = {k: (re.findall(rf"\[{k}([0-9A-F]{{10}})\]", flat) or [None])[-1] for k, _ in ROWS}
         print(f"{side} " + "  ".join(f"{what}={got[side][k]}" for k, what in ROWS), flush=True)
-    if any(v is None for v in got["VG"].values()):
+    rest = {side: rest_rows(m) for side, m in MACHINES}
+    for side in ("VG", "ZB"):
+        print(f"{side} " + "  ".join(f"{w}={v}" for w, v in rest[side].items()), flush=True)
+    if any(v is None for v in got["VG"].values()) or any(v is None for v in rest["VG"].values()):
         print("NO READING on the VG-8020")
         return 2
     bad = [what for k, what in ROWS if got["VG"][k] != got["ZB"][k]]
+    bad += [w for w in REST if rest["VG"][w] != rest["ZB"][w]]
     print(f"\n{'PASS' if not bad else 'FAIL'}: the active cassette set "
-          f"({len(ROWS) - len(bad)}/{len(ROWS)} as the VG-8020){'; differs: ' + ', '.join(bad) if bad else ''}")
+          f"({len(ROWS) + len(REST) - len(bad)}/{len(ROWS) + len(REST)} as the VG-8020){'; differs: ' + ', '.join(bad) if bad else ''}")
     return 1 if bad else 0
 
 
