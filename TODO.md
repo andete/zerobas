@@ -17382,6 +17382,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
       🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
+      🙋 **WAITING ON JOOST since 2026-11-14 -- the scope question at the end of this block.**
       🤖 **AUTONOMOUS** — National_CF-3300_ZEROBASDISK (the stock machine, our disk ROM) answers
       `call format` with Syntax error at once: that BASIC dispatches CALL to the disk ROM's
       STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
@@ -17423,6 +17424,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       16+). Written out, sh_sys is ~55-60 B against ~10 there (after the +4 B subroutine
       change) and 26 in front of $75A5, and its error routes do not split -- **still ~25 B
       short**. Parked there: the case is another BASIC driving OUR disk ROM.
+      📏 **MEASURED UNDER ANOTHER BASIC (2026-11-14): IT IS NOT ONE STATEMENT.** The callsystem
+      gate's twelve rows with the ZB side on National_CF-3300_ZEROBASDISK (the CF-3300's own
+      BASIC, our disk ROM; new `--zb-machine`, [`CS_base.out`](scratchpad/CS_base.out)): 1 / 12 SAME. CALL SYSTEM is
+      Syntax error everywhere (expected) -- but also `OPEN "X.TXT" FOR OUTPUT AS 1` answers
+      `File already open` and `KILL "COMMAND.COM"` `Illegal function call`, and after MSX-DOS's
+      `BASIC` the key row is not shown (f346dos / dosarg). zerobas keeps Disk BASIC's
+      statements in its MAIN ROM by design (D-FATENG: disk.rom serves DSKIO / BDOS / DOS);
+      another BASIC gets none of them from our disk ROM. So CALL SYSTEM there is one row of a
+      missing LAYER, and its price (~40 B: sh_sys + a carve; found today: sfirst/snext share
+      13 B, the boot-sector read + signature check twice in init.asm / hk_system ~13 B) comes
+      out of a disk ROM with 0 B in runs of 16+.
+      🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
+      yes, the scope is Disk BASIC's statement layer in disk.rom (the CF-3300's ROM holds
+      it in the same 16 KB), not CALL SYSTEM alone. If no, CALL FORMAT under another BASIC
+      (done) is where it stops, and these rows are a RULED difference. The carve above is
+      not spent until he answers.
       - [x] **tools/check_disk_walls.py counts the dead FDC window $7F80-$7FBF as free** --
             🎚️ APPARATUS — its "largest usable hole" today is that window (65 B at $7F7F, the 1 B
             before it real). A reading that offers unfetchable memory as room cost one RED gate

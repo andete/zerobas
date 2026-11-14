@@ -1,0 +1,15 @@
+ROW nosys CF=[CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK] | color   auto    goto    list    run] DIVERGES
+ROW nosysprg CF=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 5 ERL 20 | color   auto    goto    list    run] ZB=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 2 ERL 20 | color   auto    goto    list    run] DIVERGES
+ROW nosysund CF=[_SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[_SYSTEM | Syntax error | PRINT "[OK]" | [OK] | color   auto    goto    list    run] DIVERGES
+ROW dosarg CF=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC] | color   auto    goto    list    run] ZB=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC]] DIVERGES
+ROW dos CF=[CALL SYSTEM | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] ZB=[CALL SYSTEM | Syntax error | DIR MSXDOS.SYS | Syntax error] DIVERGES
+ROW dosprog CF=[10 CALL SYSTEM | 20 PRINT "[AFTER]" | RUN | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] ZB=[10 CALL SYSTEM | 20 PRINT "[AFTER]" | RUN | Syntax error in 10 | DIR MSXDOS.SYS | Syntax error] DIVERGES
+ROW dosfile CF=[OPEN "X.TXT" FOR OUTPUT AS 1 | PRINT #1,"HELLO" | CALL SYSTEM | A>TYPE X.TXT | HELLO | A>] ZB=[OPEN "X.TXT" FOR OUTPUT AS 1 | File already open | PRINT #1,"HELLO" | Bad file number | CALL SYSTEM | Syntax error | TYPE X.TXT | Syntax error] DIVERGES
+ROW doscom CF=[KILL "COMMAND.COM" | CALL SYSTEM | Insert DOS disk in default drive | and strike any key when ready] ZB=[KILL "COMMAND.COM" | Illegal function call | CALL SYSTEM | Syntax error] DIVERGES
+ROW f346data CF=[PRINT PEEK(&HF346) |  0 | color   auto    goto    list    run] ZB=[PRINT PEEK(&HF346) |  0 | color   auto    goto    list    run] SAME
+ROW f346dos CF=[PRINT PEEK(&HF346) |  255 | color   auto    goto    list    run] ZB=[PRINT PEEK(&HF346) |  255] DIVERGES
+ROW f346poke CF=[POKE &HF346,1:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK]] ZB=[POKE &HF346,1:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK] | color   auto    goto    list    run] DIVERGES
+ROW f346zero CF=[POKE &HF346,0:CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[POKE &HF346,0:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK]] DIVERGES
+
+FAIL: CALL SYSTEM (1/12)
+refcache: 12 hit, 12 miss, 12 stored

@@ -67,6 +67,10 @@ def rows(scr):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dos-disk", default=DEFAULT_DOS_DISK)
+    # D-CALLSTMT (2026-11-14): the ZB side may be another machine -- the CF-3300's own
+    # BASIC with OUR disk ROM (National_CF-3300_ZEROBASDISK), where CALL reaches the
+    # disk ROM's STATEMENT handler instead of zerobas-BASIC's hooks.
+    ap.add_argument("--zb-machine", default="C-BIOS_MSX1_EU_REPACK_DISK")
     ap.add_argument("only", nargs="*")
     args = ap.parse_args()
     only = args.only or list(ROWS)
@@ -77,7 +81,7 @@ def main():
     for name in only:
         src, lines = ROWS[name]
         got = {}
-        for side, m in (("CF", "National_CF-3300"), ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK")):
+        for side, m in (("CF", "National_CF-3300"), ("ZB", args.zb_machine)):
             dsk = probe_tmp.tmp(f"callsystem_{name}_{m}.dsk")
             shutil.copyfile(args.dos_disk if src == "dos" else
                             os.path.join(REPO, "disk", "test720.dsk"), dsk)
