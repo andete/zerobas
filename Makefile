@@ -3037,6 +3037,10 @@ seqmix-acceptance: repack-machine
 biosvdp-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_biosvdp.py
 
+# --- biosq-acceptance: LFTQ / PUTQ / GETVCP / GETVC2 out of the idle state (D-BIOSCONTRACT2 gap 8) ---
+biosq-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_biosq.py
+
 # --- grphed-acceptance: GRPHED ($FCA6) after the screen entries (D-GRPHEDCLS) ---
 # the text-mode clear ends a pending CNVCHR graphic header on the VG-8020; nothing else does.
 grphed-acceptance: repack-machine

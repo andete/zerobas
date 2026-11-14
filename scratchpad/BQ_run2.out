@@ -1,0 +1,7 @@
+ROW lftq3     VG=[007C 0000] ZB=[007C 0000] SAME
+ROW putqfull  VG=[007F 0000] ZB=[007F 0000] SAME
+ROW lftq1     VG=[007C 007F] ZB=[007C 007F] SAME
+ROW getvcp1   VG=[FB68 0000] ZB=[FB68 0000] SAME
+ROW getvcp2   VG=[FB8D 0000] ZB=[FB8D 0000] SAME
+ROW getvc2    VG=[FB90 0000] ZB=[FB90 0000] SAME
+PASS: the queue / voice entries out of the idle state (6/6)

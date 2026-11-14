@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 32; L3 full contract: 69; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 28; L3 full contract: 73; L4 errors / edges: 3; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -224,7 +224,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0087 | CALATR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $008A | GSPSIZ | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $008D | GRPPRT | exercised | yes | L2 happy path | the glyph drawn | `biosregs-acceptance` |
-| $0090 | GICINI | exercised | yes | L2 happy path | QUETAB / PLYCNT (gap 9) | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
+| $0090 | GICINI | exercised | yes | L2 happy path | QUETAB / PLYCNT (gap 9) | `biosl-acceptance`, `biosq-acceptance`, `gicini-acceptance`, `initio-acceptance` |
 | $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | yes | L3 full contract | — | `strtms-acceptance` |
@@ -258,8 +258,8 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00ED | TAPOUT | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
 | $00F0 | TAPOOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
 | $00F3 | STMOTR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $00F6 | LFTQ | exercised | yes | L2 happy path | a non-empty queue (gap 8) | `biosregs-acceptance` |
-| $00F9 | PUTQ | exercised | yes | L2 happy path | a full queue (gap 8) | `strtms-acceptance` |
+| $00F6 | LFTQ | exercised | yes | L3 full contract | a non-empty queue, two queues apart | `biosq-acceptance`, `biosregs-acceptance` |
+| $00F9 | PUTQ | exercised | yes | L3 full contract | filled until Z: 127 bytes | `biosq-acceptance`, `strtms-acceptance` |
 | $00FC | RIGHTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
 | $00FF | LEFTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance`, `slotregs-acceptance` |
 | $0102 | UPC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
@@ -288,8 +288,8 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0147 | FORMAT | exercised | yes | L1 called | its witnesses are spurious (the word FORMAT); the body is the disk ROM's -- only the main-BIOS side is in focus | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
 | $014A | ISFLIO | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $014D | OUTDLP | exercised | yes | L4 errors / edges | the Device I/O error abort compared | `outdlp-acceptance` |
-| $0150 | GETVCP | exercised | yes | L2 happy path | other voices (gap 8) | `biosregs-acceptance` |
-| $0153 | GETVC2 | exercised | yes | L2 happy path | other voices (gap 8) | `biosregs-acceptance` |
+| $0150 | GETVCP | exercised | yes | L3 full contract | voices 1 and 2 | `biosq-acceptance`, `biosregs-acceptance` |
+| $0153 | GETVC2 | exercised | yes | L3 full contract | voice 2, offset 5 | `biosq-acceptance`, `biosregs-acceptance` |
 | $0156 | KILBUF | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $0159 | CALBAS | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 

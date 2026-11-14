@@ -16532,6 +16532,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas's F = $21, A = $0D ([`IN_run2.out`](scratchpad/IN_run2.out)). bios_inlin's STOP exit now `xor a / scf` (+4 B, the $3283
       pin pad 6 B left): 3 / 3 ([`IN_run3.out`](scratchpad/IN_run3.out)). BREAKX with STOP held was already compared (breakx_loop spins
       on its Cy).
+      ✅ **(8) PART CLOSED 2026-11-14:** new `make biosq-acceptance` (probes/basic/basic_probe_biosq.py): after GICINI,
+      LFTQ with 3 bytes queued (and queues 0 / 1 apart), PUTQ until it answers Z (127 bytes, LFTQ then 0), GETVCP
+      voices 1 / 2, GETVC2 voice 2 offset 5: **6 / 6 SAME as the VG-8020** ([`BQ_run2.out`](scratchpad/BQ_run2.out)). No bug. The first run's one
+      split was the APPARATUS: a result byte the code never wrote ([`BQ_run1.out`](scratchpad/BQ_run1.out)); the words are zeroed first now.
+      Left of (8): the joystick / paddle / pad entries with a device plugged.
       📊 **LEVEL COLUMN (Joost 2026-11-14, "yes add the level column"):** docs/tier-status.md's BIOS table
       gains a contract level per entry -- L1 called, L2 happy path, L3 full contract, L4 errors / edges (L5 speed
       unscored under the focus) -- from `tools/bios_levels.py`; each claim names its proving gate, and a claim whose

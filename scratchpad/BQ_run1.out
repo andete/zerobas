@@ -1,0 +1,7 @@
+ROW lftq3     VG=[007C FFFF] ZB=[007C FFFF] SAME
+ROW putqfull  VG=[007F 0000] ZB=[FF7F 0000] DIVERGES
+ROW lftq1     VG=[007C 007F] ZB=[007C 007F] SAME
+ROW getvcp1   VG=[FB68 FFFF] ZB=[FB68 FFFF] SAME
+ROW getvcp2   VG=[FB8D FFFF] ZB=[FB8D FFFF] SAME
+ROW getvc2    VG=[FB90 FFFF] ZB=[FB90 FFFF] SAME
+FAIL: the queue / voice entries out of the idle state (5/6)
