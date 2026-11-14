@@ -187,7 +187,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $000C | RDSLT | exercised | yes | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
 | $0010 | CHRGTR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0014 | WRSLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0018 | OUTDO | exercised | yes | `biosregs-acceptance` |
+| $0018 | OUTDO | exercised | yes | `biosregs-acceptance`, `outdlp-acceptance` |
 | $001C | CALSLT | exercised | yes | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
 | $0020 | DCOMPR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0024 | ENASLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **444** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **445** in the MSX standard work area at or above `$F380`.
 * **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -295,6 +295,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
 | `$F415` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F415` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
+| `$F416` |  | `basic` | `PRTFLG` | the published "output to the printer" flag: OUTDO |  |
 | `$F417` | 2 B | `basic` | `GFX_SPATN` | $F417: ...pattern number (2) |  |
 | `$F419` | 2 B | `basic` | `GFX_G8N` | $F419: written index n (int16 LE) (2) |  |
 | `$F41B` | 1 B | `basic` | `GFX_VLEN` | $F41B: the entry size the tenant read back (1) |  |

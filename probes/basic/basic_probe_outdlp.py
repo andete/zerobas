@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """D-BIOSRUNG (3), OUTDLP ($014D): "printer output, TAB expanded to spaces, a failure is
-Device I/O error", called DIRECTLY -- VG-8020 against zerobas.
+Device I/O error", called DIRECTLY -- VG-8020 against zerobas. Also LPTOUT ($00A5), LPTSTT
+($00A8) and OUTDO ($0018) with PRTFLG ($F416) 1 / 0 (D-BIOSCONTRACT2, D-OUTDOPRT).
 
 Our own machine code sends a byte table through $014D, one call a byte, then stores
 LPTPOS ($F415, the printer column) and A / HL of the last call. The printer is
@@ -28,14 +29,17 @@ from basic_probe_editverb import prn_reading  # noqa: E402
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_DISK"))
 
 
-def code(table, entry=0x014D):
-    # ld hl,TBL / lp: ld a,(hl) / or a / jr z,dn / push hl / call ENTRY / pop hl /
-    # inc hl / jr lp / dn: ld a,($F415) / ld ($D100),a / ret / TBL: bytes, 0
-    tbl = 0xD000 + 22
-    c = [0x21, tbl & 255, tbl >> 8,
-         0x7E, 0xB7, 0x28, 0x08, 0xE5, 0xCD, entry & 255, entry >> 8, 0xE1, 0x23, 0x18, 0xF4,
-         0x3A, 0x15, 0xF4, 0x32, 0x00, 0xD1, 0xC9]
-    assert len(c) == 22
+def code(table, entry=0x014D, prtflg=None):
+    # [ld a,PRTFLG / ld ($F416),a] / ld hl,TBL / lp: ld a,(hl) / or a / jr z,dn / push hl /
+    # call ENTRY / pop hl / inc hl / jr lp / dn: [xor a / ld ($F416),a] / ld a,($F415) /
+    # ld ($D100),a / ret / TBL: bytes, 0
+    pre = [] if prtflg is None else [0x3E, prtflg, 0x32, 0x16, 0xF4]
+    post = [] if prtflg is None else [0xAF, 0x32, 0x16, 0xF4]
+    tbl = 0xD000 + len(pre) + 22 + len(post)
+    c = pre + [0x21, tbl & 255, tbl >> 8,
+               0x7E, 0xB7, 0x28, 0x08, 0xE5, 0xCD, entry & 255, entry >> 8, 0xE1, 0x23, 0x18,
+               0xF4] + post + [0x3A, 0x15, 0xF4, 0x32, 0x00, 0xD1, 0xC9]
+    assert len(c) == tbl - 0xD000
     return c + list(table) + [0]
 
 
@@ -46,17 +50,27 @@ CASES = {
     # abort (lptout_noprn / lptout_intflg below) was compared. The same table through
     # LPTOUT: a TAB goes out as $09 (OUTDLP expands it), and LPTPOS is OUTDLP's, not LPTOUT's.
     "lptout_tab": ([0x41, 9, 0x42, 13, 10], 0x00A5),
+    # D-BIOSCONTRACT2 gap 4 (2026-11-14): OUTDO ($0018) -- only its registers were compared.
+    # PRTFLG ($F416) = 1: the bytes go to the printer (the printer's bytes and LPTPOS are the
+    # answer, the TAB the discriminating byte); PRTFLG = 0: to the screen, the printer
+    # untouched (`<nothing printed>`) and the three characters just before BASIC's `[P`.
+    "outdo_prn": ([0x41, 9, 0x42, 13, 10], 0x0018, 1),
+    "outdo_prncol": ([0x41, 0x42, 0x43, 9, 0x44], 0x0018, 1),
+    "outdo_scr": ([0x51, 0x52, 0x53], 0x0018, 0),
 }
+# rows whose screen reading includes the characters just before `[P` (their own output)
+BEFORE = {"outdo_scr": 3}
 # LPTSTT ($00A8) with the logger plugged (always ready): its A and F (gap 8: only the
 # no-printer state was compared). `push af / pop hl / ld ($D100),hl` -> D100 = F, D101 = A.
 LPTSTT_CODE = [0xCD, 0xA8, 0x00, 0xF5, 0xE1, 0x22, 0x00, 0xD1, 0xC9]
 
 
 def lines(table):
-    entry = 0x014D
+    entry, prtflg = 0x014D, None
     if isinstance(table, tuple):
-        table, entry = table
-    c = code(table, entry)
+        table, entry, *rest = table
+        prtflg = rest[0] if rest else None
+    c = code(table, entry, prtflg)
     return ["10 CLEAR 200,&HCFFF",
             f"20 FOR I=0 TO {len(c) - 1}:READ X:POKE &HD000+I,X:NEXT",
             '30 DEFUSR=&HD000:Q=USR(0):PRINT "[P";PEEK(&HD100);"]"',
@@ -144,7 +158,8 @@ def main():
             scr, _, _ = (raw or "").partition("7c")
             txt = bytes.fromhex(scr).decode("latin1") if scr else ""
             i = txt.rfind("[P")
-            got[side] = f"{prn_reading(raw)}  {txt[i:i + 12].strip() if i >= 0 else '<NO [P]>'}"
+            j = max(0, i - BEFORE.get(name, 0))
+            got[side] = f"{prn_reading(raw)}  {txt[j:i + 12].strip() if i >= 0 else '<NO [P]>'}"
         if any("<NO [P]>" in v or "<NO CAPTURE>" in v for v in got.values()):
             verdict = "NO-READING"
             blind += 1

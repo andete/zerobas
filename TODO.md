@@ -16517,8 +16517,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       moves 4 B, GRPPRT's guard follows) + new `make grphed-acceptance`: 12 / 12 SAME ([`GH_gate.out`](scratchpad/GH_gate.out)),
       CNVCHR 4 / 4 ([`GH_cnv.out`](scratchpad/GH_cnv.out)); the screen / BIOS suites and unit tests green on the moved image
       ([`GH_biosflags-acceptance.out`](scratchpad/GH_biosflags-acceptance.out) and its GH_* siblings). Left of (7): the INLIN family's Cy on STOP, BREAKX held.
-      ➡️ NEXT: (4) OUTDO's output and PRTFLG path; (7)'s remainder; (8)-(10); (1) FORMAT -- its body is the DISK
-      ROM's (H.FORM): only the main-BIOS side is in focus.
+      ✅ **(4) CLOSED 2026-11-14 -- A REAL DIFFERENCE (D-OUTDOPRT).** outdlp-acceptance gained outdo_prn /
+      outdo_prncol (OUTDO with PRTFLG ($F416) = 1) and outdo_scr (PRTFLG 0). The VG-8020 PRINTS with PRTFLG set,
+      exactly OUTDLP's answer (TAB to spaces, LPTPOS 9 after `ABC TAB D`); zerobas's outdo went to pchar, the
+      printer got nothing ([`OD_run1.out`](scratchpad/OD_run1.out): 13 / 15). outdo (basic/islands.asm) now jumps to `outdo_dest`
+      (basic/main.asm, the low region's end: 15 B, 9 B left there): PRTFLG != 0 -> bios_outdlp, else pchar as
+      before (zerobas's own LPRINT uses PRDEST / PRDEV and never sets PRTFLG). After: 15 / 15 ([`OD_run2.out`](scratchpad/OD_run2.out)).
+      ⚠️ Not separated: which of PTRFIL (a file) and PRTFLG wins when both are set.
+      ➡️ NEXT: (7)'s remainder; (8)-(10); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**

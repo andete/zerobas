@@ -350,6 +350,25 @@ ndd_tape:
 ; reason -- every low-region pin is already behind it.
                 include "basic/varfind.asm"
 
+; outdo_dest -- OUTDO's ($0018) destination, after its hook. D-OUTDOPRT (2026-11-14):
+; with PRTFLG ($F416) non-zero the VG-8020's OUTDO prints -- `A TAB B CR LF` reaches
+; the printer as `A` + 7 spaces + `B\r\n`, and `ABC TAB D` leaves LPTPOS 9: OUTDLP's
+; answer exactly (scratchpad/OD_run1.out, rows outdo_prn / outdo_prncol). zerobas sent
+; it to the screen: the printer got nothing. PRTFLG 0 keeps pchar (the screen, or the
+; channel BASIC's PRDEST / PRDEV name; zerobas's own LPRINT never sets PRTFLG). The
+; printer arm is bios_outdlp (basic/biosfnk.asm); AF is restored before either arm.
+; Here, at the low region's end: biosfnk.asm's pad in front of the $3283 pin is 9 B.
+outdo_dest:
+                push    af
+                ld      a,(PRTFLG)
+                or      a
+                jr      z,odd_scr
+                pop     af
+                jp      bios_outdlp
+odd_scr:
+                pop     af
+                jp      pchar
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

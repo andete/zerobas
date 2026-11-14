@@ -3690,6 +3690,9 @@ RL_AUTO         equ     $F732           ; read_line: 1 = AUTO's polling mode (1)
 ; count is 0 either way). LF is simply not counted as an advance here; that is a
 ; CHOICE, recorded as one, not a measured rule.
 LPTPOS          equ     $F415           ; printer head column, 0-based (1)
+PRTFLG          equ     $F416           ; the published "output to the printer" flag: OUTDO
+                                        ; reads it (D-OUTDOPRT); zerobas's own LPRINT uses
+                                        ; PRDEST / PRDEV and leaves it 0
                                   ; D-WSZERO S8: the reference's LPTPOS (C-BIOS's LPTOUT zeroes it on an abort, as the reference) (was $EE76)
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-

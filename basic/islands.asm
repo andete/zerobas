@@ -257,11 +257,13 @@ cgt_lp:
 ; character twice, so the merge also patches C-BIOS's boot to leave H.OUTD a
 ; RET (`ld a,$c3` -> `ld a,$c9` at $1037, below), as on the published machine.
 ; A is saved around the hook as C-BIOS saves it: a hook may clobber it.
+; D-OUTDOPRT: the destination test is outdo_dest (basic/biosfnk.asm, the low
+; region): this island has no byte to spare.
 outdo:
                 push    af
                 call    H_OUTD              ; the published hook (a RET by default)
                 pop     af
-                jp      pchar
+                jp      outdo_dest
 
 ; ttypos_col -- TTYPOS as the reference keeps it (D-ADDR29 N set, 2026-09-25).
 ; C-BIOS's CHPUT ends `ld a,(CSRX) / ld (TTYPOS),a`, a 1-BASED cursor mirror;
