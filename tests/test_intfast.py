@@ -477,9 +477,15 @@ class Runner:
 
         def hooked():
             if cpu.pc == self.exec_pc:
-                if self.timing:
-                    self.stmt_t.append(_T["t"])
-                self.snaps.append(self.snapshot())
+                # D-SEPONCE (2026-11-14): a `:` re-entered exec_stmt once before
+                # this image and not after it, giving the OLD image a second,
+                # IDENTICAL snapshot (nothing runs between the two). Consecutive
+                # duplicates carry no state, so they are collapsed on both images.
+                _sn = self.snapshot()
+                if not self.snaps or self.snaps[-1] != _sn:
+                    self.snaps.append(_sn)
+                    if self.timing:             # (kept in step with snaps: stmt_time
+                        self.stmt_t.append(_T["t"])     # indexes both together)
             step()
         cpu.step = hooked
 

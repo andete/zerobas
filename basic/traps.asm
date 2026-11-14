@@ -141,13 +141,13 @@ tsr_put:
 ;        frame resumes at HL, and exec leaves as a GOTO to the handler line
 ;        (GOTOTGT / GOTOFLAG, which rp_run hands to rp_goto) -- the run loop's
 ;        own `call exec` return is the word under es_trap's.
-;   An end of line or a `:` is not a statement: ex_sep re-enters exec_stmt past
-;   the `:`, and the next line's first statement comes back here. Direct mode
-;   never dispatches (rp_trapchk's rule, moved with it).
+;   An end of line is not a statement: the next line's first statement comes back
+;   here. A `:` IS a boundary since D-SEPONCE (2026-11-14): exec_stmt no longer re-
+;   runs this test past it, so a trap fires AT the `:` -- its GOSUB frame resumes
+;   there, and the `:` then dispatches the same statement. Direct mode never
+;   dispatches (rp_trapchk's rule, moved with it).
 es_trap:
                 call    skipsp_test         ; A = the first non-space, Z = end of line
-                ret     z
-                cp      COLON
                 ret     z
                 ld      a,(TRAPPEND)
                 cp      2                   ; ONLY 2 is trap_pend_late's countdown: the

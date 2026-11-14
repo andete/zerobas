@@ -651,6 +651,7 @@ exec_stmt:
                                             ; as the VG-8020, then the trap test -- one
                                             ; call (basic/program.asm): this region had no
                                             ; room for both tests inline (it overran $8000)
+es_disp:
                 call    skipsp_test ; leading spaces are skipped (spec §5)
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
@@ -694,13 +695,25 @@ exec_stmt:
                 jr      c,es_idx
                 ld      a,(hl)              ; A = the token again
                 cp      COLON
-                jp      z,ex_sep            ; ':' separator / empty statement
+                jr      z,es_sep            ; ':' separator / empty statement
                 cp      '_'
                 jp      z,ex_call_us        ; _<name> -- the CALL abbreviation
                 cp      PEEK_PREFIX
                 jp      z,ex_ff_stmt        ; $FF -> MID$ / STRIG starting a statement
 es_noentry:                                 ; a letter never reaches here (D-LETFIRST)
                 jp      stmt_error
+; 🐌 D-SEPONCE (2026-11-14): A `:` IS ONE BOUNDARY, NOT TWO. The boundary work above
+; (PRDEST, the FPERR reader, TEMPPT, es_bound's STOP latch and trap test) ran with HL
+; on the `:`; ex_sep's `jp exec_stmt` then ran ALL of it again for the statement after
+; it, with nothing executed in between -- so FPERR / TEMPPT / PRDEST could not have
+; moved. Past the `:` only SAVTXT (RESUME's statement start) is new; the dispatch
+; goes on from there. es_trap fires AT the `:` now (its handler resumes there, and the
+; `:` then dispatches the same statement), so no boundary loses its trap test. ~180 T
+; a `:` (scratchpad/LP_*.out); ex_sep stays for the handlers that end on one.
+es_sep:
+                inc     hl
+                ld      (SAVTXT),hl         ; the statement after the `:` starts here
+                jr      es_disp
 es_idx:
                 ld      e,a
                 ld      d,0

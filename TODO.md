@@ -17524,7 +17524,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
-      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 19 ticks against 7 (the rest is level now).
+      🎚️ TIER 5 — on-par speed: the `%` FOR loop, 10 ticks against 7 on 2026-11-14 (the rest is level now).
       🤖 **AUTONOMOUS** — each lever is a slice; results must stay byte-identical.
       📏 **RE-MEASURED 2026-11-06 ON BOTH MACHINES** ([`loops4_time.out`](scratchpad/loops4_time.out),
       the four cases x300 in TIME ticks, VG-8020 / zerobas): `A=I+7` **70 / 72**, `A=I*7`
@@ -17656,6 +17656,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       15-byte frame copy when FOR_CUR already holds that frame -- FOR_CUR is BUFTX, a scratch
       buffer other statements write, so a cached "this frame" key could be clobbered into a
       false match.
+      ✅ **D-SEPONCE (2026-11-14): A `:` IS ONE STATEMENT BOUNDARY, NOT TWO.** Every
+      `stmt:stmt` ran exec_stmt's boundary work twice: the handler's `jp exec_stmt` landed
+      on the `:` (PRDEST, the FPERR reader, TEMPPT, es_bound), the `:` dispatched to ex_sep,
+      and ex_sep's `jp exec_stmt` ran all of it again for the next statement -- nothing
+      executed in between, so only SAVTXT could differ. exec_stmt's `:` arm is es_sep now
+      (basic/interp.asm): past the `:`, SAVTXT, back to the dispatch. es_trap (basic/traps.asm)
+      had refused a `:` because the re-entry gave it a second chance; it fires AT the `:`
+      now -- the handler's frame resumes there, and the `:` dispatches the same statement.
+      Model (scratchpad/loopprof_host.py, [`LP_base.out`](scratchpad/LP_base.out) -> [`LP_after.out`](scratchpad/LP_after.out)): exactly
+      **-183 T per `:`** in every case (🔮 ~180 HIT); the empty `%` loop 2382 -> 2199 T a
+      pass. Machine ([`loops4_time8.out`](scratchpad/loops4_time8.out), x300 ticks, VG-8020 69 / 97 / 7 / 24): zerobas
+      66 / 73 / 12 / 20 -> **64 / 70 / 10 / 19** (🔮 65 / 72 / 11 / 19: MISSED on the good
+      side). The nine trap suites green (trapstmt, interval, stop, key, strig, sprite,
+      error, trapdepth, trapsvc). Unit tests: test_stmt_dispatch names es_sep for `:`;
+      the old-vs-new differentials (test_forfast / forint / intfast) collapse CONSECUTIVE
+      IDENTICAL snapshots, which the old image took twice per `:`. ➡️ The `%` loop's rest
+      (10 against 7, ~550 T a pass) is still the per-statement dispatch.
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

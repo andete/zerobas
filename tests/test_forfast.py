@@ -135,7 +135,13 @@ class Runner:
                     _T["on"] = False
                     self.next_t.append(_T["t"])
                     self.next_sub.append(self.subcalls[0])
-                self.snaps.append(self.snapshot())
+                # D-SEPONCE (2026-11-14): a `:` re-entered exec_stmt once before
+                # this image and not after it, giving the OLD image a second,
+                # IDENTICAL snapshot (nothing runs between the two). Consecutive
+                # duplicates carry no state, so they are collapsed on both images.
+                _sn = self.snapshot()
+                if not self.snaps or self.snaps[-1] != _sn:
+                    self.snaps.append(_sn)
             elif pc == self.next_pc and self.timing:
                 in_next[0] = True
                 _T["t"] = 0

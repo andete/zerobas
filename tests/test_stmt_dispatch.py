@@ -88,7 +88,9 @@ from msxtest import Machine  # noqa: E402
 # a new statement should not be able to appear in the dispatch without the gate
 # being told about it.
 EXPECTED = [
-    ('COLON', 'ex_sep'),
+    # D-SEPONCE (2026-11-14): exec_stmt's own `:` arm (es_sep: SAVTXT, then the
+    # dispatch again) -- ex_sep stays for the handlers that end on a `:`.
+    ('COLON', 'es_sep'),
     # D-WAIT 2026-09-07: WAIT is the one entry NOT recovered from the
     # pre-refactor chain, because it did not exist then — the statement was
     # missing from zerobas entirely (kwsweep's crunch layer read `wait 0,0` back
