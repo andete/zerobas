@@ -89,7 +89,16 @@ class Pin:
 
 
 PINS = [
+    # D-ESIDXAL (2026-11-14): $3283 and $475A stood in the source as `ds` pins but not
+    # here, so neither was CHECKED and the wall readout never counted the pad in front
+    # of them (180 B appeared in front of $475A when stmt_table moved out -- unseen).
+    # $3283: crt_rows (C-BIOS's CHPUT calls it, cbios-repack/crtcnt-bound.patch) --
+    # push hl / ld hl,CNSDFG ($F3DE) / ld a,(CRTCNT ($F3B1)); the rest follows.
+    Pin(0x3283, 6, bytes.fromhex("E521DEF33AB1"), None, "D-CRTBOUND crt_rows: CRTCNT + CNSDFG"),
     Pin(0x3297, 2, bytes([0xE1, 0xC9]), None, "D-BASICINT pop hl / ret"),
+    # $475A: the published Illegal function call entry (D-USRDEF, every USRTAB vector
+    # at power-on): ld a,5; the `jp raise_error` after it moves.
+    Pin(0x475A, 2, bytes.fromhex("3E05"), None, "D-USRDEF FCERR: ld a,5 / jp raise_error"),
     # $4EF8: Head over Heels returns into it (D-BAREEXTRA's tape regression, 2026-10-24)
     Pin(0x4EF8, 4, bytes.fromhex("EB912FC9"), None, "D-BASICINT ex de,hl / sub c / cpl / ret"),
     Pin(0x6CF3, 3, "jp", "lh_back", "D-BASICINT BLOAD,R continuation: jp lh_back"),

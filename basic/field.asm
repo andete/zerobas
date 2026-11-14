@@ -329,6 +329,152 @@ gp_raise:
 ; (exf_comma / exf_fits -- field_item's comma tail, CF = another item -- are
 ; GONE, D-DISKREST slice 5, 2026-10-20: hk_field reads the comma itself. Their
 ; 15 B are free space in front of the $72D4 pin.)
+; 🐌 D-ESIDXAL (2026-11-14): stmt_table moved HERE from interp.asm's statement dispatch,
+; into the $72D4 pin's pad (free space already). es_idx forms the row's address as H =
+; the table's page, L = its low byte + 2 x row -- valid only while that never carries,
+; which the assert after the table proves (low byte + 174 <= 255; it starts at $xx11).
+; --- stmt_table: statement token -> handler, INDEXED (D-STMTIDX, 2026-10-03) ---
+; One `dw <handler>` per keyword statement token, IN TOKEN ORDER, $81 (END) to
+; $D8 (LOCATE). The range is dense -- 88 tokens, 0 holes, measured against
+; basic/sysvars.inc -- so exec_stmt computes the row from the token (es_idx
+; above) instead of walking `db token, dw handler` triples: 2 B a statement
+; instead of 3 B + a $00 sentinel (274 B -> 176 B), and every statement now
+; dispatches in about what the OLD table's second row (NEXT) cost; LOCATE, its
+; 80th row, cost ~2900 cycles (D-STMTORDER could only move the hot rows to the
+; front). The three non-keyword statement bytes -- ':' (COLON), '_' (the CALL
+; abbreviation, a literal character) and PEEK_PREFIX ($FF, the prefix of a
+; two-byte function token that can START a statement: MID$/STRIG) -- sit far
+; outside the range and are tested in code, where the chain had them too.
+; ⚠️ ROW ORDER IS THE DISPATCH. A row at the wrong index is a statement that
+; silently runs the wrong handler. Two controls: tests/test_stmt_dispatch.py
+; resolves EVERY row by name against its independent expectation and then
+; EXECUTES it; and the count assert below refuses a table that is not exactly
+; STMT_TABLE_ROWS words (on `$`, not an end label: a 0 B label that no code
+; names reads as an orphan span to tools/check_dead_code.py). A switched-off
+; feature KEEPS its slot (`dw stmt_error`, the same disposition its missing
+; `db` row used to get), so no later row moves with a switch.
+; D-ESIDXAL: the rows must not cross a page (es_idx's L = low + 2 x row). On the
+; shipping tree this pad emits NOTHING (the table starts at $xx11); a build switch
+; that shrinks the code above can move it past $51, and then it skips to the page.
+; (80 = 256 - 2 x STMT_TABLE_ROWS (88); the assert after the table re-proves it.)
+    IF (low $) > 80
+                ds      256 - (low $), $00
+    ENDIF
+stmt_table:
+                dw      ex_end            ; $81 END_TOKEN
+                dw      ex_for            ; $82 FOR_TOKEN
+                dw      ex_next           ; $83 NEXT_TOKEN
+                dw      ex_data           ; $84 DATA_TOKEN
+                dw      ex_input          ; $85 INPUT_TOKEN
+                dw      ex_dim            ; $86 DIM_TOKEN
+                dw      ex_read           ; $87 READ_TOKEN
+                dw      ex_letkw          ; $88 LET_TOKEN
+                dw      ex_goto           ; $89 GOTO_TOKEN
+                dw      ex_run            ; $8A RUN_TOKEN
+                dw      ex_if             ; $8B IF_TOKEN
+                dw      ex_restore        ; $8C RESTORE_TOKEN
+                dw      ex_gosub          ; $8D GOSUB_TOKEN
+                dw      ex_return         ; $8E RETURN_TOKEN
+                dw      ex_rem            ; $8F REM_TOKEN
+                dw      ex_stop           ; $90 STOP_TOKEN
+                dw      ex_print          ; $91 PRINT_TOKEN
+                dw      ex_clear          ; $92 CLEAR_TOKEN
+                dw      ex_list           ; $93 LIST_TOKEN
+                dw      ex_new            ; $94 NEW_TOKEN
+                dw      ex_on             ; $95 ON_TOKEN
+                dw      ex_wait           ; $96 WAIT_TOKEN
+                dw      ex_def            ; $97 DEF_TOKEN
+                dw      ex_poke           ; $98 POKE_TOKEN
+                dw      ex_cont           ; $99 CONT_TOKEN
+                dw      ex_csave          ; $9A CSAVE_TOKEN
+                dw      ex_cload          ; $9B CLOAD_TOKEN
+                dw      ex_out            ; $9C OUT_TOKEN
+                dw      ex_lprint         ; $9D LPRINT_TOKEN
+                dw      ex_llist          ; $9E LLIST_TOKEN
+                dw      ex_cls            ; $9F CLS_TOKEN
+                dw      ex_width          ; $A0 WIDTH_TOKEN
+                dw      ex_rem            ; $A1 ELSE_TOKEN
+                dw      ex_tron           ; $A2 TRON_TOKEN
+                dw      ex_troff          ; $A3 TROFF_TOKEN
+    IF SWAP_RESIDENT
+                dw      ex_swap           ; $A4 SWAP_TOKEN
+    ELSE
+                dw      stmt_error        ; $A4 SWAP_TOKEN -- not resident: Syntax error
+    ENDIF
+                dw      ex_erase          ; $A5 ERASE_TOKEN
+                dw      ex_error          ; $A6 ERROR_TOKEN
+                dw      ex_resume         ; $A7 RESUME_TOKEN
+                dw      ex_delete         ; $A8 DELETE_TOKEN
+                dw      ex_auto           ; $A9 AUTO_TOKEN
+                dw      ex_renum          ; $AA RENUM_TOKEN
+                dw      ex_deftype        ; $AB DEFSTR_TOKEN
+                dw      ex_deftype        ; $AC DEFINT_TOKEN
+                dw      ex_deftype        ; $AD DEFSNG_TOKEN
+                dw      ex_deftype        ; $AE DEFDBL_TOKEN
+                dw      ex_line           ; $AF LINE_TOKEN
+                dw      ex_open           ; $B0 OPEN_TOKEN
+                dw      ex_field          ; $B1 FIELD_TOKEN
+                dw      ex_get            ; $B2 GET_TOKEN
+                dw      ex_put            ; $B3 PUT_TOKEN
+                dw      ex_close          ; $B4 CLOSE_TOKEN
+                dw      ex_load           ; $B5 LOAD_TOKEN
+                dw      ex_merge          ; $B6 MERGE_TOKEN
+                dw      ex_files          ; $B7 FILES_TOKEN
+                dw      ex_lset           ; $B8 LSET_TOKEN
+                dw      ex_rset           ; $B9 RSET_TOKEN
+                dw      ex_save           ; $BA SAVE_TOKEN
+                dw      ex_lfiles         ; $BB LFILES_TOKEN
+                dw      ex_circle         ; $BC CIRCLE_TOKEN
+                dw      ex_color          ; $BD COLOR_TOKEN
+    IF G6_RESIDENT
+                dw      ex_draw           ; $BE DRAW_TOKEN
+    ELSE
+                dw      stmt_error        ; $BE DRAW_TOKEN -- not resident: Syntax error
+    ENDIF
+                dw      ex_paint          ; $BF PAINT_TOKEN
+                dw      ex_beep           ; $C0 BEEP_TOKEN
+                dw      ex_play           ; $C1 PLAY_TOKEN
+                dw      ex_pset           ; $C2 PSET_TOKEN
+                dw      ex_preset         ; $C3 PRESET_TOKEN
+                dw      ex_sound          ; $C4 SOUND_TOKEN
+                dw      ex_screen         ; $C5 SCREEN_TOKEN
+                dw      ex_vpoke          ; $C6 VPOKE_TOKEN
+    IF G7_RESIDENT
+                dw      ex_sprite         ; $C7 SPRITE_TOKEN
+    ELSE
+                dw      stmt_error        ; $C7 SPRITE_TOKEN -- not resident: Syntax error
+    ENDIF
+    IF G8_RESIDENT
+                dw      ex_vdp_assign     ; $C8 VDP_TOKEN
+    ELSE
+                dw      stmt_error        ; $C8 VDP_TOKEN -- not resident: Syntax error
+    ENDIF
+    IF G8_RESIDENT
+                dw      ex_base_assign    ; $C9 BASE_TOKEN
+    ELSE
+                dw      stmt_error        ; $C9 BASE_TOKEN -- not resident: Syntax error
+    ENDIF
+                dw      ex_call           ; $CA CALL_TOKEN
+                dw      ex_time_assign    ; $CB TIME_TOKEN
+                dw      ex_key            ; $CC KEY_TOKEN
+                dw      ex_maxfiles       ; $CD MAX_TOKEN
+                dw      ex_motor          ; $CE MOTOR_TOKEN
+                dw      ex_bload          ; $CF BLOAD_TOKEN
+                dw      ex_bsave          ; $D0 BSAVE_TOKEN
+                dw      ex_dsko           ; $D1 DSKO_TOKEN
+                dw      ex_donothing      ; $D2 SET_TOKEN
+                dw      ex_name           ; $D3 NAME_TOKEN
+                dw      ex_kill           ; $D4 KILL_TOKEN
+                dw      ex_donothing      ; $D5 IPL_TOKEN
+                dw      ex_copy           ; $D6 COPY_TOKEN
+                dw      ex_donothing      ; $D7 CMD_TOKEN
+                dw      ex_locate         ; $D8 LOCATE_TOKEN
+    IF ($ - stmt_table) != 2 * STMT_TABLE_ROWS
+                db      STMT_TABLE_IS_NOT_ONE_ROW_PER_TOKEN_81_TO_D8__A_ROW_IS_MISSING_OR_DOUBLED
+    ENDIF
+    IF (low stmt_table) + 2 * STMT_TABLE_ROWS - 2 > 255
+                db      STMT_TABLE_ROWS_CROSS_A_PAGE__ES_IDX_WOULD_CARRY
+    ENDIF
     IF BASICINT_PINS
 ; 📌 D-BASICINT2 PIN $72D4 (2026-10-16): the reference's tape-byte read, CALLED by
 ; Demonia (HL is its own pointer). Black-box on the VG-8020

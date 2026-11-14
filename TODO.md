@@ -17207,10 +17207,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                   $2000.. reads $00 on the VG-8020, $F1 on zerobas; the pattern area past
                   $0600 differs too (paintbios_run11.out's off-grid s3_* rows found a border
                   there on the VG-8020 only). Only a VPEEK of VRAM the mode does not use sees it.
-            - [ ] **The low-region wall readout does not count the pad before crt_rows** --
+            - [x] **The low-region wall readout does not count the pad before crt_rows** --
                   🎚️ TIER 6 — an instrument: `make basic-reloc` says "low region pin pads 0 B"
                   while 53 B (2026-11-12, after GRPPRT's stub) sit before the hand pin at $3283 (basic/float-arith.asm); D-
                   BIOSCONTRACT's stubs live there unseen by any budget.
+                  ✅ **FIXED 2026-11-14 (D-ESIDXAL):** $3283 (crt_rows) and $475A (usr_fcerr) were
+                  `ds` pins in the source but absent from tools/pin_plan.py's PINS, so neither was
+                  checked by `make pin-check` and neither pad was counted. Both are listed now
+                  (address-free head bytes); the readout shows 9 B at $3283 and 188 B at $475A on
+                  2026-11-14, and pin-check reads 9 / 9 pins present. Every `ds $xxxx - $` in
+                  basic/ now has a PINS row ($4000 / $8000 are the page ends).
             🎚️ **FIRST IN THE QUEUE (Joost 2026-11-12: the BIOS stubs before the rest).** 🏗️
             Joost's idea (2026-11-12): *"could the implementation of paint use parts of those
             paint bios calls to save space?"* -- THE PLAN: (1) measure the three on the VG-8020
@@ -17678,8 +17684,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       z,nx_find` right after it (basic/program.asm, +2 B). Model ([`NB_after.out`](scratchpad/NB_after.out)): **-112 T
       a pass** in every case (🔮 ~90: HIT, bigger); empty `%` loop 2199 -> 2087. Machine
       ([`loops4_time9.out`](scratchpad/loops4_time9.out)): 64 / 70 / 10 / 19 -> **63 / 70 / 9 / 19** (VG-8020 69 / 97 / 7 / 24).
-      Unit tests 97 / 97. ➡️ The `%` loop's rest (9 against 7): nx_again's checks (~360 T),
-      the int16 step (~620), the dispatch of NEXT (~700).
+      Unit tests 97 / 97.
+      ✅ **D-ESIDXAL (2026-11-14): THE KEYWORD DISPATCH WITHOUT A 16-BIT ADD -- 138 -> 101 T a statement.**
+      stmt_table moved from interp.asm (where it sat at $4180, low byte $80) into the $72D4 pin's
+      pad (basic/field.asm, at $7111): its rows never cross a page there (asserted: low byte
+      + 174 <= 255), so es_idx forms the row as H = page, L = low + 2 x row -- no `ld d,0` / `add
+      hl,de` / push-pop of the cursor; the out contract is unchanged to the register. A first
+      cut 256-aligned it in the $6CF3 pad and paid ~124 B of alignment (2026-11-14); the low-byte form
+      needs none. The 178 B it left fell in front of the $475A pin -- which the wall readout
+      did not list (it does now: see the crt_rows item). Model ([`EA_after.out`](scratchpad/EA_after.out)): exactly
+      **-37 T per keyword statement** (🔮 ~-37 HIT; case (e) -111 for GOSUB / NEXT / RETURN).
+      Machine ([`loops4_time10.out`](scratchpad/loops4_time10.out), three identical runs): **63 / 70 / 10 / 18** -- the
+      default loop gained a tick, the `%` loop LOST one (9 -> 10) although its pass is 37 T
+      shorter: 300 passes are ~10 ticks, so the loop's start against the 50 Hz interrupt moves
+      a reading by one when layout shifts (🔮 "% 9, default 18": MISSED by that tick).
+      ➡️ The `%` loop's rest (~2050 T against ~1470): nx_again's checks (~360 T), the int16
+      step (~620), the dispatch of NEXT (~660). A longer-run timing (3000 passes) would read
+      these small steps without the tick.
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6
