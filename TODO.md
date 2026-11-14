@@ -18256,6 +18256,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       dout_write's first half. Tag 0 = invalid (sector 0 is never an RDBLK data sector). ➡️
       Price it (dskio's clear must keep A / F / BC / DE / HL: ~8 B; five clears; the set and test
       in k47b2_mid) against the room below, then build with a gate row per explicit clear.
+      💰 **PRICED (2026-11-14): ~65 B -- MORE THAN THERE IS.** The test and set belong in
+      fat_read_file_sector's OWN entry (basic/fat-prim-body.inc: frs_head -> DE; DE = the tag
+      -> skip the read; else read_sector_nh, then tag := DE), NOT in frs_to, whose HL is
+      LOAD's program area (D-LOADDIRECT) -- ~22 B over today's 3 B entry, and every channel /
+      LOAD-buffer reader through it gains the hit too; dskio's clear keeping A / F / BC / DE /
+      HL ~8 B; five explicit clears ~6-8 B each, each in its own region. Against D-DISKCARVE3's
+      32 + 24 B. ➡️ One more carve round first (diskngram.py: the de_name / de_ext loop pair ~4 B,
+      fat_find / fat_dir_create's head ~3 B are small; read the 9-14 B pairs), or a cheaper
+      clear rule (e.g. the tag cleared at the sequential writer's and the channel writer's
+      ENTRIES -- one per writer, not per byte).
       ✂️ **D-DISKCARVE3 (2026-11-14): +26 B of disk ROM, for this.** (1) SFIRST is "cursor := 0,
       then SNEXT" (sfirst_body falls into snext_body: 13 B; the one change -- a SFIRST whose mount
       FAILS leaves the cursor 0, where it kept the old one); (2) boot_rd (disk/runtime.asm, in
