@@ -180,116 +180,118 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-| address | call | status | vs reference | exercised by |
-|---|---|---|---|---|
-| $0000 | CHKRAM | exercised | yes | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
-| $0008 | SYNCHR | exercised | yes | `synchr-acceptance` |
-| $000C | RDSLT | exercised | yes | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
-| $0010 | CHRGTR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0014 | WRSLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0018 | OUTDO | exercised | yes | `biosregs-acceptance`, `outdlp-acceptance` |
-| $001C | CALSLT | exercised | yes | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
-| $0020 | DCOMPR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0024 | ENASLT | exercised | yes | `p1vec-acceptance`, `slotregs-acceptance` |
-| $0028 | GETYPR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0030 | CALLF | exercised | yes | `bootenv-acceptance`, `p1vec-acceptance` |
-| $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — |
-| $003B | INITIO | exercised | yes | `initio-acceptance` |
-| $003E | INIFNK | exercised | yes | `biosregs-acceptance` |
-| $0041 | DISSCR | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0044 | ENASCR | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0047 | WRTVDP | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance` |
-| $004A | RDVRM | exercised | yes | `biosregs-acceptance` |
-| $004D | WRTVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0050 | SETRD | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0053 | SETWRT | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0056 | FILVRM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0059 | LDIRMV | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $005C | LDIRVM | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $005F | CHGMOD | exercised | yes | `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
-| $0062 | CHGCLR | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
-| $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — |
-| $0069 | CLRSPR | exercised | yes | `biosregs-acceptance`, `biosvram-acceptance` |
-| $006C | INITXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $006F | INIT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $0072 | INIGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $0075 | INIMLT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $0078 | SETTXT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $007B | SETT32 | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $007E | SETGRP | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0081 | SETMLT | exercised | yes | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0084 | CALPAT | exercised | yes | `biosregs-acceptance` |
-| $0087 | CALATR | exercised | yes | `biosregs-acceptance` |
-| $008A | GSPSIZ | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $008D | GRPPRT | exercised | yes | `biosregs-acceptance` |
-| $0090 | GICINI | exercised | yes | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
-| $0093 | WRTPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
-| $0096 | RDPSG | exercised | yes | `biosregs-acceptance`, `initio-acceptance` |
-| $0099 | STRTMS | exercised | yes | `strtms-acceptance` |
-| $009C | CHSNS | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $009F | CHGET | exercised | yes | `biosregs-acceptance` |
-| $00A2 | CHPUT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
-| $00A5 | LPTOUT | exercised | yes | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
-| $00A8 | LPTSTT | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $00AB | CNVCHR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $00AE | PINLIN | exercised | yes | `biosregs-acceptance` |
-| $00B1 | INLIN | exercised | yes | `biosregs-acceptance` |
-| $00B4 | QINLIN | exercised | yes | `biosregs-acceptance` |
-| $00B7 | BREAKX | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $00BA | ISCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
-| $00BD | CKCNTC | exercised | yes | `biosregs-acceptance`, `iscntc-acceptance` |
-| $00C0 | BEEP | exercised | yes | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
-| $00C3 | CLS | exercised | yes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biostext-acceptance` … |
-| $00C6 | POSIT | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
-| $00C9 | FNKSB | exercised | yes | `biosregs-acceptance` |
-| $00CC | ERAFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
-| $00CF | DSPFNK | exercised | yes | `biosregs-acceptance`, `biostext-acceptance` |
-| $00D2 | TOTEXT | exercised | yes | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $00D5 | GTSTCK | exercised | yes | `biosregs-acceptance` |
-| $00D8 | GTTRIG | exercised | yes | `biosregs-acceptance` |
-| $00DB | GTPAD | exercised | yes | `biosregs-acceptance` |
-| $00DE | GTPDL | exercised | yes | `biosregs-acceptance` |
-| $00E1 | TAPION | exercised | yes | `tapebios-acceptance`, `tapionlead-acceptance` |
-| $00E4 | TAPIN | exercised | yes | `tapebios-acceptance` |
-| $00E7 | TAPIOF | exercised | yes | `tapebios-acceptance` |
-| $00EA | TAPOON | exercised | yes | `tapebios-acceptance` |
-| $00ED | TAPOUT | exercised | yes | `tapebios-acceptance` |
-| $00F0 | TAPOOF | exercised | yes | `tapebios-acceptance` |
-| $00F3 | STMOTR | exercised | yes | `biosregs-acceptance` |
-| $00F6 | LFTQ | exercised | yes | `biosregs-acceptance` |
-| $00F9 | PUTQ | exercised | yes | `strtms-acceptance` |
-| $00FC | RIGHTC | exercised | yes | `biosregs-acceptance` |
-| $00FF | LEFTC | exercised | yes | `biosregs-acceptance`, `slotregs-acceptance` |
-| $0102 | UPC | exercised | yes | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
-| $0105 | TUPC | exercised | yes | `biosregs-acceptance` |
-| $0108 | DOWNC | exercised | yes | `biosregs-acceptance` |
-| $010B | TDOWNC | exercised | yes | `biosregs-acceptance` |
-| $010E | SCALXY | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0111 | MAPXYC | exercised | yes | `biosregs-acceptance` |
-| $0114 | FETCHC | exercised | yes | `biosregs-acceptance` |
-| $0117 | STOREC | exercised | yes | `biosregs-acceptance` |
-| $011A | SETATR | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $011D | READC | exercised | yes | `biosregs-acceptance` |
-| $0120 | SETC | exercised | yes | `biosregs-acceptance` |
-| $0123 | NSETCX | exercised | yes | `biosregs-acceptance` |
-| $0126 | GTASPC | exercised | yes | `biosregs-acceptance` |
-| $0129 | PNTINI | exercised | yes | `paintbios-acceptance` |
-| $012C | SCANR | exercised | yes | `paintbios-acceptance` |
-| $012F | SCANL | exercised | yes | `paintbios-acceptance` |
-| $0132 | CHGCAP | exercised | yes | `biosregs-acceptance` |
-| $0135 | CHGSND | exercised | yes | `biosregs-acceptance` |
-| $0138 | RSLREG | exercised | yes | `biosregs-acceptance`, `p1vec-acceptance` |
-| $013B | WSLREG | exercised | yes | `slotregs-acceptance` |
-| $013E | RDVDP | exercised | yes | `biosregs-acceptance` |
-| $0141 | SNSMAT | exercised | yes | `bootenv-acceptance`, `tapebios-acceptance` |
-| $0144 | PHYDIO | exercised | yes | `diskbasic-acceptance` |
-| $0147 | FORMAT | exercised | yes | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
-| $014A | ISFLIO | exercised | yes | `biosflags-acceptance`, `biosregs-acceptance` |
-| $014D | OUTDLP | exercised | yes | `outdlp-acceptance` |
-| $0150 | GETVCP | exercised | yes | `biosregs-acceptance` |
-| $0153 | GETVC2 | exercised | yes | `biosregs-acceptance` |
-| $0156 | KILBUF | exercised | yes | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
-| $0159 | CALBAS | exercised | yes | `biosregs-acceptance` |
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 32; L3 full contract: 69; L4 errors / edges: 3; —: 2** (— = ruled).
+
+| address | call | status | vs reference | level | note | exercised by |
+|---|---|---|---|---|---|---|
+| $0000 | CHKRAM | exercised | yes | L1 called | its witnesses are spurious ($0000 constants); its contract is the boot state every gate inherits | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
+| $0008 | SYNCHR | exercised | yes | L4 errors / edges | the Syntax error path compared | `synchr-acceptance` |
+| $000C | RDSLT | exercised | yes | L3 full contract | — | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
+| $0010 | CHRGTR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $0014 | WRSLT | exercised | yes | L3 full contract | — | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0018 | OUTDO | exercised | yes | L3 full contract | PTRFIL against PRTFLG precedence not separated | `biosregs-acceptance`, `outdlp-acceptance` |
+| $001C | CALSLT | exercised | yes | L2 happy path | IX / IY / AF' on return | `bdos-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
+| $0020 | DCOMPR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $0024 | ENASLT | exercised | yes | L3 full contract | — | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0028 | GETYPR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $0030 | CALLF | exercised | yes | L2 happy path | IX / IY / AF' on return | `bootenv-acceptance`, `p1vec-acceptance` |
+| $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — | — | — |
+| $003B | INITIO | exercised | yes | L2 happy path | exit registers printed, not diffed (gap 9) | `initio-acceptance` |
+| $003E | INIFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0041 | DISSCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
+| $0044 | ENASCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
+| $0047 | WRTVDP | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
+| $004A | RDVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $004D | WRTVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0050 | SETRD | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0053 | SETWRT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0056 | FILVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0059 | LDIRMV | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $005C | LDIRVM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $005F | CHGMOD | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
+| $0062 | CHGCLR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
+| $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — | — | — |
+| $0069 | CLRSPR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $006C | INITXT | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $006F | INIT32 | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0072 | INIGRP | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0075 | INIMLT | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0078 | SETTXT | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $007B | SETT32 | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $007E | SETGRP | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
+| $0081 | SETMLT | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
+| $0084 | CALPAT | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0087 | CALATR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $008A | GSPSIZ | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $008D | GRPPRT | exercised | yes | L2 happy path | the glyph drawn | `biosregs-acceptance` |
+| $0090 | GICINI | exercised | yes | L2 happy path | QUETAB / PLYCNT (gap 9) | `biosl-acceptance`, `gicini-acceptance`, `initio-acceptance` |
+| $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
+| $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
+| $0099 | STRTMS | exercised | yes | L3 full contract | — | `strtms-acceptance` |
+| $009C | CHSNS | exercised | yes | L2 happy path | Z with a key waiting | `biosflags-acceptance`, `biosregs-acceptance` |
+| $009F | CHGET | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $00A2 | CHPUT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $00A5 | LPTOUT | exercised | yes | L4 errors / edges | the no-printer CTRL-STOP abort compared | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
+| $00A8 | LPTSTT | exercised | yes | L3 full contract | ready state: outdlp's lptstt_rdy (DATA bytes, which the name scan cannot see) | `biosflags-acceptance`, `biosregs-acceptance` |
+| $00AB | CNVCHR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $00AE | PINLIN | exercised | yes | L2 happy path | HL not diffed (an `:END` row); the STOP exit IS compared (outdlp's pinlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00B1 | INLIN | exercised | yes | L2 happy path | HL not diffed (an `:END` row); the STOP exit IS compared (outdlp's inlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00B4 | QINLIN | exercised | yes | L2 happy path | HL and the `? ` prompt not diffed; the STOP exit IS compared (outdlp's qinlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00B7 | BREAKX | exercised | yes | L3 full contract | STOP held: outdlp's breakx_loop (DATA bytes) | `biosflags-acceptance`, `biosregs-acceptance` |
+| $00BA | ISCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
+| $00BD | CKCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
+| $00C0 | BEEP | exercised | yes | L3 full contract | — | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
+| $00C3 | CLS | exercised | yes | L2 happy path | the graphics modes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biostext-acceptance` … |
+| $00C6 | POSIT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $00C9 | FNKSB | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
+| $00CF | DSPFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $00D2 | TOTEXT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $00D5 | GTSTCK | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
+| $00D8 | GTTRIG | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
+| $00DB | GTPAD | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
+| $00DE | GTPDL | exercised | yes | L2 happy path | with a device plugged (gap 8) | `biosregs-acceptance` |
+| $00E1 | TAPION | exercised | yes | L3 full contract | — | `tapebios-acceptance`, `tapionlead-acceptance` |
+| $00E4 | TAPIN | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00E7 | TAPIOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00EA | TAPOON | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00ED | TAPOUT | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00F0 | TAPOOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00F3 | STMOTR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $00F6 | LFTQ | exercised | yes | L2 happy path | a non-empty queue (gap 8) | `biosregs-acceptance` |
+| $00F9 | PUTQ | exercised | yes | L2 happy path | a full queue (gap 8) | `strtms-acceptance` |
+| $00FC | RIGHTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $00FF | LEFTC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance`, `slotregs-acceptance` |
+| $0102 | UPC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
+| $0105 | TUPC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0108 | DOWNC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $010B | TDOWNC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $010E | SCALXY | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $0111 | MAPXYC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0114 | FETCHC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0117 | STOREC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $011A | SETATR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $011D | READC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0120 | SETC | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0123 | NSETCX | exercised | yes | L2 happy path | SCREEN 3 (gap 10) | `biosregs-acceptance` |
+| $0126 | GTASPC | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0129 | PNTINI | exercised | yes | L3 full contract | — | `paintbios-acceptance` |
+| $012C | SCANR | exercised | yes | L3 full contract | — | `paintbios-acceptance` |
+| $012F | SCANL | exercised | yes | L3 full contract | — | `paintbios-acceptance` |
+| $0132 | CHGCAP | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0135 | CHGSND | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0138 | RSLREG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `p1vec-acceptance` |
+| $013B | WSLREG | exercised | yes | L3 full contract | — | `slotregs-acceptance` |
+| $013E | RDVDP | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
+| $0141 | SNSMAT | exercised | yes | L3 full contract | — | `bootenv-acceptance`, `tapebios-acceptance` |
+| $0144 | PHYDIO | exercised | yes | L3 full contract | — | `diskbasic-acceptance` |
+| $0147 | FORMAT | exercised | yes | L1 called | its witnesses are spurious (the word FORMAT); the body is the disk ROM's -- only the main-BIOS side is in focus | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
+| $014A | ISFLIO | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $014D | OUTDLP | exercised | yes | L4 errors / edges | the Device I/O error abort compared | `outdlp-acceptance` |
+| $0150 | GETVCP | exercised | yes | L2 happy path | other voices (gap 8) | `biosregs-acceptance` |
+| $0153 | GETVC2 | exercised | yes | L2 happy path | other voices (gap 8) | `biosregs-acceptance` |
+| $0156 | KILBUF | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
+| $0159 | CALBAS | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 
 ## Every keyword and its status
 

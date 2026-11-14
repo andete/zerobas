@@ -96,5 +96,14 @@ bmap = {r["name"]: r for r in br}
 check("slotregs-acceptance" in bmap["RDSLT"]["gates"],
       "(e) RDSLT is exercised by slotregs-acceptance (a direct BIOS witness)")
 
+# (f) the contract level (tools/bios_levels.py): every claim's gate witnesses its entry,
+# and a claim whose gate does not is REFUSED, not rendered
+import bios_levels as BL  # noqa: E402
+check(BL.check(br) == [], "(f) every BIOS level claim names a gate that witnesses its entry")
+fake = dict(bmap["RDSLT"], gates=["biosregs-acceptance"])     # slotregs gone
+check(BL.level_of(fake)[2] is not None and BL.level_of(fake)[0] == "L1 called",
+      "(f) a claim whose gate no longer witnesses the entry is refused and reads L1")
+check(BL.level_of(dict(bmap["RDSLT"], stub=True))[0] == "L0 stub", "(f) a stub outranks a claim")
+
 print(f"\n{'ALL PASSED' if not fails else f'{fails} FAILED'}")
 sys.exit(1 if fails else 0)

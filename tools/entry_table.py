@@ -489,7 +489,15 @@ def bios_rows(stubs=None):
 
 
 def fmt_bios_markdown():
+    import bios_levels
     rs = bios_rows()
+    refused = bios_levels.check(rs)
+    if refused:                                 # tiers-md leaves the page unchanged
+        raise SystemExit("bios_levels: " + "; ".join(refused))
+    lv = {r["addr"]: bios_levels.level_of(r) for r in rs}
+    tally = {}
+    for r in rs:
+        tally[lv[r["addr"]][0]] = tally.get(lv[r["addr"]][0], 0) + 1
     nm = [r for r in rs if r["status"] == "NOT MEASURED"]
     ruled = [r for r in rs if not r["stub"] and not r["gates"] and r["addr"] in BIOS_RULED]
     stubs = [r for r in rs if r["stub"]]
@@ -517,11 +525,22 @@ def fmt_bios_markdown():
            + (", ".join(r["name"] for r in rs if r["gates"] and not r["vsref"]) or "none")
            + ". Mechanical: a probe that CAN compare, not proof that this row's result is compared.",
            "",
-           "| address | call | status | vs reference | exercised by |", "|---|---|---|---|---|"]
+           "**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer "
+           "is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full "
+           "contract (every published output, flags and non-idle states); L4 errors / edges (the "
+           "abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level "
+           "whose lower levels all hold; each claim names its proving gate, which must still "
+           "witness the entry or this page is not regenerated. **"
+           + "; ".join(f"{k}: {tally[k]}" for k in sorted(tally)) + "** (— = ruled).",
+           "",
+           "| address | call | status | vs reference | level | note | exercised by |",
+           "|---|---|---|---|---|---|---|"]
     for r in rs:
         by = ", ".join(f"`{g}`" for g in r["gates"][:6]) + (" …" if len(r["gates"]) > 6 else "")
         vr = "yes" if r["vsref"] else ("no" if r["vsref"] is False else "—")
-        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {vr} | {by or '—'} |")
+        lab, note, _ = lv[r["addr"]]
+        out.append(f"| ${r['addr']:04X} | {r['name']} | {r['status']} | {vr} | {lab} | "
+                   f"{note or '—'} | {by or '—'} |")
     return "\n".join(out) + "\n"
 
 
