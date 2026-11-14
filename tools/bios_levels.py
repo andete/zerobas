@@ -93,12 +93,10 @@ LEVELS = {
     0x00CC: (3, "biostext-acceptance", ""),
     0x00CF: (3, "biostext-acceptance", ""),
     0x00D2: (3, "biosvdp-acceptance", ""),
-    0x00D5: (2, "biosq-acceptance", "stick 0 with keys held compared; ports 1 / 2 need a "
-                                    "host-driven joystick the harness cannot press"),
-    0x00D8: (2, "biosq-acceptance", "trigger 0 (SPACE) held compared; ports 1 / 2 as "
-                                    "GTSTCK"),
-    0x00DB: (2, "biosregs-acceptance", "with a pad plugged: a host-driven device"),
-    0x00DE: (2, "biosregs-acceptance", "with a paddle plugged: a host-driven device"),
+    0x00D5: (3, "biosq-acceptance", "ports 0 (keys held), 1 / 2 (the PSG latch) compared"),
+    0x00D8: (3, "biosq-acceptance", "triggers 0 (SPACE held), 1..4 (the PSG latch) compared"),
+    0x00DB: (3, "biosq-acceptance", "arkanoidpad in port A / B, PAD 0..7"),
+    0x00DE: (3, "biosq-acceptance", "paddle in port A / B, PDL 1..6"),
     0x00E1: (3, "tapebios-acceptance", ""),
     0x00E4: (3, "tapebios-acceptance", ""),
     0x00E7: (3, "tapebios-acceptance", ""),

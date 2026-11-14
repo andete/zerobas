@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 28; L3 full contract: 73; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 24; L3 full contract: 77; L4 errors / edges: 3; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -247,10 +247,10 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $00CF | DSPFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
 | $00D2 | TOTEXT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $00D5 | GTSTCK | exercised | yes | L2 happy path | stick 0 with keys held compared; ports 1 / 2 need a host-driven joystick the harness cannot press | `biosq-acceptance`, `biosregs-acceptance` |
-| $00D8 | GTTRIG | exercised | yes | L2 happy path | trigger 0 (SPACE) held compared; ports 1 / 2 as GTSTCK | `biosq-acceptance`, `biosregs-acceptance` |
-| $00DB | GTPAD | exercised | yes | L2 happy path | with a pad plugged: a host-driven device | `biosregs-acceptance` |
-| $00DE | GTPDL | exercised | yes | L2 happy path | with a paddle plugged: a host-driven device | `biosregs-acceptance` |
+| $00D5 | GTSTCK | exercised | yes | L3 full contract | ports 0 (keys held), 1 / 2 (the PSG latch) compared | `biosq-acceptance`, `biosregs-acceptance` |
+| $00D8 | GTTRIG | exercised | yes | L3 full contract | triggers 0 (SPACE held), 1..4 (the PSG latch) compared | `biosq-acceptance`, `biosregs-acceptance` |
+| $00DB | GTPAD | exercised | yes | L3 full contract | arkanoidpad in port A / B, PAD 0..7 | `biosq-acceptance`, `biosregs-acceptance` |
+| $00DE | GTPDL | exercised | yes | L3 full contract | paddle in port A / B, PDL 1..6 | `biosq-acceptance`, `biosregs-acceptance` |
 | $00E1 | TAPION | exercised | yes | L3 full contract | — | `tapebios-acceptance`, `tapionlead-acceptance` |
 | $00E4 | TAPIN | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
 | $00E7 | TAPIOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |

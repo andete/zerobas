@@ -1,0 +1,9 @@
+ROW latch_stk1r VG=[0003 0000] ZB=[0003 0000] SAME
+ROW latch_stk2ul VG=[0008 0000] ZB=[0008 0000] SAME
+ROW latch_trg1 VG=[00FF 0000] ZB=[00FF 0000] SAME
+ROW latch_trg4 VG=[00FF 0000] ZB=[00FF 0000] SAME
+ROW pdl_paddleA VG=[FF80 00FF] ZB=[FF80 00FF] SAME
+ROW pdl_paddleB VG=[FF80 00FF] ZB=[FF80 00FF] SAME
+ROW pad_arkA  VG=[FFFF 00FF] ZB=[FFFF 00FF] SAME
+ROW pad_arkB  VG=[FFFF 00FF] ZB=[FFFF 00FF] SAME
+PASS: the queue / voice / stick entries out of the idle state (8/8)

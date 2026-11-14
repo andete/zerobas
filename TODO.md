@@ -16538,8 +16538,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       split was the APPARATUS: a result byte the code never wrote ([`BQ_run1.out`](scratchpad/BQ_run1.out)); the words are zeroed first now.
       ✅ Then GTSTCK stick 0 with RIGHT / UP+RIGHT / LEFT held (3 / 2 / 7) and GTTRIG trigger 0 with SPACE held (255),
       the key-matrix bits pressed by the harness, the code HALT-looping until the entry answers: **4 / 4 SAME**
-      ([`BQ_run3.out`](scratchpad/BQ_run3.out)). 🔭 FILED, NOT FAKED: ports 1 / 2 (a joystick) and GTPAD / GTPDL (pad, paddle) -- openMSX's
-      devices take their input from the HOST, which the harness cannot drive; those four stay L2 until it can.
+      ([`BQ_run3.out`](scratchpad/BQ_run3.out)). 🔴 That commit then FILED ports 1 / 2 and GTPAD / GTPDL as undrivable -- WRONG (Joost: "don't
+      we have the dongle"): input-devices-acceptance already plugs openMSX's paddle / touchpad / arkanoidpad, and
+      the STRIG traps' PSG-latch injection (docs/spec-traps-t2-strig.md §7.3) presses ports 1 / 2. ✅ biosq now has
+      both, DIRECT: latch rows (our code sets PSG R7 output, writes R14, calls GTSTCK / GTTRIG ports 1 / 2) and plug
+      rows (GTPDL 1..6 with a paddle, GTPAD 0..7 with an arkanoidpad, ports A / B): **8 / 8 SAME** ([`BQ_run4.out`](scratchpad/BQ_run4.out)),
+      every answer non-zero. All four entries L3. **Gap (8) CLOSED.**
       📊 **LEVEL COLUMN (Joost 2026-11-14, "yes add the level column"):** docs/tier-status.md's BIOS table
       gains a contract level per entry -- L1 called, L2 happy path, L3 full contract, L4 errors / edges (L5 speed
       unscored under the focus) -- from `tools/bios_levels.py`; each claim names its proving gate, and a claim whose

@@ -19,8 +19,12 @@ a known state, then the entries; it stores what they answered, and BASIC prints 
   trig0      GTTRIG ($00D8) trigger 0 (SPACE) held                  -> A
 The held rows press the key-matrix bits through the harness (`holds`); their code HALT-loops
 up to 255 frames until the entry answers non-zero, so the press's timing does not matter.
-Ports 1 / 2 (a joystick) and GTPAD / GTPDL need a device whose input openMSX takes from the
-HOST, which this harness cannot drive -- filed, not faked.
+  latch_*    GTSTCK / GTTRIG ports 1 / 2: OUR code puts PSG port A in OUTPUT mode (R7 bit 6)
+             and writes R14's stick / trigger bits itself (active low), so the PSG returns that
+             latch as the joystick pins -- docs/spec-traps-t2-strig.md §7.3's injection, done
+             through the I/O ports instead of the debugger; R7 is put back after.
+  pdl_* / pad_*  GTPDL / GTPAD called directly with an openMSX paddle / arkanoidpad PLUGGED
+             (input-devices-acceptance's plug prologues; there they are reached through BASIC).
 
 Black box: registers and the work-area cell VOICEN. Unwritten result words read 0000. Interrupts stay on: GICINI leaves PLAY
 idle (MUSICF 0), so nothing drains the queues behind the row's back.
@@ -108,6 +112,38 @@ def read_held(machine, entry, key):
     return m[-1] if m else None
 
 
+def latch_code(mask, entry, a):
+    # di / R7 -> saved / R7 := $F8 (port A output) / R14 := mask / ld a,PORT / call ENTRY /
+    # ld (OUT),a / R7 := saved / ei / ret
+    return ([0xF3, 0x3E, 7, 0xD3, 0xA0, 0xDB, 0xA2, 0xF5,
+             0x3E, 0xF8, 0xD3, 0xA1, 0x3E, 14, 0xD3, 0xA0, 0x3E, mask, 0xD3, 0xA1,
+             0x3E, a] + call(entry) + [0x32, OUT & 255, OUT >> 8,
+             0x3E, 7, 0xD3, 0xA0, 0xF1, 0xD3, 0xA1, 0xFB, 0xC9])
+
+
+def series_code(entry, args):
+    # for each A in args: ld a,A / call ENTRY / ld (OUT+i),a  (byte results, in order)
+    c = []
+    for i, a in enumerate(args):
+        c += [0x3E, a] + call(entry) + [0x32, (OUT + i) & 255, (OUT + i) >> 8]
+    return c
+
+
+# name -> (code body, plug prologue). R14: bit 0 up, 1 down, 2 left, 3 right, 4 trigger A,
+# 5 trigger B -- active low. Each expects a NON-ZERO answer: an injection the entry did not
+# see reads 0 on both machines, which would agree blind.
+DEVICE = {
+    "latch_stk1r":  (latch_code(0xF7, GTSTCK, 1), ()),        # port 1 RIGHT -> 3
+    "latch_stk2ul": (latch_code(0xFA, GTSTCK, 2), ()),        # port 2 UP+LEFT -> 8
+    "latch_trg1":   (latch_code(0xEF, GTTRIG, 1), ()),        # port 1 trigger A -> 255
+    "latch_trg4":   (latch_code(0xDF, GTTRIG, 4), ()),        # port 2 trigger B -> 255
+    "pdl_paddleA":  (series_code(0x00DE, [1, 3, 5]), ("plug joyporta paddle",)),
+    "pdl_paddleB":  (series_code(0x00DE, [2, 4, 6]), ("plug joyportb paddle",)),
+    "pad_arkA":     (series_code(0x00DB, [0, 1, 2, 3]), ("plug joyporta arkanoidpad",)),
+    "pad_arkB":     (series_code(0x00DB, [4, 5, 6, 7]), ("plug joyportb arkanoidpad",)),
+}
+
+
 def code(body):
     # the result words zeroed first: putqfull stores ONE byte at $D100, and $D101's power-on
     # garbage ($00 on the VG-8020, $FF here) read as a divergence (scratchpad/BQ_run1.out)
@@ -115,23 +151,26 @@ def code(body):
     return clr + call(GICINI) + body + [0xC9]
 
 
-def read(machine, c):
+def read(machine, c, prologue=()):
     prog = ["NEW", "10 CLEAR 200,&HCFFF",
             f"20 FOR I=0 TO {len(c) - 1}:READ X:POKE &HD000+I,X:NEXT",
             '30 DEFUSR=&HD000:Q=USR(0):PRINT "[Q";PEEK(&HD100)+256*PEEK(&HD101);'
             'PEEK(&HD102)+256*PEEK(&HD103);"]"',
             "50 DATA " + ",".join(str(b) for b in c), "RUN"]
     raw = omsx_repl.run_cases(machine, [("direct", prog)], batch=False, reset=("", "SCREEN 0"),
-                              step=3.0, run_gap=8.0)[0] or ""
+                              step=3.0, run_gap=8.0, prologue=tuple(prologue))[0] or ""
     m = re.findall(r"\[Q\s*(\d+)\s+(\d+)\s*\]", re.sub(r"\s+", " ", raw))
     return f"{int(m[-1][0]):04X} {int(m[-1][1]):04X}" if m else None
 
 
 def main():
-    only = sys.argv[1:] or list(ROWS) + list(HELD)
+    only = sys.argv[1:] or list(ROWS) + list(HELD) + list(DEVICE)
     bad = blind = 0
     for name in only:
-        if name in HELD:
+        if name in DEVICE:
+            body, plug = DEVICE[name]
+            got = {side: read(m, code(body), plug) for side, m in MACHINES}
+        elif name in HELD:
             got = {side: read_held(m, *HELD[name]) for side, m in MACHINES}
         else:
             got = {side: read(m, code(ROWS[name])) for side, m in MACHINES}
