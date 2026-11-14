@@ -4,6 +4,12 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🔴 FOCUS RULING 2026-11-14 (late) — OVERRIDES EVERY TIER ORDER BELOW UNTIL WIDENED
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| ONLY MSX1 BIOS calls | *"Lets make sure we're 100% focussed. Any work done from now on till we broaden the scope again should be on MSX1 BIOS calls."* | the loop picks ONLY BIOS-entry work (the main BIOS's published MSX1 entries: tools/entry_table.py's BIOS rows, docs/tier-status.md's BIOS table, D-ENTRYTIERS / D-BIOSRUNG / D-BIOSCONTRACT items, cbios-repack patches). No BASIC, disk-ROM, BDOS, tape-statement or speed work until Joost broadens it -- however low its tier. The aim stays his 11-13 one: close zerobas's BIOS gaps so the C-BIOS MSX1 calls can be finished upstream. If the BIOS queue empties, SAY SO and stop -- do not drift back to other work. |
+
 ## 🟢 RULINGS 2026-11-14 (evening) — READ FIRST (newest)
 
 | ruling | Joost's words | consequence |
