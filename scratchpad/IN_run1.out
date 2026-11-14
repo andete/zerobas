@@ -1,0 +1,19 @@
+ROW lprint_noprn  VG=[Device I/O error in 10] ZB=[Device I/O error in 10] SAME
+ROW outdlp_noprn  VG=[Device I/O error in 20] ZB=[Device I/O error in 20] SAME
+ROW loop_control  VG=[Break in 10] ZB=[Break in 10] SAME
+ROW breakx_loop   VG=[[C BRKX]] ZB=[[C BRKX]] SAME
+ROW lptout_noprn  VG=[[C RET]] ZB=[[C RET]] SAME
+ROW stop_pause    VG=[<NO OUTPUT>] ZB=[<NO OUTPUT>] SAME
+ROW lptout_intflg VG=[[C 0  0 ]] ZB=[[C 0  0 ]] SAME
+ROW brk_midline   VG=[Break in 20] ZB=[Break in 20] SAME
+ROW pinlin_stop   VG=[Break in 20] ZB=[Break in 20] SAME
+ROW inlin_stop    VG=[Break in 20] ZB=[Break in 20] SAME
+ROW qinlin_stop   VG=[Break in 20] ZB=[Break in 20] SAME
+ROW tab     VG=[A       B       C\r\n  [P 0 ]] ZB=[A       B       C\r\n  [P 0 ]] SAME
+ROW tabcol  VG=[ABC     D\r\n  [P 0 ]] ZB=[ABC     D\r\n  [P 0 ]] SAME
+ROW lptout_tab VG=[A\x09B\r\n  [P 0 ]] ZB=[A\x09B\r\n  [P 0 ]] SAME
+ROW outdo_prn VG=[A       B\r\n  [P 0 ]] ZB=[A       B\r\n  [P 0 ]] SAME
+ROW outdo_prncol VG=[ABC     D\r\n  [P 9 ]] ZB=[ABC     D\r\n  [P 9 ]] SAME
+ROW outdo_scr VG=[<nothing printed>  QRS[P 0 ]] ZB=[<nothing printed>  QRS[P 0 ]] SAME
+ROW lptstt_rdy (A, F & S/Z/C) VG=[[P 255  129 ]] ZB=[[P 255  129 ]] SAME
+PASS: OUTDLP / LPTOUT against the VG-8020 (18/18)

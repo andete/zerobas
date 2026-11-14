@@ -111,6 +111,21 @@ NOPRN = {
     "brk_midline": ["CLEAR 200,&HCFFF:FOR I=0 TO 42:READ X:POKE &HD000+I,X:NEXT",
                     'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100);"]"', 'PRINT "[C END]"',
                     "DATA 251,205,183,0,48,251,58,155,252,50,0,209,6,5,118,16,253,58,155,252,50,1,209,118,58,236,251,230,16,40,248,6,5,118,16,253,58,155,252,50,2,209,201"],
+    # D-BIOSCONTRACT2 gap 7 (2026-11-14): PINLIN / INLIN / QINLIN ($00AE / $00B1 / $00B4)
+    # waiting for a line, CTRL-STOP held: the published answer is Cy set. `call / push af /
+    # pop hl / ld ($D100),hl / ret`; BASIC prints F's Cy (or breaks, if the press reaches it).
+    # Both machines BREAK before the PRINT, so the stored F is ALSO read from RAM after the
+    # run (FREG_ROWS below; $D100 preset to $AA, which no F the entry leaves can be confused
+    # with on its Cy alone -- $AA has Cy clear, so a missing store reads "Cy 0").
+    "pinlin_stop": ["CLEAR 200,&HCFFF:FOR I=0 TO 8:READ X:POKE &HD000+I,X:NEXT:POKE &HD100,170",
+                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100) AND 1;"]"',
+                    "DATA 205,174,0,245,225,34,0,209,201"],
+    "inlin_stop": ["CLEAR 200,&HCFFF:FOR I=0 TO 8:READ X:POKE &HD000+I,X:NEXT:POKE &HD100,170",
+                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100) AND 1;"]"',
+                    "DATA 205,177,0,245,225,34,0,209,201"],
+    "qinlin_stop": ["CLEAR 200,&HCFFF:FOR I=0 TO 8:READ X:POKE &HD000+I,X:NEXT:POKE &HD100,170",
+                    'DEFUSR=&HD000:Q=USR(0):PRINT "[C";PEEK(&HD100) AND 1;"]"',
+                    "DATA 205,180,0,245,225,34,0,209,201"],
 }
 for _n, _p in NOPRN.items():                              # the POKE count FROM the bytes
     if _p[0].startswith("CLEAR") and "READ" in _p[0]:
@@ -122,7 +137,19 @@ KEY_OF = {"stop_pause": ((7, 0x10),)}
 HOLD_OF = {"stop_pause": (0.5, 1.0)}
 
 
-def noprn(machine, prog, key=CTRL_STOP, hold=(0.5, 2.0)):
+FREG_ROWS = ("pinlin_stop", "inlin_stop", "qinlin_stop")
+
+
+def noprn(machine, prog, key=CTRL_STOP, hold=(0.5, 2.0), freg=False):
+    if freg:                                       # the stored F / A, read from RAM
+        m = omsx_repl.run_cases(machine, [("stored", prog)], batch=False,
+                                reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+                                capture=("mem_abs", [(0xD100, 2)]),
+                                holds=[key], hold_lead=hold[0], hold_secs=hold[1])[0]
+        if not m:
+            return None
+        b = bytes.fromhex(m)
+        return f"F={b[0]:02X} Cy={b[0] & 1} A={b[1]:02X}"
     scr = omsx_repl.run_cases(machine, [("stored", prog)], batch=False,
                               reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
                               holds=[key], hold_lead=hold[0], hold_secs=hold[1])[0]
@@ -138,7 +165,11 @@ def main():
     for name, prog in NOPRN.items():
         got = {side: noprn(mach, prog, KEY_OF.get(name, CTRL_STOP), HOLD_OF.get(name, (0.5, 2.0)))
                for side, mach in MACHINES}
-        if not got["VG"] or not got["ZB"]:
+        if name in FREG_ROWS and got["VG"] and got["ZB"]:
+            for side, mach in MACHINES:
+                f = noprn(mach, prog, freg=True)
+                got[side] += f" | {f or '<NO RAM READ>'}"
+        if not got["VG"] or not got["ZB"] or "<NO RAM READ>" in got["VG"] + got["ZB"]:
             verdict = "NO-READING"
             blind += 1
         elif got["VG"] == got["ZB"]:

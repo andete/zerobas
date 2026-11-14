@@ -1,0 +1,6 @@
+pinlin_stop VG F=45 Cy=1 A=00
+pinlin_stop ZB F=21 Cy=1 A=0D
+inlin_stop VG F=45 Cy=1 A=00
+inlin_stop ZB F=21 Cy=1 A=0D
+qinlin_stop VG F=45 Cy=1 A=00
+qinlin_stop ZB F=21 Cy=1 A=0D

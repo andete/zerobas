@@ -298,4 +298,11 @@ bios_inlin:                                 ; also PINLIN
                 out     (PSLTREG),a
                 ld      hl,LINEBUF - 1      ; the published HL
                 ld      a,$0D               ; A as the VG-8020 leaves it
+                ret     nc
+                ; D-INLINSTOPF (2026-11-14): on CTRL-STOP the VG-8020 returns A = 0 and
+                ; F = $45 (Z, P/V, Cy) from all three entries -- `xor a / scf`'s flags
+                ; exactly, read as a result (scratchpad/IN_run2.out); zerobas left A = $0D,
+                ; F = $21. Cy was already right.
+                xor     a
+                scf
                 ret

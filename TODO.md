@@ -16516,7 +16516,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **cbios-repack #26 `grphed-cls.patch`** (cls_text clears it, 4 B from INIMLT's pad; the video block
       moves 4 B, GRPPRT's guard follows) + new `make grphed-acceptance`: 12 / 12 SAME ([`GH_gate.out`](scratchpad/GH_gate.out)),
       CNVCHR 4 / 4 ([`GH_cnv.out`](scratchpad/GH_cnv.out)); the screen / BIOS suites and unit tests green on the moved image
-      ([`GH_biosflags-acceptance.out`](scratchpad/GH_biosflags-acceptance.out) and its GH_* siblings). Left of (7): the INLIN family's Cy on STOP, BREAKX held.
+      ([`GH_biosflags-acceptance.out`](scratchpad/GH_biosflags-acceptance.out) and its GH_* siblings). Left of (7): the INLIN family's Cy on STOP, BREAKX held -- both
+      closed below.
       ✅ **(4) CLOSED 2026-11-14 -- A REAL DIFFERENCE (D-OUTDOPRT).** outdlp-acceptance gained outdo_prn /
       outdo_prncol (OUTDO with PRTFLG ($F416) = 1) and outdo_scr (PRTFLG 0). The VG-8020 PRINTS with PRTFLG set,
       exactly OUTDLP's answer (TAB to spaces, LPTPOS 9 after `ABC TAB D`); zerobas's outdo went to pchar, the
@@ -16524,7 +16525,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (basic/main.asm, the low region's end: 15 B, 9 B left there): PRTFLG != 0 -> bios_outdlp, else pchar as
       before (zerobas's own LPRINT uses PRDEST / PRDEV and never sets PRTFLG). After: 15 / 15 ([`OD_run2.out`](scratchpad/OD_run2.out)).
       ⚠️ Not separated: which of PTRFIL (a file) and PRTFLG wins when both are set.
-      ➡️ NEXT: (7)'s remainder; (8)-(10); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **(7) CLOSED 2026-11-14 -- AND A SMALL DIFFERENCE (D-INLINSTOPF).** outdlp-acceptance gained pinlin_stop /
+      inlin_stop / qinlin_stop: each entry waiting for a line, CTRL-STOP held. Both machines break the program
+      (`Break in 20`), so the row ALSO reads the F / A the entry stored, from RAM after the run -- the break alone
+      would agree without ever seeing Cy. Cy = 1 on both; the VG-8020's F = $45, A = 0 (`xor a / scf`'s flags),
+      zerobas's F = $21, A = $0D ([`IN_run2.out`](scratchpad/IN_run2.out)). bios_inlin's STOP exit now `xor a / scf` (+4 B, the $3283
+      pin pad 6 B left): 3 / 3 ([`IN_run3.out`](scratchpad/IN_run3.out)). BREAKX with STOP held was already compared (breakx_loop spins
+      on its Cy).
+      ➡️ NEXT: (8)-(10); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
