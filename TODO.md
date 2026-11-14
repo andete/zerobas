@@ -18246,6 +18246,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       lines; spec-diskwcache.md's W4 calls it "the widest audit, and it comes last"). ➡️ Picked
       up only with that audit; the FAT-per-cluster read waits on the same kind of tag for
       FAT_MBUF.
+      📋 **THE W4 AUDIT, ROUND 2 (2026-11-14, [`dbuf_audit2.md`](scratchpad/dbuf_audit2.md)):** 11 sites change the buffer's
+      bytes, a missed alias (BD_LINE, the boot date prompt), and the reads that bypass
+      read_sector (the page-1 bounce, a direct dskio_rd overlapping the buffer). 🧩 **THE DESIGN
+      IT POINTS TO -- the tag CLEARED IN dskio, not at read_sector:** every writer whose path did
+      any disk I/O after RDBLK's read is then safe by construction (fat_media, SFIRST / SNEXT,
+      the read-modify-writes and their failure paths); explicit clears only where bytes change
+      with NO I/O -- the sequential writer's dta_rec, fip_store, bb_mark, the boot date line,
+      dout_write's first half. Tag 0 = invalid (sector 0 is never an RDBLK data sector). ➡️
+      Price it (dskio's clear must keep A / F / BC / DE / HL: ~8 B; five clears; the set and test
+      in k47b2_mid) against the room below, then build with a gate row per explicit clear.
       ✂️ **D-DISKCARVE3 (2026-11-14): +26 B of disk ROM, for this.** (1) SFIRST is "cursor := 0,
       then SNEXT" (sfirst_body falls into snext_body: 13 B; the one change -- a SFIRST whose mount
       FAILS leaves the cursor 0, where it kept the old one); (2) boot_rd (disk/runtime.asm, in
