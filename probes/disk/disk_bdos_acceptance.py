@@ -114,7 +114,10 @@ EXERCISERS = [
     # past the Enter, SELDSK's count. Byte-identical at its first run (dosl_d1_1.out).
     ("DOSL-D1", "build_dosl_disk.py", ["--prog", "d1con", "--keys", "HELLO\\rX", "--settle", "80"]),
     ("DOSL-D2", "build_dosl_disk.py", ["--prog", "d2type"]),
-    ("DOSL-D3", "build_dosl_disk.py", ["--prog", "d3copy", "--settle", "150"]),
+    # D-SEQMIX (2026-11-14): settle 150 -> 220. SEQWRITE writes through now (no record
+    # left in the shared buffer between calls): this COPY's side 153.2 s against the
+    # CF-3300's 93.0 (scratchpad/SMX_d3_400b.out), so 150 s ended it before its anchor.
+    ("DOSL-D3", "build_dosl_disk.py", ["--prog", "d3copy", "--settle", "220"]),
     # D4: DIR -- "*.COM" through SFIRST / SNEXT (names, sizes, the first raw DTA),
     # counts of "*.SYS" / "*.*", ALLOC. It found the DTA's entry[15..21] zeroed.
     ("DOSL-D4", "build_dosl_disk.py", ["--prog", "d4dir", "--settle", "150"]),
@@ -303,7 +306,10 @@ def gate(name: str, mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool
                                         for a in printed}))
             return True, f"0-byte-diff (all {nbytes} allowlisted — {reasons})"
         note = f"; live-reg delta [{regs}] (benign epilogue)" if regs != "NONE" else ""
-        tstr = f" (anchor t={anchor_t:.1f} ≥ keys-at)" if anchor_t is not None else ""
+        # D-SEQMIX (2026-11-14): BOTH sides' times -- the min alone hid how slow ours
+        # was (DOSL-D3: 153 s against 93) until it crossed --settle and read MISALIGNED.
+        tstr = (f" (anchor t={anchor_t:.1f} ≥ keys-at; stock {float(m.group(1)):.1f} s, "
+                f"ours {float(m.group(2)):.1f} s)") if anchor_t is not None else ""
         return True, f"0-byte-diff{tstr}{note}"
     if mode == "callseq":
         if "NO DIVERGENCE" in out:

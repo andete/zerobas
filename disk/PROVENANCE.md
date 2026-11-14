@@ -775,7 +775,7 @@ RAM outside known regions.
 | — chain-tail cluster being filled (`BDOS_WRCLUS`) | $E547–$E548 (word) | own choice | sourced |
 | — file's first cluster, 0 until allocated (`BDOS_WRFIRST`) | $E549–$E54A (word) | own choice | sourced |
 | — sector index within current cluster (`BDOS_WRSECIDX`) | $E54B (1 byte) | own choice | sourced |
-| — bytes buffered in SECTOR_BUF (`BDOS_WRBUFLEN`, 0..512) | $E54C–$E54D (word) | own choice | sourced |
+| — bytes of the current sector (`BDOS_WRBUFLEN`, 0..512); for SEQWRITE already written, since D-SEQMIX 2026-11-14 writes every record through | $E54C–$E54D (word) | own choice | sourced |
 | — total bytes written = final file size (`BDOS_WRBYTES`) | $E54E–$E551 (4-byte LE) | own choice | sourced |
 | — open file's dir-entry sector (`BDOS_DIRSEC`) | $E552–$E553 (word) | own choice | sourced |
 | — open file's dir-entry byte offset (`BDOS_DIROFF`) | $E554–$E555 (word) | own choice | sourced |

@@ -880,20 +880,8 @@ rnd_loc:
                 ldir
                 pop     de                  ; DE = row+33 (CF = 0: add's)
                 ret
-; seq_flush -- rrnd_position's (disk/kernel.asm, beside seq_dirty: the comment there).
-; Here, in front of $461D, for room.
-seq_flush:
-                ld      a, (BDOS_WRMODE)
-                or      a
-                jp      z, sd_read
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      a, h
-                or      l
-                ret     z                   ; nothing buffered
-                call    fat_flush_data_sector
-                ld      hl, 0
-                ld      (BDOS_WRBUFLEN), hl ; drained (flags kept: CF = the flush's)
-                ret
+; (seq_flush -- the buffered SEQWRITE records out before a random positioning -- is gone:
+; D-SEQMIX, 2026-11-14, SEQWRITE writes through and nothing stays buffered.)
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
                 jp      bdos_create_body         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)
@@ -961,6 +949,6 @@ bdos_close:
 bdos_close_rd:
                 jp      close_read      ; read close: nothing to flush, but a WRITTEN
                                         ; file is re-dated (D-CLOSESTAMP)
-; (bdos_close_write -- the write-mode close -- is in disk/runtime.asm, before $7F7C:
-; D-BDOSSEQ's size-from-the-FCB did not fit here.)
+; (bdos_close_write -- the write-mode close from the globals -- is gone: D-SEQMIX,
+; 2026-11-14; every FCLOSE closes from its FCB, kernel.asm bdos_close_wm.)
 

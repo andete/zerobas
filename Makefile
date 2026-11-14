@@ -3024,6 +3024,14 @@ p1multi-acceptance: repack-machine $(DISK_TEST_DSK)
 fdcmasked-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_fdcmasked.py
 
+# --- seqmix-acceptance: a SEQWRITE file with another file read between (D-SEQMIX) -------
+# Through BASIC's $F37D BDOS: FMAKE A, SEQWRITE, an RDBLK / SEQREAD of B, SEQWRITE,
+# FCLOSE both, read back. Pinned to the CF-3300's readings (2026-11-14); the bug left
+# B's sector in A (RDBLK) or A empty with B's entry overwritten (SEQREAD) -- the knife,
+# scratchpad/SMX_knife.out.
+seqmix-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_seqmix.py
+
 # --- biosflags-acceptance: BIOS entries whose published OUTPUT is a flag (D-SCALXYF) ------
 # DCOMPR / CHRGTR / GETYPR / CHSNS / BREAKX / LPTSTT / SCALXY, F masked to the documented
 # bits, VG-8020 against zerobas (biosregs compares A / BC / DE / HL only).

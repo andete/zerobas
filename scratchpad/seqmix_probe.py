@@ -40,6 +40,9 @@ ROWS = [
     (0x21, 0, 0xEE, 0, 128, 0, 0, "RDRND A RR0 (want $11)"),
     (0x21, 0, 0xEE, 0, 128, 1, 0, "RDRND A RR1 (want $22)"),
     (0x10, 0, NONE, 0, -1, -1, 0, "FCLOSE A"),
+    (0x0F, 0, NONE, 1, -1, -1, 1, "FOPEN B (entry intact?)"),
+    (0x23, 0, NONE, 0, -1, -1, 1, "FSIZE B (want 4 records)"),
+    (0x21, 0, 0xEE, 0, 128, 0, 1, "RDRND B RR0 (want $AA)"),
 ]
 REC = F.REC
 

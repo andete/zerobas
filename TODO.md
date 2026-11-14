@@ -17389,7 +17389,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       there on the diskless target, and whether the VG-8020's $00 is worth matching (a CALL
       $F37D there runs into $00s; ours returns).
 
-- [ ] 🔴 **D-SEQMIX — A SEQWRITE FILE LOSES ITS DATA WHEN ANOTHER FILE IS READ BETWEEN ITS WRITES
+- [x] 🔴 **D-SEQMIX — A SEQWRITE FILE LOSES ITS DATA WHEN ANOTHER FILE IS READ BETWEEN ITS WRITES
       (found 2026-11-14 while pricing D-BLKIOPERCALL's read tag)**
       🎚️ TIER 1 — a BDOS entry point's happy path (Joost 2026-11-08: entry points first): the plainest
       file copy -- read one file, SEQWRITE another -- writes the wrong bytes or an EMPTY file.
@@ -17412,6 +17412,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       closed FCB. Witnesses: this probe both ways (to a gate), wrblkalt / bdos acceptance, the
       roundtrip probe, tests/test_wrseq_position.py. Price the disk-ROM bytes first (no 16 B
       run left on 2026-11-14 apart from D-DISKCARVE3's 32 + 24).
+      🔴 **AND B.DAT WAS CORRUPTED TOO** ([`seqmix_run3.out`](scratchpad/seqmix_run3.out), FOPEN B added at the end): in the SEQREAD
+      shape zerobas's B entry read A's size ($100) and cluster (5) -- FCLOSE A wrote at
+      FWR_DIRSEC / FWR_DIROFF, which fat_find(B) had moved. Two faults: (a) the shared buffer
+      held the writer's records BETWEEN calls; (b) FCLOSE took the entry's place and contents
+      from globals.
+      ✅ **FIXED 2026-11-14** (design drafted by a planning agent from the code, checked here):
+      (E1) bdos_seqwrite_body WRITES THROUGH -- every record flushed; a mid-sector record first
+      re-reads its sector (dout_secread, dout_write's pattern) and the writer steps back onto
+      a non-full sector; BDOS_WRBUFLEN now means "bytes of this sector on disk". (E2)
+      rrnd_position calls seq_dirty, not seq_flush (a flush would now write another file's
+      bytes over A's sector); (E3) seq_flush and (E4) bdos_close_write's globals path are gone;
+      (E5) every FCLOSE closes from its own FCB (+26, +16..19 at +25: close_read / cr_dir) --
+      D-WRBLKDIR's "one close rule". Disk ROM: the $461D region gained 28 B (2026-11-14).
+      📏 [`seqmix_fix_blk.out`](scratchpad/seqmix_fix_blk.out), [`seqmix_fix_seq.out`](scratchpad/seqmix_fix_seq.out): both shapes now match the CF-3300 on every row,
+      FCB bytes included (🔮 HIT). New `make seqmix-acceptance` (probes/disk/disk_probe_seqmix.py,
+      zerobas only, pinned to the CF-3300's readings, both shapes, 10 rows): PASS; KNIFED against
+      the unfixed sources -> 5 rows DIVERGE, exactly the bug's ([`SMX_knife.out`](scratchpad/SMX_knife.out)). Unit tests,
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull /
+      wcache green, bdosseq / bdosfcb probes run. bdos-acceptance's DOSL-D3 (COPY by SEQREAD /
+      SEQWRITE) went MISALIGNED: it now takes **153.2 s against the CF-3300's 93.0**
+      ([`SMX_d3_400b.out`](scratchpad/SMX_d3_400b.out), capture byte-identical) and its window was 150 s -- now 220, and the
+      harness prints BOTH sides' times (the min alone hid ours).
+      ➡️ LEFT, filed: the write-through's cost (below); and from the design's own list -- any
+      FCLOSE clears BDOS_WRMODE (a still-open writer's next SEQWRITE answers $FF, as before);
+      another file's WRBLK / FCLOSE between SEQWRITEs rewrites BDOS_WRFIRST / WRBYTES; a BASIC
+      output channel between $F37D SEQWRITEs; CR from the shared BDOS_SEQREC.
+      - [ ] **SEQWRITE writes through: COPY by SEQREAD / SEQWRITE 153 s against 93** -- 🎚️ TIER 5 —
+            on-par speed. Each record re-reads and writes its sector (the CF-3300 writes a
+            sector once). The lever: hold the partial sector as DIRTY with an owner tag and
+            flush it when anyone else reads into the shared buffer (dskio / read_sector) --
+            the W4 audit's tag ([`dbuf_audit2.md`](scratchpad/dbuf_audit2.md)) with a dirty bit; the reads that bypass
+            read_sector are why it must sit in dskio.
 
 - [ ] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
       ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**

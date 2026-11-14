@@ -435,12 +435,13 @@ bd_step7:
 ; wrote the entry from the GLOBALS -- the last-used file's -- never its own
 ; (wrblkalt-acceptance's ALT1). The globals path is for the SEQUENTIAL writer's
 ; file only: nothing written sequentially (no cluster yet) -> close from the FCB.
+; 🔴 D-SEQMIX (2026-11-14): AND THE SEQUENTIAL WRITER'S FILE NOW CLOSES THE SAME WAY. Its
+; globals path wrote the entry at FWR_DIRSEC / FWR_DIROFF, which any other file's
+; fat_find had moved -- FCLOSE A wrote A's chain into B.DAT's entry and left A empty
+; (scratchpad/seqmix_run3.out). Nothing is buffered any more (SEQWRITE writes through),
+; so every FCLOSE closes from its own FCB: +26 / +16..19 at +25 (close_read, cr_dir).
 bdos_close_wm:
-                ld      hl, (BDOS_WRCLUS)
-                ld      a, h
-                or      l
-                jp      nz, bdos_close_write
-                ld      (BDOS_WRMODE), a    ; (A = 0) no longer open for write
+                ld      (BDOS_WRMODE), a    ; (A = 0, bdos_close's `dec a`) not for write
                 jp      bdos_close_rd
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
@@ -8569,7 +8570,7 @@ bdos_seqwrite_body:
                 ld      hl, (BDOS_WRBUFLEN)
                 ld      a, h
                 or      l
-                jr      nz, bsw_m34_buffer  ; mid-sector: cluster already validated
+                jr      nz, bsw_mid         ; mid-sector: cluster already validated
                 ld      hl, (BDOS_WRCLUS)
                 ld      a, h
                 or      l
@@ -8593,6 +8594,17 @@ bsw_first:
                 jr      c, bsw_full
                 ld      (BDOS_WRFIRST), hl
                 ld      (BDOS_WRCLUS), hl
+                jr      bsw_m34_buffer
+                ; 🔴 D-SEQMIX (2026-11-14): THE WRITER KEEPS NOTHING IN THE SHARED BUFFER
+                ; BETWEEN CALLS. A record buffered here was overwritten by another file's
+                ; RDBLK (SECTOR_BUF is everyone's), and seq_flush on a later read wrote
+                ; whatever another file had left there over this file's sector
+                ; (scratchpad/seqmix_run1.out / run3.out). Every record is written through
+                ; now; a mid-sector record re-reads the sector as far as it is written
+                ; (dout_write's pattern) -- BDOS_WRBUFLEN is "bytes of this sector on disk".
+bsw_mid:
+                call    dout_secread        ; (FWR_CLUS, FWR_SECIDX) -> FAT_DBUF
+                jr      c, bsw_full
 bsw_m34_buffer:
                 ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
                 ld      hl, (BDOS_WRBUFLEN)
@@ -8603,16 +8615,17 @@ bsw_m34_buffer:
                 add     hl, de
                 ld      (BDOS_WRBUFLEN), hl
                 call    wrbytes_add_recsize ; BDOS_WRBYTES += RECSIZE (4-byte LE)
-                ; if the 512-byte buffer is now full, flush it to the file.
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      de, 512
-                or      a
-                sbc     hl, de
-                jr      c, bsw_ok           ; buffer not full yet
+                ; D-SEQMIX: written through, full or not (the pad zeros the rest).
                 call    fat_flush_data_sector
                 jr      c, bsw_full         ; disk full / write error
-                ld      hl, 0
-                ld      (BDOS_WRBUFLEN), hl ; buffer drained
+                ld      hl, BDOS_WRBUFLEN+1
+                bit     1, (hl)             ; 512 = $0200: the sector is complete
+                jr      z, bsw_back
+                ld      (hl), 0             ; BUFLEN := 0 (its low byte is 0 at 512)
+                jr      bsw_ok
+bsw_back:
+                ld      hl, BDOS_WRSECIDX
+                dec     (hl)                ; back onto the sector for the next record
 bsw_ok:
                 xor     a                   ; A = $00 success
                 ret
@@ -8812,7 +8825,7 @@ fcb_fatst:
 ; not a generic kernel copy-back artifact (contrast fdel_body's DE=$03D0,
 ; which the kernel already reproduced with no fdel_body code at all).
 rrnd_position:
-                call    seq_flush           ; B2 / D-BDOSSEQ: SEQREAD re-positions; a
+                call    seq_dirty           ; B2 / D-BDOSSEQ: SEQREAD re-positions; a
                                             ; write-open file's buffered records go out
                 ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
 rrnd_pos_a:                                 ; srd_pos: A = the record

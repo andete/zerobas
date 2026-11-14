@@ -698,26 +698,9 @@ frl_done:
                 call    clus_sec            ; (its adds cannot carry: CF = 0)
                 ld      (GP_PHYS), de
                 ret
-; bdos_close_write -- FCLOSE of a file open for write (disk/driver.asm bdos_close ->
-; kernel.asm bdos_close_wm). Moved here by D-BDOSSEQ (2026-11-10), for room.
-bdos_close_write:
-                xor     a
-                ld      (BDOS_WRMODE), a    ; the file is no longer open for write
-                push    de                  ; the FCB
-                ; flush any buffered partial sector (BDOS_WRBUFLEN > 0).
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      a, h
-                or      l                   ; (CF = 0)
-                call    nz, fat_flush_data_sector
-                pop     hl                  ; HL = the FCB (POP keeps CF)
-                jr      c, bdos_close_err
-                ; 🔴 D-BDOSSEQ (2026-11-10): the size comes from the FCB (+16..19), not
-                ; this session's own count. A WRRND / WRBLK past the end of a file still
-                ; open from FMAKE grows the FCB's size (wrblk_body), never BDOS_WRBYTES:
-                ; FMAKE, one SEQWRITE, WRRND RR 1, FCLOSE left 128 bytes here, the
-                ; CF-3300 256 (scratchpad/bdosseq_run1.out). Every SEQWRITE keeps +16..19
-                ; equal to BDOS_WRBYTES (wrseq_wr_writeback), so this is that count when
-                ; nothing else grew the file.
+; (bdos_close_write, the globals-path FCLOSE, retired by D-SEQMIX 2026-11-14; its
+; D-BDOSSEQ lesson -- the size comes from the FCB, a WRRND / WRBLK past the end grows
+; +16..19, never BDOS_WRBYTES -- is now the only close rule: close_read / cr_dir.)
 ; 💰 D-DSKFMT carve 18: BASIC's CLOSE (kernel.asm hcc_stamp) calls in here with HL = its
 ; channel (the size at +16..19 as in an FCB): out CF = fat_dir_update failed (A = $FF), else
 ; A = $00.

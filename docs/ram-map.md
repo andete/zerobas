@@ -73,7 +73,7 @@ second one is the question a per-component map cannot answer.
 | `$ED54` | 2 B | `disk` | `BDOS_WRCLUS/FWR_CLUS` | chain-tail cluster currently being filled (word) |  |
 | `$ED56` | 2 B | `disk` | `BDOS_WRFIRST/FWR_FIRST` | file's first cluster, 0 until first allocated (word) |  |
 | `$ED58` | 1 B | `disk` | `BDOS_WRSECIDX/FWR_SECIDX` | sector index within the current cluster (byte) |  |
-| `$ED59` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes currently buffered in SECTOR_BUF (word, 0..512) |  |
+| `$ED59` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes of the current sector in SECTOR_BUF (word, 0..512); a SEQWRITE file's are on disk already (D-SEQMIX) |  |
 | `$ED5B` | 4 B | `disk` | `BDOS_WRBYTES/FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
 | `$ED5F` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) |  |
 | `$ED61` | 2 B | `disk` | `BDOS_DIROFF/FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
