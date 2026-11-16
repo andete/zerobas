@@ -1,0 +1,3 @@
+ROW gp2_plus SAME (16384 B compared)
+ROW gp3_plus SAME (16384 B compared)
+PASS: the VRAM the mode entries leave (2/2)

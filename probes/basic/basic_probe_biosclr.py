@@ -33,6 +33,22 @@ CLS = 0x00C3
 CLS_ROWS = {"cls0": (0x006C, (0x0800, 0x1000)), "cls1": (0x006F, (0x0000, 0x0800)),
             "cls2": (0x0072, None), "cls3": (0x0075, None)}
 COLORS = "POKE &HF3E9,4:POKE &HF3EA,1:POKE &HF3EB,6"
+# GRPPRT ($008D) after INIGRP / INIMLT, GRPACX / GRPACY ($FCB7 / $FCB9) set first. ONLY
+# characters whose 8 font bytes are IDENTICAL in both machines' fonts (read back from VRAM
+# after INITXT: scratchpad/GP_font.out, 44 non-blank), so the glyph source cannot split.
+GRPPRT, GRPACX, GRPACY = 0x008D, 0xFCB7, 0xFCB9
+GRP_ROWS = {"gp2_plus": (0x0072, 0x2B, 10, 13), "gp2_edge": (0x0072, 0xDB, 250, 190),
+            "gp2_c5": (0x0072, 0xC5, 100, 96), "gp3_plus": (0x0075, 0x2B, 10, 13)}
+
+
+def grp_code(init, ch, x, y):
+    # the $55 fill FIRST, as every other row: INIMLT leaves $0600.. alone, so without it the
+    # machines' leftover VRAM showed through (scratchpad/GP_run1.out's gp3_plus)
+    fill = [0x21, 0, 0, 0x01, 0x00, 0x40, 0x3E, 0x55, 0xCD, FILVRM & 255, FILVRM >> 8]
+    return (fill + [0xCD, init & 255, init >> 8,
+             0x21, x & 255, x >> 8, 0x22, GRPACX & 255, GRPACX >> 8,
+             0x21, y & 255, y >> 8, 0x22, GRPACY & 255, GRPACY >> 8,
+             0x3E, ch, 0xCD, GRPPRT & 255, GRPPRT >> 8, 0xC9])
 
 
 def code(entry, cls=False):
@@ -44,8 +60,8 @@ def code(entry, cls=False):
     return fill + [0xCD, entry & 255, entry >> 8, 0xC9]
 
 
-def read(machine, entry, cls=False):
-    c = code(entry, cls)
+def read(machine, entry, cls=False, c=None):
+    c = c or code(entry, cls)
     prog = ["NEW", "10 CLEAR 200,&HCFFF:" + COLORS,
             f"20 FOR I=0 TO {len(c) - 1}:READ X:POKE &HD000+I,X:NEXT",
             "30 DEFUSR=&HD000:Q=USR(0)", "40 GOTO 40",
@@ -72,11 +88,16 @@ def runs(diff):
 
 
 def main():
-    only = sys.argv[1:] or list(ROWS) + list(CLS_ROWS)
+    only = sys.argv[1:] or list(ROWS) + list(CLS_ROWS) + list(GRP_ROWS)
     bad = blind = 0
     for name in only:
-        entry, font = ROWS.get(name) or CLS_ROWS[name]
-        got = {side: read(m, entry, name in CLS_ROWS) for side, m in MACHINES}
+        if name in GRP_ROWS:
+            font = None
+            gc = grp_code(*GRP_ROWS[name])
+            got = {side: read(m, 0, c=gc) for side, m in MACHINES}
+        else:
+            entry, font = ROWS.get(name) or CLS_ROWS[name]
+            got = {side: read(m, entry, name in CLS_ROWS) for side, m in MACHINES}
         if got["VG"] is None or got["ZB"] is None:
             blind += 1
             print(f"ROW {name:7} NO-READING", flush=True)

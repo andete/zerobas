@@ -67,7 +67,7 @@ LEVELS = {
     0x0084: (3, "biosregs-acceptance", ""),
     0x0087: (3, "biosregs-acceptance", ""),
     0x008A: (3, "biosflags-acceptance", ""),
-    0x008D: (2, "biosregs-acceptance", "the glyph drawn"),
+    0x008D: (3, "biosclr-acceptance", "the glyph in SCREEN 2 / 3, all VRAM, with characters both fonts share"),
     0x0090: (3, "biosq-acceptance", "queues / MUSICF / PLYCNT compared; the voice blocks' BYTES are zerobas PLAY's own encoding (filed, BASIC-side)"),
     0x0093: (3, "biosregs-acceptance", ""),
     0x0096: (3, "biosregs-acceptance", ""),

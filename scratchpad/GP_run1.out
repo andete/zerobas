@@ -1,0 +1,5 @@
+ROW gp2_plus SAME (16384 B compared)
+ROW gp2_edge SAME (16384 B compared)
+ROW gp2_c5  SAME (16384 B compared)
+ROW gp3_plus DIVERGES: 2794 B in 236 run(s): $06C1-$06C6 VG 20 ZB 10, $06C8-$06CE VG 20 ZB 10, $06D2-$06D6 VG 00 ZB 50, $0705-$0706 VG 90 ZB 68, $0708-$070F VG 30 ZB 60, $0716-$0716 VG 80 ZB 00 ...
+FAIL: the VRAM the mode entries leave (3/4)

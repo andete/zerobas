@@ -16591,7 +16591,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `cp 41`, `$600`; INIGRP's 6 B pad) + zerobas `bios_cls` ($00C3: C-BIOS's body, then FNKSB in SCREEN 0 / 1;
       the low region was 35 B free, then 22 B on 2026-11-16): 8 / 8 SAME ([`CL_run4.out`](scratchpad/CL_run4.out)). GRPPRT's glyph is the last
       L2 row.
-      ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **L2 -> L3: GRPPRT (2026-11-16).** Its glyph comes from the FONT, which differs by design -- so both fonts
+      were read back from VRAM after INITXT and only the 44 non-blank characters identical in both are used
+      ([`GP_font.out`](scratchpad/GP_font.out)). biosclr's gp2_plus / gp2_edge (a block at 250,190) / gp2_c5 / gp3_plus: all 16 KB SAME ([`GP_run2.out`](scratchpad/GP_run2.out)). The first
+      run's gp3 split was the APPARATUS -- no $55 fill before INIMLT, the machines' leftover VRAM showed through
+      ([`GP_run1.out`](scratchpad/GP_run1.out)). No bug. **L2 IS EMPTY**: CHKRAM / FORMAT stay L1 (spurious witnesses; FORMAT's body is the
+      disk ROM's).
+      ➡️ NEXT: tools/entry_table.py's own faults (biosl's rungs never credited; spurious CHKRAM / LEFTC / FORMAT
+      witnesses); then the BIOS queue is EMPTY -- say so and stop (focus ruling); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
