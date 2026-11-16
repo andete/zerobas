@@ -83,8 +83,11 @@ import omsx_repl as R                                # noqa: E402
 MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 CHGET_ENTRY = 0x009F                 # published MSX BIOS jump table
 CHSNS_ENTRY = 0x009C                 # D-KEYSHIFT: where the REPL now waits
-# chsns = ei (1) + push hl (1) + push de (1) -> the same latch pair (SIG)
-SNS_OFF = 3
+# chsns = ei (1) + push hl (1) -> its latch pair. D-CHSNSA (2026-11-16, cbios-repack #29):
+# CHSNS answers A = PUTPNT - GETPNT now, so its pair is `ld hl,GETPNT / ld a,(PUTPNT) /
+# sub (hl)` -- PUTPNT read first, GETPNT through HL second -- not chget's SIG.
+SNS_OFF = 2
+SNS_SIG = "21faf33af8f396"
 # chget = call H_CHGE (3) + push hl (1) + push de (1) -> chget_wait
 WAIT_OFF = 5
 # ld hl,(GETPNT) = 2A FA F3 ; ld de,(PUTPNT) = ED 5B F8 F3
@@ -351,7 +354,8 @@ def address2(base: int) -> int:
     return base + CHAR_OFF
 
 
-def address(entry: int = CHGET_ENTRY, wait_off: int = WAIT_OFF) -> tuple[int, str]:
+def address(entry: int = CHGET_ENTRY, wait_off: int = WAIT_OFF,
+            sig: str = SIG) -> tuple[int, str]:
     """Locate the latch pair behind a BIOS entry (`chget_wait` by default, or
     `chsns`'s) and vouch for it, or raise SystemExit."""
     got = _run(R.key_proc(), None, "CLS", entry, wait_off)  # locate only
@@ -362,18 +366,19 @@ def address(entry: int = CHGET_ENTRY, wait_off: int = WAIT_OFF) -> tuple[int, st
         raise SystemExit(f"latch-check: CANNOT JUDGE -- {entry:#06x} holds "
                          f"opcode {got.get('entry')}, not a `jp`")
     wait = int(got["chget"]) + wait_off
-    if got.get("sig") != SIG:
+    if got.get("sig") != sig:
         raise SystemExit(
             f"latch-check: CANNOT JUDGE -- chget_wait ({wait:#06x}) reads "
-            f"{got.get('sig')!r}, not the {SIG!r} this gate was written against "
+            f"{got.get('sig')!r}, not the {sig!r} this gate was written against "
             "(ld hl,(GETPNT) / ld de,(PUTPNT)). The trigger this scores may have "
             "moved; re-derive it before trusting either delivery oracle.")
     return wait, got["chget"]
 
 
 def main() -> int:
-    wait, base = address(CHSNS_ENTRY, SNS_OFF)
-    fatal, safe = wait + 3, [wait, wait + 7, wait + 8]
+    wait, base = address(CHSNS_ENTRY, SNS_OFF, SNS_SIG)
+    # the trigger: between the two pointer reads (`ld a,(PUTPNT)`); its neighbours
+    fatal, safe = wait + 3, [wait, wait + 6, wait + 7]
     print(f"latch-check: chsns ${int(base):04X}  latch pair ${wait:04X}  "
           f"trigger ${fatal:04X} (the REPL's wait since D-KEYSHIFT)")
     rows: list[tuple[str, bool]] = []
@@ -395,7 +400,7 @@ def main() -> int:
                      f"-> DELIVERED (fired)", "hl" in got and got.get("chain") == "10"))
 
     # Row C -- the shipped injector on CHSNS's neighbouring boundaries.
-    for addr, what in zip(safe, ["ld hl,(GETPNT)", "rst $20", "ld a,$ff"]):
+    for addr, what in zip(safe, ["ld hl,GETPNT", "sub (hl)", "pop hl"]):
         got = _run(R.key_proc(), hex(addr), "CLS:REM123456", CHSNS_ENTRY, SNS_OFF)
         rows.append((f"C  key_proc,     forced at ${addr:04X} ({what})"
                      f"{'':<3}-> DELIVERED (fired)", "hl" in got and got.get("chain") == "10"))

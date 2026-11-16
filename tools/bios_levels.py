@@ -70,7 +70,7 @@ LEVELS = {
     0x0093: (3, "biosregs-acceptance", ""),
     0x0096: (3, "biosregs-acceptance", ""),
     0x0099: (3, "strtms-acceptance", ""),
-    0x009C: (2, "biosflags-acceptance", "Z with a key waiting"),
+    0x009C: (3, "biosflags-acceptance", "Z and A with 0 / 1 / 3 keys and across the ring's end"),
     0x009F: (3, "biosregs-acceptance", ""),
     0x00A2: (3, "biostext-acceptance", ""),
     0x00A5: (4, "outdlp-acceptance", "the no-printer CTRL-STOP abort compared"),

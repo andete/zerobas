@@ -100,11 +100,14 @@ PATCHES = [
     # D-TDOWNCGE (2026-11-14): TDOWNC stops at the bottom cell row OR below it, as the
     # VG-8020 in SCREEN 2 and 3 -- `jr z` -> `jr c` against the row less one; same size.
     os.path.join(REPO, "cbios-repack", "tdownc-ge.patch"),
+    # D-CHSNSA (2026-11-16): CHSNS answers A = PUTPNT - GETPNT (low bytes) as the VG-8020;
+    # 8 B shorter, padded -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "chsns-a.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "2f4bb8810338e46acc96c08ecab5435e5e82e0d0"   # D-TDOWNCGE, 2026-11-14
+REPACKED_SHA1 = "47afb54c2068a0f96743d5591ae9fe969d3ea3f9"   # D-CHSNSA, 2026-11-16
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

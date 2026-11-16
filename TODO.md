@@ -16572,6 +16572,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       two rules fit (5 or $17 / anything >= 5), so rows H = 8, $16 and SCREEN 2's $18 separated them: >= the
       bottom row, both modes ([`S3_run2.out`](scratchpad/S3_run2.out)..[`S3_run4.out`](scratchpad/S3_run4.out)). cbios-repack #28 `tdownc-ge.patch`: `jr z` -> `jr c` against the row
       less one, same size; 12 / 12 ([`S3_run5.out`](scratchpad/S3_run5.out)). Ten entries to L3. **ALL TEN RANKED GAPS ARE CLOSED.**
+      ✅ **L2 -> L3: CHSNS (2026-11-16) -- A REAL DIFFERENCE (D-CHSNSA).** biosflags gained chsns_k / chsns_k3 /
+      chsns_wrap (keys put in KEYBUF by the row's own code): Z agreed, A did not -- the VG-8020 answers PUTPNT - GETPNT,
+      low bytes (1, 3, and $DB across the ring's end -- the wrap row separated it from a key count), C-BIOS $FF
+      ([`CK_run1.out`](scratchpad/CK_run1.out), [`CK_run2.out`](scratchpad/CK_run2.out), [`CK_run3.out`](scratchpad/CK_run3.out)). cbios-repack #29 `chsns-a.patch`, 8 B shorter, padded; 4 / 4 ([`CK_run4.out`](scratchpad/CK_run4.out)).
       ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 

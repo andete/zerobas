@@ -1,0 +1,2 @@
+ROW chsns_wrap VG=(0, 219) ZB=(0, 255) (F&$40, A) DIVERGES
+FAIL: flag-answering BIOS entries (0/1)

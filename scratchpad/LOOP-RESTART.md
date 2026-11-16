@@ -10,6 +10,23 @@ session and the loop resumes exactly where it stopped.
 |---|---|---|
 | ONLY MSX1 BIOS calls | *"Lets make sure we're 100% focussed. Any work done from now on till we broaden the scope again should be on MSX1 BIOS calls."* | the loop picks ONLY BIOS-entry work (the main BIOS's published MSX1 entries: tools/entry_table.py's BIOS rows, docs/tier-status.md's BIOS table, D-ENTRYTIERS / D-BIOSRUNG / D-BIOSCONTRACT items, cbios-repack patches). No BASIC, disk-ROM, BDOS, tape-statement or speed work until Joost broadens it -- however low its tier. The aim stays his 11-13 one: close zerobas's BIOS gaps so the C-BIOS MSX1 calls can be finished upstream. If the BIOS queue empties, SAY SO and stop -- do not drift back to other work. |
 
+## ▶️ RESUMED 2026-11-16 (Joost: "resume the loop") — paused 2026-11-14 night, state below still current
+
+| ruling / state | Joost's words | consequence |
+|---|---|---|
+| a CONTRACT LEVEL per BIOS entry | *"yes add the level column"* | docs/tier-status.md's BIOS table: L1 called / L2 happy path / L3 full contract / L4 errors / edges (L5 speed unscored under the focus), claims in `tools/bios_levels.py`, each naming a gate that must witness the entry or tiers-md refuses |
+| the "dongle" | *"don't we have the dongle to be able to test pad and pdl?"* | yes: `plug joyport[ab] paddle / arkanoidpad` prologues and the PSG-latch R14 injection drive every input entry -- never file one as undrivable (memory input-stimuli-exist-before-filing-undrivable) |
+
+STATE: all ten D-BIOSCONTRACT2 gaps CLOSED. Real differences fixed this session: LPTSTT F (#24),
+CNVCHR Z + CHPUT (#25), GRPHED on a text clear (#26), OUTDO with PRTFLG (D-OUTDOPRT), the INLIN
+family's STOP exit (D-INLINSTOPF), GICINI's queue reset + INITIO's exit registers (D-GICINIQ, #27),
+TDOWNC's bottom test (D-TDOWNCGE, #28). Everything is pushed: ba9ec9e7 (D-TDOWNCGE) went GREEN
+on its full gate after the pause.
+➡️ RESUME: the 12 L2 rows, `python3 tools/bios_levels.py` lists them -- CHSNS's Z with a key waiting
+first (cheapest), then the INLIN family's HL / QINLIN's prompt, CALSLT / CALLF's IX / IY / AF',
+INIT*'s cleared VRAM, CLS in graphics modes, GRPPRT's glyph. CHKRAM / FORMAT stay L1 (spurious
+witnesses; FORMAT's body is the disk ROM's).
+
 ## 🟢 RULINGS 2026-11-14 (evening) — READ FIRST (newest)
 
 | ruling | Joost's words | consequence |

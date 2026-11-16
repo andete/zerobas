@@ -1,0 +1,23 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+latch-check: chsns $111B  latch pair $111D  trigger $1120 (the REPL's wait since D-KEYSHIFT)
+latch-check: chget_char $1141  window $1142-$114C
+  PASS  A  old injector, forced at CHSNS, predecessor  4 B  -> DELIVERED (fired)
+  PASS  A  old injector, forced at CHSNS, predecessor  8 B  -> DELIVERED (fired)
+  PASS  A  old injector, forced at CHSNS, predecessor 14 B  -> DELIVERED (fired)
+  PASS  B  key_proc,     forced at CHSNS, predecessor  4 B  -> DELIVERED (fired)
+  PASS  B  key_proc,     forced at CHSNS, predecessor  8 B  -> DELIVERED (fired)
+  PASS  B  key_proc,     forced at CHSNS, predecessor 14 B  -> DELIVERED (fired)
+  PASS  C  key_proc,     forced at $111D (ld hl,GETPNT)   -> DELIVERED (fired)
+  PASS  C  key_proc,     forced at $1123 (sub (hl))   -> DELIVERED (fired)
+  PASS  C  key_proc,     forced at $1124 (pop hl)   -> DELIVERED (fired)
+  PASS  D  D-LATCH injector, forced at $1142 (push af) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  D  D-LATCH injector, forced at $114C (ld (GETPNT),hl) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  D  D-LATCH injector, forced at $1149 (ld hl,KEYBUF (wrap)) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  E  key_proc,          forced at $1142 (push af) -> DELIVERED (swallow 0, chain '54321', 17 deferrals)
+  PASS  E  key_proc,          forced at $114C (ld (GETPNT),hl) -> DELIVERED (swallow 0, chain '54321', 17 deferrals)
+  PASS  E  key_proc,          forced at $1149 (ld hl,KEYBUF (wrap)) -> DELIVERED (swallow 0, chain '54321', 12 deferrals)
+  PASS  F  D-LATCH injector, forced at $114F (pop af) -> DELIVERED (swallow 0, chain '54321', frozen body, no drain guard)
+latch-check: 16/16 rows

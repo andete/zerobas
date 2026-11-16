@@ -1,0 +1,5 @@
+ROW chsns_k  VG=(0, 1) ZB=(0, 1) (F&$40, A) SAME
+ROW chsns_k3 VG=(0, 3) ZB=(0, 3) (F&$40, A) SAME
+ROW chsns_wrap VG=(0, 219) ZB=(0, 219) (F&$40, A) SAME
+ROW chsns_e  VG=(64, 0) ZB=(64, 0) (F&$40) SAME
+PASS: flag-answering BIOS entries (4/4)

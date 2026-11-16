@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 12; L3 full contract: 89; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 11; L3 full contract: 90; L4 errors / edges: 3; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -228,7 +228,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | yes | L3 full contract | — | `strtms-acceptance` |
-| $009C | CHSNS | exercised | yes | L2 happy path | Z with a key waiting | `biosflags-acceptance`, `biosregs-acceptance` |
+| $009C | CHSNS | exercised | yes | L3 full contract | Z and A with 0 / 1 / 3 keys and across the ring's end | `biosflags-acceptance`, `biosregs-acceptance` |
 | $009F | CHGET | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $00A2 | CHPUT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
 | $00A5 | LPTOUT | exercised | yes | L4 errors / edges | the no-printer CTRL-STOP abort compared | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |

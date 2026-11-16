@@ -1,0 +1,3 @@
+ROW chsns_k  VG=(0, 1) ZB=(0, 255) (F&$40, A) DIVERGES
+ROW chsns_e  VG=(64, 0) ZB=(64, 0) (F&$40) SAME
+FAIL: flag-answering BIOS entries (1/2)
