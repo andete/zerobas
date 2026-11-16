@@ -274,6 +274,18 @@ ROWS = {
                after='A$="":FOR I=0 TO 3:A$=A$+HEX$(PEEK(&HF55E+I))+",":NEXT:PRINT:'
                      'PRINT "[C";A$;HEX$(PEEK(&HD100)+256*PEEK(&HD101));" ";HEX$(PEEK(&HD106));"]":END')
        for n, a in (("inlin", 0x00B1), ("pinlin", 0x00AE), ("qinlin", 0x00B4))},
+    # D-BIOSCONTRACT2 (2026-11-16): the Enter exit's Cy (the contract: set only on STOP --
+    # outdlp's *_stop rows compare that side) and QINLIN's `? ` prompt, read back from the
+    # name table: the prompt is put on row 10 (CLS / LOCATE first), then the echo of "AB".
+    **{n: prog_f(a, 0, before=":".join(f"POKE &HFBF0+{i},{ord(c)}" for i, c in enumerate("AB\r"))
+                       + ":POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:POKE &HF3F8,&HF3:POKE &HF3F9,&HFB",
+                 after='PRINT:PRINT "[C";PEEK(&HD10A) AND 1;"]":END')
+       for n, a in (("inlin_cy", 0x00B1), ("pinlin_cy", 0x00AE), ("qinlin_cy", 0x00B4))},
+    "qinlin_scr": prog(0x00B4, 0, before="WIDTH 40:CLS:LOCATE 0,10:"
+                       + ":".join(f"POKE &HFBF0+{i},{ord(c)}" for i, c in enumerate("AB\r"))
+                       + ":POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:POKE &HF3F8,&HF3:POKE &HF3F9,&HFB",
+                       after='S$="":FOR I=0 TO 5:S$=S$+HEX$(VPEEK(400+I))+",":NEXT:PRINT:'
+                             'PRINT "[C";S$;"]":END'),
     "chget": prog(0x009F, 0, before="POKE &HFBF0,81:POKE &HF3FA,&HF0:POKE &HF3FB,&HFB:"
                                     "POKE &HF3F8,&HF1:POKE &HF3F9,&HFB"),
     **{n: prog(0x0132, a, after='PRINT "[C";HEX$(INP(&HAA) AND &H40);"]":END')

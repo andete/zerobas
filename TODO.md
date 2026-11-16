@@ -16576,6 +16576,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       chsns_wrap (keys put in KEYBUF by the row's own code): Z agreed, A did not -- the VG-8020 answers PUTPNT - GETPNT,
       low bytes (1, 3, and $DB across the ring's end -- the wrap row separated it from a key count), C-BIOS $FF
       ([`CK_run1.out`](scratchpad/CK_run1.out), [`CK_run2.out`](scratchpad/CK_run2.out), [`CK_run3.out`](scratchpad/CK_run3.out)). cbios-repack #29 `chsns-a.patch`, 8 B shorter, padded; 4 / 4 ([`CK_run4.out`](scratchpad/CK_run4.out)).
+      ✅ **L2 -> L4: PINLIN / INLIN / QINLIN (2026-11-16).** The "HL not diffed" note was WRONG -- the rows' cell
+      already printed HL ($F55D) and A ($0D); the inventory's general `:END` remark had been copied onto them. Added:
+      the Enter exit's Cy (0 on both) and QINLIN's `? ` prompt read from the name table (`? AB` on both): 4 / 4 SAME
+      ([`IL_run1.out`](scratchpad/IL_run1.out)). With the STOP exit (outdlp, D-INLINSTOPF) the three are L4. No bug.
       ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 

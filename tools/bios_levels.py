@@ -77,12 +77,12 @@ LEVELS = {
     0x00A8: (3, "biosflags-acceptance", "ready state: outdlp's lptstt_rdy (DATA bytes, which "
                                         "the name scan cannot see)"),
     0x00AB: (3, "biosflags-acceptance", ""),
-    0x00AE: (2, "biosregs-acceptance", "HL not diffed (an `:END` row); the STOP exit IS "
-                                       "compared (outdlp's pinlin_stop, DATA bytes)"),
-    0x00B1: (2, "biosregs-acceptance", "HL not diffed (an `:END` row); the STOP exit IS "
-                                       "compared (outdlp's inlin_stop, DATA bytes)"),
-    0x00B4: (2, "biosregs-acceptance", "HL and the `? ` prompt not diffed; the STOP exit IS "
-                                       "compared (outdlp's qinlin_stop, DATA bytes)"),
+    0x00AE: (4, "biosregs-acceptance", "BUF / HL / A / Cy on Enter compared; the STOP "
+                                       "exit too (outdlp's pinlin_stop, DATA bytes)"),
+    0x00B1: (4, "biosregs-acceptance", "BUF / HL / A / Cy on Enter compared; the STOP "
+                                       "exit too (outdlp's inlin_stop, DATA bytes)"),
+    0x00B4: (4, "biosregs-acceptance", "BUF / HL / A / Cy on Enter and the `? ` prompt compared; the STOP "
+                                       "exit too (outdlp's qinlin_stop, DATA bytes)"),
     0x00B7: (3, "biosflags-acceptance", "STOP held: outdlp's breakx_loop (DATA bytes)"),
     0x00BA: (3, "iscntc-acceptance", ""),
     0x00BD: (3, "iscntc-acceptance", ""),

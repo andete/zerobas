@@ -1,0 +1,6 @@
+ROW inlin_cy VG=[[C 0 ]] ZB=[[C 0 ]] SAME
+ROW pinlin_cy VG=[[C 0 ]] ZB=[[C 0 ]] SAME
+ROW qinlin_cy VG=[[C 0 ]] ZB=[[C 0 ]] SAME
+ROW qinlin_scr VG=[[C3F,20,41,42,20,20,]] ZB=[[C3F,20,41,42,20,20,]] SAME
+
+PASS: BIOS helper registers (4/4)

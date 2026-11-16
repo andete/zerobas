@@ -180,7 +180,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 11; L3 full contract: 90; L4 errors / edges: 3; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 8; L3 full contract: 90; L4 errors / edges: 6; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
@@ -234,14 +234,14 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00A5 | LPTOUT | exercised | yes | L4 errors / edges | the no-printer CTRL-STOP abort compared | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
 | $00A8 | LPTSTT | exercised | yes | L3 full contract | ready state: outdlp's lptstt_rdy (DATA bytes, which the name scan cannot see) | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00AB | CNVCHR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
-| $00AE | PINLIN | exercised | yes | L2 happy path | HL not diffed (an `:END` row); the STOP exit IS compared (outdlp's pinlin_stop, DATA bytes) | `biosregs-acceptance` |
-| $00B1 | INLIN | exercised | yes | L2 happy path | HL not diffed (an `:END` row); the STOP exit IS compared (outdlp's inlin_stop, DATA bytes) | `biosregs-acceptance` |
-| $00B4 | QINLIN | exercised | yes | L2 happy path | HL and the `? ` prompt not diffed; the STOP exit IS compared (outdlp's qinlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00AE | PINLIN | exercised | yes | L4 errors / edges | BUF / HL / A / Cy on Enter compared; the STOP exit too (outdlp's pinlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00B1 | INLIN | exercised | yes | L4 errors / edges | BUF / HL / A / Cy on Enter compared; the STOP exit too (outdlp's inlin_stop, DATA bytes) | `biosregs-acceptance` |
+| $00B4 | QINLIN | exercised | yes | L4 errors / edges | BUF / HL / A / Cy on Enter and the `? ` prompt compared; the STOP exit too (outdlp's qinlin_stop, DATA bytes) | `biosregs-acceptance` |
 | $00B7 | BREAKX | exercised | yes | L3 full contract | STOP held: outdlp's breakx_loop (DATA bytes) | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00BA | ISCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00BD | CKCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00C0 | BEEP | exercised | yes | L3 full contract | — | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
-| $00C3 | CLS | exercised | yes | L2 happy path | the graphics modes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biostext-acceptance` … |
+| $00C3 | CLS | exercised | yes | L2 happy path | the graphics modes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biosregs-acceptance` … |
 | $00C6 | POSIT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
 | $00C9 | FNKSB | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
