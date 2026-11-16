@@ -96,6 +96,13 @@ bmap = {r["name"]: r for r in br}
 check("slotregs-acceptance" in bmap["RDSLT"]["gates"],
       "(e) RDSLT is exercised by slotregs-acceptance (a direct BIOS witness)")
 
+# (g) D-ENTRYFAULTS: biosl's rungs (a runner that LISTS its directory) are credited; the
+# name is matched case-sensitively; $00FF by name only; FORMAT by address only
+check("biosl-acceptance" in bmap["RDSLT"]["gates"], "(g) biosl's rungs credit RDSLT (DIR_RUNNERS)")
+check("slotregs-acceptance" not in bmap["LEFTC"]["gates"], "(g) slotregs' 0x00FF mask is not LEFTC")
+check(not bmap["FORMAT"]["gates"], "(g) `str.format` / `CALL FORMAT` are not the FORMAT entry")
+check("string-acceptance" not in bmap["BEEP"]["gates"], "(g) a lowercase `beep` is not BEEP")
+
 # (f) the contract level (tools/bios_levels.py): every claim's gate witnesses its entry,
 # and a claim whose gate does not is REFUSED, not rendered
 import bios_levels as BL  # noqa: E402

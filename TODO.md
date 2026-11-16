@@ -16597,8 +16597,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       run's gp3 split was the APPARATUS -- no $55 fill before INIMLT, the machines' leftover VRAM showed through
       ([`GP_run1.out`](scratchpad/GP_run1.out)). No bug. **L2 IS EMPTY**: CHKRAM / FORMAT stay L1 (spurious witnesses; FORMAT's body is the
       disk ROM's).
-      ➡️ NEXT: tools/entry_table.py's own faults (biosl's rungs never credited; spurious CHKRAM / LEFTC / FORMAT
-      witnesses); then the BIOS queue is EMPTY -- say so and stop (focus ruling); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **entry_table.py's faults fixed (2026-11-16, D-ENTRYFAULTS).** The name was matched case-INSENSITIVELY:
+      FORMAT matched every `str.format`, BEEP a BASIC string's `beep`; $0000 matched VRAM-address constants (CHKRAM),
+      $00FF slotregs' byte mask (LEFTC). Now: names case-sensitive, $0000 / $00FF by name only, FORMAT by address
+      only; DIR_RUNNERS credits biosl's rungs (biosl_run.py lists probes/bios/biosl) -- ~30 entries gain biosl-acceptance.
+      Three genuine witnesses the old match found only by luck now NAME their entry in code (synchr's `SYNCHR`, biosq's
+      `CALLF`, biosregs' `LEFTC`; the bytes unchanged). The page now says **2 NOT MEASURED: CHKRAM and FORMAT** -- the
+      honest reading (no gate calls either); both were L1 on spurious witnesses. tests/test_entry_table.py (g).
+      subrom-acceptance still backs CALSLT's "vs reference" mechanically; other witnesses are differential, no change.
+      ➡️ **THE BIOS QUEUE IS EMPTY** apart from CHKRAM / FORMAT, which need a ruling (CHKRAM is a reset; FORMAT's body is
+      the disk ROM's). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

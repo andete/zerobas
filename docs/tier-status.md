@@ -176,23 +176,23 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 
 The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-repack where a row differs). Exercised = a gate whose script (or a probe source it runs) names the entry or its address in code. Every BASIC program calls dozens of these INDIRECTLY; a row here counts only a DIRECT witness. Exercised is not same.
 
-**106 of 108** have a direct witness and are not stubs; **2 are RULED** not to need one (KEYINT, NMI); **0 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
+**104 of 108** have a direct witness and are not stubs; **2 are RULED** not to need one (KEYINT, NMI); **2 are NOT MEASURED**; **0 are STUBS** -- C-BIOS's stub body still in our built main ROM (`tools/stub_scan.py`: `push hl / push af / ld hl,name / call print_debug`, or a bare `ret`), a TIER 1 failure whatever names it (D-BIOSRUNG). 0 of the stubs ARE named by a gate, whose row therefore cannot tell the stub from the entry: none.
 
-**Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
+**Against a reference (D-ENTRYTIERS step 3):** 104 of the 104 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L3 full contract: 98; L4 errors / edges: 6; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L3 full contract: 98; L4 errors / edges: 6; —: 4** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
-| $0000 | CHKRAM | exercised | yes | L1 called | its witnesses are spurious ($0000 constants); its contract is the boot state every gate inherits | `biosclr-acceptance`, `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
+| $0000 | CHKRAM | NOT MEASURED | — | — | — | — |
 | $0008 | SYNCHR | exercised | yes | L4 errors / edges | the Syntax error path compared | `synchr-acceptance` |
-| $000C | RDSLT | exercised | yes | L3 full contract | — | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
+| $000C | RDSLT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
 | $0010 | CHRGTR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0014 | WRSLT | exercised | yes | L3 full contract | — | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0014 | WRSLT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
 | $0018 | OUTDO | exercised | yes | L3 full contract | PTRFIL against PRTFLG precedence not separated | `biosregs-acceptance`, `outdlp-acceptance` |
 | $001C | CALSLT | exercised | yes | L3 full contract | AF / BC / DE / HL through to DCOMPR and back; IX / IY / AF' are published as destroyed | `bdos-acceptance`, `biosq-acceptance`, `dskfmt-acceptance`, `p1vec-acceptance`, `subrom-acceptance` |
 | $0020 | DCOMPR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
-| $0024 | ENASLT | exercised | yes | L3 full contract | — | `p1vec-acceptance`, `slotregs-acceptance` |
+| $0024 | ENASLT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
 | $0028 | GETYPR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $0030 | CALLF | exercised | yes | L3 full contract | AF / BC / DE / HL through to DCOMPR and back; IX / IY / AF' are published as destroyed | `biosq-acceptance`, `bootenv-acceptance`, `p1vec-acceptance` |
 | $0038 | KEYINT | covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, ON INTERVAL, PLAY, TIME -- runs through it) | — | — | — | — |
@@ -200,19 +200,19 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $003E | INIFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $0041 | DISSCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
 | $0044 | ENASCR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0047 | WRTVDP | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance` |
-| $004A | RDVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $004D | WRTVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0047 | WRTVDP | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
+| $004A | RDVRM | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance` |
+| $004D | WRTVRM | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
 | $0050 | SETRD | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0053 | SETWRT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0056 | FILVRM | exercised | yes | L3 full contract | — | `biosclr-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
-| $0059 | LDIRMV | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $005C | LDIRVM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $005F | CHGMOD | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
-| $0062 | CHGCLR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
+| $0056 | FILVRM | exercised | yes | L3 full contract | — | `biosclr-acceptance`, `biosl-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
+| $0059 | LDIRMV | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
+| $005C | LDIRVM | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
+| $005F | CHGMOD | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
+| $0062 | CHGCLR | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
 | $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — | — | — |
-| $0069 | CLRSPR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $006C | INITXT | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0069 | CLRSPR | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
+| $006C | INITXT | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosl-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $006F | INIT32 | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $0072 | INIGRP | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $0075 | INIMLT | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
@@ -220,17 +220,17 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $007B | SETT32 | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $007E | SETGRP | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
 | $0081 | SETMLT | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
-| $0084 | CALPAT | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $0087 | CALATR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $008A | GSPSIZ | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
+| $0084 | CALPAT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance` |
+| $0087 | CALATR | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance` |
+| $008A | GSPSIZ | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosl-acceptance`, `biosregs-acceptance` |
 | $008D | GRPPRT | exercised | yes | L3 full contract | the glyph in SCREEN 2 / 3, all VRAM, with characters both fonts share | `biosclr-acceptance`, `biosregs-acceptance` |
 | $0090 | GICINI | exercised | yes | L3 full contract | queues / MUSICF / PLYCNT compared; the voice blocks' BYTES are zerobas PLAY's own encoding (filed, BASIC-side) | `biosl-acceptance`, `biosq-acceptance`, `gicini-acceptance`, `initio-acceptance` |
-| $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
-| $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `initio-acceptance` |
+| $0093 | WRTPSG | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `initio-acceptance` |
+| $0096 | RDPSG | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `initio-acceptance` |
 | $0099 | STRTMS | exercised | yes | L3 full contract | — | `strtms-acceptance` |
-| $009C | CHSNS | exercised | yes | L3 full contract | Z and A with 0 / 1 / 3 keys and across the ring's end | `biosflags-acceptance`, `biosregs-acceptance` |
-| $009F | CHGET | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $00A2 | CHPUT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $009C | CHSNS | exercised | yes | L3 full contract | Z and A with 0 / 1 / 3 keys and across the ring's end | `biosflags-acceptance`, `biosl-acceptance`, `biosregs-acceptance` |
+| $009F | CHGET | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance` |
+| $00A2 | CHPUT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biostext-acceptance` |
 | $00A5 | LPTOUT | exercised | yes | L4 errors / edges | the no-printer CTRL-STOP abort compared | `diskbasic-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `lstout-acceptance`, `outdlp-acceptance` |
 | $00A8 | LPTSTT | exercised | yes | L3 full contract | ready state: outdlp's lptstt_rdy (DATA bytes, which the name scan cannot see) | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00AB | CNVCHR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
@@ -240,28 +240,28 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00B7 | BREAKX | exercised | yes | L3 full contract | STOP held: outdlp's breakx_loop (DATA bytes) | `biosflags-acceptance`, `biosregs-acceptance` |
 | $00BA | ISCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00BD | CKCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
-| $00C0 | BEEP | exercised | yes | L3 full contract | — | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
+| $00C0 | BEEP | exercised | yes | L3 full contract | — | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance` |
 | $00C3 | CLS | exercised | yes | L3 full contract | all 16 KB of VRAM compared in SCREEN 0..3 (the font aside) | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosclr-acceptance`, `biosl-acceptance` … |
-| $00C6 | POSIT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $00C6 | POSIT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biostext-acceptance` |
 | $00C9 | FNKSB | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
-| $00CF | DSPFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
+| $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
+| $00CF | DSPFNK | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biostext-acceptance` |
 | $00D2 | TOTEXT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $00D5 | GTSTCK | exercised | yes | L3 full contract | ports 0 (keys held), 1 / 2 (the PSG latch) compared | `biosq-acceptance`, `biosregs-acceptance` |
-| $00D8 | GTTRIG | exercised | yes | L3 full contract | triggers 0 (SPACE held), 1..4 (the PSG latch) compared | `biosq-acceptance`, `biosregs-acceptance` |
+| $00D5 | GTSTCK | exercised | yes | L3 full contract | ports 0 (keys held), 1 / 2 (the PSG latch) compared | `biosl-acceptance`, `biosq-acceptance`, `biosregs-acceptance` |
+| $00D8 | GTTRIG | exercised | yes | L3 full contract | triggers 0 (SPACE held), 1..4 (the PSG latch) compared | `biosl-acceptance`, `biosq-acceptance`, `biosregs-acceptance` |
 | $00DB | GTPAD | exercised | yes | L3 full contract | arkanoidpad in port A / B, PAD 0..7 | `biosq-acceptance`, `biosregs-acceptance` |
 | $00DE | GTPDL | exercised | yes | L3 full contract | paddle in port A / B, PDL 1..6 | `biosq-acceptance`, `biosregs-acceptance` |
-| $00E1 | TAPION | exercised | yes | L3 full contract | — | `tapebios-acceptance`, `tapionlead-acceptance` |
-| $00E4 | TAPIN | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
-| $00E7 | TAPIOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
-| $00EA | TAPOON | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
-| $00ED | TAPOUT | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
-| $00F0 | TAPOOF | exercised | yes | L3 full contract | — | `tapebios-acceptance` |
+| $00E1 | TAPION | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance`, `tapionlead-acceptance` |
+| $00E4 | TAPIN | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance` |
+| $00E7 | TAPIOF | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance` |
+| $00EA | TAPOON | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance` |
+| $00ED | TAPOUT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance` |
+| $00F0 | TAPOOF | exercised | yes | L3 full contract | — | `biosl-acceptance`, `tapebios-acceptance` |
 | $00F3 | STMOTR | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $00F6 | LFTQ | exercised | yes | L3 full contract | a non-empty queue, two queues apart | `biosq-acceptance`, `biosregs-acceptance` |
 | $00F9 | PUTQ | exercised | yes | L3 full contract | filled until Z: 127 bytes | `biosq-acceptance`, `strtms-acceptance` |
 | $00FC | RIGHTC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
-| $00FF | LEFTC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance`, `slotregs-acceptance` |
+| $00FF | LEFTC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
 | $0102 | UPC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `bdos-acceptance`, `biosregs-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` |
 | $0105 | TUPC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
 | $0108 | DOWNC | exercised | yes | L3 full contract | SCREEN 2 and 3 compared | `biosregs-acceptance` |
@@ -283,14 +283,14 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $0138 | RSLREG | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `p1vec-acceptance` |
 | $013B | WSLREG | exercised | yes | L3 full contract | — | `slotregs-acceptance` |
 | $013E | RDVDP | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
-| $0141 | SNSMAT | exercised | yes | L3 full contract | — | `bootenv-acceptance`, `tapebios-acceptance` |
-| $0144 | PHYDIO | exercised | yes | L3 full contract | — | `diskbasic-acceptance` |
-| $0147 | FORMAT | exercised | yes | L1 called | its witnesses are spurious (the word FORMAT); the body is the disk ROM's -- only the main-BIOS side is in focus | `badfnum-acceptance`, `bdos-acceptance`, `cassave-acceptance`, `castail-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
+| $0141 | SNSMAT | exercised | yes | L3 full contract | — | `biosl-acceptance`, `bootenv-acceptance`, `tapebios-acceptance` |
+| $0144 | PHYDIO | exercised | yes | L3 full contract | — | `biosl-acceptance`, `diskbasic-acceptance` |
+| $0147 | FORMAT | NOT MEASURED | — | — | — | — |
 | $014A | ISFLIO | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
 | $014D | OUTDLP | exercised | yes | L4 errors / edges | the Device I/O error abort compared | `outdlp-acceptance` |
 | $0150 | GETVCP | exercised | yes | L3 full contract | voices 1 and 2 | `biosq-acceptance`, `biosregs-acceptance` |
 | $0153 | GETVC2 | exercised | yes | L3 full contract | voice 2, offset 5 | `biosq-acceptance`, `biosregs-acceptance` |
-| $0156 | KILBUF | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
+| $0156 | KILBUF | exercised | yes | L3 full contract | — | `biosl-acceptance`, `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |
 | $0159 | CALBAS | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 
 ## Every keyword and its status

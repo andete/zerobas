@@ -15,10 +15,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl, probe_sides                               # noqa: E402
 
+SYNCHR = 0x0008                 # the entry RST 8 reaches (named in code: entry_table)
+
+
 def routine(c):
     # ld hl,D100 / rst 8 / db c / ld (D110),hl / ld (D112),a / push af / pop hl /
     # ld (D114),hl / ret
-    return [0x21, 0x00, 0xD1, 0xCF, c, 0x22, 0x10, 0xD1, 0x32, 0x12, 0xD1,
+    return [0x21, 0x00, 0xD1, 0xC7 | SYNCHR, c, 0x22, 0x10, 0xD1, 0x32, 0x12, 0xD1,
             0xF5, 0xE1, 0x22, 0x14, 0xD1, 0xC9]
 
 CASES = [("match", ord(","), ",5"), ("miss", ord(";"), ",5"), ("space", ord(","), " ,5"),

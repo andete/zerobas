@@ -97,6 +97,9 @@ def prog_f(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after=""):
             for l in p]
 
 
+LEFTC = 0x00FF   # named in code: entry_table matches $00FF by NAME only (a byte mask otherwise)
+
+
 def cur(addr, cloc, cmask):
     """D-BIOSCONTRACT: a graphics-cursor move -- CLOC / CMASK POKEd in SCREEN 2, the
     entry called, both cells printed after (its whole effect is on them)."""
@@ -129,7 +132,7 @@ ROWS = {
     # (scratchpad/biossweep_cur2.out); C-BIOS's were print_debug stubs.
     "rc_mid": cur(0x00FC, 0x0108, 0x10),
     "rc_wrap": cur(0x00FC, 0x0108, 0x01),
-    "lc_wrap": cur(0x00FF, 0x0108, 0x80),
+    "lc_wrap": cur(LEFTC, 0x0108, 0x80),
     "uc_mid": cur(0x0102, 0x010B, 0x10),
     "uc_wrap": cur(0x0102, 0x0108, 0x10),
     "dc_wrap": cur(0x0108, 0x010F, 0x10),
@@ -186,7 +189,7 @@ ROWS = {
                after='SCREEN 0:PRINT "[C";HEX$(PEEK(&HF92A)+256*PEEK(&HF92B));" ";'
                      'HEX$(PEEK(&HF92C));"]"')
        for n, addr, lo, hi, m in (("rc3_mid", 0x00FC, 8, 1, 0xF0), ("rc3_wrap", 0x00FC, 8, 1, 0x0F),
-                                  ("lc3_mid", 0x00FF, 8, 1, 0x0F), ("lc3_wrap", 0x00FF, 8, 1, 0xF0),
+                                  ("lc3_mid", LEFTC, 8, 1, 0x0F), ("lc3_wrap", LEFTC, 8, 1, 0xF0),
                                   ("uc3_mid", 0x0102, 11, 1, 0xF0), ("uc3_wrap", 0x0102, 8, 1, 0xF0),
                                   ("dc3_mid", 0x0108, 11, 1, 0xF0), ("dc3_wrap", 0x0108, 15, 1, 0xF0))},
     **{n: prog_f(addr, 0, before=f"SCREEN 3:POKE &HF92A,{lo}:POKE &HF92B,{hi}:POKE &HF92C,&HF0",

@@ -272,8 +272,31 @@ def _probe_asms():
     return asms
 
 
+# D-ENTRYFAULTS (2026-11-16): runners that build EVERY .asm in a directory by listing it, so
+# no rung's name appears in their code -- biosl_run.py (`os.listdir(HERE)`, HERE =
+# probes/bios/biosl). Each is asserted below: a runner that stops listing refuses.
+DIR_RUNNERS = {"biosl_run.py": (os.path.join("probes", "bios"),          # the runner's home
+                                 os.path.join("probes", "bios", "biosl"))}  # the dir it lists
+
+
+def _dir_asms():
+    """runner script -> the CODE of every .asm in the directory it lists (comments off)."""
+    out = {}
+    for runner, (home, d) in DIR_RUNNERS.items():
+        src = open(os.path.join(REPO, home, runner)).read()
+        if "os.listdir(HERE)" not in src:
+            raise SystemExit(f"entry_table: {runner} no longer lists {d} -- DIR_RUNNERS is stale")
+        out[runner] = ["\n".join(l.split(";", 1)[0] for l in open(os.path.join(REPO, d, f),
+                                                                errors="replace"))
+                       for f in sorted(os.listdir(os.path.join(REPO, d))) if f.endswith(".asm")]
+    return out
+
+
 def _witnesses(pat, reach, pys, asms):
     gates = set()
+    for runner, codes in _dir_asms().items():
+        if any(pat.search(c) for c in codes):
+            gates |= reach.get(runner, set())
     for p, txt in pys.items():
         if pat.search(txt):
             gates |= reach.get(p, set())
@@ -310,6 +333,7 @@ def _differential_scripts(pys):
 def _witness_scripts(pat, pys, asms):
     """The probe scripts (not gates) that name the entry -- or run a probe .asm that does."""
     hit = {p for p, txt in pys.items() if pat.search(txt)}
+    hit |= {r for r, codes in _dir_asms().items() if any(pat.search(c) for c in codes)}
     for a, txt in asms.items():
         if pat.search(txt):
             hit |= {p for p, ptxt in pys.items() if a in ptxt}
@@ -455,6 +479,9 @@ BIOS_RULED = {
 }
 
 
+BIOS_MATCH = {0x0000: "name", 0x00FF: "name", 0x0147: "addr"}
+
+
 def bios_rows(stubs=None):
     # D-BIOSRUNG (2026-11-12): a STUB outranks "exercised" -- C-BIOS's stub body still in
     # our built main ROM (tools/stub_scan.py) is a TIER 1 failure whatever row names it;
@@ -473,7 +500,14 @@ def bios_rows(stubs=None):
     out = []
     diff = _differential_scripts(pys)
     for addr, name in BIOS:
-        pat = re.compile(r"(\$%04X|0x%04x|%04Xh)\b|\b%s\b" % (addr, addr, addr, name), re.I)
+        # D-ENTRYFAULTS (2026-11-16): the NAME is matched case-SENSITIVELY (BIOS names are
+        # written in capitals; re.I made FORMAT match every `str.format`); $0000 / $00FF by
+        # NAME only (VRAM-address constants, byte masks); FORMAT by ADDRESS only (BASIC's
+        # `CALL FORMAT` is not the BIOS entry)
+        a_re = r"(?i:\$%04X|0x%04x|%04Xh)\b" % (addr, addr, addr)
+        n_re = r"\b%s\b" % name
+        rule = BIOS_MATCH.get(addr)
+        pat = re.compile(n_re if rule == "name" else a_re if rule == "addr" else a_re + "|" + n_re)
         gates = _witnesses(pat, reach, pys, asms)
         wit = {w for w in _witness_scripts(pat, pys, asms) if reach.get(w)}
         vsref = bool(wit & diff)
