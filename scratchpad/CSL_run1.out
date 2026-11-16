@@ -1,0 +1,5 @@
+ROW calslt_afhl VG=[FFBB 1234] ZB=[FFBB 1234] SAME
+ROW callf_afhl VG=[FFBB 1234] ZB=[FFBB 1234] SAME
+ROW calslt_bcde VG=[5A5A 1235] ZB=[5A5A 1235] SAME
+ROW callf_bcde VG=[5A5A 1235] ZB=[5A5A 1235] SAME
+PASS: the queue / voice / stick entries out of the idle state (4/4)

@@ -34,11 +34,13 @@ LEVELS = {
     0x0010: (3, "biosflags-acceptance", ""),
     0x0014: (3, "slotregs-acceptance", ""),
     0x0018: (3, "outdlp-acceptance", "PTRFIL against PRTFLG precedence not separated"),
-    0x001C: (2, "p1vec-acceptance", "IX / IY / AF' on return"),
+    0x001C: (3, "biosq-acceptance", "AF / BC / DE / HL through to DCOMPR and back; "
+                                     "IX / IY / AF' are published as destroyed"),
     0x0020: (3, "biosflags-acceptance", ""),
     0x0024: (3, "slotregs-acceptance", ""),
     0x0028: (3, "biosflags-acceptance", ""),
-    0x0030: (2, "p1vec-acceptance", "IX / IY / AF' on return"),
+    0x0030: (3, "biosq-acceptance", "AF / BC / DE / HL through to DCOMPR and back; "
+                                     "IX / IY / AF' are published as destroyed"),
     0x003B: (3, "initio-acceptance", "exit registers diffed since D-GICINIQ"),
     0x003E: (3, "biosregs-acceptance", ""),
     0x0041: (3, "biosvdp-acceptance", ""),

@@ -76,7 +76,19 @@ def putqfull():
     return body + lftq(0, 1)
 
 
+# D-BIOSCONTRACT2 (2026-11-16): CALSLT ($001C) / CALLF ($0030) pass AF / BC / DE / HL into
+# the callee and its answer back. The callee is DCOMPR ($0020, main ROM, slot 0: IY = 0):
+# HL $1234 < DE $1235 -> A = L - E = $FF, Cy. IX / IY / AF' / BC' / DE' / HL' are the
+# published "destroyed" registers -- not compared.
+REGS_IN = [0x21, 0x34, 0x12, 0x11, 0x35, 0x12, 0x01, 0x5A, 0x5A, 0x3E, 0x77]
+VIA = {"calslt": [0xFD, 0x21, 0, 0, 0xDD, 0x21, 0x20, 0x00] + call(0x001C),
+       "callf": [0xF7, 0x00, 0x20, 0x00]}                  # rst $30 / db slot / dw addr
+AF_HL = [0x22, (OUT + 2) & 255, (OUT + 2) >> 8, 0xF5, 0xE1, 0x22, OUT & 255, OUT >> 8, 0xFB]
+BC_DE = [0xED, 0x43, OUT & 255, OUT >> 8, 0xED, 0x53, (OUT + 2) & 255, (OUT + 2) >> 8, 0xFB]
+
 ROWS = {
+    **{f"{v}_afhl": REGS_IN + VIA[v] + AF_HL for v in VIA},     # AF ($FF, F) / HL $1234
+    **{f"{v}_bcde": REGS_IN + VIA[v] + BC_DE for v in VIA},     # BC $5A5A / DE $1235
     "lftq3": puts(0, 3) + lftq(0, 0),
     "putqfull": putqfull(),
     "lftq1": puts(1, 3) + lftq(1, 0) + lftq(0, 1),

@@ -16580,6 +16580,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       already printed HL ($F55D) and A ($0D); the inventory's general `:END` remark had been copied onto them. Added:
       the Enter exit's Cy (0 on both) and QINLIN's `? ` prompt read from the name table (`? AB` on both): 4 / 4 SAME
       ([`IL_run1.out`](scratchpad/IL_run1.out)). With the STOP exit (outdlp, D-INLINSTOPF) the three are L4. No bug.
+      ✅ **L2 -> L3: CALSLT / CALLF (2026-11-16).** "IX / IY / AF' on return" are the PUBLISHED destroyed
+      registers, not outputs; what was uncompared was the register path. biosq calls DCOMPR (slot 0) through each:
+      AF $FFBB, HL $1234, BC $5A5A, DE $1235 back -- 4 / 4 SAME ([`CSL_run1.out`](scratchpad/CSL_run1.out)). No bug.
       ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
