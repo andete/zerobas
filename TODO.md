@@ -16583,6 +16583,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ **L2 -> L3: CALSLT / CALLF (2026-11-16).** "IX / IY / AF' on return" are the PUBLISHED destroyed
       registers, not outputs; what was uncompared was the register path. biosq calls DCOMPR (slot 0) through each:
       AF $FFBB, HL $1234, BC $5A5A, DE $1235 back -- 4 / 4 SAME ([`CSL_run1.out`](scratchpad/CSL_run1.out)). No bug.
+      ✅ **L2 -> L3: INITXT / INIT32 / INIGRP / INIMLT and CLS (2026-11-16) -- THREE REAL DIFFERENCES (D-INITKEYS).**
+      New `make biosclr-acceptance`: all 16 KB of VRAM filled with $55, the entry called, VRAM compared byte for byte
+      (the font aside). The VG-8020's INITXT / INIT32 / text CLS draw the function-key line, C-BIOS's left spaces;
+      INITXT cleared 80 * 24 for LINLEN 40 (`cp 40`), the VG-8020 960 bytes; SCREEN 3's clear wrote $600-$7FF too
+      ([`CL_run1.out`](scratchpad/CL_run1.out), [`CL_run3.out`](scratchpad/CL_run3.out)). cbios-repack #30 `initkeys.patch` (FNKSB through the table in INITXT / INIT32,
+      `cp 41`, `$600`; INIGRP's 6 B pad) + zerobas `bios_cls` ($00C3: C-BIOS's body, then FNKSB in SCREEN 0 / 1;
+      the low region was 35 B free, then 22 B on 2026-11-16): 8 / 8 SAME ([`CL_run4.out`](scratchpad/CL_run4.out)). GRPPRT's glyph is the last
+      L2 row.
       ➡️ NEXT: the remaining L2 rows (python3 tools/bios_levels.py; docs/tier-status.md's level column); (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 

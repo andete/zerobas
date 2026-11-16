@@ -3041,6 +3041,10 @@ biosvdp-acceptance: repack-machine
 biosq-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_biosq.py
 
+# --- biosclr-acceptance: the VRAM INITXT / INIT32 / INIGRP / INIMLT and CLS leave (D-INITKEYS) ---
+biosclr-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_biosclr.py
+
 # --- grphed-acceptance: GRPHED ($FCA6) after the screen entries (D-GRPHEDCLS) ---
 # the text-mode clear ends a pending CNVCHR graphic header on the VG-8020; nothing else does.
 grphed-acceptance: repack-machine

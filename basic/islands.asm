@@ -452,6 +452,7 @@ st_go:
                 jp      bios_iscntc         ; CKCNTC: the same entry on the VG-8020
                 org     $00C0
                 jp      bios_beep           ; BEEP: C-BIOS's was a stub too
+                jp      bios_cls            ; CLS: + the key line in a text mode (D-INITKEYS)
                 org     $00C9
                 jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $014D

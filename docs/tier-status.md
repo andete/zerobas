@@ -180,11 +180,11 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 
 **Against a reference (D-ENTRYTIERS step 3):** 106 of the 106 witnessed rows are named by a probe that also boots a reference machine (the VG-8020 / CF-3300); the other 0 are witnessed by zerobas-only probes (a self-check or a unit row): none. Mechanical: a probe that CAN compare, not proof that this row's result is compared.
 
-**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 6; L3 full contract: 92; L4 errors / edges: 6; —: 2** (— = ruled).
+**Contract level (Joost 2026-11-14, `tools/bios_levels.py`):** how much of the answer is COMPARED with the VG-8020 -- L1 called; L2 happy path (the main result); L3 full contract (every published output, flags and non-idle states); L4 errors / edges (the abort paths too); L5 speed, not scored under the BIOS-only focus. The highest level whose lower levels all hold; each claim names its proving gate, which must still witness the entry or this page is not regenerated. **L1 called: 2; L2 happy path: 1; L3 full contract: 97; L4 errors / edges: 6; —: 2** (— = ruled).
 
 | address | call | status | vs reference | level | note | exercised by |
 |---|---|---|---|---|---|---|
-| $0000 | CHKRAM | exercised | yes | L1 called | its witnesses are spurious ($0000 constants); its contract is the boot state every gate inherits | `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance`, `key-trap-acceptance` … |
+| $0000 | CHKRAM | exercised | yes | L1 called | its witnesses are spurious ($0000 constants); its contract is the boot state every gate inherits | `biosclr-acceptance`, `cloadverr-acceptance`, `curgeo-acceptance`, `diskascii-acceptance`, `diskbasic-acceptance`, `dskfmt-acceptance` … |
 | $0008 | SYNCHR | exercised | yes | L4 errors / edges | the Syntax error path compared | `synchr-acceptance` |
 | $000C | RDSLT | exercised | yes | L3 full contract | — | `dskfmt-acceptance`, `p1vec-acceptance`, `slotregs-acceptance` |
 | $0010 | CHRGTR | exercised | yes | L3 full contract | — | `biosflags-acceptance`, `biosregs-acceptance` |
@@ -205,17 +205,17 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $004D | WRTVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0050 | SETRD | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
 | $0053 | SETWRT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $0056 | FILVRM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
+| $0056 | FILVRM | exercised | yes | L3 full contract | — | `biosclr-acceptance`, `biosregs-acceptance`, `biosvram-acceptance` |
 | $0059 | LDIRMV | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
 | $005C | LDIRVM | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
 | $005F | CHGMOD | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosvdp-acceptance`, `grphed-acceptance`, `screenerr-acceptance` |
 | $0062 | CHGCLR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvdp-acceptance`, `biosvram-acceptance` |
 | $0066 | NMI | out of scope (Joost 2026-11-13: NMI is not used on MSX) | — | — | — | — |
 | $0069 | CLRSPR | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biosvram-acceptance` |
-| $006C | INITXT | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $006F | INIT32 | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $0072 | INIGRP | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
-| $0075 | INIMLT | exercised | yes | L2 happy path | the cleared VRAM | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $006C | INITXT | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $006F | INIT32 | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0072 | INIGRP | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
+| $0075 | INIMLT | exercised | yes | L3 full contract | all 16 KB of VRAM compared (the font aside) | `biosclr-acceptance`, `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $0078 | SETTXT | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $007B | SETT32 | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance`, `grphed-acceptance` |
 | $007E | SETGRP | exercised | yes | L3 full contract | — | `biosmode-acceptance`, `biosregs-acceptance`, `biosvdp-acceptance` |
@@ -241,7 +241,7 @@ The published MSX1 BIOS jump table (C-BIOS's on both targets, patched by cbios-r
 | $00BA | ISCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00BD | CKCNTC | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `iscntc-acceptance` |
 | $00C0 | BEEP | exercised | yes | L3 full contract | — | `beep-acceptance`, `biosl-acceptance`, `gicini-acceptance`, `lnblank-acceptance`, `lnblank-say-acceptance`, `string-acceptance` |
-| $00C3 | CLS | exercised | yes | L2 happy path | the graphics modes | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosl-acceptance`, `biosregs-acceptance` … |
+| $00C3 | CLS | exercised | yes | L3 full contract | all 16 KB of VRAM compared in SCREEN 0..3 (the font aside) | `abort-acceptance`, `array-acceptance`, `arrdim-acceptance`, `binfre-acceptance`, `biosclr-acceptance`, `biosl-acceptance` … |
 | $00C6 | POSIT | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance` |
 | $00C9 | FNKSB | exercised | yes | L3 full contract | — | `biosregs-acceptance` |
 | $00CC | ERAFNK | exercised | yes | L3 full contract | — | `biosregs-acceptance`, `biostext-acceptance`, `grphed-acceptance` |

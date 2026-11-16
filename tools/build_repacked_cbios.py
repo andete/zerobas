@@ -103,11 +103,15 @@ PATCHES = [
     # D-CHSNSA (2026-11-16): CHSNS answers A = PUTPNT - GETPNT (low bytes) as the VG-8020;
     # 8 B shorter, padded -- nothing moves.
     os.path.join(REPO, "cbios-repack", "chsns-a.patch"),
+    # D-INITKEYS (2026-11-16): INITXT / INIT32 show the function-key line (FNKSB through the
+    # table), INITXT clears 40 * 24 for LINLEN 40, SCREEN 3's clear is $600 -- paid from
+    # INIGRP's 6 B D-GRPBASE pad, nothing after it moves.
+    os.path.join(REPO, "cbios-repack", "initkeys.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "47afb54c2068a0f96743d5591ae9fe969d3ea3f9"   # D-CHSNSA, 2026-11-16
+REPACKED_SHA1 = "34d52e91f2c4ef042b93c7bcc564c42736b8d71c"   # D-INITKEYS, 2026-11-16
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

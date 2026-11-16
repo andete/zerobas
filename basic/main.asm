@@ -350,6 +350,19 @@ ndd_tape:
 ; reason -- every low-region pin is already behind it.
                 include "basic/varfind.asm"
 
+; bios_cls -- CLS ($00C3). D-INITKEYS (2026-11-16): the VG-8020's CLS in a TEXT mode also
+; redraws the function-key line (KEY ON), as its INITXT / INIT32 do; in SCREEN 2 / 3 it does
+; not (scratchpad/CL_run3.out: the whole 16 KB compared, the font aside). C-BIOS's CLS
+; body clears, then FNKSB (bios_fnksb: CNSDFG != 0 -> DSPFNK) for SCRMOD 0 / 1. `ret nz`
+; first: CLS does nothing unless entered with Z set (C-BIOS's cls_z, the published input).
+bios_cls:
+                ret     nz
+                call    CBIOS_CLS
+                ld      a,(SCRMOD)
+                cp      2
+                ret     nc
+                jp      bios_fnksb
+
 ; bios_gicini -- GICINI ($0090). D-GICINIQ (2026-11-14), D-BIOSCONTRACT2 gap 9: the
 ; VG-8020's GICINI, called directly over a work area dirtied with $55
 ; (scratchpad/GI_run1.out), leaves MUSICF and PLYCNT 0, each voice queue's descriptor
