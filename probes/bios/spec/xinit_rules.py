@@ -16,6 +16,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import xinit_cases as X  # noqa: E402
 import xinit3_cases as X3  # noqa: E402
+import xinit4_cases as X4  # noqa: E402
 from spec_rules import Rule  # noqa: E402
 
 PAGE = "docs/bios/INITXT.md"
@@ -23,12 +24,60 @@ SP, GB = 32, 0x5A            # a space; the probe's VRAM garbage
 OUTPUTS = {"XI": ["rg", "scrmod", "oldscr", "linlen", "crtcnt", "csrx", "csry", "cnsdfg", "lt", "namesum",
                   "patsum", "colsum", "tailsum", "atrsum", "lastrow", "row13"]}
 OUTPUTS["XJ"] = OUTPUTS["XI"] + ["rowc", "linl40", "linl32", "colours", "tables", "fnksum", "vsum", "col"]
+OUTPUTS["XJ4"] = OUTPUTS["XJ"]
 # the screen-table cells TXTNAM .. T32PAT the setup writes (xinit.asm `tables` / `tables2`)
 TABLES = ([0x0000, 0x0000, 0x0800, 0x0000, 0x0000, 0x1800, 0x2000, 0x0000, 0x1B00, 0x3800],
           [0x1000, 0x1234, 0x2800, 0x3456, 0x3A00, 0x1C00, 0x2FC0, 0x3000, 0x1F80, 0x0800],
           [0x1000, 0x2000, 0x2800, 0x1800, 0x3A00, 0x1C00, 0x2FC0, 0x3000, 0x1F80, 0x0800])
 LABELS = [b"key%d" % k for k in range(10)]  # the setup's FNKSTR
+LABELS7 = [b"ABCDEF%d" % k for k in range(10)]   # XINIT4's 7-character labels (lab 1)
 FNK_SUM = sum(sum(lab) for lab in LABELS)
+FNK_SUM7 = sum(sum(lab) for lab in LABELS7)
+
+
+EDGE4COL = {   # the same cases' 32 bytes at R3's base, the reference's
+    16: '0000000000000000000000000000000000000000000000000000000000000000',
+    17: '2020202020202020202020202020202020202020202020202020202020202020',
+    18: '2020202020202020202020202020202020202020202020202020202020202020',
+    19: '000000001800200000001b0038e70e0f51202020202020202020202020202020',
+    20: 'f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4',
+}
+
+
+def g(c):
+    """The case's VRAM garbage byte ($5A, or XINIT4's `fill`)."""
+    return getattr(c, "fill", 0x5A)
+
+
+def labels(c):
+    return LABELS7 if getattr(c, "lab", 0) else LABELS
+
+
+# XJ4 edge widths (0 / 80 / 255, key line on): index -> (namesum, colsum, tailsum, atrsum, vsum, row13, lastrow,
+# rowc), the reference's -- literal, like KEY_REF
+EDGE4 = {
+    16: (582, 0, 8160, 0, 43982,
+         '0000000000000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000',
+         '0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff',
+         '0000000000000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000'),
+    17: (30951, 1024, 5760, 4096, 20982,
+         '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
+         '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
+         '20202020202020202020202020202020202020202020202020202020202020202020202020202020'),
+    18: (30467, 1024, 5760, 4096, 20498,
+         '2020202020202020202020202020202020202020206b6579302020202020202020202020206b6579',
+         '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
+         '2020202020202020202020202020202020202020206b6579302020202020202020202020206b6579'),
+    19: (54388, 960, 24494, 8174, 19914,
+         '00000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000',
+         '0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffffd100000fd100010f',
+         '00000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000'),
+    20: (24325, 7808, 22064, 10544, 35588,
+         '20202020202020202020202020202020206b6579302020202020202020202020206b657931202020',
+         '2020202020202020202020202020202020202020202020202020202020202020d15a000fd15a010f',
+         '20202020202020202020202020202020206b6579302020202020202020202020206b657931202020'),
+}
+
 FONT_SUM = 31375             # the VG-8020's pattern-table sum after either call: its font
 CRT = 13                     # the setup's CRTCNT
 
@@ -75,12 +124,20 @@ def cases():
         cs3 = X3.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t3).group(1)))
         for c in cs3:
             c.src, c.id = "XJ", f"XJ {c.idx:02}"
-        out[who] = cs + cs3
+        t4 = open(os.path.join(ROOT, "scratchpad", "XINIT4_run1.out")).read()
+        cs4 = X4.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t4).group(1)))
+        for c in cs4:
+            c.src, c.id = "XJ4", f"XJ4 {c.idx:02}"
+        out[who] = cs + cs3 + cs4
     return out
 
 
 def xj(c):
-    return c.src == "XJ"
+    return c.src in ("XJ", "XJ4")
+
+
+def edge4(c):
+    return c.src == "XJ4" and c.width in (0, 80, 255)
 
 
 def ncols(c):
@@ -98,7 +155,7 @@ def key_row(c):
     m, slot = (n - c.width + 1) // 2, (c.width + 1) // 5
     row = [SP] * n
     for k in range(5):
-        for j, ch in enumerate(LABELS[k][:max(0, slot - 1)]):
+        for j, ch in enumerate(labels(c)[k][:max(0, slot - 1)]):
             row[m + k * slot + j] = ch
     return row
 
@@ -161,24 +218,24 @@ def vram_ok(c):
     n = ncols(c)
     total = 960 if n == 40 else 768
     written = 2048 + total + (0 if is_txt(c) else 32 + 128)
-    expect = GB * (16384 - written) + c.namesum + (0 if is_txt(c) else c.colsum + c.atrsum)
+    expect = g(c) * (16384 - written) + c.namesum + (0 if is_txt(c) else c.colsum + c.atrsum)
     if c.key and not on_screen(c):
-        expect += sum(key_row(c)) - GB * n
+        expect += sum(key_row(c)) - g(c) * n
     return (c.vsum - c.patsum - expect) & 0xFFFF == 0
 
 
 RULES = [
     Rule("R-I-REGS-TXT", TXT, "R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = (the "
          "copy AND $A7) OR $50 -- bits 7, 5, 2, 1, 0 kept, bits 6 and 4 set, bit 3 cleared ($A5 gives F5, $A7 F7, "
-         "$5A 52); R2 / R3 / R4 / R5 / R6 from "
+         "$5A 52; each bit alone by XINIT4's walking copies); R2 / R3 / R4 / R5 / R6 from "
          "TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = (FORCLR·16) OR BAKCLR in 8 bits "
          "($3A, $C5 gives E5, not the sum's 65; the border colour is not used).",
          lambda c: is_txt(c),
          lambda c: c.rg[1:] == [(c.rgg & 0xA7) | 0x50] + regs(c, TABLES[c.tbl][0:5]) + [((c.fg << 4) | c.bg) & 0xFF]),
     Rule("R-I-TAIL-TXT", TXT, "The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 "
-         "included) -- not at width 0 with the key line on, which writes them (R-I-KEYEDGE's cells).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * GB),
+         "included) -- not at width 0 with the key line on, which writes them (R-I-KEYEDGE's cells).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * g(c)),
     Rule("R-I-ATR-TXT", TXT, "No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's "
-         "base are left as found.", lambda c: is_txt(c) and c.tbl, lambda c: c.atrsum == 128 * GB),
+         "base are left as found.", lambda c: is_txt(c) and c.tbl, lambda c: c.atrsum == 128 * g(c)),
     Rule("R-I-REGS-32", T32, "R1 = (the copy AND $A7) OR $40 -- bit 6 set, bits 4 and 3 cleared ($A5 gives E5, $A7 "
          "E7, $5A 42); R2..R6 from T32NAM / T32COL / T32CGP / T32ATR "
          "/ T32PAT (moved: 07 BF 06 3F 01); R7 = BDRCLR as it is ($F9 stays F9).",
@@ -193,11 +250,12 @@ RULES = [
          "is set (copies $5A / $A7: 16 × 16 sprites) -- the colour = FORCLR as it is ($3A stays 3A). Read byte for byte in entries 0 and 1 (the 8 cells after the name table, default tables) "
          "and as the sum for all 32; the rest of the 1 KB name block is left as found.",
          lambda c: not is_txt(c) and not w0key(c),
-         lambda c: (c.atrsum == 32 * (209 + GB + c.fg) + step(c) * sum(range(32))
-                    and c.tailsum == 128 * GB + c.atrsum + (sum(key_row(c)) - 32 * GB if c.key and c.crt == 30 else 0)
-                    and c.lastrow[32:] == ([GB] * 8 if c.tbl else [209, GB, 0, c.fg, 209, GB, step(c), c.fg]))),
+         lambda c: (c.atrsum == 32 * (209 + g(c) + c.fg) + step(c) * sum(range(32))
+                    and c.tailsum == 128 * g(c) + c.atrsum + (sum(key_row(c)) - 32 * g(c) if c.key and c.crt == 30 else 0)
+                    and c.lastrow[32:] == ([g(c)] * 8 if c.tbl else [209, g(c), 0, c.fg, 209, g(c), step(c), c.fg]))),
     Rule("R-I-R0", B, "R0 (RG0SAV) keeps only bit 0 (external video) of the copy: $A5 / $A7 give 01, $5A (M3 and "
-         "bits 3, 4, 6 set) gives 00.", lambda c: True, lambda c: c.rg[0] == c.rgg & 1),
+         "bits 3, 4, 6 set) gives 00 -- pinned bit by bit by XINIT4's walking copies ($01, $04, $20, $80 and their "
+         "complements).", lambda c: True, lambda c: c.rg[0] == c.rgg & 1),
     Rule("R-I-MODE", B, "SCRMOD and OLDSCR become 0 (INITXT) / 1 (INIT32), also from SCREEN 2.",
          lambda c: True, lambda c: (c.scrmod, c.oldscr) == ((0, 0) if is_txt(c) else (1, 1))),
     Rule("R-I-LINLEN", B, "LINLEN becomes LINL40 (INITXT) / LINL32 (INIT32) AS IT IS: 0, 1, 80, 255 included -- no "
@@ -226,15 +284,22 @@ RULES = [
     Rule("R-I-READBACK", B, "The call changes none of its inputs: LINL40 / LINL32 (the other call's cell keeps its "
          "77), FORCLR / BAKCLR / BDRCLR, the ten screen-table cells, FNKSTR.", lambda c: xj(c),
          lambda c: ((c.linl40, c.linl32) == ((c.width, 77) if is_txt(c) else (77, c.width))
-                    and c.colours == [c.fg, c.bg, c.bd] and c.tables == TABLES[c.tbl] and c.fnksum == FNK_SUM)),
+                    and c.colours == [c.fg, c.bg, c.bd] and c.tables == TABLES[c.tbl]
+                    and c.fnksum == (FNK_SUM7 if getattr(c, "lab", 0) else FNK_SUM))),
     Rule("R-I-VRAM", B, "Nothing else in VRAM is written: the whole 16 KB less the name, pattern, colour (INIT32) and "
          "sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table.",
-         lambda c: xj(c), vram_ok),
+         lambda c: xj(c) and not edge4(c), vram_ok),
     Rule("R-I-NOCOL-TXT", TXT, "INITXT writes no colour table: moved out of every other table (TXTCOL $2000) its 32 "
          "bytes stay $5A; at the default TXTCOL 0 they are the name table's first row (spaces), and TXTATR $1800's "
-         "128 bytes stay $5A.", lambda c: xj(c) and is_txt(c),
-         lambda c: (c.col == ([GB] * 32 if c.tbl == 2 else [SP] * 32) and c.colsum == sum(c.col)
-                    and c.atrsum == 128 * (GB if c.tbl == 2 else SP))),
+         "128 bytes stay $5A.", lambda c: xj(c) and is_txt(c) and not edge4(c),
+         lambda c: (c.col == ([g(c)] * 32 if c.tbl == 2 else [SP] * 32) and c.colsum == sum(c.col)
+                    and c.atrsum == 128 * (g(c) if c.tbl == 2 else SP))),
+    Rule("R-I-EDGE4", B, "The key line at the edge widths, with the whole VRAM read (XINIT4): widths 80 and 255 write "
+         "only inside the name table (the whole-VRAM sum moves exactly as the name table's: +231, −253); width 0 "
+         "writes outside it -- the name table's tail, and for INIT32 the colour and sprite tables -- with 0 / $FF "
+         "pairs. Every cell and sum as the reference's.", edge4,
+         lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.vsum, bytes(c.row13).hex(), bytes(c.lastrow).hex(),
+                    bytes(c.rowc).hex()) == EDGE4[c.idx] and bytes(c.col).hex() == EDGE4COL[c.idx]),
     Rule("R-I-CLEAR", B, "With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and "
          "the last row read blank.", lambda c: not c.key,
          lambda c: (c.namesum == SP * (960 if is_txt(c) else 768) and c.lastrow[:cols(c)] == [SP] * cols(c)
