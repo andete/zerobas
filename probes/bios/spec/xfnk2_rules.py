@@ -43,3 +43,71 @@ RULES = [
     Rule("R-F-AF", S1, "A is kept ($5A on entry, $5A on return); F on return (not published): E9.", lambda c: True,
          lambda c: (c.a, c.f) == (0x5A, 0xE9)),
 ]
+
+
+# ---- round 2: XFNK3 (probes/bios/spec/xfnk3.asm; scratchpad/XFNK3_run1.out, both rows) and XFNK's boot-time FNKSTR
+OUTPUTS["XF3"] = ["fnk", "a", "f", "bc", "de", "hl", "ix", "iy", "iff", "row24", "nchg", "chg"]
+OUTPUTS["XB"] = ["boot"]
+ENTRY_AF = [(0xA5, 0x00), (0x00, 0xFF), (0x5A, 0xFF)]
+REF_F3 = {0: 0x00, 1: 0xC1, 2: 0xE9}            # F on return, the reference's (per case)
+TIMER = [0xF3F6, 0xFC9E, 0xFCA2]                 # the work-area cells the reference's run changed outside FNKSTR
+
+_cases1 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases1()
+    t = open(os.path.join(ROOT, "scratchpad", "XFNK3_run1.out")).read()
+    caps = re.findall(r"CAP (ref|ours)\s*:\s*([0-9a-fA-F]+)", t)
+    if len(caps) != 4:
+        sys.exit("FAIL: XFNK3 needs both rows (nodisk, disk)")
+    for n, (who, h) in enumerate(caps):
+        b = bytes.fromhex(h)
+        row = ("nodisk", "disk")[n // 2]
+        for k in range(3):
+            r = b[2 + 236 * k: 2 + 236 * (k + 1)]
+            if b[1] != 0xA5 or r[235] != 0xC3:
+                sys.exit("FAIL: an XFNK3 record has no sentinel")
+            w = lambda j: (r[j] << 8) | r[j + 1]                     # noqa: E731
+            cnt = r[213] | (r[214] << 8)
+            out["ref" if who == "ref" else "zb"].append(NS(
+                src="XF3", id=f"XF3 {row} {k + 1}", case=k, row=row, fnk=list(r[:160]), a=r[160], f=r[161],
+                bc=w(162), de=w(164), hl=w(166), ix=w(168), iy=w(170), iff=(r[172] >> 2) & 1, row24=list(r[173:213]),
+                nchg=cnt, chg=[r[215 + 2 * i] | (r[216 + 2 * i] << 8) for i in range(min(cnt, 10))]))
+    t = open(os.path.join(ROOT, "scratchpad", "XFNK_run1.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        out[who].append(NS(src="XB", id="XB 1", boot=list(b[1:161])))
+    return out
+
+
+def r2(c):
+    return c.src == "XF3"
+
+
+for _r in RULES:
+    _r.select = (lambda s: (lambda c: c.src == "XF" and s(c)))(_r.select)
+
+S2 = "2. Round 2: several inputs, everything else read (XFNK3)"
+S3 = "3. At cartridge INIT"
+DEFBYTES = [x for d in DEFAULTS for x in (d + bytes(16))[:16]]
+
+RULES += [
+    Rule("R-F-ALL", S2, "From ANY start -- all $00, all $5A, or per key $00 / $5A / 16 letters with no 0 / the "
+         "default 'list ' with $5A padding -- all 160 bytes end as R-F-DEFAULTS states: whole 16-byte slots are "
+         "written, the padding zeros included. On the diskless and the disk machine alike.", r2,
+         lambda c: c.fnk == DEFBYTES),
+    Rule("R-F-REGS", S2, "A is kept ($A5, $00, $5A in); IX / IY are kept; BC returns 0000, DE $F91F (just past "
+         "FNKSTR) and HL $1449; of F, S / Z / C come through from entry and H / P/V / N are cleared (measured 00 "
+         "from $00, C1 and E9 from $FF).", r2,
+         lambda c: ((c.a, c.f) == (ENTRY_AF[c.case][0], REF_F3[c.case])
+                    and (c.bc, c.de, c.hl, c.ix, c.iy) == (0, 0xF91F, 0x1449, 0x4321, 0x8765))),
+    Rule("R-F-DI", S2, "Entered with interrupts disabled, it returns with them disabled.", r2, lambda c: c.iff == 0),
+    Rule("R-F-NOREDRAW", S2, "It does not redraw the key line, also with CNSDFG $FF: row 24 keeps its $5A.", r2,
+         lambda c: c.row24 == [0x5A] * 40),
+    Rule("R-F-WAREA", S2, "Outside FNKSTR, of the whole work area $F380-$FFFF only the interrupt's timer cells change "
+         "($F3F6, $FC9E, $FCA2: the key scan ran during the call).", r2,
+         lambda c: c.nchg == len(TIMER) and c.chg == TIMER),
+    Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, run 1).",
+         lambda c: c.src == "XB", lambda c: c.boot == DEFBYTES),
+]

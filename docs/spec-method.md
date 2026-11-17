@@ -126,6 +126,13 @@ that was measured (the wraps, the scroll, the edges).
   CHPUT), say so in the rule. Then pin the behaviour separately against probe-written markers.
 - **The checker refuses a rule whose text names a rule id that does not exist** (stale references
   after a rewrite), and renders the sections in order.
+- **The probe's own registers are inputs too.** CNVCHR's probe left HL pointing at a copy of the
+  GRPHED value and D equal to A in every case, so "tests GRPHED" could not be told from "tests (HL)"
+  (its review). Load EVERY register with garbage unlike the inputs just before the call (`POP` the
+  pairs, `EX AF,AF'` / `EXX` for the alternate set, IX / IY), and record them all after it.
+- **A sentence may only claim what its check reads.** "Nothing else changes" needs a read of
+  everything else (a work-area snapshot diff, a whole-VRAM sum), not the two neighbouring bytes;
+  "only A / F differ" needs the other registers recorded.
 - **A probe's capture and variables stay below $EF00.** The VG-8020's stack at cartridge INIT lies
   lower than the system area: XSCR's run with a capture reaching $F1A4 crashed it (all reads $FF,
   "NO READING"). Split the matrix or shrink the record instead.

@@ -25,7 +25,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | — | — | — |
-| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INIFNK.md) | 1 | D-TEXTAF |
+| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](INIFNK.md) | 2 | D-TEXTAF, D-FNKBOOT |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
