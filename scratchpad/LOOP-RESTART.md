@@ -4,6 +4,23 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🧭 THE SPEC LOOP — 2026-11-17 — READ FIRST (overrides every focus / tier row below)
+
+| ruling | Joost's words | consequence |
+|---|---|---|
+| a measured, reviewed PAGE per BIOS call | *"apply this mechanism to all of the MSX1 BIOS calls in an autonomous loop way"* | the loop's work is docs/spec-method.md's cycle (§5), one call at a time. The page is BOTH the user doc and the spec (*"Merged pages"*): docs/bios/<NAME>.md; shared facts in the region's docs/concepts page, never duplicated |
+| the queue | *"Scaffold, then pilot"* | **docs/bios/index.md** (generated, `make bios-spec-index`). Next = the TEXT region first (CHPUT, CHGET, CHSNS, POSIT, CLS, INITXT, INIT32, CNVCHR, ERAFNK, DSPFNK), then the region pages in index order; within a region, a call whose page is not FINAL, lowest 🎚️ tier of its open TODO items first |
+| review depth | *"Adaptive"* | two fresh reviewers per pass (the prompts VERBATIM from spec-method §6) until the stopping test (§7) for rich calls and concept pages; one reviewer, stopping at the first pass with no core-rule finding, for small / grouped ones. Run passes WITHOUT asking -- the method is approved |
+| findings | — | score each real / known / wrong; answer a real one by MEASURING (a desynced matrix: probes/bios/spec/, run through `biosl_run.py <path> --row nodisk`, VG-8020 = the main-BIOS reference), never by arguing. A difference becomes a TODO item with its tier; fixes go by tier as before |
+| THE TEST AUDIT | *"vitally important"* | spec-method §8, once a page's core rule is FINAL: one separating gate case per rule (from the page's table); redundant rows retired ONLY with mutation evidence |
+| NO POINTLESS TESTS | *"we got to stop wasting time running pointless tests"* | spec / doc / evidence work: commit locally per step, GATE + PUSH ONCE per finished unit (a page reaching DRAFT / FINAL, a pause, a hand-off) -- `gate_wt.py --tier plan`; never FULL by habit. Before any gate or probe: can its result differ from the last green one? If not, don't run it. Behaviour fixes still gate + push one by one |
+| D-CONCOL | *"Postpone 3"* | its implementation waits; its page (docs/bdos/CONOUT.md) is FINAL on the column rule |
+
+STATE 2026-11-17 (recount, never quote): text region, CHPUT page DRAFT 2 (VG-8020 matrix,
+probes/bios/spec/xchput.asm); its FIRST two-reviewer pass is in progress / being scored. Filed from it:
+D-CHPUTDEL (TIER 1). Unpushed LOCAL commits since 9152f845 (gate them together at the unit's end):
+3d5b85be (CHPUT DRAFT 2 + @caplen + the audit step), de0a6d3c (D-GATEKNIFESKIP part 1), and this file.
+
 ## 🔴 FOCUS RULING 2026-11-14 (late) — OVERRIDES EVERY TIER ORDER BELOW UNTIL WIDENED
 
 | ruling | Joost's words | consequence |
