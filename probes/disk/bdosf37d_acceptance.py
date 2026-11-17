@@ -124,7 +124,7 @@ def run(machine, img):
                        "-command", "set renderer none; set sound_driver null",
                        "-script", os.path.join(td, "s.tcl")]),
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=400)
-        root = open(dsk, "rb").read()[7 * 512:7 * 512 + 128]
+        root = open(dsk, "rb").read()                  # the WHOLE image afterwards
         if not os.path.exists(out):
             return None
         flag, v, d = open(out).read().split()
@@ -169,8 +169,28 @@ def main() -> int:
     ok &= c == z
     print(f"  {'PASS' if c == z else 'FAIL'}  DTA afterwards: CF {c[:48].hex()}..."
           + ("" if c == z else f"\n                    ours {z[:48].hex()}..."))
+    # D-DISKCONTRACT gap 9 (2026-11-17): the WHOLE disk image afterwards -- both FAT copies,
+    # the root directory, the data area -- not only the entries the rows name. A byte
+    # different there is a disk another system would read differently.
+    img = {k: res[k][3] for k in ("cf", "zb")}
+    regions = (("boot", 0, 512), ("FAT 1", 512, 3 * 512), ("FAT 2", 4 * 512, 3 * 512),
+               ("root", 7 * 512, 7 * 512), ("data", 14 * 512, len(img["cf"]) - 14 * 512))
+    # EXCUSED, filed D-SLACK (TIER 6): NEWFILE.TMP's records nobody wrote. FDEL freed cluster 5
+    # (sector 20), FMAKE + WRRND rec 2 took it; the CF-3300 writes its STALE sector buffer
+    # (SECOND.DAT's bytes) around the record, ours reads-modifies-writes the old sector
+    # (THIRD.DAT's text): bytes 0..255 and 384..511 of sector 20 (scratchpad/IM_run1.out).
+    slack = set(range(20 * 512, 20 * 512 + 256)) | set(range(20 * 512 + 384, 21 * 512))
+    for name, off, n in regions:
+        c, z = img["cf"][off:off + n], img["zb"][off:off + n]
+        d = [off + i for i in range(min(len(c), len(z)))
+             if c[i] != z[i] and off + i not in slack]
+        same = not d and len(c) == len(z)
+        ok &= same
+        print(f"  {'PASS' if same else 'FAIL'}  image {name:5s} (${off:05X}+{n}): "
+              + ("same" if same else f"{len(d)} byte(s) differ from ${d[0]:05X}: CF "
+                 f"{img['cf'][d[0]:d[0] + 16].hex()} ours {img['zb'][d[0]:d[0] + 16].hex()}"))
     for e in range(4):
-        c, z = (res[k][3][32 * e:32 * e + 32] for k in ("cf", "zb"))
+        c, z = (res[k][3][7 * 512 + 32 * e:7 * 512 + 32 * e + 32] for k in ("cf", "zb"))
         ok &= c == z
         print(f"  {'PASS' if c == z else 'FAIL'}  root entry {e} afterwards: CF {c.hex()}"
               + ("" if c == z else f"\n                              ours {z.hex()}"))

@@ -16662,7 +16662,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`XK_stock.out`](scratchpad/XK_stock.out), [`XK_ours.out`](scratchpad/XK_ours.out), [`XK2_stock.out`](scratchpad/XK2_stock.out), [`XK2_ours.out`](scratchpad/XK2_ours.out)). conin_line_body (disk/runtime.asm): BS un-echoes through fmt_pr,
       Return echoes CR; +12 B net into the 13 B pad before $7F7C. After: 0 diffs on both key sets ([`XK3_1_ours.out`](scratchpad/XK3_1_ours.out),
       [`XK3_2_ours.out`](scratchpad/XK3_2_ours.out)). Left of (5): Ctrl-P / Ctrl-C / Ctrl-S at the console.
+      ✅ **(9) THE DISK IMAGE AFTERWARDS, 2026-11-17.** bdosf37d now diffs the WHOLE image after its 25 $F37D calls
+      (FMAKE / FDEL / FREN / WRRND / WRZER / FCLOSE among them): boot, both FAT copies, the root, the data area -- all SAME
+      but one sector ([`IM_run1.out`](scratchpad/IM_run1.out)): the never-written records of NEWFILE.TMP's reused cluster -- the CF-3300 writes its
+      STALE sector buffer around WRRND's record, ours reads-modifies-writes the old sector. Undefined content; excused
+      by name and FILED D-SLACK below ([`IM_run2.out`](scratchpad/IM_run2.out): PASS).
       ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
+
+- [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**
+      🎚️ TIER 6 — every edge (records a program never wrote, inside or past the file's end; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — bdosf37d's image diff: after FDEL freed a cluster and FMAKE + WRRND rec 2 took it, the CF-3300
+      leaves its stale sector BUFFER (the last sector it read, SECOND.DAT's) around the record; ours read-modify-writes
+      the old sector (the deleted THIRD.DAT's text). The published content is undefined; matching it means copying
+      the reference's buffer reuse. Excused by name in bdosf37d (sector 20's bytes 0..255, 384..511).
 
 - [ ] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC**
       🎚️ TIER 6 — every edge (a TAB on the same line right after a control code; filed 2026-11-17).
