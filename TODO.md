@@ -16679,7 +16679,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The CF-3300 selects B ($F247 = 1, CURDRV 1), and the SFIRST prompts "Insert diskette for drive B: / and strike a key
       when ready", waits for the key, and leaves the DTA's drive byte 2; zerobas stays on A ($F247 0, CURDRV 0, no prompt,
       DTA drive 1) ([`XB_stock.out`](scratchpad/XB_stock.out), [`XB_ours.out`](scratchpad/XB_ours.out), [`XB2_stock.out`](scratchpad/XB2_stock.out), [`XB2_ours.out`](scratchpad/XB2_ours.out)).
-      ➡️ NEXT: a DISK-ROM CARVE -- D-DISKVE (~55 B), D-DOSDRVB, D-CONCOL (~11 B) and D-DSKIOCYL (~5 B) all wait for bytes.
+      💰 **D-DISKCARVE6 STEP 1 (2026-11-17): a 61 B hole at $7568, in front of the $75A5 pin.** A read-only agent's plan
+      (checked against the source): the span [$607B, $75A5) has no pin inside, so any byte freed there lands in front of
+      $75A5. Four call-only routines MOVED into exact-fit pads in front of other pins -- wrblk_mul_rr_rs (14 B -> $4FF8),
+      wrblk_off24 (11 -> $420C), hl_x128 / hl_x32 (8 -> $445A), fmt_buf (8 -> $5016) -- plus 8 B of savings inside the
+      span (the dead `jr dc_result`; jp -> jr to dskio_calslt x2, to sv_load_error x3, sav_fin's). `make basic-reloc`: disk
+      free 0 -> 61 B, one run (🔮 61: HIT). All 12 disk suites, knives and unit tests green. Reserve (the same plan): fmt_key /
+      fmt_echo (8 -> $5046), fname_ev (7 -> $4365) for 76 B; skip_sp, fmt_err for 89 B.
+      ➡️ NEXT: D-DISKVE into the hole (~55 B); then D-DOSDRVB, D-CONCOL, D-DSKIOCYL (more of the reserve).
 
 - [ ] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
       🎚️ TIER 3 — common errors (a one-drive user typing B:, a program copying to B:; filed 2026-11-17).

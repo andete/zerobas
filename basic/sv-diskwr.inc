@@ -31,9 +31,9 @@
 disk_write_begin:
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,sv_load_error
+                jr      z,sv_load_error
                 call    fat_io_create       ; mount + dir-create + reset write state
-                jp      c,sv_load_error        ; disk full / dir full / write protect / I-O
+                jr      c,sv_load_error        ; disk full / dir full / write protect / I-O
                 ret
 
 ; (disk_putword -- the BSAVE header's word writer -- lives in basic/sv-bsvdisk.inc
@@ -52,7 +52,7 @@ disk_write_begin:
 ;        flush's DSKIO; the engine keeps its state in RAM).
 disk_putbyte:
                 call    fat_io_putbyte
-                jp      c,sv_load_error        ; disk full / write error
+                jr      c,sv_load_error        ; disk full / write error
                 ret
 
 ; disk_write_end — flush the buffered partial final sector and stamp the directory

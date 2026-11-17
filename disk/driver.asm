@@ -419,6 +419,17 @@ wx_out:
                 call    frl_flush           ; the held sector out, both copies (Cy = I/O)
                 pop     hl
                 ret
+; hl_x128 / hl_x32 -- HL := HL x 128 / x 32 (MOVED here by D-DISKCARVE6, 2026-11-17).
+hl_x128:
+                add     hl, hl
+                add     hl, hl
+hl_x32:
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                ret
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
 ; dta_put -- store A at (RDBLK_DST) and advance it: the block reads' one store.

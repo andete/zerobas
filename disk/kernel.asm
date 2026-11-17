@@ -442,6 +442,13 @@ bd_step7:
 ; so every FCLOSE closes from its own FCB: +26 / +16..19 at +25 (close_read, cr_dir).
 bdos_close_wm:
                 jp      bcw_own             ; (the ownership test is in front of $5FE5)
+; wrblk_mul_rr_rs -- MOVED here by D-DISKCARVE6 (2026-11-17); its contract is at wmr_core.
+wrblk_mul_rr_rs:
+                call    rh_flush            ; D-PUTCACHE: WRBLK_MUL* are WBUF+500..511,
+                call    wmr_core
+                ld      (WRBLK_MULACC), hl
+                ld      (WRBLK_MULACC + 2), de
+                ret
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
@@ -477,6 +484,13 @@ hkds_run:
                 ; hk_dpsave loads HL = sav_disk_write, the BSAVE entry HL = bsv_open
                 ; z80flow: targets sav_disk_write bsv_open
                 jp      (hl)                ; sav_disk_write, or BSAVE's bsv_open
+; fmt_buf -- HL := IX + FMT_BUF (MOVED here by D-DISKCARVE6, 2026-11-17).
+fmt_buf:
+                push    ix
+                pop     hl
+                ld      bc, FMT_BUF
+                add     hl, bc
+                ret
                 ds      $501E - $, $00  ; pad up to the pinned $501E FSIZE entry (M28)
 k_501E:
                 jp      fsize_body      ; $501E: BDOS $23 FSIZE canonical entry (M28)
@@ -4458,20 +4472,8 @@ wroe_have_valid:
 ; fat_find's SECTOR_BUF scan and before fat_dir_update's own WBUF read/write, so
 ; WBUF's tail is safe transient scratch here (§ equates.inc note).
 ;   out: WRBLK_MULACC = the 32-bit product; trashes AF, BC, DE, HL
-wrblk_mul_rr_rs:
-                call    rh_flush            ; D-PUTCACHE: WRBLK_MUL* are WBUF+500..511,
-                call    wmr_core
-                ld      (WRBLK_MULACC), hl
-                ld      (WRBLK_MULACC + 2), de
-                ret
-; wrblk_off24 -- WRBLK_REC (24 bits) := RR x RS, its low three bytes: the same product.
-; 💰 D-DSKFMT carve 36 (2026-11-10): it had its own RAM shift-and-add loop.
-wrblk_off24:
-                call    wmr_core
-                ld      (WRBLK_REC), hl
-                ld      a, e
-                ld      (WRBLK_REC + 2), a
-                ret
+; (wrblk_mul_rr_rs itself and wrblk_off24 -- MOVED by D-DISKCARVE6 to the pads in front of
+; $5006 and $4217: call-only, their bytes freed here for the hole in front of $75A5.)
 ; wmr_core -- DE:HL := RR (ix+33..35) x RS (WRBLK_RS), mod 2^32. 💰 D-DSKFMT carve 35
 ; (2026-11-10): in REGISTERS -- DE:HL the accumulator, BC = RS -- shift-and-add over
 ; RR's 24 bits, most significant first; the same result as the RAM-only version it
@@ -4772,19 +4774,10 @@ copy4:
                 ld      bc, 4
                 ldir
                 ret
-; hl_x128 / hl_x32 -- HL := HL x 128 / x 32 (16 bits, flags as `add hl,hl`'s).
+; hl_x128 / hl_x32 -- HL := HL x 128 / x 32 (16 bits, flags as `add hl,hl`'s): MOVED by
+; D-DISKCARVE6 to the pad in front of $4462 (disk/driver.asm).
 ; set_rr -- the FCB copy's random record (IX+33..34) := HL. 💰 D-DSKFMT carves 25 / 26
 ; (2026-11-10): the shift chains stood seven times, the RR store eight.
-hl_x128:
-                add     hl, hl
-                add     hl, hl
-hl_x32:
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                ret
 
 
 ; wrblk_shrink — HL_requested==0 and the target size (WRBLK_MULACC, already =
@@ -7175,12 +7168,7 @@ fmt_err:
                 call    mtoff
                 pop     af
                 ret
-fmt_buf:
-                push    ix
-                pop     hl
-                ld      bc, FMT_BUF
-                add     hl, bc
-                ret
+; (fmt_buf -- MOVED by D-DISKCARVE6 to the pad in front of $501E.)
 ; fmt_track -- Write Track, track D / side E, from the image with each ID field set
 ; first. Out Cy = 1, A = a DSKIO code (0 write protected, 2 not ready, 10 a fault).
 fmt_track:

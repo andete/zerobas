@@ -92,9 +92,8 @@
 dskio_calslt:
                 call    dskio               ; LOCAL: no slot to cross, and the
                                             ; inter-slot call disappears with it
-                jr      dc_result           ; (a jump to the next line: kept so the
-                                            ; gate's removal left disk.rom byte-
-                                            ; identical; 2 B a later carve may take)
+                                            ; (the `jr dc_result` to the next line went
+                                            ; to D-DISKCARVE6, 2026-11-17: 2 B)
 dc_result:
                 ; D-DISKERR (docs/spec-basic-diskerr.md): DSKIO's error byte (published:
                 ; 0 write protected, 2 not ready, 4 CRC, 6 seek, 8 record not found,
@@ -149,7 +148,7 @@ read_sector_nh:                         ; D-LOADHOLD: past the check (frs_to's e
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's
                                         ; (D-SIDES; fat_geom_read records it)
-                jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
+                jr      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
                                         ; CY (A=0 cleared CY here -> read direction).
                                         ; ONE name for both ROMs now: the local-vs-
                                         ; cross-slot difference lives INSIDE it, so
@@ -180,7 +179,7 @@ fatprim_write_sector:
                                         ; on another sector (DSKFMT choice 1's round trip read $E5)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jp      dskio_calslt    ; tail-call, as read_sector above
+                jr      dskio_calslt    ; tail-call, as read_sector above
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).

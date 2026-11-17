@@ -72,4 +72,4 @@ sav_next:
                 ld      (DSV_PTR),hl
                 jr      sav_data
 sav_fin:
-                jp      disk_write_end
+                jr      disk_write_end

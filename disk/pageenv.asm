@@ -118,6 +118,14 @@ fdh_rehold:
                 or      1
                 ld      (FAT_DEFER), a
                 ret
+; wrblk_off24 -- (MOVED here by D-DISKCARVE6, 2026-11-17) WRBLK_REC (24 bits) := RR x RS, its low three bytes: the same product.
+; 💰 D-DSKFMT carve 36 (2026-11-10): it had its own RAM shift-and-add loop.
+wrblk_off24:
+                call    wmr_core
+                ld      (WRBLK_REC), hl
+                ld      a, e
+                ld      (WRBLK_REC + 2), a
+                ret
                 ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)
 
 ; --- D-TPAP1 (2026-10-23): THE PAGE-0 INTER-SLOT ENTRIES, BRIDGED TO THE MAIN BIOS ---
