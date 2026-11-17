@@ -111,8 +111,9 @@ def render():
          "",
          "One page per BIOS call: what it does, its contract as measured against the reference "
          "machines, and how zerobas differs. How the pages are made: "
-         "[docs/spec-method.md](../spec-method.md). The shared facts of a region live in its "
-         "concept page, not repeated on each call's page.",
+         "[docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call "
+         "it, hooks, the work area): [the BIOS concept page](../concepts/bios.md). The shared facts of a region "
+         "live in its concept page, not repeated on each call's page.",
          "",
          f"**{n_page} of {len(rs)} calls have a page; {n_final} are FINAL.**",
          "",

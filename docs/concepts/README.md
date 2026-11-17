@@ -35,6 +35,7 @@ page lists where zerobas still differs.
 | [Screen modes](screen-modes.md) | the four MSX1 displays |
 | [Interrupts and traps](interrupts-and-traps.md) | what runs between statements |
 | [The memory map](memory-map.md) | where BASIC keeps things in RAM |
+| [The BIOS](bios.md) | the machine's own routines: where they live, how to call them, one page per call |
 
 ## Storage
 
