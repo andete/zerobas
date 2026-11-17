@@ -16771,7 +16771,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       parameter is special on both machines (the graphic prefix). Fix in the C-BIOS repack's CHPUT.
 
 - [ ] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
-      🎚️ TIER 1 — happy path (KEY ON is the normal screen; filed 2026-11-17).
+      🎚️ TIER 1 — happy path (KEY ON is BASIC's normal screen; filed 2026-11-17). Scope: never under MSX-DOS, which runs with the
+      key line off (Joost) -- it hits BASIC and ROM programs that show the key line (DSPFNK).
       🤖 **AUTONOMOUS** — XCHPUT2 G2 (key line on after DSPFNK, [`XCH2_table.out`](scratchpad/XCH2_table.out)): the VG-8020 keeps the text area to rows 1..23 --
       `ESC Y` to row 24 lands on CSRY 23, and LF / cursor-down on the last text row scroll above the key row. zerobas puts
       the cursor on row 24 and writes over the key line (CSRY one higher in every key-on bottom-corner case). Fix in
