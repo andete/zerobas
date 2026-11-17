@@ -16793,6 +16793,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
       (a row number? per screen width?) before matching them.
 
+- [ ] 🎯 **D-KEYLINESHIFT — INITXT / INIT32 WITH THE KEY LINE ON SHOW FUNCTION KEYS 6-10 (THE SHIFTED SET), NOT 1-5**
+      🎚️ TIER 1 — happy path (the function-key line a ROM program shows; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/INITXT.md (the XINIT matrix, run 2, FNKSTR written by the setup to "key0".."key9":
+      [`XINIT_run2.out`](scratchpad/XINIT_run2.out)): with CNSDFG on and no key held, the VG-8020's key row shows "key0".. (keys 1-5); zerobas's "key5".. (keys 6-10),
+      in every width 28-41 case, INITXT and INIT32, also from SCREEN 2. The name-table sums differ by exactly the 25 the digits
+      account for. Fix in the C-BIOS repack's key-line display (which set it picks). Widths 0 and 255: the VG-8020 draws
+      odd cells in the key row, zerobas none -- part of the same page, TIER 6.
+
+- [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
+      🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — probes/bios/spec/xfnk.asm ([`XFNK_run1.out`](scratchpad/XFNK_run1.out)): FNKSTR ($F87F, 160 B) at cartridge INIT is all zero on zerobas, the
+      ten defaults on the VG-8020; after INIFNK both are identical (INIFNK is right). zerobas fills them later (BASIC). It
+      is why CHPUT's / XINIT run 1's key rows read blank on zerobas. Fix: the C-BIOS repack's boot fills FNKSTR before
+      the cartridge scan (as INIFNK does).
+
 - [ ] **D-GATEKNIFESKIP — A DOCS / PROBE-ONLY GATE RE-PINS THE KNIVES AND RUNS THE WHOLE UNIT SUITE: ~15-20 MIN FOR A STATIC**
       🎚️ TIER 2 — reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request).
       🤖 **AUTONOMOUS** — measured on the STATIC gate of 9152f845, a commit whose only delta from a FULL-green tree was

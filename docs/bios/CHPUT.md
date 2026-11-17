@@ -212,7 +212,7 @@ when the function-key line is shown.
 | **R5-EDIT** Every edit works from any row and column the same way (key line off): ESC L / M at the last text row only blank it ($AF); LINTTB entries MOVE with their rows (a continued row's 0 shifts down under ESC L, up under ESC M -- not a renumbering); ESC J / K / l mark the rows they blank $AF. | 20 | ✓ | ✗ 20: X5 G6.822, X5 G6.823, X5 G6.824, X5 G6.825, X5 G6.826, X5 G6.827 … (+14) |
 | **R5-TAB-LAST** TAB from columns 33–39 on the last text row wraps and scrolls: the cursor at (1, 24), row 23's entry 0 (continued), row 24's $AF, the rows moved up. | 7 | ✓ | ✗ 7: X5 G7.842, X5 G7.843, X5 G7.844, X5 G7.845, X5 G7.846, X5 G7.847 … (+1) |
 
-Declared NOT evidence: XCH 333 cells — ESC M pulls up the NEXT row, whose content the case before left there (the matrix does not set it); X4 G2 measures ESC M on a known screen
+Declared NOT evidence (1 cases: XCH 333): cells — ESC M pulls up the NEXT row, whose content the case before left there (the matrix does not set it); X4 G2 measures ESC M on a known screen
 
 <!-- RULES END -->
 

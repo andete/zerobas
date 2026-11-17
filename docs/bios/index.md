@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**1 of 108 calls have a page; 1 are FINAL.**
+**3 of 108 calls have a page; 1 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -40,8 +40,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | — | — | — |
-| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | — | — | — |
+| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INITXT.md) | 4 | D-KEYLINESHIFT, D-LINTTBVAL, D-BIOSINT |
+| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INIT32.md) | 0 | D-KEYLINESHIFT, D-LINTTBVAL |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |

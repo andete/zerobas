@@ -68,7 +68,7 @@ def page_items(name):
     if not os.path.exists(path):
         return []
     text = open(path, encoding="utf-8").read()
-    m = re.search(r"^## Differences from the reference\n(.*?)(?=^## )", text, re.S | re.M)
+    m = re.search(r"^## Differences from the reference\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     seen = []
     for d in re.findall(r"\bD-[A-Z0-9]+\b", m.group(1) if m else ""):
         if d not in seen:

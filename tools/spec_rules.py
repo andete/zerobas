@@ -201,8 +201,11 @@ def render(mod, results, uncovered, total):
         L.append(f"| **{r.id}** {r.text} | {n} | {refs} | {zbs} |")
     if uncovered:
         L += ["", f"Measured but read by no rule's check: {uncov_text(uncovered, 12)}"]
+    groups = {}
     for cid, (fields, why) in getattr(mod, "UNREAD", {}).items():
-        L += ["", f"Declared NOT evidence: {cid} {', '.join(fields)} — {why}"]
+        groups.setdefault((", ".join(fields), why), []).append(cid)
+    for (fields, why), cids in groups.items():
+        L += ["", f"Declared NOT evidence ({len(cids)} cases: {short(cids, 4)}): {fields} — {why}"]
     L += ["", END]
     return "\n".join(L)
 
