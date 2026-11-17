@@ -84,6 +84,10 @@ EXERCISERS = [
     # BDOSXT (D-DISKCONTRACT gap 11, 2026-11-17): SDATE / STIME with valid and invalid input,
     # each read back by GDATE / GTIME -- 13 ten-byte rows.
     ("BDOSXT", "build_bdosxt_disk.py"),
+    # BDOSXB (D-DISKCONTRACT gap 8, D-DOSDRVB, 2026-11-17): drive B on a one-drive machine under
+    # MSX-DOS -- SELDSK 1, CURDRV, SFIRST *.* on the default drive: the swap prompt on the
+    # screen (read back through the VDP's ports), the key typed by the harness, the DTA.
+    ("BDOSXB", "build_bdosxb_disk.py"),
     # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
     # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
     ("BDOSX5", "build_bdosx5_disk.py"),

@@ -16715,7 +16715,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- unmeasured, Ignore = NC): over the 61 B hole, so carve step 2 (the plan's reserve: fmt_key / fmt_echo, fname_ev
       -> 76 B) first.
 
-- [ ] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
+- [x] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
       🎚️ TIER 3 — common errors (a one-drive user typing B:, a program copying to B:; filed 2026-11-17).
       🤖 **AUTONOMOUS** — BDOSXB's capture against the CF-3300 (run build_bdosxb_disk.py, then the printed capture line with
       `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`). Three parts: (1) SELDSK stores the drive in $F247 (CURDRV_CELL)
@@ -16737,6 +16737,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       under MSX-DOS (page 0 RAM). It needs a DOS-safe print / key (the BDOS console's own routines), a hook on the FCB
       functions (FCB+0 = 0 -> the current drive) that BASIC's paths never take, and ~50-70 B: a carve first (D-DISKCARVE6
       step 4, being scouted).
+      ✅ **PART (2) LANDED 2026-11-17 -- D-DOSDRVB CLOSED.** `dsel_bdos` (disk/kernel.asm, 58 of carve step 4's 72 B; 14 B
+      left) replaces fat_geom_read's `call drv_select` -- the one point every disk access crosses. The default drive
+      (DK_FCB_DRV 0) is the CURRENT one, $F247 + 1 (0 under BASIC unless a $F37D SELDSK moved it). With the BIOS in
+      page 0 (BASIC) it is drv_select, D-DSKIB's prompt, unchanged; under MSX-DOS (RAM in page 0) the prompt goes
+      through the BDOS console (CR LF first, the two lines, CR LF) and the key through innoe_body. BDOSXB on zerobas is
+      BYTE-IDENTICAL to the CF-3300, screen included ([`DDB2_ours.out`](scratchpad/DDB2_ours.out) against [`XB2_stock.out`](scratchpad/XB2_stock.out); 🔮 0 diffs: HIT), and is
+      GATED in bdos-acceptance. ⚠️ Residuals, not filed until something shows them: an FCB naming its drive EXPLICITLY
+      under MSX-DOS (DK_FCB_DRV stays 0 there -- the default drive is used); a machine with its RAM in primary slot 0
+      would take the BASIC prompt under MSX-DOS; the $F37D prompt under BASIC is unmeasured on the reference.
 
 - [ ] **D-STIMERANGE — BDOS STIME TAKES ANY TIME: A = 0 WHERE THE CF-3300 ANSWERS $FF FOR AN OUT-OF-RANGE ONE**
       🎚️ TIER 6 — every error (a program passing hour 25 / minute 60 / second 60 / hundredths 100; filed 2026-11-17).
