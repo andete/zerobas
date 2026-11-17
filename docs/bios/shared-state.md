@@ -95,8 +95,8 @@ beginning of".
 | $0093 | WRTPSG | sound | — | **PSG register A := E** (A0H / A1H per §1.7.5) | TDB §2.2.1; §1.7.5 | stated |
 | $0096 | RDPSG | sound | **PSG register A** (A0H / A2H) | PSG address latch | TDB §2.2.1; §1.7.5 | stated |
 | $0099 | STRTMS | sound | PLAY background-task state (PLYCNT "number of play statements queued for background task", MUSICF "music interrupt flag": *by description*) | starts background PLAY | TDB §2.2.1, §2.2.2 | partly |
-| $009C | CHSNS | text | keyboard buffer (KEYBUF $FBF0, PUTPNT $F3F8, GETPNT $F3FA: *by description*) | — | TDB §2.2.1, §2.2.2 | partly |
-| $009F | CHGET | text | hook **H.CHGE $FDC2**; keyboard buffer (*by description*) | keyboard buffer (consumes a code) | TDB §2.2.1, §2.2.2 hooks | partly |
+| $009C | CHSNS | text | keyboard buffer (KEYBUF $FBF0, PUTPNT $F3F8, GETPNT $F3FA: *by description*; measured: PUTPNT − GETPNT) | — ; measured: A and F (that subtraction), interrupts enabled | TDB §2.2.1, §2.2.2; [CHGET.md](CHGET.md) | partly (TDB) + measured |
+| $009F | CHGET | text | hook **H.CHGE $FDC2**; keyboard buffer (*by description*; measured: KEYBUF at GETPNT, PUTPNT) | keyboard buffer (consumes a code); measured: GETPNT + 1 (wrapping at 40), interrupts enabled; nothing else (no cursor with a code waiting) | TDB §2.2.1, §2.2.2 hooks; [CHGET.md](CHGET.md) | partly (TDB) + measured |
 | $00A2 | CHPUT | text | hook **H.CHPU $FDA4** (TDB); repo: CSRX $F3DD, CSRY $F3DC, LINLEN $F3B0, the function-key line state (CNSDFG $F3DE: the last text row is 23 when the key line is shown), LINTTB $FBB2, name-table VRAM | repo: CSRX, CSRY, LINTTB, CSRSW $FCA9 and CSTYLE $FCAA (ESC x / y), name-table VRAM | TDB §2.2.2 hooks; repo: docs/bios/CHPUT.md (FINAL), docs/concepts/screen-editor.md | partly (TDB) + measured |
 | $00A5 | LPTOUT | devices | hook **H.LPTO $FFB6**; printer busy (90H bit 1, §1.7.3) | printer data / strobe (91H, 90H bit 0) | TDB §2.2.1, §2.2.2 hooks, §1.7.3 | partly |
 | $00A8 | LPTSTT | devices | hook **H.LPTS $FFBB**; printer status (90H) | — | TDB §2.2.1, §2.2.2 hooks, §1.7.3 | partly |

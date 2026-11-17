@@ -16830,6 +16830,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rows 0 / 14 / 20 give 13), and leaves CSRX / CSRY alone in SCREEN 2; zerobas stores H / L as given (0, 41, 255
       ...) in every mode. Fix in the C-BIOS repack's POSIT.
 
+- [ ] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
+      🎚️ TIER 6 — every edge (a program calling CHGET under DI, or testing its flags; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHGET.md rules R-G-EI / R-G-FLAGS / R-G-WFLAGS ([`XCHG_run1.out`](scratchpad/XCHG_run1.out),
+      [`XCHGW_run1.out`](scratchpad/XCHGW_run1.out)): the VG-8020's CHGET always returns with interrupts enabled; zerobas's
+      leaves them disabled when a code was already waiting (when it has to wait it enables them, so it does not hang).
+      Its flags on return: VG-8020 9A (4A when GETPNT wrapped, 8A with three codes waiting), zerobas BB / 02. Fix in
+      the C-BIOS repack's CHGET.
+
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
       🤖 **AUTONOMOUS** — probes/bios/spec/xfnk.asm ([`XFNK_run1.out`](scratchpad/XFNK_run1.out)): FNKSTR ($F87F, 160 B) at cartridge INIT is all zero on zerobas, the
