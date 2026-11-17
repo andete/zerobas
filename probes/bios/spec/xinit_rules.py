@@ -175,8 +175,8 @@ RULES = [
          "($3A, $C5 gives E5, not the sum's 65; the border colour is not used).",
          lambda c: is_txt(c),
          lambda c: c.rg[1:] == [(c.rgg & 0xA7) | 0x50] + regs(c, TABLES[c.tbl][0:5]) + [((c.fg << 4) | c.bg) & 0xFF]),
-    Rule("R-I-TAIL-TXT", TXT, "The 64 bytes after the 960 name cells are left as found, at every width (41, 80, 255 "
-         "included).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * GB),
+    Rule("R-I-TAIL-TXT", TXT, "The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 "
+         "included) -- not at width 0 with the key line on, which writes them (R-I-KEYEDGE's cells).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * GB),
     Rule("R-I-ATR-TXT", TXT, "No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's "
          "base are left as found.", lambda c: is_txt(c) and c.tbl, lambda c: c.atrsum == 128 * GB),
     Rule("R-I-REGS-32", T32, "R1 = (the copy AND $A7) OR $40 -- bit 6 set, bits 4 and 3 cleared ($A5 gives E5, $A7 "
@@ -215,9 +215,9 @@ RULES = [
          "slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For "
          "widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells).",
          lambda c: c.key and on_screen(c) and 1 <= c.width <= ncols(c), keyplace_ok),
-    Rule("R-I-KEYOUT", B, "With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, at row CRTCNT's "
-         "address OUTSIDE the name table: every row of the name table reads spaces, and the whole-VRAM sum holds "
-         "exactly one more key line (INIT32 30: in the 256 bytes after the name table).",
+    Rule("R-I-KEYOUT", B, "With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, somewhere OUTSIDE "
+         "the name table: every row of the name table reads spaces, and the whole-VRAM sum holds exactly one more key "
+         "line (INIT32 30: in the 256 bytes after the name table; the address itself is not read).",
          lambda c: c.key and not on_screen(c),
          lambda c: (c.namesum == SP * (960 if is_txt(c) else 768) and c.rowc[:ncols(c)] == [SP] * ncols(c)
                     and c.row13[:ncols(c)] == [SP] * ncols(c) and c.lastrow[:ncols(c)] == [SP] * ncols(c)
@@ -243,8 +243,8 @@ RULES = [
                                                                   (c.lastrow[32:] if c.crt == 24 else [SP] * 8))))),
     Rule("R-I-KEYS", B, "With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row "
          "(which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at "
-         "column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells). Run 2 (CRTCNT 24 as found) drew it on "
-         "the last row. Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same "
+         "column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells); with "
+         "CRTCNT 24 it is the last row (XJ 03, XJ 11: R-I-KEYPLACE). Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same "
          "cells. Every cell and sum as the reference's.",
          lambda c: not xj(c) and c.key and c.width not in (0, 1, 80, 255),
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.row13, c.lastrow) == key_ref(c)),

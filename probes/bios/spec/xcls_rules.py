@@ -21,7 +21,7 @@ PAGE = "docs/bios/CLS.md"
 SP, GB, LTG = 32, 0x5A, 0x55            # a space; the VRAM garbage; the LINTTB garbage
 OUTPUTS = {"XC": ["cnsdfg", "crtcnt", "csrx", "csry", "linlen", "scrmod", "lt", "namesum", "row1", "rowc", "row24",
                   "sum0", "sum2", "vsum"],
-           "XS": M.OUTPUTS}
+           "XS": M.OUTPUTS, "XS3": M.OUTPUTS}
 LABELS = [b"key%d" % k for k in range(5)]   # the first five of the setup's FNKSTR
 
 
@@ -37,7 +37,7 @@ def cases():
 
 
 def xs(c):
-    return c.src == "XS"
+    return c.src in ("XS", "XS3")
 
 
 def cols(c):
@@ -110,8 +110,9 @@ RULES = [
          "LINLEN becomes LINLEN (0 / 41 / 255 at width 40 give 40; 38 at 37 gives 37; 31 / 30 at 29 give 29), a row "
          "of 0 or above the LIMIT (CRTCNT + CNSDFG) mod 256 becomes that limit: CRTCNT with the key line off (0 / 14 "
          "/ 20 give 13 with CRTCNT 13; 25 / 30 / 255 give 24 with 24), CRTCNT − 1 with CNSDFG's usual $FF (25 / 24 "
-         "/ 0 give 23: the key line's row is not the cursor's), and -- the same sum -- 25 with CNSDFG 1 (25 stays, "
-         "0 gives 25). It ignores the Z flag (Z clear: still clamped).",
+         "/ 0 give 23: the key line's row is not the cursor's), and -- the same sum -- 25 with CNSDFG 1, 26 with 2, 152 "
+         "with $80 (L 100 stays, 153 gives 152), 12 at CRTCNT 13 with $FF. It ignores the Z flag (Z clear: still "
+         "clamped).",
          lambda c: c.name == "POSIT" and c.mode < 2,
          lambda c: ((c.csrx, c.csry) == (clamp(c.h, c.width), clamp(c.l, (c.crt + c.cns) & 0xFF))) if not xs(c)
          else M.matches(c, ["csrx_out", "csry_out"])),
@@ -151,7 +152,9 @@ RULES += [
          "line (CNSDFG becomes 255); a second garbage set; H / L 3 / 9 ignored; the name table moved (TXTNAM $1000, "
          "T32NAM $1C00 -- cleared there); CRTCNT 13 in SCREEN 1; 15-character labels cut to slot − 1; in SCREEN 2 "
          "the colour table's BYTES read BAKCLR as it is ($16, $C5) and the pattern table's 0 -- every cell, the "
-         "cursor, LINTTB and the whole VRAM's sum as the model says.",
+         "cursor, LINTTB and the whole VRAM's sum as the model says. With the cursor ON the key line's row (24, or 13 at "
+         "CRTCNT 13) CLS does not scroll: it clears, homes, and draws the line. With TXTNAM / T32NAM changed AFTER "
+         "INITXT / INIT32 it clears the table the mode's call set up, not the one TXTNAM now names.",
          lambda c: xs(c) and c.name == "CLS" and (c.ea, c.ef) == (1, 0x40) and c.mode < 3, _model),
     Rule("R-C-MLT", S1, "CLS in SCREEN 3 (Z set): the multicolour pattern table ($0000, 1.5 KB) becomes $66 -- "
          "BAKCLR 6 in both nibbles, one BAKCLR measured -- and nothing else changes: the name table, the cursor, "
@@ -161,8 +164,9 @@ RULES += [
          lambda c: xs(c) and c.name == "POSIT",
          lambda c: M.matches(c, [f for f in _ALL if f not in ("csrx_out", "csry_out")]
                              + ([] if c.mode >= 2 else ["linlen"]))),
-    Rule("R-CP-AF", S3, "A / F on return (not published): the reference's values -- CLS 00 / 54 (00 / 44 when it "
-         "draws the key line, 66 / 24 in SCREEN 3), unchanged when Z was clear; POSIT 24 / 30 (48 / 18, 22 / 30).",
+    Rule("R-CP-AF", S3, "A / F on return (not published): the reference's values -- CLS 00 / 54 in SCREEN 0 / 1 without "
+         "the key line, 00 / 44 with it and in SCREEN 2, 66 / 24 in SCREEN 3, A / F unchanged when Z was clear; POSIT "
+         "24 / 30 in SCREEN 0 / 1, 22 / 30 in SCREEN 2 / 3, 48 / 18 with A / F 00 / 00 on entry.",
          lambda c: xs(c), lambda c: (c.a, c.f) == M.REF_AF[c.id]),
 ]
 

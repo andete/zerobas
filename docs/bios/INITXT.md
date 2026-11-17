@@ -21,8 +21,9 @@ SPDX-License-Identifier: 0BSD
 - draws the function-key line when CNSDFG is on, on row CRTCNT, which it does not change.
 
 `INIT32` does the same for the 32-column screen, and also fills the colour table and parks the 32 sprites
-(their pattern numbers stepping by 4 when 16 × 16 sprites are on). Neither writes anything else in
-VRAM, or changes any of its input cells.
+(their pattern numbers stepping by 4 when 16 × 16 sprites are on). In the measured cases neither
+writes anything else in VRAM (the whole-VRAM sum, XINIT3), or changes any of its input cells. The
+key-line edges (widths 0, 80, 255) do write elsewhere: width 0 writes the name table's tail.
 
 zerobas does all of this the same, apart from:
 - the key line shows function keys 6–10 instead of 1–5;
@@ -77,7 +78,7 @@ generate the probes and decode the runs.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-I-REGS-TXT** R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = (the copy AND $A7) OR $50 -- bits 7, 5, 2, 1, 0 kept, bits 6 and 4 set, bit 3 cleared ($A5 gives F5, $A7 F7, $5A 52); R2 / R3 / R4 / R5 / R6 from TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = (FORCLR·16) OR BAKCLR in 8 bits ($3A, $C5 gives E5, not the sum's 65; the border colour is not used). | 46 | ✓ | ✓ |
-| **R-I-TAIL-TXT** The 64 bytes after the 960 name cells are left as found, at every width (41, 80, 255 included). | 45 | ✓ | ✗ 6: XI 16, XI 17, XI 18, XI 19, XI 20, XI 21 |
+| **R-I-TAIL-TXT** The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 included) -- not at width 0 with the key line on, which writes them (R-I-KEYEDGE's cells). | 45 | ✓ | ✗ 6: XI 16, XI 17, XI 18, XI 19, XI 20, XI 21 |
 | **R-I-ATR-TXT** No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's base are left as found. | 4 | ✓ | ✓ |
 | **R-I-NOCOL-TXT** INITXT writes no colour table: moved out of every other table (TXTCOL $2000) its 32 bytes stay $5A; at the default TXTCOL 0 they are the name table's first row (spaces), and TXTATR $1800's 128 bytes stay $5A. | 13 | ✓ | ✓ |
 
@@ -101,11 +102,11 @@ generate the probes and decode the runs.
 | **R-I-CNSDFG** CNSDFG becomes 255 when it was non-zero (1, 2, $80, $FF), 0 when it was 0. | 87 | ✓ | ✓ |
 | **R-I-LT** LINTTB becomes 24, 23, …, 1 down the rows. | 87 | ✓ | ✗ 87: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+81) |
 | **R-I-KEYPLACE** Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: INITXT 33–35, INIT32 2 / 10 / 20 / 27): on row CRTCNT (13, 20 or 24), within the width's span from the left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells). | 43 | ✓ | ✗ 40: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+34) |
-| **R-I-KEYOUT** With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, at row CRTCNT's address OUTSIDE the name table: every row of the name table reads spaces, and the whole-VRAM sum holds exactly one more key line (INIT32 30: in the 256 bytes after the name table). | 4 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
+| **R-I-KEYOUT** With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, somewhere OUTSIDE the name table: every row of the name table reads spaces, and the whole-VRAM sum holds exactly one more key line (INIT32 30: in the 256 bytes after the name table; the address itself is not read). | 4 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
 | **R-I-READBACK** The call changes none of its inputs: LINL40 / LINL32 (the other call's cell keeps its 77), FORCLR / BAKCLR / BDRCLR, the ten screen-table cells, FNKSTR. | 25 | ✓ | ✓ |
 | **R-I-VRAM** Nothing else in VRAM is written: the whole 16 KB less the name, pattern, colour (INIT32) and sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table. | 25 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
 | **R-I-CLEAR** With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and the last row read blank. | 33 | ✓ | ✓ |
-| **R-I-KEYS** With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row (which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells). Run 2 (CRTCNT 24 as found) drew it on the last row. Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same cells. Every cell and sum as the reference's. | 27 | ✓ | ✗ 27: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+21) |
+| **R-I-KEYS** With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row (which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells); with CRTCNT 24 it is the last row (XJ 03, XJ 11: R-I-KEYPLACE). Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same cells. Every cell and sum as the reference's. | 27 | ✓ | ✗ 27: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+21) |
 | **R-I-KEYEDGE** Key line on with width 0, 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13; width 0: the name table is NOT cleared to spaces but mostly to 0 with $FF pairs, INIT32 also over its colour and sprite tables. | 7 | ✓ | ✗ 5: XI 01, XI 19, XI 21, XI 23, XI 39 |
 | **R-I-FONT** The pattern table holds the font (the VG-8020's sums to 31375). | 87 | ✓ | ✗ 87: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+81) |
 

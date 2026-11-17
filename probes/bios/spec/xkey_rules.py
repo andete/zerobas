@@ -19,7 +19,7 @@ from spec_rules import Rule  # noqa: E402
 PAGE = "docs/bios/DSPFNK.md"
 SP, GB = 32, 0x5A                       # a space; the probe's name-table garbage
 OUTPUTS = {"XK": ["cnsdfg", "crtcnt", "csrx", "csry", "linlen", "scrmod", "namesum", "row24", "rowc", "rowc1"],
-           "XS": M.OUTPUTS}
+           "XS": M.OUTPUTS, "XS3": M.OUTPUTS}
 KEYCALLS = {"DSPFNK", "ERAFNK", "FNKSB"}
 SPR = [0xD1, 0, 0, 0x0F, 0xD1, 0, 1, 0x0F]  # the sprite attribute table's first 8 bytes, as INIT32 left them
 
@@ -40,7 +40,7 @@ def cases():
 
 
 def xs(c):
-    return c.src == "XS"
+    return c.src in ("XS", "XS3")
 
 
 def cols(c):
@@ -154,15 +154,19 @@ def _scrolls(c):
 RULES += [
     Rule("R-K-SCROLL", S1, "With the cursor ON the key line's row (CSRY = CRTCNT: 24, or 13), DSPFNK -- and FNKSB "
          "when it draws -- first scrolls the text rows up by one: row k takes row k + 1's cells for k up to CRTCNT − 2, "
-         "row CRTCNT − 1 comes in BLANK (spaces; width 40 measured) and its LINTTB entry becomes 175; the cursor moves "
+         "row CRTCNT − 1 comes in BLANK (spaces; width 40 measured) and its LINTTB entry becomes 175; LINTTB's entries "
+         "move up with their rows (XSCR3's address-dependent entries: 41 42 … 56 AF, entry 24 kept); the cursor moves "
          "up a row (CSRX kept). Then it draws the key line. With the cursor one row higher nothing scrolls.",
          lambda c: _scrolls(c), _model),
-    Rule("R-K-ERALT", S2, "ERAFNK also marks the key line's row in LINTTB: its entry becomes 175 (from $55 and from "
-         "$AA garbage alike), in SCREEN 0 and 1; in SCREEN 2 LINTTB is left alone.",
+    Rule("R-K-ERALT", S2, "ERAFNK also marks the key line's row in LINTTB: its entry becomes 175 (from $55, $AA and "
+         "address-dependent garbage alike), whatever CNSDFG was (0 too), in SCREEN 0 and 1; in SCREEN 2 LINTTB is left "
+         "alone; the other entries stay.",
          lambda c: xs(c) and c.name == "ERAFNK", _model),
     Rule("R-K-SEVERAL", S4, "Every rule above holds with the inputs at several values (XSCR): the name table moved "
          "(TXTNAM $1000, T32NAM $1C00 -- drawn there); CNSDFG $FF, 2 and $40 counted as on (FNKSB draws, CNSDFG "
-         "becomes 255); widths 33 / 38 / 30 (SCREEN 0) and 28 (SCREEN 1), which pin slot = (width + 1) ÷ 5 against "
+         "becomes 255); FNKSB with CNSDFG 0 doing nothing, also with the cursor on the key line's row (no scroll); "
+         "TXTNAM changed AFTER INITXT -- the line goes where the mode's call set the table up, not where TXTNAM now "
+         "points; widths 33 / 38 / 30 (SCREEN 0) and 28 (SCREEN 1), which pin slot = (width + 1) ÷ 5 against "
          "(width + 2) ÷ 5; CRTCNT 13 in SCREEN 1 at width 29 and in SCREEN 0 at 37; FNKFLG $FF; a second garbage set "
          "(cursor, LINTTB, an address-dependent name table that no write of a space or a label reproduces) -- every "
          "cell, the cursor, LINTTB, LINL40 / LINL32 and the whole VRAM's sum as the model says.",
@@ -171,8 +175,10 @@ RULES += [
          "themselves; a $01 at a label's end shows nothing; `$01 'a'` shows 'a' -- the graphic prefix acts only on "
          "$40..$5F ('A' gave 01); a 16-byte label with no terminating 0 is cut like any other (to slot − 1).",
          lambda c: xs(c) and c.lab in (2, 3), _model),
-    Rule("R-K-AF", S4, "A / F on return (not published): the reference's values -- DSPFNK / FNKSB 00 / 44, ERAFNK "
-         "28 / BB (1D / 9B in SCREEN 1 at width 29, CRTCNT 13), 02 / 42 in SCREEN 2.",
+    Rule("R-K-ERA-A", S2, "ERAFNK returns A = LINLEN in SCREEN 0 / 1 (40 → 28, 37 → 25, 32 → 20, 29 → 1D).",
+         lambda c: xs(c) and c.name == "ERAFNK" and c.mode < 2, lambda c: c.a == c.width),
+    Rule("R-K-AF", S4, "The whole A / F on return (not published): the reference's values -- DSPFNK / FNKSB 00 / 44 "
+         "when they draw (00 / 54 for FNKSB with CNSDFG 0), ERAFNK LINLEN with F BB / B3 / 9B, 02 / 42 in SCREEN 2.",
          lambda c: xs(c), lambda c: (c.a, c.f) == M.REF_AF[c.id]),
 ]
 

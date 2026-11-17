@@ -16868,7 +16868,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md R-K-AF and docs/bios/CLS.md R-CP-AF
       ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) state the VG-8020's values per case (DSPFNK 00 / 44, ERAFNK 28 / BB,
-      CLS 00 / 54, POSIT 24 / 30 ...); zerobas's differ in almost every case. Also CNVCHR's F after a conversion (A3 vs
+      CLS 00 / 54, POSIT 24 / 30 ...); zerobas's differ in almost every case. ERAFNK's A is LINLEN on the VG-8020
+      (R-K-ERA-A, [`XSCR3_run1.out`](scratchpad/XSCR3_run1.out)), $20 on zerobas. Also CNVCHR's F after a conversion (A3 vs
       3B / 2B: docs/bios/CNVCHR.md R-V-F, C and Z agree) and PINLIN / QINLIN / INLIN's F (18 vs 00: docs/bios/PINLIN.md R-L-F), and INIFNK's A / F (5A / E9 vs 1F / 08:
       docs/bios/INIFNK.md R-F-AF; round 2 R-F-REGS / R-F-DI / R-F-WAREA: zerobas returns other BC / HL, A not kept,
       and with interrupts ENABLED where the VG-8020's INIFNK returns them disabled).

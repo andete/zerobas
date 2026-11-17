@@ -11,6 +11,7 @@ import os
 import re
 
 import xscr_cases as X
+import xscr3_cases as X3
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -31,18 +32,27 @@ REF_AF = {"XS 00": (0x00, 0x44), "XS 01": (0x00, 0x44), "XS 02": (0x28, 0xBB), "
           "XS 44": (0x48, 0x18), "XS 45": (0x24, 0x30), "XS 46": (0x24, 0x30), "XS 47": (0x22, 0x30),
           "XS 48": (0x22, 0x30), "XS 49": (0x24, 0x30), "XS 50": (0x24, 0x30), "XS 51": (0x24, 0x30),
           "XS 52": (0x24, 0x30), "XS 53": (0x24, 0x30), "XS 54": (0x00, 0x44)}
+REF_AF.update({"XS3 00": (0x00, 0x54), "XS3 01": (0x00, 0x54), "XS3 02": (0x25, 0xB3), "XS3 03": (0x20, 0xB3),
+               "XS3 04": (0x28, 0xBB), "XS3 05": (0x00, 0x44), "XS3 06": (0x00, 0x44), "XS3 07": (0x00, 0x44),
+               "XS3 08": (0x00, 0x44), "XS3 09": (0x24, 0x30), "XS3 10": (0x24, 0x30), "XS3 11": (0x24, 0x30),
+               "XS3 12": (0x24, 0x30), "XS3 13": (0x24, 0x30), "XS3 14": (0x24, 0x30), "XS3 15": (0x24, 0x30),
+               "XS3 16": (0x00, 0x54), "XS3 17": (0x00, 0x54), "XS3 18": (0x00, 0x44)})
 OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrmod", "linl40", "linl32", "lt",
            "namesum", "row1", "rowc", "row24", "vsum", "win"]
 
 
 def load(who, calls):
-    t = open(os.path.join(ROOT, "scratchpad", "XSCR_run2.out")).read()
-    cs = X.decode(bytes.fromhex(re.search(rf"CAP {'ref' if who == 'ref' else 'ours'}\s*:\s*([0-9a-fA-F]+)", t).group(1)))
+    """XSCR run 2 (group XS) and XSCR3 run 1 (group XS3: LINTTB's garbage address-dependent, TXTNAM changed late)."""
     out = []
-    for c in cs:
-        if c.name in calls:
-            c.src, c.id = "XS", f"XS {c.idx:02}"
-            out.append(c)
+    for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3")):
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        key = "ref" if who == "ref" else "ours"
+        for c in mod.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
+            if c.name in calls:
+                c.src, c.id = src, f"{src} {c.idx:02}"
+                c.ltpat = src == "XS3"
+                c.late = getattr(c, "late", 0)
+                out.append(c)
     return out
 
 
@@ -51,7 +61,10 @@ def fill(c):
 
 
 def lt_garbage(c):
-    return 0xAA if c.gset else 0x55
+    """LINTTB's garbage: one byte for all 24 entries (XS), or entry k := $40 + k (+ $20, garbage set 1) (XS3)."""
+    if getattr(c, "ltpat", False):
+        return [0x40 + k + (0x20 if c.gset else 0) for k in range(24)]
+    return [0xAA if c.gset else 0x55] * 24
 
 
 def cols(c):
@@ -103,7 +116,7 @@ def expect(c):
     """Every output of an XSCR case as the reference's rules say, from the case's inputs."""
     n, N = cols(c), count(c)
     img = [pat(c, i) for i in range(N)]
-    lt = [lt_garbage(c)] * 24
+    lt = lt_garbage(c)
     e = dict(cnsdfg=c.cns, crtcnt=c.crt, csrx_out=c.csrx, csry_out=c.csry, linl40=77, linl32=77,
              scrmod=c.mode, win=[0xEE] * 32)
     extra = 0                           # VRAM outside the name table: its change from the fill
@@ -121,6 +134,7 @@ def expect(c):
             if c.csry == r:             # the cursor on the key line's row: scroll the text rows up, cursor up
                 for k in range(1, r - 1):
                     put(k, row(k + 1))
+                lt[0:r - 2] = lt[1:r - 1]   # LINTTB scrolls with the rows (XS3: address-dependent entries)
                 put(r - 1, [SP] * n)    # the new last text row comes in blank (width 40 only measured)
                 e["csry_out"] = r - 1
                 lt[r - 2] = LT_MARK
