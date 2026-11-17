@@ -134,5 +134,43 @@ RULES += [
          "on row 24 the screen scrolls and the cursor stays on row 24; each call's own STAGE byte shows it returned.",
          lambda c: c.src == "XL2",
          lambda c: ((c.hl, c.f & 1, c.csrx, c.csry) == (BUFM1, 0, 1, min(c.y + 1, 24)) and c.stage == c.idx)),
-    Rule("R-L-F2", S2, "The whole F (not published) is 18 here too.", lambda c: c.src == "XL2", lambda c: c.f == 0x18),
+    Rule("R-L-F2", S2, "The whole F (not published) is 18 here too.", lambda c: c.src in ("XL2", "XL2C"),
+         lambda c: c.f == 0x18),
+]
+
+
+# ---- the confirming pass: XLIN2C (xlin2_gen.py probe c; scratchpad/XLIN2C_run1.out)
+OUTPUTS["XL2C"] = ["stage", "hl", "f", "csrx", "csry", "buf", "row", "xrows"]
+_cases2 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases2()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN2C_run1.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        for c in G.decode("c", bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
+            c.src, c.id, c.probe = "XL2C", f"XL2C {c.idx}", "c"
+            c.xrows = {r: list(v) for r, v in c.xrows.items()}
+            out[who].append(c)
+    return out
+
+
+def cells(text):
+    return list((text + b" " * 12)[:12])
+
+
+RULES += [
+    Rule("R-L-QSCREEN", S2, "QINLIN too reads the SCREEN after its prompt: at column 1 over 'ABCDEF' with Enter alone it "
+         "prints '? ' over 'AB' and returns 'CDEF' -- the cells after the prompt, not the keys typed (none).",
+         lambda c: c.src == "XL2C" and c.name == "QINLIN",
+         lambda c: (c.buf == list((b"CDEF\0" + b" " * 16)[:16]) and c.row == cells(b"? CDEF")
+                    and c.xrows == {4: cells(b""), 23: cells(b""), 24: cells(b"")} and c.stage == 1)),
+    Rule("R-L-SCROLL24", S2, "On row 24, Enter SCROLLS the screen: after 'AB' typed on row 24 the line read is 'AB', row "
+         "23 holds 'AB', row 24 is blank, and the row above moved up (row 5's '? CDEF' is on row 4); the cursor is at "
+         "column 1 of row 24.", lambda c: c.src == "XL2C" and c.name == "PINLIN",
+         lambda c: (c.buf == list((b"AB\0" + b" " * 16)[:16]) and c.row == cells(b"")
+                    and c.xrows == {4: cells(b"? CDEF"), 23: cells(b"AB"), 24: cells(b"")} and c.stage == 2)),
+    Rule("R-L-RET3", S2, "Both return HL = BUF − 1 with the carry clear, the cursor at column 1 of the next row (of "
+         "row 24 after the scroll).", lambda c: c.src == "XL2C",
+         lambda c: (c.hl, c.f & 1, c.csrx, c.csry) == (BUFM1, 0, 1, min(c.y + 1, 24))),
 ]

@@ -8,7 +8,7 @@ GRPHED left by the routine itself -- was never run. ONE case list that GENERATES
 DECODES its run:
 
     python3 probes/bios/spec/xcnv2_cases.py --gen
-    python3 -u probes/bios/biosl_run.py probes/bios/spec/xcnv2.asm --row nodisk > scratchpad/XCNV2_run1.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xcnv2.asm --row nodisk > scratchpad/XCNV2_run2.out
 
 Per call, every register is garbage UNLIKE the inputs: BC $1357, D $9B (never A), E $DF, IX $4321, IY $8765, and HL
 pointing at a RAM byte holding the OPPOSITE of GRPHED's zero-ness (GRPHED 0: the byte is 1; else 0); interrupts off.
@@ -37,6 +37,9 @@ def _cases():
             out.append(NS(seq=0, a=a, g=g, f=f, what=f"A {a:02X} GRPHED {g:02X} F {f:02X}"))
     for a in (0x3F, 0x40, 0x5F, 0x60, 0x01):
         out.append(NS(seq=1, a=a, g=0, f=0x00, what=f"CNVCHR(01) then CNVCHR({a:02X}), GRPHED left by the first"))
+    # run 2 (the confirming pass): the plain-character path -- GRPHED 0, A not $01 -- with every register garbage
+    for a in (0x00, 0x3F, 0x40, 0x5F, 0x60, 0xFF):
+        out.append(NS(seq=0, a=a, g=0, f=0x00, what=f"A {a:02X} GRPHED 00 F 00 (plain path)"))
     return out
 
 

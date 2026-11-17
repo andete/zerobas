@@ -10,7 +10,7 @@
 ; CLEAN-ROOM: 100% own code; one published BIOS entry and work-area cells.
 ;
 ; @cap C000
-; @caplen 03CE
+; @caplen 043A
 ; @timeout 120
 
 CNVCHR  equ     $00AB
@@ -20,7 +20,7 @@ SNAP    equ     $D000
 
 DONE    equ     $C000
 CAP     equ     $C001
-CAPLEN  equ     974
+CAPLEN  equ     1082
 ptr     equ     $EF00
 tptr    equ     $EF02
 cseq    equ     $EF04
@@ -232,4 +232,10 @@ cases:
                 db      1, $5F, $00, $00   ; CNVCHR(01) then CNVCHR(5F), GRPHED left by the first
                 db      1, $60, $00, $00   ; CNVCHR(01) then CNVCHR(60), GRPHED left by the first
                 db      1, $01, $00, $00   ; CNVCHR(01) then CNVCHR(01), GRPHED left by the first
+                db      0, $00, $00, $00   ; A 00 GRPHED 00 F 00 (plain path)
+                db      0, $3F, $00, $00   ; A 3F GRPHED 00 F 00 (plain path)
+                db      0, $40, $00, $00   ; A 40 GRPHED 00 F 00 (plain path)
+                db      0, $5F, $00, $00   ; A 5F GRPHED 00 F 00 (plain path)
+                db      0, $60, $00, $00   ; A 60 GRPHED 00 F 00 (plain path)
+                db      0, $FF, $00, $00   ; A FF GRPHED 00 F 00 (plain path)
                 db      $FF

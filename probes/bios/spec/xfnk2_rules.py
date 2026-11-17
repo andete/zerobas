@@ -50,14 +50,15 @@ OUTPUTS["XF3"] = ["fnk", "a", "f", "bc", "de", "hl", "ix", "iy", "iff", "row24",
 OUTPUTS["XB"] = ["boot"]
 ENTRY_AF = [(0xA5, 0x00), (0x00, 0xFF), (0x5A, 0xFF)]
 REF_F3 = {0: 0x00, 1: 0xC1, 2: 0xE9}            # F on return, the reference's (per case)
-TIMER = [0xF3F6, 0xFC9E, 0xFCA2]                 # the work-area cells the reference's run changed outside FNKSTR
+# run 1 compared the work area AFTER the probe's own VRAM reads (RDVRM let an interrupt run) and saw the timer cells
+# $F3F6, $FC9E, $FCA2; run 2 compares right after the call: the reference changes none
 
 _cases1 = cases
 
 
 def cases():                                     # noqa: F811
     out = _cases1()
-    t = open(os.path.join(ROOT, "scratchpad", "XFNK3_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XFNK3_run2.out")).read()
     caps = re.findall(r"CAP (ref|ours)\s*:\s*([0-9a-fA-F]+)", t)
     if len(caps) != 4:
         sys.exit("FAIL: XFNK3 needs both rows (nodisk, disk)")
@@ -105,9 +106,9 @@ RULES += [
     Rule("R-F-DI", S2, "Entered with interrupts disabled, it returns with them disabled.", r2, lambda c: c.iff == 0),
     Rule("R-F-NOREDRAW", S2, "It does not redraw the key line, also with CNSDFG $FF: row 24 keeps its $5A.", r2,
          lambda c: c.row24 == [0x5A] * 40),
-    Rule("R-F-WAREA", S2, "Outside FNKSTR, of the whole work area $F380-$FFFF only the interrupt's timer cells change "
-         "($F3F6, $FC9E, $FCA2: the key scan ran during the call).", r2,
-         lambda c: c.nchg == len(TIMER) and c.chg == TIMER),
+    Rule("R-F-WAREA", S2, "Outside FNKSTR NOTHING in the whole work area $F380-$FFFF changes: compared right after the "
+         "call, before any other BIOS call (run 2; run 1's timer cells were the probe's own interrupt, let in by its "
+         "VRAM reads).", r2, lambda c: c.nchg == 0 and c.chg == []),
     Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, run 1).",
          lambda c: c.src == "XB", lambda c: c.boot == DEFBYTES),
 ]

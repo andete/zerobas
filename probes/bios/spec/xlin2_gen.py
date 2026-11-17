@@ -10,6 +10,8 @@ captures at most 255 bytes.
     python3 probes/bios/spec/xlin2_gen.py --gen
     python3 -u probes/bios/biosl_run.py probes/bios/spec/xlin2a.asm --row nodisk > scratchpad/XLIN2A_run1.out
     python3 -u probes/bios/biosl_run.py probes/bios/spec/xlin2b.asm --row nodisk > scratchpad/XLIN2B_run1.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xlin2c.asm --row nodisk > scratchpad/XLIN2C_run1.out
+(c: the confirming pass's QINLIN-over-text and the row-24 scroll, rows 4 / 23 / 24 read after each call.)
 
 Each call: BUF ($F55E) filled with $FF (40 bytes), AUTFLG ($F6AA) := the call's, the row's pre-written text through
 WRTVRM at its column, CSRX / CSRY := the call's; the keys wait in the buffer (@type-at, one burst at 4 s). Record per
@@ -38,12 +40,17 @@ PROBES = {
                   (PINLIN, 4, 7, [(1, b"XYZ"), (18, b"W")], b"", 0),
                   (PINLIN, 1, 9, [], b"", 0),
                   (PINLIN, 1, 24, [], b"AB", 0)]),
+    # the confirming pass: QINLIN over text right of its prompt (the screen vs the keys); the row-24 scroll, read
+    "c": (16, 12, [(QINLIN, 1, 5, [(1, b"ABCDEF")], b"", 0),
+                   (PINLIN, 1, 24, [], b"AB", 0)]),
 }
+# rows read after EVERY call of a probe (12 cells each), besides the call's own row
+XROWS = {"a": [], "b": [], "c": [4, 23, 24]}
 
 
 def reclen(p):
     nb, nr, _ = PROBES[p]
-    return 6 + nb + nr
+    return 6 + nb + nr + 12 * len(XROWS[p])
 
 
 def calls(p):
@@ -203,7 +210,22 @@ c_rr:
                 inc     hl
                 djnz    c_rr
 c_nr:
-                ld      de, 7
+"""+"".join(f"""                ld      a, {r}
+                ld      (crow), a
+                ld      a, 1
+                call    rowcol
+                ex      de, hl
+                ld      b, 12
+x{r}_lp:
+                push    bc
+                push    hl
+                call    RDVRM
+                call    emit
+                pop     hl
+                pop     bc
+                inc     hl
+                djnz    x{r}_lp
+""" for r in XROWS[p])+"""                ld      de, 7
                 add     ix, de
                 jp      c_lp
 c_done:
@@ -274,8 +296,9 @@ def decode(p, block):
         b = list(block[rl * i: rl * (i + 1)])
         if b[0] != i + 1:
             sys.exit(f"FAIL: XLIN2{p.upper()} call {i + 1}'s STAGE byte is {b[0]}")
+        xr = {r: b[6 + nb + nr + 12 * k: 6 + nb + nr + 12 * (k + 1)] for k, r in enumerate(XROWS[p])}
         out.append(NS(**vars(c), idx=i + 1, stage=b[0], hl=b[1] | (b[2] << 8), f=b[3], csrx=b[4], csry=b[5],
-                      buf=b[6:6 + nb], row=b[6 + nb:6 + nb + nr]))
+                      buf=b[6:6 + nb], row=b[6 + nb:6 + nb + nr], xrows=xr))
     return out
 
 

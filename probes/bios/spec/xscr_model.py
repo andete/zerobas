@@ -12,6 +12,7 @@ import re
 
 import xscr_cases as X
 import xscr3_cases as X3
+import xscr4_cases as X4
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -37,6 +38,7 @@ REF_AF.update({"XS3 00": (0x00, 0x54), "XS3 01": (0x00, 0x54), "XS3 02": (0x25, 
                "XS3 08": (0x00, 0x44), "XS3 09": (0x24, 0x30), "XS3 10": (0x24, 0x30), "XS3 11": (0x24, 0x30),
                "XS3 12": (0x24, 0x30), "XS3 13": (0x24, 0x30), "XS3 14": (0x24, 0x30), "XS3 15": (0x24, 0x30),
                "XS3 16": (0x00, 0x54), "XS3 17": (0x00, 0x54), "XS3 18": (0x00, 0x44)})
+REF_AF.update({"XS4 00": (0x00, 0x44), "XS4 01": (0x00, 0x44), "XS4 02": (0x00, 0x44), "XS4 03": (0x00, 0x44)})
 OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrmod", "linl40", "linl32", "lt",
            "namesum", "row1", "rowc", "row24", "vsum", "win"]
 
@@ -44,13 +46,13 @@ OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrm
 def load(who, calls):
     """XSCR run 2 (group XS) and XSCR3 run 1 (group XS3: LINTTB's garbage address-dependent, TXTNAM changed late)."""
     out = []
-    for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3")):
+    for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3"), (X4, "XSCR4_run1.out", "XS4")):
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
         key = "ref" if who == "ref" else "ours"
         for c in mod.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
             if c.name in calls:
                 c.src, c.id = src, f"{src} {c.idx:02}"
-                c.ltpat = src == "XS3"
+                c.ltpat = src in ("XS3", "XS4")
                 c.late = getattr(c, "late", 0)
                 out.append(c)
     return out
@@ -171,6 +173,8 @@ def expect(c):
     e["row1"] = row(1) + after(1)
     e["rowc"] = row(r) + after(r)
     e["row24"] = row(24) + after(24)
+    e["row12"] = row(12) + after(12)            # XSCR4 only
+    e["rowcm1"] = row(r - 1) + after(r - 1)
     e["vsum"] = (fill(c) * (16384 - N) + sum(img) + extra) & 0xFFFF
     if c.mode >= 2:
         w = []

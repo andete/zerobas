@@ -1,7 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XFNK3 -- docs/bios/INIFNK.md round 2 (2026-11-17), after its first review: INIFNK ($003E) with SEVERAL inputs and
+; XFNK3 -- docs/bios/INIFNK.md round 2 (2026-11-17), after its first review (run 2: the work area compared BEFORE the
+; row-24 VRAM reads, whose RDVRM let an interrupt run on the reference -- the confirming pass's finding): INIFNK ($003E) with SEVERAL inputs and
 ; everything else read. Three cases:
 ;   1 FNKSTR all $00                                          CNSDFG 0    A / F $A5 / $00
 ;   2 FNKSTR per key: key 1 $00 x 16, key 2 $5A x 16, key 3 "ABCDEFGHIJKLMNOP" (no 0), key 4 "list " then $5A
@@ -39,6 +40,7 @@ ptr     equ     $EF00
 ccase   equ     $EF02
 cnt     equ     $EF04
 naddr   equ     $EF06
+rowptr  equ     $EF08
 
                 org     $4000
                 db      "AB"
@@ -166,18 +168,13 @@ c_fk:
                 call    emit
                 ld      a, c
                 call    emit
-                ; row 24
-                ld      hl, 920
-                ld      b, 40
-r_lp:
-                push    bc
-                push    hl
-                call    RDVRM
-                call    emit
-                pop     hl
-                pop     bc
-                inc     hl
-                djnz    r_lp
+                ; run 2: row 24's 40 bytes are RESERVED here and read only after the work-area comparison -- RDVRM
+                ; re-enables interrupts on the reference, so run 1's comparison after it saw the probe's own interrupt
+                ld      hl, (ptr)
+                ld      (rowptr), hl
+                ld      de, 40
+                add     hl, de
+                ld      (ptr), hl
                 ; the work area compared (FNKSTR excluded): the count, and the first ten addresses
                 ld      hl, 0
                 ld      (cnt), hl
@@ -244,6 +241,25 @@ w_next:
                 ld      hl, (cnt)
                 ld      (ix+0), l
                 ld      (ix+1), h
+                ; now row 24, into its reserved slot
+                ld      hl, (ptr)
+                push    hl
+                ld      hl, (rowptr)
+                ld      (ptr), hl
+                ld      hl, 920
+                ld      b, 40
+r_lp:
+                push    bc
+                push    hl
+                call    RDVRM
+                call    emit
+                pop     hl
+                pop     bc
+                inc     hl
+                djnz    r_lp
+                pop     hl
+                ld      (ptr), hl
+                di
                 ld      a, $C3                  ; the record's sentinel
                 call    emit
                 ld      a, (ccase)

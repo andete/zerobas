@@ -76,7 +76,7 @@ _cases1 = cases
 
 def cases():                                     # noqa: F811
     out = _cases1()
-    t = open(os.path.join(ROOT, "scratchpad", "XCNV2_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XCNV2_run2.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         for c in X2.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
             c.src, c.id, c.f = "XV2", f"XV2 {c.idx:02}", c.f_out

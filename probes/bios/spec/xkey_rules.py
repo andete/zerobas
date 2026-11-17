@@ -19,7 +19,7 @@ from spec_rules import Rule  # noqa: E402
 PAGE = "docs/bios/DSPFNK.md"
 SP, GB = 32, 0x5A                       # a space; the probe's name-table garbage
 OUTPUTS = {"XK": ["cnsdfg", "crtcnt", "csrx", "csry", "linlen", "scrmod", "namesum", "row24", "rowc", "rowc1"],
-           "XS": M.OUTPUTS, "XS3": M.OUTPUTS}
+           "XS": M.OUTPUTS, "XS3": M.OUTPUTS, "XS4": M.OUTPUTS + ["row12", "rowcm1"]}
 KEYCALLS = {"DSPFNK", "ERAFNK", "FNKSB"}
 SPR = [0xD1, 0, 0, 0x0F, 0xD1, 0, 1, 0x0F]  # the sprite attribute table's first 8 bytes, as INIT32 left them
 
@@ -40,7 +40,7 @@ def cases():
 
 
 def xs(c):
-    return c.src in ("XS", "XS3")
+    return c.src in ("XS", "XS3", "XS4")
 
 
 def cols(c):
@@ -144,7 +144,7 @@ _SCREEN = ["cnsdfg", "crtcnt", "csrx_out", "csry_out", "linl40", "linl32", "lt",
 
 
 def _model(c):
-    return M.matches(c, _SCREEN + ([] if c.mode >= 2 else ["linlen"]))
+    return M.matches(c, _SCREEN + ([] if c.mode >= 2 else ["linlen"]) + (["row12", "rowcm1"] if c.src == "XS4" else []))
 
 
 def _scrolls(c):
@@ -156,7 +156,8 @@ RULES += [
          "when it draws -- first scrolls the text rows up by one: row k takes row k + 1's cells for k up to CRTCNT − 2, "
          "row CRTCNT − 1 comes in BLANK (spaces; width 40 measured) and its LINTTB entry becomes 175; LINTTB's entries "
          "move up with their rows (XSCR3's address-dependent entries: 41 42 … 56 AF, entry 24 kept); the cursor moves "
-         "up a row (CSRX kept). Then it draws the key line. With the cursor one row higher nothing scrolls.",
+         "up a row (CSRX kept). Then it draws the key line. With the cursor one row higher nothing scrolls. XSCR4 reads "
+         "row 12 and row CRTCNT − 1 too: the middle rows moved and the blank row is blank, not only in the sums.",
          lambda c: _scrolls(c), _model),
     Rule("R-K-ERALT", S2, "ERAFNK also marks the key line's row in LINTTB: its entry becomes 175 (from $55, $AA and "
          "address-dependent garbage alike), whatever CNSDFG was (0 too), in SCREEN 0 and 1; in SCREEN 2 LINTTB is left "

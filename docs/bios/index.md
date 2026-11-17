@@ -61,7 +61,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
-| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](CNVCHR.md) | 2 | D-TEXTAF |
+| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](CNVCHR.md) | 3 | D-TEXTAF |
 | $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 2](PINLIN.md) | 5 | D-PINLINSTART, D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](INLIN.md) | 0 | D-TEXTAF |
 | $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](QINLIN.md) | 0 | D-TEXTAF |
