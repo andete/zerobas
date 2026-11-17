@@ -16674,7 +16674,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `--swap-image` / `--swap-at`, omsx_session.run_job's `swap_at` / `swap_image`: an `after time` `diska`). New exerciser
       BDOSXS (in bdos-acceptance): DSKCHG before the swap (B = 1), after it (B = 0 -- "unknown", NOT $FF, on BOTH), then
       an SFIRST finds SWAPPED.TXT, a file only the new disk holds: 81 B byte-identical ([`XS_stock.out`](scratchpad/XS_stock.out), [`XS_ours.out`](scratchpad/XS_ours.out)).
-      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
+      🔴 **(8) DRIVE B UNDER MSX-DOS, 2026-11-17 -- A REAL DIFFERENCE, FILED D-DOSDRVB.** New exerciser BDOSXB (probes/disk/
+      bdosxb.asm; NOT gated yet -- it would be RED): SELDSK 1, CURDRV, SFIRST *.* on the default drive, the screen read back.
+      The CF-3300 selects B ($F247 = 1, CURDRV 1), and the SFIRST prompts "Insert diskette for drive B: / and strike a key
+      when ready", waits for the key, and leaves the DTA's drive byte 2; zerobas stays on A ($F247 0, CURDRV 0, no prompt,
+      DTA drive 1) ([`XB_stock.out`](scratchpad/XB_stock.out), [`XB_ours.out`](scratchpad/XB_ours.out), [`XB2_stock.out`](scratchpad/XB2_stock.out), [`XB2_ours.out`](scratchpad/XB2_ours.out)).
+      ➡️ NEXT: a DISK-ROM CARVE -- D-DISKVE (~55 B), D-DOSDRVB, D-CONCOL (~11 B) and D-DSKIOCYL (~5 B) all wait for bytes.
+
+- [ ] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
+      🎚️ TIER 3 — common errors (a one-drive user typing B:, a program copying to B:; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — BDOSXB's capture against the CF-3300 (run build_bdosxb_disk.py, then the printed capture line with
+      `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`). Three parts: (1) SELDSK stores the drive in $F247 (CURDRV_CELL)
+      -- seldsk_drv_body only returns DRVCNT (~+10 B; 0 B of pad before the $55E6 pin); (2) a default-drive FCB operation
+      on B goes through drv_select (D-DSKIB's prompt, already in the ROM for BASIC's paths); (3) the DTA's / FCB's drive
+      byte reflects the current drive. Bytes first (the disk ROM's allotted space). When it lands, gate BDOSXB.
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**
       🎚️ TIER 6 — every edge (records a program never wrote, inside or past the file's end; filed 2026-11-17).
