@@ -131,6 +131,12 @@ def run(mod):
     missing = sorted({c.src for c in ref} - set(outputs))
     if missing:
         sys.exit(f"FAIL: OUTPUTS names no outputs for case group(s) {missing}")
+    ids_known = {r.id for r in mod.RULES}
+    import re as _re
+    for r in mod.RULES:                        # a rule's text may only name rules that exist
+        for ref_id in _re.findall(r"\bR4?-[A-Z0-9][A-Za-z0-9-]*\b", r.text):
+            if ref_id not in ids_known:
+                sys.exit(f"FAIL: rule {r.id}'s text names {ref_id}, which is no rule (a stale reference)")
     seen = [set() for _ in ref]
     # UNREAD: {case id: (fields, reason)} -- outputs a page declares NOT evidence (the setup decides
     # them), rendered with the reason; they count as accounted for, never as covered
@@ -183,6 +189,9 @@ def render(mod, results, uncovered, total):
              f"case's cursor, cells, A, table entries ...), {total - n_unc} are read by a rule's check and "
              f"{n_unc} are not.**")
     sec = None
+    order = {s_: i for i, s_ in enumerate(sorted({r.section for r, *_ in results},
+                                                   key=lambda t: (int(t.split(".")[0]) if t.split(".")[0].isdigit() else 99, t)))}
+    results = sorted(results, key=lambda x: order[x[0].section])      # sections in order, rules kept in order
     for r, n, rb, zbb in results:
         if r.section != sec:
             sec = r.section

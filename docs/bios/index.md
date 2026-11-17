@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**1 of 108 calls have a page; 0 are FINAL.**
+**1 of 108 calls have a page; 1 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) |
 |---|---|---|---|---|---|
@@ -58,7 +58,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0099 | STRTMS | sound (concept page to come) | L3 | — | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | — | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | — | — |
-| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 6](CHPUT.md) | 6 |
+| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | — | — |

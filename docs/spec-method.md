@@ -90,6 +90,15 @@ that was measured (the wraps, the scroll, the edges).
   CHPUT's own `ESC Y`. Where the two machines' `ESC Y` differs, every case STARTED somewhere else,
   so the differences were the setup's. Set the state through other means: VRAM writes, the work-area
   cells directly. Retire the affected groups from the rules, with the reason; their data stays on file.
+- **No self-relative expectations.** A check's expected values come from the REFERENCE, never from
+  zerobas's own other cases. CHPUT compared each machine's "prefix + byte" with ITS OWN "byte
+  alone", so a zerobas bug present in both halves was invisible (prefix + DEL; the fourth review).
+  Where a machine's own state must be the baseline (the key line's labels belong to DSPFNK, not
+  CHPUT), say so in the rule. Then pin the behaviour separately against probe-written markers.
+- **The checker refuses a rule whose text names a rule id that does not exist** (stale references
+  after a rewrite), and renders the sections in order.
+- **Generate a probe's case table from the module that decodes it** (CHPUT round 5,
+  `xchput5_cases.py`), so the layout cannot drift between probe and rules.
 - **The page's rule tables are GENERATED** between `<!-- RULES BEGIN -->` and `<!-- RULES END -->`
   (`--write`). `make spec-rules-check` (in STATIC) fails on a false rule or a stale page. The
   Summary and the Open list stay hand-written, and short.
