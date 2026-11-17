@@ -10,6 +10,16 @@ session and the loop resumes exactly where it stopped.
 |---|---|---|
 | ONLY MSX1 BIOS calls | *"Lets make sure we're 100% focussed. Any work done from now on till we broaden the scope again should be on MSX1 BIOS calls."* | the loop picks ONLY BIOS-entry work (the main BIOS's published MSX1 entries: tools/entry_table.py's BIOS rows, docs/tier-status.md's BIOS table, D-ENTRYTIERS / D-BIOSRUNG / D-BIOSCONTRACT items, cbios-repack patches). No BASIC, disk-ROM, BDOS, tape-statement or speed work until Joost broadens it -- however low its tier. The aim stays his 11-13 one: close zerobas's BIOS gaps so the C-BIOS MSX1 calls can be finished upstream. If the BIOS queue empties, SAY SO and stop -- do not drift back to other work. |
 
+## 🔵 FOCUS WIDENED 2026-11-17 — READ FIRST (overrides the 11-14 focus row below)
+
+| ruling | Joost's words (picked) | consequence |
+|---|---|---|
+| the next focus | *"Widen to BDOS/disk BIOS"* | the loop picks BDOS and disk-ROM BIOS-level work (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT, MTOFF, the pinned kernel entries) -- the 11-14 ruling: the disk ROM's first user is C-BIOS WITHOUT BASIC. Still OUT: BASIC-facing work (Disk BASIC statements too) and tape. Correctness first; the BDOS speed items stay TIER 5. If this queue empties, SAY SO and stop |
+| CHKRAM / FORMAT | *"Rule both indirect"* | entry_table's BIOS_RULED: CHKRAM a reset (every gate's boot), FORMAT the disk ROM's body |
+
+➡️ FIRST: a contract inventory of the disk-ROM entries and the 42 BDOS functions, as D-BIOSCONTRACT2 did for
+the BIOS (what a caller can observe, which gate DIFFS it, the gap), then the ranked gaps.
+
 ## ▶️ RESUMED 2026-11-16 (Joost: "resume the loop") — paused 2026-11-14 night, state below still current
 
 | ruling / state | Joost's words | consequence |
@@ -22,10 +32,13 @@ CNVCHR Z + CHPUT (#25), GRPHED on a text clear (#26), OUTDO with PRTFLG (D-OUTDO
 family's STOP exit (D-INLINSTOPF), GICINI's queue reset + INITIO's exit registers (D-GICINIQ, #27),
 TDOWNC's bottom test (D-TDOWNCGE, #28). Everything is pushed: ba9ec9e7 (D-TDOWNCGE) went GREEN
 on its full gate after the pause.
-➡️ RESUME: the 12 L2 rows, `python3 tools/bios_levels.py` lists them -- CHSNS's Z with a key waiting
-first (cheapest), then the INLIN family's HL / QINLIN's prompt, CALSLT / CALLF's IX / IY / AF',
-INIT*'s cleared VRAM, CLS in graphics modes, GRPPRT's glyph. CHKRAM / FORMAT stay L1 (spurious
-witnesses; FORMAT's body is the disk ROM's).
+2026-11-16: the 12 L2 rows were all done. Real differences: CHSNS's A (D-CHSNSA, #29); INITXT /
+INIT32 / text CLS key line, INITXT's 80*24 clear, SCREEN 3's $800 clear (D-INITKEYS, #30 +
+bios_cls). No-bug rows: INLIN family (L4), CALSLT / CALLF, GRPPRT. entry_table.py's faults
+fixed (D-ENTRYFAULTS). Last push d5a6c0f6, all GREEN.
+⏹️ **LOOP STOPPED 2026-11-16: THE BIOS QUEUE IS EMPTY** (L4 6, L3 98, L2 0). Left, needing Joost:
+CHKRAM ($0000, a reset) and FORMAT ($0147, its body is the disk ROM's) read NOT MEASURED -- ruled
+indirect, or measured? And: widen the focus, or keep it?
 
 ## 🟢 RULINGS 2026-11-14 (evening) — READ FIRST (newest)
 

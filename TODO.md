@@ -16605,8 +16605,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `CALLF`, biosregs' `LEFTC`; the bytes unchanged). The page now says **2 NOT MEASURED: CHKRAM and FORMAT** -- the
       honest reading (no gate calls either); both were L1 on spurious witnesses. tests/test_entry_table.py (g).
       subrom-acceptance still backs CALSLT's "vs reference" mechanically; other witnesses are differential, no change.
-      ➡️ **THE BIOS QUEUE IS EMPTY** apart from CHKRAM / FORMAT, which need a ruling (CHKRAM is a reset; FORMAT's body is
-      the disk ROM's). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **THE BIOS QUEUE IS EMPTY (2026-11-16).** CHKRAM / FORMAT: Joost 2026-11-17 *"Rule both indirect"* -- entry_table's
+      BIOS_RULED (a reset: every gate's boot; FORMAT: the disk ROM's body). Every main BIOS entry is L3+ or ruled.
+
+- [ ] 🎯 **D-DISKCONTRACT — THE DISK ROM'S BIOS-LEVEL ENTRIES AND THE BDOS: WHAT IS COMPARED, NOT ONLY CALLED (filed
+      2026-11-17, Joost widening the focus: *"Widen to BDOS/disk BIOS"*)**
+      🎚️ TIER 1 — the entry surface; the disk ROM's first user is C-BIOS WITHOUT BASIC (Joost 2026-11-14).
+      🤖 **AUTONOMOUS** — black box: registers, RAM, the disk image, the FDC's port traffic; the CF-3300 the reference.
+      ➡️ FIRST: a contract inventory as D-BIOSCONTRACT2's (scratchpad/bios_contract_inventory.md) -- per published disk-ROM
+      entry (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT, MTOFF, the pinned kernel entries) and per BDOS function: what a caller
+      can observe, which gate DIFFS it against the CF-3300, the gap -- ranked; then the gaps in order. Out of scope:
+      BASIC-facing work (Disk BASIC statements), tape. The BDOS speed items stay TIER 5. (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

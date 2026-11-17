@@ -476,6 +476,10 @@ BIOS_RULED = {
     0x0038: "covered INDIRECTLY (Joost 2026-11-13: every interrupt-driven row -- keys, "
             "ON INTERVAL, PLAY, TIME -- runs through it)",
     0x0066: "out of scope (Joost 2026-11-13: NMI is not used on MSX)",
+    0x0000: "covered INDIRECTLY (Joost 2026-11-17: a reset -- its result is the boot state "
+            "every gate starts from)",
+    0x0147: "covered INDIRECTLY (Joost 2026-11-17: its body is the disk ROM's -- measured "
+            "with the disk ROM's entries)",
 }
 
 
