@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `POSIT` ($00C6) — place the cursor
 
-> **Spec:** DRAFT 2 (2026-11-17). Stated on [CLS's page](CLS.md), section "2. POSIT", with CLS.
+> **Spec:** FINAL (2026-11-17), the core rule, with CLS. Stated on [CLS's page](CLS.md), section "2. POSIT", with CLS.
 
 ## Differences from the reference
 

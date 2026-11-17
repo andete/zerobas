@@ -20,7 +20,7 @@ on entry. With a code waiting it changes nothing else:
 - of the work area, only the key scan's cells change.
 
 With the buffer empty it waits for a key, with interrupts enabled even if they were disabled on
-entry. Its F on return depends on where GETPNT ends; the values are listed, not modelled.
+entry. Its F on return is that of comparing GETPNT's advanced low byte (before the wrap) with $18.
 
 `CHSNS` returns PUTPNT − GETPNT (low bytes) in A, with Z set exactly when the buffer is empty. It
 moves nothing, and also returns with interrupts enabled.
@@ -74,10 +74,10 @@ the run.
 | **R-G-CODE** CHGET returns the code at GETPNT in A, whatever it is (00, 01, 20, 7F, FF, 'A'..'D'), in SCREEN 0 and 2. | 13 | ✓ | ✓ |
 | **R-G-PTR** GETPNT advances by one, from the buffer's 40th byte back to KEYBUF ($FBF0); PUTPNT is unchanged. | 13 | ✓ | ✓ |
 | **R-G-EI** CHGET returns with interrupts ENABLED, also when it was entered with them disabled. | 13 | ✓ | ✗ 11: XG 00, XG 02, XG 04, XG 05, XG 06, XG 07 … (+5) |
-| **R-G-FLAGS** Its flags on return are not published; the reference's here: 9A, 8A (GETPNT ending at $FB), and 4A -- Z set -- when GETPNT wrapped back to KEYBUF (R-G-F2: not the number of codes waiting). | 13 | ✓ | ✗ 13: XG 00, XG 01, XG 02, XG 03, XG 04, XG 05 … (+7) |
+| **R-G-FLAGS** Its flags on return (not published) are those of comparing GETPNT's advanced low byte -- before the wrap back to KEYBUF -- with $18: 9A at $F1, 8A at $FB, 4A (Z set) at the buffer's end ($18). | 13 | ✓ | ✗ 13: XG 00, XG 01, XG 02, XG 03, XG 04, XG 05 … (+7) |
 | **R-G-QUIET** A code waiting, CHGET changes nothing else: no cursor drawn (CSRSW 0 or 1), VRAM, CSRX / CSRY, CSRSW, CNSDFG and the buffer's bytes as found. | 13 | ✓ | ✓ |
 | **R-G-WAIT** With the buffer EMPTY, CHGET waits for a key and returns its code ('Q', 'R' typed), consuming it (GETPNT = PUTPNT after), with interrupts ENABLED -- also when entered with them disabled: it does not hang. VRAM cells 166 / 167 hold their garbage $5A after the call -- NOT the cursor's cell: the probe left the boot width (37, margin 2), so the cursor at column 7 is cell 168; what the wait shows is open. | 2 | ✓ | ✓ |
-| **R-G-WFLAGS** Its flags on return after the wait: 9A, as R-G-FLAGS'. | 2 | ✓ | ✗ 2: XW 1, XW 2 |
+| **R-G-WFLAGS** After a wait too (GETPNT ending at $F1 / $F2: 9A). | 2 | ✓ | ✗ 2: XW 1, XW 2 |
 
 #### 2. CHSNS ($009C): is there a code?
 
@@ -93,7 +93,7 @@ the run.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-G-CODE2** With every register garbage and A $A7 on entry (unlike the VRAM garbage), CHGET returns the code at GETPNT in A, GETPNT advanced by one (wrapping), PUTPNT unchanged, and interrupts ENABLED -- whatever the flags on entry ($00 / $FF) and whether interrupts were on. | 10 | ✓ | ✗ 9: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+3) |
-| **R-G-F2** CHGET's F (not published) depends on where GETPNT ends: 9A at $F1 / $F6, 8A at $FB, 9B at $05 / $17, 8B at $08 / $09 (and 4A after wrapping to $F0, R-G-FLAGS). It is NOT 'the number of codes waiting' (one code at offset 10 gives 8A) nor a compare of GETPNT's low byte with $18 (that gives A2 there): the reference's values, not modelled. | 10 | ✓ | ✗ 10: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+4) |
+| **R-G-F2** The same compare explains every separated case (9A at $F1 / $F6, 8A at $FB, 9B at $05 / $17, 8B at $08 / $09) -- and is NOT 'the number of codes waiting' (one code at offset 10 gives 8A). | 10 | ✓ | ✗ 10: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+4) |
 | **R-S-COUNT2** CHSNS: A = PUTPNT − GETPNT (low bytes) with the flags of that subtraction, whatever the flags on entry; pointers unchanged; interrupts enabled. | 4 | ✓ | ✓ |
 | **R-GS-QUIET2** Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of the whole work area change only the key scan's cells (the interrupt ran). | 14 | ✓ | ✓ |
 
@@ -110,8 +110,7 @@ the run.
 - **[A]** What CHGET shows WHILE it waits (the cursor drawn with CSRSW 1 or 0), and the cursor's
   cell after the wait: XCHGW read cells 166 / 167, which at the boot width 37 are not the cursor's.
   Also whether XW 1 truly waited (its key was typed as the call began).
-- **[A]** CHGET's F as a rule: the measured values fit neither "codes waiting" nor a compare with
-  $18.
+- **[A]** CHGET's F at GETPNT positions not measured (the compare with $18 fits all 25 measured).
 - **[A]** The hook H.CHGE; the other registers on return.
 - **[A]** CHSNS's update of the function-key line when SHIFT changes (the key line's shifted set).
 - **[A]** GETPNT / PUTPNT outside the buffer (garbage pointers).

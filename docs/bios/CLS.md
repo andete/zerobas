@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CLS` ($00C3) — clear the screen
 
-> **Spec:** DRAFT 3 (2026-11-17), after two test-writer reviews. Measured on the Philips VG-8020 by
+> **Spec:** FINAL (2026-11-17), the core rule: the third review's pass was CLEAN (docs/spec-method.md §7).
+> The open items below stay [A] and do not hold up the fixes. After two earlier test-writer reviews. Measured on the Philips VG-8020 by
 > calling the call directly, the inputs written by the probe to several values. The page states POSIT
 > ($00C6, place the cursor) too, as the two are measured together; [POSIT's page](POSIT.md) points
 > here.

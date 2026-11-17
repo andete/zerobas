@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `TOTEXT` ($00D2) — back to a text screen
 
-> **Spec:** DRAFT 2 (2026-11-17), after one test-writer review. Measured on the Philips VG-8020 by
+> **Spec:** FINAL (2026-11-17), the core rule: the second review's pass was CLEAN (docs/spec-method.md §7).
+> The open items below stay [A] and do not hold up the fixes. After one earlier test-writer review. Measured on the Philips VG-8020 by
 > calling the call directly from each screen mode, with OLDSCR, SCRMOD, the register copies, CRTCNT,
 > CNSDFG, the colours and the widths written by the probe at several values.
 

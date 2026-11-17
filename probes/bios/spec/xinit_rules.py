@@ -287,7 +287,8 @@ RULES = [
                     and c.colours == [c.fg, c.bg, c.bd] and c.tables == TABLES[c.tbl]
                     and c.fnksum == (FNK_SUM7 if getattr(c, "lab", 0) else FNK_SUM))),
     Rule("R-I-VRAM", B, "Nothing else in VRAM is written: the whole 16 KB less the name, pattern, colour (INIT32) and "
-         "sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table.",
+         "sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table -- except, with "
+         "CRTCNT 0 or 30, the one key line drawn off the screen's rows (R-I-KEYOUT).",
          lambda c: xj(c) and not edge4(c), vram_ok),
     Rule("R-I-NOCOL-TXT", TXT, "INITXT writes no colour table: moved out of every other table (TXTCOL $2000) its 32 "
          "bytes stay $5A; at the default TXTCOL 0 they are the name table's first row (spaces), and TXTATR $1800's "
