@@ -87,8 +87,16 @@ ksp_div:
                 dec     c                   ; pitch - 1 = the characters shown
                 ret     z                   ; pitch 1: nothing (WIDTH 5)
                 ret     m                   ; pitch 0: nothing (WIDTH 1..3)
-                ; D-KEYSHIFT: FNKSWI 1 shows slots 1..5, 0 shows 6..10 (SHIFT held)
-                ld      a,(FNKSWI)
+                ; D-KEYSHIFT: FNKSWI 1 shows slots 1..5, 0 shows 6..10 (SHIFT held).
+                ; D-KEYLINESHIFT (2026-11-18): the set follows the KEYBOARD, and FNKSWI is
+                ; WRITTEN: the VG-8020's DSPFNK shows keys 1-5 with no SHIFT held whatever
+                ; FNKSWI held (0, 1, $5A, $FF) and leaves it 1 (docs/bios/DSPFNK.md
+                ; R-K-FNKSWI, scratchpad/XFSW_run1.out). So: FNKSWI := SHIFT's NEWKEY bit
+                ; (row 6 bit 0, active low: 1 = up), as zb_chsns already does -- a page-0
+                ; tenant may not call SNSMAT. At cartridge INIT FNKSWI was still 0.
+                ld      a,(NEWKEY+6)
+                and     1
+                ld      (FNKSWI),a
                 dec     a                   ; 1 -> 0, 0 -> $FF
                 and     5*KEYSTRIDE
                 add     a,low FNKSTR        ; FNKSTR+80 stays in its page

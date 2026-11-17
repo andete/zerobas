@@ -13,6 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import xkey_cases as X  # noqa: E402
+from types import SimpleNamespace as NS  # noqa: E402
 import xscr_model as M  # noqa: E402
 from spec_rules import Rule  # noqa: E402
 
@@ -138,7 +139,7 @@ UNREAD = {f"XK {i:02}": (["linlen"], "SCREEN 2 cases: the setup does not set LIN
 # The rules above state XKEY run 1 (group XK). XSCR (group XS, xscr_model.py) gives the inputs several values; its
 # rules follow. The XK rules keep to their own group.
 for _r in RULES:
-    _r.select = (lambda s: (lambda c: not xs(c) and s(c)))(_r.select)
+    _r.select = (lambda s: (lambda c: c.src == "XK" and s(c)))(_r.select)
 
 _SCREEN = ["cnsdfg", "crtcnt", "csrx_out", "csry_out", "linl40", "linl32", "lt", "namesum", "row1", "rowc", "row24",
            "vsum", "win", "scrmod"]
@@ -199,3 +200,32 @@ RULES += [
 UNREAD.update({c.id: (["linlen"], "SCREEN 2 cases: the setup does not set LINLEN there (INIGRP does not), so its "
                                   "value is the previous case's")
                for c in M.load("ref", KEYCALLS) if c.mode >= 2})
+
+
+# ---- D-KEYLINESHIFT's question (2026-11-18): XFSW (probes/bios/spec/xfsw.asm; scratchpad/XFSW_run1.out) -- does DSPFNK
+# take the label set from FNKSWI ($FBCD)?
+OUTPUTS["XF"] = ["fnkswi_out", "row24"]
+_cases_xf = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases_xf()
+    t = open(os.path.join(ROOT, "scratchpad", "XFSW_run1.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        if b[1] != 0xA5 or b[2 + 41 * 4] != 0xC3:
+            sys.exit("FAIL: the XFSW block is not complete (no sentinel)")
+        for i, v in enumerate((0x00, 0x01, 0x5A, 0xFF)):
+            r = b[2 + 41 * i: 2 + 41 * (i + 1)]
+            out[who].append(NS(src="XF", id=f"XF {i + 1}", fnkswi_in=v, fnkswi_out=r[0], row24=list(r[1:41])))
+    return out
+
+
+_KEY15 = list(b"key0    key1    key2    key3    key4    ")
+
+RULES += [
+    Rule("R-K-FNKSWI", S1, "DSPFNK does NOT take the label set from FNKSWI ($FBCD): with no SHIFT held it shows keys 1-5 "
+         "whatever FNKSWI held (0, 1, $5A, $FF) and leaves FNKSWI = 1. The set follows the keyboard; FNKSWI is "
+         "written, not read.", lambda c: c.src == "XF",
+         lambda c: c.fnkswi_out == 1 and c.row24 == _KEY15),
+]

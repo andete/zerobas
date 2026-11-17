@@ -275,7 +275,7 @@ RULES = [
     Rule("R-I-LT", B, "LINTTB becomes 24, 23, …, 1 down the rows.", lambda c: True,
          lambda c: c.lt == [24 - r for r in range(24)]),
     Rule("R-I-KEYPLACE", B, "Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: "
-         "INITXT 33–35, INIT32 2 / 10 / 20 / 27): on row CRTCNT (13, 20 or 24), within the width's span from the "
+         "INITXT 33–35, INIT32 2 / 10 / 20 / 27; XINIT4 adds INITXT 39, INIT32 24 / 19): on row CRTCNT (13, 20 or 24), within the width's span from the "
          "left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × "
          "slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For "
          "widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells).",
@@ -309,15 +309,15 @@ RULES = [
                     bytes(c.rowc).hex()) == EDGE4[c.idx] and bytes(c.col).hex() == EDGE4COL[c.idx]),
     Rule("R-I-W0", B, "Width 0 with the key line on: the name table is NOT cleared to spaces -- the two rows read hold "
          "0 and $FF pairs, and its sum (INITXT 582, INIT32 54388; the 64-byte tail 8160, INIT32's tail 24494 and "
-         "sprite sum 8174) shows other bytes too -- and something is written outside the tables -- the cells and these sums the same in XINIT run 4 "
-         "and XINIT4's three runs. NOT reproduced: the whole-VRAM sum (each run differs) and INIT32's colour table "
-         "(1375 vs 960 between the probes: its bytes are copies of RAM the probe does not set) -- declared UNSTABLE.",
+         "sprite sum 8174) shows other bytes too -- the cells and these sums the same in XINIT run 4 "
+         "and XINIT4's runs. Depending on RAM OUTSIDE the call's inputs -- the whole-VRAM sum, and INIT32's colour "
+         "table, whose bytes copy the probe's own capture area (XINIT4: record 0's bytes; 1375 in XINIT, 960 in "
+         "XINIT4) -- declared UNSTABLE, not compared.",
          w0key_any,
          lambda c: ((c.namesum, c.tailsum, c.atrsum, c.row13, c.lastrow)
                     == ((582, 8160, 0) if is_txt(c) else (54388, 24494, 8174)) + tuple(W0ROWS[c.name])
                     and (not is_txt(c) or c.colsum == 0)
-                    and (not xj(c) or (c.rowc == W0ROWC[c.name] and (not is_txt(c) or c.col == [0] * 32)
-                                       and not vram_ok(c))))),
+                    and (not xj(c) or (c.rowc == W0ROWC[c.name] and (not is_txt(c) or c.col == [0] * 32))))),
     Rule("R-I-CLEAR", B, "With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and "
          "the last row read blank.", lambda c: not c.key,
          lambda c: (c.namesum == SP * (960 if is_txt(c) else 768) and c.lastrow[:cols(c)] == [SP] * cols(c)
@@ -334,7 +334,8 @@ RULES = [
     Rule("R-I-KEYEDGE", B, "Key line on with width 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 "
          "blank (80: the name sum moves +231 -- more than spaces and labels could, so bytes below $20 are written "
          "too; where is not read); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13, 16 cells apart "
-         "(FNKSTR's stride, not the formula's slot). (Width 0: R-I-W0.)",
+         "(which the formula computed mod 256 may also explain: margin 21 / 17, slot 51 reading on through the "
+         "labels' padding -- not separated). (Width 0: R-I-W0.)",
          lambda c: not xj(c) and c.key and c.width in (1, 80, 255),
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.row13, c.lastrow) == key_ref(c)),
     Rule("R-I-FONT", B, "The pattern table holds the font (the VG-8020's sums to 31375).",
@@ -344,9 +345,10 @@ RULES = [
 
 # Width 0 with the key line on: the reference does not reproduce these outputs (XINIT run 4 vs XINIT4 run 2 for the same
 # inputs, and XINIT4 runs 1 / 2 in the whole-VRAM sum) -- accounted for, not compared (tools/spec_rules.py UNSTABLE)
-_W0V = "width 0, key line on: the whole-VRAM sum differs in each of XINIT4's runs 1, 2 and 3 for the same inputs"
-_W0C = "INIT32 width 0, key line on: the colour table's bytes copy RAM the probe does not set (sum 1375 in XINIT run 4, " \
-       "960 in XINIT4 run 3, for the same inputs)"
+_W0V = ("width 0, key line on: the whole-VRAM sum follows RAM outside the call's inputs -- it differs in each of XINIT4's "
+        "runs 1-4, whose capture areas differ")
+_W0C = ("INIT32 width 0, key line on: the colour table's bytes copy RAM outside the call's inputs, the probe's own "
+        "capture area (XINIT4 run 4: record 0's bytes; sum 1375 in XINIT run 4, 960 in XINIT4)")
 UNSTABLE = {}
 for _i, _c in enumerate(X.CASES):
     if _c.key and _c.width == 0 and _c.call == X.INIT32:

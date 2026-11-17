@@ -16794,7 +16794,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
       (a row number? per screen width?) before matching them.
 
-- [ ] 🎯 **D-KEYLINESHIFT — INITXT / INIT32 WITH THE KEY LINE ON SHOW FUNCTION KEYS 6-10 (THE SHIFTED SET), NOT 1-5**
+- [x] ✅ **CLOSED 2026-11-18: D-KEYLINESHIFT — INITXT / INIT32 WITH THE KEY LINE ON SHOW FUNCTION KEYS 6-10 (THE SHIFTED SET), NOT 1-5**
+      ✅ **THE CAUSE:** the key-line tenant (sub/keystr.asm) took the set from FNKSWI, which zerobas set to 1 only
+      in BASIC's cold boot -- after the cartridge scan -- so at cartridge INIT it was 0 (the shifted set). The
+      VG-8020's DSPFNK does not read FNKSWI at all: it shows keys 1-5 with no SHIFT held whatever FNKSWI held,
+      and WRITES it 1 (docs/bios/DSPFNK.md R-K-FNKSWI, [`XFSW_run1.out`](scratchpad/XFSW_run1.out)). **THE FIX:** the
+      tenant sets FNKSWI from SHIFT's NEWKEY bit (row 6 bit 0) before choosing the set, as zb_chsns already did
+      (+5 B in the sub-ROM's page 0, 8 -> 3 B free). **WITNESS:** XFSW run 2 ALL SAME on both rows
+      ([`XFSW_run2.out`](scratchpad/XFSW_run2.out)); XKEY / XINIT4 re-run on the fixed build: no zerobas case shows
+      key5.. any more ([`XKEY_fix1.out`](scratchpad/XKEY_fix1.out), [`XINIT4_fix1.out`](scratchpad/XINIT4_fix1.out); the
+      remaining differences there are D-INITEDGES'). The spec pages' zerobas columns still show the pre-fix runs
+      until the test audit (docs/spec-method.md §8) re-runs them on zerobas.
       🎚️ TIER 1 — happy path (the function-key line a ROM program shows; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/INITXT.md rule R-I-KEYS (the XINIT matrix, FNKSTR written by the setup to "key0".."key9";
       run 2 [`XINIT_run2.out`](scratchpad/XINIT_run2.out), round 2's run 4 [`XINIT_run4.out`](scratchpad/XINIT_run4.out)):

@@ -5,7 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # `INITXT` ($006C) — set up the 40-column text screen (SCREEN 0)
 
-> **Spec:** DRAFT 5 (2026-11-18): after the fourth review (a confirming pass). Measured on the
+> **Spec:** FINAL (2026-11-18), the core rule: the seventh review's two CORE findings were evidence
+> bookkeeping (a stale run citation; width 0's colour bytes copy the probe's own RAM, a reason, not a
+> behaviour), fixed (docs/spec-method.md §7); the open items stay [A] and do not hold up the fixes. Measured on the
 > Philips VG-8020 by calling the call directly, every input written by the probe to SEVERAL separating
 > values.
 > The page states INIT32 ($006F, the 32-column screen) too, as it differs from INITXT only in values.
@@ -63,7 +65,9 @@ generate the probes and decode the runs.
 
   It also reads the input cells back after the call, the colour table byte for byte, and the whole
   16 KB of VRAM's sum.
-- **[XJ4 n]**: case `n` of XINIT4, run 3, [`scratchpad/XINIT4_run3.out`](../../scratchpad/XINIT4_run3.out)
+- **[XJ4 n]**: case `n` of XINIT4, run 4, [`scratchpad/XINIT4_run4.out`](../../scratchpad/XINIT4_run4.out)
+(run 4 adds widths 5n + 4 with binding labels: INITXT 39, INIT32 24 / 19; run 3,
+[`XINIT4_run3.out`](../../scratchpad/XINIT4_run3.out), is its first 38 cases)
 (run 3 adds 10-character labels at INITXT widths 40 and 33, where the cut to slot − 1 binds, and
 FORCLR $CA; run 2, [`XINIT4_run2.out`](../../scratchpad/XINIT4_run2.out), is its first 35 cases,
 identical but for the width-0 cases' whole-VRAM sum, which differs in every run)
@@ -119,26 +123,26 @@ confirming pass's findings).
 | **R-I-CRTCNT** CRTCNT is NOT written, and not clamped: 13, 24, 20, 0 and 30 all stay, key line on or off. | 128 | ✓ | ✗ 68: XI 01, XI 03, XI 05, XI 07, XI 09, XI 11 … (+62) |
 | **R-I-CNSDFG** CNSDFG becomes 255 when it was non-zero (1, 2, $80, $FF), 0 when it was 0. | 128 | ✓ | ✓ |
 | **R-I-LT** LINTTB becomes 24, 23, …, 1 down the rows. | 128 | ✓ | ✗ 128: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+122) |
-| **R-I-KEYPLACE** Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: INITXT 33–35, INIT32 2 / 10 / 20 / 27): on row CRTCNT (13, 20 or 24), within the width's span from the left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells). | 54 | ✓ | ✗ 51: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+45) |
+| **R-I-KEYPLACE** Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: INITXT 33–35, INIT32 2 / 10 / 20 / 27; XINIT4 adds INITXT 39, INIT32 24 / 19): on row CRTCNT (13, 20 or 24), within the width's span from the left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells). | 54 | ✓ | ✗ 51: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+45) |
 | **R-I-KEYOUT** With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, somewhere OUTSIDE the name table: every row of the name table reads spaces, and the whole-VRAM sum holds exactly one more key line (INIT32 30: in the 256 bytes after the name table; the address itself is not read). | 4 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
 | **R-I-READBACK** The call changes none of its inputs: LINL40 / LINL32 (the other call's cell keeps its 77), FORCLR / BAKCLR / BDRCLR, the ten screen-table cells, FNKSTR. | 66 | ✓ | ✓ |
 | **R-I-VRAM** Nothing else in VRAM is written: the whole 16 KB less the name, pattern, colour (INIT32) and sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table -- except, with CRTCNT 0 or 30, the one key line drawn off the screen's rows (R-I-KEYOUT). | 61 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
 | **R-I-EDGE4** The key line at the edge widths, with the whole VRAM read (XINIT4): widths 80 and 255 write only inside the name table (the whole-VRAM sum moves exactly as the name table's). Every cell read and every table sum as the reference's (widths 80 / 255: INITXT's name table moves +231 / −253, INIT32's −251 at 255). Width 0: R-I-W0. | 3 | ✓ | ✗ 3: XJ4 17, XJ4 18, XJ4 20 |
-| **R-I-W0** Width 0 with the key line on: the name table is NOT cleared to spaces -- the two rows read hold 0 and $FF pairs, and its sum (INITXT 582, INIT32 54388; the 64-byte tail 8160, INIT32's tail 24494 and sprite sum 8174) shows other bytes too -- and something is written outside the tables -- the cells and these sums the same in XINIT run 4 and XINIT4's three runs. NOT reproduced: the whole-VRAM sum (each run differs) and INIT32's colour table (1375 vs 960 between the probes: its bytes are copies of RAM the probe does not set) -- declared UNSTABLE. | 4 | ✓ | ✗ 4: XI 01, XI 23, XJ4 16, XJ4 19 |
+| **R-I-W0** Width 0 with the key line on: the name table is NOT cleared to spaces -- the two rows read hold 0 and $FF pairs, and its sum (INITXT 582, INIT32 54388; the 64-byte tail 8160, INIT32's tail 24494 and sprite sum 8174) shows other bytes too -- the cells and these sums the same in XINIT run 4 and XINIT4's runs. Depending on RAM OUTSIDE the call's inputs -- the whole-VRAM sum, and INIT32's colour table, whose bytes copy the probe's own capture area (XINIT4: record 0's bytes; 1375 in XINIT, 960 in XINIT4) -- declared UNSTABLE, not compared. | 4 | ✓ | ✗ 4: XI 01, XI 23, XJ4 16, XJ4 19 |
 | **R-I-CLEAR** With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and the last row read blank. | 58 | ✓ | ✓ |
 | **R-I-KEYS** With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row (which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells); with CRTCNT 24 it is the last row (XJ 03, XJ 11: R-I-KEYPLACE). Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same cells. Every cell and sum as the reference's. | 27 | ✓ | ✗ 27: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+21) |
-| **R-I-KEYEDGE** Key line on with width 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 blank (80: the name sum moves +231 -- more than spaces and labels could, so bytes below $20 are written too; where is not read); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13, 16 cells apart (FNKSTR's stride, not the formula's slot). (Width 0: R-I-W0.) | 5 | ✓ | ✗ 3: XI 19, XI 21, XI 39 |
+| **R-I-KEYEDGE** Key line on with width 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 blank (80: the name sum moves +231 -- more than spaces and labels could, so bytes below $20 are written too; where is not read); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13, 16 cells apart (which the formula computed mod 256 may also explain: margin 21 / 17, slot 51 reading on through the labels' padding -- not separated). (Width 0: R-I-W0.) | 5 | ✓ | ✗ 3: XI 19, XI 21, XI 39 |
 | **R-I-FONT** The pattern table holds the font (the VG-8020's sums to 31375). | 128 | ✓ | ✗ 128: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+122) |
 
 Declared NOT evidence (14 cases: XI 00, XI 02, XI 04, XI 06 … (+10)): colsum, atrsum — INITXT has no colour table and no sprites: with the key line off the bytes at R3's / R5's base are name-table cells (already in namesum) or, moved, left as found
 
 Declared NOT evidence (1 cases: XI 49): colsum — INITXT has no colour table and no sprites: with the key line off the bytes at R3's / R5's base are name-table cells (already in namesum) or, moved, left as found
 
-Declared UNSTABLE on the reference itself (1 cases: XI 23): colsum — INIT32 width 0, key line on: the colour table's bytes copy RAM the probe does not set (sum 1375 in XINIT run 4, 960 in XINIT4 run 3, for the same inputs)
+Declared UNSTABLE on the reference itself (1 cases: XI 23): colsum — INIT32 width 0, key line on: the colour table's bytes copy RAM outside the call's inputs, the probe's own capture area (XINIT4 run 4: record 0's bytes; sum 1375 in XINIT run 4, 960 in XINIT4)
 
-Declared UNSTABLE on the reference itself (1 cases: XJ4 16): vsum — width 0, key line on: the whole-VRAM sum differs in each of XINIT4's runs 1, 2 and 3 for the same inputs
+Declared UNSTABLE on the reference itself (1 cases: XJ4 16): vsum — width 0, key line on: the whole-VRAM sum follows RAM outside the call's inputs -- it differs in each of XINIT4's runs 1-4, whose capture areas differ
 
-Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col — width 0, key line on: the whole-VRAM sum differs in each of XINIT4's runs 1, 2 and 3 for the same inputs; INIT32 width 0, key line on: the colour table's bytes copy RAM the probe does not set (sum 1375 in XINIT run 4, 960 in XINIT4 run 3, for the same inputs)
+Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col — width 0, key line on: the whole-VRAM sum follows RAM outside the call's inputs -- it differs in each of XINIT4's runs 1-4, whose capture areas differ; INIT32 width 0, key line on: the colour table's bytes copy RAM outside the call's inputs, the probe's own capture area (XINIT4 run 4: record 0's bytes; sum 1375 in XINIT run 4, 960 in XINIT4)
 
 <!-- RULES END -->
 
@@ -163,7 +167,11 @@ Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col �
   reproducible on the reference (declared UNSTABLE); where the off-screen writes land; the name
   table's rows other than 13 and 24 (only those two are read).
 - **[A]** Widths 80 and 255 with the key line on: where the cells land and what they hold (only
-  sums and row 13 are read).
+  sums and row 13 are read); width 255 read as the formula mod 256 (row 14 would separate it); other
+  key-on widths past the columns (INITXT 42–79, 81–254; INIT32 34–254).
+- **[A]** The edge widths and CRTCNT 0 / 30 with a second VRAM garbage value (only $5A); entries from
+  SCREEN 2 / display off reach the call with the case's register copies, not SCREEN 2's (the
+  probe overwrites RG0SAV..RG7SAV after the mode switch).
 - **[A]** The font's source (CGPNT): R-I-FONT reads only the pattern table's sum; FNKSTR read back
   only as a sum; a label with a 0 inside it ("ab\0cd"); INIT32 one width past the screen (33) as a
   formula case; VRAM "as found" checked by 16-bit sums.
