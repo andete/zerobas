@@ -16615,7 +16615,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ FIRST: a contract inventory as D-BIOSCONTRACT2's (scratchpad/bios_contract_inventory.md) -- per published disk-ROM
       entry (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT, MTOFF, the pinned kernel entries) and per BDOS function: what a caller
       can observe, which gate DIFFS it against the CF-3300, the gap -- ranked; then the gaps in order. Out of scope:
-      BASIC-facing work (Disk BASIC statements), tape. The BDOS speed items stay TIER 5. (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      BASIC-facing work (Disk BASIC statements), tape. The BDOS speed items stay TIER 5.
+      📋 **THE INVENTORY: [`disk_contract_inventory.md`](scratchpad/disk_contract_inventory.md)** (2026-11-17, a read-only agent; headline verified by hand).
+      ✅ **(1) CLOSED 2026-11-17 -- the gates ran on the WRONG HOST.** bdos- / dskfmt- / fmtdos-acceptance compared our
+      disk.rom under the CF-3300's OWN BIOS (omsx_session.py's OURS_MACHINE default National_CF-3300_ZEROBASDISK), never on
+      the shipped C-BIOS machine. Measured there: bdos 25 / 25 converge ([`DKC_bdos_cbios.out`](scratchpad/DKC_bdos_cbios.out)), dskfmt 4 / 4, fmtdos 3 / 3
+      ([`DKC_dskfmt_cbios.out`](scratchpad/DKC_dskfmt_cbios.out), [`DKC_fmtdos_cbios.out`](scratchpad/DKC_fmtdos_cbios.out)) -- no bug (prediction "a divergence" MISSED). The three now run with
+      `ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE)`; the CF-3300-host BDOS run stays as `bdos-cfhost-acceptance` (gate_wt's
+      EXCLUDED5 list). 🔭 TIER 5: some exercisers run much slower on C-BIOS (WRZER 65.8 s vs 42.8, DOSL-D3 155.6 vs 93.0).
+      ➡️ NEXT: (2) disk errors at DSKIO / BDOS level; (3) DSKIO direct writes; (4) the $F37D dispatch; (5) console output. (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

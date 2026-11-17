@@ -65,7 +65,7 @@ LOCK = os.path.join(OUTDIR, "running.pid")
 STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
 REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/")
-EXCLUDED5 = ("bdos-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
+EXCLUDED5 = ("bdos-acceptance", "bdos-cfhost-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
              "input-devices-acceptance", "lnblank-say-acceptance",
              "dskfmt-acceptance CHOICES=1,4",
              "fmtdos-acceptance CHOICES=1,4")   # D-DSKFMT: the two extremes (1 side x 40,

@@ -900,7 +900,15 @@ probe: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 # dependent like `probe` (needs `make machines-oracle` + your CF-3300 reference
 # ROMs); NOT part of the emulator-free `unit-test`. `make bdos-acceptance ONLY=BDOSX3`
 # scopes it to one exerciser.
-bdos-acceptance: $(DISK_ROM)
+# D-DISKCONTRACT gap 1 (2026-11-17): "ours" is the SHIPPED machine ($(REPACK_MACHINE)): the
+# probes' default host is our disk.rom under the CF-3300's own BIOS (omsx_session.py's
+# OURS_MACHINE), so the C-BIOS seams were never compared. Measured first: 25 / 25 converge
+# there (scratchpad/DKC_bdos_cbios.out). The CF-3300-host run stays as bdos-cfhost-acceptance
+# (the disk ROM as a cartridge under a real MSX's BIOS).
+bdos-acceptance: $(DISK_ROM) repack-machine
+	ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
+
+bdos-cfhost-acceptance: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
 # D-DSKFMT / D-SIDEWRITE: DSKFMT formats as the CF-3300 (the BPB, both FATs, the root;
@@ -908,7 +916,7 @@ bdos-acceptance: $(DISK_ROM)
 # a record to it and reads it back, both machines. CHOICES=1,4 for a short run (choice
 # 4 takes the CF-3300 ~3 minutes).
 dskfmt-acceptance: repack-machine
-	python3 probes/disk/dskfmt_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
+	ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE) python3 probes/disk/dskfmt_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
 
 # --- bdosunop-acceptance: FCLOSE / SEQREAD of an FCB never opened (D-BDOSUNOP) ---
 # The CF-3300 closes only an FCB whose root index holds an entry with its NAME
@@ -926,7 +934,7 @@ bdosunop-acceptance: repack-machine $(DISK_TEST_DSK)
 # every data sector $40. Needs the DOS disk (as bdos-acceptance); CHOICES=1,4
 # by default. tools/gate_wt.py runs it after every FULL battery.
 fmtdos-acceptance: repack-machine $(DISK_TEST_DSK)
-	python3 -u probes/disk/fmtdos_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
+	ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/fmtdos_acceptance.py $(if $(CHOICES),--choices '$(CHOICES)',)
 
 # Standing Disk-BASIC acceptance gate: the BASIC-side counterpart of bdos-acceptance.
 # Replays the self-asserting disk_probe_* differentials over the Disk-BASIC verb
@@ -4661,7 +4669,7 @@ clean:
 	rm -rf $(BUILD)
 
 .PHONY: all disk sub patches tape-patches machines machines-oracle install dist install-openmsx tiers \
-        test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
+        test-dsk unit-test coverage probe bdos-acceptance bdos-cfhost-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
