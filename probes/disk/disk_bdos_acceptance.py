@@ -65,6 +65,10 @@ EXERCISERS = [
     # made ours byte-identical to stock: disk-full at WRSEQ #1, all-01, FCLOSE 00.
     # Now a standing regression guard — no allowlist needed (0-byte-diff buffer).
     ("BDOSX4", "build_bdosx4_disk.py"),
+    # BDOSXC (D-DISKCONTRACT gap 5, 2026-11-17): what CONOUT / STROUT put ON THE SCREEN --
+    # CLS, TAB, BS, BEL, ESC Y, two STROUTs -- the name table read back through the VDP's
+    # ports by the program itself, plus LINLEN / CSRY / CSRX.
+    ("BDOSXC", "build_bdosxc_disk.py"),
     # (BDOSXE, D-DISKCONTRACT gap 2: NOT gated yet -- it DIVERGES, TODO D-DISKVE: our BDOS
     #  never calls a program's DISKVE handler. Run it with `--only BDOSXE` after adding it
     #  back here once D-DISKVE lands.)

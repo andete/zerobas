@@ -16649,8 +16649,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measured with RS = 128 and 1 only, where two rules COINCIDE; [`setrnd_rs_probe.py`](scratchpad/setrnd_rs_probe.py) (RS = $0080 $0181 $0200
       $0400 $1234 $FFFF, [`F7_rs2.out`](scratchpad/F7_rs2.out)) separates them: the CF-3300 sets r2 = RS's LOW byte / 2, r3 = 0. setrnd_body
       (disk/kernel.asm, both $0005 and $F37D) fixed, 4 B shorter: 6 / 6 ([`F7_rs3.out`](scratchpad/F7_rs3.out)), bdosf37d PASS ([`F7_run4.out`](scratchpad/F7_run4.out)).
-      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first); (5)'s console output (screen diffs of CONOUT /
-      STROUT / echo).
+      ✅ **(5) THE CONSOLE'S SCREEN OUTPUT, 2026-11-17.** New exerciser BDOSXC (in bdos-acceptance): CLS, TAB, BS, BEL,
+      ESC Y and two STROUTs; the program reads its own name table back through the VDP ports (a CALSLT to LDIRMV
+      copied NOTHING on either machine -- an all-zero buffer that AGREED: [`XC_stock.out`](scratchpad/XC_stock.out)) with LINLEN / CSRY / CSRX:
+      0-byte-diff ([`XC4_run.out`](scratchpad/XC4_run.out)). One real difference, FILED D-CONCOL below: the BDOS's logical column ($F237, which TAB
+      counts from) after a control code ([`XC2_stock.out`](scratchpad/XC2_stock.out), [`XC3_stock.out`](scratchpad/XC3_stock.out), [`XC3_ours.out`](scratchpad/XC3_ours.out)). The gated text places TABs only
+      after CR LF / printable text. Left of (5): the echo of CONIN / BUFIN on screen; Ctrl-P / Ctrl-C / Ctrl-S.
+      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
+
+- [ ] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC**
+      🎚️ TIER 6 — every edge (a TAB on the same line right after a control code; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — BDOSXC's measurement rows ([`XC3_stock.out`](scratchpad/XC3_stock.out), [`XC3_ours.out`](scratchpad/XC3_ours.out)): the CF-3300's column ($F237) rule is
+      printable +1; CR and FF -> 0; BS -1; every other control code (LF, BEL, ESC ...) unchanged. Ours (conout_emit_e,
+      disk/runtime.asm): CR -> 0, LF unchanged, EVERYTHING else +1 -- so `XYZ` FF `A` TAB puts B at 4 not 8, BS / BEL
+      before a TAB jump to 16, ESC Y counts the ESC. ~+11 B, and conout_emit_e's pinned tail ($7FD1..) has 2 B free:
+      a carve first (the disk ROM stays in its allotted space).
 
 - [ ] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
       🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).
