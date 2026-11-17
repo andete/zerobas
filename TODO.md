@@ -16679,6 +16679,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The CF-3300 selects B ($F247 = 1, CURDRV 1), and the SFIRST prompts "Insert diskette for drive B: / and strike a key
       when ready", waits for the key, and leaves the DTA's drive byte 2; zerobas stays on A ($F247 0, CURDRV 0, no prompt,
       DTA drive 1) ([`XB_stock.out`](scratchpad/XB_stock.out), [`XB_ours.out`](scratchpad/XB_ours.out), [`XB2_stock.out`](scratchpad/XB2_stock.out), [`XB2_ours.out`](scratchpad/XB2_ours.out)).
+      🔴 **(11) SDATE / STIME INVALID INPUT, 2026-11-17 -- STIME's RANGE CHECK MISSING, FILED D-STIMERANGE.** New exerciser
+      BDOSXT (probes/disk/bdosxt.asm, in bdos-acceptance): 13 cases, each followed by GDATE / GTIME. SDATE is the SAME on
+      every row (valid 0; month 13, Feb 30, 1979, 2100, month 0 all $FF and the date kept; the leap day valid). STIME:
+      the CF-3300 answers $FF for hour 25, minute 60, second 60, hundredths 100; ours 0 every time
+      ([`XT_stock.out`](scratchpad/XT_stock.out), [`XT_ours.out`](scratchpad/XT_ours.out)). Those 4 bytes are pinned at ours in the gate. 🔮 "the CF-3300 keeps the time STIME set": MISS --
+      its GTIME reads 00:00:00 throughout, as ours (no clock on an MSX1). Left: (12) VERIFY, (5) Ctrl-P / C / S, (6) > $30.
       💰 **D-DISKCARVE6 STEP 1 (2026-11-17): a 61 B hole at $7568, in front of the $75A5 pin.** A read-only agent's plan
       (checked against the source): the span [$607B, $75A5) has no pin inside, so any byte freed there lands in front of
       $75A5. Four call-only routines MOVED into exact-fit pads in front of other pins -- wrblk_mul_rr_rs (14 B -> $4FF8),
@@ -16714,6 +16720,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB_stock.out`](scratchpad/XB_stock.out)). 🔮 hole 15 -> 2 B: HIT. An E past the count leaves $F247 alone -- NOT measured
       on the reference. Still open: (2) the swap prompt on a default-drive FCB operation on B (no prompt yet) and (3)
       the DTA's drive byte (ours 1, the CF-3300 2) -- both need bytes (2 B left in front of $75A5); BDOSXB stays ungated.
+
+- [ ] **D-STIMERANGE — BDOS STIME TAKES ANY TIME: A = 0 WHERE THE CF-3300 ANSWERS $FF FOR AN OUT-OF-RANGE ONE**
+      🎚️ TIER 6 — every error (a program passing hour 25 / minute 60 / second 60 / hundredths 100; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — BDOSXT in bdos-acceptance, its 4 STIME bytes pinned at ours (D-DISKCONTRACT gap 11:
+      [`XT_stock.out`](scratchpad/XT_stock.out), [`XT_ours.out`](scratchpad/XT_ours.out)). stime_body ($4E7E) is `xor a / ld b,h / ld c,l / ret`; the fix checks H < 24,
+      L < 60, D < 60, E < 100 -> else A = $FF (~+20 B; the clock itself keeps nothing on either machine). Bytes: the disk
+      ROM's hole has 2 B -- after D-DOSDRVB's parts (TIER 3) in the next carve. When it lands, drop the 4 pins.
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**
       🎚️ TIER 6 — every edge (records a program never wrote, inside or past the file's end; filed 2026-11-17).

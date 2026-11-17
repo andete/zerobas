@@ -81,6 +81,9 @@ EXERCISERS = [
     # and each BDOS return. (Retry / Abort measured by hand: scratchpad/DVE_retry.out,
     # DVE_abort_ours.out.)
     ("BDOSXE", "build_bdosxe_disk.py"),
+    # BDOSXT (D-DISKCONTRACT gap 11, 2026-11-17): SDATE / STIME with valid and invalid input,
+    # each read back by GDATE / GTIME -- 13 ten-byte rows.
+    ("BDOSXT", "build_bdosxt_disk.py"),
     # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
     # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
     ("BDOSX5", "build_bdosx5_disk.py"),
@@ -257,6 +260,15 @@ ALLOWLIST = {
         # (scratchpad/DVE_run2.out).
         0x0250: (0x08, "regs rec2 RDABS C -- the code the handler was given (D-DSKIOCYL)"),
         0x0267: (0x08, "hrec slot 2 C -- the handler's C on that read (D-DSKIOCYL)"),
+    },
+    "BDOSXT": {
+        # D-STIMERANGE (TODO, TIER 6): STIME takes any time -- A = 0 where the CF-3300
+        # answers $FF for hour 25, minute 60, second 60 and hundredths 100. OURS pinned
+        # (scratchpad/XT_stock.out, XT_ours.out).
+        0x0392: (0x00, "row 8 STIME 25:00:00's A (D-STIMERANGE; the CF-3300 $FF)"),
+        0x039C: (0x00, "row 9 STIME 12:60:00's A (D-STIMERANGE)"),
+        0x03A6: (0x00, "row 10 STIME 12:34:60's A (D-STIMERANGE)"),
+        0x03B0: (0x00, "row 11 STIME hundredths 100's A (D-STIMERANGE)"),
     },
     "BDOSX8": {
         # Item 5 (WRSEQ FCB position write-back). The post-WRSEQ FCB position (+12

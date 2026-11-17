@@ -1,0 +1,6 @@
+
+===== BDOSXT (build_bdosxt_disk.py) =====
+  PASS  BDOSXT capture 0x0340:0x083: 0-byte-diff (all 4 allowlisted — row 10 STIME 12:34:60's A (D-STIMERANGE); row 11 STIME hundredths 100's A (D-STIMERANGE); row 8 STIME 25:00:00's A (D-STIMERANGE; the CF-3300 $FF); row 9 STIME 12:60:00's A (D-STIMERANGE))
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.
