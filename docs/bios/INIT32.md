@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `INIT32` ($006F) — set up the 32-column text screen (SCREEN 1)
 
-> **Spec:** DRAFT 2 (2026-11-17). Stated on [INITXT's page](INITXT.md), together
+> **Spec:** DRAFT 3 (2026-11-17). Stated on [INITXT's page](INITXT.md), together
 > with INITXT: the two calls differ only in values.
 
 ## Summary

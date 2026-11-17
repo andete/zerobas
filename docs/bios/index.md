@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**15 of 108 calls have a page; 1 are FINAL.**
+**16 of 108 calls have a page; 1 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -25,7 +25,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | — | — | — |
-| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | — | — | — |
+| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INIFNK.md) | 1 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
@@ -41,7 +41,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 3](INITXT.md) | 7 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-BIOSINT |
-| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](INIT32.md) | 0 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL |
+| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 3](INIT32.md) | 0 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
@@ -70,9 +70,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00BD | CKCNTC | input (concept page to come) | L3 | — | — | — |
 | $00C0 | BEEP | sound (concept page to come) | L3 | — | — | — |
 | $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](CLS.md) | 5 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-POSITCLAMP, D-TEXTAF |
-| $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](POSIT.md) | 0 | D-POSITCLAMP |
-| $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
-| $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](ERAFNK.md) | 0 | D-INITEDGES |
+| $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](POSIT.md) | 0 | D-POSITCLAMP |
+| $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
+| $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](ERAFNK.md) | 0 | D-INITEDGES |
 | $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](DSPFNK.md) | 8 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](TOTEXT.md) | 2 | D-FNKBOOT, D-KEYLINESHIFT, D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |

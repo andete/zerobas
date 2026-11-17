@@ -64,7 +64,7 @@ beginning of".
 | $0030 | CALLF | slots | inline slot / address after RST 30h | as CALSLT | TDB §2.2.1 | partly |
 | $0038 | KEYINT | system | VDP interrupt (§1.3.3); hooks **H.KEYI $FD9A** (start of the interrupt handler) and **H.TIMI $FD9F** (timer handler); repo: VDP status into STATFL $F3E7, SCNCNT $F3F6 gates the key scan | key input (TH §4.5); TIME (JIFFY $FC9E) advances per VDP interrupt (TDB §5.4, repo); STATFL (repo) | TDB §1.3.3, §2.2.2 hooks, §5.4; TH ch.2 §4.5; repo: docs/concepts/interrupts-and-traps.md, probes/bios/biosl/b3int.asm | partly |
 | $003B | INITIO | system | — | "device initialization"; devices not named | TDB §2.2.1 | not stated |
-| $003E | INIFNK | text | — | function-key strings: FNKSTR $F87F (*by description*: "function key string save area") | TDB §2.2.1, §2.2.2 | partly |
+| $003E | INIFNK | text | — | function-key strings: FNKSTR $F87F (*by description*: "function key string save area"); measured: all 160 bytes, the ten defaults, nothing outside | TDB §2.2.1, §2.2.2; [INIFNK.md](INIFNK.md) | partly (TDB) + measured |
 | $0041 | DISSCR | vdp | — | VDP display enable (register not named); RG1SAV $F3E0 holds R#1's current contents (§6 note 6) | TDB §2.2.1; §6 | partly |
 | $0044 | ENASCR | vdp | — | as DISSCR | TDB §2.2.1; §6 | partly |
 | $0047 | WRTVDP | vdp | — | **VDP register C := B** (named); shadow RG0SAV–RG7SAV $F3DF–$F3E6 ("save area for the VDP registers"; §6 note 6 for R#0 / R#1); repo: RG7SAV follows a WRTVDP R#7 | TDB §2.2.1, §2.2.2, §6; repo: probes/bios/biosl/b2vdp.asm | partly |
