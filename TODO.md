@@ -16690,6 +16690,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (🔮 76: HIT). Left in reserve: skip_sp (7 -> $47AB), fmt_err (6 -> $5FDE) for 89 B.
       ➡️ NEXT: ~~D-DISKVE into the hole~~ ✅ LANDED 2026-11-17 (74 of the 76 B); then D-DOSDRVB, D-CONCOL,
       D-DSKIOCYL -- the plan's reserve (skip_sp, fmt_err) first.
+      💰 **STEP 3 (2026-11-17): the reserve, 2 -> 15 B at $7596** (🔮 15: HIT). skip_sp moved into the 7 B pad in
+      front of $47B2 (disk/fat.asm), fmt_err into the 7 B pad in front of $5FE5; the plan is spent. More exact-fit
+      pads stand (zero runs of 7-10 B at $4006, $47B5, $4E93, $4FE4, $5051, $50A2, $50D8, $5532 -- read
+      `build/disk.rom`, never this list) for the next call-only moves.
       🔴 **D-DISKVE's KEY FAILS (measured 2026-11-17):** under BASIC the CF-3300's DISKVE ($F323) holds $72AE (its BASIC's
       handler cell), zerobas's holds $C9C9 -- NOT zero. "Call the handler when DISKVE is non-zero" would make zerobas BASIC
       jump through a garbage pointer on its first disk error. So D-DISKVE also needs: zerobas's disk init leaving a known

@@ -3889,6 +3889,12 @@ bcw_own:
                 xor     a
                 ld      (BDOS_WRMODE), a    ; the writer's own file: no longer for write
                 jp      bdos_close_rd
+; fmt_err -- the motor off, A / F kept (FORMAT's error exit; MOVED here by D-DISKCARVE6 step 3).
+fmt_err:
+                push    af
+                call    mtoff
+                pop     af
+                ret
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
 ; --- S10.D: the RANDOM record writer, in the free region after the $5FE5 veneer
@@ -7060,14 +7066,7 @@ fname_fcb:
                 ld      ix,pdfcb_resume
                 jp      calbak
 ; (fname_ev -- MOVED by D-DISKCARVE6 step 2 to the pad in front of $436C, disk/driver.asm.)
-; skip_sp -- HL past the blanks at it; A = the first other character. 💰 D-DSKFMT
-; carve 34 (2026-11-10): the loop stood three times (NAME's `AS`, COPY's `TO`, FILES).
-skip_sp:
-                ld      a,(hl)
-                cp      ' '
-                ret     nz
-                inc     hl
-                jr      skip_sp
+; (skip_sp -- MOVED by D-DISKCARVE6 step 3 to the pad in front of $47B2, disk/fat.asm.)
 ; seq_flush / seq_dirty -- the start of a random positioning.
 ; seq_dirty (k47b2_seek, RDBLK -- BASIC's own file reads come through here too): a
 ; READ-open file's iterator moves, so BDOS_SEQREC := $FFFF makes srd_pos re-position
@@ -7241,11 +7240,7 @@ fs_fat:
                 xor     a
                 scf
                 jp      dskio               ; A = B = 0, Cy = 0 once written
-fmt_err:
-                push    af
-                call    mtoff
-                pop     af
-                ret
+; (fmt_err -- MOVED by D-DISKCARVE6 step 3 to the pad in front of $5FE5.)
 ; (fmt_buf -- MOVED by D-DISKCARVE6 to the pad in front of $501E.)
 ; fmt_track -- Write Track, track D / side E, from the image with each ID field set
 ; first. Out Cy = 1, A = a DSKIO code (0 write protected, 2 not ready, 10 a fault).

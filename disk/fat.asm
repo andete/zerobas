@@ -362,6 +362,14 @@ fac_flushdirty:                             ; a dirty buffer to both FATs (CF = 
                 and     2
                 ret     z
                 jr      fat_write_buf_allfats
+; skip_sp -- HL past the blanks at it; A = the first other character. 💰 D-DSKFMT carve 34
+; (2026-11-10): NAME's `AS`, COPY's `TO`, FILES. MOVED here by D-DISKCARVE6 step 3 (2026-11-17).
+skip_sp:
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+                inc     hl
+                jr      skip_sp
                 ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
                 ds      $47B9 - $, $00      ; pad remainder (net-zero: anchors the 3b relocation below)
