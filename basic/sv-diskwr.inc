@@ -50,10 +50,7 @@ disk_write_begin:
 ;   in:  A = byte to write.
 ;   out: byte appended. Clobbers all (CALSLT clobbers everything across a sector
 ;        flush's DSKIO; the engine keeps its state in RAM).
-disk_putbyte:
-                call    fat_io_putbyte
-                jr      c,sv_load_error        ; disk full / write error
-                ret
+; (disk_putbyte -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $5058, disk/kernel.asm.)
 
 ; disk_write_end — flush the buffered partial final sector and stamp the directory
 ; entry with the true byte count + first cluster (fat_io_close). On a write error

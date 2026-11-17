@@ -570,7 +570,11 @@ def disk_seeds(spans):
     return out
 
 
-DISK_PIN_ROOTS = ('sfirst', 'snext')
+# 🔴 D-DISKCARVE6 step 4 (2026-11-17): `conin` ($50E0, the CONIN line-routine entry the MSX-DOS
+# kernel CALLs by address, M12d) had the same accident: live only because the span before it
+# fell through the `ds $50E0` pad. Moving fmt_off's data into that pad turned it and its six
+# runtime.asm callees "dead". Declared here like sfirst / snext.
+DISK_PIN_ROOTS = ('sfirst', 'snext', 'conin')
 
 
 def disk_abi_seeds(spans):

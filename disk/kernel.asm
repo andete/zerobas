@@ -559,6 +559,11 @@ k_504E:
 ; runtime DTA. Same un-wired-$50xx-entry class as M13/M17/M18. Body =
 ; setdta_cache_body (free tail). CLEAN-ROOM: our own DE->$F23D store + the observed
 ; entry-register / write-target contract; no stock routine internals decoded.
+; disk_putbyte -- A = the byte, appended; a write error -> sv_load_error (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+disk_putbyte:
+                call    fat_io_putbyte
+                jp      c,sv_load_error        ; disk full / write error
+                ret
                 ds      $5058 - $, $00  ; pad up to the pinned $5058 SETDTA-cache entry
 setdta_cache:
                 jp      setdta_cache_body ; -> free-tail: ($F23D) := DE (runtime DTA; M19)
@@ -658,6 +663,12 @@ dsl_cmp:
 k_509F:
                 jp      w50a9_stub      ; $509F: BDOS $0D DSKRST canonical entry (M22a; was via
                                         ; the dskrst_body veneer -- D-DISKCARVE)
+; hkcv_float -- hk_cv's float: the string's bytes into FAC (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+hkcv_float:
+                ld      de,FAC
+                ldir                        ; the string's bytes ARE the packed value
+                scf                         ; FACTYP is already the width
+                ret
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
 w50a9_stub:
                 ld      a, $FF          ; D-F346: MSX-DOS has been booted -- the CF-3300
@@ -741,6 +752,9 @@ rd_fatsec:
                 ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
 seldsk_drv:
                 jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
+; fmt_off -- the boot-sector offsets dskfmt_body sets (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+fmt_off:
+                db      13, 17, 19, 20, 21, 22, 26
                 ds      $50E0 - $, $00  ; pad up to the pinned CONIN line-routine entry
 conin:
                 jp      conin_line_body ; -> free-tail buffered-line CHGET loop (M13)
@@ -1365,6 +1379,13 @@ fmt_tail:
                 ds      $5445 - $, $00  ; pad up to the pinned $5445 CONIN entry (M22a)
 k_5445:
                 jp      conin_body      ; $5445: BDOS $01 CONIN canonical entry (M22a)
+; fat_total_clusters -- DE = total clusters, Cy = 0 (fat_mount's, D-WCACHE W1; MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+fat_total_clusters:
+                ; D-WCACHE W1: fat_mount computed it; no boot-sector read, so no
+                ; failure either (Cy = 0, which every caller's `ret c` expects).
+                ld      de, (FAT_TOTCLUS)
+                or      a
+                ret
                 ds      $544E - $, $00  ; pad up to the pinned $544E INNOE entry (M22a)
 k_544E:
                 jp      innoe_body      ; $544E: BDOS $08 INNOE canonical entry (M22a)
@@ -1660,6 +1681,14 @@ cr_copy1:
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (BDOS_WRFIRST), hl
                 jp      cr_copy2            ; disk/runtime.asm
+; fdc_wp_chkrdy -- the write path's NOT READY test, CY / A = 2 or NC (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+fdc_wp_chkrdy:
+                ld      a, (FDC_STATUS)
+                and     ST_NOTRDY
+                ret     z
+                ld      a, 2
+                scf
+                ret
                 ds      $553C - $, $00      ; pad to the canonical _GDATE entry
 gdate_handler:
                 jp      gdate_body          ; D-DOSDATE: the STORED date, not a constant
@@ -5418,14 +5447,9 @@ hk_dskf:
                                             ; and none on to the sub ROM
 hkdf_done:
                 ld      (FAC),de
-                xor     a
-                ld      (DISKOP_STATUS),a   ; counted
-                scf
-                ret
+                xor     a                   ; counted (falls into hkdf_bad: carve step 4)
 hkdf_bad:
-                ld      (DISKOP_STATUS),a   ; A = the ERR code main raises
-                scf
-                ret
+                jp      hk_claim_status     ; DISKOP_STATUS := A, CF=1 (the same body)
 
 ; --- hk_cv: CVI/CVS/CVD's conversion, RUNNING IN THE DISK ROM ---------------
 ; docs/spec-basic-nodisk.md §9 (D-MKHOOK) is where these three are established as
@@ -5468,7 +5492,7 @@ hk_cv:
                 call    pu_deref_body       ; ...and its body (low region: $28C1)
                 ld      a,c                 ; ⚠️ RELOAD: the call clobbers A
                 cp      2
-                jr      nz,hkcv_float
+                jp      nz,hkcv_float       ; (moved out of jr reach: carve step 4)
                 ld      e,(hl)              ; low byte
                 inc     hl
                 ld      d,(hl)              ; high byte -- DE = the int (LE)
@@ -5477,11 +5501,7 @@ hk_cv:
                 ld      (FACTYP),a          ; the string arg must not stick
                 scf
                 ret
-hkcv_float:
-                ld      de,FAC
-                ldir                        ; the string's bytes ARE the packed value
-                scf                         ; FACTYP is already the width
-                ret
+; (hkcv_float -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $50A9.)
 
 ; --- ; --- install_basic_hooks: claim every BASIC-extension hook this ROM answers --
 ; Table-driven so init.asm costs ONE call: the pad before its $41EF pin is 31 B
@@ -5537,18 +5557,12 @@ dk_disk:        db      "Disk ", 0
                 db      "I/O error", 0      ; 69
                 db      "offline", 0        ; 70
 
-; --- fdc_wp_chkrdy: the write path's NOT READY test (D-DISKERR) --------------
+; --- fdc_wp_chkrdy: the write path's NOT READY test (D-DISKERR; the body is in front of $553C) --
 ; Source: WD2793 data sheet via MSX2 Technical Handbook (type-I status bit 7 =
 ; NOT READY); the read command reports it on its own, the write command with no
 ; medium is accepted and completes clean on the emulated FDC (measured, 3/3), so
 ; the write path asks the seek's status first. Out: CY, A = 2 (not ready) / NC.
-fdc_wp_chkrdy:
-                ld      a, (FDC_STATUS)
-                and     ST_NOTRDY
-                ret     z
-                ld      a, 2
-                scf
-                ret
+; (fdc_wp_chkrdy -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $553C.)
 
 ; bdos_dskio -- 🎯 D-DISKVE (2026-11-17): dskio for the BDOS's OWN transfers (write_sector,
 ; dskio_calslt -> read_sector, RDABS / WRABS; never the published $4010, whose raw codes PHYDIO
@@ -7329,8 +7343,7 @@ fmt_geo:
                 db      2, 112, $D0, $02, $FD, 2, 2
                 db      2, 112, $D0, $02, $F8, 2, 1
                 db      2, 112, $A0, $05, $F9, 3, 2
-fmt_off:
-                db      13, 17, 19, 20, 21, 22, 26
+; (fmt_off -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $50E0; its loop tests the pointer's low byte for EQUALITY.)
 ; the track: the index gap (80 x $4E), sync, the index mark ($F6 writes C2, then
 ; $FC), gap 1 -- the WD2793 data sheet's Write Track bytes
 fmt_head:
@@ -7339,9 +7352,7 @@ fmt_head:
 ; and $4025 both use it); carves 34-36 made the room.
 ; fmt_bkey -- CALL FORMAT's key: INPUT$'s key source in main (no echo), so the wait
 ; happens with main in page 1 (a page-1 tenant must not wait: basic/repl.asm).
-fmt_bkey:
-                ld      ix,chget_getbyte
-                jp      calbak
+; (fmt_bkey -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $77B8.)
 ; fmt_dos -- $4025, MSX-DOS's FORMAT: keys through our own CHGET body (page 0 is RAM
 ; there); the work area is the TPA from $0100 (COMMAND.COM lives at its top).
 fmt_dos:
@@ -7888,6 +7899,10 @@ mulacc_cmp:
                 dec     hl
                 cp      (hl)
                 ret
+; fmt_bkey -- CALL FORMAT's key, through main's CHGET (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+fmt_bkey:
+                ld      ix,chget_getbyte
+                jp      calbak
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
 ; --- S10.D: the RANDOM record engine's chain walk, in the free region between the

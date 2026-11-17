@@ -16700,6 +16700,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       front of $47B2 (disk/fat.asm), fmt_err into the 7 B pad in front of $5FE5; the plan is spent. More exact-fit
       pads stand (zero runs of 7-10 B at $4006, $47B5, $4E93, $4FE4, $5051, $50A2, $50D8, $5532 -- read
       `build/disk.rom`, never this list) for the next call-only moves.
+      💰 **STEP 4 (2026-11-17): 2 -> 72 B at $755D** (🔮 72: HIT), for D-DOSDRVB part 2's MSX-DOS prompt. A read-only
+      agent's plan, each item checked against the source: fdc_wp_chkrdy -> $553C, fmt_off -> $50E0, fmt_bkey -> $77B8,
+      fat_total_clusters -> $544E, fcf_zero -> $43A4, disk_putbyte -> $5058, hkcv_float -> $50A9 (its jr -> jp), and
+      four duplicate tails folded (hkdf_done / hkdf_bad -> hk_claim_status, fat_dir_update -> fat_dir_create's write-back,
+      fat_advance -> fat_open's). Left out: toupper (needs fat.asm's $47B9 anchor dropped -- unproven), fmt_t_q (its 3 B
+      pad's pin line not found). 🔴 tools/check_dead_code.py: `conin` ($50E0) was live only by falling through its pad
+      (fix 16's accident); fmt_off in that pad turned it and six callees "dead" -- now a declared DISK_PIN_ROOT.
       🔴 **D-DISKVE's KEY FAILS (measured 2026-11-17):** under BASIC the CF-3300's DISKVE ($F323) holds $72AE (its BASIC's
       handler cell), zerobas's holds $C9C9 -- NOT zero. "Call the handler when DISKVE is non-zero" would make zerobas BASIC
       jump through a garbage pointer on its first disk error. So D-DISKVE also needs: zerobas's disk init leaving a known
@@ -16720,6 +16727,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB_stock.out`](scratchpad/XB_stock.out)). 🔮 hole 15 -> 2 B: HIT. An E past the count leaves $F247 alone -- NOT measured
       on the reference. Still open: (2) the swap prompt on a default-drive FCB operation on B (no prompt yet) and (3)
       the DTA's drive byte (ours 1, the CF-3300 2) -- both need bytes (2 B left in front of $75A5); BDOSXB stays ungated.
+      ✅ **PART (3) FELL OUT OF PART (1) (2026-11-17):** SFIRST's DTA[0] is (CURDRV_CELL) + 1, so with SELDSK storing the drive
+      it reads 2, as the CF-3300 -- BDOSXB's cells and DTA are byte-identical now; only the SCREEN differs
+      ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB2_stock.out`](scratchpad/XB2_stock.out)).
+      📐 **PART (2), THE CF-3300's PROMPT (read from XB2_stock.out's screen, 32 columns):** after the program's CLS, row 1
+      "Insert diskette for drive B:", row 2 "and strike a key when ready", the cursor on row 3 -- so CR LF FIRST even at
+      a line's start (drv_select, BASIC's, skips it at column 1), the text, then CR LF after the key. 🔴 It is NOT
+      drv_select reused: that prints with CHPUT and reads the key through `calbak` into main's page 1 -- neither is there
+      under MSX-DOS (page 0 RAM). It needs a DOS-safe print / key (the BDOS console's own routines), a hook on the FCB
+      functions (FCB+0 = 0 -> the current drive) that BASIC's paths never take, and ~50-70 B: a carve first (D-DISKCARVE6
+      step 4, being scouted).
 
 - [ ] **D-STIMERANGE — BDOS STIME TAKES ANY TIME: A = 0 WHERE THE CF-3300 ANSWERS $FF FOR AN OUT-OF-RANGE ONE**
       🎚️ TIER 6 — every error (a program passing hour 25 / minute 60 / second 60 / hundredths 100; filed 2026-11-17).

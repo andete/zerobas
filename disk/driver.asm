@@ -277,6 +277,10 @@ fdc_seek:
                 ld      a, CMD_SEEK
                 ld      (FDC_STATUS), a
                 jr      fdc_wait_ready
+; fcf_zero -- fat_count_free's DE := 0 exit (MOVED here by D-DISKCARVE6 step 4 (2026-11-17)).
+fcf_zero:
+                ld      de, 0
+                ret
                 ds      $43A4 - $, $00      ; net-zero: fdc_write_phys stays at $43A4
 
 ; fdc_write_phys — write one physical sector from (HL).

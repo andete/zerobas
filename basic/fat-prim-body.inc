@@ -439,6 +439,7 @@ hcm_next:
 ; fat_open — start sequential reading of the file found by fat_find.
 fat_open:
                 ld      hl, (FAT_FIRSTCLUS)
+fat_open_at:                                ; (fat_advance's tail too: carve step 4)
                 ld      (FAT_CURCLUS), hl
                 xor     a
                 ld      (FAT_CLUSSEC), a
@@ -448,10 +449,7 @@ fat_open:
 fat_advance:
                 ld      hl, (FAT_CURCLUS)
                 call    fat_next_cluster
-                ld      (FAT_CURCLUS), hl
-                xor     a
-                ld      (FAT_CLUSSEC), a
-                ret
+                jr      fat_open_at         ; FAT_CURCLUS := HL, the sector index 0
 
 ; fat_next_cluster — follow the FAT12 chain one link.
 ;   in:  HL = current cluster
@@ -946,12 +944,7 @@ fwe_err:
 
 ; fat_total_clusters — total cluster count of the volume (2 + data clusters).
 ;   out: DE = total clusters; preserves HL (Microsoft FAT spec §3.3).
-fat_total_clusters:
-                ; D-WCACHE W1: fat_mount computed it; no boot-sector read, so no
-                ; failure either (Cy = 0, which every caller's `ret c` expects).
-                ld      de, (FAT_TOTCLUS)
-                or      a
-                ret
+; (the body -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $544E, disk/kernel.asm.)
 
 ; (fat_dir_start / fat_rootsecs: disk.rom's are in disk/fat.asm's $47C1 fill. The
 ; sub build's own copies stood here under `IF SUB_BUILD` and went on 2026-10-19
@@ -1104,9 +1097,7 @@ fcf_used:
 fcf_done:
                 ld      de, (FAT_WRTMP2)
                 ret
-fcf_zero:
-                ld      de, 0
-                ret
+; (fcf_zero -- MOVED by D-DISKCARVE6 step 4 to the pad in front of $43A4, disk/driver.asm.)
 
 ; fat_flush_data_sector — write FAT_DBUF (the current 512-byte data buffer) to
 ; the file's current data sector, allocating/extending the cluster chain first.
@@ -1267,6 +1258,7 @@ fdcr_zero:
                 pop     hl                  ; HL = the slot
                 call    dir_stamp_date      ; +22..25 := time 0, date 0821h (as the CF-3300)
                 ; write the dir sector back.
+fdir_wrback:                                ; (fat_dir_update's tail too: carve step 4)
                 ld      de, (FWR_DIRSEC)
                 ld      hl, FAT_MBUF
                 call    fatprim_write_sector
@@ -1336,10 +1328,4 @@ fat_dir_update:
                 ld      hl, FWR_BYTES
                 ld      bc, 4
                 ldir
-                ; write the dir sector back.
-                ld      de, (FWR_DIRSEC)
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
-                ret     c
-                or      a                   ; Cy = 0 success
-                ret
+                jr      fdir_wrback         ; write the dir sector back (carve step 4)
