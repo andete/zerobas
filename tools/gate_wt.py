@@ -44,6 +44,8 @@ the middle of. Builds, unit tests and the static tools were always fine.
 from __future__ import annotations
 
 import argparse
+import glob
+import hashlib
 import json
 import os
 import shutil
@@ -61,6 +63,27 @@ import omsx_preflight  # noqa: E402
 WT = os.path.abspath(os.environ.get("ZEROBAS_GATE_WT")
                      or os.path.join(os.path.dirname(ROOT), "zerobas-gate"))
 OUTDIR = os.path.join(ROOT, "scratchpad", "gate_wt")
+# D-GATEKNIFESKIP (2026-11-17): the knives and the tape corpus read only the built ROM images
+# (and their .sym) and their own harness. A pass is remembered by a hash of exactly those, and a
+# commit whose build hashes the same skips them: the same bytes were already knifed. A docs /
+# probe commit stacked on unpushed ROM commits re-ran ~3.5 min of knives for nothing.
+KNIFE_STAMP = os.path.join(OUTDIR, "knife_inputs.json")
+KNIFE_HARNESS = ("scratchpad/kwknife.py", "scratchpad/knife_guard.py", "tools/tier_table.py",
+                 "probes/basic/basic_probe_kwsweep.py", "scratchpad/tapecorpus_run.py")
+
+
+def knife_key(wt: str) -> str:
+    """sha256 over the built ROMs, their .sym files and the knife / corpus harness, by path."""
+    files = sorted(glob.glob(os.path.join(wt, "build", "*.rom"))
+                   + glob.glob(os.path.join(wt, "build", "*.sym")))
+    if not files:
+        raise SystemExit("FAIL: knife_key: no built ROM in the worktree -- refusing to key a skip "
+                         "on an empty build")
+    h = hashlib.sha256()
+    for f in files + [os.path.join(wt, x) for x in KNIFE_HARNESS]:
+        h.update(os.path.relpath(f, wt).encode() + b"\0")
+        h.update(open(f, "rb").read())
+    return h.hexdigest()
 LOCK = os.path.join(OUTDIR, "running.pid")
 STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
 REWRITE_DIRS = ("machines", "extensions")
@@ -200,7 +223,17 @@ def run(a) -> int:
         fails.append("build")
     changed = [f for f in git("diff", "--name-only", parent, sha).splitlines() if f]
     rom = any(f.startswith(ROM_TREES) for f in changed)
-    if not fails and rom and not a.no_knives:
+    key = knife_key(WT) if not fails and rom and not a.no_knives else None
+    try:
+        last = json.load(open(KNIFE_STAMP)) if key else {}
+    except (OSError, ValueError):
+        last = {}
+    if key and last.get("key") == key:
+        say(f"knives + tape corpus SKIPPED: the built ROMs and the knife / corpus harness are "
+            f"byte-identical to the last passing run ({last.get('sha')}; D-GATEKNIFESKIP)")
+        key = None
+    ran_knives = bool(key)
+    if key:
         for argv, what in ((["python3", "-u", "scratchpad/kwknife.py", "--all"], "knives"),
                            (["python3", "-u", "scratchpad/kwknife.py", "--allfn"], "fn knives")):
             if sh(argv, env, what):
@@ -224,6 +257,10 @@ def run(a) -> int:
                 shutil.copy2(os.path.join(WT, f), os.path.join(keep, f))
             say(f"TRACKED FILES MOVED by the knives / corpus (amend the commit with "
                 f"{keep}/* before the push): {' '.join(moved)}")
+    if ran_knives and not fails:            # a pass is remembered only when it PASSED
+        os.makedirs(OUTDIR, exist_ok=True)
+        with open(KNIFE_STAMP, "w") as fh:
+            json.dump({"key": key, "sha": short, "written": time.strftime("%Y-%m-%d %H:%M")}, fh)
 
     if not fails:
         if a.tier == "plan":
