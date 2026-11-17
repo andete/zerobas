@@ -16756,9 +16756,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         lands on (the character left of the cursor); zerobas blanks the cell UNDER the cursor and does not move.
       - `ESC l` [XCH 364]: both blank the line; the VG-8020 leaves the cursor at its column, zerobas moves it to
         column 1.
+      Round 2 (XCHPUT2 G2, [`XCH2_table.out`](scratchpad/XCH2_table.out)): at column 1 the VG-8020's DEL, like its BS, wraps to the end of the row
+      above (CSRX 40); zerobas stays, and its DEL in the last cell of the last row SCROLLS the screen.
       The CF-3300 agrees with the VG-8020 on both cursors (BDOSXM through its BDOS, [`XM_table.out`](scratchpad/XM_table.out)), so
       this is not a regional quirk. The fix is in the C-BIOS repack's CHPUT (a cbios-repack patch). When it lands,
       the page's test audit (docs/spec-method.md §8) turns the matrix's rows into gate cases.
+
+- [ ] 🎯 **D-CHPUTESCY — CHPUT's `ESC Y` DOES NOT CLAMP: AN OUT-OF-RANGE ROW / COLUMN PUTS CSRY / CSRX AT 225, 255 ...**
+      🎚️ TIER 3 — common errors (a program's out-of-range cursor position; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHPUT.md round 2 (XCHPUT2 G5, [`XCH2_table.out`](scratchpad/XCH2_table.out)): every byte as `ESC Y`'s row, then
+      column parameter. The VG-8020 clamps: a row byte under 32 or past the last row gives the last row (CSRY 24), a column
+      byte under 32 or past 40 gives column 40; zerobas stores the byte - 32 as is (CSRY 225 for $00, 0 for $1F, 25.. past
+      the last row; CSRX likewise) -- 446 of 512 cases. A later character then lands outside the screen. Byte $01 as a
+      parameter is special on both machines (the graphic prefix). Fix in the C-BIOS repack's CHPUT.
+
+- [ ] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
+      🎚️ TIER 1 — happy path (KEY ON is the normal screen; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — XCHPUT2 G2 (key line on after DSPFNK, [`XCH2_table.out`](scratchpad/XCH2_table.out)): the VG-8020 keeps the text area to rows 1..23 --
+      `ESC Y` to row 24 lands on CSRY 23, and LF / cursor-down on the last text row scroll above the key row. zerobas puts
+      the cursor on row 24 and writes over the key line (CSRY one higher in every key-on bottom-corner case). Fix in
+      the C-BIOS repack's CHPUT (the text-row count when CNSDFG is on).
+
+- [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;
+      filed 2026-11-17).
+      🤖 **AUTONOMOUS** — XCHPUT2 G2's LINTTB ($FBB2, 24 B) after a clear + one byte per row: the VG-8020 holds 24, 23, ..., 1
+      down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
+      (a row number? per screen width?) before matching them.
 
 - [ ] **D-GATEKNIFESKIP — A DOCS / PROBE-ONLY GATE RE-PINS THE KNIVES AND RUNS THE WHOLE UNIT SUITE: ~15-20 MIN FOR A STATIC**
       🎚️ TIER 2 — reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request).
@@ -16773,7 +16797,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       change still re-pins.
       ✅ **(1) LANDED 2026-11-17:** `knife_key` in tools/gate_wt.py, a sha256 over the built ROMs, their .sym files and
       the knife / corpus harness (kwknife.py, knife_guard.py, tier_table.py, basic_probe_kwsweep.py,
-      tapecorpus_run.py). A PASSING knife + corpus run writes it to scratchpad/gate_wt/knife_inputs.json; a later
+      tapecorpus_run.py). A PASSING knife + corpus run writes it to the gate output folder (knife_inputs.json, runtime state, never committed); a later
       gate whose build hashes the same skips both and says so. tests/test_gate_wt_knife_key.py pins the key: it
       moves for one ROM byte, a .sym change and a harness edit, and refuses an empty build.
       (2) **LATER: a tier for generated-docs-only commits**: only the checks that read the changed files (tiers-md-check,

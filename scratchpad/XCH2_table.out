@@ -1,0 +1,1313 @@
+XCHPUT2 (probes/bios/spec/xchput2.asm): CHPUT round 2, the VG-8020 (ref) against zerobas (zb), called
+directly, SCREEN 0 width 40. Read the rung's header for each group's setup. Positions 0-based (row, col);
+CSRX / CSRY 1-based. '_' = a space, $nn = a non-printable cell. Raw run: scratchpad/XCH2_run1.out.
+INIT: LINLEN ref 40 zb 40; CRTCNT ref 24 zb 24; CNSDFG ref 0 zb 0
+
+== G1 TAB: row 10 = 40 'o', cursor at (10, c), TAB -> CSRX CSRY, row 10 ==
+G1.00 c  0 | ref  9 11 ________oooooooooooooooooooooooooooooooo | zb  9 11
+G1.01 c  1 | ref  9 11 o_______oooooooooooooooooooooooooooooooo | zb  9 11
+G1.02 c  2 | ref  9 11 oo______oooooooooooooooooooooooooooooooo | zb  9 11
+G1.03 c  3 | ref  9 11 ooo_____oooooooooooooooooooooooooooooooo | zb  9 11
+G1.04 c  4 | ref  9 11 oooo____oooooooooooooooooooooooooooooooo | zb  9 11
+G1.05 c  5 | ref  9 11 ooooo___oooooooooooooooooooooooooooooooo | zb  9 11
+G1.06 c  6 | ref  9 11 oooooo__oooooooooooooooooooooooooooooooo | zb  9 11
+G1.07 c  7 | ref  9 11 ooooooo_oooooooooooooooooooooooooooooooo | zb  9 11
+G1.08 c  8 | ref 17 11 oooooooo________oooooooooooooooooooooooo | zb 17 11
+G1.09 c  9 | ref 17 11 ooooooooo_______oooooooooooooooooooooooo | zb 17 11
+G1.10 c 10 | ref 17 11 oooooooooo______oooooooooooooooooooooooo | zb 17 11
+G1.11 c 11 | ref 17 11 ooooooooooo_____oooooooooooooooooooooooo | zb 17 11
+G1.12 c 12 | ref 17 11 oooooooooooo____oooooooooooooooooooooooo | zb 17 11
+G1.13 c 13 | ref 17 11 ooooooooooooo___oooooooooooooooooooooooo | zb 17 11
+G1.14 c 14 | ref 17 11 oooooooooooooo__oooooooooooooooooooooooo | zb 17 11
+G1.15 c 15 | ref 17 11 ooooooooooooooo_oooooooooooooooooooooooo | zb 17 11
+G1.16 c 16 | ref 25 11 oooooooooooooooo________oooooooooooooooo | zb 25 11
+G1.17 c 17 | ref 25 11 ooooooooooooooooo_______oooooooooooooooo | zb 25 11
+G1.18 c 18 | ref 25 11 oooooooooooooooooo______oooooooooooooooo | zb 25 11
+G1.19 c 19 | ref 25 11 ooooooooooooooooooo_____oooooooooooooooo | zb 25 11
+G1.20 c 20 | ref 25 11 oooooooooooooooooooo____oooooooooooooooo | zb 25 11
+G1.21 c 21 | ref 25 11 ooooooooooooooooooooo___oooooooooooooooo | zb 25 11
+G1.22 c 22 | ref 25 11 oooooooooooooooooooooo__oooooooooooooooo | zb 25 11
+G1.23 c 23 | ref 25 11 ooooooooooooooooooooooo_oooooooooooooooo | zb 25 11
+G1.24 c 24 | ref 33 11 oooooooooooooooooooooooo________oooooooo | zb 33 11
+G1.25 c 25 | ref 33 11 ooooooooooooooooooooooooo_______oooooooo | zb 33 11
+G1.26 c 26 | ref 33 11 oooooooooooooooooooooooooo______oooooooo | zb 33 11
+G1.27 c 27 | ref 33 11 ooooooooooooooooooooooooooo_____oooooooo | zb 33 11
+G1.28 c 28 | ref 33 11 oooooooooooooooooooooooooooo____oooooooo | zb 33 11
+G1.29 c 29 | ref 33 11 ooooooooooooooooooooooooooooo___oooooooo | zb 33 11
+G1.30 c 30 | ref 33 11 oooooooooooooooooooooooooooooo__oooooooo | zb 33 11
+G1.31 c 31 | ref 33 11 ooooooooooooooooooooooooooooooo_oooooooo | zb 33 11
+G1.32 c 32 | ref  1 12 oooooooooooooooooooooooooooooooo________ | zb  1 12
+G1.33 c 33 | ref  1 12 ooooooooooooooooooooooooooooooooo_______ | zb  1 12
+G1.34 c 34 | ref  1 12 oooooooooooooooooooooooooooooooooo______ | zb  1 12
+G1.35 c 35 | ref  1 12 ooooooooooooooooooooooooooooooooooo_____ | zb  1 12
+G1.36 c 36 | ref  1 12 oooooooooooooooooooooooooooooooooooo____ | zb  1 12
+G1.37 c 37 | ref  1 12 ooooooooooooooooooooooooooooooooooooo___ | zb  1 12
+G1.38 c 38 | ref  1 12 oooooooooooooooooooooooooooooooooooooo__ | zb  1 12
+G1.39 c 39 | ref  1 12 ooooooooooooooooooooooooooooooooooooooo_ | zb  1 12
+
+== G2 EDGES: key line, corner (row, col), byte -> CSRX CSRY | first cell of rows 0..23 | LINTTB ==
+G2.00 key off ( 0, 0) $08 | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.01 key off ( 0, 0) $1D | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.02 key off ( 0, 0) $7F | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.03 key off ( 0, 0) $1C | ref  2  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.04 key off ( 0, 0) $1E | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.05 key off ( 0, 0) $1F | ref  1  2 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.06 key off ( 0, 0) $0A | ref  1  2 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.07 key off ( 0, 0) $0D | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.08 key off ( 0, 0) $09 | ref  9  1 _bcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   9  1 _bcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.09 key off ( 0, 0)   A | ref  2  1 Abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2  1 Abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.10 key off ( 0,39) $08 | ref 39  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.11 key off ( 0,39) $1D | ref 39  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.12 key off ( 0,39) $7F | ref 39  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  1 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.13 key off ( 0,39) $1C | ref  1  2 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.14 key off ( 0,39) $1E | ref 40  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.15 key off ( 0,39) $1F | ref 40  2 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.16 key off ( 0,39) $0A | ref 40  2 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.17 key off ( 0,39) $0D | ref  1  1 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.18 key off ( 0,39) $09 | ref  1  2 abcdefghijklmnopqrstuvwx 0017161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.19 key off ( 0,39)   A | ref  1  2 abcdefghijklmnopqrstuvwx 0017161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.20 key off (23, 0) $08 | ref 40 23 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.21 key off (23, 0) $1D | ref 40 23 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.22 key off (23, 0) $7F | ref 40 23 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.23 key off (23, 0) $1C | ref  2 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.24 key off (23, 0) $1E | ref  1 23 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.25 key off (23, 0) $1F | ref  1 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.26 key off (23, 0) $0A | ref  1 24 bcdefghijklmnopqrstuvwx_ 17161514131211100f0e0d0c0b0a090807060504030201af
+                          | zb   1 24 bcdefghijklmnopqrstuvwx_ 010101010101010101010101010101010101010101010118 DIFF
+G2.27 key off (23, 0) $0D | ref  1 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.28 key off (23, 0) $09 | ref  9 24 abcdefghijklmnopqrstuvw_ 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   9 24 abcdefghijklmnopqrstuvw_ 010101010101010101010101010101010101010101010101 DIFF
+G2.29 key off (23, 0)   A | ref  2 24 abcdefghijklmnopqrstuvwA 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2 24 abcdefghijklmnopqrstuvwA 010101010101010101010101010101010101010101010101 DIFF
+G2.30 key off (23,39) $08 | ref 39 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.31 key off (23,39) $1D | ref 39 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.32 key off (23,39) $7F | ref 39 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 bcdefghijklmnopqrstuvwx_ 010101010101010101010101010101010101010101010018 DIFF
+G2.33 key off (23,39) $1C | ref 40 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.34 key off (23,39) $1E | ref 40 23 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.35 key off (23,39) $1F | ref 40 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.36 key off (23,39) $0A | ref 40 24 bcdefghijklmnopqrstuvwx_ 17161514131211100f0e0d0c0b0a090807060504030201af
+                          | zb  40 24 bcdefghijklmnopqrstuvwx_ 010101010101010101010101010101010101010101010118 DIFF
+G2.37 key off (23,39) $0D | ref  1 24 abcdefghijklmnopqrstuvwx 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.38 key off (23,39) $09 | ref  1 24 bcdefghijklmnopqrstuvwx_ 17161514131211100f0e0d0c0b0a090807060504030200af
+                          | zb   1 24 bcdefghijklmnopqrstuvwx_ 010101010101010101010101010101010101010101010018 DIFF
+G2.39 key off (23,39)   A | ref  1 24 bcdefghijklmnopqrstuvwx_ 17161514131211100f0e0d0c0b0a090807060504030200af
+                          | zb   1 24 bcdefghijklmnopqrstuvwx_ 010101010101010101010101010101010101010101010018 DIFF
+G2.40 key on  ( 0, 0) $08 | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.41 key on  ( 0, 0) $1D | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.42 key on  ( 0, 0) $7F | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.43 key on  ( 0, 0) $1C | ref  2  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.44 key on  ( 0, 0) $1E | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.45 key on  ( 0, 0) $1F | ref  1  2 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.46 key on  ( 0, 0) $0A | ref  1  2 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.47 key on  ( 0, 0) $0D | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.48 key on  ( 0, 0) $09 | ref  9  1 _bcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   9  1 _bcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.49 key on  ( 0, 0)   A | ref  2  1 Abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2  1 Abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.50 key on  ( 0,39) $08 | ref 39  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.51 key on  ( 0,39) $1D | ref 39  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.52 key on  ( 0,39) $7F | ref 39  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  1 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.53 key on  ( 0,39) $1C | ref  1  2 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.54 key on  ( 0,39) $1E | ref 40  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.55 key on  ( 0,39) $1F | ref 40  2 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.56 key on  ( 0,39) $0A | ref 40  2 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40  2 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.57 key on  ( 0,39) $0D | ref  1  1 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  1 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.58 key on  ( 0,39) $09 | ref  1  2 abcdefghijklmnopqrstuvxc 0017161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.59 key on  ( 0,39)   A | ref  1  2 abcdefghijklmnopqrstuvxc 0017161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1  2 abcdefghijklmnopqrstuvwx 000101010101010101010101010101010101010101010101 DIFF
+G2.60 key on  (23, 0) $08 | ref 40 22 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.61 key on  (23, 0) $1D | ref 40 22 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.62 key on  (23, 0) $7F | ref 40 22 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.63 key on  (23, 0) $1C | ref  2 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.64 key on  (23, 0) $1E | ref  1 22 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.65 key on  (23, 0) $1F | ref  1 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.66 key on  (23, 0) $0A | ref  1 23 bcdefghijklmnopqrstuvx_c 17161514131211100f0e0d0c0b0a0908070605040302af01
+                          | zb   1 24 bcdefghijklmnopqrstuvw_x 010101010101010101010101010101010101010101011701 DIFF
+G2.67 key on  (23, 0) $0D | ref  1 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.68 key on  (23, 0) $09 | ref  9 23 abcdefghijklmnopqrstuv_c 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   9 24 abcdefghijklmnopqrstuvw_ 010101010101010101010101010101010101010101010101 DIFF
+G2.69 key on  (23, 0)   A | ref  2 23 abcdefghijklmnopqrstuvAc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   2 24 abcdefghijklmnopqrstuvwA 010101010101010101010101010101010101010101010101 DIFF
+G2.70 key on  (23,39) $08 | ref 39 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.71 key on  (23,39) $1D | ref 39 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  39 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.72 key on  (23,39) $7F | ref 39 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 bcdefghijklmnopqrstuvw_x 010101010101010101010101010101010101010101011700 DIFF
+G2.73 key on  (23,39) $1C | ref 40 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.74 key on  (23,39) $1E | ref 40 22 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 23 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.75 key on  (23,39) $1F | ref 40 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb  40 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.76 key on  (23,39) $0A | ref 40 23 bcdefghijklmnopqrstuvx_c 17161514131211100f0e0d0c0b0a0908070605040302af01
+                          | zb  40 24 bcdefghijklmnopqrstuvw_x 010101010101010101010101010101010101010101011701 DIFF
+G2.77 key on  (23,39) $0D | ref  1 23 abcdefghijklmnopqrstuvxc 1817161514131211100f0e0d0c0b0a090807060504030201
+                          | zb   1 24 abcdefghijklmnopqrstuvwx 010101010101010101010101010101010101010101010101 DIFF
+G2.78 key on  (23,39) $09 | ref  1 23 bcdefghijklmnopqrstuvx_c 17161514131211100f0e0d0c0b0a0908070605040300af01
+                          | zb   1 24 bcdefghijklmnopqrstuvw_x 010101010101010101010101010101010101010101011700 DIFF
+G2.79 key on  (23,39)   A | ref  1 23 bcdefghijklmnopqrstuvx_c 17161514131211100f0e0d0c0b0a0908070605040300af01
+                          | zb   1 24 bcdefghijklmnopqrstuvw_x 010101010101010101010101010101010101010101011700 DIFF
+
+== G3 PENDING: kind, c, then 'A' -> CSRX CSRY, cells (10, 19..21) [setup: P Q R, cursor on Q] ==
+G3.00 ESC  0 A | ref 22 11 P A R | zb 22 11 P A R
+G3.01 ESC  1 A | ref 22 11 P $01 R | zb 22 11 P $01 R
+G3.02 ESC  2 A | ref 22 11 P A R | zb 22 11 P A R
+G3.03 ESC  3 A | ref 22 11 P A R | zb 22 11 P A R
+G3.04 ESC  4 A | ref 22 11 P A R | zb 22 11 P A R
+G3.05 ESC  5 A | ref 22 11 P A R | zb 22 11 P A R
+G3.06 ESC  6 A | ref 22 11 P A R | zb 22 11 P A R
+G3.07 ESC  7 A | ref 22 11 P A R | zb 22 11 P A R
+G3.08 ESC  8 A | ref 22 11 P A R | zb 22 11 P A R
+G3.09 ESC  9 A | ref 22 11 P A R | zb 22 11 P A R
+G3.10 ESC 10 A | ref 22 11 P A R | zb 22 11 P A R
+G3.11 ESC 11 A | ref 22 11 P A R | zb 22 11 P A R
+G3.12 ESC 12 A | ref 22 11 P A R | zb 22 11 P A R
+G3.13 ESC 13 A | ref 22 11 P A R | zb 22 11 P A R
+G3.14 ESC 14 A | ref 22 11 P A R | zb 22 11 P A R
+G3.15 ESC 15 A | ref 22 11 P A R | zb 22 11 P A R
+G3.16 ESC 16 A | ref 22 11 P A R | zb 22 11 P A R
+G3.17 ESC 17 A | ref 22 11 P A R | zb 22 11 P A R
+G3.18 ESC 18 A | ref 22 11 P A R | zb 22 11 P A R
+G3.19 ESC 19 A | ref 22 11 P A R | zb 22 11 P A R
+G3.20 ESC 20 A | ref 22 11 P A R | zb 22 11 P A R
+G3.21 ESC 21 A | ref 22 11 P A R | zb 22 11 P A R
+G3.22 ESC 22 A | ref 22 11 P A R | zb 22 11 P A R
+G3.23 ESC 23 A | ref 22 11 P A R | zb 22 11 P A R
+G3.24 ESC 24 A | ref 22 11 P A R | zb 22 11 P A R
+G3.25 ESC 25 A | ref 22 11 P A R | zb 22 11 P A R
+G3.26 ESC 26 A | ref 22 11 P A R | zb 22 11 P A R
+G3.27 ESC 27 A | ref 22 11 P A R | zb 22 11 P A R
+G3.28 ESC 28 A | ref 22 11 P A R | zb 22 11 P A R
+G3.29 ESC 29 A | ref 22 11 P A R | zb 22 11 P A R
+G3.30 ESC 30 A | ref 22 11 P A R | zb 22 11 P A R
+G3.31 ESC 31 A | ref 22 11 P A R | zb 22 11 P A R
+G3.32 1    0 A | ref 22 11 P A R | zb 22 11 P A R
+G3.33 1    1 A | ref 22 11 P A R | zb 22 11 P A R
+G3.34 1    2 A | ref 22 11 P A R | zb 22 11 P A R
+G3.35 1    3 A | ref 22 11 P A R | zb 22 11 P A R
+G3.36 1    4 A | ref 22 11 P A R | zb 22 11 P A R
+G3.37 1    5 A | ref 22 11 P A R | zb 22 11 P A R
+G3.38 1    6 A | ref 22 11 P A R | zb 22 11 P A R
+G3.39 1    7 A | ref 22 11 P A R | zb 22 11 P A R
+G3.40 1    8 A | ref 21 11 A Q R | zb 21 11 A Q R
+G3.41 1    9 A | ref 26 11 P _ _ | zb 26 11 P _ _
+G3.42 1   10 A | ref 22 12 P Q R | zb 22 12 P Q R
+G3.43 1   11 A | ref  2  1 P Q R | zb  2  1 P Q R
+G3.44 1   12 A | ref  2  1 _ _ _ | zb  2  1 _ _ _
+G3.45 1   13 A | ref  2 11 P Q R | zb  2 11 P Q R
+G3.46 1   14 A | ref 22 11 P A R | zb 22 11 P A R
+G3.47 1   15 A | ref 22 11 P A R | zb 22 11 P A R
+G3.48 1   16 A | ref 22 11 P A R | zb 22 11 P A R
+G3.49 1   17 A | ref 22 11 P A R | zb 22 11 P A R
+G3.50 1   18 A | ref 22 11 P A R | zb 22 11 P A R
+G3.51 1   19 A | ref 22 11 P A R | zb 22 11 P A R
+G3.52 1   20 A | ref 22 11 P A R | zb 22 11 P A R
+G3.53 1   21 A | ref 22 11 P A R | zb 22 11 P A R
+G3.54 1   22 A | ref 22 11 P A R | zb 22 11 P A R
+G3.55 1   23 A | ref 22 11 P A R | zb 22 11 P A R
+G3.56 1   24 A | ref 22 11 P A R | zb 22 11 P A R
+G3.57 1   25 A | ref 22 11 P A R | zb 22 11 P A R
+G3.58 1   26 A | ref 22 11 P A R | zb 22 11 P A R
+G3.59 1   27 A | ref 21 10 P Q R | zb 21 10 P Q R
+G3.60 1   28 A | ref 23 11 P Q A | zb 23 11 P Q A
+G3.61 1   29 A | ref 21 11 A Q R | zb 21 11 A Q R
+G3.62 1   30 A | ref 22 10 P Q R | zb 22 10 P Q R
+G3.63 1   31 A | ref 22 12 P Q R | zb 22 12 P Q R
+
+== G4 EDITS: rows filled 'a'+r at cols 0..38, cursor (10, 20), op -> CSRX CSRY | rows' col 0 | col 38 | (10,19..21) ==
+G4.0 ESC L | ref  1 11 col0 abcdefghij_klmnopqrstuvw col38 abcdefghij_klmnopqrstuvw cells ___
+G4.1 ESC M | ref  1 11 col0 abcdefghijlmnopqrstuvwx_ col38 abcdefghijlmnopqrstuvwx_ cells lll
+G4.2 ESC J | ref 21 11 col0 abcdefghijk_____________ col38 abcdefghij______________ cells k__
+G4.3 ESC K | ref 21 11 col0 abcdefghijklmnopqrstuvwx col38 abcdefghij_lmnopqrstuvwx cells k__
+G4.4 ESC E | ref  1  1 col0 ________________________ col38 ________________________ cells ___
+G4.5 ESC j | ref  1  1 col0 ________________________ col38 ________________________ cells ___
+G4.6 ESC l | ref 21 11 col0 abcdefghij_lmnopqrstuvwx col38 abcdefghij_lmnopqrstuvwx cells ___
+            | zb   1 11 col0 abcdefghij_lmnopqrstuvwx col38 abcdefghij_lmnopqrstuvwx cells ___ DIFF
+G4.7 12    | ref  1  1 col0 ________________________ col38 ________________________ cells ___
+
+== G5 ESC Y: v as the ROW parameter (column 32+5), then as the COLUMN parameter (row 32+5) -> CSRX CSRY ==
+G5.000 row v   0 $00 | ref  6 24 | zb  6 225 DIFF
+G5.001 row v   1 $01 | ref  1  6 | zb  1  6
+G5.002 row v   2 $02 | ref  6 24 | zb  6 227 DIFF
+G5.003 row v   3 $03 | ref  6 24 | zb  6 228 DIFF
+G5.004 row v   4 $04 | ref  6 24 | zb  6 229 DIFF
+G5.005 row v   5 $05 | ref  6 24 | zb  6 230 DIFF
+G5.006 row v   6 $06 | ref  6 24 | zb  6 231 DIFF
+G5.007 row v   7 $07 | ref  6 24 | zb  6 232 DIFF
+G5.008 row v   8 $08 | ref  6 24 | zb  6 233 DIFF
+G5.009 row v   9 $09 | ref  6 24 | zb  6 234 DIFF
+G5.010 row v  10 $0A | ref  6 24 | zb  6 235 DIFF
+G5.011 row v  11 $0B | ref  6 24 | zb  6 236 DIFF
+G5.012 row v  12 $0C | ref  6 24 | zb  6 237 DIFF
+G5.013 row v  13 $0D | ref  6 24 | zb  6 238 DIFF
+G5.014 row v  14 $0E | ref  6 24 | zb  6 239 DIFF
+G5.015 row v  15 $0F | ref  6 24 | zb  6 240 DIFF
+G5.016 row v  16 $10 | ref  6 24 | zb  6 241 DIFF
+G5.017 row v  17 $11 | ref  6 24 | zb  6 242 DIFF
+G5.018 row v  18 $12 | ref  6 24 | zb  6 243 DIFF
+G5.019 row v  19 $13 | ref  6 24 | zb  6 244 DIFF
+G5.020 row v  20 $14 | ref  6 24 | zb  6 245 DIFF
+G5.021 row v  21 $15 | ref  6 24 | zb  6 246 DIFF
+G5.022 row v  22 $16 | ref  6 24 | zb  6 247 DIFF
+G5.023 row v  23 $17 | ref  6 24 | zb  6 248 DIFF
+G5.024 row v  24 $18 | ref  6 24 | zb  6 249 DIFF
+G5.025 row v  25 $19 | ref  6 24 | zb  6 250 DIFF
+G5.026 row v  26 $1A | ref  6 24 | zb  6 251 DIFF
+G5.027 row v  27 $1B | ref  6 24 | zb  6 252 DIFF
+G5.028 row v  28 $1C | ref  6 24 | zb  6 253 DIFF
+G5.029 row v  29 $1D | ref  6 24 | zb  6 254 DIFF
+G5.030 row v  30 $1E | ref  6 24 | zb  6 255 DIFF
+G5.031 row v  31 $1F | ref  6 24 | zb  6  0 DIFF
+G5.032 row v  32 $20 | ref  6  1 | zb  6  1
+G5.033 row v  33 $21 | ref  6  2 | zb  6  2
+G5.034 row v  34 $22 | ref  6  3 | zb  6  3
+G5.035 row v  35 $23 | ref  6  4 | zb  6  4
+G5.036 row v  36 $24 | ref  6  5 | zb  6  5
+G5.037 row v  37 $25 | ref  6  6 | zb  6  6
+G5.038 row v  38 $26 | ref  6  7 | zb  6  7
+G5.039 row v  39 $27 | ref  6  8 | zb  6  8
+G5.040 row v  40 $28 | ref  6  9 | zb  6  9
+G5.041 row v  41 $29 | ref  6 10 | zb  6 10
+G5.042 row v  42 $2A | ref  6 11 | zb  6 11
+G5.043 row v  43 $2B | ref  6 12 | zb  6 12
+G5.044 row v  44 $2C | ref  6 13 | zb  6 13
+G5.045 row v  45 $2D | ref  6 14 | zb  6 14
+G5.046 row v  46 $2E | ref  6 15 | zb  6 15
+G5.047 row v  47 $2F | ref  6 16 | zb  6 16
+G5.048 row v  48 $30 | ref  6 17 | zb  6 17
+G5.049 row v  49 $31 | ref  6 18 | zb  6 18
+G5.050 row v  50 $32 | ref  6 19 | zb  6 19
+G5.051 row v  51 $33 | ref  6 20 | zb  6 20
+G5.052 row v  52 $34 | ref  6 21 | zb  6 21
+G5.053 row v  53 $35 | ref  6 22 | zb  6 22
+G5.054 row v  54 $36 | ref  6 23 | zb  6 23
+G5.055 row v  55 $37 | ref  6 24 | zb  6 24
+G5.056 row v  56 $38 | ref  6 24 | zb  6 25 DIFF
+G5.057 row v  57 $39 | ref  6 24 | zb  6 26 DIFF
+G5.058 row v  58 $3A | ref  6 24 | zb  6 27 DIFF
+G5.059 row v  59 $3B | ref  6 24 | zb  6 28 DIFF
+G5.060 row v  60 $3C | ref  6 24 | zb  6 29 DIFF
+G5.061 row v  61 $3D | ref  6 24 | zb  6 30 DIFF
+G5.062 row v  62 $3E | ref  6 24 | zb  6 31 DIFF
+G5.063 row v  63 $3F | ref  6 24 | zb  6 32 DIFF
+G5.064 row v  64 $40 | ref  6 24 | zb  6 33 DIFF
+G5.065 row v  65 $41 | ref  6 24 | zb  6 34 DIFF
+G5.066 row v  66 $42 | ref  6 24 | zb  6 35 DIFF
+G5.067 row v  67 $43 | ref  6 24 | zb  6 36 DIFF
+G5.068 row v  68 $44 | ref  6 24 | zb  6 37 DIFF
+G5.069 row v  69 $45 | ref  6 24 | zb  6 38 DIFF
+G5.070 row v  70 $46 | ref  6 24 | zb  6 39 DIFF
+G5.071 row v  71 $47 | ref  6 24 | zb  6 40 DIFF
+G5.072 row v  72 $48 | ref  6 24 | zb  6 41 DIFF
+G5.073 row v  73 $49 | ref  6 24 | zb  6 42 DIFF
+G5.074 row v  74 $4A | ref  6 24 | zb  6 43 DIFF
+G5.075 row v  75 $4B | ref  6 24 | zb  6 44 DIFF
+G5.076 row v  76 $4C | ref  6 24 | zb  6 45 DIFF
+G5.077 row v  77 $4D | ref  6 24 | zb  6 46 DIFF
+G5.078 row v  78 $4E | ref  6 24 | zb  6 47 DIFF
+G5.079 row v  79 $4F | ref  6 24 | zb  6 48 DIFF
+G5.080 row v  80 $50 | ref  6 24 | zb  6 49 DIFF
+G5.081 row v  81 $51 | ref  6 24 | zb  6 50 DIFF
+G5.082 row v  82 $52 | ref  6 24 | zb  6 51 DIFF
+G5.083 row v  83 $53 | ref  6 24 | zb  6 52 DIFF
+G5.084 row v  84 $54 | ref  6 24 | zb  6 53 DIFF
+G5.085 row v  85 $55 | ref  6 24 | zb  6 54 DIFF
+G5.086 row v  86 $56 | ref  6 24 | zb  6 55 DIFF
+G5.087 row v  87 $57 | ref  6 24 | zb  6 56 DIFF
+G5.088 row v  88 $58 | ref  6 24 | zb  6 57 DIFF
+G5.089 row v  89 $59 | ref  6 24 | zb  6 58 DIFF
+G5.090 row v  90 $5A | ref  6 24 | zb  6 59 DIFF
+G5.091 row v  91 $5B | ref  6 24 | zb  6 60 DIFF
+G5.092 row v  92 $5C | ref  6 24 | zb  6 61 DIFF
+G5.093 row v  93 $5D | ref  6 24 | zb  6 62 DIFF
+G5.094 row v  94 $5E | ref  6 24 | zb  6 63 DIFF
+G5.095 row v  95 $5F | ref  6 24 | zb  6 64 DIFF
+G5.096 row v  96 $60 | ref  6 24 | zb  6 65 DIFF
+G5.097 row v  97 $61 | ref  6 24 | zb  6 66 DIFF
+G5.098 row v  98 $62 | ref  6 24 | zb  6 67 DIFF
+G5.099 row v  99 $63 | ref  6 24 | zb  6 68 DIFF
+G5.100 row v 100 $64 | ref  6 24 | zb  6 69 DIFF
+G5.101 row v 101 $65 | ref  6 24 | zb  6 70 DIFF
+G5.102 row v 102 $66 | ref  6 24 | zb  6 71 DIFF
+G5.103 row v 103 $67 | ref  6 24 | zb  6 72 DIFF
+G5.104 row v 104 $68 | ref  6 24 | zb  6 73 DIFF
+G5.105 row v 105 $69 | ref  6 24 | zb  6 74 DIFF
+G5.106 row v 106 $6A | ref  6 24 | zb  6 75 DIFF
+G5.107 row v 107 $6B | ref  6 24 | zb  6 76 DIFF
+G5.108 row v 108 $6C | ref  6 24 | zb  6 77 DIFF
+G5.109 row v 109 $6D | ref  6 24 | zb  6 78 DIFF
+G5.110 row v 110 $6E | ref  6 24 | zb  6 79 DIFF
+G5.111 row v 111 $6F | ref  6 24 | zb  6 80 DIFF
+G5.112 row v 112 $70 | ref  6 24 | zb  6 81 DIFF
+G5.113 row v 113 $71 | ref  6 24 | zb  6 82 DIFF
+G5.114 row v 114 $72 | ref  6 24 | zb  6 83 DIFF
+G5.115 row v 115 $73 | ref  6 24 | zb  6 84 DIFF
+G5.116 row v 116 $74 | ref  6 24 | zb  6 85 DIFF
+G5.117 row v 117 $75 | ref  6 24 | zb  6 86 DIFF
+G5.118 row v 118 $76 | ref  6 24 | zb  6 87 DIFF
+G5.119 row v 119 $77 | ref  6 24 | zb  6 88 DIFF
+G5.120 row v 120 $78 | ref  6 24 | zb  6 89 DIFF
+G5.121 row v 121 $79 | ref  6 24 | zb  6 90 DIFF
+G5.122 row v 122 $7A | ref  6 24 | zb  6 91 DIFF
+G5.123 row v 123 $7B | ref  6 24 | zb  6 92 DIFF
+G5.124 row v 124 $7C | ref  6 24 | zb  6 93 DIFF
+G5.125 row v 125 $7D | ref  6 24 | zb  6 94 DIFF
+G5.126 row v 126 $7E | ref  6 24 | zb  6 95 DIFF
+G5.127 row v 127 $7F | ref  6 24 | zb  6 96 DIFF
+G5.128 row v 128 $80 | ref  6 24 | zb  6 97 DIFF
+G5.129 row v 129 $81 | ref  6 24 | zb  6 98 DIFF
+G5.130 row v 130 $82 | ref  6 24 | zb  6 99 DIFF
+G5.131 row v 131 $83 | ref  6 24 | zb  6 100 DIFF
+G5.132 row v 132 $84 | ref  6 24 | zb  6 101 DIFF
+G5.133 row v 133 $85 | ref  6 24 | zb  6 102 DIFF
+G5.134 row v 134 $86 | ref  6 24 | zb  6 103 DIFF
+G5.135 row v 135 $87 | ref  6 24 | zb  6 104 DIFF
+G5.136 row v 136 $88 | ref  6 24 | zb  6 105 DIFF
+G5.137 row v 137 $89 | ref  6 24 | zb  6 106 DIFF
+G5.138 row v 138 $8A | ref  6 24 | zb  6 107 DIFF
+G5.139 row v 139 $8B | ref  6 24 | zb  6 108 DIFF
+G5.140 row v 140 $8C | ref  6 24 | zb  6 109 DIFF
+G5.141 row v 141 $8D | ref  6 24 | zb  6 110 DIFF
+G5.142 row v 142 $8E | ref  6 24 | zb  6 111 DIFF
+G5.143 row v 143 $8F | ref  6 24 | zb  6 112 DIFF
+G5.144 row v 144 $90 | ref  6 24 | zb  6 113 DIFF
+G5.145 row v 145 $91 | ref  6 24 | zb  6 114 DIFF
+G5.146 row v 146 $92 | ref  6 24 | zb  6 115 DIFF
+G5.147 row v 147 $93 | ref  6 24 | zb  6 116 DIFF
+G5.148 row v 148 $94 | ref  6 24 | zb  6 117 DIFF
+G5.149 row v 149 $95 | ref  6 24 | zb  6 118 DIFF
+G5.150 row v 150 $96 | ref  6 24 | zb  6 119 DIFF
+G5.151 row v 151 $97 | ref  6 24 | zb  6 120 DIFF
+G5.152 row v 152 $98 | ref  6 24 | zb  6 121 DIFF
+G5.153 row v 153 $99 | ref  6 24 | zb  6 122 DIFF
+G5.154 row v 154 $9A | ref  6 24 | zb  6 123 DIFF
+G5.155 row v 155 $9B | ref  6 24 | zb  6 124 DIFF
+G5.156 row v 156 $9C | ref  6 24 | zb  6 125 DIFF
+G5.157 row v 157 $9D | ref  6 24 | zb  6 126 DIFF
+G5.158 row v 158 $9E | ref  6 24 | zb  6 127 DIFF
+G5.159 row v 159 $9F | ref  6 24 | zb  6 128 DIFF
+G5.160 row v 160 $A0 | ref  6 24 | zb  6 129 DIFF
+G5.161 row v 161 $A1 | ref  6 24 | zb  6 130 DIFF
+G5.162 row v 162 $A2 | ref  6 24 | zb  6 131 DIFF
+G5.163 row v 163 $A3 | ref  6 24 | zb  6 132 DIFF
+G5.164 row v 164 $A4 | ref  6 24 | zb  6 133 DIFF
+G5.165 row v 165 $A5 | ref  6 24 | zb  6 134 DIFF
+G5.166 row v 166 $A6 | ref  6 24 | zb  6 135 DIFF
+G5.167 row v 167 $A7 | ref  6 24 | zb  6 136 DIFF
+G5.168 row v 168 $A8 | ref  6 24 | zb  6 137 DIFF
+G5.169 row v 169 $A9 | ref  6 24 | zb  6 138 DIFF
+G5.170 row v 170 $AA | ref  6 24 | zb  6 139 DIFF
+G5.171 row v 171 $AB | ref  6 24 | zb  6 140 DIFF
+G5.172 row v 172 $AC | ref  6 24 | zb  6 141 DIFF
+G5.173 row v 173 $AD | ref  6 24 | zb  6 142 DIFF
+G5.174 row v 174 $AE | ref  6 24 | zb  6 143 DIFF
+G5.175 row v 175 $AF | ref  6 24 | zb  6 144 DIFF
+G5.176 row v 176 $B0 | ref  6 24 | zb  6 145 DIFF
+G5.177 row v 177 $B1 | ref  6 24 | zb  6 146 DIFF
+G5.178 row v 178 $B2 | ref  6 24 | zb  6 147 DIFF
+G5.179 row v 179 $B3 | ref  6 24 | zb  6 148 DIFF
+G5.180 row v 180 $B4 | ref  6 24 | zb  6 149 DIFF
+G5.181 row v 181 $B5 | ref  6 24 | zb  6 150 DIFF
+G5.182 row v 182 $B6 | ref  6 24 | zb  6 151 DIFF
+G5.183 row v 183 $B7 | ref  6 24 | zb  6 152 DIFF
+G5.184 row v 184 $B8 | ref  6 24 | zb  6 153 DIFF
+G5.185 row v 185 $B9 | ref  6 24 | zb  6 154 DIFF
+G5.186 row v 186 $BA | ref  6 24 | zb  6 155 DIFF
+G5.187 row v 187 $BB | ref  6 24 | zb  6 156 DIFF
+G5.188 row v 188 $BC | ref  6 24 | zb  6 157 DIFF
+G5.189 row v 189 $BD | ref  6 24 | zb  6 158 DIFF
+G5.190 row v 190 $BE | ref  6 24 | zb  6 159 DIFF
+G5.191 row v 191 $BF | ref  6 24 | zb  6 160 DIFF
+G5.192 row v 192 $C0 | ref  6 24 | zb  6 161 DIFF
+G5.193 row v 193 $C1 | ref  6 24 | zb  6 162 DIFF
+G5.194 row v 194 $C2 | ref  6 24 | zb  6 163 DIFF
+G5.195 row v 195 $C3 | ref  6 24 | zb  6 164 DIFF
+G5.196 row v 196 $C4 | ref  6 24 | zb  6 165 DIFF
+G5.197 row v 197 $C5 | ref  6 24 | zb  6 166 DIFF
+G5.198 row v 198 $C6 | ref  6 24 | zb  6 167 DIFF
+G5.199 row v 199 $C7 | ref  6 24 | zb  6 168 DIFF
+G5.200 row v 200 $C8 | ref  6 24 | zb  6 169 DIFF
+G5.201 row v 201 $C9 | ref  6 24 | zb  6 170 DIFF
+G5.202 row v 202 $CA | ref  6 24 | zb  6 171 DIFF
+G5.203 row v 203 $CB | ref  6 24 | zb  6 172 DIFF
+G5.204 row v 204 $CC | ref  6 24 | zb  6 173 DIFF
+G5.205 row v 205 $CD | ref  6 24 | zb  6 174 DIFF
+G5.206 row v 206 $CE | ref  6 24 | zb  6 175 DIFF
+G5.207 row v 207 $CF | ref  6 24 | zb  6 176 DIFF
+G5.208 row v 208 $D0 | ref  6 24 | zb  6 177 DIFF
+G5.209 row v 209 $D1 | ref  6 24 | zb  6 178 DIFF
+G5.210 row v 210 $D2 | ref  6 24 | zb  6 179 DIFF
+G5.211 row v 211 $D3 | ref  6 24 | zb  6 180 DIFF
+G5.212 row v 212 $D4 | ref  6 24 | zb  6 181 DIFF
+G5.213 row v 213 $D5 | ref  6 24 | zb  6 182 DIFF
+G5.214 row v 214 $D6 | ref  6 24 | zb  6 183 DIFF
+G5.215 row v 215 $D7 | ref  6 24 | zb  6 184 DIFF
+G5.216 row v 216 $D8 | ref  6 24 | zb  6 185 DIFF
+G5.217 row v 217 $D9 | ref  6 24 | zb  6 186 DIFF
+G5.218 row v 218 $DA | ref  6 24 | zb  6 187 DIFF
+G5.219 row v 219 $DB | ref  6 24 | zb  6 188 DIFF
+G5.220 row v 220 $DC | ref  6 24 | zb  6 189 DIFF
+G5.221 row v 221 $DD | ref  6 24 | zb  6 190 DIFF
+G5.222 row v 222 $DE | ref  6 24 | zb  6 191 DIFF
+G5.223 row v 223 $DF | ref  6 24 | zb  6 192 DIFF
+G5.224 row v 224 $E0 | ref  6 24 | zb  6 193 DIFF
+G5.225 row v 225 $E1 | ref  6 24 | zb  6 194 DIFF
+G5.226 row v 226 $E2 | ref  6 24 | zb  6 195 DIFF
+G5.227 row v 227 $E3 | ref  6 24 | zb  6 196 DIFF
+G5.228 row v 228 $E4 | ref  6 24 | zb  6 197 DIFF
+G5.229 row v 229 $E5 | ref  6 24 | zb  6 198 DIFF
+G5.230 row v 230 $E6 | ref  6 24 | zb  6 199 DIFF
+G5.231 row v 231 $E7 | ref  6 24 | zb  6 200 DIFF
+G5.232 row v 232 $E8 | ref  6 24 | zb  6 201 DIFF
+G5.233 row v 233 $E9 | ref  6 24 | zb  6 202 DIFF
+G5.234 row v 234 $EA | ref  6 24 | zb  6 203 DIFF
+G5.235 row v 235 $EB | ref  6 24 | zb  6 204 DIFF
+G5.236 row v 236 $EC | ref  6 24 | zb  6 205 DIFF
+G5.237 row v 237 $ED | ref  6 24 | zb  6 206 DIFF
+G5.238 row v 238 $EE | ref  6 24 | zb  6 207 DIFF
+G5.239 row v 239 $EF | ref  6 24 | zb  6 208 DIFF
+G5.240 row v 240 $F0 | ref  6 24 | zb  6 209 DIFF
+G5.241 row v 241 $F1 | ref  6 24 | zb  6 210 DIFF
+G5.242 row v 242 $F2 | ref  6 24 | zb  6 211 DIFF
+G5.243 row v 243 $F3 | ref  6 24 | zb  6 212 DIFF
+G5.244 row v 244 $F4 | ref  6 24 | zb  6 213 DIFF
+G5.245 row v 245 $F5 | ref  6 24 | zb  6 214 DIFF
+G5.246 row v 246 $F6 | ref  6 24 | zb  6 215 DIFF
+G5.247 row v 247 $F7 | ref  6 24 | zb  6 216 DIFF
+G5.248 row v 248 $F8 | ref  6 24 | zb  6 217 DIFF
+G5.249 row v 249 $F9 | ref  6 24 | zb  6 218 DIFF
+G5.250 row v 250 $FA | ref  6 24 | zb  6 219 DIFF
+G5.251 row v 251 $FB | ref  6 24 | zb  6 220 DIFF
+G5.252 row v 252 $FC | ref  6 24 | zb  6 221 DIFF
+G5.253 row v 253 $FD | ref  6 24 | zb  6 222 DIFF
+G5.254 row v 254 $FE | ref  6 24 | zb  6 223 DIFF
+G5.255 row v 255 $FF | ref  6 24 | zb  6 224 DIFF
+G5.256 col v   0 $00 | ref 40  6 | zb 225  6 DIFF
+G5.257 col v   1 $01 | ref  1  6 | zb  1  6
+G5.258 col v   2 $02 | ref 40  6 | zb 227  6 DIFF
+G5.259 col v   3 $03 | ref 40  6 | zb 228  6 DIFF
+G5.260 col v   4 $04 | ref 40  6 | zb 229  6 DIFF
+G5.261 col v   5 $05 | ref 40  6 | zb 230  6 DIFF
+G5.262 col v   6 $06 | ref 40  6 | zb 231  6 DIFF
+G5.263 col v   7 $07 | ref 40  6 | zb 232  6 DIFF
+G5.264 col v   8 $08 | ref 40  6 | zb 233  6 DIFF
+G5.265 col v   9 $09 | ref 40  6 | zb 234  6 DIFF
+G5.266 col v  10 $0A | ref 40  6 | zb 235  6 DIFF
+G5.267 col v  11 $0B | ref 40  6 | zb 236  6 DIFF
+G5.268 col v  12 $0C | ref 40  6 | zb 237  6 DIFF
+G5.269 col v  13 $0D | ref 40  6 | zb 238  6 DIFF
+G5.270 col v  14 $0E | ref 40  6 | zb 239  6 DIFF
+G5.271 col v  15 $0F | ref 40  6 | zb 240  6 DIFF
+G5.272 col v  16 $10 | ref 40  6 | zb 241  6 DIFF
+G5.273 col v  17 $11 | ref 40  6 | zb 242  6 DIFF
+G5.274 col v  18 $12 | ref 40  6 | zb 243  6 DIFF
+G5.275 col v  19 $13 | ref 40  6 | zb 244  6 DIFF
+G5.276 col v  20 $14 | ref 40  6 | zb 245  6 DIFF
+G5.277 col v  21 $15 | ref 40  6 | zb 246  6 DIFF
+G5.278 col v  22 $16 | ref 40  6 | zb 247  6 DIFF
+G5.279 col v  23 $17 | ref 40  6 | zb 248  6 DIFF
+G5.280 col v  24 $18 | ref 40  6 | zb 249  6 DIFF
+G5.281 col v  25 $19 | ref 40  6 | zb 250  6 DIFF
+G5.282 col v  26 $1A | ref 40  6 | zb 251  6 DIFF
+G5.283 col v  27 $1B | ref 40  6 | zb 252  6 DIFF
+G5.284 col v  28 $1C | ref 40  6 | zb 253  6 DIFF
+G5.285 col v  29 $1D | ref 40  6 | zb 254  6 DIFF
+G5.286 col v  30 $1E | ref 40  6 | zb 255  6 DIFF
+G5.287 col v  31 $1F | ref 40  6 | zb  0  6 DIFF
+G5.288 col v  32 $20 | ref  1  6 | zb  1  6
+G5.289 col v  33 $21 | ref  2  6 | zb  2  6
+G5.290 col v  34 $22 | ref  3  6 | zb  3  6
+G5.291 col v  35 $23 | ref  4  6 | zb  4  6
+G5.292 col v  36 $24 | ref  5  6 | zb  5  6
+G5.293 col v  37 $25 | ref  6  6 | zb  6  6
+G5.294 col v  38 $26 | ref  7  6 | zb  7  6
+G5.295 col v  39 $27 | ref  8  6 | zb  8  6
+G5.296 col v  40 $28 | ref  9  6 | zb  9  6
+G5.297 col v  41 $29 | ref 10  6 | zb 10  6
+G5.298 col v  42 $2A | ref 11  6 | zb 11  6
+G5.299 col v  43 $2B | ref 12  6 | zb 12  6
+G5.300 col v  44 $2C | ref 13  6 | zb 13  6
+G5.301 col v  45 $2D | ref 14  6 | zb 14  6
+G5.302 col v  46 $2E | ref 15  6 | zb 15  6
+G5.303 col v  47 $2F | ref 16  6 | zb 16  6
+G5.304 col v  48 $30 | ref 17  6 | zb 17  6
+G5.305 col v  49 $31 | ref 18  6 | zb 18  6
+G5.306 col v  50 $32 | ref 19  6 | zb 19  6
+G5.307 col v  51 $33 | ref 20  6 | zb 20  6
+G5.308 col v  52 $34 | ref 21  6 | zb 21  6
+G5.309 col v  53 $35 | ref 22  6 | zb 22  6
+G5.310 col v  54 $36 | ref 23  6 | zb 23  6
+G5.311 col v  55 $37 | ref 24  6 | zb 24  6
+G5.312 col v  56 $38 | ref 25  6 | zb 25  6
+G5.313 col v  57 $39 | ref 26  6 | zb 26  6
+G5.314 col v  58 $3A | ref 27  6 | zb 27  6
+G5.315 col v  59 $3B | ref 28  6 | zb 28  6
+G5.316 col v  60 $3C | ref 29  6 | zb 29  6
+G5.317 col v  61 $3D | ref 30  6 | zb 30  6
+G5.318 col v  62 $3E | ref 31  6 | zb 31  6
+G5.319 col v  63 $3F | ref 32  6 | zb 32  6
+G5.320 col v  64 $40 | ref 33  6 | zb 33  6
+G5.321 col v  65 $41 | ref 34  6 | zb 34  6
+G5.322 col v  66 $42 | ref 35  6 | zb 35  6
+G5.323 col v  67 $43 | ref 36  6 | zb 36  6
+G5.324 col v  68 $44 | ref 37  6 | zb 37  6
+G5.325 col v  69 $45 | ref 38  6 | zb 38  6
+G5.326 col v  70 $46 | ref 39  6 | zb 39  6
+G5.327 col v  71 $47 | ref 40  6 | zb 40  6
+G5.328 col v  72 $48 | ref 40  6 | zb 41  6 DIFF
+G5.329 col v  73 $49 | ref 40  6 | zb 42  6 DIFF
+G5.330 col v  74 $4A | ref 40  6 | zb 43  6 DIFF
+G5.331 col v  75 $4B | ref 40  6 | zb 44  6 DIFF
+G5.332 col v  76 $4C | ref 40  6 | zb 45  6 DIFF
+G5.333 col v  77 $4D | ref 40  6 | zb 46  6 DIFF
+G5.334 col v  78 $4E | ref 40  6 | zb 47  6 DIFF
+G5.335 col v  79 $4F | ref 40  6 | zb 48  6 DIFF
+G5.336 col v  80 $50 | ref 40  6 | zb 49  6 DIFF
+G5.337 col v  81 $51 | ref 40  6 | zb 50  6 DIFF
+G5.338 col v  82 $52 | ref 40  6 | zb 51  6 DIFF
+G5.339 col v  83 $53 | ref 40  6 | zb 52  6 DIFF
+G5.340 col v  84 $54 | ref 40  6 | zb 53  6 DIFF
+G5.341 col v  85 $55 | ref 40  6 | zb 54  6 DIFF
+G5.342 col v  86 $56 | ref 40  6 | zb 55  6 DIFF
+G5.343 col v  87 $57 | ref 40  6 | zb 56  6 DIFF
+G5.344 col v  88 $58 | ref 40  6 | zb 57  6 DIFF
+G5.345 col v  89 $59 | ref 40  6 | zb 58  6 DIFF
+G5.346 col v  90 $5A | ref 40  6 | zb 59  6 DIFF
+G5.347 col v  91 $5B | ref 40  6 | zb 60  6 DIFF
+G5.348 col v  92 $5C | ref 40  6 | zb 61  6 DIFF
+G5.349 col v  93 $5D | ref 40  6 | zb 62  6 DIFF
+G5.350 col v  94 $5E | ref 40  6 | zb 63  6 DIFF
+G5.351 col v  95 $5F | ref 40  6 | zb 64  6 DIFF
+G5.352 col v  96 $60 | ref 40  6 | zb 65  6 DIFF
+G5.353 col v  97 $61 | ref 40  6 | zb 66  6 DIFF
+G5.354 col v  98 $62 | ref 40  6 | zb 67  6 DIFF
+G5.355 col v  99 $63 | ref 40  6 | zb 68  6 DIFF
+G5.356 col v 100 $64 | ref 40  6 | zb 69  6 DIFF
+G5.357 col v 101 $65 | ref 40  6 | zb 70  6 DIFF
+G5.358 col v 102 $66 | ref 40  6 | zb 71  6 DIFF
+G5.359 col v 103 $67 | ref 40  6 | zb 72  6 DIFF
+G5.360 col v 104 $68 | ref 40  6 | zb 73  6 DIFF
+G5.361 col v 105 $69 | ref 40  6 | zb 74  6 DIFF
+G5.362 col v 106 $6A | ref 40  6 | zb 75  6 DIFF
+G5.363 col v 107 $6B | ref 40  6 | zb 76  6 DIFF
+G5.364 col v 108 $6C | ref 40  6 | zb 77  6 DIFF
+G5.365 col v 109 $6D | ref 40  6 | zb 78  6 DIFF
+G5.366 col v 110 $6E | ref 40  6 | zb 79  6 DIFF
+G5.367 col v 111 $6F | ref 40  6 | zb 80  6 DIFF
+G5.368 col v 112 $70 | ref 40  6 | zb 81  6 DIFF
+G5.369 col v 113 $71 | ref 40  6 | zb 82  6 DIFF
+G5.370 col v 114 $72 | ref 40  6 | zb 83  6 DIFF
+G5.371 col v 115 $73 | ref 40  6 | zb 84  6 DIFF
+G5.372 col v 116 $74 | ref 40  6 | zb 85  6 DIFF
+G5.373 col v 117 $75 | ref 40  6 | zb 86  6 DIFF
+G5.374 col v 118 $76 | ref 40  6 | zb 87  6 DIFF
+G5.375 col v 119 $77 | ref 40  6 | zb 88  6 DIFF
+G5.376 col v 120 $78 | ref 40  6 | zb 89  6 DIFF
+G5.377 col v 121 $79 | ref 40  6 | zb 90  6 DIFF
+G5.378 col v 122 $7A | ref 40  6 | zb 91  6 DIFF
+G5.379 col v 123 $7B | ref 40  6 | zb 92  6 DIFF
+G5.380 col v 124 $7C | ref 40  6 | zb 93  6 DIFF
+G5.381 col v 125 $7D | ref 40  6 | zb 94  6 DIFF
+G5.382 col v 126 $7E | ref 40  6 | zb 95  6 DIFF
+G5.383 col v 127 $7F | ref 40  6 | zb 96  6 DIFF
+G5.384 col v 128 $80 | ref 40  6 | zb 97  6 DIFF
+G5.385 col v 129 $81 | ref 40  6 | zb 98  6 DIFF
+G5.386 col v 130 $82 | ref 40  6 | zb 99  6 DIFF
+G5.387 col v 131 $83 | ref 40  6 | zb 100  6 DIFF
+G5.388 col v 132 $84 | ref 40  6 | zb 101  6 DIFF
+G5.389 col v 133 $85 | ref 40  6 | zb 102  6 DIFF
+G5.390 col v 134 $86 | ref 40  6 | zb 103  6 DIFF
+G5.391 col v 135 $87 | ref 40  6 | zb 104  6 DIFF
+G5.392 col v 136 $88 | ref 40  6 | zb 105  6 DIFF
+G5.393 col v 137 $89 | ref 40  6 | zb 106  6 DIFF
+G5.394 col v 138 $8A | ref 40  6 | zb 107  6 DIFF
+G5.395 col v 139 $8B | ref 40  6 | zb 108  6 DIFF
+G5.396 col v 140 $8C | ref 40  6 | zb 109  6 DIFF
+G5.397 col v 141 $8D | ref 40  6 | zb 110  6 DIFF
+G5.398 col v 142 $8E | ref 40  6 | zb 111  6 DIFF
+G5.399 col v 143 $8F | ref 40  6 | zb 112  6 DIFF
+G5.400 col v 144 $90 | ref 40  6 | zb 113  6 DIFF
+G5.401 col v 145 $91 | ref 40  6 | zb 114  6 DIFF
+G5.402 col v 146 $92 | ref 40  6 | zb 115  6 DIFF
+G5.403 col v 147 $93 | ref 40  6 | zb 116  6 DIFF
+G5.404 col v 148 $94 | ref 40  6 | zb 117  6 DIFF
+G5.405 col v 149 $95 | ref 40  6 | zb 118  6 DIFF
+G5.406 col v 150 $96 | ref 40  6 | zb 119  6 DIFF
+G5.407 col v 151 $97 | ref 40  6 | zb 120  6 DIFF
+G5.408 col v 152 $98 | ref 40  6 | zb 121  6 DIFF
+G5.409 col v 153 $99 | ref 40  6 | zb 122  6 DIFF
+G5.410 col v 154 $9A | ref 40  6 | zb 123  6 DIFF
+G5.411 col v 155 $9B | ref 40  6 | zb 124  6 DIFF
+G5.412 col v 156 $9C | ref 40  6 | zb 125  6 DIFF
+G5.413 col v 157 $9D | ref 40  6 | zb 126  6 DIFF
+G5.414 col v 158 $9E | ref 40  6 | zb 127  6 DIFF
+G5.415 col v 159 $9F | ref 40  6 | zb 128  6 DIFF
+G5.416 col v 160 $A0 | ref 40  6 | zb 129  6 DIFF
+G5.417 col v 161 $A1 | ref 40  6 | zb 130  6 DIFF
+G5.418 col v 162 $A2 | ref 40  6 | zb 131  6 DIFF
+G5.419 col v 163 $A3 | ref 40  6 | zb 132  6 DIFF
+G5.420 col v 164 $A4 | ref 40  6 | zb 133  6 DIFF
+G5.421 col v 165 $A5 | ref 40  6 | zb 134  6 DIFF
+G5.422 col v 166 $A6 | ref 40  6 | zb 135  6 DIFF
+G5.423 col v 167 $A7 | ref 40  6 | zb 136  6 DIFF
+G5.424 col v 168 $A8 | ref 40  6 | zb 137  6 DIFF
+G5.425 col v 169 $A9 | ref 40  6 | zb 138  6 DIFF
+G5.426 col v 170 $AA | ref 40  6 | zb 139  6 DIFF
+G5.427 col v 171 $AB | ref 40  6 | zb 140  6 DIFF
+G5.428 col v 172 $AC | ref 40  6 | zb 141  6 DIFF
+G5.429 col v 173 $AD | ref 40  6 | zb 142  6 DIFF
+G5.430 col v 174 $AE | ref 40  6 | zb 143  6 DIFF
+G5.431 col v 175 $AF | ref 40  6 | zb 144  6 DIFF
+G5.432 col v 176 $B0 | ref 40  6 | zb 145  6 DIFF
+G5.433 col v 177 $B1 | ref 40  6 | zb 146  6 DIFF
+G5.434 col v 178 $B2 | ref 40  6 | zb 147  6 DIFF
+G5.435 col v 179 $B3 | ref 40  6 | zb 148  6 DIFF
+G5.436 col v 180 $B4 | ref 40  6 | zb 149  6 DIFF
+G5.437 col v 181 $B5 | ref 40  6 | zb 150  6 DIFF
+G5.438 col v 182 $B6 | ref 40  6 | zb 151  6 DIFF
+G5.439 col v 183 $B7 | ref 40  6 | zb 152  6 DIFF
+G5.440 col v 184 $B8 | ref 40  6 | zb 153  6 DIFF
+G5.441 col v 185 $B9 | ref 40  6 | zb 154  6 DIFF
+G5.442 col v 186 $BA | ref 40  6 | zb 155  6 DIFF
+G5.443 col v 187 $BB | ref 40  6 | zb 156  6 DIFF
+G5.444 col v 188 $BC | ref 40  6 | zb 157  6 DIFF
+G5.445 col v 189 $BD | ref 40  6 | zb 158  6 DIFF
+G5.446 col v 190 $BE | ref 40  6 | zb 159  6 DIFF
+G5.447 col v 191 $BF | ref 40  6 | zb 160  6 DIFF
+G5.448 col v 192 $C0 | ref 40  6 | zb 161  6 DIFF
+G5.449 col v 193 $C1 | ref 40  6 | zb 162  6 DIFF
+G5.450 col v 194 $C2 | ref 40  6 | zb 163  6 DIFF
+G5.451 col v 195 $C3 | ref 40  6 | zb 164  6 DIFF
+G5.452 col v 196 $C4 | ref 40  6 | zb 165  6 DIFF
+G5.453 col v 197 $C5 | ref 40  6 | zb 166  6 DIFF
+G5.454 col v 198 $C6 | ref 40  6 | zb 167  6 DIFF
+G5.455 col v 199 $C7 | ref 40  6 | zb 168  6 DIFF
+G5.456 col v 200 $C8 | ref 40  6 | zb 169  6 DIFF
+G5.457 col v 201 $C9 | ref 40  6 | zb 170  6 DIFF
+G5.458 col v 202 $CA | ref 40  6 | zb 171  6 DIFF
+G5.459 col v 203 $CB | ref 40  6 | zb 172  6 DIFF
+G5.460 col v 204 $CC | ref 40  6 | zb 173  6 DIFF
+G5.461 col v 205 $CD | ref 40  6 | zb 174  6 DIFF
+G5.462 col v 206 $CE | ref 40  6 | zb 175  6 DIFF
+G5.463 col v 207 $CF | ref 40  6 | zb 176  6 DIFF
+G5.464 col v 208 $D0 | ref 40  6 | zb 177  6 DIFF
+G5.465 col v 209 $D1 | ref 40  6 | zb 178  6 DIFF
+G5.466 col v 210 $D2 | ref 40  6 | zb 179  6 DIFF
+G5.467 col v 211 $D3 | ref 40  6 | zb 180  6 DIFF
+G5.468 col v 212 $D4 | ref 40  6 | zb 181  6 DIFF
+G5.469 col v 213 $D5 | ref 40  6 | zb 182  6 DIFF
+G5.470 col v 214 $D6 | ref 40  6 | zb 183  6 DIFF
+G5.471 col v 215 $D7 | ref 40  6 | zb 184  6 DIFF
+G5.472 col v 216 $D8 | ref 40  6 | zb 185  6 DIFF
+G5.473 col v 217 $D9 | ref 40  6 | zb 186  6 DIFF
+G5.474 col v 218 $DA | ref 40  6 | zb 187  6 DIFF
+G5.475 col v 219 $DB | ref 40  6 | zb 188  6 DIFF
+G5.476 col v 220 $DC | ref 40  6 | zb 189  6 DIFF
+G5.477 col v 221 $DD | ref 40  6 | zb 190  6 DIFF
+G5.478 col v 222 $DE | ref 40  6 | zb 191  6 DIFF
+G5.479 col v 223 $DF | ref 40  6 | zb 192  6 DIFF
+G5.480 col v 224 $E0 | ref 40  6 | zb 193  6 DIFF
+G5.481 col v 225 $E1 | ref 40  6 | zb 194  6 DIFF
+G5.482 col v 226 $E2 | ref 40  6 | zb 195  6 DIFF
+G5.483 col v 227 $E3 | ref 40  6 | zb 196  6 DIFF
+G5.484 col v 228 $E4 | ref 40  6 | zb 197  6 DIFF
+G5.485 col v 229 $E5 | ref 40  6 | zb 198  6 DIFF
+G5.486 col v 230 $E6 | ref 40  6 | zb 199  6 DIFF
+G5.487 col v 231 $E7 | ref 40  6 | zb 200  6 DIFF
+G5.488 col v 232 $E8 | ref 40  6 | zb 201  6 DIFF
+G5.489 col v 233 $E9 | ref 40  6 | zb 202  6 DIFF
+G5.490 col v 234 $EA | ref 40  6 | zb 203  6 DIFF
+G5.491 col v 235 $EB | ref 40  6 | zb 204  6 DIFF
+G5.492 col v 236 $EC | ref 40  6 | zb 205  6 DIFF
+G5.493 col v 237 $ED | ref 40  6 | zb 206  6 DIFF
+G5.494 col v 238 $EE | ref 40  6 | zb 207  6 DIFF
+G5.495 col v 239 $EF | ref 40  6 | zb 208  6 DIFF
+G5.496 col v 240 $F0 | ref 40  6 | zb 209  6 DIFF
+G5.497 col v 241 $F1 | ref 40  6 | zb 210  6 DIFF
+G5.498 col v 242 $F2 | ref 40  6 | zb 211  6 DIFF
+G5.499 col v 243 $F3 | ref 40  6 | zb 212  6 DIFF
+G5.500 col v 244 $F4 | ref 40  6 | zb 213  6 DIFF
+G5.501 col v 245 $F5 | ref 40  6 | zb 214  6 DIFF
+G5.502 col v 246 $F6 | ref 40  6 | zb 215  6 DIFF
+G5.503 col v 247 $F7 | ref 40  6 | zb 216  6 DIFF
+G5.504 col v 248 $F8 | ref 40  6 | zb 217  6 DIFF
+G5.505 col v 249 $F9 | ref 40  6 | zb 218  6 DIFF
+G5.506 col v 250 $FA | ref 40  6 | zb 219  6 DIFF
+G5.507 col v 251 $FB | ref 40  6 | zb 220  6 DIFF
+G5.508 col v 252 $FC | ref 40  6 | zb 221  6 DIFF
+G5.509 col v 253 $FD | ref 40  6 | zb 222  6 DIFF
+G5.510 col v 254 $FE | ref 40  6 | zb 223  6 DIFF
+G5.511 col v 255 $FF | ref 40  6 | zb 224  6 DIFF
+
+== G6 ESC x / ESC y v (the state CARRIES case to case) -> CSRX CSRY ($FCA9) ($FCAA) ==
+G6.000 ESC x v   0 $00 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.001 ESC x v   1 $01 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.002 ESC x v   2 $02 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.003 ESC x v   3 $03 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.004 ESC x v   4 $04 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.005 ESC x v   5 $05 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.006 ESC x v   6 $06 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.007 ESC x v   7 $07 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.008 ESC x v   8 $08 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.009 ESC x v   9 $09 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.010 ESC x v  10 $0A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.011 ESC x v  11 $0B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.012 ESC x v  12 $0C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.013 ESC x v  13 $0D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.014 ESC x v  14 $0E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.015 ESC x v  15 $0F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.016 ESC x v  16 $10 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.017 ESC x v  17 $11 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.018 ESC x v  18 $12 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.019 ESC x v  19 $13 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.020 ESC x v  20 $14 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.021 ESC x v  21 $15 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.022 ESC x v  22 $16 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.023 ESC x v  23 $17 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.024 ESC x v  24 $18 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.025 ESC x v  25 $19 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.026 ESC x v  26 $1A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.027 ESC x v  27 $1B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.028 ESC x v  28 $1C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.029 ESC x v  29 $1D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.030 ESC x v  30 $1E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.031 ESC x v  31 $1F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.032 ESC x v  32 $20 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.033 ESC x v  33 $21 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.034 ESC x v  34 $22 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.035 ESC x v  35 $23 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.036 ESC x v  36 $24 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.037 ESC x v  37 $25 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.038 ESC x v  38 $26 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.039 ESC x v  39 $27 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.040 ESC x v  40 $28 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.041 ESC x v  41 $29 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.042 ESC x v  42 $2A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.043 ESC x v  43 $2B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.044 ESC x v  44 $2C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.045 ESC x v  45 $2D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.046 ESC x v  46 $2E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.047 ESC x v  47 $2F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.048 ESC x v  48 $30 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.049 ESC x v  49 $31 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.050 ESC x v  50 $32 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.051 ESC x v  51 $33 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.052 ESC x v  52 $34 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.053 ESC x v  53 $35 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.054 ESC x v  54 $36 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.055 ESC x v  55 $37 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.056 ESC x v  56 $38 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.057 ESC x v  57 $39 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.058 ESC x v  58 $3A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.059 ESC x v  59 $3B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.060 ESC x v  60 $3C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.061 ESC x v  61 $3D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.062 ESC x v  62 $3E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.063 ESC x v  63 $3F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.064 ESC x v  64 $40 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.065 ESC x v  65 $41 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.066 ESC x v  66 $42 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.067 ESC x v  67 $43 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.068 ESC x v  68 $44 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.069 ESC x v  69 $45 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.070 ESC x v  70 $46 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.071 ESC x v  71 $47 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.072 ESC x v  72 $48 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.073 ESC x v  73 $49 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.074 ESC x v  74 $4A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.075 ESC x v  75 $4B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.076 ESC x v  76 $4C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.077 ESC x v  77 $4D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.078 ESC x v  78 $4E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.079 ESC x v  79 $4F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.080 ESC x v  80 $50 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.081 ESC x v  81 $51 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.082 ESC x v  82 $52 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.083 ESC x v  83 $53 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.084 ESC x v  84 $54 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.085 ESC x v  85 $55 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.086 ESC x v  86 $56 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.087 ESC x v  87 $57 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.088 ESC x v  88 $58 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.089 ESC x v  89 $59 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.090 ESC x v  90 $5A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.091 ESC x v  91 $5B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.092 ESC x v  92 $5C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.093 ESC x v  93 $5D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.094 ESC x v  94 $5E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.095 ESC x v  95 $5F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.096 ESC x v  96 $60 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.097 ESC x v  97 $61 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.098 ESC x v  98 $62 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.099 ESC x v  99 $63 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.100 ESC x v 100 $64 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.101 ESC x v 101 $65 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.102 ESC x v 102 $66 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.103 ESC x v 103 $67 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.104 ESC x v 104 $68 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.105 ESC x v 105 $69 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.106 ESC x v 106 $6A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.107 ESC x v 107 $6B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.108 ESC x v 108 $6C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.109 ESC x v 109 $6D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.110 ESC x v 110 $6E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.111 ESC x v 111 $6F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.112 ESC x v 112 $70 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.113 ESC x v 113 $71 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.114 ESC x v 114 $72 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.115 ESC x v 115 $73 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.116 ESC x v 116 $74 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.117 ESC x v 117 $75 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.118 ESC x v 118 $76 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.119 ESC x v 119 $77 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.120 ESC x v 120 $78 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.121 ESC x v 121 $79 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.122 ESC x v 122 $7A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.123 ESC x v 123 $7B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.124 ESC x v 124 $7C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.125 ESC x v 125 $7D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.126 ESC x v 126 $7E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.127 ESC x v 127 $7F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.128 ESC x v 128 $80 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.129 ESC x v 129 $81 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.130 ESC x v 130 $82 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.131 ESC x v 131 $83 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.132 ESC x v 132 $84 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.133 ESC x v 133 $85 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.134 ESC x v 134 $86 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.135 ESC x v 135 $87 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.136 ESC x v 136 $88 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.137 ESC x v 137 $89 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.138 ESC x v 138 $8A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.139 ESC x v 139 $8B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.140 ESC x v 140 $8C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.141 ESC x v 141 $8D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.142 ESC x v 142 $8E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.143 ESC x v 143 $8F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.144 ESC x v 144 $90 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.145 ESC x v 145 $91 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.146 ESC x v 146 $92 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.147 ESC x v 147 $93 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.148 ESC x v 148 $94 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.149 ESC x v 149 $95 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.150 ESC x v 150 $96 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.151 ESC x v 151 $97 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.152 ESC x v 152 $98 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.153 ESC x v 153 $99 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.154 ESC x v 154 $9A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.155 ESC x v 155 $9B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.156 ESC x v 156 $9C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.157 ESC x v 157 $9D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.158 ESC x v 158 $9E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.159 ESC x v 159 $9F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.160 ESC x v 160 $A0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.161 ESC x v 161 $A1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.162 ESC x v 162 $A2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.163 ESC x v 163 $A3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.164 ESC x v 164 $A4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.165 ESC x v 165 $A5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.166 ESC x v 166 $A6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.167 ESC x v 167 $A7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.168 ESC x v 168 $A8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.169 ESC x v 169 $A9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.170 ESC x v 170 $AA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.171 ESC x v 171 $AB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.172 ESC x v 172 $AC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.173 ESC x v 173 $AD | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.174 ESC x v 174 $AE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.175 ESC x v 175 $AF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.176 ESC x v 176 $B0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.177 ESC x v 177 $B1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.178 ESC x v 178 $B2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.179 ESC x v 179 $B3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.180 ESC x v 180 $B4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.181 ESC x v 181 $B5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.182 ESC x v 182 $B6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.183 ESC x v 183 $B7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.184 ESC x v 184 $B8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.185 ESC x v 185 $B9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.186 ESC x v 186 $BA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.187 ESC x v 187 $BB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.188 ESC x v 188 $BC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.189 ESC x v 189 $BD | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.190 ESC x v 190 $BE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.191 ESC x v 191 $BF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.192 ESC x v 192 $C0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.193 ESC x v 193 $C1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.194 ESC x v 194 $C2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.195 ESC x v 195 $C3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.196 ESC x v 196 $C4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.197 ESC x v 197 $C5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.198 ESC x v 198 $C6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.199 ESC x v 199 $C7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.200 ESC x v 200 $C8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.201 ESC x v 201 $C9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.202 ESC x v 202 $CA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.203 ESC x v 203 $CB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.204 ESC x v 204 $CC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.205 ESC x v 205 $CD | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.206 ESC x v 206 $CE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.207 ESC x v 207 $CF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.208 ESC x v 208 $D0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.209 ESC x v 209 $D1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.210 ESC x v 210 $D2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.211 ESC x v 211 $D3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.212 ESC x v 212 $D4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.213 ESC x v 213 $D5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.214 ESC x v 214 $D6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.215 ESC x v 215 $D7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.216 ESC x v 216 $D8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.217 ESC x v 217 $D9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.218 ESC x v 218 $DA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.219 ESC x v 219 $DB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.220 ESC x v 220 $DC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.221 ESC x v 221 $DD | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.222 ESC x v 222 $DE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.223 ESC x v 223 $DF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.224 ESC x v 224 $E0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.225 ESC x v 225 $E1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.226 ESC x v 226 $E2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.227 ESC x v 227 $E3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.228 ESC x v 228 $E4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.229 ESC x v 229 $E5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.230 ESC x v 230 $E6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.231 ESC x v 231 $E7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.232 ESC x v 232 $E8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.233 ESC x v 233 $E9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.234 ESC x v 234 $EA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.235 ESC x v 235 $EB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.236 ESC x v 236 $EC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.237 ESC x v 237 $ED | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.238 ESC x v 238 $EE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.239 ESC x v 239 $EF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.240 ESC x v 240 $F0 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.241 ESC x v 241 $F1 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.242 ESC x v 242 $F2 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.243 ESC x v 243 $F3 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.244 ESC x v 244 $F4 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.245 ESC x v 245 $F5 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.246 ESC x v 246 $F6 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.247 ESC x v 247 $F7 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.248 ESC x v 248 $F8 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.249 ESC x v 249 $F9 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.250 ESC x v 250 $FA | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.251 ESC x v 251 $FB | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.252 ESC x v 252 $FC | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.253 ESC x v 253 $FD | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.254 ESC x v 254 $FE | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.255 ESC x v 255 $FF | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.256 ESC y v   0 $00 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.257 ESC y v   1 $01 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.258 ESC y v   2 $02 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.259 ESC y v   3 $03 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.260 ESC y v   4 $04 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.261 ESC y v   5 $05 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.262 ESC y v   6 $06 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.263 ESC y v   7 $07 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.264 ESC y v   8 $08 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.265 ESC y v   9 $09 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.266 ESC y v  10 $0A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.267 ESC y v  11 $0B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.268 ESC y v  12 $0C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.269 ESC y v  13 $0D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.270 ESC y v  14 $0E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.271 ESC y v  15 $0F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.272 ESC y v  16 $10 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.273 ESC y v  17 $11 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.274 ESC y v  18 $12 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.275 ESC y v  19 $13 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.276 ESC y v  20 $14 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.277 ESC y v  21 $15 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.278 ESC y v  22 $16 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.279 ESC y v  23 $17 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.280 ESC y v  24 $18 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.281 ESC y v  25 $19 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.282 ESC y v  26 $1A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.283 ESC y v  27 $1B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.284 ESC y v  28 $1C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.285 ESC y v  29 $1D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.286 ESC y v  30 $1E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.287 ESC y v  31 $1F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.288 ESC y v  32 $20 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.289 ESC y v  33 $21 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.290 ESC y v  34 $22 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.291 ESC y v  35 $23 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.292 ESC y v  36 $24 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.293 ESC y v  37 $25 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.294 ESC y v  38 $26 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.295 ESC y v  39 $27 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.296 ESC y v  40 $28 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.297 ESC y v  41 $29 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.298 ESC y v  42 $2A | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.299 ESC y v  43 $2B | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.300 ESC y v  44 $2C | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.301 ESC y v  45 $2D | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.302 ESC y v  46 $2E | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.303 ESC y v  47 $2F | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.304 ESC y v  48 $30 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.305 ESC y v  49 $31 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.306 ESC y v  50 $32 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.307 ESC y v  51 $33 | ref 21 11 $00 $00 | zb 21 11 $00 $00
+G6.308 ESC y v  52 $34 | ref 21 11 $00 $01 | zb 21 11 $00 $01
+G6.309 ESC y v  53 $35 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.310 ESC y v  54 $36 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.311 ESC y v  55 $37 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.312 ESC y v  56 $38 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.313 ESC y v  57 $39 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.314 ESC y v  58 $3A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.315 ESC y v  59 $3B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.316 ESC y v  60 $3C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.317 ESC y v  61 $3D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.318 ESC y v  62 $3E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.319 ESC y v  63 $3F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.320 ESC y v  64 $40 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.321 ESC y v  65 $41 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.322 ESC y v  66 $42 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.323 ESC y v  67 $43 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.324 ESC y v  68 $44 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.325 ESC y v  69 $45 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.326 ESC y v  70 $46 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.327 ESC y v  71 $47 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.328 ESC y v  72 $48 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.329 ESC y v  73 $49 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.330 ESC y v  74 $4A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.331 ESC y v  75 $4B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.332 ESC y v  76 $4C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.333 ESC y v  77 $4D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.334 ESC y v  78 $4E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.335 ESC y v  79 $4F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.336 ESC y v  80 $50 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.337 ESC y v  81 $51 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.338 ESC y v  82 $52 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.339 ESC y v  83 $53 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.340 ESC y v  84 $54 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.341 ESC y v  85 $55 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.342 ESC y v  86 $56 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.343 ESC y v  87 $57 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.344 ESC y v  88 $58 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.345 ESC y v  89 $59 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.346 ESC y v  90 $5A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.347 ESC y v  91 $5B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.348 ESC y v  92 $5C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.349 ESC y v  93 $5D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.350 ESC y v  94 $5E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.351 ESC y v  95 $5F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.352 ESC y v  96 $60 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.353 ESC y v  97 $61 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.354 ESC y v  98 $62 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.355 ESC y v  99 $63 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.356 ESC y v 100 $64 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.357 ESC y v 101 $65 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.358 ESC y v 102 $66 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.359 ESC y v 103 $67 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.360 ESC y v 104 $68 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.361 ESC y v 105 $69 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.362 ESC y v 106 $6A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.363 ESC y v 107 $6B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.364 ESC y v 108 $6C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.365 ESC y v 109 $6D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.366 ESC y v 110 $6E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.367 ESC y v 111 $6F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.368 ESC y v 112 $70 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.369 ESC y v 113 $71 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.370 ESC y v 114 $72 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.371 ESC y v 115 $73 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.372 ESC y v 116 $74 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.373 ESC y v 117 $75 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.374 ESC y v 118 $76 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.375 ESC y v 119 $77 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.376 ESC y v 120 $78 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.377 ESC y v 121 $79 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.378 ESC y v 122 $7A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.379 ESC y v 123 $7B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.380 ESC y v 124 $7C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.381 ESC y v 125 $7D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.382 ESC y v 126 $7E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.383 ESC y v 127 $7F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.384 ESC y v 128 $80 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.385 ESC y v 129 $81 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.386 ESC y v 130 $82 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.387 ESC y v 131 $83 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.388 ESC y v 132 $84 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.389 ESC y v 133 $85 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.390 ESC y v 134 $86 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.391 ESC y v 135 $87 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.392 ESC y v 136 $88 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.393 ESC y v 137 $89 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.394 ESC y v 138 $8A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.395 ESC y v 139 $8B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.396 ESC y v 140 $8C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.397 ESC y v 141 $8D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.398 ESC y v 142 $8E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.399 ESC y v 143 $8F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.400 ESC y v 144 $90 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.401 ESC y v 145 $91 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.402 ESC y v 146 $92 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.403 ESC y v 147 $93 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.404 ESC y v 148 $94 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.405 ESC y v 149 $95 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.406 ESC y v 150 $96 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.407 ESC y v 151 $97 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.408 ESC y v 152 $98 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.409 ESC y v 153 $99 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.410 ESC y v 154 $9A | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.411 ESC y v 155 $9B | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.412 ESC y v 156 $9C | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.413 ESC y v 157 $9D | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.414 ESC y v 158 $9E | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.415 ESC y v 159 $9F | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.416 ESC y v 160 $A0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.417 ESC y v 161 $A1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.418 ESC y v 162 $A2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.419 ESC y v 163 $A3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.420 ESC y v 164 $A4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.421 ESC y v 165 $A5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.422 ESC y v 166 $A6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.423 ESC y v 167 $A7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.424 ESC y v 168 $A8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.425 ESC y v 169 $A9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.426 ESC y v 170 $AA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.427 ESC y v 171 $AB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.428 ESC y v 172 $AC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.429 ESC y v 173 $AD | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.430 ESC y v 174 $AE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.431 ESC y v 175 $AF | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.432 ESC y v 176 $B0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.433 ESC y v 177 $B1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.434 ESC y v 178 $B2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.435 ESC y v 179 $B3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.436 ESC y v 180 $B4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.437 ESC y v 181 $B5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.438 ESC y v 182 $B6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.439 ESC y v 183 $B7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.440 ESC y v 184 $B8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.441 ESC y v 185 $B9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.442 ESC y v 186 $BA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.443 ESC y v 187 $BB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.444 ESC y v 188 $BC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.445 ESC y v 189 $BD | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.446 ESC y v 190 $BE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.447 ESC y v 191 $BF | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.448 ESC y v 192 $C0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.449 ESC y v 193 $C1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.450 ESC y v 194 $C2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.451 ESC y v 195 $C3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.452 ESC y v 196 $C4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.453 ESC y v 197 $C5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.454 ESC y v 198 $C6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.455 ESC y v 199 $C7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.456 ESC y v 200 $C8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.457 ESC y v 201 $C9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.458 ESC y v 202 $CA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.459 ESC y v 203 $CB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.460 ESC y v 204 $CC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.461 ESC y v 205 $CD | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.462 ESC y v 206 $CE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.463 ESC y v 207 $CF | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.464 ESC y v 208 $D0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.465 ESC y v 209 $D1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.466 ESC y v 210 $D2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.467 ESC y v 211 $D3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.468 ESC y v 212 $D4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.469 ESC y v 213 $D5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.470 ESC y v 214 $D6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.471 ESC y v 215 $D7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.472 ESC y v 216 $D8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.473 ESC y v 217 $D9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.474 ESC y v 218 $DA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.475 ESC y v 219 $DB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.476 ESC y v 220 $DC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.477 ESC y v 221 $DD | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.478 ESC y v 222 $DE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.479 ESC y v 223 $DF | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.480 ESC y v 224 $E0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.481 ESC y v 225 $E1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.482 ESC y v 226 $E2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.483 ESC y v 227 $E3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.484 ESC y v 228 $E4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.485 ESC y v 229 $E5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.486 ESC y v 230 $E6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.487 ESC y v 231 $E7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.488 ESC y v 232 $E8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.489 ESC y v 233 $E9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.490 ESC y v 234 $EA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.491 ESC y v 235 $EB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.492 ESC y v 236 $EC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.493 ESC y v 237 $ED | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.494 ESC y v 238 $EE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.495 ESC y v 239 $EF | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.496 ESC y v 240 $F0 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.497 ESC y v 241 $F1 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.498 ESC y v 242 $F2 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.499 ESC y v 243 $F3 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.500 ESC y v 244 $F4 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.501 ESC y v 245 $F5 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.502 ESC y v 246 $F6 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.503 ESC y v 247 $F7 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.504 ESC y v 248 $F8 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.505 ESC y v 249 $F9 | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.506 ESC y v 250 $FA | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.507 ESC y v 251 $FB | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.508 ESC y v 252 $FC | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.509 ESC y v 253 $FD | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.510 ESC y v 254 $FE | ref 21 11 $01 $01 | zb 21 11 $01 $01
+G6.511 ESC y v 255 $FF | ref 21 11 $01 $01 | zb 21 11 $01 $01
