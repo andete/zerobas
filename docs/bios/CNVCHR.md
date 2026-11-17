@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CNVCHR` ($00AB) — convert a graphic character
 
-> **Spec:** DRAFT 2 (2026-11-17), after one test-writer review. Measured on the Philips VG-8020:
+> **Spec:** FINAL (2026-11-18), the core rule: the confirming pass was CLEAN (docs/spec-method.md
+> §7); the open items stay [A] and do not hold up the fixes. After one earlier test-writer review. Measured on the Philips VG-8020:
 > every value of A (exhaustive in A only) at three GRPHED values and two sets of entry flags; then
 > four more GRPHED values ($80, $FF, $20, $04), eight entry flags, every register as garbage, and the natural two-call
 > sequence.
@@ -87,7 +88,9 @@ records them all, and compares the whole work area.
 - **[A]** F's undocumented bits 5 / 3 on another CPU variant (R-V-F copies A's on the emulated Z80).
 - **[A]** GRPHED with only bit 1, 3, 4 or 6 set; all 256 values of A at the new GRPHED values;
   CNVCHR entered with interrupts enabled; RAM below $F380 and the stack; HL's byte at a value
-  other than 0 / 1.
+  other than 0 / 1 (on the header / conversion paths it already held GRPHED's new value).
+- **[A]** Registers and the work area recorded only for seven A values (XCNV2), never at GRPHED
+  $5A; entry flags other than $00 / $FF on the plain path and at GRPHED values other than 0 / 1.
 
 ## Tests that cover it
 

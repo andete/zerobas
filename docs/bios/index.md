@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**16 of 108 calls have a page; 4 are FINAL.**
+**16 of 108 calls have a page; 9 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -25,7 +25,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | — | — | — |
-| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](INIFNK.md) | 2 | D-TEXTAF, D-FNKBOOT |
+| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF, D-FNKBOOT |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
@@ -61,10 +61,10 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
-| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](CNVCHR.md) | 3 | D-TEXTAF |
-| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 2](PINLIN.md) | 5 | D-PINLINSTART, D-TEXTAF |
-| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](INLIN.md) | 0 | D-TEXTAF |
-| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](QINLIN.md) | 0 | D-TEXTAF |
+| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | D-TEXTAF |
+| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-PINLINSTART, D-TEXTAF |
+| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF |
+| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF |
 | $00B7 | BREAKX | input (concept page to come) | L3 | — | — | — |
 | $00BA | ISCNTC | input (concept page to come) | L3 | — | — | — |
 | $00BD | CKCNTC | input (concept page to come) | L3 | — | — | — |

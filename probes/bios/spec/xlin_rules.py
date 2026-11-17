@@ -59,7 +59,9 @@ RULES = [
          lambda c: c.name == "PINLIN", lambda c: c.buf == buf_of(shown(c))),
     Rule("R-L-INLIN", S1, "INLIN returns only the text from the column the cursor was at when it was called ('XYZ' "
          "before the cursor, typed 'Q': 'Q').", lambda c: c.name == "INLIN", lambda c: c.buf == buf_of(c.typed)),
-    Rule("R-L-QIN", S1, "QINLIN first prints '? ' and returns the text typed after it (the prompt not included).",
+    Rule("R-L-QIN", S1, "QINLIN first prints '? ' and returns the screen cells after the prompt (the prompt not "
+         "included) -- here an empty row, so they are the keys typed; over existing text they are the screen's "
+         "(R-L-QSCREEN).",
          lambda c: c.name == "QINLIN", lambda c: c.buf == buf_of(c.typed)),
     Rule("R-L-RET", S1, "All three return HL = BUF − 1 ($F55D) with the carry clear (Enter, not STOP), echo the line "
          "on the screen, and leave the cursor at column 1 of the next row.", lambda c: True,

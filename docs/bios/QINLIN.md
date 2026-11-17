@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `QINLIN` ($00B4) — read a line after a "? " prompt
 
-> **Spec:** DRAFT 1 (2026-11-17). Stated on [PINLIN's page](PINLIN.md), with PINLIN.
+> **Spec:** FINAL (2026-11-18), the core rule, with PINLIN. Stated on [PINLIN's page](PINLIN.md), with PINLIN.
 
 ## Differences from the reference
 

@@ -45,7 +45,7 @@ RULES = [
 ]
 
 
-# ---- round 2: XFNK3 (probes/bios/spec/xfnk3.asm; scratchpad/XFNK3_run1.out, both rows) and XFNK's boot-time FNKSTR
+# ---- round 2: XFNK3 (probes/bios/spec/xfnk3.asm; scratchpad/XFNK3_run2.out, both rows) and XFNK's boot-time FNKSTR
 OUTPUTS["XF3"] = ["fnk", "a", "f", "bc", "de", "hl", "ix", "iy", "iff", "row24", "nchg", "chg"]
 OUTPUTS["XB"] = ["boot"]
 ENTRY_AF = [(0xA5, 0x00), (0x00, 0xFF), (0x5A, 0xFF)]

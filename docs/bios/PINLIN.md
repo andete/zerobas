@@ -5,7 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # `PINLIN` ($00AE) — read a line from the screen editor
 
-> **Spec:** DRAFT 2 (2026-11-17), after one test-writer review. Measured on the Philips VG-8020 with
+> **Spec:** FINAL (2026-11-18), the core rule: the confirming pass's one CORE finding was a stale
+> sentence (R-L-QIN), fixed (docs/spec-method.md §7); the open items stay [A]. After earlier
+> test-writer reviews. Measured on the Philips VG-8020 with
 > typed keys.
 > The page states QINLIN ($00B4) and INLIN ($00B1) too: the three read a line the same way and
 > differ in where it starts. [QINLIN's](QINLIN.md) and [INLIN's](INLIN.md) pages point here.
@@ -70,7 +72,7 @@ documents it.
 |---|---|---|---|
 | **R-L-PIN** PINLIN returns the WHOLE screen line the cursor is on, from column 1 -- text that was on the line before the call included ('XYZ' + typed 'Q' gives 'XYZQ'; Enter alone over 'XYZ' gives 'XYZ'), with BS editing applied ('AB' BS 'C' gives 'AC') -- in BUF, terminated by 0. | 4 | ✓ | ✗ 1: XL 3 |
 | **R-L-INLIN** INLIN returns only the text from the column the cursor was at when it was called ('XYZ' before the cursor, typed 'Q': 'Q'). | 1 | ✓ | ✓ |
-| **R-L-QIN** QINLIN first prints '? ' and returns the text typed after it (the prompt not included). | 1 | ✓ | ✓ |
+| **R-L-QIN** QINLIN first prints '? ' and returns the screen cells after the prompt (the prompt not included) -- here an empty row, so they are the keys typed; over existing text they are the screen's (R-L-QSCREEN). | 1 | ✓ | ✓ |
 | **R-L-RET** All three return HL = BUF − 1 ($F55D) with the carry clear (Enter, not STOP), echo the line on the screen, and leave the cursor at column 1 of the next row. | 6 | ✓ | ✓ |
 | **R-L-F** The whole F on return (only the carry published): 18. | 6 | ✓ | ✗ 6: XL 1, XL 2, XL 3, XL 4, XL 5, XL 6 |
 
@@ -103,6 +105,12 @@ documents it.
 - **[A]** Other AUTFLG values than $FF; widths other than 40, SCREEN 1, the key line on.
 - **[A]** BS / cursor keys / INS / DEL in INLIN and QINLIN, and BS past INLIN's entry column.
 - **[A]** Characters of $80 and above on the line; a key arriving while the call already waits.
+- **[A]** INLIN / QINLIN on row 24; QINLIN with AUTFLG set; leading blanks at INLIN's / QINLIN's
+  entry column; QINLIN's prompt at columns 39 / 40.
+- **[A]** BS against delete-and-shift (only "AB" BS "C" measured) and cursor keys in PINLIN too;
+  the row read when Enter is pressed on another row than the entry row.
+- **[A]** Work-area cells after the call (AUTFLG, LINTTB); how far BUF is written past the 0 (16 /
+  24 bytes read).
 - **[A]** The hooks H.PINL / H.QINL / H.INLI; the registers other than HL and F.
 
 ## Tests that cover it

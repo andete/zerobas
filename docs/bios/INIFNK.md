@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `INIFNK` ($003E) — set the default function-key strings
 
-> **Spec:** DRAFT 2 (2026-11-17), after one test-writer review. Measured on the Philips VG-8020 from
+> **Spec:** FINAL (2026-11-18), the core rule: the confirming pass was CLEAN (docs/spec-method.md
+> §7); the open items stay [A] and do not hold up the fixes. After one earlier test-writer review. Measured on the Philips VG-8020 from
 > garbage, from several starting states, with every register and the whole work area read.
 
 ## Summary
@@ -79,7 +80,7 @@ already held the defaults, so it is evidence only for the boot state.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-TEXTAF** (registers on return; interrupts enabled on return; the interrupt's cells it touches) | R-F-AF, R-F-REGS, R-F-DI, R-F-WAREA |
+| **D-TEXTAF** (registers on return; interrupts enabled on return; work-area cells it changes: the interrupt's $F3F6 / $F3F7 / $FC9E, and $F5F5 / $F856, whose source is not shown) | R-F-AF, R-F-REGS, R-F-DI, R-F-WAREA |
 | **D-FNKBOOT** (FNKSTR empty at cartridge INIT) | R-F-BOOT |
 
 ## Open (not measured)
@@ -87,6 +88,9 @@ already held the defaults, so it is evidence only for the boot state.
 - **[A]** The alternate registers on return; F's bits 5 / 3 for other entry values.
 - **[A]** INIFNK entered with interrupts ENABLED (only entry with them disabled measured); IX / IY
   with one value each; RAM below $F380 and the stack.
+- **[A]** S / Z / C passing through one at a time (entry F only $00 / $FF); the boot-time FNKSTR on
+  the disk row (XFNK ran diskless only); a work area with a second background pattern (a write of
+  an unchanged value is invisible to the snapshot).
 
 ## Tests that cover it
 
