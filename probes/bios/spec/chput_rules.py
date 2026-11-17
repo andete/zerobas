@@ -10,6 +10,8 @@ Evidence (both runs through probes/bios/biosl_run.py, NODISK row, SCREEN 0 width
   XCH  scratchpad/XCH_run1.out   probes/bios/spec/xchput.asm   768 cases: v alone / after ESC /
        after the graphic prefix, from (row 10, col 20) on a Q between P and R
   X2   scratchpad/XCH2_run1.out  probes/bios/spec/xchput2.asm  groups G1..G6 (its header)
+  X3   scratchpad/XCH3_run2.out  probes/bios/spec/xchput3.asm  groups G1..G6 (its header); run 1
+       (XCH3_run1.out) is NOT used: it left the cursor display on, so a cell under the cursor read 255
 Positions in the code are 0-based; csrx / csry are the BIOS's 1-based cells.
 """
 import os
@@ -72,11 +74,52 @@ def _machine(b1, b2):
     return out
 
 
+def _round3(b3):
+    out = []
+    for s in range(5):
+        x = b3[4 + 12 * s: 16 + 12 * s]
+        out.append(NS(src="X3G1", id=f"X3 G1.{s}", seq=s, cur=[(x[2 * i], x[2 * i + 1]) for i in range(6)]))
+    for i in range(512):
+        x = b3[64 + 2 * i: 66 + 2 * i]
+        out.append(NS(src="X3G2", id=f"X3 G2.{i:03}", kind="x" if i < 256 else "y", v=i % 256,
+                      csrsw=x[0], fcaa=x[1]))
+    for i in range(6):
+        x = b3[1088 + 8 * i: 1096 + 8 * i]
+        out.append(NS(src="X3G3", id=f"X3 G3.{i}", wrapped=i < 3, byte=(8, 29, 127)[i % 3], csrx=x[0],
+                      csry=x[1], c938=x[2], c939=x[3], c100=x[4], c101=x[5], lt9=x[6], lt10=x[7]))
+    for i in range(32):
+        x = b3[1136 + 26 * i: 1162 + 26 * i]
+        key, rest = divmod(i, 16)
+        cn, cmd = divmod(rest, 4)
+        r0, c0 = CORNERS[cn]
+        last = 22 if key else 23
+        out.append(NS(src="X3G4", id=f"X3 G4.{i:02}", key=key, row=r0, col=c0, s=min(r0, last), last=last,
+                      cmd="ABCD"[cmd], csrx=x[0], csry=x[1], col0=list(x[2:26])))
+    for i in range(8):
+        x = b3[1968 + 53 * i: 2021 + 53 * i]
+        out.append(NS(src="X3G5", id=f"X3 G5.{i}", op=G4OPS[i], csrx=x[0], csry=x[1],
+                      col0=list(x[2:50:2]), col38=list(x[3:50:2]), cells=list(x[50:53])))
+    out.append(NS(src="X3G6", id="X3 G6.0", sent=27, a=b3[2392]))
+    out.append(NS(src="X3G6", id="X3 G6.1", sent=1, a=b3[2393]))
+    return out
+
+
+def _block3(text, who):
+    import re
+    m = re.search(rf"CAP {who}\s*:\s*([0-9a-fA-F]+)", text)
+    b = bytes.fromhex(m.group(1))
+    b = b + bytes(2398 - len(b))
+    if b[1] != 0xA5:
+        sys.exit(f"FAIL: the XCHPUT3 {who} block is not complete")
+    return b
+
+
 def cases():
     t1 = open(os.path.join(ROOT, "scratchpad", "XCH_run1.out")).read()
     t2 = open(os.path.join(ROOT, "scratchpad", "XCH2_run1.out")).read()
-    return {"ref": _machine(T1.block(t1, "ref"), T2.block(t2, "ref")),
-            "zb": _machine(T1.block(t1, "ours"), T2.block(t2, "ours"))}
+    t3 = open(os.path.join(ROOT, "scratchpad", "XCH3_run2.out")).read()
+    return {"ref": _machine(T1.block(t1, "ref"), T2.block(t2, "ref")) + _round3(_block3(t3, "ref")),
+            "zb": _machine(T1.block(t1, "ours"), T2.block(t2, "ours")) + _round3(_block3(t3, "ours"))}
 
 
 def xch(mode, vs):
@@ -116,6 +159,32 @@ def scrolled(c):
     """the text rows moved up one: row 0's first cell holds what row 1's did ('b')"""
     return c.col0[0] == ord("b")
 
+
+Y1_SEQ = ("ESC Y 1 '%' A B", "ESC Y '%' 1 A B", "ESC Y 1 1 '%' '%'", "1 ESC Y '%' '%' A", "ESC Y 1 A '%' B")
+Y1_REF = ([(1, 1), (1, 1), (1, 1), (1, 6), (34, 6), (35, 6)],
+          [(1, 6), (1, 6), (1, 6), (1, 6), (2, 6), (35, 6)],
+          [(1, 6), (1, 6), (1, 6), (1, 24), (6, 24), (7, 24)],
+          [(1, 24), (1, 24), (1, 24), (1, 6), (6, 6), (7, 6)],
+          [(1, 6), (1, 6), (1, 6), (2, 6), (2, 6), (35, 6)])
+# the key-line-on screen of X3 G5 before the edit: the fill's last row went to row 23 (0-based 22), the
+# ESC Y clamp; row 24 holds the key line (its first cell 'c')
+KB0 = [ord("a") + r for r in range(22)] + [ord("x"), ord("c")]
+KB38 = [ord("a") + r for r in range(22)] + [ord("x"), SP]
+
+
+def key_edit_ok(c):
+    exp = {"ESC L": (KB0[:10] + [SP] + KB0[10:22] + [KB0[23]], KB38[:10] + [SP] + KB38[10:22] + [SP], (1, 11)),
+           "ESC M": (KB0[:10] + KB0[11:23] + [SP, KB0[23]], KB38[:10] + KB38[11:23] + [SP, SP], (1, 11)),
+           "ESC J": (KB0[:11] + [SP] * 12 + [KB0[23]], KB38[:10] + [SP] * 14, (21, 11)),
+           "ESC K": (KB0, KB38[:10] + [SP] + KB38[11:], (21, 11)),
+           "ESC l": (KB0[:10] + [SP] + KB0[11:], KB38[:10] + [SP] + KB38[11:], (21, 11))}
+    for op in ("ESC E", "ESC j", "12"):
+        exp[op] = ([SP] * 23 + [KB0[23]], [SP] * 24, (1, 1))
+    e0, e38, cur = exp[c.op]
+    return c.col0 == e0 and c.col38 == e38 and (c.csrx, c.csry) == cur
+
+
+S9 = "9. Round 3: byte 1 inside ESC Y, the cursor cells, DEL wrapping, the edges, the key line"
 
 RULES = [
     Rule("R-A", S0, "CHPUT returns A unchanged (the rung passes v in A and records the A returned).",
@@ -260,4 +329,32 @@ RULES = [
          lambda c: c.fcaa == 1),
     Rule("R-Y-5", S8, "ESC y '5' sets CSRSW ($FCA9) to 1.",
          lambda c: c.src == "G6" and c.kind == "y" and c.v == ord("5"), lambda c: c.fca9 == 1),
+
+    Rule("R-XY-CELLS", S9, "From both cells set, ESC x '4' clears $FCAA and ESC x '5' clears CSRSW; from both clear, "
+         "ESC y '4' / '5' set them; every other byte after ESC x / y changes neither.",
+         lambda c: c.src == "X3G2",
+         lambda c: (c.csrsw, c.fcaa) == ({"x": {52: (1, 0), 53: (0, 1)}, "y": {52: (0, 1), 53: (1, 0)}}[c.kind]
+                                         .get(c.v, (1, 1) if c.kind == "x" else (0, 0)))),
+    Rule("R-Y1-SEQ", S9, "Byte 1 inside ESC Y: no general rule found; the cursor after each byte of five measured "
+         "sequences (row byte '%' = 37 = row 6), as the reference gives them: "
+         + "; ".join(f"`{q}` {[tuple(x) for x in r]}" for q, r in zip(Y1_SEQ, Y1_REF)) + ".",
+         lambda c: c.src == "X3G1", lambda c: c.cur == Y1_REF[c.seq]),
+    Rule("R-Y1-PARAM", S9, "Byte 1 as ESC Y's whole row or column parameter (the other one '%' = 37) leaves the "
+         "cursor at column 1, row 6, on the reference -- see R-Y1-SEQ: no general rule found.",
+         lambda c: c.src == "G5" and c.v == 1, lambda c: (c.csrx, c.csry) == (1, 6)),
+    Rule("R-DEL-WRAPCELL", S9, "A DEL that wraps from column 1 to the row above blanks that row's column 40; BS and "
+         "29 leave it; none of them changes the rows' LINTTB entries.",
+         lambda c: c.src == "X3G3",
+         lambda c: (c.csrx, c.csry) == (40, 10) and c.c939 == (SP if (c.byte == 127 or not c.wrapped) else ord("z"))
+         and (c.lt9, c.lt10) == ((0 if c.wrapped else 15), 14)),
+    Rule("R-ESC-EDGES", S9, "ESC A / B / C / D stop at the screen's edges: no wrap, no scroll (the last row is the "
+         "last TEXT row).", lambda c: c.src == "X3G4",
+         lambda c: (c.csrx, c.csry) == {"A": (c.col + 1, max(c.s, 1)), "B": (c.col + 1, min(c.s + 1, c.last) + 1),
+                                        "C": (min(c.col + 2, 40), c.s + 1), "D": (max(c.col, 1), c.s + 1)}[c.cmd]
+         and c.col0[0] != ord("b")),
+    Rule("R-ED-KEYROW", S9, "With the key line on, the line and screen edits work on the text rows 1–23 only: ESC L "
+         "drops row 23's content, ESC M blanks row 23, ESC J and the clears stop at row 23, and the key row (row 24) is "
+         "never touched.", lambda c: c.src == "X3G5", lambda c: key_edit_ok(c)),
+    Rule("R-A-PENDING", S9, "CHPUT returns A unchanged after an ESC or a graphic prefix too.",
+         lambda c: c.src == "X3G6", lambda c: c.a == c.sent),
 ]

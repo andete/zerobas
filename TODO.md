@@ -16758,6 +16758,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         column 1.
       Round 2 (XCHPUT2 G2, [`XCH2_table.out`](scratchpad/XCH2_table.out)): at column 1 the VG-8020's DEL, like its BS, wraps to the end of the row
       above (CSRX 40); zerobas stays, and its DEL in the last cell of the last row SCROLLS the screen.
+      Round 3 ([`XCH3_run2.out`](scratchpad/XCH3_run2.out)): a DEL that wraps there BLANKS the row above's column 40 on the VG-8020 (BS / 29 leave it);
+      zerobas's does not move. docs/bios/CHPUT.md's rules R-DEL, R-E-LEFT1/40, R-DEL-WRAPCELL, R-ESC-l, R-ED-l are the target.
       The CF-3300 agrees with the VG-8020 on both cursors (BDOSXM through its BDOS, [`XM_table.out`](scratchpad/XM_table.out)), so
       this is not a regional quirk. The fix is in the C-BIOS repack's CHPUT (a cbios-repack patch). When it lands,
       the page's test audit (docs/spec-method.md §8) turns the matrix's rows into gate cases.
@@ -16777,6 +16779,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ESC Y` to row 24 lands on CSRY 23, and LF / cursor-down on the last text row scroll above the key row. zerobas puts
       the cursor on row 24 and writes over the key line (CSRY one higher in every key-on bottom-corner case). Fix in
       the C-BIOS repack's CHPUT (the text-row count when CNSDFG is on).
+      Round 3 ([`XCH3_run2.out`](scratchpad/XCH3_run2.out)): it is not only movement -- with the key line on the VG-8020's ESC L / M / J / K / E / j / l
+      and 12 work on rows 1-23 only and never touch row 24, and ESC A-D stop at row 23; zerobas edits row 24 too.
+      docs/bios/CHPUT.md's rules R-KEYROW, R-E-... (key on), R-ESC-EDGES, R-ED-KEYROW are the target.
 
 - [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;

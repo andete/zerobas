@@ -541,7 +541,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 1 | 🤖 | the BIOS entry surface (Joost 2026-11-08 / 11-13: entry points first, for C-BIOS upstream). | T-B238E2 |
 | — | TIER 1 | 🤖 | the entry surface; the disk ROM's first user is C-BIOS WITHOUT BASIC (Joost 2026-11-14). | T-AB6934 |
 | — | TIER 1 | 🤖 | happy path (a BIOS call's normal output for a published control code; the BIOS-call focus; filed 2026-11-17). | T-C2B2C8 |
-| — | TIER 1 | 🤖 | happy path (KEY ON is the normal screen; filed 2026-11-17). | T-A1184D |
+| — | TIER 1 | 🤖 | happy path (KEY ON is BASIC's normal screen; filed 2026-11-17). Scope: never under MSX-DOS, which runs with the | T-A1184D |
 | — | TIER 1 | 🤖 | ⬆️ RE-TAGGED THE SAME DAY: Joost, *"having the bios and such stable and on par is | T-3C7B46 |
 | — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | T-D2A359 |
 | — | TIER 2 | 🤖 | reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request). | T-6EEBBC |

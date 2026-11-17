@@ -58,7 +58,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0099 | STRTMS | sound (concept page to come) | L3 | — | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | — | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | — | — |
-| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 4](CHPUT.md) | 10 |
+| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 5](CHPUT.md) | 6 |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | — | — |
