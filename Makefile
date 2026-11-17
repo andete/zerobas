@@ -4544,6 +4544,14 @@ tiers-md:
 kwidx-check:
 	python3 tools/gen_kwidx.py --check
 
+# D-SPECMETHOD (2026-11-17): docs/bios/index.md -- every MSX1 BIOS call, its region, level and
+# page state (docs/spec-method.md). Generated; the check keeps it from drifting.
+bios-spec-index:
+	python3 tools/bios_spec_index.py --write
+
+bios-spec-index-check:
+	python3 tools/bios_spec_index.py --check
+
 tiers-md-check:
 	@python3 tools/tier_table.py --keywords --markdown > build/tier-status.check.md
 	@if diff -u docs/tier-status.md build/tier-status.check.md; then \

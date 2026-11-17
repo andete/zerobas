@@ -1,0 +1,165 @@
+BDOSXL (probes/disk/bdosxl.asm), 2026-11-17: ($F237) and CSRX after each case, the CF-3300 and zerobas.
+Each case starts with a CONOUT CR (column 0) unless fn has bit 7 set ($8x: a CONTINUATION, the count
+carries over from the row before). fn: 2 CONOUT, 6 DIRIO, 9 STROUT (one string, its own '$'), $0B CONST.
+Bytes: "text", a quoted character, or a decimal code. Raw captures: scratchpad/XL2_stock.out, XL2_ours.out
+(rows 0-83 also in XL_stock.out / XL_ours.out, round 1; reproduced exactly on the CF-3300 in round 2).
+⚠️ CSRX is CONTAMINATED in rows 35, 40, 42, 43 and 84 (and 85, which continues 84): they begin inside the escape
+sequence the row before left unfinished (34: a bare ESC; 39: ESC x; 41, 42, 83: a partial ESC Y), so the leading CR
+went to CHPUT's escape. (Row 41 is CLEAN: row 40 completed its ESC x 5. Corrected after the second review.)
+The count there is still valid: the BDOS-level CR zeroed it either way.
+head: LINLEN CF 29 zb 29; ($F237) at program entry CF 0 zb 0
+
+row  fn   bytes  | CF-3300 col CSRX | zerobas col CSRX | note
+  0  $02  "XYZ" 0  |   3  4 |   4  4 DIFF | 
+  1  $02  "XYZ" 1 "Q"  |   4  5 |   5  5 DIFF | 
+  2  $02  "XYZ" 2  |   3  4 |   4  4 DIFF | 
+  3  $02  "XYZ" 3  |   3  4 |   4  4 DIFF | 
+  4  $02  "XYZ" 4  |   3  4 |   4  4 DIFF | 
+  5  $02  "XYZ" 5  |   3  4 |   4  4 DIFF | 
+  6  $02  "XYZ" 6  |   3  4 |   4  4 DIFF | 
+  7  $02  "XYZ" 7  |   3  4 |   4  4 DIFF | 
+  8  $02  "XYZ" 8  |   2  3 |   4  3 DIFF | 
+  9  $02  "XYZ" 9  |   8  9 |   8  9 | 
+ 10  $02  "XYZ" 10  |   3  4 |   3  4 | 
+ 11  $02  "XYZ" 11  |   0  1 |   4  1 DIFF | 
+ 12  $02  "XYZ" 12  |   0  1 |   4  1 DIFF | 
+ 13  $02  "XYZ" 13  |   0  1 |   0  1 | 
+ 14  $02  "XYZ" 14  |   3  4 |   4  4 DIFF | 
+ 15  $02  "XYZ" 15  |   3  4 |   4  4 DIFF | 
+ 16  $02  "XYZ" 16  |   3  4 |   4  4 DIFF | 
+ 17  $02  "XYZ" 17  |   3  4 |   4  4 DIFF | 
+ 18  $02  "XYZ" 18  |   3  4 |   4  4 DIFF | 
+ 19  $02  "XYZ" 19  |   3  4 |   4  4 DIFF | 
+ 20  $02  "XYZ" 20  |   3  4 |   4  4 DIFF | 
+ 21  $02  "XYZ" 21  |   3  4 |   4  4 DIFF | 
+ 22  $02  "XYZ" 22  |   3  4 |   4  4 DIFF | 
+ 23  $02  "XYZ" 23  |   3  4 |   4  4 DIFF | 
+ 24  $02  "XYZ" 24  |   3  4 |   4  4 DIFF | 
+ 25  $02  "XYZ" 25  |   3  4 |   4  4 DIFF | 
+ 26  $02  "XYZ" 26  |   3  4 |   4  4 DIFF | 
+ 27  $02  "XYZ" 28  |   3  5 |   4  5 DIFF | 
+ 28  $02  "XYZ" 29  |   2  3 |   4  3 DIFF | 
+ 29  $02  "XYZ" 30  |   3  4 |   4  4 DIFF | 
+ 30  $02  "XYZ" 31  |   3  4 |   4  4 DIFF | 
+ 31  $02  "XYZ" 127  |   2  3 |   4  4 DIFF | 
+ 32  $02  "XYZ" 1  |   3  4 |   4  4 DIFF | 
+ 33  $02  "Q"  |   1  2 |   1  2 | (continues the pending prefix? a fresh CR came first)
+ 34  $02  "XYZ" 27  |   3  4 |   4  4 DIFF | 
+ 35  $02  "K"  |   1  5 |   1  5 | (completes the ESC above, after the CR)
+ 36  $02  "XYZ" 27 "K"  |   4  4 |   5  4 DIFF | erase to the line's end
+ 37  $02  "XYZ" 27 "C"  |   4  5 |   5  5 DIFF | cursor right
+ 38  $02  "XYZ" 27 "D"  |   4  3 |   5  3 DIFF | cursor left
+ 39  $02  "XYZ" 27 "x"  |   4  4 |   5  4 DIFF | 
+ 40  $02  "XYZ" 27 "x" "5"  |   5  7 |   6  7 DIFF | 
+ 41  $02  "XYZ" 27 "Y"  |   4  4 |   5  4 DIFF | 
+ 42  $02  "XYZ" 27 "Y" '#'  |   5  2 |   6  2 DIFF | 
+ 43  $02  "XYZ" 27 "Y" '#' '*'  |   6 11 |   7 11 DIFF | 
+ 44  $02  "XYZ" 27 "Y" '#' '*' "Q"  |   7 12 |   8 12 DIFF | 
+ 45  $02  9  |   8  9 |   8  9 | 
+ 46  $02  "1" 9  |   8  9 |   8  9 | 
+ 47  $02  "12" 9  |   8  9 |   8  9 | 
+ 48  $02  "123" 9  |   8  9 |   8  9 | 
+ 49  $02  "1234" 9  |   8  9 |   8  9 | 
+ 50  $02  "12345" 9  |   8  9 |   8  9 | 
+ 51  $02  "123456" 9  |   8  9 |   8  9 | 
+ 52  $02  "1234567" 9  |   8  9 |   8  9 | 
+ 53  $02  "12345678" 9  |  16 17 |  16 17 | 
+ 54  $02  "123456789" 9  |  16 17 |  16 17 | 
+ 55  $02  "123456789012345" 9  |  16 17 |  16 17 | 
+ 56  $02  "1234567890123456" 9  |  24 25 |  24 25 | 
+ 57  $02  9 9 9  |  24 25 |  24 25 | three TABs
+ 58  $02  8  | 255 29 |   1 29 DIFF | 
+ 59  $02  "Q" 8 8  | 255 29 |   3 29 DIFF | 
+ 60  $02  "QR" 8 9  |   8  9 |   8  7 DIFF | BS then TAB
+ 61  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"  |  36  8 |  36  8 | 
+ 62  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"  |  37  9 |  37  9 | 
+ 63  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?"  |  38 10 |  38 10 | 
+ 64  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?+-*"  |  41 13 |  41 13 | 
+ 65  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?+-*/=<>"  |  45 17 |  45 17 | 
+ 66  $02  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?+-*/" 9  |  48 20 |  48 20 | 
+ 67  $02  "XYZ" 128  |   4  5 |   4  5 | 
+ 68  $02  "XYZ" 160  |   4  5 |   4  5 | 
+ 69  $02  "XYZ" 255  |   4  5 |   4  5 | 
+ 70  $06  "XYZ"  |   0  4 |   3  4 DIFF | 
+ 71  $06  "XYZ" 8  |   0  3 |   4  3 DIFF | 
+ 72  $06  "XYZ" 9  |   0  9 |   8  9 DIFF | 
+ 73  $06  "XYZ" 12  |   0  1 |   4  1 DIFF | 
+ 74  $06  "XYZ" 7  |   0  4 |   4  4 DIFF | 
+ 75  $06  "XYZ" 10  |   0  4 |   3  4 DIFF | 
+ 76  $06  "XYZ" 13  |   0  1 |   0  1 | 
+ 77  $09  "XYZ$"  |   3  4 |   3  4 | 
+ 78  $09  "XYZ" 8 "$"  |   2  3 |   4  3 DIFF | 
+ 79  $09  "XYZ" 9 "$"  |   8  9 |   8  9 | 
+ 80  $09  "XYZ" 12 "$"  |   0  1 |   4  1 DIFF | 
+ 81  $09  "XYZ" 7 "$"  |   3  4 |   4  4 DIFF | 
+ 82  $09  "XYZ" 10 "$"  |   3  4 |   3  4 | 
+ 83  $09  "XYZ" 27 "Y" '#' "$"  |   5  4 |   6  4 DIFF | 
+ 84  $02  'A' 'B'  |   2  2 |   2  2 | R2a base: count 2
+ 85  $86  'X' 'Y' 'Z'  |   2  5 |   5  5 DIFF | R2a DIRIO from count 2: untouched 2 / zeroed 0
+ 86  $02  'X' 'Y' 'Z' 27 'Y' '#' '*'  |   6 11 |   7 11 DIFF | R2b desync: count 6, CSRX 11
+ 87  $82  9  |   8 13 |   8 12 DIFF | R2b TAB: from the count -> 8; from the cursor -> next stop past 10
+ 88  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2b desync: count 36, CSRX 8
+ 89  $82  9  |  40 12 |  40 12 | R2b TAB at count 36
+ 90  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then BEL
+ 91  $82  7  |  36  8 |  37  8 DIFF | R2c BEL after the desync
+ 92  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then NUL
+ 93  $82  0  |  36  8 |  37  8 DIFF | R2c NUL after the desync
+ 94  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then LF
+ 95  $82  10  |  36  8 |  36  8 | R2c LF after the desync
+ 96  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then right
+ 97  $82  28  |  36  9 |  37  9 DIFF | R2c right after the desync
+ 98  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then up
+ 99  $82  30  |  36  8 |  37  8 DIFF | R2c up after the desync
+100  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then down
+101  $82  31  |  36  8 |  37  8 DIFF | R2c down after the desync
+102  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then ESC K
+103  $82  27 'K'  |  37  8 |  38  8 DIFF | R2c ESC K after the desync
+104  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then prefix+Q
+105  $82  1 'Q'  |  37  9 |  38  9 DIFF | R2c prefix+Q after the desync
+106  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then home
+107  $82  11  |   0  1 |  37  1 DIFF | R2c home after the desync
+108  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then FF
+109  $82  12  |   0  1 |  37  1 DIFF | R2c FF after the desync
+110  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then BS
+111  $82  8  |  35  7 |  37  7 DIFF | R2c BS after the desync
+112  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then left
+113  $82  29  |  35  7 |  37  7 DIFF | R2c left after the desync
+114  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2c desync 36 / CSRX 8, then DEL
+115  $82  127  |  35  7 |  37  8 DIFF | R2c DEL after the desync
+116  $02  'X' 'Y' 'Z' 27 'Y' '#' '*'  |   6 11 |   7 11 DIFF | R2c desync by ESC Y: count 6, CSRX 11
+117  $82  7  |   6 11 |   8 11 DIFF | R2c BEL: unchanged 6 / re-synced 10
+118  $02  29  | 255 29 |   1 29 DIFF | R2d cursor-left at count 0
+119  $02  127  | 255 29 |   1  1 DIFF | R2d DEL at count 0
+120  $02  'X' 'Y' 'Z' 27 8  |   2  4 |   5  4 DIFF | R2e ESC BS
+121  $02  'X' 'Y' 'Z' 27 9  |   8  8 |   8  7 DIFF | R2e ESC TAB
+122  $02  'X' 'Y' 'Z' 27 13  |   0  4 |   0  4 | R2e ESC CR
+123  $02  'X' 'Y' 'Z' 27 'Y' 9 '4'  |   9  4 |   9  3 DIFF | R2e ESC Y with a TAB as the row
+124  $02  'X' 'Y' 'Z' 27 'Y' '#' 9  |   8  3 |   8  2 DIFF | R2e ESC Y with a TAB as the column
+125  $02  'X' 'Y' 'Z' 1 9  |   8  9 |   8  8 DIFF | R2e prefix 1 then TAB
+126  $02  'X' 'Y' 'Z' 1 8  |   2  3 |   5  3 DIFF | R2e prefix 1 then BS
+127  $02  'X' 'Y' 'Z' 1 13  |   0  1 |   0  1 | R2e prefix 1 then CR
+128  $09  'X' 'Y' 'Z' 11 '$'  |   0  1 |   4  1 DIFF | R2f STROUT home
+129  $09  'X' 'Y' 'Z' 13 '$'  |   0  1 |   0  1 | R2f STROUT CR
+130  $09  'X' 'Y' 'Z' 29 '$'  |   2  3 |   4  3 DIFF | R2f STROUT left
+131  $09  'X' 'Y' 'Z' 127 '$'  |   2  3 |   4  4 DIFF | R2f STROUT DEL
+132  $09  'X' 'Y' 'Z' 128 '$'  |   4  5 |   4  5 | R2f STROUT $80
+133  $09  'X' 'Y' 'Z' 28 '$'  |   3  5 |   4  5 DIFF | R2f STROUT right
+134  $09  8 '$'  | 255  1 |   1  1 DIFF | R2f STROUT BS at count 0
+135  $09  'X' 'Y' 'Z' 9 9 '$'  |  16 17 |  16 17 | R2f STROUT two TABs
+136  $02  'X' 'Y' 'Z' ' '  |   4  5 |   4  5 | R2g space
+137  $02  'X' 'Y' 'Z' '~'  |   4  5 |   4  5 | R2g ~
+138  $02  'X' 'Y' 'Z' 129  |   4  5 |   4  5 | R2g $81
+139  $02  'X' 'Y' 'Z' 254  |   4  5 |   4  5 | R2g $FE
+140  $02  8 'Q'  |   0  2 |   2  2 DIFF | R2h 255 then a printable: wrap 0 / clamp 255
+141  $02  8 9  |   0  2 |   8  8 DIFF | R2h TAB at 255
+142  $02  8 8 8 8 8 8 9  |   0  7 |   8  3 DIFF | R2h TAB at 250
+143  $02  'X' 'Y' 'Z' 12 'A' 9 'B'  |   9 10 |   9  6 DIFF | R2i XYZ FF A TAB B
+144  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 9  |  32  4 |  32  4 | R2j 25 printables then TAB
+145  $02  'X' 'Y' 'Z'  |   3  4 |   3  4 | R2k base: count 3
+146  $8B  0  |   3  4 |   3  4 | R2k CONST ($0B) once
+147  $86  255  |   3  4 |   3  4 | R2k DIRIO input (E=$FF) once
+148  $82  9  |   8  9 |   8  9 | R2k then TAB: from 3 -> 8
+149  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2l desync 36
+150  $86  7  |  36  8 |  37  8 DIFF | R2l DIRIO BEL at count 36
+151  $02  'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'  |  36  8 |  36  8 | R2l desync 36
+152  $86  9  |  36  9 |  40 12 DIFF | R2l DIRIO TAB at count 36
