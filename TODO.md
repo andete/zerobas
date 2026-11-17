@@ -16623,7 +16623,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`DKC_dskfmt_cbios.out`](scratchpad/DKC_dskfmt_cbios.out), [`DKC_fmtdos_cbios.out`](scratchpad/DKC_fmtdos_cbios.out)) -- no bug (prediction "a divergence" MISSED). The three now run with
       `ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE)`; the CF-3300-host BDOS run stays as `bdos-cfhost-acceptance` (gate_wt's
       EXCLUDED5 list). 🔭 TIER 5: some exercisers run much slower on C-BIOS (WRZER 65.8 s vs 42.8, DOSL-D3 155.6 vs 93.0).
-      ➡️ NEXT: (2) disk errors at DSKIO / BDOS level; (3) DSKIO direct writes; (4) the $F37D dispatch; (5) console output. (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      ✅ **(2) / (3) DSKIO PART, 2026-11-17.** New `make phydioerr-acceptance` (probes/disk/disk_probe_phydioerr.py): PHYDIO
+      ($0144 -> DSKIO) called directly on the shipped machine against the CF-3300 -- a WRITE (sector 13 then compared in
+      both images), a write to a write-protected (read-only) image (Cy, A = 0, nothing written), no disk (A = 2), the
+      last sector, sectors past the end, $FFFF: 6 SAME, 3 a REAL DIFFERENCE pinned ([`PE_run1.out`](scratchpad/PE_run1.out), [`PE_run2.out`](scratchpad/PE_run2.out), [`PE_run3.out`](scratchpad/PE_run3.out)):
+      a cylinder past the last (sector 1440 / 1500 / 2000) -> the CF-3300 A = 2 (not ready), zerobas A = 8 (record not
+      found); $FFFF wraps in range on both (so a CYLINDER rule, not a sector-count one) -- filed D-DSKIOCYL below.
+      Left of (2): the BDOS-level error path (DISKVE / Abort-Retry-Ignore for a .COM program); CRC / seek codes.
+      ➡️ NEXT: (2)'s BDOS-level error path; (4) the $F37D dispatch; (5) console output (DIRIO with a key).
+
+- [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
+      🎚️ TIER 6 — every error (a sector past the media's end; filed 2026-11-17, D-DISKCONTRACT gap 2).
+      🤖 **AUTONOMOUS** — PHYDIO / DSKIO with sector 1440, 1500 or 2000 on the 720 KB disk; sector $FFFF reads fine on
+      BOTH (an 8-bit cylinder wrapping in range, read as a result). Our driver maps the FDC's status faithfully; the
+      fix is a cylinder range check in DSKIO (~5 B) -- the disk ROM has 0 B free, so a carve first (Joost: the disk ROM
+      stays in its allotted space). Pinned in phydioerr-acceptance (rows read_far / read_1440 / read_1500). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

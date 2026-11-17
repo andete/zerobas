@@ -908,6 +908,10 @@ probe: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 bdos-acceptance: $(DISK_ROM) repack-machine
 	ZEROBAS_OURS_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
+# --- phydioerr-acceptance: PHYDIO's DSKIO error paths and a write vs the CF-3300 (D-DISKCONTRACT gaps 2 / 3) ---
+phydioerr-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/disk_probe_phydioerr.py
+
 bdos-cfhost-acceptance: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 

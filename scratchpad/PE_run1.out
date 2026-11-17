@@ -1,0 +1,6 @@
+ROW read_ok     CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+ROW write_ok    CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] sector 13: SAME (CF written) SAME
+ROW write_wp    CF=[R F 1  A 0  B 1 ] ZB=[R F 1  A 0  B 1 ] sector 13: SAME (CF not written) SAME
+ROW read_nodisk CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 2  B 1 ] SAME
+ROW read_far    CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 8  B 1 ] DIVERGES
+FAIL: PHYDIO's error paths and a write against the CF-3300 (4/5)

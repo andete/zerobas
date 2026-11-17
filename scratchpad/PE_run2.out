@@ -1,0 +1,5 @@
+ROW read_last   CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+ROW read_1440   CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 8  B 1 ] DIVERGES
+ROW read_1500   CF=[R F 1  A 2  B 1 ] ZB=[R F 1  A 8  B 1 ] DIVERGES
+ROW read_ffff   CF=[R F 0  A 0  B 0 ] ZB=[R F 0  A 0  B 0 ] SAME
+FAIL: PHYDIO's error paths and a write against the CF-3300 (2/4)
