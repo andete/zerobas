@@ -16818,8 +16818,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - **R-I-TAIL-TXT:** INITXT with a width above 40: zerobas also clears the 64 bytes after the 960 name cells; the
         VG-8020 leaves them.
       - **R-I-KEYEDGE:** key line on with width 0, 80 or 255: the reference's odd cells (its rule says which).
-      - **docs/bios/TOTEXT.md R-T-OLDX** ([`XTOT_run1.out`](scratchpad/XTOT_run1.out)): TOTEXT from SCREEN 2 / 3 with a
-        garbage OLDSCR ($5A): the VG-8020 sets up SCREEN 3, zerobas SCREEN 1.
+      - **docs/bios/TOTEXT.md R-T-OLDX / R-T-DISPATCH** ([`XTOT_run1.out`](scratchpad/XTOT_run1.out),
+        [`XTOT2_run1.out`](scratchpad/XTOT2_run1.out)): TOTEXT from SCREEN 2 / 3 dispatches on OLDSCR -- 2 back to SCREEN
+        2; 3, $5A, $7F, $80 SCREEN 3; $81, $FF SCREEN 0 (OLDSCR := 0) -- where zerobas sets up SCREEN 1 for every
+        non-zero OLDSCR (and sets OLDSCR to 1).
       - **docs/bios/DSPFNK.md R-K-STATE / R-K-ERA** ([`XKEY_run1.out`](scratchpad/XKEY_run1.out)): DSPFNK / FNKSB
         likewise draw on row 24 and set CRTCNT := 24 on zerobas (the VG-8020: row CRTCNT, CRTCNT kept); and at a
         width below the screen's (37, 39, 29) the VG-8020 writes only the width's span of the key line's row,
