@@ -95,11 +95,38 @@ def program() -> bytes:
     return ("\r\n".join(lines) + "\r\n").encode("ascii") + b"\x1a"
 
 
+GEOMETRY = os.environ.get("ZB_GEOMETRY", "720")   # D-DISKCONTRACT gap 13: "360" = 1DD, media $F8
+
+
+def to_360(img: bytearray) -> bytearray:
+    """The 720 KB empty image re-made as a 360 KB single-sided one (media $F8): 720
+    sectors, 1 head, 2 sectors per FAT -- FATs at 1..4, the root at 5..11, data from 12."""
+    boot = bytearray(img[:512])
+    boot[19:21] = (720).to_bytes(2, "little")      # total sectors
+    boot[21] = 0xF8                                 # media
+    boot[22:24] = (2).to_bytes(2, "little")         # sectors per FAT
+    boot[26:28] = (1).to_bytes(2, "little")         # heads
+    out = bytearray(720 * 512)
+    out[:512] = boot
+    for f in (1, 3):                                # both FAT copies
+        out[f * 512:f * 512 + 3] = b"\xF8\xFF\xFF"
+    return out
+
+
+def geometry(img: bytes) -> dict:
+    spf = int.from_bytes(img[22:24], "little")
+    root = 1 + 2 * spf
+    rsec = int.from_bytes(img[17:19], "little") * 32 // 512
+    return {"spf": spf, "root": root, "rsec": rsec, "data": root + rsec, "spc": img[13]}
+
+
 def image() -> bytes:
     path = probe_tmp.tmp("bdosf37d_empty.dsk")
     subprocess.run(["python3", os.path.join(REPO, "tools", "make_test_dsk.py"), "--empty", path],
                    check=True, capture_output=True)
     img = bytearray(open(path, "rb").read())
+    if GEOMETRY == "360":
+        img = to_360(img)
     fat12_add(img, "AUTOEXEC", "BAS", program())                     # root entry 0
     fat12_add(img, "SECOND", "DAT", bytes(range(256)) * 2)           # root entry 1
     fat12_add(img, "THIRD", "DAT", b"THIRD FILE\r\n" * 10)           # root entry 2
@@ -173,13 +200,20 @@ def main() -> int:
     # the root directory, the data area -- not only the entries the rows name. A byte
     # different there is a disk another system would read differently.
     img = {k: res[k][3] for k in ("cf", "zb")}
-    regions = (("boot", 0, 512), ("FAT 1", 512, 3 * 512), ("FAT 2", 4 * 512, 3 * 512),
-               ("root", 7 * 512, 7 * 512), ("data", 14 * 512, len(img["cf"]) - 14 * 512))
+    g = geometry(img["cf"])
+    regions = (("boot", 0, 512), ("FAT 1", 512, g["spf"] * 512),
+               ("FAT 2", (1 + g["spf"]) * 512, g["spf"] * 512),
+               ("root", g["root"] * 512, g["rsec"] * 512),
+               ("data", g["data"] * 512, len(img["cf"]) - g["data"] * 512))
     # EXCUSED, filed D-SLACK (TIER 6): NEWFILE.TMP's records nobody wrote. FDEL freed cluster 5
     # (sector 20), FMAKE + WRRND rec 2 took it; the CF-3300 writes its STALE sector buffer
     # (SECOND.DAT's bytes) around the record, ours reads-modifies-writes the old sector
     # (THIRD.DAT's text): bytes 0..255 and 384..511 of sector 20 (scratchpad/IM_run1.out).
-    slack = set(range(20 * 512, 20 * 512 + 256)) | set(range(20 * 512 + 384, 21 * 512))
+    rootb = img["cf"][g["root"] * 512:(g["root"] + g["rsec"]) * 512]
+    nf = next((rootb[i:i + 32] for i in range(0, len(rootb), 32) if rootb[i:i + 11] == b"NEWFILE TMP"),
+              None)
+    sec = g["data"] + (int.from_bytes(nf[26:28], "little") - 2) * g["spc"] if nf else -1
+    slack = set(range(sec * 512, sec * 512 + 256)) | set(range(sec * 512 + 384, (sec + 1) * 512))
     for name, off, n in regions:
         c, z = img["cf"][off:off + n], img["zb"][off:off + n]
         d = [off + i for i in range(min(len(c), len(z)))
@@ -190,11 +224,11 @@ def main() -> int:
               + ("same" if same else f"{len(d)} byte(s) differ from ${d[0]:05X}: CF "
                  f"{img['cf'][d[0]:d[0] + 16].hex()} ours {img['zb'][d[0]:d[0] + 16].hex()}"))
     for e in range(4):
-        c, z = (res[k][3][7 * 512 + 32 * e:7 * 512 + 32 * e + 32] for k in ("cf", "zb"))
+        c, z = (res[k][3][g["root"] * 512 + 32 * e:g["root"] * 512 + 32 * e + 32] for k in ("cf", "zb"))
         ok &= c == z
         print(f"  {'PASS' if c == z else 'FAIL'}  root entry {e} afterwards: CF {c.hex()}"
               + ("" if c == z else f"\n                              ours {z.hex()}"))
-    print(f"===== bdosf37d-acceptance: {'PASS' if ok else 'FAIL'} =====")
+    print(f"===== bdosf37d-acceptance ({GEOMETRY} KB): {'PASS' if ok else 'FAIL'} =====")
     return 0 if ok else 1
 
 

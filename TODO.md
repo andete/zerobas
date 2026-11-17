@@ -16667,6 +16667,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       but one sector ([`IM_run1.out`](scratchpad/IM_run1.out)): the never-written records of NEWFILE.TMP's reused cluster -- the CF-3300 writes its
       STALE sector buffer around WRRND's record, ours reads-modifies-writes the old sector. Undefined content; excused
       by name and FILED D-SLACK below ([`IM_run2.out`](scratchpad/IM_run2.out): PASS).
+      ✅ **(13) A SECOND GEOMETRY, 2026-11-17.** bdosf37d runs on a 360 KB single-sided image too (media $F8, 2-sector FATs,
+      the regions from the image's own BPB; ZB_GEOMETRY=360, both in the gate): all 25 rows, the FCBs, the DTA and the
+      whole image SAME (ALLOC 354 clusters on both: [`G3_360.out`](scratchpad/G3_360.out); 720 KB still PASS, [`G3_720.out`](scratchpad/G3_720.out)). No bug.
       ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**

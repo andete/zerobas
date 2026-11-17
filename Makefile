@@ -915,6 +915,7 @@ phydioerr-acceptance: repack-machine $(DISK_TEST_DSK)
 # --- bdosf37d-acceptance: the BDOS through $F37D (a ROM program's entry) vs the CF-3300 (D-DISKCONTRACT gap 4) ---
 bdosf37d-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/bdosf37d_acceptance.py
+	ZB_GEOMETRY=360 ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 -u probes/disk/bdosf37d_acceptance.py   # 1DD, media $F8 (gap 13)
 
 bdos-cfhost-acceptance: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
