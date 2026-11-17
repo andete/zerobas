@@ -371,6 +371,13 @@ def _param_key(k, v):
     # reference readings and the next FULL missed every one of them again.
     # The bytes are what the machine reads; a path is only where they sat.
     if k in MEDIA_PARAMS and isinstance(v, str) and os.path.isfile(v):
+        # D-DISKCONTRACT (2026-11-17): and by its WRITABILITY when it is read-only --
+        # openMSX mounts a read-only image write-protected, so the machine reads a different
+        # disk. phydioerr's write_ok / write_wp rows run the same program on byte-identical
+        # images; without this, `refs` served write_ok's CF-3300 reading for write_wp.
+        # (A writable image's key is unchanged, so no stored entry is lost.)
+        if not os.access(v, os.W_OK):
+            return {"sha256": _file_sha(v), "readonly": True}
         return {"sha256": _file_sha(v)}
     return list(v) if isinstance(v, tuple) else v
 
@@ -589,8 +596,18 @@ def replay_media(media: dict, params: dict) -> None:
     for k, blob in media.items():
         path = params.get(k)
         if isinstance(path, str):
+            # D-DISKCONTRACT (2026-11-17): a probe may mount a READ-ONLY image (openMSX then
+            # write-protects the disk -- phydioerr's write_wp row); the replayed bytes are what
+            # the reference left there, so write them and put the file's own mode back.
+            import os
+            import stat
+            mode = os.stat(path).st_mode if os.path.exists(path) else None
+            if mode is not None and not mode & stat.S_IWUSR:
+                os.chmod(path, mode | stat.S_IWUSR)
             with open(path, "wb") as fh:
                 fh.write(zlib.decompress(base64.b64decode(blob)))
+            if mode is not None:
+                os.chmod(path, stat.S_IMODE(mode))
             STATS["media_replayed"] = STATS.get("media_replayed", 0) + 1
 
 

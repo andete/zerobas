@@ -5067,7 +5067,8 @@ k47b2_nextbyte:
 ; residual (2), ruled by Joost 2026-11-10 ("Match the references"): MEASURED on three
 ; disk systems -- the CF-3300, the VG-8020 + NMS 1200 and the NMS 8250 (MSX2) -- through
 ; $F37D and, on the CF-3300, through MSX-DOS's $0005 too (scratchpad/setrnd_probe.py,
-; setrnd_dos_probe.py): RR := 1 + (RS >> 1) x 65536 -- r0 = 1, r1 = 0, r2..r3 = RS / 2 --
+; setrnd_dos_probe.py): RR := 1 + (RS >> 1) x 65536 -- r0 = 1, r1 = 0, r2..r3 = RS / 2 (for
+; RS < 256; for a larger RS only the low byte counts and r3 = 0: D-SETRNDRS, below) --
 ; whatever EX (+12), CR (+32), +13, +24 or the previous RR, and after any sequential
 ; reads. It does NOT compute the current record. This body used to (the CP/M rule, cr
 ; + ex x 128 + s2 x 4096, reading +14 -- MSX-DOS's RS -- as CP/M's S2): an
@@ -5077,12 +5078,15 @@ k47b2_nextbyte:
 setrnd_body:
                 push    de
                 pop     ix
-                ld      l, (ix+14)
-                ld      h, (ix+15)
-                srl     h
-                rr      l                   ; HL = RS / 2
-                ld      (ix+35), l          ; r2
-                ld      (ix+36), h          ; r3
+                ; 🔴 D-SETRNDRS (2026-11-17): r2 = RS's LOW BYTE / 2, r3 = 0 -- not the 16-bit RS / 2.
+                ; The rule above was measured with RS = 128 and 1 only, where the two coincide;
+                ; RS = $0181 / $0200 / $0400 / $1234 / $FFFF on the CF-3300 give r2 = $40 / 0 / 0 /
+                ; $1A / $7F and r3 = 0 every time (scratchpad/setrnd_rs_probe.py, F7_rs2.out;
+                ; found by bdosf37d-acceptance: RS = $0400 left r3 = 2 here). 4 B shorter.
+                ld      a, (ix+14)
+                srl     a                   ; A = RS's low byte / 2
+                ld      (ix+35), a          ; r2
+                ld      (ix+36), 0          ; r3
                 ld      hl, 1
                 call    set_rr              ; r0 = 1, r1 = 0
                 call    clr_f306            ; M20 dispatcher-flag rule (A = 0)

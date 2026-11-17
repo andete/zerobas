@@ -16641,8 +16641,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the CF-3300's BOOT passes through -- a vacuous anchor at t = 14.8 s reading boot RAM ([`DK_stock.out`](scratchpad/DK_stock.out)); `done` is
       now pinned at $0330. And a single DIRIO call agreed on both machines with A = 0 -- 'w' was not yet typed -- so
       it never saw a key ([`DK_ours.out`](scratchpad/DK_ours.out)): a case agreeing for the wrong reason.
-      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first); (4) the $F37D dispatch; (5)'s console output
-      (screen diffs of CONOUT / STROUT / echo).
+      ✅ **(4) THE $F37D DISPATCH, 2026-11-17 -- A REAL DIFFERENCE FIXED (D-SETRNDRS).** New `make bdosf37d-acceptance`
+      (probes/disk/bdosf37d_acceptance.py): 25 rows through $F37D -- VERSION LOGIN CURDRV SELDSK GDATE GTIME ALLOC SFIRST
+      SNEXT FOPEN FSIZE SETRND RDRND FCLOSE FREN FDEL FMAKE WRRND WRZER CONST DIRIO CONOUT -- every A, the published
+      register outputs, 5 FCBs, the DTA, root entries 0..3: all SAME but FCB S's +36 ([`F7_run1.out`](scratchpad/F7_run1.out)). Tracked per row
+      ([`F7_run2.out`](scratchpad/F7_run2.out), [`F7_run3.out`](scratchpad/F7_run3.out)): SETRND set RR's top byte from a 16-bit RS / 2. D-BDOSFCB's rule (11-10) was
+      measured with RS = 128 and 1 only, where two rules COINCIDE; [`setrnd_rs_probe.py`](scratchpad/setrnd_rs_probe.py) (RS = $0080 $0181 $0200
+      $0400 $1234 $FFFF, [`F7_rs2.out`](scratchpad/F7_rs2.out)) separates them: the CF-3300 sets r2 = RS's LOW byte / 2, r3 = 0. setrnd_body
+      (disk/kernel.asm, both $0005 and $F37D) fixed, 4 B shorter: 6 / 6 ([`F7_rs3.out`](scratchpad/F7_rs3.out)), bdosf37d PASS ([`F7_run4.out`](scratchpad/F7_run4.out)).
+      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first); (5)'s console output (screen diffs of CONOUT /
+      STROUT / echo).
 
 - [ ] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
       🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).
