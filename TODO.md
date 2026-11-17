@@ -16660,6 +16660,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       never the published $4010, whose raw codes PHYDIO / Disk BASIC expect): save the inputs, call dskio, on Cy build
       A / B / C, call through (DISKVE), loop on 1, warm-boot on 2, return per the Ignore rules above. Then price it
       and carve (disk ROM 0 B free).
+      🔴 **A SHARED BODY (2026-11-17):** read_sector is basic/fat-prim-body.inc's -- Disk BASIC runs the same code, and
+      zerobas BASIC raises 68 / 69 / 70 itself, so a wrapper there must not change BASIC. Key the call on the DISKVE
+      cell being NON-ZERO (MSX-DOS's COMMAND.COM and a program install one; zerobas BASIC does not set it -- VERIFY)
+      rather than on a DOS-mode flag (none exists). The Ignore rules split: FMAKE's path wants "ignored" = success,
+      RDABS / WRABS want A = $FF after it -- a one-byte "ignored" flag, or RDABS / WRABS calling the handler themselves.
+      💰 PRICE ~50-60 B; `scratchpad/dupspan_disk.py` finds 43 B SAFE NET but SCATTERED (each freed byte returns only in
+      front of its own pin) -- so a carve slice first (D-DISKCARVE's unclaimed candidate: the getalloc /
+      fat_have_free_cluster scan bodies, ~60 B), then the wrapper.
 
 - [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
       🎚️ TIER 6 — every error (a sector past the media's end; filed 2026-11-17, D-DISKCONTRACT gap 2).
