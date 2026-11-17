@@ -15,7 +15,7 @@ value is itself a constant). XINIT3 varies them. ONE case list that GENERATES pr
 and DECODES its run:
 
     python3 probes/bios/spec/xinit4_cases.py --gen
-    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit4.asm --row nodisk > scratchpad/XINIT4_run2.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit4.asm --row nodisk > scratchpad/XINIT4_run3.out
 
 The setup is XINIT's (xinit_cases.py's docstring), with two inputs per case instead of constants:
   - `rgg`: RG0SAV..RG7SAV := rgg ($A5 as XINIT, $5A, or $A7: R1's size bit set);
@@ -49,7 +49,9 @@ def _cases():
                       rgg=rgg, crt=crt, fill=fill, lab=lab, rg1=rg1,
                       what=f"{name} width {width} key {'on' if key else 'off'} copies ${rgg:02X} CRTCNT {crt}"
                            + (" tables3" if tbl == 2 else " tables2" if tbl == 1 else "")
-                           + (f" fill {fill:02X}" if fill != 0x5A else "") + (" 7-char labels" if lab else "")
+                           + (f" fill {fill:02X}" if fill != 0x5A else "")
+                           + {0: "", 1: " 7-char labels", 2: " 10-char labels"}[lab]
+                           + (f" FORCLR {fg:02X}" if fg != 15 else "")
                            + (f" RG1SAV {rg1:02X}" if rg1 != rgg else "")))
     for call, w in ((INITXT, 40), (INIT32, 32)):
         for rgg in (0x01, 0x04, 0x20, 0x80, 0xFE, 0xFB, 0xDF, 0x7F):         # walking bits and their complements
@@ -70,6 +72,11 @@ def _cases():
             add(call, w, 0, rgg=rgg)
         add(call, w, 0, rgg=0xFE, rg1=0x01)
         add(call, w, 0, rgg=0x01, rg1=0xFE)
+    # run 3 (the second confirming pass): 10-character labels, so INITXT's cut to slot - 1 binds; FORCLR $CA (the sprite
+    # colour with bits 6 / 7 set)
+    add(INITXT, 40, 1, lab=2)
+    add(INITXT, 33, 1, lab=2)
+    add(INIT32, 32, 1, fg=0xCA)
     return out
 
 

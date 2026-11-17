@@ -13,6 +13,7 @@ import re
 import xscr_cases as X
 import xscr3_cases as X3
 import xscr4_cases as X4
+import xscr5_cases as X5
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -39,6 +40,7 @@ REF_AF.update({"XS3 00": (0x00, 0x54), "XS3 01": (0x00, 0x54), "XS3 02": (0x25, 
                "XS3 12": (0x24, 0x30), "XS3 13": (0x24, 0x30), "XS3 14": (0x24, 0x30), "XS3 15": (0x24, 0x30),
                "XS3 16": (0x00, 0x54), "XS3 17": (0x00, 0x54), "XS3 18": (0x00, 0x44)})
 REF_AF.update({"XS4 00": (0x00, 0x44), "XS4 01": (0x00, 0x44), "XS4 02": (0x00, 0x44), "XS4 03": (0x00, 0x44)})
+REF_AF.update({"XS5 00": (0x00, 0x44), "XS5 01": (0x25, 0xB3), "XS5 02": (0x00, 0x44), "XS5 03": (0x1D, 0x9B), "XS5 04": (0x28, 0xBB), "XS5 05": (0x00, 0x44), "XS5 06": (0x00, 0x44), "XS5 07": (0x02, 0x42)})
 OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrmod", "linl40", "linl32", "lt",
            "namesum", "row1", "rowc", "row24", "vsum", "win"]
 
@@ -46,13 +48,15 @@ OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrm
 def load(who, calls):
     """XSCR run 2 (group XS) and XSCR3 run 1 (group XS3: LINTTB's garbage address-dependent, TXTNAM changed late)."""
     out = []
-    for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3"), (X4, "XSCR4_run1.out", "XS4")):
+    for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3"), (X4, "XSCR4_run1.out", "XS4"),
+                             (X5, "XSCR5_run1.out", "XS5")):
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
         key = "ref" if who == "ref" else "ours"
         for c in mod.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
             if c.name in calls:
                 c.src, c.id = src, f"{src} {c.idx:02}"
-                c.ltpat = src in ("XS3", "XS4")
+                c.ltpat = src in ("XS3", "XS4", "XS5")
+                c.lw = getattr(c, "lw", 0)
                 c.late = getattr(c, "late", 0)
                 out.append(c)
     return out
@@ -100,10 +104,16 @@ def label_cells(lab):
     return out
 
 
+def width(c):
+    """The width the key-line calls use: LINLEN as found (XSCR5's `lw` sets it after the mode's call) -- the rule under
+    test."""
+    return c.lw or c.width
+
+
 def key_cells(c, found):
     """Row CRTCNT's cells after the key line is drawn (show) over `found`: the width's span spaced, then the FIRST five
     labels from margin + k x slot, cut to slot - 1 cells."""
-    n, w = cols(c), c.width
+    n, w = cols(c), width(c)
     m, slot = (n - w + 1) // 2, (w + 1) // 5
     row = list(found)
     for i in range(max(0, m), min(n, m + w)):
@@ -142,9 +152,9 @@ def expect(c):
                 lt[r - 2] = LT_MARK
             put(r, key_cells(c, row(r)))
         elif acts:                      # ERAFNK: the span spaced, the row's LINTTB entry marked
-            m = (n - c.width + 1) // 2
+            m = (n - width(c) + 1) // 2
             cells = row(r)
-            for i in range(max(0, m), min(n, m + c.width)):
+            for i in range(max(0, m), min(n, m + width(c))):
                 cells[i] = SP
             put(r, cells)
             lt[r - 1] = LT_MARK
@@ -188,7 +198,7 @@ def expect(c):
             w += [v] * 8
         e["win"] = w
     if text:
-        e["linlen"] = c.width
+        e["linlen"] = width(c)
     return e
 
 

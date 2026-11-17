@@ -155,6 +155,18 @@ def run(mod):
         for f in fields:
             if getattr(ref[i], f) != getattr(zb[i], f):
                 unread_diffs.append(f"{cid} {f}")
+    # UNSTABLE: {case id: (fields, reason)} -- outputs the REFERENCE itself does not reproduce (the same inputs gave
+    # different values in two probes / runs; the reason must cite both). Accounted for like UNREAD, but exempt from
+    # the difference guard: zerobas cannot be compared with a value the reference does not keep.
+    for cid, (fields, why) in getattr(mod, "UNSTABLE", {}).items():
+        if cid not in ids:
+            sys.exit(f"FAIL: UNSTABLE names {cid}, which is no case")
+        if "run" not in why and "probe" not in why:
+            sys.exit(f"FAIL: UNSTABLE {cid}'s reason must cite the two runs / probes that differ")
+        i = ids[cid]
+        sl = {x for x in _slots(ref[i], outputs[ref[i].src]) if x[0] in fields}
+        seen[i] |= sl
+        declared += len(sl)
     out = []
     for r in mod.RULES:
         idx = [i for i, c in enumerate(ref) if r.select(c)]
@@ -216,6 +228,11 @@ def render(mod, results, uncovered, total):
         groups.setdefault((", ".join(fields), why), []).append(cid)
     for (fields, why), cids in groups.items():
         L += ["", f"Declared NOT evidence ({len(cids)} cases: {short(cids, 4)}): {fields} — {why}"]
+    groups = {}
+    for cid, (fields, why) in getattr(mod, "UNSTABLE", {}).items():
+        groups.setdefault((", ".join(fields), why), []).append(cid)
+    for (fields, why), cids in groups.items():
+        L += ["", f"Declared UNSTABLE on the reference itself ({len(cids)} cases: {short(cids, 4)}): {fields} — {why}"]
     L += ["", END]
     return "\n".join(L)
 

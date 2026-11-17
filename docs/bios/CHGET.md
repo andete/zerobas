@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CHGET` ($009F) — take a character from the keyboard
 
-> **Spec:** DRAFT 2 (2026-11-17), after one test-writer review. Measured on the Philips VG-8020 by
+> **Spec:** FINAL (2026-11-18), the core rule: the confirming pass was CLEAN (docs/spec-method.md
+> §7); the open items stay [A] and do not hold up the fixes. After one earlier test-writer review. Measured on the Philips VG-8020 by
 > calling the call directly. The page states CHSNS ($009C, is a character waiting?) too: both read the key buffer.
 > [CHSNS's page](CHSNS.md) points here. What puts codes INTO the buffer (the key scan) belongs to
 > KEYINT's page.
@@ -17,7 +18,7 @@ round the 40-byte buffer, and returns with interrupts enabled, whatever the flag
 on entry. With a code waiting it changes nothing else:
 - BC, DE, HL, IX and IY are kept;
 - no cursor is drawn, also on the key line's row;
-- of the work area, only the key scan's cells change.
+- of the work area, only the interrupt's cells change.
 
 With the buffer empty it waits for a key, with interrupts enabled even if they were disabled on
 entry. Its F on return is that of comparing GETPNT's advanced low byte (before the wrap) with $18.
@@ -95,7 +96,7 @@ the run.
 | **R-G-CODE2** With every register garbage and A $A7 on entry (unlike the VRAM garbage), CHGET returns the code at GETPNT in A, GETPNT advanced by one (wrapping), PUTPNT unchanged, and interrupts ENABLED -- whatever the flags on entry ($00 / $FF) and whether interrupts were on. | 10 | ✓ | ✗ 9: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+3) |
 | **R-G-F2** The same compare explains every separated case (9A at $F1 / $F6, 8A at $FB, 9B at $05 / $17, 8B at $08 / $09) -- and is NOT 'the number of codes waiting' (one code at offset 10 gives 8A). | 10 | ✓ | ✗ 10: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+4) |
 | **R-S-COUNT2** CHSNS: A = PUTPNT − GETPNT (low bytes) with the flags of that subtraction, whatever the flags on entry; pointers unchanged; interrupts enabled. | 4 | ✓ | ✓ |
-| **R-GS-QUIET2** Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of the whole work area change only the key scan's cells (the interrupt ran). | 14 | ✓ | ✓ |
+| **R-GS-QUIET2** Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of the whole work area change only the interrupt's cells (NEWKEY's last row, INTCNT's high byte: the interrupt ran during the probe's own reads too). | 14 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -111,6 +112,11 @@ the run.
   cell after the wait: XCHGW read cells 166 / 167, which at the boot width 37 are not the cursor's.
   Also whether XW 1 truly waited (its key was typed as the call began).
 - **[A]** CHGET's F at GETPNT positions not measured (the compare with $18 fits all 25 measured).
+- **[A]** A full buffer (39 codes); CHSNS with a result whose bit 5 is set (F's bit 5 from the
+  result vs always 0).
+- **[A]** Writes to SCNCNT / REPCNT / JIFFY / INTVAL / INTCNT: the work-area compare skips them, and
+  runs after the probe's own VRAM reads (an interrupt can hide a write). XCHG's cells 166 / 167 are
+  not the cursor's either (the boot width 37); the whole-VRAM sum is the witness there.
 - **[A]** The hook H.CHGE; the other registers on return.
 - **[A]** CHSNS's update of the function-key line when SHIFT changes (the key line's shifted set).
 - **[A]** GETPNT / PUTPNT outside the buffer (garbage pointers).

@@ -133,6 +133,11 @@ that was measured (the wraps, the scroll, the edges).
 - **A sentence may only claim what its check reads.** "Nothing else changes" needs a read of
   everything else (a work-area snapshot diff, a whole-VRAM sum), not the two neighbouring bytes;
   "only A / F differ" needs the other registers recorded.
+- **When the REFERENCE itself does not reproduce an output, declare it UNSTABLE.** INITXT at width 0
+  with the key line on gave different cells for the same inputs in two probes (it copies RAM the
+  probe does not set). `UNSTABLE` in a rules file accounts for such outputs without comparing
+  zerobas, and the reason must cite the two runs / probes. A rule then states only what both agree
+  on.
 - **A probe's capture and variables stay below $EF00.** The VG-8020's stack at cartridge INIT lies
   lower than the system area: XSCR's run with a capture reaching $F1A4 crashed it (all reads $FF,
   "NO READING"). Split the matrix or shrink the record instead.

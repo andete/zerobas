@@ -19,7 +19,8 @@ from spec_rules import Rule  # noqa: E402
 PAGE = "docs/bios/DSPFNK.md"
 SP, GB = 32, 0x5A                       # a space; the probe's name-table garbage
 OUTPUTS = {"XK": ["cnsdfg", "crtcnt", "csrx", "csry", "linlen", "scrmod", "namesum", "row24", "rowc", "rowc1"],
-           "XS": M.OUTPUTS, "XS3": M.OUTPUTS, "XS4": M.OUTPUTS + ["row12", "rowcm1"]}
+           "XS": M.OUTPUTS, "XS3": M.OUTPUTS, "XS4": M.OUTPUTS + ["row12", "rowcm1"],
+           "XS5": M.OUTPUTS + ["row12", "rowcm1"]}
 KEYCALLS = {"DSPFNK", "ERAFNK", "FNKSB"}
 SPR = [0xD1, 0, 0, 0x0F, 0xD1, 0, 1, 0x0F]  # the sprite attribute table's first 8 bytes, as INIT32 left them
 
@@ -40,7 +41,7 @@ def cases():
 
 
 def xs(c):
-    return c.src in ("XS", "XS3", "XS4")
+    return c.src in ("XS", "XS3", "XS4", "XS5")
 
 
 def cols(c):
@@ -144,7 +145,8 @@ _SCREEN = ["cnsdfg", "crtcnt", "csrx_out", "csry_out", "linl40", "linl32", "lt",
 
 
 def _model(c):
-    return M.matches(c, _SCREEN + ([] if c.mode >= 2 else ["linlen"]) + (["row12", "rowcm1"] if c.src == "XS4" else []))
+    return M.matches(c, _SCREEN + ([] if c.mode >= 2 else ["linlen"])
+                     + (["row12", "rowcm1"] if c.src in ("XS4", "XS5") else []))
 
 
 def _scrolls(c):
@@ -176,8 +178,14 @@ RULES += [
          "themselves; a $01 at a label's end shows nothing; `$01 'a'` shows 'a' -- the graphic prefix acts only on "
          "$40..$5F ('A' gave 01); a 16-byte label with no terminating 0 is cut like any other (to slot − 1).",
          lambda c: xs(c) and c.lab in (2, 3), _model),
-    Rule("R-K-ERA-A", S2, "ERAFNK returns A = LINLEN in SCREEN 0 / 1 (40 → 28, 37 → 25, 32 → 20, 29 → 1D).",
-         lambda c: xs(c) and c.name == "ERAFNK" and c.mode < 2, lambda c: c.a == c.width),
+    Rule("R-K-ERA-A", S2, "ERAFNK returns A = LINLEN in SCREEN 0 / 1 (40 → 28, 37 → 25, 32 → 20, 29 → 1D) -- LINLEN as "
+         "found: set to 37 / 29 after a width-40 / 32 INITXT / INIT32 it gives 25 / 1D (XSCR5).",
+         lambda c: xs(c) and c.name == "ERAFNK" and c.mode < 2, lambda c: c.a == M.width(c)),
+    Rule("R-K-LINLEN", S1, "The width the key-line calls use is LINLEN AS FOUND, not the width the mode's call was given: "
+         "with LINLEN set to 37 after a width-40 INITXT (29 after a width-32 INIT32), DSPFNK draws with margin 2 and "
+         "slot 7 (2 and 6) and ERAFNK clears that span; and ERAFNK / FNKSB with TXTNAM changed late, DSPFNK with "
+         "T32NAM changed late, all use the base the mode's call set up.", lambda c: c.src == "XS5" and c.mode < 2,
+         _model),
     Rule("R-K-AF", S4, "The whole A / F on return (not published): the reference's values -- DSPFNK / FNKSB 00 / 44 "
          "when they draw (00 / 54 for FNKSB with CNSDFG 0), ERAFNK LINLEN with F BB / B3 / 9B, 02 / 42 in SCREEN 2.",
          lambda c: xs(c), lambda c: (c.a, c.f) == M.REF_AF[c.id]),

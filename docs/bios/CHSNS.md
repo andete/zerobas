@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CHSNS` ($009C) — is a character waiting?
 
-> **Spec:** DRAFT 1 (2026-11-17). Stated on [CHGET's page](CHGET.md), section "2. CHSNS", with CHGET.
+> **Spec:** FINAL (2026-11-18), the core rule, with CHGET. Stated on [CHGET's page](CHGET.md), section "2. CHSNS", with CHGET.
 
 ## Differences from the reference
 

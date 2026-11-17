@@ -13,7 +13,7 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / FILVRM.
 ;
 ; @cap C000
-; @caplen 1F99
+; @caplen 224E
 ; @timeout 300
 
 RDVRM   equ     $004A
@@ -36,7 +36,7 @@ FNKSTR  equ     $F87F
 
 DONE    equ     $C000
 CAP     equ     $C001
-CAPLEN  equ     8089
+CAPLEN  equ     8782
 ptr     equ     $EF00
 tptr    equ     $EF02
 ccall   equ     $EF04
@@ -136,6 +136,9 @@ t_def:
                 or      a
                 jr      z, k_def
                 ld      hl, keys7
+                dec     a
+                jr      z, k_def
+                ld      hl, keys10
 k_def:
                 ld      de, FNKSTR
                 ld      bc, 160
@@ -456,7 +459,19 @@ tables2:        dw      $1000, $1234, $2800, $3456, $3A00, $1C00, $2FC0, $3000, 
 ; round 3: TXTCOL / TXTATR OUTSIDE every other table: $2000, $1800 (INITXT has none: are they written?)
 tables3:        dw      $1000, $2000, $2800, $1800, $3A00, $1C00, $2FC0, $3000, $1F80, $0800
 
-; 7-character labels (round 4): the cut to slot - 1 binds at every width
+; 10-character labels (run 3): the cut to slot - 1 binds for INITXT too (slot 8 at width 40)
+keys10:
+                db      "ABCDEFGHI0", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI1", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI2", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI3", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI4", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI5", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI6", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI7", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI8", 0, 0, 0, 0, 0, 0
+                db      "ABCDEFGHI9", 0, 0, 0, 0, 0, 0
+; 7-character labels (round 4): the cut to slot - 1 binds at every INIT32 width
 keys7:
                 db      "ABCDEF0", 0, 0, 0, 0, 0, 0, 0, 0, 0
                 db      "ABCDEF1", 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -518,4 +533,7 @@ cases:
                 db      $6F, 32, 0, 0, 15, 4, 7, 0, 0, $FD, 13, $5A, 0, $FD   ; INIT32 width 32 key off copies $FD CRTCNT 13
                 db      $6F, 32, 0, 0, 15, 4, 7, 0, 0, $FE, 13, $5A, 0, $01   ; INIT32 width 32 key off copies $FE CRTCNT 13 RG1SAV 01
                 db      $6F, 32, 0, 0, 15, 4, 7, 0, 0, $01, 13, $5A, 0, $FE   ; INIT32 width 32 key off copies $01 CRTCNT 13 RG1SAV FE
+                db      $6C, 40, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 2, $A5   ; INITXT width 40 key on copies $A5 CRTCNT 13 10-char labels
+                db      $6C, 33, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 2, $A5   ; INITXT width 33 key on copies $A5 CRTCNT 13 10-char labels
+                db      $6F, 32, 1, 0, 202, 4, 7, 0, 0, $A5, 13, $5A, 0, $A5   ; INIT32 width 32 key on copies $A5 CRTCNT 13 FORCLR CA
                 db      $FF

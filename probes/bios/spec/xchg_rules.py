@@ -187,8 +187,10 @@ RULES += [
     Rule("R-S-COUNT2", S3, "CHSNS: A = PUTPNT − GETPNT (low bytes) with the flags of that subtraction, whatever the "
          "flags on entry; pointers unchanged; interrupts enabled.", lambda c: g2(c) and c.name == "CHSNS",
          lambda c: (c.a == (c.putlo - c.getlo) & 0xFF and c.f_out == sub_flags(c.putlo, c.getlo)
-                    and c.getlo == (KEYBUF + c.off) & 0xFF and c.iff == 1)),
+                    and c.getlo == (KEYBUF + c.off) & 0xFF and c.putlo == (KEYBUF + (c.off + c.n) % 40) & 0xFF
+                    and c.iff == 1)),
     Rule("R-GS-QUIET2", S3, "Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor "
          "at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of "
-         "the whole work area change only the key scan's cells (the interrupt ran).", g2, g2_quiet),
+         "the whole work area change only the interrupt's cells (NEWKEY's last row, INTCNT's high byte: the interrupt "
+         "ran during the probe's own reads too).", g2, g2_quiet),
 ]
