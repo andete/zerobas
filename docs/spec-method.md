@@ -79,6 +79,17 @@ that was measured (the wraps, the scroll, the edges).
     items;
   - **the cases no rule covers:** measured but not stated. It is a count, and the page's open
     list must account for every one.
+- **Coverage is FIELD-LEVEL.** Each case group declares its recorded outputs (`OUTPUTS`). While a
+  check runs, the case records which outputs, and which list entries, it reads. An output no check
+  reads is uncovered. A case merely SELECTED by a rule that reads none of its behaviour does not
+  count, and neither does a check that reads one entry of a list its sentence talks about in full.
+  (CHPUT's first "0 uncovered" was hollow for 33 cases and 5,741 outputs; the third review found it.)
+  Outputs the setup itself decides are declared in `UNREAD`, with the reason, and rendered on the
+  page: accounted for, never covered.
+- **A probe's setup must not use the call under test.** CHPUT rounds 2 and 3 placed the cursor with
+  CHPUT's own `ESC Y`. Where the two machines' `ESC Y` differs, every case STARTED somewhere else,
+  so the differences were the setup's. Set the state through other means: VRAM writes, the work-area
+  cells directly. Retire the affected groups from the rules, with the reason; their data stays on file.
 - **The page's rule tables are GENERATED** between `<!-- RULES BEGIN -->` and `<!-- RULES END -->`
   (`--write`). `make spec-rules-check` (in STATIC) fails on a false rule or a stale page. The
   Summary and the Open list stay hand-written, and short.

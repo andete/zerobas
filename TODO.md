@@ -16781,7 +16781,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the C-BIOS repack's CHPUT (the text-row count when CNSDFG is on).
       Round 3 ([`XCH3_run2.out`](scratchpad/XCH3_run2.out)): it is not only movement -- with the key line on the VG-8020's ESC L / M / J / K / E / j / l
       and 12 work on rows 1-23 only and never touch row 24, and ESC A-D stop at row 23; zerobas edits row 24 too.
-      docs/bios/CHPUT.md's rules R-KEYROW, R-E-... (key on), R-ESC-EDGES, R-ED-KEYROW are the target.
+      Round 4 ([`XCH4_run1.out`](scratchpad/XCH4_run1.out), a NEUTRAL setup -- rounds 2 / 3's key-on cases started elsewhere on the two machines and are retired):
+      from the key row itself the VG-8020 moves LF / cursor-down / ESC B / a wrap ONTO the last text row (LF and wraps
+      then scroll the text rows); zerobas stays on row 24. docs/bios/CHPUT.md's rules R4-CURSOR (key-row starts) and
+      R4-Y-KEYCLAMP are the target.
 
 - [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;

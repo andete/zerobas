@@ -114,12 +114,98 @@ def _block3(text, who):
     return b
 
 
+R4_STARTS = ((0, 0, 0), (0, 0, 39), (0, 23, 0), (0, 23, 39), (1, 0, 0), (1, 0, 39), (1, 22, 0), (1, 22, 39),
+             (1, 23, 0), (1, 23, 39))
+R4_SEQS = ((8,), (29,), (127,), (28,), (30,), (31,), (10,), (13,), (9,), (65,), (27, 65), (27, 66), (27, 67), (27, 68))
+R4_G3 = ("ESC Z A", "ESC ~ A", "ESC DEL A", "ESC x 1 A", "ESC x ESC A A", "ESC y 1 A", "ESC y ESC A A",
+         "prefix DEL A", "DEL from (10,0)", "key on: ESC Y 55 52", "key on: ESC Y 200 52", "ESC Y 54 52")
+
+
+def _round4(b):
+    out = []
+    for i in range(140):
+        x = b[4 + 42 * i: 46 + 42 * i]
+        key, s0, c0 = R4_STARTS[i // 14]
+        rows = [0, max(s0 - 1, 0), s0, min(s0 + 1, 23), 23]
+        out.append(NS(src="R4G1", id=f"X4 G1.{i:03}", key=key, s=s0, c=c0, last=22 if key else 23,
+                      seq=R4_SEQS[i % 14], rows=rows, csrx=x[0], csry=x[1], a=x[2], lt=list(x[3:27]),
+                      cells=list(x[27:42])))
+    for i in range(16):
+        x = b[5884 + 170 * i: 6054 + 170 * i]
+        out.append(NS(src="R4G2", id=f"X4 G2.{i:02}", key=i // 8, op=G4OPS[i % 8], last=22 if i >= 8 else 23,
+                      csrx=x[0], csry=x[1], lt=list(x[2:26]), grid=list(x[26:170])))
+    for i in range(12):
+        x = b[8604 + 9 * i: 8613 + 9 * i]
+        out.append(NS(src="R4G3", id=f"X4 G3.{i:02}", what=R4_G3[i], csrx=x[0], csry=x[1], a=x[2],
+                      cells=list(x[3:8]), c939=x[8]))
+    return out
+
+
+def _block(text, who, n):
+    import re
+    m = re.search(rf"CAP {who}\s*:\s*([0-9a-fA-F]+)", text)
+    b = bytes.fromhex(m.group(1))
+    b = b + bytes(n - len(b))
+    if b[1] != 0xA5:
+        sys.exit(f"FAIL: a {who} block is not complete")
+    return b
+
+
+# RETIRED from the rules (kept as evidence): the groups whose setup placed the cursor with ESC Y and wrote
+# the markers with CHPUT -- where the two machines' ESC Y differs (the key line on) they STARTED in different
+# places, so a difference there was the setup's (the third review). Round 4 re-measures them with a neutral
+# setup: X2 G2 (corners), X2 G4 (edits), X3 G4 (ESC A-D at the edges), X3 G5 (edits, key on).
+RETIRED = {"G2", "G4", "X3G4", "X3G5"}
+
+
 def cases():
     t1 = open(os.path.join(ROOT, "scratchpad", "XCH_run1.out")).read()
     t2 = open(os.path.join(ROOT, "scratchpad", "XCH2_run1.out")).read()
     t3 = open(os.path.join(ROOT, "scratchpad", "XCH3_run2.out")).read()
-    return {"ref": _machine(T1.block(t1, "ref"), T2.block(t2, "ref")) + _round3(_block3(t3, "ref")),
-            "zb": _machine(T1.block(t1, "ours"), T2.block(t2, "ours")) + _round3(_block3(t3, "ours"))}
+    t4 = open(os.path.join(ROOT, "scratchpad", "XCH4_run1.out")).read()
+    out = {}
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        cs = (_machine(T1.block(t1, key), T2.block(t2, key)) + _round3(_block3(t3, key))
+              + _round4(_block(t4, key, 8712)))
+        cs = [c for c in cs if c.src not in RETIRED]
+        # each XCH prefix case carries its sibling's result: v sent ALONE (mode 0), same machine
+        alone = {c.v: c for c in cs if c.src == "XCH" and c.mode == 0}
+        for c in cs:
+            if c.src == "XCH" and c.mode == 2:
+                a = alone[c.v]
+                c.alone = (a.csrx, a.csry, list(a.cells))
+        # the key row's own text on THIS machine (DSPFNK's labels, not CHPUT's): X4 G1.065 starts at
+        # (0, 0) with the key line on, far from row 24
+        kb = [c for c in cs if c.id == "X4 G1.065"][0].cells[12:15]
+        # the key row's six grid cells for X4 G2 (key on), from this machine's ESC K case, which erases only
+        # row 11 (the baseline is the machine's own, so DSPFNK's labels never read as a CHPUT difference)
+        k2 = [c for c in cs if c.id == "X4 G2.11"][0].grid[23 * 6: 24 * 6]
+        for c in cs:
+            c.keyrow = kb
+            c.kr2 = k2
+        out[who] = cs
+    return out
+
+
+# each case group's RECORDED outputs (tools/spec_rules.py: field-level coverage)
+OUTPUTS = {
+    "XCH": ["csrx", "csry", "a", "cells"],
+    "G1": ["csrx", "csry", "row"],
+    "G2": ["csrx", "csry", "col0", "lt"],
+    "G3": ["csrx", "csry", "cells"],
+    "G4": ["csrx", "csry", "col0", "col38", "cells"],
+    "G5": ["csrx", "csry"],
+    "G6": ["csrx", "csry", "fca9", "fcaa"],
+    "X3G1": ["cur"],
+    "X3G2": ["csrsw", "fcaa"],
+    "X3G3": ["csrx", "csry", "c938", "c939", "c100", "c101", "lt9", "lt10"],
+    "X3G4": ["csrx", "csry", "col0"],
+    "X3G5": ["csrx", "csry", "col0", "col38", "cells"],
+    "X3G6": ["a"],
+    "R4G1": ["csrx", "csry", "a", "lt", "cells"],
+    "R4G2": ["csrx", "csry", "lt", "grid"],
+    "R4G3": ["csrx", "csry", "a", "cells", "c939"],
+}
 
 
 def xch(mode, vs):
@@ -186,6 +272,231 @@ def key_edit_ok(c):
 
 S9 = "9. Round 3: byte 1 inside ESC Y, the cursor cells, DEL wrapping, the edges, the key line"
 
+
+# ---- round 4: a model of CHPUT at the edges (X4 G1) -- the rules below compare it, piece by piece ----
+def _mark(r, col, c):
+    """the setup's cell (r, col) for col 0 / 38 / 39; the key row is this machine's own (c.keyrow)"""
+    if r > c.last:
+        return c.keyrow[(0, 38, 39).index(col)]
+    return {0: ord("a"), 38: ord("A"), 39: ord("0")}[col] + r
+
+
+def r4_model(c):
+    """(x, y, cells{(r, col)}, lt[24]) after c.seq, from (c.c, c.s): x, y 0-based"""
+    L = c.last
+    cell = {(r, col): _mark(r, col, c) for r in range(24) for col in (0, 38, 39)}
+    lt = [24 - r for r in range(24)]
+    x, y = c.c, c.s
+
+    def scroll():
+        for r in range(L):
+            for col in (0, 38, 39):
+                cell[(r, col)] = cell[(r + 1, col)]
+            lt[r] = lt[r + 1]
+        for col in (0, 38, 39):
+            cell[(L, col)] = SP
+        lt[L] = 0xAF
+
+    def down(scrolls):
+        nonlocal y
+        if y < L:
+            y += 1
+        elif y == L:
+            if scrolls:
+                scroll()
+        else:
+            y = L                                       # from the key row: onto the last text row,
+            if scrolls:                                 # and a scrolling action scrolls the text rows
+                scroll()
+
+    def write(ch):
+        nonlocal x
+        if (y, x) in cell:
+            cell[(y, x)] = ch
+        if x < 39:
+            x += 1
+        else:
+            lt[y] = 0                                   # the row continues (the key row's entry too)
+            x = 0
+            down(True)
+    seq = list(c.seq)
+    if seq[0] == 27:
+        cmd = seq[1]
+        if cmd == 65 and y > 0:
+            y -= 1
+        elif cmd == 66:
+            down(False)
+        elif cmd == 67 and x < 39:
+            x += 1
+        elif cmd == 68 and x > 0:
+            x -= 1
+        return x, y, cell, lt
+    b = seq[0]
+    if b in (8, 29, 127):
+        moved = True
+        if x > 0:
+            x -= 1
+        elif y > 0:
+            x, y = 39, y - 1
+        else:
+            moved = False
+        if b == 127 and moved and (y, x) in cell:
+            cell[(y, x)] = SP
+    elif b == 28:
+        if x < 39:
+            x += 1
+        elif y < L:
+            x, y = 0, y + 1
+        elif y > L:
+            x, y = 0, L
+    elif b == 30:
+        if y > 0:
+            y -= 1
+    elif b == 31:
+        down(False)
+    elif b == 10:
+        down(True)
+    elif b == 13:
+        x = 0
+    elif b == 9:
+        stop = 8 * (x // 8 + 1) if x < 32 else 40
+        while x < stop and not (x == 0 and stop == 40 and False):
+            was = x
+            write(SP)
+            if x == 0 and was == 39:
+                break
+            if x >= stop:
+                break
+    else:
+        write(b)
+    return x, y, cell, lt
+
+
+def r4_cells(c):
+    _, _, cell, _ = r4_model(c)
+    return [cell[(r, col)] for r in c.rows for col in (0, 38, 39)]
+
+
+# ---- round 4: the edits (X4 G2), the grid = columns 0, 19, 20, 21, 38, 39 of rows 0..23 ----
+G2C = (0, 19, 20, 21, 38, 39)
+
+
+def r4_edit_lt(c):
+    """LINTTB after an X4 G2 edit (from 24 .. 1): $AF marks a row the edit blanked from the cursor or
+    inserted; ESC L also puts $FB on the last text row; the key row's entry is never touched"""
+    L = c.last
+    lt = [24 - r for r in range(24)]
+    if c.op == "ESC L":
+        lt[11:L] = [24 - r for r in range(10, L - 1)]
+        lt[10], lt[L] = 0xAF, 0xFB
+    elif c.op == "ESC M":
+        lt[10:L] = [24 - r for r in range(11, L + 1)]
+        lt[L] = 0xAF
+    elif c.op == "ESC J":
+        for r in range(10, L + 1):
+            lt[r] = 0xAF
+    elif c.op in ("ESC K", "ESC l"):
+        lt[10] = 0xAF
+    return lt
+
+
+def r4_edit(c, keyrow):
+    L = c.last
+    base = {0: lambda r: ord("a") + r, 38: lambda r: ord("A") + r, 39: lambda r: ord("0") + r}
+    g = {}
+    for r in range(L + 1):
+        for col in G2C:
+            g[(r, col)] = base[col](r) if col in base else (PQR[col - 19] if r == 10 else SP)
+    blank = lambda r: [g.__setitem__((r, col), SP) for col in G2C]  # noqa: E731
+    x, y = 20, 10
+    if c.op == "ESC L":
+        for r in range(L, 10, -1):
+            for col in G2C:
+                g[(r, col)] = g[(r - 1, col)]
+        blank(10)
+        x = 0
+    elif c.op == "ESC M":
+        for r in range(10, L):
+            for col in G2C:
+                g[(r, col)] = g[(r + 1, col)]
+        blank(L)
+        x = 0
+    elif c.op in ("ESC J", "ESC K"):
+        for col in G2C:
+            if col >= 20:
+                g[(10, col)] = SP
+        if c.op == "ESC J":
+            for r in range(11, L + 1):
+                blank(r)
+    elif c.op == "ESC l":
+        blank(10)
+    else:                                               # 12, ESC E, ESC j
+        for r in range(L + 1):
+            blank(r)
+        x, y = 0, 0
+    flat = []
+    for r in range(24):
+        flat += keyrow if r > L else [g[(r, col)] for col in G2C]
+    return x, y, flat
+
+
+def pfx_ctrl(c):
+    """X2 G3 kind 1 (prefix, control code c, then 'A'): the cursor and cells when the code acts and 'A'
+    is then written plainly, from (row 10, col 20) on P Q R; None for codes whose result leaves row 10"""
+    x, y = 20, 10
+    cells = {19: P, 20: Q, 21: R}
+    v = c.c
+    if v in (8, 29, 127):
+        x -= 1
+        if v == 127:
+            cells[x] = SP
+    elif v == 28:
+        x += 1
+    elif v == 13:
+        x = 0
+    elif v == 9:
+        for k in range(x, 24):
+            cells[k] = SP
+        x = 24
+    elif v in (10, 30, 31, 11, 12):
+        return None
+    if x in cells:
+        cells[x] = ord("A")
+    return x + 2, y + 1, [cells[19], cells[20], cells[21]]
+
+
+def g6_states(cs):
+    """X2 G6's carried state: ($FCA9, $FCAA) after each case, from (0, 0) -- 'ESC x/y 4' clears / sets
+    $FCAA, '5' clears / sets $FCA9, nothing else changes them"""
+    st, exp = [0, 0], {}
+    for c in cs:
+        if c.src == "G6":
+            if c.v == 52:
+                st[1] = 0 if c.kind == "x" else 1
+            elif c.v == 53:
+                st[0] = 0 if c.kind == "x" else 1
+            exp[c.id] = tuple(st)
+    return exp
+
+
+def _g6_static():
+    st, exp = [0, 0], {}
+    for i in range(512):
+        kind, v = ("x" if i < 256 else "y"), i % 256
+        if v == 52:
+            st[1] = 0 if kind == "x" else 1
+        elif v == 53:
+            st[0] = 0 if kind == "x" else 1
+        exp[f"X2 G6.{i:03}"] = tuple(st)
+    return exp
+
+
+G6_EXP = _g6_static()
+
+UNREAD = {"XCH 333": (["cells"], "ESC M pulls up the NEXT row, whose content the case before left there "
+                                 "(the matrix does not set it); X4 G2 measures ESC M on a known screen")}
+S10 = "10. Round 4: the edges, the key row and the edits, from a NEUTRAL setup"
+
 RULES = [
     Rule("R-A", S0, "CHPUT returns A unchanged (the rung passes v in A and records the A returned).",
          lambda c: c.src == "XCH", lambda c: c.a == c.v),
@@ -217,38 +528,6 @@ RULES = [
          and c.row == [ord("o") if (x < c.c or (c.c < 32 and x >= 8 * (c.c // 8 + 1))) else SP
                        for x in range(40)]),
 
-    Rule("R-E-LEFT1", S2, "BS / 29 / DEL at column 1 go to column 40 of the row above; at the top-left they stay.",
-         lambda c: g2(8, 0)(c) or g2(29, 0)(c) or g2(127, 0)(c),
-         lambda c: (c.csrx, c.csry) == ((1, 1) if c.s == 0 else (40, c.s))),
-    Rule("R-E-LEFT40", S2, "BS / 29 / DEL at column 40 move left one.",
-         lambda c: g2(8, 39)(c) or g2(29, 39)(c) or g2(127, 39)(c),
-         lambda c: (c.csrx, c.csry) == (39, c.s + 1)),
-    Rule("R-E-PRINT40", S2, "A printable at column 40 wraps to the next row's column 1; on the last text row the "
-         "screen scrolls up one instead.",
-         g2(ord("A"), 39),
-         lambda c: (c.csrx, c.csry) == (1, min(c.s + 1, c.last) + 1) and scrolled(c) == (c.s == c.last)),
-    Rule("R-E-RIGHT40", S2, "28 at column 40 wraps to the next row's column 1; on the last text row it stays "
-         "(no scroll).", g2(28, 39),
-         lambda c: (c.csrx, c.csry) == ((40, c.s + 1) if c.s == c.last else (1, c.s + 2)) and not scrolled(c)),
-    Rule("R-E-UP", S2, "30 moves up one; on the top row it stays.", g2(30),
-         lambda c: (c.csrx, c.csry) == (c.col + 1, max(c.s, 1))),
-    Rule("R-E-DOWN31", S2, "31 moves down one; on the last text row it stays (no scroll).", g2(31),
-         lambda c: (c.csrx, c.csry) == (c.col + 1, min(c.s + 1, c.last) + 1) and not scrolled(c)),
-    Rule("R-E-LF", S2, "LF moves down one; on the last text row the screen scrolls up one and the cursor stays.",
-         g2(10), lambda c: (c.csrx, c.csry) == (c.col + 1, min(c.s + 1, c.last) + 1)
-         and scrolled(c) == (c.s == c.last)),
-    Rule("R-E-CR", S2, "CR goes to column 1 of the same row.", g2(13),
-         lambda c: (c.csrx, c.csry) == (1, c.s + 1) and not scrolled(c)),
-    Rule("R-E-TAB40", S2, "TAB at column 40 wraps like a printable (scrolling on the last text row).", g2(9, 39),
-         lambda c: (c.csrx, c.csry) == (1, min(c.s + 1, c.last) + 1) and scrolled(c) == (c.s == c.last)),
-    Rule("R-E-COL1", S2, "TAB and a printable at column 1 behave as mid-screen (column 9 / column 2).",
-         lambda c: g2(9, 0)(c) or g2(ord("A"), 0)(c),
-         lambda c: (c.csrx, c.csry) == ((9 if c.byte == 9 else 2), c.s + 1)),
-    Rule("R-E-RIGHT1", S2, "28 at column 1 moves right one.", g2(28, 0),
-         lambda c: (c.csrx, c.csry) == (2, c.s + 1)),
-    Rule("R-KEYROW", S2, "With the key line on, the text rows are 1–23: the cursor never reaches row 24.",
-         lambda c: c.src == "G2" and c.key == 1, lambda c: c.csry <= 23),
-
     Rule("R-ESC-ABCD", S3, "ESC A / B / C / D move the cursor up / down / right / left one, writing nothing.",
          xch(1, b"ABCD"), lambda c: (c.csrx, c.csry, c.cells) == {
              65: (21, 10, PQR), 66: (21, 12, PQR), 67: (22, 11, PQR), 68: (20, 11, PQR)}[c.v]),
@@ -271,26 +550,6 @@ RULES = [
     Rule("R-ESC-1", S3, "After ESC, byte 1 still acts as the graphic prefix: ESC, 1, A writes $01.",
          lambda c: c.src == "G3" and c.kind == 27 and c.c == 1, lambda c: at(c, 22, 11, [P, 1, R])),
 
-    Rule("R-ED-L", S4, "ESC L inserts a blank line at the cursor's row: the rows below move down one, the last "
-         "drops off.", lambda c: c.src == "G4" and c.op == "ESC L",
-         lambda c: c.col0 == [ord("a") + r for r in range(10)] + [SP] + [ord("a") + r for r in range(10, 23)]),
-    Rule("R-ED-M", S4, "ESC M deletes the cursor's row: the rows below move up one, the last row is blank.",
-         lambda c: c.src == "G4" and c.op == "ESC M",
-         lambda c: c.col0 == [ord("a") + r for r in range(10)] + [ord("a") + r for r in range(11, 24)] + [SP]),
-    Rule("R-ED-J", S4, "ESC J erases from the cursor to the screen's end.", lambda c: c.src == "G4" and c.op == "ESC J",
-         lambda c: c.col0 == [ord("a") + r for r in range(11)] + [SP] * 13
-         and c.col38 == [ord("a") + r for r in range(10)] + [SP] * 14),
-    Rule("R-ED-K", S4, "ESC K erases from the cursor to the line's end.", lambda c: c.src == "G4" and c.op == "ESC K",
-         lambda c: c.col0 == [ord("a") + r for r in range(24)]
-         and c.col38 == [ord("a") + r for r in range(10)] + [SP] + [ord("a") + r for r in range(11, 24)]),
-    Rule("R-ED-l", S4, "ESC l erases the cursor's whole line and nothing else.",
-         lambda c: c.src == "G4" and c.op == "ESC l",
-         lambda c: c.col0 == [ord("a") + r for r in range(10)] + [SP] + [ord("a") + r for r in range(11, 24)]
-         and (c.csrx, c.csry) == (21, 11)),
-    Rule("R-ED-CLEAR", S4, "12, ESC E and ESC j clear the whole screen (key line off).",
-         lambda c: c.src == "G4" and c.op in ("12", "ESC E", "ESC j"),
-         lambda c: c.col0 == [SP] * 24 and c.col38 == [SP] * 24 and (c.csrx, c.csry) == (1, 1)),
-
     Rule("R-Y-ROW", S5, "ESC Y's row byte r = 32..55 puts the cursor on row r − 31 (1-based).",
          lambda c: c.src == "G5" and c.kind == "row" and 32 <= c.v <= 55, lambda c: (c.csrx, c.csry) == (6, c.v - 31)),
     Rule("R-Y-ROWCLAMP", S5, "Any other row byte but 1 clamps to the last row (24).",
@@ -306,22 +565,8 @@ RULES = [
          xch(2, range(64, 96)), lambda c: at(c, 22, 11, [P, c.v - 64, R])),
     Rule("R-PFX-PLAIN", S6, "The prefix, then a byte 32–63 or 96–255 but 127, writes the byte itself.",
          xch(2, set(range(32, 64)) | (set(range(96, 256)) - {127})), lambda c: at(c, 22, 11, [P, c.v, R])),
-    Rule("R-PFX-CTRL", S6, "The prefix, then a control code (but 27), acts as the code and cancels the prefix: a "
-         "following A is a plain A (never $01).",
-         lambda c: c.src == "G3" and c.kind == 1 and c.c != 27, lambda c: 1 not in c.cells),
     Rule("R-PFX-ESC", S6, "The prefix, then ESC, arms the escape: a following A is ESC A (cursor up, nothing "
          "written).", lambda c: c.src == "G3" and c.kind == 1 and c.c == 27, lambda c: at(c, 21, 10, PQR)),
-
-    Rule("R-LT-CLEAR", S7, "After a clear, LINTTB holds 24, 23, …, 1 down the rows (when nothing wrapped or "
-         "scrolled).", lambda c: c.src == "G2" and c.byte in (8, 29, 30, 13) and c.col == 0 and c.key == 0,
-         lambda c: c.lt == FRESH_LT),
-    Rule("R-LT-WRAP", S7, "A printable or TAB that wraps from a row (not the last) sets that row's entry to 0 "
-         "(the row continues).",
-         lambda c: c.src == "G2" and c.byte in (9, ord("A")) and c.col == 39 and c.s < c.last,
-         lambda c: c.lt[c.s] == 0),
-    Rule("R-LT-SCROLL", S7, "A scroll moves the entries up one and gives the new last text row $AF.",
-         lambda c: c.src == "G2" and c.byte == 10 and c.s == c.last,
-         lambda c: c.lt[c.last] == 0xAF),
 
     Rule("R-XY-CURSOR", S8, "ESC x v and ESC y v never move the cursor.", lambda c: c.src == "G6",
          lambda c: (c.csrx, c.csry) == (21, 11)),
@@ -347,14 +592,77 @@ RULES = [
          lambda c: c.src == "X3G3",
          lambda c: (c.csrx, c.csry) == (40, 10) and c.c939 == (SP if (c.byte == 127 or not c.wrapped) else ord("z"))
          and (c.lt9, c.lt10) == ((0 if c.wrapped else 15), 14)),
-    Rule("R-ESC-EDGES", S9, "ESC A / B / C / D stop at the screen's edges: no wrap, no scroll (the last row is the "
-         "last TEXT row).", lambda c: c.src == "X3G4",
-         lambda c: (c.csrx, c.csry) == {"A": (c.col + 1, max(c.s, 1)), "B": (c.col + 1, min(c.s + 1, c.last) + 1),
-                                        "C": (min(c.col + 2, 40), c.s + 1), "D": (max(c.col, 1), c.s + 1)}[c.cmd]
-         and c.col0[0] != ord("b")),
-    Rule("R-ED-KEYROW", S9, "With the key line on, the line and screen edits work on the text rows 1–23 only: ESC L "
-         "drops row 23's content, ESC M blanks row 23, ESC J and the clears stop at row 23, and the key row (row 24) is "
-         "never touched.", lambda c: c.src == "X3G5", lambda c: key_edit_ok(c)),
     Rule("R-A-PENDING", S9, "CHPUT returns A unchanged after an ESC or a graphic prefix too.",
          lambda c: c.src == "X3G6", lambda c: c.a == c.sent),
+    Rule("R-PFX-ALONE", S6, "The prefix, then a control code (0–31) or DEL, does exactly what that byte does alone "
+         "(cursor and cells as its mode-0 case); no graphic is written.",
+         lambda c: c.src == "XCH" and c.mode == 2 and (c.v < 32 or c.v == 127),
+         lambda c: (c.csrx, c.csry, c.cells) == c.alone),
+    Rule("R-PFX-CTRL", S6, "The prefix, then a control code (not 1 or 27), then A: the code acts and the prefix "
+         "is cancelled -- A is written plainly where the code left the cursor.",
+         lambda c: c.src == "G3" and c.kind == 1 and c.c not in (1, 27) and pfx_ctrl(c) is not None,
+         lambda c: (c.csrx, c.csry, c.cells) == pfx_ctrl(c)),
+    Rule("R-PFX-CTRL-MOVE", S6, "… and for codes that move the cursor off row 11 (10, 11, 12, 30, 31), A is not "
+         "written on row 11.", lambda c: c.src == "G3" and c.kind == 1 and c.c in (10, 11, 12, 30, 31),
+         lambda c: ord("A") not in c.cells and c.csry != 11 and c.csrx == (2 if c.c in (11, 12) else 22)),
+    Rule("R-PFX-1", S6, "The prefix, then 1, then A writes a plain A (the second 1 cancels, it does not re-arm).",
+         lambda c: c.src == "G3" and c.kind == 1 and c.c == 1, lambda c: at(c, 22, 11, [P, ord("A"), R])),
+    Rule("R-ESC-L-CELLS", S3, "ESC L leaves the cursor's row blank (an inserted line).", xch(1, b"L"),
+         lambda c: c.cells == [SP, SP, SP]),
+    Rule("R-G6-STATE", S8, "ESC x / ESC y with any other byte than '4' / '5' leave $FCA9 and $FCAA as they were "
+         "(round 2's carried state, from 0 / 0).", lambda c: c.src == "G6",
+         lambda c: (c.fca9, c.fcaa) == G6_EXP[c.id]),
+    Rule("R-DEL-WRAP-ROWS", S9, "… and the row DEL / BS / 29 left (row 11) keeps its blank cells at columns 1 and 2, "
+         "the row above its column 39.", lambda c: c.src == "X3G3",
+         lambda c: (c.c100, c.c101, c.c938) == (SP, SP, ord("z"))),
+
+    Rule("R4-CURSOR", S10, "From every corner, key line off and on (and ON the key row): BS / 29 / DEL move left, "
+         "at column 1 to the row above's column 40, not past the top-left; 28 moves right, at column 40 to the "
+         "next row unless on the last text row (it stays), from the key row into the last text row; 30 / ESC A up, "
+         "not past row 1; 31 / ESC B / LF down, not past the last text row, from the key row INTO the last text "
+         "row; CR to column 1; TAB to the next stop of 8, from column 33 on wrapping like a printable; a "
+         "printable writes and moves right, at column 40 wrapping; ESC C / D right / left, not past the edges.",
+         lambda c: c.src == "R4G1", lambda c: (c.csrx, c.csry) == tuple(v + 1 for v in r4_model(c)[:2])),
+    Rule("R4-CELLS", S10, "The cells: DEL blanks the cell it moves onto (a row's column 40 included, continued or "
+         "not); a printable writes its cell; TAB writes spaces; LF, a printable or TAB at column 40 on the last "
+         "text row -- or on the key row, from which they first move onto the last text row -- scroll rows "
+         "1..last up one and blank the last; the key row's cells are never touched.",
+         lambda c: c.src == "R4G1", lambda c: c.cells == r4_cells(c)),
+    Rule("R4-LT", S10, "LINTTB: after a clear 24, 23, …, 1 down the rows; a wrap from a row sets its entry to 0 "
+         "(continued) -- the key row's too, when the wrap starts there; a scroll shifts the text rows' entries "
+         "up one and gives the last text row $AF.", lambda c: c.src == "R4G1", lambda c: c.lt == r4_model(c)[3]),
+    Rule("R4-A", S10, "A comes back as the last byte sent.", lambda c: c.src == "R4G1", lambda c: c.a == c.seq[-1]),
+    Rule("R4-EDIT", S10, "The edits from (row 11, column 21), on rows 1..last text row only: ESC L inserts a blank "
+         "line (the last text row's content drops off), ESC M deletes the line (a blank last text row), ESC K "
+         "erases to the line's end, ESC J to the last text row's end, ESC l the whole line, 12 / ESC E / ESC j "
+         "clear the text rows and home; the key row is never touched.",
+         lambda c: c.src == "R4G2",
+         lambda c: [c.csrx - 1, c.csry - 1, c.grid] == list(r4_edit(c, c.kr2))),
+    Rule("R4-EDIT-LT", S10, "LINTTB after an edit: ESC K / ESC l give the cursor's row $AF; ESC J gives it and every "
+         "text row below $AF; ESC M shifts the entries below up and gives the last text row $AF; ESC L shifts them "
+         "down, gives the inserted row $AF and the last text row $FB; 12 / ESC E / ESC j restore 24 … 1; the key "
+         "row's entry is never touched.", lambda c: c.src == "R4G2", lambda c: c.lt == r4_edit_lt(c)),
+    Rule("R4-ESC-ENDS", S10, "ESC then a non-command byte (Z, ~, DEL) does nothing and ends the escape: the next A "
+         "is printed.", lambda c: c.src == "R4G3" and c.what in ("ESC Z A", "ESC ~ A", "ESC DEL A"),
+         lambda c: (c.csrx, c.csry, c.cells) == (22, 11, [SP, P, ord("A"), R, SP])),
+    Rule("R4-ESCXY-1", S10, "ESC x / ESC y, then 1: the 1 is NOT taken as the parameter -- it arms the graphic "
+         "prefix, and the next A writes $01.", lambda c: c.src == "R4G3" and c.what in ("ESC x 1 A", "ESC y 1 A"),
+         lambda c: (c.csrx, c.csry, c.cells) == (22, 11, [SP, P, 1, R, SP])),
+    Rule("R4-ESCXY-ESC", S10, "ESC x / ESC y, then ESC: the ESC IS taken as the parameter; the A's after it print.",
+         lambda c: c.src == "R4G3" and c.what in ("ESC x ESC A A", "ESC y ESC A A"),
+         lambda c: (c.csrx, c.csry, c.cells) == (23, 11, [SP, P, ord("A"), ord("A"), SP])),
+    Rule("R4-PFX-DEL", S10, "The prefix, then DEL, then A: DEL acts (left, blanking P), then A is written there.",
+         lambda c: c.src == "R4G3" and c.what == "prefix DEL A",
+         lambda c: (c.csrx, c.csry, c.cells) == (21, 11, [SP, ord("A"), Q, R, SP])),
+    Rule("R4-DEL-NOCONT", S10, "DEL at column 1 onto a row that does NOT continue still blanks its column 40.",
+         lambda c: c.src == "R4G3" and c.what == "DEL from (10,0)", lambda c: (c.csrx, c.csry, c.c939) == (40, 10, SP)),
+    Rule("R4-Y-KEYCLAMP", S10, "ESC Y's row, with the key line on, clamps to the last TEXT row (23); key line off, "
+         "row byte 54 is row 23.", lambda c: c.src == "R4G3" and c.what.startswith(("key on", "ESC Y 54")),
+         lambda c: (c.csrx, c.csry) == (21, 23)),
+    Rule("R4-G3-REST", S10, "In these cases A comes back as the last byte sent, and the row above's column 40 ('z') is "
+         "untouched but by the DEL case; the cells of row 11 are as stated above (Y cases: untouched).",
+         lambda c: c.src == "R4G3",
+         lambda c: (c.a == {"DEL from (10,0)": 127}.get(c.what, 52 if "ESC Y" in c.what else 65))
+         and (c.c939 == ord("z") or c.what == "DEL from (10,0)")
+         and (not ("ESC Y" in c.what or c.what == "DEL from (10,0)") or c.cells == [SP, P, Q, R, SP])),
 ]

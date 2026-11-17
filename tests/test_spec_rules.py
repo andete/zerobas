@@ -31,6 +31,7 @@ def cases():
     ref = [NS(src="T", id=f"T {{i}}", v=i, out=i * 2) for i in range(4)]
     zb = [NS(src="T", id=f"T {{i}}", v=i, out=i * 2 + (1 if i == 3 else 0)) for i in range(4)]
     return {{"ref": ref, "zb": zb}}
+OUTPUTS = {{"T": ["out"]}}
 RULES = [Rule("R-DOUBLE", "S", "out is twice v.", lambda c: True, lambda c: c.out == ({expr}))]
 '''
 
@@ -66,6 +67,10 @@ def main():
         write("c.v * 2 if c.v != 2 else -1")
         rc, out = run(mod, "--check")
         check(rc == 1 and "FALSE" in out and "T 2" in out, "a rule false on reference case T 2: fails, names it")
+        write("c.v * 2")
+        open(mod, "a").write('OUTPUTS = {"T": ["out", "id"]}\n')     # 'id' recorded, no check reads it
+        rc, out = run(mod)
+        check("uncovered outputs: 4 of 8" in out, "an output no check reads is UNCOVERED (field-level)")
         open(mod, "a").write('RULES[0].select = lambda c: False\n')
         rc, out = run(mod)
         check(rc != 0 and "selects no case" in out, "a rule that selects no case refuses")

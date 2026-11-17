@@ -16,7 +16,12 @@ A rules module (e.g. probes/bios/spec/chput_rules.py) defines:
 The checker reports, per rule:
   - the REFERENCE: every selected case must satisfy it -- a failure means the SENTENCE is false;
   - zerobas: the same cases; a failure is a DIFFERENCE (the page's Differences come from these);
-and, over all cases: those that NO rule selects ("measured but not stated" -- counted, listed).
+and, over all cases, FIELD-LEVEL coverage (round 4, 2026-11-17): the module's `OUTPUTS` names each case
+group's recorded outputs (scalars and lists); while a rule's `expect` runs on a reference case, the case
+records which outputs -- and which LIST ENTRIES -- it reads. An output entry no rule reads is UNCOVERED:
+"measured but not stated". A case merely SELECTED by a rule that reads none of its behaviour (CHPUT's
+"A unchanged" rule over every case) no longer counts; nor does a check that reads one entry of a list its
+sentence talks about in full.
 
     python3 tools/spec_rules.py MODULE.py            report
     python3 tools/spec_rules.py MODULE.py --write    also render the page's rule tables
@@ -50,28 +55,122 @@ def load(path):
     return mod
 
 
+class _TList(list):
+    """A list that marks the entries a check reads (indexing, iteration, comparison, `in`)."""
+    def __init__(self, data, mark):
+        super().__init__(data)
+        self._mark = mark
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            for j in range(*i.indices(len(self))):
+                self._mark(j)
+        else:
+            self._mark(i % len(self))
+        return list.__getitem__(self, i)
+
+    def _all(self):
+        for j in range(len(self)):
+            self._mark(j)
+
+    def __iter__(self):
+        self._all()
+        return list.__iter__(self)
+
+    def __eq__(self, other):
+        self._all()
+        return list(self) == list(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __contains__(self, x):
+        self._all()
+        return list.__contains__(self, x)
+
+    __hash__ = None
+
+
+class _Tracked:
+    """A case seen through a check: reading an OUTPUT field marks it (a list: per entry)."""
+    def __init__(self, case, outputs, seen):
+        object.__setattr__(self, "_c", case)
+        object.__setattr__(self, "_o", outputs)
+        object.__setattr__(self, "_s", seen)
+
+    def __getattr__(self, name):
+        v = getattr(self._c, name)
+        if name not in self._o:
+            return v
+        if isinstance(v, list):
+            return _TList(v, lambda j, n=name: self._s.add((n, j)))
+        self._s.add((name, None))
+        return v
+
+
+def _slots(case, outputs):
+    out = set()
+    for f in outputs:
+        v = getattr(case, f)
+        if isinstance(v, list):
+            out |= {(f, j) for j in range(len(v))}
+        else:
+            out.add((f, None))
+    return out
+
+
 def run(mod):
     cs = mod.cases()
     ref, zb = cs["ref"], cs["zb"]
     if len(ref) != len(zb) or not ref:
         sys.exit(f"FAIL: the reference and zerobas case lists differ in length ({len(ref)} / {len(zb)}) "
                  f"or are empty")
-    out, covered = [], [False] * len(ref)
+    outputs = getattr(mod, "OUTPUTS", None)
+    if not outputs:
+        sys.exit("FAIL: the rules module declares no OUTPUTS -- field-level coverage needs them")
+    missing = sorted({c.src for c in ref} - set(outputs))
+    if missing:
+        sys.exit(f"FAIL: OUTPUTS names no outputs for case group(s) {missing}")
+    seen = [set() for _ in ref]
+    # UNREAD: {case id: (fields, reason)} -- outputs a page declares NOT evidence (the setup decides
+    # them), rendered with the reason; they count as accounted for, never as covered
+    unread = getattr(mod, "UNREAD", {})
+    ids = {c.id: i for i, c in enumerate(ref)}
+    for cid, (fields, _why) in unread.items():
+        if cid not in ids:
+            sys.exit(f"FAIL: UNREAD names {cid}, which is no case")
+        c = ref[ids[cid]]
+        seen[ids[cid]] |= {sl for sl in _slots(c, outputs[c.src]) if sl[0] in fields}
+    out = []
     for r in mod.RULES:
         idx = [i for i, c in enumerate(ref) if r.select(c)]
         if not idx:
             sys.exit(f"FAIL: rule {r.id} selects no case -- a rule about nothing")
-        for i in idx:
-            covered[i] = True
-        ref_bad = [ref[i].id for i in idx if not r.expect(ref[i])]
+        ref_bad = [ref[i].id for i in idx if not r.expect(_Tracked(ref[i], outputs[ref[i].src], seen[i]))]
         zb_bad = [zb[i].id for i in idx if not r.expect(zb[i])]
         out.append((r, len(idx), ref_bad, zb_bad))
-    uncovered = [ref[i].id for i, ok in enumerate(covered) if not ok]
-    return out, uncovered, len(ref)
+    total = 0
+    uncovered = []                        # (case id, [field[entry] ...])
+    for i, c in enumerate(ref):
+        slots = _slots(c, outputs[c.src])
+        total += len(slots)
+        miss = slots - seen[i]
+        if miss:
+            uncovered.append((c.id, sorted(f if j is None else f"{f}[{j}]" for f, j in miss)))
+    return out, uncovered, total
 
 
 def short(ids, n=6):
     return ", ".join(ids[:n]) + (f" … (+{len(ids) - n})" if len(ids) > n else "")
+
+
+def uncov_text(uncovered, n):
+    """'XCH 512: csrx, csry' ... grouped by the same missing fields"""
+    groups = {}
+    for cid, fields in uncovered:
+        groups.setdefault(", ".join(fields), []).append(cid)
+    parts = [f"{short(ids, 3)} ({len(ids)}): {fs}" for fs, ids in groups.items()]
+    return "; ".join(parts[:n]) + (f"; … (+{len(parts) - n} more groups)" if len(parts) > n else "")
 
 
 def render(mod, results, uncovered, total):
@@ -79,8 +178,10 @@ def render(mod, results, uncovered, total):
          f"<!-- GENERATED by tools/spec_rules.py from {os.path.relpath(mod.__file__, ROOT)} -- do not "
          f"edit; `python3 tools/spec_rules.py {os.path.relpath(mod.__file__, ROOT)} --write` -->", ""]
     n_ok = sum(1 for _, _, rb, _ in results if not rb)
-    L.append(f"**{len(results)} rules over {total} measured cases; {n_ok} hold on the reference; "
-             f"{total - len(uncovered)} cases are covered by a rule, {len(uncovered)} are not.**")
+    n_unc = sum(len(f) for _, f in uncovered)
+    L.append(f"**{len(results)} rules; {n_ok} hold on the reference. Of the {total} recorded outputs (each "
+             f"case's cursor, cells, A, table entries ...), {total - n_unc} are read by a rule's check and "
+             f"{n_unc} are not.**")
     sec = None
     for r, n, rb, zbb in results:
         if r.section != sec:
@@ -90,7 +191,9 @@ def render(mod, results, uncovered, total):
         zbs = "✓" if not zbb else f"✗ {len(zbb)}: {short(zbb)}"
         L.append(f"| **{r.id}** {r.text} | {n} | {refs} | {zbs} |")
     if uncovered:
-        L += ["", f"Measured but not covered by any rule ({len(uncovered)}): {short(uncovered, 12)}"]
+        L += ["", f"Measured but read by no rule's check: {uncov_text(uncovered, 12)}"]
+    for cid, (fields, why) in getattr(mod, "UNREAD", {}).items():
+        L += ["", f"Declared NOT evidence: {cid} {', '.join(fields)} — {why}"]
     L += ["", END]
     return "\n".join(L)
 
@@ -104,7 +207,9 @@ def main():
     for r, n, rb, zbb in results:
         print(f"{r.id:22} {n:5} cases  ref {'ok' if not rb else 'FALSE ' + short(rb, 4):40}  "
               f"zb {'ok' if not zbb else str(len(zbb)) + ' differ: ' + short(zbb, 3)}")
-    print(f"\nuncovered: {len(uncovered)} of {total}" + (f": {short(uncovered, 20)}" if uncovered else ""))
+    n_unc = sum(len(f) for _, f in uncovered)
+    print(f"\nuncovered outputs: {n_unc} of {total} in {len(uncovered)} cases"
+          + (f"\n  {uncov_text(uncovered, 40)}" if uncovered else ""))
     page = os.path.join(ROOT, mod.PAGE)
     text = open(page, encoding="utf-8").read()
     if text.count(BEGIN) != 1 or text.count(END) != 1:
