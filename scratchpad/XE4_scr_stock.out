@@ -1,0 +1,30 @@
+=== screen: STOCK (National_CF-3300)  [MODE scrmod=01 linlen=1D r2=06 namebase=1800]  settle=60.0s ===
+  ROW00 |                                |
+  ROW01 |  MSX-DOS version 1.03          |
+  ROW02 |  Copyright 1984 by Microsoft   |
+  ROW03 |                                |
+  ROW04 |  COMMAND version 1.08          |
+  ROW05 |                                |
+  ROW06 |                                |
+  ROW07 |  A>BDOSXE                      |
+  ROW08 |                                |
+  ROW09 |  A>                            |
+  ROW10 |  A>.                           |
+  ROW11 |                                |
+  ROW12 |                                |
+  ROW13 |                                |
+  ROW14 |                                |
+  ROW15 |                                |
+  ROW16 |                                |
+  ROW17 |                                |
+  ROW18 |                                |
+  ROW19 |                                |
+  ROW20 |                                |
+  ROW21 |                                |
+  ROW22 |                                |
+  ROW23 |                                |
+  HEX00 2020202020202020202020202020202020202020202020202020202020202020
+  HEX01 20204D53582D444F532076657273696F6E20312E303320202020202020202020
+  HEX02 2020436F707972696768742031393834206279204D6963726F736F6674202020
+  FOUND-MSX at VRAM 1822
+

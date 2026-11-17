@@ -33,7 +33,7 @@ import probe_tmp  # noqa: E402  (every scratch file under the project's temp roo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "bdosxe.asm")
-SYM_NAMES = ("done", "regs", "hcount", "answers")
+SYM_NAMES = ("done", "regs", "hcount", "answers", "dv0")
 
 
 def assemble(tmp_dir: str) -> tuple[bytes, dict]:
@@ -67,8 +67,8 @@ def build(dos_src: str, out: str, tmp_dir: str, answers=()) -> dict:
     open(out, "wb").write(img)
     os.chmod(out, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)   # write-protected mount
     addrs["sig"] = com_bytes[2]                   # byte at $0102 (resident-program arm)
-    addrs["len"] = addrs["hcount"] + 1 - addrs["regs"]
-    if addrs["len"] != 3 * 8 + 6 * 8 + 1:
+    addrs["len"] = addrs["dv0"] + 4 + 5 - addrs["regs"]
+    if addrs["len"] != 3 * 8 + 6 * 8 + 1 + 4 + 5:
         sys.exit(f"regs / hrec / hcount are not contiguous ({addrs['len']} B)")
     return addrs
 

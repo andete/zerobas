@@ -1806,15 +1806,27 @@ rdabs_body:
                 ; returned dskio's DE and F = $44 (`xor`). SDSNAT1C.DSK's boot code reads
                 ; DE after RDABS and took another road here
                 ; (scratchpad/bdosregs_probe.py -> bdosregs_run2.out).
+                ; 🎯 D-DISKVE (2026-11-17): RDABS and WRABS are ONE body now (the write
+                ; was its mirror), through bdos_dskio -- DISKVE's handler on an error.
+                xor     a                   ; drive ignored (single-drive); Cy=0 = read
+                jr      abs_go
+; wrabs_body -- MSX-DOS-1 WRABS ($30), canonical entry $4720 (M26, tier2-m26-spec.md §2.5/§7):
+; RDABS's mirror, the DTA as the source; pinned by BDOSX3 record 23 (H=1) -- the same shape as
+; RDABS's: A=$00 B=$00 C=$01 D=$00 E=$00 H=$00 L=$00 on success.
+wrabs_body:
+                xor     a                   ; drive 0 (ignored, single-drive)
+                scf                         ; Cy=1 = write direction (MSX2 TH DSKIO)
+abs_go:
                 push    de                  ; the sector, handed back as on the CF-3300
                 ld      b, h                ; B := sector count (dskio's own count param)
                 push    bc                  ; preserve original count across the dskio call
-                ld      hl, (DOS_DTAPTR)    ; target = runtime DTA
-                xor     a                   ; drive ignored (single-drive); Cy=0 = read
-                call    dskio
+                ld      hl, (DOS_DTAPTR)    ; the runtime DTA
+                call    bdos_dskio
+                jr      c, abs_err
+                inc     a                   ; A = $FF: DISKVE's handler answered Ignore
+                jr      z, abs_ign
                 pop     bc                  ; B := original count again (dskio clobbers B/C)
-                pop     de                  ; (flags kept: CF is dskio's)
-                jr      c, rdabs_ioerr
+                pop     de
                 ld      a, b                ; A := original count
                 ld      c, a                ; C := count (pinned exit value)
                 sub     a                   ; A = 0, F = $42 as on the CF-3300 (not xor's $44)
@@ -1823,36 +1835,24 @@ rdabs_body:
                 ld      h, a
                 ld      l, a                ; H=L=$00 (pinned exit value)
                 ret
+abs_ign:
+                ; After Ignore the CF-3300 returns A = $FF, B = 1, C = the code the handler
+                ; was given (bdos_dskio's B / C), DE = the sector, H = 1, L = $FF
+                ; (scratchpad/XE2_ign_stock.out, DVE_run1.out).
+                pop     hl                  ; (the count)
+                pop     de                  ; the sector
+                ld      hl, $01FF
+                dec     a                   ; A = $FF
+                push    af
+                call    clr_f306            ; M20 dispatcher-flag rule
+                pop     af
+                ret
+abs_err:
+                pop     bc
+                pop     de                  ; the sector, handed back
 rdabs_ioerr:
                 ld      b, a                ; preserve dskio's error code
                 call     clr_f306   ; M20 dispatcher-flag rule
                 ld      a, b                ; restore error code
                 scf
-                ret
-
-; wrabs_body — MSX-DOS-1 kernel WRABS ($30) canonical entry $4720's real body
-; (M26, tier2-m26-spec.md §2.5/§7). CLEAN-ROOM, mirror of rdabs_body above:
-; in DE = start logical sector, H = sector count, L = drive (ignored --
-; single-drive ROM). Source buffer = the runtime DTA (DOS_DTAPTR, $F23D).
-; Calls dskio directly with Cy=1 (write direction) rather than a fixed-count
-; wrapper, for the same arbitrary-count reason as RDABS. Entry/exit register
-; contract pinned by black-box `capture` (BDOSX3 record 23, H=1): identical
-; shape to RDABS's own pinned contract -- A=$00 B=$00 C=$01 D=$00 E=$00
-; H=$00 L=$00 on success, C carrying the original sector count.
-wrabs_body:
-                ld      b, h                ; B := sector count (dskio's own count param)
-                push    bc                  ; preserve original count across the dskio call
-                ld      hl, (DOS_DTAPTR)    ; source = runtime DTA
-                xor     a                   ; drive 0 (ignored, single-drive)
-                scf                         ; Cy=1 = write direction (MSX2 TH DSKIO)
-                call    dskio
-                pop     bc                  ; B := original count again (dskio clobbers B/C)
-                jr      c, rdabs_ioerr      ; 💰 D-DSKFMT carve 17: the same error tail
-                ld      a, b                ; A := original count
-                ld      c, a                ; C := count (pinned exit value)
-                xor     a
-                ld      b, a                ; B := $00 (pinned exit value)
-                ld      ($F306), a          ; M20 dispatcher-flag rule
-                ld      h, a
-                ld      l, a                ; H=L=$00 (pinned exit value)
                 ret

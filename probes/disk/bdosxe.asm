@@ -30,6 +30,15 @@ BDOS            equ     $0005
 DISKVE          equ     $F323
 
 start:
+                ; D-DISKVE (2026-11-17): what MSX-DOS left in DISKVE before we install ours --
+                ; the pointer, and the handler address it points to
+                ld      hl, (DISKVE)
+                ld      (dv0), hl
+                ld      a, (hl)
+                ld      (dv0+2), a
+                inc     hl
+                ld      a, (hl)
+                ld      (dv0+3), a
                 call    build_wrpat
                 ld      hl, hcell
                 ld      (DISKVE), hl            ; our handler, through the published cell
@@ -116,6 +125,19 @@ handler:
                 add     hl, de                  ; answers[call index] (B, D, E kept)
                 pop     de
                 ld      c, (hl)
+                ld      a, c
+                cp      2
+                jr      nz, h_ret
+                ; D-DISKVE (2026-11-17): an Abort answer -- where does the BDOS go? $F325's
+                ; value before, then $F325 -> our landing cell (abcell holds abland; abcell's
+                ; own bytes, run as code, are `nop / dec b` into abland -- direct or indirect).
+                ; MEASURED: the CF-3300 never lands there -- Abort is a warm boot to
+                ; COMMAND.COM's prompt (scratchpad/XE4_stock.out, XE4_scr_stock.out).
+                ld      hl, ($F325)
+                ld      (bv0), hl
+                ld      hl, abcell
+                ld      ($F325), hl
+h_ret:
                 ld      hl, (hsave)
                 ret
 h_abort:        ld      hl, (hsave)
@@ -180,4 +202,15 @@ fcb:            ds      37
 regs:           ds      3*8
 hrec:           ds      6*8
 hcount:         db      0
+dv0:            ds      4                       ; ($F323) on entry, and the word it points to
+bv0:            ds      2                       ; ($F325) when an Abort was answered
+abmark:         ds      1                       ; $AB: the Abort landed in abland
+absp:           ds      2                       ; SP there
 wrpat:          ds      512
+                ds      $04FE - $, $00
+abcell:         dw      abland                  ; = $0500: bytes 00 05 = nop / dec b
+abland:
+                ld      (absp), sp
+                ld      a, $AB
+                ld      (abmark), a
+                jp      done

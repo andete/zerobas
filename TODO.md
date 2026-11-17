@@ -16688,7 +16688,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       fmt_echo (8 -> $5046), fname_ev (7 -> $4365) for 76 B; skip_sp, fmt_err for 89 B.
       💰 **STEP 2 (2026-11-17): 76 B at $7559.** fmt_key / fmt_echo moved in front of $504E, fname_ev in front of $436C
       (🔮 76: HIT). Left in reserve: skip_sp (7 -> $47AB), fmt_err (6 -> $5FDE) for 89 B.
-      ➡️ NEXT: D-DISKVE into the hole (~55 B); then D-DOSDRVB, D-CONCOL, D-DSKIOCYL (more of the reserve).
+      ➡️ NEXT: ~~D-DISKVE into the hole~~ ✅ LANDED 2026-11-17 (74 of the 76 B); then D-DOSDRVB, D-CONCOL,
+      D-DSKIOCYL -- the plan's reserve (skip_sp, fmt_err) first.
       🔴 **D-DISKVE's KEY FAILS (measured 2026-11-17):** under BASIC the CF-3300's DISKVE ($F323) holds $72AE (its BASIC's
       handler cell), zerobas's holds $C9C9 -- NOT zero. "Call the handler when DISKVE is non-zero" would make zerobas BASIC
       jump through a garbage pointer on its first disk error. So D-DISKVE also needs: zerobas's disk init leaving a known
@@ -16720,7 +16721,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       before a TAB jump to 16, ESC Y counts the ESC. ~+11 B, and conout_emit_e's pinned tail ($7FD1..) has 2 B free:
       a carve first (the disk ROM stays in its allotted space).
 
-- [ ] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
+- [x] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
+      ✅ **LANDED 2026-11-17.** `bdos_dskio` (disk/kernel.asm, in D-DISKCARVE6's hole: 2 B left) wraps dskio for
+      write_sector, dskio_calslt and RDABS / WRABS (one body now, disk/fat.asm). On an error with a handler
+      installed it enters the handler as the CF-3300 does -- A = the drive, B = 1, C = the code | the write bit,
+      DE = the DISKVE cell + 1, HL = the handler -- and acts on C: 1 Retry, 2 Abort (`jp 0`: the warm boot,
+      measured -- the CF-3300 lands at COMMAND.COM's prompt, never through $F325: [`XE4_scr_stock.out`](scratchpad/XE4_scr_stock.out)),
+      0 Ignore (FMAKE carries on; RDABS / WRABS return A = $FF, B = 1, C = the code given, DE = the sector,
+      HL = $01FF). The KEY is DISKVE's high byte: MSX-DOS leaves $D609 there on both machines
+      ([`XE3_stock.out`](scratchpad/XE3_stock.out), [`XE3_ours.out`](scratchpad/XE3_ours.out)), and our init now zeroes it under BASIC (it held $C9C9), so
+      BASIC's own disk errors are unchanged. BDOSXE is GATED (bdos-acceptance): Ignore
+      [`DVE_run2.out`](scratchpad/DVE_run2.out), Retry [`DVE_retry.out`](scratchpad/DVE_retry.out), Abort's screen [`DVE_abort_ours.out`](scratchpad/DVE_abort_ours.out) -- byte-identical but
+      for the two RDABS-1440 bytes that are D-DSKIOCYL's (pinned in the gate's allowlist). 🔮 2 B left: HIT;
+      🔮 "Abort lands at $F325's target": MISS (a warm boot). WRABS's success F is now $42 as RDABS's (one
+      body). ⚠️ Residual: a DOS boot sector's step-5 code (HL = $F323) could leave a page-3 pointer there
+      if that disk then falls back to BASIC -- unmeasured, not filed until a disk does it.
       🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).
       🤖 **AUTONOMOUS** — black box: BDOSXE's capture against the CF-3300 (run build_bdosxe_disk.py, then the
       `disk_probe_diff.py capture` line it prints, `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`).
@@ -16757,7 +16772,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — PHYDIO / DSKIO with sector 1440, 1500 or 2000 on the 720 KB disk; sector $FFFF reads fine on
       BOTH (an 8-bit cylinder wrapping in range, read as a result). Our driver maps the FDC's status faithfully; the
       fix is a cylinder range check in DSKIO (~5 B) -- the disk ROM has 0 B free, so a carve first (Joost: the disk ROM
-      stays in its allotted space). Pinned in phydioerr-acceptance (rows read_far / read_1440 / read_1500). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
+      stays in its allotted space). Pinned in phydioerr-acceptance (rows read_far / read_1440 / read_1500), and since
+      D-DISKVE in bdos-acceptance's BDOSXE allowlist (RDABS 1440's C, ours 8). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
 - [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE

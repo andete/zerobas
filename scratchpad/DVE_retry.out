@@ -1,0 +1,22 @@
+=== capture: regs+mem at occurrence #1 of 0x0171 ===
+  ALIGNED: both hit occurrence #1  (stock t=18.1519, ours t=17.5770, dt=0.5749)
+
+  reg   STOCK  OURS
+  PC    0171   0171
+  SP    D529   D529
+>>AF    FFBB   FFBA
+>>BC    0102   0108
+  DE    05A0   05A0
+  HL    01FF   01FF
+  IX    024D   024D
+>>IY    ED35   DA40
+
+  head stock: 16 00 00 00 02 38 00 00 30 FF 01 01 00 14 01 FF 2F FF 01 02 05 A0 01 FF 00 01 01 02 0D 01 73 00 00 01 01 02 0D 01 73 01 00 01 01 02 0D 01 73 02 00 01 02 02 0D 01 73 03 00 00 00 00 00 00 00 00
+  head ours : 16 00 00 00 02 38 00 00 30 FF 01 01 00 14 01 FF 2F FF 01 08 05 A0 01 FF 00 01 01 02 0D 01 73 00 00 01 01 02 0D 01 73 01 00 01 01 02 0D 01 73 02 00 01 08 02 0D 01 73 03 00 00 00 00 00 00 00 00
+
+  memory 0x023d+82: 2 of 82 bytes differ
+    0250: stock=02 ours=08
+    026F: stock=02 ours=08
+    diff runs: 0250, 026F
+
+  register diffs: AF, BC, IY

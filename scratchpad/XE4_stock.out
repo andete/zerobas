@@ -1,0 +1,5 @@
+=== capture: regs+mem at occurrence #1 of 0x0171 ===
+
+*** STOCK never reached occurrence #1 of 0x0171 (looped / wrong --nth). ***
+  class: LOGICAL — ran its full emulated timeline and genuinely never hit the anchor — a real anchor/keys/--nth defect
+  replay saved: /tmp/zerobas/zb_replay_stock_kmox372x.omr

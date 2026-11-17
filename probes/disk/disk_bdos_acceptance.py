@@ -75,9 +75,12 @@ EXERCISERS = [
     # BDOSXS (D-DISKCONTRACT gap 7, 2026-11-17): a DISK SWAP mid-run (disk_probe_diff.py
     # --swap-image): DSKCHG before / after, and an SFIRST for a file only the new disk holds.
     ("BDOSXS", "build_bdosxs_disk.py"),
-    # (BDOSXE, D-DISKCONTRACT gap 2: NOT gated yet -- it DIVERGES, TODO D-DISKVE: our BDOS
-    #  never calls a program's DISKVE handler. Run it with `--only BDOSXE` after adding it
-    #  back here once D-DISKVE lands.)
+    # BDOSXE (D-DISKCONTRACT gap 2, D-DISKVE, 2026-11-17): a disk ERROR through the BDOS --
+    # FMAKE / WRABS on a write-protected disk, RDABS past the last cylinder -- with the
+    # program's own DISKVE handler answering Ignore: the handler's entry registers per call
+    # and each BDOS return. (Retry / Abort measured by hand: scratchpad/DVE_retry.out,
+    # DVE_abort_ours.out.)
+    ("BDOSXE", "build_bdosxe_disk.py"),
     # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
     # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
     ("BDOSX5", "build_bdosx5_disk.py"),
@@ -246,6 +249,14 @@ ALLOWLIST = {
         # byte-identically (record 0 A=FF; source survives; dest intact); residuals:
         0x01E3: "regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only)",
         0x01E4: "regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned)",
+    },
+    "BDOSXE": {
+        # D-DSKIOCYL (TODO, TIER 6): RDABS of sector 1440, past the 720 KB disk's last
+        # cylinder -- DSKIO's code is 8 (record not found) here, 2 (not ready) on the
+        # CF-3300. OURS is pinned, so the excuse cannot hide a regression
+        # (scratchpad/DVE_run2.out).
+        0x0250: (0x08, "regs rec2 RDABS C -- the code the handler was given (D-DSKIOCYL)"),
+        0x0267: (0x08, "hrec slot 2 C -- the handler's C on that read (D-DSKIOCYL)"),
     },
     "BDOSX8": {
         # Item 5 (WRSEQ FCB position write-back). The post-WRSEQ FCB position (+12

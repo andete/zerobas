@@ -538,6 +538,7 @@ hdl_oom:                                    ; D-LOADDIRECT: the file does not fi
 ; fmt_key / fmt_echo -- FORMAT's key read / echo (MOVED here by D-DISKCARVE6 step 2, 2026-11-17).
 fmt_key:
                 ld      hl,(FDC_DEST)
+jp_hl:                                      ; (D-DISKVE: bdos_dskio's call into the handler)
                 jp      (hl)
 fmt_echo:
                 ld      e,a
@@ -3867,7 +3868,7 @@ write_sector:                           ; relocated (its entry once collided wit
                 ld      c, 0            ; media: not an ID -> the mounted disk's (D-SIDES)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jp      dskio           ; tail-call: dskio returns to our caller
+                jp      bdos_dskio      ; tail-call (D-DISKVE: DISKVE's handler on an error)
 ; bcw_own -- 🔴 D-SEQMIX2 (2026-11-14): FCLOSE ends write mode only for the WRITER'S OWN
 ; file. BDOS_WRMODE is one global; a copy that closed its SOURCE before the destination's
 ; last SEQWRITE had that write answered $FF and the record lost (scratchpad/
@@ -5544,6 +5545,76 @@ fdc_wp_chkrdy:
                 scf
                 ret
 
+; bdos_dskio -- 🎯 D-DISKVE (2026-11-17): dskio for the BDOS's OWN transfers (write_sector,
+; dskio_calslt -> read_sector, RDABS / WRABS; never the published $4010, whose raw codes PHYDIO
+; and Disk BASIC expect). Same interface as dskio. On an error, when a disk-error handler is
+; installed -- DISKVE ($F323) names a cell holding its address; our init zeroes the high byte
+; under BASIC (install_basic_hooks), MSX-DOS's own leaves $D609 on both machines
+; (scratchpad/XE3_stock.out, XE3_ours.out) -- the handler is entered as on the CF-3300
+; (scratchpad/XE2_ign_stock.out): A = the drive, B = 1, C = DSKIO's code | 1 for a write. Its
+; answer in C: 1 Retry (the same transfer again), 2 Abort (a warm boot: the CF-3300 lands at
+; COMMAND.COM's prompt, scratchpad/XE4_scr_stock.out), 0 Ignore -- Cy = 0 with A = $FF (dskio's
+; own success leaves A = 0), so FMAKE carries on and RDABS / WRABS tell the two apart.
+; With no handler: dskio's result, every register as it left it (BASIC's route, unchanged).
+bdos_dskio:
+                push    hl
+                push    de
+                push    bc
+                push    af
+                call    dskio
+                jr      nc, bdd_drop
+                push    af
+                ld      a, (DISKVE + 1)     ; the key: a handler cell outside page 0
+                or      a
+                jr      nz, bdd_hand
+                pop     af
+bdd_drop:                                   ; drop the saved inputs, nothing else touched
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                ret
+bdd_hand:
+                pop     af
+                ld      c, a                ; DSKIO's code
+                pop     af                  ; A = the drive, Cy = a write
+                push    af
+                ld      b, a
+                sbc     a, a
+                and     1
+                or      c
+                ld      c, a                ; C = the code | the write bit
+                ld      hl, (DISKVE)
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                ex      de, hl              ; HL = the handler; DE = the cell + 1, as the CF-3300's
+                ld      a, b                ; A = the drive
+                ld      b, 1
+                push    bc
+                call    jp_hl
+                ld      a, c                ; the answer
+                pop     bc                  ; B = 1, C = the code | write: what Ignore returns
+                dec     a
+                jr      z, bdd_retry        ; 1 Retry
+                jp      p, $0000            ; 2 Abort: the warm boot
+                pop     hl                  ; 0 Ignore: A = $FF already
+                pop     hl
+                pop     de
+                pop     hl
+                or      a                   ; Cy = 0, A = $FF: "ignored"
+                ret
+bdd_retry:
+                pop     af
+                pop     bc
+                pop     de
+                pop     hl
+                jr      bdos_dskio
+
 ; 🔴 D-ALIASWCELL (2026-09-23): THE RAW-SECTOR BUFFER IS ~~FSECTOR_BUF~~ FWBUF.
 ; It named FSECTOR_BUF -- main's FILE DATA sector -- so with a file open, DSKI$
 ; read a raw sector straight over the channel's staged data and DSKO$ wrote the
@@ -5602,6 +5673,8 @@ ibh_him:
     ENDIF
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
+                xor     a                   ; D-DISKVE: no disk-error handler under BASIC --
+                ld      (DISKVE + 1), a     ; bdos_dskio's key (it held $C9C9 here)
                 ld      hl, hook_tab
 ibh_lp:
                 ld      a, (hl)             ; the hook cell's index ((cell - HOOK_LO) / 5)

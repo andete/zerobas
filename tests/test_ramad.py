@@ -58,6 +58,10 @@ def run():
     for label, ramad0, hok, prim, exp, sub, want, want_hok, want_tab in rows:
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         m.trap("install_res_print", lambda mach: None)
+        # SNSMAT (D-BOOTKEYS' CTRL test): row 6 reads $FF, no key held. 🔴 Unstubbed, $0141
+        # was a NOP sled into the ROM at $4000, so the run's outcome hung on the disk ROM's
+        # LAYOUT -- D-DISKVE's byte moves turned the $FF row RED without touching set_ramad.
+        m.trap(0x0141, lambda mach: setattr(mach.cpu, "a", 0xFF))
         m.poke(RAMAD0, bytes([ramad0, 0xC9, 0xC9, 0xC9]))
         m.poke(HOKVLD, bytes([hok]))
         m.poke(EXPTBL, bytes([0x80 if (i == prim and exp) else 0 for i in range(4)]))
@@ -66,7 +70,11 @@ def run():
         m.poke(m.addr("HOOK_SLOT"), bytes([0x87]))         # this ROM in 3-1, as INIT set it
         m.poke(MASTERS, bytes([0xC9]))                     # C-BIOS's fill
         m.cpu.io_in = lambda port, prim=prim: (prim << 6) if port & 0xFF == 0xA8 else 0xFF
-        m.call("set_ramad")
+        # 🔴 The harness's default SP ($F380) puts the stack ON the $F368 table under test:
+        # D-DISKVE's bdos_dskio (8 B more stack on build_resident's failing mount read)
+        # pushed over the freshly built table. Run on a stack below the work area.
+        m.cpu.sp = 0xE000
+        m.call("set_ramad", keep_sp=True)
         got = bytes(m.mem[RAMAD0:RAMAD0 + 4])
         tab = m.mem[WA_JMPTAB] == 0xC3
         check(got == bytes([want] * 4) and m.mem[HOKVLD] == want_hok and tab == want_tab,

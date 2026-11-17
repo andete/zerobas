@@ -90,7 +90,7 @@
 ; entry and the driver keeping the caller's state per sector (fdc_di_save), the
 ; same TIME behaviour by another road (D-LOADDI).
 dskio_calslt:
-                call    dskio               ; LOCAL: no slot to cross, and the
+                call    bdos_dskio          ; LOCAL (D-DISKVE: through DISKVE's handler); no slot to cross, and the
                                             ; inter-slot call disappears with it
                                             ; (the `jr dc_result` to the next line went
                                             ; to D-DISKCARVE6, 2026-11-17: 2 B)
