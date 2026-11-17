@@ -16809,7 +16809,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/INITXT.md, round 2's separating setup, run 4
       ([`XINIT_run4.out`](scratchpad/XINIT_run4.out)):
-      - **R-I-CRTCNT / R-I-KEYS:** the VG-8020 leaves CRTCNT as found and draws the key line on row CRTCNT (13 in the
+      - **R-I-CRTCNT / R-I-KEYS / R-I-KEYPLACE / R-I-KEYOUT:** the VG-8020 leaves CRTCNT as found and draws the key line
+        on row CRTCNT -- 13, 20, 24, and for 0 / 30 off the screen's rows
+        ([`XINIT3_run1.out`](scratchpad/XINIT3_run1.out)) (13 in the
         setup); zerobas sets CRTCNT to 24 when the key line is on and draws it on row 24.
       - **R-I-R0:** the VG-8020 keeps only bit 0 of RG0SAV ($A5 gives 01); zerobas $A1.
       - **R-I-TAIL-TXT:** INITXT with a width above 40: zerobas also clears the 64 bytes after the 960 name cells; the
