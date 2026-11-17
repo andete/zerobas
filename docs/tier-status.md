@@ -166,9 +166,9 @@ The six published entries, then every PINNED address in `disk/*.asm` -- the refe
 | $75A5 | `(jp k_75A5)` | no BDOS function named | disk/kernel.asm:7421 |
 | $77B8 | `(jp k_77B8)` | no BDOS function named | disk/kernel.asm:7820 |
 | $782B | `(jp k_782B)` | no BDOS function named | disk/kernel.asm:7909 |
-| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:865 |
-| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:869 |
-| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:882 |
+| $7F7C | `k_7F7C` | no BDOS function named | disk/runtime.asm:872 |
+| $7FC0 | `fw_done` | no BDOS function named | disk/runtime.asm:876 |
+| $7FD1 | `(IF ($ <= $7FBF))` | no BDOS function named | disk/runtime.asm:889 |
 
 65 pinned addresses; 37 name a BDOS function, 28 do not.
 

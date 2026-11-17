@@ -69,6 +69,9 @@ EXERCISERS = [
     # CLS, TAB, BS, BEL, ESC Y, two STROUTs -- the name table read back through the VDP's
     # ports by the program itself, plus LINLEN / CSRY / CSRX.
     ("BDOSXC", "build_bdosxc_disk.py"),
+    # BDOSXK (D-DISKCONTRACT gap 5, D-BUFINECHO, 2026-11-17): CONIN's and BUFIN's ECHO on the
+    # screen -- typed `xHelz` BS `lo` Return: BS erases (BS, space, BS), Return echoes CR.
+    ("BDOSXK", "build_bdosxk_disk.py"),
     # (BDOSXE, D-DISKCONTRACT gap 2: NOT gated yet -- it DIVERGES, TODO D-DISKVE: our BDOS
     #  never calls a program's DISKVE handler. Run it with `--only BDOSXE` after adding it
     #  back here once D-DISKVE lands.)

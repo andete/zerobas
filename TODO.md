@@ -16655,6 +16655,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       0-byte-diff ([`XC4_run.out`](scratchpad/XC4_run.out)). One real difference, FILED D-CONCOL below: the BDOS's logical column ($F237, which TAB
       counts from) after a control code ([`XC2_stock.out`](scratchpad/XC2_stock.out), [`XC3_stock.out`](scratchpad/XC3_stock.out), [`XC3_ours.out`](scratchpad/XC3_ours.out)). The gated text places TABs only
       after CR LF / printable text. Left of (5): the echo of CONIN / BUFIN on screen; Ctrl-P / Ctrl-C / Ctrl-S.
+      ✅ **(5) BUFIN'S ECHO, 2026-11-17 -- A REAL DIFFERENCE FIXED (D-BUFINECHO).** New exerciser BDOSXK (in
+      bdos-acceptance): typed `x` (CONIN) then `Helz` BS `lo` Return (BUFIN), the screen read back. The buffer matched;
+      the SCREEN did not: the CF-3300 erases the BackSpaced char (BS, space, BS -- `Helz` BS Return separated it from a
+      bare BS) and echoes CR on Return (cursor at column 0); ours showed "Helzlo" / "Helz", cursor after
+      ([`XK_stock.out`](scratchpad/XK_stock.out), [`XK_ours.out`](scratchpad/XK_ours.out), [`XK2_stock.out`](scratchpad/XK2_stock.out), [`XK2_ours.out`](scratchpad/XK2_ours.out)). conin_line_body (disk/runtime.asm): BS un-echoes through fmt_pr,
+      Return echoes CR; +12 B net into the 13 B pad before $7F7C. After: 0 diffs on both key sets ([`XK3_1_ours.out`](scratchpad/XK3_1_ours.out),
+      [`XK3_2_ours.out`](scratchpad/XK3_2_ours.out)). Left of (5): Ctrl-P / Ctrl-C / Ctrl-S at the console.
       ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
 
 - [ ] **D-CONCOL — THE BDOS CONSOLE'S LOGICAL COLUMN AFTER A CONTROL CODE: TAB LANDS WRONG AFTER FF / BS / BEL / ESC**

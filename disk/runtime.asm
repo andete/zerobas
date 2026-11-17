@@ -253,7 +253,7 @@ cinl_getchar:
                 ei
                 ld      a, b                ; A = the char read
                 cp      $0D                 ; CR -> line done
-                jr      z, cinl_done
+                jr      z, cinl_cr
                 cp      $08                 ; BS -> edit back one char
                 jr      nz, cinl_store
                 ld      hl, CONIN_COUNT
@@ -261,7 +261,12 @@ cinl_getchar:
                 or      a
                 jr      z, cinl_getchar     ; nothing to erase -> ignore
                 dec     (hl)
-                jr      cinl_getchar        ; (buffer edit only; no un-echo)
+                ; 🔴 D-BUFINECHO (2026-11-17): and UN-ECHO it -- BS, space, BS. The CF-3300's
+                ; BUFIN erases the character on screen; this left it (`Helz` BS `lo` showed
+                ; "Helzlo", `Helz` BS Return "Helz": scratchpad/XK_stock.out, XK2_*.out).
+                ld      hl, cinl_bs
+                call    fmt_pr
+                jr      cinl_getchar
 cinl_store:
                 ld      c, a                ; C = the char to store/echo
                 ld      a, (CONIN_COUNT)
@@ -272,17 +277,18 @@ cinl_store:
                 ld      de, (CONIN_BUF)
                 inc     de
                 inc     de                  ; DE -> buf[2 + count]
-                ld      a, b
-                ld      l, a
+                ld      l, b
                 ld      h, 0
                 add     hl, de
                 ld      (hl), c             ; store the char
-                inc     b
-                ld      a, b
-                ld      (CONIN_COUNT), a    ; count++
+                ld      hl, CONIN_COUNT
+                inc     (hl)                ; count++
                 ld      e, c                ; echo via conout_body (E = char, its ABI)
                 call    conout_body
                 jr      cinl_getchar
+cinl_cr:
+                ld      e, a                ; D-BUFINECHO: Return echoes CR -- the CF-3300 leaves
+                call    conout_body         ; the cursor at column 0 of the input line (XK_*)
 cinl_done:
                 ld      de, (CONIN_BUF)
                 inc     de                  ; DE -> buf[1] = count
@@ -301,6 +307,7 @@ cinl_done:
                 pop     hl
                 pop     bc
                 ret
+cinl_bs:        db      8, " ", 8, 0        ; D-BUFINECHO: BackSpace's un-echo
 
 ; --- int_h_body - REMOVED 2026-09-09 (D-INTHDEAD) ---------------------------------
 ; The OLD page-1 $0038 handler (A-2/A-2b), superseded by A-3 and kept "pending
