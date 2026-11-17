@@ -1,0 +1,20 @@
+
+===== BDOSXE (build_bdosxe_disk.py) =====
+  FAIL  BDOSXE capture 0x01f0:0x41: BYTE DIFF (23 UNEXCUSED: 01F1, 01F7, 01F9, 01FA, 01FB, 01FC, 01FD, 01FE (+15 more); regs: AF, BC, DE, HL, IY)
+    --- probe tail ---
+    0206: stock=4A ours=00
+    0209: stock=01 ours=00
+    020A: stock=01 ours=00
+    020B: stock=01 ours=00
+    020C: stock=C6 ours=00
+    020D: stock=01 ours=00
+    020E: stock=4A ours=00
+    020F: stock=01 ours=00
+    0230: stock=02 ours=00
+    diff runs: 01F1, 01F7, 01F9-01FF, 0201-0206, 0209-020F, 0230
+
+  register diffs: AF, BC, DE, HL, IY
+
+===== BDOSX acceptance: 0/1 gated differentials converged (0 screen skipped) =====
+DIVERGENCE — the BDOS surface no longer matches stock:
+  - BDOSXE capture 0x01f0:0x41: BYTE DIFF (23 UNEXCUSED: 01F1, 01F7, 01F9, 01FA, 01FB, 01FC, 01FD, 01FE (+15 more); regs: AF, BC, DE, HL, IY)

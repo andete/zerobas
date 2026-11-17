@@ -16630,7 +16630,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a cylinder past the last (sector 1440 / 1500 / 2000) -> the CF-3300 A = 2 (not ready), zerobas A = 8 (record not
       found); $FFFF wraps in range on both (so a CYLINDER rule, not a sector-count one) -- filed D-DSKIOCYL below.
       Left of (2): the BDOS-level error path (DISKVE / Abort-Retry-Ignore for a .COM program); CRC / seek codes.
-      ➡️ NEXT: (2)'s BDOS-level error path; (4) the $F37D dispatch; (5) console output (DIRIO with a key).
+      🔴 **(2) BDOS LEVEL, 2026-11-17 -- A REAL DIFFERENCE, FILED D-DISKVE (next).** New exerciser BDOSXE (probes/disk/bdosxe.asm,
+      build_bdosxe_disk.py; NOT gated yet -- it would be RED): FMAKE and WRABS on a WRITE-PROTECTED disk with the program's own
+      DISKVE handler. The CF-3300 calls it twice (A = 0, C = $01 -- write / write-protect, B = 1), then FMAKE A = 0 and WRABS
+      A = $FF after Ignore; zerobas NEVER calls it -- FMAKE A = $FF, WRABS A = 0 (SUCCESS on a protected disk)
+      ([`XE_stock.out`](scratchpad/XE_stock.out), [`XE_ours.out`](scratchpad/XE_ours.out), [`XE_run1.out`](scratchpad/XE_run1.out)).
+      ➡️ NEXT: D-DISKVE (below); then (4) the $F37D dispatch; (5) console output (DIRIO with a key).
+
+- [ ] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
+      🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — black box: BDOSXE's capture against the CF-3300 (run build_bdosxe_disk.py, then the
+      `disk_probe_diff.py capture` line it prints, `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`).
+      The CF-3300 calls DISKVE's handler (the published cell at $F323 -> the handler's address) on a DSKIO error with
+      A = the drive, C = the error code (bit 0 = a write; the code in the bits above), B = 1 -- DE / HL looked like
+      pointers, not yet separated -- and acts on its answer: C = 0 Ignore (FMAKE then A = 0, WRABS A = $FF), 1 Retry,
+      2 Abort (inf: back to the command level). COMMAND.COM's handler is what prints "Abort, Retry, Ignore"; on zerobas a
+      .COM program writing to a protected disk gets no prompt and a silent FF -- or, for WRABS, SUCCESS. The disk ROM
+      has 0 B free: a carve first (Joost: it stays in its allotted space). When it lands, put BDOSXE back in
+      disk_bdos_acceptance.py's list.
 
 - [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
       🎚️ TIER 6 — every error (a sector past the media's end; filed 2026-11-17, D-DISKCONTRACT gap 2).

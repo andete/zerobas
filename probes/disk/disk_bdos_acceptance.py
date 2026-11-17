@@ -65,6 +65,9 @@ EXERCISERS = [
     # made ours byte-identical to stock: disk-full at WRSEQ #1, all-01, FCLOSE 00.
     # Now a standing regression guard — no allowlist needed (0-byte-diff buffer).
     ("BDOSX4", "build_bdosx4_disk.py"),
+    # (BDOSXE, D-DISKCONTRACT gap 2: NOT gated yet -- it DIVERGES, TODO D-DISKVE: our BDOS
+    #  never calls a program's DISKVE handler. Run it with `--only BDOSXE` after adding it
+    #  back here once D-DISKVE lands.)
     # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
     # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
     ("BDOSX5", "build_bdosx5_disk.py"),
