@@ -16798,11 +16798,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — docs/bios/INITXT.md rule R-I-KEYS (the XINIT matrix, FNKSTR written by the setup to "key0".."key9";
       run 2 [`XINIT_run2.out`](scratchpad/XINIT_run2.out), round 2's run 4 [`XINIT_run4.out`](scratchpad/XINIT_run4.out)):
       with CNSDFG on and no key held, the VG-8020's key line shows "key0".. (keys 1-5); zerobas's "key5".. (keys 6-10),
-      in every width 28-41 case, INITXT and INIT32, also from SCREEN 2 / display off / CNSDFG 2, $80, $FF. The name-table
+      in every width 28-41 case, INITXT and INIT32, also from SCREEN 2 / display off / CNSDFG 2, $80, $FF; and
+      the same from DSPFNK / FNKSB (docs/bios/DSPFNK.md, [`XKEY_run1.out`](scratchpad/XKEY_run1.out)). The name-table
       sums differ by exactly the 25 the digits account for. Fix in the C-BIOS repack's key-line display (which set it
       picks). Widths 0, 80 and 255 (R-I-KEYEDGE) and the ROW the line goes on are D-INITEDGES, TIER 6.
 
-- [ ] **D-INITEDGES — INITXT / INIT32: THE KEY LINE'S ROW, R0'S KEPT BITS, THE NAME TABLE'S TAIL, THE ODD WIDTHS**
+- [ ] **D-INITEDGES — INITXT / INIT32 / DSPFNK / ERAFNK / FNKSB: THE KEY LINE'S ROW AND MARGINS, R0'S KEPT BITS, THE NAME TABLE'S TAIL, THE ODD WIDTHS**
       🎚️ TIER 6 — every edge (each needs a program that changes CRTCNT, garbles RG0SAV or sets LINL40 above 40;
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/INITXT.md, round 2's separating setup, run 4
@@ -16813,6 +16814,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - **R-I-TAIL-TXT:** INITXT with a width above 40: zerobas also clears the 64 bytes after the 960 name cells; the
         VG-8020 leaves them.
       - **R-I-KEYEDGE:** key line on with width 0, 80 or 255: the reference's odd cells (its rule says which).
+      - **docs/bios/DSPFNK.md R-K-STATE / R-K-ERA** ([`XKEY_run1.out`](scratchpad/XKEY_run1.out)): DSPFNK / FNKSB
+        likewise draw on row 24 and set CRTCNT := 24 on zerobas (the VG-8020: row CRTCNT, CRTCNT kept); and at a
+        width below the screen's (37, 39, 29) the VG-8020 writes only the width's span of the key line's row,
+        leaving the margin cells, where zerobas writes the whole row (DSPFNK and ERAFNK).
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).

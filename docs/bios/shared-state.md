@@ -110,9 +110,9 @@ beginning of".
 | $00C0 | BEEP | sound | — | "the buzzer" (device not named); repo: PSG registers 0..13 changed right after BEEP | TDB §2.2.1; repo: probes/bios/biosl/b5sound.asm | partly (measured) |
 | $00C3 | CLS | text | — | the screen (VRAM; mode-dependent) | TDB §2.2.1; repo: bios_levels.py (all VRAM, SCREEN 0..3) | partly |
 | $00C6 | POSIT | text | — | cursor position (CSRX / CSRY *by description*; repo: measured after POSIT) | TDB §2.2.1; repo: probes/bios/biosl/b1text.asm | partly |
-| $00C9 | FNKSB | text | **FNKFLG $FBCE** (named Entry, as printed) | key-line display (screen) | TDB §2.2.1 | partly |
-| $00CC | ERAFNK | text | hook **H.ERAF $FDB8** | key-line erased (screen); repo: CNSDFG after it | TDB §2.2.1, §2.2.2; repo: b1text.asm | partly |
-| $00CF | DSPFNK | text | hook **H.DSPF $FDB3**; key strings (FNKSTR *by description*) | key-line display (screen); repo: CNSDFG | TDB §2.2.1, §2.2.2; repo: b1text.asm | partly |
+| $00C9 | FNKSB | text | **FNKFLG $FBCE** (named Entry, as printed); measured: FNKFLG makes NO difference, CNSDFG decides (non-zero: as DSPFNK; 0: nothing) | key-line display (screen); measured: as DSPFNK | TDB §2.2.1; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
+| $00CC | ERAFNK | text | hook **H.ERAF $FDB8**; measured: CRTCNT (the row), LINLEN (the span), SCRMOD | key-line erased (screen); measured: CNSDFG := 0, row CRTCNT's span := spaces | TDB §2.2.1, §2.2.2; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
+| $00CF | DSPFNK | text | hook **H.DSPF $FDB3**; key strings (FNKSTR *by description*); measured: FNKSTR keys 1–5, CRTCNT (the row), LINLEN (the span and slots), SCRMOD | key-line display (screen); measured: CNSDFG := 255, row CRTCNT's span; NOT the cursor, CRTCNT | TDB §2.2.1, §2.2.2; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
 | $00D2 | TOTEXT | text | hook **H.TOTE $FDBD** | screen forced to text mode (VDP; SCRMOD not named) | TDB §2.2.1, §2.2.2 | partly |
 | $00D5 | GTSTCK | input | joystick (PSG R#14 bits 0–3, R#15 bit 6 port select per §1.7.12); repo: ID 0 = cursor keys | PSG R#15 select (per §1.7.12, not stated by the entry) | TDB §2.2.1, §1.7.12; repo: bios_levels.py | partly |
 | $00D8 | GTTRIG | input | trigger (PSG R#14 bits 4–5 per §1.7.12); repo: ID 0 = SPACE | as GTSTCK | TDB §2.2.1, §1.7.12; repo | partly |
