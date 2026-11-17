@@ -5,10 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # `CHPUT` ($00A2) — write one character to the screen
 
-> **Spec:** DRAFT 3 (2026-11-17) — one review pass, answered by a second measurement round.
-> Measured on the Philips VG-8020 (the main-BIOS reference) by calling CHPUT directly, in
-> SCREEN 0 at width 40. The cursor results agree with an earlier reading on the Panasonic
-> CF-3300 through its BDOS.
+> **Spec:** DRAFT 4 (2026-11-17) — two review passes, two measurement rounds. The behaviour is
+> now stated as EXECUTABLE RULES, checked against every measured case. Measured on the Philips
+> VG-8020 (the main-BIOS reference) by calling CHPUT directly, in SCREEN 0 at width 40; the cursor
+> results agree with an earlier reading on the Panasonic CF-3300 through its BDOS.
 
 ## Summary
 
@@ -16,137 +16,185 @@ SPDX-License-Identifier: 0BSD
 control code or an escape sequence it moves the cursor or edits the screen instead. `PRINT` and
 the MSX-DOS console both end up here.
 
-zerobas does the same for every byte and every escape command measured, with these exceptions:
-- **DEL (127):** the reference moves back one column and blanks that cell (nothing shifts; at
-  column 1 it wraps to the row above); zerobas blanks the cell under the cursor and stays.
-- **`ESC l`:** both blank the line, but the reference leaves the cursor where it was, and zerobas
-  moves it to the line's start.
+zerobas behaves the same in most of the measured cases. It differs in four places:
+- **DEL:** zerobas does not move back and blanks the wrong cell.
+- **`ESC l`:** zerobas moves the cursor to the line's start.
+- **`ESC Y` out of range:** zerobas does not keep the cursor on the screen.
+- **The function-key line:** zerobas lets the cursor onto the key row.
 
-- **`ESC Y` out of range:** the reference clamps to the screen; zerobas stores any position
-  (TODO **D-CHPUTESCY**).
-- **The function-key line:** with it on, the reference keeps the cursor off the key row; zerobas
-  writes over it (TODO **D-CHPUTKEYROW**).
-
-DEL and `ESC l` are TODO **D-CHPUTDEL**.
+Its line-continuation table (LINTTB) also holds different values.
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Second: the Panasonic CF-3300's. Ours: the C-BIOS
-repack's CHPUT (the `cbios-repack` patches).
-The region's shared facts (the screen, the cursor cells) are on
-[the screen editor page](../concepts/screen-editor.md).
+repack's CHPUT (the `cbios-repack` patches). The region's shared facts (the screen, the cursor
+cells) are on [the screen editor page](../concepts/screen-editor.md).
+
+**How to read the rules below.** Every rule is a sentence AND a check
+(`probes/bios/spec/chput_rules.py`, run by `tools/spec_rules.py`; [docs/spec-method.md](../spec-method.md)
+§3a) over the measured cases it names.
+- **reference:** ✓ means the check holds on EVERY case it selects of the VG-8020's run.
+- **zerobas:** the cases where zerobas fails it, which are its differences.
+
+The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
 **Evidence.**
 - **[XCH n]**: case `n` of the XCHPUT matrix, [`scratchpad/XCH_table.out`](../../scratchpad/XCH_table.out)
-  (read its header: setup, columns). Program `probes/bios/spec/xchput.asm`, run through
-  `probes/bios/biosl_run.py` on its NODISK row, the VG-8020 against zerobas; the raw run is
-  [`scratchpad/XCH_run1.out`](../../scratchpad/XCH_run1.out).
-  - Before every case the cursor is at CSRY 11, CSRX 21 (1-based), in SCREEN 0 width 40, on a
-    `Q` with `P` left of it and `R` right of it.
-  - Each case records CSRX, CSRY, the A CHPUT returned, and those three cells (VRAM).
-  - Modes: 0 = the byte alone (cases 0–255); 1 = ESC, then the byte (256–511); 2 = the graphic
-    prefix 1, then the byte (512–767).
+  (program `probes/bios/spec/xchput.asm`; raw run [`scratchpad/XCH_run1.out`](../../scratchpad/XCH_run1.out)).
+  The byte is sent alone (cases 0–255), after ESC (256–511), or after the graphic prefix
+  (512–767). Each case starts on a `Q` between `P` and `R`, at row 11, column 21.
 - **[X2 Gn.i]**: case `i` of group `n` of the round-2 rung XCHPUT2,
   [`scratchpad/XCH2_table.out`](../../scratchpad/XCH2_table.out) (each group's setup is in
-  `probes/bios/spec/xchput2.asm`'s header; raw run [`scratchpad/XCH2_run1.out`](../../scratchpad/XCH2_run1.out)):
-  G1 TAB from every column, G2 the screen's corners with the key line off and on, G3 ESC / the
-  prefix then a control code then `A`, G4 the line and screen edits on a full pattern, G5 every
-  byte as `ESC Y`'s parameters, G6 every byte after `ESC x` / `ESC y`.
-- **[XM n]**: the CF-3300 reading through its BDOS, [`scratchpad/XM_table.out`](../../scratchpad/XM_table.out)
-  (DIRIO output, mode 1; ESC + byte, mode 3), under MSX-DOS with LINLEN 29 (its table's header).
+  `probes/bios/spec/xchput2.asm`'s header; raw run [`scratchpad/XCH2_run1.out`](../../scratchpad/XCH2_run1.out)).
+  The groups:
+  - G1: TAB from every column;
+  - G2: the screen's corners, key line off and on;
+  - G3: ESC or the prefix, then a control code, then `A`;
+  - G4: the line and screen edits on a full screen;
+  - G5: every byte as `ESC Y`'s parameters;
+  - G6: every byte after `ESC x` / `ESC y`.
+- **[XM n]**: the CF-3300 reading through its BDOS, [`scratchpad/XM_table.out`](../../scratchpad/XM_table.out).
 - **[A]**: assumed, NOT measured.
 
-### 1. Interface
+Units: CSRX / CSRY are the BIOS's 1-based cursor cells. "The last text row" is row 24, or row 23
+when the function-key line is shown.
 
-In: A = the character. Out:
-- **A unchanged**, for every byte [XCH 0–767]: the rung passes v to CHPUT in A and records the A
-  CHPUT RETURNS. In modes 1 and 2 only the second call's A is recorded. **[A]** The A after the
-  ESC / prefix call itself.
-- **[A]** The other registers and the flags.
+<!-- RULES BEGIN -->
+<!-- GENERATED by tools/spec_rules.py from probes/bios/spec/chput_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/chput_rules.py --write` -->
 
-### 2. One byte, the cursor and the cells after it
+**54 rules over 1984 measured cases; 54 hold on the reference; 1982 cases are covered by a rule, 2 are not.**
 
-From CSRY 11, CSRX 21 [XCH 0–255]:
+#### 0. The interface
 
-| bytes | cursor after | the cells |
-|---|---|---|
-| 32–126, 128–255, 28 (cursor right) | right one: CSRX 22 | a printable byte replaces the `Q` [XCH 65]; 28 writes nothing |
-| 0–7, 14–27 (1, the graphic prefix, and 27, ESC, are left pending) | unchanged | unchanged [XCH 7] |
-| 8 (BS), 29 (cursor left) | left one: CSRX 20; at column 1, the row above's column 40; at the top-left, stays [X2 G2.00, G2.20, G2.21] | unchanged [XCH 8] |
-| 127 (DEL) | as BS [X2 G2.22] | **the cell it moves onto (left of the cursor) blanked** [XCH 127] |
-| 10 (LF), 31 (cursor down) | down one: CSRY 12; on the last text row LF scrolls the screen up [X2 G2.26, G2.36] | unchanged |
-| 30 (cursor up) | up one: CSRY 10 | unchanged |
-| 11 (home) | CSRY 1, CSRX 1 | unchanged |
-| 12 (clear) | CSRY 1, CSRX 1 | the whole screen cleared [X2 G4.7] |
-| 13 (CR) | CSRX 1, same row | unchanged [XCH 13] |
-| 9 (TAB) | the next stop of 8: CSRX 9, 17, 25, 33 from columns before them; from CSRX 33 on, the next row's column 1 [X2 G1.00–G1.39] | spaces written up to the stop [X2 G1] |
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-A** CHPUT returns A unchanged (the rung passes v in A and records the A returned). | 768 | ✓ | ✓ |
 
-The CF-3300 moves the cursor identically for 0–254 [XM 256–510].
+#### 1. One byte, from mid-screen (row 11, column 21, on a Q between P and R)
 
-### 3. `ESC v`, the cursor after it
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-PRINT** A byte 32–126 or 128–255 is written at the cursor, which moves right. | 223 | ✓ | ✓ |
+| **R-NOP** Bytes 0–7 and 14–27 (incl. 1, the prefix, and 27, ESC, left pending) do nothing visible. | 22 | ✓ | ✓ |
+| **R-RIGHT** 28 moves the cursor right one; nothing is written. | 1 | ✓ | ✓ |
+| **R-LEFT** 8 (BS) and 29 move the cursor left one; nothing is written. | 2 | ✓ | ✓ |
+| **R-DEL** 127 (DEL) moves left one and blanks the cell it moves onto (nothing shifts). | 1 | ✓ | ✗ 1: XCH 127 |
+| **R-DOWN** 10 (LF) and 31 move the cursor down one; nothing is written. | 2 | ✓ | ✓ |
+| **R-UP** 30 moves the cursor up one. | 1 | ✓ | ✓ |
+| **R-HOME** 11 homes the cursor (row 1, column 1); nothing is written. | 1 | ✓ | ✓ |
+| **R-CLEAR** 12 homes the cursor and clears the screen (the whole screen: R-ED-CLEAR). | 1 | ✓ | ✓ |
+| **R-CR** 13 (CR) moves to column 1 of the same row. | 1 | ✓ | ✓ |
+| **R-TAB** 9 (TAB) writes spaces up to the next stop of 8 (columns 9, 17, 25, 33). | 1 | ✓ | ✓ |
+| **R-TAB-ALL** From column c (0–31, 0-based) a TAB writes spaces to column 8·(c//8 + 1); from 32 on, to the row's end, and the cursor goes to the next row's column 1. | 40 | ✓ | ✓ |
 
-From the same start, ESC then v [XCH 256–511]:
+#### 2. One byte at the screen's corners (key line off and on)
 
-| `ESC v` | cursor after | the three cells |
-|---|---|---|
-| A / B / C / D | up / down / right / left one | unchanged |
-| H | CSRY 1, CSRX 1 | unchanged [XCH 328] |
-| E, j | CSRY 1, CSRX 1 | the whole screen cleared [X2 G4.4, G4.5] |
-| L | CSRX 1, same row | a blank line INSERTED: the rows below move down, the last one drops off [X2 G4.0] |
-| M | CSRX 1, same row | the line DELETED: the rows below move up, a blank last row [X2 G4.1] |
-| K | unchanged | erased from the cursor to the line's end [X2 G4.3] |
-| J | unchanged | erased from the cursor to the screen's end [X2 G4.2] |
-| l | unchanged | the whole line erased [X2 G4.6] |
-| Y r c | row r − 32, column c − 32; out-of-range values CLAMPED to the last row / column 40 (r or c below 32 included; byte 1 aside) [X2 G5] | unchanged |
-| x v, y v | unchanged [X2 G6] | unchanged |
-| a control code | unchanged — the code itself does NOTHING (12 does not clear, 13 does not return) and the escape ends: a following `A` is printed [X2 G3.00–G3.31] | unchanged |
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-E-LEFT1** BS / 29 / DEL at column 1 go to column 40 of the row above; at the top-left they stay. | 12 | ✓ | ✗ 4: X2 G2.22, X2 G2.60, X2 G2.61, X2 G2.62 |
+| **R-E-LEFT40** BS / 29 / DEL at column 40 move left one. | 12 | ✓ | ✗ 6: X2 G2.12, X2 G2.32, X2 G2.52, X2 G2.70, X2 G2.71, X2 G2.72 |
+| **R-E-PRINT40** A printable at column 40 wraps to the next row's column 1; on the last text row the screen scrolls up one instead. | 4 | ✓ | ✗ 1: X2 G2.79 |
+| **R-E-RIGHT40** 28 at column 40 wraps to the next row's column 1; on the last text row it stays (no scroll). | 4 | ✓ | ✗ 1: X2 G2.73 |
+| **R-E-UP** 30 moves up one; on the top row it stays. | 8 | ✓ | ✗ 2: X2 G2.64, X2 G2.74 |
+| **R-E-DOWN31** 31 moves down one; on the last text row it stays (no scroll). | 8 | ✓ | ✗ 2: X2 G2.65, X2 G2.75 |
+| **R-E-LF** LF moves down one; on the last text row the screen scrolls up one and the cursor stays. | 8 | ✓ | ✗ 2: X2 G2.66, X2 G2.76 |
+| **R-E-CR** CR goes to column 1 of the same row. | 8 | ✓ | ✗ 2: X2 G2.67, X2 G2.77 |
+| **R-E-TAB40** TAB at column 40 wraps like a printable (scrolling on the last text row). | 4 | ✓ | ✗ 1: X2 G2.78 |
+| **R-E-COL1** TAB and a printable at column 1 behave as mid-screen (column 9 / column 2). | 8 | ✓ | ✗ 2: X2 G2.68, X2 G2.69 |
+| **R-E-RIGHT1** 28 at column 1 moves right one. | 4 | ✓ | ✗ 1: X2 G2.63 |
+| **R-KEYROW** With the key line on, the text rows are 1–23: the cursor never reaches row 24. | 40 | ✓ | ✗ 15: X2 G2.62, X2 G2.63, X2 G2.65, X2 G2.66, X2 G2.67, X2 G2.68 … (+9) |
 
-- **`ESC l` blanks the line, and the cursor stays** [XCH 364].
-- **The CF-3300 agrees** [XM 768–1023], except `ESC TAB`: there the BDOS expanded the TAB before
-  CHPUT saw it.
+#### 3. ESC v
 
-### 4. The graphic prefix
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-ESC-ABCD** ESC A / B / C / D move the cursor up / down / right / left one, writing nothing. | 4 | ✓ | ✓ |
+| **R-ESC-H** ESC H homes the cursor; nothing is written. | 1 | ✓ | ✓ |
+| **R-ESC-EJ** ESC E and ESC j home the cursor and clear the screen. | 2 | ✓ | ✓ |
+| **R-ESC-KJ** ESC K and ESC J erase from the cursor on (the cursor stays). | 2 | ✓ | ✓ |
+| **R-ESC-l** ESC l erases the whole line; the cursor stays where it is. | 1 | ✓ | ✗ 1: XCH 364 |
+| **R-ESC-LM** ESC L and ESC M move the cursor to column 1 (the line edits: R-ED-L, R-ED-M). | 2 | ✓ | ✓ |
+| **R-ESC-OTHER** ESC then any other byte (a control code, or a non-command printable) does nothing visible; ESC Y / x / y wait for their parameters. | 244 | ✓ | ✓ |
+| **R-ESC-CTRL** After ESC, a control code (but 1) is swallowed and ends the escape: a following A is printed. | 31 | ✓ | ✓ |
+| **R-ESC-1** After ESC, byte 1 still acts as the graphic prefix: ESC, 1, A writes $01. | 1 | ✓ | ✓ |
 
-- **Prefix then a byte 64–95** writes that byte − 64 (a graphic code $00–$1F) and moves right
-  [XCH 576–607; e.g. `1`, `A` writes $01, 577].
-- **Prefix then a byte 32–63 or 96–255, DEL excepted,** writes the byte itself and moves right
-  [XCH 544–575, 608–638, 640–767].
-- **Prefix then DEL** acts as DEL [XCH 639].
-- **A control code after the prefix acts as itself and cancels the prefix:** `1`, BS moves left
-  and writes nothing [XCH 520]; `1`, TAB tabs [XCH 521]; `1`, clear clears [XCH 524]; a following
-  `A` is a plain `A` [X2 G3.32–G3.63].
-- **After ESC, byte 1 still acts as the prefix:** ESC, 1, `A` writes $01 [X2 G3.01].
+#### 4. The line and screen edits, on a full screen
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-ED-L** ESC L inserts a blank line at the cursor's row: the rows below move down one, the last drops off. | 1 | ✓ | ✓ |
+| **R-ED-M** ESC M deletes the cursor's row: the rows below move up one, the last row is blank. | 1 | ✓ | ✓ |
+| **R-ED-J** ESC J erases from the cursor to the screen's end. | 1 | ✓ | ✓ |
+| **R-ED-K** ESC K erases from the cursor to the line's end. | 1 | ✓ | ✓ |
+| **R-ED-l** ESC l erases the cursor's whole line and nothing else. | 1 | ✓ | ✗ 1: X2 G4.6 |
+| **R-ED-CLEAR** 12, ESC E and ESC j clear the whole screen (key line off). | 3 | ✓ | ✓ |
+
+#### 5. ESC Y's parameters
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-Y-ROW** ESC Y's row byte r = 32..55 puts the cursor on row r − 31 (1-based). | 24 | ✓ | ✓ |
+| **R-Y-ROWCLAMP** Any other row byte but 1 clamps to the last row (24). | 231 | ✓ | ✗ 231: X2 G5.000, X2 G5.002, X2 G5.003, X2 G5.004, X2 G5.005, X2 G5.006 … (+225) |
+| **R-Y-COL** ESC Y's column byte c = 32..71 puts the cursor in column c − 31 (1-based). | 40 | ✓ | ✓ |
+| **R-Y-COLCLAMP** Any other column byte but 1 clamps to column 40. | 215 | ✓ | ✗ 215: X2 G5.256, X2 G5.258, X2 G5.259, X2 G5.260, X2 G5.261, X2 G5.262 … (+209) |
+
+#### 6. The graphic prefix, and pending state
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-PFX-GRAPH** The prefix, then a byte 64–95, writes byte − 64 (graphic $00–$1F) and moves right. | 32 | ✓ | ✓ |
+| **R-PFX-PLAIN** The prefix, then a byte 32–63 or 96–255 but 127, writes the byte itself. | 191 | ✓ | ✓ |
+| **R-PFX-CTRL** The prefix, then a control code (but 27), acts as the code and cancels the prefix: a following A is a plain A (never $01). | 31 | ✓ | ✓ |
+| **R-PFX-ESC** The prefix, then ESC, arms the escape: a following A is ESC A (cursor up, nothing written). | 1 | ✓ | ✓ |
+
+#### 7. LINTTB, the line-continuation table
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-LT-CLEAR** After a clear, LINTTB holds 24, 23, …, 1 down the rows (when nothing wrapped or scrolled). | 8 | ✓ | ✗ 8: X2 G2.00, X2 G2.01, X2 G2.04, X2 G2.07, X2 G2.20, X2 G2.21 … (+2) |
+| **R-LT-WRAP** A printable or TAB that wraps from a row (not the last) sets that row's entry to 0 (the row continues). | 4 | ✓ | ✓ |
+| **R-LT-SCROLL** A scroll moves the entries up one and gives the new last text row $AF. | 4 | ✓ | ✗ 4: X2 G2.26, X2 G2.36, X2 G2.66, X2 G2.76 |
+
+#### 8. ESC x / ESC y
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-XY-CURSOR** ESC x v and ESC y v never move the cursor. | 512 | ✓ | ✓ |
+| **R-Y-4** ESC y '4' sets $FCAA to 1. | 1 | ✓ | ✓ |
+| **R-Y-5** ESC y '5' sets CSRSW ($FCA9) to 1. | 1 | ✓ | ✓ |
+
+Measured but not covered by any rule (2): X2 G5.001, X2 G5.257
+
+<!-- RULES END -->
 
 ## Differences from the reference
 
-All [XCH]; nothing else in the 768 cases differs, A and the three cells included. (XCH 333,
-`ESC M`, agrees by construction, not by evidence: see §3.)
+Every ✗ in the zerobas column above, by TODO item:
 
-| case | VG-8020 | zerobas |
-|---|---|---|
-| DEL [XCH 127; after the prefix 639] | CSRX 20; `P` blanked, `Q R` kept | CSRX 21; `Q` blanked, `P R` kept |
-| `ESC l` [XCH 364; X2 G4.6] | CSRX 21; the line blanked | CSRX 1; the line blanked |
-| DEL at column 1 [X2 G2.22, G2.62] | the row above's column 40 | stays; in the last cell of the last row it scrolls the screen [X2 G2.32] |
-| `ESC Y` out of range [X2 G5: 446 of 512] | clamped to the screen | the byte − 32 stored as is (CSRY 225, 255, 25 ...) |
-| key line on [X2 G2.40–G2.79] | the cursor stays off the key row (row 24) | the cursor goes onto row 24; the key line is written over |
-| LINTTB [X2 G2, every case] | 24, 23, …, 1 down the rows | 1 on every row (both: non-zero = the row starts a logical line) |
-
-TODO items: **D-CHPUTDEL** (DEL, `ESC l`), **D-CHPUTESCY**, **D-CHPUTKEYROW**, **D-LINTTBVAL**.
+| TODO item | rules zerobas fails |
+|---|---|
+| **D-CHPUTDEL** (DEL, `ESC l`) | R-DEL, R-E-LEFT1 / R-E-LEFT40 (DEL), R-ESC-l, R-ED-l |
+| **D-CHPUTKEYROW** (the key line) | R-KEYROW, and every R-E-… case with the key line on |
+| **D-CHPUTESCY** (`ESC Y` out of range) | R-Y-ROWCLAMP, R-Y-COLCLAMP |
+| **D-LINTTBVAL** (LINTTB's values) | R-LT-CLEAR, R-LT-SCROLL |
 
 ## Open (not measured)
 
-- **[A]** The registers other than A, and the flags.
-- **[A]** LINTTB beyond a clear: what a wrap, the scroll and `ESC L` / `ESC M` do to it; and what the
-  VG-8020's values 24 … 1 mean.
-- **[A]** What `ESC x` / `ESC y` actually change (G6 read the cursor and $FCA9–$FCAA only).
-- **[A]** The cursor block's drawing (CSRSW), and whether BEL sounds.
-- **[A]** The cursor at the screen's last column (the wrap), on its last row (the scroll), at
-  other widths (32, 37, 80), and in the graphic modes.
-- **[A]** Whether CHPUT goes through the hook H.CHPU ($FDA4), and with interrupts in which state.
-- **[A]** `ESC K` / `ESC J`, cells beyond the three read.
+- **[A]** Byte 1 as an `ESC Y` parameter [X2 G5.001, G5.257]: the two cases no rule covers.
+- **[A]** `ESC x` from a non-zero state: G6 ran `ESC x` first, while both cells were 0, so "it
+  clears them" and "it does nothing" read the same.
+- **[A]** Which cell a DEL that wraps to the row above blanks: G2 reads only column 1 of each row.
+- **[A]** `ESC A` / `B` / `C` / `D` at the screen's edges.
+- **[A]** The line and screen edits (`ESC L` / `M` / `J` / `K` / `E` / `j`, 12) with the key line
+  on.
+- **[A]** The other registers and the flags; the A after an ESC / prefix call itself.
+- **[A]** What the VG-8020's LINTTB values (24 … 1, $AF after a scroll) mean.
+- **[A]** Other widths (32, 37, 80) and the graphic modes.
+- **[A]** Whether CHPUT goes through the hook H.CHPU ($FDA4), and with interrupts in which state;
+  the cursor block's drawing; whether BEL sounds.
 
 ## Tests that cover it
 
 `biosl-acceptance` rung b1text: CHPUT's happy path, VG-8020 against zerobas (L3 in
-tools/bios_levels.py). The matrix above is spec evidence, not yet a gate. It joins one through the
-test audit ([docs/spec-method.md](../spec-method.md) §8) once this page is FINAL.
+tools/bios_levels.py). The rules above are spec evidence, not yet a gate. They become one through
+the test audit ([docs/spec-method.md](../spec-method.md) §8) once this page is FINAL.

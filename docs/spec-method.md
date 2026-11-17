@@ -61,6 +61,36 @@ are one higher throughout", "the BDOS reads the cell at each byte"); none sat in
 Clean room (unchanged, see [allowed-sources.md](allowed-sources.md)): registers, RAM, VRAM, I/O ports and slot
 state are readable. A reference ROM byte, a hook target or a disassembly never is.
 
+## 3a. Executable rules — a page cannot say more than its data (Joost, 2026-11-17)
+
+Every BEHAVIOUR rule a page states is also a check over its measured cases. Writing tables by hand
+from thousands of cases failed the same way twice on CHPUT: over-generalising ("a byte from 64
+up", true only for 64–95), mis-summarising (LINTTB's orientation), and leaving out behaviour
+that was measured (the wraps, the scroll, the edges).
+
+- **The rules file.** Each page with a measured case set gets `probes/bios/spec/<name>_rules.py`.
+  It defines `PAGE`, `cases()` (the reference's and zerobas's measured cases, each with the
+  page's citation id) and `RULES`. A rule pairs `select` (which cases it speaks about) with
+  `expect` (what it says about them), plus the sentence the page shows.
+- **The checker,** `tools/spec_rules.py`, reports three things:
+  - **a rule FALSE on any reference case** it selects: the sentence is wrong, so fix the rule,
+    never the data;
+  - **zerobas's failures:** its differences, which the page's Differences section maps to TODO
+    items;
+  - **the cases no rule covers:** measured but not stated. It is a count, and the page's open
+    list must account for every one.
+- **The page's rule tables are GENERATED** between `<!-- RULES BEGIN -->` and `<!-- RULES END -->`
+  (`--write`). `make spec-rules-check` (in STATIC) fails on a false rule or a stale page. The
+  Summary and the Open list stay hand-written, and short.
+- **Reviewers** then read the rules and the data for what only a fresh reader finds:
+  - a selector that dodges awkward cases;
+  - two rules the cases cannot separate;
+  - a measurement that is missing.
+
+  "Uncovered cases" tells them where to look.
+- **The test audit (§8)** takes its gate cases from these rules. They state the reference's
+  behaviour, so a gate can run the probe on zerobas alone and check them.
+
 ## 4. References
 
 - **The main BIOS:** the Philips **VG-8020** is the primary reference; tools/bios_levels.py
