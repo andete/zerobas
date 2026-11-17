@@ -5,92 +5,117 @@ SPDX-License-Identifier: 0BSD
 
 # `CHPUT` ($00A2) — write one character to the screen
 
-> **Spec:** DRAFT 1 (2026-11-17) — not yet reviewed. Measured on the Panasonic CF-3300 only; the
-> primary reference for the main BIOS, the Philips VG-8020, is NOT yet measured, so the two
-> differences below may be CF-3300-specific until it is.
+> **Spec:** DRAFT 2 (2026-11-17) — not yet reviewed. Measured on the Philips VG-8020 (the
+> main-BIOS reference) by calling CHPUT directly, in SCREEN 0 at width 40. The cursor results
+> agree with an earlier reading on the Panasonic CF-3300 through its BDOS.
 
 ## Summary
 
-`CHPUT` puts the character in A on the text screen at the cursor and moves the cursor, or, for a
-control code or an escape sequence, moves the cursor or edits the screen. It is what `PRINT` and
-the MSX-DOS console end up calling. On the CF-3300, zerobas moves the cursor the same way for
-every byte and every escape command but two: DEL and `ESC l` (below).
+`CHPUT` writes the character in A to the text screen at the cursor and moves the cursor on. For a
+control code or an escape sequence it moves the cursor or edits the screen instead. `PRINT` and
+the MSX-DOS console both end up here.
 
-Split out of the BDOS [CONOUT](../bdos/CONOUT.md) page, whose third review showed its remaining
-open questions were CHPUT's, not the BDOS's.
+zerobas does the same for every byte and every escape command, with two exceptions:
+- **DEL (127):** the reference deletes the character LEFT of the cursor and moves back onto it;
+  zerobas blanks the character under the cursor and stays.
+- **`ESC l`:** both blank the line, but the reference leaves the cursor where it was, and zerobas
+  moves it to the line's start.
 
-Reference: the Panasonic CF-3300's main BIOS. Ours: the C-BIOS repack's CHPUT (`cbios-repack`
-patches, [cbios-repack-provenance.md](../cbios-repack-provenance.md)).
+Both are TODO **D-CHPUTDEL**.
+
+## The specification
+
+Reference: the Philips VG-8020's main BIOS. Second: the Panasonic CF-3300's. Ours: the C-BIOS
+repack's CHPUT (`cbios-repack` patches, [cbios-repack-provenance.md](../cbios-repack-provenance.md)).
+The region's shared facts (the screen, the cursor cells) are on
+[the screen editor page](../concepts/screen-editor.md).
 
 **Evidence.**
-- **[XM n]**: case `n` of the BDOSXM matrix, [`scratchpad/XM_table.out`](../../scratchpad/XM_table.out).
-  Read its header first: setup, units, the two skipped cases. The matrix reaches CHPUT through the
-  MSX-DOS BDOS, so it reads CHPUT's cursor effect from the BDOS side:
-  - **DIRIO output ($06, mode 1)** passes each byte to the screen with no BDOS processing of its
-    own, so its cursor results are CHPUT's. **[A]**: the TAB case (see §4).
-  - **CONOUT after ESC (mode 3)** gives the cursor effect of every `ESC v`.
+- **[XCH n]**: case `n` of the XCHPUT matrix, [`scratchpad/XCH_table.out`](../../scratchpad/XCH_table.out)
+  (read its header: setup, columns). Program `probes/bios/spec/xchput.asm`, run through
+  `probes/bios/biosl_run.py` on its NODISK row, the VG-8020 against zerobas; the raw run is
+  [`scratchpad/XCH_run1.out`](../../scratchpad/XCH_run1.out).
+  - Before every case the cursor is at CSRY 11, CSRX 21 (1-based), in SCREEN 0 width 40, on a
+    `Q` with `P` left of it and `R` right of it.
+  - Each case records CSRX, CSRY, the A CHPUT returned, and those three cells (VRAM).
+  - Modes: 0 = the byte alone (cases 0–255); 1 = ESC, then the byte (256–511); 2 = the graphic
+    prefix 1, then the byte (512–767).
+- **[XM n]**: the CF-3300 reading through its BDOS, [`scratchpad/XM_table.out`](../../scratchpad/XM_table.out)
+  (DIRIO output, mode 1; ESC + byte, mode 3), on the 32-column screen of MSX-DOS.
 - **[A]**: assumed, NOT measured.
 
-The screen state throughout: under MSX-DOS 1, the 32-column text screen with LINLEN 29. The cursor
-starts every case at CSRY 11, CSRX 21 (1-based), placed there by `ESC Y`. Only CSRX / CSRY were
-read; VRAM was not.
+### 1. Interface
 
-## 1. One byte, the cursor after it
+In: A = the character. Out:
+- **A unchanged**, for every byte and in every mode [XCH 0–767].
+- **[A]** The other registers and the flags.
 
-From CSRY 11, CSRX 21, every byte 0–254 [XM 256–510], the CF-3300:
+### 2. One byte, the cursor and the cells after it
 
-| bytes | cursor after |
-|---|---|
-| 32–126, 128–254, and 28 (cursor right) | right one: CSRX 22 |
-| 0–7, 14–27 (incl. 1, the graphic prefix, and 27, ESC — both pending) | unchanged |
-| 8 (BS), 29 (cursor left), 127 (DEL) | left one: CSRX 20 |
-| 10 (LF), 31 (cursor down) | down one: CSRY 12 |
-| 30 (cursor up) | up one: CSRY 10 |
-| 11 (home), 12 (clear) | CSRY 1, CSRX 1 |
-| 13 (CR) | CSRX 1, same row |
-| 9 (TAB) | CSRX 25: the next stop of 8 (columns 1, 9, 17, 25 …) |
+From CSRY 11, CSRX 21 [XCH 0–255]:
 
-**zerobas differs in one byte: DEL (127) leaves the cursor where it is** instead of moving it left
-[XM 383; also through CONOUT XM 127, STROUT 639, after the prefix 1151; and BDOSXL rows 31, 115,
-119]. Every other byte gives the same cursor.
+| bytes | cursor after | the cells |
+|---|---|---|
+| 32–126, 128–255, 28 (cursor right) | right one: CSRX 22 | a printable byte replaces the `Q` [XCH 65]; 28 writes nothing |
+| 0–7, 14–27 (1, the graphic prefix, and 27, ESC, are left pending) | unchanged | unchanged [XCH 7] |
+| 8 (BS), 29 (cursor left) | left one: CSRX 20 | unchanged [XCH 8] |
+| 127 (DEL) | left one: CSRX 20 | **the `P` (left of the cursor) blanked** [XCH 127] |
+| 10 (LF), 31 (cursor down) | down one: CSRY 12 | unchanged |
+| 30 (cursor up) | up one: CSRY 10 | unchanged |
+| 11 (home) | CSRY 1, CSRX 1 | unchanged |
+| 12 (clear) | CSRY 1, CSRX 1 | the screen cleared |
+| 13 (CR) | CSRX 1, same row | unchanged [XCH 13] |
+| 9 (TAB) | CSRX 25: the next stop of 8 (columns 1, 9, 17, 25, …) | the cells passed are blanked [XCH 9] |
 
-## 2. `ESC v`, the cursor after it
+The CF-3300 moves the cursor identically for 0–254 [XM 256–510].
 
-From the same start, through CONOUT ESC then CONOUT v [XM 768–1023], the CF-3300:
+### 3. `ESC v`, the cursor after it
+
+From the same start, ESC then v [XCH 256–511]:
 
 | `ESC v` | cursor after |
 |---|---|
 | A / B / C / D | up / down / right / left one |
 | E, H, j | CSRY 1, CSRX 1 |
 | L, M | CSRX 1, same row |
-| every other v (incl. Y, x, y, still waiting for parameters; K, J, l) | unchanged |
+| every other v, a control code included (Y, x, y still wait for parameters; K, J, l erase) | unchanged |
 
-**zerobas differs in one command: `ESC l` moves the cursor to CSRX 1** instead of leaving it
-[XM 876]. (`ESC TAB` ends at CSRX 25 on the CF-3300 and 23 on zerobas [XM 777]. That is the BDOS's
-TAB expansion from a different count (D-CONCOL), not CHPUT.)
+- **`ESC l` blanks the line, and the cursor stays** [XCH 364].
+- **The CF-3300 agrees** [XM 768–1023], except `ESC TAB`: there the BDOS expanded the TAB before
+  CHPUT saw it.
 
-## 3. What the two differences are, stated as behaviour
+### 4. The graphic prefix
 
-- **DEL (127):** the reference moves the cursor one column left; whether it also erases a character
-  is not read (VRAM). **[A]** At a row's first column: moves to the previous row's end? BDOSXL rows
-  119 / 134 suggest it depends on the row, and CSRY was not read there.
-- **`ESC l`:** the reference leaves the cursor in place; MSX documentation calls `ESC l` "erase the
-  whole line". **[A]** what it erases (VRAM not read).
+- **Prefix then a byte from 64 up** writes that byte − 64 as a graphic code: `1`, `A` writes $01
+  in the cell and moves right [XCH 577].
+- **A control code after the prefix acts as itself:** `1`, BS moves left and writes nothing
+  [XCH 520]; `1`, TAB tabs [XCH 521]; `1`, clear clears [XCH 524].
+- **[A]** Whether the prefix stays pending after such a control code, for the next byte (`1`,
+  BEL, `A`).
 
-## 4. Open (the next measurements)
+## Differences from the reference
 
-- **[A] What lands in VRAM.** Every claim above is the cursor only. A VRAM read of the cells
-  around the cursor would show what DEL, `ESC l`, `ESC K` / `J` and a graphic character write.
-- **[A] Does the graphic prefix 1 stay pending across a control code?** E.g. `1`, BEL, `A`: does the
-  `A` become a graphic character? The cursor alone cannot tell; a VRAM read can.
-- **[A] Does a TAB reach CHPUT as 9 from DIRIO-out**, or does the BDOS write spaces counted from the
-  cursor? The cursors agree under both. A TAB as an `ESC Y` parameter through DIRIO, or an H.CHPU
-  ($FDA4) trace, separates them.
-- **[A] What CHPUT receives at all:** whether every byte reaches it unchanged (an H.CHPU trace
-  logging each byte).
-- **[A] Parameters:** every byte value as the `ESC Y` row and column parameter, and as `ESC x` /
-  `ESC y`'s.
-- **[A] Other states:** the screen's last row (scrolling), the last column (the wrap), SCREEN 0 at
-  width 40 / 80 / 37, and the graphic modes.
-- **[A] CHPUT called directly** (inter-slot from a program, or from BASIC), not through the BDOS:
-  that would confirm the DIRIO-derived table on its own.
+All [XCH]; nothing else in the 768 cases differs, A and the cells included.
+
+| case | VG-8020 | zerobas |
+|---|---|---|
+| DEL [XCH 127; after the prefix 639] | CSRX 20; `P` blanked, `Q R` kept | CSRX 21; `Q` blanked, `P R` kept |
+| `ESC l` [XCH 364] | CSRX 21; the line blanked | CSRX 1; the line blanked |
+
+TODO **D-CHPUTDEL** fixes both in the C-BIOS repack's CHPUT.
+
+## Open (not measured)
+
+- **[A]** The registers other than A, and the flags.
+- **[A]** The prefix pending across a control code (§4).
+- **[A]** Every byte as an `ESC Y` row / column parameter and as `ESC x` / `ESC y`'s.
+- **[A]** The cursor at the screen's last column (the wrap), on its last row (the scroll), at
+  other widths (32, 37, 80), and in the graphic modes.
+- **[A]** Whether CHPUT goes through the hook H.CHPU ($FDA4), and with interrupts in which state.
+- **[A]** `ESC K` / `ESC J`, cells beyond the three read.
+
+## Tests that cover it
+
+`biosl-acceptance` rung b1text: CHPUT's happy path, VG-8020 against zerobas (L3 in
+tools/bios_levels.py). The matrix above is spec evidence, not yet a gate. It joins one through the
+test audit ([docs/spec-method.md](../spec-method.md) §8) once this page is FINAL.

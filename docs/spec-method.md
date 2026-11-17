@@ -85,6 +85,8 @@ state are readable. A reference ROM byte, a hook target or a disassembly never i
 5. **Repeat 4** until the stopping test (§7).
 6. **File each difference** as a TODO item with its 🎚️ tier. The existing loop fixes it, and its
    gate rows come from the page's cases.
+7. **Audit the call's tests** once its core rule is FINAL (§8): one sharp gate case per rule; the
+   rows that pin nothing are retired, with mutation evidence.
 
 ## 6. Review — depth and prompts
 
@@ -133,3 +135,37 @@ error** about the call's core rule.
 The pilot, for scale: three passes, each of two reviewers, on CONOUT:
 - the "rule pairs not separated" findings went ~15 → ~11 → 0 on the core rule;
 - each pass was answered by measurement: 84 → 153 cases → a 1287-case matrix.
+
+## 8. The test audit — fewer, sharper tests (Joost, 2026-11-17: "vitally important")
+
+A page does not replace a test: only a run notices that OUR code drifted. What a FINAL page does
+is say exactly which rules a gate must pin and which case separates each rule from its rivals.
+Most existing rows pin less than they appear to. The pilot's rows mostly agreed "for the wrong
+reason": they started where the rival rules coincide, so ten of them proved less than one
+desynced case.
+
+The audit, once the call's core rule is FINAL:
+
+1. **Map.** For every gate row that calls the entry (`tools/entry_table.py` names them), write
+   down which of the page's rules it pins: the rule, and whether its inputs SEPARATE that rule
+   from the page's rival rules. A row that cannot fail under any rival rule pins nothing.
+2. **Fill.** Every rule needs at least one gate case that separates it. The page's own cases
+   (its matrix) are the source; turn them into gate rows, with the page's measured reference
+   values as the expected values, so spec and test are one table and cannot drift apart. A rule
+   with no separating case in a gate is a TODO item, not a page footnote.
+3. **Prove the cut.** "This row is redundant" is a claim like any other, and is answered by
+   measuring. Break the rule in OUR ROM and confirm that the REMAINING gate rows still go red
+   without the row to be retired (`scratchpad/gate_blindness_sweep.py`; the battery is the
+   denominator). Each retirement names its mutation and the row that caught it.
+4. **Retire** only proven-redundant rows, in a commit of their own: what went, which rule each
+   pinned, and which row now catches it.
+5. **Record** the result on the page's *Tests that cover it* section, as one line per rule: the
+   rule → the gate case that pins it.
+
+The page's open list (`[A]`) is then exactly where tests are missing, so "how many tests do we
+need" becomes a count rather than a feeling.
+
+Why it matters: the FULL gate's hour is mostly emulator boots, scenario after scenario. A call
+whose rules are each pinned by one matrix row group, run on zerobas against the page's stored
+reference values, needs no scenario suites of its own. Rows are retired only with mutation
+evidence, never because a page "covers" them.

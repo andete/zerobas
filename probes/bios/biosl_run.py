@@ -16,6 +16,10 @@ Its header comment may carry the harness settings, one per line:
     ; @vram ADDR:LEN    a VRAM span to compare as well (hex, e.g. 0000:3C0); repeatable
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
     ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
+    ; @caplen LEN       the capture block's length (hex, default FF). D-SPECMETHOD (2026-11-17):
+                        a matrix rung records more than FF bytes. KEYREADY / TAPEREADY sit at
+                        CAP's +$FF..+$101, inside a longer block, so LEN > FF refuses with
+                        @keys / @matrix / @tape
                         -- a rung that lets the disk ROM start moves it below HIMEM
     ; @type-at S TEXT   TEXT typed at S emulated seconds ('\\r' = Enter) -- e.g. our
                         disk machine's date question, which the VG-8020 + NMS 1200
@@ -85,7 +89,7 @@ ROWS = {
 
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
-         "cap": DONE, "type_at": None, "tape": False}
+         "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN}
     for m in re.finditer(r"^;\s*@([\w-]+)\s+(.*?)\s*$", asm_text, re.M):
         k, v = m.group(1), m.group(2)
         if k == "keys":
@@ -95,6 +99,8 @@ def settings(asm_text: str) -> dict:
             s["matrix"] = (int(r), int(mk, 16))
         elif k == "cap":                    # DONE's address (hex); CAP = +1, KEYREADY = +$100
             s["cap"] = int(v, 16)
+        elif k == "caplen":                 # the capture block's length (hex)
+            s["caplen"] = int(v, 16)
         elif k == "type-at":                # SECONDS TEXT: typed at that emulated time
             t, _, txt = v.partition(" ")
             s["type_at"] = (float(t), txt)
@@ -107,6 +113,9 @@ def settings(asm_text: str) -> dict:
         elif k == "vram":
             a, n = v.split(":")
             s["vram"].append((int(a, 16), int(n, 16)))
+    if s["caplen"] > CAPLEN and (s["keys"] or s["matrix"] or s["tape"]):
+        sys.exit("FAIL: @caplen > FF overlaps KEYREADY / TAPEREADY (CAP's +$FF..+$101): a rung "
+                 "with @keys / @matrix / @tape keeps the default capture length")
     return s
 
 
@@ -160,7 +169,7 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
            f"  if {{[debug read memory {DONE}] == 0xA5 || [machine_info time] > {st['timeout']}}} {{\n"
            f"    set f [open {{{out}}} w]\n"
            f"    puts $f \"DONE [debug read memory {DONE}]\"\n"
-           f"    binary scan [debug read_block memory {CAP} {CAPLEN}] H* v\n"
+           f"    binary scan [debug read_block memory {CAP} {st['caplen']}] H* v\n"
            '    puts $f "CAP $v"\n'
            '    puts $f "VDPR1 [debug read {VDP regs} 1]"\n'
            '    binary scan [debug read_block memory 0xFC9E 2] H* j\n'

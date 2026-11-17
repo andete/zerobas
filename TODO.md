@@ -16747,6 +16747,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       under MSX-DOS (DK_FCB_DRV stays 0 there -- the default drive is used); a machine with its RAM in primary slot 0
       would take the BASIC prompt under MSX-DOS; the $F37D prompt under BASIC is unmeasured on the reference.
 
+- [ ] 🎯 **D-CHPUTDEL — CHPUT: DEL BLANKS THE WRONG CELL AND DOES NOT MOVE; `ESC l` MOVES THE CURSOR TO THE LINE START**
+      🎚️ TIER 1 — happy path (a BIOS call's normal output for a published control code; the BIOS-call focus; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHPUT.md (DRAFT 2), the spec method's text-region pilot: the XCHPUT matrix calls
+      CHPUT directly, the VG-8020 against zerobas, 768 cases, cursor + A + the three cells around the cursor
+      ([`XCH_table.out`](scratchpad/XCH_table.out), raw [`XCH_run1.out`](scratchpad/XCH_run1.out)). Exactly 3 cases differ:
+      - DEL (127) [XCH 127, and after the graphic prefix 639]: the VG-8020 moves the cursor LEFT and blanks the cell it
+        lands on (the character left of the cursor); zerobas blanks the cell UNDER the cursor and does not move.
+      - `ESC l` [XCH 364]: both blank the line; the VG-8020 leaves the cursor at its column, zerobas moves it to
+        column 1.
+      The CF-3300 agrees with the VG-8020 on both cursors (BDOSXM through its BDOS, [`XM_table.out`](scratchpad/XM_table.out)), so
+      this is not a regional quirk. The fix is in the C-BIOS repack's CHPUT (a cbios-repack patch). When it lands,
+      the page's test audit (docs/spec-method.md §8) turns the matrix's rows into gate cases.
+
+- [ ] **D-GATEKNIFESKIP — A DOCS / PROBE-ONLY GATE RE-PINS THE KNIVES AND RUNS THE WHOLE UNIT SUITE: ~15-20 MIN FOR A STATIC**
+      🎚️ TIER 2 — reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request).
+      🤖 **AUTONOMOUS** — measured on the STATIC gate of 9152f845, a commit whose only delta from a FULL-green tree was
+      the generated docs/tier-status.md:
+      - tools/gate_wt.py re-pins the keyword knives on EVERY tier (128 s + 78 s), though they matter only when the ROM
+        changed;
+      - the unit suite (97 files, ~10 min) and selftest-check (~3.5 min) run inside STATIC.
+      (1) **NEXT: skip the knives** when the built ROMs are byte-identical to the ones the last green knife pin was
+      measured on (the knife ROM guard already records the hashes). A docs or probe commit then saves ~3.5 min, and a ROM
+      change still re-pins.
+      (2) **LATER: a tier for generated-docs-only commits**: only the checks that read the changed files (tiers-md-check,
+      citations, bios-spec-index-check, the TODO checks). It needs care: which files may go through it, and how
+      gates-plan proves the delta is docs-only. Joost: "file it and do the knife skip after CHPUT".
+
 - [ ] **D-STIMERANGE — BDOS STIME TAKES ANY TIME: A = 0 WHERE THE CF-3300 ANSWERS $FF FOR AN OUT-OF-RANGE ONE**
       🎚️ TIER 6 — every error (a program passing hour 25 / minute 60 / second 60 / hundredths 100; filed 2026-11-17).
       🤖 **AUTONOMOUS** — BDOSXT in bdos-acceptance, its 4 STIME bytes pinned at ours (D-DISKCONTRACT gap 11:
