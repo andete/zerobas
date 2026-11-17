@@ -67,3 +67,72 @@ RULES = [
                     and c.row == list((shown(c) + b" " * 12)[:12]))),
     Rule("R-L-F", S1, "The whole F on return (only the carry published): 18.", lambda c: True, lambda c: c.f == 0x18),
 ]
+
+
+# ---- round 2: XLIN2A / XLIN2B (probes/bios/spec/xlin2_gen.py; scratchpad/XLIN2A_run1.out, XLIN2B_run1.out)
+sys.path.insert(0, HERE)
+import xlin2_gen as G  # noqa: E402
+
+OUTPUTS["XL2"] = ["stage", "hl", "f", "csrx", "csry", "buf", "row"]
+_cases1 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases1()
+    for p in "ab":
+        t = open(os.path.join(ROOT, "scratchpad", f"XLIN2{p.upper()}_run1.out")).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            for c in G.decode(p, bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
+                c.src, c.id, c.probe = "XL2", f"XL2{p.upper()} {c.idx}", p
+                out[who].append(c)
+    return out
+
+
+def line_model(c):
+    """The row after the input, and the line the reference returns: the screen row with the pre-written text, QINLIN's
+    '? ' at the entry column and the typed keys over it (overtyping); read from column 1 for PINLIN -- and for INLIN when
+    AUTFLG is set -- else from the entry column (after the prompt for QINLIN); trailing spaces dropped."""
+    row = bytearray(b" " * 40)
+    for col, txt in c.pre:
+        row[col - 1:col - 1 + len(txt)] = txt
+    x = c.x
+    if c.name == "QINLIN":
+        row[x - 1:x + 1] = b"? "
+        x += 2
+    row[x - 1:x - 1 + len(c.typed)] = c.typed
+    start = 1 if c.name == "PINLIN" or (c.name == "INLIN" and c.autflg) else x
+    text = bytes(row[start - 1:]).rstrip(b" ")
+    return bytes(row), text, start
+
+
+def buf_model(c):
+    """BUF as recorded: the line, its 0, then the rest of the row read (spaces)."""
+    row, text, start = line_model(c)
+    return list((text + b"\0" + row[start - 1 + len(text) + 1:] + b"\xff" * 40)[:len(c.buf)])
+
+
+for _r in RULES:
+    _r.select = (lambda s: (lambda c: c.src == "XL" and s(c)))(_r.select)
+
+S2 = "2. Round 2: where the line starts and ends (XLIN2A / XLIN2B)"
+
+RULES += [
+    Rule("R-L-START", S2, "INLIN and QINLIN read the SCREEN, not the keys typed: from the entry column -- Enter alone "
+         "at column 1 over 'XYZ' gives 'XYZ'; 'Q' typed at column 4 over 'XYZWV' gives 'QV' (the text right of the "
+         "cursor included); with a gap ('XYZ', cursor at 6) 'Q' -- and QINLIN prints '? ' AT the entry column (column 4 "
+         "over 'XYZ': the row reads 'XYZ? R') and reads after it.",
+         lambda c: c.src == "XL2" and c.name in ("INLIN", "QINLIN") and not c.autflg,
+         lambda c: c.buf == buf_model(c) and c.row == list(line_model(c)[0][:12])),
+    Rule("R-L-AUTFLG", S2, "With AUTFLG set ($FF), INLIN reads from column 1 like PINLIN ('XYZ' + 'Q' at column 4: "
+         "'XYZQ'); PINLIN does so either way.", lambda c: c.src == "XL2" and c.autflg,
+         lambda c: c.buf == buf_model(c) and c.row == list(line_model(c)[0][:12])),
+    Rule("R-L-EDGES", S2, "PINLIN's line: leading spaces kept ('  XYZ' at columns 3-5, cursor at 6: '  XYZ'), inner "
+         "spaces kept ('A B'; 'XYZ' and a 'W' at column 18: everything between), trailing spaces dropped ('A B  ' "
+         "typed: 'A B'); an empty row gives an empty line; BUF holds the line, its 0, then the rest of the row.",
+         lambda c: c.src == "XL2" and c.probe == "b", lambda c: c.buf == buf_model(c) and c.row == []),
+    Rule("R-L-RET2", S2, "Each returns HL = BUF − 1 with the carry clear, and the cursor at column 1 of the next row -- "
+         "on row 24 the screen scrolls and the cursor stays on row 24; each call's own STAGE byte shows it returned.",
+         lambda c: c.src == "XL2",
+         lambda c: ((c.hl, c.f & 1, c.csrx, c.csry) == (BUFM1, 0, 1, min(c.y + 1, 24)) and c.stage == c.idx)),
+    Rule("R-L-F2", S2, "The whole F (not published) is 18 here too.", lambda c: c.src == "XL2", lambda c: c.f == 0x18),
+]

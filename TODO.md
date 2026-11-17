@@ -16855,8 +16855,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/PINLIN.md rule R-L-PIN ([`XLIN_run1.out`](scratchpad/XLIN_run1.out), XL 3): with "XYZ"
       on the row before the cursor and "Q" typed, the VG-8020's PINLIN returns "XYZQ" (from column 1), zerobas's "Q" --
-      what INLIN returns on both (R-L-INLIN). QINLIN, BS editing and Enter over existing text agree. Fix in the C-BIOS
-      repack's PINLIN (start the line at column 1, not at the entry column).
+      what INLIN returns on both (R-L-INLIN). QINLIN, BS editing and Enter over existing text agree. Round 2
+      ([`XLIN2A_run1.out`](scratchpad/XLIN2A_run1.out), [`XLIN2B_run1.out`](scratchpad/XLIN2B_run1.out)): the same for
+      INLIN with AUTFLG set (R-L-AUTFLG: the VG-8020 reads from column 1) and for leading spaces / text far right
+      (R-L-EDGES). Fix in the C-BIOS repack's PINLIN / INLIN (start at column 1 for PINLIN, and for INLIN when AUTFLG
+      is set).
 
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
