@@ -27,6 +27,10 @@ comes from the *elephant and goldfish* model ([egm.dev](https://egm.dev/)):
   drifts, so a call page LINKS to the concept page, never restates it.
 - **Evidence** — probe programs, captures and tables — lives in `probes/` and `scratchpad/`; pages
   cite it.
+- **What a call touches** (cells, VDP registers, ports, interrupt state) is ONE table:
+  [docs/bios/shared-state.md](bios/shared-state.md), compiled from the published interface. A call's
+  page links its row; a measurement that contradicts a row corrects the row. Its "couplings" list is
+  read before fixing a region: which other regions share the state a fix touches.
 - **Per-call STATE never goes on a shared page.** A concept or base page does not repeat a call's
   status, its differences or its TODO items (Joost, 2026-11-17, on the base page listing CHPUT's).
   The generated index shows them, read from each call's own page, so they cannot drift.

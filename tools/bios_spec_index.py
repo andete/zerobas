@@ -109,7 +109,7 @@ def rows():
 def render():
     rs = rows()
     known = {n for _, n in entry_table.BIOS}
-    strays = sorted(f for f in os.listdir(PAGES) if f.endswith(".md") and f != "index.md"
+    strays = sorted(f for f in os.listdir(PAGES) if f.endswith(".md") and f not in ("index.md", "shared-state.md")
                     and f[:-3] not in known) if os.path.isdir(PAGES) else []
     if strays:
         sys.exit(f"FAIL: docs/bios/ pages that name no BIOS entry: {strays}")
@@ -126,7 +126,8 @@ def render():
          "One page per BIOS call: what it does, its contract as measured against the reference "
          "machines, and how zerobas differs. How the pages are made: "
          "[docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call "
-         "it, hooks, the work area): [the BIOS concept page](../concepts/bios.md). The shared facts of a region "
+         "it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, "
+         "register and port: [the shared-state map](shared-state.md). The shared facts of a region "
          "live in its concept page, not repeated on each call's page.",
          "",
          f"**{n_page} of {len(rs)} calls have a page; {n_final} are FINAL.**",

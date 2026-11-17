@@ -53,8 +53,8 @@ The BIOS keeps its state in RAM at the top of the address space, in published ce
 (CSRX $F3DD, CSRY $F3DC), the screen width (LINLEN $F3B0), the row count (CRTCNT $F3B1), the
 function-key line switch (CNSDFG $F3DE), the line-continuation table (LINTTB $FBB2) and many
 more [P]. Several calls read and write the same cells. Which call touches which cell is the
-**shared-state map** (being compiled); it shows where one region's calls meet another's, so a fix
-in one cannot silently break another.
+[shared-state map](../bios/shared-state.md). It shows where one region's calls meet another's, so
+a fix in one cannot silently break another.
 
 ## Differences from the reference
 

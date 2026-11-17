@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # The MSX1 BIOS calls
 
-One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md). The shared facts of a region live in its concept page, not repeated on each call's page.
+One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
 **1 of 108 calls have a page; 1 are FINAL.**
 
