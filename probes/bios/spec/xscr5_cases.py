@@ -26,7 +26,7 @@ each of those several values and reads bytes. ONE case list that GENERATES probe
 DECODES its run:
 
     python3 probes/bios/spec/xscr5_cases.py --gen
-    python3 -u probes/bios/biosl_run.py probes/bios/spec/xscr5.asm --row nodisk > scratchpad/XSCR5_run1.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xscr5.asm --row nodisk > scratchpad/XSCR5_run2.out
 
 The setup per case (no call under test is used):
   - the screen-table cells TXTNAM .. T32PAT := the published defaults, or (`nmv`) TXTNAM := $1000 / T32NAM := $1C00;
@@ -93,6 +93,10 @@ def _cases():
     case(FNKSB, cns=1, late=1)
     case(DSPFNK, mode=1, late=1)
     case(FNKSB, mode=2, cns=1, gset=1)
+    # run 2 (the third confirming pass): long labels where "slot - 1", "width / 5 - 1" and a fixed 7 / 5 disagree
+    case(DSPFNK, width=37, lab=4)
+    case(DSPFNK, width=39, lab=4)
+    case(DSPFNK, mode=1, width=29, lab=4)
     return raw
 
 

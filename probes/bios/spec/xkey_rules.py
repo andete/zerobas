@@ -184,8 +184,13 @@ RULES += [
     Rule("R-K-LINLEN", S1, "The width the key-line calls use is LINLEN AS FOUND, not the width the mode's call was given: "
          "with LINLEN set to 37 after a width-40 INITXT (29 after a width-32 INIT32), DSPFNK draws with margin 2 and "
          "slot 7 (2 and 6) and ERAFNK clears that span; and ERAFNK / FNKSB with TXTNAM changed late, DSPFNK with "
-         "T32NAM changed late, all use the base the mode's call set up.", lambda c: c.src == "XS5" and c.mode < 2,
-         _model),
+         "T32NAM changed late, all use the base the mode's call set up. The label cut is slot − 1 at every width: "
+         "15-letter labels show 6 cells at width 37, 7 at 39, 5 at 29 -- not width ÷ 5 − 1, not a fixed 7 / 5 (XSCR5 "
+         "run 2).", lambda c: c.src == "XS5" and c.mode < 2, _model),
+    Rule("R-K-NOLT", S1, "DSPFNK -- and FNKSB when it draws -- without a scroll leave LINTTB untouched, the key line's "
+         "own entry included (ERAFNK marks it: R-K-ERALT).",
+         lambda c: xs(c) and c.mode < 2 and not _scrolls(c) and (c.name == "DSPFNK" or (c.name == "FNKSB" and c.cns)),
+         lambda c: c.lt == M.lt_garbage(c)),
     Rule("R-K-AF", S4, "The whole A / F on return (not published): the reference's values -- DSPFNK / FNKSB 00 / 44 "
          "when they draw (00 / 54 for FNKSB with CNSDFG 0), ERAFNK LINLEN with F BB / B3 / 9B, 02 / 42 in SCREEN 2.",
          lambda c: xs(c), lambda c: (c.a, c.f) == M.REF_AF[c.id]),

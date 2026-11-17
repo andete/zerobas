@@ -37,12 +37,17 @@ FNK_SUM7 = sum(sum(lab) for lab in LABELS7)
 
 
 EDGE4COL = {   # the same cases' 32 bytes at R3's base, the reference's
-    16: '0000000000000000000000000000000000000000000000000000000000000000',
     17: '2020202020202020202020202020202020202020202020202020202020202020',
     18: '2020202020202020202020202020202020202020202020202020202020202020',
-    19: '000000001800200000001b0038e70e0f51202020202020202020202020202020',
     20: 'f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4',
 }
+
+
+# width 0 with the key line on: row 13 (= row CRTCNT) and the last row as the reference leaves them -- the same in
+# XINIT run 4 and XINIT4's runs (stable; R-I-W0)
+W0ROWS = {"INITXT": ([0] * 20 + [255, 255, 0, 0] * 5, [0, 0, 255, 255] * 10),
+          "INIT32": ([0] * 16 + [255, 255, 0, 0] * 6, [0, 0, 255, 255] * 8 + [209, 0, 0, 15, 209, 0, 1, 15])}
+W0ROWC = {k: v[0] for k, v in W0ROWS.items()}
 
 
 def g(c):
@@ -57,10 +62,6 @@ def labels(c):
 # XJ4 edge widths (0 / 80 / 255, key line on): index -> (namesum, colsum, tailsum, atrsum, vsum, row13, lastrow,
 # rowc), the reference's -- literal, like KEY_REF
 EDGE4 = {
-    16: (582, 0, 8160, 0, 43982,
-         '0000000000000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000',
-         '0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff',
-         '0000000000000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000'),
     17: (30951, 1024, 5760, 4096, 20982,
          '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
          '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
@@ -69,10 +70,6 @@ EDGE4 = {
          '2020202020202020202020202020202020202020206b6579302020202020202020202020206b6579',
          '20202020202020202020202020202020202020202020202020202020202020202020202020202020',
          '2020202020202020202020202020202020202020206b6579302020202020202020202020206b6579'),
-    19: (54388, 960, 24494, 8174, 19914,
-         '00000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000',
-         '0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000ffffd100000fd100010f',
-         '00000000000000000000000000000000ffff0000ffff0000ffff0000ffff0000ffff0000ffff0000'),
     20: (24325, 7808, 22064, 10544, 35588,
          '20202020202020202020202020202020206b6579302020202020202020202020206b657931202020',
          '2020202020202020202020202020202020202020202020202020202020202020d15a000fd15a010f',
@@ -243,7 +240,7 @@ RULES = [
          lambda c: is_txt(c),
          lambda c: c.rg[1:] == [(r1in(c) & 0xA7) | 0x50] + regs(c, TABLES[c.tbl][0:5]) + [((c.fg << 4) | c.bg) & 0xFF]),
     Rule("R-I-TAIL-TXT", TXT, "The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 "
-         "included) -- not at width 0 with the key line on, which writes them (R-I-KEYEDGE's cells).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * g(c)),
+         "included) -- not at width 0 with the key line on, which writes them (R-I-W0).", lambda c: is_txt(c) and not w0key(c), lambda c: c.tailsum == 64 * g(c)),
     Rule("R-I-ATR-TXT", TXT, "No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's "
          "base are left as found.", lambda c: is_txt(c) and c.tbl, lambda c: c.atrsum == 128 * g(c)),
     Rule("R-I-REGS-32", T32, "R1 = (the copy AND $A7) OR $40 -- bit 6 set, bits 4 and 3 cleared ($A5 gives E5, $A7 "
@@ -310,11 +307,17 @@ RULES = [
          "−253, INIT32's −251 at 255). Width 0: R-I-W0.", edge4,
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.vsum, bytes(c.row13).hex(), bytes(c.lastrow).hex(),
                     bytes(c.rowc).hex()) == EDGE4[c.idx] and bytes(c.col).hex() == EDGE4COL[c.idx]),
-    Rule("R-I-W0", B, "Width 0 with the key line on is NOT reproducible on the reference: the same inputs gave "
-         "different cells and sums in XINIT run 4 and XINIT4 (INIT32's colour-table sum 1375 vs 960, its colour bytes "
-         "copies of RAM the probe does not set). The page states only what both agree on: the name table is NOT "
-         "cleared to spaces, and something is written outside the tables (the rest: declared UNSTABLE below).",
-         w0key_any, lambda c: c.namesum != SP * (960 if is_txt(c) else 768) and (not xj(c) or not vram_ok(c))),
+    Rule("R-I-W0", B, "Width 0 with the key line on: the name table is NOT cleared to spaces but filled mostly with 0 "
+         "and $FF pairs (INITXT: name sum 582, the 64-byte tail 8160; INIT32: 54388, its tail 24494 and sprite sum "
+         "8174 too), and something is written outside the tables -- the cells and these sums the same in XINIT run 4 "
+         "and XINIT4's three runs. NOT reproduced: the whole-VRAM sum (each run differs) and INIT32's colour table "
+         "(1375 vs 960 between the probes: its bytes are copies of RAM the probe does not set) -- declared UNSTABLE.",
+         w0key_any,
+         lambda c: ((c.namesum, c.tailsum, c.atrsum, c.row13, c.lastrow)
+                    == ((582, 8160, 0) if is_txt(c) else (54388, 24494, 8174)) + tuple(W0ROWS[c.name])
+                    and (not is_txt(c) or c.colsum == 0)
+                    and (not xj(c) or (c.rowc == W0ROWC[c.name] and (not is_txt(c) or c.col == [0] * 32)
+                                       and not vram_ok(c))))),
     Rule("R-I-CLEAR", B, "With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and "
          "the last row read blank.", lambda c: not c.key,
          lambda c: (c.namesum == SP * (960 if is_txt(c) else 768) and c.lastrow[:cols(c)] == [SP] * cols(c)
@@ -340,13 +343,14 @@ RULES = [
 
 # Width 0 with the key line on: the reference does not reproduce these outputs (XINIT run 4 vs XINIT4 run 2 for the same
 # inputs, and XINIT4 runs 1 / 2 in the whole-VRAM sum) -- accounted for, not compared (tools/spec_rules.py UNSTABLE)
-_W0 = "width 0, key line on: the reference's values depend on RAM the probe does not set (XINIT run 4 vs XINIT4 run 2 " \
-      "differ for the same inputs; XINIT4 runs 1 and 2 in the whole-VRAM sum)"
+_W0V = "width 0, key line on: the whole-VRAM sum differs in each of XINIT4's runs 1, 2 and 3 for the same inputs"
+_W0C = "INIT32 width 0, key line on: the colour table's bytes copy RAM the probe does not set (sum 1375 in XINIT run 4, " \
+       "960 in XINIT4 run 3, for the same inputs)"
 UNSTABLE = {}
-for _who in (X.CASES,):
-    for _i, _c in enumerate(_who):
-        if _c.key and _c.width == 0:
-            UNSTABLE[f"XI {_i:02}"] = (["colsum", "tailsum", "atrsum", "row13", "lastrow"], _W0)
+for _i, _c in enumerate(X.CASES):
+    if _c.key and _c.width == 0 and _c.call == X.INIT32:
+        UNSTABLE[f"XI {_i:02}"] = (["colsum"], _W0C)
 for _i, _c in enumerate(X4.CASES):
     if _c.key and _c.width == 0:
-        UNSTABLE[f"XJ4 {_i:02}"] = (["colsum", "tailsum", "atrsum", "vsum", "row13", "lastrow", "rowc", "col"], _W0)
+        UNSTABLE[f"XJ4 {_i:02}"] = (["vsum"] + ([] if _c.call == X4.INITXT else ["colsum", "col"]),
+                                    _W0V + ("" if _c.call == X4.INITXT else "; " + _W0C))

@@ -41,6 +41,7 @@ REF_AF.update({"XS3 00": (0x00, 0x54), "XS3 01": (0x00, 0x54), "XS3 02": (0x25, 
                "XS3 16": (0x00, 0x54), "XS3 17": (0x00, 0x54), "XS3 18": (0x00, 0x44)})
 REF_AF.update({"XS4 00": (0x00, 0x44), "XS4 01": (0x00, 0x44), "XS4 02": (0x00, 0x44), "XS4 03": (0x00, 0x44)})
 REF_AF.update({"XS5 00": (0x00, 0x44), "XS5 01": (0x25, 0xB3), "XS5 02": (0x00, 0x44), "XS5 03": (0x1D, 0x9B), "XS5 04": (0x28, 0xBB), "XS5 05": (0x00, 0x44), "XS5 06": (0x00, 0x44), "XS5 07": (0x02, 0x42)})
+REF_AF.update({"XS5 08": (0x00, 0x44), "XS5 09": (0x00, 0x44), "XS5 10": (0x00, 0x44)})
 OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrmod", "linl40", "linl32", "lt",
            "namesum", "row1", "rowc", "row24", "vsum", "win"]
 
@@ -49,7 +50,7 @@ def load(who, calls):
     """XSCR run 2 (group XS) and XSCR3 run 1 (group XS3: LINTTB's garbage address-dependent, TXTNAM changed late)."""
     out = []
     for mod, run, src in ((X, "XSCR_run2.out", "XS"), (X3, "XSCR3_run1.out", "XS3"), (X4, "XSCR4_run1.out", "XS4"),
-                             (X5, "XSCR5_run1.out", "XS5")):
+                             (X5, "XSCR5_run2.out", "XS5")):
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
         key = "ref" if who == "ref" else "ours"
         for c in mod.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):

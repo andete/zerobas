@@ -16,7 +16,7 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / WRTVRM / FILVRM.
 ;
 ; @cap C000
-; @caplen 087A
+; @caplen 0BA7
 ; @timeout 300
 
 RDVRM   equ     $004A
@@ -43,7 +43,7 @@ FNKFLG  equ     $FBCE
 
 DONE    equ     $C000
 CAP     equ     $C001
-CAPLEN  equ     2170
+CAPLEN  equ     2983
 ptr     equ     $EF00
 tptr    equ     $EF02
 ccall   equ     $EF04                   ; the case's 16 bytes, in table order
@@ -510,4 +510,7 @@ cases:
                 db      $C9, $00, $28, $01, $18, $07, $05, $00, $00, $00, $00, $00, $01, $40, $63, $63, $01, $00   ; FNKSB SCREEN 0 w 40 CNSDFG 1 CRTCNT 24 cur 7,5 TXTNAM late
                 db      $CF, $01, $20, $00, $18, $07, $05, $00, $00, $00, $00, $00, $01, $40, $63, $63, $01, $00   ; DSPFNK SCREEN 1 w 32 CNSDFG 0 CRTCNT 24 cur 7,5 TXTNAM late
                 db      $C9, $02, $20, $01, $18, $07, $05, $00, $00, $00, $01, $00, $01, $40, $63, $63, $00, $00   ; FNKSB SCREEN 2 w 32 CNSDFG 1 CRTCNT 24 cur 7,5 garbage 1
+                db      $CF, $00, $25, $00, $18, $07, $05, $00, $04, $00, $00, $00, $01, $40, $63, $63, $00, $00   ; DSPFNK SCREEN 0 w 37 CNSDFG 0 CRTCNT 24 cur 7,5 labels 4
+                db      $CF, $00, $27, $00, $18, $07, $05, $00, $04, $00, $00, $00, $01, $40, $63, $63, $00, $00   ; DSPFNK SCREEN 0 w 39 CNSDFG 0 CRTCNT 24 cur 7,5 labels 4
+                db      $CF, $01, $1D, $00, $18, $07, $05, $00, $04, $00, $00, $00, $01, $40, $63, $63, $00, $00   ; DSPFNK SCREEN 1 w 29 CNSDFG 0 CRTCNT 24 cur 7,5 labels 4
                 db      $FF

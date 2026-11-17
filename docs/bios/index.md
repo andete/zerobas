@@ -40,7 +40,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 5](INITXT.md) | 11 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-BIOSINT |
+| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 5](INITXT.md) | 12 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 3](INIT32.md) | 0 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
@@ -73,7 +73,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-POSITCLAMP |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](ERAFNK.md) | 0 | D-INITEDGES |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 4](DSPFNK.md) | 12 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 4](DSPFNK.md) | 13 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-FNKBOOT, D-KEYLINESHIFT, D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |
