@@ -27,6 +27,9 @@ comes from the *elephant and goldfish* model ([egm.dev](https://egm.dev/)):
   drifts, so a call page LINKS to the concept page, never restates it.
 - **Evidence** — probe programs, captures and tables — lives in `probes/` and `scratchpad/`; pages
   cite it.
+- **Per-call STATE never goes on a shared page.** A concept or base page does not repeat a call's
+  status, its differences or its TODO items (Joost, 2026-11-17, on the base page listing CHPUT's).
+  The generated index shows them, read from each call's own page, so they cannot drift.
 - **This method** lives here and nowhere else.
 
 ## 2. The page

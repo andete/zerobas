@@ -62,6 +62,20 @@ REGIONS = {
 REGION_OF = {n: r for r, names in REGIONS.items() for n in names.split()}
 
 
+def page_items(name):
+    """the TODO items (D-...) the page's own "Differences from the reference" section names, in order"""
+    path = os.path.join(PAGES, f"{name}.md")
+    if not os.path.exists(path):
+        return []
+    text = open(path, encoding="utf-8").read()
+    m = re.search(r"^## Differences from the reference\n(.*?)(?=^## )", text, re.S | re.M)
+    seen = []
+    for d in re.findall(r"\bD-[A-Z0-9]+\b", m.group(1) if m else ""):
+        if d not in seen:
+            seen.append(d)
+    return seen
+
+
 def page_state(name):
     """(state, open [A] count, relative link) for a call's page, or ("none", None, None)."""
     path = os.path.join(PAGES, f"{name}.md")
@@ -117,15 +131,16 @@ def render():
          "",
          f"**{n_page} of {len(rs)} calls have a page; {n_final} are FINAL.**",
          "",
-         "| address | call | region | contract level | page | open (not measured) |",
-         "|---|---|---|---|---|---|"]
+         "| address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |",
+         "|---|---|---|---|---|---|---|"]
     for addr, name, region, level, ruled, state, nopen, link in rs:
         rp = REGION_PAGE[region]
         reg = f"[{region}]({rp})" if rp else f"{region} (concept page to come)"
         lvl = level + (" · ruled indirect" if ruled else "")
         page = f"[{state}]({link})" if link else "—"
         op = str(nopen) if nopen is not None else "—"
-        L.append(f"| ${addr:04X} | {name} | {reg} | {lvl} | {page} | {op} |")
+        items = ", ".join(page_items(name)) or "—"
+        L.append(f"| ${addr:04X} | {name} | {reg} | {lvl} | {page} | {op} | {items} |")
     L.append("")
     L.append("Contract level: tools/bios_levels.py (L1 called · L2 happy path · L3 full contract · "
              "L4 errors / edges), measured against the VG-8020. It says how much a GATE compares; the "

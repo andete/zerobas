@@ -5,10 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # The BIOS — calling the machine's own routines
 
-> **Status (2026-11-17):** the base page for the per-call BIOS pages
-> ([docs/bios/index.md](../bios/index.md)). One call is FINAL: [CHPUT](../bios/CHPUT.md). The
-> rest are being specified region by region ([docs/spec-method.md](../spec-method.md)). Speed is
-> deliberately left out of these docs until on-par speed is established.
+> **Status (2026-11-17):** the base page for the per-call BIOS pages. Each call's state, and the
+> differences its page names, are in the generated [BIOS index](../bios/index.md), never repeated
+> here. Speed is deliberately left out of these docs until on-par speed is established.
 
 ## Summary
 
@@ -59,11 +58,8 @@ in one cannot silently break another.
 
 ## Differences from the reference
 
-By call, on the call's page. The text region's differences so far are all in CHPUT [M]:
-- DEL (D-CHPUTDEL);
-- the function-key line (D-CHPUTKEYROW);
-- `ESC Y` out of range (D-CHPUTESCY);
-- the line-continuation table's values (D-LINTTBVAL).
+Each call's differences are on its own page, never repeated here. The
+[BIOS index](../bios/index.md) lists, per call, the TODO items its page names.
 
 ## What we found, and how
 
