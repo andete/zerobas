@@ -78,6 +78,9 @@ DEVICE = re.compile(r"^(LPT|CRT|CAS|GRP|COM)\s*:", re.I)
 # FILE. The set may shrink freely; it grows only in a visible diff carrying a
 # sentence, which is the same discipline as the other pinned sets in tools/.
 ALLOW = {
+    "DCV3_carve.py":
+        "a ROM-carve edit script (D-DISKCARVE6 step 3): `FILES` is inside the asm "
+        "COMMENT it anchors on (skip_sp's callers), never typed at a machine",
     "file6_todo.py":
         "a TODO-filing edit script: `SAVE \"X\",A` is prose inside the D-LISTFLT "
         "item text it writes into TODO.md, never typed at a machine",
