@@ -101,8 +101,8 @@ def regs(c, t):
 RULES = [
     Rule("R-I-REGS-TXT", TXT, "R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = $F0 + the "
          "copy's low 3 bits (sprite size / magnify / bit 2 kept; here $A5 gives F5); R2 / R3 / R4 / R5 / R6 from "
-         "TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = FORCLR·16 + BAKCLR in 8 bits "
-         "($3A, $C5 gives E5; the border colour is not used).",
+         "TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = (FORCLR·16) OR BAKCLR in 8 bits "
+         "($3A, $C5 gives E5, not the sum's 65; the border colour is not used).",
          lambda c: is_txt(c),
          lambda c: c.rg[1:] == [0xF0 | (0xA5 & 7)] + regs(c, TABLES[c.tbl][0:5]) + [((c.fg << 4) | c.bg) & 0xFF]),
     Rule("R-I-TAIL-TXT", TXT, "The 64 bytes after the 960 name cells are left as found, at every width (41, 80, 255 "
@@ -113,7 +113,7 @@ RULES = [
          "/ T32PAT (moved: 07 BF 06 3F 01); R7 = BDRCLR as it is ($F9 stays F9).",
          lambda c: not is_txt(c),
          lambda c: c.rg[1:] == [0xE0 | (0xA5 & 7)] + regs(c, TABLES[c.tbl][5:10]) + [c.bd]),
-    Rule("R-I-COL32", T32, "The colour table's 32 bytes all become FORCLR·16 + BAKCLR in 8 bits.",
+    Rule("R-I-COL32", T32, "The colour table's 32 bytes all become (FORCLR·16) OR BAKCLR in 8 bits (their sum read).",
          lambda c: not is_txt(c) and not w0key(c), lambda c: c.colsum == 32 * (((c.fg << 4) | c.bg) & 0xFF)),
     Rule("R-I-SPR32", T32, "The sprite attribute table (32 entries at T32ATR) is written: each entry Y = 209 ($D1, "
          "the sprite is off screen), X left as found, the pattern = the sprite's number, the colour = FORCLR as it is "
@@ -141,13 +141,13 @@ RULES = [
                     and c.row13 == [SP] * 40)),
     Rule("R-I-KEYS", B, "With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row "
          "(which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at "
-         "column 1 for widths 40 / 41 / 32 / 33, the labels 8 / 6 cells apart). Run 2 (CRTCNT 24 as found) drew it on "
+         "column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells). Run 2 (CRTCNT 24 as found) drew it on "
          "the last row. Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same "
          "cells. Every cell and sum as the reference's.",
          lambda c: c.key and c.width not in (0, 1, 80, 255),
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.row13, c.lastrow) == key_ref(c)),
     Rule("R-I-KEYEDGE", B, "Key line on with width 0, 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 "
-         "blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 of row 13; width 0: "
+         "blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13; width 0: "
          "the name table is NOT cleared to spaces but mostly to 0 with $FF pairs, INIT32 also over its colour and "
          "sprite tables.",
          lambda c: c.key and c.width in (0, 1, 80, 255),

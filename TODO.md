@@ -16799,7 +16799,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       run 2 [`XINIT_run2.out`](scratchpad/XINIT_run2.out), round 2's run 4 [`XINIT_run4.out`](scratchpad/XINIT_run4.out)):
       with CNSDFG on and no key held, the VG-8020's key line shows "key0".. (keys 1-5); zerobas's "key5".. (keys 6-10),
       in every width 28-41 case, INITXT and INIT32, also from SCREEN 2 / display off / CNSDFG 2, $80, $FF; and
-      the same from DSPFNK / FNKSB (docs/bios/DSPFNK.md, [`XKEY_run1.out`](scratchpad/XKEY_run1.out)). The name-table
+      the same from DSPFNK / FNKSB (docs/bios/DSPFNK.md, [`XKEY_run1.out`](scratchpad/XKEY_run1.out)) and CLS
+      (docs/bios/CLS.md R-C-TEXT, which also redraws it on row 24 with CRTCNT := 24 on zerobas: D-INITEDGES). The name-table
       sums differ by exactly the 25 the digits account for. Fix in the C-BIOS repack's key-line display (which set it
       picks). Widths 0, 80 and 255 (R-I-KEYEDGE) and the ROW the line goes on are D-INITEDGES, TIER 6.
 
@@ -16818,6 +16819,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         likewise draw on row 24 and set CRTCNT := 24 on zerobas (the VG-8020: row CRTCNT, CRTCNT kept); and at a
         width below the screen's (37, 39, 29) the VG-8020 writes only the width's span of the key line's row,
         leaving the margin cells, where zerobas writes the whole row (DSPFNK and ERAFNK).
+
+- [ ] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
+      🎚️ TIER 6 — every edge (a program passing POSIT a column of 0 / above LINLEN or a row of 0 / above CRTCNT, or
+      calling it in a graphics mode; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CLS.md rules R-P-CLAMP / R-P-GRP ([`XCLS_run2.out`](scratchpad/XCLS_run2.out)): the
+      VG-8020 turns a column of 0 or above LINLEN into LINLEN and a row of 0 or above CRTCNT into CRTCNT (CRTCNT 13:
+      rows 0 / 14 / 20 give 13), and leaves CSRX / CSRY alone in SCREEN 2; zerobas stores H / L as given (0, 41, 255
+      ...) in every mode. Fix in the C-BIOS repack's POSIT.
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).

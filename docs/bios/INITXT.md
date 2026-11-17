@@ -62,7 +62,7 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-I-REGS-TXT** R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = $F0 + the copy's low 3 bits (sprite size / magnify / bit 2 kept; here $A5 gives F5); R2 / R3 / R4 / R5 / R6 from TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = FORCLR·16 + BAKCLR in 8 bits ($3A, $C5 gives E5; the border colour is not used). | 33 | ✓ | ✓ |
+| **R-I-REGS-TXT** R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = $F0 + the copy's low 3 bits (sprite size / magnify / bit 2 kept; here $A5 gives F5); R2 / R3 / R4 / R5 / R6 from TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = (FORCLR·16) OR BAKCLR in 8 bits ($3A, $C5 gives E5, not the sum's 65; the border colour is not used). | 33 | ✓ | ✓ |
 | **R-I-TAIL-TXT** The 64 bytes after the 960 name cells are left as found, at every width (41, 80, 255 included). | 32 | ✓ | ✗ 6: XI 16, XI 17, XI 18, XI 19, XI 20, XI 21 |
 | **R-I-ATR-TXT** No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's base are left as found. | 2 | ✓ | ✓ |
 
@@ -71,7 +71,7 @@ the run.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-I-REGS-32** R1 = $E0 + the copy's low 3 bits (E5); R2..R6 from T32NAM / T32COL / T32CGP / T32ATR / T32PAT (moved: 07 BF 06 3F 01); R7 = BDRCLR as it is ($F9 stays F9). | 29 | ✓ | ✓ |
-| **R-I-COL32** The colour table's 32 bytes all become FORCLR·16 + BAKCLR in 8 bits. | 28 | ✓ | ✓ |
+| **R-I-COL32** The colour table's 32 bytes all become (FORCLR·16) OR BAKCLR in 8 bits (their sum read). | 28 | ✓ | ✓ |
 | **R-I-SPR32** The sprite attribute table (32 entries at T32ATR) is written: each entry Y = 209 ($D1, the sprite is off screen), X left as found, the pattern = the sprite's number, the colour = FORCLR as it is ($3A stays 3A). Read byte for byte in entries 0 and 1 (the 8 cells after the name table, default tables) and as the sum for all 32; the rest of the 1 KB name block is left as found. | 28 | ✓ | ✓ |
 
 #### 3. Both
@@ -86,8 +86,8 @@ the run.
 | **R-I-CNSDFG** CNSDFG becomes 255 when it was non-zero (1, 2, $80, $FF), 0 when it was 0. | 62 | ✓ | ✓ |
 | **R-I-LT** LINTTB becomes 24, 23, …, 1 down the rows. | 62 | ✓ | ✗ 62: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+56) |
 | **R-I-CLEAR** With the key line off the name table is cleared to spaces (960 / 768 cells): row 13 and the last row read blank. | 28 | ✓ | ✓ |
-| **R-I-KEYS** With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row (which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at column 1 for widths 40 / 41 / 32 / 33, the labels 8 / 6 cells apart). Run 2 (CRTCNT 24 as found) drew it on the last row. Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same cells. Every cell and sum as the reference's. | 27 | ✓ | ✗ 27: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+21) |
-| **R-I-KEYEDGE** Key line on with width 0, 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 of row 13; width 0: the name table is NOT cleared to spaces but mostly to 0 with $FF pairs, INIT32 also over its colour and sprite tables. | 7 | ✓ | ✗ 5: XI 01, XI 19, XI 21, XI 23, XI 39 |
+| **R-I-KEYS** With the key line on, the key line is drawn on row CRTCNT -- row 13 here, NOT the last row (which stays blank) -- and shows the FIRST five function keys' labels, placed by the width ('key0' at column 1 for INITXT 40 / 41 and INIT32 32 / 33, 8 / 6 cells apart; elsewhere by the cases' cells). Run 2 (CRTCNT 24 as found) drew it on the last row. Entering from SCREEN 2, with the display off, or with CNSDFG 2 / $80 / $FF gives the same cells. Every cell and sum as the reference's. | 27 | ✓ | ✗ 27: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+21) |
+| **R-I-KEYEDGE** Key line on with width 0, 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13; width 0: the name table is NOT cleared to spaces but mostly to 0 with $FF pairs, INIT32 also over its colour and sprite tables. | 7 | ✓ | ✗ 5: XI 01, XI 19, XI 21, XI 23, XI 39 |
 | **R-I-FONT** The pattern table holds the font (the VG-8020's sums to 31375). | 62 | ✓ | ✗ 62: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+56) |
 
 Declared NOT evidence (14 cases: XI 00, XI 02, XI 04, XI 06 … (+10)): colsum, atrsum — INITXT has no colour table and no sprites: with the key line off the bytes at R3's / R5's base are name-table cells (already in namesum) or, moved, left as found
@@ -101,7 +101,7 @@ Declared NOT evidence (1 cases: XI 49): colsum — INITXT has no colour table an
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-KEYLINESHIFT** (the key line shows keys 6–10) | R-I-KEYS |
-| **D-INITEDGES** (the key line's row, R0's kept bits, the name table's tail, the odd widths) | R-I-CRTCNT, R-I-R0, R-I-TAIL-TXT, R-I-KEYEDGE |
+| **D-INITEDGES** (the key line's row, R0's kept bits, the name table's tail, the odd widths) | R-I-KEYS (the row: fixing D-KEYLINESHIFT alone leaves it red), R-I-CRTCNT, R-I-R0, R-I-TAIL-TXT, R-I-KEYEDGE |
 | **D-LINTTBVAL** (LINTTB's values) | R-I-LT |
 | ruled, not a TODO: C-BIOS's own font (D-BIOSINT, Joost 2026-11-05) | R-I-FONT |
 
@@ -112,7 +112,11 @@ Declared NOT evidence (1 cases: XI 49): colsum — INITXT has no colour table an
 - **[A]** The registers and flags on return; the interrupt state; whether a hook is called.
 - **[A]** The key line with a key HELD (SHIFT: the VG-8020 should then show keys 6–10).
 - **[A]** Key labels holding control characters or longer than the slot.
-- **[A]** CRTCNT values other than 13 and 24 (below the key line's minimum, above 24).
+- **[A]** CRTCNT other than 13 under the separating setup (run 2's 24 used round 1's setup), and
+  clamping (0, above 24). Register copies other than $A5 (R0's / R1's kept bits, the 16×16 sprite
+  size). INITXT with TXTCOL / TXTATR outside its name table. Widths with no case (INITXT 33–35,
+  INIT32 below 28). The input cells after the call (the other width cell, the colours, the table
+  cells, FNKSTR). VRAM outside the read windows. Round 3 measures these (the second review).
 - **[A]** Whether the name table is cleared beyond row CRTCNT for every CRTCNT (at 13 it cleared all
   960 / 768 cells).
 - **[A]** Entering from SCREEN 3, and from a table layout that overlaps itself.

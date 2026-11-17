@@ -100,7 +100,10 @@ that was measured (the wraps, the scroll, the edges).
   garbage unlike the expected result into every output. Otherwise "the call uses this input" and
   "the call writes a constant" look the same. INITXT round 1 kept LINL40 = LINL32, left CRTCNT at
   24, never garbled the register copies, and used only default screen-table cells and colours
-  below 16: none of those rules could be told from a constant.
+  below 16: none of those rules could be told from a constant. **And ONE garbage value is itself a
+  constant:** round 2 entered every case with the register copies at $A5 and CRTCNT at 13, so "keep
+  bit 0" could not be told from "write 01", nor "row CRTCNT" from "row 13" (the second review). Give
+  each input at least two values, chosen so the candidate rules DISAGREE on them.
 - **A capture ends with a sentinel byte, and the decoder refuses when it is missing.** The harness
   trims trailing zeros, so a short capture padded with zeros reads as real zero outputs (INITXT
   run 2 was 2 bytes short).

@@ -28,7 +28,7 @@ Then the call (INITXT $006C or INIT32 $006F), and one 130-byte record:
   sum16 of the rest of the name table's 1 KB block (64 / 256 B),
   sum16 of the sprite attribute table (128 B) at RG5SAV x $80,
   the first 40 cells of the LAST row, the first 40 cells of row 13 (CRTCNT's garbage value: the
-  reference draws the key line on row CRTCNT, run 3), and the sentinel $C3.
+  reference draws the key line on row CRTCNT, run 4), and the sentinel $C3.
 The real VDP registers are write-only from the Z80: only their RAM copies are recorded.
 """
 import os

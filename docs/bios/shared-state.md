@@ -108,8 +108,8 @@ beginning of".
 | $00BA | ISCNTC | input | STOP-key status (cells not named) | not stated | TDB §2.2.1 | not stated |
 | $00BD | CKCNTC | input | as ISCNTC | not stated | TDB §2.2.1 | not stated |
 | $00C0 | BEEP | sound | — | "the buzzer" (device not named); repo: PSG registers 0..13 changed right after BEEP | TDB §2.2.1; repo: probes/bios/biosl/b5sound.asm | partly (measured) |
-| $00C3 | CLS | text | — | the screen (VRAM; mode-dependent) | TDB §2.2.1; repo: bios_levels.py (all VRAM, SCREEN 0..3) | partly |
-| $00C6 | POSIT | text | — | cursor position (CSRX / CSRY *by description*; repo: measured after POSIT) | TDB §2.2.1; repo: probes/bios/biosl/b1text.asm | partly |
+| $00C3 | CLS | text | — ; measured: the Z flag (clear: nothing), SCRMOD, CNSDFG, CRTCNT, LINLEN, FNKSTR, BAKCLR (SCREEN 2) | the screen (VRAM; mode-dependent); measured: SCREEN 0 / 1 the name table only, CSRX / CSRY, LINTTB, CNSDFG; SCREEN 2 the pattern and colour tables only | TDB §2.2.1; [CLS.md](CLS.md) | partly (TDB) + measured |
+| $00C6 | POSIT | text | — ; measured: H, L, LINLEN and CRTCNT (the clamps), SCRMOD | cursor position: CSRX / CSRY (measured; nothing in SCREEN 2) | TDB §2.2.1; [CLS.md](CLS.md) | partly (TDB) + measured |
 | $00C9 | FNKSB | text | **FNKFLG $FBCE** (named Entry, as printed); measured: FNKFLG makes NO difference, CNSDFG decides (non-zero: as DSPFNK; 0: nothing) | key-line display (screen); measured: as DSPFNK | TDB §2.2.1; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
 | $00CC | ERAFNK | text | hook **H.ERAF $FDB8**; measured: CRTCNT (the row), LINLEN (the span), SCRMOD | key-line erased (screen); measured: CNSDFG := 0, row CRTCNT's span := spaces | TDB §2.2.1, §2.2.2; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
 | $00CF | DSPFNK | text | hook **H.DSPF $FDB3**; key strings (FNKSTR *by description*); measured: FNKSTR keys 1–5, CRTCNT (the row), LINLEN (the span and slots), SCRMOD | key-line display (screen); measured: CNSDFG := 255, row CRTCNT's span; NOT the cursor, CRTCNT | TDB §2.2.1, §2.2.2; [DSPFNK.md](DSPFNK.md) | partly (TDB) + measured |
