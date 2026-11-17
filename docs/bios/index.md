@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**10 of 108 calls have a page; 1 are FINAL.**
+**15 of 108 calls have a page; 1 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -61,10 +61,10 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
-| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | — | — | — |
-| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | — | — | — |
-| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | — | — | — |
-| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | — | — | — |
+| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](CNVCHR.md) | 1 | D-TEXTAF |
+| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](PINLIN.md) | 3 | D-PINLINSTART, D-TEXTAF |
+| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](INLIN.md) | 0 | D-TEXTAF |
+| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [DRAFT 1](QINLIN.md) | 0 | D-TEXTAF |
 | $00B7 | BREAKX | input (concept page to come) | L3 | — | — | — |
 | $00BA | ISCNTC | input (concept page to come) | L3 | — | — | — |
 | $00BD | CKCNTC | input (concept page to come) | L3 | — | — | — |
@@ -74,7 +74,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](ERAFNK.md) | 0 | D-INITEDGES |
 | $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](DSPFNK.md) | 8 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
-| $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | — | — | — |
+| $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](TOTEXT.md) | 2 | D-FNKBOOT, D-KEYLINESHIFT, D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |
 | $00DB | GTPAD | input (concept page to come) | L3 | — | — | — |

@@ -16818,6 +16818,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - **R-I-TAIL-TXT:** INITXT with a width above 40: zerobas also clears the 64 bytes after the 960 name cells; the
         VG-8020 leaves them.
       - **R-I-KEYEDGE:** key line on with width 0, 80 or 255: the reference's odd cells (its rule says which).
+      - **docs/bios/TOTEXT.md R-T-OLDX** ([`XTOT_run1.out`](scratchpad/XTOT_run1.out)): TOTEXT from SCREEN 2 / 3 with a
+        garbage OLDSCR ($5A): the VG-8020 sets up SCREEN 3, zerobas SCREEN 1.
       - **docs/bios/DSPFNK.md R-K-STATE / R-K-ERA** ([`XKEY_run1.out`](scratchpad/XKEY_run1.out)): DSPFNK / FNKSB
         likewise draw on row 24 and set CRTCNT := 24 on zerobas (the VG-8020: row CRTCNT, CRTCNT kept); and at a
         width below the screen's (37, 39, 29) the VG-8020 writes only the width's span of the key line's row,
@@ -16848,13 +16850,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       entry 175), moves the cursor up a row, then draws the key line; zerobas draws over the cursor's row and leaves the
       cursor there. Fix in the C-BIOS repack's DSPFNK.
 
+- [ ] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
+      🎚️ TIER 3 — common (a ROM program that prints a prompt and calls PINLIN gets the prompt in BUF on the VG-8020;
+      filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/PINLIN.md rule R-L-PIN ([`XLIN_run1.out`](scratchpad/XLIN_run1.out), XL 3): with "XYZ"
+      on the row before the cursor and "Q" typed, the VG-8020's PINLIN returns "XYZQ" (from column 1), zerobas's "Q" --
+      what INLIN returns on both (R-L-INLIN). QINLIN, BS editing and Enter over existing text agree. Fix in the C-BIOS
+      repack's PINLIN (start the line at column 1, not at the entry column).
+
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
       2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md R-K-AF and docs/bios/CLS.md R-CP-AF
       ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) state the VG-8020's values per case (DSPFNK 00 / 44, ERAFNK 28 / BB,
-      CLS 00 / 54, POSIT 24 / 30 ...); zerobas's differ in almost every case. Not published values: match them only if
-      cheap. CHGET's are D-CHGETEI.
+      CLS 00 / 54, POSIT 24 / 30 ...); zerobas's differ in almost every case. Also CNVCHR's F after a conversion (A3 vs
+      3B: docs/bios/CNVCHR.md R-V-F, C and Z agree) and PINLIN / QINLIN / INLIN's F (18 vs 00: docs/bios/PINLIN.md R-L-F).
+      Not published values: match them only if cheap. CHGET's are D-CHGETEI.
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
