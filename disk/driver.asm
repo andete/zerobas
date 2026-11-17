@@ -225,6 +225,10 @@ new_taken:
                 pop     hl
                 ld      (FWR_DIRSEC), hl
                 ret
+; fname_ev -- the file-name expression through calbak (MOVED here by D-DISKCARVE6 step 2).
+fname_ev:
+                ld      ix,fname_expr
+                jp      calbak
                 ds      $436C - $, $00      ; pad remainder up to the pinned canonical entry
 k_436C:
                 jp      fdel_body           ; $436C: BDOS $13 FDEL canonical entry (M26)

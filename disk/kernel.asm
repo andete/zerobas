@@ -535,6 +535,13 @@ dst_skip:
 hdl_oom:                                    ; D-LOADDIRECT: the file does not fit
                 ld      a,4                 ; 4: out of memory
                 jp      hdl_answer          ; (jp: out of jr reach since the move)
+; fmt_key / fmt_echo -- FORMAT's key read / echo (MOVED here by D-DISKCARVE6 step 2, 2026-11-17).
+fmt_key:
+                ld      hl,(FDC_DEST)
+                jp      (hl)
+fmt_echo:
+                ld      e,a
+                jp      conout_emit_e
                 ds      $504E - $, $00  ; pad up to the pinned $504E LOGIN entry (M22a)
 k_504E:
                 jp      login_body      ; $504E: BDOS $18 LOGIN canonical entry (M22a)
@@ -6979,9 +6986,7 @@ fname_fcb:
                 call    fname_ev
                 ld      ix,pdfcb_resume
                 jp      calbak
-fname_ev:
-                ld      ix,fname_expr
-                jp      calbak
+; (fname_ev -- MOVED by D-DISKCARVE6 step 2 to the pad in front of $436C, disk/driver.asm.)
 ; skip_sp -- HL past the blanks at it; A = the first other character. 💰 D-DSKFMT
 ; carve 34 (2026-11-10): the loop stood three times (NAME's `AS`, COPY's `TO`, FILES).
 skip_sp:
@@ -7310,12 +7315,7 @@ fmt_pr:
                 pop     hl
                 inc     hl
                 jr      fmt_pr
-fmt_key:
-                ld      hl,(FDC_DEST)
-                jp      (hl)
-fmt_echo:
-                ld      e,a
-                jp      conout_emit_e
+; (fmt_key / fmt_echo -- MOVED by D-DISKCARVE6 step 2 to the pad in front of $504E.)
 fmt_t_drive:    db      "Drive name? (A,B) ",0
 fmt_t_q:        db      "? ",0
 fmt_t_done:     db      "Format complete",13,10,0

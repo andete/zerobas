@@ -16686,7 +16686,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       span (the dead `jr dc_result`; jp -> jr to dskio_calslt x2, to sv_load_error x3, sav_fin's). `make basic-reloc`: disk
       free 0 -> 61 B, one run (🔮 61: HIT). All 12 disk suites, knives and unit tests green. Reserve (the same plan): fmt_key /
       fmt_echo (8 -> $5046), fname_ev (7 -> $4365) for 76 B; skip_sp, fmt_err for 89 B.
+      💰 **STEP 2 (2026-11-17): 76 B at $7559.** fmt_key / fmt_echo moved in front of $504E, fname_ev in front of $436C
+      (🔮 76: HIT). Left in reserve: skip_sp (7 -> $47AB), fmt_err (6 -> $5FDE) for 89 B.
       ➡️ NEXT: D-DISKVE into the hole (~55 B); then D-DOSDRVB, D-CONCOL, D-DSKIOCYL (more of the reserve).
+      🔴 **D-DISKVE's KEY FAILS (measured 2026-11-17):** under BASIC the CF-3300's DISKVE ($F323) holds $72AE (its BASIC's
+      handler cell), zerobas's holds $C9C9 -- NOT zero. "Call the handler when DISKVE is non-zero" would make zerobas BASIC
+      jump through a garbage pointer on its first disk error. So D-DISKVE also needs: zerobas's disk init leaving a known
+      DISKVE under BASIC (~6 B in init), a measurement of what MSX-DOS's boot leaves there, and RDABS / WRABS's A = $FF
+      after Ignore (a flag, or their own call). The wrapper itself prices ~66 B (Retry by re-entry, Abort `jp 0`
+      -- unmeasured, Ignore = NC): over the 61 B hole, so carve step 2 (the plan's reserve: fmt_key / fmt_echo, fname_ev
+      -> 76 B) first.
 
 - [ ] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
       🎚️ TIER 3 — common errors (a one-drive user typing B:, a program copying to B:; filed 2026-11-17).
