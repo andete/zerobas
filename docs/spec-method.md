@@ -104,6 +104,14 @@ that was measured (the wraps, the scroll, the edges).
   constant:** round 2 entered every case with the register copies at $A5 and CRTCNT at 13, so "keep
   bit 0" could not be told from "write 01", nor "row CRTCNT" from "row 13" (the second review). Give
   each input at least two values, chosen so the candidate rules DISAGREE on them.
+- **A sum of equal bytes pins only part of the byte.** 2048 equal bytes sum to 2048·x, which a 16-bit
+  sum keeps only mod 32 (CLS's colour table: $C5 and $05 give the same sum; a table of zeros and
+  one of spaces too). Read bytes, or make the garbage address-dependent so a sum fits one layout only.
+- **Set entry flags independently.** `cp 1` made "Z set", "A = 1" and "carry clear" coincide for
+  every CLS case; load A and F separately (`push` / `pop af`) so each candidate gate gets its own case.
+- **"Left as found" needs garbage that no plausible write produces:** an address-dependent pattern
+  that is never a space or a label character, and two garbage sets, so "untouched" differs from
+  "rewrote the same constant". And the table bases themselves are inputs: move them.
 - **A capture ends with a sentinel byte, and the decoder refuses when it is missing.** The harness
   trims trailing zeros, so a short capture padded with zeros reads as real zero outputs (INITXT
   run 2 was 2 bytes short).
@@ -118,6 +126,9 @@ that was measured (the wraps, the scroll, the edges).
   CHPUT), say so in the rule. Then pin the behaviour separately against probe-written markers.
 - **The checker refuses a rule whose text names a rule id that does not exist** (stale references
   after a rewrite), and renders the sections in order.
+- **A probe's capture and variables stay below $EF00.** The VG-8020's stack at cartridge INIT lies
+  lower than the system area: XSCR's run with a capture reaching $F1A4 crashed it (all reads $FF,
+  "NO READING"). Split the matrix or shrink the record instead.
 - **Generate a probe's case table from the module that decodes it** (CHPUT round 5,
   `xchput5_cases.py`), so the layout cannot drift between probe and rules.
 - **The page's rule tables are GENERATED** between `<!-- RULES BEGIN -->` and `<!-- RULES END -->`

@@ -69,11 +69,11 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00BA | ISCNTC | input (concept page to come) | L3 | — | — | — |
 | $00BD | CKCNTC | input (concept page to come) | L3 | — | — | — |
 | $00C0 | BEEP | sound (concept page to come) | L3 | — | — | — |
-| $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](CLS.md) | 4 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-POSITCLAMP |
+| $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](CLS.md) | 5 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-POSITCLAMP, D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](POSIT.md) | 0 | D-POSITCLAMP |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](ERAFNK.md) | 0 | D-INITEDGES |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](DSPFNK.md) | 5 | D-KEYLINESHIFT, D-INITEDGES |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](DSPFNK.md) | 8 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | — | — | — |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |

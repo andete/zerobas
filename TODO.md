@@ -16789,7 +16789,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;
       filed 2026-11-17).
-      🤖 **AUTONOMOUS** — XCHPUT2 G2's LINTTB ($FBB2, 24 B) after a clear + one byte per row: the VG-8020 holds 24, 23, ..., 1
+      🤖 **AUTONOMOUS** — (also: the VG-8020's ERAFNK and DSPFNK's scroll write 175 into LINTTB entries, zerobas none --
+      docs/bios/DSPFNK.md R-K-ERALT / R-K-SCROLL.) XCHPUT2 G2's LINTTB ($FBB2, 24 B) after a clear + one byte per row: the VG-8020 holds 24, 23, ..., 1
       down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
       (a row number? per screen width?) before matching them.
 
@@ -16828,7 +16829,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — docs/bios/CLS.md rules R-P-CLAMP / R-P-GRP ([`XCLS_run2.out`](scratchpad/XCLS_run2.out)): the
       VG-8020 turns a column of 0 or above LINLEN into LINLEN and a row of 0 or above CRTCNT into CRTCNT (CRTCNT 13:
       rows 0 / 14 / 20 give 13), and leaves CSRX / CSRY alone in SCREEN 2; zerobas stores H / L as given (0, 41, 255
-      ...) in every mode. Fix in the C-BIOS repack's POSIT.
+      ...) in every mode. XSCR ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) refines the row limit to (CRTCNT + CNSDFG)
+      mod 256 -- CRTCNT - 1 while the key line shows with CNSDFG $FF -- and adds SCREEN 3 (nothing). Fix in the C-BIOS
+      repack's POSIT.
 
 - [ ] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
       🎚️ TIER 6 — every edge (a program calling CHGET under DI, or testing its flags; filed 2026-11-17).
@@ -16837,6 +16840,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       leaves them disabled when a code was already waiting (when it has to wait it enables them, so it does not hang).
       Its flags on return: VG-8020 9A (4A when GETPNT wrapped, 8A with three codes waiting), zerobas BB / 02. Fix in
       the C-BIOS repack's CHGET.
+
+- [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+      🎚️ TIER 3 — common (KEY ON with the cursor on the bottom line; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md rule R-K-SCROLL ([`XSCR_run2.out`](scratchpad/XSCR_run2.out), XS 00 / 04 /
+      54): with CSRY = CRTCNT the VG-8020 scrolls the text rows up by one (row CRTCNT - 1 comes in blank, its LINTTB
+      entry 175), moves the cursor up a row, then draws the key line; zerobas draws over the cursor's row and leaves the
+      cursor there. Fix in the C-BIOS repack's DSPFNK.
+
+- [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
+      🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
+      2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md R-K-AF and docs/bios/CLS.md R-CP-AF
+      ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) state the VG-8020's values per case (DSPFNK 00 / 44, ERAFNK 28 / BB,
+      CLS 00 / 54, POSIT 24 / 30 ...); zerobas's differ in almost every case. Not published values: match them only if
+      cheap. CHGET's are D-CHGETEI.
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
