@@ -1,0 +1,20 @@
+
+===== BDOSX2 (build_bdosx2_disk.py) =====
+  FAIL  BDOSX2 capture 0x0340:0x78: BYTE DIFF (119 byte(s); only 48 enumerated by the probe — too large to allowlist-verify, treated as real; regs: SP, AF, BC, DE, HL, IX, IY)
+    --- probe tail ---
+    0368: stock=7E ours=2E
+    0369: stock=2F ours=00
+    036A: stock=77 ours=FF
+    036B: stock=BE ours=2E
+    036C: stock=2F ours=00
+    036D: stock=77 ours=00
+    036E: stock=20 ours=FF
+    036F: stock=09 ours=00
+    ... (+71 more)
+    diff runs: 0340-039E, 03A0-03B7
+
+  register diffs: SP, AF, BC, DE, HL, IX, IY
+
+===== BDOSX acceptance: 0/1 gated differentials converged (0 screen skipped) =====
+DIVERGENCE — the BDOS surface no longer matches stock:
+  - BDOSX2 capture 0x0340:0x78: BYTE DIFF (119 byte(s); only 48 enumerated by the probe — too large to allowlist-verify, treated as real; regs: SP, AF, BC, DE, HL, IX, IY)

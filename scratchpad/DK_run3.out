@@ -1,0 +1,6 @@
+
+===== BDOSX2 (build_bdosx2_disk.py) =====
+  PASS  BDOSX2 capture 0x0340:0x78: 0-byte-diff (anchor t=32.2 ≥ keys-at; stock 32.2 s, ours 32.2 s)
+
+===== BDOSX acceptance: 1/1 gated differentials converged (0 screen skipped) =====
+ALL CONVERGED — the BDOS surface still matches the stock oracle byte-for-byte.

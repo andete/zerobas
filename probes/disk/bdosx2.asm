@@ -127,11 +127,19 @@ const_poll:
                 ld      (ix+0), $08
                 call    snap
 
-                ; --- record 11: $06 DIRIO input direction (E=$FF); queue is
-                ;     now drained by records 8-10 -> deterministic A=$00 ---
+                ; --- record 11: $06 DIRIO input direction (E=$FF) WITH A KEY WAITING:
+                ;     the 4th staged char ('w'), left by records 8-10 -- the usual key
+                ;     poll of a game or .COM program (D-DISKCONTRACT gap 5, 2026-11-17;
+                ;     before, 3 chars were staged and this record saw a drained queue) ---
+                ;     POLLED until it answers non-zero: DIRIO input does not wait, and 'w' is
+                ;     typed after 'z' -- a single call agreed on BOTH machines with A = 0, the key
+                ;     not yet there (scratchpad/DK_ours.out record 11), so it never saw a key.
+dirio_poll:
                 ld      e, $FF
                 ld      c, $06
                 call    BDOS
+                or      a
+                jr      z, dirio_poll
                 ld      ix, regs+11*8
                 ld      (ix+0), $06
                 call    snap
@@ -151,8 +159,21 @@ const_poll:
                 ld      (ix+0), $06
                 call    snap
 
-done:
-                jr      done                    ; self-loop; the disk_probe_diff.py `capture --at
+                ; --- record 14: $06 DIRIO input, now DRAINED -> A = $00 (the case record
+                ;     11 measured before gap 5 moved it to a waiting key) ---
+                ld      e, $FF
+                ld      c, $06
+                call    BDOS
+                ld      ix, regs+14*8
+                ld      (ix+0), $06
+                call    snap
+                jp      done                    ; the anchor sits at a FIXED $0330 (below)
+
+; (D-DISKCONTRACT gap 5, 2026-11-17: when record 14 moved `done` to $0205, the stock
+;  CF-3300 "reached" it at t = 14.8 s DURING BOOT -- its own code passes there and the
+;  $0102 byte matched -- and the capture read boot RAM (scratchpad/DK_stock.out). The
+;  anchor is pinned high, away from the program's growth.)
+                   ; self-loop; the disk_probe_diff.py `capture --at
                                                 ; <done> --arm-check-val` anchor (arm-gated on
                                                 ; $0102 == BDOSX2.COM's own 3rd byte, so the count
                                                 ; only starts once BDOSX2.COM -- not COMMAND.COM's
@@ -174,7 +195,10 @@ snap:
                 ret
 
 ; ---------------------------------------------------------------------------
-; regs (14 records x 8 B); no FCB/data buffer needed by this program.
+; regs (15 records x 8 B); no FCB/data buffer needed by this program.
 ; ---------------------------------------------------------------------------
+                ds      $0330 - $, $00
+done:
+                jr      done                    ; the capture anchor, pinned at $0330
                 ds      $0340 - $, $00
-regs:           ds      14*8                    ; $0340-$03AF
+regs:           ds      15*8                    ; $0340-$03B7

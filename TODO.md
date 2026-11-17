@@ -16635,7 +16635,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       DISKVE handler. The CF-3300 calls it twice (A = 0, C = $01 -- write / write-protect, B = 1), then FMAKE A = 0 and WRABS
       A = $FF after Ignore; zerobas NEVER calls it -- FMAKE A = $FF, WRABS A = 0 (SUCCESS on a protected disk)
       ([`XE_stock.out`](scratchpad/XE_stock.out), [`XE_ours.out`](scratchpad/XE_ours.out), [`XE_run1.out`](scratchpad/XE_run1.out)).
-      ➡️ NEXT: D-DISKVE (below); then (4) the $F37D dispatch; (5) console output (DIRIO with a key).
+      ✅ **(5) DIRIO WITH A KEY WAITING, 2026-11-17 -- SAME, no bug.** BDOSX2 stages a 4th key ('xyzw'); record 11 POLLS
+      DIRIO input ($06, E = $FF) until it answers (A = $77 'w' on both), a new record 14 keeps the drained case (A = 0):
+      0-byte-diff ([`DK_run4.out`](scratchpad/DK_run4.out), [`DK_ours2.out`](scratchpad/DK_ours2.out)). TWO APPARATUS TRAPS on the way: record 14 moved `done` to $0205, which
+      the CF-3300's BOOT passes through -- a vacuous anchor at t = 14.8 s reading boot RAM ([`DK_stock.out`](scratchpad/DK_stock.out)); `done` is
+      now pinned at $0330. And a single DIRIO call agreed on both machines with A = 0 -- 'w' was not yet typed -- so
+      it never saw a key ([`DK_ours.out`](scratchpad/DK_ours.out)): a case agreeing for the wrong reason.
+      ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first); (4) the $F37D dispatch; (5)'s console output
+      (screen diffs of CONOUT / STROUT / echo).
 
 - [ ] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
       🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).

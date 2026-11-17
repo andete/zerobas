@@ -78,8 +78,8 @@ def main() -> int:
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
           f"--at {done_addr:#06x} --arm-check-val {sig:#04x} "
-          "--keys2 'xyz' --keys2-at 32 --settle 50 --machine both "
-          f"--mem 0x0340:0x70 --diska {args.out}")
+          "--keys2 'xyzw' --keys2-at 32 --settle 50 --machine both "
+          f"--mem 0x0340:0x78 --diska {args.out}")
     return 0
 
 
