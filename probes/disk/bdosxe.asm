@@ -11,6 +11,9 @@
 ; (build_bdosxe_disk.py leaves the image read-only; openMSX mounts it protected):
 ;   record 0: $16 FMAKE "WPTEST  TMP"  -- the directory write fails
 ;   record 1: $30 WRABS sector 20, 1 sector, drive 0
+;   record 2: $2F RDABS sector 1440 -- past the 720 KB disk's last cylinder: a READ error
+; Each call's answer comes from `answers` (index = the call's number; the builder can
+; patch it, default all 0 = Ignore), so the same program measures Ignore and Retry.
 ; The handler records the registers it is entered with (A, B, C, D, E, H, L -- 8 B a
 ; call, up to 6 calls) and answers C = 0 (Ignore), so the BDOS returns to us; each
 ; BDOS return is snapped as the other exercisers do. We do not posit what either side
@@ -57,6 +60,17 @@ start:
                 ld      (ix+0), $30
                 call    snap
 
+                ; --- record 2: $2F RDABS sector 1440 (a read error) into wrpat ---
+                ld      de, 1440
+                ld      hl, $0100               ; H = 1 sector, L = drive 0
+                ld      c, $2F
+                ld      ix, regs+2*8
+                push    ix
+                call    BDOS
+                pop     ix
+                ld      (ix+0), $2F
+                call    snap
+
 done:
                 jr      done                    ; self-loop; capture --at <done>
 
@@ -93,10 +107,18 @@ handler:
                 ld      (hptr), hl
                 inc     a
                 ld      (hcount), a
-                ld      hl, (hsave)
                 cp      6
-                ld      c, 0                    ; Ignore
-                ret     c
+                jr      nc, h_abort             ; the hang guard
+                ld      hl, answers-1
+                push    de
+                ld      e, a
+                ld      d, 0
+                add     hl, de                  ; answers[call index] (B, D, E kept)
+                pop     de
+                ld      c, (hl)
+                ld      hl, (hsave)
+                ret
+h_abort:        ld      hl, (hsave)
                 ld      c, 2                    ; Abort (the hang guard)
                 ret
 
@@ -147,14 +169,15 @@ snap:
                 ret
 
 ; ---------------------------------------------------------------------------
-; data -- regs, hrec and hcount are CONTIGUOUS: one capture block (2*8 + 6*8 + 1 B)
+; data -- regs, hrec and hcount are CONTIGUOUS: one capture block (3*8 + 6*8 + 1 B)
 ; ---------------------------------------------------------------------------
 name_wptest:    db      "WPTEST  TMP"
 hcell:          dw      handler
 hptr:           dw      hrec
 hsave:          dw      0
+answers:        db      0, 0, 0, 0, 0, 0        ; per call: 0 Ignore, 1 Retry (builder-patched)
 fcb:            ds      37
-regs:           ds      2*8
+regs:           ds      3*8
 hrec:           ds      6*8
 hcount:         db      0
 wrpat:          ds      512

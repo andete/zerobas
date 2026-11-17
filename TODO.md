@@ -16648,6 +16648,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       .COM program writing to a protected disk gets no prompt and a silent FF -- or, for WRABS, SUCCESS. The disk ROM
       has 0 B free: a carve first (Joost: it stays in its allotted space). When it lands, put BDOSXE back in
       disk_bdos_acceptance.py's list.
+      📐 **THE CONTRACT, MEASURED 2026-11-17** (BDOSXE + RDABS sector 1440, answers patchable: `--answers 1,0` = Retry then
+      Ignore; [`XE2_ign_stock.out`](scratchpad/XE2_ign_stock.out), [`XE2_retry_stock.out`](scratchpad/XE2_retry_stock.out), zerobas [`XE2_ign_ours.out`](scratchpad/XE2_ign_ours.out)):
+      on EVERY BDOS DSKIO error the handler is entered with A = the drive (0), C = DSKIO's code | 1 for a write
+      (write-protect write $01, not-ready read $02), B = 1; DE / HL point into the caller (they moved with the program:
+      not contract). Retry re-issues the DSKIO and calls the handler again (4 calls for 3 operations with one Retry).
+      After Ignore: FMAKE goes on and returns A = 0; WRABS / RDABS return A = $FF, B = 1, C = the handler's C, DE = the
+      sector, H = 1, L = $FF. Abort: not yet measured (the program ends; needs a different readout). zerobas: no handler
+      call; FMAKE $FF, WRABS 0, RDABS 8 (DSKIO's raw code).
+      ➡️ DESIGN: one `bdos_dskio` wrapper for the BDOS's own DSKIO calls (write_sector, read_sector, RDABS, WRABS --
+      never the published $4010, whose raw codes PHYDIO / Disk BASIC expect): save the inputs, call dskio, on Cy build
+      A / B / C, call through (DISKVE), loop on 1, warm-boot on 2, return per the Ignore rules above. Then price it
+      and carve (disk ROM 0 B free).
 
 - [ ] **D-DSKIOCYL — DSKIO ON A CYLINDER PAST THE LAST ANSWERS 8 (RECORD NOT FOUND); THE CF-3300 ANSWERS 2 (NOT READY)**
       🎚️ TIER 6 — every error (a sector past the media's end; filed 2026-11-17, D-DISKCONTRACT gap 2).

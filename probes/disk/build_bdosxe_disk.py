@@ -33,7 +33,7 @@ import probe_tmp  # noqa: E402  (every scratch file under the project's temp roo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "bdosxe.asm")
-SYM_NAMES = ("done", "regs", "hcount")
+SYM_NAMES = ("done", "regs", "hcount", "answers")
 
 
 def assemble(tmp_dir: str) -> tuple[bytes, dict]:
@@ -52,8 +52,12 @@ def assemble(tmp_dir: str) -> tuple[bytes, dict]:
     return open(com, "rb").read(), addrs
 
 
-def build(dos_src: str, out: str, tmp_dir: str) -> dict:
+def build(dos_src: str, out: str, tmp_dir: str, answers=()) -> dict:
     com_bytes, addrs = assemble(tmp_dir)
+    com = bytearray(com_bytes)
+    for i, a in enumerate(answers):             # the handler's answer per call (0 / 1)
+        com[addrs["answers"] - 0x100 + i] = a
+    com_bytes = bytes(com)
     if os.path.exists(out):                       # a previous run left it read-only
         os.chmod(out, stat.S_IRUSR | stat.S_IWUSR)
     shutil.copyfile(dos_src, out)
@@ -64,7 +68,7 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     os.chmod(out, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)   # write-protected mount
     addrs["sig"] = com_bytes[2]                   # byte at $0102 (resident-program arm)
     addrs["len"] = addrs["hcount"] + 1 - addrs["regs"]
-    if addrs["len"] != 2 * 8 + 6 * 8 + 1:
+    if addrs["len"] != 3 * 8 + 6 * 8 + 1:
         sys.exit(f"regs / hrec / hcount are not contiguous ({addrs['len']} B)")
     return addrs
 
@@ -78,11 +82,13 @@ def main() -> int:
     os.makedirs(probe_tmp.BASE, exist_ok=True)
     ap.add_argument("--out", default=os.path.join(probe_tmp.BASE, "zerobas_bdosxe.dsk"))
     ap.add_argument("--tmp-dir", default=probe_tmp.BASE)
+    ap.add_argument("--answers", default="", help="the handler's answer per call, e.g. 1,0")
     args = ap.parse_args()
-    addrs = build(args.dos_disk, args.out, args.tmp_dir)
+    addrs = build(args.dos_disk, args.out, args.tmp_dir,
+                  [int(x) for x in args.answers.split(",") if x != ""])
     print(f"built {args.out} (read-only)")
     print(f"done = {addrs['done']:#06x}")
-    print(f"regs = {addrs['regs']:#06x} ({addrs['len']} B: 2 BDOS returns, 6 handler slots, the count)")
+    print(f"regs = {addrs['regs']:#06x} ({addrs['len']} B: 3 BDOS returns, 6 handler slots, the count)")
     print()
     print("next: python3 probes/disk/disk_probe_diff.py capture "
           f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --settle 90 "

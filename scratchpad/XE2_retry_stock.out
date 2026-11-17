@@ -1,0 +1,14 @@
+=== capture: regs+mem at occurrence #1 of 0x0162 ===
+  STOCK reached anchor  t=18.1531
+
+  reg   STOCK
+  PC    0162
+  SP    D529
+  AF    FFBB
+  BC    0102
+  DE    05A0
+  HL    01FF
+  IX    022D
+  IY    ED35
+
+  memory 0x021d+73: 16 00 00 00 02 18 00 00 30 FF 01 01 00 14 01 FF 2F FF 01 02 05 A0 01 FF 00 01 01 01 ED 01 64 00 00 01 01 01 ED 01 64 01 00 01 01 01 ED 01 64 02 00 01 02 01 ED 01 64 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 04
