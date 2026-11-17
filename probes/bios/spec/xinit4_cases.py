@@ -15,7 +15,7 @@ value is itself a constant). XINIT3 varies them. ONE case list that GENERATES pr
 and DECODES its run:
 
     python3 probes/bios/spec/xinit4_cases.py --gen
-    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit4.asm --row nodisk > scratchpad/XINIT4_run3.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit4.asm --row nodisk > scratchpad/XINIT4_run4.out
 
 The setup is XINIT's (xinit_cases.py's docstring), with two inputs per case instead of constants:
   - `rgg`: RG0SAV..RG7SAV := rgg ($A5 as XINIT, $5A, or $A7: R1's size bit set);
@@ -77,6 +77,10 @@ def _cases():
     add(INITXT, 40, 1, lab=2)
     add(INITXT, 33, 1, lab=2)
     add(INIT32, 32, 1, fg=0xCA)
+    # run 4 (the sixth review): widths 5n + 4, where "slot - 1" and "width / 5 - 1" differ, with labels that bind
+    add(INITXT, 39, 1, lab=2)
+    add(INIT32, 24, 1)
+    add(INIT32, 19, 1)
     return out
 
 

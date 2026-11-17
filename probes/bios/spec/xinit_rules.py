@@ -122,7 +122,7 @@ def cases():
         cs3 = X3.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t3).group(1)))
         for c in cs3:
             c.src, c.id = "XJ", f"XJ {c.idx:02}"
-        t4 = open(os.path.join(ROOT, "scratchpad", "XINIT4_run3.out")).read()
+        t4 = open(os.path.join(ROOT, "scratchpad", "XINIT4_run4.out")).read()
         cs4 = X4.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t4).group(1)))
         for c in cs4:
             c.src, c.id = "XJ4", f"XJ4 {c.idx:02}"
@@ -307,9 +307,9 @@ RULES = [
          "−253, INIT32's −251 at 255). Width 0: R-I-W0.", edge4,
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.vsum, bytes(c.row13).hex(), bytes(c.lastrow).hex(),
                     bytes(c.rowc).hex()) == EDGE4[c.idx] and bytes(c.col).hex() == EDGE4COL[c.idx]),
-    Rule("R-I-W0", B, "Width 0 with the key line on: the name table is NOT cleared to spaces but filled mostly with 0 "
-         "and $FF pairs (INITXT: name sum 582, the 64-byte tail 8160; INIT32: 54388, its tail 24494 and sprite sum "
-         "8174 too), and something is written outside the tables -- the cells and these sums the same in XINIT run 4 "
+    Rule("R-I-W0", B, "Width 0 with the key line on: the name table is NOT cleared to spaces -- the two rows read hold "
+         "0 and $FF pairs, and its sum (INITXT 582, INIT32 54388; the 64-byte tail 8160, INIT32's tail 24494 and "
+         "sprite sum 8174) shows other bytes too -- and something is written outside the tables -- the cells and these sums the same in XINIT run 4 "
          "and XINIT4's three runs. NOT reproduced: the whole-VRAM sum (each run differs) and INIT32's colour table "
          "(1375 vs 960 between the probes: its bytes are copies of RAM the probe does not set) -- declared UNSTABLE.",
          w0key_any,
@@ -332,8 +332,9 @@ RULES = [
          lambda c: not xj(c) and c.key and c.width not in (0, 1, 80, 255),
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.row13, c.lastrow) == key_ref(c)),
     Rule("R-I-KEYEDGE", B, "Key line on with width 1, 80 or 255: as the reference leaves it. Width 1 / 80: row 13 "
-         "blank (80: labels elsewhere, the name sum 30951); width 255: labels from column 22 (INITXT) / 18 (INIT32) "
-         "of row 13. (Width 0: R-I-W0.)",
+         "blank (80: the name sum moves +231 -- more than spaces and labels could, so bytes below $20 are written "
+         "too; where is not read); width 255: labels from column 22 (INITXT) / 18 (INIT32) of row 13, 16 cells apart "
+         "(FNKSTR's stride, not the formula's slot). (Width 0: R-I-W0.)",
          lambda c: not xj(c) and c.key and c.width in (1, 80, 255),
          lambda c: (c.namesum, c.colsum, c.tailsum, c.atrsum, c.row13, c.lastrow) == key_ref(c)),
     Rule("R-I-FONT", B, "The pattern table holds the font (the VG-8020's sums to 31375).",

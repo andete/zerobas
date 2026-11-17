@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `DSPFNK` ($00CF) — show the function-key line
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews. Measured on the Philips VG-8020 by
+> **Spec:** FINAL (2026-11-18), the core rule: the fourth review's pass was CLEAN (docs/spec-method.md
+> §7); the open items stay [A] and do not hold up the fixes. After three earlier test-writer reviews. Measured on the Philips VG-8020 by
 > calling the call directly, the inputs written by the probe to several values. The page states ERAFNK
 > ($00CC, erase the key line) and FNKSB ($00C9, show it if it is on) too: the three share the key line.
 > [ERAFNK's](ERAFNK.md) and [FNKSB's](FNKSB.md) pages point here.
@@ -17,7 +18,8 @@ row CRTCNT, inside the width's span. If the cursor is ON that row, it first scro
 by one, LINTTB with them, and moves the cursor up. `ERAFNK` turns it off (CNSDFG := 0), clears that
 span, marks the row in LINTTB, and returns LINLEN in A. All three draw where the mode's call set the
 name table up, not where TXTNAM points later. `FNKSB` draws the line when CNSDFG is non-zero and, when it is 0, changes nothing on the screen or in
-the work area (only A / F).
+the work-area cells read (CNSDFG, CRTCNT, the cursor, LINLEN, SCRMOD, LINL40 / LINL32, LINTTB); only
+A / F.
 In SCREEN 2 all three only set the flag.
 
 zerobas does all of it the same, apart from:
@@ -74,9 +76,9 @@ the run.
   - POSIT with CNSDFG 2 / $80, and CRTCNT 13 with $FF;
   - TXTNAM / T32NAM changed AFTER INITXT / INIT32.
 - A / F on return are the one exception to "from the case's inputs alone": R-K-AF checks them against
-  the reference's own per-case values (ERAFNK's F BB / B3 / 9B at widths 40 / 37–32 / 29 is not
-  modelled).
-- **[XS5 n]**: the second confirming pass's XSCR5 ([`XSCR5_run1.out`](../../scratchpad/XSCR5_run1.out),
+  the reference's own per-case values (ERAFNK's F, BB / B3 / 9B at the measured widths 40 / 37 / 32 /
+  29, is not modelled: it may copy LINLEN's bits 5 / 3, $93 OR (LINLEN AND $28), unseparated).
+- **[XS5 n]**: the second confirming pass's XSCR5 ([`XSCR5_run2.out`](../../scratchpad/XSCR5_run2.out),
   `probes/bios/spec/xscr5_cases.py`). LINLEN set after the mode's call, separating "LINLEN as found"
   from "the width the mode's call was given". Also ERAFNK / FNKSB with TXTNAM changed late, DSPFNK
   with T32NAM changed late, and FNKSB in SCREEN 2 read whole.
@@ -155,6 +157,9 @@ Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen —
 - **[A]** The scroll in SCREEN 1, and DSPFNK's scroll with CNSDFG already non-zero (FNKSB with
   CNSDFG 1 does scroll); SCREEN 2 with the cursor on row CRTCNT; "one row higher nothing scrolls" at
   CRTCNT 13; FNKSB / ERAFNK with T32NAM moved before the mode's call.
+- **[A]** The label cut in cells vs bytes with several $01 prefixes in one label; a $01 before the
+  terminator with non-zero bytes after it; FNKSB's scroll at CRTCNT 13; ERAFNK / FNKSB with T32NAM
+  changed after INIT32; FNKSTR / FNKFLG after the calls (not read back).
 - **[A]** Entry HL / BC / DE for the key calls; NAMBAS vs RG2SAV as "the base the mode's call set
   up" (they coincide in every late case).
 - **[A]** A scroll's rows other than 1, 12, CRTCNT − 1, CRTCNT and 24 are read only through sums (at

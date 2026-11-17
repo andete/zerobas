@@ -13,7 +13,7 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / FILVRM.
 ;
 ; @cap C000
-; @caplen 224E
+; @caplen 2503
 ; @timeout 300
 
 RDVRM   equ     $004A
@@ -36,7 +36,7 @@ FNKSTR  equ     $F87F
 
 DONE    equ     $C000
 CAP     equ     $C001
-CAPLEN  equ     8782
+CAPLEN  equ     9475
 ptr     equ     $EF00
 tptr    equ     $EF02
 ccall   equ     $EF04
@@ -536,4 +536,7 @@ cases:
                 db      $6C, 40, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 2, $A5   ; INITXT width 40 key on copies $A5 CRTCNT 13 10-char labels
                 db      $6C, 33, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 2, $A5   ; INITXT width 33 key on copies $A5 CRTCNT 13 10-char labels
                 db      $6F, 32, 1, 0, 202, 4, 7, 0, 0, $A5, 13, $5A, 0, $A5   ; INIT32 width 32 key on copies $A5 CRTCNT 13 FORCLR CA
+                db      $6C, 39, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 2, $A5   ; INITXT width 39 key on copies $A5 CRTCNT 13 10-char labels
+                db      $6F, 24, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 0, $A5   ; INIT32 width 24 key on copies $A5 CRTCNT 13
+                db      $6F, 19, 1, 0, 15, 4, 7, 0, 0, $A5, 13, $5A, 0, $A5   ; INIT32 width 19 key on copies $A5 CRTCNT 13
                 db      $FF
