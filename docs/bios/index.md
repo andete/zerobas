@@ -40,8 +40,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INITXT.md) | 4 | D-KEYLINESHIFT, D-LINTTBVAL, D-BIOSINT |
-| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 1](INIT32.md) | 0 | D-KEYLINESHIFT, D-LINTTBVAL |
+| $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](INITXT.md) | 8 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL, D-BIOSINT |
+| $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [DRAFT 2](INIT32.md) | 0 | D-KEYLINESHIFT, D-INITEDGES, D-LINTTBVAL |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |

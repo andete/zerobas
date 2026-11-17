@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""docs/bios/INITXT.md / INIT32.md round 1 (2026-11-17): the XINIT matrix. ONE case list that GENERATES
+"""docs/bios/INITXT.md / INIT32.md round 2 (2026-11-17; round 1's layout is in git history): the XINIT matrix. ONE case list that GENERATES
 the rung's case table (probes/bios/spec/xinit.asm) and DECODES its run.
 
     python3 probes/bios/spec/xinit_cases.py --gen
-    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit.asm --row nodisk > scratchpad/XINIT_run1.out
+    python3 -u probes/bios/biosl_run.py probes/bios/spec/xinit.asm --row nodisk > scratchpad/XINIT_run4.out
 
 Every case is set up NEUTRALLY (docs/spec-method.md §3a: no CHPUT, no call under test):
-  - the published input cells written DIRECTLY: LINL40 / LINL32 (the case's width), CNSDFG (its key
-    line flag), FORCLR / BAKCLR / BDRCLR (its colours), and the screen-table cells TXTNAM .. T32PAT at
-    their published defaults;
+  - the published input cells written DIRECTLY, each SEPARATING (docs/spec-method.md §3a): the call's
+    width cell (LINL40 / LINL32) := the case's width and the OTHER one := 77; CNSDFG := the case's key
+    flag (0, 1, 2, $80, $FF); FORCLR / BAKCLR / BDRCLR := its colours (some above 15); the screen-table
+    cells TXTNAM .. T32PAT := the published defaults or, `tbl`, moved ones (tables2 in xinit.asm);
+  - `vdp`: the VDP entered with R0 := $02 and R1 := $A0 (display off) through WRTVDP;
   - FNKSTR (the 10 function-key strings) := "key0" .. "key9": an INPUT of the key line, which zerobas
     leaves empty at cartridge INIT (scratchpad/XFNK_run1.out) -- without it the key row's difference
     was the setup's (run 1, scratchpad/XINIT_run1.out, kept but not used);
-  - garbage in what the call should set: CSRX := 10, CSRY := 5, LINTTB := $55 x 24, LINLEN := 99, and
-    VRAM $0000-$3FFF filled with $5A (FILVRM, a VDP call not under test);
+  - garbage in what the call should set: CSRX := 10, CSRY := 5, LINTTB := $55 x 24, LINLEN := 99,
+    CRTCNT := 13, RG0SAV..RG7SAV := $A5, and VRAM $0000-$3FFF filled with $5A (FILVRM, a VDP call
+    not under test);
   - PRIOR = 1: INIGRP first (the call is entered from SCREEN 2).
-Then the call (INITXT $006C or INIT32 $006F), and one 54-byte record:
+Then the call (INITXT $006C or INIT32 $006F), and one 130-byte record:
   RG0SAV..RG7SAV (8), SCRMOD, OLDSCR, LINLEN, CRTCNT, CSRX, CSRY, CNSDFG, LINTTB (24),
   sum16 of the name table (960 B in INITXT, 768 in INIT32) at RG2SAV x $400,
   sum16 of the pattern table (2048 B) at RG4SAV x $800,
   sum16 of the colour table (32 B) at RG3SAV x $40,
-  the first 7 cells of the LAST row (the key row) at the name table.
+  sum16 of the rest of the name table's 1 KB block (64 / 256 B),
+  sum16 of the sprite attribute table (128 B) at RG5SAV x $80,
+  the first 40 cells of the LAST row, the first 40 cells of row 13 (CRTCNT's garbage value: the
+  reference draws the key line on row CRTCNT, run 3), and the sentinel $C3.
+The real VDP registers are write-only from the Z80: only their RAM copies are recorded.
 """
 import os
 import re
@@ -32,17 +39,21 @@ from types import SimpleNamespace as NS
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "xinit.asm")
 INITXT, INIT32 = 0x6C, 0x6F
-REC = 54
+REC = 130
+SENT = 0xC3
 
 
 def _cases():
     out = []
 
-    def add(call, width, key=0, prior=0, fg=15, bg=4, bd=7):
+    def add(call, width, key=0, prior=0, fg=15, bg=4, bd=7, tbl=0, vdp=0):
         name = "INITXT" if call == INITXT else "INIT32"
-        out.append(NS(call=call, name=name, width=width, key=key, prior=prior, fg=fg, bg=bg, bd=bd,
-                      what=f"{name} width {width} key {'on' if key else 'off'}"
-                           + (" from SCREEN 2" if prior else "") + (f" colours {fg},{bg},{bd}" if (fg, bg, bd) != (15, 4, 7) else "")))
+        out.append(NS(call=call, name=name, width=width, key=key, prior=prior, fg=fg, bg=bg, bd=bd, tbl=tbl,
+                      vdp=vdp,
+                      what=f"{name} width {width} key {key if key > 1 else ('on' if key else 'off')}"
+                           + (" from SCREEN 2" if prior else "") + (" moved tables" if tbl else "")
+                           + (" display off" if vdp else "")
+                           + (f" colours {fg},{bg},{bd}" if (fg, bg, bd) != (15, 4, 7) else "")))
     for w in (0, 1, 32, 36, 37, 38, 39, 40, 41, 80, 255):
         for k in (0, 1):
             add(INITXT, w, k)
@@ -53,6 +64,16 @@ def _cases():
     add(INIT32, 29, 1, prior=1)
     add(INITXT, 40, 0, fg=1, bg=2, bd=3)
     add(INIT32, 32, 0, fg=1, bg=2, bd=3)
+    # round 2: separating inputs (cases 44 ..)
+    for call, w in ((INITXT, 40), (INIT32, 32)):
+        for k in (2, 0x80, 0xFF):
+            add(call, w, k)
+        add(call, w, 0, fg=0x3A, bg=0xC5, bd=0xF9)
+        add(call, w, 1, fg=0x3A, bg=0xC5, bd=0xF9)
+        add(call, w, 0, tbl=1)
+        add(call, w, 1, tbl=1)
+        add(call, w, 0, vdp=1)
+        add(call, w, 1, prior=1, vdp=1)
     return out
 
 
@@ -64,9 +85,11 @@ def caplen():
 
 
 def table_asm():
-    L = ["; ---- GENERATED by xinit_cases.py --gen: call, width, key, prior, fg, bg, bd; $FF ends ----", "cases:"]
+    L = ["; ---- GENERATED by xinit_cases.py --gen: call, width, key, prior, fg, bg, bd, tbl, vdp; $FF ends ----",
+         "cases:"]
     for c in CASES:
-        L.append(f"                db      ${c.call:02X}, {c.width}, {c.key}, {c.prior}, {c.fg}, {c.bg}, {c.bd}   ; {c.what}")
+        L.append(f"                db      ${c.call:02X}, {c.width}, {c.key}, {c.prior}, {c.fg}, {c.bg}, {c.bd}, {c.tbl}, "
+                 f"{c.vdp}   ; {c.what}")
     L.append("                db      $FF")
     return "\n".join(L) + "\n"
 
@@ -81,15 +104,21 @@ def gen():
 
 
 def decode(block):
+    """REFUSES a block that is not complete or a record without its sentinel: the harness trims trailing
+    zeros, so a short capture padded with zeros would read as real outputs (docs/spec-method.md §3a)."""
     if block[1] != 0xA5:
         sys.exit("FAIL: the XINIT block is not complete")
+    if len(block) < caplen():
+        sys.exit(f"FAIL: the XINIT block is {len(block)} B, {caplen()} expected -- the last record has no sentinel")
     out = []
     for i, c in enumerate(CASES):
         b = list(block[4 + REC * i: 4 + REC * (i + 1)])
+        if b[REC - 1] != SENT:
+            sys.exit(f"FAIL: XINIT record {i} has no sentinel")
         w16 = lambda j: b[j] | (b[j + 1] << 8)                      # noqa: E731
         out.append(NS(**vars(c), idx=i, rg=b[0:8], scrmod=b[8], oldscr=b[9], linlen=b[10], crtcnt=b[11],
                       csrx=b[12], csry=b[13], cnsdfg=b[14], lt=b[15:39], namesum=w16(39), patsum=w16(41),
-                      colsum=w16(43), keyrow=b[45:52]))
+                      colsum=w16(43), tailsum=w16(45), atrsum=w16(47), lastrow=b[49:89], row13=b[89:129]))
     return out
 
 

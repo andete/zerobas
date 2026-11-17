@@ -79,8 +79,8 @@ beginning of".
 | $0062 | CHGCLR | vdp | **FORCLR $F3E9, BAKCLR $F3EA, BDRCLR $F3EB** (named) | screen colours (VDP register not named; repo: RG7SAV changes) | TDB §2.2.1; repo: b2vdp.asm | partly |
 | $0066 | NMI | system | hook **H.NMI $FDD6** ("MSX ROM only provides a RAM hook", §1.3.3) | — | TDB §2.2.1, §1.3.3, §2.2.2 | stated |
 | $0069 | CLRSPR | vdp | **SCRMOD** (named Entry); foreground colour (FORCLR *by description*) | **sprite pattern table (nulls), sprite attribute table (name = plane, colour = foreground, Y = 209)**; table cells not named | TDB §2.2.1 | partly |
-| $006C | INITXT | text | **TXTNAM $F3B3, TXTCGP $F3B7** (named) | screen initialised (VRAM) + VDP set for 40×24; registers not named | TDB §2.2.1; repo: tools/bios_levels.py (all VRAM compared) | partly |
-| $006F | INIT32 | text | **T32NAM $F3BD, T32CGP $F3C1, T32COL $F3BF, T32ATR $F3C3, T32PAT $F3C5** | screen (VRAM) + VDP for 32×24 | TDB §2.2.1 | partly |
+| $006C | INITXT | text | **TXTNAM $F3B3, TXTCGP $F3B7** (named); measured: also TXTCOL / TXTATR / TXTPAT, LINL40, CNSDFG, CRTCNT (the key line's row), FORCLR / BAKCLR, FNKSTR, RG0SAV bit 0 and RG1SAV bits 0–2 | screen initialised (VRAM) + VDP set for 40×24; measured: RG0SAV–RG7SAV, LINLEN, SCRMOD, OLDSCR, CSRX / CSRY, LINTTB, CNSDFG; NOT CRTCNT | TDB §2.2.1; [INITXT.md](INITXT.md) | partly (TDB) + measured |
+| $006F | INIT32 | text | **T32NAM $F3BD, T32CGP $F3C1, T32COL $F3BF, T32ATR $F3C3, T32PAT $F3C5**; measured: also LINL32, CNSDFG, CRTCNT, FORCLR / BAKCLR / BDRCLR, FNKSTR, RG0SAV / RG1SAV bits | screen (VRAM) + VDP for 32×24; measured: as INITXT, plus the colour table and the sprite attribute table | TDB §2.2.1; [INITXT.md](INITXT.md) | partly (TDB) + measured |
 | $0072 | INIGRP | vdp | **GRPNAM $F3C7, GRPCGP $F3CB, GRPCOL $F3C9, GRPATR $F3CD, GRPPAT $F3CF** | screen (VRAM) + VDP, high-res | TDB §2.2.1 | partly |
 | $0075 | INIMLT | vdp | **MLTNAM $F3D1, MLTCGP $F3D5, MLTCOL $F3D3, MLTATR $F3D7, MLTPAT $F3D9** | screen (VRAM) + VDP, multicolour | TDB §2.2.1 | partly |
 | $0078 | SETTXT | vdp | **TXTNAM, TXTCGP** | VDP set for 40×24 | TDB §2.2.1 | partly |
@@ -197,7 +197,7 @@ register, hook-only.
    NSETCX, SCANR / L (graphics). KEYINT's status read uses the same port pair (99H). Programs may
    use the ports directly via ROM $0006 / $0007 (TDB §6).
 8. **Screen-mode table cells: text × vdp.** TXTNAM $F3B3 / TXTCGP $F3B7 are read by INITXT
-   (text) and SETTXT (vdp). T32NAM..T32PAT $F3BD–$F3C5 are read by INIT32 (text) and SETT32 (vdp).
+   (text; measured: TXTCOL / TXTATR / TXTPAT too, into R3 / R5 / R6) and SETTXT (vdp). T32NAM..T32PAT $F3BD–$F3C5 are read by INIT32 (text) and SETT32 (vdp).
 9. **CPU interrupt-enable state: slots × tape × input × system.** The slot entries leave
    interrupts disabled ("never enabled by this routine"). The tape entries "must be entered with
    interrupts disabled" (§2.2.4). BREAKX exists for the interrupts-off case. KEYINT (JIFFY, key

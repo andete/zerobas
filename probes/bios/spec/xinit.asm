@@ -10,11 +10,12 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / FILVRM.
 ;
 ; @cap C000
-; @caplen 094C
+; @caplen 1F80
 ; @timeout 300
 
 RDVRM   equ     $004A
 FILVRM  equ     $0056
+WRTVDP  equ     $0047
 INIGRP  equ     $0072
 LINL40  equ     $F3AE
 LINL32  equ     $F3AF
@@ -32,7 +33,7 @@ FNKSTR  equ     $F87F
 
 DONE    equ     $C000
 CAP     equ     $C001
-CAPLEN  equ     2380
+CAPLEN  equ     8064
 ptr     equ     $EF00
 tptr    equ     $EF02
 ccall   equ     $EF04
@@ -42,6 +43,8 @@ cprior  equ     $EF07
 cfg     equ     $EF08
 cbg     equ     $EF09
 cbd     equ     $EF0A
+ctbl    equ     $EF0B
+cvdp    equ     $EF0C
 rec0    equ     $EF10                   ; the record's start
 
                 org     $4000
@@ -71,16 +74,35 @@ next:
                 cp      $FF
                 jp      z, finish
                 ld      de, ccall
-                ld      bc, 7
+                ld      bc, 9
                 ldir
                 ld      (tptr), hl
                 ld      a, (cprior)
                 or      a
                 call    nz, INIGRP
-                ; the published inputs, written directly
-                ld      a, (cwidth)
+                ; entry VDP state (cvdp): R0 := $02 (M3), R1 := $A0 (display OFF, IE0) through WRTVDP
+                ld      a, (cvdp)
+                or      a
+                jr      z, no_vdp
+                ld      bc, $0200
+                call    WRTVDP
+                ld      bc, $A001
+                call    WRTVDP
+no_vdp:
+                ; the published inputs, written directly. The OTHER call's width gets 77, so a call that
+                ; read the wrong cell shows it (round 1 kept LINL40 = LINL32)
+                ld      a, 77
                 ld      (LINL40), a
                 ld      (LINL32), a
+                ld      a, (ccall)
+                cp      $6C
+                ld      a, (cwidth)
+                jr      nz, w_32
+                ld      (LINL40), a
+                jr      w_done
+w_32:
+                ld      (LINL32), a
+w_done:
                 ld      a, (ckey)
                 ld      (CNSDFG), a
                 ld      hl, cfg
@@ -88,6 +110,11 @@ next:
                 ld      bc, 3
                 ldir
                 ld      hl, tables
+                ld      a, (ctbl)
+                or      a
+                jr      z, t_def
+                ld      hl, tables2
+t_def:
                 ld      de, TXTNAM
                 ld      bc, 20
                 ldir
@@ -104,6 +131,14 @@ next:
                 ld      (CSRY), a
                 ld      a, 99
                 ld      (LINLEN), a
+                ld      a, 13
+                ld      (CRTCNT), a
+                ld      hl, RG0SAV              ; the register COPIES too (round 1 left them as found)
+                ld      b, 8
+gb_rg:
+                ld      (hl), $A5
+                inc     hl
+                djnz    gb_rg
                 ld      hl, LINTTB
                 ld      b, 24
 gb_lt:
@@ -184,7 +219,33 @@ r_nb:
                 add     hl, hl
                 ld      bc, 32
                 call    vsum
-                ; the last row's first 7 cells: name + 23 x 40 (INITXT) / 23 x 32 (INIT32)
+                ; the rest of the name table's 1 KB block: name + 960 / 768, 64 / 256 B
+                ld      hl, (nbase)
+                ld      de, 960
+                ld      bc, 64
+                ld      a, (ccall)
+                cp      $6C
+                jr      z, r_tl
+                ld      de, 768
+                ld      bc, 256
+r_tl:
+                add     hl, de
+                call    vsum
+                ; the sprite attribute table: RG5SAV x $80, 128 B
+                ld      a, (RG0SAV+5)
+                and     $7F
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                ld      bc, 128
+                call    vsum
+                ; the last row's first 40 cells: name + 23 x 40 (INITXT) / 23 x 32 (INIT32)
                 ld      hl, (nbase)
                 ld      de, 920
                 ld      a, (ccall)
@@ -193,7 +254,7 @@ r_nb:
                 ld      de, 736
 r_kr:
                 add     hl, de
-                ld      b, 7
+                ld      b, 40
 r_krl:
                 push    bc
                 push    hl
@@ -203,8 +264,26 @@ r_krl:
                 pop     bc
                 inc     hl
                 djnz    r_krl
-                ld      a, 0                    ; pad to 54
+                ; row 13's first 40 cells (name + 12 x 40 / 12 x 32): the setup's CRTCNT is 13
+                ld      hl, (nbase)
+                ld      de, 480
+                ld      a, (ccall)
+                cp      $6C
+                jr      z, r_13
+                ld      de, 384
+r_13:
+                add     hl, de
+                ld      b, 40
+r_13l:
+                push    bc
+                push    hl
+                call    RDVRM
                 call    emit
+                pop     hl
+                pop     bc
+                inc     hl
+                djnz    r_13l
+                ld      a, $C3                  ; the record's sentinel: a decoder refuses without it
                 call    emit
                 jp      next
 
@@ -257,6 +336,10 @@ nbase:          equ     $EF20
 ; the screen-table cells' published defaults, TXTNAM .. T32PAT (10 words)
 tables:         dw      $0000, $0000, $0800, $0000, $0000, $1800, $2000, $0000, $1B00, $3800
 
+; moved: TXTNAM $1000, TXTCOL $1234, TXTCGP $2800, TXTATR $3456, TXTPAT $3A00 (the last three are
+; not INITXT's: does it touch them?), T32NAM $1C00, T32COL $2FC0, T32CGP $3000, T32ATR $1F80, T32PAT $0800
+tables2:        dw      $1000, $1234, $2800, $3456, $3A00, $1C00, $2FC0, $3000, $1F80, $0800
+
 keys:
                 db      "key0", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 db      "key1", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -269,50 +352,68 @@ keys:
                 db      "key8", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 db      "key9", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-; ---- GENERATED by xinit_cases.py --gen: call, width, key, prior, fg, bg, bd; $FF ends ----
+; ---- GENERATED by xinit_cases.py --gen: call, width, key, prior, fg, bg, bd, tbl, vdp; $FF ends ----
 cases:
-                db      $6C, 0, 0, 0, 15, 4, 7   ; INITXT width 0 key off
-                db      $6C, 0, 1, 0, 15, 4, 7   ; INITXT width 0 key on
-                db      $6C, 1, 0, 0, 15, 4, 7   ; INITXT width 1 key off
-                db      $6C, 1, 1, 0, 15, 4, 7   ; INITXT width 1 key on
-                db      $6C, 32, 0, 0, 15, 4, 7   ; INITXT width 32 key off
-                db      $6C, 32, 1, 0, 15, 4, 7   ; INITXT width 32 key on
-                db      $6C, 36, 0, 0, 15, 4, 7   ; INITXT width 36 key off
-                db      $6C, 36, 1, 0, 15, 4, 7   ; INITXT width 36 key on
-                db      $6C, 37, 0, 0, 15, 4, 7   ; INITXT width 37 key off
-                db      $6C, 37, 1, 0, 15, 4, 7   ; INITXT width 37 key on
-                db      $6C, 38, 0, 0, 15, 4, 7   ; INITXT width 38 key off
-                db      $6C, 38, 1, 0, 15, 4, 7   ; INITXT width 38 key on
-                db      $6C, 39, 0, 0, 15, 4, 7   ; INITXT width 39 key off
-                db      $6C, 39, 1, 0, 15, 4, 7   ; INITXT width 39 key on
-                db      $6C, 40, 0, 0, 15, 4, 7   ; INITXT width 40 key off
-                db      $6C, 40, 1, 0, 15, 4, 7   ; INITXT width 40 key on
-                db      $6C, 41, 0, 0, 15, 4, 7   ; INITXT width 41 key off
-                db      $6C, 41, 1, 0, 15, 4, 7   ; INITXT width 41 key on
-                db      $6C, 80, 0, 0, 15, 4, 7   ; INITXT width 80 key off
-                db      $6C, 80, 1, 0, 15, 4, 7   ; INITXT width 80 key on
-                db      $6C, 255, 0, 0, 15, 4, 7   ; INITXT width 255 key off
-                db      $6C, 255, 1, 0, 15, 4, 7   ; INITXT width 255 key on
-                db      $6F, 0, 0, 0, 15, 4, 7   ; INIT32 width 0 key off
-                db      $6F, 0, 1, 0, 15, 4, 7   ; INIT32 width 0 key on
-                db      $6F, 1, 0, 0, 15, 4, 7   ; INIT32 width 1 key off
-                db      $6F, 1, 1, 0, 15, 4, 7   ; INIT32 width 1 key on
-                db      $6F, 28, 0, 0, 15, 4, 7   ; INIT32 width 28 key off
-                db      $6F, 28, 1, 0, 15, 4, 7   ; INIT32 width 28 key on
-                db      $6F, 29, 0, 0, 15, 4, 7   ; INIT32 width 29 key off
-                db      $6F, 29, 1, 0, 15, 4, 7   ; INIT32 width 29 key on
-                db      $6F, 30, 0, 0, 15, 4, 7   ; INIT32 width 30 key off
-                db      $6F, 30, 1, 0, 15, 4, 7   ; INIT32 width 30 key on
-                db      $6F, 31, 0, 0, 15, 4, 7   ; INIT32 width 31 key off
-                db      $6F, 31, 1, 0, 15, 4, 7   ; INIT32 width 31 key on
-                db      $6F, 32, 0, 0, 15, 4, 7   ; INIT32 width 32 key off
-                db      $6F, 32, 1, 0, 15, 4, 7   ; INIT32 width 32 key on
-                db      $6F, 33, 0, 0, 15, 4, 7   ; INIT32 width 33 key off
-                db      $6F, 33, 1, 0, 15, 4, 7   ; INIT32 width 33 key on
-                db      $6F, 255, 0, 0, 15, 4, 7   ; INIT32 width 255 key off
-                db      $6F, 255, 1, 0, 15, 4, 7   ; INIT32 width 255 key on
-                db      $6C, 39, 1, 1, 15, 4, 7   ; INITXT width 39 key on from SCREEN 2
-                db      $6F, 29, 1, 1, 15, 4, 7   ; INIT32 width 29 key on from SCREEN 2
-                db      $6C, 40, 0, 0, 1, 2, 3   ; INITXT width 40 key off colours 1,2,3
-                db      $6F, 32, 0, 0, 1, 2, 3   ; INIT32 width 32 key off colours 1,2,3
+                db      $6C, 0, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 0 key off
+                db      $6C, 0, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 0 key on
+                db      $6C, 1, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 1 key off
+                db      $6C, 1, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 1 key on
+                db      $6C, 32, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 32 key off
+                db      $6C, 32, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 32 key on
+                db      $6C, 36, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 36 key off
+                db      $6C, 36, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 36 key on
+                db      $6C, 37, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 37 key off
+                db      $6C, 37, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 37 key on
+                db      $6C, 38, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 38 key off
+                db      $6C, 38, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 38 key on
+                db      $6C, 39, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 39 key off
+                db      $6C, 39, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 39 key on
+                db      $6C, 40, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 40 key off
+                db      $6C, 40, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 40 key on
+                db      $6C, 41, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 41 key off
+                db      $6C, 41, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 41 key on
+                db      $6C, 80, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 80 key off
+                db      $6C, 80, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 80 key on
+                db      $6C, 255, 0, 0, 15, 4, 7, 0, 0   ; INITXT width 255 key off
+                db      $6C, 255, 1, 0, 15, 4, 7, 0, 0   ; INITXT width 255 key on
+                db      $6F, 0, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 0 key off
+                db      $6F, 0, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 0 key on
+                db      $6F, 1, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 1 key off
+                db      $6F, 1, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 1 key on
+                db      $6F, 28, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 28 key off
+                db      $6F, 28, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 28 key on
+                db      $6F, 29, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 29 key off
+                db      $6F, 29, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 29 key on
+                db      $6F, 30, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 30 key off
+                db      $6F, 30, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 30 key on
+                db      $6F, 31, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 31 key off
+                db      $6F, 31, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 31 key on
+                db      $6F, 32, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 32 key off
+                db      $6F, 32, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 32 key on
+                db      $6F, 33, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 33 key off
+                db      $6F, 33, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 33 key on
+                db      $6F, 255, 0, 0, 15, 4, 7, 0, 0   ; INIT32 width 255 key off
+                db      $6F, 255, 1, 0, 15, 4, 7, 0, 0   ; INIT32 width 255 key on
+                db      $6C, 39, 1, 1, 15, 4, 7, 0, 0   ; INITXT width 39 key on from SCREEN 2
+                db      $6F, 29, 1, 1, 15, 4, 7, 0, 0   ; INIT32 width 29 key on from SCREEN 2
+                db      $6C, 40, 0, 0, 1, 2, 3, 0, 0   ; INITXT width 40 key off colours 1,2,3
+                db      $6F, 32, 0, 0, 1, 2, 3, 0, 0   ; INIT32 width 32 key off colours 1,2,3
+                db      $6C, 40, 2, 0, 15, 4, 7, 0, 0   ; INITXT width 40 key 2
+                db      $6C, 40, 128, 0, 15, 4, 7, 0, 0   ; INITXT width 40 key 128
+                db      $6C, 40, 255, 0, 15, 4, 7, 0, 0   ; INITXT width 40 key 255
+                db      $6C, 40, 0, 0, 58, 197, 249, 0, 0   ; INITXT width 40 key off colours 58,197,249
+                db      $6C, 40, 1, 0, 58, 197, 249, 0, 0   ; INITXT width 40 key on colours 58,197,249
+                db      $6C, 40, 0, 0, 15, 4, 7, 1, 0   ; INITXT width 40 key off moved tables
+                db      $6C, 40, 1, 0, 15, 4, 7, 1, 0   ; INITXT width 40 key on moved tables
+                db      $6C, 40, 0, 0, 15, 4, 7, 0, 1   ; INITXT width 40 key off display off
+                db      $6C, 40, 1, 1, 15, 4, 7, 0, 1   ; INITXT width 40 key on from SCREEN 2 display off
+                db      $6F, 32, 2, 0, 15, 4, 7, 0, 0   ; INIT32 width 32 key 2
+                db      $6F, 32, 128, 0, 15, 4, 7, 0, 0   ; INIT32 width 32 key 128
+                db      $6F, 32, 255, 0, 15, 4, 7, 0, 0   ; INIT32 width 32 key 255
+                db      $6F, 32, 0, 0, 58, 197, 249, 0, 0   ; INIT32 width 32 key off colours 58,197,249
+                db      $6F, 32, 1, 0, 58, 197, 249, 0, 0   ; INIT32 width 32 key on colours 58,197,249
+                db      $6F, 32, 0, 0, 15, 4, 7, 1, 0   ; INIT32 width 32 key off moved tables
+                db      $6F, 32, 1, 0, 15, 4, 7, 1, 0   ; INIT32 width 32 key on moved tables
+                db      $6F, 32, 0, 0, 15, 4, 7, 0, 1   ; INIT32 width 32 key off display off
+                db      $6F, 32, 1, 1, 15, 4, 7, 0, 1   ; INIT32 width 32 key on from SCREEN 2 display off
                 db      $FF

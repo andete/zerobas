@@ -142,11 +142,19 @@ def run(mod):
     # them), rendered with the reason; they count as accounted for, never as covered
     unread = getattr(mod, "UNREAD", {})
     ids = {c.id: i for i, c in enumerate(ref)}
+    declared = 0
+    unread_diffs = []                        # declared NOT evidence, yet the machines differ there
     for cid, (fields, _why) in unread.items():
         if cid not in ids:
             sys.exit(f"FAIL: UNREAD names {cid}, which is no case")
-        c = ref[ids[cid]]
-        seen[ids[cid]] |= {sl for sl in _slots(c, outputs[c.src]) if sl[0] in fields}
+        i = ids[cid]
+        c = ref[i]
+        sl = {x for x in _slots(c, outputs[c.src]) if x[0] in fields}
+        seen[i] |= sl
+        declared += len(sl)
+        for f in fields:
+            if getattr(ref[i], f) != getattr(zb[i], f):
+                unread_diffs.append(f"{cid} {f}")
     out = []
     for r in mod.RULES:
         idx = [i for i, c in enumerate(ref) if r.select(c)]
@@ -163,6 +171,7 @@ def run(mod):
         miss = slots - seen[i]
         if miss:
             uncovered.append((c.id, sorted(f if j is None else f"{f}[{j}]" for f, j in miss)))
+    run.declared, run.unread_diffs = declared, unread_diffs
     return out, uncovered, total
 
 
@@ -185,9 +194,10 @@ def render(mod, results, uncovered, total):
          f"edit; `python3 tools/spec_rules.py {os.path.relpath(mod.__file__, ROOT)} --write` -->", ""]
     n_ok = sum(1 for _, _, rb, _ in results if not rb)
     n_unc = sum(len(f) for _, f in uncovered)
+    dec = getattr(run, "declared", 0)
     L.append(f"**{len(results)} rules; {n_ok} hold on the reference. Of the {total} recorded outputs (each "
-             f"case's cursor, cells, A, table entries ...), {total - n_unc} are read by a rule's check and "
-             f"{n_unc} are not.**")
+             f"case's cursor, cells, A, table entries ...): {total - n_unc - dec} read by a rule's check, {dec} "
+             f"declared NOT evidence (below), {n_unc} unread.**")
     sec = None
     order = {s_: i for i, s_ in enumerate(sorted({r.section for r, *_ in results},
                                                    key=lambda t: (int(t.split(".")[0]) if t.split(".")[0].isdigit() else 99, t)))}
@@ -234,6 +244,10 @@ def main():
         if false:
             print(f"🔴 spec-rules: {len(false)} rule(s) FALSE on the reference's own data: "
                   + "; ".join(f"{i} ({short(b, 3)})" for i, b in false))
+            return 1
+        if run.unread_diffs:
+            print(f"🔴 spec-rules: outputs declared NOT evidence DIFFER between the machines -- they are "
+                  f"evidence after all, state a rule: {short(run.unread_diffs, 6)}")
             return 1
         if new != text:
             print(f"🔴 spec-rules: {mod.PAGE}'s rule tables are stale -- run with --write")

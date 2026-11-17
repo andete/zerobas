@@ -92,7 +92,18 @@ that was measured (the wraps, the scroll, the edges).
   count, and neither does a check that reads one entry of a list its sentence talks about in full.
   (CHPUT's first "0 uncovered" was hollow for 33 cases and 5,741 outputs; the third review found it.)
   Outputs the setup itself decides are declared in `UNREAD`, with the reason, and rendered on the
-  page: accounted for, never covered.
+  page: accounted for, never covered. The headline counts them apart from what checks read. **An
+  UNREAD output whose value differs between the machines is refused:** it is evidence after all,
+  so state a rule (INITXT: the "colour table" at width 0 was the name table's first row, and the
+  two machines wrote different things there; the first review found it).
+- **A setup must SEPARATE, not only be neutral.** Give every input a distinctive value, and put
+  garbage unlike the expected result into every output. Otherwise "the call uses this input" and
+  "the call writes a constant" look the same. INITXT round 1 kept LINL40 = LINL32, left CRTCNT at
+  24, never garbled the register copies, and used only default screen-table cells and colours
+  below 16: none of those rules could be told from a constant.
+- **A capture ends with a sentinel byte, and the decoder refuses when it is missing.** The harness
+  trims trailing zeros, so a short capture padded with zeros reads as real zero outputs (INITXT
+  run 2 was 2 bytes short).
 - **A probe's setup must not use the call under test.** CHPUT rounds 2 and 3 placed the cursor with
   CHPUT's own `ESC Y`. Where the two machines' `ESC Y` differs, every case STARTED somewhere else,
   so the differences were the setup's. Set the state through other means: VRAM writes, the work-area
