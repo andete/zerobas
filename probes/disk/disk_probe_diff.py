@@ -384,10 +384,16 @@ def mode_capture(args) -> int:
         """Returns (records, run) — the run carries HOW it ended (omsx_session §4.1c)."""
         run = _runner(machine, args.diska, args.symfile)
         who = "ours" if machine == OURS_MACHINE else "stock"
+        swap = ""
+        if getattr(args, "swap_image", ""):          # a fresh copy per machine: the run may write it
+            swap = tempfile.mktemp(suffix=".dsk")
+            shutil.copy2(args.swap_image, swap)
+            _TMP_DISKS.append(swap)
         recs = run.run_job(
             _body(tempfile.mktemp(prefix=f"zb_replay_{who}_")),
             settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at,
+            swap_at=getattr(args, "swap_at", 0.0), swap_image=swap)
         return recs, run
 
     print(f"=== capture: regs{'+mem' if mem else ''} at occurrence #{args.nth} of {args.at:#06x} ===")
@@ -1238,6 +1244,11 @@ def main() -> int:
                             "(tier2-bdos-remaining-spec.md §3)")
         p.add_argument("--keys2-at", type=float, default=0.0, dest="keys2_at",
                        help="emulated time (s) at which to inject --keys2")
+        p.add_argument("--swap-image", default="", dest="swap_image",
+                       help="a disk image to put in drive A at --swap-at (capture only; "
+                            "D-DISKCONTRACT gap 7: a disk SWAP, default off)")
+        p.add_argument("--swap-at", type=float, default=0.0, dest="swap_at",
+                       help="emulated time (s) of the --swap-image swap")
         p.add_argument("--plug-printer", action="store_true", dest="plug_printer",
                        help="plug openMSX `simpl` printer into printerport at init (+ log to "
                             "--printer-log) — for LSTOUT/AUX list-device characterisation; the "

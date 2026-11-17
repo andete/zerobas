@@ -222,7 +222,8 @@ class OmsxRun:
                     timeout: float = 200.0, safety: float = 30.0, arm: str = "",
                     keys: str = "", keys_at: float = 0.0,
                     keys2: str = "", keys2_at: float = 0.0,
-                    stall_timeout: float | None = STALL_TIMEOUT) -> list[str]:
+                    stall_timeout: float | None = STALL_TIMEOUT,
+                    swap_at: float = 0.0, swap_image: str = "") -> list[str]:
         """As `run_job`, but returns the RAW `emit` lines (unparsed). Use this when the
         job emits its own record format (e.g. the differential harness's `CALL`/`BLOCK`
         lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`.
@@ -257,6 +258,10 @@ class OmsxRun:
             inject = f'after time {keys_at:.4f} {{ type "{keys}" }}\n'
         if keys2:
             inject += f'after time {keys2_at:.4f} {{ type "{keys2}" }}\n'
+        if swap_image:
+            # D-DISKCONTRACT gap 7 (2026-11-17): a DISK SWAP at emulated time `swap_at` --
+            # what a program asking for another disk sees through DSKCHG (default off)
+            inject += f'after time {swap_at:.4f} {{ diska {{{swap_image}}} }}\n'
         script = preamble + arm + inject + f"""
 after time {settle:.4f} {{
   if {{[catch {{ {body} }} err]}} {{ emit "ERROR $err"; exit }}
@@ -358,7 +363,8 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
                 timeout: float = 200.0, safety: float = 30.0, arm: str = "",
                 keys: str = "", keys_at: float = 0.0,
                 keys2: str = "", keys2_at: float = 0.0,
-                stall_timeout: float | None = STALL_TIMEOUT) -> list[dict]:
+                stall_timeout: float | None = STALL_TIMEOUT,
+                swap_at: float = 0.0, swap_image: str = "") -> list[dict]:
         """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
         (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
         is responsible for finishing with `exit` or installing a condition that exits.
@@ -369,7 +375,7 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         return [parse_ctx(l) for l in self.run_job_raw(
             body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm,
             keys=keys, keys_at=keys_at, keys2=keys2, keys2_at=keys2_at,
-            stall_timeout=stall_timeout)]
+            stall_timeout=stall_timeout, swap_at=swap_at, swap_image=swap_image)]
 
     # -- composed primitives ----------------------------------------------
     def bisect_locate(self, predicate: str, lo: float, settle: float,

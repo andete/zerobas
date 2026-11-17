@@ -16670,6 +16670,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ **(13) A SECOND GEOMETRY, 2026-11-17.** bdosf37d runs on a 360 KB single-sided image too (media $F8, 2-sector FATs,
       the regions from the image's own BPB; ZB_GEOMETRY=360, both in the gate): all 25 rows, the FCBs, the DTA and the
       whole image SAME (ALLOC 354 clusters on both: [`G3_360.out`](scratchpad/G3_360.out); 720 KB still PASS, [`G3_720.out`](scratchpad/G3_720.out)). No bug.
+      ✅ **(7) A DISK SWAP, 2026-11-17 -- SAME.** The harness can swap drive A mid-run now (disk_probe_diff.py
+      `--swap-image` / `--swap-at`, omsx_session.run_job's `swap_at` / `swap_image`: an `after time` `diska`). New exerciser
+      BDOSXS (in bdos-acceptance): DSKCHG before the swap (B = 1), after it (B = 0 -- "unknown", NOT $FF, on BOTH), then
+      an SFIRST finds SWAPPED.TXT, a file only the new disk holds: 81 B byte-identical ([`XS_stock.out`](scratchpad/XS_stock.out), [`XS_ours.out`](scratchpad/XS_ours.out)).
       ➡️ NEXT: D-DISKVE (TIER 3; a carve by consolidation first).
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**

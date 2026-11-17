@@ -72,6 +72,9 @@ EXERCISERS = [
     # BDOSXK (D-DISKCONTRACT gap 5, D-BUFINECHO, 2026-11-17): CONIN's and BUFIN's ECHO on the
     # screen -- typed `xHelz` BS `lo` Return: BS erases (BS, space, BS), Return echoes CR.
     ("BDOSXK", "build_bdosxk_disk.py"),
+    # BDOSXS (D-DISKCONTRACT gap 7, 2026-11-17): a DISK SWAP mid-run (disk_probe_diff.py
+    # --swap-image): DSKCHG before / after, and an SFIRST for a file only the new disk holds.
+    ("BDOSXS", "build_bdosxs_disk.py"),
     # (BDOSXE, D-DISKCONTRACT gap 2: NOT gated yet -- it DIVERGES, TODO D-DISKVE: our BDOS
     #  never calls a program's DISKVE handler. Run it with `--only BDOSXE` after adding it
     #  back here once D-DISKVE lands.)
