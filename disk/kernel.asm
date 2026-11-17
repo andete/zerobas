@@ -1764,8 +1764,7 @@ k_55DB:
 ; (seldsk_drv_body / curdrv_body -- its contract is in the comment block at the old site, the free
 ; tail; moved here by D-SFIRSTVOL, whose skip needed the bytes there.)
 seldsk_drv_body:
-                ld      a, (DRVCNT)     ; DRVCNT = $F347 = logical-drive count ($02)
-                ret
+                jp      seldsk_set      ; D-DOSDRVB: the body is in the pin-free span
 curdrv_body:
                 ld      a, (CURDRV_CELL) ; CURDRV_CELL = $F247 = current-drive index ($00)
                 ret
@@ -5620,6 +5619,22 @@ bdd_retry:
                 pop     de
                 pop     hl
                 jr      bdos_dskio
+
+; seldsk_set -- BDOS $0E SELDSK: E = the drive (0 A:, 1 B:) -> A = the logical-drive count
+; (DRVCNT, $F347). 🎯 D-DOSDRVB part 1 (2026-11-17): the drive is STORED in $F247 (CURDRV_CELL)
+; as on the CF-3300, so CURDRV answers it (scratchpad/XB_stock.out); it only returned the count.
+; An E past the count leaves $F247 alone (not measured on the reference). Every register but
+; A / F as before.
+seldsk_set:
+                ld      a, (DRVCNT)
+                cp      e
+                ret     c
+                ret     z               ; E >= the count: not a drive
+                push    af
+                ld      a, e
+                ld      (CURDRV_CELL), a
+                pop     af
+                ret
 
 ; 🔴 D-ALIASWCELL (2026-09-23): THE RAW-SECTOR BUFFER IS ~~FSECTOR_BUF~~ FWBUF.
 ; It named FSECTOR_BUF -- main's FILE DATA sector -- so with a file open, DSKI$

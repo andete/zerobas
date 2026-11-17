@@ -16709,6 +16709,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- seldsk_drv_body only returns DRVCNT (~+10 B; 0 B of pad before the $55E6 pin); (2) a default-drive FCB operation
       on B goes through drv_select (D-DSKIB's prompt, already in the ROM for BASIC's paths); (3) the DTA's / FCB's drive
       byte reflects the current drive. Bytes first (the disk ROM's allotted space). When it lands, gate BDOSXB.
+      ✅ **PART (1) LANDED 2026-11-17:** `seldsk_set` (disk/kernel.asm, the pin-free span; the $55DE body is a `jp` now)
+      stores E in $F247 when E < DRVCNT -- BDOSXB on zerobas: $F247 1, CURDRV 1, as the CF-3300
+      ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB_stock.out`](scratchpad/XB_stock.out)). 🔮 hole 15 -> 2 B: HIT. An E past the count leaves $F247 alone -- NOT measured
+      on the reference. Still open: (2) the swap prompt on a default-drive FCB operation on B (no prompt yet) and (3)
+      the DTA's drive byte (ours 1, the CF-3300 2) -- both need bytes (2 B left in front of $75A5); BDOSXB stays ungated.
 
 - [ ] **D-SLACK — A NEW FILE'S NEVER-WRITTEN RECORDS HOLD DIFFERENT GARBAGE**
       🎚️ TIER 6 — every edge (records a program never wrote, inside or past the file's end; filed 2026-11-17).
