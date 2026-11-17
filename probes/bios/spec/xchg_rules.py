@@ -90,14 +90,15 @@ RULES = [
          lambda c: c.getpnt == KEYBUF + (c.off + 1) % 40 and c.putpnt == KEYBUF + (c.off + c.n) % 40),
     Rule("R-G-EI", S1, "CHGET returns with interrupts ENABLED, also when it was entered with them disabled.", chget,
          lambda c: c.iff == 1),
-    Rule("R-G-FLAGS", S1, "Its flags on return are not published; the reference's are 9A (8A with three codes "
-         "waiting), and 4A -- Z set -- when GETPNT wrapped back to KEYBUF.", chget,
+    Rule("R-G-FLAGS", S1, "Its flags on return are not published; the reference's here: 9A, 8A (GETPNT ending at $FB), "
+         "and 4A -- Z set -- when GETPNT wrapped back to KEYBUF (R-G-F2: not the number of codes waiting).", chget,
          lambda c: c.f == CHGET_F[(c.off, c.n)]),
     Rule("R-G-QUIET", S1, "A code waiting, CHGET changes nothing else: no cursor drawn (CSRSW 0 or 1), VRAM, CSRX / "
          "CSRY, CSRSW, CNSDFG and the buffer's bytes as found.", chget, quiet),
     Rule("R-G-WAIT", S1, "With the buffer EMPTY, CHGET waits for a key and returns its code ('Q', 'R' typed), "
          "consuming it (GETPNT = PUTPNT after), with interrupts ENABLED -- also when entered with them disabled: it "
-         "does not hang. With CSRSW 1 the cursor's cell holds its character again after the call (the garbage $5A).",
+         "does not hang. VRAM cells 166 / 167 hold their garbage $5A after the call -- NOT the cursor's cell: the probe "
+         "left the boot width (37, margin 2), so the cursor at column 7 is cell 168; what the wait shows is open.",
          wait, lambda c: (c.stage == 4 and c.a == c.key and c.getlo == c.putlo and c.iff == 1 and c.csrsw_out == 1
                           and (c.cur, c.cur2) == (GB, GB))),
     Rule("R-G-WFLAGS", S1, "Its flags on return after the wait: 9A, as R-G-FLAGS'.", wait, lambda c: c.f == 0x9A),
@@ -110,4 +111,74 @@ RULES = [
     Rule("R-S-EI", S2, "CHSNS too returns with interrupts enabled, also when entered with them disabled.",
          lambda c: c.name == "CHSNS", lambda c: c.iff == 1),
     Rule("R-S-QUIET", S2, "And changes nothing else (as R-G-QUIET), in SCREEN 0 and 2.", lambda c: c.name == "CHSNS", quiet),
+]
+
+
+# ---- round 2: XCHG2 (probes/bios/spec/xchg2_cases.py; scratchpad/XCHG2_run1.out), after the first review
+import xchg2_cases as X2  # noqa: E402
+
+OUTPUTS["XG2"] = ["a", "f_out", "bc", "de", "hl", "ix", "iy", "iff", "getlo", "putlo", "csrx", "csry", "csrsw",
+                  "cnsdfg", "linlen", "keybuf", "before", "after", "vsum", "nchg", "chg"]
+# CHGET's F on return, the reference's, by GETPNT's low byte after the call (neither "codes waiting" nor a compare of
+# that byte with $18 fits all of them: the review's two readings, both refuted by this run)
+CHGET_F2 = {0xF1: 0x9A, 0xF6: 0x9A, 0xFB: 0x8A, 0x05: 0x9B, 0x17: 0x9B, 0x08: 0x8B, 0x09: 0x8B}
+# work-area cells the interrupt's key scan writes, which the probe's comparison did not skip: NEWKEY's last row ($FBEF:
+# the probe's "byte before KEYBUF" -- its own mistake, it is a key-matrix cell) and INTCNT's high byte ($FCA3)
+SCAN = {0xFBEF, 0xFCA3}
+
+_cases1 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases1()
+    t = open(os.path.join(ROOT, "scratchpad", "XCHG2_run1.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        for c in X2.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
+            c.src, c.id = "XG2", f"XG2 {c.idx:02}"
+            out[who].append(c)
+    return out
+
+
+def g2(c):
+    return c.src == "XG2"
+
+
+def g2_buf(c):
+    buf = [KB_GB] * 40
+    for k in range(c.n):
+        buf[(c.off + k) % 40] = c.codes[k]
+    return buf
+
+
+def g2_quiet(c):
+    """Registers kept, nothing on the screen, the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found, and of
+    the work area only the key scan's cells changed."""
+    return ((c.bc, c.de, c.hl, c.ix, c.iy) == (0x1357, 0x9BDF, 0x2468, 0x4321, 0x8765) and c.vsum == (GB * 16384) & 0xFFFF
+            and c.keybuf == g2_buf(c) and c.after == 0xA5 and c.before in (0xA5, 0xFF)
+            and (c.csrx, c.csry, c.csrsw, c.linlen) == (c.x, c.y, 1, 40) and c.cnsdfg == (255 if c.cns else 0)
+            and set(c.chg) <= SCAN and c.nchg == len(c.chg))
+
+
+for _r in RULES:
+    _r.select = (lambda s: (lambda c: not g2(c) and s(c)))(_r.select)
+
+S3 = "3. Round 2: the inputs separated (XCHG2)"
+
+RULES += [
+    Rule("R-G-CODE2", S3, "With every register garbage and A $A7 on entry (unlike the VRAM garbage), CHGET returns the "
+         "code at GETPNT in A, GETPNT advanced by one (wrapping), PUTPNT unchanged, and interrupts ENABLED -- whatever "
+         "the flags on entry ($00 / $FF) and whether interrupts were on.", lambda c: g2(c) and c.name == "CHGET",
+         lambda c: (c.a == c.codes[0] and c.getlo == (KEYBUF + (c.off + 1) % 40) & 0xFF
+                    and c.putlo == (KEYBUF + (c.off + c.n) % 40) & 0xFF and c.iff == 1)),
+    Rule("R-G-F2", S3, "CHGET's F (not published) depends on where GETPNT ends: 9A at $F1 / $F6, 8A at $FB, 9B at $05 / "
+         "$17, 8B at $08 / $09 (and 4A after wrapping to $F0, R-G-FLAGS). It is NOT 'the number of codes waiting' (one "
+         "code at offset 10 gives 8A) nor a compare of GETPNT's low byte with $18 (that gives A2 there): the reference's "
+         "values, not modelled.", lambda c: g2(c) and c.name == "CHGET", lambda c: c.f_out == CHGET_F2[c.getlo]),
+    Rule("R-S-COUNT2", S3, "CHSNS: A = PUTPNT − GETPNT (low bytes) with the flags of that subtraction, whatever the "
+         "flags on entry; pointers unchanged; interrupts enabled.", lambda c: g2(c) and c.name == "CHSNS",
+         lambda c: (c.a == (c.putlo - c.getlo) & 0xFF and c.f_out == sub_flags(c.putlo, c.getlo)
+                    and c.getlo == (KEYBUF + c.off) & 0xFF and c.iff == 1)),
+    Rule("R-GS-QUIET2", S3, "Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor "
+         "at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of "
+         "the whole work area change only the key scan's cells (the interrupt ran).", g2, g2_quiet),
 ]
