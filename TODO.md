@@ -17044,6 +17044,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       caller's IY and the page; zerobas's CALSLT passes the caller's. After the call both return the target's IY.
       CALLF publishes IY as destroyed; the values are not published. Priced when picked up.
 
+- [ ] **D-LPTOUTF — LPTOUT RETURNS AN OR'S FLAGS ON A; THE VG-8020'S AN AND'S (H SET)**
+      🎚️ TIER 6 — every edge (a program testing H after LPTOUT; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/LPTOUT.md R-LO-F ([`XLPT_run2.out`](scratchpad/XLPT_run2.out),
+      [`XLPT_run2d.out`](scratchpad/XLPT_run2d.out)): for every byte value the VG-8020's F after LPTOUT is a logical
+      result's on A with H set, the carry clear; zerobas's the same with H clear. The printer receives the same 256
+      bytes on both, and A and the registers are kept on both. Aborted by CTRL + STOP (R-LO-ABORTF,
+      [`XLPT3_run1.out`](scratchpad/XLPT3_run1.out)) both set the carry, but the VG-8020's F is $01 and zerobas's $A9.
+      Only the carry (aborted) is published. Priced when picked up.
+
 - [ ] **D-CHRGTRSKIP — CHRGTR SKIPS ONLY THE SPACE; THE VG-8020'S SKIPS TAB AND LF TOO, AND ITS END-OF-LINE F IS $44**
       🎚️ TIER 6 — every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00;
       filed 2026-11-18).

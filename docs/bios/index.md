@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**29 of 108 calls have a page; 29 are FINAL.**
+**31 of 108 calls have a page; 31 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -59,8 +59,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHGET.md) | 8 | — |
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | — |
-| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
-| $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
+| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | D-LPTOUTF |
+| $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 4 | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | D-TEXTAF |
 | $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF |

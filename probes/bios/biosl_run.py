@@ -11,7 +11,8 @@ Its header comment may carry the harness settings, one per line:
     ; @keys TEXT        typed into the keyboard (openMSX `type`) once the program
                         sets KEYREADY ($E100) to 1 -- after its own KILBUF, so a
                         machine that reaches INIT later loses no key
-    ; @matrix ROW MASK  a raw key-matrix press (keymatrixdown, hex mask) for 0.3 s
+    ; @matrix ROW MASK [ROW MASK ...]  raw key-matrix presses (keymatrixdown, hex masks), all
+                        held together for 0.3 s (e.g. `6 02 7 10`: CTRL + STOP)
                         at KEYREADY -- no `type` logic in between
     ; @vram ADDR:LEN    a VRAM span to compare as well (hex, e.g. 0000:3C0); repeatable
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
@@ -27,6 +28,8 @@ Its header comment may carry the harness settings, one per line:
     ; @tape             a fresh recording from boot (cassetteplayer new); when the
                         program sets TAPEREADY (+$101) to 1 the harness rewinds, plays
                         and acknowledges with 1 at +$102
+    ; @printer          openMSX's printer logger is plugged into the printer port; the bytes the
+                        printer received are reported as `PRN ref:` / `PRN ours:` (hex) and compared
     ; @disk empty       the disk row gets drive A = a fresh copy of disk/empty720.dsk
                         (`make test-dsk`); the NODISK row has no drive
 Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
@@ -94,14 +97,16 @@ ROWS = {
 
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
-         "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN}
+         "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False}
     for m in re.finditer(r"^;\s*@([\w-]+)\s+(.*?)\s*$", asm_text, re.M):
         k, v = m.group(1), m.group(2)
         if k == "keys":
             s["keys"] = v
-        elif k == "matrix":                 # ROW MASK: a raw key-matrix press
-            r, mk = v.split()
-            s["matrix"] = (int(r), int(mk, 16))
+        elif k == "matrix":                 # ROW MASK [ROW MASK ...]: raw key-matrix presses, held together
+            f = v.split()
+            if not f or len(f) % 2:
+                sys.exit(f"FAIL: @matrix wants ROW MASK pairs, got {v!r}")
+            s["matrix"] = [(int(f[i]), int(f[i + 1], 16)) for i in range(0, len(f), 2)]
         elif k == "cap":                    # DONE's address (hex); CAP = +1, KEYREADY = +$100
             s["cap"] = int(v, 16)
         elif k == "caplen":                 # the capture block's length (hex)
@@ -111,6 +116,8 @@ def settings(asm_text: str) -> dict:
             s["type_at"] = (float(t), txt)
         elif k == "tape":                   # record from boot; play on TAPEREADY
             s["tape"] = True
+        elif k == "printer":                # plug the printer logger; report what it received
+            s["printer"] = True
         elif k == "disk":                   # empty: a copy of disk/empty720.dsk
             s["disk"] = v
         elif k == "timeout":
@@ -149,10 +156,10 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
         keys = (f"  if {{$::typed == 0 && [debug read memory {KEYREADY}] == 1}} "
                 f"{{ set ::typed 1; type {{{st['keys']}}} }}\n")
     if st["matrix"]:
-        r, mk = st["matrix"]
+        down = "; ".join(f"keymatrixdown {r} {mk:#x}" for r, mk in st["matrix"])
+        up = "; ".join(f"keymatrixup {r} {mk:#x}" for r, mk in st["matrix"])
         keys += (f"  if {{$::typed == 0 && [debug read memory {KEYREADY}] == 1}} "
-                 f"{{ set ::typed 1; keymatrixdown {r} {mk:#x}; "
-                 f"after time 0.3 {{keymatrixup {r} {mk:#x}}} }}\n")
+                 f"{{ set ::typed 1; {down}; after time 0.3 {{{up}}} }}\n")
     vram = ""
     for i, (va, vn) in enumerate(st["vram"]):
         vram += (f'  binary scan [debug read_block VRAM {va} {vn}] H* vr\n'
@@ -195,9 +202,15 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
         dsk = os.path.join(td, machine + ".dsk")
         shutil.copyfile(src, dsk)
         media = ["-diska", dsk]
+    prn = os.path.join(td, machine + ".prn")
+    plug = ""
+    if st["printer"]:
+        if os.path.exists(prn):
+            os.remove(prn)
+        plug = f"; set printerlogfilename {{{prn}}}; plug printerport logger"
     subprocess.run(omsx_preflight.guarded(
         [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
-        ["-command", "set renderer none; set sound_driver null", "-script", script]),
+        ["-command", "set renderer none; set sound_driver null" + plug, "-script", script]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
     if not os.path.exists(out):
         return None
@@ -205,6 +218,11 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     for line in open(out):
         k, _, v = line.strip().partition(" ")
         got[k] = v
+    if st["printer"]:
+        if not os.path.exists(prn):         # the logger never wrote: no reading, not an empty print
+            got["DONE"] = "no printer log"
+        else:
+            got["PRN"] = open(prn, "rb").read().hex()
     return got
 
 
@@ -268,6 +286,14 @@ def one(rung: str, rows: str) -> int:
                 return b[:end].hex()
             print(f"  CAP ref : {trimmed(ref['CAP'])}")
             print(f"  CAP ours: {trimmed(zb['CAP'])}")
+            if st["printer"]:
+                print(f"  PRN ref : {ref['PRN']}")
+                print(f"  PRN ours: {zb['PRN']}")
+                if ref["PRN"] != zb["PRN"]:
+                    rc = max(rc, 1)
+                    pr, pz = bytes.fromhex(ref["PRN"]), bytes.fromhex(zb["PRN"])
+                    k = next((i for i in range(min(len(pr), len(pz))) if pr[i] != pz[i]), min(len(pr), len(pz)))
+                    print(f"  PRN DIFF: ref {len(pr)} bytes, ours {len(pz)}; first difference at byte {k}")
             zbcap = bytes.fromhex(zb["CAP"])
             CAP = st["cap"] + 1
             unexcused, excused = [], []

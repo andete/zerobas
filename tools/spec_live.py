@@ -108,9 +108,20 @@ def live_run(run_file, td):
         b = bytes.fromhex(zb["CAP"])
         cap = b[:max(32, len(b.rstrip(b"\0")))].hex()
         same = lines[c].split(":", 1)[1].strip() == cap
+        if st["printer"]:
+            pl = [lines[i] for i in range(c, next((i for i in heads if i > c), len(lines)))
+                  if lines[i].startswith("  PRN ours:")]
+            same = same and bool(pl) and pl[0].split(":", 1)[1].strip() == zb["PRN"]
         print(f"  live {os.path.basename(run_file)} {row}: {os.path.basename(asm)} {time.time() - t0:.1f} s, "
               f"zerobas {'as committed' if same else 'CHANGED since the committed run'}")
         lines[c] = f"  CAP ours: {cap}\n"
+        if st["printer"]:                  # the section's `PRN ours:` line, re-measured too
+            end = next((i for i in heads if i > c), len(lines))
+            p = [i for i in range(c, end) if lines[i].startswith("  PRN ours:")]
+            if len(p) != 1:
+                raise SystemExit(f"spec-live: {os.path.relpath(run_file, ROOT)} {row}: @printer but "
+                                 f"{len(p)} `PRN ours` line(s)")
+            lines[p[0]] = f"  PRN ours: {zb['PRN']}\n"
     live = os.path.join(td, os.path.basename(run_file))
     with open(live, "w") as f:
         f.write("".join(lines))
