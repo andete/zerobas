@@ -72,15 +72,17 @@ ROWS = {
     # D-BIOSCONTRACT2 gap 6 (2026-11-14): SETWRT / SETRD answer in the VDP's ADDRESS POINTER,
     # which only registers had been diffed for. SETWRT HL = $1006, then OUR OWN two OUT $98
     # ($C3, $3C: the pointer and its auto-increment); SETRD HL = $1009 over $9A $9B seeded,
-    # then OUR OWN two IN $98 into RAM. DI around call + port I/O: nothing moves the pointer
-    # in between.
+    # then OUR OWN two IN $98 into RAM. SETWRT / SETRD return with interrupts ENABLED on both
+    # machines (D-SETWRTEI, probes/bios/spec/xsetw.asm). The port accesses are spaced by two
+    # EX (SP),HL: back to back (18 T) the emulated TMS9918 drops the first write when it falls in
+    # active display, and the frame phase picked which machine lost it.
     "setwrt": (vfill(0x1000, 16, 0x77),
                [0xF3] + call(SETWRT, [("hl", 0x1006)])
-               + [0x3E, 0xC3, 0xD3, 0x98, 0x3E, 0x3C, 0xD3, 0x98, 0xFB],
+               + [0x3E, 0xC3, 0xD3, 0x98, 0xE3, 0xE3, 0x3E, 0x3C, 0xD3, 0x98, 0xFB],
                [(0x1000, 16)], [], ""),
     "setrd": (vfill(0x1000, 16, 0x77) + vfill(0x1009, 1, 0x9A) + vfill(0x100A, 1, 0x9B),
               [0xF3] + call(SETRD, [("hl", 0x1009)])
-              + [0xDB, 0x98, 0x32, 0x00, 0xC2, 0xDB, 0x98, 0x32, 0x01, 0xC2, 0xFB],
+              + [0xDB, 0x98, 0x32, 0x00, 0xC2, 0xE3, 0xE3, 0xDB, 0x98, 0x32, 0x01, 0xC2, 0xFB],
               [], [(0xC200, 2)], "POKE &HC200,0:POKE &HC201,0"),
 }
 

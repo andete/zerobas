@@ -16898,7 +16898,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and with interrupts ENABLED where the VG-8020's INIFNK returns them disabled).
       Not published values: match them only if cheap. CHGET's are D-CHGETEI.
 
-- [ ] **D-SETWRTEI — SETWRT RETURNS WITH INTERRUPTS ENABLED: A CALLER'S FIRST VRAM WRITE CAN BE LOST TO AN INTERRUPT**
+- [x] **D-SETWRTEI — SETWRT RETURNS WITH INTERRUPTS ENABLED: A CALLER'S FIRST VRAM WRITE CAN BE LOST TO AN INTERRUPT**
       🎚️ TIER 3 — common (a program that calls SETWRT and then OUTs to $98 itself; filed 2026-11-18).
       🤖 **AUTONOMOUS** — C-BIOS's SETWRT (our repack's source, video.asm) ends `EI / RET`. biosvram-acceptance's
       setwrt row (DI, SETWRT $1006, OUT $98 twice) lost its FIRST byte on zerobas once a layout change moved the
@@ -16906,6 +16906,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       7777777777773c77..); the d18bb012 build passed the same row. Two facts to measure before fixing: whether the
       VG-8020's SETWRT / SETRD return with interrupts enabled (read IFF2 after each), and what zerobas's interrupt
       path writes to VRAM (the VG-8020's evidently does not move the VDP address). Same class: SETRD.
+      ✅ **CLOSED 2026-11-18: NOT A BIOS DIFFERENCE; THE ROW WAS THE FLAW.** probes/bios/spec/xsetw.asm run 1
+      ([`XSETW_run1.out`](scratchpad/XSETW_run1.out)): IFF2 is 1 after SETWRT and SETRD on BOTH machines, entered
+      with interrupts off or on, so C-BIOS's `EI` matches the VG-8020. In the same run the VG-8020 lost the first byte
+      instead. Run 2 ([`XSETW_run2.out`](scratchpad/XSETW_run2.out)) put two `EX (SP),HL` between the OUTs, and both
+      machines read c33c. Back to back (18 T), the emulated TMS9918 drops the first write when it falls in active display.
+      The frame phase picked the machine, so the result flipped with layout. biosvram-acceptance's setwrt / setrd rows
+      now space their port accesses the same way, and the row's "DI around call" comment, false since SETWRT
+      re-enables interrupts, is corrected (8/8 SAME).
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
