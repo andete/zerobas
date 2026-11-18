@@ -37,7 +37,7 @@ def writes(c):
 
 
 RULES = [
-    X.vram_rule("CS", S1, "The sprite pattern table -- 2048 bytes from PATBAS ($F926) -- := 0. In the attribute table from "
+    X.vram_rule("CS", S1, "With RG1SAV's bit 7 set (16 KB addressing): the sprite pattern table -- 2048 bytes from PATBAS ($F926) -- := 0. In the attribute table from "
                 "ATRBAS ($F928), sprite k's entry gets Y := $D1 (209), its pattern number := k, or 4 x k when RG1SAV's "
                 "bit 1 is set (16 x 16 sprites -- bit 0, magnification, plays no part: RG1SAV $E1), and its colour := FORCLR as it is (a byte over 15 too: $FF); its X is "
                 "not written. The pattern table is cleared first and the attributes written after it: where the two "
@@ -46,7 +46,7 @@ RULES = [
                 "SCRMOD holds (0, 1, 2, 3, $77, with either sprite size); ATRBAS / PATBAS, not the screen-table cells, give the places in every "
                 "mode measured.", writes),
     Rule("R-CS-R1", S1, "VDP register R#1 := RG1SAV, as the VDP holds it (bit 2 reads 0: RG1SAV $A4; bits 7-5 as they are: "
-         "$82, $A4, $88); the other registers keep their "
+         "$82, $A4, $88; bit 7 clear: $60); the other registers keep their "
          "values, and RG0SAV-RG7SAV, SCRMOD and FORCLR / BAKCLR / BDRCLR are not changed.", ALL,
          lambda c: (c.vdp == tuple((c.crg1 & 0xFB) if k == 1 else v for k, v in enumerate(X.VPRE))
                     and c.sav == (0xA5, c.crg1) + (0xA5,) * 6 and c.scrmod == c.cscr

@@ -45,7 +45,7 @@ def writes(c):
 RULES = [
     Rule("R-CC-R7", S1, "VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, when SCRMOD - 1 is negative as a "
          "signed byte -- SCRMOD 0, $81, $FF; BDRCLR otherwise -- SCRMOD 1, 2, 3, 4, $10, $77, $80. Colours over 15 are used as "
-         "they are (FORCLR $10, BAKCLR $25 give $25, not $05; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD "
+         "they are (FORCLR $10, BAKCLR $25 give $25, not $05; FORCLR $1F, BAKCLR 0 give $F0 -- a shift, not a rotate; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD "
          "and the colour cells are not changed.", ALL,
          lambda c: (c.vdp == X.VPRE[:7] + (r7(c),) and c.sav == (0xA5, c.crg1) + (0xA5,) * 5 + (r7(c),)
                     and c.scrmod == c.cscr and c.colours == (c.fo, c.ba, c.bd))),

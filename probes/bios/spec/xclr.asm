@@ -1,8 +1,9 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 4 (2026-11-18; round 1's fill had every block sum alike; round 2 had
-; cases 0-23 only; round 3 no status read, one interrupt read, and markers that followed entry F): the sprite clear and the colour change. Per case (the
+; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 5 (2026-11-18; round 1's fill had every block sum alike; round 2 had
+; cases 0-23 only; round 3 no status read, one interrupt read, and markers that followed entry F; round 4 cases
+; 0-52): the sprite clear and the colour change. Per case (the
 ; table `cases` at the end: op, F, interrupts, SCRMOD, RG1SAV, FORCLR, BAKCLR, BDRCLR, ATRBAS, PATBAS, cell set, three
 ; window addresses) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := set 0 (the published defaults) or set 1 (moved;
@@ -27,7 +28,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1B00
+; @caplen 1D80
 ; @timeout 120
 ; @vdpsnap E8F0 EF00
 
@@ -74,7 +75,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $1AFF
+                ld      bc, $1D7F
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -605,4 +606,24 @@ cases:
                 dw      $1B00, $3800
                 db      $00
                 dw      $2000, $2010, $0000   ; 52
+                db      $00, $FF, $00, $04, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 53
+                db      $00, $00, $01, $81, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 54
+                db      $00, $FF, $01, $01, $60, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 55
+                db      $01, $00, $00, $00, $E0, $1F, $00, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 56
+                db      $01, $FF, $00, $01, $E0, $1F, $00, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 57
                 db      $FF

@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and VRAM model for CLRSPR / CHGCLR's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XCLR_run4.out (rows N and D; probes/bios/spec/xclr.asm documents the presets, the case table and the
+scratchpad/XCLR_run5.out (rows N and D; probes/bios/spec/xclr.asm documents the presets, the case table and the
 128-byte record). xclrspr_rules.py and xchgclr_rules.py take their op's cases from `load(op)`."""
 import os
 import re
@@ -14,13 +14,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XCLR_run4.out"
+RUN = "XCLR_run5.out"
 ASM = os.path.join(HERE, "xclr.asm")
 REC = 128
 MASK = (0x03, 0xFB, 0x0F, 0xFF, 0x07, 0x7F, 0x07, 0xFF)
 VPRE = (0x00, 0x80, 0x06, 0x80, 0x00, 0x36, 0x07, 0xF4)
 OUTPUTS = {"XC": ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sav", "scrmod", "colours", "vdp", "sums", "w1", "w2",
                   "w3"]}
+# CLRSPR with RG1SAV's bit 7 clear: the reference writes R#1 := RG1SAV before its VRAM writes, so they go through the
+# TMS9918's 4 KB addressing, which the model does not reproduce -- that case's VRAM is not an output (group XC4)
+OUTPUTS["XC4"] = [f for f in OUTPUTS["XC"] if f not in ("sums", "w1", "w2", "w3")]
 
 
 def fill(a):
@@ -61,7 +64,7 @@ def load(op):
                 r = b[1 + REC * i:1 + REC * (i + 1)]
                 m = 0xFF if i & 4 else 0x00          # the marker set: bit 2 of the case number
                 out[who].append(NS(
-                    src="XC", id=f"XC {row}{i:02}", row=row, op=cop, cf=cf, ei=ei, cscr=scr, crg1=rg1,
+                    src="XC4" if cop == 0 and not rg1 & 0x80 else "XC", id=f"XC {row}{i:02}", row=row, op=cop, cf=cf, ei=ei, cscr=scr, crg1=rg1,
                     fo=fo, ba=ba, bd=bd, catr=atr, cpat=pat, t32col=ts[cs][6], cw=(w1, w2, w3), mask=m,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], sav=tuple(r[13:21]), scrmod=r[21],
@@ -88,7 +91,7 @@ def vram_rule(tag, section, text, writes):
     def check(c):
         sums, wins = vram_after(c, writes(c))
         return c.sums == sums and (c.w1, c.w2, c.w3) == wins
-    return Rule(f"R-{tag}-VRAM", section, text, lambda c: True, check)
+    return Rule(f"R-{tag}-VRAM", section, text, lambda c: c.src == "XC", check)
 
 
 def keep_rule(tag, section, text, check):

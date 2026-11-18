@@ -37,9 +37,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CHGMOD.md) | 4 | D-CHGMODRANGE, D-INITXTBAS |
-| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
+| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CLRSPR.md) | 6 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
+| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](CLRSPR.md) | 6 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](INIGRP.md) | 4 | D-SETSHADOW, D-INIREGS |
