@@ -397,8 +397,7 @@ RULES += [
          and (c.psg[7], c.psg[8], c.psg[9], c.psg[10], c.psg[11], c.psg[14]) == (0xB8, 0, 0, 0, 0x0B, 0xCF)),
     Rule("R-IO-QUEUES", S5, "INITIO writes the three voice-queue descriptors into the table QUEUES ($F3F3) points to: "
          "with QUEUES = $9EB7 the 18 bytes there become R-IO-PLAY's descriptors (0, 0, 0, $7F, $F975 / $F9F5 / "
-         "$FA75), and $F959.. keeps its garbage, QUEBAK and the RS-232 descriptor theirs (read after one more "
-         "interrupt). QUEUES itself is left (it is in no case's changed cells). As the boot "
+         "$FA75), and $F959.. keeps its garbage, as do its bytes +18..+27 (read after one more interrupt). QUEUES itself is left (it is in no case's changed cells). As the boot "
          "leaves QUEUES ($F959), rounds 1-4 saw the reset at $F959.", lambda c: c.src == "XI5",
          lambda c: c.q9eb7 == QDESC and c.quetab1[:18] != QDESC
          and c.quetab1[18:] == [(0x5A + k) & 0xFF for k in range(18, 28)]),
@@ -426,22 +425,23 @@ UNSTABLE = {"XI5 1": (["jifb", "jifa"], "the read window's witness, not INITIO's
 
 # ---- round 6: XINITIO6 (probes/bios/spec/xinitio6.asm; scratchpad/XINITIO6_run1.out), after the sixth review ----
 OUTPUTS["XI6"] = ["jifb", "jifa", "qb", "qa", "tb", "ta", "fb", "fa", "musicf"]
-CASES6 = [(0x0000, 0x00, 0x00), (0x9EB7, 0x40, 0x90), (0xA123, 0xC0, 0x10)]      # QUEUES (0 = as found), seeds
+CASES6 = [(0x0000, 0x00, 0x00, 0), (0x9EB7, 0x40, 0x90, 0), (0xA123, 0xC0, 0x10, 0),   # QUEUES (0 = as found),
+          (0xF959, 0x60, 0x60, 0), (0xF959, 0x20, 0x20, 0xFF)]                       # seeds, MUSICF
 _cases5 = cases
 
 
 def cases():                                     # noqa: F811
     out = _cases5()
-    t = open(os.path.join(ROOT, "scratchpad", "XINITIO6_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO6_run3.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
         b += bytes(1 + 125 * len(CASES6) - len(b))
-        for i, (q, qs, fs) in enumerate(CASES6):
+        for i, (q, qs, fs, mus) in enumerate(CASES6):
             r = b[1 + 125 * i: 1 + 125 * (i + 1)]
             if b[0] != 0xA5 or r[124] != 0xC3:
                 sys.exit("FAIL: an XINITIO6 record has no sentinel")
             w = lambda o: r[o] | (r[o + 1] << 8)  # noqa: E731
-            out[who].append(NS(src="XI6", id=f"XI6 {i + 1}", q_in=q, qs=qs, fs=fs, jifb=w(0), jifa=w(2), qb=w(4),
+            out[who].append(NS(src="XI6", id=f"XI6 {i + 1}", q_in=q, qs=qs, fs=fs, mus=mus, jifb=w(0), jifa=w(2), qb=w(4),
                                qa=w(6), tb=list(r[8:36]), ta=list(r[36:64]), fb=list(r[64:92]), fa=list(r[92:120]),
                                musicf=r[120]))
     return out
@@ -462,10 +462,23 @@ RULES += [
          and c.musicf == 0),
     Rule("R-IO-QUEUES6", S6, "INITIO ITSELF writes the descriptors where QUEUES points: with QUEUES $9EB7 or $A123 and its "
          "28-byte table garbage, the table's first 18 bytes become R-IO-PLAY's descriptors (the buffer addresses "
-         "$F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 (the RS-232 descriptor, QUEBAK) keep their "
-         "garbage, $F959.. keeps its own, and QUEUES is kept -- with JIFFY unchanged: no interrupt ran.",
-         lambda c: c.src == "XI6" and c.q_in != 0,
+         "$F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 keep their garbage, $F959.. (the fixed "
+         "$F96B-$F974 included) keeps its own, and QUEUES is kept -- with JIFFY unchanged: no interrupt ran.",
+         lambda c: c.src == "XI6" and c.q_in not in (0, 0xF959),
          lambda c: c.jifb == c.jifa and c.qb == c.qa == c.q_in and c.tb == seeded28(c.qs)
          and c.ta == QDESC + seeded28(c.qs)[18:] and c.fb == c.fa == seeded28(c.fs) and c.musicf == 0),
+    Rule("R-IO-QF959", S6, "With QUEUES at the boot's $F959 and that table garbage, the descriptors are written "
+         "there: the first 18 bytes become R-IO-PLAY's, bytes +18..+27 keep their garbage. (In this run an interrupt "
+         "slipped into the window; XI6 5 shows the same with none: R-IO-MPFF.)",
+         lambda c: c.src == "XI6" and c.q_in == 0xF959 and c.mus == 0,
+         lambda c: c.qb == c.qa == 0xF959 and c.tb == c.fb == seeded28(c.fs)
+         and c.ta == c.fa == QDESC + seeded28(c.fs)[18:] and c.musicf == 0),
+    Rule("R-IO-MPFF", S6, "With MUSICF $FF (every bit) and no interrupt in the window (JIFFY unchanged), INITIO itself "
+         "clears MUSICF -- and writes the descriptors at $F959 as R-IO-QF959.", lambda c: c.src == "XI6" and c.mus,
+         lambda c: c.jifb == c.jifa and c.musicf == 0 and c.qb == c.qa == 0xF959 and c.tb == c.fb == seeded28(c.fs)
+         and c.ta == c.fa == QDESC + seeded28(c.fs)[18:]),
 ]
 
+UNSTABLE["XI6 4"] = (["jifb", "jifa"], "the read window's witness, not INITIO's output: the VG-8020 does not reproduce "
+                                       "it -- no interrupt in scratchpad/XINITIO6_run2.out (JIFFY $BD -> $BD), one in "
+                                       "scratchpad/XINITIO6_run3.out ($BD -> $BE)")

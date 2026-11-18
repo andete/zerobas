@@ -7,6 +7,8 @@
 ;   case 1: the first call after boot -- QUEUES as the boot left it, before and after; QUETAB ($F959, 28 B) before / after.
 ;   case 2: QUEUES := $9EB7, its 28-byte table seeded $40.. and $F959.. seeded $90..; both read before and after.
 ;   case 3: QUEUES := $A123, its table seeded $C0..; $F959.. seeded $10..; both read before and after.
+;   case 4 (run 2): QUEUES := $F959 (the boot's value), its table -- $F959.. itself -- seeded $60..
+;   case 5 (run 3): as case 4, seeded $20.., with MUSICF $FF before the call.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xinitio6.asm --row nodisk
 ; The capture: CAP+0 = $A5 when finished; per case a 125-byte record from CAP+1:
 ;   +0,1 JIFFY before (low, high)  +2,3 JIFFY after  +4,5 QUEUES before  +6,7 QUEUES after
@@ -16,7 +18,7 @@
 ; CLEAN-ROOM: 100% own code; a published BIOS entry, the VDP's published status port, work-area RAM.
 ;
 ; @cap C000
-; @caplen 0180
+; @caplen 0280
 ; @timeout 60
 
 DONE    equ     $C000
@@ -28,6 +30,7 @@ cqs     equ     $EF06
 cfs     equ     $EF07
 qtab    equ     $EF08                   ; the table address used for the reads
 jb      equ     $EF0A
+cmus    equ     $EF0C                   ; run 3: MUSICF before the call
 
                 org     $4000
                 db      "AB"
@@ -38,7 +41,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $017F
+                ld      bc, $027F
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -53,6 +56,9 @@ next:
                 jp      z, finish
                 ld      de, cq
                 ld      bc, 4
+                ldir
+                ld      de, cmus
+                ld      bc, 1
                 ldir
                 ld      (tptr), hl
                 ; QUEUES: the case's value, or as found (0)
@@ -103,8 +109,8 @@ q_keep:
                 ld      hl, $F959
                 call    emit28                  ; +64..91
                 ; the call, under the clean window
-                xor     a
-                ld      ($FB3F), a              ; MUSICF 0: nothing for an interrupt to play
+                ld      a, (cmus)
+                ld      ($FB3F), a              ; MUSICF: the case's (0 but in case 5)
                 in      a, ($99)
                 ld      hl, ($FC9E)
                 ld      (jb), hl
@@ -178,12 +184,16 @@ emit:
                 pop     hl
                 ret
 
-; ---- cases: QUEUES (0 = as found), its table's seed, $F959's seed; $FF ends (the QUEUES low byte is never $FF) ----
+; ---- cases: QUEUES (0 = as found), its table's seed, $F959's seed, MUSICF; $FF ends (QUEUES' low byte is never $FF) ----
 cases:
                 dw      $0000
-                db      $00, $00                ; 1  the first call after boot
+                db      $00, $00, $00           ; 1  the first call after boot
                 dw      $9EB7
-                db      $40, $90                ; 2  QUEUES $9EB7, both tables garbage
+                db      $40, $90, $00           ; 2  QUEUES $9EB7, both tables garbage
                 dw      $A123
-                db      $C0, $10                ; 3  QUEUES $A123, other garbage
+                db      $C0, $10, $00           ; 3  QUEUES $A123, other garbage
+                dw      $F959
+                db      $60, $60, $00           ; 4  run 2: QUEUES left at $F959, that table garbage
+                dw      $F959
+                db      $20, $20, $FF           ; 5  run 3: MUSICF $FF (every bit), the $F959 table garbage
                 db      $FF
