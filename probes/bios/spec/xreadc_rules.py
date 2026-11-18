@@ -36,7 +36,7 @@ def colour(c):
 
 RULES = [
     Rule("R-RD-A", S1, "A := the current pixel's colour: in SCREEN 2 the foreground nibble of its colour byte "
-         "(GRPCOL + CLOC - GRPCGP) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in "
+         "(CLOC XOR $2000; GRPCOL and GRPCGP are not used) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in "
          "SCREEN 3 the nibble CMASK selects ($0F the low one, $F0 the high one).", ALL, lambda c: c.a == colour(c)),
     Rule("R-RD-F", S1, "F is A's flags as an AND leaves them (H set; S, Z, bits 5 / 3 and P/V from A) -- whatever F "
          "was on entry.", ALL, lambda c: c.f == G.logical(c.a) | 0x10),

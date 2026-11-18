@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and VRAM model for READC / SETC / NSETCX's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XGFX3_run1.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
+scratchpad/XGFX3_run4.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
 128-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX3_run1.out"
+RUN = "XGFX3_run4.out"
 ASM = os.path.join(HERE, "xgfx3.asm")
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt"]
@@ -82,8 +82,34 @@ def marker(c, v):
 
 
 def colour_addr(c, cl):
-    """SCREEN 2: the colour byte of the pattern byte at cl -- GRPCOL + (cl - GRPCGP)"""
-    return (c.grpcol + cl - c.grpcgp) & 0x3FFF
+    """SCREEN 2: the colour byte of the pattern byte at cl -- cl XOR $2000, whatever GRPCOL / GRPCGP hold"""
+    return (cl ^ 0x2000) & 0x3FFF
+
+
+def pixel_byte(c, a, m):
+    """SCREEN 2: the writes that set the pixels `m` (a bit mask, 0 for none) of the pattern byte at a to ATRBYT, by the
+    first that applies: m = $FF -- pattern $00, colour byte ATRBYT; ATRBYT = the background nibble -- the bits
+    cleared; ATRBYT = the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and ATRBYT into
+    the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. Returns the
+    writes and the byte the call reports (the colour byte when it is written, else the pattern byte)."""
+    ca = colour_addr(c, a)
+    p, col = fill(a), fill(ca)
+    if m == 0xFF:
+        return {a: 0x00, ca: c.catr}, c.catr
+    if c.catr == col & 0x0F:
+        return {a: p & ~m & 0xFF}, p & ~m & 0xFF
+    if c.catr == col >> 4:
+        return {a: p | m}, p | m
+    if p | m == 0xFF:
+        n = (col & 0xF0) | (c.catr & 0x0F)
+        return {a: p & ~m & 0xFF, ca: n}, n
+    n = ((c.catr << 4) & 0xF0) | (col & 0x0F)
+    return {a: p | m, ca: n}, n
+
+
+def pattern_flags(v):
+    """S, Z and P/V of v; H, N, C and bits 3 / 5 clear"""
+    return (v & 0x80) | (0x40 if v == 0 else 0) | (0x04 if bin(v).count("1") % 2 == 0 else 0)
 
 
 def vram_after(c, writes):

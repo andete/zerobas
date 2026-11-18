@@ -26,29 +26,37 @@ ALL = lambda c: True  # noqa: E731
 
 
 def writes(c):
-    """VRAM: in SCREEN 2 the pattern byte at CLOC gets CMASK's bit set, and the colour byte at GRPCOL + CLOC - GRPCGP
-    gets ATRBYT in its foreground nibble ((ATRBYT x 16) AND $F0: $1A gives $A0), the background nibble kept; in
-    SCREEN 3 the nibble CMASK selects becomes ATRBYT's low nibble (the high one: (ATRBYT x 16) AND $F0). Nothing
-    else changes. GRPCOL / GRPCGP from the cells (set 1: GRPCGP $2000, GRPCOL $0000)."""
+    """VRAM, SCREEN 2: the pattern byte at CLOC and its colour byte at CLOC XOR $2000 (GRPCOL and GRPCGP are not
+    used), by the first that applies -- ATRBYT equal to the colour byte's background nibble: CMASK's bit cleared;
+    equal to the foreground nibble: the bit set; the pattern byte OR CMASK = $FF (this is its last background
+    pixel): the bit cleared and ATRBYT into the background nibble; otherwise the bit set and (ATRBYT x 16) AND $F0
+    into the foreground nibble ($1A gives $A0). The comparisons take the whole ATRBYT ($1A is neither $A nor $1).
+    SCREEN 3: the nibble CMASK selects becomes ATRBYT's low nibble (the high one: (ATRBYT x 16) AND $F0). Nothing
+    else changes."""
     a = c.cclo & 0x3FFF
     if c.cscr == 2:
-        ca = G.colour_addr(c, c.cclo)
-        return {a: G.fill(a) | c.ccm, ca: ((c.catr << 4) & 0xF0) | (G.fill(ca) & 0x0F)}
+        return G.pixel_byte(c, a, c.ccm)[0]
     old = G.fill(a)
     new = (old & 0xF0) | (c.catr & 0x0F) if c.ccm == 0x0F else (old & 0x0F) | ((c.catr << 4) & 0xF0)
     return {a: new}
 
 
-def new_byte(c):
-    w = writes(c)
-    return w[G.colour_addr(c, c.cclo)] if c.cscr == 2 else w[c.cclo & 0x3FFF]
+def af(c):
+    """A and F after: the colour byte and its OR flags when the colour byte is written, the pattern byte and its S /
+    Z / P flags (bits 3, 5 clear) when only the pattern byte is; in SCREEN 3 the pixel byte and its OR flags"""
+    if c.cscr == 2:
+        w, v = G.pixel_byte(c, c.cclo & 0x3FFF, c.ccm)
+        return v, (G.logical(v) if len(w) == 2 else G.pattern_flags(v))
+    v = writes(c)[c.cclo & 0x3FFF]
+    return v, G.logical(v)
 
 
 RULES = [
     G.vram_rule("SC", S1, " ".join(writes.__doc__.split()), writes),
-    Rule("R-SC-AF", S1, "A := the byte written last -- the colour byte in SCREEN 2, the pixel byte in SCREEN 3 -- and F "
-         "its flags as an OR leaves them -- whatever A and F were on entry.", ALL,
-         lambda c: c.a == new_byte(c) and c.f == G.logical(c.a)),
+    Rule("R-SC-AF", S1, "A := the byte written last, whatever A and F were on entry: in SCREEN 2 the colour byte when "
+         "it is written, F its flags as an OR leaves them; when only the pattern byte is written, the pattern byte, F "
+         "its S, Z and P/V flags with H, N, C and bits 3 / 5 clear ($FF gives $84, $00 $44). In SCREEN 3 the pixel "
+         "byte, F its OR flags.", ALL, lambda c: (c.a, c.f) == af(c)),
     Rule("R-SC-KEEP", S1, "BC, DE, HL, IX and IY are kept; CLOC, CMASK and ATRBYT are kept.", ALL,
          lambda c: ((c.bc, c.de, c.hl, c.ix, c.iy) == tuple(G.marker(c, v) for v in (0x1357, 0x9BDF))
                     + (c.chl, G.marker(c, 0x4321), G.marker(c, 0x8765))

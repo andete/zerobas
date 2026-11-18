@@ -5,68 +5,87 @@ SPDX-License-Identifier: 0BSD
 
 # `READC` ($011D) — read the colour of the current pixel
 
-> **Spec:** DRAFT 1 (2026-11-18), before review. Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (runs 2-4). Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
 
 `READC` returns the colour of the pixel at the current graphics position (CLOC, CMASK) in A: in
-SCREEN 2 the foreground nibble of the pixel's colour byte (GRPCOL + CLOC - GRPCGP) when its pattern
-bit is set, the background nibble when not; in SCREEN 3 the nibble CMASK selects. F is an AND's flags
-on A. It changes nothing, keeps BC, DE, HL, IX and IY, and returns with interrupts **on**.
+SCREEN 2 the foreground nibble of the pixel's colour byte when its pattern bit is set, the background
+nibble when not -- the colour byte at CLOC XOR $2000, whatever GRPCOL and GRPCGP hold; in SCREEN 3
+the nibble CMASK selects. F is an AND's flags on A. It changes nothing, keeps BC, DE, HL, IX and IY,
+and returns with interrupts **on**.
 
-zerobas does all of it the same.
+zerobas does the same where the pattern table is below $2000; with it at $2000 it reads another byte
+(below).
 
 ## The specification
 
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XP rNN]**: case `NN` of the XGFX3 probe, run 1, on row `r`, both rows in
-[`scratchpad/XGFX3_run1.out`](../../scratchpad/XGFX3_run1.out) (the two rows recorded the same bytes).
+**Evidence.** **[XP rNN]**: case `NN` of the XGFX3 probe, run 4, on row `r`, both rows in
+[`scratchpad/XGFX3_run4.out`](../../scratchpad/XGFX3_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx3.asm` documents the presets, the case table and the 128-byte record:
-- Before each case the probe sets, by hand: the screen-table cells to the published defaults (set 0:
-  GRPCGP $0000, GRPCOL $2000, MLTCGP $0000) or moved ones (set 1: GRPCGP $2000, GRPCOL $0000);
-  SCRMOD, CLOC, CMASK and ATRBYT to the case's; every VRAM byte to ((address low) XOR (address high)
-  XOR $5A) OR (address high AND $3C), so the sixteen 1 KB blocks sum to sixteen different values,
-  none 0; the VDP registers to a preset with the display off. It reads the VDP status last.
+- Before each case the probe sets, by hand: the screen-table cells to one of four sets -- set 0 the
+  published defaults (GRPCGP $0000, GRPCOL $2000, MLTCGP $0000); set 1 GRPCGP $2000, GRPCOL $0000,
+  MLTCGP $1000; set 5 GRPCGP = GRPCOL = $2000; set 6 GRPCGP $0800, GRPCOL $2000; SCRMOD, CLOC, CMASK
+  and ATRBYT to the case's; every VRAM byte to ((address low) XOR (address high) XOR $5A) OR (address
+  high AND $3C), so the sixteen 1 KB blocks sum to sixteen different values, none 0; the VDP registers
+  to a preset with the display off. It reads the VDP status last.
 - BC $1357, DE $9BDF, IX $4321, IY $8765 (complemented when bit 2 of the case number is set), HL, A
-  $A7, entry F and the interrupt state as the case lists them. After the call it records every
-  register, the interrupt state (read twice), CLOC, CMASK, ATRBYT, the 16-bit sums of VRAM's 1 KB
-  blocks (read with R#1 := $80 first) and three 16-byte VRAM windows (the pixel's pattern byte, its
-  colour byte, and the bytes after).
-- SCREEN 2, set 0: READC 00-05 (pixels at (100,50), (101,50), (0,0), (7,0), (255,191), (64,9)), SETC
-  06-09 (ATRBYT 5, $0F, 0, $1A), NSETCX 10-15 (HL 1, 5, 8 from a cell's start, 20, 12 from x 250,
-  0). SCREEN 2, set 1: READC 16, SETC 17, NSETCX 18. SCREEN 3: READC 19-22, SETC 23-25 (ATRBYT 5,
+  $A7 (or the case's), entry F and the interrupt state as the case lists them. After the call it
+  records every register, the interrupt state (read twice), CLOC, CMASK, ATRBYT, the 16-bit sums of
+  VRAM's 1 KB blocks (read with R#1 := $80 first) and three 16-byte VRAM windows (the pixel's pattern
+  byte, its colour byte, and the bytes after).
+- Run 1, SCREEN 2, set 0: READC 00-05 (pixels at (100,50), (101,50), (0,0), (7,0), (255,191),
+  (64,9)), SETC 06-09 (ATRBYT 5, $0F, 0, $1A), NSETCX 10-15 (HL 1, 5, 8 from a cell's start, 20, 12
+  from x 250, 0). Set 1: READC 16, SETC 17, NSETCX 18. SCREEN 3: READC 19-22, SETC 23-25 (ATRBYT 5,
   $0F, $1A), NSETCX 26-28 (HL 1, 6, 9).
+- Run 2: READC 29, SETC 30 (set 1); SETC 31 (completing pattern $FB with ATRBYT the background), 35
+  (ATRBYT 0); NSETCX 32 (ATRBYT $1A, HL 20), 36-39 (SCREEN 3 HL 3, $17FF HL 2, SCREEN 3 HL 0,
+  completing $FA); SETC 33 (SCREEN 3 ATRBYT $1A); READC 34 (colour 0); READC / SETC 40-41 (set 5),
+  42-43 (set 6); READC / SETC / NSETCX 44-46 (SCREEN 3, set 1).
+- Run 3: SETC 47-50 (completing $FB with ATRBYT neither nibble / the foreground; a set bit with
+  ATRBYT the background; a clear bit with the foreground); NSETCX 51-53 (2 or 3 pixels with ATRBYT
+  the background / neither / the foreground), 54-56 (SCREEN 3 HL $0100, $0102, $0101), 57-58
+  (SCREEN 2 HL 0 on a clear bit, HL $0100), 59 (set 5).
+- Run 4: READC 60-61 (sets 5 and 6, at bytes whose colour-table candidates differ); SETC 62 (pattern
+  $FF, ATRBYT neither), 65 (ATRBYT $1A over background $A), 66 (colour byte $FF, ATRBYT $F), 68
+  (clearing the only set bit); NSETCX 63-64 (a whole byte, ATRBYT the foreground / background), 67
+  (SCREEN 3, ATRBYT $1A).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xreadc_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xreadc_rules.py --write` -->
 
-**4 rules; 4 hold on the reference. Of the 330 recorded outputs (each case's cursor, cells, A, table entries ...): 330 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 540 recorded outputs (each case's cursor, cells, A, table entries ...): 540 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. READC ($011D): read the colour of the current pixel
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RD-A** A := the current pixel's colour: in SCREEN 2 the foreground nibble of its colour byte (GRPCOL + CLOC - GRPCGP) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in SCREEN 3 the nibble CMASK selects ($0F the low one, $F0 the high one). | 22 | ✓ | ✓ |
-| **R-RD-F** F is A's flags as an AND leaves them (H set; S, Z, bits 5 / 3 and P/V from A) -- whatever F was on entry. | 22 | ✓ | ✓ |
-| **R-RD-KEEP** BC, DE, HL, IX and IY are kept; CLOC, CMASK and ATRBYT are kept; VRAM is not changed. | 22 | ✓ | ✓ |
-| **R-RD-EI** Interrupts are on after the call, whether they were on or off before it. | 22 | ✓ | ✓ |
+| **R-RD-A** A := the current pixel's colour: in SCREEN 2 the foreground nibble of its colour byte (CLOC XOR $2000; GRPCOL and GRPCGP are not used) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in SCREEN 3 the nibble CMASK selects ($0F the low one, $F0 the high one). | 36 | ✓ | ✗ 4: XP N29, XP N60, XP D29, XP D60 |
+| **R-RD-F** F is A's flags as an AND leaves them (H set; S, Z, bits 5 / 3 and P/V from A) -- whatever F was on entry. | 36 | ✓ | ✓ |
+| **R-RD-KEEP** BC, DE, HL, IX and IY are kept; CLOC, CMASK and ATRBYT are kept; VRAM is not changed. | 36 | ✓ | ✓ |
+| **R-RD-EI** Interrupts are on after the call, whether they were on or off before it. | 36 | ✓ | ✓ |
 
 <!-- RULES END -->
 
 ## Differences from the reference
 
-None measured: every rule holds on zerobas.
+| TODO item | rules zerobas fails |
+|---|---|
+| **D-SETCCOL** (zerobas puts the colour byte at CLOC OR $2000, the VG-8020 at CLOC XOR $2000: they part where the pattern table is at $2000 -- cases 29, 60) | R-RD-A |
 
 ## Open (not measured)
 
-- **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask; ATRBYT values other
-  than those measured.
+- **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask.
+- **[A]** CLOC $4000 and above: whether the colour byte is at CLOC XOR $2000 or (CLOC + $2000) AND
+  $3FFF (the same below $4000).
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status first); the interrupt state
   is read only after the call; the alternate registers and SP; the time it takes.
 - **[A]** VRAM outside the three windows beyond the block sums; VRAM writes that keep a block's sum.
+- **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).
 
 ## Related pages

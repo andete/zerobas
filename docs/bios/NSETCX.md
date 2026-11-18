@@ -5,56 +5,74 @@ SPDX-License-Identifier: 0BSD
 
 # `NSETCX` ($0123) — set pixels to the right
 
-> **Spec:** DRAFT 1 (2026-11-18), before review. Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (runs 2-4). Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
 
-`NSETCX` sets HL pixels from the current graphics position rightwards, from cell to cell, to the
-colour in ATRBYT. In SCREEN 2 a pattern byte with some of its pixels set gets those bits and the
-colour in its foreground nibble; one with all 8 set becomes pattern $00 with colour byte ATRBYT -- the
-same pixels, drawn in the background colour. In SCREEN 3 each pixel's nibble becomes ATRBYT's, and
-CLOC / CMASK end on the pixel after the last; in SCREEN 2 they are kept. Interrupts are **on** after.
+`NSETCX` sets pixels from the current graphics position rightwards, from cell to cell, to the colour
+in ATRBYT: HL of them in SCREEN 2, L of them in SCREEN 3 (H is not used there, and L = 0 gives 256).
+In SCREEN 2 it treats each pattern byte (colour byte at its address XOR $2000) as [SETC](SETC.md) does
+one pixel, with all the byte's new bits at once; a byte with all 8 pixels to set becomes pattern $00
+with colour byte ATRBYT -- the same pixels, drawn in the background colour. HL = 0 in SCREEN 2 sets
+no pixel but still takes the byte at CLOC through those steps with no bits: ATRBYT goes into its
+foreground nibble unless it matches a colour already there. In SCREEN 3 each pixel's nibble becomes
+ATRBYT's, and CLOC / CMASK end on the pixel after the last; in SCREEN 2 they are kept. Interrupts are
+**on** after.
 
-zerobas sets the same pixels; it writes whole bytes the other way round, uses the default colour-table
-place whatever the cells hold, and sets nothing for HL = 0 (below).
+zerobas sets the same pixels for HL from 1 to 255 where the pattern table is below $2000, except a
+partly set byte completed to all 8; it writes whole bytes the other way round, counts all of HL in
+SCREEN 3, and does nothing for HL = 0 (below).
 
 ## The specification
 
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XP rNN]**: case `NN` of the XGFX3 probe, run 1, on row `r`, both rows in
-[`scratchpad/XGFX3_run1.out`](../../scratchpad/XGFX3_run1.out) (the two rows recorded the same bytes).
+**Evidence.** **[XP rNN]**: case `NN` of the XGFX3 probe, run 4, on row `r`, both rows in
+[`scratchpad/XGFX3_run4.out`](../../scratchpad/XGFX3_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx3.asm` documents the presets, the case table and the 128-byte record:
-- Before each case the probe sets, by hand: the screen-table cells to the published defaults (set 0:
-  GRPCGP $0000, GRPCOL $2000, MLTCGP $0000) or moved ones (set 1: GRPCGP $2000, GRPCOL $0000);
-  SCRMOD, CLOC, CMASK and ATRBYT to the case's; every VRAM byte to ((address low) XOR (address high)
-  XOR $5A) OR (address high AND $3C), so the sixteen 1 KB blocks sum to sixteen different values,
-  none 0; the VDP registers to a preset with the display off. It reads the VDP status last.
+- Before each case the probe sets, by hand: the screen-table cells to one of four sets -- set 0 the
+  published defaults (GRPCGP $0000, GRPCOL $2000, MLTCGP $0000); set 1 GRPCGP $2000, GRPCOL $0000,
+  MLTCGP $1000; set 5 GRPCGP = GRPCOL = $2000; set 6 GRPCGP $0800, GRPCOL $2000; SCRMOD, CLOC, CMASK
+  and ATRBYT to the case's; every VRAM byte to ((address low) XOR (address high) XOR $5A) OR (address
+  high AND $3C), so the sixteen 1 KB blocks sum to sixteen different values, none 0; the VDP registers
+  to a preset with the display off. It reads the VDP status last.
 - BC $1357, DE $9BDF, IX $4321, IY $8765 (complemented when bit 2 of the case number is set), HL, A
-  $A7, entry F and the interrupt state as the case lists them. After the call it records every
-  register, the interrupt state (read twice), CLOC, CMASK, ATRBYT, the 16-bit sums of VRAM's 1 KB
-  blocks (read with R#1 := $80 first) and three 16-byte VRAM windows (the pixel's pattern byte, its
-  colour byte, and the bytes after).
-- SCREEN 2, set 0: READC 00-05 (pixels at (100,50), (101,50), (0,0), (7,0), (255,191), (64,9)), SETC
-  06-09 (ATRBYT 5, $0F, 0, $1A), NSETCX 10-15 (HL 1, 5, 8 from a cell's start, 20, 12 from x 250,
-  0). SCREEN 2, set 1: READC 16, SETC 17, NSETCX 18. SCREEN 3: READC 19-22, SETC 23-25 (ATRBYT 5,
+  $A7 (or the case's), entry F and the interrupt state as the case lists them. After the call it
+  records every register, the interrupt state (read twice), CLOC, CMASK, ATRBYT, the 16-bit sums of
+  VRAM's 1 KB blocks (read with R#1 := $80 first) and three 16-byte VRAM windows (the pixel's pattern
+  byte, its colour byte, and the bytes after).
+- Run 1, SCREEN 2, set 0: READC 00-05 (pixels at (100,50), (101,50), (0,0), (7,0), (255,191),
+  (64,9)), SETC 06-09 (ATRBYT 5, $0F, 0, $1A), NSETCX 10-15 (HL 1, 5, 8 from a cell's start, 20, 12
+  from x 250, 0). Set 1: READC 16, SETC 17, NSETCX 18. SCREEN 3: READC 19-22, SETC 23-25 (ATRBYT 5,
   $0F, $1A), NSETCX 26-28 (HL 1, 6, 9).
+- Run 2: READC 29, SETC 30 (set 1); SETC 31 (completing pattern $FB with ATRBYT the background), 35
+  (ATRBYT 0); NSETCX 32 (ATRBYT $1A, HL 20), 36-39 (SCREEN 3 HL 3, $17FF HL 2, SCREEN 3 HL 0,
+  completing $FA); SETC 33 (SCREEN 3 ATRBYT $1A); READC 34 (colour 0); READC / SETC 40-41 (set 5),
+  42-43 (set 6); READC / SETC / NSETCX 44-46 (SCREEN 3, set 1).
+- Run 3: SETC 47-50 (completing $FB with ATRBYT neither nibble / the foreground; a set bit with
+  ATRBYT the background; a clear bit with the foreground); NSETCX 51-53 (2 or 3 pixels with ATRBYT
+  the background / neither / the foreground), 54-56 (SCREEN 3 HL $0100, $0102, $0101), 57-58
+  (SCREEN 2 HL 0 on a clear bit, HL $0100), 59 (set 5).
+- Run 4: READC 60-61 (sets 5 and 6, at bytes whose colour-table candidates differ); SETC 62 (pattern
+  $FF, ATRBYT neither), 65 (ATRBYT $1A over background $A), 66 (colour byte $FF, ATRBYT $F), 68
+  (clearing the only set bit); NSETCX 63-64 (a whole byte, ATRBYT the foreground / background), 67
+  (SCREEN 3, ATRBYT $1A).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xnsetcx_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xnsetcx_rules.py --write` -->
 
-**4 rules; 4 hold on the reference. Of the 200 recorded outputs (each case's cursor, cells, A, table entries ...): 200 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 560 recorded outputs (each case's cursor, cells, A, table entries ...): 560 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. NSETCX ($0123): set pixels to the right
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-NX-VRAM** VRAM: HL pixels from the current position rightwards, from cell to cell (into the next row's cells past the right edge). SCREEN 2: a pattern byte with some of its 8 pixels set gets those bits set and its colour byte (GRPCOL + address - GRPCGP) ATRBYT in the foreground nibble, the background kept; a pattern byte with all 8 pixels set becomes $00 and its colour byte ATRBYT -- the same pixels, drawn in the background colour. SCREEN 3: each pixel's nibble becomes ATRBYT's. HL = 0 sets one pixel (measured once). Nothing else changes. | 20 | ✓ | ✗ 8: XP N12, XP N13, XP N15, XP N18, XP D12, XP D13 … (+2) |
-| **R-NX-POS** CLOC and CMASK: kept in SCREEN 2; in SCREEN 3 moved to the pixel after the last one set. ATRBYT is kept. | 20 | ✓ | ✓ |
-| **R-NX-KEEP** IX and IY are kept. (A, F, BC, DE and HL are left holding working values: not compared, the group `XN`.) | 20 | ✓ | ✓ |
-| **R-NX-EI** Interrupts are on after the call, whether they were on or off before it. | 20 | ✓ | ✓ |
+| **R-NX-VRAM** VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the right edge) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT equal to the background nibble -- the bits cleared; equal to the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and ATRBYT into the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 treats the byte at CLOC with no bits (its colour byte still written by the last case). SCREEN 3: each pixel's nibble becomes ATRBYT's. Nothing else changes. | 56 | ✓ | ✗ 30: XP N12, XP N13, XP N15, XP N18, XP N32, XP N38 … (+24) |
+| **R-NX-POS** CLOC and CMASK: kept in SCREEN 2; in SCREEN 3 moved to the pixel after the last one set. ATRBYT is kept. | 56 | ✓ | ✗ 6: XP N38, XP N55, XP N56, XP D38, XP D55, XP D56 |
+| **R-NX-KEEP** IX and IY are kept. (A, F, BC, DE and HL are left holding working values: not compared, the group `XN`.) | 56 | ✓ | ✓ |
+| **R-NX-EI** Interrupts are on after the call, whether they were on or off before it. | 56 | ✓ | ✗ 4: XP N38, XP N57, XP D38, XP D57 |
 
 <!-- RULES END -->
 
@@ -62,20 +80,24 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-NSETCXFULL** (a pattern byte with all 8 pixels set: zerobas writes pattern $FF with ATRBYT in the colour's foreground nibble, where the VG-8020 writes pattern $00 and colour byte ATRBYT -- the same pixels on the screen, other bytes) | R-NX-VRAM |
-| **D-SETCCOL** (as SETC: the colour bytes at pattern address + $2000 whatever GRPCOL / GRPCGP hold, case 18) | R-NX-VRAM |
-| **D-NSETCX0** (HL = 0: zerobas sets no pixel, where the VG-8020 sets one, case 15) | R-NX-VRAM |
+| **D-NSETCXFULL** (a pattern byte with all 8 pixels to set: zerobas writes pattern $FF and ATRBYT in the foreground nibble -- or leaves the colour when ATRBYT is a colour already there -- where the VG-8020 writes pattern $00 and colour byte ATRBYT: the same pixels, other bytes -- cases 12, 13, 32, 58, 63, 64) | R-NX-VRAM |
+| **D-SETCLAST** (as SETC: a byte completed to all 8 pixels by a run that starts or ends in it, ATRBYT neither colour: zerobas turns the whole byte to ATRBYT -- case 39) | R-NX-VRAM |
+| **D-SETCCOL** (zerobas puts the colour byte at CLOC OR $2000, the VG-8020 at CLOC XOR $2000: they part where the pattern table is at $2000 -- cases 18, 59) | R-NX-VRAM |
+| **D-SETCATR** (as SETC, SCREEN 3 ATRBYT over 15 -- case 67) | R-NX-VRAM |
+| **D-NSETCXL** (SCREEN 3: zerobas counts HL, the VG-8020 L alone -- HL $0102 sets 258 pixels, not 2; cases 55, 56) | R-NX-VRAM, R-NX-POS |
+| **D-NSETCX0** (HL = 0: zerobas returns at once, writing nothing and leaving interrupts as they were; the VG-8020 writes the colour byte in SCREEN 2 and sets 256 pixels in SCREEN 3 -- cases 15, 38, 57) | R-NX-VRAM, R-NX-POS, R-NX-EI |
 
 ## Open (not measured)
 
 - **[A]** A, F, BC, DE and HL after the call: working values, not compared (the group `XN`).
-- **[A]** HL = 0 measured once, with the pixel's bit already set, so "one pixel" and "the colour byte
-  only" are not separated; HL above 20.
-- **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask; ATRBYT values other
-  than those measured.
+- **[A]** SCREEN 2 HL above $0100; ATRBYT over 15 in the background-nibble step.
+- **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask.
+- **[A]** CLOC $4000 and above: whether the colour byte is at CLOC XOR $2000 or (CLOC + $2000) AND
+  $3FFF (the same below $4000).
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status first); the interrupt state
   is read only after the call; the alternate registers and SP; the time it takes.
 - **[A]** VRAM outside the three windows beyond the block sums; VRAM writes that keep a block's sum.
+- **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).
 
 ## Related pages

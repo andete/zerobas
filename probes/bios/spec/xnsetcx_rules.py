@@ -26,8 +26,9 @@ ALL = lambda c: True  # noqa: E731
 
 
 def pixels(c):
-    """the pixels set, as (address, mask) runs, and CLOC / CMASK after (SCREEN 3)"""
-    n = c.chl or 1
+    """the pixels set, as (address, mask) runs, and CLOC / CMASK after (SCREEN 3). SCREEN 2 counts HL (16-bit);
+    SCREEN 3 counts L alone, 0 meaning 256"""
+    n = c.chl if c.cscr == 2 else ((c.chl & 0xFF) or 256)
     cl, cm, out = c.cclo, c.ccm, []
     for _ in range(n):
         out.append((cl & 0x3FFF, cm))
@@ -39,24 +40,22 @@ def pixels(c):
 
 
 def writes(c):
-    """VRAM: HL pixels from the current position rightwards, from cell to cell (into the next row's cells past the
-    right edge). SCREEN 2: a pattern byte with some of its 8 pixels set gets those bits set and its colour byte (GRPCOL
-    + address - GRPCGP) ATRBYT in the foreground nibble, the background kept; a pattern byte with all 8 pixels set
-    becomes $00 and its colour byte ATRBYT -- the same pixels, drawn in the background colour. SCREEN 3: each pixel's
-    nibble becomes ATRBYT's. HL = 0 sets one pixel (measured once). Nothing else changes."""
+    """VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the
+    right edge) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern
+    byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that
+    applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT equal to
+    the background nibble -- the bits cleared; equal to the foreground nibble -- the bits set; pattern OR m = $FF --
+    the bits cleared and ATRBYT into the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the
+    foreground nibble. HL = 0 in SCREEN 2 treats the byte at CLOC with no bits (its colour byte still written by the
+    last case). SCREEN 3: each pixel's nibble becomes ATRBYT's. Nothing else changes."""
     w = {}
     px, _, _ = pixels(c)
     if c.cscr == 2:
-        byaddr = {}
+        byaddr = {c.cclo & 0x3FFF: 0}
         for a, m in px:
             byaddr[a] = byaddr.get(a, 0) | m
         for a, bits in byaddr.items():
-            ca = G.colour_addr(c, a)
-            if bits == 0xFF:
-                w[a], w[ca] = 0x00, c.catr
-            else:
-                w[a] = G.fill(a) | bits
-                w[ca] = ((c.catr << 4) & 0xF0) | (G.fill(ca) & 0x0F)
+            w.update(G.pixel_byte(c, a, bits)[0])
         return w
     for a, m in px:
         old = w.get(a, G.fill(a))
