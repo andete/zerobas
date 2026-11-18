@@ -16856,6 +16856,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (SCALXY called outside the graphics modes; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX4_run1.out`](scratchpad/XGFX4_run1.out)): the VG-8020 divides X and Y by 4 whenever SCRMOD is not 2; zerobas only in SCREEN 3.
+      docs/bios/SCALXY.md R-SX-CLIP / R-SX-AF, cases 28-31. Priced when picked up.
+
+- [ ] **D-SCALXYF — SCALXY RETURNS SCREEN 2'S FLAGS IN THE OTHER MODES ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX4_run1.out`](scratchpad/XGFX4_run1.out)): with SCRMOD not 2 the VG-8020's S / Z / P/V come from the new E (H, N, bits 3 / 5
+      clear; the carry as in SCREEN 2); zerobas returns $41 / $40. docs/bios/SCALXY.md R-SX-AF. Priced when picked up.
+
 - [ ] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
       🎚️ TIER 1 — happy path: SETC on any SCREEN 2 byte whose other 7 pixels are set, with a third colour, changes 7
       pixels on the screen (filed 2026-11-18).
