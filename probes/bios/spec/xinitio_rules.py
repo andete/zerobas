@@ -463,8 +463,8 @@ RULES += [
          and c.musicf == 0),
     Rule("R-IO-QUEUES6", S6, "INITIO ITSELF writes the descriptors where QUEUES points: with QUEUES $9EB7 or $A123 and its "
          "28-byte table garbage, the table's first 18 bytes become R-IO-PLAY's descriptors (the buffer addresses "
-         "$F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 keep their garbage, $F959.. (the fixed "
-         "$F96B-$F974 included) keeps its own, and QUEUES is kept -- in a witnessed window (the evidence note).",
+         "$F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 keep their garbage, $F959.. ($F96B-$F974 "
+         "included) keeps its own, and QUEUES is kept -- in a witnessed window (the evidence note).",
          lambda c: c.src == "XI6" and c.q_in not in (0, 0xF959),
          lambda c: c.qb == c.qa == c.q_in and c.tb == seeded28(c.qs)
          and c.ta == QDESC + seeded28(c.qs)[18:] and c.fb == c.fa == seeded28(c.fs) and c.musicf == 0),
@@ -478,11 +478,67 @@ RULES += [
          lambda c: c.musicf == 0 and c.qb == c.qa == 0xF959 and c.tb == c.fb == seeded28(c.fs)
          and c.ta == c.fa == QDESC + seeded28(c.fs)[18:]),
     Rule("R-IO-PSG0", S6, "With the PSG all $00 before the call and a witnessed window (run 4), R7 = $B8, R11 = $0B and "
-         "R15 = $CF after it: written whole, not masked into the old value (R11 AND $09 / R15 AND $01 would give "
-         "$00 here).", lambda c: c.src == "XI6", lambda c: (c.r7, c.r11, c.r15) == (0xB8, 0x0B, 0xCF)),
+         "R15 = $CF after it. From $00 this rules out an AND of the old value; R-IO-PSG7 (from $FF) rules out an OR.", lambda c: c.src == "XI6", lambda c: (c.r7, c.r11, c.r15) == (0xB8, 0x0B, 0xCF)),
 ]
 
 UNSTABLE.update({f"XI6 {i + 1}": (["jifb", "jifa"], "the read window's witness, each machine's own time -- XI6 4 took "
                                                    "no interrupt in scratchpad/XINITIO6_run2.out and one in "
                                                    "scratchpad/XINITIO6_run3.out; run 4's are all unchanged (the "
                                                    "evidence note)") for i in range(len(CASES6))})
+
+
+# ---- round 7: XINITIO7 (probes/bios/spec/xinitio7.asm; scratchpad/XINITIO7_run1.out), after the ninth review ----
+OUTPUTS["XI7"] = ["jifb", "jifa", "tries", "qb", "qa", "tb", "ta", "fb", "fa", "musicf", "r7", "r11", "r15", "vcb"]
+# ei, QUEUES, table seed, $F959 seed, MUSICF, PSG value, VCB mode (1 all $FF, 2 $CC - k)
+CASES7 = [(1, 0xF959, 0x60, 0x60, 0xFF, 0xFF, 2), (1, 0x9EB7, 0x40, 0x90, 0x5A, 0x00, 1),
+          (0, 0xF959, 0x20, 0x20, 0xFF, 0xFF, 1), (0, 0xA123, 0xC0, 0x10, 0x00, 0xFF, 2)]
+REC7 = 237
+_cases6b = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases6b()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO7_run1.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        b += bytes(1 + REC7 * len(CASES7) - len(b))
+        for i, (ei, q, qs, fs, mus, pv, vm) in enumerate(CASES7):
+            r = b[1 + REC7 * i: 1 + REC7 * (i + 1)]
+            if b[0] != 0xA5 or r[REC7 - 1] != 0xC3:
+                sys.exit("FAIL: an XINITIO7 record has no sentinel")
+            w = lambda o: r[o] | (r[o + 1] << 8)  # noqa: E731
+            out[who].append(NS(src="XI7", id=f"XI7 {i + 1}", ei=ei, q_in=q, qs=qs, fs=fs, mus=mus, pv=pv, vm=vm,
+                               jifb=w(0), jifa=w(2), tries=r[4], qb=w(5), qa=w(7), tb=list(r[9:37]),
+                               ta=list(r[37:65]), fb=list(r[65:93]), fa=list(r[93:121]), musicf=r[121], r7=r[122],
+                               r11=r[123], r15=r[124], vcb=list(r[125:236])))
+    return out
+
+
+def table_ok(c):
+    """the descriptors where QUEUES points, its +18..+27 kept; $F959.. kept when QUEUES is elsewhere; QUEUES kept"""
+    own = c.q_in == 0xF959
+    return (c.qb == c.qa == c.q_in and c.tb == seeded28(c.qs) and c.ta == QDESC + seeded28(c.qs)[18:]
+            and (c.fb == c.tb and c.fa == c.ta if own else c.fb == c.fa == seeded28(c.fs)))
+
+
+S7 = ("7. Round 7: every call witnessed clean on BOTH machines (XINITIO7 re-seeds and retries until JIFFY is unchanged "
+      "across the call), interrupts on and off at entry, the PSG all $00 / all $FF, the voice control blocks all $FF "
+      "and $CC - k")
+
+RULES += [
+    Rule("R-IO-W7", S7, "Every recorded call is clean: JIFFY is unchanged across it, within the 8 tries the probe "
+         "allows (one try was enough on both machines).", lambda c: c.src == "XI7",
+         lambda c: c.jifb == c.jifa and 1 <= c.tries < 8),
+    Rule("R-IO-PSG7", S7, "R7 = $B8, R11 = $0B and R15 = $CF from the PSG all $FF (XI7 1 / 3 / 4) and all $00 (XI7 2): "
+         "with R-IO-PSG0 neither an AND nor an OR of the old value fits -- they are written whole.",
+         lambda c: c.src == "XI7", lambda c: (c.r7, c.r11, c.r15) == (0xB8, 0x0B, 0xCF)),
+    Rule("R-IO-VCB7", S7, "The voice control blocks become R-IO-VCB's values from all $FF (XI7 2 / 3) and from "
+         "$CC - k (XI7 1 / 4, the complement of rounds 2-3's pattern): every bit of every byte was seen both ways.",
+         lambda c: c.src == "XI7", lambda c: c.vcb == VCB_RESET * 3),
+    Rule("R-IO-EI7", S7, "Entered with interrupts ON (XI7 1 / 2), in the clean window, INITIO itself does the same: "
+         "MUSICF ($FF, $5A) becomes 0, and the descriptors are written where QUEUES points ($F959, $9EB7).",
+         lambda c: c.src == "XI7" and c.ei, lambda c: c.musicf == 0 and table_ok(c)),
+    Rule("R-IO-Q7", S7, "Entered with interrupts off (XI7 3 / 4): MUSICF ($FF, 0) is 0 after, and the descriptors are "
+         "written where QUEUES points ($F959, $A123), as R-IO-QUEUES6 / R-IO-QF959.",
+         lambda c: c.src == "XI7" and not c.ei, lambda c: c.musicf == 0 and table_ok(c)),
+]

@@ -24,7 +24,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0028 | GETYPR | interpreter (concept page to come) | L3 | — | — | — |
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [DRAFT 8](INITIO.md) | 21 | D-INITIOVCB, D-INITIOQUEUES |
+| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [DRAFT 9](INITIO.md) | 23 | D-INITIOVCB, D-INITIOQUEUES |
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
