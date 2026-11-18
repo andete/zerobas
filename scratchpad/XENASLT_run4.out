@@ -1,0 +1,20 @@
+===== probes/bios/spec/xenaslt.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=be00 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8200 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f4000000000000000f000301fcac00fc001b2c3d4e0f5aa50cf3ff0cf4a000f4001b2c3d4e0f414204f3550cfcac00fc001b2c3d4e0f5aa50cf3ff0cd48400d4001b2c3d4e0f104010cf5530f4a000f4001b2c3d4e0fc66c30cfff30f4a000f4001b2c3d4e0f414204f3550cf4a000f4001b2c3d4e0fc66c30cfff30f4a000f4001b2c3d4e0fc66c30cfff30f4a000f4001b2c3d4e0fc66c30cfff30c3
+  CAP ours: a5f40000008000000000008301fcac00fc001b2c3d000f5aa50cf3ff0cf4a000f4001b2c3d000f414204f3550cfcac00fc001b2c3d000f5aa50cf3ff0cd48400d4001b2c3d000f104010cf5530f4a000f4001b2c3d000fc66c30cfff30f4a000f4001b2c3d000f414204f3550cf4a000f4001b2c3d000fc66c30cfff30f4a000f4001b2c3d000fc66c30cfff30f4a000f4001b2c3d000fc66c30cfff30c3
+  DIFF (12 unexcused byte(s)):
+  CAP C006: ref=00 ours=80
+  CAP C00A: ref=0F ours=00
+  CAP C00C: ref=03 ours=83
+  CAP C016: ref=4E ours=00
+  CAP C026: ref=4E ours=00
+  CAP C036: ref=4E ours=00
+  CAP C046: ref=4E ours=00
+  CAP C056: ref=4E ours=00
+  CAP C066: ref=4E ours=00
+  CAP C076: ref=4E ours=00
+  CAP C086: ref=4E ours=00
+  CAP C096: ref=4E ours=00
+===== biosl: DIVERGENCE =====
