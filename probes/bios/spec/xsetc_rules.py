@@ -29,16 +29,18 @@ def writes(c):
     """VRAM, SCREEN 2: the pattern byte at CLOC and its colour byte at CLOC XOR $2000 (GRPCOL and GRPCGP are not
     used), by the first that applies -- ATRBYT equal to the colour byte's background nibble: CMASK's bit cleared;
     ATRBYT's low nibble equal to the foreground nibble: the bit set; the pattern byte OR CMASK = $FF (no other bit
-    of the byte clear): the bit cleared and ATRBYT's low nibble into the background nibble; otherwise the bit set
+    of the byte clear): the bit cleared and colour byte := (colour AND $F0) OR ATRBYT -- ATRBYT ORed in whole, so
+    $1A over $E_ gives $FA; otherwise the bit set
     and (ATRBYT x 16) AND $F0 into the foreground nibble ($1A gives $A0). The background test takes the whole
     ATRBYT ($1A is not $A), the foreground test its low nibble ($1A is $A).
-    SCREEN 3: the nibble CMASK selects becomes ATRBYT's low nibble (the high one: (ATRBYT x 16) AND $F0). Nothing
+    SCREEN 3: CMASK $0F -- byte := (byte AND $F0) OR ATRBYT (whole: $1A over $A4 gives $BA); CMASK $F0 -- byte :=
+    (byte AND $0F) OR ((ATRBYT x 16) AND $F0). Nothing
     else changes."""
     a = c.cclo & 0x3FFF
     if c.cscr == 2:
         return G.pixel_byte(c, a, c.ccm)[0]
     old = G.fill(a)
-    new = (old & 0xF0) | (c.catr & 0x0F) if c.ccm == 0x0F else (old & 0x0F) | ((c.catr << 4) & 0xF0)
+    new = (old & 0xF0) | c.catr if c.ccm == 0x0F else (old & 0x0F) | ((c.catr << 4) & 0xF0)
     return {a: new}
 
 

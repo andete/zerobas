@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX3 -- docs/bios/READC.md, SETC.md, NSETCX.md round 5 (2026-11-19; round 1 had cases 0-28 and cell sets 0 / 1 only, round 2 cases 29-46, round 3 47-59, round 4 60-68): the calls that read or set pixels at the current
+; XGFX3 -- docs/bios/READC.md, SETC.md, NSETCX.md round 6 (2026-11-19; round 1 had cases 0-28 and cell sets 0 / 1 only, round 2 cases 29-46, round 3 47-59, round 4 60-68, round 5 69-77): the calls that read or set pixels at the current
 ; graphics position. Per case (the table `cases` at the end, xinig.asm's layout with its fields read anew: op, F,
 ; interrupts, SCRMOD, CMASK, ATRBYT, BAKCLR, BDRCLR, CLOC, HL, cell set, three window addresses, A) the probe first sets,
 ; BY HAND:
@@ -28,38 +28,38 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 2800
+; @caplen 2E00
 ; @timeout 180
-; @vdpsnap E8F0 EF00
+; @vdpsnap EE00 EF00
 
 DONE    equ     $C000
 CAP     equ     $C001
 ptr     equ     $EF00
 tptr    equ     $EF02
-SNAP    equ     $E8F0
-STUB    equ     $E8F2
-cop     equ     $E910                   ; op, F, ei, SCRMOD, RG1SAV, FOR, BAK, BDR, ATRBAS, PATBAS, set, W1, W2, W3, A
-cF      equ     $E911
-cei     equ     $E912
-cscr    equ     $E913
-crg1    equ     $E914
-cfor    equ     $E915
-catr    equ     $E918
-cpat    equ     $E91A
-cts     equ     $E91C
-cW1     equ     $E91D
-cW2     equ     $E91F
-cW3     equ     $E921
-cA      equ     $E923
-mask    equ     $E926
-cidx    equ     $E927
-raf     equ     $E930
-rbc     equ     $E932
-rde     equ     $E934
-rhl     equ     $E936
-rix     equ     $E938
-riy     equ     $E93A
-riff    equ     $E93C
+SNAP    equ     $EE00
+STUB    equ     $EE02
+cop     equ     $EE10                   ; op, F, ei, SCRMOD, RG1SAV, FOR, BAK, BDR, ATRBAS, PATBAS, set, W1, W2, W3, A
+cF      equ     $EE11
+cei     equ     $EE12
+cscr    equ     $EE13
+crg1    equ     $EE14
+cfor    equ     $EE15
+catr    equ     $EE18
+cpat    equ     $EE1A
+cts     equ     $EE1C
+cW1     equ     $EE1D
+cW2     equ     $EE1F
+cW3     equ     $EE21
+cA      equ     $EE23
+mask    equ     $EE26
+cidx    equ     $EE27
+raf     equ     $EE30
+rbc     equ     $EE32
+rde     equ     $EE34
+rhl     equ     $EE36
+rix     equ     $EE38
+riy     equ     $EE3A
+riff    equ     $EE3C
 TXTNAM  equ     $F3B3
 RG0SAV  equ     $F3DF
 FORCLR  equ     $F3E9
@@ -76,7 +76,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $27FF
+                ld      bc, $2DFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -790,4 +790,59 @@ cases:
                 db      $00
                 dw      $00A0, $20A0, $00B0
                 db      $A7   ; 77
+                db      $01, $FF, $00, $02, $04, $0F, $04, $07
+                dw      $00A1, $2468
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 78
+                db      $01, $FF, $00, $02, $01, $01, $04, $07
+                dw      $005B, $2468
+                db      $00
+                dw      $0050, $2050, $0060
+                db      $A7   ; 79
+                db      $01, $FF, $00, $02, $04, $09, $04, $07
+                dw      $00A1, $2468
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 80
+                db      $02, $00, $00, $02, $40, $1A, $04, $07
+                dw      $00D1, $0002
+                db      $00
+                dw      $00D0, $20D0, $00E0
+                db      $A7   ; 81
+                db      $02, $00, $00, $02, $10, $1A, $04, $07
+                dw      $00B5, $0001
+                db      $00
+                dw      $00B0, $20B0, $00C0
+                db      $A7   ; 82
+                db      $01, $00, $00, $03, $0F, $1A, $04, $07
+                dw      $05FF, $2468
+                db      $00
+                dw      $05F0, $0600, $0600
+                db      $A7   ; 83
+                db      $01, $00, $00, $02, $10, $1A, $04, $07
+                dw      $00B5, $2468
+                db      $00
+                dw      $00B0, $20B0, $00C0
+                db      $A7   ; 84
+                db      $01, $00, $00, $02, $08, $0E, $04, $07
+                dw      $0662, $2468
+                db      $00
+                dw      $0660, $2660, $0670
+                db      $A7   ; 85
+                db      $02, $00, $00, $02, $04, $09, $04, $07
+                dw      $00A1, $0000
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 86
+                db      $00, $00, $00, $03, $0F, $05, $04, $07
+                dw      $2164, $2468
+                db      $00
+                dw      $2160, $0160, $2170
+                db      $A7   ; 87
+                db      $01, $00, $00, $03, $0F, $09, $04, $07
+                dw      $2164, $2468
+                db      $00
+                dw      $2160, $0160, $2170
+                db      $A7   ; 88
                 db      $FF

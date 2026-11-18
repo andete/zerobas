@@ -45,9 +45,11 @@ def writes(c):
     byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that
     applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT (whole)
     equal to the background nibble -- the bits cleared; ATRBYT's low nibble equal to the foreground nibble -- the bits
-    set; pattern OR m = $FF -- the bits cleared and ATRBYT's low nibble into the background nibble; otherwise the bits
+    set; pattern OR m = $FF -- the bits cleared and colour byte := (colour AND $F0) OR ATRBYT (ATRBYT ORed in whole:
+    $1A over $E_ gives $FA); otherwise the bits
     set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 takes the byte at CLOC through the
-    same steps with no bits (m = 0). SCREEN 3: each pixel's nibble becomes ATRBYT's. Nothing else changes."""
+    same steps with no bits (m = 0). SCREEN 3: a high-nibble pixel := (old AND $0F) OR ((ATRBYT x 16) AND $F0), a low-nibble one
+    := (old AND $F0) OR ATRBYT (ORed in whole: $1A over $A4 gives $BA). Nothing else changes."""
     w = {}
     px, _, _ = pixels(c)
     if c.cscr == 2:
@@ -59,7 +61,7 @@ def writes(c):
         return w
     for a, m in px:
         old = w.get(a, G.fill(a))
-        w[a] = (old & 0xF0) | (c.catr & 0x0F) if m == 0x0F else (old & 0x0F) | ((c.catr << 4) & 0xF0)
+        w[a] = (old & 0xF0) | c.catr if m == 0x0F else (old & 0x0F) | ((c.catr << 4) & 0xF0)
     return w
 
 

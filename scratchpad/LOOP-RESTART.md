@@ -22,7 +22,16 @@ session and the loop resumes exactly where it stopped.
 | EXECUTABLE RULES | *"yes, add executable rules"* | spec-method §3a: every page's behaviour rules are checks (probes/bios/spec/<name>_rules.py, tools/spec_rules.py); its rule tables are GENERATED; `make spec-rules-check` in STATIC. A false rule is fixed in the rule, never the data |
 | THE ORDER | *"let's go with the new order"* (after weighing whole-BIOS-first: no -- region by region) | (1) finish CHPUT: round 3 for its 5 unmeasured items, then goldfish pass 3 (the stopping test); (2) the BASE BIOS page `docs/concepts/bios.md` (calling conventions, the BIOS slot, interrupts, registers) and a SHARED-STATE MAP (which work-area cells / VDP registers / ports each of the 108 calls reads or writes, from published references + existing evidence: where regions touch); (3) the rest of the text region in this order: INITXT / INIT32 -> DSPFNK / ERAFNK / FNKSB -> CLS / POSIT -> CHGET / CHSNS -> CNVCHR / PINLIN / INLIN / QINLIN / TOTEXT -> the screen-editor concept page's contract section; (4) FIX the region's differences together (D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL, ...), then the test audit per call; (5) the next region. Joost: spec the whole region first (synergies), not the whole BIOS |
 
-STATE 2026-11-18 LATER (recount, never quote): the VDP region's SPECS are done -- all 23 calls FINAL (WRTVDP, DISSCR,
+STATE 2026-11-19 (recount, never quote): the GRAPHICS region is in progress. FINAL: FETCHC, STOREC, SETATR, GTASPC,
+MAPXYC (XGFX1), RIGHTC/LEFTC/UPC/TUPC/DOWNC/TDOWNC (XGFX2, 7 runs). DRAFT: READC/SETC/NSETCX (XGFX3, 5 runs; review
+pass 3 launched), SCALXY (XGFX4; pass 1 launched). Measured surprises: the SCREEN 2 colour byte is at CLOC XOR $2000
+(GRPCOL / GRPCGP unused); SETC's per-byte choice (background test on the whole ATRBYT, foreground on its low nibble,
+then "every other bit set" -> clear + background nibble); NSETCX counts L alone in SCREEN 3; TUPC / TDOWNC edges are
+unsigned compares against GRPCGP + $100 / + $1700. Filed: D-SETCLAST (TIER 1 -- 7 pixels change colour on zerobas),
+the rest TIER 6. NEXT: GRPPRT, PNTINI, SCANR, SCANL, then the graphics concept page, then SOUND. Lesson: a VRAM fill
+whose colour and pattern candidates coincide (the OR (high AND $3C) term) hides a colour-address rule -- pick
+addresses where the candidates differ in the nibble READ.
+PREVIOUS STATE 2026-11-18 LATER (recount, never quote): the VDP region's SPECS are done -- all 23 calls FINAL (WRTVDP, DISSCR,
 ENASCR, RDVDP; the 7 VRAM calls; CALPAT, CALATR, GSPSIZ; SETTXT/T32/GRP/MLT; CLRSPR, CHGCLR; INIGRP, INIMLT, CHGMOD),
 rows N and D. biosl_run.py `@vdpsnap ADDR PTR` (the debugger writes R#0-R#7 into the probe's record). Shared loaders
 are probes/bios/spec/*_model.py (a *_rules.py must have cases()). Lessons: a VRAM fill must not make every 1 KB block

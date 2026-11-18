@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and VRAM model for READC / SETC / NSETCX's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XGFX3_run5.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
+scratchpad/XGFX3_run6.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
 128-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX3_run5.out"
+RUN = "XGFX3_run6.out"
 ASM = os.path.join(HERE, "xgfx3.asm")
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt", "regs"]
@@ -89,7 +89,7 @@ def colour_addr(c, cl):
 def pixel_byte(c, a, m):
     """SCREEN 2: the writes that set the pixels `m` (a bit mask, 0 for none) of the pattern byte at a to ATRBYT, by the
     first that applies: m = $FF -- pattern $00, colour byte ATRBYT; ATRBYT (whole) = the background nibble -- the
-    bits cleared; ATRBYT's low nibble = the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and ATRBYT into
+    bits cleared; ATRBYT's low nibble = the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and (colour AND $F0) OR ATRBYT into
     the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. Returns the
     writes and the byte the call reports (the colour byte when it is written, else the pattern byte)."""
     ca = colour_addr(c, a)
@@ -101,7 +101,7 @@ def pixel_byte(c, a, m):
     if c.catr & 0x0F == col >> 4:
         return {a: p | m}, p | m
     if p | m == 0xFF:
-        n = (col & 0xF0) | (c.catr & 0x0F)
+        n = (col & 0xF0) | c.catr
         return {a: p & ~m & 0xFF, ca: n}, n
     n = ((c.catr << 4) & 0xF0) | (col & 0x0F)
     return {a: p | m, ca: n}, n

@@ -580,7 +580,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (a caller -- an extension ROM printing through OUTDO -- asking ISFLIO while PTRFIL's low | T-1DD578 |
 | — | TIER 6 | 🤖 | every edge (SCALXY called outside the graphics modes; filed 2026-11-19). | T-06A921 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-A938B9 |
-| — | TIER 6 | 🤖 | every edge (a SCREEN 2 pattern table moved to $2000) (filed 2026-11-18). | T-FB4754 |
+| — | TIER 6 | 🤖 | every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18). | T-CE01B2 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-18). | T-700502 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-18). | T-886837 |
 | — | TIER 6 | 🤖 | every edge (the same pixels, other bytes) (filed 2026-11-18). | T-15B4C6 |
