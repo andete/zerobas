@@ -88,12 +88,12 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00F6 | LFTQ | sound (concept page to come) | L3 | — | — | — |
 | $00F9 | PUTQ | sound (concept page to come) | L3 | — | — | — |
-| $00FC | RIGHTC | graphics (concept page to come) | L3 | [DRAFT 3](RIGHTC.md) | 5 | D-MOVEMASK |
-| $00FF | LEFTC | graphics (concept page to come) | L3 | [DRAFT 3](LEFTC.md) | 5 | D-MOVEMASK |
-| $0102 | UPC | graphics (concept page to come) | L3 | [DRAFT 3](UPC.md) | 5 | — |
-| $0105 | TUPC | graphics (concept page to come) | L3 | [DRAFT 3](TUPC.md) | 6 | D-TEDGE |
-| $0108 | DOWNC | graphics (concept page to come) | L3 | [DRAFT 3](DOWNC.md) | 5 | — |
-| $010B | TDOWNC | graphics (concept page to come) | L3 | [DRAFT 3](TDOWNC.md) | 6 | D-TEDGE |
+| $00FC | RIGHTC | graphics (concept page to come) | L3 | [DRAFT 4](RIGHTC.md) | 5 | D-MOVEMASK |
+| $00FF | LEFTC | graphics (concept page to come) | L3 | [DRAFT 4](LEFTC.md) | 5 | D-MOVEMASK |
+| $0102 | UPC | graphics (concept page to come) | L3 | [DRAFT 4](UPC.md) | 5 | — |
+| $0105 | TUPC | graphics (concept page to come) | L3 | [DRAFT 4](TUPC.md) | 6 | D-TEDGE |
+| $0108 | DOWNC | graphics (concept page to come) | L3 | [DRAFT 4](DOWNC.md) | 5 | — |
+| $010B | TDOWNC | graphics (concept page to come) | L3 | [DRAFT 4](TDOWNC.md) | 6 | D-TEDGE |
 | $010E | SCALXY | graphics (concept page to come) | L3 | — | — | — |
 | $0111 | MAPXYC | graphics (concept page to come) | L3 | [FINAL](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCWRAP, D-MAPXYCMODE, D-MAPXYCF |
 | $0114 | FETCHC | graphics (concept page to come) | L3 | [FINAL](FETCHC.md) | 3 | — |

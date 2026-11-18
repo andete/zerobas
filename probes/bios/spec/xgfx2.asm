@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX2 -- docs/bios/RIGHTC.md, LEFTC.md, UPC.md, TUPC.md, DOWNC.md, TDOWNC.md round 4 (2026-11-18; round 1 had cases 0-125, round 2 0-251, round 3 0-276): the calls that move
+; XGFX2 -- docs/bios/RIGHTC.md, LEFTC.md, UPC.md, TUPC.md, DOWNC.md, TDOWNC.md round 6 (2026-11-18; round 1 had cases 0-125, round 2 0-251, round 3 0-276, round 4 0-302, round 5 0-319): the calls that move
 ; the current graphics position (CLOC $F92A, CMASK $F92C) one pixel. Per case (the table `cases` at the end: op, A, F,
 ; interrupts, SCRMOD, BC, DE, HL, CLOC, CMASK, GRPCGP, MLTCGP) the probe sets, BY HAND: CLOC, CMASK, GRPCGP ($F3CB),
 ; MLTCGP ($F3D5), SCRMOD ($FCAF) := the case's -- CLOC / CMASK a pixel's position as MAPXYC gives it -- ATRBYT
@@ -18,7 +18,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area RAM.
 ;
 ; @cap C000
-; @caplen 2200
+; @caplen 2400
 ; @timeout 60
 
 GTB     equ     $FF                     ; (case 255 gets ASPCT1 / ASPCT2 $0100 / $00C0)
@@ -67,7 +67,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $21FF
+                ld      bc, $23FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -1481,4 +1481,88 @@ cases:
                 dw      $1357, $9BDF, $2468, $FFFC
                 db      $01
                 dw      $0000, $1000   ; 302
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $36FF
+                db      $80
+                dw      $2000, $1000   ; 303
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $2100
+                db      $80
+                dw      $2001, $1000   ; 304
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $2100
+                db      $80
+                dw      $2002, $1000   ; 305
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $2100
+                db      $80
+                dw      $2003, $1000   ; 306
+                db      $03, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $00F8
+                db      $F0
+                dw      $0000, $0000   ; 307
+                db      $05, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $04FF
+                db      $F0
+                dw      $0000, $0000   ; 308
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $3707
+                db      $80
+                dw      $2008, $1000   ; 309
+                db      $00, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $0100
+                db      $70
+                dw      $0000, $1000   ; 310
+                db      $00, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $0100
+                db      $4F
+                dw      $0000, $1000   ; 311
+                db      $01, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $0100
+                db      $70
+                dw      $0000, $1000   ; 312
+                db      $01, $A7, $00, $00, $03
+                dw      $1357, $9BDF, $2468, $0100
+                db      $4F
+                dw      $0000, $1000   ; 313
+                db      $01, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $0100
+                db      $C0
+                dw      $0000, $1000   ; 314
+                db      $01, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $0100
+                db      $81
+                dw      $0000, $1000   ; 315
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $0008
+                db      $80
+                dw      $2000, $1000   ; 316
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $0F07
+                db      $80
+                dw      $2000, $1000   ; 317
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $8007
+                db      $80
+                dw      $0000, $1000   ; 318
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $8000
+                db      $80
+                dw      $0000, $1000   ; 319
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $3707
+                db      $80
+                dw      $2005, $1000   ; 320
+                db      $03, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $8100
+                db      $80
+                dw      $0000, $1000   ; 321
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $9707
+                db      $80
+                dw      $0000, $1000   ; 322
+                db      $05, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $96FF
+                db      $80
+                dw      $0000, $1000   ; 323
                 db      $FF

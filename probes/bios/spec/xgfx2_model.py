@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX2_run4.out"
+RUN = "XGFX2_run6.out"
 ASM = os.path.join(HERE, "xgfx2.asm")
 REC = 28
 GTB = 255                                   # the probe's GTB ($FF): case 255 gets ASPCT1 / ASPCT2 $0100 / $00C0
@@ -105,17 +105,14 @@ def move(c):
         return cl, cm, cm, andf(cm), False
     if c.op in (2, 3):
         if c.op == 3:
-            d = (cl - c.cgcg) & 0xFFFF
-            d = d - 0x10000 if d & 0x8000 else d   # signed
-            stop = (cl & 0xFF07) == 0 if mlt else (cl & 7 == 0 and d < 0x100)
+            stop = (cl & 0xFF07) == 0 if mlt else (cl & 7 == 0 and cl < ((c.cgcg + 0x100) & 0xFFFF))   # unsigned
             if stop:
                 return cl, cm, 0, 0x45, True
         a = cl & 7
         cl = (cl - (0xF9 if a == 0 else 1)) & 0xFFFF
         return cl, cm, a, andf(a), False
     if c.op == 5:
-        d = (cl - c.cgcg) & 0xFFFF
-        stop = (cl & 7 == 7 and (cl >> 8) >= 5) if mlt else (cl & 7 == 7 and d >= 0x1700)
+        stop = (cl & 7 == 7 and (cl >> 8) >= 5) if mlt else (cl & 7 == 7 and cl >= ((c.cgcg + 0x1700) & 0xFFFF))
         if stop:
             return cl, cm, 0, 0x45, True
     cl = (cl + (0xF9 if cl & 7 == 7 else 1)) & 0xFFFF

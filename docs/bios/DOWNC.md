@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `DOWNC` ($0108) — move the graphics position one pixel down
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 4 (2026-11-19), after three test-writer reviews, measured again (runs 5, 6). Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -21,11 +21,11 @@ zerobas does all of it the same.
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XM rNNN]**: case `NNN` of the XGFX2 probe, run 4, on row `r`, both rows in
-[`scratchpad/XGFX2_run4.out`](../../scratchpad/XGFX2_run4.out) (the two rows recorded the same bytes).
+**Evidence.** **[XM rNNN]**: case `NNN` of the XGFX2 probe, run 6, on row `r`, both rows in
+[`scratchpad/XGFX2_run6.out`](../../scratchpad/XGFX2_run6.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx2.asm` documents the presets, the case table and the 28-byte record:
-- Before each case the probe sets, by hand: CLOC ($F92A) and CMASK ($F92C) to a pixel's position as
-  [MAPXYC](MAPXYC.md) gives it, GRPCGP ($F3CB), MLTCGP ($F3D5) and SCRMOD to the case's, ATRBYT to
+- Before each case the probe sets, by hand: CLOC ($F92A) and CMASK ($F92C) -- mostly a pixel's
+  position as [MAPXYC](MAPXYC.md) gives it, the exceptions listed below -- GRPCGP ($F3CB), MLTCGP ($F3D5) and SCRMOD to the case's, ATRBYT to
   $77, ASPCT1 / ASPCT2 to $1234 / $5678.
 - BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (IX / IY complemented when bit 2 of the case
   number is set), A $A7, entry F $00 / $FF and interrupts off / on by case. After the call it records
@@ -43,8 +43,14 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   LEFTC at $0000 (wrapping); RIGHTC with SCREEN 3 CMASK $1F / $8F / $FF and LEFTC with $80 / $F1;
   RIGHTC / LEFTC with SCREEN 2 CMASK $03; the four plain moves with entry A $FF, F $FF, interrupts on
   and other BC / DE / HL; a TDOWNC stop with entry A $FF; DOWNC from $FFFF and RIGHTC from $FFFC.
-  Cases 261, 275, 276, 285-289, 294, 295 are not positions MAPXYC gives (a CMASK that is not a
-  pixel's, or CLOC off GRPCGP's grid).
+- Cases 303-323: TDOWNC at CLOC $36FF (GRPCGP $2000), $3707 (GRPCGP $2008, $2005), $0F07 (GRPCGP
+  $2000), $8007, $9707, $96FF (GRPCGP $0000), and in SCREEN 3 at $04FF (MLTCGP $0000); TUPC at $2100
+  with GRPCGP $2001-$2003, at $0008 (GRPCGP $2000), $8000 and $8100 (GRPCGP $0000), and in SCREEN 3
+  at $00F8 (MLTCGP $0000); RIGHTC / LEFTC with SCREEN 3 CMASK $70 / $4F; LEFTC with SCREEN 2 CMASK
+  $C0 / $81.
+- Not positions MAPXYC gives: a CMASK that is not a pixel's (261, 275, 276, 285-289, 294, 295,
+  310-315); CLOC off GRPCGP's grid or outside the table (261, 277-279, 290, 291, 303-306, 309,
+  316-323); SCREEN 3 CLOC outside a table at MLTCGP $0000 (292, 293); CLOC $FFFF / $FFFC (301, 302).
 - Case 255 enters with ASPCT1 / ASPCT2 $0100 / $00C0 (the probe's marker for that case number).
 - The rule tables count each case once per row (N and D).
 
