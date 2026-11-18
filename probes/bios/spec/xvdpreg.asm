@@ -1,31 +1,35 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XVDPREG -- docs/bios/WRTVDP.md, DISSCR.md, ENASCR.md, RDVDP.md round 2 (2026-11-18; round 1 had no boot copy and no sprite case): the VDP register calls.
+; XVDPREG -- docs/bios/WRTVDP.md, DISSCR.md, ENASCR.md, RDVDP.md round 3 (2026-11-18; round 1 had no boot copy and no sprite case; round 2 no C above 15, one B per C 8-15, no
+; second RDVDP, and sprite cases not synchronised to the frame): the VDP register calls.
 ; Per case (the table `cases` at the end: op, C, B, entry F, interrupts, RG1SAV) the probe first sets, BY HAND:
 ;   - VDP registers R#0-R#7 := $00 $C0 $06 $80 $00 $36 $07 $F4 (ports $99), R#1 with the interrupt bit clear;
 ;   - RG0SAV-RG7SAV ($F3DF-$F3E6) := $30 + k, a pattern none of the calls' values share -- then RG1SAV := the
 ;     case's value;
 ;   - $F3E7-$F3EE := the copy taken at boot (they are recorded, to show a call writing past RG7SAV);
 ;   - sprite 0's Y := $D0 in VRAM at $1B00 (R#5 = $36), so no sprite counts for the status;
+;   - the byte at RG0SAV + C ($F3DF + C, 16-bit) is saved, and put back after the record;
 ;   - the VDP status read once (cleared); for an RDVDP case with B = 1 a wait of more than one frame follows;
 ;     with B = 2, first sprites 0-4 on one line at the same place ($40, $40; pattern 0 = 8 x $FF at $3800,
-;     colour 15; sprite 5's Y $D0; written slowly), then the wait: five on a line, and overlapping.
+;     colour 15; sprite 5's Y $D0; written slowly), then the status polled until its frame flag is set (the
+;     start of a frame), then the wait: five on a line, and overlapping, scanned once since the poll;
+;     with B = 3, the wait, then one RDVDP call of the probe's own (not recorded) before the recorded one.
 ; Then A = $A7, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), B and C as listed, F as listed,
 ; interrupts on or off, and the call: op 0 WRTVDP ($0047), 1 DISSCR ($0041), 2 ENASCR ($0044), 3 RDVDP ($013E).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xvdpreg.asm --row nodisk
 ; The capture: CAP+0 = $A5 when finished; CAP+1..8 = $F3E7-$F3EE at boot (the copy every case starts from);
-; per case a 30-byte record from CAP+9:
+; per case a 32-byte record from CAP+9:
 ;   +0 A after  +1 F after  +2 B after  +3 C after  +4 moved: bit 0 DE, 1 HL, 2 IX, 3 IY (0 = all kept)
 ;   +5 interrupts after (1 on)  +6..13 RG0SAV-RG7SAV after  +14..21 $F3E7-$F3EE after
-;   +22..29 VDP R#0-R#7 after (written by the debugger at SNAP: @vdpsnap)
+;   +22..29 VDP R#0-R#7 after (written by the debugger at SNAP: @vdpsnap)  +30 the byte at RG0SAV + C after  +31 0
 ; then $C3.
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries, work-area RAM, the VDP's ports, and the VDP's registers
 ; read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 0800
+; @caplen 0C00
 ; @timeout 60
 ; @vdpsnap E8F0 EF00
 
@@ -43,6 +47,8 @@ raf     equ     $E918                   ; F, A after
 rbc     equ     $E91A                   ; C, B after
 riff    equ     $E91C
 rkept   equ     $E91D
+farp    equ     $E91E                   ; RG0SAV + C
+farv    equ     $E920                   ; its byte before
 
                 org     $4000
                 db      "AB"
@@ -53,7 +59,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $07FF
+                ld      bc, $0BFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -89,6 +95,14 @@ next:
                 rrca
                 sbc     a, a                    ; $FF in odd cases
                 ld      (mask), a
+                ld      a, (cop+1)
+                ld      l, a
+                ld      h, 0
+                ld      de, $F3DF
+                add     hl, de
+                ld      (farp), hl
+                ld      a, (hl)
+                ld      (farv), a
                 call    preset
                 in      a, ($99)                ; the status cleared
                 ld      a, (cop)
@@ -100,11 +114,18 @@ next:
                 cp      2
                 call    z, sprites
                 ld      bc, $1000               ; > 100 000 T-states: more than one frame
+                call    w_lp
+                ld      a, (cop+2)
+                cp      3
+                jr      nz, nowait
+                call    $013E                   ; the probe's own RDVDP, not recorded
+                jr      nowait
 w_lp:
                 dec     bc
                 ld      a, b
                 or      c
                 jr      nz, w_lp
+                ret
 nowait:
                 ld      a, (cop+3)
                 ld      c, a
@@ -233,6 +254,13 @@ r_lp:
                 inc     hl
                 djnz    r_lp
                 call    SNAP                    ; the debugger appends R#0-R#7
+                ld      hl, (farp)
+                ld      a, (hl)
+                call    emit
+                xor     a
+                call    emit
+                ld      a, (farv)
+                ld      (hl), a                 ; RG0SAV + C put back
                 ld      hl, SAVE
                 ld      de, $F3E7
                 ld      bc, 8
@@ -327,6 +355,10 @@ s_p:
                 call    vput
                 djnz    s_p
                 in      a, ($99)                ; cleared again
+s_sync:
+                in      a, ($99)                ; polled until the frame flag: the start of a frame
+                rlca
+                jr      nc, s_sync
                 ret
 
 ; vput -- one VRAM write, at least 38 T-states from the next (a TMS9918 drops faster writes in active display)
@@ -359,7 +391,8 @@ emit:
 
 ; ---- cases: op, C, B, entry F, interrupts (1 on), RG1SAV; $FF ends ----
 ; op 0 WRTVDP: C 0-7 x B {00, FF, 5A, A5}, then C 8-15; op 1 DISSCR / 2 ENASCR: RG1SAV over 8 values;
-; op 3 RDVDP: B = 1 waits more than a frame first, B = 0 does not, B = 2 sets the sprites up and waits
+; op 3 RDVDP: B = 1 waits more than a frame first, B = 0 does not, B = 2 sets the sprites up, synchronises and
+; waits, B = 3 waits and reads the status once itself first
 cases:
                 db      $00, $00, $00, $00, $00, $31   ; 0
                 db      $00, $00, $FF, $FF, $00, $31   ; 1
@@ -425,4 +458,20 @@ cases:
                 db      $03, $77, $00, $00, $01, $31   ; 61
                 db      $03, $77, $02, $00, $00, $31   ; 62
                 db      $03, $77, $02, $FF, $01, $31   ; 63
+                db      $00, $08, $A5, $00, $01, $31   ; 64  C 8-15 with the other B
+                db      $00, $09, $A5, $FF, $00, $31   ; 65
+                db      $00, $0A, $A5, $00, $01, $31   ; 66
+                db      $00, $0B, $A5, $FF, $00, $31   ; 67
+                db      $00, $0C, $5A, $00, $01, $31   ; 68
+                db      $00, $0D, $5A, $FF, $00, $31   ; 69
+                db      $00, $0E, $5A, $00, $01, $31   ; 70
+                db      $00, $0F, $5A, $FF, $00, $31   ; 71
+                db      $00, $10, $5A, $00, $00, $31   ; 72  C above 15
+                db      $00, $28, $A5, $FF, $01, $31   ; 73
+                db      $00, $80, $5A, $FF, $00, $31   ; 74
+                db      $00, $FF, $A5, $00, $01, $31   ; 75
+                db      $03, $77, $01, $00, $01, $31   ; 76  RDVDP: the combinations rows 56-61 lack
+                db      $03, $77, $00, $FF, $00, $31   ; 77
+                db      $03, $77, $03, $00, $00, $31   ; 78  RDVDP twice after the wait
+                db      $03, $77, $03, $FF, $01, $31   ; 79
                 db      $FF

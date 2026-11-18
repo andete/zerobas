@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `DISSCR` ($0041) — blank the screen
 
-> **Spec:** DRAFT 1 (2026-11-18), before review. Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 4). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -23,25 +23,28 @@ zerobas does all of it the same.
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XV rNN]**: case `NN` of the XVDPREG probe, run 3, on row `r`, both rows in
-[`scratchpad/XVDPREG_run3.out`](../../scratchpad/XVDPREG_run3.out); a second run,
-[`scratchpad/XVDPREG_run3_repeat.out`](../../scratchpad/XVDPREG_run3_repeat.out), recorded the same bytes.
-`probes/bios/spec/xvdpreg.asm` documents the case table and the 30-byte record:
+**Evidence.** **[XV rNN]**: case `NN` of the XVDPREG probe, run 4, on row `r`, both rows in
+[`scratchpad/XVDPREG_run4.out`](../../scratchpad/XVDPREG_run4.out); a second run,
+[`scratchpad/XVDPREG_run4_repeat.out`](../../scratchpad/XVDPREG_run4_repeat.out), recorded the same bytes.
+`probes/bios/spec/xvdpreg.asm` documents the case table and the 32-byte record:
 - Before each case the probe sets, by hand: the VDP registers R#0-R#7 to $00 $C0 $06 $80 $00 $36 $07
   $F4 (R#1's interrupt bit clear); RG0SAV-RG7SAV ($F3DF-$F3E6) to $30-$37, then RG1SAV to the case's
   value; $F3E7-$F3EE to the bytes they held at boot (recorded once, at the start of the capture);
-  sprite 0's Y to $D0 (no sprite shown). It reads the VDP status once, to clear it.
+  sprite 0's Y to $D0 (no sprite shown). It saves the byte at RG0SAV + C and puts it back after the
+  record. It reads the VDP status once, to clear it.
 - A is $A7, DE $9BDF, HL $2468, IX $4321, IY $8765, every one complemented in odd cases; B and C as
   the case lists them; entry F $00 or $FF; interrupts on or off.
 - After the call it records A, F, B, C, whether DE / HL / IX / IY moved, the interrupt state,
-  RG0SAV-RG7SAV and $F3E7-$F3EE. Then the CPU reaches a probe address where the emulator's debugger
-  writes the VDP registers R#0-R#7 into the record (`@vdpsnap` in
+  RG0SAV-RG7SAV, $F3E7-$F3EE and the byte at RG0SAV + C. Then the CPU reaches a probe address where
+  the emulator's debugger writes the VDP registers R#0-R#7 into the record (`@vdpsnap` in
   [probes/bios/biosl_run.py](../../probes/bios/biosl_run.py)): the registers as the VDP holds them,
   read from the hardware, not from any ROM.
-- Cases 00-39 call WRTVDP: C 0-7 with B $00, $FF, $5A and $A5, then C 8-15. Cases 40-47 call DISSCR
-  and 48-55 ENASCR, RG1SAV $00, $FF, $A0, $E2, $5A, $A5, $40, $BF. Cases 56-63 call RDVDP: after a
-  wait of more than a frame (B = 1), with none (B = 0), or with five sprites set up on one line first
-  (B = 2).
+- WRTVDP: cases 00-31 (C 0-7, B $00, $FF, $5A, $A5, each B with its own entry F and interrupt
+  state), 32-39 and 64-71 (C 8-15, B $5A and $A5), 72-75 (C $10, $28, $80, $FF). DISSCR: 40-47,
+  ENASCR: 48-55, RG1SAV $00, $FF, $A0, $E2, $5A, $A5, $40, $BF. RDVDP: 56-63 and 76-79 -- after a
+  wait of more than a frame (B = 1); with none (B = 0); with five sprites set up on one line and the
+  status polled until its frame flag, then the wait (B = 2); or the wait and an RDVDP of the probe's
+  own first (B = 3); each with entry F $00 and $FF and interrupts off and on.
 - $F3E7-$F3EE differ between the machines at boot (two bytes): set-up, which every case starts from
   and the rules compare with each machine's own boot copy. The harness reports them as differences.
 
@@ -67,6 +70,9 @@ None measured: every rule holds on zerobas.
 ## Open (not measured)
 
 - **[A]** RG1SAV values other than the eight measured.
+- **[A]** Entry with a VDP interrupt pending and RG1SAV with bit 5 set (5 of the 8 values): whether the interrupt is taken before the
+  call returns (the probe clears the VDP status first, so none is pending).
+- **[A]** The VDP's address latch after the call.
 - **[A]** The alternate registers and SP; RAM beyond $F3DF-$F3EE; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

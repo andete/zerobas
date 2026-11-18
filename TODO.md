@@ -16856,6 +16856,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
+      🎚️ TIER 6 — every edge (F is not published for any of them; a caller testing it; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/RDVRM.md R-RV-F, FILVRM.md R-FV-F, LDIRMV.md R-MV-REGS, LDIRVM.md R-VM-REGS
+      ([`XVRAM_run1.out`](scratchpad/XVRAM_run1.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
+      leaves them (H set), zerobas's without H ($04 for $14); FILVRM keeps F there, zerobas returns $42 / $43;
+      LDIRMV / LDIRVM return $44 there, $42 / $43 on zerobas. The bytes, A and the other registers agree.
+      Priced when picked up.
+
+- [ ] **D-WRTVDPC — WRTVDP WITH C $80 AND UP WRITES THE WRONG WORK-AREA BYTE ON ZEROBAS (C AND $7F)**
+      🎚️ TIER 6 — every edge (a caller passing a register number of $80 or more to WRTVDP; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/WRTVDP.md R-WV-SAV / R-WV-ABC ([`XVDPREG_run4.out`](scratchpad/XVDPREG_run4.out)):
+      the VG-8020 stores B at RG0SAV + C for every C ($F45F for C $80, $F4DE for $FF) and returns C unchanged;
+      zerobas takes C AND $7F -- C = $80 overwrites RG0SAV itself with B and returns C = 0, C = $FF writes $F45E and
+      returns $7F. The VDP register written (C AND 7) and F agree. Priced when picked up.
+
 - [ ] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
       🎚️ TIER 6 — every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed
       2026-11-18). BASIC's own context is not measured here (the harness runs cartridges at init).

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""docs/bios/WRTVDP.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRTVDP ($0047) -- scratchpad/XVDPREG_run3.out
-(rows N and D; probes/bios/spec/xvdpreg.asm documents the presets, the case table and the 30-byte record).
+"""docs/bios/WRTVDP.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRTVDP ($0047) -- scratchpad/XVDPREG_run4.out
+(rows N and D; probes/bios/spec/xvdpreg.asm documents the presets, the case table and the 32-byte record).
 DISSCR.md, ENASCR.md and RDVDP.md read the same run: `load(op)` serves all four (op 0 WRTVDP, 1 DISSCR, 2 ENASCR,
 3 RDVDP)."""
 import os
@@ -16,13 +16,13 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
 PAGE = "docs/bios/WRTVDP.md"
-RUN = "XVDPREG_run3.out"
+RUN = "XVDPREG_run4.out"
 ASM = os.path.join(HERE, "xvdpreg.asm")
-REC = 30
+REC = 32
 VPRE = (0x00, 0xC0, 0x06, 0x80, 0x00, 0x36, 0x07, 0xF4)     # the VDP registers' preset, by hand
 MASK = (0x03, 0xFB, 0x0F, 0xFF, 0x07, 0x7F, 0x07, 0xFF)     # the bits each register holds (the rest read 0)
 FIELDS = ["a", "f", "b", "c", "moved", "iff", "sav", "e7", "vdp"]
-OUTPUTS = {"XV": FIELDS, "XVS": ["afc"] + FIELDS[1:]}
+OUTPUTS = {"XW": FIELDS + ["far"], "XV": FIELDS}   # XW: WRTVDP, with the byte at RG0SAV + C
 
 
 def parity_even(v):
@@ -56,14 +56,12 @@ def load(op):
                 if cop != op:
                     continue
                 r = b[9 + REC * i:9 + REC * (i + 1)]
-                spr = cop == 3 and bb == 2
-                d = dict(src="XVS" if spr else "XV", id=f"XV {row}{i:02}", row=row, op=cop, cc=cc, bb=bb, ef=ef,
+                d = dict(src="XW" if cop == 0 else "XV", id=f"XV {row}{i:02}", row=row, op=cop, cc=cc, bb=bb, ef=ef,
                          ei=ei, rg1=rg1, boot=boot, f=r[1], b=r[2], c=r[3], moved=r[4], iff=r[5],
                          sav=tuple(r[6:14]), e7=tuple(r[14:22]), vdp=tuple(r[22:30]))
-                if spr:
-                    d["afc"] = r[0] & 0xA0
-                else:
-                    d["a"] = r[0]
+                d["a"] = r[0]
+                if cop == 0:
+                    d["far"] = r[30]
                 out[who].append(NS(**d))
     return out
 
@@ -80,9 +78,10 @@ def cases():
 
 
 def after_write(c, k, v):
-    """the 16 work-area bytes and the 8 registers, with byte k of the work area and register k & 7 := v"""
+    """the 16 work-area bytes and the 8 registers, with byte k of the work area (k < 16) and register k & 7 := v"""
     s = presav(c)
-    s[k] = v
+    if k < 16:
+        s[k] = v
     r = list(VPRE)
     r[k & 7] = v & MASK[k & 7]
     return tuple(s[:8]), tuple(s[8:]), tuple(r)
@@ -92,13 +91,15 @@ S1 = "1. WRTVDP ($0047): write B to VDP register C"
 ALL = lambda c: True  # noqa: E731
 
 RULES = [
-    Rule("R-WV-REG", S1, "VDP register C := B, as the VDP holds it (its unused bits read 0: R#0 keeps bits 1-0, R#1 all "
-         "but bit 2, R#2 bits 3-0, R#4 and R#6 bits 2-0, R#5 bits 6-0); the other seven registers keep their values. "
-         "C 0-7, each with B $00, $FF, $5A and $A5; for C 8-15 the register written is C AND 7.", ALL,
+    Rule("R-WV-REG", S1, "VDP register C AND 7 := B, as the VDP holds it (its unused bits read 0: R#0 keeps bits 1-0, R#1 "
+         "all but bit 2, R#2 bits 3-0, R#4 and R#6 bits 2-0, R#5 bits 6-0); the other seven registers keep their values. "
+         "C 0-7, each with B $00, $FF, $5A and $A5; C 8-15 with $5A and $A5; C $10, $28, $80, $FF.", ALL,
          lambda c: c.vdp == after_write(c, c.cc, c.bb)[2]),
-    Rule("R-WV-SAV", S1, "The byte at RG0SAV + C ($F3DF + C) := B: for C 0-7 the register's own shadow RG0SAV-RG7SAV; "
-         "for C 8-15 a cell past RG7SAV ($F3E7-$F3EE). Every other byte of $F3DF-$F3EE keeps its value.", ALL,
-         lambda c: (c.sav, c.e7) == after_write(c, c.cc, c.bb)[:2]),
+    Rule("R-WV-SAV", S1, "The byte at RG0SAV + C ($F3DF + C, for every C) := B: for C 0-7 the register's own shadow "
+         "RG0SAV-RG7SAV; for C 8-15 a cell past RG7SAV ($F3E7-$F3EE); for C $10, $28, $80, $FF further on ($F3EF, "
+         "$F407, $F45F, $F4DE). Every other byte of $F3DF-$F3EE keeps its value.", ALL,
+         lambda c: c.far == c.bb and (c.sav, c.e7) == (after_write(c, c.cc, c.bb)[:2] if c.cc < 16
+                                                       else (tuple(presav(c)[:8]), tuple(presav(c)[8:])))),
     Rule("R-WV-ABC", S1, "A = B on return, B = 0, and C is kept.", ALL,
          lambda c: c.a == c.bb and c.b == 0 and c.c == c.cc),
     Rule("R-WV-F", S1, "F is $A0 (S and bit 5 set), with P/V set when C OR $80 has an even number of 1 bits ($A4) -- "
