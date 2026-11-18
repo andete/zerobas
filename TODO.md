@@ -17026,6 +17026,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset
       (basic/playsvc.asm psv_flush / the GICINI teardown), priced when picked up.
 
+- [ ] **D-CHRGTRSKIP — CHRGTR SKIPS ONLY THE SPACE; THE VG-8020'S SKIPS TAB AND LF TOO, AND ITS END-OF-LINE F IS $44**
+      🎚️ TIER 6 — every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00;
+      filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CHRGTR.md R-C-SKIP / R-C-END ([`XCHRGTR_run4.out`](scratchpad/XCHRGTR_run4.out)): the
+      VG-8020's CHRGTR steps over $20, $09 and $0A alike (HL + 2, A $31 in the probe); zerobas's (basic/islands.asm
+      `chrgtr`) over $20 only, returning $09 / $0A as plain characters. At 00 the VG-8020 returns F $44 (a logical
+      result's: Z, P/V), zerobas $42 (Z, N); Z agrees. zerobas's interpreter calls `rst $10` itself, so the skip would
+      also change how its BASIC reads a TAB in program text -- toward the reference, whose interpreter uses the same
+      entry; measure a stored TAB on both machines before picking it up. Priced when picked up (island 2).
+
+- [ ] **D-CHRGTRTOK — CHRGTR TREATS THE NUMERIC-CONSTANT TOKENS $0B-$1F AS PLAIN CHARACTERS; THE VG-8020'S DECODES THEM**
+      🎚️ TIER 6 — every edge (machine code -- a USR routine or a CALL handler -- walking program text with CHRGTR across
+      a constant; zerobas's own interpreter reads constants without it; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CHRGTR.md R-C-NUM / R-C-CONST / R-C-10 / R-C-1E / R-C-CHAIN
+      ([`XCHRGTR_run4.out`](scratchpad/XCHRGTR_run4.out), [`XCHRGTR2_run1.out`](scratchpad/XCHRGTR2_run1.out)): on a numeric token the VG-8020 writes CONTXT ($F666) := the
+      text after the constant, CONSAV ($F668) := the token, CONTYP ($F669) := 2 / 4 / 8, CONLO ($F66A..) := the value,
+      and returns A = the token, a logical result's F and HL = $46E6; the next call from there returns the text after
+      the constant. $10 resumes at CONTXT; $1E returns A = CONSAV.
+      zerobas returns each as a plain character and writes none of the cells. The program text is the same format on
+      both machines (docs/concepts/program-text.md), so such code meets these tokens on zerobas too. Priced when
+      picked up; not cheap (a decoder for 19 tokens).
+
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
       2026-11-17).
