@@ -16848,6 +16848,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01; zerobas's differs on every call ($1A for a letter, $54 after a TAB ...). Not published. The LPTOUT half is
       D-LPTOUTF. Priced when picked up.
 
+- [ ] **D-ISFLIO — ISFLIO LOOKS AT PTRFIL'S LOW BYTE ONLY: A FILE WHOSE FCB IS AT $xx00 READS AS "NO FILE"**
+      🎚️ TIER 6 — every edge (a caller -- an extension ROM printing through OUTDO -- asking ISFLIO while PTRFIL's low
+      byte is 0; filed 2026-11-18). A WRONG ANSWER, not a flag: likely a one-instruction fix (OR the high byte in).
+      🤖 **AUTONOMOUS** — docs/bios/ISFLIO.md R-IF-A / R-IF-F ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out),
+      [`XOUTDO_run2d.out`](scratchpad/XOUTDO_run2d.out)): the VG-8020 returns A = PTRFIL's two bytes ORed ($0100 ->
+      $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
+      file") with other flags. Priced when picked up.
+
+- [ ] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed
+      2026-11-18). BASIC's own context is not measured here (the harness runs cartridges at init).
+      🤖 **AUTONOMOUS** — docs/bios/OUTDO.md R-OU-SCR / R-OU-CELL / R-OU-KEEP / R-OU-SF ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out)):
+      with PRTFLG 0 the VG-8020 prints the character in the cursor's cell and moves CSRX on, keeping A, F and the
+      registers; zerobas leaves CSRX and the name table (RG2SAV * $400) as they were, and entered with F $FF it
+      returns A $FE, F $08 and other BC, DE, HL (R-OU-KEEP / R-OU-SF). The printer did not get the characters
+      either (PRN identical). Priced when picked up -- first measure where zerobas's OUTDO sends it (PRDEST / the
+      hook) at cartridge time.
+
 - [ ] **D-CHRGTRSKIP — CHRGTR SKIPS ONLY THE SPACE; THE VG-8020'S SKIPS TAB AND LF TOO, AND ITS END-OF-LINE F IS $44**
       🎚️ TIER 6 — every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00;
       filed 2026-11-18).

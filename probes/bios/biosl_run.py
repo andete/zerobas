@@ -98,8 +98,10 @@ ROWS = {
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False}
-    for m in re.finditer(r"^;\s*@([\w-]+)\s+(.*?)\s*$", asm_text, re.M):
-        k, v = m.group(1), m.group(2)
+    # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
+    # otherwise take the next line as its value)
+    for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
+        k, v = m.group(1), (m.group(2) or "")
         if k == "keys":
             s["keys"] = v
         elif k == "matrix":                 # ROW MASK [ROW MASK ...]: raw key-matrix presses, held together

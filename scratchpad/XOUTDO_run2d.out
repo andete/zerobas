@@ -1,0 +1,38 @@
+===== probes/bios/spec/xoutdo.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=e800 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=4d01 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  CAP ours: a5005400011000005400005400ffbc00050305037e000001501a0008095400095a0a000a019b000b411a00000d0a00000a0a00014b0a000c0a0c0afe080706ffff00ffff00c3
+  PRN ref : 50202020202020205a01410d0a4b
+  PRN ours: 50202020202020205a01410d0a4b
+  DIFF (28 unexcused byte(s)):
+  CAP C003: ref=44 ours=54
+  CAP C006: ref=00 ours=10
+  CAP C008: ref=01 ours=00
+  CAP C009: ref=00 ours=54
+  CAP C00B: ref=80 ours=00
+  CAP C00C: ref=80 ours=54
+  CAP C00F: ref=AC ours=BC
+  CAP C014: ref=04 ours=03
+  CAP C01A: ref=14 ours=1A
+  CAP C01E: ref=00 ours=54
+  CAP C022: ref=1C ours=0A
+  CAP C024: ref=09 ours=0A
+  CAP C026: ref=10 ours=9B
+  CAP C028: ref=0A ours=0B
+  CAP C02A: ref=14 ours=1A
+  CAP C02E: ref=18 ours=0A
+  CAP C032: ref=1C ours=0A
+  CAP C036: ref=1C ours=0A
+  CAP C03B: ref=0B ours=0A
+  CAP C03C: ref=7C ours=FE
+  CAP C03D: ref=FF ours=08
+  CAP C03E: ref=00 ours=07
+  CAP C040: ref=84 ours=FF
+  CAP C041: ref=00 ours=FF
+  CAP C042: ref=01 ours=00
+  CAP C043: ref=6B ours=FF
+  CAP C044: ref=01 ours=FF
+  CAP C045: ref=01 ours=00
+===== biosl: DIVERGENCE =====
