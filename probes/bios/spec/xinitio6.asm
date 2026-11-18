@@ -13,7 +13,8 @@
 ; The capture: CAP+0 = $A5 when finished; per case a 125-byte record from CAP+1:
 ;   +0,1 JIFFY before (low, high)  +2,3 JIFFY after  +4,5 QUEUES before  +6,7 QUEUES after
 ;   +8..35 the table at QUEUES (as it was before the call) BEFORE   +36..63 the same 28 bytes AFTER
-;   +64..91 $F959.. BEFORE   +92..119 $F959.. AFTER   +120 MUSICF after   +121..123 0   +124 sentinel $C3
+;   +64..91 $F959.. BEFORE   +92..119 $F959.. AFTER   +120 MUSICF after   +121..123 R7 / R11 / R15 after (run 4: the
+;   PSG is set all $00 before every call)   +124 sentinel $C3
 ;
 ; CLEAN-ROOM: 100% own code; a published BIOS entry, the VDP's published status port, work-area RAM.
 ;
@@ -108,6 +109,17 @@ q_keep:
                 ld      (ptr), hl               ; skip the AFTER copy for now
                 ld      hl, $F959
                 call    emit28                  ; +64..91
+                ; run 4: the PSG's 16 registers := 0 (R7 / R11 / R15 read back after the call)
+                ld      b, 0
+z_psg:
+                ld      a, b
+                out     ($A0), a
+                xor     a
+                out     ($A1), a
+                inc     b
+                ld      a, b
+                cp      16
+                jr      c, z_psg
                 ; the call, under the clean window
                 ld      a, (cmus)
                 ld      ($FB3F), a              ; MUSICF: the case's (0 but in case 5)
@@ -151,9 +163,17 @@ q_keep:
                 call    emit28                  ; +92..119
                 ld      a, ($FB3F)
                 call    emit                    ; +120
-                xor     a
+                ld      a, 7                    ; run 4: R7, R11, R15 after the call (+121..123)
+                out     ($A0), a
+                in      a, ($A2)
                 call    emit
+                ld      a, 11
+                out     ($A0), a
+                in      a, ($A2)
                 call    emit
+                ld      a, 15
+                out     ($A0), a
+                in      a, ($A2)
                 call    emit
                 ld      a, $C3
                 call    emit                    ; +124
