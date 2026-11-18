@@ -5,30 +5,32 @@ SPDX-License-Identifier: 0BSD
 
 # `CHGCLR` ($0062) — set the screen colours
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
 
 `CHGCLR` puts the colour cells on the screen:
-- in SCREEN 0 (SCRMOD 0, and $FF, which takes the same path) VDP register R#7 and RG7SAV :=
-  (FORCLR x 16) OR BAKCLR, the text and background colours;
-- for SCRMOD 1, 2, 3, 4 and $77 they := BDRCLR, the border colour;
-- in SCREEN 1 it also fills the 32-byte colour table at T32COL ($F3BF) with (FORCLR x 16) OR
-  BAKCLR.
+- in SCREEN 0 -- when SCRMOD - 1 is negative as a signed byte: SCRMOD 0, and $81-$FF ($81 and $FF
+  measured) -- VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, the text and background
+  colours;
+- for any other SCRMOD (1, 2, 3, 4, $10, $77, $80 measured) they := BDRCLR, the border colour;
+- in SCREEN 1 it also fills the 32-byte colour table at T32COL ($F3BF, AND $3FFF, wrapping) with
+  (FORCLR x 16) OR BAKCLR.
 
 Colours over 15 are used as they are. It writes nothing else and returns with interrupts **on**.
 
-zerobas sets the same registers and VRAM, except for SCRMOD $FF, which it treats as a graphics mode.
-It returns other registers: F and DE on every path, and A and HL outside SCREEN 0 / 1 (below).
+zerobas sets the same registers and VRAM, except for SCRMOD $81 and $FF, which it treats as graphics
+modes. It returns other registers: DE on every path, F on the SCREEN 0 / 1 paths and where the entry
+carry is set, A and HL outside SCREEN 0 / 1 (below).
 
 ## The specification
 
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XC rNN]**: case `NN` of the XCLR probe, run 3, on row `r`, both rows in
-[`scratchpad/XCLR_run3.out`](../../scratchpad/XCLR_run3.out) (the two rows recorded the same bytes).
+**Evidence.** **[XC rNN]**: case `NN` of the XCLR probe, run 4, on row `r`, both rows in
+[`scratchpad/XCLR_run4.out`](../../scratchpad/XCLR_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xclr.asm` documents the presets, the case table and the 128-byte record:
 - Before each case the probe sets, by hand: the 20 screen-table cells to the published defaults
   (set 0) or moved ones (set 1: T32COL $0FC0, T32ATR $3F80, T32PAT $1000 among them); SCRMOD,
@@ -36,9 +38,11 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   $A5; the VDP registers to $00 $80 $06 $80 $00 $36 $07 $F4 (R#1's interrupt bit clear, display
   off); every VRAM byte to ((address low) XOR (address high) XOR $5A) OR the block number (address /
   $400), so the sixteen 1 KB blocks sum to sixteen different values.
-- BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (complemented in odd cases), A $A7, entry F and
-  interrupts as the case lists them.
-- After the call it records every register, the interrupt state, RG0SAV-RG7SAV, SCRMOD, FORCLR /
+- The VDP status is read last, so no VDP interrupt is pending at the call. BC $1357, DE $9BDF, HL
+  $2468, IX $4321, IY $8765 (complemented when bit 2 of the case number is set, apart from entry F,
+  which is $00 / $FF in even / odd cases, and the interrupt state), A $A7.
+- After the call it records every register, the interrupt state (read twice: an interrupt accepted
+  during the first read would show "off"), RG0SAV-RG7SAV, SCRMOD, FORCLR /
   BAKCLR / BDRCLR, the VDP registers as the VDP holds them (written into the record by the
   emulator's debugger, `@vdpsnap` in [probes/bios/biosl_run.py](../../probes/bios/biosl_run.py)),
   the 16-bit sums of VRAM's sixteen 1 KB blocks (read with R#1 := $80 first) and three 16-byte VRAM
@@ -47,22 +51,24 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   FORCLR 15, $0A, $FF; ATRBAS / PATBAS $1B00 / $3800, $1F80 / $2000 (in SCREEN 0-3), $3FC0 / $3C00
   (both wrapping, the attributes inside the pattern table's span); cell sets 0 and 1. CHGCLR: cases
   12-23 and 33-39 -- SCRMOD 0, 1, 2, 3, 4, $77, $FF; colours 15 / 4 / 7, $1A / $25 / $3C, 0 / 0 / 0,
-  15 / 15 / 15, $10 / $25 / 7, 1 / 2 / 3; cell sets 0 and 1. Entry F $00 in even cases and $FF in odd
-  ones up to 23; cases 24-39 pair them otherwise, and the interrupt state too.
+  15 / 15 / 15, $10 / $25 / 7, 1 / 2 / 3; cell sets 0 and 1. Round 4 adds CLRSPR 40-46 (16 x 16 in
+  SCREEN 0 and 3, SCRMOD $77 with moved tables, ATRBAS $5B00 / $9B00 and PATBAS $B800, RG1SAV $88,
+  the attributes inside the pattern table without a wrap) and CHGCLR 47-52 (SCRMOD $80, $81, $10;
+  T32COL $FFFF, wrapping; SCRMOD 2 / 3 with the markers apart from entry F).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xchgclr_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xchgclr_rules.py --write` -->
 
-**4 rules; 4 hold on the reference. Of the 608 recorded outputs (each case's cursor, cells, A, table entries ...): 608 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**4 rules; 4 hold on the reference. Of the 800 recorded outputs (each case's cursor, cells, A, table entries ...): 800 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. CHGCLR ($0062): set the screen colours
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CC-R7** VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, for SCRMOD 0 -- and $FF, which goes the same way (SCRMOD - 1 negative); BDRCLR for SCRMOD 1, 2, 3, 4, $77. Colours over 15 are used as they are (FORCLR $10, BAKCLR $25 give $25, not $05; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD and the colour cells are not changed. | 38 | ✓ | ✗ 2: XC N39, XC D39 |
-| **R-CC-VRAM** In SCREEN 1 (SCRMOD 1) the 32-byte colour table at T32COL ($F3BF) := (FORCLR x 16) OR BAKCLR; in the other modes VRAM is not written. T32COL, not RG3SAV, gives the place. | 38 | ✓ | ✓ |
-| **R-CC-REGS** On return, on the SCREEN 0 path: A = R#7's new value, F = $A4 (whatever the colour byte: $F4, $A5, $FF, $25, $12), BC = $0007, HL = $F3EA, DE kept; in SCREEN 1: A = the colour byte, F its flags as an OR leaves them, BC = 0, HL = T32COL, DE kept; in the other modes A = SCRMOD - 1 with F as DEC A leaves it and the entry carry kept, BC = $0007, DE and HL kept. IX and IY are kept. | 38 | ✓ | ✗ 38: XC N12, XC N13, XC N14, XC N15, XC N16, XC N17 … (+32) |
-| **R-CC-EI** Interrupts are on after the call, whether they were on or off before it. | 38 | ✓ | ✓ |
+| **R-CC-R7** VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, when SCRMOD - 1 is negative as a signed byte -- SCRMOD 0, $81, $FF; BDRCLR otherwise -- SCRMOD 1, 2, 3, 4, $10, $77, $80. Colours over 15 are used as they are (FORCLR $10, BAKCLR $25 give $25, not $05; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD and the colour cells are not changed. | 50 | ✓ | ✗ 4: XC N39, XC N48, XC D39, XC D48 |
+| **R-CC-VRAM** In SCREEN 1 (SCRMOD 1) the 32-byte colour table at T32COL ($F3BF) := (FORCLR x 16) OR BAKCLR, T32COL taken AND $3FFF and the 32 bytes wrapping from $3FFF to $0000 (T32COL $FFFF); in the other modes VRAM is not written. T32COL, not RG3SAV, gives the place. | 50 | ✓ | ✓ |
+| **R-CC-REGS** On return, on the SCREEN 0 path: A = R#7's new value, F = $A4 (whatever the colour byte: $F4, $A5, $FF, $25, $12), BC = $0007, HL = $F3EA, DE kept; in SCREEN 1: A = the colour byte, F its flags as an OR leaves them, BC = 0, HL = T32COL, DE kept; in the other modes A = SCRMOD - 1 with F as DEC A leaves it (the half-borrow at $10, the overflow at $80) and the entry carry kept, BC = $0007, DE and HL kept. IX and IY are kept. | 50 | ✓ | ✗ 50: XC N12, XC N13, XC N14, XC N15, XC N16, XC N17 … (+44) |
+| **R-CC-EI** Interrupts are on after the call, whether they were on or off before it. | 50 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -70,12 +76,13 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-CHGCLRMODE** (SCRMOD $FF: zerobas sets R#7 to BDRCLR; the VG-8020 takes the SCREEN 0 path) | R-CC-R7 |
-| **D-CLRREGS** (zerobas returns other F and DE everywhere -- D = SCRMOD - 1, E the colour byte -- and, outside SCREEN 0 / 1, A = BDRCLR and HL $F3EB; its A and HL agree in SCREEN 0 / 1) | R-CC-REGS |
+| **D-CHGCLRMODE** (SCRMOD $81 and $FF: zerobas sets R#7 to BDRCLR; the VG-8020 takes the SCREEN 0 path) | R-CC-R7 |
+| **D-CLRREGS** (zerobas returns another DE everywhere -- D = SCRMOD - 1, E the colour byte; another F on the SCREEN 0 / 1 paths and, in the other modes, where the entry carry is set; and outside SCREEN 0 / 1 A = BDRCLR and HL $F3EB) | R-CC-REGS |
 
 ## Open (not measured)
 
-- **[A]** Entry with a VDP interrupt pending and R#1's interrupt bit set (the preset has it clear).
+- **[A]** An interrupt arriving during the call once it has set R#1's interrupt bit (the status is
+  read just before the call, so none is pending at entry).
 - **[A]** Whether the call turns interrupts off and on again inside (the state is read after it).
 - **[A]** RG1SAV with bit 7 clear (4 KB addressing while the call writes VRAM), and so the order of the
   R#1 write against the VRAM writes; SCRMOD values other than those measured.

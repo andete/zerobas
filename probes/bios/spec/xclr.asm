@@ -1,8 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 3 (2026-11-18; round 1's fill had every block sum alike; round 2 had
-; cases 0-23 only): the sprite clear and the colour change. Per case (the
+; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 4 (2026-11-18; round 1's fill had every block sum alike; round 2 had
+; cases 0-23 only; round 3 no status read, one interrupt read, and markers that followed entry F): the sprite clear and the colour change. Per case (the
 ; table `cases` at the end: op, F, interrupts, SCRMOD, RG1SAV, FORCLR, BAKCLR, BDRCLR, ATRBAS, PATBAS, cell set, three
 ; window addresses) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := set 0 (the published defaults) or set 1 (moved;
@@ -11,7 +11,8 @@
 ;     case's; RG0SAV, RG2SAV-RG7SAV := $A5;
 ;   - the VDP registers R#0-R#7 := $00 $80 $06 $80 $00 $36 $07 $F4 (display off, so VRAM may be written fast);
 ;   - every VRAM byte := ((address low) XOR (address high) XOR $5A) OR address / $400 (each 1 KB block sums apart).
-; Then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), A $A7, F and interrupts as listed,
+; The VDP status is read last (no VDP interrupt pending at the call). Then BC $1357, DE $9BDF, HL $2468, IX $4321,
+; IY $8765 (all XOR $FF when bit 2 of the case number is set), A $A7, F and interrupts as listed,
 ; and the call: op 0 CLRSPR ($0069), 1 CHGCLR ($0062).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xclr.asm --row both
 ; The capture: CAP+0 = $A5 when finished; per case a 128-byte record from CAP+1:
@@ -26,7 +27,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1500
+; @caplen 1B00
 ; @timeout 120
 ; @vdpsnap E8F0 EF00
 
@@ -73,7 +74,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $14FF
+                ld      bc, $1AFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -95,6 +96,8 @@ next:
                 ldir
                 ld      (tptr), hl
                 ld      a, (cidx)
+                rrca                            ; the marker set from bit 2 of the case number: apart from
+                rrca                            ; entry F (bit 0) and the interrupt state (bit 1)
                 rrca
                 sbc     a, a
                 ld      (mask), a
@@ -148,7 +151,10 @@ next:
                 push    af
                 pop     hl
                 ld      (raf), hl
+                ld      a, i                    ; P/V := IFF2 -- read twice: an interrupt accepted during
+                jp      pe, i_on                ; LD A,I makes that read show 0
                 ld      a, i
+i_on:
                 di
                 push    af
                 pop     hl
@@ -346,6 +352,7 @@ p4:
                 inc     hl
                 ld      d, (hl)
                 ld      (STUB+2), de
+                in      a, ($99)                ; the VDP status read: no VDP interrupt pending at the call
                 ret
 
 targets:
@@ -546,4 +553,56 @@ cases:
                 dw      $1B00, $3800
                 db      $00
                 dw      $2000, $2010, $0000   ; 39
+                db      $00, $FF, $00, $00, $E2, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 40
+                db      $00, $00, $01, $03, $E2, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 41
+                db      $00, $FF, $01, $77, $E2, $0F, $04, $07
+                dw      $1F80, $2000
+                db      $00
+                dw      $1F80, $1B00, $2000   ; 42
+                db      $00, $00, $00, $01, $E0, $0F, $04, $07
+                dw      $5B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 43
+                db      $00, $FF, $00, $01, $E0, $0F, $04, $07
+                dw      $9B00, $B800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 44
+                db      $00, $00, $01, $01, $88, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 45
+                db      $00, $FF, $01, $01, $E0, $0F, $04, $07
+                dw      $2400, $2000
+                db      $00
+                dw      $2400, $2470, $2000   ; 46
+                db      $01, $FF, $00, $80, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 47
+                db      $01, $00, $01, $81, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 48
+                db      $01, $FF, $01, $10, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 49
+                db      $01, $00, $00, $01, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $03
+                dw      $3FF8, $0000, $2000   ; 50
+                db      $01, $FF, $00, $02, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 51
+                db      $01, $00, $01, $03, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 52
                 db      $FF

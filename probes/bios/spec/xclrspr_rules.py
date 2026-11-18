@@ -41,20 +41,22 @@ RULES = [
                 "ATRBAS ($F928), sprite k's entry gets Y := $D1 (209), its pattern number := k, or 4 x k when RG1SAV's "
                 "bit 1 is set (16 x 16 sprites -- bit 0, magnification, plays no part: RG1SAV $E1), and its colour := FORCLR as it is (a byte over 15 too: $FF); its X is "
                 "not written. The pattern table is cleared first and the attributes written after it: where the two "
-                "overlap, the attributes stay. Addresses wrap from $3FFF to $0000. Nothing else in VRAM changes. Whatever "
-                "SCRMOD holds (0, 1, 2, 3, $77); ATRBAS / PATBAS, not the screen-table cells, give the places in every "
+                "overlap, the attributes stay. The bases are taken AND $3FFF (ATRBAS $5B00, $9B00 and PATBAS $B800 "
+                "write where $1B00 and $3800 would) and the addresses wrap from $3FFF to $0000. Nothing else in VRAM changes. Whatever "
+                "SCRMOD holds (0, 1, 2, 3, $77, with either sprite size); ATRBAS / PATBAS, not the screen-table cells, give the places in every "
                 "mode measured.", writes),
     Rule("R-CS-R1", S1, "VDP register R#1 := RG1SAV, as the VDP holds it (bit 2 reads 0: RG1SAV $A4; bits 7-5 as they are: "
-         "$82, $A4); the other registers keep their "
+         "$82, $A4, $88); the other registers keep their "
          "values, and RG0SAV-RG7SAV, SCRMOD and FORCLR / BAKCLR / BDRCLR are not changed.", ALL,
          lambda c: (c.vdp == tuple((c.crg1 & 0xFB) if k == 1 else v for k, v in enumerate(X.VPRE))
                     and c.sav == (0xA5, c.crg1) + (0xA5,) * 6 and c.scrmod == c.cscr
                     and c.colours == (c.fo, c.ba, c.bd))),
     Rule("R-CS-REGS", S1, "On return A = FORCLR, E = FORCLR, D kept; BC = $0020 (8 x 8) or $0080 (16 x 16); HL = ATRBAS + "
-         "$80, just past the table; F = $28 (8 x 8) or $95 (16 x 16), one value each, whatever F was on entry. IX and IY "
-         "are kept.", ALL,
+         "$80, just past the table; F: for 16 x 16 sprites $95, one value; for 8 x 8 bits 5 and 3 are RG1SAV's bits 7 "
+         "and 5 (as GSPSIZ leaves them: $E0 gives $28, $88 $20) and the rest clear -- whatever F was on entry. IX and "
+         "IY are kept.", ALL,
          lambda c: (c.a == c.fo and c.de == (marker_d(c) | c.fo) and c.bc == (0x80 if BIG(c) else 0x20)
-                    and c.hl == (c.catr + 0x80) & 0xFFFF and c.f == (0x95 if BIG(c) else 0x28)
+                    and c.hl == (c.catr + 0x80) & 0xFFFF and c.f == (0x95 if BIG(c) else (c.crg1 >> 2) & 0x28)
                     and (c.ix, c.iy) == (X.marker(c, 0x4321), X.marker(c, 0x8765)))),
     Rule("R-CS-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),

@@ -37,17 +37,17 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRMV.md) | 9 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRVM.md) | 8 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
+| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CLRSPR.md) | 6 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
+| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CLRSPR.md) | 6 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETTXT.md) | 8 | D-SETSHADOW, D-SETREGS |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETT32.md) | 8 | D-SETSHADOW, D-SETREGS |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETGRP.md) | 8 | D-SETSHADOW, D-SETREGS |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETMLT.md) | 8 | D-SETSHADOW, D-SETREGS |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETTXT.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETT32.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETGRP.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETMLT.md) | 10 | D-SETSHADOW, D-SETREGS |
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |

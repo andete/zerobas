@@ -43,18 +43,19 @@ def writes(c):
 
 
 RULES = [
-    Rule("R-CC-R7", S1, "VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, for SCRMOD 0 -- and $FF, "
-         "which goes the same way (SCRMOD - 1 negative); BDRCLR for SCRMOD 1, 2, 3, 4, $77. Colours over 15 are used as "
+    Rule("R-CC-R7", S1, "VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, when SCRMOD - 1 is negative as a "
+         "signed byte -- SCRMOD 0, $81, $FF; BDRCLR otherwise -- SCRMOD 1, 2, 3, 4, $10, $77, $80. Colours over 15 are used as "
          "they are (FORCLR $10, BAKCLR $25 give $25, not $05; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD "
          "and the colour cells are not changed.", ALL,
          lambda c: (c.vdp == X.VPRE[:7] + (r7(c),) and c.sav == (0xA5, c.crg1) + (0xA5,) * 5 + (r7(c),)
                     and c.scrmod == c.cscr and c.colours == (c.fo, c.ba, c.bd))),
     X.vram_rule("CC", S1, "In SCREEN 1 (SCRMOD 1) the 32-byte colour table at T32COL ($F3BF) := (FORCLR x 16) OR "
-                "BAKCLR; in the other modes VRAM is not written. T32COL, not RG3SAV, gives the place.", writes),
+                "BAKCLR, T32COL taken AND $3FFF and the 32 bytes wrapping from $3FFF to $0000 (T32COL $FFFF); in the other "
+                "modes VRAM is not written. T32COL, not RG3SAV, gives the place.", writes),
     Rule("R-CC-REGS", S1, "On return, on the SCREEN 0 path: A = R#7's new value, F = $A4 (whatever the colour byte: $F4, "
          "$A5, $FF, $25, $12), BC = $0007, HL = $F3EA, DE kept; in SCREEN 1: A = the colour byte, F its flags as an OR "
-         "leaves them, BC = 0, HL = T32COL, DE kept; in the other modes A = SCRMOD - 1 with F as DEC A leaves it and the "
-         "entry carry kept, BC = $0007, DE and HL kept. IX and IY are kept.", ALL,
+         "leaves them, BC = 0, HL = T32COL, DE kept; in the other modes A = SCRMOD - 1 with F as DEC A leaves it (the "
+         "half-borrow at $10, the overflow at $80) and the entry carry kept, BC = $0007, DE and HL kept. IX and IY are kept.", ALL,
          lambda c: regs(c)),
     Rule("R-CC-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
