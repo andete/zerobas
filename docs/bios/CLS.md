@@ -38,7 +38,7 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The screen 
 [the screen editor page](../concepts/screen-editor.md); what the calls touch is on
 [the shared-state map](shared-state.md).
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT, D-LINTTBVAL's clear, D-INITEDGES's R0 / tail and D-POSITCLAMP: [`XCLS_fix2.out`](../../scratchpad/XCLS_fix2.out), [`XSCR_fix2.out`](../../scratchpad/XSCR_fix2.out), [`XSCR3_fix2.out`](../../scratchpad/XSCR3_fix2.out), [`XSCR4_fix2.out`](../../scratchpad/XSCR4_fix2.out), [`XSCR5_fix2.out`](../../scratchpad/XSCR5_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT, D-LINTTBVAL's clear, D-INITEDGES's R0 / tail, D-POSITCLAMP and D-CHPUTESCY (POSIT's clamp shared with ESC Y): [`XCLS_fix3.out`](../../scratchpad/XCLS_fix3.out), [`XSCR_fix3.out`](../../scratchpad/XSCR_fix3.out), [`XSCR3_fix3.out`](../../scratchpad/XSCR3_fix3.out), [`XSCR4_fix3.out`](../../scratchpad/XSCR4_fix3.out), [`XSCR5_fix3.out`](../../scratchpad/XSCR5_fix3.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XC n]**: case `n` of the XCLS matrix, run 2,
 [`scratchpad/XCLS_run2.out`](../../scratchpad/XCLS_run2.out). The case list, the setup and the record

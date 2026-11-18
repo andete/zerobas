@@ -16771,13 +16771,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R4-DEL-NOCONT and R-DEL-WRAPCELL now hold on zerobas, and R4-CURSOR went 17 -> 9 cases failing (the rest are
       D-CHPUTKEYROW's). The test audit is still to come.
 
-- [ ] 🎯 **D-CHPUTESCY — CHPUT's `ESC Y` DOES NOT CLAMP: AN OUT-OF-RANGE ROW / COLUMN PUTS CSRY / CSRX AT 225, 255 ...**
+- [x] 🎯 **D-CHPUTESCY — CHPUT's `ESC Y` DOES NOT CLAMP: AN OUT-OF-RANGE ROW / COLUMN PUTS CSRY / CSRX AT 225, 255 ...**
       🎚️ TIER 3 — common errors (a program's out-of-range cursor position; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/CHPUT.md round 2 (XCHPUT2 G5, [`XCH2_table.out`](scratchpad/XCH2_table.out)): every byte as `ESC Y`'s row, then
       column parameter. The VG-8020 clamps: a row byte under 32 or past the last row gives the last row (CSRY 24), a column
       byte under 32 or past 40 gives column 40; zerobas stores the byte - 32 as is (CSRY 225 for $00, 0 for $1F, 25.. past
       the last row; CSRX likewise) -- 446 of 512 cases. A later character then lands outside the screen. Byte $01 as a
       parameter is special on both machines (the graphic prefix). Fix in the C-BIOS repack's CHPUT.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-escy.patch, 38 bytes differ, nothing moves). POSIT is restructured, at
+      the same 35 B, into `posit_col` (H -> CSRX, limit LINLEN) and `posit_row` (L -> CSRY, limit crt_rows) over one
+      clamp-and-store. ESC Y's handlers call them at their old sizes (8 B / 10 B), so a parameter byte under 32 (wrapping
+      on the `sub`) or past the limit clamps as POSIT does. WITNESS: CHPUT's five probes and CLS / DSPFNK's re-run
+      ([`XCH2_fix3.out`](scratchpad/XCH2_fix3.out), [`XCLS_fix3.out`](scratchpad/XCLS_fix3.out)): R-Y-ROWCLAMP 231 -> 0
+      cases failing, R-Y-COLCLAMP 215 -> 0, R-Y1-SEQ 2 -> 0, R4-Y-KEYCLAMP 2 -> 0, R5-ESC-CMD 1 -> 0, R5-Y1 6 -> 0. CLS.md /
+      DSPFNK.md unchanged; CHPUT now differs only in LINTTB's marks (D-LINTTBVAL).
 
 - [x] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
       🎚️ TIER 1 — happy path (KEY ON is BASIC's normal screen; filed 2026-11-17). Scope: never under MSX-DOS, which runs with the

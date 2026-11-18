@@ -19,11 +19,9 @@ SPDX-License-Identifier: 0BSD
 control code or an escape sequence it moves the cursor or edits the screen instead. `PRINT` and
 the MSX-DOS console both end up here.
 
-zerobas behaves the same in most of the measured cases. It differs in one place:
-- **`ESC Y` out of range:** zerobas does not keep the cursor on the screen.
-
-Its line-continuation table (LINTTB) also holds different marks where a row is blanked. Fixed on
-2026-11-18: DEL did not move back and blanked the wrong cell; `ESC l` moved the cursor to the line's
+zerobas behaves the same in every measured case but one: its line-continuation table (LINTTB) holds
+different marks where a row is blanked (D-LINTTBVAL). Fixed on 2026-11-18: `ESC Y` out of range left
+the cursor off the screen (D-CHPUTESCY); DEL did not move back and blanked the wrong cell; `ESC l` moved the cursor to the line's
 start (D-CHPUTDEL); from the function-key row LF / cursor-down / ESC B / wraps stayed on it, and 12 /
 ESC E / ESC j left the key row blank (D-CHPUTKEYROW).
 
@@ -41,7 +39,7 @@ cells) are on [the screen editor page](../concepts/screen-editor.md).
 
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-CHPUTDEL and D-CHPUTKEYROW (with D-LINTTBVAL's clear and the other text-region fixes of that day): [`XCH_fix2.out`](../../scratchpad/XCH_fix2.out), [`XCH2_fix2.out`](../../scratchpad/XCH2_fix2.out), [`XCH3_fix2.out`](../../scratchpad/XCH3_fix2.out), [`XCH4_fix2.out`](../../scratchpad/XCH4_fix2.out), [`XCH5_fix2.out`](../../scratchpad/XCH5_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-CHPUTDEL, D-CHPUTKEYROW and D-CHPUTESCY (with D-LINTTBVAL's clear and the other text-region fixes of that day): [`XCH_fix3.out`](../../scratchpad/XCH_fix3.out), [`XCH2_fix3.out`](../../scratchpad/XCH2_fix3.out), [`XCH3_fix3.out`](../../scratchpad/XCH3_fix3.out), [`XCH4_fix3.out`](../../scratchpad/XCH4_fix3.out), [`XCH5_fix3.out`](../../scratchpad/XCH5_fix3.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.**
 - **[XCH n]**: case `n` of the XCHPUT matrix, [`scratchpad/XCH_table.out`](../../scratchpad/XCH_table.out)
@@ -145,9 +143,9 @@ when the function-key line is shown.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-Y-ROW** Key line off: ESC Y's row byte r = 32..55 puts the cursor on row r − 31 (1-based) (key line on: R4-Y-KEYCLAMP). | 24 | ✓ | ✓ |
-| **R-Y-ROWCLAMP** Key line off: any other row byte but 1 clamps to the last row (24). | 231 | ✓ | ✗ 231: X2 G5.000, X2 G5.002, X2 G5.003, X2 G5.004, X2 G5.005, X2 G5.006 … (+225) |
+| **R-Y-ROWCLAMP** Key line off: any other row byte but 1 clamps to the last row (24). | 231 | ✓ | ✓ |
 | **R-Y-COL** ESC Y's column byte c = 32..71 puts the cursor in column c − 31 (1-based). | 40 | ✓ | ✓ |
-| **R-Y-COLCLAMP** Any other column byte but 1 clamps to column 40. | 215 | ✓ | ✗ 215: X2 G5.256, X2 G5.258, X2 G5.259, X2 G5.260, X2 G5.261, X2 G5.262 … (+209) |
+| **R-Y-COLCLAMP** Any other column byte but 1 clamps to column 40. | 215 | ✓ | ✓ |
 
 #### 6. The graphic prefix, and pending state
 
@@ -175,7 +173,7 @@ when the function-key line is shown.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-XY-CELLS** From both cells set, ESC x '4' clears $FCAA and ESC x '5' clears CSRSW; from both clear, ESC y '4' / '5' set them; every other byte after ESC x / y changes neither. | 512 | ✓ | ✓ |
-| **R-Y1-SEQ** Byte 1 inside ESC Y (the general rule: R5-Y1): the cursor after each byte of five measured sequences (row byte '%' = 37 = row 6), as the reference gives them: `ESC Y 1 '%' A B` [(1, 1), (1, 1), (1, 1), (1, 6), (34, 6), (35, 6)]; `ESC Y '%' 1 A B` [(1, 6), (1, 6), (1, 6), (1, 6), (2, 6), (35, 6)]; `ESC Y 1 1 '%' '%'` [(1, 6), (1, 6), (1, 6), (1, 24), (6, 24), (7, 24)]; `1 ESC Y '%' '%' A` [(1, 24), (1, 24), (1, 24), (1, 6), (6, 6), (7, 6)]; `ESC Y 1 A '%' B` [(1, 6), (1, 6), (1, 6), (2, 6), (2, 6), (35, 6)]. | 5 | ✓ | ✗ 2: X3 G1.2, X3 G1.3 |
+| **R-Y1-SEQ** Byte 1 inside ESC Y (the general rule: R5-Y1): the cursor after each byte of five measured sequences (row byte '%' = 37 = row 6), as the reference gives them: `ESC Y 1 '%' A B` [(1, 1), (1, 1), (1, 1), (1, 6), (34, 6), (35, 6)]; `ESC Y '%' 1 A B` [(1, 6), (1, 6), (1, 6), (1, 6), (2, 6), (35, 6)]; `ESC Y 1 1 '%' '%'` [(1, 6), (1, 6), (1, 6), (1, 24), (6, 24), (7, 24)]; `1 ESC Y '%' '%' A` [(1, 24), (1, 24), (1, 24), (1, 6), (6, 6), (7, 6)]; `ESC Y 1 A '%' B` [(1, 6), (1, 6), (1, 6), (2, 6), (2, 6), (35, 6)]. | 5 | ✓ | ✓ |
 | **R-Y1-PARAM** Byte 1 as ESC Y's row or column byte (the other '%' = 37): a SNAPSHOT mid-sequence -- the 1 is not a parameter and the escape is still waiting (R5-Y1); the cursor reads column 1, row 6. | 2 | ✓ | ✓ |
 | **R-DEL-WRAPCELL** A DEL that wraps from column 1 to the row above blanks that row's column 40; BS and 29 leave it; none of them changes the rows' LINTTB entries. | 6 | ✓ | ✓ |
 | **R-A-PENDING** CHPUT returns A unchanged after an ESC or a graphic prefix too. | 2 | ✓ | ✓ |
@@ -196,7 +194,7 @@ when the function-key line is shown.
 | **R4-ESCXY-ESC** ESC x / ESC y, then ESC: the ESC IS taken as the parameter; the A's after it print. | 2 | ✓ | ✓ |
 | **R4-PFX-DEL** The prefix, then DEL, then A: DEL acts (left, blanking P), then A is written there. | 1 | ✓ | ✓ |
 | **R4-DEL-NOCONT** DEL at column 1 onto a row that does NOT continue still blanks its column 40. | 1 | ✓ | ✓ |
-| **R4-Y-KEYCLAMP** ESC Y's row, with the key line on, clamps to the last TEXT row (23); key line off, row byte 54 is row 23. | 3 | ✓ | ✗ 2: X4 G3.09, X4 G3.10 |
+| **R4-Y-KEYCLAMP** ESC Y's row, with the key line on, clamps to the last TEXT row (23); key line off, row byte 54 is row 23. | 3 | ✓ | ✓ |
 | **R4-G3-REST** In these cases A comes back as the last byte sent, and the row above's column 40 ('z') is untouched but by the DEL case; the cells of row 11 are as stated above (Y cases: untouched). | 12 | ✓ | ✓ |
 
 #### 11. Round 5: every escape, pending state, ESC x / y both ways, the key row, the edits anywhere
@@ -204,11 +202,11 @@ when the function-key line is shown.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R5-ESC-ENDS** ESC then any byte that is not a command (A B C D E H J K L M Y j l x y) or 1 does nothing and ENDS the escape: a following A is printed (240 bytes). | 240 | ✓ | ✓ |
-| **R5-ESC-CMD** ESC then a command, then A: the command acts (A B C D move; E j clear; H homes; J K erase; L M edit; l erases the line) and A prints; after ESC x / y / Y the A is their PARAMETER (nothing printed; ESC Y A puts the cursor on the clamped row 24); ESC 1 A writes $01. | 16 | ✓ | ✗ 1: X5 G1.089 |
+| **R5-ESC-CMD** ESC then a command, then A: the command acts (A B C D move; E j clear; H homes; J K erase; L M edit; l erases the line) and A prints; after ESC x / y / Y the A is their PARAMETER (nothing printed; ESC Y A puts the cursor on the clamped row 24); ESC 1 A writes $01. | 16 | ✓ | ✓ |
 | **R5-NOPEND** A control code alone leaves nothing pending but 1 (the prefix: the next A is $01) and 27 (ESC: the next A is ESC A): each acts, then A prints where it left the cursor. | 32 | ✓ | ✓ |
 | **R5-XY** From both cursor cells SET, ESC y v changes neither for every v; from both CLEAR, ESC x v changes neither for every v (with R-XY-CELLS: only x / y '4' / '5' clear / set them). | 512 | ✓ | ✓ |
 | **R5-PENDING** ESC, ESC x and ESC y STAY PENDING across the prefix + a graphic: ESC 1 A B is a graphic then ESC B (down); ESC 1 A K a graphic then ESC K; ESC x / y 1 A 5: the 5 is their parameter. | 4 | ✓ | ✓ |
-| **R5-Y1** Inside ESC Y, byte 1 is the graphic prefix, NOT a parameter: if the next byte is 64–95 it is written as a graphic and ESC Y keeps waiting; any other next byte IS the parameter (so row bytes 0, 13, 31, 96, 128, 255 clamp to row 24). | 9 | ✓ | ✗ 6: X5 G4.804, X5 G4.805, X5 G4.806, X5 G4.810, X5 G4.811, X5 G4.812 |
+| **R5-Y1** Inside ESC Y, byte 1 is the graphic prefix, NOT a parameter: if the next byte is 64–95 it is written as a graphic and ESC Y keeps waiting; any other next byte IS the parameter (so row bytes 0, 13, 31, 96, 128, 255 clamp to row 24). | 9 | ✓ | ✓ |
 | **R5-UNTOUCHED** In these pending-state sequences no other row changes: (row 6, columns 1–3) and the last row's (columns 1–3) keep their markers. | 13 | ✓ | ✓ |
 | **R5-KEYROW** With the key line on and the KEY ROW marked: a printable / TAB / DEL on the key row write there as anywhere; ESC J, LF and a wrap from the last text row leave it; 12 / ESC E / ESC j REDRAW it (the probe's markers are replaced by the key line's labels: 'c', 'o' at columns 1, 2 on the VG-8020). | 9 | ✓ | ✓ |
 | **R5-EDIT** Every edit works from any row and column the same way (key line off): ESC L / M at the last text row only blank it ($AF); LINTTB entries MOVE with their rows (a continued row's 0 shifts down under ESC L, up under ESC M -- not a renumbering); ESC J / K / l mark the rows they blank $AF. | 20 | ✓ | ✗ 20: X5 G6.822, X5 G6.823, X5 G6.824, X5 G6.825, X5 G6.826, X5 G6.827 … (+14) |
@@ -224,7 +222,6 @@ Every ✗ in the zerobas column above, by TODO item:
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-CHPUTESCY** (`ESC Y` out of range) | R-Y-ROWCLAMP, R-Y-COLCLAMP, R-Y1-SEQ (its clamp), R4-Y-KEYCLAMP, R5-Y1, R5-ESC-CMD (`ESC Y A`) |
 | **D-LINTTBVAL** (LINTTB's marks: $AF on a blanked row, $FB after ESC L; the clear's 24 … 1 is fixed) | R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST |
 
 ## Open (not measured)

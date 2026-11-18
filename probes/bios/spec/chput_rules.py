@@ -159,17 +159,17 @@ RETIRED = {"G2", "G4", "X3G4", "X3G5"}
 
 
 def cases():
-    t1 = open(os.path.join(ROOT, "scratchpad", "XCH_fix2.out")).read()
-    t2 = open(os.path.join(ROOT, "scratchpad", "XCH2_fix2.out")).read()
-    t3 = open(os.path.join(ROOT, "scratchpad", "XCH3_fix2.out")).read()
-    t4 = open(os.path.join(ROOT, "scratchpad", "XCH4_fix2.out")).read()
+    t1 = open(os.path.join(ROOT, "scratchpad", "XCH_fix3.out")).read()
+    t2 = open(os.path.join(ROOT, "scratchpad", "XCH2_fix3.out")).read()
+    t3 = open(os.path.join(ROOT, "scratchpad", "XCH3_fix3.out")).read()
+    t4 = open(os.path.join(ROOT, "scratchpad", "XCH4_fix3.out")).read()
     out = {}
     ref_alone = None
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = (_machine(T1.block(t1, key), T2.block(t2, key)) + _round3(_block3(t3, key))
               + _round4(_block(t4, key, 8712)))
         import xchput5_cases as X5
-        t5 = open(os.path.join(ROOT, "scratchpad", "XCH5_fix2.out")).read()
+        t5 = open(os.path.join(ROOT, "scratchpad", "XCH5_fix3.out")).read()
         for d in X5.decode(_block(t5, key, X5.caplen())):
             d.src, d.id = "R5" + d.group, f"X5 {d.group}.{d.idx:03}"
             cs.append(d)

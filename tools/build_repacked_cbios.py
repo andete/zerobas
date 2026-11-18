@@ -126,11 +126,14 @@ PATCHES = [
     # move onto the last text row; 12 / ESC E / ESC j clear through $00C3 (the key line redrawn).
     # Nothing moves.
     os.path.join(REPO, "cbios-repack", "chput-keyrow.patch"),
+    # D-CHPUTESCY (2026-11-18): ESC Y's row / column clamp to the last text row / LINLEN as the
+    # VG-8020, through POSIT's clamp (posit_row / posit_col); same size -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "chput-escy.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "012f8d53a5a2c70e7022a84f59b6acb0a312ea23"   # D-CHPUTKEYROW, 2026-11-18
+REPACKED_SHA1 = "c115c913e6e6a4108d9c6fa6ea49f89c3b707074"   # D-CHPUTESCY, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
