@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for INIGRP / INIMLT / CHGMOD's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XINIG_run1.out (rows N and D; probes/bios/spec/xinig.asm documents the presets, the case table and the
+scratchpad/XINIG_run2.out (rows N and D; probes/bios/spec/xinig.asm documents the presets, the case table and the
 128-byte record). xinigrp_rules.py, xinimlt_rules.py and xchgmod_rules.py take their op's cases from `load(op)`;
 the direct INITXT / INIT32 cases (ops 3, 4) are only CHGMOD's partners, reached through `partner()`."""
 import os
@@ -15,18 +15,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XINIG_run1.out"
+RUN = "XINIG_run2.out"
 ASM = os.path.join(HERE, "xinig.asm")
 REC = 128
 MASK = (0x03, 0xFB, 0x0F, 0xFF, 0x07, 0x7F, 0x07, 0xFF)
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sav", "scrmod", "colours", "vdp", "sums", "w1", "w2", "w3",
           "oldscr", "patbas", "atrbas", "grpac"]
 OUTPUTS = {"XG": FIELDS}
-PAIRS = {12: 0, 13: 6, 14: 20, 15: 21, 16: 24, 17: 25}     # CHGMOD case -> the same set-up, called directly
+PAIRS = {12: 0, 13: 6, 14: 20, 15: 21, 16: 24, 17: 25, 31: 24, 32: 24, 33: 25, 34: 25, 35: 18}     # CHGMOD case -> the same set-up, called directly
 
 
 def fill(a):
-    return (((a & 0xFF) ^ (a >> 8) ^ 0x5A) | (a >> 10)) & 0xFF
+    """the probe's VRAM fill: ((address low) XOR (address high) XOR $5A) OR (address high AND $3C)"""
+    return (((a & 0xFF) ^ (a >> 8) ^ 0x5A) | ((a >> 8) & 0x3C)) & 0xFF
 
 
 def table():
@@ -122,8 +123,9 @@ def screen_rules(tag, section, mode, writes, r0, r1, shadows, regs_text, de, hl,
     return [
         Rule(f"R-{tag}-VRAM", section, writes.__doc__, ALLc, vram),
         Rule(f"R-{tag}-VDP", section, f"The VDP is set up as {'SETGRP' if mode == 2 else 'SETMLT'} sets it from the "
-             f"{cellname} cells (RG0SAV-RG6SAV and R#0-R#6 as on that page), and R#7 / RG7SAV := BDRCLR. The VDP "
-             "registers hold those values as the VDP keeps them.", ALLc,
+             f"{cellname} cells (RG0SAV-RG6SAV and R#0-R#6 as on that page), with RG1SAV's bit 6 set besides -- the "
+             "display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those "
+             "values as the VDP keeps them.", ALLc,
              lambda c: c.sav == sav(c) and c.vdp == tuple(v & MASK[n] for n, v in enumerate(sav(c)))),
         Rule(f"R-{tag}-CELLS", section, f"SCRMOD := {scrmod}; PATBAS ($F926) := {cellname}PAT and ATRBAS ($F928) := "
              f"{cellname}ATR. OLDSCR, GRPACX / GRPACY and FORCLR / BAKCLR / BDRCLR are not changed.", ALLc,

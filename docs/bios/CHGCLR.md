@@ -90,6 +90,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 - **[A]** SCRMOD values other than those measured.
 - **[A]** RAM other than the cells recorded; VRAM writes that keep every block's sum outside the
   three windows (the read-back compares sums there).
+- **[A]** A write that leaves VRAM block 1 ($0400-$07FF) all zero: the probe's fill sums to $0000
+  there, as a cleared block would, so the block sums cannot show it.
 - **[A]** The alternate registers and SP; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

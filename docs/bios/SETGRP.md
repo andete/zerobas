@@ -103,6 +103,8 @@ record:
   SCRMOD and the 20 cells.
 - **[A]** What is written into the register bits the TMS9918 drops (the snapshot shows the registers
   as the VDP holds them; a port trace would show the bytes sent).
+- **[A]** A write that leaves VRAM block 1 ($0400-$07FF) all zero: the probe's fill sums to $0000
+  there, as a cleared block would, so the block sums cannot show it.
 - **[A]** The alternate registers and SP; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

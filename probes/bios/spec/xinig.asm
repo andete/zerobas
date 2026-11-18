@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XINIG -- docs/bios/INIGRP.md, INIMLT.md, CHGMOD.md round 1 (2026-11-18): the graphics-screen set-ups and the mode
+; XINIG -- docs/bios/INIGRP.md, INIMLT.md, CHGMOD.md round 2 (2026-11-18; round 1 had cases 0-25 and a fill whose block 1 summed to 0): the graphics-screen set-ups and the mode
 ; change. Per case (the table `cases` at the end: op, F, interrupts, SCRMOD, RG1SAV, FORCLR, BAKCLR, BDRCLR, ATRBAS,
 ; PATBAS, cell set, three window addresses, A) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := set 0 (the published defaults) or set 1 (moved;
@@ -9,7 +9,8 @@
 ;   - SCRMOD ($FCAF), RG1SAV ($F3E0), FORCLR / BAKCLR / BDRCLR ($F3E9-$F3EB), ATRBAS ($F928), PATBAS ($F926) := the
 ;     case's; RG0SAV, RG2SAV-RG7SAV := $A5; OLDSCR ($FCB0) := $66; GRPACX / GRPACY ($FCB7 / $FCB9) := $1234 / $5678;
 ;   - the VDP registers R#0-R#7 := $00 $80 $06 $80 $00 $36 $07 $F4 (display off, so VRAM may be written fast);
-;   - every VRAM byte := ((address low) XOR (address high) XOR $5A) OR address / $400 (each 1 KB block sums apart);
+;   - every VRAM byte := ((address low) XOR (address high) XOR $5A) OR (address high AND $3C) -- the sixteen 1 KB
+;     blocks sum to sixteen different values, none of them 0;
 ;   - the VDP status read last (no VDP interrupt pending at the call).
 ; Then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF when bit 2 of the case number is set), A and F
 ; and interrupts as listed, and the call: op 0 INIGRP ($0072), 1 INIMLT ($0075), 2 CHGMOD ($005F), 3 INITXT
@@ -29,7 +30,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1400
+; @caplen 1300
 ; @timeout 180
 ; @vdpsnap E8F0 EF00
 
@@ -77,7 +78,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $13FF
+                ld      bc, $12FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -339,10 +340,8 @@ p_lp:
                 out     ($99), a
                 ld      de, 0
 f_lp:
-                ld      a, d                    ; OR the block number (address / $400), so every block sums apart
-                rrca
-                rrca
-                and     $0F
+                ld      a, d                    ; OR (address / $400) x 4: every block sums apart, none to 0
+                and     $3C
                 ld      c, a
                 ld      a, d
                 xor     e
@@ -547,4 +546,54 @@ cases:
                 db      $00
                 dw      $1800, $2000, $1B00
                 db      $A7   ; 25
+                db      $00, $00, $00, $01, $80, $0F, $04, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $00   ; 26
+                db      $00, $FF, $01, $01, $A0, $0F, $F4, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $FF   ; 27
+                db      $00, $00, $01, $01, $E0, $0F, $55, $07
+                dw      $1111, $2222
+                db      $02
+                dw      $3C00, $0000, $1F80
+                db      $A7   ; 28
+                db      $01, $FF, $00, $01, $80, $0F, $55, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $0800, $0000, $1B00
+                db      $00   ; 29
+                db      $01, $00, $01, $01, $A0, $0F, $F4, $07
+                dw      $1111, $2222
+                db      $02
+                dw      $3800, $1000, $2F00
+                db      $FF   ; 30
+                db      $02, $00, $01, $01, $E0, $0F, $04, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $7F   ; 31
+                db      $02, $00, $01, $01, $E0, $0F, $04, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $80   ; 32
+                db      $02, $FF, $00, $01, $E0, $0F, $04, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $81   ; 33
+                db      $02, $FF, $00, $01, $E0, $0F, $04, $07
+                dw      $1111, $2222
+                db      $00
+                dw      $1800, $2000, $1B00
+                db      $FE   ; 34
+                db      $02, $00, $00, $77, $E2, $1A, $25, $3C
+                dw      $1111, $2222
+                db      $01
+                dw      $3C00, $0000, $3B80
+                db      $02   ; 35
                 db      $FF
