@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CHGMOD` ($005F) — change the screen mode
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the third test-writer review found no new behaviour; its
+> items are combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -45,8 +46,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   31-35 and 40 with A = 2, 3, 0, 1, 4, $FF, $7F, $80, $81, $FE, 2, 2; and set-ups called directly, for CHGMOD's comparison:
   00 (for 12), 06 (13), 20 INITXT (14), 21 INIT32 (15), 24 INIMLT (16, 31, 32), 25 INITXT (17, 33,
   34), 18 INIGRP (35), 28 INIGRP (40) -- the same cells, colours, SCRMOD, RG1SAV, entry F and
-  interrupt state; entry A differs (CHGMOD's is the mode), and case 31 has the other marker set. Colours 15 / 4 / 7, $1A / $25 /
-  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
+  interrupt state; entry A differs (CHGMOD's is the mode), and cases 12, 31 and 40 have the other
+  marker set from their partners. Colours 15 / 4 / 7, $1A / $25 /
+  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7, 15 / $25 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
   entry A $A7, $00, $FF; SCRMOD before 0-3, $77.
 
 <!-- RULES BEGIN -->
@@ -58,8 +60,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CM-MODE** CHGMOD with A = 0 does what INITXT does, 1 what INIT32 does, 2 what INIGRP does, 3 what INIMLT does: from the same set-up it leaves every recorded output as the direct call does -- the registers (IX and IY kept), the interrupt state, RG0SAV-RG7SAV, SCRMOD, OLDSCR, PATBAS / ATRBAS, the VDP registers and VRAM. Other A go by A - 1 as a signed byte: negative (A $81-$FF, and 0) as 0, INITXT -- measured $81, $FE, $FF; 1 as INIT32, 2 as INIGRP, anything else as INIMLT -- measured 4, $7F, $80. Each case is compared with the same machine's direct call from the same set-up; IX and IY are left out of the comparison and checked kept on their own (case 31 has the other marker set from its partner). | 24 | ✓ | ✗ 12: XG N16, XG N17, XG N31, XG N32, XG N33, XG N34 … (+6) |
-| **R-CM-TXTBAS** Where CHGMOD goes as INITXT (A = 0, $81, $FE, $FF) PATBAS and ATRBAS keep their values ($2222 / $1111 in the probe) -- an absolute check, beside R-CM-MODE's comparison with the same machine. | 8 | ✓ | ✗ 2: XG N14, XG D14 |
+| **R-CM-MODE** CHGMOD with A = 0 does what INITXT does, 1 what INIT32 does, 2 what INIGRP does, 3 what INIMLT does: from the same set-up it leaves every recorded output as the direct call does -- the registers (IX and IY kept), the interrupt state, RG0SAV-RG7SAV, SCRMOD, OLDSCR, PATBAS / ATRBAS, the VDP registers and VRAM. Other A go by A - 1 as a signed byte: negative (A = 0, and $81-$FF) as INITXT -- measured $81, $FE, $FF; A = 1 as INIT32, 2 as INIGRP, any other (A - 1 from 3 to $7F) as INIMLT -- measured 4, $7F, $80. Each case is compared with the same machine's direct call from the same set-up; IX and IY are left out of the comparison and checked kept on their own (cases 12, 31 and 40 have the other marker set from their partners). | 24 | ✓ | ✗ 12: XG N16, XG N17, XG N31, XG N32, XG N33, XG N34 … (+6) |
+| **R-CM-TXTBAS** Where CHGMOD goes as INITXT (A = 0, $81, $FE, $FF) PATBAS and ATRBAS keep their values ($2222 / $1111 in the probe) -- an absolute check, beside R-CM-MODE's comparison with the same machine. (A CHGMOD that does nothing for A above 3 also passes cases 17, 33, 34; case 14 is the one that tests INITXT.) | 8 | ✓ | ✗ 2: XG N14, XG D14 |
 
 <!-- RULES END -->
 
@@ -76,9 +78,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   read just before the call).
 - **[A]** RAM other than the cells recorded; VRAM outside the three windows beyond the block sums;
   cell, colour, RG1SAV and entry A values other than those measured; RG0SAV and RG2SAV-RG7SAV preset
-  only to $A5, and the VDP registers only to the probe's one preset (display off).
+  only to $A5 or $00, and the VDP registers only to the probe's one preset (display off).
 - **[A]** A values between 5 and $7E and between $82 and $FD; each A value is measured from one set-up
-  (two for A = 2).
+  (three for A = 2: cell sets 0, 1 and 2).
 - **[A]** The VDP status register after the call.
 - **[A]** The alternate registers and SP; the time it takes.
 - **[A]** The CF-3300 (the second reference).

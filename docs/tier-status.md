@@ -578,7 +578,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (a program testing F after OUTDLP; filed 2026-11-18). | T-29B019 |
 | — | TIER 6 | 🤖 | every edge (a caller -- an extension ROM printing through OUTDO -- asking ISFLIO while PTRFIL's low | T-1DD578 |
 | — | TIER 6 | 🤖 | every edge (unpublished return registers; filed 2026-11-18). | T-E728BF |
-| — | TIER 6 | 🤖 | every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18). | T-84DD6E |
+| — | TIER 6 | 🤖 | every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18). | T-2C1769 |
 | — | TIER 6 | 🤖 | every edge (BAKCLR over 15 when INIMLT runs; filed 2026-11-18). | T-037CB1 |
 | — | TIER 6 | 🤖 | every edge (CHGMOD with A above 3; filed 2026-11-18). | T-4951F1 |
 | — | TIER 6 | 🤖 | every edge (a program reading PATBAS / ATRBAS after SCREEN 0; filed 2026-11-18). | T-6D002D |

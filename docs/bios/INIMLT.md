@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `INIMLT` ($0075) — set up the multicolour screen
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the third test-writer review found no new behaviour; its
+> items are combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -21,7 +22,8 @@ SPDX-License-Identifier: 0BSD
 
 It returns with interrupts **on**.
 
-zerobas writes the same VRAM for colours up to 15 and programs the VDP the same; it masks a BAKCLR
+zerobas writes the same VRAM for colours up to 15 when the tables do not overlap, and programs the
+VDP the same; it masks a BAKCLR
 over 15, stores another RG0SAV and returns other DE and HL (below).
 
 ## The specification
@@ -51,8 +53,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   31-35 and 40 with A = 2, 3, 0, 1, 4, $FF, $7F, $80, $81, $FE, 2, 2; and set-ups called directly, for CHGMOD's comparison:
   00 (for 12), 06 (13), 20 INITXT (14), 21 INIT32 (15), 24 INIMLT (16, 31, 32), 25 INITXT (17, 33,
   34), 18 INIGRP (35), 28 INIGRP (40) -- the same cells, colours, SCRMOD, RG1SAV, entry F and
-  interrupt state; entry A differs (CHGMOD's is the mode), and case 31 has the other marker set. Colours 15 / 4 / 7, $1A / $25 /
-  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
+  interrupt state; entry A differs (CHGMOD's is the mode), and cases 12, 31 and 40 have the other
+  marker set from their partners. Colours 15 / 4 / 7, $1A / $25 /
+  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7, 15 / $25 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
   entry A $A7, $00, $FF; SCRMOD before 0-3, $77.
 
 <!-- RULES BEGIN -->
@@ -65,7 +68,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IM-VRAM** VRAM, from the cells AND $3FFF, wrapping past $3FFF (every cell $3FFF in case 38, $FFFF in 39): first the name table, 768 bytes from MLTNAM ($F3D1), := for row r and column c (32 a row) (r / 4) x 32 + c -- each group of four rows the same 32 numbers; then the pattern table, over the name table where they overlap, 1536 bytes from MLTCGP, := BAKCLR x 16 OR BAKCLR as a byte -- an OR, not an ADD ($55 gives $55), the whole byte ($25 gives $75, $F4 $F4); the 32 sprite attribute entries from MLTATR get Y $D1, the pattern number (times 4 when RG1SAV's bit 1 is set) and FORCLR, X not written -- the sprite patterns are not cleared. Nothing else in VRAM changes. | 26 | ✓ | ✗ 10: XG N08, XG N23, XG N30, XG N38, XG N39, XG D08 … (+4) |
-| **R-IM-VDP** The VDP is set up as SETMLT sets it from the MLT cells (RG0SAV-RG6SAV and R#0-R#6 as on that page), with RG1SAV's bit 6 set besides -- the display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those values as the VDP keeps them. | 26 | ✓ | ✗ 26: XG N06, XG N07, XG N08, XG N09, XG N10, XG N11 … (+20) |
+| **R-IM-VDP** The VDP is set up as SETMLT sets it from the MLT cells (RG0SAV-RG6SAV and R#0-R#6 as on that page -- the shadows are the unmasked cells shifted: $FFFF gives RG2SAV $3F where R#2 holds $0F), with RG1SAV's bit 6 set besides -- the display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those values as the VDP keeps them. | 26 | ✓ | ✗ 26: XG N06, XG N07, XG N08, XG N09, XG N10, XG N11 … (+20) |
 | **R-IM-CELLS** SCRMOD := 3; PATBAS ($F926) := MLTPAT and ATRBAS ($F928) := MLTATR, as the cells hold them ($FFFF stays $FFFF). OLDSCR, GRPACX / GRPACY and FORCLR / BAKCLR / BDRCLR are not changed. | 26 | ✓ | ✓ |
 | **R-IM-REGS** On return A = the new RG1SAV, F = $A4, BC = $0001, DE = $0000, HL = $F3DB; IX and IY are kept -- whatever A and F were on entry. F is $A4 whatever the shadows held ($A5, or $00). | 26 | ✓ | ✗ 26: XG N06, XG N07, XG N08, XG N09, XG N10, XG N11 … (+20) |
 | **R-IM-EI** Interrupts are on after the call, whether they were on or off before it. | 26 | ✓ | ✓ |
@@ -76,8 +79,10 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
+| **D-INIGRPORDER** (with overlapping tables -- every cell $3FFF / $FFFF, cases 38, 39 -- zerobas writes the sprites before the patterns, so the patterns win) | R-IM-VRAM |
 | **D-INIMLTCOL** (BAKCLR over 15: zerobas fills the pattern table with (BAKCLR AND 15) x $11 -- $55 for $25, $44 for $F4 -- where the VG-8020 uses the whole byte, $75 and $F4) | R-IM-VRAM |
-| **D-SETSHADOW** (zerobas's RG0SAV keeps bits 7 and 5 of $A5 -- $A1 where the VG-8020 has $01; and with unaligned cells its RG2SAV / RG4SAV / RG6SAV carry junk top bits -- $CE / $E2 / $E1 where the VG-8020 has $0E / $02 / $01; the VDP's own registers are the same on both) | R-IM-VDP |
+| **D-SETSHADOW** (zerobas's RG0SAV keeps bits 7 and 5 of $A5 -- $A1 where the VG-8020 has $01; and with unaligned cells its RG2SAV / RG4SAV / RG6SAV carry junk top bits -- $CE / $E2 / $E1 where the VG-8020 has $0E / $02 / $01, and $FF / $FF / $FF where it has $3F /
+$1F / $1F for cells $FFFF; the VDP's own registers are the same on both) | R-IM-VDP |
 | **D-INIREGS** (zerobas returns other DE and HL: DE $88D1, HL $F3E7, where the VG-8020 returns $0000 and $F3DB) | R-IM-REGS |
 
 ## Open (not measured)
@@ -86,8 +91,13 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   read just before the call).
 - **[A]** RAM other than the cells recorded; VRAM outside the three windows beyond the block sums;
   cell, colour, RG1SAV and entry A values other than those measured; RG0SAV and RG2SAV-RG7SAV preset
-  only to $A5, and the VDP registers only to the probe's one preset (display off).
+  only to $A5 or $00, and the VDP registers only to the probe's one preset (display off).
 - **[A]** The VDP status register after the call.
+- **[A]** The name-table rows 4-19 one by one (the windows see rows 0-2 and 23; the block sums see
+  the rest only as sums).
+- **[A]** A name table (or colour table) that wraps past $3FFF with nothing written over it: in cases
+  38 and 39 the wrapped tables are overwritten, so only the pattern and sprite tables' wrap is seen.
+- **[A]** RG1SAV with bit 7 clear, or (INIGRP) bit 3 set, at entry.
 - **[A]** The alternate registers and SP; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

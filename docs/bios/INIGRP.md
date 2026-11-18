@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `INIGRP` ($0072) — set up the high-resolution graphics screen
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the third test-writer review found no new behaviour; its
+> items are combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -51,8 +52,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   31-35 and 40 with A = 2, 3, 0, 1, 4, $FF, $7F, $80, $81, $FE, 2, 2; and set-ups called directly, for CHGMOD's comparison:
   00 (for 12), 06 (13), 20 INITXT (14), 21 INIT32 (15), 24 INIMLT (16, 31, 32), 25 INITXT (17, 33,
   34), 18 INIGRP (35), 28 INIGRP (40) -- the same cells, colours, SCRMOD, RG1SAV, entry F and
-  interrupt state; entry A differs (CHGMOD's is the mode), and case 31 has the other marker set. Colours 15 / 4 / 7, $1A / $25 /
-  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
+  interrupt state; entry A differs (CHGMOD's is the mode), and cases 12, 31 and 40 have the other
+  marker set from their partners. Colours 15 / 4 / 7, $1A / $25 /
+  $3C, 0 / 0 / 0, 5 / 6 / 8, $F0 / $0F / 0, 15 / $55 / 7, 15 / $F4 / 7, 15 / $25 / 7; RG1SAV $E0-$E3, $F0, $80, $A0;
   entry A $A7, $00, $FF; SCRMOD before 0-3, $77.
 
 <!-- RULES BEGIN -->
@@ -65,7 +67,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IG-VRAM** VRAM, from the cells AND $3FFF, wrapping past $3FFF (every cell $3FFF in case 28, $FFFF in 36): first the name table, 768 bytes from GRPNAM ($F3C7), := 0, 1, ... 255 three times; then the colour table, 6144 bytes from GRPCOL, := BAKCLR as it is (a byte over 15 too: $25, $F4) -- over the name table where they overlap (case 37, GRPNAM = GRPCOL); then the pattern table, 6144 bytes from GRPCGP, := 0 -- the zeros stay where it overlaps either; last, the 32 sprite attribute entries from GRPATR get Y $D1, the pattern number (times 4 when RG1SAV's bit 1 is set) and FORCLR, X not written -- the sprite patterns are not cleared. Nothing else in VRAM changes. | 26 | ✓ | ✗ 4: XG N28, XG N36, XG D28, XG D36 |
-| **R-IG-VDP** The VDP is set up as SETGRP sets it from the GRP cells (RG0SAV-RG6SAV and R#0-R#6 as on that page), with RG1SAV's bit 6 set besides -- the display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those values as the VDP keeps them. | 26 | ✓ | ✗ 24: XG N00, XG N01, XG N02, XG N03, XG N04, XG N05 … (+18) |
+| **R-IG-VDP** The VDP is set up as SETGRP sets it from the GRP cells (RG0SAV-RG6SAV and R#0-R#6 as on that page -- the shadows are the unmasked cells shifted: $FFFF gives RG2SAV $3F where R#2 holds $0F), with RG1SAV's bit 6 set besides -- the display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those values as the VDP keeps them. | 26 | ✓ | ✗ 24: XG N00, XG N01, XG N02, XG N03, XG N04, XG N05 … (+18) |
 | **R-IG-CELLS** SCRMOD := 2; PATBAS ($F926) := GRPPAT and ATRBAS ($F928) := GRPATR, as the cells hold them ($FFFF stays $FFFF). OLDSCR, GRPACX / GRPACY and FORCLR / BAKCLR / BDRCLR are not changed. | 26 | ✓ | ✓ |
 | **R-IG-REGS** On return A = the new RG1SAV, F = $A4, BC = $0001, DE = $7F03, HL = $F3D1; IX and IY are kept -- whatever A and F were on entry. F is $A4 whatever the shadows held ($A5, or $00). | 26 | ✓ | ✗ 26: XG N00, XG N01, XG N02, XG N03, XG N04, XG N05 … (+20) |
 | **R-IG-EI** Interrupts are on after the call, whether they were on or off before it. | 26 | ✓ | ✓ |
@@ -76,7 +78,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-SETSHADOW** (zerobas's RG0SAV clears bit 2 -- $A3 from $A5, where the VG-8020 sets bit 1 and gives $A7; and with unaligned cells its RG2SAV / RG4SAV / RG6SAV carry junk top bits -- $CF / $E7 / $E7 where the VG-8020 has $0F / $07 / $07; the VDP's own registers are the same on both) | R-IG-VDP |
+| **D-SETSHADOW** (zerobas's RG0SAV clears bit 2 -- $A3 from $A5, where the VG-8020 sets bit 1 and gives $A7; and with unaligned cells its RG2SAV / RG4SAV / RG6SAV carry junk top bits -- $CF / $E7 / $E7 where the VG-8020 has $0F / $07 / $07, and $FF / $FF / $FF where it has $3F /
+$1F / $1F for cells $FFFF; the VDP's own registers are the same on both) | R-IG-VDP |
 | **D-INIGRPORDER** (with overlapping tables -- every cell $3FFF -- zerobas writes them in another order, so other bytes win) | R-IG-VRAM |
 | **D-INIREGS** (zerobas returns DE $88D1 and HL $F3E7 where the VG-8020 returns $7F03 and $F3D1) | R-IG-REGS |
 
@@ -86,8 +89,11 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   read just before the call).
 - **[A]** RAM other than the cells recorded; VRAM outside the three windows beyond the block sums;
   cell, colour, RG1SAV and entry A values other than those measured; RG0SAV and RG2SAV-RG7SAV preset
-  only to $A5, and the VDP registers only to the probe's one preset (display off).
+  only to $A5 or $00, and the VDP registers only to the probe's one preset (display off).
 - **[A]** The VDP status register after the call.
+- **[A]** A name table (or colour table) that wraps past $3FFF with nothing written over it: in cases
+  28 and 36 the wrapped tables are overwritten, so only the pattern and sprite tables' wrap is seen.
+- **[A]** RG1SAV with bit 7 clear, or (INIGRP) bit 3 set, at entry.
 - **[A]** The alternate registers and SP; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

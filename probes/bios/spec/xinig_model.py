@@ -123,7 +123,8 @@ def screen_rules(tag, section, mode, writes, r0, r1, shadows, regs_text, de, hl,
     return [
         Rule(f"R-{tag}-VRAM", section, " ".join(writes.__doc__.split()), ALLc, vram),
         Rule(f"R-{tag}-VDP", section, f"The VDP is set up as {'SETGRP' if mode == 2 else 'SETMLT'} sets it from the "
-             f"{cellname} cells (RG0SAV-RG6SAV and R#0-R#6 as on that page), with RG1SAV's bit 6 set besides -- the "
+             f"{cellname} cells (RG0SAV-RG6SAV and R#0-R#6 as on that page -- the shadows are the unmasked cells shifted: "
+             "$FFFF gives RG2SAV $3F where R#2 holds $0F), with RG1SAV's bit 6 set besides -- the "
              "display on (RG1SAV $80 gives $C0, $A0 $E0) -- and R#7 / RG7SAV := BDRCLR. The VDP registers hold those "
              "values as the VDP keeps them.", ALLc,
              lambda c: c.sav == sav(c) and c.vdp == tuple(v & MASK[n] for n, v in enumerate(sav(c)))),

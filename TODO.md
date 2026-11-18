@@ -16862,11 +16862,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the VG-8020 returns DE $7F03 / $0000 and HL $F3D1 / $F3DB; zerobas DE $88D1 and HL $F3E7 in every case.
       A, F and BC agree. Priced when picked up.
 
-- [ ] **D-INIGRPORDER — INIGRP WRITES OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
+- [ ] **D-INIGRPORDER — INIGRP / INIMLT WRITE OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
       🎚️ TIER 6 — every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 28):
       the VG-8020 writes the name and colour tables, then clears the patterns, then the sprite attributes; zerobas's
-      order leaves other bytes where they overlap. Priced when picked up.
+      order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
+      VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
 
 - [ ] **D-INIMLTCOL — INIMLT MASKS A BAKCLR OVER 15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (BAKCLR over 15 when INIMLT runs; filed 2026-11-18).
