@@ -1,0 +1,63 @@
+low region $2781-$3FFF: 550 attributed routines; pinning seeds = 101 resident-ABI + 26 ISR (htimi_guard, zkey_hook, crt_rows, crt_cp, bios_beep, bios_breakx, bios_calbas, bios_cls, bios_dspfnk, bios_erafnk, bios_fnk, bios_fnk_key, bios_fnk_out, bios_fnksb, bios_gicini, bios_grpprt, bios_inifnk, bios_inlin, bios_iscntc, bios_outdlp, bios_pntini, bios_putq, bios_qinlin, bios_scanl, bios_scanr, bios_strtms)
+
+   445 B promotable /   1721 B pinned   basic/float-arith.asm
+            40 B  cmul_int
+            26 B  fxc_rint
+            26 B  cpow_x_nonzero
+            23 B  combine_pow
+            21 B  signed_div_de_bc
+            21 B  fxt_int
+   385 B promotable /    152 B pinned   basic/input.asm
+            35 B  inpc_vloop
+            30 B  inp_readline
+            25 B  inpc_line
+            20 B  inpc_pscan
+            20 B  inpc_after
+            18 B  inp_numitem
+   100 B promotable /    383 B pinned   basic/arrays.asm
+            24 B  ee_settype
+            21 B  ee_lp
+            13 B  err_syntax
+            12 B  ed_lp
+             9 B  ed_settype
+             8 B  ed_next
+    99 B promotable /    107 B pinned   basic/trapstmt.asm
+            29 B  tt_eostr_idx
+            26 B  ex_key_stmt
+            13 B  tt_eostr_lp
+            10 B  tt_eostr_store
+             5 B  ex_on_stop
+             5 B  ex_on_key
+    80 B promotable /    139 B pinned   basic/main.asm
+            38 B  __MEAS_LOW_END
+            17 B  msg_redo
+            14 B  ndd_lp
+             8 B  mxf_require_end
+             2 B  ndd_tape
+             1 B  ndd_scan
+    76 B promotable /   1512 B pinned   basic/str-engine.asm
+            12 B  ex_dsko
+            12 B  ems_print
+            10 B  print_strval
+             9 B  relop_peek
+             8 B  pu_deref_body
+             7 B  nodisk_dev
+    60 B promotable /     24 B pinned   basic/sound.asm
+            34 B  ex_sound
+            19 B  ex_beep
+             7 B  snd_nomask
+    40 B promotable /    125 B pinned   basic/subromcall.asm
+            36 B  sub_int_template
+             4 B  sub_int_template_end
+             0 B  fch_park
+    16 B promotable /     73 B pinned   basic/varfind.asm
+            12 B  getypr
+             4 B  gty_dbl
+     5 B promotable /      0 B pinned   basic/title.asm
+             5 B  show_title
+     0 B promotable /    290 B pinned   basic/biosfnk.asm
+     0 B promotable /    202 B pinned   basic/float.asm
+     0 B promotable /     85 B pinned   basic/edscreen.asm
+     0 B promotable /     55 B pinned   basic/keytrap.asm
+
+1306 B promotable, 4868 B pinned (6174 B attributed)

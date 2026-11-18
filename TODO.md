@@ -16920,6 +16920,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
       🏗️ **RULED (Joost, 2026-11-18, "I agree with your recommendation"): SCOUT a promote pass in the low region** (promote_scout.py); re-land this fix if it frees ~30 B with margin for the switch-off builds, else report the numbers and park.
+      💰 **ROOM MADE (2026-11-18): SOUND / BEEP PROMOTED into main page 1** (basic/soundstmt.asm, in front of the $6CF3
+      pin). tools/promote_scout.py seeded with every bios_* entry, crt_rows / crt_cp and the ISR path
+      ([`promote_scout_bios_1118.out`](scratchpad/promote_scout_bios_1118.out)): ex_sound / snd_nomask / ex_beep 60 B
+      PROMOTABLE. The low region went 22 -> 82 B free, and the switch-off builds 15 -> 75 B (their floor, 7 B under the
+      baseline: the true budget). The page-1 $6CF3 pad went 798 -> 738 B. Next: re-land this fix and PINLIN's half.
       🔴 **BLOCKED ON LOW-REGION SPACE (2026-11-18).** A fix was built and witnessed (e5ada705, reverted by 49bde3de):
       bios_fnk calls a 20 B bf_scroll at the low region's end -- showing the line with the cursor on its row,
       CSRY := the last text row, then the console's own LF scroll (CNSDFG is $FF already). XSCR4 re-run: the CRTCNT

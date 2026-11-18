@@ -92,7 +92,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/biosfnk.asm basic/subromcall.asm basic/edscreen.asm basic/input.asm \
-         basic/arrays.asm basic/sound.asm basic/play.asm basic/graphics.asm basic/traps.asm \
+         basic/arrays.asm basic/sound.asm basic/soundstmt.asm basic/play.asm basic/graphics.asm basic/traps.asm \
          basic/missing.asm basic/trapstmt.asm basic/varfind.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
