@@ -113,11 +113,14 @@ PATCHES = [
     # D-INITEDGES (2026-11-18): INITXT / INIT32 keep only RG0SAV's bit 0 in R0, and the text clear is
     # 40 * 24 at any LINLEN, as the VG-8020; 10 B shorter, padded -- nothing moves.
     os.path.join(REPO, "cbios-repack", "initedges.patch"),
+    # D-POSITCLAMP (2026-11-18): POSIT clamps H / L as the VG-8020 and does nothing in SCREEN 2 / 3,
+    # paid from the dead FNKSB / ERAFNK / DSPFNK stubs (zerobas overlays all three); TOTEXT stays put.
+    os.path.join(REPO, "cbios-repack", "posit-clamp.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "a956592519fe2c7fd39940d2af48873fa7be926a"   # D-INITEDGES, 2026-11-18
+REPACKED_SHA1 = "9fee43cee72e524b4bbe680929758258a2a24efc"   # D-POSITCLAMP, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

@@ -9,4 +9,5 @@ SPDX-License-Identifier: 0BSD
 
 ## Differences from the reference
 
-As CLS's page states for POSIT: **D-POSITCLAMP**.
+As CLS's page states for POSIT: **D-TEXTAF** (A / F on return, R-CP-AF). The clamps and SCREEN 2 / 3
+have matched the VG-8020 since the 2026-11-18 fix.

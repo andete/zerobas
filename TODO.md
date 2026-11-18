@@ -16863,7 +16863,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       row / CRTCNT and the margins (sub/keystr.asm `ks_geom` takes row 24 and the whole row; the sub ROM's page 0 has
       3 B free) and TOTEXT's OLDSCR dispatch.
 
-- [ ] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
+- [x] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
       🎚️ TIER 6 — every edge (a program passing POSIT a column of 0 / above LINLEN or a row of 0 / above CRTCNT, or
       calling it in a graphics mode; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/CLS.md rules R-P-CLAMP / R-P-GRP ([`XCLS_run2.out`](scratchpad/XCLS_run2.out)): the
@@ -16872,6 +16872,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ...) in every mode. XSCR ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) refines the row limit to (CRTCNT + CNSDFG)
       mod 256 -- CRTCNT - 1 while the key line shows with CNSDFG $FF -- and adds SCREEN 3 (nothing). Fix in the C-BIOS
       repack's POSIT.
+      ✅ **FIXED 2026-11-18** (cbios-repack/posit-clamp.patch). POSIT returns at once in SCREEN 2 / 3. It clamps a column
+      of 0 or above LINLEN to LINLEN, and a row of 0 or above `crt_rows` ((CRTCNT + CNSDFG) mod 256, zerobas's $3283) to
+      that limit. It is paid from C-BIOS's FNKSB / ERAFNK / DSPFNK print_debug stubs right after it, dead since zerobas
+      overlays $00C9 / $00CC / $00CF: their labels are POSIT's `ret`, build_mainrom's guards on those entries follow,
+      and a pad keeps TOTEXT in place (59 bytes differ). WITNESS: XCLS / XSCR* re-run on the fixed build
+      ([`XCLS_fix2.out`](scratchpad/XCLS_fix2.out), [`XSCR_fix2.out`](scratchpad/XSCR_fix2.out)): R-P-CLAMP 19 -> 0
+      cases failing, R-P-GRP 5 -> 0; no other rule of CLS.md / DSPFNK.md moved.
 
 - [ ] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
       🎚️ TIER 6 — every edge (a program calling CHGET under DI, or testing its flags; filed 2026-11-17).

@@ -26,10 +26,11 @@ LINLEN to LINLEN. It clamps a row of 0 or above (CRTCNT + CNSDFG) mod 256 to tha
 CRTCNT − 1 while the key line shows with the usual CNSDFG $FF. In SCREEN 2 and 3 it does nothing.
 
 zerobas does all of it the same, apart from:
-- the key line's labels and row (D-KEYLINESHIFT, D-INITEDGES);
-- LINTTB's values (D-LINTTBVAL);
-- POSIT, which takes H and L as they are and also moves the cursor in SCREEN 2 / 3 (D-POSITCLAMP);
+- the key line's row (D-INITEDGES);
 - A / F on return (D-TEXTAF).
+
+Fixed on 2026-11-18: the key line's labels (D-KEYLINESHIFT); LINTTB after a clear (D-LINTTBVAL's
+clear); POSIT took H and L as they were and moved the cursor in SCREEN 2 / 3 too (D-POSITCLAMP).
 
 ## The specification
 
@@ -37,7 +38,7 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The screen 
 [the screen editor page](../concepts/screen-editor.md); what the calls touch is on
 [the shared-state map](shared-state.md).
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT and D-LINTTBVAL's clear: [`XCLS_fix1.out`](../../scratchpad/XCLS_fix1.out), [`XSCR_fix1.out`](../../scratchpad/XSCR_fix1.out), [`XSCR3_fix1.out`](../../scratchpad/XSCR3_fix1.out), [`XSCR4_fix1.out`](../../scratchpad/XSCR4_fix1.out), [`XSCR5_fix1.out`](../../scratchpad/XSCR5_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT, D-LINTTBVAL's clear, D-INITEDGES's R0 / tail and D-POSITCLAMP: [`XCLS_fix2.out`](../../scratchpad/XCLS_fix2.out), [`XSCR_fix2.out`](../../scratchpad/XSCR_fix2.out), [`XSCR3_fix2.out`](../../scratchpad/XSCR3_fix2.out), [`XSCR4_fix2.out`](../../scratchpad/XSCR4_fix2.out), [`XSCR5_fix2.out`](../../scratchpad/XSCR5_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XC n]**: case `n` of the XCLS matrix, run 2,
 [`scratchpad/XCLS_run2.out`](../../scratchpad/XCLS_run2.out). The case list, the setup and the record
@@ -105,8 +106,8 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-P-CLAMP** POSIT in SCREEN 0 / 1: CSRX := H and CSRY := L, each CLAMPED -- a column of 0 or above LINLEN becomes LINLEN (0 / 41 / 255 at width 40 give 40; 38 at 37 gives 37; 31 / 30 at 29 give 29), a row of 0 or above the LIMIT (CRTCNT + CNSDFG) mod 256 becomes that limit: CRTCNT with the key line off (0 / 14 / 20 give 13 with CRTCNT 13; 25 / 30 / 255 give 24 with 24), CRTCNT − 1 with CNSDFG's usual $FF (25 / 24 / 0 give 23: the key line's row is not the cursor's), and -- the same sum -- 25 with CNSDFG 1, 26 with 2, 152 with $80 (L 100 stays, 153 gives 152), 12 at CRTCNT 13 with $FF. It ignores the Z flag (Z clear: still clamped). | 33 | ✓ | ✗ 19: XC 17, XC 18, XC 19, XC 22, XC 24, XC 27 … (+13) |
-| **R-P-GRP** POSIT in SCREEN 2 and 3 does nothing: the cursor stays as found -- (7, 5) and (11, 3) -- for H / L 3 / 9 and 0 / 0. | 5 | ✓ | ✗ 5: XC 25, XC 34, XC 35, XS 47, XS 48 |
+| **R-P-CLAMP** POSIT in SCREEN 0 / 1: CSRX := H and CSRY := L, each CLAMPED -- a column of 0 or above LINLEN becomes LINLEN (0 / 41 / 255 at width 40 give 40; 38 at 37 gives 37; 31 / 30 at 29 give 29), a row of 0 or above the LIMIT (CRTCNT + CNSDFG) mod 256 becomes that limit: CRTCNT with the key line off (0 / 14 / 20 give 13 with CRTCNT 13; 25 / 30 / 255 give 24 with 24), CRTCNT − 1 with CNSDFG's usual $FF (25 / 24 / 0 give 23: the key line's row is not the cursor's), and -- the same sum -- 25 with CNSDFG 1, 26 with 2, 152 with $80 (L 100 stays, 153 gives 152), 12 at CRTCNT 13 with $FF. It ignores the Z flag (Z clear: still clamped). | 33 | ✓ | ✓ |
+| **R-P-GRP** POSIT in SCREEN 2 and 3 does nothing: the cursor stays as found -- (7, 5) and (11, 3) -- for H / L 3 / 9 and 0 / 0. | 5 | ✓ | ✓ |
 | **R-P-ONLY** POSIT changes nothing else: VRAM, LINTTB and CNSDFG as found. | 21 | ✓ | ✓ |
 | **R-P-SEVERAL** POSIT changes nothing else, with the inputs at several values: VRAM (the whole sum), LINTTB, CNSDFG, CRTCNT, LINL40 / LINL32 as found. | 17 | ✓ | ✓ |
 
@@ -128,7 +129,6 @@ Declared NOT evidence (5 cases: XS 36, XS 37, XS 43, XS 47 … (+1)): linlen —
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24) | R-C-TEXT, R-CP-STATE, R-C-SEVERAL |
-| **D-POSITCLAMP** (POSIT does not clamp, and moves the cursor in SCREEN 2 / 3) | R-P-CLAMP, R-P-GRP |
 | **D-TEXTAF** (A / F on return) | R-CP-AF |
 
 ## Open (not measured)

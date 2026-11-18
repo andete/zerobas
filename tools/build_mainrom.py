@@ -89,7 +89,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x00C0: bytes([0xC3, 0xE7, 0x15]),     # BEEP -> basic/biosfnk.asm
                 0x00C3: bytes([0xC3, 0x60, 0x07]),     # CLS -> basic/main.asm bios_cls
                                                        #  (D-INITKEYS; cls_z, CBIOS_CLS - 1)
-                0x00C9: bytes([0xC3, 0xFB, 0x15]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x00C9: bytes([0xC3, 0x19, 0x16]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG; C-BIOS's
+                                                       #  stub is POSIT's ret since D-POSITCLAMP)
                 0x014D: bytes([0xC3, 0x21, 0x18]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0159: bytes([0xC3, 0x19, 0x1A]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x008D: bytes([0xC3, 0x45, 0x05]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG;
@@ -101,8 +102,9 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0129: bytes([0xC3, 0x55, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
                                0xC3, 0x55, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 3 B
                                0xC3, 0x55, 0x09]),     #  on since D-SCALXYF)
-                0x00CC: bytes([0xC3, 0x0C, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
-                               0xC3, 0x1E, 0x16]),     #  (D-BIOSCONTRACT)
+                0x00CC: bytes([0xC3, 0x19, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
+                               0xC3, 0x19, 0x16]),     #  (D-BIOSCONTRACT; both stubs are POSIT's
+                                                       #  ret since D-POSITCLAMP)
                 0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
                 0x116E: bytes([0x3A, 0xDD, 0xF3])}     # CHPUT: TTYPOS = CSRX-1 (0-based)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
