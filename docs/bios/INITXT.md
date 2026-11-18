@@ -30,16 +30,21 @@ the name table's); width 0 writes outside it, and so does a key line drawn off t
 (CRTCNT 0 / 30).
 
 zerobas does all of this the same, apart from:
-- the key line shows function keys 6–10 instead of 1–5;
-- the line-continuation table holds different values;
 - its font is C-BIOS's own (ruled);
-- four edges, each needing a program that changes CRTCNT, garbles RG0SAV or uses an odd width (D-INITEDGES).
+- the key line's row (row 24, and CRTCNT := 24, where the VG-8020 uses row CRTCNT and keeps it) and the
+  odd widths' key-line edges (D-INITEDGES).
+
+Fixed on 2026-11-18: the key line showed function keys 6–10 (D-KEYLINESHIFT); the line-continuation
+table held other values (D-LINTTBVAL's clear); R0 kept more of RG0SAV, and above width 40 the 64
+bytes after the name table were cleared (D-INITEDGES).
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. What the two calls touch is on
 [the shared-state map](shared-state.md); the screen and its cells are on
 [the screen editor page](../concepts/screen-editor.md).
+
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT, D-LINTTBVAL's clear and D-INITEDGES's R0 and tail: [`XINIT_fix1.out`](../../scratchpad/XINIT_fix1.out), [`XINIT3_fix1.out`](../../scratchpad/XINIT3_fix1.out), [`XINIT4_fix2.out`](../../scratchpad/XINIT4_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XI n]**: case `n` of the XINIT matrix, run 4,
 [`scratchpad/XINIT_run4.out`](../../scratchpad/XINIT_run4.out); **[XJ n]**: case `n` of its
@@ -101,7 +106,7 @@ confirming pass's findings).
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-I-REGS-TXT** R1..R7 (their copies RG1SAV..RG7SAV) are computed, never left as found: R1 = (the copy AND $A7) OR $50 -- bits 7, 5, 2, 1, 0 kept, bits 6 and 4 set, bit 3 cleared ($A5 gives F5, $A7 F7, $5A 52; each bit alone by XINIT4's walking copies, bit 1 included; from RG1SAV, not RG0SAV); R2 / R3 / R4 / R5 / R6 from TXTNAM / TXTCOL / TXTCGP / TXTATR / TXTPAT (moved: 04 48 05 68 07); R7 = (FORCLR·16) OR BAKCLR in 8 bits ($3A, $C5 gives E5, not the sum's 65; the border colour is not used). | 66 | ✓ | ✓ |
-| **R-I-TAIL-TXT** The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 included) -- not at width 0 with the key line on, which writes them (R-I-W0). | 64 | ✓ | ✗ 8: XI 16, XI 17, XI 18, XI 19, XI 20, XI 21 … (+2) |
+| **R-I-TAIL-TXT** The 64 bytes after the 960 name cells are left as found, at widths 1 to 255 (41, 80, 255 included) -- not at width 0 with the key line on, which writes them (R-I-W0). | 64 | ✓ | ✓ |
 | **R-I-ATR-TXT** No sprite attribute table is written: moved (TXTATR $3456), the 128 bytes at R5's base are left as found. | 4 | ✓ | ✓ |
 | **R-I-NOCOL-TXT** INITXT writes no colour table: moved out of every other table (TXTCOL $2000) its 32 bytes stay $5A; at the default TXTCOL 0 they are the name table's first row (spaces), and TXTATR $1800's 128 bytes stay $5A. | 30 | ✓ | ✓ |
 
@@ -117,14 +122,14 @@ confirming pass's findings).
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-I-R0** R0 (RG0SAV) keeps only bit 0 (external video) of the copy: $A5 / $A7 give 01, $5A (M3 and bits 3, 4, 6 set) gives 00 -- pinned bit by bit by XINIT4's walking copies ($01, $02, $04, $20, $80 and their complements), with RG0SAV and RG1SAV given different values: R0 reads RG0SAV. | 128 | ✓ | ✗ 120: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+114) |
+| **R-I-R0** R0 (RG0SAV) keeps only bit 0 (external video) of the copy: $A5 / $A7 give 01, $5A (M3 and bits 3, 4, 6 set) gives 00 -- pinned bit by bit by XINIT4's walking copies ($01, $02, $04, $20, $80 and their complements), with RG0SAV and RG1SAV given different values: R0 reads RG0SAV. | 128 | ✓ | ✓ |
 | **R-I-MODE** SCRMOD and OLDSCR become 0 (INITXT) / 1 (INIT32), also from SCREEN 2. | 128 | ✓ | ✓ |
 | **R-I-LINLEN** LINLEN becomes LINL40 (INITXT) / LINL32 (INIT32) AS IT IS: 0, 1, 80, 255 included -- no validation; the other call's cell (77) is not used. | 128 | ✓ | ✓ |
 | **R-I-HOME** The cursor goes home: CSRX 1, CSRY 1. | 128 | ✓ | ✓ |
 | **R-I-CRTCNT** CRTCNT is NOT written, and not clamped: 13, 24, 20, 0 and 30 all stay, key line on or off. | 128 | ✓ | ✗ 68: XI 01, XI 03, XI 05, XI 07, XI 09, XI 11 … (+62) |
 | **R-I-CNSDFG** CNSDFG becomes 255 when it was non-zero (1, 2, $80, $FF), 0 when it was 0. | 128 | ✓ | ✓ |
-| **R-I-LT** LINTTB becomes 24, 23, …, 1 down the rows. | 128 | ✓ | ✗ 128: XI 00, XI 01, XI 02, XI 03, XI 04, XI 05 … (+122) |
-| **R-I-KEYPLACE** Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: INITXT 33–35, INIT32 2 / 10 / 20 / 27; XINIT4 adds INITXT 39, INIT32 24 / 19): on row CRTCNT (13, 20 or 24), within the width's span from the left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells). | 54 | ✓ | ✗ 51: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+45) |
+| **R-I-LT** LINTTB becomes 24, 23, …, 1 down the rows. | 128 | ✓ | ✓ |
+| **R-I-KEYPLACE** Where the key line goes, as a formula (XINIT3 pins it on widths no other case has: INITXT 33–35, INIT32 2 / 10 / 20 / 27; XINIT4 adds INITXT 39, INIT32 24 / 19): on row CRTCNT (13, 20 or 24), within the width's span from the left margin (columns − width + 1) ÷ 2; label k (k = 0..4, the FIRST five keys) from column margin + k × slot, slot = (width + 1) ÷ 5, cut to slot − 1 cells (width 2: none). Every other row is spaces. For widths up to the screen's columns only: one past (INITXT 41) leaves an extra 0 cell (R-I-KEYS' cells). | 54 | ✓ | ✗ 49: XI 05, XI 07, XI 09, XI 11, XI 13, XI 15 … (+43) |
 | **R-I-KEYOUT** With CRTCNT 0 or 30 (off the screen's rows) the key line is still drawn, somewhere OUTSIDE the name table: every row of the name table reads spaces, and the whole-VRAM sum holds exactly one more key line (INIT32 30: in the 256 bytes after the name table; the address itself is not read). | 4 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
 | **R-I-READBACK** The call changes none of its inputs: LINL40 / LINL32 (the other call's cell keeps its 77), FORCLR / BAKCLR / BDRCLR, the ten screen-table cells, FNKSTR. | 66 | ✓ | ✓ |
 | **R-I-VRAM** Nothing else in VRAM is written: the whole 16 KB less the name, pattern, colour (INIT32) and sprite attribute (INIT32) tables stays as found -- INITXT writes no colour and no sprite table -- except, with CRTCNT 0 or 30, the one key line drawn off the screen's rows (R-I-KEYOUT). | 61 | ✓ | ✗ 4: XJ 05, XJ 06, XJ 13, XJ 14 |
@@ -151,9 +156,7 @@ Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col �
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-KEYLINESHIFT** (the key line shows keys 6–10) | R-I-KEYS |
-| **D-INITEDGES** (the key line's row, R0's kept bits, the name table's tail, the odd widths) | R-I-KEYS and R-I-KEYPLACE (the row: fixing D-KEYLINESHIFT alone leaves them red), R-I-KEYOUT, R-I-VRAM, R-I-SPR32 (CRTCNT 30), R-I-CRTCNT, R-I-R0, R-I-TAIL-TXT, R-I-KEYEDGE, R-I-EDGE4, R-I-W0 |
-| **D-LINTTBVAL** (LINTTB's values) | R-I-LT |
+| **D-INITEDGES** (the key line's row and CRTCNT, the odd widths; R0's kept bits and the name table's tail are fixed) | R-I-KEYS, R-I-KEYPLACE, R-I-KEYOUT, R-I-VRAM, R-I-SPR32 (CRTCNT 30), R-I-CRTCNT, R-I-KEYEDGE, R-I-EDGE4, R-I-W0 |
 | ruled, not a TODO: C-BIOS's own font (D-BIOSINT, Joost 2026-11-05) | R-I-FONT |
 
 ## Open (not measured)

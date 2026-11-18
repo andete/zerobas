@@ -22,5 +22,4 @@ The rules are on [INITXT's page](INITXT.md), sections "2. INIT32" and "3. Both".
 
 ## Differences from the reference
 
-As INITXT's (its page's Differences): **D-KEYLINESHIFT**, **D-INITEDGES**, **D-LINTTBVAL**, and the
-ruled font.
+As INITXT's (its page's Differences): **D-INITEDGES**, and the ruled font.

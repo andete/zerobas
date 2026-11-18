@@ -1,0 +1,48 @@
+diff --git a/src/video.asm b/src/video.asm
+index 702ff20..3c0d368 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -829,7 +829,9 @@ settxt:
+         ENDIF
+ 
+                 ld      a,(RG0SAV)
+-                and     $F1             ; MASK 11110001
++                and     $01             ; zerobas D-INITEDGES: only bit 0 (external video) is
++                                        ; kept, as the VG-8020 (zerobas docs/bios/INITXT.md
++                                        ; R-I-R0); C-BIOS kept 11110001
+                 ld      b,a
+                 ld      c,0
+                 call    wrtvdp          ; write VDP R#0
+@@ -899,7 +901,9 @@ settxt80:
+ ; Registers: All
+ sett32:
+                 ld      a,(RG0SAV)
+-                and     $F1             ; MASK 11110001
++                and     $01             ; zerobas D-INITEDGES: only bit 0 (external video) is
++                                        ; kept, as the VG-8020 (zerobas docs/bios/INITXT.md
++                                        ; R-I-R0); C-BIOS kept 11110001
+                 ld      b,a
+                 ld      c,0
+                 call    wrtvdp          ; write VDP R#0
+@@ -1944,15 +1948,14 @@ cls_table:
+         ENDIF
+ 
+ cls_screen0:
+-                ; zerobas D-INITKEYS (2026-11-16): `cp 41`, not `cp 40` -- LINLEN 40 is a
+-                ; 40-column screen, and the VG-8020's INITXT clears 960 bytes, leaving
+-                ; $03C0.. as it was (zerobas scratchpad/CL_run1.out); 80 * 24 was cleared
+-                ld      a,(LINLEN)
+-                cp      41
++                ; zerobas: 40 * 24 at ANY LINLEN, as the VG-8020's INITXT, which clears 960
++                ; bytes and leaves $03C0.. as it was -- at LINLEN 40 (D-INITKEYS, 2026-11-16,
++                ; zerobas scratchpad/CL_run1.out) and at 41, 80 and 255 (D-INITEDGES,
++                ; 2026-11-18, zerobas docs/bios/INITXT.md R-I-TAIL-TXT). C-BIOS cleared
++                ; 80 * 24 above 40; MSX1 has no 80-column mode. 10 B shorter, padded.
+                 ld      bc,40*24
+-                jr      c,cls_text
+-                ld      bc,80*24
+                 jr      cls_text
++                ds      10, 0
+ 
+ cls_screen1:
+                 ld      bc,32*24

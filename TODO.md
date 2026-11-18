@@ -16855,6 +16855,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         likewise draw on row 24 and set CRTCNT := 24 on zerobas (the VG-8020: row CRTCNT, CRTCNT kept); and at a
         width below the screen's (37, 39, 29) the VG-8020 writes only the width's span of the key line's row,
         leaving the margin cells, where zerobas writes the whole row (DSPFNK and ERAFNK).
+      🟡 **PART 1 LANDED 2026-11-18: R-I-R0 and R-I-TAIL-TXT** (cbios-repack/initedges.patch, 17 bytes differ, nothing
+      moves). INITXT / INIT32 mask RG0SAV with $01 (C-BIOS $F1), and the text clear is 40 * 24 at any LINLEN (C-BIOS
+      80 * 24 above 40). Witness: INITXT.md's rules on the fixed build ([`XINIT_fix1.out`](scratchpad/XINIT_fix1.out),
+      [`XINIT3_fix1.out`](scratchpad/XINIT3_fix1.out), [`XINIT4_fix2.out`](scratchpad/XINIT4_fix2.out)): R-I-R0 120 -> 0
+      cases failing, R-I-TAIL-TXT 8 -> 0 (and R-I-LT 128 -> 0 from D-LINTTBVAL's clear). **STILL OPEN:** the key line's
+      row / CRTCNT and the margins (sub/keystr.asm `ks_geom` takes row 24 and the whole row; the sub ROM's page 0 has
+      3 B free) and TOTEXT's OLDSCR dispatch.
 
 - [ ] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
       🎚️ TIER 6 — every edge (a program passing POSIT a column of 0 / above LINLEN or a row of 0 / above CRTCNT, or

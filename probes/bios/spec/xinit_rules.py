@@ -112,8 +112,8 @@ KEY_REF = {   # (call, width, moved tables, FORCLR) -> (namesum, colsum, tailsum
 def cases():
     """Two groups: XI = XINIT run 4 (register copies $A5 and CRTCNT 13 in every case), XJ = XINIT3 run 1 (those
     varied, plus widths, read-backs and the whole VRAM)."""
-    t = open(os.path.join(ROOT, "scratchpad", "XINIT_run4.out")).read()
-    t3 = open(os.path.join(ROOT, "scratchpad", "XINIT3_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XINIT_fix1.out")).read()
+    t3 = open(os.path.join(ROOT, "scratchpad", "XINIT3_fix1.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))
@@ -122,7 +122,7 @@ def cases():
         cs3 = X3.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t3).group(1)))
         for c in cs3:
             c.src, c.id = "XJ", f"XJ {c.idx:02}"
-        t4 = open(os.path.join(ROOT, "scratchpad", "XINIT4_run4.out")).read()
+        t4 = open(os.path.join(ROOT, "scratchpad", "XINIT4_fix2.out")).read()
         cs4 = X4.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t4).group(1)))
         for c in cs4:
             c.src, c.id = "XJ4", f"XJ4 {c.idx:02}"

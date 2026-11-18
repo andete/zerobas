@@ -110,11 +110,14 @@ PATCHES = [
     # D-LINTTBVAL (2026-11-18): a text clear leaves LINTTB 24, 23, ..., 1 down the rows, as the
     # VG-8020 (C-BIOS: 1 in all); 3 B shorter, padded -- nothing moves.
     os.path.join(REPO, "cbios-repack", "linttb-clear.patch"),
+    # D-INITEDGES (2026-11-18): INITXT / INIT32 keep only RG0SAV's bit 0 in R0, and the text clear is
+    # 40 * 24 at any LINLEN, as the VG-8020; 10 B shorter, padded -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "initedges.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "09130175f77cc537d53e8daf497576d0aeb95e4b"   # D-LINTTBVAL, 2026-11-18
+REPACKED_SHA1 = "a956592519fe2c7fd39940d2af48873fa7be926a"   # D-INITEDGES, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
