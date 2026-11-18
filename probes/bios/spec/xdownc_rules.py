@@ -21,4 +21,4 @@ def cases():
 S1 = "1. DOWNC ($0108): move the graphics position one pixel down"
 
 RULES = G.move_rules("DC", S1, "CLOC := CLOC + 1, or CLOC + $F9 when CLOC AND 7 is 7 (the line below is in the "
-                     "character row below); CMASK is kept. Both screens alike; no edge is checked.")
+                     "character row below); CMASK is kept. Both screens alike; no edge is checked ($FFFF gives $00F8).")

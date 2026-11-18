@@ -20,5 +20,7 @@ def cases():
 
 S1 = "1. LEFTC ($00FF): move the graphics position one pixel left"
 
-RULES = G.move_rules("LC", S1, "SCREEN 2: CMASK shifts left one bit; from $80 it becomes $01 and CLOC := CLOC - 8. "
-                     "SCREEN 3: CMASK $F0 becomes $0F and CLOC := CLOC - 8; any other CMASK becomes $F0 ($0F, and $1F, CLOC kept). No edge is checked.")
+RULES = G.move_rules("LC", S1, "SCREEN 2: CMASK rotates left one bit; when the bit rotated out was set (from $80) "
+                     "CLOC := CLOC - 8 ($03 gives $06, CLOC kept). SCREEN 3: with CMASK's bit 7 set ($F0, $80, $F1) "
+                     "CMASK := $0F and CLOC := CLOC - 8; with it clear ($0F, $1F) CMASK := $F0, CLOC kept. No edge is "
+                     "checked: from $0000 CLOC wraps to $FFF8.")

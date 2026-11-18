@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for RIGHTC / LEFTC / UPC / TUPC / DOWNC / TDOWNC's EXECUTABLE RULES
-(docs/spec-method.md §3a): scratchpad/XGFX2_run3.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
+(docs/spec-method.md §3a): scratchpad/XGFX2_run4.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
 the case table and the 28-byte record, as xgfx1.asm's). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX2_run3.out"
+RUN = "XGFX2_run4.out"
 ASM = os.path.join(HERE, "xgfx2.asm")
 REC = 28
 GTB = 255                                   # the probe's GTB ($FF): case 255 gets ASPCT1 / ASPCT2 $0100 / $00C0
@@ -87,24 +87,35 @@ def move(c):
     andf = lambda v: logical(v) | 0x10  # noqa: E731   (an AND's flags)
     if c.op in (0, 1):
         if c.op == 0:
-            edge = cm == (0x0F if mlt else 0x01)
-            cm = (0xF0 if mlt else 0x80) if edge else (0x0F if mlt else cm >> 1)
+            if mlt:                         # bit 7 clear: the low pixel -> move on; else -> the low pixel
+                edge = not cm & 0x80
+                cm = 0xF0 if edge else 0x0F
+            else:                           # rotate right; the bit rotated out -> move on
+                edge = cm & 1
+                cm = (cm >> 1) | (0x80 if edge else 0)
             cl = (cl + 8) & 0xFFFF if edge else cl
         else:
-            edge = cm == (0xF0 if mlt else 0x80)
-            cm = (0x0F if mlt else 0x01) if edge else (0xF0 if mlt else cm << 1)
+            if mlt:                         # bit 7 set: the high pixel -> move back; else -> the high pixel
+                edge = cm & 0x80
+                cm = 0x0F if edge else 0xF0
+            else:                           # rotate left; the bit rotated out -> move back
+                edge = cm & 0x80
+                cm = ((cm << 1) & 0xFF) | (1 if edge else 0)
             cl = (cl - 8) & 0xFFFF if edge else cl
         return cl, cm, cm, andf(cm), False
     if c.op in (2, 3):
         if c.op == 3:
-            stop = (cl & 0xFF07) == 0 if mlt else ((cl >> 8) == (c.cgcg >> 8) and cl & 7 == 0)
+            d = (cl - c.cgcg) & 0xFFFF
+            d = d - 0x10000 if d & 0x8000 else d   # signed
+            stop = (cl & 0xFF07) == 0 if mlt else (cl & 7 == 0 and d < 0x100)
             if stop:
                 return cl, cm, 0, 0x45, True
         a = cl & 7
         cl = (cl - (0xF9 if a == 0 else 1)) & 0xFFFF
         return cl, cm, a, andf(a), False
     if c.op == 5:
-        stop = (cl & 7 == 7 and (cl >> 8) >= 5) if mlt else (cl & 7 == 7 and (cl >> 8) == ((c.cgcg >> 8) + 0x17) & 0xFF)
+        d = (cl - c.cgcg) & 0xFFFF
+        stop = (cl & 7 == 7 and (cl >> 8) >= 5) if mlt else (cl & 7 == 7 and d >= 0x1700)
         if stop:
             return cl, cm, 0, 0x45, True
     cl = (cl + (0xF9 if cl & 7 == 7 else 1)) & 0xFFFF
