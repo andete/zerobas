@@ -13,16 +13,16 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
 | $0000 | CHKRAM | [system](../concepts/interrupts-and-traps.md) | L1 · ruled indirect | — | — | — |
-| $0008 | SYNCHR | interpreter (concept page to come) | L4 | [FINAL](SYNCHR.md) | 9 | — |
-| $000C | RDSLT | slots (concept page to come) | L3 | [FINAL](RDSLT.md) | 12 | — |
-| $0010 | CHRGTR | interpreter (concept page to come) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
-| $0014 | WRSLT | slots (concept page to come) | L3 | [FINAL](WRSLT.md) | 13 | — |
+| $0008 | SYNCHR | [interpreter](../concepts/interpreter-entries.md) | L4 | [FINAL](SYNCHR.md) | 9 | — |
+| $000C | RDSLT | [slots](../concepts/slots.md) | L3 | [FINAL](RDSLT.md) | 12 | — |
+| $0010 | CHRGTR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
+| $0014 | WRSLT | [slots](../concepts/slots.md) | L3 | [FINAL](WRSLT.md) | 13 | — |
 | $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | D-OUTDOINIT, D-OUTDLPGRAPH, D-OUTDLPF |
-| $001C | CALSLT | slots (concept page to come) | L3 | [FINAL](CALSLT.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
-| $0020 | DCOMPR | interpreter (concept page to come) | L3 | [FINAL](DCOMPR.md) | 8 | — |
-| $0024 | ENASLT | slots (concept page to come) | L3 | [FINAL](ENASLT.md) | 7 | — |
-| $0028 | GETYPR | interpreter (concept page to come) | L3 | [FINAL](GETYPR.md) | 5 | — |
-| $0030 | CALLF | slots (concept page to come) | L3 | [FINAL](CALLF.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
+| $001C | CALSLT | [slots](../concepts/slots.md) | L3 | [FINAL](CALSLT.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
+| $0020 | DCOMPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](DCOMPR.md) | 8 | — |
+| $0024 | ENASLT | [slots](../concepts/slots.md) | L3 | [FINAL](ENASLT.md) | 7 | — |
+| $0028 | GETYPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](GETYPR.md) | 5 | — |
+| $0030 | CALLF | [slots](../concepts/slots.md) | L3 | [FINAL](CALLF.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 25 | D-INITIOVCB, D-INITIOQUEUES |
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
@@ -108,8 +108,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $012F | SCANL | graphics (concept page to come) | L3 | — | — | — |
 | $0132 | CHGCAP | input (concept page to come) | L3 | — | — | — |
 | $0135 | CHGSND | sound (concept page to come) | L3 | — | — | — |
-| $0138 | RSLREG | slots (concept page to come) | L3 | [FINAL](RSLREG.md) | 4 | — |
-| $013B | WSLREG | slots (concept page to come) | L3 | [FINAL](WSLREG.md) | 4 | — |
+| $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |
+| $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
 | $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0141 | SNSMAT | input (concept page to come) | L3 | — | — | — |
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
@@ -119,6 +119,6 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0150 | GETVCP | sound (concept page to come) | L3 | — | — | — |
 | $0153 | GETVC2 | sound (concept page to come) | L3 | — | — | — |
 | $0156 | KILBUF | input (concept page to come) | L3 | — | — | — |
-| $0159 | CALBAS | slots (concept page to come) | L3 | [FINAL](CALBAS.md) | 5 | — |
+| $0159 | CALBAS | [slots](../concepts/slots.md) | L3 | [FINAL](CALBAS.md) | 5 | — |
 
 Contract level: tools/bios_levels.py (L1 called · L2 happy path · L3 full contract · L4 errors / edges), measured against the VG-8020. It says how much a GATE compares; the page says what the call DOES.

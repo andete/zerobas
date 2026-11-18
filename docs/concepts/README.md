@@ -36,6 +36,8 @@ page lists where zerobas still differs.
 | [Interrupts and traps](interrupts-and-traps.md) | what runs between statements |
 | [The memory map](memory-map.md) | where BASIC keeps things in RAM |
 | [The BIOS](bios.md) | the machine's own routines: where they live, how to call them, one page per call |
+| [Slots](slots.md) | how an MSX reaches more than 64 KB, and the BIOS's slot calls |
+| [The interpreter entries](interpreter-entries.md) | BASIC's text and value helpers in the BIOS table |
 
 ## Storage
 
