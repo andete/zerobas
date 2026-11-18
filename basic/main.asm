@@ -433,27 +433,6 @@ odd_scr:
                 pop     af
                 jp      pchar
 
-; bf_scroll -- D-DSPFNKSCROLL (2026-11-18), called by bios_fnk (basic/biosfnk.asm, whose pad in
-; front of the $3283 pin had no room). Showing the key line (C = $FF) with the cursor ON its row,
-; the VG-8020 first scrolls the text rows up and moves the cursor up a row, CSRX kept
-; (docs/bios/DSPFNK.md R-K-SCROLL). Here: the cursor up to the last text row, then the console's
-; own LF scroll (CNSDFG is $FF already: 23 text rows). BC kept (bios_fnk reads C after); HL spent
-; (bios_fnk saved it).
-bf_scroll:
-                ld      a,c
-                or      a
-                ret     z                   ; ERAFNK: no scroll
-                ld      a,(CSRY)
-                cp      CON_ROWS            ; the key line's row (bios_fnk set CRTCNT := 24)
-                ret     nz
-                ld      hl,CSRY
-                dec     (hl)
-                push    bc
-                ld      a,10
-                call    CHPUT
-                pop     bc
-                ret
-
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean
