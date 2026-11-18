@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `ENASCR` ($0044) — show the screen
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the second test-writer review found no unpinned rule and no new
+> behaviour; its other items are open (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -44,7 +45,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   ENASCR: 48-55, RG1SAV $00, $FF, $A0, $E2, $5A, $A5, $40, $BF. RDVDP: 56-63 and 76-79 -- after a
   wait of more than a frame (B = 1); with none (B = 0); with five sprites set up on one line and the
   status polled until its frame flag, then the wait (B = 2); or the wait and an RDVDP of the probe's
-  own first (B = 3); each with entry F $00 and $FF and interrupts off and on.
+  own first (B = 3). B = 0 and B = 1 meet all four pairs of entry F ($00, $FF) and interrupt state; B = 2
+  and B = 3 meet F $00 with interrupts off and F $FF with them on.
 - $F3E7-$F3EE differ between the machines at boot (two bytes): set-up, which every case starts from
   and the rules compare with each machine's own boot copy. The harness reports them as differences.
 
@@ -70,6 +72,7 @@ None measured: every rule holds on zerobas.
 ## Open (not measured)
 
 - **[A]** RG1SAV values other than the eight measured.
+- **[A]** Entry B and C other than $77 (every case enters with $77 in both).
 - **[A]** Entry with a VDP interrupt pending and RG1SAV with bit 5 set: whether the interrupt is taken before the
   call returns (the probe clears the VDP status first, so none is pending).
 - **[A]** The VDP's address latch after the call.

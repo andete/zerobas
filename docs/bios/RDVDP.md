@@ -5,18 +5,19 @@ SPDX-License-Identifier: 0BSD
 
 # `RDVDP` ($013E) — read the VDP status
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the second test-writer review found no unpinned rule and no new
+> behaviour; its other items are open (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
 
-`RDVDP` returns the VDP status register in A, and the read clears it: bit 7, the frame flag, is set
-once a frame and a second read right after the first returns 0. With five sprites on one line the
+`RDVDP` returns the VDP status register in A, and the read clears the frame flag: bit 7 is set once
+a frame, and a second read right after the first returns 0 (measured with no sprite shown). With five sprites on one line the
 fifth-sprite flag (bit 6) and that sprite's number (bits 4-0) are set, and with sprites overlapping
 the coincidence flag (bit 5).
 
-Everything else is kept: F, BC, DE, HL, IX, IY, the interrupt state, the work area (STATFL $F3E7
-too: RDVDP does not store the status there) and the VDP registers.
+Everything else measured is kept: F, BC, DE, HL, IX, IY, the interrupt state, $F3DF-$F3EE (STATFL
+$F3E7 too: RDVDP does not store the status there) and the VDP registers.
 
 zerobas does all of it the same.
 
@@ -46,7 +47,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   ENASCR: 48-55, RG1SAV $00, $FF, $A0, $E2, $5A, $A5, $40, $BF. RDVDP: 56-63 and 76-79 -- after a
   wait of more than a frame (B = 1); with none (B = 0); with five sprites set up on one line and the
   status polled until its frame flag, then the wait (B = 2); or the wait and an RDVDP of the probe's
-  own first (B = 3); each with entry F $00 and $FF and interrupts off and on.
+  own first (B = 3). B = 0 and B = 1 meet all four pairs of entry F ($00, $FF) and interrupt state; B = 2
+  and B = 3 meet F $00 with interrupts off and F $FF with them on.
 - $F3E7-$F3EE differ between the machines at boot (two bytes): set-up, which every case starts from
   and the rules compare with each machine's own boot copy. The harness reports them as differences.
 
@@ -60,7 +62,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-RV-FRAME** A is the VDP status: with no sprite on the screen (sprite 0's Y $D0) it is $80 after a wait of more than a frame since the status was last read (B = 1), and $00 without one (B = 0) -- bit 7, the frame flag, set by the VDP once a frame. | 16 | ✓ | ✓ |
-| **R-RV-CLEAR** The read clears the status: after the same wait, an RDVDP of the probe's own and then the recorded one, the second returns $00 (B = 3). | 4 | ✓ | ✓ |
+| **R-RV-CLEAR** The read clears the frame flag: after the same wait (which gives $80 in the B = 1 cases), an RDVDP of the probe's own and then the recorded one, the second returns $00 (B = 3). | 4 | ✓ | ✓ |
 | **R-RV-SPR** With five sprites on one line at the same place, read a little over a frame after the frame flag was seen (B = 2), A = $E4: the frame flag, the fifth-sprite flag (bit 6) with that sprite's number (4) in bits 4-0, and the coincidence flag (bit 5). | 4 | ✓ | ✓ |
 | **R-RV-KEEP** F, B, C, DE, HL, IX and IY are kept, and so is the interrupt state (off, or on). RG0SAV-RG7SAV and $F3E7-$F3EE (STATFL among them) keep their bytes, and the VDP registers keep theirs. | 24 | ✓ | ✓ |
 
@@ -75,6 +77,12 @@ None measured: every rule holds on zerobas.
 - **[A]** Which sprite arrangement sets which flag: the sprite cases have five sprites on a line
   that also overlap; two overlapping sprites alone, or five apart, would separate the coincidence
   flag from the fifth-sprite flag (a property of the VDP more than of the call).
+- **[A]** Whether a read clears the fifth-sprite and coincidence flags, and what bits 4-0 hold after
+  it (two reads after the sprite set-up, both recorded); the probe's own first read in the B = 3
+  cases is not recorded (the same wait gives $80 in the B = 1 cases).
+- **[A]** Bits 4-0 with no fifth sprite and the list ended at a sprite other than 0 (with sprite 0's
+  Y $D0, "0" and "the sprite where the scan stopped" agree).
+- **[A]** The VDP's address latch after the read; RAM beyond $F3DF-$F3EE.
 - **[A]** VDP interrupts enabled (R#1's bit 5) with CPU interrupts on, where the interrupt handler
   also reads the status (the probe keeps R#1's bit 5 clear).
 - **[A]** The alternate registers and SP; the time it takes.

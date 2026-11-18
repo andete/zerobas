@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `WRTVDP` ($0047) — write a VDP register
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the second test-writer review found no unpinned rule and no new
+> behaviour; its other items are open (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -17,8 +18,9 @@ the bits each register has (R#2's low four, for example).
 It returns with A = B, B = 0, C kept and F $A0 or $A4 (P/V set when C OR $80 has an even number of 1
 bits), and with interrupts **on**, whatever they were before. DE, HL, IX and IY are kept.
 
-zerobas does all of it the same for C below $80. From $80 up it uses C AND $7F: it writes the
-work-area byte $80 lower and returns C AND $7F (below).
+zerobas does all of it the same for the C values measured below $80 (0-$28). For C $80 and $FF it
+differs: C = $80 writes B into RG0SAV and returns C = 0, and C = $FF leaves $F4DE alone and returns
+$7F, as if it used C AND $7F (below).
 
 ## The specification
 
@@ -46,7 +48,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   ENASCR: 48-55, RG1SAV $00, $FF, $A0, $E2, $5A, $A5, $40, $BF. RDVDP: 56-63 and 76-79 -- after a
   wait of more than a frame (B = 1); with none (B = 0); with five sprites set up on one line and the
   status polled until its frame flag, then the wait (B = 2); or the wait and an RDVDP of the probe's
-  own first (B = 3); each with entry F $00 and $FF and interrupts off and on.
+  own first (B = 3). B = 0 and B = 1 meet all four pairs of entry F ($00, $FF) and interrupt state; B = 2
+  and B = 3 meet F $00 with interrupts off and F $FF with them on.
 - $F3E7-$F3EE differ between the machines at boot (two bytes): set-up, which every case starts from
   and the rules compare with each machine's own boot copy. The harness reports them as differences.
 
@@ -72,7 +75,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-WRTVDPC** (for C $80 and up zerobas takes C AND $7F: C = $80 writes B into RG0SAV itself, not $F45F, and returns C = 0; C = $FF writes $F45E, not $F4DE, and returns $7F) | R-WV-SAV, R-WV-ABC |
+| **D-WRTVDPC** (for C $80 and up zerobas takes C AND $7F: C = $80 writes B into RG0SAV itself, not $F45F, and returns C = 0; C = $FF does not write $F4DE and returns $7F) | R-WV-SAV, R-WV-ABC |
 
 ## Open (not measured)
 
@@ -85,6 +88,10 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   taken between the two port writes or after the call (the probe clears the status first and keeps
   R#1's bit 5 clear at entry), and what the handler then leaves in STATFL.
 - **[A]** The VDP's address latch and VRAM address after the call.
+- **[A]** Whether WRTVDP masks B itself or the VDP keeps only the register's bits (the snapshot reads
+  the registers back, so both look the same; a port trace would tell). Case 25 (R#6 := $FF) cannot
+  show the write: $FF masked to R#6's bits is $07, the preset.
+- **[A]** Where zerobas writes for C = $FF (the probe records $F4DE only).
 - **[A]** The alternate registers and SP; RAM other than $F3DF-$F3EE and RG0SAV + C; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

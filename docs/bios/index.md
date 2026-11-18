@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**45 of 108 calls have a page; 34 are FINAL.**
+**48 of 108 calls have a page; 38 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -26,9 +26,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 25 | D-INITIOVCB, D-INITIOQUEUES |
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
-| $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](DISSCR.md) | 5 | — |
-| $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](ENASCR.md) | 5 | — |
-| $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](WRTVDP.md) | 7 | D-WRTVDPC |
+| $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
+| $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
+| $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | D-WRTVDPC |
 | $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](RDVRM.md) | 5 | D-VRAMF |
 | $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](WRTVRM.md) | 5 | — |
 | $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETRD.md) | 5 | — |
@@ -48,9 +48,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
+| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CALPAT.md) | 4 | D-CALPATF |
+| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CALATR.md) | 4 | — |
+| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](GSPSIZ.md) | 4 | — |
 | $008D | GRPPRT | graphics (concept page to come) | L3 | — | — | — |
 | $0090 | GICINI | sound (concept page to come) | L3 | — | — | — |
 | $0093 | WRTPSG | sound (concept page to come) | L3 | — | — | — |
@@ -110,7 +110,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0135 | CHGSND | sound (concept page to come) | L3 | — | — | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |
 | $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
-| $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](RDVDP.md) | 4 | — |
+| $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVDP.md) | 7 | — |
 | $0141 | SNSMAT | input (concept page to come) | L3 | — | — | — |
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |

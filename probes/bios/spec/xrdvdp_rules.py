@@ -28,8 +28,8 @@ RULES = [
     Rule("R-RV-FRAME", S1, "A is the VDP status: with no sprite on the screen (sprite 0's Y $D0) it is $80 after a wait "
          "of more than a frame since the status was last read (B = 1), and $00 without one (B = 0) -- bit 7, the frame "
          "flag, set by the VDP once a frame.", lambda c: c.bb in (0, 1), lambda c: c.a == (0x80 if c.bb == 1 else 0x00)),
-    Rule("R-RV-CLEAR", S1, "The read clears the status: after the same wait, an RDVDP of the probe's own and then the "
-         "recorded one, the second returns $00 (B = 3).", lambda c: c.bb == 3, lambda c: c.a == 0x00),
+    Rule("R-RV-CLEAR", S1, "The read clears the frame flag: after the same wait (which gives $80 in the B = 1 cases), an "
+         "RDVDP of the probe's own and then the recorded one, the second returns $00 (B = 3).", lambda c: c.bb == 3, lambda c: c.a == 0x00),
     Rule("R-RV-SPR", S1, "With five sprites on one line at the same place, read a little over a frame after the frame "
          "flag was seen (B = 2), A = $E4: the frame flag, the fifth-sprite flag (bit 6) with that sprite's number (4) "
          "in bits 4-0, and the coincidence flag (bit 5).", lambda c: c.bb == 2, lambda c: c.a == 0xE4),
