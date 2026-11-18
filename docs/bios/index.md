@@ -8,15 +8,15 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**21 of 108 calls have a page; 21 are FINAL.**
+**23 of 108 calls have a page; 23 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
 | $0000 | CHKRAM | [system](../concepts/interrupts-and-traps.md) | L1 · ruled indirect | — | — | — |
 | $0008 | SYNCHR | interpreter (concept page to come) | L4 | [FINAL](SYNCHR.md) | 9 | — |
-| $000C | RDSLT | slots (concept page to come) | L3 | — | — | — |
+| $000C | RDSLT | slots (concept page to come) | L3 | [FINAL](RDSLT.md) | 12 | — |
 | $0010 | CHRGTR | interpreter (concept page to come) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
-| $0014 | WRSLT | slots (concept page to come) | L3 | — | — | — |
+| $0014 | WRSLT | slots (concept page to come) | L3 | [FINAL](WRSLT.md) | 13 | — |
 | $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
 | $001C | CALSLT | slots (concept page to come) | L3 | — | — | — |
 | $0020 | DCOMPR | interpreter (concept page to come) | L3 | [FINAL](DCOMPR.md) | 8 | — |

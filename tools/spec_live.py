@@ -36,7 +36,7 @@ import spec_rules  # noqa: E402
 import biosl_run  # noqa: E402
 
 SCRATCH = os.path.join(ROOT, "scratchpad")
-HEADER = re.compile(r"^===== (\S+\.asm) (nodisk|disk): ")
+HEADER = re.compile(r"^===== (\S+\.asm) (nodisk|disk|cf3300): ")
 CAP_OURS = re.compile(r"^  CAP ours: [0-9a-fA-F]+$", re.M)
 RULE_ID = re.compile(r"\bR\d?-[A-Z0-9][A-Z0-9-]*[A-Z0-9]\b")
 
@@ -101,7 +101,7 @@ def live_run(run_file, td):
         st = biosl_run.settings(open(os.path.join(ROOT, asm)).read())
         rom = biosl_run.build(os.path.join(ROOT, asm), td)
         t0 = time.time()
-        zb = biosl_run.run(biosl_run.ROWS[row][1], rom, st, td, disk=(row == "disk"))
+        zb = biosl_run.run(biosl_run.ROWS[row][1], rom, st, td, disk=(row != "nodisk"))
         if not zb or zb.get("DONE") != "165":
             print(f"  NO READING: {asm} {row} (DONE {zb and zb.get('DONE')})")
             return None

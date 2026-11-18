@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: 0BSD
 """D-BIOSLADDER -- run one rung (our own ROM cartridge) on the reference and on zerobas.
 
-    python3 -u probes/bios/biosl_run.py RUNG|--all [--row nodisk|disk|both]
+    python3 -u probes/bios/biosl_run.py RUNG|--all [--row nodisk|disk|both|cf3300]
 
 A rung is probes/bios/biosl/RUNG.asm: a 16 KB "AB" cartridge whose INIT runs the
 program, writes its results to the capture block at CAP and $A5 to DONE, then loops.
@@ -32,8 +32,12 @@ Its header comment may carry the harness settings, one per line:
 Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
     nodisk  Philips_VG_8020         vs  C-BIOS_MSX1_EU_REPACK_NODISK
     disk    Philips_VG_8020_NMS1200 vs  C-BIOS_MSX1_EU_REPACK_DISK
-The reference is the VG-8020 on both rows (presentational splits go to it, 2026-09-04;
-the CF-3300 is a Japanese MSX1, whose BIOS differs from both for reasons of its own).
+    cf3300  National_CF-3300        vs  C-BIOS_MSX1_EU_REPACK_DISK   (only on request: --row cf3300)
+The reference is the VG-8020 on both default rows (presentational splits go to it, 2026-09-04;
+the CF-3300 is a Japanese MSX1, whose BIOS differs from both for reasons of its own). The
+cf3300 row (Joost 2026-11-18) is for the SLOT calls: its RAM is the expanded slot 3-0, as on
+zerobas's machine, where neither VG-8020 row has expanded RAM. It boots with drive A as the
+disk row does.
 
 CLEAN-ROOM: only OUR program's RAM (the capture block) and VRAM are read back through
 the emulator's debugger -- never a ROM byte. Exit 0: every row identical; 1: a
@@ -84,6 +88,7 @@ ALLOW = {
 ROWS = {
     "nodisk": ("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"),
     "disk": ("Philips_VG_8020_NMS1200", "C-BIOS_MSX1_EU_REPACK_DISK"),
+    "cf3300": ("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"),
 }
 
 
@@ -212,7 +217,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rung", nargs="?")
     ap.add_argument("--all", action="store_true", help="every rung in probes/bios/biosl")
-    ap.add_argument("--row", choices=("nodisk", "disk", "both"), default="both")
+    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300"), default="both")
     a = ap.parse_args()
     if a.all:
         rungs = sorted(f[:-4] for f in os.listdir(HERE) if f.endswith(".asm"))
@@ -240,8 +245,8 @@ def one(rung: str, rows: str) -> int:
         rom = build(a.rung, td)
         for row in (("nodisk", "disk") if a.row == "both" else (a.row,)):
             ref_m, zb_m = ROWS[row]
-            ref = run(ref_m, rom, st, td, disk=(row == "disk"))
-            zb = run(zb_m, rom, st, td, disk=(row == "disk"))
+            ref = run(ref_m, rom, st, td, disk=(row != "nodisk"))
+            zb = run(zb_m, rom, st, td, disk=(row != "nodisk"))
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
             bad = [n for n, g in (("ref", ref), ("ours", zb))
                    if not g or g.get("DONE") != "165"]
