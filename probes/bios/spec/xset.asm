@@ -1,14 +1,14 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XSET -- docs/bios/SETTXT.md, SETT32.md, SETGRP.md, SETMLT.md round 2 (2026-11-18; round 1 had cases 0-47, a $5A fill and no read-back of the
-; cells): the calls that set the VDP up for a screen mode from the screen-table cells. Per case (the table `cases` at the end: op, F, interrupts, RG0SAV, RG1SAV,
+; XSET -- docs/bios/SETTXT.md, SETT32.md, SETGRP.md, SETMLT.md round 3 (2026-11-18; round 1 had cases 0-47, a $5A fill and no read-back of the
+; cells; round 2 a fill whose blocks all summed alike, and no cell set 4): the calls that set the VDP up for a screen mode from the screen-table cells. Per case (the table `cases` at the end: op, F, interrupts, RG0SAV, RG1SAV,
 ; table set, SCRMOD, RG7SAV) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := the case's set (`tsets`: 0 the published
-;     defaults, 1 moved, 2 moved with junk in the low bits, 3 every cell $FFFF);
+;     defaults, 1 moved, 2 others with low bits set, 3 every cell $FFFF, 4 $4000 / $8000 / $C000);
 ;   - RG0SAV / RG1SAV := the case's values, RG2SAV-RG6SAV := $A5, RG7SAV and SCRMOD ($FCAF) := the case's;
 ;   - the VDP registers R#0-R#7 := $00 $80 $06 $80 $00 $36 $07 $F4 (display off, so VRAM may be written fast);
-;   - every VRAM byte := (address low) XOR (address high) XOR $5A (display off, so it may be written fast).
+;   - every VRAM byte := ((address low) XOR (address high) XOR $5A) OR address / $400 (each 1 KB block sums apart) (display off, so it may be written fast).
 ; Then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), A $A7, F and interrupts as listed,
 ; and the call: op 0 SETTXT ($0078), 1 SETT32 ($007B), 2 SETGRP ($007E), 3 SETMLT ($0081).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xset.asm --row both
@@ -23,7 +23,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1D00
+; @caplen 1F00
 ; @timeout 120
 ; @vdpsnap E8F0 EF00
 
@@ -63,7 +63,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $1CFF
+                ld      bc, $1EFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -227,7 +227,7 @@ z_lp:
                 inc     (hl)
                 jp      next
 
-; preset -- the table cells, RG0SAV.., SCRMOD, the VDP registers, VRAM := $5A, the stub
+; preset -- the table cells, RG0SAV.., SCRMOD, the VDP registers, VRAM (the fill), the stub
 preset:
                 ld      a, (cts)
                 ld      l, a
@@ -278,9 +278,15 @@ p_lp:
                 out     ($99), a
                 ld      de, 0
 f_lp:
+                ld      a, d                    ; OR the block number (address / $400), so every block sums apart
+                rrca
+                rrca
+                and     $0F
+                ld      c, a
                 ld      a, d
                 xor     e
                 xor     $5A
+                or      c
                 out     ($98), a
                 inc     de
                 ld      a, d
@@ -316,7 +322,7 @@ targets:
 vpre:
                 db      $00, $80, $06, $80, $00, $36, $07, $F4
 
-; the four table sets: TXT NAM COL CGP ATR PAT, T32 ..., GRP ..., MLT ... (20 words each)
+; the five table sets (set 4: bits 14 / 15 apart): TXT NAM COL CGP ATR PAT, T32 ..., GRP ..., MLT ... (20 words each)
 tsets:
                 dw      $0000, $0000, $0800, $0000, $0000,  $1800, $2000, $0000, $1B00, $3800
                 dw      $1800, $2000, $0000, $1B00, $3800,  $0800, $0000, $0000, $1B00, $3800
@@ -326,6 +332,8 @@ tsets:
                 dw      $3FFF, $3FFF, $3FFF, $3FFF, $3FFF,  $3BFF, $13FF, $17FF, $2F7F, $0FFF
                 dw      $FFFF, $FFFF, $FFFF, $FFFF, $FFFF,  $FFFF, $FFFF, $FFFF, $FFFF, $FFFF
                 dw      $FFFF, $FFFF, $FFFF, $FFFF, $FFFF,  $FFFF, $FFFF, $FFFF, $FFFF, $FFFF
+                dw      $4000, $4000, $8000, $8000, $C000,  $8000, $4000, $4000, $C000, $8000
+                dw      $4000, $4000, $8000, $8000, $C000,  $8000, $4000, $4000, $C000, $8000
 
 finish:
                 ld      a, $C3
@@ -413,4 +421,8 @@ cases:
                 db      $03, $00, $01, $FE, $FF, $01, $01, $FF   ; 61
                 db      $03, $00, $01, $01, $00, $01, $02, $5A   ; 62
                 db      $03, $FF, $00, $FE, $FF, $01, $03, $00   ; 63
+                db      $00, $00, $00, $00, $00, $04, $77, $A5   ; 64
+                db      $01, $FF, $00, $00, $00, $04, $77, $A5   ; 65
+                db      $02, $00, $01, $00, $00, $04, $77, $A5   ; 66
+                db      $03, $FF, $01, $00, $00, $04, $77, $A5   ; 67
                 db      $FF

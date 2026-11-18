@@ -29,7 +29,8 @@ RULES = [
                "$4123 / $C125 / $FFFF, which write $0123 / $0125 / $3FFF; A $00, $FF, $5A, $A5, $3C, $C3)."),
     Rule("R-WV-KEEP", S1, "A, F, BC, DE, HL, IX and IY are kept (F $00, $FF, $A5 and $5A on entry).", ALL,
          lambda c: V.keep(c, ["a", "f", "bc", "de", "hl", "ix", "iy"])),
-    V.port_rule("WV", S1, "The next read of port $98 returns the byte just written, A."),
+    V.land_rule("WV", S1, "The VDP is left writing at the next address: a byte the probe then writes to port $98 lands "
+                "at (HL + 1) AND $3FFF."),
     V.ei_rule("WV", S1),
 ]
 

@@ -1,8 +1,9 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XVRAM -- docs/bios/RDVRM.md, WRTVRM.md, SETRD.md, SETWRT.md, FILVRM.md, LDIRMV.md, LDIRVM.md round 2
-; (2026-11-18; round 1 had cases 0-33, two windows and no port read after the other calls): the VRAM access calls. Per case (the table `cases` at the end: op, A, F, interrupts, HL, DE, BC,
+; XVRAM -- docs/bios/RDVRM.md, WRTVRM.md, SETRD.md, SETWRT.md, FILVRM.md, LDIRMV.md, LDIRVM.md round 3
+; (2026-11-18; round 1 had cases 0-33, two windows and no port read after the other calls; round 2 cases 0-54, no
+; status read before the call, and a read, not a write, after the writing calls): the VRAM access calls. Per case (the table `cases` at the end: op, A, F, interrupts, HL, DE, BC,
 ; three window addresses W1 / W2 / W3, and a kind byte: bit 0 set = W1 / W2 are RAM, bit 1 set = W3 is RAM) the probe first sets, BY HAND
 ; and slowly (a VRAM access at least 38 T-states from the next):
 ;   - VRAM: the 8 bytes from each VRAM window, and from HL AND $3FFF (DE AND $3FFF for LDIRVM) := pv(a) =
@@ -11,12 +12,13 @@
 ;     (low byte), $110 bytes.
 ; Then IX $4321, IY $8765, the case's A, F, HL, DE, BC, interrupts on or off, and the call:
 ; op 0 RDVRM ($004A), 1 WRTVRM ($004D), 2 SETRD ($0050), 3 SETWRT ($0053), 4 FILVRM ($0056), 5 LDIRMV ($0059),
-; 6 LDIRVM ($005C). Right after it: for SETRD two reads of port $98, for SETWRT two writes ($C7, $C8) to it,
-; for every other call one read of port $98.
+; 6 LDIRVM ($005C). The VDP status is read just before (no VDP interrupt pending at the call). Right after it: for
+; SETRD two reads of port $98, for SETWRT two writes ($C7, $C8) to it, for RDVRM and LDIRMV one read, for WRTVRM,
+; FILVRM and LDIRVM one write ($C9).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xvram.asm --row both
 ; The capture: CAP+0 = $A5 when finished; per case a 48-byte record from CAP+1:
 ;   +0 A  +1 F  +2 B  +3 C  +4 D  +5 E  +6 H  +7 L  +8,9 IX (high, low)  +10,11 IY  after the call
-;   +12 interrupts after (1 on)  +13,14 the port reads after the call (SETRD two; SETWRT none, 0; the others one)
+;   +12 interrupts after (1 on)  +13,14 the port reads after the call (SETRD two; RDVRM / LDIRMV one; else 0)
 ;   +15..22 the 8 bytes from W1 after  +23..30 from W2  +31..38 from W3 (VRAM or RAM, as the kind says)  +39..47 0
 ; then $C3.
 ;
@@ -24,7 +26,7 @@
 ; RAM below $C000 into VRAM, and no BC = 0 copy is made (it would carry ROM bytes into VRAM).
 ;
 ; @cap C000
-; @caplen 0E00
+; @caplen 0F00
 ; @timeout 60
 
 DONE    equ     $C000
@@ -64,7 +66,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $0DFF
+                ld      bc, $0EFF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -128,8 +130,18 @@ nrd:
                 jr      z, nwr0
                 cp      2
                 jr      z, nwr
-                call    vget                    ; the other calls: one read
+                cp      1
+                jr      z, n_w
+                cp      4
+                jr      z, n_w
+                cp      6
+                jr      z, n_w
+                call    vget                    ; RDVRM / LDIRMV: one read
                 ld      (rp0), a
+                jr      nwr
+n_w:
+                ld      a, $C9                  ; WRTVRM / FILVRM / LDIRVM: one write
+                call    vput
                 jr      nwr
 nwr0:
                 ld      a, $C7
@@ -295,6 +307,7 @@ p4:
                 inc     hl
                 ld      d, (hl)
                 ld      (STUB+2), de
+                in      a, ($99)                ; the VDP status read: no VDP interrupt pending at the call
                 ret
 
 targets:
@@ -544,4 +557,16 @@ cases:
                 db      $06, $A7, $FF, $00
                 dw      $E9A0, $1200, $0108, $11FC, $1304, $EAA0
                 db      $02                   ; 54
+                db      $05, $A7, $A5, $01
+                dw      $1200, $E980, $0100, $E97C, $EA7C, $1300
+                db      $01                   ; 55
+                db      $06, $5A, $00, $00
+                dw      $E9A0, $1200, $0100, $11FC, $12FC, $EA9C
+                db      $02                   ; 56
+                db      $04, $11, $01, $01
+                dw      $1234, $9BDF, $0008, $1230, $1238, $1230
+                db      $00                   ; 57
+                db      $04, $22, $04, $00
+                dw      $1234, $9BDF, $0008, $1230, $1238, $1230
+                db      $00                   ; 58
                 db      $FF

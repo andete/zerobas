@@ -16856,17 +16856,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (RG1SAV and R#1 out of step when CLRSPR is called -- the VG-8020's CLRSPR brings the
+      sprite size into R#1; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-R1 ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)): the VG-8020
+      writes RG1SAV to R#1; zerobas leaves R#1 alone. Priced when picked up.
+
+- [ ] **D-CLRSPRMODE — CLRSPR DOES NOTHING IN SCREEN 0 ON ZEROBAS, AND WRITES Y $D9 FOR SCRMOD ABOVE 3**
+      🎚️ TIER 6 — every edge (CLRSPR called in SCREEN 0, or with SCRMOD over 3; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM / R-CS-EI / R-CS-REGS ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)):
+      the VG-8020 clears the sprite tables in every SCRMOD measured (0, 1, 2, 3, $77) with Y $D1; zerobas returns at
+      once in SCREEN 0 (VRAM untouched, registers and interrupts as on entry) and writes Y $D9 for SCRMOD $77.
+      Priced when picked up.
+
+- [ ] **D-CLRREGS — CLRSPR / CHGCLR RETURN OTHER REGISTERS ON ZEROBAS**
+      🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-REGS, CHGCLR.md R-CC-REGS ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)):
+      the VG-8020's values are listed in the rules; zerobas returns A = 0 / F $42 / HL = PATBAS after CLRSPR and
+      other A, F, DE, HL after CHGCLR. Priced when picked up.
+
 - [ ] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
       🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV
       copies -- BASIC's VDP() reads them; or RG0SAV with bits 2-7 set; filed 2026-11-18). The VDP itself agrees.
       🤖 **AUTONOMOUS** — docs/bios/SETTXT.md / SETT32.md / SETGRP.md / SETMLT.md R-xx-SHADOW, and SETGRP / SETMLT
-      R-xx-R01 ([`XSET_run2.out`](scratchpad/XSET_run2.out)): the VG-8020 stores each cell shifted right (TXTNAM
+      R-xx-R01 ([`XSET_run3.out`](scratchpad/XSET_run3.out)): the VG-8020 stores each cell shifted right (TXTNAM
       $3D23 -> RG2SAV $0F, $FFFF -> $3F); zerobas stores $CF / $FF (rotated, not shifted). SETGRP: RG0SAV OR $02 there,
       (RG0SAV AND $F3) OR $02 on zerobas; SETMLT: RG0SAV AND $01 there, AND $F1 on zerobas. Priced when picked up.
 
 - [ ] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run2.out`](scratchpad/XSET_run2.out)): the VG-8020
+      🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run3.out`](scratchpad/XSET_run3.out)): the VG-8020
       returns A = the new RG6SAV, F = $00, DE = 0 ($7F03 for SETGRP), HL = the address past the mode's five cells;
       zerobas returns F $42 (or $00), DE = that address, HL = 0 or $FFE0, and another A. Priced when picked up.
 
@@ -16879,7 +16898,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
       🎚️ TIER 6 — every edge (F is not published for any of them; a caller testing it; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/RDVRM.md R-RV-F, FILVRM.md R-FV-F, LDIRMV.md R-MV-REGS, LDIRVM.md R-VM-REGS
-      ([`XVRAM_run2.out`](scratchpad/XVRAM_run2.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
+      ([`XVRAM_run3.out`](scratchpad/XVRAM_run3.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
       leaves them (H set), zerobas's without H ($04 for $14); FILVRM keeps F there, zerobas returns $42 / $43;
       LDIRMV / LDIRVM return $44 there, $42 / $43 on zerobas. The bytes, A and the other registers agree.
       Priced when picked up.

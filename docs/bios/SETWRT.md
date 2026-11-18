@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `SETWRT` ($0053) — set the VDP address for writing
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 2). Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
 > interface, with VRAM read back by hand through the VDP's ports after every call.
 
 ## Summary
@@ -23,26 +23,28 @@ zerobas does all of it the same.
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XM rNN]**: case `NN` of the XVRAM probe, run 2, on row `r`, both rows in
-[`scratchpad/XVRAM_run2.out`](../../scratchpad/XVRAM_run2.out) (the two rows recorded the same bytes).
+**Evidence.** **[XM rNN]**: case `NN` of the XVRAM probe, run 3, on row `r`, both rows in
+[`scratchpad/XVRAM_run3.out`](../../scratchpad/XVRAM_run3.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xvram.asm` documents the case table and the 48-byte record:
 - Before each case the probe writes, by hand and slowly (a VRAM access at least 38 T-states from the
   next), 8 VRAM bytes at each VRAM window and at the call's own VRAM address (HL AND $3FFF; DE AND
   $3FFF for LDIRVM; for LDIRMV / LDIRVM the whole BC bytes when BC is 8 to $200): each byte := its
   address's low byte XOR its high byte XOR $5A. Neighbouring bytes differ, but the pattern repeats,
   so the rules compare whole windows with the modelled VRAM, not single bytes with an address. RAM
-  windows hold $E0 + i and $E8 + i; LDIRVM's source, RAM from $E9A0, holds $80 + i (low byte) for
-  $110 bytes.
+  windows are set to $E0 + i and $E8 + i, and then LDIRVM's source, RAM from $E9A0, to $80 + i (low
+  byte) for $110 bytes -- a RAM window inside that span (case 51's second) holds the source's bytes.
+  Just before the call the probe reads the VDP status, so no VDP interrupt is pending.
 - IX is $4321 and IY $8765; A, F, HL, DE, BC and the interrupt state (on or off) as the case lists
   them -- A $A7, $00, $5A and others, F $00, $FF, $A5, $5A.
 - After the call it records every register and the interrupt state; then for SETRD two reads of
-  port $98, for SETWRT two writes ($C7, $C8), for every other call one read; then three 8-byte
-  windows read back by hand -- for LDIRMV the third is the source VRAM, for LDIRVM the source RAM.
+  port $98, for SETWRT two writes ($C7, $C8), for RDVRM and LDIRMV one read, for WRTVRM, FILVRM and
+  LDIRVM one write ($C9); then three 8-byte windows read back by hand -- for LDIRMV the third is the
+  source VRAM, for LDIRVM the source RAM.
 - The rules model VRAM over the whole run: a byte an earlier case wrote keeps its value until
   another case writes it. A next read that lands on a byte nothing wrote is declared not evidence.
 - The screen is the one the cartridge finds at boot, with the display on.
 - Cases: RDVRM 00-05, 34-35; WRTVRM 06-11, 43-44; SETRD 12-15, 36-39; SETWRT 16-19, 40-42; FILVRM
-  20-25, 45-48; LDIRMV 26-29, 49-51; LDIRVM 30-33, 52-54. No case copies 64 KB (BC = 0) from or to RAM:
+  20-25, 45-48; LDIRMV 26-29, 49-51; LDIRVM 30-33, 52-54, 56; and LDIRMV 55 (BC $100), FILVRM 57-58 (entry F $01, $04). No case copies 64 KB (BC = 0) from or to RAM:
   from RAM it would carry ROM bytes into VRAM.
 
 <!-- RULES BEGIN -->
@@ -71,7 +73,7 @@ None measured: every rule holds on zerobas.
 - **[A]** The next read of port $98 after SETWRT (the probe writes instead).
 - **[A]** The moment between the call's return, with interrupts on, and the probe's own `di`: an
   interrupt there would run the handler before the probe's port access.
-- **[A]** RAM other than the windows, and the source / destination spans.
+- **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows.
 - **[A]** Entry with a VDP interrupt pending and R#1's interrupt bit set, where the handler would
   run inside or right after the call (the screen's R#1 has the bit set, but the probe keeps
   interrupts off between cases, so none is pending when it calls).

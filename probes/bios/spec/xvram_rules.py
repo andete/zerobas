@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for the VRAM access calls' EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XVRAM_run2.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
+scratchpad/XVRAM_run3.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
 48-byte record). Each page's module (xrdvrm_rules.py, xwrtvrm_rules.py, xsetrd_rules.py, xsetwrt_rules.py,
 xfilvrm_rules.py, xldirmv_rules.py, xldirvm_rules.py) takes its op's cases from `load(op)`.
 
@@ -19,12 +19,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XVRAM_run2.out"
+RUN = "XVRAM_run3.out"
 ASM = os.path.join(HERE, "xvram.asm")
 REC = 48
 SRC = 0xE9A0
 REGS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "w1", "w2", "w3"]
-OUTPUTS = {"XM": REGS + ["p0"], "XMR": REGS + ["p0", "p1"], "XMW": REGS}   # XMR SETRD, XMW SETWRT
+OUTPUTS = {"XM": REGS + ["p0"], "XMR": REGS + ["p0", "p1"], "XMW": REGS}   # XM RDVRM / LDIRMV, XMR SETRD, XMW the rest
+WRITERS = (1, 4, 6)                     # WRTVRM, FILVRM, LDIRVM: the probe writes $C9 to port $98 after the call
 
 
 def pv(a):
@@ -78,7 +79,8 @@ def effect(c, vram, ram):
         return vram.get((c.chl + 1) & 0x3FFF)
     if c.op == 1:
         vram[c.chl & 0x3FFF] = c.ca
-        return c.ca
+        vram[(c.chl + 1) & 0x3FFF] = 0xC9
+        return None
     if c.op == 2:
         return None
     if c.op == 3:
@@ -92,14 +94,16 @@ def effect(c, vram, ram):
         else:
             for i in range(n):
                 vram[(c.chl + i) & 0x3FFF] = c.ca
-        return c.ca
+        vram[(c.chl + n) & 0x3FFF] = 0xC9
+        return None
     if c.op == 5:
         for i in range(n):
             ram[c.cde + i] = vram[(c.chl + i) & 0x3FFF]
         return vram.get((c.chl + n) & 0x3FFF)
     for i in range(n):
         vram[(c.cde + i) & 0x3FFF] = ram[c.chl + i]
-    return ram[c.chl + n - 1]
+    vram[(c.cde + n) & 0x3FFF] = 0xC9
+    return None
 
 
 def history():
@@ -136,11 +140,11 @@ def load(op):
                     continue
                 r = b[1 + REC * i:1 + REC * (i + 1)]
                 c = case_ns(i, t)
-                d = dict(vars(c), src="XMR" if op == 2 else "XMW" if op == 3 else "XM", id=f"XM {row}{i:02}", row=row,
+                d = dict(vars(c), src="XMR" if op == 2 else "XM" if op in (0, 5) else "XMW", id=f"XM {row}{i:02}", row=row,
                          a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                          ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12],
                          w1=tuple(r[15:23]), w2=tuple(r[23:31]), w3=tuple(r[31:39]))
-                if op != 3:
+                if op in (0, 2, 5):
                     d["p0"] = r[13]
                 if op == 2:
                     d["p1"] = r[14]
@@ -181,9 +185,28 @@ def port_rule(tag, section, text):
     return Rule(f"R-{tag}-PORT", section, text, lambda c: next_read(c) is not None, lambda c: c.p0 == next_read(c))
 
 
+def landing(c):
+    """where the probe's $C9 lands after a writing call"""
+    n = c.cbc or 0x10000
+    return {1: c.chl + 1, 4: c.chl + n, 6: c.cde + n}[c.op] & 0x3FFF
+
+
+def land_rule(tag, section, text):
+    def sel(c):
+        a = landing(c)
+        return c.kind & 1 == 0 and any((a - w) & 0x3FFF < 8 for w in (c.cw1, c.cw2))
+    def chk(c):
+        a = landing(c)
+        for w, win in ((c.cw1, c.w1), (c.cw2, c.w2)):
+            if (a - w) & 0x3FFF < 8:
+                return win[(a - w) & 0x3FFF] == 0xC9
+        return False
+    return Rule(f"R-{tag}-NEXT", section, text, sel, chk)
+
+
 def unread(op):
     """the cases whose next port read lands on a VRAM byte neither the probe nor a call had written: not modelled"""
-    if op in (2, 3):                    # SETRD's reads have their own rule; SETWRT's probe writes instead
+    if op not in (0, 5):                # only RDVRM / LDIRMV record one read
         return {}
     return {c.id: (["p0"], "the next port read lands on a VRAM byte neither the probe nor an earlier call wrote, "
                    "so no rule predicts it (the same on both machines)")

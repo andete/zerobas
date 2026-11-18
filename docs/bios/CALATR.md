@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CALATR` ($0087) — the address of a sprite attribute entry
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the third test-writer review found no unpinned rule and no new
+> behaviour; its other items are open (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -28,8 +29,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 - Per case the probe sets RG1SAV ($F3E0), PATBAS ($F926) and ATRBAS ($F928) by hand, then BC $1357,
   DE $9BDF, HL $2468, IX $4321 and IY $8765 (all complemented in odd cases), the case's A, entry F
   and interrupt state, and calls. In cases 00-33 entry F is $00 in even cases and $FF in odd ones;
-  cases 34-49 pair them the other way round and add $80, $40, $04, $A5 and $5A; cases 50-59
-  pair them both ways.
+  cases 34-49 pair them the other way round and add $80, $40, $04, $A5 and $5A; cases 50-56
+  pair them as 00-33 do, 57-59 the other way round.
 - It records every register, the interrupt state, RG1SAV, PATBAS and ATRBAS after the call. It does
   not look at the VDP or at other RAM.
 - CALPAT: cases 00-17 and 34-39 -- A 0, 1, 7, $1F, $20, $7F, $FF with RG1SAV $E0 and $E2; A 1, 2, 3,
@@ -64,10 +65,14 @@ None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
-- **[A]** A values other than the ten measured.
+- **[A]** A values other than the ten measured; ATRBAS and RG1SAV values other than those measured.
+- **[A]** Entry F with S alone ($80) or Z alone ($40): every measured entry F with S set has P/V set
+  too.
+- **[A]** A sum whose high byte has bit 5 set and bit 3 clear ($2x).
 - **[A]** Whether the call touches the VDP (its address latch, VRAM) or RAM other than the three
   cells recorded.
 - **[A]** Whether PATBAS / ATRBAS are what the screen-mode calls set (the probe sets them by hand).
+- **[A]** Whether the call writes back the cells it reads (a write of the same value).
 - **[A]** Whether the call turns interrupts off and on again inside (the probe reads the state
   only after it returns).
 - **[A]** The alternate registers and SP; the time it takes.
