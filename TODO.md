@@ -17026,6 +17026,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset
       (basic/playsvc.asm psv_flush / the GICINI teardown), priced when picked up.
 
+- [ ] **D-CALSLTSTACK — A CALSLT / CALLF TARGET RUNS 10 BYTES BELOW THE CALLER'S SP ON ZEROBAS; 6 ON THE VG-8020 AND CF-3300 (14 FOR THE CF-3300'S EXPANDED RAM)**
+      🎚️ TIER 6 — every edge (a target, or an interrupt in it, that runs within a few bytes of the stack's bottom;
+      filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CALSLT.md R-CS-SP, docs/bios/CALLF.md R-CF-SP ([`XCALSLT_run4.out`](scratchpad/XCALSLT_run4.out),
+      [`XCALSLT_run4c.out`](scratchpad/XCALSLT_run4c.out)): the references' inter-slot call pushes 6 bytes before
+      the target runs for a slot that is not expanded, 14 for the CF-3300's expanded 3-0; zerobas's pushes 10 for
+      both. The stack is not a published part of the contract. Priced when picked up.
+
+- [ ] **D-CALSLTIY — IY IN A CALLF TARGET (AND IN A TARGET IN AN EXPANDED SLOT) DIFFERS FROM THE REFERENCES'**
+      🎚️ TIER 6 — every edge (a target reading IY on entry after CALLF, or after CALSLT into an expanded slot;
+      filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CALLF.md R-CF-IY, docs/bios/CALSLT.md R-CS-IY ([`XCALSLT_run4.out`](scratchpad/XCALSLT_run4.out),
+      [`XCALSLT_run4c.out`](scratchpad/XCALSLT_run4c.out)): in a CALLF target the references' IY holds the slot ID
+      over the entry F (IY was $8765); zerobas's the slot ID over $55 (a slot that is not expanded) or $8388 (its
+      expanded RAM). For a call into the expanded RAM 3-0 the CF-3300's IY in the target is $0314, whatever the
+      caller's IY and the page; zerobas's CALSLT passes the caller's. After the call both return the target's IY.
+      CALLF publishes IY as destroyed; the values are not published. Priced when picked up.
+
 - [ ] **D-CHRGTRSKIP — CHRGTR SKIPS ONLY THE SPACE; THE VG-8020'S SKIPS TAB AND LF TOO, AND ITS END-OF-LINE F IS $44**
       🎚️ TIER 6 — every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00;
       filed 2026-11-18).
