@@ -26,14 +26,15 @@ and drop trailing spaces.
 
 On row 24, Enter scrolls the screen and the cursor stays on row 24.
 
-zerobas reads the same keys and echoes the same screen. But its PINLIN, and its INLIN with AUTFLG
-set, return only the row from the cursor (D-PINLINSTART). The unpublished bits of F differ too
-(D-TEXTAF).
+zerobas reads the same keys, echoes the same screen and returns the same line. The unpublished
+bits of F differ (D-TEXTAF).
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The screen editor is on
 [the screen editor page](../concepts/screen-editor.md).
+
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XLIN_fix1.out`](../../scratchpad/XLIN_fix1.out), [`XLIN2A_fix2.out`](../../scratchpad/XLIN2A_fix2.out), [`XLIN2B_fix1.out`](../../scratchpad/XLIN2B_fix1.out), [`XLIN2C_fix1.out`](../../scratchpad/XLIN2C_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XL n]**: call `n` of the keyed XLIN probe,
 [`scratchpad/XLIN_run1.out`](../../scratchpad/XLIN_run1.out). `probes/bios/spec/xlin.asm`
@@ -70,7 +71,7 @@ documents it.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-L-PIN** PINLIN returns the WHOLE screen line the cursor is on, from column 1 -- text that was on the line before the call included ('XYZ' + typed 'Q' gives 'XYZQ'; Enter alone over 'XYZ' gives 'XYZ'), with BS editing applied ('AB' BS 'C' gives 'AC') -- in BUF, terminated by 0. | 4 | ✓ | ✗ 1: XL 3 |
+| **R-L-PIN** PINLIN returns the WHOLE screen line the cursor is on, from column 1 -- text that was on the line before the call included ('XYZ' + typed 'Q' gives 'XYZQ'; Enter alone over 'XYZ' gives 'XYZ'), with BS editing applied ('AB' BS 'C' gives 'AC') -- in BUF, terminated by 0. | 4 | ✓ | ✓ |
 | **R-L-INLIN** INLIN returns only the text from the column the cursor was at when it was called ('XYZ' before the cursor, typed 'Q': 'Q'). | 1 | ✓ | ✓ |
 | **R-L-QIN** QINLIN first prints '? ' and returns the screen cells after the prompt (the prompt not included) -- here an empty row, so they are the keys typed; over existing text they are the screen's (R-L-QSCREEN). | 1 | ✓ | ✓ |
 | **R-L-RET** All three return HL = BUF − 1 ($F55D) with the carry clear (Enter, not STOP), echo the line on the screen, and leave the cursor at column 1 of the next row. | 6 | ✓ | ✓ |
@@ -81,8 +82,8 @@ documents it.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-L-START** INLIN and QINLIN read the SCREEN, not the keys typed: from the entry column -- Enter alone at column 1 over 'XYZ' gives 'XYZ'; 'Q' typed at column 4 over 'XYZWV' gives 'QV' (the text right of the cursor included); with a gap ('XYZ', cursor at 6) 'Q' -- and QINLIN prints '? ' AT the entry column (column 4 over 'XYZ': the row reads 'XYZ? R') and reads after it. | 4 | ✓ | ✓ |
-| **R-L-AUTFLG** With AUTFLG set ($FF), INLIN reads from column 1 like PINLIN ('XYZ' + 'Q' at column 4: 'XYZQ'); PINLIN does so either way. | 2 | ✓ | ✗ 2: XL2A 5, XL2A 6 |
-| **R-L-EDGES** PINLIN's line: leading spaces kept ('  XYZ' at columns 3-5, cursor at 6: '  XYZ'), inner spaces kept ('A B'; 'XYZ' and a 'W' at column 18: everything between), trailing spaces dropped ('A B  ' typed: 'A B'); an empty row gives an empty line; BUF holds the line, its 0, then the rest of the row. | 5 | ✓ | ✗ 2: XL2B 1, XL2B 3 |
+| **R-L-AUTFLG** With AUTFLG set ($FF), INLIN reads from column 1 like PINLIN ('XYZ' + 'Q' at column 4: 'XYZQ'); PINLIN does so either way. | 2 | ✓ | ✓ |
+| **R-L-EDGES** PINLIN's line: leading spaces kept ('  XYZ' at columns 3-5, cursor at 6: '  XYZ'), inner spaces kept ('A B'; 'XYZ' and a 'W' at column 18: everything between), trailing spaces dropped ('A B  ' typed: 'A B'); an empty row gives an empty line; BUF holds the line, its 0, then the rest of the row. | 5 | ✓ | ✓ |
 | **R-L-RET2** Each returns HL = BUF − 1 with the carry clear, and the cursor at column 1 of the next row -- on row 24 the screen scrolls and the cursor stays on row 24; each call's own STAGE byte shows it returned. | 11 | ✓ | ✓ |
 | **R-L-F2** The whole F (not published) is 18 here too. | 13 | ✓ | ✗ 13: XL2A 1, XL2A 2, XL2A 3, XL2A 4, XL2A 5, XL2A 6 … (+7) |
 | **R-L-QSCREEN** QINLIN too reads the SCREEN after its prompt: at column 1 over 'ABCDEF' with Enter alone it prints '? ' over 'AB' and returns 'CDEF' -- the cells after the prompt, not the keys typed (none). | 1 | ✓ | ✓ |
@@ -95,7 +96,6 @@ documents it.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-PINLINSTART** (PINLIN, and INLIN with AUTFLG set, return from the cursor, not from column 1) | R-L-PIN, R-L-AUTFLG, R-L-EDGES |
 | **D-TEXTAF** (the unpublished bits of F: 18 against 00) | R-L-F, R-L-F2 |
 
 ## Open (not measured)

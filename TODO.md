@@ -16944,7 +16944,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the one cell left is the new last row's LINTTB entry ($AF on the VG-8020: D-LINTTBVAL's marks). The two CRTCNT 13 cases
       are D-INITEDGES's row. R-K-SCROLL is therefore attributed to those two items.
 
-- [ ] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
+- [x] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
       🏗️ **RULED (Joost, 2026-11-18): the PINLIN half rides D-DSPFNKSCROLL's promote scout** (re-land with it, or park with it).
       🟡 **HALF FIXED (2026-11-18):** INLIN with AUTFLG set now reads from column 1 -- read_line (basic/repl.asm)
       takes column 1 as the input's start when AUTFLG ($F6AA) is non-zero (zerobas's BASIC never sets it); XLIN2A
@@ -16961,6 +16961,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       INLIN with AUTFLG set (R-L-AUTFLG: the VG-8020 reads from column 1) and for leading spaces / text far right
       (R-L-EDGES). Fix in the C-BIOS repack's PINLIN / INLIN (start at column 1 for PINLIN, and for INLIN when AUTFLG
       is set).
+      ✅ **FIXED 2026-11-18, both halves.** PINLIN ($00AE) now jumps to bios_pinlin (6 B at the low region's end, in the room
+      the SOUND / BEEP promotion made), which hands read_line_col1 to bios_inlin's shared tail (`call cl_jphl`). read_line_col1
+      (page 1, basic/repl.asm) sets carry, and the column choice reads it from the stack: column 1 for PINLIN, the AUTFLG rule
+      otherwise. biosfnk.asm's pad in front of the $3283 pin is now full (0 B). Walls: low region 55 B free, switch-off
+      floor 48 B, all 7 assembling. WITNESS: the four XLIN probes re-run ([`XLIN_fix1.out`](scratchpad/XLIN_fix1.out),
+      [`XLIN2B_fix1.out`](scratchpad/XLIN2B_fix1.out)): R-L-PIN, R-L-AUTFLG and R-L-EDGES hold on zerobas. PINLIN.md now
+      differs only in F (D-TEXTAF).
 
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed

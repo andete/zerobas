@@ -443,7 +443,7 @@ st_go:
                 org     $003E
                 jp      bios_inifnk         ; INIFNK: C-BIOS's was a stub too
                 org     $00AE
-                jp      bios_inlin          ; PINLIN: C-BIOS's INLIN never returned
+                jp      bios_pinlin         ; PINLIN: C-BIOS's INLIN never returned
                 jp      bios_inlin          ; INLIN
                 jp      bios_qinlin         ; QINLIN
                 org     $00B7

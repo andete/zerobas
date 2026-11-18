@@ -454,6 +454,13 @@ bf_scroll:
                 pop     bc
                 ret
 
+; bios_pinlin -- PINLIN ($00AE) reads the line from column 1, as the VG-8020 (D-PINLINSTART,
+; docs/bios/PINLIN.md R-L-PIN): bios_inlin's shared tail (basic/biosfnk.asm) with
+; read_line_col1. Here, not beside bios_inlin: that file's pad in front of the $3283 pin is full.
+bios_pinlin:
+                ld      hl,read_line_col1
+                jp      bil_go
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

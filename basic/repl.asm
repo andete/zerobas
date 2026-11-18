@@ -159,9 +159,19 @@ print_string:
 ;
 ; CF ON RETURN: clear = the line was ended with Enter; SET = the poll below saw
 ; Ctrl-STOP (only reachable with RL_AUTO set).
+; read_line_col1 -- PINLIN's entry (D-PINLINSTART, 2026-11-18): the line is read from column 1,
+; as the VG-8020's PINLIN does (docs/bios/PINLIN.md R-L-PIN). Carry rides the stack to the
+; column choice below: set here, clear from read_line / rl_loop.
+read_line_col1:
+                ld      hl,LINEBUF
+                scf
+                jr      rl_entry
 read_line:
                 ld      hl,LINEBUF
 rl_loop:
+                or      a                   ; not PINLIN (carry clear)
+rl_entry:
+                push    af                  ; [the PINLIN flag]
                 ; 🔴 D-STOPINPUT round 4 (2026-11-06): a Ctrl-STOP still HELD when the
                 ; read begins is the PREVIOUS press -- typically the one that just broke
                 ; the program (`Break in 70`, typed session S2_stopcont went red: the
@@ -185,6 +195,9 @@ rl_loop:
                 call    txt_mode            ; INPUT inside SCREEN 2 reads its line in SCREEN 0 too (measured)
                 ld      a,(CSRY)
                 ld      (RL_ROW0),a         ; where input begins: the FSTPOS rule
+                pop     af                  ; PINLIN (carry): column 1 always
+                ld      a,1
+                jr      c,rl_col0
                 ld      a,(AUTFLG)          ; D-PINLINSTART (2026-11-18): with AUTFLG set the
                 or      a                   ; VG-8020's INLIN reads the line from column 1, not
                 ld      a,(CSRX)            ; from where input began (docs/bios/PINLIN.md

@@ -288,12 +288,17 @@ bios_qinlin:
                 call    CHPUT
                 ld      a,' '
                 call    CHPUT
-bios_inlin:                                 ; also PINLIN
+; INLIN / QINLIN hand read_line to the shared tail; PINLIN's entry (bios_pinlin, basic/main.asm
+; at the low region's end: this file's pad in front of the $3283 pin is full) hands
+; read_line_col1 (D-PINLINSTART, docs/bios/PINLIN.md R-L-PIN).
+bios_inlin:
+                ld      hl,read_line
+bil_go:
                 in      a,(PSLTREG)
                 push    af                  ; the caller's slot layout
                 and     %11110011           ; page 1 -> primary slot 0: main ROM
                 out     (PSLTREG),a
-                call    read_line           ; LINEBUF (= BUF) <- the line; CF = STOP
+                call    cl_jphl             ; read_line(_col1): LINEBUF (= BUF) <- the line; CF = STOP
                 pop     hl                  ; H = the caller's layout (flags kept)
                 ld      a,h
                 out     (PSLTREG),a

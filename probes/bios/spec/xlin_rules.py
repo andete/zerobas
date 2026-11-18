@@ -23,7 +23,7 @@ CALLS = [("PINLIN", 1, 3, b"", b"AB"), ("QINLIN", 1, 5, b"", b"CD"), ("PINLIN", 
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XLIN_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN_fix1.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
@@ -82,7 +82,7 @@ _cases1 = cases
 def cases():                                     # noqa: F811
     out = _cases1()
     for p in "ab":
-        t = open(os.path.join(ROOT, "scratchpad", f"XLIN2{p.upper()}_run1.out")).read()
+        t = open(os.path.join(ROOT, "scratchpad", {"a": "XLIN2A_fix2.out", "b": "XLIN2B_fix1.out"}[p])).read()
         for who, key in (("ref", "ref"), ("zb", "ours")):
             for c in G.decode(p, bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
                 c.src, c.id, c.probe = "XL2", f"XL2{p.upper()} {c.idx}", p
@@ -148,7 +148,7 @@ _cases2 = cases
 
 def cases():                                     # noqa: F811
     out = _cases2()
-    t = open(os.path.join(ROOT, "scratchpad", "XLIN2C_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN2C_fix1.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         for c in G.decode("c", bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
             c.src, c.id, c.probe = "XL2C", f"XL2C {c.idx}", "c"
