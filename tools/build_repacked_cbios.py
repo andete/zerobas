@@ -122,11 +122,15 @@ PATCHES = [
     # D-CHPUTDEL (2026-11-18): CHPUT's DEL moves left as BS and blanks the cell it lands on; ESC l
     # keeps the cursor where it was (its body in POSIT's pad) -- nothing moves.
     os.path.join(REPO, "cbios-repack", "chput-del.patch"),
+    # D-CHPUTKEYROW (2026-11-18): from the function-key row LF / cursor-down / ESC B / 28 / a wrap
+    # move onto the last text row; 12 / ESC E / ESC j clear through $00C3 (the key line redrawn).
+    # Nothing moves.
+    os.path.join(REPO, "cbios-repack", "chput-keyrow.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "3edcd98b1c39678834f18ae21a9c7649af806a42"   # D-CHPUTDEL, 2026-11-18
+REPACKED_SHA1 = "012f8d53a5a2c70e7022a84f59b6acb0a312ea23"   # D-CHPUTKEYROW, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

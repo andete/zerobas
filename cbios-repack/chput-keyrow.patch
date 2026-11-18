@@ -1,0 +1,91 @@
+diff --git a/src/chput.asm b/src/chput.asm
+index 33e80ad..6e0d9c4 100644
+--- a/src/chput.asm
++++ b/src/chput.asm
+@@ -125,11 +125,13 @@ chput_ctrl_lf:
+                 cp      l
+                 jr      nc,chput_ctrl_lf_done
+ 
++                ld      l,a                     ; zerobas D-CHPUTKEYROW: the row after the
++                                                ; scroll is the last text row -- also from the
++                                                ; key row, where `dec l` left the cursor on it
+                 push    hl
+                 call    chput_ctrl_home         ; home cursor
+                 call    chput_esc_m             ; delete top line (scroll!)
+                 pop     hl
+-                dec     l
+ 
+ chput_ctrl_lf_done:
+                 ld      (CSRY),hl
+@@ -143,9 +145,13 @@ chput_esc_h:
+                 ret
+ 
+ ; -- Form Feed / Cls
+-chput_ctrl_ff:  equ     cls
+-chput_esc_e:    equ     cls
+-chput_esc_j:    equ     cls
++; zerobas D-CHPUTKEYROW (2026-11-18): through the published CLS ($00C3, zerobas's bios_cls),
++; which redraws the function-key line when it is on, as the VG-8020's 12 / ESC E / ESC j do
++; (zerobas docs/bios/CHPUT.md R5-KEYROW); C-BIOS's own cls left the key row blank. The
++; dispatch enters with Z set, which CLS requires.
++chput_ctrl_ff:  equ     $00C3
++chput_esc_e:    equ     $00C3
++chput_esc_j:    equ     $00C3
+ 
+ ; -- Clear till end of screen
+ chput_esc_jj:
+@@ -186,14 +192,23 @@ chput_ctrl_right:
+                 jr      nc,chput_ctrl_right_next
+                 inc     a
+                 jr      chput_right_left_ok
+-chput_ctrl_right_next:
+-                ld      a,(CSRY)
+-                call      $328D         ; zerobas repack: A - (CRTCNT + CNSDFG) (crt_cp)
+-                nop
+-                ret     nc
++; -- Cursor down (31, ESC B). zerobas D-CHPUTKEYROW (2026-11-18), as the VG-8020 (zerobas
++; docs/bios/CHPUT.md R4-CURSOR): on the last text row it stays; from the function-key row
++; (CSRY past CRTCNT + CNSDFG) it moves ONTO the last text row, where C-BIOS stayed on the key
++; row. Z on return exactly when it did not move (chput_ctrl_right_next reads it). It lives
++; in the old right-wrap's 14 B, and that wrap in its old 13: nothing moves.
++chput_ctrl_down:
++chput_esc_b:
++                call    $3283           ; A := CRTCNT + CNSDFG, the last text row (crt_rows)
++                ld      hl,CSRY
++                cp      (hl)
++                ret     z               ; on the last text row: stays
++                jr      c,chput_down_set ; on the key row: onto the last text row
++                ld      a,(hl)
+                 inc     a
+-                ld      (CSRY),a
+-                jr      chput_ctrl_cr
++chput_down_set:
++                ld      (hl),a
++                ret
+ 
+ ; -- Cursor left
+ chput_ctrl_bs:
+@@ -219,16 +234,13 @@ chput_esc_a:
+                 ld      (CSRY),a
+                 ret
+ 
+-; -- Cursor down
+-chput_ctrl_down:
+-chput_esc_b:
+-                ld      a,(CSRY)
+-                call      $328D         ; zerobas repack: A - (CRTCNT + CNSDFG) (crt_cp)
+-                nop
+-                ret     nc
+-                inc     a
+-                ld      (CSRY),a
+-                ret
++; -- 28 at the row's last column: the next row's start, through cursor-down (zerobas
++; D-CHPUTKEYROW: from the key row onto the last text row; on the last text row it stays).
++chput_ctrl_right_next:
++                call    chput_ctrl_down
++                ret     z
++                jr      chput_ctrl_cr
++                ds      7, 0
+ 
+ ; -- Handle ESC mode (ESCCNT in A and != 0)
+ chput_escape:

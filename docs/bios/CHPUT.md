@@ -19,13 +19,13 @@ SPDX-License-Identifier: 0BSD
 control code or an escape sequence it moves the cursor or edits the screen instead. `PRINT` and
 the MSX-DOS console both end up here.
 
-zerobas behaves the same in most of the measured cases. It differs in two places:
+zerobas behaves the same in most of the measured cases. It differs in one place:
 - **`ESC Y` out of range:** zerobas does not keep the cursor on the screen.
-- **The function-key line:** zerobas lets the cursor onto the key row.
 
 Its line-continuation table (LINTTB) also holds different marks where a row is blanked. Fixed on
-2026-11-18 (D-CHPUTDEL): DEL did not move back and blanked the wrong cell; `ESC l` moved the cursor
-to the line's start.
+2026-11-18: DEL did not move back and blanked the wrong cell; `ESC l` moved the cursor to the line's
+start (D-CHPUTDEL); from the function-key row LF / cursor-down / ESC B / wraps stayed on it, and 12 /
+ESC E / ESC j left the key row blank (D-CHPUTKEYROW).
 
 ## The specification
 
@@ -41,7 +41,7 @@ cells) are on [the screen editor page](../concepts/screen-editor.md).
 
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-CHPUTDEL (with D-LINTTBVAL's clear and the other text-region fixes of that day): [`XCH_fix1.out`](../../scratchpad/XCH_fix1.out), [`XCH2_fix1.out`](../../scratchpad/XCH2_fix1.out), [`XCH3_fix1.out`](../../scratchpad/XCH3_fix1.out), [`XCH4_fix1.out`](../../scratchpad/XCH4_fix1.out), [`XCH5_fix1.out`](../../scratchpad/XCH5_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-CHPUTDEL and D-CHPUTKEYROW (with D-LINTTBVAL's clear and the other text-region fixes of that day): [`XCH_fix2.out`](../../scratchpad/XCH_fix2.out), [`XCH2_fix2.out`](../../scratchpad/XCH2_fix2.out), [`XCH3_fix2.out`](../../scratchpad/XCH3_fix2.out), [`XCH4_fix2.out`](../../scratchpad/XCH4_fix2.out), [`XCH5_fix2.out`](../../scratchpad/XCH5_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.**
 - **[XCH n]**: case `n` of the XCHPUT matrix, [`scratchpad/XCH_table.out`](../../scratchpad/XCH_table.out)
@@ -185,7 +185,7 @@ when the function-key line is shown.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R4-CURSOR** From every corner, key line off and on (and ON the key row): BS / 29 / DEL move left, at column 1 to the row above's column 40, not past the top-left; 28 moves right, at column 40 to the next row unless on the last text row (it stays), from the key row into the last text row; 30 / ESC A up, not past row 1; 31 / ESC B / LF down, not past the last text row, from the key row INTO the last text row; CR to column 1; TAB to the next stop of 8, from column 33 on wrapping like a printable; a printable writes and moves right, at column 40 wrapping; ESC C / D right / left, not past the edges. | 140 | ✓ | ✗ 9: X4 G1.117, X4 G1.118, X4 G1.123, X4 G1.129, X4 G1.131, X4 G1.132 … (+3) |
+| **R4-CURSOR** From every corner, key line off and on (and ON the key row): BS / 29 / DEL move left, at column 1 to the row above's column 40, not past the top-left; 28 moves right, at column 40 to the next row unless on the last text row (it stays), from the key row into the last text row; 30 / ESC A up, not past row 1; 31 / ESC B / LF down, not past the last text row, from the key row INTO the last text row; CR to column 1; TAB to the next stop of 8, from column 33 on wrapping like a printable; a printable writes and moves right, at column 40 wrapping; ESC C / D right / left, not past the edges. | 140 | ✓ | ✓ |
 | **R4-CELLS** The cells: DEL blanks the cell it moves onto (a row's column 40 included, continued or not); a printable writes its cell; TAB writes spaces; LF from the last text row, and a printable or TAB wrapping from it (or from the key row, from which they first move onto the last text row) scroll rows 1..last up one and blank the last. The key row changes only where the cursor itself writes on it (the key-row cells here compare with each machine's OWN labels -- DSPFNK's text differs; R5-KEYROW pins them against the probe's own markers). | 140 | ✓ | ✓ |
 | **R4-LT** LINTTB: after a clear 24, 23, …, 1 down the rows; a wrap from a row sets its entry to 0 (continued) -- the key row's too, when the wrap starts there; a scroll shifts the text rows' entries up one and gives the last text row $AF. | 140 | ✓ | ✗ 12: X4 G1.034, X4 G1.048, X4 G1.050, X4 G1.051, X4 G1.090, X4 G1.104 … (+6) |
 | **R4-A** A comes back as the last byte sent. | 140 | ✓ | ✓ |
@@ -210,7 +210,7 @@ when the function-key line is shown.
 | **R5-PENDING** ESC, ESC x and ESC y STAY PENDING across the prefix + a graphic: ESC 1 A B is a graphic then ESC B (down); ESC 1 A K a graphic then ESC K; ESC x / y 1 A 5: the 5 is their parameter. | 4 | ✓ | ✓ |
 | **R5-Y1** Inside ESC Y, byte 1 is the graphic prefix, NOT a parameter: if the next byte is 64–95 it is written as a graphic and ESC Y keeps waiting; any other next byte IS the parameter (so row bytes 0, 13, 31, 96, 128, 255 clamp to row 24). | 9 | ✓ | ✗ 6: X5 G4.804, X5 G4.805, X5 G4.806, X5 G4.810, X5 G4.811, X5 G4.812 |
 | **R5-UNTOUCHED** In these pending-state sequences no other row changes: (row 6, columns 1–3) and the last row's (columns 1–3) keep their markers. | 13 | ✓ | ✓ |
-| **R5-KEYROW** With the key line on and the KEY ROW marked: a printable / TAB / DEL on the key row write there as anywhere; ESC J, LF and a wrap from the last text row leave it; 12 / ESC E / ESC j REDRAW it (the probe's markers are replaced by the key line's labels: 'c', 'o' at columns 1, 2 on the VG-8020). | 9 | ✓ | ✗ 3: X5 G5.816, X5 G5.817, X5 G5.818 |
+| **R5-KEYROW** With the key line on and the KEY ROW marked: a printable / TAB / DEL on the key row write there as anywhere; ESC J, LF and a wrap from the last text row leave it; 12 / ESC E / ESC j REDRAW it (the probe's markers are replaced by the key line's labels: 'c', 'o' at columns 1, 2 on the VG-8020). | 9 | ✓ | ✓ |
 | **R5-EDIT** Every edit works from any row and column the same way (key line off): ESC L / M at the last text row only blank it ($AF); LINTTB entries MOVE with their rows (a continued row's 0 shifts down under ESC L, up under ESC M -- not a renumbering); ESC J / K / l mark the rows they blank $AF. | 20 | ✓ | ✗ 20: X5 G6.822, X5 G6.823, X5 G6.824, X5 G6.825, X5 G6.826, X5 G6.827 … (+14) |
 | **R5-TAB-LAST** TAB from columns 33–39 on the last text row wraps and scrolls: the cursor at (1, 24), row 23's entry 0 (continued), row 24's $AF, the rows moved up. | 7 | ✓ | ✗ 7: X5 G7.842, X5 G7.843, X5 G7.844, X5 G7.845, X5 G7.846, X5 G7.847 … (+1) |
 
@@ -224,7 +224,6 @@ Every ✗ in the zerobas column above, by TODO item:
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-CHPUTKEYROW** (the key line) | R4-CURSOR (the starts ON the key row: LF, cursor-down, ESC B, wraps), R4-Y-KEYCLAMP, R5-KEYROW (12 / ESC E / ESC j: zerobas leaves the key row blank where the VG-8020 redraws its labels -- whether zerobas's labels are blank is DSPFNK's page) |
 | **D-CHPUTESCY** (`ESC Y` out of range) | R-Y-ROWCLAMP, R-Y-COLCLAMP, R-Y1-SEQ (its clamp), R4-Y-KEYCLAMP, R5-Y1, R5-ESC-CMD (`ESC Y A`) |
 | **D-LINTTBVAL** (LINTTB's marks: $AF on a blanked row, $FB after ESC L; the clear's 24 … 1 is fixed) | R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST |
 

@@ -16779,7 +16779,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the last row; CSRX likewise) -- 446 of 512 cases. A later character then lands outside the screen. Byte $01 as a
       parameter is special on both machines (the graphic prefix). Fix in the C-BIOS repack's CHPUT.
 
-- [ ] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
+- [x] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
       🎚️ TIER 1 — happy path (KEY ON is BASIC's normal screen; filed 2026-11-17). Scope: never under MSX-DOS, which runs with the
       key line off (Joost) -- it hits BASIC and ROM programs that show the key line (DSPFNK).
       🤖 **AUTONOMOUS** — XCHPUT2 G2 (key line on after DSPFNK, [`XCH2_table.out`](scratchpad/XCH2_table.out)): the VG-8020 keeps the text area to rows 1..23 --
@@ -16792,6 +16792,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from the key row itself the VG-8020 moves LF / cursor-down / ESC B / a wrap ONTO the last text row (LF and wraps
       then scroll the text rows); zerobas stays on row 24. docs/bios/CHPUT.md's rules R4-CURSOR (key-row starts) and
       R4-Y-KEYCLAMP are the target.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-keyrow.patch, 44 bytes differ, nothing moves).
+      - LF sets the row to the limit (crt_rows) before its scroll, instead of `dec l` after it.
+      - Cursor-down / ESC B: from the key row onto the last text row, on it stays. Z on return when it did not move.
+      - 28's wrap is now cursor-down + CR (the two bodies swap places: 14 B / 13 B).
+      - 12 / ESC E / ESC j go through $00C3 (zerobas's bios_cls, which redraws the key line).
+      WITNESS: the five XCHPUT probes re-run ([`XCH4_fix2.out`](scratchpad/XCH4_fix2.out),
+      [`XCH5_fix2.out`](scratchpad/XCH5_fix2.out)): R4-CURSOR 9 -> 0 cases failing, R5-KEYROW 3 -> 0, nothing else moved.
+      R4-Y-KEYCLAMP is ESC Y's clamp (D-CHPUTESCY).
 
 - [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;
@@ -16812,6 +16820,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-KEYGRAPH — A FUNCTION-KEY LABEL'S $01 GRAPHIC PREFIX: THE VG-8020 SHOWS THE GRAPHIC CELL, ZEROBAS A SPACE AND THE LETTER**
       🎚️ TIER 6 — every edge (a program putting a graphic character into a KEY string; filed 2026-11-18).
+      🏗️ **RULED (Joost, 2026-11-18): PARKED** -- no sub-ROM page-0 carve for it now.
       🤖 **AUTONOMOUS** — it was hidden behind D-KEYLINESHIFT. docs/bios/DSPFNK.md R-K-LABELS / R-K-LABELS2 on the fixed
       build ([`XKEY_fix2.out`](scratchpad/XKEY_fix2.out), [`XSCR_fix1.out`](scratchpad/XSCR_fix1.out)): with `$01 'A'`
       the VG-8020 shows cell 01 in ONE cell (code − $40, for $40..$5F only). A $01 before anything else shows nothing
@@ -16842,6 +16851,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       picks). Widths 0, 80 and 255 (R-I-KEYEDGE) and the ROW the line goes on are D-INITEDGES, TIER 6.
 
 - [ ] **D-INITEDGES — INITXT / INIT32 / DSPFNK / ERAFNK / FNKSB: THE KEY LINE'S ROW AND MARGINS, R0'S KEPT BITS, THE NAME TABLE'S TAIL, THE ODD WIDTHS**
+      🏗️ **RULED (Joost, 2026-11-18): the key-row part (sub ROM page 0) is PARKED**; the C-BIOS parts stay autonomous.
       🎚️ TIER 6 — every edge (each needs a program that changes CRTCNT, garbles RG0SAV or sets LINL40 above 40;
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/INITXT.md, round 2's separating setup, run 4
@@ -16902,6 +16912,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-G-F2 10 -> 0).
 
 - [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+      🏗️ **RULED (Joost, 2026-11-18, "I agree with your recommendation"): SCOUT a promote pass in the low region** (promote_scout.py); re-land this fix if it frees ~30 B with margin for the switch-off builds, else report the numbers and park.
       🔴 **BLOCKED ON LOW-REGION SPACE (2026-11-18).** A fix was built and witnessed (e5ada705, reverted by 49bde3de):
       bios_fnk calls a 20 B bf_scroll at the low region's end -- showing the line with the cursor on its row,
       CSRY := the last text row, then the console's own LF scroll (CNSDFG is $FF already). XSCR4 re-run: the CRTCNT
@@ -16916,6 +16927,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cursor there. Fix in the C-BIOS repack's DSPFNK.
 
 - [ ] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
+      🏗️ **RULED (Joost, 2026-11-18): the PINLIN half rides D-DSPFNKSCROLL's promote scout** (re-land with it, or park with it).
       🟡 **HALF FIXED (2026-11-18):** INLIN with AUTFLG set now reads from column 1 -- read_line (basic/repl.asm)
       takes column 1 as the input's start when AUTFLG ($F6AA) is non-zero (zerobas's BASIC never sets it); XLIN2A
       re-run: all six calls SAME, PINLIN with AUTFLG $FF included ([`XLIN2A_fix1.out`](scratchpad/XLIN2A_fix1.out)).
