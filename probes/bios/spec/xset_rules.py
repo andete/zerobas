@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for SETTXT / SETT32 / SETGRP / SETMLT's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XSET_run3.out (rows N and D; probes/bios/spec/xset.asm documents the presets, the four table sets, the
+scratchpad/XSET_run4.out (rows N and D; probes/bios/spec/xset.asm documents the presets, the four table sets, the
 case table and the 112-byte record). Each page's module takes its op's cases from `load(op)` and its rules from
 `rules(op, ...)`."""
 import os
@@ -15,7 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XSET_run3.out"
+RUN = "XSET_run4.out"
 ASM = os.path.join(HERE, "xset.asm")
 REC = 112
 MASK = (0x03, 0xFB, 0x0F, 0xFF, 0x07, 0x7F, 0x07, 0xFF)
@@ -29,7 +29,7 @@ NAMES = ("TXT", "T32", "GRP", "MLT")
 
 
 def table():
-    pat = r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\s+;"
+    pat = r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\s+;"
     src = open(ASM).read()
     return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src[src.index("\ncases:"):])]
 
@@ -38,7 +38,7 @@ def tsets():
     src = open(ASM).read()
     body = src[src.index("tsets:"):src.index("finish:")]
     words = [int(w, 16) for w in re.findall(r"\$([0-9A-F]{4})", body)]
-    return [words[20 * k:20 * (k + 1)] for k in range(5)]
+    return [words[20 * k:20 * (k + 1)] for k in range(6)]
 
 
 def load(op):
@@ -54,14 +54,14 @@ def load(op):
             b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
             if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
                 sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
-            for i, (cop, cf, ei, rg0, rg1, t, scr, rg7) in enumerate(tab):
+            for i, (cop, cf, ei, rg0, rg1, t, scr, rg7, rgp) in enumerate(tab):
                 if cop != op:
                     continue
                 r = b[1 + REC * i:1 + REC * (i + 1)]
                 m = 0xFF if i & 1 else 0x00
                 out[who].append(NS(
                     src="XS", id=f"XS {row}{i:02}", row=row, op=cop, cf=cf, ei=ei, rg0=rg0, rg1=rg1, ts=t,
-                    cscr=scr, crg7=rg7, allcells=tuple(ts[t]), cells5=ts[t][5 * cop:5 * cop + 5], mask=m,
+                    cscr=scr, crg7=rg7, crgp=rgp, allcells=tuple(ts[t]), cells5=ts[t][5 * cop:5 * cop + 5], mask=m,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], sav=tuple(r[13:21]), scrmod=r[21],
                     vdp=tuple(r[22:30]), sums=tuple(r[30 + 2 * k] | r[31 + 2 * k] << 8 for k in range(16)),
@@ -100,9 +100,10 @@ def rules(op, tag, section, r0text, r1text, regtext):
         Rule(f"R-{tag}-SHADOW", section, f"RG2SAV-RG6SAV := {mode}NAM / $400, {mode}COL / $40, {mode}CGP / $800, "
              f"{mode}ATR / $80, {mode}PAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are "
              "dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F)" + (", with RG3SAV OR $7F and RG4SAV OR $03" if op == 2
-                                                                 else "") + ". RG7SAV is kept ($A5, $00, $FF, $5A). Five sets "
-             "of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and $4000 / $8000 / "
-             "$C000 (bits 14 and 15 apart: a plain shift, $4000 / $40 giving $00, not a clamp to $FF).", ALL,
+                                                                 else "") + ". Whatever they held ($A5, or $5A), "
+             "RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published "
+             "defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 "
+             "and 15 apart, each way round (a plain shift: NAM $4000 gives $10, ATR $C000 $80, PAT $C000 $18).", ALL,
              lambda c: c.sav[2:] == sav_after(c)[2:]),
         Rule(f"R-{tag}-R01", section, f"RG0SAV := {r0text}; RG1SAV := {r1text} (RG0SAV / RG1SAV $00 / $00, $FF / $FF, "
              "$5A / $A5, and apart: $01 / $00, $FE / $FF).", ALL, lambda c: c.sav[:2] == sav_after(c)[:2]),
