@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/SETWRT.md's EXECUTABLE RULES (docs/spec-method.md §3a): SETWRT ($0053) -- the run the VRAM access calls share
-(probes/bios/spec/xvram.asm, op 3; the loader and the model are xvram_rules)."""
+(probes/bios/spec/xvram.asm, op 3; the loader and the model are xvram_model)."""
 import os
 import sys
 
@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, HERE)
 from spec_rules import Rule  # noqa: E402
-import xvram_rules as V  # noqa: E402
+import xvram_model as V  # noqa: E402
 
 PAGE = "docs/bios/SETWRT.md"
 OUTPUTS = V.OUTPUTS

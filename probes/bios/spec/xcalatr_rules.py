@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/CALATR.md's EXECUTABLE RULES (docs/spec-method.md §3a): CALATR ($0087) -- the run the sprite table calls share
-(probes/bios/spec/xspr.asm, op 1; the loader is xspr_rules)."""
+(probes/bios/spec/xspr.asm, op 1; the loader is xspr_model)."""
 import os
 import sys
 
@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, HERE)
 from spec_rules import Rule  # noqa: E402
-import xspr_rules as P  # noqa: E402
+import xspr_model as P  # noqa: E402
 
 PAGE = "docs/bios/CALATR.md"
 OUTPUTS = P.OUTPUTS

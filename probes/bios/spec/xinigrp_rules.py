@@ -2,13 +2,13 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/INIGRP.md's EXECUTABLE RULES (docs/spec-method.md §3a): INIGRP ($0072) -- probes/bios/spec/xinig.asm, op 0
-(the loader and the model are xinig_rules)."""
+(the loader and the model are xinig_model)."""
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import xinig_rules as X  # noqa: E402
+import xinig_model as X  # noqa: E402
 
 PAGE = "docs/bios/INIGRP.md"
 OUTPUTS = X.OUTPUTS

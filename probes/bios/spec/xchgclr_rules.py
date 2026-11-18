@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/CHGCLR.md's EXECUTABLE RULES (docs/spec-method.md §3a): CHGCLR ($0062) -- probes/bios/spec/xclr.asm, op 1
-(the loader and the VRAM model are xclr_rules)."""
+(the loader and the VRAM model are xclr_model)."""
 import os
 import sys
 
@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, HERE)
 from spec_rules import Rule  # noqa: E402
-import xclr_rules as X  # noqa: E402
+import xclr_model as X  # noqa: E402
 
 PAGE = "docs/bios/CHGCLR.md"
 OUTPUTS = X.OUTPUTS

@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/CHGMOD.md's EXECUTABLE RULES (docs/spec-method.md §3a): CHGMOD ($005F) -- probes/bios/spec/xinig.asm, op 2,
-each case compared with the same set-up's direct INITXT / INIT32 / INIGRP / INIMLT case (xinig_rules.PAIRS)."""
+each case compared with the same set-up's direct INITXT / INIT32 / INIGRP / INIMLT case (xinig_model.PAIRS)."""
 import os
 import sys
 
@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, HERE)
 from spec_rules import Rule  # noqa: E402
-import xinig_rules as X  # noqa: E402
+import xinig_model as X  # noqa: E402
 
 PAGE = "docs/bios/CHGMOD.md"
 OUTPUTS = X.OUTPUTS

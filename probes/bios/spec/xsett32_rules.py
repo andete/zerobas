@@ -2,13 +2,13 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/SETT32.md's EXECUTABLE RULES (docs/spec-method.md §3a): SETT32 ($007B) -- the run the SETxxx calls share
-(probes/bios/spec/xset.asm, op 1; the loader, the model and the rules are xset_rules)."""
+(probes/bios/spec/xset.asm, op 1; the loader, the model and the rules are xset_model)."""
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import xset_rules as X  # noqa: E402
+import xset_model as X  # noqa: E402
 
 PAGE = "docs/bios/SETT32.md"
 OUTPUTS = X.OUTPUTS
