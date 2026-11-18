@@ -16858,31 +16858,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run2.out`](scratchpad/XINIG_run2.out)):
+      🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out)):
       the VG-8020 returns DE $7F03 / $0000 and HL $F3D1 / $F3DB; zerobas DE $88D1 and HL $F3E7 in every case.
       A, F and BC agree. Priced when picked up.
 
 - [ ] **D-INIGRPORDER — INIGRP WRITES OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
       🎚️ TIER 6 — every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-VRAM ([`XINIG_run2.out`](scratchpad/XINIG_run2.out), case 28):
+      🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 28):
       the VG-8020 writes the name and colour tables, then clears the patterns, then the sprite attributes; zerobas's
       order leaves other bytes where they overlap. Priced when picked up.
 
 - [ ] **D-INIMLTCOL — INIMLT MASKS A BAKCLR OVER 15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (BAKCLR over 15 when INIMLT runs; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INIMLT.md R-IM-VRAM ([`XINIG_run2.out`](scratchpad/XINIG_run2.out), cases 08, 23):
+      🤖 **AUTONOMOUS** — docs/bios/INIMLT.md R-IM-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 08, 23):
       the VG-8020 fills the multicolour pattern table with BAKCLR x 16 OR BAKCLR as a byte ($75 for $25); zerobas
       with (BAKCLR AND 15) x $11 ($55). Priced when picked up.
 
 - [ ] **D-CHGMODRANGE — CHGMOD DOES NOTHING FOR A ABOVE 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGMOD with A above 3; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-MODE ([`XINIG_run2.out`](scratchpad/XINIG_run2.out), cases 16, 17):
+      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-MODE ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 16, 17):
       the VG-8020 goes by A - 1 as a signed byte (SCREEN 0 for $81-$FF, SCREEN 3 for 4-$80; $7F, $80, $81, $FE
       measured too); zerobas returns at once for any A above 3. Priced when picked up.
 
 - [ ] **D-INITXTBAS — INITXT SETS PATBAS / ATRBAS ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program reading PATBAS / ATRBAS after SCREEN 0; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-TXTBAS ([`XINIG_run2.out`](scratchpad/XINIG_run2.out), case 14 and
+      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-TXTBAS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 14 and
       its direct INITXT partner 20): the VG-8020's INITXT leaves PATBAS / ATRBAS; zerobas's sets them from TXTPAT /
       TXTATR ($0000 by default). Priced when picked up.
 

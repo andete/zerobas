@@ -36,14 +36,14 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | D-VRAMF |
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
-| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CHGMOD.md) | 5 | D-CHGMODRANGE, D-INITXTBAS |
+| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CHGMOD.md) | 6 | D-CHGMODRANGE, D-INITXTBAS |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGCLR.md) | 7 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CLRSPR.md) | 8 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
-| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](INIGRP.md) | 4 | D-SETSHADOW, D-INIGRPORDER, D-INIREGS |
-| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](INIMLT.md) | 4 | D-INIMLTCOL, D-SETSHADOW, D-INIREGS |
+| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](INIGRP.md) | 5 | D-SETSHADOW, D-INIGRPORDER, D-INIREGS |
+| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](INIMLT.md) | 5 | D-INIMLTCOL, D-SETSHADOW, D-INIREGS |
 | $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETSHADOW, D-SETREGS |
 | $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETSHADOW, D-SETREGS |
 | $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETSHADOW, D-SETREGS |

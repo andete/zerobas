@@ -19,10 +19,10 @@ def cases():
 
 
 def writes(c):
-    """VRAM, from the cells as they are (AND $3FFF, wrapping past $3FFF -- every cell $3FFF in case 28): the name table,
-    768 bytes from GRPNAM ($F3C7), := 0, 1, ... 255 three times; the colour table, 6144 bytes from GRPCOL, := BAKCLR as it
-    is (a byte over 15 too: $25, $55, $F4); then the pattern table, 6144 bytes from GRPCGP, := 0 -- where the tables
-    overlap the patterns' zeros stay; last, the 32 sprite attribute entries from GRPATR get Y $D1, the pattern number
+    """VRAM, from the cells AND $3FFF, wrapping past $3FFF (every cell $3FFF in case 28, $FFFF in 36): first the name
+    table, 768 bytes from GRPNAM ($F3C7), := 0, 1, ... 255 three times; then the colour table, 6144 bytes from GRPCOL,
+    := BAKCLR as it is (a byte over 15 too: $25, $F4) -- over the name table where they overlap (case 37, GRPNAM =
+    GRPCOL); then the pattern table, 6144 bytes from GRPCGP, := 0 -- the zeros stay where it overlaps either; last, the 32 sprite attribute entries from GRPATR get Y $D1, the pattern number
     (times 4 when RG1SAV's bit 1 is set) and FORCLR, X not written -- the sprite patterns are not cleared. Nothing else
     in VRAM changes."""
     nam, col, cgp, atr, _ = c.cells[10:15]

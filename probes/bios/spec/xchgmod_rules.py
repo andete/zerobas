@@ -36,9 +36,11 @@ RULES = [
          "INIMLT does: from the same set-up it leaves every recorded output as the direct call does -- the registers "
          "(IX and IY kept), the interrupt state, RG0SAV-RG7SAV, SCRMOD, OLDSCR, PATBAS / ATRBAS, the VDP registers and "
          "VRAM. Other A go by A - 1 as a signed byte: negative (A $81-$FF, and 0) as 0, INITXT -- measured $81, $FE, "
-         "$FF; 1 as INIT32, 2 as INIGRP, anything else as INIMLT -- measured 4, $7F, $80. The comparison leaves out "
-         "IX and IY, which are kept (cases 12 and 13 have the other marker set from their partners).", lambda c: True, lambda c: same(c, c.who)),
-    Rule("R-CM-TXTBAS", S1, "With A = 0 (INITXT) PATBAS and ATRBAS keep their values ($2222 / $1111 in the probe), as "
-         "INITXT leaves them.", lambda c: c.ca == 0, lambda c: (c.patbas, c.atrbas) == (0x2222, 0x1111)),
+         "$FF; 1 as INIT32, 2 as INIGRP, anything else as INIMLT -- measured 4, $7F, $80. Each case is compared with "
+         "the same machine's direct call from the same set-up; IX and IY are left out of the comparison and checked "
+         "kept on their own (case 31 has the other marker set from its partner).", lambda c: True, lambda c: same(c, c.who)),
+    Rule("R-CM-TXTBAS", S1, "Where CHGMOD goes as INITXT (A = 0, $81, $FE, $FF) PATBAS and ATRBAS keep their values "
+         "($2222 / $1111 in the probe) -- an absolute check, beside R-CM-MODE's comparison with the same machine.",
+         lambda c: c.ca == 0 or c.ca >= 0x81, lambda c: (c.patbas, c.atrbas) == (0x2222, 0x1111)),
 ]
 

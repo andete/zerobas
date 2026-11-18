@@ -19,8 +19,9 @@ def cases():
 
 
 def writes(c):
-    """VRAM: the name table, 768 bytes from MLTNAM ($F3D1), := for row r and column c (32 a row) (r / 4) x 32 + c -- each
-    group of four rows the same 32 numbers; the pattern table, 1536 bytes from MLTCGP, := BAKCLR x 16 OR BAKCLR as a byte
+    """VRAM, from the cells AND $3FFF, wrapping past $3FFF (every cell $3FFF in case 38, $FFFF in 39): first the name
+    table, 768 bytes from MLTNAM ($F3D1), := for row r and column c (32 a row) (r / 4) x 32 + c -- each group of four
+    rows the same 32 numbers; then the pattern table, over the name table where they overlap, 1536 bytes from MLTCGP, := BAKCLR x 16 OR BAKCLR as a byte
     -- an OR, not an ADD ($55 gives $55), the whole byte ($25 gives $75, $F4 $F4); the 32 sprite attribute entries from MLTATR get Y $D1, the pattern number (times 4 when
     RG1SAV's bit 1 is set) and FORCLR, X not written -- the sprite patterns are not cleared. Nothing else in VRAM
     changes."""

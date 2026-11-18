@@ -1,13 +1,14 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XINIG -- docs/bios/INIGRP.md, INIMLT.md, CHGMOD.md round 2 (2026-11-18; round 1 had cases 0-25 and a fill whose block 1 summed to 0): the graphics-screen set-ups and the mode
+; XINIG -- docs/bios/INIGRP.md, INIMLT.md, CHGMOD.md round 3 (2026-11-18; round 1 had cases 0-25 and a fill whose block 1 summed to 0; round 2 cases
+; 0-35): the graphics-screen set-ups and the mode
 ; change. Per case (the table `cases` at the end: op, F, interrupts, SCRMOD, RG1SAV, FORCLR, BAKCLR, BDRCLR, ATRBAS,
 ; PATBAS, cell set, three window addresses, A) the probe first sets, BY HAND:
-;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := set 0 (the published defaults) or set 1 (moved;
-;     `tsets`, as in xset.asm);
+;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := one of `tsets`: 0 the published defaults, 1 moved,
+;     2 unaligned, 3 every cell $FFFF, 4 GRPNAM = GRPCOL ($2000) and every MLT cell $3FFF;
 ;   - SCRMOD ($FCAF), RG1SAV ($F3E0), FORCLR / BAKCLR / BDRCLR ($F3E9-$F3EB), ATRBAS ($F928), PATBAS ($F926) := the
-;     case's; RG0SAV, RG2SAV-RG7SAV := $A5; OLDSCR ($FCB0) := $66; GRPACX / GRPACY ($FCB7 / $FCB9) := $1234 / $5678;
+;     case's; RG0SAV, RG2SAV-RG7SAV := $A5 ($00 in cell-set-4 cases); OLDSCR ($FCB0) := $66; GRPACX / GRPACY ($FCB7 / $FCB9) := $1234 / $5678;
 ;   - the VDP registers R#0-R#7 := $00 $80 $06 $80 $00 $36 $07 $F4 (display off, so VRAM may be written fast);
 ;   - every VRAM byte := ((address low) XOR (address high) XOR $5A) OR (address high AND $3C) -- the sixteen 1 KB
 ;     blocks sum to sixteen different values, none of them 0;
@@ -30,7 +31,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1300
+; @caplen 1500
 ; @timeout 180
 ; @vdpsnap E8F0 EF00
 
@@ -78,7 +79,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $12FF
+                ld      bc, $14FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -299,10 +300,16 @@ preset:
                 ld      de, TXTNAM
                 ld      bc, 40
                 ldir
+                ld      a, (cts)                ; the shadows' preset: $A5, or $00 in cell-set-4 cases
+                cp      4
+                ld      a, $A5
+                jr      nz, p_s0
+                xor     a
+p_s0:
                 ld      hl, RG0SAV
                 ld      b, 8
 p_sav:
-                ld      (hl), $A5
+                ld      (hl), a
                 inc     hl
                 djnz    p_sav
                 ld      a, (crg1)
@@ -393,6 +400,8 @@ tsets:
                 dw      $3FFF, $3FFF, $3FFF, $3FFF, $3FFF,  $3BFF, $13FF, $17FF, $2F7F, $0FFF
                 dw      $FFFF, $FFFF, $FFFF, $FFFF, $FFFF,  $FFFF, $FFFF, $FFFF, $FFFF, $FFFF
                 dw      $FFFF, $FFFF, $FFFF, $FFFF, $FFFF,  $FFFF, $FFFF, $FFFF, $FFFF, $FFFF
+                dw      $0000, $0000, $0800, $0000, $0000,  $1800, $2000, $0000, $1B00, $3800
+                dw      $2000, $2000, $0000, $1B00, $3800,  $3FFF, $3FFF, $3FFF, $3FFF, $3FFF
 
 finish:
                 ld      a, $C3
@@ -596,4 +605,29 @@ cases:
                 db      $01
                 dw      $3C00, $0000, $3B80
                 db      $02   ; 35
+                db      $00, $FF, $00, $01, $E0, $0F, $25, $07
+                dw      $1111, $2222
+                db      $03
+                dw      $3FF0, $0000, $1B00
+                db      $A7   ; 36
+                db      $00, $00, $01, $01, $E0, $0F, $25, $07
+                dw      $1111, $2222
+                db      $04
+                dw      $2000, $22F0, $0000
+                db      $A7   ; 37
+                db      $01, $FF, $01, $01, $E0, $0F, $25, $07
+                dw      $1111, $2222
+                db      $04
+                dw      $3FF0, $0000, $02F0
+                db      $A7   ; 38
+                db      $01, $00, $00, $01, $E0, $0F, $25, $07
+                dw      $1111, $2222
+                db      $03
+                dw      $3FF0, $0000, $02F0
+                db      $A7   ; 39
+                db      $02, $00, $01, $01, $E0, $0F, $55, $07
+                dw      $1111, $2222
+                db      $02
+                dw      $3C00, $0000, $1F80
+                db      $02   ; 40
                 db      $FF
