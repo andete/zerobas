@@ -16860,8 +16860,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bios_fnk calls a 20 B bf_scroll at the low region's end -- showing the line with the cursor on its row,
       CSRY := the last text row, then the console's own LF scroll (CNSDFG is $FF already). XSCR4 re-run: the CRTCNT
       24 scroll cases matched the reference in every row ([`XSCR4_fix1.out`](scratchpad/XSCR4_fix1.out)). But the
-      low region had 22 B free; spending 21 left the switch-off builds (G6/G7/G8/I1_RESIDENT, CLEARPOOL) no room
-      and switch-build-check went red. biosfnk.asm's own pad in front of the $3283 pin has 3 B. Needs a carve /
+      low region had 22 B free at d18bb012 (2026-11-18); spending 21 left the switch-off builds (G6/G7/G8/I1_RESIDENT, CLEARPOOL) no room
+      and switch-build-check went red. biosfnk.asm's own pad in front of the $3283 pin had 3 B (2026-11-18). Needs a carve /
       promote (the low region and page 1 share one budget; memory carve-routes-measured-shut) of about 20 B.
       🎚️ TIER 3 — common (KEY ON with the cursor on the bottom line; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md rule R-K-SCROLL ([`XSCR_run2.out`](scratchpad/XSCR_run2.out), XS 00 / 04 /
