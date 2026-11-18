@@ -34,17 +34,13 @@ zerobas does all of this the same, apart from:
 - the key line's row (row 24, and CRTCNT := 24, where the VG-8020 uses row CRTCNT and keeps it) and the
   odd widths' key-line edges (D-INITEDGES).
 
-Fixed on 2026-11-18: the key line showed function keys 6–10 (D-KEYLINESHIFT); the line-continuation
-table held other values (D-LINTTBVAL's clear); R0 kept more of RG0SAV, and above width 40 the 64
-bytes after the name table were cleared (D-INITEDGES).
-
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. What the two calls touch is on
 [the shared-state map](shared-state.md); the screen and its cells are on
 [the screen editor page](../concepts/screen-editor.md).
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT, D-LINTTBVAL's clear and D-INITEDGES's R0 and tail: [`XINIT_fix1.out`](../../scratchpad/XINIT_fix1.out), [`XINIT3_fix1.out`](../../scratchpad/XINIT3_fix1.out), [`XINIT4_fix2.out`](../../scratchpad/XINIT4_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XINIT_fix1.out`](../../scratchpad/XINIT_fix1.out), [`XINIT3_fix1.out`](../../scratchpad/XINIT3_fix1.out), [`XINIT4_fix2.out`](../../scratchpad/XINIT4_fix2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XI n]**: case `n` of the XINIT matrix, run 4,
 [`scratchpad/XINIT_run4.out`](../../scratchpad/XINIT_run4.out); **[XJ n]**: case `n` of its
@@ -88,9 +84,8 @@ confirming pass's findings).
   - 7-character labels (the cut binds at INIT32 32), and in run 3 10-character labels (it binds at
     INITXT 40 and 33), and in run 4 widths of the form 5n + 4 (INITXT 39, INIT32 24 / 19), where
     "slot − 1" and "width ÷ 5 − 1" differ.
-- The function-key strings are written too ("key0".."key9"). zerobas left them empty at cartridge
-  INIT until D-FNKBOOT ([`XFNK_run1.out`](../../scratchpad/XFNK_run1.out); fixed:
-  [`XFNK_fix1.out`](../../scratchpad/XFNK_fix1.out)).
+- The function-key strings are written too ("key0".."key9"); at cartridge INIT both machines already
+  hold the ten defaults there ([`XFNK_fix1.out`](../../scratchpad/XFNK_fix1.out)).
 - Each record ends in a sentinel byte that the decoder requires.
 - Runs 1 and 2 ([`XINIT_run1.out`](../../scratchpad/XINIT_run1.out),
   [`XINIT_run2.out`](../../scratchpad/XINIT_run2.out)) used round 1's setup, which separated less. Run
@@ -156,7 +151,7 @@ Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col �
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-INITEDGES** (the key line's row and CRTCNT, the odd widths; R0's kept bits and the name table's tail are fixed) | R-I-KEYS, R-I-KEYPLACE, R-I-KEYOUT, R-I-VRAM, R-I-SPR32 (CRTCNT 30), R-I-CRTCNT, R-I-KEYEDGE, R-I-EDGE4, R-I-W0 |
+| **D-INITEDGES** (the key line's row and CRTCNT, the odd widths) | R-I-KEYS, R-I-KEYPLACE, R-I-KEYOUT, R-I-VRAM, R-I-SPR32 (CRTCNT 30), R-I-CRTCNT, R-I-KEYEDGE, R-I-EDGE4, R-I-W0 |
 | ruled, not a TODO: C-BIOS's own font (D-BIOSINT, Joost 2026-11-05) | R-I-FONT |
 
 ## Open (not measured)

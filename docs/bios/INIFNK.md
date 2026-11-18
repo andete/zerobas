@@ -18,8 +18,7 @@ when entered so.
 
 zerobas writes the same strings, on the diskless and the disk machine alike. Its registers on return
 differ, and it returns with interrupts enabled (D-TEXTAF). Separately, at cartridge INIT FNKSTR
-already holds the defaults on both machines (R-F-BOOT): that is the boot's job, not INIFNK's. zerobas
-filled it only after the cartridge scan until D-FNKBOOT (2026-11-18).
+already holds the defaults on both machines (R-F-BOOT): that is the boot's job, not INIFNK's.
 
 ## The specification
 

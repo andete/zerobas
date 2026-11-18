@@ -20,10 +20,7 @@ control code or an escape sequence it moves the cursor or edits the screen inste
 the MSX-DOS console both end up here.
 
 zerobas behaves the same in every measured case but one: its line-continuation table (LINTTB) holds
-different marks where a row is blanked (D-LINTTBVAL). Fixed on 2026-11-18: `ESC Y` out of range left
-the cursor off the screen (D-CHPUTESCY); DEL did not move back and blanked the wrong cell; `ESC l` moved the cursor to the line's
-start (D-CHPUTDEL); from the function-key row LF / cursor-down / ESC B / wraps stayed on it, and 12 /
-ESC E / ESC j left the key row blank (D-CHPUTKEYROW).
+different marks where a row is blanked (D-LINTTBVAL).
 
 ## The specification
 
@@ -39,7 +36,7 @@ cells) are on [the screen editor page](../concepts/screen-editor.md).
 
 The tables are generated from the checks, so a sentence here cannot say more than the data does.
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-CHPUTDEL, D-CHPUTKEYROW and D-CHPUTESCY (with D-LINTTBVAL's clear and the other text-region fixes of that day): [`XCH_fix3.out`](../../scratchpad/XCH_fix3.out), [`XCH2_fix3.out`](../../scratchpad/XCH2_fix3.out), [`XCH3_fix3.out`](../../scratchpad/XCH3_fix3.out), [`XCH4_fix3.out`](../../scratchpad/XCH4_fix3.out), [`XCH5_fix3.out`](../../scratchpad/XCH5_fix3.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XCH_fix3.out`](../../scratchpad/XCH_fix3.out), [`XCH2_fix3.out`](../../scratchpad/XCH2_fix3.out), [`XCH3_fix3.out`](../../scratchpad/XCH3_fix3.out), [`XCH4_fix3.out`](../../scratchpad/XCH4_fix3.out), [`XCH5_fix3.out`](../../scratchpad/XCH5_fix3.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.**
 - **[XCH n]**: case `n` of the XCHPUT matrix, [`scratchpad/XCH_table.out`](../../scratchpad/XCH_table.out)
@@ -222,7 +219,7 @@ Every ✗ in the zerobas column above, by TODO item:
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-LINTTBVAL** (LINTTB's marks: $AF on a blanked row, $FB after ESC L; the clear's 24 … 1 is fixed) | R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST |
+| **D-LINTTBVAL** (LINTTB's marks: $AF on a blanked row, $FB after ESC L) | R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST |
 
 ## Open (not measured)
 

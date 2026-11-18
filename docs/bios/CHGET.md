@@ -26,15 +26,14 @@ entry. Its F on return is that of comparing GETPNT's advanced low byte (before t
 `CHSNS` returns PUTPNT − GETPNT (low bytes) in A, with Z set exactly when the buffer is empty. It
 moves nothing, and also returns with interrupts enabled.
 
-zerobas does all of it the same. Until the 2026-11-18 fix (D-CHGETEI), CHGET with a code already
-waiting returned with interrupts still disabled when entered so, and its flags on return differed.
+zerobas does all of it the same.
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The key buffer's cells are on
 [the shared-state map](shared-state.md).
 
-**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build with D-CHGETEI's fix: [`XCHG_fix1.out`](../../scratchpad/XCHG_fix1.out), [`XCHGW_fix1.out`](../../scratchpad/XCHGW_fix1.out), [`XCHG2_fix1.out`](../../scratchpad/XCHG2_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XCHG_fix1.out`](../../scratchpad/XCHG_fix1.out), [`XCHGW_fix1.out`](../../scratchpad/XCHGW_fix1.out), [`XCHG2_fix1.out`](../../scratchpad/XCHG2_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XG n]**: case `n` of the XCHG matrix, run 1,
 [`scratchpad/XCHG_run1.out`](../../scratchpad/XCHG_run1.out). The case list, the setup and the record
@@ -102,7 +101,7 @@ the run.
 
 ## Differences from the reference
 
-None measured: every rule holds on zerobas (since the 2026-11-18 fix of CHGET's interrupts and flags).
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

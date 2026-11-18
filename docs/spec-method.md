@@ -53,6 +53,14 @@ sections the specification needs:
 6. **Open (not measured)** — every `[A]`.
 7. **Related pages, Tests that cover it.**
 
+**The page describes behaviour, not history (Joost, 2026-11-18).** A spec page states what the
+reference does, and lists what zerobas does differently NOW. It never says what zerobas used to do:
+no "fixed on <date>", no "until D-X", no "zerobas used to ...". When a difference is fixed, its row
+leaves *Differences* and its sentence leaves the summary: it is DELETED, not moved anywhere else on
+the page. The history lives in git and `docs/TODO-done.md`. What a finding MEASURED stays when it
+is evidence for a rule, phrased as the reference's behaviour with its citation. A run's date is
+evidence provenance, which is allowed: "zerobas's side re-run on the 2026-11-18 build".
+
 ## 3. Evidence tags and the one rule that matters
 
 Every sentence of the specification carries one tag:

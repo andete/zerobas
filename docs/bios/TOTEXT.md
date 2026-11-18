@@ -30,8 +30,8 @@ to 1 (D-INITEDGES).
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack.
 
-**Evidence.** **[XT n]**: case `n` of the XTOT matrix, re-run on the build that fixed D-FNKBOOT and
-D-KEYLINESHIFT, [`scratchpad/XTOT_fix1.out`](../../scratchpad/XTOT_fix1.out) (run 1, before them:
+**Evidence.** **[XT n]**: case `n` of the XTOT matrix, zerobas's side re-run on the 2026-11-18 build,
+[`scratchpad/XTOT_fix1.out`](../../scratchpad/XTOT_fix1.out) (the run the rules were written from:
 [`scratchpad/XTOT_run1.out`](../../scratchpad/XTOT_run1.out)). The case list, the setup and the record
 are in `probes/bios/spec/xtot_cases.py`, which also generates `probes/bios/spec/xtot.asm` and decodes
 the run.
