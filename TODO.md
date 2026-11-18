@@ -16856,6 +16856,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the C-BIOS repack's CHGET.
 
 - [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+      🔴 **BLOCKED ON LOW-REGION SPACE (2026-11-18).** A fix was built and witnessed (e5ada705, reverted by 49bde3de):
+      bios_fnk calls a 20 B bf_scroll at the low region's end -- showing the line with the cursor on its row,
+      CSRY := the last text row, then the console's own LF scroll (CNSDFG is $FF already). XSCR4 re-run: the CRTCNT
+      24 scroll cases matched the reference in every row ([`XSCR4_fix1.out`](scratchpad/XSCR4_fix1.out)). But the
+      low region had 22 B free; spending 21 left the switch-off builds (G6/G7/G8/I1_RESIDENT, CLEARPOOL) no room
+      and switch-build-check went red. biosfnk.asm's own pad in front of the $3283 pin has 3 B. Needs a carve /
+      promote (the low region and page 1 share one budget; memory carve-routes-measured-shut) of about 20 B.
       🎚️ TIER 3 — common (KEY ON with the cursor on the bottom line; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md rule R-K-SCROLL ([`XSCR_run2.out`](scratchpad/XSCR_run2.out), XS 00 / 04 /
       54): with CSRY = CRTCNT the VG-8020 scrolls the text rows up by one (row CRTCNT - 1 comes in blank, its LINTTB
@@ -16884,6 +16891,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/bios/INIFNK.md R-F-AF; round 2 R-F-REGS / R-F-DI / R-F-WAREA: zerobas returns other BC / HL, A not kept,
       and with interrupts ENABLED where the VG-8020's INIFNK returns them disabled).
       Not published values: match them only if cheap. CHGET's are D-CHGETEI.
+
+- [ ] **D-SETWRTEI — SETWRT RETURNS WITH INTERRUPTS ENABLED: A CALLER'S FIRST VRAM WRITE CAN BE LOST TO AN INTERRUPT**
+      🎚️ TIER 3 — common (a program that calls SETWRT and then OUTs to $98 itself; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — C-BIOS's SETWRT (our repack's source, video.asm) ends `EI / RET`. biosvram-acceptance's
+      setwrt row (DI, SETWRT $1006, OUT $98 twice) lost its FIRST byte on zerobas once a layout change moved the
+      interrupt into that window ([`SETWRTEI_evidence.out`](scratchpad/SETWRTEI_evidence.out): VG 777777777777c33c.., ZB
+      7777777777773c77..); the d18bb012 build passed the same row. Two facts to measure before fixing: whether the
+      VG-8020's SETWRT / SETRD return with interrupts enabled (read IFF2 after each), and what zerobas's interrupt
+      path writes to VRAM (the VG-8020's evidently does not move the VDP address). Same class: SETRD.
 
 - [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).

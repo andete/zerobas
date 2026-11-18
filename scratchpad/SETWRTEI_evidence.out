@@ -1,0 +1,5 @@
+# D-SETWRTEI evidence (2026-11-18): biosvram-acceptance's setwrt row on the e5ada705 build (reverted by 49bde3de),
+# reproduced twice by `make biosvram-acceptance`; the d18bb012 build passed the same row in its FULL gate.
+ROW setwrt  DIVERGES  VG 777777777777c33c7777777777777777
+            ZB 7777777777773c777777777777777777
+FAIL: VRAM-answering BIOS entries (7/8)
