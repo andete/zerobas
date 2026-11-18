@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LDIRVM` ($005C) — copy RAM to VRAM
 
-> **Spec:** DRAFT 3 (2026-11-18), after two test-writer reviews, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
 > interface, with VRAM read back by hand through the VDP's ports after every call.
 
 ## Summary
@@ -25,23 +25,24 @@ zerobas copies the same bytes and leaves the same registers; its F differs (belo
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XM rNN]**: case `NN` of the XVRAM probe, run 3, on row `r`, both rows in
-[`scratchpad/XVRAM_run3.out`](../../scratchpad/XVRAM_run3.out) (the two rows recorded the same bytes).
+**Evidence.** **[XM rNN]**: case `NN` of the XVRAM probe, run 4, on row `r`, both rows in
+[`scratchpad/XVRAM_run4.out`](../../scratchpad/XVRAM_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xvram.asm` documents the case table and the 48-byte record:
 - Before each case the probe writes, by hand and slowly (a VRAM access at least 38 T-states from the
   next), 8 VRAM bytes at each VRAM window and at the call's own VRAM address (HL AND $3FFF; DE AND
   $3FFF for LDIRVM; for LDIRMV / LDIRVM the whole BC bytes when BC is 8 to $200): each byte := its
   address's low byte XOR its high byte XOR $5A. Neighbouring bytes differ, but the pattern repeats,
   so the rules compare whole windows with the modelled VRAM, not single bytes with an address. RAM
-  windows are set to $E0 + i and $E8 + i, and then LDIRVM's source, RAM from $E9A0, to $80 + i (low
-  byte) for $110 bytes -- a RAM window inside that span (case 51's second) holds the source's bytes.
-  Just before the call the probe reads the VDP status, so no VDP interrupt is pending.
+  windows are set to $E0 + i and $E8 + i, and then LDIRVM's source, RAM from $E9A0, to (address low)
+  XOR (address high) for $110 bytes, which does not repeat every 256 bytes -- a RAM window inside
+  that span (the second of cases 51 and 55) holds the source's bytes. Just before the call the probe
+  reads the VDP status: no VDP interrupt is pending, and the port $99 address latch is reset.
 - IX is $4321 and IY $8765; A, F, HL, DE, BC and the interrupt state (on or off) as the case lists
   them -- A $A7, $00, $5A and others, F $00, $FF, $A5, $5A.
 - After the call it records every register and the interrupt state; then for SETRD two reads of
   port $98, for SETWRT two writes ($C7, $C8), for RDVRM and LDIRMV one read, for WRTVRM, FILVRM and
-  LDIRVM one write ($C9); then three 8-byte windows read back by hand -- for LDIRMV the third is the
-  source VRAM, for LDIRVM the source RAM.
+  LDIRVM one write ($C9); then three 8-byte windows read back by hand -- for LDIRMV the third lies in
+  the source VRAM, for LDIRVM in the source RAM.
 - The rules model VRAM over the whole run: a byte an earlier case wrote keeps its value until
   another case writes it. A next read that lands on a byte nothing wrote is declared not evidence.
 - The screen is the one the cartridge finds at boot, with the display on.
@@ -75,6 +76,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 - **[A]** More source (HL) values; BC = 0 and BC above $108. A source in pages 0-2 is not measured
   on purpose: it would copy ROM bytes into VRAM, which a probe may not read.
+- **[A]** A VDP interrupt arriving during the call (a long FILVRM with interrupts on spans frames;
+  only the state after the call is read), and entry with the port $99 latch half-written.
 - **[A]** The moment between the call's return, with interrupts on, and the probe's own `di`: an
   interrupt there would run the handler before the probe's port access.
 - **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows.

@@ -1,15 +1,15 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XVRAM -- docs/bios/RDVRM.md, WRTVRM.md, SETRD.md, SETWRT.md, FILVRM.md, LDIRMV.md, LDIRVM.md round 3
-; (2026-11-18; round 1 had cases 0-33, two windows and no port read after the other calls; round 2 cases 0-54, no
+; XVRAM -- docs/bios/RDVRM.md, WRTVRM.md, SETRD.md, SETWRT.md, FILVRM.md, LDIRMV.md, LDIRVM.md round 4
+; (2026-11-18; round 3 had a source repeating every 256 bytes; round 1 had cases 0-33, two windows and no port read after the other calls; round 2 cases 0-54, no
 ; status read before the call, and a read, not a write, after the writing calls): the VRAM access calls. Per case (the table `cases` at the end: op, A, F, interrupts, HL, DE, BC,
 ; three window addresses W1 / W2 / W3, and a kind byte: bit 0 set = W1 / W2 are RAM, bit 1 set = W3 is RAM) the probe first sets, BY HAND
 ; and slowly (a VRAM access at least 38 T-states from the next):
 ;   - VRAM: the 8 bytes from each VRAM window, and from HL AND $3FFF (DE AND $3FFF for LDIRVM) := pv(a) =
 ;     (a's low byte) XOR (a's high byte) XOR $5A -- for LDIRMV / LDIRVM the whole BC bytes when BC is 8..$200;
-;   - RAM windows: the 8 bytes from W1 := $E0 + i, from W2 := $E8 + i; LDIRVM's source $E9A0.. := $80 + i
-;     (low byte), $110 bytes.
+;   - RAM windows: the 8 bytes from W1 := $E0 + i, from W2 := $E8 + i; LDIRVM's source $E9A0.. := (address
+;     low) XOR (address high), $110 bytes.
 ; Then IX $4321, IY $8765, the case's A, F, HL, DE, BC, interrupts on or off, and the call:
 ; op 0 RDVRM ($004A), 1 WRTVRM ($004D), 2 SETRD ($0050), 3 SETWRT ($0053), 4 FILVRM ($0056), 5 LDIRMV ($0059),
 ; 6 LDIRVM ($005C). The VDP status is read just before (no VDP interrupt pending at the call). Right after it: for
@@ -275,11 +275,11 @@ p_s8:
                 call    vfilln
                 ld      hl, SRC
                 ld      bc, $110
-                ld      e, $80
 s_src:
-                ld      (hl), e
+                ld      a, l                    ; (address low) XOR (address high): no 256-byte repeat
+                xor     h
+                ld      (hl), a
                 inc     hl
-                inc     e
                 dec     bc
                 ld      a, b
                 or      c
@@ -468,7 +468,7 @@ cases:
                 dw      $5234, $9BDF, $0004, $1230, $1238, $1230
                 db      $00                   ; 24
                 db      $04, $77, $FF, $01
-                dw      $2000, $9BDF, $0000, $1FF8, $3FF8, $1FF8
+                dw      $2000, $9BDF, $0000, $1FF8, $0000, $2000
                 db      $00                   ; 25
                 db      $05, $A7, $00, $00
                 dw      $1234, $E980, $0008, $E97C, $E984, $1234
@@ -558,7 +558,7 @@ cases:
                 dw      $E9A0, $1200, $0108, $11FC, $1304, $EAA0
                 db      $02                   ; 54
                 db      $05, $A7, $A5, $01
-                dw      $1200, $E980, $0100, $E97C, $EA7C, $1300
+                dw      $1200, $E980, $0100, $E97C, $EA7C, $1280
                 db      $01                   ; 55
                 db      $06, $5A, $00, $00
                 dw      $E9A0, $1200, $0100, $11FC, $12FC, $EA9C

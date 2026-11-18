@@ -2,12 +2,12 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for the VRAM access calls' EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XVRAM_run3.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
+scratchpad/XVRAM_run4.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
 48-byte record). Each page's module (xrdvrm_rules.py, xwrtvrm_rules.py, xsetrd_rules.py, xsetwrt_rules.py,
 xfilvrm_rules.py, xldirmv_rules.py, xldirvm_rules.py) takes its op's cases from `load(op)`.
 
 The model is the probe's own set-up, then the call's documented effect: VRAM bytes the probe preset hold
-pv(a) = low(a) XOR high(a) XOR $5A, RAM windows $E0 + i / $E8 + i, LDIRVM's source $80 + i; a VRAM address is
+pv(a) = low(a) XOR high(a) XOR $5A, RAM windows $E0 + i / $E8 + i, LDIRVM's source (address low) XOR (address high); a VRAM address is
 taken AND $3FFF."""
 import os
 import re
@@ -19,7 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XVRAM_run3.out"
+RUN = "XVRAM_run4.out"
 ASM = os.path.join(HERE, "xvram.asm")
 REC = 48
 SRC = 0xE9A0
@@ -69,7 +69,8 @@ def preset(c, vram, ram):
     for i in range(span_len(c)):
         vram[(span + i) & 0x3FFF] = pv(span + i)
     for i in range(0x110):
-        ram[SRC + i] = (0x80 + i) & 0xFF
+        a = SRC + i
+        ram[a] = (a & 0xFF) ^ (a >> 8)
 
 
 def effect(c, vram, ram):

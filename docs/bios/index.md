@@ -29,13 +29,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | D-WRTVDPC |
-| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](RDVRM.md) | 7 | D-VRAMF |
-| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](WRTVRM.md) | 7 | — |
-| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETRD.md) | 7 | — |
-| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](SETWRT.md) | 8 | — |
-| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](FILVRM.md) | 7 | D-VRAMF |
-| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](LDIRMV.md) | 8 | D-VRAMF |
-| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](LDIRVM.md) | 7 | D-VRAMF |
+| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](RDVRM.md) | 8 | D-VRAMF |
+| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](WRTVRM.md) | 8 | — |
+| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETRD.md) | 8 | — |
+| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETWRT.md) | 9 | — |
+| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](FILVRM.md) | 8 | D-VRAMF |
+| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRMV.md) | 9 | D-VRAMF |
+| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRVM.md) | 8 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
