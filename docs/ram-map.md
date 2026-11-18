@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **445** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **446** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -412,6 +412,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6A6` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
 | `$F6A9` | 1 B | `basic` | `RDV_MODE` | $F6A9: main -> tenant MODE (1 B), D-READVAR: |  |
+| `$F6AA` | 1 B | `basic` | `AUTFLG` | the standard AUTO-mode flag: with it set INLIN reads the line from column 1 (D-PINLINSTART; zerobas's BASIC never sets it) (1) |  |
 | `$F6AB` | 2 B | `basic` | `AU_NUM/RN_NEW/USRC_KEY` | AUTO: the line number being prompted (2) |  |
 | `$F6AD` | 2 B | `basic` | `AU_INC/RN_INC/USRC_AFTER` | USR cache: cursor after `USR(...)` (2) |  |
 | `$F6AF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
