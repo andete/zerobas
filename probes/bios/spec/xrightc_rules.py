@@ -21,5 +21,5 @@ def cases():
 S1 = "1. RIGHTC ($00FC): move the graphics position one pixel right"
 
 RULES = G.move_rules("RC", S1, "SCREEN 2: CMASK shifts right one bit; from $01 it becomes $80 and CLOC := CLOC + 8 (the "
-                     "next 8-pixel cell). SCREEN 3: CMASK $F0 becomes $0F; $0F becomes $F0 and CLOC := CLOC + 8. No "
+                     "next 8-pixel cell). SCREEN 3: CMASK $0F becomes $F0 and CLOC := CLOC + 8; any other CMASK becomes $0F ($F0, and $F1, CLOC kept). No "
                      "edge is checked: from the right edge CLOC goes on into the next row's cells.")

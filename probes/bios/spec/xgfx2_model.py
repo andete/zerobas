@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for RIGHTC / LEFTC / UPC / TUPC / DOWNC / TDOWNC's EXECUTABLE RULES
-(docs/spec-method.md §3a): scratchpad/XGFX2_run2.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
+(docs/spec-method.md §3a): scratchpad/XGFX2_run3.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
 the case table and the 28-byte record, as xgfx1.asm's). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,10 +14,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX2_run2.out"
+RUN = "XGFX2_run3.out"
 ASM = os.path.join(HERE, "xgfx2.asm")
 REC = 28
-GTB = -1                                    # (no GTASPC case here)
+GTB = 255                                   # the probe's GTB ($FF): case 255 gets ASPCT1 / ASPCT2 $0100 / $00C0
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "cloc", "cmask", "atrbyt", "aspct", "scrmod", "cgp"]
 OUTPUTS = {"XG1": FIELDS}
 
@@ -88,11 +88,11 @@ def move(c):
     if c.op in (0, 1):
         if c.op == 0:
             edge = cm == (0x0F if mlt else 0x01)
-            cm = (0xF0 if mlt else 0x80) if edge else ((cm ^ 0xFF) if mlt else cm >> 1)
+            cm = (0xF0 if mlt else 0x80) if edge else (0x0F if mlt else cm >> 1)
             cl = (cl + 8) & 0xFFFF if edge else cl
         else:
             edge = cm == (0xF0 if mlt else 0x80)
-            cm = (0x0F if mlt else 0x01) if edge else ((cm ^ 0xFF) if mlt else cm << 1)
+            cm = (0x0F if mlt else 0x01) if edge else (0xF0 if mlt else cm << 1)
             cl = (cl - 8) & 0xFFFF if edge else cl
         return cl, cm, cm, andf(cm), False
     if c.op in (2, 3):

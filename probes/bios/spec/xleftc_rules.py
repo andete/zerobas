@@ -21,4 +21,4 @@ def cases():
 S1 = "1. LEFTC ($00FF): move the graphics position one pixel left"
 
 RULES = G.move_rules("LC", S1, "SCREEN 2: CMASK shifts left one bit; from $80 it becomes $01 and CLOC := CLOC - 8. "
-                     "SCREEN 3: CMASK $0F becomes $F0; $F0 becomes $0F and CLOC := CLOC - 8. No edge is checked.")
+                     "SCREEN 3: CMASK $F0 becomes $0F and CLOC := CLOC - 8; any other CMASK becomes $F0 ($0F, and $1F, CLOC kept). No edge is checked.")

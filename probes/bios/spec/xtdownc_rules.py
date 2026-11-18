@@ -22,6 +22,8 @@ S1 = "1. TDOWNC ($010B): move the graphics position down, checking the edge"
 
 RULES = G.move_rules("TD", S1, "Where it does not stop, as DOWNC: CLOC := CLOC + 1, or CLOC + $F9 when CLOC AND 7 is "
                      "7; CMASK is kept.", "It stops -- CLOC and CMASK kept, the carry set -- at the bottom: in SCREEN 2 "
-                     "when CLOC AND 7 is 7 and CLOC's high byte is GRPCGP's + $17 (GRPCGP $0000, $1800, $2000 measured); "
-                     "in SCREEN 3 when CLOC AND 7 is 7 and CLOC's high byte is 5 or more, whatever MLTCGP is ($0000, "
+                     "when CLOC AND 7 is 7 and CLOC's high byte is GRPCGP's + $17 (GRPCGP $0000, $1800, $2000, $2100 "
+                     "measured; character rows 7 and 15 move on); "
+                     "in SCREEN 3 when CLOC AND 7 is 7 and CLOC's high byte is 5 or more, unsigned ($85 stops), "
+                     "whatever MLTCGP is ($0000, "
                      "$0800, $1000 measured: with MLTCGP $1000 every block row 7 stops). Otherwise the carry is clear.")

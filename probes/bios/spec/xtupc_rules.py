@@ -22,6 +22,7 @@ S1 = "1. TUPC ($0105): move the graphics position up, checking the edge"
 
 RULES = G.move_rules("TU", S1, "Where it does not stop, as UPC: CLOC := CLOC - 1, or CLOC - $F9 when CLOC AND 7 is 0; "
                      "CMASK is kept.", "It stops -- CLOC and CMASK kept, the carry set -- at the top: in SCREEN 2 when "
-                     "CLOC AND 7 is 0 and CLOC's high byte is GRPCGP's ($F3CB; GRPCGP $0000, $1800, $2000 measured); in "
+                     "CLOC AND 7 is 0 and CLOC's high byte is GRPCGP's ($F3CB; GRPCGP $0000, $1800, $2000, $2100, "
+                     "$2004 measured; character rows 8 and 16 move on); in "
                      "SCREEN 3 when CLOC AND $FF07 is 0, whatever MLTCGP is ($0000, $0800, $1000 measured). Otherwise "
                      "the carry is clear.")
