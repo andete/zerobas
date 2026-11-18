@@ -26,7 +26,7 @@ OUTPUTS = {"XG": ["a", "f", "getpnt", "putpnt", "iff", "csrx", "csry", "csrsw_ou
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XCHG_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XCHG_fix1.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))
@@ -38,7 +38,7 @@ def cases():
 
 def waited(who):
     """XCHGW's two cases: CHGET on an empty buffer, entered with interrupts on (1, 'Q' typed) / off (2, 'R')."""
-    t = open(os.path.join(ROOT, "scratchpad", "XCHGW_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XCHGW_fix1.out")).read()
     b = bytes.fromhex(re.search(rf"CAP {'ref' if who == 'ref' else 'ours'}\s*:\s*([0-9a-fA-F]+)", t).group(1))
     out = []
     for i, (ei, key) in enumerate(((1, ord("Q")), (0, ord("R")))):
@@ -142,7 +142,7 @@ _cases1 = cases
 
 def cases():                                     # noqa: F811
     out = _cases1()
-    t = open(os.path.join(ROOT, "scratchpad", "XCHG2_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XCHG2_fix1.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         for c in X2.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):
             c.src, c.id = "XG2", f"XG2 {c.idx:02}"

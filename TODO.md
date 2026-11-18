@@ -16880,13 +16880,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`XCLS_fix2.out`](scratchpad/XCLS_fix2.out), [`XSCR_fix2.out`](scratchpad/XSCR_fix2.out)): R-P-CLAMP 19 -> 0
       cases failing, R-P-GRP 5 -> 0; no other rule of CLS.md / DSPFNK.md moved.
 
-- [ ] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
+- [x] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
       🎚️ TIER 6 — every edge (a program calling CHGET under DI, or testing its flags; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/CHGET.md rules R-G-EI / R-G-FLAGS / R-G-WFLAGS ([`XCHG_run1.out`](scratchpad/XCHG_run1.out),
       [`XCHGW_run1.out`](scratchpad/XCHGW_run1.out)): the VG-8020's CHGET always returns with interrupts enabled; zerobas's
       leaves them disabled when a code was already waiting (when it has to wait it enables them, so it does not hang).
       Its flags on return: VG-8020 9A (4A when GETPNT wrapped, 8A with three codes waiting), zerobas BB / 02. Fix in
       the C-BIOS repack's CHGET.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chget-ei.patch, same size, 17 bytes differ). CHGET's tail keeps the code in D,
+      so the `cp $18` on GETPNT's advanced low byte is the last flag-setting instruction, and an `ei` precedes the
+      `ret`. WITNESS: XCHG / XCHGW / XCHG2 re-run on the fixed build ([`XCHG_fix1.out`](scratchpad/XCHG_fix1.out),
+      [`XCHGW_fix1.out`](scratchpad/XCHGW_fix1.out), [`XCHG2_fix1.out`](scratchpad/XCHG2_fix1.out)): every docs/bios/CHGET.md
+      rule holds on zerobas (R-G-EI 11 -> 0 cases failing, R-G-FLAGS 13 -> 0, R-G-WFLAGS 2 -> 0, R-G-CODE2 9 -> 0,
+      R-G-F2 10 -> 0).
 
 - [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
       🔴 **BLOCKED ON LOW-REGION SPACE (2026-11-18).** A fix was built and witnessed (e5ada705, reverted by 49bde3de):

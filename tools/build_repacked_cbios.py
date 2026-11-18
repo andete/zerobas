@@ -116,11 +116,14 @@ PATCHES = [
     # D-POSITCLAMP (2026-11-18): POSIT clamps H / L as the VG-8020 and does nothing in SCREEN 2 / 3,
     # paid from the dead FNKSB / ERAFNK / DSPFNK stubs (zerobas overlays all three); TOTEXT stays put.
     os.path.join(REPO, "cbios-repack", "posit-clamp.patch"),
+    # D-CHGETEI (2026-11-18): CHGET returns with interrupts enabled and the flags of its `cp $18`,
+    # as the VG-8020; same size -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "chget-ei.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "9fee43cee72e524b4bbe680929758258a2a24efc"   # D-POSITCLAMP, 2026-11-18
+REPACKED_SHA1 = "6871598459e4667ee234bd64912d4d5b8750cf4f"   # D-CHGETEI, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

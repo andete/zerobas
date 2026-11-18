@@ -1,0 +1,8 @@
+===== probes/bios/spec/xchgw.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=ba02 typed=1 scncnt=02 newkey=ffffffff7ffffeffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f202 typed=1 scncnt=03 newkey=ffffffff7ffffeffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 04519a44f1f1015a5a529a44f2f2015a5a000000000000000000000000000000
+  CAP ours: 04519a44f1f1015a5a529a44f2f2015a5a000000000000000000000000000000
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

@@ -26,15 +26,15 @@ entry. Its F on return is that of comparing GETPNT's advanced low byte (before t
 `CHSNS` returns PUTPNT − GETPNT (low bytes) in A, with Z set exactly when the buffer is empty. It
 moves nothing, and also returns with interrupts enabled.
 
-zerobas does all of it the same, apart from CHGET:
-- with a code already waiting, it returns with interrupts still DISABLED when it was entered with
-  them disabled (it waits with them enabled, so it does not hang);
-- its flags on return differ (D-CHGETEI).
+zerobas does all of it the same. Until the 2026-11-18 fix (D-CHGETEI), CHGET with a code already
+waiting returned with interrupts still disabled when entered so, and its flags on return differed.
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The key buffer's cells are on
 [the shared-state map](shared-state.md).
+
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build with D-CHGETEI's fix: [`XCHG_fix1.out`](../../scratchpad/XCHG_fix1.out), [`XCHGW_fix1.out`](../../scratchpad/XCHGW_fix1.out), [`XCHG2_fix1.out`](../../scratchpad/XCHG2_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XG n]**: case `n` of the XCHG matrix, run 1,
 [`scratchpad/XCHG_run1.out`](../../scratchpad/XCHG_run1.out). The case list, the setup and the record
@@ -74,11 +74,11 @@ the run.
 |---|---|---|---|
 | **R-G-CODE** CHGET returns the code at GETPNT in A, whatever it is (00, 01, 20, 7F, FF, 'A'..'D'), in SCREEN 0 and 2. | 13 | ✓ | ✓ |
 | **R-G-PTR** GETPNT advances by one, from the buffer's 40th byte back to KEYBUF ($FBF0); PUTPNT is unchanged. | 13 | ✓ | ✓ |
-| **R-G-EI** CHGET returns with interrupts ENABLED, also when it was entered with them disabled. | 13 | ✓ | ✗ 11: XG 00, XG 02, XG 04, XG 05, XG 06, XG 07 … (+5) |
-| **R-G-FLAGS** Its flags on return (not published) are those of comparing GETPNT's advanced low byte -- before the wrap back to KEYBUF -- with $18: 9A at $F1, 8A at $FB, 4A (Z set) at the buffer's end ($18). | 13 | ✓ | ✗ 13: XG 00, XG 01, XG 02, XG 03, XG 04, XG 05 … (+7) |
+| **R-G-EI** CHGET returns with interrupts ENABLED, also when it was entered with them disabled. | 13 | ✓ | ✓ |
+| **R-G-FLAGS** Its flags on return (not published) are those of comparing GETPNT's advanced low byte -- before the wrap back to KEYBUF -- with $18: 9A at $F1, 8A at $FB, 4A (Z set) at the buffer's end ($18). | 13 | ✓ | ✓ |
 | **R-G-QUIET** A code waiting, CHGET changes nothing else: no cursor drawn (CSRSW 0 or 1), VRAM, CSRX / CSRY, CSRSW, CNSDFG and the buffer's bytes as found. | 13 | ✓ | ✓ |
 | **R-G-WAIT** With the buffer EMPTY, CHGET waits for a key and returns its code ('Q', 'R' typed), consuming it (GETPNT = PUTPNT after), with interrupts ENABLED -- also when entered with them disabled: it does not hang. VRAM cells 166 / 167 hold their garbage $5A after the call -- NOT the cursor's cell: the probe left the boot width (37, margin 2), so the cursor at column 7 is cell 168; what the wait shows is open. | 2 | ✓ | ✓ |
-| **R-G-WFLAGS** After a wait too (GETPNT ending at $F1 / $F2: 9A). | 2 | ✓ | ✗ 2: XW 1, XW 2 |
+| **R-G-WFLAGS** After a wait too (GETPNT ending at $F1 / $F2: 9A). | 2 | ✓ | ✓ |
 
 #### 2. CHSNS ($009C): is there a code?
 
@@ -93,8 +93,8 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-G-CODE2** With every register garbage and A $A7 on entry (unlike the VRAM garbage), CHGET returns the code at GETPNT in A, GETPNT advanced by one (wrapping), PUTPNT unchanged, and interrupts ENABLED -- whatever the flags on entry ($00 / $FF) and whether interrupts were on. | 10 | ✓ | ✗ 9: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+3) |
-| **R-G-F2** The same compare explains every separated case (9A at $F1 / $F6, 8A at $FB, 9B at $05 / $17, 8B at $08 / $09) -- and is NOT 'the number of codes waiting' (one code at offset 10 gives 8A). | 10 | ✓ | ✗ 10: XG2 00, XG2 01, XG2 02, XG2 03, XG2 04, XG2 05 … (+4) |
+| **R-G-CODE2** With every register garbage and A $A7 on entry (unlike the VRAM garbage), CHGET returns the code at GETPNT in A, GETPNT advanced by one (wrapping), PUTPNT unchanged, and interrupts ENABLED -- whatever the flags on entry ($00 / $FF) and whether interrupts were on. | 10 | ✓ | ✓ |
+| **R-G-F2** The same compare explains every separated case (9A at $F1 / $F6, 8A at $FB, 9B at $05 / $17, 8B at $08 / $09) -- and is NOT 'the number of codes waiting' (one code at offset 10 gives 8A). | 10 | ✓ | ✓ |
 | **R-S-COUNT2** CHSNS: A = PUTPNT − GETPNT (low bytes) with the flags of that subtraction, whatever the flags on entry; pointers unchanged; interrupts enabled. | 4 | ✓ | ✓ |
 | **R-GS-QUIET2** Both keep BC, DE, HL, IX and IY; draw nothing (the whole VRAM's sum), also with the cursor at (1, 24) and the key line on; leave the buffer's bytes, LINLEN, CSRSW, the cursor and CNSDFG as found; and of the whole work area change only the interrupt's cells (NEWKEY's last row, INTCNT's high byte: the interrupt ran during the probe's own reads too). | 14 | ✓ | ✓ |
 
@@ -102,9 +102,7 @@ the run.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-CHGETEI** (CHGET leaves interrupts disabled; its flags on return) | R-G-EI, R-G-FLAGS, R-G-WFLAGS, R-G-CODE2, R-G-F2 |
+None measured: every rule holds on zerobas (since the 2026-11-18 fix of CHGET's interrupts and flags).
 
 ## Open (not measured)
 

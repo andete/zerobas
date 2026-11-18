@@ -95,18 +95,22 @@ SIG = "2afaf3ed5bf8f3"
 TARGET = '10 PRINT"ABCDEFG"'         # stored line 10; a mangle rejects it outright
 
 # --- D-LATCH2: the SECOND window (docs/spec-probe-latch2.md) ----------------
-# chget_char, 14 bytes past chget_wait:
-#   $11A2 ld a,(hl) / push af / inc hl / ld a,l / cp $18 / jr nz /
-#   $11AA ld hl,KEYBUF / $11AD ld (GETPNT),hl / pop af / pop de / pop hl / ret
+# chget_char, 14 bytes past chget_wait. Since D-CHGETEI (2026-11-18) the code waits in D
+# instead of on the stack (cbios-repack/chget-ei.patch, same size):
+#   +0 ld d,(hl) / +1 inc hl / ld a,l / cp $18 / jr nz /
+#   +7 ld hl,KEYBUF / +10 ld (GETPNT),hl / +13 ld a,d / pop de / pop hl / ei / ret
+# The window is the same instructions one byte earlier: from just after the read
+# to the store. (Before D-CHGETEI: ld a,(hl) / push af / ... / pop af, offsets
+# 1 / 8 / 11 / 14; docs/spec-probe-latch2.md quotes that era's bytes.)
 # The signature spans the whole window and embeds KEYBUF ($FBF0) and GETPNT
 # ($F3FA), so it vouches for the sysvar contract as well as the addresses.
 CHAR_OFF = 19                        # chget -> chget_char
-SIG2 = "7ef5237dfe18200321f0fb22faf3f1d1e1c9"
+SIG2 = "56237dfe18200321f0fb22faf37ad1e1fbc9"
 # Offsets from chget_char to the boundaries this scores.
-B_PUSHAF = 1                         # $11A3 -- first FATAL boundary
-B_WRAP = 8                           # $11AA -- ld hl,KEYBUF (wrap path only)
-B_STORE = 11                         # $11AD -- ld (GETPNT),hl, last FATAL one
-B_POPAF = 14                         # $11B0 -- past the store: SAFE again
+B_READ = 1                           # inc hl, just after the read -- first FATAL boundary
+B_WRAP = 7                           # ld hl,KEYBUF (wrap path only)
+B_STORE = 10                         # ld (GETPNT),hl, last FATAL one
+B_SAFE = 13                          # ld a,d -- past the store: SAFE again
 # Ten spaces: the tokeniser skips leading blanks, so the prefix the machine has
 # already consumed is invisible and the STORED LINE NUMBER is the swallow count
 # (0 -> 54321, 1 -> 4321, 2 -> 321 ...). No screen decoding, no new oracle.
@@ -117,7 +121,7 @@ PRED2 = " " * 10
 # at GETPNT can get there: OLD_KEY resets GETPNT := KEYBUF every time and a
 # payload is at most 39 B, so D-LATCH's own fix OPENED this sub-window.
 FILLER2 = " " * 31
-# ⚠️ Every row below fires on the FIRST hit. For $11AA that is not a choice:
+# ⚠️ Every row below fires on the FIRST hit. For B_WRAP that is not a choice:
 # the wrap path is entered only when the consuming pointer crosses KEYBUF+40,
 # so the first time that breakpoint is reached IS the wrap. Asking for a later
 # hit there gets `NO HIT` -- which is what the row reports, rather than scoring.
@@ -342,13 +346,13 @@ def _row2(label: str, key_body: str, addr: int, k: int, want: str,
 def address2(base: int) -> int:
     """Locate `chget_char` and vouch for the whole window, or raise SystemExit.
     A gate that cannot identify its subject may not score a guessed address."""
-    got = _run2(R.key_proc(), base + CHAR_OFF + B_POPAF, 1)   # a SAFE boundary
+    got = _run2(R.key_proc(), base + CHAR_OFF + B_SAFE, 1)   # a SAFE boundary
     if got.get("sig") != SIG2:
         raise SystemExit(
             f"latch-check: CANNOT JUDGE -- chget_char "
             f"({base + CHAR_OFF:#06x}) reads {got.get('sig')!r}, not the "
-            f"{SIG2!r} this gate was written against (ld a,(hl) / push af / "
-            "inc hl / ld a,l / cp $18 / jr nz / ld hl,KEYBUF / "
+            f"{SIG2!r} this gate was written against (ld d,(hl) / inc hl / "
+            "ld a,l / cp $18 / jr nz / ld hl,KEYBUF / "
             "ld (GETPNT),hl). The second window this scores may have moved; "
             "re-derive it before trusting either delivery oracle.")
     return base + CHAR_OFF
@@ -416,11 +420,11 @@ def main() -> int:
     # same time (docs/spec-probe-latch2.md §3).
     char = address2(int(base))
     print(f"latch-check: chget_char ${char:04X}  window "
-          f"${char + B_PUSHAF:04X}-${char + B_STORE:04X}")
+          f"${char + B_READ:04X}-${char + B_STORE:04X}")
 
     # Row D -- the positive control, one era later. The D-LATCH injector, which
     # is race-free at $1197, loses the head of the line here.
-    for off, what in [(B_PUSHAF, "push af"), (B_STORE, "ld (GETPNT),hl"),
+    for off, what in [(B_READ, "inc hl"), (B_STORE, "ld (GETPNT),hl"),
                       (B_WRAP, "ld hl,KEYBUF (wrap)")]:
         rows.append(_row2(
             f"D  D-LATCH injector, forced at ${char + off:04X} ({what})",
@@ -430,7 +434,7 @@ def main() -> int:
     # Row E -- the fix. `need_defer` is the anti-vacuity clause for the guard
     # itself: green because the guard FIRED, not because the boundary was
     # missed.
-    for off, what in [(B_PUSHAF, "push af"), (B_STORE, "ld (GETPNT),hl"),
+    for off, what in [(B_READ, "inc hl"), (B_STORE, "ld (GETPNT),hl"),
                       (B_WRAP, "ld hl,KEYBUF (wrap)")]:
         rows.append(_row2(
             f"E  key_proc,          forced at ${char + off:04X} ({what})",
@@ -441,8 +445,8 @@ def main() -> int:
     # SAME frozen injector delivers, so rows D are the latch and not merely
     # "we injected into a buffer that was being consumed".
     rows.append(_row2(
-        f"F  D-LATCH injector, forced at ${char + B_POPAF:04X} (pop af)",
-        GETPNT_KEY, char + B_POPAF, HIT, "54321"))
+        f"F  D-LATCH injector, forced at ${char + B_SAFE:04X} (ld a,d)",
+        GETPNT_KEY, char + B_SAFE, HIT, "54321"))
 
     for label, ok in rows:
         print(f"  {'PASS' if ok else 'FAIL'}  {label}")

@@ -83,6 +83,15 @@ $11B2                E1            pop hl
 $11B3                C9            ret
 ```
 
+> **Since D-CHGETEI (2026-11-18)** the tail is different bytes with the same window.
+> cbios-repack/chget-ei.patch keeps the code in D instead of on the stack, so that CHGET
+> returns with interrupts enabled and the flags of its `cp $18`. The window is now
+> `ld d,(hl)` / **`inc hl`** (first fatal) / ... / **`ld hl,KEYBUF`** (+7) /
+> **`ld (GETPNT),hl`** (+10, last fatal) / `ld a,d` (+13, safe), one byte earlier than
+> above. latch_check.py's SIG2 and offsets follow it (`B_READ` / `B_WRAP` / `B_STORE` /
+> `B_SAFE`). The positive control (row D) still MANGLES at all three fatal boundaries, so
+> the re-derived window is not blind.
+
 🔴 **The filed range `$11A2`–`$119D` is not an address range at all** — its second
 endpoint is *below* its first. The window is `$11A3`–`$11AD`, and §4 says why
 `$11A2` itself is on the safe side of it.
