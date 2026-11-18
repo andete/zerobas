@@ -1,0 +1,35 @@
+diff --git a/src/main.asm b/src/main.asm
+index 319d1f9..dd8133e 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1901,7 +1901,6 @@ chput_esc_l:
+                 pop     hl
+                 ld      (CSRY),hl
+                 ret
+-                ds      7, 0
+ 
+ ;--------------------------------
+ ; $00D2 TOTEXT
+@@ -1914,9 +1913,19 @@ totext:
+                 ret     c
+                 ld      a,(OLDSCR)
+                 call    H_TOTE
+-                or      a
+-                jp      z,initxt
+-                jp      init32
++                ; zerobas D-INITEDGES (2026-11-18): OLDSCR is a DISPATCH, as the VG-8020's
++                ; (zerobas docs/bios/TOTEXT.md R-T-DISPATCH / R-T-OLDX): 0..3 that screen,
++                ; 4..$80 SCREEN 3, $81..$FF SCREEN 0 (INITXT makes OLDSCR 0). C-BIOS ran INIT32
++                ; for every non-zero OLDSCR. Through CHGMOD's table; 7 B longer, paid from
++                ; POSIT's pad above (TOTEXT starts 7 B earlier, $00D2 follows its label).
++                cp      4
++                jr      c,totext_go     ; 0..3
++                cp      $81
++                ld      a,3
++                jr      c,totext_go     ; 4..$80: SCREEN 3
++                xor     a               ; $81..$FF: SCREEN 0
++totext_go:
++                jp      chgmod
+ 
+ ;--------------------------------
+ ; $00E1 TAPION

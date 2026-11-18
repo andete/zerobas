@@ -16896,6 +16896,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cases failing, R-I-TAIL-TXT 8 -> 0 (and R-I-LT 128 -> 0 from D-LINTTBVAL's clear). **STILL OPEN:** the key line's
       row / CRTCNT and the margins (sub/keystr.asm `ks_geom` takes row 24 and the whole row; the sub ROM's page 0 has
       3 B free) and TOTEXT's OLDSCR dispatch.
+      🟡 **PART 2 LANDED 2026-11-18: TOTEXT's OLDSCR dispatch** (cbios-repack/totext-dispatch.patch, 26 bytes differ, nothing
+      else moves). TOTEXT runs CHGMOD's table: 0..3 that screen, 4..$80 SCREEN 3, $81..$FF SCREEN 0 (INITXT makes OLDSCR 0).
+      It is 7 B longer, paid from POSIT's pad, and TOTEXT starts 7 B earlier ($00D2 follows the label). WITNESS: XTOT / XTOT2
+      re-run ([`XTOT_fix2.out`](scratchpad/XTOT_fix2.out), [`XTOT2_fix1.out`](scratchpad/XTOT2_fix1.out)): R-T-OLDX,
+      R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
+      CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
 - [x] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
       🎚️ TIER 6 — every edge (a program passing POSIT a column of 0 / above LINLEN or a row of 0 / above CRTCNT, or

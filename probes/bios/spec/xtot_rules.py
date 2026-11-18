@@ -28,7 +28,7 @@ VREF = {(0, 0): (30720, 3584, 20751), (0, 1): (32290, 3584, 22321), (1, 0): (728
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XTOT_fix1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XTOT_fix2.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))
@@ -87,7 +87,7 @@ VREF2 = {0: 20751, 1: 32768, 2: 22321, 3: 37409, 4: 22321, 5: 22321, 6: 20751, 7
 
 
 def _cases_r2():
-    t = open(os.path.join(ROOT, "scratchpad", "XTOT2_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XTOT2_fix1.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X2.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))

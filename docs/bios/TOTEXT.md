@@ -22,16 +22,15 @@ SPDX-License-Identifier: 0BSD
 
 The graphics outcomes leave LINLEN and the cursor alone.
 
-zerobas does the same for OLDSCR 0 and 1, apart from what INITXT / INIT32 themselves differ in: the
-key line's row and the font. It treats every other OLDSCR as 1 (INIT32), and sets OLDSCR
-to 1 (D-INITEDGES).
+zerobas dispatches the same way. It differs only where INITXT / INIT32 themselves do: the key line's
+row (D-INITEDGES) and the font (ruled).
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack.
 
 **Evidence.** **[XT n]**: case `n` of the XTOT matrix, zerobas's side re-run on the 2026-11-18 build,
-[`scratchpad/XTOT_fix1.out`](../../scratchpad/XTOT_fix1.out) (the run the rules were written from:
+[`scratchpad/XTOT_fix2.out`](../../scratchpad/XTOT_fix2.out) (XTOT2's: [`scratchpad/XTOT2_fix1.out`](../../scratchpad/XTOT2_fix1.out)) (the run the rules were written from:
 [`scratchpad/XTOT_run1.out`](../../scratchpad/XTOT_run1.out)). The case list, the setup and the record
 are in `probes/bios/spec/xtot_cases.py`, which also generates `probes/bios/spec/xtot.asm` and decodes
 the run.
@@ -59,7 +58,7 @@ the run.
 | **R-T-TEXT** In SCREEN 0 or 1 TOTEXT does nothing: the register copies, SCRMOD, OLDSCR (0, 1 or garbage), LINLEN, the cursor, CNSDFG and every VRAM byte stay as found. | 12 | ✓ | ✓ |
 | **R-T-OLD0** In SCREEN 2 or 3 with OLDSCR 0 it is INITXT (docs/bios/INITXT.md): SCREEN 0, LINLEN := LINL40 (37), the cursor home, CNSDFG 255 when it was on, INITXT's registers -- every VRAM sum the reference's. | 4 | ✓ | ✗ 4: XT 12, XT 13, XT 18, XT 19 |
 | **R-T-OLD1** With OLDSCR 1 it is INIT32: SCREEN 1, LINLEN := LINL32 (29), the cursor home, CNSDFG 255 when it was on, INIT32's registers -- every VRAM sum the reference's. | 4 | ✓ | ✗ 4: XT 14, XT 15, XT 20, XT 21 |
-| **R-T-OLDX** With a garbage OLDSCR ($5A) the reference sets up SCREEN 3 (the multicolour registers, SCRMOD 3; OLDSCR, the cursor and CNSDFG left as found), from SCREEN 2 and 3 alike -- not a text screen. | 4 | ✓ | ✗ 4: XT 16, XT 17, XT 22, XT 23 |
+| **R-T-OLDX** With a garbage OLDSCR ($5A) the reference sets up SCREEN 3 (the multicolour registers, SCRMOD 3; OLDSCR, the cursor and CNSDFG left as found), from SCREEN 2 and 3 alike -- not a text screen. | 4 | ✓ | ✓ |
 | **R-T-CRTCNT** CRTCNT is never changed (24). | 24 | ✓ | ✓ |
 
 #### 2. Round 2: SCRMOD, OLDSCR, the copies, CRTCNT, CNSDFG, the colours at several values (XTOT2)
@@ -67,10 +66,10 @@ the run.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-T-SCRMOD** SCRMOD decides, not the register copies: INITXT's copies with SCRMOD 2 are acted on (INITXT); INIGRP's copies with SCRMOD 0 are left alone (nothing at all, LINLEN's 50 kept). | 2 | ✓ | ✓ |
-| **R-T-DISPATCH** OLDSCR is a dispatch, not a text choice: 0, $81 and $FF set up SCREEN 0 (and OLDSCR becomes 0); 1 SCREEN 1; 2 SCREEN 2 -- back to the graphics screen; 3, $5A, $7F and $80 SCREEN 3. The graphics outcomes leave LINLEN (50), the cursor and CNSDFG as found. | 7 | ✓ | ✗ 7: XT2 10, XT2 11, XT2 12, XT2 13, XT2 14, XT2 15 … (+1) |
-| **R-T-THRU** TOTEXT's INITXT / INIT32 follow INITXT's page with the inputs as found: CRTCNT 13 kept and the key line on row 13 (the boot's labels: '  color  aut' / '  color auto'); CNSDFG $80 / $FF become 255; R7 from the colours (3A, 09); RG0SAV $03 / RG1SAV $E3 give R0 01 and R1 F3 / E3 -- the register copies as INITXT.md's R0 and register rules compute them (whole where the case set the entry copies; where the mode's call left them, from bits of the previous case's, only the bits TOTEXT forces and R2-R7). | 8 | ✓ | ✗ 4: XT2 02, XT2 03, XT2 04, XT2 05 |
-| **R-T-VRAM2** The whole VRAM's sum is the reference's, per case (the font included: ruled; INIT32's sum also follows the colours and the sprite size; INITXT's does not: the colours 3, 10, 9 give the same sum). | 17 | ✓ | ✗ 16: XT2 00, XT2 02, XT2 03, XT2 04, XT2 05, XT2 06 … (+10) |
-| **R-T-REGS2** The register copies after the graphics outcomes are the reference's (INIGRP's / INIMLT's, the entry bits kept: 03 E3 06 FF 03 36 07 04 for SCREEN 2, 01 EB 02 00 00 36 07 04 for SCREEN 3); with nothing done they stay as found. | 6 | ✓ | ✗ 5: XT2 10, XT2 11, XT2 12, XT2 13, XT2 14 |
+| **R-T-DISPATCH** OLDSCR is a dispatch, not a text choice: 0, $81 and $FF set up SCREEN 0 (and OLDSCR becomes 0); 1 SCREEN 1; 2 SCREEN 2 -- back to the graphics screen; 3, $5A, $7F and $80 SCREEN 3. The graphics outcomes leave LINLEN (50), the cursor and CNSDFG as found. | 7 | ✓ | ✓ |
+| **R-T-THRU** TOTEXT's INITXT / INIT32 follow INITXT's page with the inputs as found: CRTCNT 13 kept and the key line on row 13 (the boot's labels: '  color  aut' / '  color auto'); CNSDFG $80 / $FF become 255; R7 from the colours (3A, 09); RG0SAV $03 / RG1SAV $E3 give R0 01 and R1 F3 / E3 -- the register copies as INITXT.md's R0 and register rules compute them (whole where the case set the entry copies; where the mode's call left them, from bits of the previous case's, only the bits TOTEXT forces and R2-R7). | 8 | ✓ | ✗ 2: XT2 02, XT2 03 |
+| **R-T-VRAM2** The whole VRAM's sum is the reference's, per case (the font included: ruled; INIT32's sum also follows the colours and the sprite size; INITXT's does not: the colours 3, 10, 9 give the same sum). | 17 | ✓ | ✗ 11: XT2 00, XT2 02, XT2 03, XT2 04, XT2 05, XT2 06 … (+5) |
+| **R-T-REGS2** The register copies after the graphics outcomes are the reference's (INIGRP's / INIMLT's, the entry bits kept: 03 E3 06 FF 03 36 07 04 for SCREEN 2, 01 EB 02 00 00 36 07 04 for SCREEN 3); with nothing done they stay as found. | 6 | ✓ | ✓ |
 
 Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-OLDSCR cases: the reference's SCREEN 3 set-up leaves LINLEN, so its value is the previous case's
 
@@ -80,8 +79,8 @@ Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-
 
 | TODO item | rules zerobas fails |
 |---|---|
-| ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1 |
-| **D-INITEDGES** (OLDSCR other than 0 / 1: zerobas sets up SCREEN 1; CRTCNT 13: row 24 and CRTCNT := 24) | R-T-OLDX, R-T-DISPATCH, R-T-REGS2, R-T-THRU |
+| ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1, R-T-VRAM2 |
+| **D-INITEDGES** (CRTCNT 13: zerobas's key line on row 24 and CRTCNT := 24) | R-T-THRU, R-T-VRAM2 (its two CRTCNT 13 cases) |
 
 ## Open (not measured)
 

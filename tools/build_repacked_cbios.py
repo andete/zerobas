@@ -132,11 +132,14 @@ PATCHES = [
     # D-LINTTBVAL (2026-11-18): a row CHPUT blanks gets LINTTB $AF, and ESC L's last text row $FB, as
     # the VG-8020; chput_esc_k starts 1 B earlier into its pad -- nothing else moves.
     os.path.join(REPO, "cbios-repack", "linttb-marks.patch"),
+    # D-INITEDGES (2026-11-18): TOTEXT dispatches on OLDSCR through CHGMOD as the VG-8020 (0..3 that
+    # screen, 4..$80 SCREEN 3, $81..$FF SCREEN 0); 7 B from POSIT's pad -- nothing else moves.
+    os.path.join(REPO, "cbios-repack", "totext-dispatch.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "6213617ff559ad9fa9d29ceac09123c926e704e4"   # D-LINTTBVAL marks, 2026-11-18
+REPACKED_SHA1 = "4e83c449eb81f6ab329430f803aacc6f505bf3b7"   # D-INITEDGES TOTEXT, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
