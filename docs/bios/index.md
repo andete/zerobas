@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**18 of 108 calls have a page; 18 are FINAL.**
+**19 of 108 calls have a page; 19 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -21,7 +21,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $001C | CALSLT | slots (concept page to come) | L3 | — | — | — |
 | $0020 | DCOMPR | interpreter (concept page to come) | L3 | [FINAL](DCOMPR.md) | 8 | — |
 | $0024 | ENASLT | slots (concept page to come) | L3 | — | — | — |
-| $0028 | GETYPR | interpreter (concept page to come) | L3 | — | — | — |
+| $0028 | GETYPR | interpreter (concept page to come) | L3 | [FINAL](GETYPR.md) | 5 | — |
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 25 | D-INITIOVCB, D-INITIOQUEUES |
