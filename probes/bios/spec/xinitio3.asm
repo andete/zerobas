@@ -16,7 +16,7 @@
 ;   +0..7 AF' BC' DE' HL' (each high, low)   +8..19 AF BC DE HL IX IY   +20 LD A,I's flags (bit 2 = IFF2)
 ;   +21..36 PSG R0..R15   +37 port $AA   +38,39 the count of changed work-area cells (low, high)
 ;   +40..111 the first 24 changed cells: address (low, high), value   +112..222 the voice control blocks
-;   VCBA..VCBC ($FB41-$FBAF) after the call, whole (run 2)   +223 sentinel $C3
+;   VCBA..VCBC ($FB41-$FBAF) after the call, whole (round 2)   +223 sentinel $C3
 ;
 ; CLEAN-ROOM: 100% own code; a published BIOS entry, the PSG's and the PPI's published ports, work-area RAM.
 ;
@@ -308,7 +308,7 @@ skip:
                 cp      $F3
                 jr      nz, sk_fb
                 ld      a, l
-                cp      $E7                     ; STATFL / TRGFLG ($F3E7-$F3E8): the interrupt's (run 2)
+                cp      $E7                     ; STATFL / TRGFLG ($F3E7-$F3E8): the interrupt's (round 2)
                 jr      c, sk_no
                 cp      $E9
                 jr      c, sk_yes

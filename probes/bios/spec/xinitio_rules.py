@@ -70,7 +70,8 @@ def play_ok(c):
 S1 = "1. INITIO ($003B)"
 
 RULES = [
-    Rule("R-IO-PSG", S1, "The PSG: R7 := $B8 (tone and noise off on all three channels, port A input, port B output), "
+    Rule("R-IO-PSG", S1, "The PSG: R7 := $B8 (the mixer bits are active-low: tone ENABLED on A / B / C, noise disabled, port A input, "
+         "port B output -- the silence comes from the amplitudes), "
          "R8 / R9 / R10 := 0 (the three amplitudes), R11 := $0B, R15 := $CF; R0-R6, R12 and R13 are left as found -- "
          "for five patterns, all $00 and all $FF included.", lambda c: True,
          lambda c: (c.psg[7], c.psg[8], c.psg[9], c.psg[10], c.psg[11], c.psg[14]) == (0xB8, 0, 0, 0, 0x0B, 0xCF)
@@ -80,7 +81,8 @@ RULES = [
          "may run an interrupt between the return and the read; R-IO-AA4 closes that window.)",
          lambda c: True,
          lambda c: c.aa >> 4 == c.aa_in >> 4),
-    Rule("R-IO-PLAY", S1, "PLAY's state is reset: QUETAB's three voice queues ($F959-$F96A) to put / get / backup 0, "
+    Rule("R-IO-PLAY", S1, "PLAY's state is reset: the three voice queues' descriptors -- in the table QUEUES points to, $F959-$F96A "
+         "as the boot leaves it (R-IO-QUEUES) -- to put / get / backup 0, "
          "size $7F and their buffers $F975, $F9F5, $FA75; MUSICF ($FB3F) and PLYCNT ($FB40) to 0. The fourth (RS-232) "
          "queue's descriptor and QUEBAK ($F96B-$F974) are left, from garbage; no other cell of the work area "
          "$F380-$FFFF changes (cells not seeded held what the boot or the previous case left: R-IO-SEED seeds "
@@ -177,7 +179,8 @@ RULES += [
          and all(c.psg[k] == pattern(c, k) for k in (0, 1, 2, 3, 4, 5, 6, 12, 13)) and c.aa >> 4 == c.aa_in >> 4
          and c.iff == 1),
     Rule("R-IO-PLAYEI", S2, "Entered with interrupts ON (MUSICF 0, so the interrupt plays nothing), INITIO resets "
-         "QUETAB's three voice descriptors the same way, from garbage; the RS-232 descriptor and QUEBAK stay.",
+         "the three voice descriptors (QUEUES at $F959) the same way, from garbage; the RS-232 descriptor and QUEBAK "
+         "stay.",
          lambda c: c.src == "XI2" and c.seed == 2,
          lambda c: c.nchg == changed_by_reset(2) and c.cells == [(a, v) for a, v in RESET if a < 0xFB00]),
     Rule("R-IO-VCB", S2, "The three voice control blocks (37 B each at $FB41, $FB66, $FB8B) are rewritten: offsets "
@@ -246,7 +249,8 @@ S3 = "3. Round 3: each seed independent, MUSICF / PLYCNT values, the first call 
 
 RULES += [
     Rule("R-IO-VCB3", S3, "The voice control blocks are rewritten to R-IO-VCB's values whatever else holds: with "
-         "interrupts ON and MUSICF 0 (XI3 3), with only the blocks seeded (XI3 6), and already after boot (XI3 1, "
+         "interrupts ON and MUSICF 0 (XI3 3), with the blocks seeded and only PLYCNT besides (XI3 6), and already at a "
+         "cartridge's INIT during boot (XI3 1, "
          "the first call: nothing to change).", lambda c: c.src == "XI3", lambda c: c.vcb == VCB_RESET * 3),
     Rule("R-IO-MP", S3, "MUSICF and PLYCNT become 0 whatever they held -- 0 / $5A, $FF / 0 (MUSICF alone), $5A / $FF, "
          "0 / $33 (XI3 2 / 4 / 5 / 6; XI3 3 seeds 0 / 0) -- and exactly the seeded cells the reset gives another "
@@ -339,3 +343,82 @@ def seed3(c):                                    # noqa: F811 -- XINITIO4's pars
 UNREAD.update({f"XI4 {i + 1}": (["r14", "iff"], "R14 is the PSG's input port; IFF2 reads the probe's own `di` "
                                                 "(the first instruction after the return: round 4's read window)")
                for i in range(len(CASES4))})
+
+
+# ---- round 5: XINITIO5 (probes/bios/spec/xinitio5.asm; scratchpad/XINITIO5_run4.out), after the fourth / fifth reviews
+OUTPUTS["XI5"] = OUTPUTS["XI4"] + ["jifb", "jifa", "quetab1", "q9eb7"]
+# XINITIO4's fields, then the QUEUES seed ($9EB7)
+CASES5 = [(0, 0x00, 0x00, 0x35, 0x00, 0, 1, 0, 1, 0xFF, 0x00, 0, 0x5A, 1),
+          (0, 0xFF, 0x00, 0x96, 0xFF, 1, 0, 1, 1, 0x00, 0x5A, 1, 0xA5, 1),
+          (0, 0xA0, 0x07, 0xC3, 0x00, 1, 1, 1, 1, 0x5A, 0xFF, 0, 0x00, 0)]
+REC5 = 275
+QDESC = [x for a in VOICE_BUF for x in (0, 0, 0, 0x7F, a & 0xFF, a >> 8)]       # the three reset descriptors
+_cases4 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases4()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO5_run4.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        b += bytes(1 + REC5 * len(CASES5) - len(b))
+        for i, (ei, base, step, aa, f, rs, desc, vcb, mp, mus, ply, parse, ireg, qs) in enumerate(CASES5):
+            r = b[1 + REC5 * i: 1 + REC5 * (i + 1)]
+            if b[0] != 0xA5 or r[REC5 - 1] != 0xC3:
+                sys.exit("FAIL: an XINITIO5 record has no sentinel")
+            w = [(r[2 * j] << 8) | r[2 * j + 1] for j in range(10)]
+            n = r[38] | (r[39] << 8)
+            out[who].append(NS(src="XI5", id=f"XI5 {i + 1}", ei=ei, base=base, step=step, aa_in=aa, f_in=f, rs=rs,
+                               desc=desc, vcbseed=vcb, mp=mp, mus=mus, ply=ply, parse=parse, ireg_in=ireg, qseed=qs,
+                               afx=w[0], bcx=w[1], dex=w[2], hlx=w[3], af=w[4], bc=w[5], de=w[6], hl=w[7],
+                               ix=w[8], iy=w[9], iff=(r[20] >> 2) & 1, psg=list(r[21:35]) + [r[36]], r14=r[35],
+                               aa=r[37], nchg=n,
+                               cells=[(r[40 + 3 * j] | (r[41 + 3 * j] << 8), r[42 + 3 * j]) for j in range(min(n, 24))],
+                               vcb=list(r[112:223]), ireg=r[223], jifb=r[224] | (r[225] << 8),
+                               jifa=r[226] | (r[227] << 8), quetab1=list(r[228:256]), q9eb7=list(r[256:274])))
+    return out
+
+
+def mp5_changes(c):
+    """round 5's expected changes: the voice control blocks and MUSICF / PLYCNT, NOT the descriptors at $F959 (QUEUES
+    points elsewhere, so INITIO writes them there, outside the work area)"""
+    return [(a, v) for a, v in reset3(c) if not (0xF959 <= a <= 0xF96A)]
+
+
+S5 = ("5. Round 5: under the clean window, with JIFFY as the witness; QUEUES moved (XINITIO5: QUEUES ($F3F3) := $9EB7 "
+      "in XI5 1 / 2, left so for XI5 3)")
+
+RULES += [
+    Rule("R-IO-CLEAN", S5, "No interrupt ran between the VDP status read before the call and the reads after it in "
+         "XI5 2 and 3: JIFFY is the same before and after. (In XI5 1 the VG-8020 took one: JIFFY moved by 1.) With "
+         "the PSG all $FF (XI5 2) and a pattern (XI5 3) R7 / R8-R10 / R11 / R15 are as R-IO-PSG says, so INITIO wrote "
+         "them, not an interrupt.", lambda c: c.src == "XI5" and c.base != 0x00,
+         lambda c: c.jifb == c.jifa
+         and (c.psg[7], c.psg[8], c.psg[9], c.psg[10], c.psg[11], c.psg[14]) == (0xB8, 0, 0, 0, 0x0B, 0xCF)),
+    Rule("R-IO-QUEUES", S5, "INITIO writes the three voice-queue descriptors into the table QUEUES ($F3F3) points to: "
+         "with QUEUES = $9EB7 the 18 bytes there become R-IO-PLAY's descriptors (0, 0, 0, $7F, $F975 / $F9F5 / "
+         "$FA75), and $F959.. keeps its garbage, QUEBAK and the RS-232 descriptor theirs (read after one more "
+         "interrupt). QUEUES itself is left (it is in no case's changed cells). As the boot "
+         "leaves QUEUES ($F959), rounds 1-4 saw the reset at $F959.", lambda c: c.src == "XI5",
+         lambda c: c.q9eb7 == QDESC and c.quetab1[:18] != QDESC
+         and c.quetab1[18:] == [(0x5A + k) & 0xFF for k in range(18, 28)]),
+    Rule("R-IO-MP5", S5, "Under the clean window too: MUSICF / PLYCNT become 0 ($FF / 0, 0 / $5A, $5A / $FF), the voice "
+         "control blocks R-IO-VCB's values, and exactly those seeded cells change.", lambda c: c.src == "XI5",
+         lambda c: c.vcb == VCB_RESET * 3 and c.nchg == len(mp5_changes(c)) and c.cells == mp5_changes(c)[:24]),
+    Rule("R-IO-REGS5", S5, "The registers, I and the PSG (all $00, all $FF and a pattern) as R-IO-REGS3 / R-IO-I / "
+         "R-IO-PSG say; port $AA WHOLE in the clean cases ($96, $C3), its high nibble in XI5 1, where the interrupt "
+         "that slipped in scanned the keyboard ($35 read as $3A).",
+         lambda c: c.src == "XI5",
+         lambda c: (c.af, c.de >> 8, c.de & 0xFF) == (0xFF54, SETS[c.rs][2] >> 8, 0x0B)
+         and (c.bc, c.hl, c.ix, c.iy, c.afx, c.bcx, c.dex, c.hlx) == SETS[c.rs][1:2] + SETS[c.rs][3:]
+         and all(c.psg[k] == pattern(c, k) for k in (0, 1, 2, 3, 4, 5, 6, 12, 13))
+         and (c.aa >> 4 == c.aa_in >> 4 if c.id == "XI5 1" else c.aa == c.aa_in)
+         and c.ireg == c.ireg_in
+         and (c.psg[7], c.psg[8], c.psg[9], c.psg[10], c.psg[11], c.psg[14]) == (0xB8, 0, 0, 0, 0x0B, 0xCF)),
+]
+
+UNREAD.update({f"XI5 {i + 1}": (["r14", "iff"], "R14 is the PSG's input port; IFF2 reads the probe's own `di` "
+                                                "(round 5's read window)") for i in range(len(CASES5))})
+UNSTABLE = {"XI5 1": (["jifb", "jifa"], "the read window's witness, not INITIO's output: the VG-8020 itself does "
+                     "not reproduce it -- XI5 1 took no interrupt in scratchpad/XINITIO5_run2.out (JIFFY $BD -> $BD) and "
+                     "one in scratchpad/XINITIO5_run4.out ($BD -> $BE), so R-IO-CLEAN leaves this case out")}

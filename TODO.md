@@ -17010,10 +17010,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       4, tempo 120, volume 8, envelope $FF) and every other byte 0, from garbage, in every case. That includes interrupts
       on with MUSICF 0, and the blocks seeded alone (round 3, [`XINITIO3_run1.out`](scratchpad/XINITIO3_run1.out)). Its boot
       already leaves them so. zerobas leaves them, apart from writing 0 into voice 0's tempo byte ($FB52), and they hold 0
-      after its boot. PLAY SOUNDS the same: zerobas's psv_flush zeroes the tempo as the "seed the defaults at the next
-      PLAY" sign (basic/playsvc.asm, pt_init in sub/playparse.asm). Only the RAM a program PEEKs differs. Priced
+      after its boot. Its psv_flush zeroes the tempo as the "seed the defaults at the next PLAY" sign (basic/playsvc.asm,
+      pt_init in sub/playparse.asm). 🔴 THE TIER RESTS ON AN UNMEASURED INFERENCE: by that code a PLAY after INITIO should
+      sound the same, so only the RAM a program PEEKs differs (TIER 6). The page does not claim it. A PLAY with other O / L
+      / T / V / M, then INITIO, then PLAY "C", compared on both machines, would settle it (TIER 3 if it differs). Priced
       2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
       -- not cheap; match only if a real program reads the blocks.
+
+- [ ] **D-INITIOQUEUES — INITIO WRITES THE VOICE-QUEUE DESCRIPTORS AT $F959; THE VG-8020 WRITES THEM WHERE QUEUES ($F3F3) POINTS**
+      🎚️ TIER 6 — every edge (a program that moves QUEUES and then calls INITIO / GICINI; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-QUEUES ([`XINITIO5_run4.out`](scratchpad/XINITIO5_run4.out)). With QUEUES :=
+      $9EB7 the VG-8020's INITIO writes the three reset descriptors (0, 0, 0, $7F, $F975 / $F9F5 / $FA75) at $9EB7.. and
+      leaves $F959..; QUEUES itself is kept. zerobas writes them at $F959 and leaves $9EB7. As the boot leaves QUEUES at
+      $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset
+      (basic/playsvc.asm psv_flush / the GICINI teardown), priced when picked up.
 
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
