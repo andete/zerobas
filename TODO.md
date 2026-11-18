@@ -16747,7 +16747,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       under MSX-DOS (DK_FCB_DRV stays 0 there -- the default drive is used); a machine with its RAM in primary slot 0
       would take the BASIC prompt under MSX-DOS; the $F37D prompt under BASIC is unmeasured on the reference.
 
-- [ ] 🎯 **D-CHPUTDEL — CHPUT: DEL BLANKS THE WRONG CELL AND DOES NOT MOVE; `ESC l` MOVES THE CURSOR TO THE LINE START**
+- [x] 🎯 **D-CHPUTDEL — CHPUT: DEL BLANKS THE WRONG CELL AND DOES NOT MOVE; `ESC l` MOVES THE CURSOR TO THE LINE START**
       🎚️ TIER 1 — happy path (a BIOS call's normal output for a published control code; the BIOS-call focus; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/CHPUT.md (DRAFT 2), the spec method's text-region pilot: the XCHPUT matrix calls
       CHPUT directly, the VG-8020 against zerobas, 768 cases, cursor + A + the three cells around the cursor
@@ -16763,6 +16763,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The CF-3300 agrees with the VG-8020 on both cursors (BDOSXM through its BDOS, [`XM_table.out`](scratchpad/XM_table.out)), so
       this is not a regional quirk. The fix is in the C-BIOS repack's CHPUT (a cbios-repack patch). When it lands,
       the page's test audit (docs/spec-method.md §8) turns the matrix's rows into gate cases.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-del.patch, 34 bytes differ, nothing moves). DEL calls BS's left move and
+      blanks the cell only if it moved (chput_ctrl_left leaves Z set exactly when it did not). `ESC l` saves CSRY / CSRX
+      around the home-and-erase; its body sits in POSIT's pad (main.asm), and the table entry follows it. WITNESS: the five
+      XCHPUT probes re-run on the fixed build ([`XCH_fix1.out`](scratchpad/XCH_fix1.out) ..
+      [`XCH5_fix1.out`](scratchpad/XCH5_fix1.out)). R-DEL, R-ESC-l, R-PFX-ALONE, R4-CELLS, R4-EDIT, R4-PFX-DEL,
+      R4-DEL-NOCONT and R-DEL-WRAPCELL now hold on zerobas, and R4-CURSOR went 17 -> 9 cases failing (the rest are
+      D-CHPUTKEYROW's). The test audit is still to come.
 
 - [ ] 🎯 **D-CHPUTESCY — CHPUT's `ESC Y` DOES NOT CLAMP: AN OUT-OF-RANGE ROW / COLUMN PUTS CSRY / CSRX AT 225, 255 ...**
       🎚️ TIER 3 — common errors (a program's out-of-range cursor position; filed 2026-11-17).

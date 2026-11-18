@@ -119,11 +119,14 @@ PATCHES = [
     # D-CHGETEI (2026-11-18): CHGET returns with interrupts enabled and the flags of its `cp $18`,
     # as the VG-8020; same size -- nothing moves.
     os.path.join(REPO, "cbios-repack", "chget-ei.patch"),
+    # D-CHPUTDEL (2026-11-18): CHPUT's DEL moves left as BS and blanks the cell it lands on; ESC l
+    # keeps the cursor where it was (its body in POSIT's pad) -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "chput-del.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "6871598459e4667ee234bd64912d4d5b8750cf4f"   # D-CHGETEI, 2026-11-18
+REPACKED_SHA1 = "3edcd98b1c39678834f18ae21a9c7649af806a42"   # D-CHPUTDEL, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
