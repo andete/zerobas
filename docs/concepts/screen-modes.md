@@ -144,6 +144,37 @@ the table addresses (in `SCREEN 0`, `BASE(3)=&H1F00` sets register 5 to
 *current* mode in `SCREEN 1` or `2` reprograms the chip from the next mode's
 slots, a VG-8020 quirk zerobas reproduces ([`VDP`](../keywords/VDP.md)).
 
+### The BIOS's VDP calls
+
+The BIOS region behind all of this has 23 calls, each with a measured page in the
+[BIOS index](../bios/index.md). What they share, measured on the VG-8020 with and without a disk
+interface:
+- **Interrupts come back on.** Every call that touches the VDP returns with interrupts enabled,
+  even when it was called with them off: [WRTVDP](../bios/WRTVDP.md), DISSCR / ENASCR, the VRAM
+  calls (RDVRM, WRTVRM, SETRD, SETWRT, FILVRM, LDIRMV, LDIRVM), the SETxxx and INIxxx calls,
+  CLRSPR, CHGCLR, CHGMOD. Only [RDVDP](../bios/RDVDP.md) and the calls that merely compute
+  ([CALPAT](../bios/CALPAT.md), CALATR, GSPSIZ) leave the interrupt state alone.
+- **The shadows.** [WRTVDP](../bios/WRTVDP.md) stores B at `RG0SAV` + C for any C, while the chip
+  gets register C AND 7. The TMS9918 keeps only the bits each register has (register 2's low four,
+  for example), so a shadow can hold more than the chip does. The SETxxx calls
+  ([SETTXT](../bios/SETTXT.md) ...) compute registers 2-6 from the screen-table cells
+  (`TXTNAM` .. `MLTPAT`) by a plain shift.
+- **VRAM addresses** are taken AND `&H3FFF`, and a run past `&H3FFF` wraps to 0. After a call the
+  VDP is left at the next address: a read returns the following byte, a write lands after the
+  span ([FILVRM](../bios/FILVRM.md)).
+- **The sprite tables** come from `PATBAS` / `ATRBAS` (`&HF926` / `&HF928`), which
+  [INIGRP](../bios/INIGRP.md) and [INIMLT](../bios/INIMLT.md) set from their mode's cells;
+  [CLRSPR](../bios/CLRSPR.md), CALPAT and CALATR read them.
+- **The mode calls build on each other:** [CHGMOD](../bios/CHGMOD.md) with A = 0-3 does exactly
+  what INITXT, INIT32, INIGRP or INIMLT does, and INIGRP / INIMLT program the VDP as SETGRP /
+  SETMLT do.
+
+The pages read the VDP's registers after each call through the emulator's debugger (hardware
+state, not the ROM: the clean-room rule allows it), and VRAM through the VDP's own ports. zerobas
+writes the same VRAM in the everyday cases. Its differences, all filed as TIER 6, are named on each
+call's page: unpublished return registers and flags, a few shadow bytes, out-of-range arguments,
+and one VDP register -- its CLRSPR does not rewrite register 1 from `RG1SAV`.
+
 ## Example
 
 ```
@@ -236,6 +267,7 @@ sprite collision check runs every frame from the interrupt hook
 
 ## Related pages
 
+- The BIOS's VDP calls: [the BIOS index](../bios/index.md) (the vdp region), [the BIOS](bios.md).
 - Concepts: [screen-editor.md](screen-editor.md), [rom-layout.md](rom-layout.md),
   [memory-map.md](memory-map.md), [interrupts-and-traps.md](interrupts-and-traps.md).
 - Keywords: [`SCREEN`](../keywords/SCREEN.md), [`WIDTH`](../keywords/WIDTH.md), [`COLOR`](../keywords/COLOR.md),
