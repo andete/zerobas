@@ -30,8 +30,8 @@ def BCX(c):
 
 
 PLAINBC = lambda c: c.op != 2 and c.src == "XR" and not c.sid & 0x80  # noqa: E731
-EXPBC = lambda c: c.op != 2 and c.src == "XR" and c.sid & 0x80  # noqa: E731
-CALL = lambda c: c.op != 2  # noqa: E731
+EXPBC = lambda c: c.op != 2 and c.src in ("XR", "XR2") and c.sid & 0x80  # noqa: E731
+CALL = lambda c: c.op != 2 and c.src != "XR2"  # noqa: E731
 
 
 def SEC(c):
@@ -39,13 +39,22 @@ def SEC(c):
     return {0: c.secboot, 1: (c.secboot & 0xFC) | 0x01, 2: (c.secboot & 0xF3) | 0x04}[c.ps]
 
 
-EXPROW = lambda c: c.op != 2 and c.row == "C"  # noqa: E731
+EXPROW = lambda c: c.op != 2 and c.row == "C" and c.src != "XR2"  # noqa: E731
+R6 = lambda c: c.src == "XR2"  # noqa: E731
+
+
+def SEC2(c):
+    return c.secboot if c.ps is None else (c.secboot & 0xF3) | (c.ps << 2)
 OUTPUTS = {"XR": ["a", "f", "iff", "a8", "sec", "moved", "wit", "b", "c", "d", "e", "pre"],
            # a RAM case on a row whose two machines' RAM slots differ in kind (the VG-8020's slot 3, zerobas's
            # expanded 3-0): B and C come from different paths there, so they are not outputs of this comparison --
            # the cf3300 row compares zerobas's kind with a reference of the same kind
            # (and slot 3's secondary selection: expanded on zerobas, not on the VG-8020)
-           "XRK": ["a", "f", "iff", "a8", "moved", "wit", "d", "e", "pre"]}
+           "XRK": ["a", "f", "iff", "a8", "moved", "wit", "d", "e", "pre"],
+           # round 6 (probes/bios/spec/xrdslt2.asm, the cf3300 row): the ID's secondary slot, 3-1's header
+           "XR2": ["a", "f", "a8", "sec", "b", "c"]}
+CASES2 = [(0, 0x83, 0x18, None), (1, 0x87, 0, None), (1, 0x87, 1, None), (1, 0x83, 0, None), (1, 0x83, 0, 1),
+          (1, 0x87, 0, 2)]   # op, ID, value (WRSLT's E; for $87 the address's low byte), page-1 secondary preset
 RUNS = [("XRDSLT_run5.out", "N"), ("XRDSLT_run5d.out", "D"), ("XRDSLT_run5c.out", "C")]
 # the probe's cases, read from its own table (`cases:` in probes/bios/spec/xrdslt.asm): op (0 WRSLT, 1 RDSLT), which (0
 # RAM, 1 cartridge), address, value (E), entry F, ei, extra ID bits, the secondary preset (0 none, 1 page 0 := 3-1,
@@ -95,8 +104,30 @@ def load(op):
     return out
 
 
+def load2(op):
+    """Round 6: scratchpad/XRDSLT2_run1c.out (the cf3300 row); the header holds 3-1's two bytes at $4000 / $4001."""
+    out = {"ref": [], "zb": []}
+    t = open(os.path.join(ROOT, "scratchpad", "XRDSLT2_run1c.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        n = len(CASES2)
+        if b[0] != 0xA5 or len(b) < 7 + 8 * n or b[6 + 8 * n] != 0xC3:
+            sys.exit("FAIL: the XRDSLT2_run1c.out block is not complete (no sentinel)")
+        a8b, secb, hdr = b[1], b[3], (b[4], b[5])
+        for i, (cop, sid, va, ps) in enumerate(CASES2):
+            if cop != op:
+                continue
+            r = b[6 + 8 * i:14 + 8 * i]
+            out[who].append(NS(src="XR2", id=f"XR2 {i}", op=cop, sid=sid, val=va, ps=ps, a8boot=a8b, a8pre=a8b,
+                               secboot=secb, hdr=hdr, addr=0x4000 | (va if sid == 0x87 else 0), row="C2", cart=0, xb=0,
+                               idx=-1, a8p=0, ef=None, ei=0,
+                               a=r[0], f=r[1], a8=r[2], sec=r[3], b=r[4], c=r[5]))
+    return out
+
+
 def cases():
-    return load(1)
+    one, two = load(1), load2(1)
+    return {w: one[w] + two[w] for w in one}
 
 
 def logical(a):
@@ -151,6 +182,14 @@ RULES = [
          "registers, slot register and witness as set: the IFF readout can report 1.", lambda c: c.op == 2,
          lambda c: c.iff == 1 and c.a == c.sid and c.f == c.ef and c.moved == 0 and c.a8 == c.a8boot and c.d == 0x9B
          and c.e == c.val and c.wit == c.pre and (c.b, c.c) == (0x13, 0x57) and c.sec == c.secboot),
+    Rule("R-RD-SUB", S1, "The ID's secondary slot is the sub-slot read (round 6, the cf3300 row): naming 3-1 ($87) at "
+         "$4000 / $4001 returns 3-1's header 'A' / 'B' -- the same two bytes a read by hand of 3-1 finds -- where 3-0 "
+         "holds $18 (naming 3-0 there returns $18): the ID's bits 2-3 go into the page's field, not a cleared one, "
+         "and 3-1 is not 3-0. From a page-1 selection of 3-1 or 3-2 set by hand, the call leaves that selection.",
+         R6, lambda c: c.a == ((c.hdr[c.addr & 1]) if c.sid == 0x87 else 0x18) and c.hdr == (0x41, 0x42)
+         and c.sec == SEC2(c) and c.a8 == c.a8boot),
+    Rule("R-RD-F6", S1, "Round 6's F is R-RD-F's: a logical result's on the slot register with page 1 switched to slot "
+         "3 ($FC: F $AC).", R6, lambda c: c.f == logical(switched(c))),
     Rule("R-RD-BCX", S1, "For the expanded RAM slot 3-0 (the cf3300 row), B is the slot register's value as it was "
          "before the call ($F4, or $F0 with page 1 set to slot 0 -- not the switched value: page 0 gives $F0, not "
          "$F3) and C $C0, in every page.", EXPBC, BCX),
