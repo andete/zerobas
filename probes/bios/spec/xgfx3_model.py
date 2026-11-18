@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+"""The shared loader and VRAM model for READC / SETC / NSETCX's EXECUTABLE RULES (docs/spec-method.md §3a):
+scratchpad/XGFX3_run1.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
+128-byte record). Each page's module takes its op's cases from `load(op)`."""
+import os
+import re
+import sys
+from types import SimpleNamespace as NS
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+from spec_rules import Rule  # noqa: E402
+
+RUN = "XGFX3_run1.out"
+ASM = os.path.join(HERE, "xgfx3.asm")
+REC = 128
+FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt"]
+# NSETCX's A, F, BC, DE and HL after the call are working values (the reference's are not a function the probe
+# separates); its cases are the group XN, without them
+OUTPUTS = {"XP": FIELDS, "XN": [f for f in FIELDS if f not in ("a", "f", "bc", "de", "hl")]}
+
+
+def fill(a):
+    return (((a & 0xFF) ^ (a >> 8) ^ 0x5A) | ((a >> 8) & 0x3C)) & 0xFF
+
+
+def table():
+    src = open(ASM).read()
+    pat = (r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\n\s+dw\s+\$(....), \$(....)\n"
+           r"\s+db\s+\$(..)\n\s+dw\s+\$(....), \$(....), \$(....)\n\s+db\s+\$(..)")
+    return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src[src.index("\ncases:"):])]
+
+
+def tsets():
+    src = open(ASM).read()
+    body = src[src.index("tsets:"):src.index("finish:")]
+    words = [int(w, 16) for w in re.findall(r"\$([0-9A-F]{4})", body)]
+    return [words[20 * k:20 * (k + 1)] for k in range(len(words) // 20)]
+
+
+def load(op):
+    tab, ts = table(), tsets()
+    out = {"ref": [], "zb": []}
+    text = open(os.path.join(ROOT, "scratchpad", RUN)).read()
+    secs = re.findall(r"===== \S+ (nodisk|disk): .*?CAP ref : (\w+)\n  CAP ours: (\w+)", text, re.S)
+    if [s[0] for s in secs] != ["nodisk", "disk"]:
+        sys.exit(f"FAIL: {RUN} does not hold the nodisk and disk sections")
+    for rowname, hr, hz in secs:
+        row = "N" if rowname == "nodisk" else "D"
+        for who, h in (("ref", hr), ("zb", hz)):
+            b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
+            if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
+                sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
+            for i, (cop, cf, ei, scr, cm, atr, ba, bd, cl, hl, cs, w1, w2, w3, ca) in enumerate(tab):
+                if cop != op:
+                    continue
+                r = b[1 + REC * i:1 + REC * (i + 1)]
+                cells = ts[cs]
+                d = dict(src="XN" if cop == 2 else "XP", id=f"XP {row}{i:02}", i=i, row=row, op=cop, ca=ca, cf=cf,
+                         ei=ei, cscr=scr, ccm=cm, catr=atr, cclo=cl, chl=hl, cset=cs, cw=(w1, w2, w3),
+                         grpcol=cells[11], grpcgp=cells[12], mask=0xFF if i & 4 else 0,
+                         ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12],
+                         sums=tuple(r[33 + 2 * k] | r[34 + 2 * k] << 8 for k in range(16)),
+                         w1=tuple(r[65:81]), w2=tuple(r[81:97]), w3=tuple(r[97:113]),
+                         cloc=r[113] | r[114] << 8, cmask=r[115], atrbyt=r[116])
+                if cop != 2:
+                    d.update(a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7])
+                out[who].append(NS(**d))
+    return out
+
+
+def logical(v):
+    f = (v & 0xA8) | (0x40 if v == 0 else 0)
+    return f | (0x04 if bin(v).count("1") % 2 == 0 else 0)
+
+
+def marker(c, v):
+    return v ^ (c.mask << 8 | c.mask)
+
+
+def colour_addr(c, cl):
+    """SCREEN 2: the colour byte of the pattern byte at cl -- GRPCOL + (cl - GRPCGP)"""
+    return (c.grpcol + cl - c.grpcgp) & 0x3FFF
+
+
+def vram_after(c, writes):
+    sums = tuple(sum(writes.get(a, fill(a)) for a in range(k * 1024, (k + 1) * 1024)) & 0xFFFF for k in range(16))
+    wins = tuple(tuple(writes.get((w + i) & 0x3FFF, fill((w + i) & 0x3FFF)) for i in range(16)) for w in c.cw)
+    return sums, wins
+
+
+def vram_rule(tag, section, text, writes):
+    def check(c):
+        sums, wins = vram_after(c, writes(c))
+        return c.sums == sums and (c.w1, c.w2, c.w3) == wins
+    return Rule(f"R-{tag}-VRAM", section, text, lambda c: True, check)
+
+
+def ei_rule(tag, section):
+    return Rule(f"R-{tag}-EI", section, "Interrupts are on after the call, whether they were on or off before it.",
+                lambda c: True, lambda c: c.iff == 1)

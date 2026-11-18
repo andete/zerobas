@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**68 of 108 calls have a page; 62 are FINAL.**
+**71 of 108 calls have a page; 62 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -99,9 +99,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0114 | FETCHC | graphics (concept page to come) | L3 | [FINAL](FETCHC.md) | 3 | — |
 | $0117 | STOREC | graphics (concept page to come) | L3 | [FINAL](STOREC.md) | 3 | — |
 | $011A | SETATR | graphics (concept page to come) | L3 | [FINAL](SETATR.md) | 4 | — |
-| $011D | READC | graphics (concept page to come) | L3 | — | — | — |
-| $0120 | SETC | graphics (concept page to come) | L3 | — | — | — |
-| $0123 | NSETCX | graphics (concept page to come) | L3 | — | — | — |
+| $011D | READC | graphics (concept page to come) | L3 | [DRAFT 1](READC.md) | 4 | — |
+| $0120 | SETC | graphics (concept page to come) | L3 | [DRAFT 1](SETC.md) | 4 | D-SETCCOL, D-SETCATR, D-SETCF |
+| $0123 | NSETCX | graphics (concept page to come) | L3 | [DRAFT 1](NSETCX.md) | 6 | D-NSETCXFULL, D-SETCCOL, D-NSETCX0 |
 | $0126 | GTASPC | graphics (concept page to come) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | graphics (concept page to come) | L3 | — | — | — |
 | $012C | SCANR | graphics (concept page to come) | L3 | — | — | — |

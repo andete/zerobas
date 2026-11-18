@@ -16856,6 +16856,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-SETCCOL — SETC / NSETCX WRITE THE COLOUR BYTE AT CLOC + $2000 ON ZEROBAS, WHATEVER THE CELLS HOLD**
+      🎚️ TIER 6 — every edge (filed 2026-11-18).
+      🤖 **AUTONOMOUS** — ([`XGFX3_run1.out`](scratchpad/XGFX3_run1.out)): the VG-8020 writes it at GRPCOL + CLOC - GRPCGP; zerobas at CLOC + $2000 (the default cells' place) -- with
+      GRPCGP $2000 / GRPCOL $0000 into the pattern table. docs/bios/SETC.md R-SC-VRAM, NSETCX.md R-NX-VRAM, cases 17,
+      18. Priced when picked up.
+
+- [ ] **D-SETCATR — SETC TAKES ATRBYT OVER 15 DIFFERENTLY IN SCREEN 3 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-18).
+      🤖 **AUTONOMOUS** — ([`XGFX3_run1.out`](scratchpad/XGFX3_run1.out)): the VG-8020 writes (ATRBYT x 16) AND $F0 into the high nibble ($A_ for $1A), zerobas $B_. docs/bios/SETC.md
+      R-SC-VRAM, case 25. Priced when picked up.
+
+- [ ] **D-SETCF — SETC RETURNS ANOTHER F ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-18).
+      🤖 **AUTONOMOUS** — ([`XGFX3_run1.out`](scratchpad/XGFX3_run1.out)): the VG-8020 returns the written byte's OR flags. docs/bios/SETC.md R-SC-AF. Priced when picked up.
+
+- [ ] **D-NSETCXFULL — NSETCX WRITES A FULL PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-18).
+      🤖 **AUTONOMOUS** — ([`XGFX3_run1.out`](scratchpad/XGFX3_run1.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT (the same pixels, background colour); zerobas pattern
+      $FF with ATRBYT in the foreground nibble. docs/bios/NSETCX.md R-NX-VRAM, cases 12, 13. Priced when picked up.
+
+- [ ] **D-NSETCX0 — NSETCX WITH HL = 0 SETS NOTHING ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-18).
+      🤖 **AUTONOMOUS** — ([`XGFX3_run1.out`](scratchpad/XGFX3_run1.out)): the VG-8020 sets one pixel (its colour byte written). docs/bios/NSETCX.md R-NX-VRAM, case 15. Priced when picked up.
+
 - [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
       2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
