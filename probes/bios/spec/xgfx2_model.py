@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for RIGHTC / LEFTC / UPC / TUPC / DOWNC / TDOWNC's EXECUTABLE RULES
-(docs/spec-method.md §3a): scratchpad/XGFX2_run4.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
+(docs/spec-method.md §3a): scratchpad/XGFX2_run7.out (rows N and D; probes/bios/spec/xgfx2.asm documents the presets,
 the case table and the 28-byte record, as xgfx1.asm's). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX2_run6.out"
+RUN = "XGFX2_run7.out"
 ASM = os.path.join(HERE, "xgfx2.asm")
 REC = 28
 GTB = 255                                   # the probe's GTB ($FF): case 255 gets ASPCT1 / ASPCT2 $0100 / $00C0

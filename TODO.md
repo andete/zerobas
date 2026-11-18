@@ -16906,14 +16906,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/RIGHTC.md / LEFTC.md ([`XGFX2_run6.out`](scratchpad/XGFX2_run6.out), cases 275,
+      🤖 **AUTONOMOUS** — docs/bios/RIGHTC.md / LEFTC.md ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out), cases 275,
       276, 285-289, 310-313): the VG-8020 tests bit 7 -- RIGHTC moves on when it is clear, LEFTC back when it is
       set, otherwise $0F / $F0 with CLOC kept; zerobas swaps the mask's nibbles and tests bit 3 / bit 4. Priced when picked up.
 
 - [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
       2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
-      🤖 **AUTONOMOUS** — docs/bios/TUPC.md / TDOWNC.md R-TU-* / R-TD-* ([`XGFX2_run6.out`](scratchpad/XGFX2_run6.out)):
+      🤖 **AUTONOMOUS** — docs/bios/TUPC.md / TDOWNC.md R-TU-* / R-TD-* ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out)):
       the VG-8020 stops TUPC where CLOC is below GRPCGP + $100, TDOWNC where it is GRPCGP + $1700 or more (unsigned);
       zerobas stops TUPC only where CLOC AND $FF07 is 0 and TDOWNC wherever CLOC is $1700 or more. Priced when picked up.
 
