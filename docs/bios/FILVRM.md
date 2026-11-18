@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `FILVRM` ($0056) — fill VRAM with a byte
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the fourth test-writer review found no new behaviour, and
+> its unpinned items are edge combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with VRAM read back by hand through the VDP's ports after every call.
 
 ## Summary
@@ -63,7 +64,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | **R-FV-MEM** BC bytes of VRAM from HL AND $3FFF := A, the address wrapping from $3FFF to $0000; the bytes around keep theirs. With BC = 0 every byte read back holds A: at least $4000 bytes, wrapping. (HL $1234, $1200, $3FFC, $2000, and $5234 / $D234 / $9234, which fill from $1234; BC 1, 4, 8, $100, $108, 0.) | 24 | ✓ | ✓ |
 | **R-FV-BC** BC is 0 on return; A, DE, HL, IX and IY are kept. | 24 | ✓ | ✓ |
 | **R-FV-F** F is kept ($00, $FF, $A5, $5A, $01 and $04 on entry). | 24 | ✓ | ✗ 24: XM N20, XM N21, XM N22, XM N23, XM N24, XM N25 … (+18) |
-| **R-FV-NEXT** The VDP is left writing after the filled span: a byte the probe then writes to port $98 lands at (HL + BC) AND $3FFF. | 20 | ✓ | ✓ |
+| **R-FV-NEXT** The VDP is left writing after the filled span: a byte the probe then writes to port $98 lands at (HL + BC) AND $3FFF. | 22 | ✓ | ✓ |
 | **R-FV-EI** Interrupts are on after the call, whether they were on or off before it. | 24 | ✓ | ✓ |
 
 <!-- RULES END -->
@@ -76,6 +77,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Open (not measured)
 
+- **[A]** A read of port $98 after the call (the probe writes); more HL values. Case 22's next write
+  lands where no window looks.
 - **[A]** BC between $108 and $4000, and above it (other than 0); and the count BC = 0 stands for:
   every byte read back holds the fill byte and the VDP is left at HL again (case 25), which any count
   that is a multiple of $4000 would also give.
@@ -83,7 +86,10 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   only the state after the call is read), and entry with the port $99 latch half-written.
 - **[A]** The moment between the call's return, with interrupts on, and the probe's own `di`: an
   interrupt there would run the handler before the probe's port access.
-- **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows.
+- **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows;
+  the VDP registers and status after the call.
+- **[A]** A write of one byte more than the span, followed by an address reset to the span's end:
+  the probe's own access after a writing call lands on that byte, so it cannot tell.
 - **[A]** Entry with a VDP interrupt pending and R#1's interrupt bit set, where the handler would
   run inside or right after the call (the screen's R#1 has the bit set, but the probe keeps
   interrupts off between cases, so none is pending when it calls).

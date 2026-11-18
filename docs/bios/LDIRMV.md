@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `LDIRMV` ($0059) — copy VRAM to RAM
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the fourth test-writer review found no new behaviour, and
+> its unpinned items are edge combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with VRAM read back by hand through the VDP's ports after every call.
 
 ## Summary
@@ -74,6 +75,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Open (not measured)
 
+- **[A]** A next read that wraps past $3FFF onto a byte the probe preset (case 27's lands on a byte
+  an earlier fill left); more than one read after the call; more HL values.
 - **[A]** More DE values; BC = 0 and BC above $108 (a 64 KB copy into RAM would overwrite the probe
   itself).
 - **[A]** A destination range that crosses into the ROM pages or the stack.
@@ -81,7 +84,10 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   only the state after the call is read), and entry with the port $99 latch half-written.
 - **[A]** The moment between the call's return, with interrupts on, and the probe's own `di`: an
   interrupt there would run the handler before the probe's port access.
-- **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows.
+- **[A]** RAM other than the windows, and the source / destination spans; VRAM outside the windows;
+  the VDP registers and status after the call.
+- **[A]** A write of one byte more than the span, followed by an address reset to the span's end:
+  the probe's own access after a writing call lands on that byte, so it cannot tell.
 - **[A]** Entry with a VDP interrupt pending and R#1's interrupt bit set, where the handler would
   run inside or right after the call (the screen's R#1 has the bit set, but the probe keeps
   interrupts off between cases, so none is pending when it calls).

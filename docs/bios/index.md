@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**54 of 108 calls have a page; 41 are FINAL.**
+**54 of 108 calls have a page; 48 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -29,13 +29,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | D-WRTVDPC |
-| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](RDVRM.md) | 8 | D-VRAMF |
-| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](WRTVRM.md) | 8 | — |
-| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETRD.md) | 8 | — |
-| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETWRT.md) | 9 | — |
-| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](FILVRM.md) | 8 | D-VRAMF |
-| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRMV.md) | 9 | D-VRAMF |
-| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](LDIRVM.md) | 8 | D-VRAMF |
+| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVRM.md) | 9 | D-VRAMF |
+| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVRM.md) | 9 | — |
+| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETRD.md) | 9 | — |
+| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETWRT.md) | 10 | — |
+| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | D-VRAMF |
+| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
+| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |

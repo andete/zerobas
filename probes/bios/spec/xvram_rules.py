@@ -193,15 +193,17 @@ def landing(c):
 
 
 def land_rule(tag, section, text):
+    def wins(c):
+        out = [(c.cw1, c.w1), (c.cw2, c.w2)] if c.kind & 1 == 0 else []
+        return out + ([(c.cw3, c.w3)] if c.kind & 2 == 0 else [])
+
     def sel(c):
         a = landing(c)
-        return c.kind & 1 == 0 and any((a - w) & 0x3FFF < 8 for w in (c.cw1, c.cw2))
+        return any((a - w) & 0x3FFF < 8 for w, _ in wins(c))
+
     def chk(c):
         a = landing(c)
-        for w, win in ((c.cw1, c.w1), (c.cw2, c.w2)):
-            if (a - w) & 0x3FFF < 8:
-                return win[(a - w) & 0x3FFF] == 0xC9
-        return False
+        return all(win[(a - w) & 0x3FFF] == 0xC9 for w, win in wins(c) if (a - w) & 0x3FFF < 8)
     return Rule(f"R-{tag}-NEXT", section, text, sel, chk)
 
 
