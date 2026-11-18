@@ -16859,19 +16859,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RG1SAV and R#1 out of step when CLRSPR is called -- the VG-8020's CLRSPR brings the
       sprite size into R#1; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-R1 ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)): the VG-8020
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-R1 ([`XCLR_run3.out`](scratchpad/XCLR_run3.out)): the VG-8020
       writes RG1SAV to R#1; zerobas leaves R#1 alone. Priced when picked up.
 
 - [ ] **D-CLRSPRMODE — CLRSPR DOES NOTHING IN SCREEN 0 ON ZEROBAS, AND WRITES Y $D9 FOR SCRMOD ABOVE 3**
       🎚️ TIER 6 — every edge (CLRSPR called in SCREEN 0, or with SCRMOD over 3; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM / R-CS-EI / R-CS-REGS ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)):
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM / R-CS-EI / R-CS-REGS ([`XCLR_run3.out`](scratchpad/XCLR_run3.out)):
       the VG-8020 clears the sprite tables in every SCRMOD measured (0, 1, 2, 3, $77) with Y $D1; zerobas returns at
       once in SCREEN 0 (VRAM untouched, registers and interrupts as on entry) and writes Y $D9 for SCRMOD $77.
       Priced when picked up.
 
+- [ ] **D-CLRSPRORDER — CLRSPR WRITES THE ATTRIBUTES BEFORE CLEARING THE PATTERNS ON ZEROBAS**
+      🎚️ TIER 6 — every edge (an attribute table inside the sprite pattern table's 2 KB; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM ([`XCLR_run3.out`](scratchpad/XCLR_run3.out), case 31: PATBAS
+      $3C00, ATRBAS $3FC0): the VG-8020 clears the patterns first, so the attribute entries stay; zerobas clears them
+      last and the overlapping entries read 0. Priced when picked up.
+
+- [ ] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $FF AS A GRAPHICS MODE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/CHGCLR.md R-CC-R7 ([`XCLR_run3.out`](scratchpad/XCLR_run3.out), case 39): the
+      VG-8020 takes the SCREEN 0 path for SCRMOD $FF (R#7 := (FORCLR x 16) OR BAKCLR); zerobas sets the border colour.
+      Priced when picked up.
+
 - [ ] **D-CLRREGS — CLRSPR / CHGCLR RETURN OTHER REGISTERS ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-REGS, CHGCLR.md R-CC-REGS ([`XCLR_run2.out`](scratchpad/XCLR_run2.out)):
+      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-REGS, CHGCLR.md R-CC-REGS ([`XCLR_run3.out`](scratchpad/XCLR_run3.out)):
       the VG-8020's values are listed in the rules; zerobas returns A = 0 / F $42 / HL = PATBAS after CLRSPR and
       other A, F, DE, HL after CHGCLR. Priced when picked up.
 

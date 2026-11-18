@@ -29,8 +29,13 @@ def fb(c):
     return ((c.fo << 4) | c.ba) & 0xFF
 
 
+def text(c):
+    """the SCREEN 0 path: SCRMOD - 1 negative as a signed byte (measured: SCRMOD 0 and $FF)"""
+    return ((c.cscr - 1) & 0xFF) >= 0x80
+
+
 def r7(c):
-    return fb(c) if c.cscr == 0 else c.bd
+    return fb(c) if text(c) else c.bd
 
 
 def writes(c):
@@ -38,16 +43,18 @@ def writes(c):
 
 
 RULES = [
-    Rule("R-CC-R7", S1, "VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, in SCREEN 0 (SCRMOD 0); "
-         "BDRCLR in any other SCRMOD (1, 2, 3, $77). Colours over 15 are used as they are (FORCLR $1A, BAKCLR $25 give "
-         "$A5; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD and the colour cells are not changed.", ALL,
+    Rule("R-CC-R7", S1, "VDP register R#7 and RG7SAV := (FORCLR x 16) OR BAKCLR, as a byte, for SCRMOD 0 -- and $FF, "
+         "which goes the same way (SCRMOD - 1 negative); BDRCLR for SCRMOD 1, 2, 3, 4, $77. Colours over 15 are used as "
+         "they are (FORCLR $10, BAKCLR $25 give $25, not $05; BDRCLR $3C). The other registers, RG0SAV-RG6SAV, SCRMOD "
+         "and the colour cells are not changed.", ALL,
          lambda c: (c.vdp == X.VPRE[:7] + (r7(c),) and c.sav == (0xA5, c.crg1) + (0xA5,) * 5 + (r7(c),)
                     and c.scrmod == c.cscr and c.colours == (c.fo, c.ba, c.bd))),
     X.vram_rule("CC", S1, "In SCREEN 1 (SCRMOD 1) the 32-byte colour table at T32COL ($F3BF) := (FORCLR x 16) OR "
                 "BAKCLR; in the other modes VRAM is not written. T32COL, not RG3SAV, gives the place.", writes),
-    Rule("R-CC-REGS", S1, "On return, in SCREEN 0: A = R#7's new value, F = $A4, BC = $0007, HL = $F3EA, DE kept; in "
-         "SCREEN 1: A = the colour byte, F its flags as an OR leaves them, BC = 0, HL = T32COL, DE kept; in other modes "
-         "A = SCRMOD - 1, BC = $0007, DE and HL kept, F $02 (SCRMOD 2), $03 (3), $23 ($77). IX and IY are kept.", ALL,
+    Rule("R-CC-REGS", S1, "On return, on the SCREEN 0 path: A = R#7's new value, F = $A4 (whatever the colour byte: $F4, "
+         "$A5, $FF, $25, $12), BC = $0007, HL = $F3EA, DE kept; in SCREEN 1: A = the colour byte, F its flags as an OR "
+         "leaves them, BC = 0, HL = T32COL, DE kept; in the other modes A = SCRMOD - 1 with F as DEC A leaves it and the "
+         "entry carry kept, BC = $0007, DE and HL kept. IX and IY are kept.", ALL,
          lambda c: regs(c)),
     Rule("R-CC-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
@@ -63,10 +70,13 @@ def regs(c):
     kept_ix = (c.ix, c.iy) == (X.marker(c, 0x4321), X.marker(c, 0x8765))
     de = X.marker(c, 0x9BDF)
     hl = X.marker(c, 0x2468)
-    if c.cscr == 0:
+    if text(c):
         want = (r7(c), 0xA4, 0x0007, de, 0xF3EA)
     elif c.cscr == 1:
         want = (fb(c), logical(fb(c)), 0, de, c.t32col)
     else:
-        want = ((c.cscr - 1) & 0xFF, {2: 0x02, 3: 0x03, 0x77: 0x23}[c.cscr], 0x0007, de, hl)
+        r = (c.cscr - 1) & 0xFF
+        f = (r & 0xA8) | (0x40 if r == 0 else 0) | (0x10 if c.cscr & 0x0F == 0 else 0) | \
+            (0x04 if c.cscr == 0x80 else 0) | 0x02 | (c.cf & 0x01)
+        want = (r, f, 0x0007, de, hl)
     return kept_ix and (c.a, c.f, c.bc, c.de, c.hl) == want

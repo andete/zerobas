@@ -1,7 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 2 (2026-11-18; round 1's fill had every block sum alike): the sprite clear and the colour change. Per case (the
+; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 3 (2026-11-18; round 1's fill had every block sum alike; round 2 had
+; cases 0-23 only): the sprite clear and the colour change. Per case (the
 ; table `cases` at the end: op, F, interrupts, SCRMOD, RG1SAV, FORCLR, BAKCLR, BDRCLR, ATRBAS, PATBAS, cell set, three
 ; window addresses) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := set 0 (the published defaults) or set 1 (moved;
@@ -25,7 +26,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 0D00
+; @caplen 1500
 ; @timeout 120
 ; @vdpsnap E8F0 EF00
 
@@ -72,7 +73,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $0CFF
+                ld      bc, $14FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -481,4 +482,68 @@ cases:
                 dw      $1B00, $3800
                 db      $00
                 dw      $2000, $2010, $0000   ; 23
+                db      $00, $00, $00, $01, $82, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 24
+                db      $00, $FF, $01, $01, $A4, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 25
+                db      $00, $00, $01, $01, $E1, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $1B00, $1B70, $3800   ; 26
+                db      $00, $FF, $00, $02, $E0, $0F, $04, $07
+                dw      $1F80, $2000
+                db      $00
+                dw      $1F80, $1B00, $2000   ; 27
+                db      $00, $00, $01, $03, $E0, $0F, $04, $07
+                dw      $1F80, $2000
+                db      $00
+                dw      $1F80, $1B00, $2000   ; 28
+                db      $00, $FF, $01, $00, $E0, $0F, $04, $07
+                dw      $1F80, $2000
+                db      $00
+                dw      $1F80, $1B00, $2000   ; 29
+                db      $00, $00, $00, $02, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $01
+                dw      $3B80, $1B00, $1800   ; 30
+                db      $00, $FF, $00, $01, $E0, $0F, $04, $07
+                dw      $3FC0, $3C00
+                db      $00
+                dw      $3FF0, $0000, $03F0   ; 31
+                db      $00, $00, $01, $01, $E2, $FF, $04, $07
+                dw      $1F80, $2000
+                db      $00
+                dw      $1F80, $1FF0, $2000   ; 32
+                db      $01, $FF, $00, $02, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 33
+                db      $01, $00, $00, $03, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 34
+                db      $01, $FF, $01, $00, $E0, $10, $25, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 35
+                db      $01, $00, $00, $01, $E0, $10, $25, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 36
+                db      $01, $FF, $00, $00, $E0, $01, $02, $03
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 37
+                db      $01, $00, $01, $04, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 38
+                db      $01, $FF, $01, $FF, $E0, $0F, $04, $07
+                dw      $1B00, $3800
+                db      $00
+                dw      $2000, $2010, $0000   ; 39
                 db      $FF

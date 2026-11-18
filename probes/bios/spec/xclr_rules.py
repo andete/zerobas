@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and VRAM model for CLRSPR / CHGCLR's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XCLR_run2.out (rows N and D; probes/bios/spec/xclr.asm documents the presets, the case table and the
+scratchpad/XCLR_run3.out (rows N and D; probes/bios/spec/xclr.asm documents the presets, the case table and the
 128-byte record). xclrspr_rules.py and xchgclr_rules.py take their op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XCLR_run2.out"
+RUN = "XCLR_run3.out"
 ASM = os.path.join(HERE, "xclr.asm")
 REC = 128
 MASK = (0x03, 0xFB, 0x0F, 0xFF, 0x07, 0x7F, 0x07, 0xFF)
