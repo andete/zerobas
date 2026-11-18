@@ -16996,6 +16996,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (scratchpad/gate_blindness_sweep.py). Retire only the proven-redundant rows, in a commit of their own naming each
       row, its rule, its mutation and the row that now catches it. Rows that pin something no page measures (e.g. a
       work-area answer outside the matrices) stay, and become an [A] on the page.
+      ⏸️ **DEFERRED 2026-11-18: MEASURED NOT WORTH IT FOR THIS REGION** (NO POINTLESS TESTS). From the ba91a26d gate log: the
+      candidate suites are small (biostext 14 s, biosflags 20 s, biosmode 12 s, biosclr 8 s, grphed 7 s, biosl 6 s;
+      biosregs 129 s covers every BIOS call, the text ones a share). Retiring every redundant text row saves at most
+      ~1 min of a ~4800 s serial battery, against a rebuild + suite + spec-live run per mutation. The audit's main
+      payoff, every rule pinned by a separating case, landed with spec-live. Re-open for a region whose old suites are
+      expensive.
+
+- [ ] **D-INITIOVCB — INITIO / GICINI DO NOT REWRITE THE VOICE CONTROL BLOCKS; THE VG-8020'S RESET THEM TO PLAY'S DEFAULTS**
+      🎚️ TIER 6 — every edge (a program that PEEKs the voice control blocks after INITIO / GICINI; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-VCB / R-IO-SEED ([`XINITIO2_run2.out`](scratchpad/XINITIO2_run2.out)): the
+      VG-8020 rewrites all three 37-byte blocks ($FB41, $FB66, $FB8B) to offsets 15-19 = 04 04 78 88 FF (octave 4, length
+      4, tempo 120, volume 8, envelope $FF) and every other byte 0, from garbage, in every case. That includes interrupts
+      on with MUSICF 0, and the blocks seeded alone (round 3, [`XINITIO3_run1.out`](scratchpad/XINITIO3_run1.out)). Its boot
+      already leaves them so. zerobas leaves them, apart from writing 0 into voice 0's tempo byte ($FB52), and they hold 0
+      after its boot. PLAY SOUNDS the same: zerobas's psv_flush zeroes the tempo as the "seed the defaults at the next
+      PLAY" sign (basic/playsvc.asm, pt_init in sub/playparse.asm). Only the RAM a program PEEKs differs. Priced
+      2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
+      -- not cheap; match only if a real program reads the blocks.
 
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
