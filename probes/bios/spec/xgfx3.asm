@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX3 -- docs/bios/READC.md, SETC.md, NSETCX.md round 4 (2026-11-18; round 1 had cases 0-28 and cell sets 0 / 1 only, round 2 cases 29-46, round 3 47-59): the calls that read or set pixels at the current
+; XGFX3 -- docs/bios/READC.md, SETC.md, NSETCX.md round 5 (2026-11-19; round 1 had cases 0-28 and cell sets 0 / 1 only, round 2 cases 29-46, round 3 47-59, round 4 60-68): the calls that read or set pixels at the current
 ; graphics position. Per case (the table `cases` at the end, xinig.asm's layout with its fields read anew: op, F,
 ; interrupts, SCRMOD, CMASK, ATRBYT, BAKCLR, BDRCLR, CLOC, HL, cell set, three window addresses, A) the probe first sets,
 ; BY HAND:
@@ -745,4 +745,49 @@ cases:
                 db      $00
                 dw      $0050, $2050, $0060
                 db      $A7   ; 68
+                db      $02, $00, $00, $02, $04, $0A, $04, $07
+                dw      $00A0, $0000
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 69
+                db      $02, $00, $00, $02, $04, $0F, $04, $07
+                dw      $00A0, $0000
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 70
+                db      $02, $00, $00, $02, $10, $09, $04, $07
+                dw      $2481, $0000
+                db      $01
+                dw      $2480, $0480, $2490
+                db      $A7   ; 71
+                db      $02, $00, $00, $02, $04, $09, $04, $07
+                dw      $00A0, $0005
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 72
+                db      $02, $00, $00, $02, $01, $09, $04, $07
+                dw      $015C, $0003
+                db      $00
+                dw      $0158, $2158, $0168
+                db      $A7   ; 73
+                db      $01, $00, $00, $02, $40, $1A, $04, $07
+                dw      $00D1, $2468
+                db      $00
+                dw      $00D0, $20D0, $00E0
+                db      $A7   ; 74
+                db      $00, $00, $00, $02, $80, $05, $04, $07
+                dw      $0808, $2468
+                db      $06
+                dw      $0800, $2800, $2000
+                db      $A7   ; 75
+                db      $02, $00, $00, $02, $10, $0F, $04, $07
+                dw      $00A5, $0002
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 76
+                db      $01, $00, $00, $02, $04, $1A, $04, $07
+                dw      $00A1, $2468
+                db      $00
+                dw      $00A0, $20A0, $00B0
+                db      $A7   ; 77
                 db      $FF

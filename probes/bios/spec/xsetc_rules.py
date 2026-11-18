@@ -28,9 +28,10 @@ ALL = lambda c: True  # noqa: E731
 def writes(c):
     """VRAM, SCREEN 2: the pattern byte at CLOC and its colour byte at CLOC XOR $2000 (GRPCOL and GRPCGP are not
     used), by the first that applies -- ATRBYT equal to the colour byte's background nibble: CMASK's bit cleared;
-    equal to the foreground nibble: the bit set; the pattern byte OR CMASK = $FF (this is its last background
-    pixel): the bit cleared and ATRBYT into the background nibble; otherwise the bit set and (ATRBYT x 16) AND $F0
-    into the foreground nibble ($1A gives $A0). The comparisons take the whole ATRBYT ($1A is neither $A nor $1).
+    ATRBYT's low nibble equal to the foreground nibble: the bit set; the pattern byte OR CMASK = $FF (no other bit
+    of the byte clear): the bit cleared and ATRBYT's low nibble into the background nibble; otherwise the bit set
+    and (ATRBYT x 16) AND $F0 into the foreground nibble ($1A gives $A0). The background test takes the whole
+    ATRBYT ($1A is not $A), the foreground test its low nibble ($1A is $A).
     SCREEN 3: the nibble CMASK selects becomes ATRBYT's low nibble (the high one: (ATRBYT x 16) AND $F0). Nothing
     else changes."""
     a = c.cclo & 0x3FFF
@@ -61,5 +62,6 @@ RULES = [
          lambda c: ((c.bc, c.de, c.hl, c.ix, c.iy) == tuple(G.marker(c, v) for v in (0x1357, 0x9BDF))
                     + (c.chl, G.marker(c, 0x4321), G.marker(c, 0x8765))
                     and (c.cloc, c.cmask, c.atrbyt) == (c.cclo, c.ccm, c.catr))),
+    G.regs_rule("SC", S1),
     G.ei_rule("SC", S1),
 ]

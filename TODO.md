@@ -16869,40 +16869,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
       🎚️ TIER 1 — happy path: SETC on any SCREEN 2 byte whose other 7 pixels are set, with a third colour, changes 7
       pixels on the screen (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): the VG-8020 leaves the bit clear and puts ATRBYT into the
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): the VG-8020 leaves the bit clear and puts ATRBYT into the
       background nibble (the other pixels keep the foreground); zerobas sets the bit and puts ATRBYT into the foreground
-      nibble. docs/bios/SETC.md R-SC-VRAM (cases 47, 62), NSETCX.md R-NX-VRAM (case 39). Priced when picked up.
+      nibble. docs/bios/SETC.md R-SC-VRAM (cases 47, 62, 77), NSETCX.md R-NX-VRAM (cases 39, 72, 73). Priced when picked up.
 
 - [ ] **D-SETCCOL — READC / SETC / NSETCX PUT THE COLOUR BYTE AT CLOC OR $2000 ON ZEROBAS, XOR $2000 ON THE VG-8020**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved to $2000) (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): neither uses GRPCOL / GRPCGP; they part when CLOC is $2000 or
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): neither uses GRPCOL / GRPCGP; they part when CLOC is $2000 or
       above. docs/bios/READC.md R-RD-A (29, 60), SETC.md R-SC-VRAM (17, 30, 41), NSETCX.md R-NX-VRAM (18, 59). Priced when picked up.
 
 - [ ] **D-SETCATR — SETC / NSETCX TAKE ATRBYT OVER 15 DIFFERENTLY IN SCREEN 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): the VG-8020 writes ATRBYT's low nibble ($A for $1A) into
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): the VG-8020 writes ATRBYT's low nibble ($A for $1A) into
       either nibble, zerobas $B. docs/bios/SETC.md R-SC-VRAM (25, 33), NSETCX.md R-NX-VRAM (67). Priced when picked up.
 
 - [ ] **D-SETCF — SETC RETURNS ANOTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): the VG-8020 returns the colour byte written and its OR
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): the VG-8020 returns the colour byte written and its OR
       flags, or -- when only the pattern byte is written -- that byte and its S / Z / P flags. docs/bios/SETC.md R-SC-AF. Priced when picked up.
 
 - [ ] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
       🎚️ TIER 6 — every edge (the same pixels, other bytes) (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT;
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT;
       zerobas pattern $FF with ATRBYT in the foreground nibble. docs/bios/NSETCX.md R-NX-VRAM, cases 12, 13, 32, 58, 63, 64. Priced when picked up.
 
 - [ ] **D-NSETCXL — NSETCX IN SCREEN 3 COUNTS ALL OF HL ON ZEROBAS, L ALONE ON THE VG-8020**
       🎚️ TIER 6 — every edge (HL 256 or more) (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): HL $0102 sets 2 pixels on the VG-8020, 258 on zerobas.
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): HL $0102 sets 2 pixels on the VG-8020, 258 on zerobas.
       docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS, cases 55, 56. Priced when picked up.
 
 - [ ] **D-NSETCX0 — NSETCX WITH HL = 0 DOES NOTHING ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run4.out`](scratchpad/XGFX3_run4.out)): the VG-8020 writes ATRBYT into the colour byte at CLOC
+      🤖 **AUTONOMOUS** — ([`XGFX3_run5.out`](scratchpad/XGFX3_run5.out)): the VG-8020 writes ATRBYT into the colour byte at CLOC
       (SCREEN 2) or sets 256 pixels (SCREEN 3), and returns with interrupts on; zerobas returns at once, interrupts as
-      they were. docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS / R-NX-EI, cases 15, 38, 57. Priced when picked up.
+      they were. docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS / R-NX-EI, cases 15, 38, 57, 69-71. Priced when picked up.
 
 - [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).

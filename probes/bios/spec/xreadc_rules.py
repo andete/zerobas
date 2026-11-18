@@ -45,5 +45,6 @@ RULES = [
                     + (c.chl, G.marker(c, 0x4321), G.marker(c, 0x8765))
                     and (c.cloc, c.cmask, c.atrbyt) == (c.cclo, c.ccm, c.catr)
                     and G.vram_after(c, {}) == (c.sums, (c.w1, c.w2, c.w3)))),
+    G.regs_rule("RD", S1),
     G.ei_rule("RD", S1),
 ]

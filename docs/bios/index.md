@@ -99,9 +99,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0114 | FETCHC | graphics (concept page to come) | L3 | [FINAL](FETCHC.md) | 3 | — |
 | $0117 | STOREC | graphics (concept page to come) | L3 | [FINAL](STOREC.md) | 3 | — |
 | $011A | SETATR | graphics (concept page to come) | L3 | [FINAL](SETATR.md) | 4 | — |
-| $011D | READC | graphics (concept page to come) | L3 | [DRAFT 2](READC.md) | 6 | D-SETCCOL |
-| $0120 | SETC | graphics (concept page to come) | L3 | [DRAFT 2](SETC.md) | 7 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
-| $0123 | NSETCX | graphics (concept page to come) | L3 | [DRAFT 2](NSETCX.md) | 8 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
+| $011D | READC | graphics (concept page to come) | L3 | [DRAFT 3](READC.md) | 6 | D-SETCCOL |
+| $0120 | SETC | graphics (concept page to come) | L3 | [DRAFT 3](SETC.md) | 7 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
+| $0123 | NSETCX | graphics (concept page to come) | L3 | [DRAFT 3](NSETCX.md) | 8 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
 | $0126 | GTASPC | graphics (concept page to come) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | graphics (concept page to come) | L3 | — | — | — |
 | $012C | SCANR | graphics (concept page to come) | L3 | — | — | — |

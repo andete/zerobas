@@ -43,11 +43,11 @@ def writes(c):
     """VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the
     right edge) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern
     byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that
-    applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT equal to
-    the background nibble -- the bits cleared; equal to the foreground nibble -- the bits set; pattern OR m = $FF --
-    the bits cleared and ATRBYT into the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the
-    foreground nibble. HL = 0 in SCREEN 2 treats the byte at CLOC with no bits (its colour byte still written by the
-    last case). SCREEN 3: each pixel's nibble becomes ATRBYT's. Nothing else changes."""
+    applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT (whole)
+    equal to the background nibble -- the bits cleared; ATRBYT's low nibble equal to the foreground nibble -- the bits
+    set; pattern OR m = $FF -- the bits cleared and ATRBYT's low nibble into the background nibble; otherwise the bits
+    set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 takes the byte at CLOC through the
+    same steps with no bits (m = 0). SCREEN 3: each pixel's nibble becomes ATRBYT's. Nothing else changes."""
     w = {}
     px, _, _ = pixels(c)
     if c.cscr == 2:
@@ -70,5 +70,6 @@ RULES = [
          lambda c: (c.cloc, c.cmask) == ((c.cclo, c.ccm) if c.cscr == 2 else pixels(c)[1:]) and c.atrbyt == c.catr),
     Rule("R-NX-KEEP", S1, "IX and IY are kept. (A, F, BC, DE and HL are left holding working values: not compared, the "
          "group `XN`.)", ALL, lambda c: (c.ix, c.iy) == (G.marker(c, 0x4321), G.marker(c, 0x8765))),
+    G.regs_rule("NX", S1),
     G.ei_rule("NX", S1),
 ]

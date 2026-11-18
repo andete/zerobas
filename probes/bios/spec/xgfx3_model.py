@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and VRAM model for READC / SETC / NSETCX's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XGFX3_run4.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
+scratchpad/XGFX3_run5.out (rows N and D; probes/bios/spec/xgfx3.asm documents the presets, the case table and the
 128-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,10 +14,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX3_run4.out"
+RUN = "XGFX3_run5.out"
 ASM = os.path.join(HERE, "xgfx3.asm")
 REC = 128
-FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt"]
+FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt", "regs"]
 # NSETCX's A, F, BC, DE and HL after the call are working values (the reference's are not a function the probe
 # separates); its cases are the group XN, without them
 OUTPUTS = {"XP": FIELDS, "XN": [f for f in FIELDS if f not in ("a", "f", "bc", "de", "hl")]}
@@ -65,7 +65,7 @@ def load(op):
                          ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12],
                          sums=tuple(r[33 + 2 * k] | r[34 + 2 * k] << 8 for k in range(16)),
                          w1=tuple(r[65:81]), w2=tuple(r[81:97]), w3=tuple(r[97:113]),
-                         cloc=r[113] | r[114] << 8, cmask=r[115], atrbyt=r[116])
+                         cloc=r[113] | r[114] << 8, cmask=r[115], atrbyt=r[116], cba=ba, cbd=bd, regs=tuple(r[13:22]) + tuple(r[25:33]))
                 if cop != 2:
                     d.update(a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7])
                 out[who].append(NS(**d))
@@ -88,8 +88,8 @@ def colour_addr(c, cl):
 
 def pixel_byte(c, a, m):
     """SCREEN 2: the writes that set the pixels `m` (a bit mask, 0 for none) of the pattern byte at a to ATRBYT, by the
-    first that applies: m = $FF -- pattern $00, colour byte ATRBYT; ATRBYT = the background nibble -- the bits
-    cleared; ATRBYT = the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and ATRBYT into
+    first that applies: m = $FF -- pattern $00, colour byte ATRBYT; ATRBYT (whole) = the background nibble -- the
+    bits cleared; ATRBYT's low nibble = the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and ATRBYT into
     the background nibble; otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. Returns the
     writes and the byte the call reports (the colour byte when it is written, else the pattern byte)."""
     ca = colour_addr(c, a)
@@ -98,7 +98,7 @@ def pixel_byte(c, a, m):
         return {a: 0x00, ca: c.catr}, c.catr
     if c.catr == col & 0x0F:
         return {a: p & ~m & 0xFF}, p & ~m & 0xFF
-    if c.catr == col >> 4:
+    if c.catr & 0x0F == col >> 4:
         return {a: p | m}, p | m
     if p | m == 0xFF:
         n = (col & 0xF0) | (c.catr & 0x0F)
@@ -123,6 +123,16 @@ def vram_rule(tag, section, text, writes):
         sums, wins = vram_after(c, writes(c))
         return c.sums == sums and (c.w1, c.w2, c.w3) == wins
     return Rule(f"R-{tag}-VRAM", section, text, lambda c: True, check)
+
+
+VPRE = (0x00, 0x80, 0x06, 0x80, 0x00, 0x36, 0x07, 0xF4)     # the probe's VDP preset, as R#0-R#7 hold it
+
+
+def regs_rule(tag, section):
+    return Rule(f"R-{tag}-REGS", section, "RG0SAV-RG7SAV ($A5 preset), SCRMOD and the VDP registers R#0-R#7 are kept: "
+                "the call writes no VDP register. (FORCLR / BAKCLR / BDRCLR, recorded too, are not preset by the "
+                "probe: not compared.)", lambda c: True,
+                lambda c: c.regs == (0xA5,) * 8 + (c.cscr,) + VPRE)
 
 
 def ei_rule(tag, section):
