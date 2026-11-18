@@ -15,6 +15,10 @@ Its header comment may carry the harness settings, one per line:
                         held together for 0.3 s (e.g. `6 02 7 10`: CTRL + STOP)
                         at KEYREADY -- no `type` logic in between
     ; @vram ADDR:LEN    a VRAM span to compare as well (hex, e.g. 0000:3C0); repeatable
+    ; @vdpsnap ADDR PTR when the CPU reaches ADDR (hex, the probe's own RAM code, e.g. a `ret`), the debugger
+    ;                   writes VDP registers R#0-R#7 (as last written: hardware state, no ROM byte) at the
+    ;                   address held in the word at PTR, and adds 8 to that word -- the probe's capture
+    ;                   pointer, so the snapshot lands inline in its record
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
     ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
     ; @caplen LEN       the capture block's length (hex, default FF). D-SPECMETHOD (2026-11-17):
@@ -97,7 +101,8 @@ ROWS = {
 
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
-         "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False}
+         "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
+         "vdpsnap": None}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -124,6 +129,11 @@ def settings(asm_text: str) -> dict:
             s["disk"] = v
         elif k == "timeout":
             s[k] = float(v)
+        elif k == "vdpsnap":                # ADDR PTR (hex)
+            f = v.split()
+            if len(f) != 2:
+                sys.exit(f"FAIL: @vdpsnap wants ADDR PTR, got {v!r}")
+            s["vdpsnap"] = (int(f[0], 16), int(f[1], 16))
         elif k == "vram":
             a, n = v.split(":")
             s["vram"].append((int(a, 16), int(n, 16)))
@@ -178,7 +188,18 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     if st["type_at"]:
         t, txt = st["type_at"]
         at = f'after time {t} {{type "{txt}"}}\n'
-    tcl = ("set throttle off\nset ::typed 0\n" + tape + at +
+    snap = ""
+    if st["vdpsnap"]:
+        sa, sp = st["vdpsnap"]
+        snap = ("proc biosl_vdpsnap {} {\n"
+                f"  set p [expr {{[debug read memory {sp}] | ([debug read memory {sp + 1}] << 8)}}]\n"
+                "  for {set i 0} {$i < 8} {incr i} {\n"
+                "    debug write memory [expr {($p + $i) & 0xFFFF}] [debug read {VDP regs} $i]\n  }\n"
+                "  set p [expr {($p + 8) & 0xFFFF}]\n"
+                f"  debug write memory {sp} [expr {{$p & 255}}]\n"
+                f"  debug write memory {sp + 1} [expr {{$p >> 8}}]\n}}\n"
+                f"debug set_bp {sa} {{}} biosl_vdpsnap\n")
+    tcl = ("set throttle off\nset ::typed 0\n" + tape + at + snap +
            "proc biosl_poll {} {\n" + keys +
            f"  if {{[debug read memory {DONE}] == 0xA5 || [machine_info time] > {st['timeout']}}} {{\n"
            f"    set f [open {{{out}}} w]\n"
