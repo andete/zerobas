@@ -185,26 +185,27 @@ init:
                 ; have it in the EXPANDED slot 3 (the 2026-07-11 slot map); the scan
                 ; still records one found anywhere else.
                 call    sub_first           ; SCNCNT := 1, then the sub-ROM (subrom-boot.asm)
-                call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
-                ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
-                ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,
-                ; 2026-10-17: there is no table; FIELD writes variables.)
                 ; D-KEYSTR (2026-09-10): the ten function-key defaults, COLD BOOT
                 ; ONLY -- the references keep a KEY n,"str" across NEW/RUN/CLEAR.
                 ; zerobas read `0 0 0 0` at every slot before this; the image is
                 ; the VG-8020's, measured byte for byte (sub/keystr.asm).
-                ; 🔴 AFTER init_ext_roms, NOT BEFORE: that is where
-                ; try_sub_slot decides SUBSLOT_OK. The first cut called the tenant
+                ; 🔴 AFTER SUBSLOT_OK IS DECIDED: the first cut called the tenant
                 ; from the top of init, when SUBSLOT_OK was still power-on RAM
                 ; garbage -- subrom_call took the garbage as "present", handed a
                 ; garbage slot id to CALSLT, and the machine never reached the
-                ; prompt (the gate's control row read BLIND). Order is the fix.
+                ; prompt (the gate's control row read BLIND). It then ran after
+                ; init_ext_roms; since B5, sub_first (just above) decides it.
+                ; D-FNKBOOT (2026-11-18): so it runs BEFORE the cartridge scan --
+                ; a cartridge's INIT found FNKSTR empty, the VG-8020's holds the
+                ; ten defaults there (probes/bios/spec/xfnk.asm, XFNK_run1.out).
                 xor     a
                 ld      (KEYARG),a
                 call    sr_inl0             ; D-STUBINL: absent sub-ROM: the slots stay clear
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
-                                            ; (e.g. zerobas-disk in slot 3-1) since
-                                            ; our own INIT never returns to the scan
+                call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
+                ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
+                ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,
+                ; 2026-10-17: there is no table; FIELD writes variables.)
                 ; D-CTLPOOL: NOW the control pool can be sized. clear_vars called
                 ; ctl_reset back at line 28, but the sub-ROM slot was not known
                 ; yet, so it only parked the CSP=0 "not live" sentinel -- the pool

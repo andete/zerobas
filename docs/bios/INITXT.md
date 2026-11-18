@@ -83,8 +83,9 @@ confirming pass's findings).
   - 7-character labels (the cut binds at INIT32 32), and in run 3 10-character labels (it binds at
     INITXT 40 and 33), and in run 4 widths of the form 5n + 4 (INITXT 39, INIT32 24 / 19), where
     "slot − 1" and "width ÷ 5 − 1" differ.
-- The function-key strings are written too ("key0".."key9"). zerobas leaves them empty at cartridge
-  INIT (D-FNKBOOT, [`XFNK_run1.out`](../../scratchpad/XFNK_run1.out)).
+- The function-key strings are written too ("key0".."key9"). zerobas left them empty at cartridge
+  INIT until D-FNKBOOT ([`XFNK_run1.out`](../../scratchpad/XFNK_run1.out); fixed:
+  [`XFNK_fix1.out`](../../scratchpad/XFNK_fix1.out)).
 - Each record ends in a sentinel byte that the decoder requires.
 - Runs 1 and 2 ([`XINIT_run1.out`](../../scratchpad/XINIT_run1.out),
   [`XINIT_run2.out`](../../scratchpad/XINIT_run2.out)) used round 1's setup, which separated less. Run

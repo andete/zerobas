@@ -25,7 +25,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0030 | CALLF | slots (concept page to come) | L3 | — | — | — |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | — | — | — |
-| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF, D-FNKBOOT |
+| $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
@@ -74,7 +74,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-KEYLINESHIFT, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES |
 | $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 15 | D-KEYLINESHIFT, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
-| $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-FNKBOOT, D-KEYLINESHIFT, D-BIOSINT, D-INITEDGES |
+| $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |
 | $00DB | GTPAD | input (concept page to come) | L3 | — | — | — |

@@ -17,9 +17,9 @@ the work area. It keeps A, IX and IY, and returns with interrupts disabled
 when entered so.
 
 zerobas writes the same strings, on the diskless and the disk machine alike. Its registers on return
-differ, and it returns with interrupts enabled (D-TEXTAF). Separately, at cartridge INIT the
-reference's FNKSTR already holds the defaults and zerobas's is empty (D-FNKBOOT, R-F-BOOT): that is
-the boot's job, not INIFNK's.
+differ, and it returns with interrupts enabled (D-TEXTAF). Separately, at cartridge INIT FNKSTR
+already holds the defaults on both machines (R-F-BOOT): that is the boot's job, not INIFNK's. zerobas
+filled it only after the cartridge scan until D-FNKBOOT (2026-11-18).
 
 ## The specification
 
@@ -72,7 +72,7 @@ already held the defaults, so it is evidence only for the boot state.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-F-BOOT** When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, run 1). | 1 | ✓ | ✗ 1: XB 1 |
+| **R-F-BOOT** When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, the run after D-FNKBOOT). | 1 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -81,7 +81,6 @@ already held the defaults, so it is evidence only for the boot state.
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-TEXTAF** (registers on return; interrupts enabled on return; work-area cells it changes: the interrupt's $F3F6 / $F3F7 / $FC9E, and $F5F5 / $F856, whose source is not shown) | R-F-AF, R-F-REGS, R-F-DI, R-F-WAREA |
-| **D-FNKBOOT** (FNKSTR empty at cartridge INIT) | R-F-BOOT |
 
 ## Open (not measured)
 

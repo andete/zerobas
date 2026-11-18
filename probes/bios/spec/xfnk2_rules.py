@@ -75,7 +75,8 @@ def cases():                                     # noqa: F811
                 src="XF3", id=f"XF3 {row} {k + 1}", case=k, row=row, fnk=list(r[:160]), a=r[160], f=r[161],
                 bc=w(162), de=w(164), hl=w(166), ix=w(168), iy=w(170), iff=(r[172] >> 2) & 1, row24=list(r[173:213]),
                 nchg=cnt, chg=[r[215 + 2 * i] | (r[216 + 2 * i] << 8) for i in range(min(cnt, 10))]))
-    t = open(os.path.join(ROOT, "scratchpad", "XFNK_run1.out")).read()
+    # D-FNKBOOT (2026-11-18): the fixed build's run (run 1 was zerobas empty, the reference the same)
+    t = open(os.path.join(ROOT, "scratchpad", "XFNK_fix1.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
         out[who].append(NS(src="XB", id="XB 1", boot=list(b[1:161])))
@@ -109,6 +110,6 @@ RULES += [
     Rule("R-F-WAREA", S2, "Outside FNKSTR NOTHING in the whole work area $F380-$FFFF changes: compared right after the "
          "call, before any other BIOS call (run 2; run 1's timer cells were the probe's own interrupt, let in by its "
          "VRAM reads).", r2, lambda c: c.nchg == 0 and c.chg == []),
-    Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, run 1).",
+    Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, the run after D-FNKBOOT).",
          lambda c: c.src == "XB", lambda c: c.boot == DEFBYTES),
 ]

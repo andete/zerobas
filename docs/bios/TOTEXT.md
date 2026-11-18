@@ -23,15 +23,16 @@ SPDX-License-Identifier: 0BSD
 The graphics outcomes leave LINLEN and the cursor alone.
 
 zerobas does the same for OLDSCR 0 and 1, apart from what INITXT / INIT32 themselves differ in: the
-key line's row and labels, and the font. It treats every other OLDSCR as 1 (INIT32), and sets OLDSCR
+key line's row and the font. It treats every other OLDSCR as 1 (INIT32), and sets OLDSCR
 to 1 (D-INITEDGES).
 
 ## The specification
 
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack.
 
-**Evidence.** **[XT n]**: case `n` of the XTOT matrix, run 1,
-[`scratchpad/XTOT_run1.out`](../../scratchpad/XTOT_run1.out). The case list, the setup and the record
+**Evidence.** **[XT n]**: case `n` of the XTOT matrix, re-run on the build that fixed D-FNKBOOT and
+D-KEYLINESHIFT, [`scratchpad/XTOT_fix1.out`](../../scratchpad/XTOT_fix1.out) (run 1, before them:
+[`scratchpad/XTOT_run1.out`](../../scratchpad/XTOT_run1.out)). The case list, the setup and the record
 are in `probes/bios/spec/xtot_cases.py`, which also generates `probes/bios/spec/xtot.asm` and decodes
 the run.
 - The matrix: SCREEN 0–3 on entry × OLDSCR 0 / 1 / $5A × CNSDFG 0 / 1.
@@ -79,7 +80,7 @@ Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-FNKBOOT** / **D-KEYLINESHIFT** (the key line's labels), ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1 |
+| ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1 |
 | **D-INITEDGES** (OLDSCR other than 0 / 1: zerobas sets up SCREEN 1; CRTCNT 13: row 24 and CRTCNT := 24) | R-T-OLDX, R-T-DISPATCH, R-T-REGS2, R-T-THRU |
 
 ## Open (not measured)

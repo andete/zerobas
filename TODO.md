@@ -16915,12 +16915,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       now space their port accesses the same way, and the row's "DI around call" comment, false since SETWRT
       re-enables interrupts, is corrected (8/8 SAME).
 
-- [ ] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
+- [x] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
       🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
       🤖 **AUTONOMOUS** — probes/bios/spec/xfnk.asm ([`XFNK_run1.out`](scratchpad/XFNK_run1.out)): FNKSTR ($F87F, 160 B) at cartridge INIT is all zero on zerobas, the
       ten defaults on the VG-8020; after INIFNK both are identical (INIFNK is right). zerobas fills them later (BASIC). It
       is why CHPUT's / XINIT run 1's key rows read blank on zerobas. Fix: the C-BIOS repack's boot fills FNKSTR before
       the cartridge scan (as INIFNK does).
+      ✅ **FIXED 2026-11-18 (zero bytes): basic/interp.asm's cold boot runs the keystr defaults (op 0) between
+      sub_first and init_ext_roms**, not after the scan. The rule that kept it after the scan ("that is where
+      try_sub_slot decides SUBSLOT_OK") had been stale since D-BIOSLADDER B5 moved that decision into sub_first. A
+      first cut patched C-BIOS's boot to call INIFNK before INIT32 and measured nothing: subrom_call refused, because
+      SUBSLOT_OK is decided after C-BIOS's own boot. WITNESS: XFNK on the fixed build is ALL SAME on both rows
+      ([`XFNK_fix1.out`](scratchpad/XFNK_fix1.out), [`XFNK_fix1_disk.out`](scratchpad/XFNK_fix1_disk.out)). INIFNK.md's
+      R-F-BOOT now reads that run. XTOT re-run ([`XTOT_fix1.out`](scratchpad/XTOT_fix1.out)): TOTEXT's key-line
+      sums now match, and R-T-OLD0 / OLD1 fail on the ruled font (D-BIOSINT) only.
 
 - [ ] **D-GATEKNIFESKIP — A DOCS / PROBE-ONLY GATE RE-PINS THE KNIVES AND RUNS THE WHOLE UNIT SUITE: ~15-20 MIN FOR A STATIC**
       🎚️ TIER 2 — reasonable time (the gate's own wall time; filed 2026-11-17 at Joost's request).
