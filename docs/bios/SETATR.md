@@ -22,8 +22,8 @@ zerobas does all of it the same.
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XG rNN]**: case `NN` of the XGFX1 probe, run 4, on row `r`, both rows in
-[`scratchpad/XGFX1_run4.out`](../../scratchpad/XGFX1_run4.out) (the two rows recorded the same bytes).
+**Evidence.** **[XG rNN]**: case `NN` of the XGFX1 probe, run 5, on row `r`, both rows in
+[`scratchpad/XGFX1_run5.out`](../../scratchpad/XGFX1_run5.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx1.asm` documents the presets, the case table and the 28-byte record:
 - Before each case the probe sets, by hand: CLOC ($F92A), CMASK ($F92C), GRPCGP ($F3CB) and MLTCGP
   ($F3D5) to the case's ($5A5A, $A5, $2000, $1000 in cases 00-42), ATRBYT ($F3F2) to $77, ASPCT1 /
@@ -40,7 +40,10 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   $0000 / $1804 / $20F8 and MLTCGP $0000 / $0B00 / $0300 / $2800 / $1100, entry A $00 / $FF / $5A,
   SCRMOD 4 and $FF, a SCREEN 3 case with D $01 (54) and one with B $11, D $22 (58), a SCREEN 2 case
   with Y $0100; 59-65 with SCRMOD 6 and $82, GRPCGP $0800 / $F000 / $3800 (base additions that carry
-  out of bit 11 or 15, and a CLOC of $4000), MLTCGP $10F8 and $3C00.
+  out of bit 11 or 15, and a CLOC of $4000), MLTCGP $10F8 and $3C00; 66-80: SCREEN 2 X 2, 3, 5,
+  6; MLTCGP $F900 (a carry out of bit 15), GRPCGP $07F8 / $FFF8 / $2004 (carries from the low byte,
+  and A 0 with CLOC's low byte $04); X 8 with D $01; SCRMOD $0A and $42; CLOC $0000 with CMASK $00 /
+  $FF preset; X $0100 with CMASK $00 / $FF preset and A $00.
 - The probe does not look at the VDP.
 
 <!-- RULES BEGIN -->

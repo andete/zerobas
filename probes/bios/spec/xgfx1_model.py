@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for FETCHC / STOREC / SETATR / GTASPC / MAPXYC's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XGFX1_run4.out (rows N and D; probes/bios/spec/xgfx1.asm documents the presets, the case table and the
+scratchpad/XGFX1_run5.out (rows N and D; probes/bios/spec/xgfx1.asm documents the presets, the case table and the
 28-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX1_run4.out"
+RUN = "XGFX1_run5.out"
 ASM = os.path.join(HERE, "xgfx1.asm")
 REC = 28
 GTB = 12                                    # GTASPC's second case: ASPCT1 / ASPCT2 preset $0100 / $00C0

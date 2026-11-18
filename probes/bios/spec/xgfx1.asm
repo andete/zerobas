@@ -1,8 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX1 -- docs/bios/FETCHC.md, STOREC.md, SETATR.md, GTASPC.md, MAPXYC.md round 4 (2026-11-18; round 1 had cases 0-31, round 2 0-42 with one CLOC / CMASK / GRPCGP / MLTCGP preset,
-; round 3 0-58): the graphics calls
+; XGFX1 -- docs/bios/FETCHC.md, STOREC.md, SETATR.md, GTASPC.md, MAPXYC.md round 5 (2026-11-18; round 1 had cases 0-31, round 2 0-42 with one CLOC / CMASK / GRPCGP / MLTCGP preset,
+; round 3 0-58, round 4 0-65): the graphics calls
 ; that move values between the registers and the work area. Per case (the table `cases` at the end: op, A, F,
 ; interrupts, SCRMOD, BC, DE, HL, CLOC, CMASK, GRPCGP, MLTCGP) the probe sets, BY HAND: CLOC ($F92A), CMASK ($F92C)
 ; := the case's ($5A5A / $A5 in cases 0-42), ATRBYT ($F3F2)
@@ -20,7 +20,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area RAM.
 ;
 ; @cap C000
-; @caplen 0800
+; @caplen 0900
 ; @timeout 60
 
 GTB     equ     12                      ; GTASPC's second case: ASPCT1 / ASPCT2 $0100 / $00C0
@@ -68,7 +68,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $07FF
+                ld      bc, $08FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -534,4 +534,64 @@ cases:
                 dw      $0000, $0038, $0506, $5A5A
                 db      $A5
                 dw      $2000, $3C00   ; 65
+                db      $04, $A7, $00, $00, $02
+                dw      $0002, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 66
+                db      $04, $A7, $00, $00, $02
+                dw      $0003, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 67
+                db      $04, $A7, $00, $00, $02
+                dw      $0005, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 68
+                db      $04, $A7, $00, $00, $02
+                dw      $0006, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 69
+                db      $04, $A7, $FF, $00, $03
+                dw      $0000, $0038, $0506, $5A5A
+                db      $A5
+                dw      $2000, $F900   ; 70
+                db      $04, $A7, $00, $00, $02
+                dw      $0008, $0000, $0506, $5A5A
+                db      $A5
+                dw      $07F8, $1000   ; 71
+                db      $04, $A7, $00, $01, $02
+                dw      $0008, $0000, $0506, $5A5A
+                db      $A5
+                dw      $FFF8, $1000   ; 72
+                db      $04, $A7, $00, $00, $02
+                dw      $0000, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2004, $1000   ; 73
+                db      $04, $A7, $00, $00, $02
+                dw      $0008, $0100, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 74
+                db      $04, $A7, $FF, $00, $0A
+                dw      $0064, $0032, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 75
+                db      $04, $A7, $00, $01, $42
+                dw      $0064, $0032, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 76
+                db      $04, $A7, $00, $00, $02
+                dw      $0064, $0032, $0506, $0000
+                db      $00
+                dw      $2000, $1000   ; 77
+                db      $04, $A7, $FF, $00, $03
+                dw      $0064, $0032, $0506, $0000
+                db      $FF
+                dw      $2000, $1000   ; 78
+                db      $04, $A7, $00, $00, $02
+                dw      $0100, $0000, $0506, $5A5A
+                db      $00
+                dw      $2000, $1000   ; 79
+                db      $04, $00, $00, $00, $02
+                dw      $0100, $0000, $0506, $5A5A
+                db      $FF
+                dw      $2000, $1000   ; 80
                 db      $FF
