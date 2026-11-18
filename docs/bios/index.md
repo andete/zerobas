@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**31 of 108 calls have a page; 31 are FINAL.**
+**32 of 108 calls have a page; 32 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -115,7 +115,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
-| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
+| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | D-OUTDLPGRAPH, D-OUTDLPF |
 | $0150 | GETVCP | sound (concept page to come) | L3 | — | — | — |
 | $0153 | GETVC2 | sound (concept page to come) | L3 | — | — | — |
 | $0156 | KILBUF | input (concept page to come) | L3 | — | — | — |

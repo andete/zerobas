@@ -39177,3 +39177,489 @@ the phase narrative above still have somewhere to land.
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
 The record is unchanged there; this heading is kept only so the citations and
 the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] 🎯 **D-DOSDRVB — UNDER MSX-DOS, SELDSK 1 DOES NOT SELECT THE PHANTOM DRIVE B: NO SWAP PROMPT, CURDRV STAYS 0**
+      🎚️ TIER 3 — common errors (a one-drive user typing B:, a program copying to B:; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — BDOSXB's capture against the CF-3300 (run build_bdosxb_disk.py, then the printed capture line with
+      `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`). Three parts: (1) SELDSK stores the drive in $F247 (CURDRV_CELL)
+      -- seldsk_drv_body only returns DRVCNT (~+10 B; 0 B of pad before the $55E6 pin); (2) a default-drive FCB operation
+      on B goes through drv_select (D-DSKIB's prompt, already in the ROM for BASIC's paths); (3) the DTA's / FCB's drive
+      byte reflects the current drive. Bytes first (the disk ROM's allotted space). When it lands, gate BDOSXB.
+      ✅ **PART (1) LANDED 2026-11-17:** `seldsk_set` (disk/kernel.asm, the pin-free span; the $55DE body is a `jp` now)
+      stores E in $F247 when E < DRVCNT -- BDOSXB on zerobas: $F247 1, CURDRV 1, as the CF-3300
+      ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB_stock.out`](scratchpad/XB_stock.out)). 🔮 hole 15 -> 2 B: HIT. An E past the count leaves $F247 alone -- NOT measured
+      on the reference. Still open: (2) the swap prompt on a default-drive FCB operation on B (no prompt yet) and (3)
+      the DTA's drive byte (ours 1, the CF-3300 2) -- both need bytes (2 B left in front of $75A5); BDOSXB stays ungated.
+      ✅ **PART (3) FELL OUT OF PART (1) (2026-11-17):** SFIRST's DTA[0] is (CURDRV_CELL) + 1, so with SELDSK storing the drive
+      it reads 2, as the CF-3300 -- BDOSXB's cells and DTA are byte-identical now; only the SCREEN differs
+      ([`DDB_ours.out`](scratchpad/DDB_ours.out) against [`XB2_stock.out`](scratchpad/XB2_stock.out)).
+      📐 **PART (2), THE CF-3300's PROMPT (read from XB2_stock.out's screen, 32 columns):** after the program's CLS, row 1
+      "Insert diskette for drive B:", row 2 "and strike a key when ready", the cursor on row 3 -- so CR LF FIRST even at
+      a line's start (drv_select, BASIC's, skips it at column 1), the text, then CR LF after the key. 🔴 It is NOT
+      drv_select reused: that prints with CHPUT and reads the key through `calbak` into main's page 1 -- neither is there
+      under MSX-DOS (page 0 RAM). It needs a DOS-safe print / key (the BDOS console's own routines), a hook on the FCB
+      functions (FCB+0 = 0 -> the current drive) that BASIC's paths never take, and ~50-70 B: a carve first (D-DISKCARVE6
+      step 4, being scouted).
+      ✅ **PART (2) LANDED 2026-11-17 -- D-DOSDRVB CLOSED.** `dsel_bdos` (disk/kernel.asm, 58 of carve step 4's 72 B; 14 B
+      left) replaces fat_geom_read's `call drv_select` -- the one point every disk access crosses. The default drive
+      (DK_FCB_DRV 0) is the CURRENT one, $F247 + 1 (0 under BASIC unless a $F37D SELDSK moved it). With the BIOS in
+      page 0 (BASIC) it is drv_select, D-DSKIB's prompt, unchanged; under MSX-DOS (RAM in page 0) the prompt goes
+      through the BDOS console (CR LF first, the two lines, CR LF) and the key through innoe_body. BDOSXB on zerobas is
+      BYTE-IDENTICAL to the CF-3300, screen included ([`DDB2_ours.out`](scratchpad/DDB2_ours.out) against [`XB2_stock.out`](scratchpad/XB2_stock.out); 🔮 0 diffs: HIT), and is
+      GATED in bdos-acceptance. ⚠️ Residuals, not filed until something shows them: an FCB naming its drive EXPLICITLY
+      under MSX-DOS (DK_FCB_DRV stays 0 there -- the default drive is used); a machine with its RAM in primary slot 0
+      would take the BASIC prompt under MSX-DOS; the $F37D prompt under BASIC is unmeasured on the reference.
+
+- [x] 🎯 **D-CHPUTDEL — CHPUT: DEL BLANKS THE WRONG CELL AND DOES NOT MOVE; `ESC l` MOVES THE CURSOR TO THE LINE START**
+      🎚️ TIER 1 — happy path (a BIOS call's normal output for a published control code; the BIOS-call focus; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHPUT.md (DRAFT 2), the spec method's text-region pilot: the XCHPUT matrix calls
+      CHPUT directly, the VG-8020 against zerobas, 768 cases, cursor + A + the three cells around the cursor
+      ([`XCH_table.out`](scratchpad/XCH_table.out), raw [`XCH_run1.out`](scratchpad/XCH_run1.out)). Exactly 3 cases differ:
+      - DEL (127) [XCH 127, and after the graphic prefix 639]: the VG-8020 moves the cursor LEFT and blanks the cell it
+        lands on (the character left of the cursor); zerobas blanks the cell UNDER the cursor and does not move.
+      - `ESC l` [XCH 364]: both blank the line; the VG-8020 leaves the cursor at its column, zerobas moves it to
+        column 1.
+      Round 2 (XCHPUT2 G2, [`XCH2_table.out`](scratchpad/XCH2_table.out)): at column 1 the VG-8020's DEL, like its BS, wraps to the end of the row
+      above (CSRX 40); zerobas stays, and its DEL in the last cell of the last row SCROLLS the screen.
+      Round 3 ([`XCH3_run2.out`](scratchpad/XCH3_run2.out)): a DEL that wraps there BLANKS the row above's column 40 on the VG-8020 (BS / 29 leave it);
+      zerobas's does not move. docs/bios/CHPUT.md's rules R-DEL, R-E-LEFT1/40, R-DEL-WRAPCELL, R-ESC-l, R-ED-l are the target.
+      The CF-3300 agrees with the VG-8020 on both cursors (BDOSXM through its BDOS, [`XM_table.out`](scratchpad/XM_table.out)), so
+      this is not a regional quirk. The fix is in the C-BIOS repack's CHPUT (a cbios-repack patch). When it lands,
+      the page's test audit (docs/spec-method.md §8) turns the matrix's rows into gate cases.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-del.patch, 34 bytes differ, nothing moves). DEL calls BS's left move and
+      blanks the cell only if it moved (chput_ctrl_left leaves Z set exactly when it did not). `ESC l` saves CSRY / CSRX
+      around the home-and-erase; its body sits in POSIT's pad (main.asm), and the table entry follows it. WITNESS: the five
+      XCHPUT probes re-run on the fixed build ([`XCH_fix1.out`](scratchpad/XCH_fix1.out) ..
+      [`XCH5_fix1.out`](scratchpad/XCH5_fix1.out)). R-DEL, R-ESC-l, R-PFX-ALONE, R4-CELLS, R4-EDIT, R4-PFX-DEL,
+      R4-DEL-NOCONT and R-DEL-WRAPCELL now hold on zerobas, and R4-CURSOR went 17 -> 9 cases failing (the rest are
+      D-CHPUTKEYROW's). The test audit is still to come.
+
+- [x] 🎯 **D-CHPUTESCY — CHPUT's `ESC Y` DOES NOT CLAMP: AN OUT-OF-RANGE ROW / COLUMN PUTS CSRY / CSRX AT 225, 255 ...**
+      🎚️ TIER 3 — common errors (a program's out-of-range cursor position; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHPUT.md round 2 (XCHPUT2 G5, [`XCH2_table.out`](scratchpad/XCH2_table.out)): every byte as `ESC Y`'s row, then
+      column parameter. The VG-8020 clamps: a row byte under 32 or past the last row gives the last row (CSRY 24), a column
+      byte under 32 or past 40 gives column 40; zerobas stores the byte - 32 as is (CSRY 225 for $00, 0 for $1F, 25.. past
+      the last row; CSRX likewise) -- 446 of 512 cases. A later character then lands outside the screen. Byte $01 as a
+      parameter is special on both machines (the graphic prefix). Fix in the C-BIOS repack's CHPUT.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-escy.patch, 38 bytes differ, nothing moves). POSIT is restructured, at
+      the same 35 B, into `posit_col` (H -> CSRX, limit LINLEN) and `posit_row` (L -> CSRY, limit crt_rows) over one
+      clamp-and-store. ESC Y's handlers call them at their old sizes (8 B / 10 B), so a parameter byte under 32 (wrapping
+      on the `sub`) or past the limit clamps as POSIT does. WITNESS: CHPUT's five probes and CLS / DSPFNK's re-run
+      ([`XCH2_fix3.out`](scratchpad/XCH2_fix3.out), [`XCLS_fix3.out`](scratchpad/XCLS_fix3.out)): R-Y-ROWCLAMP 231 -> 0
+      cases failing, R-Y-COLCLAMP 215 -> 0, R-Y1-SEQ 2 -> 0, R4-Y-KEYCLAMP 2 -> 0, R5-ESC-CMD 1 -> 0, R5-Y1 6 -> 0. CLS.md /
+      DSPFNK.md unchanged; CHPUT now differs only in LINTTB's marks (D-LINTTBVAL).
+
+- [x] 🎯 **D-CHPUTKEYROW — WITH THE FUNCTION-KEY LINE ON, CHPUT LETS THE CURSOR ONTO THE KEY ROW**
+      🎚️ TIER 1 — happy path (KEY ON is BASIC's normal screen; filed 2026-11-17). Scope: never under MSX-DOS, which runs with the
+      key line off (Joost) -- it hits BASIC and ROM programs that show the key line (DSPFNK).
+      🤖 **AUTONOMOUS** — XCHPUT2 G2 (key line on after DSPFNK, [`XCH2_table.out`](scratchpad/XCH2_table.out)): the VG-8020 keeps the text area to rows 1..23 --
+      `ESC Y` to row 24 lands on CSRY 23, and LF / cursor-down on the last text row scroll above the key row. zerobas puts
+      the cursor on row 24 and writes over the key line (CSRY one higher in every key-on bottom-corner case). Fix in
+      the C-BIOS repack's CHPUT (the text-row count when CNSDFG is on).
+      Round 3 ([`XCH3_run2.out`](scratchpad/XCH3_run2.out)): it is not only movement -- with the key line on the VG-8020's ESC L / M / J / K / E / j / l
+      and 12 work on rows 1-23 only and never touch row 24, and ESC A-D stop at row 23; zerobas edits row 24 too.
+      Round 4 ([`XCH4_run1.out`](scratchpad/XCH4_run1.out), a NEUTRAL setup -- rounds 2 / 3's key-on cases started elsewhere on the two machines and are retired):
+      from the key row itself the VG-8020 moves LF / cursor-down / ESC B / a wrap ONTO the last text row (LF and wraps
+      then scroll the text rows); zerobas stays on row 24. docs/bios/CHPUT.md's rules R4-CURSOR (key-row starts) and
+      R4-Y-KEYCLAMP are the target.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chput-keyrow.patch, 44 bytes differ, nothing moves).
+      - LF sets the row to the limit (crt_rows) before its scroll, instead of `dec l` after it.
+      - Cursor-down / ESC B: from the key row onto the last text row, on it stays. Z on return when it did not move.
+      - 28's wrap is now cursor-down + CR (the two bodies swap places: 14 B / 13 B).
+      - 12 / ESC E / ESC j go through $00C3 (zerobas's bios_cls, which redraws the key line).
+      WITNESS: the five XCHPUT probes re-run ([`XCH4_fix2.out`](scratchpad/XCH4_fix2.out),
+      [`XCH5_fix2.out`](scratchpad/XCH5_fix2.out)): R4-CURSOR 9 -> 0 cases failing, R5-KEYROW 3 -> 0, nothing else moved.
+      R4-Y-KEYCLAMP is ESC Y's clamp (D-CHPUTESCY).
+
+- [x] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;
+      filed 2026-11-17).
+      🤖 **AUTONOMOUS** — (also: the VG-8020's ERAFNK and DSPFNK's scroll write 175 into LINTTB entries, zerobas none --
+      docs/bios/DSPFNK.md R-K-ERALT / R-K-SCROLL.) XCHPUT2 G2's LINTTB ($FBB2, 24 B) after a clear + one byte per row: the VG-8020 holds 24, 23, ..., 1
+      down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
+      (a row number? per screen width?) before matching them.
+      🟡 **PART 1 LANDED 2026-11-18: the clear.** cbios-repack/linttb-clear.patch makes a text clear (CLS, INITXT /
+      INIT32, ESC E / 12 / ESC j) leave 24, 23, ..., 1 down the rows with a `djnz` loop. It is 3 B shorter than C-BIOS's
+      `ldir`, padded, so nothing moves. Witness: docs/bios/CLS.md on the fixed build
+      ([`XCLS_fix1.out`](scratchpad/XCLS_fix1.out), [`XSCR_fix1.out`](scratchpad/XSCR_fix1.out)): R-C-HOME 11 -> 0 cases
+      failing, R-C-GATE 2 -> 0. **STILL OPEN, the marks:** the VG-8020 writes $AF into the entry of a row it blanks
+      (ESC K / ESC l / ESC J, the scroll's new last row, ERAFNK's row: docs/bios/DSPFNK.md R-K-ERALT, R-K-SCROLL) and
+      $FB into the last text row after ESC L (docs/bios/CHPUT.md R4-EDIT-LT). zerobas's writers are C-BIOS chput.asm
+      (`chput_esc_k` writes CSRY; the ESC L / M shifts) and the scroll. Price each before matching: these values are
+      the reference's leftovers, not published ones.
+      ✅ **PART 2 LANDED 2026-11-18, the marks; ITEM CLOSED.**
+      - cbios-repack/linttb-marks.patch (19 bytes differ): chput_esc_k writes $AF into the row it blanks. That covers
+        ESC K / l / J, the scroll's new row and ESC L's inserted row; chput_esc_k starts 1 B earlier, into ESC l's old
+        pad. ESC L's last text row gets `ld (hl),h` = $FB.
+      - basic/main.asm bf_eramark (11 B at the low region's end): ERAFNK marks LINTTB entry CRTCNT with $AF in SCREEN
+        0 / 1. Walls: low region 43 B free, the switch-off floor 36 B, all 7 assembling.
+      WITNESS ([`XCH4_fix4.out`](scratchpad/XCH4_fix4.out), [`XSCR_fix6.out`](scratchpad/XSCR_fix6.out)): every CHPUT.md
+      rule now holds on zerobas (R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST). R-K-SCROLL 9 -> 2 and R-K-ERALT 12 -> 4
+      cases failing, and their LINTTB matches in every CRTCNT 24 case; what is left is D-INITEDGES (CRTCNT 13, the
+      margins). Not matched: LINTTB values with CRTCNT other than 24 (D-INITEDGES' key row, PARKED).
+
+- [x] ✅ **CLOSED 2026-11-18: D-KEYLINESHIFT — INITXT / INIT32 WITH THE KEY LINE ON SHOW FUNCTION KEYS 6-10 (THE SHIFTED SET), NOT 1-5**
+      ✅ **THE CAUSE:** the key-line tenant (sub/keystr.asm) took the set from FNKSWI, which zerobas set to 1 only
+      in BASIC's cold boot -- after the cartridge scan -- so at cartridge INIT it was 0 (the shifted set). The
+      VG-8020's DSPFNK does not read FNKSWI at all: it shows keys 1-5 with no SHIFT held whatever FNKSWI held,
+      and WRITES it 1 (docs/bios/DSPFNK.md R-K-FNKSWI, [`XFSW_run1.out`](scratchpad/XFSW_run1.out)). **THE FIX:** the
+      tenant sets FNKSWI from SHIFT's NEWKEY bit (row 6 bit 0) before choosing the set, as zb_chsns already did
+      (+5 B in the sub-ROM's page 0, 8 -> 3 B free). **WITNESS:** XFSW run 2 ALL SAME on both rows
+      ([`XFSW_run2.out`](scratchpad/XFSW_run2.out)); XKEY / XINIT4 re-run on the fixed build: no zerobas case shows
+      key5.. any more ([`XKEY_fix1.out`](scratchpad/XKEY_fix1.out), [`XINIT4_fix1.out`](scratchpad/XINIT4_fix1.out); the
+      remaining differences there are D-INITEDGES'). The spec pages' zerobas columns still show the pre-fix runs
+      until the test audit (docs/spec-method.md §8) re-runs them on zerobas.
+      🎚️ TIER 1 — happy path (the function-key line a ROM program shows; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/INITXT.md rule R-I-KEYS (the XINIT matrix, FNKSTR written by the setup to "key0".."key9";
+      run 2 [`XINIT_run2.out`](scratchpad/XINIT_run2.out), round 2's run 4 [`XINIT_run4.out`](scratchpad/XINIT_run4.out)):
+      with CNSDFG on and no key held, the VG-8020's key line shows "key0".. (keys 1-5); zerobas's "key5".. (keys 6-10),
+      in every width 28-41 case, INITXT and INIT32, also from SCREEN 2 / display off / CNSDFG 2, $80, $FF; and
+      the same from DSPFNK / FNKSB (docs/bios/DSPFNK.md, [`XKEY_run1.out`](scratchpad/XKEY_run1.out)) and CLS
+      (docs/bios/CLS.md R-C-TEXT, which also redraws it on row 24 with CRTCNT := 24 on zerobas: D-INITEDGES). The name-table
+      sums differ by exactly the 25 the digits account for. Fix in the C-BIOS repack's key-line display (which set it
+      picks). Widths 0, 80 and 255 (R-I-KEYEDGE) and the ROW the line goes on are D-INITEDGES, TIER 6.
+
+- [x] **D-POSITCLAMP — POSIT TAKES H / L AS THEY ARE; THE VG-8020 CLAMPS THEM, AND DOES NOTHING IN SCREEN 2**
+      🎚️ TIER 6 — every edge (a program passing POSIT a column of 0 / above LINLEN or a row of 0 / above CRTCNT, or
+      calling it in a graphics mode; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CLS.md rules R-P-CLAMP / R-P-GRP ([`XCLS_run2.out`](scratchpad/XCLS_run2.out)): the
+      VG-8020 turns a column of 0 or above LINLEN into LINLEN and a row of 0 or above CRTCNT into CRTCNT (CRTCNT 13:
+      rows 0 / 14 / 20 give 13), and leaves CSRX / CSRY alone in SCREEN 2; zerobas stores H / L as given (0, 41, 255
+      ...) in every mode. XSCR ([`XSCR_run2.out`](scratchpad/XSCR_run2.out)) refines the row limit to (CRTCNT + CNSDFG)
+      mod 256 -- CRTCNT - 1 while the key line shows with CNSDFG $FF -- and adds SCREEN 3 (nothing). Fix in the C-BIOS
+      repack's POSIT.
+      ✅ **FIXED 2026-11-18** (cbios-repack/posit-clamp.patch). POSIT returns at once in SCREEN 2 / 3. It clamps a column
+      of 0 or above LINLEN to LINLEN, and a row of 0 or above `crt_rows` ((CRTCNT + CNSDFG) mod 256, zerobas's $3283) to
+      that limit. It is paid from C-BIOS's FNKSB / ERAFNK / DSPFNK print_debug stubs right after it, dead since zerobas
+      overlays $00C9 / $00CC / $00CF: their labels are POSIT's `ret`, build_mainrom's guards on those entries follow,
+      and a pad keeps TOTEXT in place (59 bytes differ). WITNESS: XCLS / XSCR* re-run on the fixed build
+      ([`XCLS_fix2.out`](scratchpad/XCLS_fix2.out), [`XSCR_fix2.out`](scratchpad/XSCR_fix2.out)): R-P-CLAMP 19 -> 0
+      cases failing, R-P-GRP 5 -> 0; no other rule of CLS.md / DSPFNK.md moved.
+
+- [x] **D-CHGETEI — CHGET WITH A CODE WAITING RETURNS WITH INTERRUPTS STILL DISABLED IF ENTERED SO; ITS FLAGS DIFFER**
+      🎚️ TIER 6 — every edge (a program calling CHGET under DI, or testing its flags; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/CHGET.md rules R-G-EI / R-G-FLAGS / R-G-WFLAGS ([`XCHG_run1.out`](scratchpad/XCHG_run1.out),
+      [`XCHGW_run1.out`](scratchpad/XCHGW_run1.out)): the VG-8020's CHGET always returns with interrupts enabled; zerobas's
+      leaves them disabled when a code was already waiting (when it has to wait it enables them, so it does not hang).
+      Its flags on return: VG-8020 9A (4A when GETPNT wrapped, 8A with three codes waiting), zerobas BB / 02. Fix in
+      the C-BIOS repack's CHGET.
+      ✅ **FIXED 2026-11-18** (cbios-repack/chget-ei.patch, same size, 17 bytes differ). CHGET's tail keeps the code in D,
+      so the `cp $18` on GETPNT's advanced low byte is the last flag-setting instruction, and an `ei` precedes the
+      `ret`. WITNESS: XCHG / XCHGW / XCHG2 re-run on the fixed build ([`XCHG_fix1.out`](scratchpad/XCHG_fix1.out),
+      [`XCHGW_fix1.out`](scratchpad/XCHGW_fix1.out), [`XCHG2_fix1.out`](scratchpad/XCHG2_fix1.out)): every docs/bios/CHGET.md
+      rule holds on zerobas (R-G-EI 11 -> 0 cases failing, R-G-FLAGS 13 -> 0, R-G-WFLAGS 2 -> 0, R-G-CODE2 9 -> 0,
+      R-G-F2 10 -> 0).
+
+- [x] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+      🏗️ **RULED (Joost, 2026-11-18, "I agree with your recommendation"): SCOUT a promote pass in the low region** (promote_scout.py); re-land this fix if it frees ~30 B with margin for the switch-off builds, else report the numbers and park.
+      💰 **ROOM MADE (2026-11-18): SOUND / BEEP PROMOTED into main page 1** (basic/soundstmt.asm, in front of the $6CF3
+      pin). tools/promote_scout.py seeded with every bios_* entry, crt_rows / crt_cp and the ISR path
+      ([`promote_scout_bios_1118.out`](scratchpad/promote_scout_bios_1118.out)): ex_sound / snd_nomask / ex_beep 60 B
+      PROMOTABLE. The low region went 22 -> 82 B free, and the switch-off builds 15 -> 75 B (their floor, 7 B under the
+      baseline: the true budget). The page-1 $6CF3 pad went 798 -> 738 B. Next: re-land this fix and PINLIN's half.
+      🔴 **BLOCKED ON LOW-REGION SPACE (2026-11-18).** A fix was built and witnessed (e5ada705, reverted by 49bde3de):
+      bios_fnk calls a 20 B bf_scroll at the low region's end -- showing the line with the cursor on its row,
+      CSRY := the last text row, then the console's own LF scroll (CNSDFG is $FF already). XSCR4 re-run: the CRTCNT
+      24 scroll cases matched the reference in every row ([`XSCR4_fix1.out`](scratchpad/XSCR4_fix1.out)). But the
+      low region had 22 B free at d18bb012 (2026-11-18); spending 21 left the switch-off builds (G6/G7/G8/I1_RESIDENT, CLEARPOOL) no room
+      and switch-build-check went red. biosfnk.asm's own pad in front of the $3283 pin had 3 B (2026-11-18). Needs a carve /
+      promote (the low region and page 1 share one budget; memory carve-routes-measured-shut) of about 20 B.
+      🎚️ TIER 3 — common (KEY ON with the cursor on the bottom line; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md rule R-K-SCROLL ([`XSCR_run2.out`](scratchpad/XSCR_run2.out), XS 00 / 04 /
+      54): with CSRY = CRTCNT the VG-8020 scrolls the text rows up by one (row CRTCNT - 1 comes in blank, its LINTTB
+      entry 175), moves the cursor up a row, then draws the key line; zerobas draws over the cursor's row and leaves the
+      cursor there. Fix in the C-BIOS repack's DSPFNK.
+      ✅ **FIXED 2026-11-18, RE-LANDED** (the revert of 49bde3de: bios_fnk calls bf_scroll, 20 B at the low region's end) in
+      the room the SOUND / BEEP promotion made. Walls after it: low region 61 B free, the switch-off builds' floor 54 B (all
+      7 assemble). WITNESS: the four XSCR probes re-run ([`XSCR4_fix4.out`](scratchpad/XSCR4_fix4.out),
+      [`XSCR_fix4.out`](scratchpad/XSCR_fix4.out)). In the 7 scroll cases at CRTCNT 24 the cursor, rows and row 1 now match;
+      the one cell left is the new last row's LINTTB entry ($AF on the VG-8020: D-LINTTBVAL's marks). The two CRTCNT 13 cases
+      are D-INITEDGES's row. R-K-SCROLL is therefore attributed to those two items.
+
+- [x] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
+      🏗️ **RULED (Joost, 2026-11-18): the PINLIN half rides D-DSPFNKSCROLL's promote scout** (re-land with it, or park with it).
+      🟡 **HALF FIXED (2026-11-18):** INLIN with AUTFLG set now reads from column 1 -- read_line (basic/repl.asm)
+      takes column 1 as the input's start when AUTFLG ($F6AA) is non-zero (zerobas's BASIC never sets it); XLIN2A
+      re-run: all six calls SAME, PINLIN with AUTFLG $FF included ([`XLIN2A_fix1.out`](scratchpad/XLIN2A_fix1.out)).
+      🔴 **PINLIN with AUTFLG 0 is BLOCKED ON PAGE-0 SPACE:** PINLIN and INLIN share bios_inlin's jump target, and
+      telling them apart needs a ~5 B entry stub in page 0 (2026-11-18: 1 B free in the low region at d18bb012 + 3 B
+      in front of the $3283 pin) -- the same carve as D-DSPFNKSCROLL.
+      🎚️ TIER 3 — common (a ROM program that prints a prompt and calls PINLIN gets the prompt in BUF on the VG-8020;
+      filed 2026-11-17).
+      🤖 **AUTONOMOUS** — docs/bios/PINLIN.md rule R-L-PIN ([`XLIN_run1.out`](scratchpad/XLIN_run1.out), XL 3): with "XYZ"
+      on the row before the cursor and "Q" typed, the VG-8020's PINLIN returns "XYZQ" (from column 1), zerobas's "Q" --
+      what INLIN returns on both (R-L-INLIN). QINLIN, BS editing and Enter over existing text agree. Round 2
+      ([`XLIN2A_run1.out`](scratchpad/XLIN2A_run1.out), [`XLIN2B_run1.out`](scratchpad/XLIN2B_run1.out)): the same for
+      INLIN with AUTFLG set (R-L-AUTFLG: the VG-8020 reads from column 1) and for leading spaces / text far right
+      (R-L-EDGES). Fix in the C-BIOS repack's PINLIN / INLIN (start at column 1 for PINLIN, and for INLIN when AUTFLG
+      is set).
+      ✅ **FIXED 2026-11-18, both halves.** PINLIN ($00AE) now jumps to bios_pinlin (6 B at the low region's end, in the room
+      the SOUND / BEEP promotion made), which hands read_line_col1 to bios_inlin's shared tail (`call cl_jphl`). read_line_col1
+      (page 1, basic/repl.asm) sets carry, and the column choice reads it from the stack: column 1 for PINLIN, the AUTFLG rule
+      otherwise. biosfnk.asm's pad in front of the $3283 pin is now full (0 B). Walls: low region 55 B free, switch-off
+      floor 48 B, all 7 assembling. WITNESS: the four XLIN probes re-run ([`XLIN_fix1.out`](scratchpad/XLIN_fix1.out),
+      [`XLIN2B_fix1.out`](scratchpad/XLIN2B_fix1.out)): R-L-PIN, R-L-AUTFLG and R-L-EDGES hold on zerobas. PINLIN.md now
+      differs only in F (D-TEXTAF).
+
+- [x] **D-SETWRTEI — SETWRT RETURNS WITH INTERRUPTS ENABLED: A CALLER'S FIRST VRAM WRITE CAN BE LOST TO AN INTERRUPT**
+      🎚️ TIER 3 — common (a program that calls SETWRT and then OUTs to $98 itself; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — C-BIOS's SETWRT (our repack's source, video.asm) ends `EI / RET`. biosvram-acceptance's
+      setwrt row (DI, SETWRT $1006, OUT $98 twice) lost its FIRST byte on zerobas once a layout change moved the
+      interrupt into that window ([`SETWRTEI_evidence.out`](scratchpad/SETWRTEI_evidence.out): VG 777777777777c33c.., ZB
+      7777777777773c77..); the d18bb012 build passed the same row. Two facts to measure before fixing: whether the
+      VG-8020's SETWRT / SETRD return with interrupts enabled (read IFF2 after each), and what zerobas's interrupt
+      path writes to VRAM (the VG-8020's evidently does not move the VDP address). Same class: SETRD.
+      ✅ **CLOSED 2026-11-18: NOT A BIOS DIFFERENCE; THE ROW WAS THE FLAW.** probes/bios/spec/xsetw.asm run 1
+      ([`XSETW_run1.out`](scratchpad/XSETW_run1.out)): IFF2 is 1 after SETWRT and SETRD on BOTH machines, entered
+      with interrupts off or on, so C-BIOS's `EI` matches the VG-8020. In the same run the VG-8020 lost the first byte
+      instead. Run 2 ([`XSETW_run2.out`](scratchpad/XSETW_run2.out)) put two `EX (SP),HL` between the OUTs, and both
+      machines read c33c. Back to back (18 T), the emulated TMS9918 drops the first write when it falls in active display.
+      The frame phase picked the machine, so the result flipped with layout. biosvram-acceptance's setwrt / setrd rows
+      now space their port accesses the same way, and the row's "DI around call" comment, false since SETWRT
+      re-enables interrupts, is corrected (8/8 SAME).
+
+- [x] **D-FNKBOOT — AT CARTRIDGE INIT ZEROBAS'S FUNCTION-KEY STRINGS (FNKSTR) ARE EMPTY; THE VG-8020'S HOLD THE TEN DEFAULTS**
+      🎚️ TIER 3 — common (a cartridge that shows the key line before calling INIFNK; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — probes/bios/spec/xfnk.asm ([`XFNK_run1.out`](scratchpad/XFNK_run1.out)): FNKSTR ($F87F, 160 B) at cartridge INIT is all zero on zerobas, the
+      ten defaults on the VG-8020; after INIFNK both are identical (INIFNK is right). zerobas fills them later (BASIC). It
+      is why CHPUT's / XINIT run 1's key rows read blank on zerobas. Fix: the C-BIOS repack's boot fills FNKSTR before
+      the cartridge scan (as INIFNK does).
+      ✅ **FIXED 2026-11-18 (zero bytes): basic/interp.asm's cold boot runs the keystr defaults (op 0) between
+      sub_first and init_ext_roms**, not after the scan. The rule that kept it after the scan ("that is where
+      try_sub_slot decides SUBSLOT_OK") had been stale since D-BIOSLADDER B5 moved that decision into sub_first. A
+      first cut patched C-BIOS's boot to call INIFNK before INIT32 and measured nothing: subrom_call refused, because
+      SUBSLOT_OK is decided after C-BIOS's own boot. WITNESS: XFNK on the fixed build is ALL SAME on both rows
+      ([`XFNK_fix1.out`](scratchpad/XFNK_fix1.out), [`XFNK_fix1_disk.out`](scratchpad/XFNK_fix1_disk.out)). INIFNK.md's
+      R-F-BOOT now reads that run. XTOT re-run ([`XTOT_fix1.out`](scratchpad/XTOT_fix1.out)): TOTEXT's key-line
+      sums now match, and R-T-OLD0 / OLD1 fail on the ruled font (D-BIOSINT) only.
+
+- [x] 🎯 **D-DISKVE — OUR BDOS NEVER CALLS THE DISK-ERROR HANDLER (DISKVE, $F323): A DOS PROGRAM'S DISK ERROR IS SILENT**
+      ✅ **LANDED 2026-11-17.** `bdos_dskio` (disk/kernel.asm, in D-DISKCARVE6's hole: 2 B left) wraps dskio for
+      write_sector, dskio_calslt and RDABS / WRABS (one body now, disk/fat.asm). On an error with a handler
+      installed it enters the handler as the CF-3300 does -- A = the drive, B = 1, C = the code | the write bit,
+      DE = the DISKVE cell + 1, HL = the handler -- and acts on C: 1 Retry, 2 Abort (`jp 0`: the warm boot,
+      measured -- the CF-3300 lands at COMMAND.COM's prompt, never through $F325: [`XE4_scr_stock.out`](scratchpad/XE4_scr_stock.out)),
+      0 Ignore (FMAKE carries on; RDABS / WRABS return A = $FF, B = 1, C = the code given, DE = the sector,
+      HL = $01FF). The KEY is DISKVE's high byte: MSX-DOS leaves $D609 there on both machines
+      ([`XE3_stock.out`](scratchpad/XE3_stock.out), [`XE3_ours.out`](scratchpad/XE3_ours.out)), and our init now zeroes it under BASIC (it held $C9C9), so
+      BASIC's own disk errors are unchanged. BDOSXE is GATED (bdos-acceptance): Ignore
+      [`DVE_run2.out`](scratchpad/DVE_run2.out), Retry [`DVE_retry.out`](scratchpad/DVE_retry.out), Abort's screen [`DVE_abort_ours.out`](scratchpad/DVE_abort_ours.out) -- byte-identical but
+      for the two RDABS-1440 bytes that are D-DSKIOCYL's (pinned in the gate's allowlist). 🔮 2 B left: HIT;
+      🔮 "Abort lands at $F325's target": MISS (a warm boot). WRABS's success F is now $42 as RDABS's (one
+      body). ⚠️ Residual: a DOS boot sector's step-5 code (HL = $F323) could leave a page-3 pointer there
+      if that disk then falls back to BASIC -- unmeasured, not filed until a disk does it.
+      🎚️ TIER 3 — common errors (write-protect, disk out, a bad sector, for any MSX-DOS program; filed 2026-11-17).
+      🤖 **AUTONOMOUS** — black box: BDOSXE's capture against the CF-3300 (run build_bdosxe_disk.py, then the
+      `disk_probe_diff.py capture` line it prints, `ZEROBAS_OURS_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK`).
+      The CF-3300 calls DISKVE's handler (the published cell at $F323 -> the handler's address) on a DSKIO error with
+      A = the drive, C = the error code (bit 0 = a write; the code in the bits above), B = 1 -- DE / HL looked like
+      pointers, not yet separated -- and acts on its answer: C = 0 Ignore (FMAKE then A = 0, WRABS A = $FF), 1 Retry,
+      2 Abort (inf: back to the command level). COMMAND.COM's handler is what prints "Abort, Retry, Ignore"; on zerobas a
+      .COM program writing to a protected disk gets no prompt and a silent FF -- or, for WRABS, SUCCESS. The disk ROM
+      has 0 B free: a carve first (Joost: it stays in its allotted space). When it lands, put BDOSXE back in
+      disk_bdos_acceptance.py's list.
+      📐 **THE CONTRACT, MEASURED 2026-11-17** (BDOSXE + RDABS sector 1440, answers patchable: `--answers 1,0` = Retry then
+      Ignore; [`XE2_ign_stock.out`](scratchpad/XE2_ign_stock.out), [`XE2_retry_stock.out`](scratchpad/XE2_retry_stock.out), zerobas [`XE2_ign_ours.out`](scratchpad/XE2_ign_ours.out)):
+      on EVERY BDOS DSKIO error the handler is entered with A = the drive (0), C = DSKIO's code | 1 for a write
+      (write-protect write $01, not-ready read $02), B = 1; DE / HL point into the caller (they moved with the program:
+      not contract). Retry re-issues the DSKIO and calls the handler again (4 calls for 3 operations with one Retry).
+      After Ignore: FMAKE goes on and returns A = 0; WRABS / RDABS return A = $FF, B = 1, C = the handler's C, DE = the
+      sector, H = 1, L = $FF. Abort: not yet measured (the program ends; needs a different readout). zerobas: no handler
+      call; FMAKE $FF, WRABS 0, RDABS 8 (DSKIO's raw code).
+      ➡️ DESIGN: one `bdos_dskio` wrapper for the BDOS's own DSKIO calls (write_sector, read_sector, RDABS, WRABS --
+      never the published $4010, whose raw codes PHYDIO / Disk BASIC expect): save the inputs, call dskio, on Cy build
+      A / B / C, call through (DISKVE), loop on 1, warm-boot on 2, return per the Ignore rules above. Then price it
+      and carve (disk ROM 0 B free).
+      🔴 **A SHARED BODY (2026-11-17):** read_sector is basic/fat-prim-body.inc's -- Disk BASIC runs the same code, and
+      zerobas BASIC raises 68 / 69 / 70 itself, so a wrapper there must not change BASIC. Key the call on the DISKVE
+      cell being NON-ZERO (MSX-DOS's COMMAND.COM and a program install one; zerobas BASIC does not set it -- VERIFY)
+      rather than on a DOS-mode flag (none exists). The Ignore rules split: FMAKE's path wants "ignored" = success,
+      RDABS / WRABS want A = $FF after it -- a one-byte "ignored" flag, or RDABS / WRABS calling the handler themselves.
+      💰 PRICE ~50-60 B; `scratchpad/dupspan_disk.py` finds 43 B SAFE NET but SCATTERED (each freed byte returns only in
+      front of its own pin) -- so a carve slice first (D-DISKCARVE's unclaimed candidate: the getalloc /
+      fat_have_free_cluster scan bodies, ~60 B), then the wrapper.
+
+- [x] 🔴 **D-SEQMIX — A SEQWRITE FILE LOSES ITS DATA WHEN ANOTHER FILE IS READ BETWEEN ITS WRITES
+      (found 2026-11-14 while pricing D-BLKIOPERCALL's read tag)**
+      🎚️ TIER 1 — a BDOS entry point's happy path (Joost 2026-11-08: entry points first): the plainest
+      file copy -- read one file, SEQWRITE another -- writes the wrong bytes or an EMPTY file.
+      🤖 **AUTONOMOUS** — the CF-3300 settles it.
+      📏 [`seqmix_probe.py`](scratchpad/seqmix_probe.py) (bdosfcb_probe's machinery from BASIC's $F37D, two FCBs): B.DAT made with a
+      full sector of $AA and closed; FOPEN B; FMAKE A.DAT; SEQWRITE A rec0 $11 (buffered); a READ
+      of B; SEQWRITE A rec1 $22; FCLOSE A and B; FOPEN A and RDRND RR0 / RR1.
+      • the read is **RDBLK** ([`seqmix_run1.out`](scratchpad/seqmix_run1.out)): CF-3300 $11 / $22; **zerobas $AA / $22** -- A's buffered
+        record was overwritten by B's sector in the shared buffer (k47b2_seek does not seq_flush,
+        by design: D-BDOSSEQ found BASIC's own reads come through there).
+      • the read is **SEQREAD** ([`seqmix_run2.out`](scratchpad/seqmix_run2.out), `SEQMIX_READ=seq`): CF-3300 $11 / $22; **zerobas A.DAT
+        reopens with size 0, first cluster 0 -- EMPTY**, both RDRNDs A=01. SEQREAD runs seq_flush
+        (D-BDOSSEQ), and then the writer's GLOBAL state (size / chain, not the FCB's) is B's by
+        FCLOSE time -- the "FCB authoritative for every writer" design D-WRBLKDIR named
+        (2026-11-08: WRBLK / WRRND are; WRSEQ keeps its size in globals) and left open.
+      ➡️ The design that note asks for: WRSEQ keeps its file's state IN ITS FCB (+16 size, +26 /
+      +28 cluster, the record) as WRBLK / WRRND do; its partial sector survives another file's
+      use of the shared buffer (flushed by whoever reads into it, re-read when the writer
+      resumes mid-sector -- the CF-3300's dirty-buffer shape); FCLOSE writes the entry from the
+      closed FCB. Witnesses: this probe both ways (to a gate), wrblkalt / bdos acceptance, the
+      roundtrip probe, tests/test_wrseq_position.py. Price the disk-ROM bytes first (no 16 B
+      run left on 2026-11-14 apart from D-DISKCARVE3's 32 + 24).
+      🔴 **AND B.DAT WAS CORRUPTED TOO** ([`seqmix_run3.out`](scratchpad/seqmix_run3.out), FOPEN B added at the end): in the SEQREAD
+      shape zerobas's B entry read A's size ($100) and cluster (5) -- FCLOSE A wrote at
+      FWR_DIRSEC / FWR_DIROFF, which fat_find(B) had moved. Two faults: (a) the shared buffer
+      held the writer's records BETWEEN calls; (b) FCLOSE took the entry's place and contents
+      from globals.
+      ✅ **FIXED 2026-11-14** (design drafted by a planning agent from the code, checked here):
+      (E1) bdos_seqwrite_body WRITES THROUGH -- every record flushed; a mid-sector record first
+      re-reads its sector (dout_secread, dout_write's pattern) and the writer steps back onto
+      a non-full sector; BDOS_WRBUFLEN now means "bytes of this sector on disk". (E2)
+      rrnd_position calls seq_dirty, not seq_flush (a flush would now write another file's
+      bytes over A's sector); (E3) seq_flush and (E4) bdos_close_write's globals path are gone;
+      (E5) every FCLOSE closes from its own FCB (+26, +16..19 at +25: close_read / cr_dir) --
+      D-WRBLKDIR's "one close rule". Disk ROM: the $461D region gained 28 B (2026-11-14).
+      📏 [`seqmix_fix_blk.out`](scratchpad/seqmix_fix_blk.out), [`seqmix_fix_seq.out`](scratchpad/seqmix_fix_seq.out): both shapes now match the CF-3300 on every row,
+      FCB bytes included (🔮 HIT). New `make seqmix-acceptance` (probes/disk/disk_probe_seqmix.py,
+      zerobas only, pinned to the CF-3300's readings, both shapes, 10 rows): PASS; KNIFED against
+      the unfixed sources -> 5 rows DIVERGE, exactly the bug's ([`SMX_knife.out`](scratchpad/SMX_knife.out)). Unit tests,
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull /
+      wcache green, bdosseq / bdosfcb probes run. bdos-acceptance's DOSL-D3 (COPY by SEQREAD /
+      SEQWRITE) went MISALIGNED: it now takes **153.2 s against the CF-3300's 93.0**
+      ([`SMX_d3_400b.out`](scratchpad/SMX_d3_400b.out), capture byte-identical) and its window was 150 s -- now 220, and the
+      harness prints BOTH sides' times (the min alone hid ours).
+      ➡️ LEFT, filed: the write-through's cost (below). 🏗️ RULED (Joost 2026-11-14): a BASIC
+      output channel between $F37D SEQWRITEs is *"an unsupported corner case"* -- a
+      recorded difference, not chased.
+      ✅ **D-SEQMIX3 (2026-11-14): TWO FILES READ ALTERNATELY BY SEQREAD** (a merge / compare;
+      [`seqmix_inter1.out`](scratchpad/seqmix_inter1.out), `SEQMIX_READ=interleave`): SEQREAD A after FOPEN B read B's records ($AA,
+      $BB where the CF-3300 gives $11, $22) -- srd_pos trusted the one iterator whenever the
+      RECORD matched (0 = 0). Now srd_same (disk/pageenv.asm, the 24 B in front of $41EF --
+      exactly 24, one `or a` dropped with its reason) also requires the iterator's file to be
+      this FCB's (+26 = FAT_FIRSTCLUS); else rrnd_pos_a re-positions from this FCB's own file
+      (D-RDRNDMULTI). [`seqmix_inter2.out`](scratchpad/seqmix_inter2.out): every row as the CF-3300 (🔮 HIT). seqmix-acceptance gained
+      the shape (20 rows): PASS; KNIFED -> the 2 A reads DIVERGE ([`SMX3_knife.out`](scratchpad/SMX3_knife.out)). Unit tests, bdos /
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull / wcache /
+      programs acceptance green. Past record 255 srd_pos still reads on from the iterator
+      (rrnd_position's scope, unchanged). Disk ROM: no run of 16 B+ left (2026-11-14).
+      ✅ **D-SEQMIX2 (2026-11-14): the SOURCE CLOSED BEFORE THE WRITER'S LAST RECORD** -- a copy
+      that ends with an EOF mark ([`seqmix_close2.out`](scratchpad/seqmix_close2.out), `SEQMIX_READ=close`): FCLOSE B cleared the
+      ONE BDOS_WRMODE, so SEQWRITE A rec1 answered **$FF** and A.DAT kept 1 record (CF-3300: 2).
+      Fixed: (1) bdos_close_wm -> bcw_own (kernel.asm, in front of $5FE5): write mode ends only
+      when the closed FCB's +26 is the writer's BDOS_WRFIRST, tested before close_read (whose
+      cr_copy1 rewrites it); (2) seq_load (driver.asm, the $461D hole): every SEQWRITE reloads
+      BDOS_WRFIRST / BDOS_WRBYTES from its own FCB (+26, +16..19), which another file's FCLOSE /
+      WRBLK rewrite. [`seqmix_close3.out`](scratchpad/seqmix_close3.out): every row as the CF-3300 (🔮 HIT). seqmix-acceptance
+      gained the shape (15 rows, keyed by label): PASS; KNIFED against D-SEQMIX alone -> the 2
+      early-close rows DIVERGE ([`SMX2_knife.out`](scratchpad/SMX2_knife.out)). Unit tests, bdos (D3 151.7 s, in its window) /
+      wrblkalt / bdosunop / diskbasic / copy / catcopy / inpquote / diskascii / diskfull /
+      wcache / callsystem acceptance green. Disk ROM after: 24 B in front of $41EF, the rest
+      under 16 (2026-11-14).
+- [x] 🔴 **D-CALLSTMT — WITH THE STOCK CF-3300's OWN BASIC, `CALL FORMAT` / `CALL SYSTEM` ARE A SYNTAX
+      ERROR (found 2026-11-10 by D-DSKFMT's dialogue runs)**
+      🎚️ TIER 1 — a disk-ROM entry point's happy path (Joost 2026-11-08: entry points first).
+      🏗️ **RULED 2026-11-14: first *"ideally yes"*, then *"(b) record as a known gap"* -- CLOSED, see the end.**
+      🤖 **AUTONOMOUS** — National_CF-3300_ZEROBASDISK (the stock machine, our disk ROM) answers
+      `call format` with Syntax error at once: that BASIC dispatches CALL to the disk ROM's
+      STATEMENT handler (the ROM header's third word, MSX2 TH expansion-ROM header), and ours
+      is 0 -- zerobas-BASIC reaches the same bodies through its own hooks (H_FORM / H_SYST), so
+      the gap shows only under another BASIC. Our trace saw no disk-ROM entry run at all.
+      ✅ **FORMAT DONE (2026-11-10):** the header's STATEMENT word is stmt_hdl (kernel.asm, in
+      front of $5FE5: 0 B left) -- PROCNM against "FORMAT" + 0, then the dialogue with our
+      own CHGET body for keys. Under the CF-3300's BASIC with our disk ROM, CALL FORMAT runs
+      the dialogue, formats and comes back to Ok ([`callstmt_ours.out`](scratchpad/callstmt_ours.out)). ➡️ STILL OPEN:
+      CALL SYSTEM there (hk_system calls back into zerobas-BASIC: fch_close_all, disk_error
+      -- under another BASIC it needs its own way), so it stays "not ours" (Syntax error);
+      and what the CF-3300 answers for an unknown CALL name under its BASIC with ours.
+      ✅ **UNKNOWN NAMES (2026-11-11): SAME.** `CALL FOO` / `CALL SYSTEMX` are Syntax error under
+      the CF-3300's BASIC with its own disk ROM and with ours ([`callunk_run.out`](scratchpad/callunk_run.out)).
+      💰 **CALL SYSTEM THERE, PRICED (2026-11-11): ~60 B, ROOM BLOCKED.** stmt_hdl's sh_no
+      becomes `jp sh_sys` (3 B for 3 B); sh_sys in the $75A5 region (42 B free): PROCNM
+      against "SYSTEM" + 0, the BASIC text after it must end the statement (else CF = 1:
+      that BASIC's Syntax error), $F346 = 0 -> Illegal function call through the published
+      error entry (E = 5, CALBAS $406F, MSX2 TH -- that BASIC's own), no file close (that
+      BASIC has no files of ours), DI, then hk_system's key-row / boot-sector read / check
+      as a SUBROUTINE returning Cy (today it jumps to hsy_syn -> disk_error by calbak into
+      zerobas-BASIC, which would crash another BASIC): +6 B in front of $5FE5 (0 B free --
+      move frp_full or write_sector to the $55DB slack first). Total ~55-60 B against 42 +
+      13: a carve of ~20 B first.
+      📏 **RE-PRICED (2026-11-13): THE "65 B AT $7F7F" IS NOT ROOM.** `make basic-reloc` reads
+      disk.rom's largest hole as $7F7F-$7FBF, 65 B -- but $7F80-$7FBF is the FDC's memory-mapped
+      window (disk/runtime.asm: "skip OVER the dead $7F80-$7FBF FDC window"): code placed there
+      cannot be fetched, which is also why cr_copy1 broke bdos-acceptance there on 11-13. The
+      real room on 2026-11-13: ~12 B in front of $75A5 and ~0 in front of $5FE5 (moving
+      hk_format, 14 B, to $75A5 trades one for the other -- tried and reverted). CALL SYSTEM
+      under another BASIC needs sh_sys (~45 B: PROCNM vs "SYSTEM", the tail must end the
+      statement, $F346 = 0 -> E = 5 through CALBAS $406F, then hk_system's key-row / read /
+      boot part as a subroutine that RETURNS on failure, +4 B in front of $5FE5) -- a carve of
+      ~40 B first.
+      ✂️ **CARVE STEP 12 (2026-11-13):** sav_full (tokenised SAVE's Disk full, 14 B in front of
+      $5FE5) was byte for byte the tail of BSAVE's bsv_full (basic/sv-bsvdisk.inc, disk.rom
+      only) -- now a label inside it ([`diskngram.py`](scratchpad/diskngram.py)'s 15 B x2 pair). **In front of $5FE5:
+      0 -> 14 B on 2026-11-13** (a zero-run count from the image; the wall readout lists runs of
+      16+). Written out, sh_sys is ~55-60 B against ~10 there (after the +4 B subroutine
+      change) and 26 in front of $75A5, and its error routes do not split -- **still ~25 B
+      short**. Parked there: the case is another BASIC driving OUR disk ROM.
+      📏 **MEASURED UNDER ANOTHER BASIC (2026-11-14): IT IS NOT ONE STATEMENT.** The callsystem
+      gate's twelve rows with the ZB side on National_CF-3300_ZEROBASDISK (the CF-3300's own
+      BASIC, our disk ROM; new `--zb-machine`, [`CS_base.out`](scratchpad/CS_base.out)): 1 / 12 SAME. CALL SYSTEM is
+      Syntax error everywhere (expected) -- but also `OPEN "X.TXT" FOR OUTPUT AS 1` answers
+      `File already open` and `KILL "COMMAND.COM"` `Illegal function call`, and after MSX-DOS's
+      `BASIC` the key row is not shown (f346dos / dosarg). zerobas keeps Disk BASIC's
+      statements in its MAIN ROM by design (D-FATENG: disk.rom serves DSKIO / BDOS / DOS);
+      another BASIC gets none of them from our disk ROM. So CALL SYSTEM there is one row of a
+      missing LAYER, and its price (~40 B: sh_sys + a carve; found today: sfirst/snext share
+      13 B, the boot-sector read + signature check twice in init.asm / hk_system ~13 B) comes
+      out of a disk ROM with 0 B in runs of 16+.
+      🏗️ **RULED (Joost 2026-11-14): *"ideally yes"*** -- another MSX BASIC driving our disk ROM IS
+      a target, so the scope is the Disk BASIC statement layer in disk.rom; and *"we should
+      stick to the final alotted space"*: inside the 16 KB, carving first (the disk ROM ships
+      before the rest of zerobas).
+      📏 **INVENTORY (2026-11-14, [`foreign_probe.py`](scratchpad/foreign_probe.py) -> [`foreign_run1.out`](scratchpad/foreign_run1.out)): 1 / 18 SAME.** Under the
+      CF-3300's own BASIC, our disk ROM answers SAVE / LOAD / RUN / MERGE / OPEN / LOAD of a
+      missing file with `Internal error`, a random OPEN / FIELD / PUT with `Syntax error`,
+      KILL / NAME / COPY with `Type mismatch`, DSKF / DSKI$ with `Illegal function call`, and
+      FILES / LFILES list the files then `Illegal function call`; only MAXFILES matches.
+      That is the design: disk.rom serves DSKIO, the DOS kernel and the helpers zerobas's MAIN
+      ROM calls -- it has NO Disk BASIC statement layer behind the hooks a stock BASIC calls.
+      💰 **WHAT "IDEALLY YES" COSTS:** a whole Disk BASIC in disk.rom -- every statement above
+      plus the file-I/O hooks a stock BASIC reaches (the CF-3300 holds its own in the same
+      16 KB with its kernel) -- several KB, against a disk ROM with no free run of 16 B
+      (2026-11-14) and the ruling that its 16 KB is final. 🙋 **ASK JOOST: the two rulings
+      conflict at this size.** Options: (a) carve the kernel / helpers hard and build the
+      layer (several KB of carving -- not visible today); (b) "ideally" means not now:
+      record these rows as the known gap; (c) a subset (which statements matter most under
+      a foreign BASIC: LOAD / RUN / FILES?) priced one by one.
+      🏗️ **RULED (Joost 2026-11-14): *"(b) record as a known gap"*** -- and why: *"the first user of
+      the disk rom will be C-BIOS without basic, so what matters most is the bios and bdos
+      calls"*. CLOSED as a RECORDED DIFFERENCE: under another MSX BASIC, our disk ROM answers
+      17 of foreign_probe.py's 18 rows differently (the table above); CALL FORMAT works there.
+      Not chased. The disk ROM's priority is its BIOS-level entries (DSKIO / DSKCHG / GETDPB /
+      CHOICE / DSKFMT / ...) and the BDOS -- every TIER 5 BDOS speed item (D-BLKIOPERCALL, the
+      SEQWRITE write-through, the RDBLK read tag) ranks with that.
+      ~~🙋 **ASK JOOST (2026-11-14): is "another MSX BASIC driving OUR disk ROM" a target?** If
+      yes, the scope is Disk BASIC's statement layer in disk.rom (the CF-3300's ROM holds
+      it in the same 16 KB), not CALL SYSTEM alone. If no, CALL FORMAT under another BASIC
+      (done) is where it stops, and these rows are a RULED difference. The carve above is
+      not spent until he answers.~~
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
