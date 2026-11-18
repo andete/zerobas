@@ -17019,7 +17019,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-INITIOQUEUES — INITIO WRITES THE VOICE-QUEUE DESCRIPTORS AT $F959; THE VG-8020 WRITES THEM WHERE QUEUES ($F3F3) POINTS**
       🎚️ TIER 6 — every edge (a program that moves QUEUES and then calls INITIO / GICINI; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-QUEUES ([`XINITIO5_run4.out`](scratchpad/XINITIO5_run4.out)). With QUEUES :=
+      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-QUEUES / R-IO-QUEUES6 ([`XINITIO6_run1.out`](scratchpad/XINITIO6_run1.out): INITIO
+      itself, no interrupt, QUEUES $9EB7 and $A123 each over a garbage table; [`XINITIO5_run4.out`](scratchpad/XINITIO5_run4.out)). With QUEUES :=
       $9EB7 the VG-8020's INITIO writes the three reset descriptors (0, 0, 0, $7F, $F975 / $F9F5 / $FA75) at $9EB7.. and
       leaves $F959..; QUEUES itself is kept. zerobas writes them at $F959 and leaves $9EB7. As the boot leaves QUEUES at
       $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset

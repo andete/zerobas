@@ -5,8 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `INITIO` ($003B) — initialise the sound chip and PLAY's state
 
-> **Spec:** DRAFT 5 (2026-11-18), after five test-writer reviews. Measured on the Philips VG-8020:
-> twenty-two states built so that "kept" and "written" give different answers:
+> **Spec:** DRAFT 6 (2026-11-18), after six test-writer reviews. Measured on the Philips VG-8020:
+> twenty-five states built so that "kept" and "written" give different answers:
 > - the PSG pattern, all $00 and all $FF included;
 > - port $AA;
 > - PLAY's queue descriptors, the voice control blocks and MUSICF / PLYCNT, each seeded with garbage
@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 > - entry F $00 / $FF, and interrupts on and off;
 > - two full sets of entry registers (entry A $A7 / $00), the shadow registers and I included;
 > - PLAY's parse cells seeded;
-> - QUEUES moved;
+> - QUEUES moved to two other tables, each seeded with garbage and read before any interrupt;
 > - the first call after boot;
 > - a read window with a witness (JIFFY): no interrupt ran in it in two of round 5's three cases.
 
@@ -27,7 +27,8 @@ SPDX-License-Identifier: 0BSD
 - the tone and noise periods (R0-R6) and the envelope period (R12, R13) are left as they were.
 
 PLAY's state goes back to its start: the three voice queues are emptied (their descriptors are
-written into the table QUEUES ($F3F3) points to, $F959 as the boot leaves it), MUSICF / PLYCNT cleared,
+written into the table QUEUES ($F3F3) points to, $F959 as the boot leaves it; the buffer addresses in
+them are fixed), MUSICF / PLYCNT cleared,
 and the three voice control blocks rewritten: bytes 15-19 of each become $04 $04 $78 $88 $FF
 (octave 4, length 4, tempo 120, volume byte $88, envelope period low byte $FF), every other byte 0.
 The fourth (RS-232) queue, QUEUES itself, PLAY's parse cells and the PPI's port $AA (the CAPS lamp,
@@ -47,7 +48,16 @@ Whether a PLAY after INITIO sounds the same on both is not measured here.
 Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack, whose INITIO writes R15 and R11 and
 then runs GICINI's teardown (cbios-repack/initio.patch, initio-gicini.patch).
 
-**Evidence.** **[XI5 n]**: case `n` of round 5's XINITIO5 probe, run 4,
+**Evidence.** **[XI6 n]**: case `n` of round 6's XINITIO6 probe, run 1,
+[`scratchpad/XINITIO6_run1.out`](../../scratchpad/XINITIO6_run1.out). `probes/bios/spec/xinitio6.asm` runs
+three cases in round 5's window:
+- the first call after boot;
+- QUEUES := $9EB7, and QUEUES := $A123.
+
+In the moved cases both QUEUES' 28-byte table and $F959.. are seeded with garbage. Everything is read
+before the call and again after it, before any `ei`; JIFFY is the witness.
+
+**[XI5 n]**: case `n` of round 5's XINITIO5 probe, run 4,
 [`scratchpad/XINITIO5_run4.out`](../../scratchpad/XINITIO5_run4.out). `probes/bios/spec/xinitio5.asm` runs
 every case with interrupts off and round 4's window. JIFFY ($FC9E) is read just before the call and
 again after the reads, as the window's witness. It seeds QUEUES ($F3F3) := $9EB7 in XI5 1 / 2, where
@@ -56,10 +66,16 @@ XI5 3 inherits it, and reads $9EB7.. and QUETAB again after one more interrupt.
 **Rounds 1-3 ran with an interrupt pending.** Their probes kept interrupts off for more than a frame
 (the 3200-byte copy and compare), so the VDP's interrupt was pending at the call. It ran at INITIO's
 own EI in the interrupts-off cases, and at the probe's `ei` just before the call in the interrupts-on
-cases. Their rules therefore describe INITIO followed by one interrupt. Rounds 4 and 5 remove it, and
-every rule the interrupt could have explained holds there too. In the interrupts-off cases of rounds
-1-3 that interrupt ran with garbage queues and MUSICF ≠ 0, yet R8-R10 still read 0. That fits INITIO
-clearing MUSICF before it enables interrupts, so the interrupt plays nothing.
+cases. Their rules therefore describe INITIO followed by one interrupt. Rounds 5 and 6 remove it, with
+JIFFY as the witness, and every rule the interrupt could have explained holds there too. In rounds
+1-3's interrupts-off cases MUSICF was garbage before the call and R8-R10 still read 0 after it. That
+fits INITIO clearing MUSICF before it enables interrupts; the state at that interrupt is not recorded.
+
+**Round 4's window has no witness.** It reads the VDP status just before the call and runs `di` right
+after it. In XI4 2, entered with interrupts on, the interrupt left pending by the snapshot ran
+between the probe's `ei` and that status read: port $AA was written $C3 and read $CA. XI5 1 shows an
+interrupt can still be taken after INITIO's EI. No round-4 rule depends on the window: R-IO-AA4
+witnesses itself through $AA's low nibble, and XI4 2 is checked on the high nibble only.
 
 **[XI4 n]**: case `n` of round 4's XINITIO4 probe, run 1,
 [`scratchpad/XINITIO4_run1.out`](../../scratchpad/XINITIO4_run1.out). `probes/bios/spec/xinitio4.asm` adds
@@ -100,7 +116,7 @@ five cases and the 105-byte record:
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xinitio_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xinitio_rules.py --write` -->
 
-**24 rules; 24 hold on the reference. Of the 2987 recorded outputs (each case's cursor, cells, A, table entries ...): 2957 read by a rule's check, 30 declared NOT evidence (below), 0 unread.**
+**26 rules; 26 hold on the reference. Of the 3338 recorded outputs (each case's cursor, cells, A, table entries ...): 3308 read by a rule's check, 30 declared NOT evidence (below), 0 unread.**
 
 #### 1. INITIO ($003B)
 
@@ -151,6 +167,13 @@ five cases and the 105-byte record:
 | **R-IO-MP5** Under the clean window too: MUSICF / PLYCNT become 0 ($FF / 0, 0 / $5A, $5A / $FF), the voice control blocks R-IO-VCB's values, and exactly those seeded cells change. | 3 | ✓ | ✗ 3: XI5 1, XI5 2, XI5 3 |
 | **R-IO-REGS5** The registers, I and the PSG (all $00, all $FF and a pattern) as R-IO-REGS3 / R-IO-I / R-IO-PSG say; port $AA WHOLE in the clean cases ($96, $C3), its high nibble in XI5 1, where the interrupt that slipped in scanned the keyboard ($35 read as $3A). | 3 | ✓ | ✓ |
 
+#### 6. Round 6: QUEUES and its table read BEFORE any interrupt can run (XINITIO6: the clean window, JIFFY as the witness, the reads before any `ei`)
+
+| rule | cases | reference | zerobas |
+|---|---|---|---|
+| **R-IO-QBOOT** At the first call after boot QUEUES is $F959 and its table already holds R-IO-PLAY's descriptors, the RS-232 descriptor and QUEBAK 0; the call changes none of it, and no interrupt runs. | 1 | ✓ | ✓ |
+| **R-IO-QUEUES6** INITIO ITSELF writes the descriptors where QUEUES points: with QUEUES $9EB7 or $A123 and its 28-byte table garbage, the table's first 18 bytes become R-IO-PLAY's descriptors (the buffer addresses $F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 (the RS-232 descriptor, QUEBAK) keep their garbage, $F959.. keeps its own, and QUEUES is kept -- with JIFFY unchanged: no interrupt ran. | 2 | ✓ | ✗ 2: XI6 2, XI6 3 |
+
 Declared NOT evidence (16 cases: XI 1, XI 2, XI 3, XI 4 … (+12)): r14 — R14 is the PSG's INPUT port A: it reads the joystick lines, not anything INITIO writes
 
 Declared NOT evidence (3 cases: XI4 1, XI4 2, XI4 3): r14, iff — R14 is the PSG's input port; IFF2 reads the probe's own `di` (the first instruction after the return: round 4's read window)
@@ -166,7 +189,7 @@ Declared UNSTABLE on the reference itself (1 cases: XI5 1): jifb, jifa — the r
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-INITIOVCB** (the voice control blocks are not rewritten; they hold 0 after boot) | R-IO-VCB, R-IO-SEED, R-IO-VCB3, R-IO-VCB4, R-IO-MP / R-IO-PARSE / R-IO-MP5 (through the blocks' cells) |
-| **D-INITIOQUEUES** (the descriptors go to $F959, not where QUEUES points) | R-IO-QUEUES, R-IO-MP5 (the extra writes at $F959) |
+| **D-INITIOQUEUES** (the descriptors go to $F959, not where QUEUES points) | R-IO-QUEUES, R-IO-QUEUES6, R-IO-MP5 (the extra writes at $F959) |
 
 ## Open (not measured)
 
@@ -175,6 +198,8 @@ Declared UNSTABLE on the reference itself (1 cases: XI5 1): jifb, jifa — the r
   the whole work area was never filled with garbage before a call.
 - **[A]** A PLAY after INITIO, with other O / L / T / V / M settings before it: what it sounds like,
   and the voice control blocks after it.
+- **[A]** Whether INITIO writes R14, port A's output latch: a read returns the joystick lines (declared
+  not evidence), so it matters only if port A is later made an output.
 - **[A]** The disk machine (every run is the diskless row): whether the disk ROM hooks INITIO, and
   what it does to the disk ROM's work area.
 - **[A]** The rest of the work area from garbage. Only PLAY's cells were seeded; every other cell held
