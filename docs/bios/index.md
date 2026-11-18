@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**57 of 108 calls have a page; 52 are FINAL.**
+**57 of 108 calls have a page; 54 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -37,9 +37,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CHGMOD.md) | 5 | D-CHGMODRANGE, D-INITXTBAS |
-| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](CHGCLR.md) | 7 | D-CHGCLRMODE, D-CLRREGS |
+| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGCLR.md) | 7 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](CLRSPR.md) | 7 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
+| $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CLRSPR.md) | 8 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](INIGRP.md) | 4 | D-SETSHADOW, D-INIGRPORDER, D-INIREGS |

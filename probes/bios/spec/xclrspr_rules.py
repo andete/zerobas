@@ -43,7 +43,7 @@ RULES = [
                 "not written. The pattern table is cleared first and the attributes written after it: where the two "
                 "overlap, the attributes stay. The bases are taken AND $3FFF (ATRBAS $5B00, $9B00 and PATBAS $B800 "
                 "write where $1B00 and $3800 would) and the addresses wrap from $3FFF to $0000. Nothing else in VRAM changes. Whatever "
-                "SCRMOD holds (0, 1, 2, 3, $77, with either sprite size); ATRBAS / PATBAS, not the screen-table cells, give the places in every "
+                "SCRMOD holds (0, 1, 2, 3, $77 with either sprite size; 4, $81); ATRBAS / PATBAS, not the screen-table cells, give the places in every "
                 "mode measured.", writes),
     Rule("R-CS-R1", S1, "VDP register R#1 := RG1SAV, as the VDP holds it (bit 2 reads 0: RG1SAV $A4; bits 7-5 as they are: "
          "$82, $A4, $88; bit 7 clear: $60); the other registers keep their "

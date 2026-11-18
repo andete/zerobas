@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CLRSPR` ($0069) — clear all sprites
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 5). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the fourth test-writer review found no new behaviour; its
+> items are combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -17,7 +18,8 @@ SPDX-License-Identifier: 0BSD
   and its colour := FORCLR; X is not written;
 - the VDP register R#1 := RG1SAV.
 
-It writes R#1 first, then clears the patterns, then writes the attributes. It does this in every SCRMOD
+It writes R#1 before at least one of its VRAM writes (case 55), clears the patterns, then writes the
+attributes. It does this in every SCRMOD
 measured (0-4, $77, $81), takes
 the places from ATRBAS / PATBAS (AND $3FFF) rather than the screen-table cells, and returns with
 interrupts **on**.
@@ -69,7 +71,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CS-VRAM** With RG1SAV's bit 7 set (16 KB addressing): the sprite pattern table -- 2048 bytes from PATBAS ($F926) -- := 0. In the attribute table from ATRBAS ($F928), sprite k's entry gets Y := $D1 (209), its pattern number := k, or 4 x k when RG1SAV's bit 1 is set (16 x 16 sprites -- bit 0, magnification, plays no part: RG1SAV $E1), and its colour := FORCLR as it is (a byte over 15 too: $FF); its X is not written. The pattern table is cleared first and the attributes written after it: where the two overlap, the attributes stay. The bases are taken AND $3FFF (ATRBAS $5B00, $9B00 and PATBAS $B800 write where $1B00 and $3800 would) and the addresses wrap from $3FFF to $0000. Nothing else in VRAM changes. Whatever SCRMOD holds (0, 1, 2, 3, $77, with either sprite size); ATRBAS / PATBAS, not the screen-table cells, give the places in every mode measured. | 60 | ✓ | ✗ 18: XC N04, XC N11, XC N29, XC N31, XC N40, XC N42 … (+12) |
+| **R-CS-VRAM** With RG1SAV's bit 7 set (16 KB addressing): the sprite pattern table -- 2048 bytes from PATBAS ($F926) -- := 0. In the attribute table from ATRBAS ($F928), sprite k's entry gets Y := $D1 (209), its pattern number := k, or 4 x k when RG1SAV's bit 1 is set (16 x 16 sprites -- bit 0, magnification, plays no part: RG1SAV $E1), and its colour := FORCLR as it is (a byte over 15 too: $FF); its X is not written. The pattern table is cleared first and the attributes written after it: where the two overlap, the attributes stay. The bases are taken AND $3FFF (ATRBAS $5B00, $9B00 and PATBAS $B800 write where $1B00 and $3800 would) and the addresses wrap from $3FFF to $0000. Nothing else in VRAM changes. Whatever SCRMOD holds (0, 1, 2, 3, $77 with either sprite size; 4, $81); ATRBAS / PATBAS, not the screen-table cells, give the places in every mode measured. | 60 | ✓ | ✗ 18: XC N04, XC N11, XC N29, XC N31, XC N40, XC N42 … (+12) |
 | **R-CS-R1** VDP register R#1 := RG1SAV, as the VDP holds it (bit 2 reads 0: RG1SAV $A4; bits 7-5 as they are: $82, $A4, $88; bit 7 clear: $60); the other registers keep their values, and RG0SAV-RG7SAV, SCRMOD and FORCLR / BAKCLR / BDRCLR are not changed. | 62 | ✓ | ✗ 62: XC N00, XC N01, XC N02, XC N03, XC N04, XC N05 … (+56) |
 | **R-CS-REGS** On return A = FORCLR, E = FORCLR, D kept; BC = $0020 (8 x 8) or $0080 (16 x 16); HL = ATRBAS + $80, just past the table; F: for 16 x 16 sprites $95, one value; for 8 x 8 bits 5 and 3 are RG1SAV's bits 7 and 5 (as GSPSIZ leaves them: $E0 gives $28, $88 $20) and the rest clear -- whatever F was on entry. IX and IY are kept. | 62 | ✓ | ✗ 62: XC N00, XC N01, XC N02, XC N03, XC N04, XC N05 … (+56) |
 | **R-CS-EI** Interrupts are on after the call, whether they were on or off before it. | 62 | ✓ | ✗ 4: XC N04, XC N40, XC D04, XC D40 |
@@ -83,7 +85,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | **D-CLRSPRR1** (zerobas leaves VDP R#1 as it was; the VG-8020 writes RG1SAV to it) | R-CS-R1 |
 | **D-CLRSPRMODE** (in SCREEN 0 zerobas returns at once -- VRAM, BC, DE, HL, IX, IY and the interrupts as on entry, A $00, F $44; for SCRMOD above 3 -- 4, $77, $81 -- it writes Y $D9, not $D1) | R-CS-VRAM, R-CS-EI, R-CS-REGS |
 | **D-CLRSPRORDER** (zerobas writes the attributes and then clears the patterns: an attribute table inside the pattern table's span ends up 0) | R-CS-VRAM |
-| **D-CLRREGS** (zerobas returns A = 0, F $42, BC = 0, DE = FORCLR / $D1 -- $D9 with SCRMOD $77, D-CLRSPRMODE -- and HL = PATBAS) | R-CS-REGS |
+| **D-CLRREGS** (zerobas returns A = 0, F $42, BC = 0, DE = FORCLR / $D1 -- $D9 with SCRMOD above 3, D-CLRSPRMODE -- and HL = PATBAS) | R-CS-REGS |
 
 ## Open (not measured)
 
@@ -92,8 +94,12 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 - **[A]** Whether the call turns interrupts off and on again inside (the state is read after it).
 - **[A]** RG1SAV with bit 7 clear: case 55 ($60) shows R#1 written before the VRAM writes -- its VRAM
   no longer matches the 16 KB model -- so they go through the TMS9918's 4 KB addressing, whose
-  mapping the model does not reproduce; that case's VRAM is not compared (the group `XC4`). SCRMOD
-  values other than those measured.
+  mapping the model does not reproduce; that case's VRAM is not compared (the group `XC4`). Where
+  among the VRAM writes R#1 is written (a VDP R#1 preset with bit 7 clear and RG1SAV $E0 would
+  tell); every case enters with VDP R#1 $80. SCRMOD values other than those measured; SCRMOD 4 and
+  $81 only with the default tables and 8 x 8 sprites.
+- **[A]** For 8 x 8 sprites, where F's S, Z and P/V come from: no case has RG1SAV bits 7 and 5 both
+  clear.
 - **[A]** RAM other than the cells recorded; VRAM writes that keep every block's sum outside the
   three windows (the read-back compares sums there).
 - **[A]** A write that leaves VRAM block 1 ($0400-$07FF) all zero: the probe's fill sums to $0000

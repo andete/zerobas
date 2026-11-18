@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CHGCLR` ($0062) — set the screen colours
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 5). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the fourth test-writer review found no new behaviour; its
+> items are combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -79,7 +80,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-CHGCLRMODE** (SCRMOD $81 and $FF: zerobas sets R#7 to BDRCLR; the VG-8020 takes the SCREEN 0 path) | R-CC-R7 |
+| **D-CHGCLRMODE** (SCRMOD $81 and $FF: zerobas sets R#7 to BDRCLR and returns the other path's A, F and HL; the VG-8020 takes the SCREEN 0 path) | R-CC-R7, R-CC-REGS |
 | **D-CLRREGS** (zerobas returns another DE everywhere -- D = SCRMOD - 1, E the colour byte; another F on the SCREEN 0 / 1 paths and, in the other modes, where the entry carry is set; and outside SCREEN 0 / 1 A = BDRCLR and HL $F3EB) | R-CC-REGS |
 
 ## Open (not measured)
@@ -87,7 +88,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 - **[A]** A call made with R#1's interrupt bit set (the probe's preset has it clear; CHGCLR does not
   write R#1), and the SCREEN 1 fill with R#1's bit 7 clear (4 KB addressing).
 - **[A]** Whether the call turns interrupts off and on again inside (the state is read after it).
-- **[A]** SCRMOD values other than those measured.
+- **[A]** SCRMOD values other than those measured. For SCRMOD $81 / $FF the colour byte equals the
+  probe's R#7 preset ($F4), so R#7 is seen only through RG7SAV there; in SCRMOD 4, $10, $77 and $80
+  BDRCLR is 7, the same as the R#6 preset, so a stray R#6 write would not show.
 - **[A]** RAM other than the cells recorded; VRAM writes that keep every block's sum outside the
   three windows (the read-back compares sums there).
 - **[A]** A write that leaves VRAM block 1 ($0400-$07FF) all zero: the probe's fill sums to $0000
