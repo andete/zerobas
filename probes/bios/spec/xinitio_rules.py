@@ -257,8 +257,8 @@ RULES += [
          "value change, no other.",
          lambda c: c.src == "XI3" and c.mp,
          lambda c: c.nchg == len(reset3(c)) and c.cells == reset3(c)[:24]),
-    Rule("R-IO-BOOT", S3, "The first call after boot, nothing seeded, changes no cell of the work area: the boot "
-         "already left PLAY's state, the voice control blocks included, at INITIO's values.",
+    Rule("R-IO-BOOT", S3, "The first call after boot, nothing seeded, changes no cell of the work area. (That the "
+         "boot already left the voice control blocks at INITIO's values is R-IO-VCB3's read of XI3 1.)",
          lambda c: c.src == "XI3" and not (c.desc or c.vcbseed or c.mp), lambda c: c.nchg == 0 and c.cells == []),
     Rule("R-IO-REGS3", S3, "R-IO-REGS2 and R-IO-PSG2 hold here too: A $FF, F $54, E $0B, the rest and the shadow "
          "registers kept; the PSG; port $AA's high nibble (CAPS, click, motor, cassette out) as found; interrupts on.",
@@ -526,9 +526,6 @@ S7 = ("7. Round 7: every call witnessed clean on BOTH machines (XINITIO7 re-seed
       "and $CC - k")
 
 RULES += [
-    Rule("R-IO-W7", S7, "Every recorded call is clean: JIFFY is unchanged across it, within the 8 tries the probe "
-         "allows (one try was enough on both machines).", lambda c: c.src == "XI7",
-         lambda c: c.jifb == c.jifa and 1 <= c.tries < 8),
     Rule("R-IO-PSG7", S7, "R7 = $B8, R11 = $0B and R15 = $CF from the PSG all $FF (XI7 1 / 3 / 4) and all $00 (XI7 2): "
          "with R-IO-PSG0 neither an AND nor an OR of the old value fits -- they are written whole.",
          lambda c: c.src == "XI7", lambda c: (c.r7, c.r11, c.r15) == (0xB8, 0x0B, 0xCF)),
@@ -538,7 +535,13 @@ RULES += [
     Rule("R-IO-EI7", S7, "Entered with interrupts ON (XI7 1 / 2), in the clean window, INITIO itself does the same: "
          "MUSICF ($FF, $5A) becomes 0, and the descriptors are written where QUEUES points ($F959, $9EB7).",
          lambda c: c.src == "XI7" and c.ei, lambda c: c.musicf == 0 and table_ok(c)),
-    Rule("R-IO-Q7", S7, "Entered with interrupts off (XI7 3 / 4): MUSICF ($FF, 0) is 0 after, and the descriptors are "
-         "written where QUEUES points ($F959, $A123), as R-IO-QUEUES6 / R-IO-QF959.",
+    Rule("R-IO-Q7", S7, "Entered with interrupts off (XI7 3 / 4): the descriptors are written where QUEUES points "
+         "($F959, $A123), as R-IO-QUEUES6 / R-IO-QF959; MUSICF is 0 after (cleared from $FF in XI7 3; XI7 4 seeds 0).",
          lambda c: c.src == "XI7" and not c.ei, lambda c: c.musicf == 0 and table_ok(c)),
 ]
+UNSTABLE.update({f"XI7 {i + 1}": (["jifb", "jifa", "tries"], "the read window's witness, each machine's own time: the "
+                                                            "probe retries until JIFFY is unchanged (XINITIO7_run1.out: "
+                                                            "one try everywhere, on both machines). No rule reads it: "
+                                                            "a correct but slower INITIO would need more tries -- the "
+                                                            "evidence note states the witnessed values")
+                 for i in range(len(CASES7))})

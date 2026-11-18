@@ -238,6 +238,15 @@ The pilot, for scale: three passes, each of two reviewers, on CONOUT:
 - the "rule pairs not separated" findings went ~15 → ~11 → 0 on the core rule;
 - each pass was answered by measurement: 84 → 153 cases → a 1287-case matrix.
 
+
+**Small calls stop when the findings stop being behaviour (Joost, 2026-11-18, after INITIO's ten
+passes).** For a small call (one reviewer per pass, §6), a pass that finds no unpinned rule and no
+new BEHAVIOUR ends the review even if it has core findings. A finding that is only a new
+COMBINATION of measured rules (another bit pattern, another entry state crossed with another seed)
+goes to the open list as an [A], and the page is FINAL. Contradictions, citations that do not match,
+and rules a case refutes are still fixed first. INITIO's passes 7-10 tightened evidence without new
+behaviour, at ~150k tokens each.
+
 ## 8. The test audit — fewer, sharper tests (Joost, 2026-11-17: "vitally important")
 
 A page does not replace a test: only a run notices that OUR code drifted. What a FINAL page does
