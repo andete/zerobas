@@ -2,8 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader and model for the VRAM access calls' EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XVRAM_run1.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
-32-byte record). Each page's module (xrdvrm_rules.py, xwrtvrm_rules.py, xsetrd_rules.py, xsetwrt_rules.py,
+scratchpad/XVRAM_run2.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
+48-byte record). Each page's module (xrdvrm_rules.py, xwrtvrm_rules.py, xsetrd_rules.py, xsetwrt_rules.py,
 xfilvrm_rules.py, xldirmv_rules.py, xldirvm_rules.py) takes its op's cases from `load(op)`.
 
 The model is the probe's own set-up, then the call's documented effect: VRAM bytes the probe preset hold
@@ -19,12 +19,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XVRAM_run1.out"
+RUN = "XVRAM_run2.out"
 ASM = os.path.join(HERE, "xvram.asm")
-REC = 32
+REC = 48
 SRC = 0xE9A0
-REGS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "w1", "w2"]
-OUTPUTS = {"XM": REGS, "XMR": REGS + ["p0", "p1"]}       # XMR: SETRD's cases, with the two port reads
+REGS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "w1", "w2", "w3"]
+OUTPUTS = {"XM": REGS + ["p0"], "XMR": REGS + ["p0", "p1"], "XMW": REGS}   # XMR SETRD, XMW SETWRT
 
 
 def pv(a):
@@ -40,9 +40,82 @@ def logical(v):
 
 def table():
     src = open(ASM).read()
-    pat = (r"db\s+\$(..), \$(..), \$(..), \$(..)\n\s+dw\s+\$(....), \$(....), \$(....), \$(....), \$(....)\n"
+    pat = (r"db\s+\$(..), \$(..), \$(..), \$(..)\n\s+dw\s+\$(....), \$(....), \$(....), \$(....), \$(....), \$(....)\n"
            r"\s+db\s+\$(..)")
     return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src)]
+
+
+def case_ns(i, t):
+    cop, ca, cf, ei, hl, de, bc, w1, w2, w3, kind = t
+    return NS(i=i, op=cop, ca=ca, cf=cf, ei=ei, chl=hl, cde=de, cbc=bc, cw1=w1, cw2=w2, cw3=w3, kind=kind)
+
+
+def span_len(c):
+    return c.cbc if c.op in (5, 6) and 8 <= c.cbc <= 0x200 else 8
+
+
+def preset(c, vram, ram):
+    """the probe's set-up for case c, into the dicts"""
+    wins = [(c.cw1, c.kind & 1, 0xE0), (c.cw2, c.kind & 1, 0xE8), (c.cw3, c.kind & 2, None)]
+    for w, isram, base in wins:
+        for i in range(8):
+            if isram:
+                if base is not None:
+                    ram[w + i] = base + i
+            else:
+                vram[(w + i) & 0x3FFF] = pv(w + i)
+    span = c.cde if c.op == 6 else c.chl
+    for i in range(span_len(c)):
+        vram[(span + i) & 0x3FFF] = pv(span + i)
+    for i in range(0x110):
+        ram[SRC + i] = (0x80 + i) & 0xFF
+
+
+def effect(c, vram, ram):
+    """the call's documented effect on the dicts; returns the next port read the VDP is left on (None: unknown)"""
+    n = c.cbc or 0x10000
+    if c.op == 0:
+        return vram.get((c.chl + 1) & 0x3FFF)
+    if c.op == 1:
+        vram[c.chl & 0x3FFF] = c.ca
+        return c.ca
+    if c.op == 2:
+        return None
+    if c.op == 3:
+        vram[c.chl & 0x3FFF] = 0xC7
+        vram[(c.chl + 1) & 0x3FFF] = 0xC8
+        return None
+    if c.op == 4:
+        if n >= 0x4000:
+            for k in range(0x4000):
+                vram[k] = c.ca
+        else:
+            for i in range(n):
+                vram[(c.chl + i) & 0x3FFF] = c.ca
+        return c.ca
+    if c.op == 5:
+        for i in range(n):
+            ram[c.cde + i] = vram[(c.chl + i) & 0x3FFF]
+        return vram.get((c.chl + n) & 0x3FFF)
+    for i in range(n):
+        vram[(c.cde + i) & 0x3FFF] = ram[c.chl + i]
+    return ram[c.chl + n - 1]
+
+
+def history():
+    """the whole run in order: per case (vram, ram) after the call over what is known, and the expected next port
+    read -- VRAM bytes an earlier case wrote count as known, bytes never written by the probe or a call do not"""
+    vram, ram, out = {}, {}, []
+    for i, t in enumerate(table()):
+        c = case_ns(i, t)
+        preset(c, vram, ram)
+        before = dict(vram)
+        nxt = effect(c, vram, ram)
+        out.append((before, dict(vram), dict(ram), nxt))
+    return out
+
+
+HIST = history()
 
 
 def load(op):
@@ -58,71 +131,63 @@ def load(op):
             b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
             if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
                 sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
-            for i, (cop, ca, cf, ei, hl, de, bc, w1, w2, wk) in enumerate(tab):
-                if cop != op:
+            for i, t in enumerate(tab):
+                if t[0] != op:
                     continue
                 r = b[1 + REC * i:1 + REC * (i + 1)]
-                d = dict(src="XMR" if op == 2 else "XM", id=f"XM {row}{i:02}", row=row, op=cop, ca=ca, cf=cf, ei=ei,
-                         chl=hl, cde=de, cbc=bc, cw1=w1, cw2=w2, wk=wk,
+                c = case_ns(i, t)
+                d = dict(vars(c), src="XMR" if op == 2 else "XMW" if op == 3 else "XM", id=f"XM {row}{i:02}", row=row,
                          a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                          ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12],
-                         w1=tuple(r[15:23]), w2=tuple(r[23:31]))
+                         w1=tuple(r[15:23]), w2=tuple(r[23:31]), w3=tuple(r[31:39]))
+                if op != 3:
+                    d["p0"] = r[13]
                 if op == 2:
-                    d["p0"], d["p1"] = r[13], r[14]
+                    d["p1"] = r[14]
                 out[who].append(NS(**d))
     return out
 
 
 def model(c):
-    """(vram, ram) dicts after the call, over the addresses the probe preset, from the case's inputs alone"""
-    vram, ram = {}, {}
-    if c.wk == 0:
-        for w in (c.cw1, c.cw2):
-            for i in range(8):
-                vram[(w + i) & 0x3FFF] = pv(w + i)
-    else:
-        for w, base in ((c.cw1, 0xE0), (c.cw2, 0xE8)):
-            for i in range(8):
-                ram[w + i] = base + i
-    span = c.cde if c.op == 6 else c.chl
-    for i in range(8):
-        vram[(span + i) & 0x3FFF] = pv(span + i)
-    for i in range(8):
-        ram[SRC + i] = 0x80 + i
-    n = c.cbc or 0x10000
-    if c.op == 1:
-        vram[c.chl & 0x3FFF] = c.ca
-    elif c.op == 3:
-        vram[c.chl & 0x3FFF] = 0xC7
-        vram[(c.chl + 1) & 0x3FFF] = 0xC8
-    elif c.op == 4:
-        if n >= 0x4000:
-            vram = {k: c.ca for k in vram}
-        else:
-            for i in range(n):
-                vram[(c.chl + i) & 0x3FFF] = c.ca
-    elif c.op == 5:
-        for i in range(n):
-            ram[c.cde + i] = vram[(c.chl + i) & 0x3FFF]
-    elif c.op == 6:
-        for i in range(n):
-            vram[(c.cde + i) & 0x3FFF] = ram[c.chl + i]
+    _, vram, ram, _ = HIST[c.i]
     return vram, ram
 
 
 def windows(c):
     vram, ram = model(c)
-    mem = (lambda a: vram[a & 0x3FFF]) if c.wk == 0 else (lambda a: ram[a])
-    return tuple(mem(c.cw1 + i) for i in range(8)), tuple(mem(c.cw2 + i) for i in range(8))
+    get = lambda isram, a: ram[a] if isram else vram[a & 0x3FFF]  # noqa: E731
+    return (tuple(get(c.kind & 1, c.cw1 + i) for i in range(8)), tuple(get(c.kind & 1, c.cw2 + i) for i in range(8)),
+            tuple(get(c.kind & 2, c.cw3 + i) for i in range(8)))
+
+
+def next_read(c):
+    return HIST[c.i][3]
+
+
+def before(c, a):
+    return HIST[c.i][0].get(a & 0x3FFF)
 
 
 def mem_rule(tag, section, text):
-    return Rule(f"R-{tag}-MEM", section, text, lambda c: True, lambda c: (c.w1, c.w2) == windows(c))
+    return Rule(f"R-{tag}-MEM", section, text, lambda c: True, lambda c: (c.w1, c.w2, c.w3) == windows(c))
 
 
 def ei_rule(tag, section):
     return Rule(f"R-{tag}-EI", section, "Interrupts are on after the call, whether they were on or off before it.",
                 lambda c: True, lambda c: c.iff == 1)
+
+
+def port_rule(tag, section, text):
+    return Rule(f"R-{tag}-PORT", section, text, lambda c: next_read(c) is not None, lambda c: c.p0 == next_read(c))
+
+
+def unread(op):
+    """the cases whose next port read lands on a VRAM byte neither the probe nor a call had written: not modelled"""
+    if op in (2, 3):                    # SETRD's reads have their own rule; SETWRT's probe writes instead
+        return {}
+    return {c.id: (["p0"], "the next port read lands on a VRAM byte neither the probe nor an earlier call wrote, "
+                   "so no rule predicts it (the same on both machines)")
+            for c in load(op)["ref"] if next_read(c) is None}
 
 
 def keep(c, names):

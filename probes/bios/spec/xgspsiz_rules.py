@@ -27,10 +27,11 @@ SIZE = lambda c: 32 if c.crg1 & 2 else 8  # noqa: E731
 
 RULES = [
     Rule("R-GS-A", S1, "A := 8 when RG1SAV's bit 1 is 0 (8 x 8 sprites), 32 when it is 1 (16 x 16), and the carry is "
-         "that bit; RG1SAV's other bits play no part (RG1SAV $E0-$E3, $00, $FF, $FD, $02).", ALL,
+         "that bit; RG1SAV's other bits and the entry A play no part (RG1SAV $E0-$E3, $00, $FF, $FD, $02, $80, $20, $40, $A2; A "
+         "$A7, $00, $FF, $5A, $A5).", ALL,
          lambda c: c.a == SIZE(c) and (c.f & 1) == (c.crg1 >> 1) & 1),
     Rule("R-GS-F", S1, "The rest of F: bit 5 is RG1SAV's bit 7 and bit 3 its bit 5 (as rotating it right twice leaves "
-         "them); H and N clear; S, Z and P/V as on entry ($00 or $FF).", ALL,
+         "them); H and N clear; S, Z and P/V as on entry, each on its own ($00, $FF, $80, $04, $40, $A5).", ALL,
          lambda c: c.f & 0xFE == ((c.crg1 >> 2) & 0x28) | (c.cf & 0xC4)),
     Rule("R-GS-KEEP", S1, "BC, DE, HL, IX and IY are kept (two sets of values).", ALL,
          lambda c: P.kept(c, ["bc", "de", "hl", "ix", "iy"])),

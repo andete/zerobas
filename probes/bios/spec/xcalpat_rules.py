@@ -27,13 +27,13 @@ SIZE = lambda c: 32 if c.crg1 & 2 else 8  # noqa: E731
 
 RULES = [
     Rule("R-CP-HL", S1, "HL := PATBAS ($F926) + A x the pattern size: 8 bytes when RG1SAV's bit 1 is 0 (8 x 8 sprites), 32 "
-         "when it is 1 (16 x 16); the sum wraps at 16 bits. RG1SAV's bit 0 (magnified) plays no part. A 0-$FF, PATBAS "
-         "$3800, $1234, $FFF8, $FFF0.", ALL, lambda c: c.hl == (c.cpat + c.ca * SIZE(c)) & 0xFFFF),
+         "when it is 1 (16 x 16); the sum wraps at 16 bits. RG1SAV's other bits play no part (RG1SAV $E0-$E3, $00, $02, $FD, "
+         "$FF). A 0-$FF; PATBAS $3800, $1234, $FFF8, $FFF0.", ALL, lambda c: c.hl == (c.cpat + c.ca * SIZE(c)) & 0xFFFF),
     Rule("R-CP-ADE", S1, "A := the pattern size (8 or 32) and DE := A x that size, the offset added.", ALL,
          lambda c: c.a == SIZE(c) and c.de == c.ca * SIZE(c)),
     Rule("R-CP-F", S1, "F: H, C and bits 5 / 3 as ADD HL,DE leaves them (H the carry out of bit 11, C out of bit 15, bits "
          "5 / 3 from the sum's high byte), N clear; Z set exactly when the sprites are 8 x 8; S and P/V clear -- whatever "
-         "F was on entry ($00 or $FF).", ALL,
+         "F was on entry ($00, $FF, $80, $40).", ALL,
          lambda c: c.f == P.add_flags(c.cpat, c.ca * SIZE(c)) | (0x40 if SIZE(c) == 8 else 0)),
     Rule("R-CP-KEEP", S1, "BC, IX and IY are kept (two sets of values).", ALL, lambda c: P.kept(c, ["bc", "ix", "iy"])),
     P.cells_rule("CP", S1),

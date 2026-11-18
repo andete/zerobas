@@ -29,9 +29,12 @@ RULES = [
          "that address and the next one, wrapping from $3FFF to $0000.", ALL,
          lambda c: (c.p0, c.p1) == (V.model(c)[0][c.chl & 0x3FFF], V.model(c)[0][(c.chl + 1) & 0x3FFF])),
     Rule("R-SR-AF", S1, "A := H AND $3F, and F is its flags as an AND leaves them (H set, P/V the even parity, N and C "
-         "clear) -- whatever A and F were on entry.", ALL,
+         "clear) -- whatever A and F were on entry (A $A7, $00, $5A; F $00, $FF, $A5, $5A). H AND $3F = 0 "
+         "(HL $0000, $C0AB) gives Z and P/V set ($54).", ALL,
          lambda c: c.a == (c.chl >> 8) & 0x3F and c.f == V.logical(c.a) | 0x10),
     Rule("R-SR-KEEP", S1, "BC, DE, HL, IX and IY are kept.", ALL, lambda c: V.keep(c, ["bc", "de", "hl", "ix", "iy"])),
     V.mem_rule("SR", S1, "VRAM is not changed: the probe's VRAM windows read back as it set them."),
     V.ei_rule("SR", S1),
 ]
+
+UNREAD = V.unread(2)

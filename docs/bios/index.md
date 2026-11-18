@@ -29,13 +29,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
 | $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | D-WRTVDPC |
-| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](RDVRM.md) | 5 | D-VRAMF |
-| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](WRTVRM.md) | 5 | — |
-| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETRD.md) | 5 | — |
-| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETWRT.md) | 5 | — |
-| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](FILVRM.md) | 5 | D-VRAMF |
-| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](LDIRMV.md) | 6 | D-VRAMF |
-| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](LDIRVM.md) | 5 | D-VRAMF |
+| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](RDVRM.md) | 7 | D-VRAMF |
+| $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](WRTVRM.md) | 7 | — |
+| $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETRD.md) | 7 | — |
+| $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETWRT.md) | 8 | — |
+| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](FILVRM.md) | 7 | D-VRAMF |
+| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](LDIRMV.md) | 8 | D-VRAMF |
+| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](LDIRVM.md) | 7 | D-VRAMF |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
@@ -48,9 +48,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETT32.md) | 5 | D-SETSHADOW, D-SETREGS |
 | $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETGRP.md) | 5 | D-SETSHADOW, D-SETREGS |
 | $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETMLT.md) | 5 | D-SETSHADOW, D-SETREGS |
-| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CALPAT.md) | 4 | D-CALPATF |
-| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CALATR.md) | 4 | — |
-| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](GSPSIZ.md) | 4 | — |
+| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CALPAT.md) | 5 | D-CALPATF |
+| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CALATR.md) | 5 | — |
+| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](GSPSIZ.md) | 5 | — |
 | $008D | GRPPRT | graphics (concept page to come) | L3 | — | — | — |
 | $0090 | GICINI | sound (concept page to come) | L3 | — | — | — |
 | $0093 | WRTPSG | sound (concept page to come) | L3 | — | — | — |

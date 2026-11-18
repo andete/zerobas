@@ -16872,14 +16872,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
       🎚️ TIER 6 — every edge (F is not published; a caller testing it; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run1.out`](scratchpad/XSPR_run1.out)): the VG-8020's
+      🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run2.out`](scratchpad/XSPR_run2.out)): the VG-8020's
       CALPAT returns H, C and bits 5 / 3 from the addition, Z set exactly for 8 x 8 sprites, S and P/V clear,
       whatever F was on entry; zerobas's keeps the entry's S, Z and P/V. HL, A and DE agree. Priced when picked up.
 
 - [ ] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
       🎚️ TIER 6 — every edge (F is not published for any of them; a caller testing it; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/RDVRM.md R-RV-F, FILVRM.md R-FV-F, LDIRMV.md R-MV-REGS, LDIRVM.md R-VM-REGS
-      ([`XVRAM_run1.out`](scratchpad/XVRAM_run1.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
+      ([`XVRAM_run2.out`](scratchpad/XVRAM_run2.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
       leaves them (H set), zerobas's without H ($04 for $14); FILVRM keeps F there, zerobas returns $42 / $43;
       LDIRMV / LDIRVM return $44 there, $42 / $43 on zerobas. The bytes, A and the other registers agree.
       Priced when picked up.

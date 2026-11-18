@@ -1,10 +1,11 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XSPR -- docs/bios/CALPAT.md, CALATR.md, GSPSIZ.md round 1 (2026-11-18): the sprite table calls. Per case (the table
+; XSPR -- docs/bios/CALPAT.md, CALATR.md, GSPSIZ.md round 2 (2026-11-18; round 1 was cases 0-33): the sprite table calls. Per case (the table
 ; `cases` at the end: op, A, F, interrupts, RG1SAV, PATBAS, ATRBAS) the probe sets RG1SAV ($F3E0), PATBAS ($F926) and
 ; ATRBAS ($F928) by hand, then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), the
-; case's A, F and interrupt state, and calls: op 0 CALPAT ($0084), 1 CALATR ($0087), 2 GSPSIZ ($008A).
+; case's A, F and interrupt state, and calls (cases 34-49 pair entry F with the other register set, and take
+; single-bit and mixed F values): op 0 CALPAT ($0084), 1 CALATR ($0087), 2 GSPSIZ ($008A).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xspr.asm --row both
 ; The capture: CAP+0 = $A5 when finished; per case a 20-byte record from CAP+1:
 ;   +0 A  +1 F  +2 B  +3 C  +4 D  +5 E  +6 H  +7 L  +8,9 IX  +10,11 IY  after the call  +12 interrupts after (1 on)
@@ -301,4 +302,36 @@ cases:
                 dw      $3800, $1B00   ; 32
                 db      $02, $A7, $FF, $00, $02
                 dw      $3800, $1B00   ; 33
+                db      $00, $03, $FF, $00, $00
+                dw      $3800, $1B00   ; 34
+                db      $00, $03, $00, $01, $02
+                dw      $3800, $1B00   ; 35
+                db      $00, $09, $80, $00, $FD
+                dw      $3800, $1B00   ; 36
+                db      $00, $09, $40, $01, $FF
+                dw      $3800, $1B00   ; 37
+                db      $00, $05, $FF, $01, $E1
+                dw      $1234, $1B00   ; 38
+                db      $00, $05, $00, $00, $E3
+                dw      $1234, $1B00   ; 39
+                db      $01, $40, $04, $00, $00
+                dw      $3800, $0F00   ; 40
+                db      $01, $03, $00, $01, $FF
+                dw      $3800, $1B00   ; 41
+                db      $01, $07, $A5, $00, $02
+                dw      $3800, $3F00   ; 42
+                db      $01, $80, $5A, $01, $FD
+                dw      $3800, $1B00   ; 43
+                db      $02, $00, $FF, $00, $E0
+                dw      $3800, $1B00   ; 44
+                db      $02, $FF, $00, $01, $E2
+                dw      $3800, $1B00   ; 45
+                db      $02, $00, $80, $00, $80
+                dw      $3800, $1B00   ; 46
+                db      $02, $FF, $04, $01, $20
+                dw      $3800, $1B00   ; 47
+                db      $02, $5A, $40, $00, $40
+                dw      $3800, $1B00   ; 48
+                db      $02, $A5, $A5, $01, $A2
+                dw      $3800, $1B00   ; 49
                 db      $FF

@@ -25,9 +25,12 @@ S1 = "1. WRTVRM ($004D): write a VRAM byte"
 ALL = lambda c: True  # noqa: E731
 
 RULES = [
-    V.mem_rule("WV", S1, "The VRAM byte at HL AND $3FFF := A; its neighbours keep their bytes (HL $1234, $3FFF, and "
+    V.mem_rule("WV", S1, "The VRAM byte at HL AND $3FFF := A; its neighbours keep their bytes (HL $1234, $3FFF, $2034, $0812, and "
                "$4123 / $C125 / $FFFF, which write $0123 / $0125 / $3FFF; A $00, $FF, $5A, $A5, $3C, $C3)."),
-    Rule("R-WV-KEEP", S1, "A, F, BC, DE, HL, IX and IY are kept (F $00 and $FF on entry).", ALL,
+    Rule("R-WV-KEEP", S1, "A, F, BC, DE, HL, IX and IY are kept (F $00, $FF, $A5 and $5A on entry).", ALL,
          lambda c: V.keep(c, ["a", "f", "bc", "de", "hl", "ix", "iy"])),
+    V.port_rule("WV", S1, "The next read of port $98 returns the byte just written, A."),
     V.ei_rule("WV", S1),
 ]
+
+UNREAD = V.unread(1)

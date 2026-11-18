@@ -26,10 +26,13 @@ ALL = lambda c: True  # noqa: E731
 
 RULES = [
     V.mem_rule("FV", S1, "BC bytes of VRAM from HL AND $3FFF := A, the address wrapping from $3FFF to $0000; the bytes "
-               "around keep theirs. BC = 0 fills 65536 bytes: all of VRAM. (HL $1234, $1200, $3FFC, $5234, $2000; BC 1, "
-               "4, 8, $100, 0.)"),
+               "around keep theirs. BC = 0 fills 65536 bytes: all of VRAM. (HL $1234, $1200, $3FFC, $2000, and $5234 / $D234 / $9234, "
+               "which fill from $1234; BC 1, 4, 8, $100, $108, 0.)"),
     Rule("R-FV-BC", S1, "BC is 0 on return; A, DE, HL, IX and IY are kept.", ALL,
          lambda c: c.bc == 0 and V.keep(c, ["a", "de", "hl", "ix", "iy"])),
-    Rule("R-FV-F", S1, "F is kept ($00 and $FF on entry).", ALL, lambda c: c.f == c.cf),
+    Rule("R-FV-F", S1, "F is kept ($00, $FF, $A5 and $5A on entry).", ALL, lambda c: c.f == c.cf),
+    V.port_rule("FV", S1, "The next read of port $98 returns the fill byte, A."),
     V.ei_rule("FV", S1),
 ]
+
+UNREAD = V.unread(4)
