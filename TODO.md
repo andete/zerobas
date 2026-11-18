@@ -16996,6 +16996,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/bios/INIFNK.md R-F-AF; round 2 R-F-REGS / R-F-DI / R-F-WAREA: zerobas returns other BC / HL, A not kept,
       and with interrupts ENABLED where the VG-8020's INIFNK returns them disabled).
       Not published values: match them only if cheap. CHGET's are D-CHGETEI.
+      💰 **PRICED 2026-11-18: NOT CHEAP -- left unmatched under this item's own rule.** Each piece, against the low region (43 B
+      free, the switch-off floor 36 B, at 13c67168):
+      - ERAFNK's A = LINLEN: 3 B, but its F (BB / B3 / 9B) still differs, so R-K-AF stays red.
+      - PINLIN / INLIN / QINLIN's F = $18: a constant F via push / pop past the full $3283 pin pad, ~6-8 B.
+      - INIFNK: IFF kept across subrom_call's `ei`, A kept, F, and the BC / DE / HL leftovers: ~15+ B.
+      - CLS / POSIT / DSPFNK: per-path literal A / F pairs (00/54, 00/44, 66/24, 24/30, 22/30, 48/18 ...), tens of B.
+      - CNVCHR's F (41 OR (A AND $28), 42, A3 per path): a C-BIOS patch, ~8-10 B.
+      These are the reference's register leftovers, and the low region's remaining bytes are worth more to the next
+      BIOS regions. Re-open a piece only if a real program is found that reads it.
 
 - [x] **D-SETWRTEI — SETWRT RETURNS WITH INTERRUPTS ENABLED: A CALLER'S FIRST VRAM WRITE CAN BE LOST TO AN INTERRUPT**
       🎚️ TIER 3 — common (a program that calls SETWRT and then OUTs to $98 itself; filed 2026-11-18).
