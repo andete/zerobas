@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""The loader and drawing model for GRPPRT's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX5_run2.out
+"""The loader and drawing model for GRPPRT's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX5_run3.out
 (rows N and D; probes/bios/spec/xgfx5.asm documents the presets, the probe's RAM font, the case table and the 128-byte
 record)."""
 import os
@@ -13,13 +13,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
-RUN = "XGFX5_run2.out"
+RUN = "XGFX5_run3.out"
 ASM = os.path.join(HERE, "xgfx5.asm")
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "regs", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt",
           "grpac", "forclr", "logopr"]
 OUTPUTS = {"XT": FIELDS}
-TSETS = {0: (0x0000, 0x0000), 1: (0x2000, 0x1000)}     # the probe's cell sets: GRPCGP, MLTCGP
+TSETS = {0: (0x0000, 0x0000), 1: (0x2000, 0x1000), 6: (0x0800, 0x0000)}     # cell sets: GRPCGP, MLTCGP
 VPRE = (0x00, 0x80, 0x06, 0x80, 0x00, 0x36, 0x07, 0xF4)
 
 

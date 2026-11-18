@@ -1,11 +1,11 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX5 -- docs/bios/GRPPRT.md round 2 (2026-11-19; round 1 had cases 0-23): the call that draws a character on a graphics screen. xgfx3.asm's
+; XGFX5 -- docs/bios/GRPPRT.md round 3 (2026-11-19; round 1 had cases 0-23, round 2 24-41): the call that draws a character on a graphics screen. xgfx3.asm's
 ; frame, its case fields read anew: op, F, interrupts, SCRMOD, FORCLR, LOGOPR, ATRBYT, (unused), GRPACX, GRPACY, cell
 ; set, three window addresses, A (the character). Per case the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := one of `tsets` (0 the published defaults; 1 moved:
-;     GRPCGP $2000, GRPCOL $0000, MLTCGP $1000);
+;     GRPCGP $2000, GRPCOL $0000, MLTCGP $1000; 6 GRPCGP $0800, GRPCOL $2000, MLTCGP $0000);
 ;   - SCRMOD ($FCAF), FORCLR ($F3E9), LOGOPR ($FB02), ATRBYT ($F3F2), GRPACX ($FCB7), GRPACY ($FCB9) := the case's;
 ;     CLOC ($F92A) := $5A5A, CMASK ($F92C) := $A5; RG0SAV-RG7SAV := $A5;
 ;   - CGPNT ($F91F slot, $F920 address) := the RAM slot, FONT: the probe's own 2 KB font in RAM (character c's line j is
@@ -29,7 +29,7 @@
 ; and the VDP's registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 1800
+; @caplen 2000
 ; @timeout 180
 ; @vdpsnap E8F0 EF00
 
@@ -71,7 +71,7 @@ GRPACX  equ     $FCB7
 GRPACY  equ     $FCB9
 LOGOPR  equ     $FB02
 CGPNT   equ     $F91F
-FONT    equ     $D800
+FONT    equ     $E000
 ramid   equ     $E928
 
                 org     $4000
@@ -83,7 +83,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $17FF
+                ld      bc, $1FFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -691,4 +691,109 @@ cases:
                 db      $00
                 dw      $0560, $0660, $0570
                 db      $0D   ; 41
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $06
+                dw      $0E60, $2E60, $2660
+                db      $41   ; 42
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $00B4
+                db      $00
+                dw      $1660, $3660, $1760
+                db      $0D   ; 43
+                db      $00, $00, $00, $03, $0F, $00, $77, $00
+                dw      $0060, $0096
+                db      $00
+                dw      $0460, $0560, $0470
+                db      $0D   ; 44
+                db      $00, $00, $00, $03, $0F, $00, $77, $00
+                dw      $00C8, $0000
+                db      $00
+                dw      $00C0, $01C0, $00D0
+                db      $41   ; 45
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $00C0
+                db      $00
+                dw      $1860, $3860, $1960
+                db      $41   ; 46
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0100, $0030
+                db      $00
+                dw      $0600, $2600, $0700
+                db      $41   ; 47
+                db      $00, $00, $00, $03, $0F, $00, $77, $00
+                dw      $0060, $00C0
+                db      $00
+                dw      $0660, $0760, $0670
+                db      $41   ; 48
+                db      $00, $00, $00, $03, $0F, $00, $77, $00
+                dw      $0100, $0030
+                db      $00
+                dw      $0100, $0200, $0110
+                db      $41   ; 49
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $012C, $0032
+                db      $00
+                dw      $0620, $2620, $0720
+                db      $0D   ; 50
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $00C8
+                db      $00
+                dw      $1960, $3960, $1A60
+                db      $0D   ; 51
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $FFFF
+                db      $00
+                dw      $1F60, $3F60, $2060
+                db      $0D   ; 52
+                db      $00, $FF, $01, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $0D   ; 53
+                db      $00, $FF, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $0A   ; 54
+                db      $00, $FF, $00, $02, $0F, $00, $77, $00
+                dw      $012C, $0030
+                db      $00
+                dw      $0620, $2620, $0720
+                db      $41   ; 55
+                db      $00, $00, $00, $03, $1A, $00, $77, $00
+                dw      $0004, $0000
+                db      $00
+                dw      $0000, $0100, $0010
+                db      $41   ; 56
+                db      $00, $00, $00, $02, $13, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $41   ; 57
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $01   ; 58
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $1C   ; 59
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $1D   ; 60
+                db      $00, $00, $00, $02, $0F, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $1E   ; 61
+                db      $00, $00, $00, $02, $1E, $00, $77, $00
+                dw      $0060, $0030
+                db      $00
+                dw      $0660, $2660, $0760
+                db      $41   ; 62
                 db      $FF

@@ -16858,22 +16858,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run2.out`](scratchpad/XGFX5_run2.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
       (where its TDOWNC steps end); zerobas its own last pixel. docs/bios/GRPPRT.md R-GP-POS. Priced when picked up.
 
 - [ ] **D-GRPPRTEI — GRPPRT TURNS INTERRUPTS ON FOR A CONTROL CODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run2.out`](scratchpad/XGFX5_run2.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
+
+- [ ] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
+      🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 clears GRPACX's low byte and adds
+      the step to GRPACY's low byte without a carry (X 300 gives 256, Y $FFFF gives $FF07); zerobas GRPACX := 0 and a
+      16-bit add. docs/bios/GRPPRT.md R-GP-ACC, cases 50, 52. Priced when picked up.
 
 - [ ] **D-GRPPRTOFF — GRPPRT AT A POSITION OUTSIDE THE SCREEN MOVES / DRAWS ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run2.out`](scratchpad/XGFX5_run2.out)): the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT
       := FORCLR; zerobas moves GRPACX on, keeps ATRBYT, and with Y $FFFF draws at the top. docs/bios/GRPPRT.md cases
       13, 14, 21, 23, 38. Priced when picked up.
 
 - [ ] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15, A MOVED PATTERN TABLE, OR MLTCGP $1000 DRAWS OTHERWISE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run2.out`](scratchpad/XGFX5_run2.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16 (the background nibble
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16 (the background nibble
       changes), 17 (GRPCGP $2000), 22 (SCREEN 3 does not stop where TDOWNC stops). Priced when picked up.
 
 - [ ] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**

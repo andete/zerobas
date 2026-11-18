@@ -32,7 +32,8 @@ def acc(c):
     if c.ch < 0x20:
         if c.ch != 0x0D:
             return c.cx, c.cy
-        return 0, (c.cy + st if c.cy + st <= 191 else 0)
+        ly = ((c.cy & 0xFF) + st) & 0xFF                   # the low bytes only
+        return c.cx & 0xFF00, ((c.cy & 0xFF00) | ly if ly <= 191 else 0)
     if not G.drawn(c):
         return c.cx, c.cy
     if c.cx + st > 255:
@@ -53,19 +54,23 @@ RULES = [
          "outside, nothing is drawn) is drawn from the font at CGPNT ($F91F slot, $F920 address -- the probe's own RAM "
          "font): its 8 lines, each 8 pixels from bit 7, in FORCLR ($F3E9). SCREEN 2: from the position MAPXYC gives "
          "(GRPCGP-based), each line's bits shifted right by X AND 7 into the pattern byte and the rest into the next "
-         "cell's (none past X 255: no wrap); each pattern byte with bits m, colour byte at its address XOR $2000: m = 0 "
+         "cell's (none past X 255: no wrap); each pattern byte with bits m, colour byte at its address XOR $2000 (GRPCOL "
+         "not used: GRPCGP $0800 / GRPCOL $2000 measured): m = 0 "
          "-- nothing written; FORCLR (whole) = the background nibble -- the bits cleared; FORCLR's low nibble = the "
          "foreground nibble -- the bits set; otherwise the bits set and (FORCLR x 16) AND $F0 into the foreground "
          "nibble (no whole-byte or last-clear-bit step: a line $FF sets pattern $FF). SCREEN 3: each glyph pixel is "
          "one block (X / 4, Y / 4 the first), its nibble := FORCLR's as SETC writes it, none past block column 63. "
          "After each line the position moves down as TDOWNC does, and drawing stops where TDOWNC stops (in SCREEN 2 "
          "at the bottom; in SCREEN 3 at a block row's line 7 with CLOC's high byte 5 or more). LOGOPR is not used. "
-         "Control codes $00-$1F draw nothing.", ALL, lambda c: G.vram_after(c, vram(c)) == (c.sums, (c.w1, c.w2, c.w3))),
-    Rule("R-GP-POS", S1, "CLOC / CMASK ($F92A / $F92C): for a drawn character, the first column's pixel on the line "
-         "after the last drawn (where TDOWNC left it); otherwise kept.", ALL, lambda c: (c.cloc, c.cmask) == pos(c)),
+         "Control codes draw nothing. (BAKCLR / BDRCLR, recorded, are not preset by the probe: not compared.)", ALL, lambda c: G.vram_after(c, vram(c)) == (c.sums, (c.w1, c.w2, c.w3))),
+    Rule("R-GP-POS", S1, "CLOC / CMASK ($F92A / $F92C): for a drawn character, the first column's position where the "
+         "last TDOWNC step left it -- the line after the glyph, or the last line drawn where TDOWNC stopped (SCREEN 3: "
+         "CMASK the block's nibble mask); otherwise kept.", ALL, lambda c: (c.cloc, c.cmask) == pos(c)),
     Rule("R-GP-ACC", S1, "GRPACX / GRPACY: a drawn character adds 8 to GRPACX in SCREEN 2, 32 in SCREEN 3; past 255 "
-         "GRPACX := 0 and GRPACY goes on by the same step, to 0 past 191. CR ($0D) does that line feed whatever X is "
-         "(GRPACX := 0). Other control codes and positions outside the screen keep both.", ALL,
+         "GRPACX := 0 and GRPACY goes on by the same step, to 0 past 191. CR ($0D) does that line feed whatever X is, on "
+         "the LOW BYTES: GRPACX's low byte := 0 (X 300 gives 256), GRPACY's low byte + the step without a carry into the "
+         "high byte (Y $FFFF gives $FF07), GRPACY := 0 when that low byte is past 191 (Y 186, 200). Other control codes "
+         "($00, $01, $08, $0A, $0C, $1B-$1F measured) and positions outside the screen keep both.", ALL,
          lambda c: c.grpac == acc(c)),
     Rule("R-GP-ATR", S1, "ATRBYT := FORCLR, except for a control code (kept: $77 preset). FORCLR and LOGOPR are kept.",
          ALL, lambda c: c.atrbyt == (c.catr if c.ch < 0x20 else c.cfor) and (c.forclr, c.logopr) == (c.cfor, c.clog)),

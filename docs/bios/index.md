@@ -51,7 +51,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
-| $008D | GRPPRT | graphics (concept page to come) | L3 | [DRAFT 1](GRPPRT.md) | 6 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTOFF, D-GRPPRTCOL, D-SETCCOL |
+| $008D | GRPPRT | graphics (concept page to come) | L3 | [DRAFT 2](GRPPRT.md) | 9 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
 | $0090 | GICINI | sound (concept page to come) | L3 | — | — | — |
 | $0093 | WRTPSG | sound (concept page to come) | L3 | — | — | — |
 | $0096 | RDPSG | sound (concept page to come) | L3 | — | — | — |
