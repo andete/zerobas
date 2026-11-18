@@ -1,28 +1,29 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XSET -- docs/bios/SETTXT.md, SETT32.md, SETGRP.md, SETMLT.md round 1 (2026-11-18): the calls that set the VDP up for
-; a screen mode from the screen-table cells. Per case (the table `cases` at the end: op, F, interrupts, RG0SAV, RG1SAV,
-; table set) the probe first sets, BY HAND:
+; XSET -- docs/bios/SETTXT.md, SETT32.md, SETGRP.md, SETMLT.md round 2 (2026-11-18; round 1 had cases 0-47, a $5A fill and no read-back of the
+; cells): the calls that set the VDP up for a screen mode from the screen-table cells. Per case (the table `cases` at the end: op, F, interrupts, RG0SAV, RG1SAV,
+; table set, SCRMOD, RG7SAV) the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := the case's set (`tsets`: 0 the published
 ;     defaults, 1 moved, 2 moved with junk in the low bits, 3 every cell $FFFF);
-;   - RG0SAV / RG1SAV := the case's values, RG2SAV-RG7SAV := $A5; SCRMOD ($FCAF) := $77;
+;   - RG0SAV / RG1SAV := the case's values, RG2SAV-RG6SAV := $A5, RG7SAV and SCRMOD ($FCAF) := the case's;
 ;   - the VDP registers R#0-R#7 := $00 $80 $06 $80 $00 $36 $07 $F4 (display off, so VRAM may be written fast);
-;   - every VRAM byte := $5A (a 1 KB block sums to $6800).
+;   - every VRAM byte := (address low) XOR (address high) XOR $5A (display off, so it may be written fast).
 ; Then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), A $A7, F and interrupts as listed,
 ; and the call: op 0 SETTXT ($0078), 1 SETT32 ($007B), 2 SETGRP ($007E), 3 SETMLT ($0081).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xset.asm --row both
-; The capture: CAP+0 = $A5 when finished; per case a 64-byte record from CAP+1:
+; The capture: CAP+0 = $A5 when finished; per case a 112-byte record from CAP+1:
 ;   +0 A  +1 F  +2 B  +3 C  +4 D  +5 E  +6 H  +7 L  +8,9 IX  +10,11 IY  after the call  +12 interrupts after (1 on)
 ;   +13..20 RG0SAV-RG7SAV after  +21 SCRMOD after  +22..29 VDP R#0-R#7 after (the debugger, @vdpsnap)
-;   +30..61 the 16-bit sums (low, high) of VRAM's 16 1-KB blocks after  +62,63 0
+;   +30..61 the 16-bit sums (low, high) of VRAM's 16 1-KB blocks after, read with R#1 := $80 first (16 KB
+;   addressing, display off)  +62..101 the 20 screen-table cells after  +102..111 0
 ; then $C3.
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries, work-area RAM, VRAM through the VDP's ports, and the VDP's
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 0C80
+; @caplen 1D00
 ; @timeout 120
 ; @vdpsnap E8F0 EF00
 
@@ -32,14 +33,16 @@ ptr     equ     $EF00
 tptr    equ     $EF02
 SNAP    equ     $E8F0
 STUB    equ     $E8F2
-cop     equ     $E910                   ; op, F, ei, RG0SAV, RG1SAV, table set
+cop     equ     $E910                   ; op, F, ei, RG0SAV, RG1SAV, table set, SCRMOD, RG7SAV
 cF      equ     $E911
 cei     equ     $E912
 crg0    equ     $E913
 crg1    equ     $E914
 cts     equ     $E915
-mask    equ     $E916
-cidx    equ     $E917
+cscr    equ     $E916
+crg7    equ     $E917
+mask    equ     $E918
+cidx    equ     $E919
 raf     equ     $E920
 rbc     equ     $E922
 rde     equ     $E924
@@ -60,7 +63,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $0C7F
+                ld      bc, $1CFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -78,7 +81,7 @@ next:
                 cp      $FF
                 jp      z, finish
                 ld      de, cop
-                ld      bc, 6
+                ld      bc, 8
                 ldir
                 ld      (tptr), hl
                 ld      a, (cidx)
@@ -180,7 +183,11 @@ r_lp:
                 ld      hl, SCRMOD
                 call    emitm
                 call    SNAP                    ; the debugger appends R#0-R#7
-                ; VRAM's 16 1-KB sums, read slowly from $0000
+                ld      a, $80                  ; R#1 := $80: 16 KB addressing for the read-back
+                out     ($99), a
+                ld      a, $81
+                out     ($99), a
+                ; VRAM's 16 1-KB sums, from $0000
                 xor     a
                 out     ($99), a
                 out     ($99), a
@@ -205,9 +212,17 @@ s_nc:
                 call    emit
                 dec     c
                 jr      nz, k_lp
+                ld      hl, TXTNAM
+                ld      b, 40
+c_lp:
+                call    emitm
+                inc     hl
+                djnz    c_lp
+                ld      b, 10
+z_lp:
                 xor     a
                 call    emit
-                call    emit
+                djnz    z_lp
                 ld      hl, cidx
                 inc     (hl)
                 jp      next
@@ -237,12 +252,14 @@ preset:
                 ld      a, (crg1)
                 ld      (hl), a
                 inc     hl
-                ld      b, 6
+                ld      b, 5
 p_sav:
                 ld      (hl), $A5
                 inc     hl
                 djnz    p_sav
-                ld      a, $77
+                ld      a, (crg7)
+                ld      (hl), a
+                ld      a, (cscr)
                 ld      (SCRMOD), a
                 ld      hl, vpre
                 ld      c, $80
@@ -259,14 +276,15 @@ p_lp:
                 out     ($99), a
                 ld      a, $40
                 out     ($99), a
-                ld      de, $4000
-                ld      a, $5A
+                ld      de, 0
 f_lp:
-                out     ($98), a
-                dec     de
                 ld      a, d
-                or      e
-                ld      a, $5A
+                xor     e
+                xor     $5A
+                out     ($98), a
+                inc     de
+                ld      a, d
+                cp      $40
                 jr      nz, f_lp
                 ld      a, (cei)
                 or      a
@@ -329,54 +347,70 @@ emit:
                 pop     hl
                 ret
 
-; ---- cases: op, F, interrupts, RG0SAV, RG1SAV, table set; $FF ends ----
+; ---- cases: op, F, interrupts, RG0SAV, RG1SAV, table set, SCRMOD, RG7SAV; $FF ends ----
 cases:
-                db      $00, $00, $00, $00, $00, $00   ; 0
-                db      $00, $FF, $00, $FF, $FF, $00   ; 1
-                db      $00, $00, $01, $5A, $A5, $00   ; 2
-                db      $00, $FF, $01, $00, $00, $01   ; 3
-                db      $00, $00, $00, $FF, $FF, $01   ; 4
-                db      $00, $FF, $00, $5A, $A5, $01   ; 5
-                db      $00, $00, $01, $00, $00, $02   ; 6
-                db      $00, $FF, $01, $FF, $FF, $02   ; 7
-                db      $00, $00, $00, $5A, $A5, $02   ; 8
-                db      $00, $FF, $00, $00, $00, $03   ; 9
-                db      $00, $00, $01, $FF, $FF, $03   ; 10
-                db      $00, $FF, $01, $5A, $A5, $03   ; 11
-                db      $01, $00, $00, $00, $00, $00   ; 12
-                db      $01, $FF, $00, $FF, $FF, $00   ; 13
-                db      $01, $00, $01, $5A, $A5, $00   ; 14
-                db      $01, $FF, $01, $00, $00, $01   ; 15
-                db      $01, $00, $00, $FF, $FF, $01   ; 16
-                db      $01, $FF, $00, $5A, $A5, $01   ; 17
-                db      $01, $00, $01, $00, $00, $02   ; 18
-                db      $01, $FF, $01, $FF, $FF, $02   ; 19
-                db      $01, $00, $00, $5A, $A5, $02   ; 20
-                db      $01, $FF, $00, $00, $00, $03   ; 21
-                db      $01, $00, $01, $FF, $FF, $03   ; 22
-                db      $01, $FF, $01, $5A, $A5, $03   ; 23
-                db      $02, $00, $00, $00, $00, $00   ; 24
-                db      $02, $FF, $00, $FF, $FF, $00   ; 25
-                db      $02, $00, $01, $5A, $A5, $00   ; 26
-                db      $02, $FF, $01, $00, $00, $01   ; 27
-                db      $02, $00, $00, $FF, $FF, $01   ; 28
-                db      $02, $FF, $00, $5A, $A5, $01   ; 29
-                db      $02, $00, $01, $00, $00, $02   ; 30
-                db      $02, $FF, $01, $FF, $FF, $02   ; 31
-                db      $02, $00, $00, $5A, $A5, $02   ; 32
-                db      $02, $FF, $00, $00, $00, $03   ; 33
-                db      $02, $00, $01, $FF, $FF, $03   ; 34
-                db      $02, $FF, $01, $5A, $A5, $03   ; 35
-                db      $03, $00, $00, $00, $00, $00   ; 36
-                db      $03, $FF, $00, $FF, $FF, $00   ; 37
-                db      $03, $00, $01, $5A, $A5, $00   ; 38
-                db      $03, $FF, $01, $00, $00, $01   ; 39
-                db      $03, $00, $00, $FF, $FF, $01   ; 40
-                db      $03, $FF, $00, $5A, $A5, $01   ; 41
-                db      $03, $00, $01, $00, $00, $02   ; 42
-                db      $03, $FF, $01, $FF, $FF, $02   ; 43
-                db      $03, $00, $00, $5A, $A5, $02   ; 44
-                db      $03, $FF, $00, $00, $00, $03   ; 45
-                db      $03, $00, $01, $FF, $FF, $03   ; 46
-                db      $03, $FF, $01, $5A, $A5, $03   ; 47
+                db      $00, $00, $00, $00, $00, $00, $77, $A5   ; 0
+                db      $00, $FF, $00, $FF, $FF, $00, $77, $A5   ; 1
+                db      $00, $00, $01, $5A, $A5, $00, $77, $A5   ; 2
+                db      $00, $FF, $01, $00, $00, $01, $77, $A5   ; 3
+                db      $00, $00, $00, $FF, $FF, $01, $77, $A5   ; 4
+                db      $00, $FF, $00, $5A, $A5, $01, $77, $A5   ; 5
+                db      $00, $00, $01, $00, $00, $02, $77, $A5   ; 6
+                db      $00, $FF, $01, $FF, $FF, $02, $77, $A5   ; 7
+                db      $00, $00, $00, $5A, $A5, $02, $77, $A5   ; 8
+                db      $00, $FF, $00, $00, $00, $03, $77, $A5   ; 9
+                db      $00, $00, $01, $FF, $FF, $03, $77, $A5   ; 10
+                db      $00, $FF, $01, $5A, $A5, $03, $77, $A5   ; 11
+                db      $01, $00, $00, $00, $00, $00, $77, $A5   ; 12
+                db      $01, $FF, $00, $FF, $FF, $00, $77, $A5   ; 13
+                db      $01, $00, $01, $5A, $A5, $00, $77, $A5   ; 14
+                db      $01, $FF, $01, $00, $00, $01, $77, $A5   ; 15
+                db      $01, $00, $00, $FF, $FF, $01, $77, $A5   ; 16
+                db      $01, $FF, $00, $5A, $A5, $01, $77, $A5   ; 17
+                db      $01, $00, $01, $00, $00, $02, $77, $A5   ; 18
+                db      $01, $FF, $01, $FF, $FF, $02, $77, $A5   ; 19
+                db      $01, $00, $00, $5A, $A5, $02, $77, $A5   ; 20
+                db      $01, $FF, $00, $00, $00, $03, $77, $A5   ; 21
+                db      $01, $00, $01, $FF, $FF, $03, $77, $A5   ; 22
+                db      $01, $FF, $01, $5A, $A5, $03, $77, $A5   ; 23
+                db      $02, $00, $00, $00, $00, $00, $77, $A5   ; 24
+                db      $02, $FF, $00, $FF, $FF, $00, $77, $A5   ; 25
+                db      $02, $00, $01, $5A, $A5, $00, $77, $A5   ; 26
+                db      $02, $FF, $01, $00, $00, $01, $77, $A5   ; 27
+                db      $02, $00, $00, $FF, $FF, $01, $77, $A5   ; 28
+                db      $02, $FF, $00, $5A, $A5, $01, $77, $A5   ; 29
+                db      $02, $00, $01, $00, $00, $02, $77, $A5   ; 30
+                db      $02, $FF, $01, $FF, $FF, $02, $77, $A5   ; 31
+                db      $02, $00, $00, $5A, $A5, $02, $77, $A5   ; 32
+                db      $02, $FF, $00, $00, $00, $03, $77, $A5   ; 33
+                db      $02, $00, $01, $FF, $FF, $03, $77, $A5   ; 34
+                db      $02, $FF, $01, $5A, $A5, $03, $77, $A5   ; 35
+                db      $03, $00, $00, $00, $00, $00, $77, $A5   ; 36
+                db      $03, $FF, $00, $FF, $FF, $00, $77, $A5   ; 37
+                db      $03, $00, $01, $5A, $A5, $00, $77, $A5   ; 38
+                db      $03, $FF, $01, $00, $00, $01, $77, $A5   ; 39
+                db      $03, $00, $00, $FF, $FF, $01, $77, $A5   ; 40
+                db      $03, $FF, $00, $5A, $A5, $01, $77, $A5   ; 41
+                db      $03, $00, $01, $00, $00, $02, $77, $A5   ; 42
+                db      $03, $FF, $01, $FF, $FF, $02, $77, $A5   ; 43
+                db      $03, $00, $00, $5A, $A5, $02, $77, $A5   ; 44
+                db      $03, $FF, $00, $00, $00, $03, $77, $A5   ; 45
+                db      $03, $00, $01, $FF, $FF, $03, $77, $A5   ; 46
+                db      $03, $FF, $01, $5A, $A5, $03, $77, $A5   ; 47
+                db      $00, $FF, $00, $01, $00, $01, $00, $00   ; 48
+                db      $00, $00, $01, $FE, $FF, $01, $01, $FF   ; 49
+                db      $00, $00, $01, $01, $00, $01, $02, $5A   ; 50
+                db      $00, $FF, $00, $FE, $FF, $01, $03, $00   ; 51
+                db      $01, $FF, $00, $01, $00, $01, $00, $00   ; 52
+                db      $01, $00, $01, $FE, $FF, $01, $01, $FF   ; 53
+                db      $01, $00, $01, $01, $00, $01, $02, $5A   ; 54
+                db      $01, $FF, $00, $FE, $FF, $01, $03, $00   ; 55
+                db      $02, $FF, $00, $01, $00, $01, $00, $00   ; 56
+                db      $02, $00, $01, $FE, $FF, $01, $01, $FF   ; 57
+                db      $02, $00, $01, $01, $00, $01, $02, $5A   ; 58
+                db      $02, $FF, $00, $FE, $FF, $01, $03, $00   ; 59
+                db      $03, $FF, $00, $01, $00, $01, $00, $00   ; 60
+                db      $03, $00, $01, $FE, $FF, $01, $01, $FF   ; 61
+                db      $03, $00, $01, $01, $00, $01, $02, $5A   ; 62
+                db      $03, $FF, $00, $FE, $FF, $01, $03, $00   ; 63
                 db      $FF

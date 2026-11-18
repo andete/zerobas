@@ -16860,19 +16860,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV
       copies -- BASIC's VDP() reads them; or RG0SAV with bits 2-7 set; filed 2026-11-18). The VDP itself agrees.
       🤖 **AUTONOMOUS** — docs/bios/SETTXT.md / SETT32.md / SETGRP.md / SETMLT.md R-xx-SHADOW, and SETGRP / SETMLT
-      R-xx-R01 ([`XSET_run1.out`](scratchpad/XSET_run1.out)): the VG-8020 stores each cell shifted right (TXTNAM
+      R-xx-R01 ([`XSET_run2.out`](scratchpad/XSET_run2.out)): the VG-8020 stores each cell shifted right (TXTNAM
       $3D23 -> RG2SAV $0F, $FFFF -> $3F); zerobas stores $CF / $FF (rotated, not shifted). SETGRP: RG0SAV OR $02 there,
       (RG0SAV AND $F3) OR $02 on zerobas; SETMLT: RG0SAV AND $01 there, AND $F1 on zerobas. Priced when picked up.
 
 - [ ] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run1.out`](scratchpad/XSET_run1.out)): the VG-8020
+      🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run2.out`](scratchpad/XSET_run2.out)): the VG-8020
       returns A = the new RG6SAV, F = $00, DE = 0 ($7F03 for SETGRP), HL = the address past the mode's five cells;
       zerobas returns F $42 (or $00), DE = that address, HL = 0 or $FFE0, and another A. Priced when picked up.
 
 - [ ] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
       🎚️ TIER 6 — every edge (F is not published; a caller testing it; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run2.out`](scratchpad/XSPR_run2.out)): the VG-8020's
+      🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run3.out`](scratchpad/XSPR_run3.out)): the VG-8020's
       CALPAT returns H, C and bits 5 / 3 from the addition, Z set exactly for 8 x 8 sprites, S and P/V clear,
       whatever F was on entry; zerobas's keeps the entry's S, Z and P/V. HL, A and DE agree. Priced when picked up.
 

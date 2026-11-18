@@ -44,13 +44,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETTXT.md) | 5 | D-SETSHADOW, D-SETREGS |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETT32.md) | 5 | D-SETSHADOW, D-SETREGS |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETGRP.md) | 5 | D-SETSHADOW, D-SETREGS |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](SETMLT.md) | 5 | D-SETSHADOW, D-SETREGS |
-| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CALPAT.md) | 5 | D-CALPATF |
-| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](CALATR.md) | 5 | — |
-| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](GSPSIZ.md) | 5 | — |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETTXT.md) | 7 | D-SETSHADOW, D-SETREGS |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETT32.md) | 7 | D-SETSHADOW, D-SETREGS |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETGRP.md) | 7 | D-SETSHADOW, D-SETREGS |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 2](SETMLT.md) | 7 | D-SETSHADOW, D-SETREGS |
+| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CALPAT.md) | 6 | D-CALPATF |
+| $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CALATR.md) | 6 | — |
+| $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](GSPSIZ.md) | 6 | — |
 | $008D | GRPPRT | graphics (concept page to come) | L3 | — | — | — |
 | $0090 | GICINI | sound (concept page to come) | L3 | — | — | — |
 | $0093 | WRTPSG | sound (concept page to come) | L3 | — | — | — |

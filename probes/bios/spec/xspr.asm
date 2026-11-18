@@ -1,11 +1,12 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XSPR -- docs/bios/CALPAT.md, CALATR.md, GSPSIZ.md round 2 (2026-11-18; round 1 was cases 0-33): the sprite table calls. Per case (the table
+; XSPR -- docs/bios/CALPAT.md, CALATR.md, GSPSIZ.md round 3 (2026-11-18; round 1 was cases 0-33, round 2 34-49): the sprite table calls. Per case (the table
 ; `cases` at the end: op, A, F, interrupts, RG1SAV, PATBAS, ATRBAS) the probe sets RG1SAV ($F3E0), PATBAS ($F926) and
 ; ATRBAS ($F928) by hand, then BC $1357, DE $9BDF, HL $2468, IX $4321, IY $8765 (all XOR $FF in odd cases), the
 ; case's A, F and interrupt state, and calls (cases 34-49 pair entry F with the other register set, and take
-; single-bit and mixed F values): op 0 CALPAT ($0084), 1 CALATR ($0087), 2 GSPSIZ ($008A).
+; single-bit and mixed F values; cases 50-59 give CALPAT sums with bit 15 set, an overflow and a 16 x 16 wrap to
+; zero, and RG1SAV with bits 2-4 or bits 5-7 apart): op 0 CALPAT ($0084), 1 CALATR ($0087), 2 GSPSIZ ($008A).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xspr.asm --row both
 ; The capture: CAP+0 = $A5 when finished; per case a 20-byte record from CAP+1:
 ;   +0 A  +1 F  +2 B  +3 C  +4 D  +5 E  +6 H  +7 L  +8,9 IX  +10,11 IY  after the call  +12 interrupts after (1 on)
@@ -15,7 +16,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area RAM.
 ;
 ; @cap C000
-; @caplen 0400
+; @caplen 0600
 ; @timeout 60
 
 DONE    equ     $C000
@@ -52,7 +53,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $03FF
+                ld      bc, $05FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -334,4 +335,24 @@ cases:
                 dw      $3800, $1B00   ; 48
                 db      $02, $A5, $A5, $01, $A2
                 dw      $3800, $1B00   ; 49
+                db      $00, $01, $00, $00, $E0
+                dw      $8000, $1B00   ; 50
+                db      $00, $01, $FF, $01, $E0
+                dw      $7FF8, $1B00   ; 51
+                db      $00, $80, $00, $00, $E2
+                dw      $F000, $1B00   ; 52
+                db      $00, $80, $FF, $01, $E2
+                dw      $F000, $1B00   ; 53
+                db      $00, $03, $00, $00, $1E
+                dw      $3800, $1B00   ; 54
+                db      $00, $03, $FF, $01, $82
+                dw      $3800, $1B00   ; 55
+                db      $00, $03, $00, $00, $22
+                dw      $3800, $1B00   ; 56
+                db      $02, $A7, $00, $01, $04
+                dw      $3800, $1B00   ; 57
+                db      $02, $A7, $FF, $00, $08
+                dw      $3800, $1B00   ; 58
+                db      $02, $A7, $00, $01, $10
+                dw      $3800, $1B00   ; 59
                 db      $FF
