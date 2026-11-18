@@ -16855,7 +16855,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Its flags on return: VG-8020 9A (4A when GETPNT wrapped, 8A with three codes waiting), zerobas BB / 02. Fix in
       the C-BIOS repack's CHGET.
 
-- [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+- [x] ✅ **CLOSED 2026-11-18: D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+      ✅ **THE FIX:** bios_fnk (basic/biosfnk.asm) calls bf_scroll (basic/main.asm, the low region's end: +21 B, 22 ->
+      1 B free): showing the line with the cursor on its row, the cursor goes up to the last text row and the
+      console's own LF scrolls. **WITNESS:** XSCR4 re-run on the fixed build: the three CRTCNT 24 scroll cases
+      match the reference's model in every row and the cursor; only LINTTB differs (D-LINTTBVAL)
+      ([`XSCR4_fix1.out`](scratchpad/XSCR4_fix1.out)). The CRTCNT 13 case still differs through D-INITEDGES (zerobas
+      forces CRTCNT 24).
       🎚️ TIER 3 — common (KEY ON with the cursor on the bottom line; filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/DSPFNK.md rule R-K-SCROLL ([`XSCR_run2.out`](scratchpad/XSCR_run2.out), XS 00 / 04 /
       54): with CSRY = CRTCNT the VG-8020 scrolls the text rows up by one (row CRTCNT - 1 comes in blank, its LINTTB

@@ -130,6 +130,7 @@ bios_fnk:
                 ld      a,(SCRMOD)
                 cp      2
                 jr      nc,bios_fnk_out     ; graphics: the cells only
+                call    bf_scroll           ; D-DSPFNKSCROLL (basic/main.asm, the low region's end)
                 ld      a,KEYOP_FNKBLANK
                 sub     c                   ; BLANK / PAINT (= BLANK + 1)
 bios_fnk_key:                               ; A = the keystr op
