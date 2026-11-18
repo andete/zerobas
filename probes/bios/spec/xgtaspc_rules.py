@@ -27,6 +27,6 @@ ALL = lambda c: True  # noqa: E731
 RULES = [
     Rule("R-GA-OUT", S1, "DE := ASPCT1 ($F40B) and HL := ASPCT2 ($F40D) ($1234 / $5678, and $0100 / $00C0).", ALL,
          lambda c: (c.de, c.hl) == G.aspct_in(c)),
-    G.keep_rule("GA", S1, "A, F, BC, IX, IY, the interrupt state and the work area are kept.",
-                ["a", "f", "bc", "ix", "iy", "iff", "cloc", "cmask", "atrbyt", "aspct", "scrmod"]),
+    G.keep_rule("GA", S1, "A, F, BC, IX, IY, the interrupt state and the work area recorded are kept.",
+                ["a", "f", "bc", "ix", "iy", "iff", "cloc", "cmask", "atrbyt", "aspct", "scrmod", "cgp"]),
 ]

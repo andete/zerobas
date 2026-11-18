@@ -95,14 +95,14 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0108 | DOWNC | graphics (concept page to come) | L3 | — | — | — |
 | $010B | TDOWNC | graphics (concept page to come) | L3 | — | — | — |
 | $010E | SCALXY | graphics (concept page to come) | L3 | — | — | — |
-| $0111 | MAPXYC | graphics (concept page to come) | L3 | [DRAFT 1](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCMODE, D-MAPXYCF |
-| $0114 | FETCHC | graphics (concept page to come) | L3 | [DRAFT 1](FETCHC.md) | 3 | — |
-| $0117 | STOREC | graphics (concept page to come) | L3 | [DRAFT 1](STOREC.md) | 3 | — |
-| $011A | SETATR | graphics (concept page to come) | L3 | [DRAFT 1](SETATR.md) | 3 | — |
+| $0111 | MAPXYC | graphics (concept page to come) | L3 | [DRAFT 2](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCWRAP, D-MAPXYCMODE, D-MAPXYCF |
+| $0114 | FETCHC | graphics (concept page to come) | L3 | [DRAFT 2](FETCHC.md) | 3 | — |
+| $0117 | STOREC | graphics (concept page to come) | L3 | [DRAFT 2](STOREC.md) | 3 | — |
+| $011A | SETATR | graphics (concept page to come) | L3 | [DRAFT 2](SETATR.md) | 4 | — |
 | $011D | READC | graphics (concept page to come) | L3 | — | — | — |
 | $0120 | SETC | graphics (concept page to come) | L3 | — | — | — |
 | $0123 | NSETCX | graphics (concept page to come) | L3 | — | — | — |
-| $0126 | GTASPC | graphics (concept page to come) | L3 | [DRAFT 1](GTASPC.md) | 3 | — |
+| $0126 | GTASPC | graphics (concept page to come) | L3 | [DRAFT 2](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | graphics (concept page to come) | L3 | — | — | — |
 | $012C | SCANR | graphics (concept page to come) | L3 | — | — | — |
 | $012F | SCANL | graphics (concept page to come) | L3 | — | — | — |

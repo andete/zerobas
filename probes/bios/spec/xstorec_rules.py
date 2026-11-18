@@ -25,8 +25,9 @@ S1 = "1. STOREC ($0117): set the current graphics position"
 ALL = lambda c: True  # noqa: E731
 
 RULES = [
-    Rule("R-SC-IN", S1, "CLOC ($F92A) := HL and CMASK ($F92C) := A (HL $2345, $0000, $FFFF; A $10, $00, $FF).", ALL,
+    Rule("R-SC-IN", S1, "CLOC ($F92A) := HL and CMASK ($F92C) := A (HL $2345, $0000, $FFFF, $1234; A $10, $00, $FF, $33).", ALL,
          lambda c: c.cloc == c.chl and c.cmask == c.ca),
-    G.keep_rule("SC", S1, "A, F, BC, DE, HL, IX, IY, the interrupt state, ATRBYT, ASPCT1 / ASPCT2 and SCRMOD are kept.",
-                ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "atrbyt", "aspct", "scrmod"]),
+    G.keep_rule("SC", S1, "A, F, BC, DE, HL, IX, IY, the interrupt state, ATRBYT, ASPCT1 / ASPCT2, SCRMOD and "
+                "GRPCGP / MLTCGP are kept.",
+                ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "atrbyt", "aspct", "scrmod", "cgp"]),
 ]

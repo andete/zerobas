@@ -37,11 +37,12 @@ def cp_ccf(a):
 
 RULES = [
     Rule("R-SA-ATR", S1, "A colour 0-15 is stored: ATRBYT ($F3F2) := A; A of 16 or more is refused: ATRBYT is kept "
-         "and the carry set (A $00, $05, $0F, $10, $80, $FF).", ALL,
+         "and the carry set (A $00, $05, $0F, $10, $20, $80, $FF).", ALL,
          lambda c: c.atrbyt == (c.ca if c.ca < 16 else 0x77) and (c.f & 1) == (1 if c.ca >= 16 else 0)),
     Rule("R-SA-F", S1, "The whole F is what CP $10 followed by CCF leaves: S, Z and P/V from A - $10, bits 5 / 3 "
          "from A, N clear, H set and the carry clear for A below 16, H clear and the carry set from 16 -- whatever F "
          "was on entry.", ALL, lambda c: c.f == cp_ccf(c.ca)),
-    G.keep_rule("SA", S1, "A, BC, DE, HL, IX, IY, the interrupt state, CLOC, CMASK, ASPCT1 / ASPCT2 and SCRMOD are "
-                "kept.", ["a", "bc", "de", "hl", "ix", "iy", "iff", "cloc", "cmask", "aspct", "scrmod"]),
+    G.keep_rule("SA", S1, "A, BC, DE, HL, IX, IY, the interrupt state, CLOC, CMASK, ASPCT1 / ASPCT2, SCRMOD and "
+                "GRPCGP / MLTCGP are kept.", ["a", "bc", "de", "hl", "ix", "iy", "iff", "cloc", "cmask", "aspct", "scrmod",
+                                             "cgp"]),
 ]

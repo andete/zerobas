@@ -28,33 +28,47 @@ MLT = lambda c: c.cscr != 2  # noqa: E731
 
 
 def grp(c):
+    """SCREEN 2: (CLOC, CMASK, A) from X (C) and Y (E) and GRPCGP"""
     x, y = c.cbc & 0xFF, c.cde & 0xFF
-    off = (y & 0xF8) * 32 + (x & 0xF8) + (y & 7)
-    return (0x2000 + off) & 0xFFFF, 0x80 >> (x & 7)
+    cloc = (c.cgcg + (y & 0xF8) * 32 + (x & 0xF8) + (y & 7)) & 0xFFFF
+    return cloc, 0x80 >> (x & 7)
 
 
 def mlt(c):
     x, y = c.cbc & 0xFF, c.cde & 0xFF
-    off = ((y >> 3) & 7) * 256 + ((x >> 1) & 31) * 8 + (y & 7)
-    return (0x1000 + off) & 0xFFFF, 0x0F if x & 1 else 0xF0
+    cloc = (c.cmcg + ((y >> 3) & 7) * 256 + ((x >> 1) & 31) * 8 + (y & 7)) & 0xFFFF
+    return cloc, 0x0F if x & 1 else 0xF0
+
+
+def want_af(c):
+    if not MLT(c):
+        cloc = grp(c)[0]
+        a = (cloc - c.cgcg) & 0xFF            # the offset's low byte, before GRPCGP is added
+    else:
+        cloc = mlt(c)[0]
+        a = (c.cde >> 3) & 7
+    return a, (G.logical(a) & 0xC4) | ((cloc >> 8) & 0x28)
 
 
 RULES = [
-    Rule("R-MX-GRP", S1, "In SCREEN 2 (SCRMOD 2), with X in C and Y in E: CLOC := GRPCGP + (Y AND $F8) x 32 + (X AND "
-         "$F8) + (Y AND 7), GRPCGP ($F3CB) as it holds ($2000 in the probe), and CMASK := $80 >> (X AND 7), for X 0-255.",
+    Rule("R-MX-GRP", S1, "In SCREEN 2 (SCRMOD 2), with X in C and Y in E (their high bytes play no part): CLOC := GRPCGP "
+         "+ (Y AND $F8) x 32 + (X AND $F8) + (Y AND 7), with GRPCGP ($F3CB) as it holds -- an addition ($20F8 carries "
+         "into the high byte; GRPCGP $0000, $1804, $2000, $20F8 measured) -- and CMASK := $80 >> (X AND 7).",
          lambda c: not MLT(c), lambda c: c.cloc == grp(c)[0] and (c.src == "XGX" or c.cmask == grp(c)[1])),
-    Rule("R-MX-MLT", S1, "In any other SCRMOD (3, and 0 and 1 too), X and Y are multicolour block numbers: CLOC := "
-         "MLTCGP + ((Y >> 3) AND 7) x 256 + ((X >> 1) AND 31) x 8 + (Y AND 7), MLTCGP ($F3D5) as it holds ($1000), and "
-         "CMASK := $F0 for even X, $0F for odd -- X and Y count modulo 64.", MLT,
+    Rule("R-MX-MLT", S1, "In any other SCRMOD (3; and 0, 1, 4, $FF too), X and Y are multicolour block numbers, their "
+         "high bytes playing no part: CLOC := MLTCGP + ((Y >> 3) AND 7) x 256 + ((X >> 1) AND 31) x 8 + (Y AND 7), with "
+         "MLTCGP ($F3D5) as it holds -- an addition ($1100 with Y 8 gives $1201; $0000, $0300, $0B00, $1000, $2800 "
+         "measured) -- and CMASK := $F0 for even X, $0F for odd: X and Y count modulo 64.", MLT,
          lambda c: (c.cloc, c.cmask) == mlt(c)),
-    Rule("R-MX-AF", S1, "SCREEN 2: A := CLOC's low byte, F's S, Z and P/V that byte's (as an OR leaves them) and its "
-         "bits 5 / 3 from CLOC's high byte, H, N, C clear. Other SCRMOD: A := (Y >> 3) AND 7 and F that value's flags as "
-         "an OR leaves them. Whatever A and F were on entry.", ALL,
-         lambda c: (c.a == (c.cloc & 0xFF) and c.f == (G.logical(c.cloc & 0xFF) & 0xC4) | ((c.cloc >> 8) & 0x28))
-         if not MLT(c) else (c.a == (c.cde >> 3) & 7 and c.f == G.logical(c.a))),
-    Rule("R-MX-REGS", S1, "BC and DE are kept but for D := X's low byte in SCREEN 2 (DE $0700 for X 7, Y 0); HL := "
-         "CLOC; IX, IY and the interrupt state are kept; ATRBYT, ASPCT1 / ASPCT2 and SCRMOD are kept.", ALL,
-         lambda c: (c.bc == c.cbc and c.hl == c.cloc
+    Rule("R-MX-AF", S1, "A := in SCREEN 2 the offset's low byte, before GRPCGP is added (GRPCGP $1804 / $20F8 tell); in "
+         "other SCRMOD (Y >> 3) AND 7. F: S, Z and P/V from that A (as an OR leaves them), bits 5 / 3 from CLOC's high "
+         "byte (GRPCGP $0000 / $1804, MLTCGP $0B00 / $2800 tell), H, N and C clear -- whatever A and F were on entry "
+         "($A7, $00, $FF, $5A). The expected values come from the model, not from the CLOC returned.", ALL,
+         lambda c: (c.a, c.f) == want_af(c)),
+    Rule("R-MX-REGS", S1, "BC is kept; DE is kept but for D := X's low byte in SCREEN 2 (X 7, Y $0100 gives DE $0700); "
+         "HL := the modelled CLOC; IX, IY, the interrupt state, ATRBYT, ASPCT1 / ASPCT2, SCRMOD and GRPCGP / MLTCGP are "
+         "kept.", ALL,
+         lambda c: (c.bc == c.cbc and c.hl == (grp(c) if not MLT(c) else mlt(c))[0]
                     and c.de == (((c.cbc & 0xFF) << 8 | (c.cde & 0xFF)) if not MLT(c) else c.cde)
-                    and G.kept(c, ["ix", "iy", "iff", "atrbyt", "aspct", "scrmod"]))),
+                    and G.kept(c, ["ix", "iy", "iff", "atrbyt", "aspct", "scrmod", "cgp"]))),
 ]

@@ -25,9 +25,9 @@ S1 = "1. FETCHC ($0114): read the current graphics position"
 ALL = lambda c: True  # noqa: E731
 
 RULES = [
-    Rule("R-FC-OUT", S1, "HL := CLOC ($F92A) and A := CMASK ($F92C), the current position's address and mask.", ALL,
-         lambda c: c.hl == 0x5A5A and c.a == 0xA5),
-    G.keep_rule("FC", S1, "F, BC, DE, IX, IY, the interrupt state and the work area (CLOC, CMASK, ATRBYT, ASPCT1 / "
-                "ASPCT2, SCRMOD) are kept.", ["f", "bc", "de", "ix", "iy", "iff", "cloc", "cmask", "atrbyt", "aspct",
-                                              "scrmod"]),
+    Rule("R-FC-OUT", S1, "HL := CLOC ($F92A) and A := CMASK ($F92C), the current position's address and mask (CLOC "
+         "$5A5A / CMASK $A5, and $1234 / $40).", ALL, lambda c: c.hl == c.cclo and c.a == c.ccm),
+    G.keep_rule("FC", S1, "F, BC, DE, IX, IY, the interrupt state and the work area recorded (CLOC, CMASK, ATRBYT, "
+                "ASPCT1 / ASPCT2, SCRMOD, GRPCGP / MLTCGP) are kept.",
+                ["f", "bc", "de", "ix", "iy", "iff", "cloc", "cmask", "atrbyt", "aspct", "scrmod", "cgp"]),
 ]
