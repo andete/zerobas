@@ -185,7 +185,12 @@ rl_loop:
                 call    txt_mode            ; INPUT inside SCREEN 2 reads its line in SCREEN 0 too (measured)
                 ld      a,(CSRY)
                 ld      (RL_ROW0),a         ; where input begins: the FSTPOS rule
-                ld      a,(CSRX)
+                ld      a,(AUTFLG)          ; D-PINLINSTART (2026-11-18): with AUTFLG set the
+                or      a                   ; VG-8020's INLIN reads the line from column 1, not
+                ld      a,(CSRX)            ; from where input began (docs/bios/PINLIN.md
+                jr      z,rl_col0           ; R-L-AUTFLG); zerobas's BASIC never sets AUTFLG
+                ld      a,1
+rl_col0:
                 ld      (RL_COL0),a
                 ; C-BIOS's scroll never rewrites the last two LINTTB entries
                 ; (D-SCREDIT, write-watchpoint), so after any output that wrapped

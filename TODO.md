@@ -16870,6 +16870,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cursor there. Fix in the C-BIOS repack's DSPFNK.
 
 - [ ] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
+      🟡 **HALF FIXED (2026-11-18):** INLIN with AUTFLG set now reads from column 1 -- read_line (basic/repl.asm)
+      takes column 1 as the input's start when AUTFLG ($F6AA) is non-zero (zerobas's BASIC never sets it); XLIN2A
+      re-run: all six calls SAME, PINLIN with AUTFLG $FF included ([`XLIN2A_fix1.out`](scratchpad/XLIN2A_fix1.out)).
+      🔴 **PINLIN with AUTFLG 0 is BLOCKED ON PAGE-0 SPACE:** PINLIN and INLIN share bios_inlin's jump target, and
+      telling them apart needs a ~5 B entry stub in page 0 (2026-11-18: 1 B free in the low region at d18bb012 + 3 B
+      in front of the $3283 pin) -- the same carve as D-DSPFNKSCROLL.
       🎚️ TIER 3 — common (a ROM program that prints a prompt and calls PINLIN gets the prompt in BUF on the VG-8020;
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — docs/bios/PINLIN.md rule R-L-PIN ([`XLIN_run1.out`](scratchpad/XLIN_run1.out), XL 3): with "XYZ"

@@ -4630,6 +4630,7 @@ RL_HL           equ     $F7A9   ; main -> tenant: the write cursor (LINEBUF, or 
 RL_STAT         equ     $F7AB   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
 RL_ROW0         equ     $F7AC   ; the row where input began (1-based; 0 once scrolled off) (1)
 RL_COL0         equ     $F7AD   ; the column where input began, after any prompt (1)
+AUTFLG          equ     $F6AA   ; the standard AUTO-mode flag: with it set INLIN reads the line from column 1 (D-PINLINSTART; zerobas's BASIC never sets it) (1)
 RL_LAST         equ     $F7AE   ; the logical line's last row at Enter (1)
 RL_KEY          equ     $F7AF   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
 ; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
