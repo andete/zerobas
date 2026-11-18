@@ -1,0 +1,53 @@
+WARNING: Var i4 is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xchput2.asm
+  live XCH2_fix4.out nodisk: xchput2.asm 0.3 s, zerobas as committed
+  live XCH3_fix4.out nodisk: xchput3.asm 0.1 s, zerobas as committed
+WARNING: Var i3 is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xchput4.asm
+  live XCH4_fix4.out nodisk: xchput4.asm 0.1 s, zerobas as committed
+  live XCH5_fix4.out nodisk: xchput5.asm 0.3 s, zerobas as committed
+  live XCH_fix4.out nodisk: xchput.asm 0.1 s, zerobas as committed
+OK   docs/bios/CHPUT.md: 67 rules, 0 failing on zerobas (live, 5 run file(s))
+  live XCHG2_fix1.out nodisk: xchg2.asm 0.2 s, zerobas as committed
+  live XCHGW_fix1.out nodisk: xchgw.asm 0.1 s, zerobas as committed
+  live XCHG_fix1.out nodisk: xchg.asm 0.3 s, zerobas as committed
+OK   docs/bios/CHGET.md: 15 rules, 0 failing on zerobas (live, 3 run file(s))
+WARNING: Var jphl is never used on line 207 of file /Users/joost/projects/zerobas/probes/bios/spec/xcls.asm
+  live XCLS_fix4.out nodisk: xcls.asm 0.5 s, zerobas as committed
+  live XSCR3_fix6.out nodisk: xscr3.asm 0.2 s, zerobas as committed
+  live XSCR4_fix6.out nodisk: xscr4.asm 0.1 s, zerobas as committed
+  live XSCR5_fix6.out nodisk: xscr5.asm 0.2 s, zerobas as committed
+  live XSCR_fix6.out nodisk: xscr.asm 0.6 s, zerobas as committed
+OK   docs/bios/CLS.md: 13 rules, 4 failing on zerobas (live, 5 run file(s))
+  live XCNV2_run2.out nodisk: xcnv2.asm 0.1 s, zerobas as committed
+  live XCNV_run1.out nodisk: xcnv.asm 0.1 s, zerobas as committed
+OK   docs/bios/CNVCHR.md: 7 rules, 3 failing on zerobas (live, 2 run file(s))
+  live XFNK2_run1.out nodisk: xfnk2.asm 0.1 s, zerobas as committed
+  live XFNK3_run2.out nodisk: xfnk3.asm 0.1 s, zerobas CHANGED since the committed run
+  live XFNK3_run2.out disk: xfnk3.asm 0.2 s, zerobas CHANGED since the committed run
+  live XFNK_fix1.out nodisk: xfnk.asm 0.1 s, zerobas as committed
+OK   docs/bios/INIFNK.md: 9 rules, 4 failing on zerobas (live, 3 run file(s))
+WARNING: Var cbd is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+WARNING: Var cbg is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+WARNING: Var rec0 is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+  live XINIT3_fix1.out nodisk: xinit3.asm 0.3 s, zerobas as committed
+WARNING: Var cbd is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+WARNING: Var cbg is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+WARNING: Var rec0 is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+  live XINIT4_fix2.out nodisk: xinit4.asm 0.5 s, zerobas as committed
+WARNING: Var cbd is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+WARNING: Var cbg is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+WARNING: Var rec0 is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+  live XINIT_fix1.out nodisk: xinit.asm 0.3 s, zerobas as committed
+OK   docs/bios/INITXT.md: 24 rules, 10 failing on zerobas (live, 3 run file(s))
+  live XFSW_run2.out nodisk: xfsw.asm 0.1 s, zerobas as committed
+  live XFSW_run2.out disk: xfsw.asm 0.1 s, zerobas as committed
+  live XKEY_fix2.out nodisk: xkey.asm 0.1 s, zerobas as committed
+OK   docs/bios/DSPFNK.md: 17 rules, 12 failing on zerobas (live, 6 run file(s))
+  live XLIN2A_fix2.out nodisk: xlin2a.asm 0.1 s, zerobas as committed
+  live XLIN2B_fix1.out nodisk: xlin2b.asm 0.1 s, zerobas as committed
+  live XLIN2C_fix1.out nodisk: xlin2c.asm 0.1 s, zerobas as committed
+  live XLIN_fix1.out nodisk: xlin.asm 0.1 s, zerobas as committed
+OK   docs/bios/PINLIN.md: 13 rules, 2 failing on zerobas (live, 4 run file(s))
+  live XTOT2_fix1.out nodisk: xtot2.asm 0.3 s, zerobas as committed
+  live XTOT_fix2.out nodisk: xtot.asm 0.3 s, zerobas as committed
+OK   docs/bios/TOTEXT.md: 10 rules, 4 failing on zerobas (live, 2 run file(s))
+===== spec-live: ALL PAGES AGREE =====

@@ -231,6 +231,7 @@ None measured: every rule holds on zerobas.
 
 ## Tests that cover it
 
-`biosl-acceptance` rung b1text: CHPUT's happy path, VG-8020 against zerobas (L3 in
-tools/bios_levels.py). The rules above are spec evidence, not yet a gate. They become one through
-the test audit ([docs/spec-method.md](../spec-method.md) §8) once this page is FINAL.
+**`spec-live`** ([tools/spec_live.py](../../tools/spec_live.py), in every gate): every rule above, run live on zerobas against these cases' measured reference values. It fails if a rule fails that *Differences from the reference* does not name, or a named one holds ([docs/spec-method.md](../spec-method.md) §8).
+
+Also `biosl-acceptance` rung b1text (L3 in tools/bios_levels.py) and the suites `tools/entry_table.py --bios` lists. Which of those older rows the matrix makes redundant is the audit's next step: a row is retired only with mutation evidence.
+

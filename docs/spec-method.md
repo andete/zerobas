@@ -264,6 +264,16 @@ The audit, once the call's core rule is FINAL:
 5. **Record** the result on the page's *Tests that cover it* section, as one line per rule: the
    rule → the gate case that pins it.
 
+**The mechanism (2026-11-18): `make spec-live`** ([tools/spec_live.py](../tools/spec_live.py), in the
+fast tier, ~8 s for the text region). For every page's rules module it re-runs the page's own probes
+on zerobas only; the reference side is the page's committed measurement and is never re-booted. It
+then requires that the rules zerobas fails are exactly the rules the page's *Differences* table names.
+So step 2 holds for every page with a rules module: each rule is pinned by the page's own separating
+cases. A new failure is a REGRESSION, and a listed rule that now holds is a STALE PAGE. Controls,
+2026-11-18: a Differences row deleted gave REGRESSION; zerobas's machine replaced by the VG-8020 gave
+STALE PAGE for every listed rule. Steps 3-4 (retiring the older suites' rows) still need mutation
+evidence per row.
+
 The page's open list (`[A]`) is then exactly where tests are missing, so "how many tests do we
 need" becomes a count rather than a feeling.
 

@@ -4554,6 +4554,13 @@ bios-spec-index-check:
 
 # docs/spec-method.md §3a: every page's EXECUTABLE RULES hold on the reference's own measured
 # cases, and each page's rendered rule tables match their rules file. Reads committed evidence only.
+# docs/spec-method.md §8 step 2 (2026-11-18): every BIOS spec page AS a gate. Re-runs each page's
+# probes on zerobas only (the reference side stays the page's measured values) and requires that the
+# rules zerobas fails are exactly the rules its "Differences from the reference" table names: a new
+# failure is a REGRESSION, a listed rule that now holds a STALE PAGE. ~8 s (zerobas's boots only).
+spec-live: repack-machine
+	python3 -u tools/spec_live.py
+
 spec-rules-check:
 	@set -e; for f in probes/bios/spec/*_rules.py; do python3 tools/spec_rules.py "$$f" --check > build/spec-rules.out || { cat build/spec-rules.out; exit 1; }; tail -1 build/spec-rules.out; done
 

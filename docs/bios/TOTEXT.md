@@ -93,5 +93,7 @@ Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-
 
 ## Tests that cover it
 
-`biosl-acceptance` (L3 in tools/bios_levels.py). The rules above join a gate through the test audit
-([docs/spec-method.md](../spec-method.md) §8) once this page is FINAL.
+**`spec-live`** ([tools/spec_live.py](../../tools/spec_live.py), in every gate): every rule above, run live on zerobas against these cases' measured reference values. It fails if a rule fails that *Differences from the reference* does not name, or a named one holds ([docs/spec-method.md](../spec-method.md) §8).
+
+Also `biosl-acceptance` (L3 in tools/bios_levels.py) and the suites `tools/entry_table.py --bios` lists. Which of those older rows the matrix makes redundant is the audit's next step: a row is retired only with mutation evidence.
+

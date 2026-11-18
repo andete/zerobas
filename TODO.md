@@ -16985,6 +16985,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`XLIN2B_fix1.out`](scratchpad/XLIN2B_fix1.out)): R-L-PIN, R-L-AUTFLG and R-L-EDGES hold on zerobas. PINLIN.md now
       differs only in F (D-TEXTAF).
 
+- [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
+      🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
+      fast tier, ~8 s, [`SPECLIVE_all.out`](scratchpad/SPECLIVE_all.out)) pins every rule of the 16 text-region pages with
+      the page's own cases, live on zerobas. Controls: a deleted Differences row gave REGRESSION, the VG-8020 as zerobas
+      gave STALE PAGE. Left: the older rows that call these entries (`tools/entry_table.py --bios`: biosl b1text,
+      biosregs, biostext, biosclr, biosmode, biosvdp, biosflags, grphed ...). For each: which page rule it pins, then
+      break that rule in OUR ROM and confirm spec-live (and the remaining rows) go red without it
+      (scratchpad/gate_blindness_sweep.py). Retire only the proven-redundant rows, in a commit of their own naming each
+      row, its rule, its mutation and the row that now catches it. Rows that pin something no page measures (e.g. a
+      work-area answer outside the matrices) stay, and become an [A] on the page.
+
 - [ ] **D-TEXTAF — THE TEXT CALLS' A / F ON RETURN DIFFER FROM THE VG-8020'S**
       🎚️ TIER 6 — every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed
       2026-11-17).
