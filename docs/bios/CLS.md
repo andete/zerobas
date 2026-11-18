@@ -35,7 +35,7 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The screen 
 [the screen editor page](../concepts/screen-editor.md); what the calls touch is on
 [the shared-state map](shared-state.md).
 
-**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XCLS_fix3.out`](../../scratchpad/XCLS_fix3.out), [`XSCR_fix4.out`](../../scratchpad/XSCR_fix4.out), [`XSCR3_fix4.out`](../../scratchpad/XSCR3_fix4.out), [`XSCR4_fix4.out`](../../scratchpad/XSCR4_fix4.out), [`XSCR5_fix4.out`](../../scratchpad/XSCR5_fix4.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XCLS_fix4.out`](../../scratchpad/XCLS_fix4.out), [`XSCR_fix6.out`](../../scratchpad/XSCR_fix6.out), [`XSCR3_fix6.out`](../../scratchpad/XSCR3_fix6.out), [`XSCR4_fix6.out`](../../scratchpad/XSCR4_fix6.out), [`XSCR5_fix6.out`](../../scratchpad/XSCR5_fix6.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XC n]**: case `n` of the XCLS matrix, run 2,
 [`scratchpad/XCLS_run2.out`](../../scratchpad/XCLS_run2.out). The case list, the setup and the record
@@ -133,7 +133,7 @@ Declared NOT evidence (5 cases: XS 36, XS 37, XS 43, XS 47 … (+1)): linlen —
 - **[A]** CLS with the cursor display on (CSRSW); POSIT with it on (is the cursor redrawn?).
 - **[A]** CLS in SCREEN 3 with another BAKCLR (only 6 measured: "both nibbles" vs a constant).
 - **[A]** CLS in SCREEN 2 / 3 with moved GRPCGP / GRPCOL / MLTCGP cells.
-- **[A]** The key line's labels with SHIFT held (D-KEYLINESHIFT's question; needs a keyed probe).
+- **[A]** The key line's labels with SHIFT held (needs a keyed probe).
 - **[A]** The registers other than A / F on return.
 - **[A]** CLS's gate with S / P/V / H / N set on entry (only $00 / $40 / $41 and `cp 1`'s flags
   measured); A other than 0 / 1.

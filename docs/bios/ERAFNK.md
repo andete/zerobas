@@ -10,4 +10,4 @@ SPDX-License-Identifier: 0BSD
 
 ## Differences from the reference
 
-As DSPFNK's (its page's Differences): **D-INITEDGES**; **D-LINTTBVAL** (the row's $AF mark, R-K-ERALT); **D-TEXTAF** (A is not LINLEN, R-K-ERA-A).
+As DSPFNK's (its page's Differences): **D-INITEDGES**; **D-TEXTAF** (A is not LINLEN, R-K-ERA-A).

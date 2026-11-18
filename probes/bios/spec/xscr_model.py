@@ -49,8 +49,8 @@ OUTPUTS = ["a", "f", "cnsdfg", "crtcnt", "csrx_out", "csry_out", "linlen", "scrm
 def load(who, calls):
     """XSCR run 2 (group XS) and XSCR3 run 1 (group XS3: LINTTB's garbage address-dependent, TXTNAM changed late)."""
     out = []
-    for mod, run, src in ((X, "XSCR_fix4.out", "XS"), (X3, "XSCR3_fix4.out", "XS3"), (X4, "XSCR4_fix4.out", "XS4"),
-                             (X5, "XSCR5_fix4.out", "XS5")):
+    for mod, run, src in ((X, "XSCR_fix6.out", "XS"), (X3, "XSCR3_fix6.out", "XS3"), (X4, "XSCR4_fix6.out", "XS4"),
+                             (X5, "XSCR5_fix6.out", "XS5")):
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
         key = "ref" if who == "ref" else "ours"
         for c in mod.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))):

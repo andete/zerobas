@@ -58,7 +58,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0099 | STRTMS | sound (concept page to come) | L3 | — | — | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHGET.md) | 8 | — |
-| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | D-LINTTBVAL |
+| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | — |
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | — | — | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | — | — | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | D-TEXTAF |
@@ -72,8 +72,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-INITEDGES, D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-KEYGRAPH, D-INITEDGES |
-| $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-LINTTBVAL, D-TEXTAF |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-LINTTBVAL, D-TEXTAF |
+| $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |

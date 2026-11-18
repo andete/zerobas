@@ -110,6 +110,6 @@ RULES += [
     Rule("R-F-WAREA", S2, "Outside FNKSTR NOTHING in the whole work area $F380-$FFFF changes: compared right after the "
          "call, before any other BIOS call (run 2; run 1's timer cells were the probe's own interrupt, let in by its "
          "VRAM reads).", r2, lambda c: c.nchg == 0 and c.chg == []),
-    Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, the run after D-FNKBOOT).",
+    Rule("R-F-BOOT", S3, "When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, zerobas's side re-run on the 2026-11-18 build).",
          lambda c: c.src == "XB", lambda c: c.boot == DEFBYTES),
 ]

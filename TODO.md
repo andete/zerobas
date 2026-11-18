@@ -16808,7 +16808,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`XCH5_fix2.out`](scratchpad/XCH5_fix2.out)): R4-CURSOR 9 -> 0 cases failing, R5-KEYROW 3 -> 0, nothing else moved.
       R4-Y-KEYCLAMP is ESC Y's clamp (D-CHPUTESCY).
 
-- [ ] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
+- [x] **D-LINTTBVAL — LINTTB'S NON-ZERO ENTRIES ARE 24 .. 1 ON THE VG-8020, 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program peeking LINTTB; the published meaning, non-zero = not continued, holds on both;
       filed 2026-11-17).
       🤖 **AUTONOMOUS** — (also: the VG-8020's ERAFNK and DSPFNK's scroll write 175 into LINTTB entries, zerobas none --
@@ -16824,6 +16824,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $FB into the last text row after ESC L (docs/bios/CHPUT.md R4-EDIT-LT). zerobas's writers are C-BIOS chput.asm
       (`chput_esc_k` writes CSRY; the ESC L / M shifts) and the scroll. Price each before matching: these values are
       the reference's leftovers, not published ones.
+      ✅ **PART 2 LANDED 2026-11-18, the marks; ITEM CLOSED.**
+      - cbios-repack/linttb-marks.patch (19 bytes differ): chput_esc_k writes $AF into the row it blanks. That covers
+        ESC K / l / J, the scroll's new row and ESC L's inserted row; chput_esc_k starts 1 B earlier, into ESC l's old
+        pad. ESC L's last text row gets `ld (hl),h` = $FB.
+      - basic/main.asm bf_eramark (11 B at the low region's end): ERAFNK marks LINTTB entry CRTCNT with $AF in SCREEN
+        0 / 1. Walls: low region 43 B free, the switch-off floor 36 B, all 7 assembling.
+      WITNESS ([`XCH4_fix4.out`](scratchpad/XCH4_fix4.out), [`XSCR_fix6.out`](scratchpad/XSCR_fix6.out)): every CHPUT.md
+      rule now holds on zerobas (R4-LT, R4-EDIT-LT, R5-EDIT, R5-TAB-LAST). R-K-SCROLL 9 -> 2 and R-K-ERALT 12 -> 4
+      cases failing, and their LINTTB matches in every CRTCNT 24 case; what is left is D-INITEDGES (CRTCNT 13, the
+      margins). Not matched: LINTTB values with CRTCNT other than 24 (D-INITEDGES' key row, PARKED).
 
 - [ ] **D-KEYGRAPH — A FUNCTION-KEY LABEL'S $01 GRAPHIC PREFIX: THE VG-8020 SHOWS THE GRAPHIC CELL, ZEROBAS A SPACE AND THE LETTER**
       🎚️ TIER 6 — every edge (a program putting a graphic character into a KEY string; filed 2026-11-18).

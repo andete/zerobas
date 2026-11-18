@@ -140,14 +140,14 @@ pointing to the rules that measured it on the VG-8020; the detail stays on the c
   - POSIT's row limit is (CRTCNT + CNSDFG) mod 256: CRTCNT − 1 with CNSDFG's usual $FF
     ([CLS](../bios/CLS.md) R-P-CLAMP).
   - DSPFNK with the cursor on the key line's row first scrolls the text rows up, so the cursor stays
-    visible ([DSPFNK](../bios/DSPFNK.md) R-K-SCROLL; zerobas does not: D-DSPFNKSCROLL).
+    visible ([DSPFNK](../bios/DSPFNK.md) R-K-SCROLL).
 - **What the key line shows:** the FIRST five strings of FNKSTR (keys 1–5).
   - Slot = (width + 1) ÷ 5 cells, starting at the margin (columns − width + 1) ÷ 2, each label cut
     to slot − 1 cells.
   - Only the width's span is written.
 
   ([INITXT](../bios/INITXT.md) R-I-KEYPLACE, [DSPFNK](../bios/DSPFNK.md) R-K-DSP / R-K-SEVERAL.)
-  zerobas shows keys 6–10 (D-KEYLINESHIFT) and writes the whole row (D-INITEDGES).
+  zerobas writes the whole row, margins included (D-INITEDGES).
 - **The graphic prefix is one rule in every call that meets it:** $01 then a byte from $40 to $5F
   means the graphic character byte − $40 ([CHPUT](../bios/CHPUT.md) R-PFX-GRAPH,
   [CNVCHR](../bios/CNVCHR.md) R-V-CONV, [DSPFNK](../bios/DSPFNK.md) R-K-LABELS / R-K-LABELS2).
@@ -157,12 +157,9 @@ pointing to the rules that measured it on the VG-8020; the detail stays on the c
   - ERAFNK, and DSPFNK's scroll, write 175 into the row they free ([DSPFNK](../bios/DSPFNK.md)
     R-K-ERALT / R-K-SCROLL).
 
-  zerobas writes other non-zero values (D-LINTTBVAL). Only zero against non-zero is read back, so
-  this matters only to a program that peeks LINTTB.
 - **Reading a line back:** PINLIN takes the whole screen line from column 1; INLIN, and QINLIN after
   its "? ", take it from the column where input began ([PINLIN](../bios/PINLIN.md) R-L-PIN /
-  R-L-INLIN / R-L-QIN). Step 3 of "What RETURN does" above is INLIN's rule. zerobas's PINLIN starts
-  at the cursor, as INLIN does (D-PINLINSTART).
+  R-L-INLIN / R-L-QIN). Step 3 of "What RETURN does" above is INLIN's rule.
 - **Keys come from the key buffer.** CHGET takes one code, and waits when the buffer is empty;
   CHSNS only looks. Both return with interrupts enabled ([CHGET](../bios/CHGET.md) R-G-* / R-S-*).
 
@@ -200,9 +197,6 @@ The editing keys cannot be typed by that checker; the gates below cover them.
   appears in the same places (after a command or an error, not after a stored
   line). The one place an editing key notices: CTRL+B from the start of a line
   lands on `ZB` where the reference lands on `Ok`.
-- **`LINTTB`'s non-zero values differ.** The VG-8020 stores a countdown (24, 23,
-  …); zerobas stores 1. Only zero / non-zero has a meaning, and that agrees; a
-  program that `PEEK`s the table sees different numbers.
 - **Not measured on the reference:** CTRL with the keys outside the main block
   (keypad, cursor and special keys); CTRL+F from one row of a wrapped line to
   the next (the reading was not valid on either machine); how many rows the

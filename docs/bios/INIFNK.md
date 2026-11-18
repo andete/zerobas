@@ -71,7 +71,7 @@ already held the defaults, so it is evidence only for the boot state.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-F-BOOT** When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, the run after D-FNKBOOT). | 1 | ✓ | ✓ |
+| **R-F-BOOT** When a cartridge's INIT runs, FNKSTR already holds the ten defaults (XFNK, zerobas's side re-run on the 2026-11-18 build). | 1 | ✓ | ✓ |
 
 <!-- RULES END -->
 

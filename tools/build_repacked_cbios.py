@@ -129,11 +129,14 @@ PATCHES = [
     # D-CHPUTESCY (2026-11-18): ESC Y's row / column clamp to the last text row / LINLEN as the
     # VG-8020, through POSIT's clamp (posit_row / posit_col); same size -- nothing moves.
     os.path.join(REPO, "cbios-repack", "chput-escy.patch"),
+    # D-LINTTBVAL (2026-11-18): a row CHPUT blanks gets LINTTB $AF, and ESC L's last text row $FB, as
+    # the VG-8020; chput_esc_k starts 1 B earlier into its pad -- nothing else moves.
+    os.path.join(REPO, "cbios-repack", "linttb-marks.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "c115c913e6e6a4108d9c6fa6ea49f89c3b707074"   # D-CHPUTESCY, 2026-11-18
+REPACKED_SHA1 = "6213617ff559ad9fa9d29ceac09123c926e704e4"   # D-LINTTBVAL marks, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

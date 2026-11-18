@@ -1,0 +1,41 @@
+diff --git a/src/chput.asm b/src/chput.asm
+index 042ef42..6824d6c 100644
+--- a/src/chput.asm
++++ b/src/chput.asm
+@@ -345,8 +345,9 @@ chput_esc_d:
+                 ret
+ 
+ ; -- clear line: zerobas D-CHPUTDEL -- chput_esc_l is in main.asm (POSIT's pad), as
+-; the VG-8020's ESC l leaves the cursor where it was; its old 3 B are padding.
+-                ds      3, 0
++; the VG-8020's ESC l leaves the cursor where it was; its old 3 B are padding (2 since
++; D-LINTTBVAL: chput_esc_k starts one byte earlier).
++                ds      2, 0
+ 
+ ; -- Clear till end of line
+ chput_esc_k:
+@@ -355,8 +356,11 @@ chput_esc_k:
+                 ld      e,a
+                 ld      d,0
+                 add     hl,de
+-                ; a != 0, which is OK
+-                ld      (hl),a
++                ld      (hl),$AF                ; zerobas D-LINTTBVAL (2026-11-18): a row it
++                                                ; blanks is marked $AF, as the VG-8020 (ESC K /
++                                                ; l / J, the scroll's new row, ESC L's inserted
++                                                ; one: zerobas docs/bios/CHPUT.md R4-EDIT-LT,
++                                                ; R4-LT); C-BIOS wrote CSRY. Non-zero either way.
+                 
+                 ld      a,(LINLEN)
+                 inc     a                       ; because CSRX is 1-based
+@@ -393,7 +397,9 @@ chput_esc_ll:
+                 dec     hl                      ; DE := HL, HL := HL - 1
+                 lddr
+                 pop     hl
+-                ld      (hl),a                  ; bottom row: line ends (A > 0)
++                ld      (hl),h                  ; bottom row: line ends -- $FB (H: the
++                                                ; LINTTB page), as the VG-8020 after ESC L
++                                                ; (zerobas D-LINTTBVAL, R4-EDIT-LT)
+                 ld      b,a
+                 ld      a,(CSRY)
+                 jr      chput_esc_ll_loop_end

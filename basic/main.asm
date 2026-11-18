@@ -442,7 +442,7 @@ odd_scr:
 bf_scroll:
                 ld      a,c
                 or      a
-                ret     z                   ; ERAFNK: no scroll
+                jr      z,bf_eramark        ; ERAFNK: no scroll, but the row's LINTTB mark
                 ld      a,(CSRY)
                 cp      CON_ROWS            ; the key line's row (bios_fnk set CRTCNT := 24)
                 ret     nz
@@ -452,6 +452,15 @@ bf_scroll:
                 ld      a,10
                 call    CHPUT
                 pop     bc
+                ret
+; ERAFNK marks the key line's row in LINTTB: entry CRTCNT := 175, in SCREEN 0 / 1, as the
+; VG-8020 (D-LINTTBVAL, docs/bios/DSPFNK.md R-K-ERALT). LINTTB ($FBB2) + 78 stays in its page.
+bf_eramark:
+                ld      hl,LINTTB-1
+                ld      a,(CRTCNT)
+                add     a,l
+                ld      l,a
+                ld      (hl),$AF
                 ret
 
 ; bios_pinlin -- PINLIN ($00AE) reads the line from column 1, as the VG-8020 (D-PINLINSTART,
