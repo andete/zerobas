@@ -41,14 +41,16 @@ def pixels(c):
 
 def writes(c):
     """VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the
-    right edge) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern
+    right edge; a run past $17FF goes on into $18xx, no wrap) -- in SCREEN 2 HL of them, in SCREEN 3 L of them
+    (H not used; L = 0 gives 256). SCREEN 2, per pattern
     byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that
     applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT (whole)
     equal to the background nibble -- the bits cleared; ATRBYT's low nibble equal to the foreground nibble -- the bits
     set; pattern OR m = $FF -- the bits cleared and colour byte := (colour AND $F0) OR ATRBYT (ATRBYT ORed in whole:
     $1A over $E_ gives $FA); otherwise the bits
     set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 takes the byte at CLOC through the
-    same steps with no bits (m = 0). SCREEN 3: a high-nibble pixel := (old AND $0F) OR ((ATRBYT x 16) AND $F0), a low-nibble one
+    same steps with no bits (m = 0). SCREEN 3: a high-nibble pixel := (old AND $0F) OR ((ATRBYT x 16) AND $F0), a
+    low-nibble one
     := (old AND $F0) OR ATRBYT (ORed in whole: $1A over $A4 gives $BA). Nothing else changes."""
     w = {}
     px, _, _ = pixels(c)

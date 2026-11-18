@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `SETC` ($0120) — set the current pixel
 
-> **Spec:** DRAFT 4 (2026-11-19), after three test-writer reviews, measured again (runs 2-6). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the fourth test-writer review found no new behaviour --
+> only combinations of measured rules (now open items) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -97,7 +98,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | **D-SETCLAST** (every other bit of the pattern byte set, ATRBYT neither colour: zerobas sets the bit and puts ATRBYT in the foreground nibble, so the byte's other 7 pixels change colour; the VG-8020 clears the bit and ORs ATRBYT into the colour's high nibble -- cases 47, 62, 77, 80, 84) | R-SC-VRAM, R-SC-AF |
 | **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 17, 30, 41, 62, 88) | R-SC-VRAM, R-SC-AF |
 | **D-SETCATR** (SCREEN 3, ATRBYT over 15: zerobas writes $B for $1A into the nibble, where the VG-8020 writes (ATRBYT x 16) AND $F0 into the high one and ORs ATRBYT in whole into the low one -- cases 25, 33, 83) | R-SC-VRAM, R-SC-AF |
-| **D-SETCF** (zerobas returns another F -- A the same -- on the pattern-only steps, and other A / F where its bytes differ) | R-SC-AF |
+| **D-SETCF** (zerobas returns another F on most cases -- the colour-write steps too, A the same: case 06 $08 against $28 -- and other A / F where its bytes differ) | R-SC-AF |
 
 ## Open (not measured)
 
@@ -105,7 +106,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   the background test comes first); ATRBYT over 15 only as $1A (SCREEN 2: 9, 65, 74, 77, 84;
   SCREEN 3: 25, 33, 83).
 - **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask.
-- **[A]** SCREEN 3 CLOC $2000-$3FFF measured once per call (87, 88: the byte at CLOC itself).
+- **[A]** SCREEN 3 CLOC $2000-$3FFF measured once (88: the byte at CLOC itself).
+- **[A]** The Z flag on a colour-byte or SCREEN 3 result (only pattern-only results of $00 measured).
 - **[A]** CLOC $4000 and above: whether the colour byte is at CLOC XOR $2000 or (CLOC + $2000) AND
   $3FFF (the same below $4000).
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status first); the interrupt state

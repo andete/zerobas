@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `READC` ($011D) — read the colour of the current pixel
 
-> **Spec:** DRAFT 4 (2026-11-19), after three test-writer reviews, measured again (runs 2-6). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the fourth test-writer review found no new behaviour --
+> only combinations of measured rules (now open items) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -89,12 +90,13 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 29, 60) | R-RD-A |
+| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 29, 60) | R-RD-A |
 
 ## Open (not measured)
 
 - **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask.
-- **[A]** SCREEN 3 CLOC $2000-$3FFF measured once per call (87, 88: the byte at CLOC itself).
+- **[A]** SCREEN 3 CLOC $2000-$3FFF: not separated (case 87's fill holds the same byte at $2164 and
+  $0164; SETC's case 88 shows the byte at CLOC).
 - **[A]** CLOC $4000 and above: whether the colour byte is at CLOC XOR $2000 or (CLOC + $2000) AND
   $3FFF (the same below $4000).
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status first); the interrupt state

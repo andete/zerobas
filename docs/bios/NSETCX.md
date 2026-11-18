@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `NSETCX` ($0123) — set pixels to the right
 
-> **Spec:** DRAFT 4 (2026-11-19), after three test-writer reviews, measured again (runs 2-6). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the fourth test-writer review found no new behaviour --
+> only combinations of measured rules (now open items) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -83,7 +84,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-NX-VRAM** VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the right edge) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT (whole) equal to the background nibble -- the bits cleared; ATRBYT's low nibble equal to the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and colour byte := (colour AND $F0) OR ATRBYT (ATRBYT ORed in whole: $1A over $E_ gives $FA); otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 takes the byte at CLOC through the same steps with no bits (m = 0). SCREEN 3: a high-nibble pixel := (old AND $0F) OR ((ATRBYT x 16) AND $F0), a low-nibble one := (old AND $F0) OR ATRBYT (ORed in whole: $1A over $A4 gives $BA). Nothing else changes. | 74 | ✓ | ✗ 40: XP N12, XP N13, XP N15, XP N18, XP N32, XP N38 … (+34) |
+| **R-NX-VRAM** VRAM: pixels from the current position rightwards, from cell to cell (into the next row's cells past the right edge; a run past $17FF goes on into $18xx, no wrap) -- in SCREEN 2 HL of them, in SCREEN 3 L of them (H not used; L = 0 gives 256). SCREEN 2, per pattern byte with the bits m it gets (its colour byte at its address XOR $2000; GRPCOL / GRPCGP not used), the first that applies: all 8 bits -- pattern $00 and colour byte ATRBYT (the same pixels, drawn as background); ATRBYT (whole) equal to the background nibble -- the bits cleared; ATRBYT's low nibble equal to the foreground nibble -- the bits set; pattern OR m = $FF -- the bits cleared and colour byte := (colour AND $F0) OR ATRBYT (ATRBYT ORed in whole: $1A over $E_ gives $FA); otherwise the bits set and (ATRBYT x 16) AND $F0 into the foreground nibble. HL = 0 in SCREEN 2 takes the byte at CLOC through the same steps with no bits (m = 0). SCREEN 3: a high-nibble pixel := (old AND $0F) OR ((ATRBYT x 16) AND $F0), a low-nibble one := (old AND $F0) OR ATRBYT (ORed in whole: $1A over $A4 gives $BA). Nothing else changes. | 74 | ✓ | ✗ 40: XP N12, XP N13, XP N15, XP N18, XP N32, XP N38 … (+34) |
 | **R-NX-POS** CLOC and CMASK: kept in SCREEN 2; in SCREEN 3 moved to the pixel after the last one set. ATRBYT is kept. | 74 | ✓ | ✗ 6: XP N38, XP N55, XP N56, XP D38, XP D55, XP D56 |
 | **R-NX-KEEP** IX and IY are kept. (A, F, BC, DE and HL are left holding working values: not compared, the group `XN`.) | 74 | ✓ | ✓ |
 | **R-NX-REGS** RG0SAV-RG7SAV ($A5 preset), SCRMOD and the VDP registers R#0-R#7 are kept: the call writes no VDP register. (FORCLR / BAKCLR / BDRCLR, recorded too, are not preset by the probe: not compared.) | 74 | ✓ | ✓ |
@@ -100,15 +101,16 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 18, 59) | R-NX-VRAM |
 | **D-SETCATR** (as SETC, SCREEN 3 ATRBYT over 15 -- case 67) | R-NX-VRAM |
 | **D-NSETCXL** (SCREEN 3: zerobas counts HL, the VG-8020 L alone -- HL $0102 sets 258 pixels, not 2; cases 55, 56) | R-NX-VRAM, R-NX-POS |
-| **D-NSETCX0** (HL = 0: zerobas returns at once, writing nothing and leaving interrupts as they were; the VG-8020 writes the colour byte in SCREEN 2 and sets 256 pixels in SCREEN 3 -- cases 15, 38, 57, 69-71, 86) | R-NX-VRAM, R-NX-POS, R-NX-EI |
+| **D-NSETCX0** (HL = 0: zerobas returns at once, writing nothing and leaving interrupts as they were; the VG-8020 writes the colour byte in SCREEN 2 and sets 256 pixels in SCREEN 3 -- cases 15, 38, 57, 71, 86; in 69 and 70 ATRBYT matches a colour, so only the interrupt state differs) | R-NX-VRAM, R-NX-POS, R-NX-EI |
 
 ## Open (not measured)
 
 - **[A]** A, F, BC, DE and HL after the call: working values, not compared (the group `XN`).
-- **[A]** SCREEN 2 HL above $0100; ATRBYT over 15 only as $1A (cases 32, 67, 81, 82); a colour byte
+- **[A]** SCREEN 2 HL above $0100; ATRBYT over 15 only as $1A (cases 32, 67, 81, 82), never against
+  a background nibble of $A nor into a SCREEN 3 low nibble where the whole-byte OR shows (SETC's 65, 83 do); a colour byte
   with equal nibbles measured once (76: the bits cleared, the background test first).
 - **[A]** SCRMOD other than 2 and 3; CMASK values that are not one pixel's mask.
-- **[A]** SCREEN 3 CLOC $2000-$3FFF measured once per call (87, 88: the byte at CLOC itself).
+- **[A]** SCREEN 3 CLOC $2000-$3FFF not measured for NSETCX (SETC's case 88 shows the byte at CLOC).
 - **[A]** CLOC $4000 and above: whether the colour byte is at CLOC XOR $2000 or (CLOC + $2000) AND
   $3FFF (the same below $4000).
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status first); the interrupt state
