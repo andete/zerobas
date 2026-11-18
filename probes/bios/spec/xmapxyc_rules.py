@@ -47,22 +47,29 @@ def want_af(c):
     else:
         cloc = mlt(c)[0]
         a = (c.cde >> 3) & 7
-    return a, (G.logical(a) & 0xC4) | ((cloc >> 8) & 0x28)
+    base = c.cgcg if not MLT(c) else c.cmcg
+    off = (cloc - base) & 0xFFFF
+    h = 0x10 if (base & 0xFFF) + (off & 0xFFF) > 0xFFF else 0
+    cy = 1 if base + off > 0xFFFF else 0
+    return a, (G.logical(a) & 0xC4) | ((cloc >> 8) & 0x28) | h | cy
 
 
 RULES = [
-    Rule("R-MX-GRP", S1, "In SCREEN 2 (SCRMOD 2), with X in C and Y in E (their high bytes play no part): CLOC := GRPCGP "
-         "+ (Y AND $F8) x 32 + (X AND $F8) + (Y AND 7), with GRPCGP ($F3CB) as it holds -- an addition ($20F8 carries "
-         "into the high byte; GRPCGP $0000, $1804, $2000, $20F8 measured) -- and CMASK := $80 >> (X AND 7).",
+    Rule("R-MX-GRP", S1, "In SCREEN 2 (SCRMOD 2), with X in C and Y in E (Y's high byte plays no part): CLOC := GRPCGP "
+         "+ (Y AND $F8) x 32 + (X AND $F8) + (Y AND 7), with GRPCGP ($F3CB) as it holds -- a 16-bit addition, not "
+         "kept inside VRAM ($20F8 carries into the high byte, $F000 wraps, $3800 + $0800 gives $4000; GRPCGP $0000, "
+         "$0800, $1804, $2000, $20F8, $3800, $F000 measured) -- and CMASK := $80 >> (X AND 7) for X 0-255.",
          lambda c: not MLT(c), lambda c: c.cloc == grp(c)[0] and (c.src == "XGX" or c.cmask == grp(c)[1])),
-    Rule("R-MX-MLT", S1, "In any other SCRMOD (3; and 0, 1, 4, $FF too), X and Y are multicolour block numbers, their "
-         "high bytes playing no part: CLOC := MLTCGP + ((Y >> 3) AND 7) x 256 + ((X >> 1) AND 31) x 8 + (Y AND 7), with "
-         "MLTCGP ($F3D5) as it holds -- an addition ($1100 with Y 8 gives $1201; $0000, $0300, $0B00, $1000, $2800 "
-         "measured) -- and CMASK := $F0 for even X, $0F for odd: X and Y count modulo 64.", MLT,
+    Rule("R-MX-MLT", S1, "In any other SCRMOD (3; and 0, 1, 4, 6, $82, $FF too: the test is SCRMOD = 2), X and Y are "
+         "multicolour block numbers, their high bytes playing no part (case 58: B $11, D $22): CLOC := MLTCGP + ((Y >> 3) AND 7) x 256 + ((X >> 1) AND 31) x 8 + (Y AND 7), with "
+         "MLTCGP ($F3D5) as it holds -- a 16-bit addition, its low byte included ($0B00 + $0190 gives $0C90, not $0B90; $10F8 + $0008 "
+         "gives $1100; $0000, $0300, $0B00, $1000, $10F8, $1100, $2800, $3C00 measured) -- and CMASK := $F0 for even X, $0F for odd: X and Y count modulo 64.", MLT,
          lambda c: (c.cloc, c.cmask) == mlt(c)),
     Rule("R-MX-AF", S1, "A := in SCREEN 2 the offset's low byte, before GRPCGP is added (GRPCGP $1804 / $20F8 tell); in "
          "other SCRMOD (Y >> 3) AND 7. F: S, Z and P/V from that A (as an OR leaves them), bits 5 / 3 from CLOC's high "
-         "byte (GRPCGP $0000 / $1804, MLTCGP $0B00 / $2800 tell), H, N and C clear -- whatever A and F were on entry "
+         "byte (GRPCGP $0000 / $1804, MLTCGP $0B00 / $2800 tell), H and C as the base addition leaves them (H the carry "
+         "out of bit 11, C out of bit 15: GRPCGP $0800 / $3800 / $F000 with Y 64 / 192 tell), N clear -- whatever A and "
+         "F were on entry "
          "($A7, $00, $FF, $5A). The expected values come from the model, not from the CLOC returned.", ALL,
          lambda c: (c.a, c.f) == want_af(c)),
     Rule("R-MX-REGS", S1, "BC is kept; DE is kept but for D := X's low byte in SCREEN 2 (X 7, Y $0100 gives DE $0700); "

@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `GTASPC` ($0126) — get the aspect ratio
 
-> **Spec:** DRAFT 2 (2026-11-18), after one test-writer review, measured again (run 3). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18): the second test-writer review found nothing on this page (§7's small-call
+> stop). Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -20,8 +21,8 @@ zerobas does all of it the same.
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XG rNN]**: case `NN` of the XGFX1 probe, run 3, on row `r`, both rows in
-[`scratchpad/XGFX1_run3.out`](../../scratchpad/XGFX1_run3.out) (the two rows recorded the same bytes).
+**Evidence.** **[XG rNN]**: case `NN` of the XGFX1 probe, run 4, on row `r`, both rows in
+[`scratchpad/XGFX1_run4.out`](../../scratchpad/XGFX1_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx1.asm` documents the presets, the case table and the 28-byte record:
 - Before each case the probe sets, by hand: CLOC ($F92A), CMASK ($F92C), GRPCGP ($F3CB) and MLTCGP
   ($F3D5) to the case's ($5A5A, $A5, $2000, $1000 in cases 00-42), ATRBYT ($F3F2) to $77, ASPCT1 /
@@ -36,7 +37,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   $FFFF,$FFFF); 23-29 and 32-42 in SCREEN 3 (block numbers: 0,0; 3,0; 4,0; 255,191; 100,50; 4,4; 0,8;
   X 31, 32, 63, 64, 127; Y 7, 63, 64, 127, 128; 65,65); 30-31 in SCREEN 1 and 0; 47-58 with GRPCGP
   $0000 / $1804 / $20F8 and MLTCGP $0000 / $0B00 / $0300 / $2800 / $1100, entry A $00 / $FF / $5A,
-  SCRMOD 4 and $FF, a SCREEN 3 case with D $01, a SCREEN 2 case with Y $0100.
+  SCRMOD 4 and $FF, a SCREEN 3 case with D $01 (54) and one with B $11, D $22 (58), a SCREEN 2 case
+  with Y $0100; 59-65 with SCRMOD 6 and $82, GRPCGP $0800 / $F000 / $3800 (base additions that carry
+  out of bit 11 or 15, and a CLOC of $4000), MLTCGP $10F8 and $3C00.
 - The probe does not look at the VDP.
 
 <!-- RULES BEGIN -->

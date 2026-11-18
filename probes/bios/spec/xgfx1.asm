@@ -1,7 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX1 -- docs/bios/FETCHC.md, STOREC.md, SETATR.md, GTASPC.md, MAPXYC.md round 3 (2026-11-18; round 1 had cases 0-31, round 2 0-42 with one CLOC / CMASK / GRPCGP / MLTCGP preset): the graphics calls
+; XGFX1 -- docs/bios/FETCHC.md, STOREC.md, SETATR.md, GTASPC.md, MAPXYC.md round 4 (2026-11-18; round 1 had cases 0-31, round 2 0-42 with one CLOC / CMASK / GRPCGP / MLTCGP preset,
+; round 3 0-58): the graphics calls
 ; that move values between the registers and the work area. Per case (the table `cases` at the end: op, A, F,
 ; interrupts, SCRMOD, BC, DE, HL, CLOC, CMASK, GRPCGP, MLTCGP) the probe sets, BY HAND: CLOC ($F92A), CMASK ($F92C)
 ; := the case's ($5A5A / $A5 in cases 0-42), ATRBYT ($F3F2)
@@ -19,7 +20,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area RAM.
 ;
 ; @cap C000
-; @caplen 0700
+; @caplen 0800
 ; @timeout 60
 
 GTB     equ     12                      ; GTASPC's second case: ASPCT1 / ASPCT2 $0100 / $00C0
@@ -67,7 +68,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $06FF
+                ld      bc, $07FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -505,4 +506,32 @@ cases:
                 dw      $1105, $2203, $0506, $5A5A
                 db      $A5
                 dw      $2000, $1100   ; 58
+                db      $04, $A7, $00, $00, $06
+                dw      $0064, $0032, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 59
+                db      $04, $A7, $FF, $01, $82
+                dw      $0064, $0032, $0506, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 60
+                db      $04, $A7, $00, $01, $02
+                dw      $0000, $0040, $0506, $5A5A
+                db      $A5
+                dw      $0800, $1000   ; 61
+                db      $04, $A7, $FF, $00, $02
+                dw      $0000, $00C0, $0506, $5A5A
+                db      $A5
+                dw      $F000, $1000   ; 62
+                db      $04, $A7, $00, $00, $02
+                dw      $0000, $0040, $0506, $5A5A
+                db      $A5
+                dw      $3800, $1000   ; 63
+                db      $04, $A7, $FF, $01, $03
+                dw      $0002, $0000, $0506, $5A5A
+                db      $A5
+                dw      $2000, $10F8   ; 64
+                db      $04, $A7, $00, $01, $03
+                dw      $0000, $0038, $0506, $5A5A
+                db      $A5
+                dw      $2000, $3C00   ; 65
                 db      $FF
