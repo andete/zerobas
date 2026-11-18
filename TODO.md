@@ -16856,6 +16856,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a pattern table moved off $0000 with BASE, then a graphics call; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-GRP / R-MX-MLT ([`XGFX1_run2.out`](scratchpad/XGFX1_run2.out)):
+      the VG-8020's CLOC is GRPCGP (SCREEN 2) or MLTCGP (else) plus the offset; zerobas's is the offset alone. The
+      same while those cells hold 0. Priced when picked up.
+
+- [ ] **D-MAPXYCMODE — MAPXYC TAKES THE SCREEN 2 WAY FOR SCRMOD 0 / 1 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (MAPXYC called in a text mode; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-MLT ([`XGFX1_run2.out`](scratchpad/XGFX1_run2.out), cases 30, 31):
+      the VG-8020 takes the multicolour way for any SCRMOD but 2. Priced when picked up.
+
+- [ ] **D-MAPXYCF — MAPXYC RETURNS OTHER A / F ON ZEROBAS**
+      🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-AF ([`XGFX1_run2.out`](scratchpad/XGFX1_run2.out)). Priced when
+      picked up.
+
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out)):

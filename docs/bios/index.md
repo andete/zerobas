@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**57 of 108 calls have a page; 57 are FINAL.**
+**62 of 108 calls have a page; 57 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -95,14 +95,14 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0108 | DOWNC | graphics (concept page to come) | L3 | — | — | — |
 | $010B | TDOWNC | graphics (concept page to come) | L3 | — | — | — |
 | $010E | SCALXY | graphics (concept page to come) | L3 | — | — | — |
-| $0111 | MAPXYC | graphics (concept page to come) | L3 | — | — | — |
-| $0114 | FETCHC | graphics (concept page to come) | L3 | — | — | — |
-| $0117 | STOREC | graphics (concept page to come) | L3 | — | — | — |
-| $011A | SETATR | graphics (concept page to come) | L3 | — | — | — |
+| $0111 | MAPXYC | graphics (concept page to come) | L3 | [DRAFT 1](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCMODE, D-MAPXYCF |
+| $0114 | FETCHC | graphics (concept page to come) | L3 | [DRAFT 1](FETCHC.md) | 3 | — |
+| $0117 | STOREC | graphics (concept page to come) | L3 | [DRAFT 1](STOREC.md) | 3 | — |
+| $011A | SETATR | graphics (concept page to come) | L3 | [DRAFT 1](SETATR.md) | 3 | — |
 | $011D | READC | graphics (concept page to come) | L3 | — | — | — |
 | $0120 | SETC | graphics (concept page to come) | L3 | — | — | — |
 | $0123 | NSETCX | graphics (concept page to come) | L3 | — | — | — |
-| $0126 | GTASPC | graphics (concept page to come) | L3 | — | — | — |
+| $0126 | GTASPC | graphics (concept page to come) | L3 | [DRAFT 1](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | graphics (concept page to come) | L3 | — | — | — |
 | $012C | SCANR | graphics (concept page to come) | L3 | — | — | — |
 | $012F | SCANL | graphics (concept page to come) | L3 | — | — | — |
