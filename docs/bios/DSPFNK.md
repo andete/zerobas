@@ -36,6 +36,8 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The key lin
 INITXT / INIT32 ([INITXT.md](INITXT.md)); what the calls touch is on
 [the shared-state map](shared-state.md).
 
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT and D-LINTTBVAL's clear: [`XKEY_fix2.out`](../../scratchpad/XKEY_fix2.out), [`XSCR_fix1.out`](../../scratchpad/XSCR_fix1.out), [`XSCR3_fix1.out`](../../scratchpad/XSCR3_fix1.out), [`XSCR4_fix1.out`](../../scratchpad/XSCR4_fix1.out), [`XSCR5_fix1.out`](../../scratchpad/XSCR5_fix1.out), and XFSW's run 2 [`XFSW_run2.out`](../../scratchpad/XFSW_run2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+
 **Evidence.** **[XK n]**: case `n` of the XKEY matrix, run 1,
 [`scratchpad/XKEY_run1.out`](../../scratchpad/XKEY_run1.out). The case list, the setup and the record
 are in `probes/bios/spec/xkey_cases.py`, which also generates `probes/bios/spec/xkey.asm` and decodes
@@ -95,13 +97,13 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-K-DSP** DSPFNK sets CNSDFG to 255 (from 0, 1 or $80) and draws the key line on row CRTCNT (24 or 13; NOT row 24 when CRTCNT is 13). Within the width's span (LINLEN cells from the left margin (columns − width + 1) ÷ 2, the cells outside it left as found): spaces, then the FIRST five labels from column margin + k × slot, slot = (width + 1) ÷ 5 (8 at 40, 7 at 37, 6 at 32 / 29), each cut to slot − 1 cells. Every other cell of the name table is left as found. | 11 | ✓ | ✗ 11: XK 00, XK 01, XK 02, XK 03, XK 04, XK 05 … (+5) |
+| **R-K-DSP** DSPFNK sets CNSDFG to 255 (from 0, 1 or $80) and draws the key line on row CRTCNT (24 or 13; NOT row 24 when CRTCNT is 13). Within the width's span (LINLEN cells from the left margin (columns − width + 1) ÷ 2, the cells outside it left as found): spaces, then the FIRST five labels from column margin + k × slot, slot = (width + 1) ÷ 5 (8 at 40, 7 at 37, 6 at 32 / 29), each cut to slot − 1 cells. Every other cell of the name table is left as found. | 11 | ✓ | ✗ 6: XK 03, XK 04, XK 07, XK 08, XK 09, XK 11 |
 | **R-K-LABELS** A label shows as its bytes, with a $01 prefix making the next character a graphic one (its code − $40 for $40..$5F: `$01 'A'` shows cell 01; R-K-LABELS2 for the rest), a control character below $20 (CR, ESC) as a space, DEL as itself, and the label cut to slot − 1 cells ('abcdefghijklmno' shows 'abcdefg' at width 40, 'abcde' at 32); an empty label leaves its slot blank. | 3 | ✓ | ✗ 3: XK 43, XK 44, XK 45 |
 | **R-K-SCROLL** With the cursor ON the key line's row (CSRY = CRTCNT: 24, or 13), DSPFNK -- and FNKSB when it draws -- first scrolls the text rows up by one: row k takes row k + 1's cells for k up to CRTCNT − 2, row CRTCNT − 1 comes in BLANK (spaces; width 40 measured) and its LINTTB entry becomes 175; LINTTB's entries move up with their rows (XSCR3's address-dependent entries: 41 42 … 56 AF, entry 24 kept); the cursor moves up a row (CSRX kept). Then it draws the key line. With the cursor one row higher nothing scrolls. XSCR4 reads row 12 and row CRTCNT − 1 too: the middle rows moved and the blank row is blank, not only in the sums. | 9 | ✓ | ✗ 9: XS 00, XS 04, XS 54, XS3 05, XS3 06, XS4 00 … (+3) |
-| **R-K-LABELS2** More label bytes: TAB and BS show as spaces (as CR and ESC); $80, $FF and DEL as themselves; a $01 at a label's end shows nothing; `$01 'a'` shows 'a' -- the graphic prefix acts only on $40..$5F ('A' gave 01); a 16-byte label with no terminating 0 is cut like any other (to slot − 1). | 3 | ✓ | ✗ 3: XS 20, XS 21, XS 22 |
-| **R-K-LINLEN** The width the key-line calls use is LINLEN AS FOUND, not the width the mode's call was given: with LINLEN set to 37 after a width-40 INITXT (29 after a width-32 INIT32), DSPFNK draws with margin 2 and slot 7 (2 and 6) and ERAFNK clears that span; and ERAFNK / FNKSB with TXTNAM changed late, DSPFNK with T32NAM changed late, all use the base the mode's call set up. The label cut is slot − 1 at every width: 15-letter labels show 6 cells at width 37, 7 at 39, 5 at 29 -- not width ÷ 5 − 1, not a fixed 7 / 5 (XSCR5 run 2). | 10 | ✓ | ✗ 10: XS5 00, XS5 01, XS5 02, XS5 03, XS5 04, XS5 05 … (+4) |
+| **R-K-LABELS2** More label bytes: TAB and BS show as spaces (as CR and ESC); $80, $FF and DEL as themselves; a $01 at a label's end shows nothing; `$01 'a'` shows 'a' -- the graphic prefix acts only on $40..$5F ('A' gave 01); a 16-byte label with no terminating 0 is cut like any other (to slot − 1). | 3 | ✓ | ✗ 2: XS 20, XS 21 |
+| **R-K-LINLEN** The width the key-line calls use is LINLEN AS FOUND, not the width the mode's call was given: with LINLEN set to 37 after a width-40 INITXT (29 after a width-32 INIT32), DSPFNK draws with margin 2 and slot 7 (2 and 6) and ERAFNK clears that span; and ERAFNK / FNKSB with TXTNAM changed late, DSPFNK with T32NAM changed late, all use the base the mode's call set up. The label cut is slot − 1 at every width: 15-letter labels show 6 cells at width 37, 7 at 39, 5 at 29 -- not width ÷ 5 − 1, not a fixed 7 / 5 (XSCR5 run 2). | 10 | ✓ | ✗ 8: XS5 00, XS5 01, XS5 02, XS5 03, XS5 04, XS5 08 … (+2) |
 | **R-K-NOLT** DSPFNK -- and FNKSB when it draws -- without a scroll leave LINTTB untouched, the key line's own entry included (ERAFNK marks it: R-K-ERALT). | 25 | ✓ | ✓ |
-| **R-K-FNKSWI** DSPFNK does NOT take the label set from FNKSWI ($FBCD): with no SHIFT held it shows keys 1-5 whatever FNKSWI held (0, 1, $5A, $FF) and leaves FNKSWI = 1. The set follows the keyboard; FNKSWI is written, not read. | 4 | ✓ | ✗ 3: XF 1, XF 3, XF 4 |
+| **R-K-FNKSWI** DSPFNK does NOT take the label set from FNKSWI ($FBCD): with no SHIFT held it shows keys 1-5 whatever FNKSWI held (0, 1, $5A, $FF) and leaves FNKSWI = 1. The set follows the keyboard; FNKSWI is written, not read. | 4 | ✓ | ✓ |
 
 #### 2. ERAFNK ($00CC): erase the key line
 
@@ -115,9 +117,9 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-K-SB-ON** FNKSB with CNSDFG non-zero (1, $80) is DSPFNK: CNSDFG 255 and the key line drawn. | 9 | ✓ | ✗ 9: XK 27, XK 28, XK 29, XK 30, XK 32, XK 34 … (+3) |
+| **R-K-SB-ON** FNKSB with CNSDFG non-zero (1, $80) is DSPFNK: CNSDFG 255 and the key line drawn. | 9 | ✓ | ✗ 4: XK 29, XK 30, XK 34, XK 37 |
 | **R-K-SB-OFF** FNKSB with CNSDFG 0 does NOTHING: it does not erase; the name table keeps its garbage and CNSDFG stays 0. | 6 | ✓ | ✓ |
-| **R-K-FNKFLG** FNKFLG (the ten function-key trap flags, 1 or $FF) makes no difference to FNKSB. | 4 | ✓ | ✗ 2: XK 41, XK 42 |
+| **R-K-FNKFLG** FNKFLG (the ten function-key trap flags, 1 or $FF) makes no difference to FNKSB. | 4 | ✓ | ✓ |
 
 #### 4. All three
 
@@ -125,7 +127,7 @@ the run.
 |---|---|---|---|
 | **R-K-GRP** In SCREEN 2 all three only set CNSDFG (DSPFNK 255, ERAFNK 0, FNKSB 255 if it was non-zero) and leave the name table as found. | 6 | ✓ | ✓ |
 | **R-K-STATE** None of them moves the cursor (CSRX 7, CSRY 5 stay; the cursor ON the key line's row is the exception: R-K-SCROLL), or changes CRTCNT, LINLEN or SCRMOD. | 46 | ✓ | ✗ 5: XK 09, XK 11, XK 22, XK 24, XK 37 |
-| **R-K-SEVERAL** Every rule above holds with the inputs at several values (XSCR): the name table moved (TXTNAM $1000, T32NAM $1C00 -- drawn there); CNSDFG $FF, 2 and $40 counted as on (FNKSB draws, CNSDFG becomes 255); FNKSB with CNSDFG 0 doing nothing, also with the cursor on the key line's row (no scroll); TXTNAM changed AFTER INITXT -- the line goes where the mode's call set the table up, not where TXTNAM now points; widths 33 / 38 / 30 (SCREEN 0) and 28 (SCREEN 1), which pin slot = (width + 1) ÷ 5 against (width + 2) ÷ 5; CRTCNT 13 in SCREEN 1 at width 29 and in SCREEN 0 at 37; FNKFLG $FF; a second garbage set (cursor, LINTTB, an address-dependent name table that no write of a space or a label reproduces) -- every cell, the cursor, LINTTB, LINL40 / LINL32 and the whole VRAM's sum as the model says. | 26 | ✓ | ✗ 22: XS 01, XS 05, XS 06, XS 08, XS 10, XS 11 … (+16) |
+| **R-K-SEVERAL** Every rule above holds with the inputs at several values (XSCR): the name table moved (TXTNAM $1000, T32NAM $1C00 -- drawn there); CNSDFG $FF, 2 and $40 counted as on (FNKSB draws, CNSDFG becomes 255); FNKSB with CNSDFG 0 doing nothing, also with the cursor on the key line's row (no scroll); TXTNAM changed AFTER INITXT -- the line goes where the mode's call set the table up, not where TXTNAM now points; widths 33 / 38 / 30 (SCREEN 0) and 28 (SCREEN 1), which pin slot = (width + 1) ÷ 5 against (width + 2) ÷ 5; CRTCNT 13 in SCREEN 1 at width 29 and in SCREEN 0 at 37; FNKFLG $FF; a second garbage set (cursor, LINTTB, an address-dependent name table that no write of a space or a label reproduces) -- every cell, the cursor, LINTTB, LINL40 / LINL32 and the whole VRAM's sum as the model says. | 26 | ✓ | ✗ 11: XS 13, XS 14, XS 15, XS 16, XS 17, XS 18 … (+5) |
 | **R-K-AF** The whole A / F on return (not published): the reference's values -- DSPFNK / FNKSB 00 / 44 when they draw (00 / 54 for FNKSB with CNSDFG 0), ERAFNK LINLEN with F BB / B3 / 9B, 02 / 42 in SCREEN 2. | 51 | ✓ | ✗ 48: XS 00, XS 01, XS 02, XS 03, XS 04, XS 05 … (+42) |
 
 Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen — SCREEN 2 cases: the setup does not set LINLEN there (INIGRP does not), so its value is the previous case's
@@ -136,17 +138,15 @@ Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen —
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-KEYLINESHIFT** (the key line shows keys 6–10) | R-K-DSP, R-K-LABELS, R-K-LABELS2, R-K-SB-ON, R-K-FNKFLG, R-K-SEVERAL |
-| **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24; the whole row written, margins included) | R-K-DSP, R-K-SB-ON, R-K-ERA, R-K-STATE, R-K-SEVERAL |
-| **D-DSPFNKSCROLL** (no scroll with the cursor on the key line's row) | R-K-SCROLL (also through D-KEYLINESHIFT's labels) |
-| **D-KEYLINESHIFT** / **D-INITEDGES** (the labels; the margins at widths below the screen's) | R-K-LINLEN, R-K-ERALT (width 37) |
-| **D-LINTTBVAL** (LINTTB: no marks written) | R-K-SCROLL, R-K-ERALT |
+| **D-KEYGRAPH** (a label's $01 graphic prefix: zerobas shows a space and the letter) | R-K-LABELS, R-K-LABELS2 |
+| **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24; the whole row written, margins included) | R-K-DSP, R-K-SB-ON, R-K-ERA, R-K-STATE, R-K-SEVERAL, R-K-LINLEN |
+| **D-DSPFNKSCROLL** (no scroll with the cursor on the key line's row) | R-K-SCROLL |
+| **D-LINTTBVAL** (LINTTB: no $AF marks written) | R-K-SCROLL, R-K-ERALT, R-K-LINLEN |
 | **D-TEXTAF** (A / F on return; ERAFNK's A is not LINLEN on zerobas) | R-K-AF, R-K-ERA-A |
 
 ## Open (not measured)
 
 - **[A]** The key line with a key HELD (SHIFT: the VG-8020 should then show keys 6–10).
-- **[A]** zerobas's handling of odd labels: hidden behind D-KEYLINESHIFT, which shows other labels.
 - **[A]** Widths below 28 or above 40, CRTCNT other than 13 and 24.
 - **[A]** The scroll at a width below the screen's (is the blank row the whole row or the span?), and
   with the cursor below the key line's row.

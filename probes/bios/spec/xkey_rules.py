@@ -31,7 +31,7 @@ LABELS = ([b"key%d" % k for k in range(10)],
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XKEY_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XKEY_fix2.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))
@@ -210,7 +210,7 @@ _cases_xf = cases
 
 def cases():                                     # noqa: F811
     out = _cases_xf()
-    t = open(os.path.join(ROOT, "scratchpad", "XFSW_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XFSW_run2.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
         if b[1] != 0xA5 or b[2 + 41 * 4] != 0xC3:

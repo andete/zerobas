@@ -10,4 +10,4 @@ SPDX-License-Identifier: 0BSD
 
 ## Differences from the reference
 
-As DSPFNK's (its page's Differences): **D-KEYLINESHIFT**, **D-INITEDGES**.
+As DSPFNK's (its page's Differences): **D-KEYGRAPH**, **D-INITEDGES**.

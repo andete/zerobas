@@ -26,7 +26,7 @@ LABELS = [b"key%d" % k for k in range(5)]   # the first five of the setup's FNKS
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XCLS_run2.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XCLS_fix1.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         cs = X.decode(bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1)))

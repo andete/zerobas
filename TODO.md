@@ -16793,6 +16793,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/bios/DSPFNK.md R-K-ERALT / R-K-SCROLL.) XCHPUT2 G2's LINTTB ($FBB2, 24 B) after a clear + one byte per row: the VG-8020 holds 24, 23, ..., 1
       down the rows, zerobas 1 in each; both mark a continued row the same way. Measure what the VG-8020's values ARE
       (a row number? per screen width?) before matching them.
+      🟡 **PART 1 LANDED 2026-11-18: the clear.** cbios-repack/linttb-clear.patch makes a text clear (CLS, INITXT /
+      INIT32, ESC E / 12 / ESC j) leave 24, 23, ..., 1 down the rows with a `djnz` loop. It is 3 B shorter than C-BIOS's
+      `ldir`, padded, so nothing moves. Witness: docs/bios/CLS.md on the fixed build
+      ([`XCLS_fix1.out`](scratchpad/XCLS_fix1.out), [`XSCR_fix1.out`](scratchpad/XSCR_fix1.out)): R-C-HOME 11 -> 0 cases
+      failing, R-C-GATE 2 -> 0. **STILL OPEN, the marks:** the VG-8020 writes $AF into the entry of a row it blanks
+      (ESC K / ESC l / ESC J, the scroll's new last row, ERAFNK's row: docs/bios/DSPFNK.md R-K-ERALT, R-K-SCROLL) and
+      $FB into the last text row after ESC L (docs/bios/CHPUT.md R4-EDIT-LT). zerobas's writers are C-BIOS chput.asm
+      (`chput_esc_k` writes CSRY; the ESC L / M shifts) and the scroll. Price each before matching: these values are
+      the reference's leftovers, not published ones.
+
+- [ ] **D-KEYGRAPH — A FUNCTION-KEY LABEL'S $01 GRAPHIC PREFIX: THE VG-8020 SHOWS THE GRAPHIC CELL, ZEROBAS A SPACE AND THE LETTER**
+      🎚️ TIER 6 — every edge (a program putting a graphic character into a KEY string; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — it was hidden behind D-KEYLINESHIFT. docs/bios/DSPFNK.md R-K-LABELS / R-K-LABELS2 on the fixed
+      build ([`XKEY_fix2.out`](scratchpad/XKEY_fix2.out), [`XSCR_fix1.out`](scratchpad/XSCR_fix1.out)): with `$01 'A'`
+      the VG-8020 shows cell 01 in ONE cell (code − $40, for $40..$5F only). A $01 before anything else shows nothing
+      and the next byte as itself, and a $01 at a label's end shows nothing. zerobas's label loop (sub/keystr.asm
+      `ksp_char`: `cp ' '` -> blank) shows a space and then the letter. ⛔ **BLOCKED ON SPACE:** the prefix test needs
+      ~12 B in the sub ROM's page 0, which has 3 B free (`make basic-reloc`, 2026-11-18). Same decision as
+      D-DSPFNKSCROLL (a carve / promote is Joost's).
 
 - [x] ✅ **CLOSED 2026-11-18: D-KEYLINESHIFT — INITXT / INIT32 WITH THE KEY LINE ON SHOW FUNCTION KEYS 6-10 (THE SHIFTED SET), NOT 1-5**
       ✅ **THE CAUSE:** the key-line tenant (sub/keystr.asm) took the set from FNKSWI, which zerobas set to 1 only

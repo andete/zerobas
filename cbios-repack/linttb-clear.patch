@@ -1,0 +1,26 @@
+diff --git a/src/video.asm b/src/video.asm
+index ddc878e..702ff20 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -1975,11 +1975,17 @@ cls_text:
+         ELSE
+                 ld      a,1
+         ENDIF
++                ; zerobas D-LINTTBVAL (2026-11-18): 24, 23, ..., 1 down the rows, as the
++                ; VG-8020 leaves them after a clear (zerobas docs/bios/CLS.md R-C-HOME,
++                ; docs/bios/CHPUT.md R4-LT); C-BIOS wrote 1 into all 24. Non-zero is
++                ; "not continued" either way. A stays 1. 3 B shorter, padded: nothing moves.
+                 ld      hl,LINTTB
+-                ld      (hl),a
+-                ld      de,LINTTB+1
+-                ld      bc,23
+-                ldir
++                ld      b,24
++cls_linttb_lp:
++                ld      (hl),b
++                inc     hl
++                djnz    cls_linttb_lp
++                ds      3, 0
+         IF MODEL_MSX = MODEL_SUBROM
+                 ret
+         ELSE

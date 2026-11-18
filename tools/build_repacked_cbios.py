@@ -107,11 +107,14 @@ PATCHES = [
     # table), INITXT clears 40 * 24 for LINLEN 40, SCREEN 3's clear is $600 -- paid from
     # INIGRP's 6 B D-GRPBASE pad, nothing after it moves.
     os.path.join(REPO, "cbios-repack", "initkeys.patch"),
+    # D-LINTTBVAL (2026-11-18): a text clear leaves LINTTB 24, 23, ..., 1 down the rows, as the
+    # VG-8020 (C-BIOS: 1 in all); 3 B shorter, padded -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "linttb-clear.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "34d52e91f2c4ef042b93c7bcc564c42736b8d71c"   # D-INITKEYS, 2026-11-16
+REPACKED_SHA1 = "09130175f77cc537d53e8daf497576d0aeb95e4b"   # D-LINTTBVAL, 2026-11-18
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

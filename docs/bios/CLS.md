@@ -37,6 +37,8 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The screen 
 [the screen editor page](../concepts/screen-editor.md); what the calls touch is on
 [the shared-state map](shared-state.md).
 
+**Re-runs (2026-11-18).** The rules read each probe below re-run, unchanged, on the build that fixed D-KEYLINESHIFT, D-FNKBOOT and D-LINTTBVAL's clear: [`XCLS_fix1.out`](../../scratchpad/XCLS_fix1.out), [`XSCR_fix1.out`](../../scratchpad/XSCR_fix1.out), [`XSCR3_fix1.out`](../../scratchpad/XSCR3_fix1.out), [`XSCR4_fix1.out`](../../scratchpad/XSCR4_fix1.out), [`XSCR5_fix1.out`](../../scratchpad/XSCR5_fix1.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+
 **Evidence.** **[XC n]**: case `n` of the XCLS matrix, run 2,
 [`scratchpad/XCLS_run2.out`](../../scratchpad/XCLS_run2.out). The case list, the setup and the record
 are in `probes/bios/spec/xcls_cases.py`, which also generates `probes/bios/spec/xcls.asm` and decodes
@@ -91,12 +93,12 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-C-TEXT** CLS with the Z flag set, in SCREEN 0 / 1: the whole name table (960 / 768 cells) becomes spaces -- at any width, CRTCNT 13 included -- and nothing else in VRAM changes (the whole 16 KB's sum read). With CNSDFG non-zero the key line is redrawn on row CRTCNT as DSPFNK draws it (the first five labels; docs/bios/DSPFNK.md) and CNSDFG becomes 255. | 11 | ✓ | ✗ 6: XC 02, XC 04, XC 08, XC 09, XC 10, XC 37 |
-| **R-C-HOME** It homes the cursor (CSRX 1, CSRY 1) and sets LINTTB to 24, 23, …, 1 down the rows. | 11 | ✓ | ✗ 11: XC 00, XC 02, XC 04, XC 05, XC 06, XC 07 … (+5) |
+| **R-C-TEXT** CLS with the Z flag set, in SCREEN 0 / 1: the whole name table (960 / 768 cells) becomes spaces -- at any width, CRTCNT 13 included -- and nothing else in VRAM changes (the whole 16 KB's sum read). With CNSDFG non-zero the key line is redrawn on row CRTCNT as DSPFNK draws it (the first five labels; docs/bios/DSPFNK.md) and CNSDFG becomes 255. | 11 | ✓ | ✗ 1: XC 08 |
+| **R-C-HOME** It homes the cursor (CSRX 1, CSRY 1) and sets LINTTB to 24, 23, …, 1 down the rows. | 11 | ✓ | ✓ |
 | **R-C-ZCLEAR** CLS with the Z flag CLEAR does nothing at all: VRAM, the cursor, LINTTB and CNSDFG as found, in every mode. | 4 | ✓ | ✓ |
 | **R-C-GRP** CLS with the Z flag set in SCREEN 2: the pattern table ($0000, 6 KB) becomes 0 and the colour table ($2000, 6 KB) BAKCLR AS IT IS (FORCLR is not used): read here only as sums, which for 2048 equal bytes keep the byte mod 32 -- XSCR's byte reads pin it ($16, $C5: R-C-SEVERAL); the name and sprite tables are left as found, and so are the cursor, LINTTB and CNSDFG. | 3 | ✓ | ✓ |
-| **R-C-GATE** CLS acts exactly when the Z flag is set: A = 0 with Z set and A = 1 with Z and carry set clear the screen; A = 1 and A = 0 with Z clear do nothing -- A and the carry do not matter. | 5 | ✓ | ✗ 2: XS 27, XS 29 |
-| **R-C-SEVERAL** And with the inputs at several values (XSCR): CNSDFG 2 / $80 / $FF all redraw the key line (CNSDFG becomes 255); a second garbage set; H / L 3 / 9 ignored; the name table moved (TXTNAM $1000, T32NAM $1C00 -- cleared there); CRTCNT 13 in SCREEN 1; 15-character labels cut to slot − 1; in SCREEN 2 the colour table's BYTES read BAKCLR as it is ($16, $C5) and the pattern table's 0 -- every cell, the cursor, LINTTB and the whole VRAM's sum as the model says. With the cursor ON the key line's row (24, or 13 at CRTCNT 13) CLS does not scroll: it clears, homes, and draws the line. With TXTNAM / T32NAM changed AFTER INITXT / INIT32 it clears the table the mode's call set up, not the one TXTNAM now names. | 15 | ✓ | ✗ 13: XS 31, XS 32, XS 33, XS 34, XS 38, XS 39 … (+7) |
+| **R-C-GATE** CLS acts exactly when the Z flag is set: A = 0 with Z set and A = 1 with Z and carry set clear the screen; A = 1 and A = 0 with Z clear do nothing -- A and the carry do not matter. | 5 | ✓ | ✓ |
+| **R-C-SEVERAL** And with the inputs at several values (XSCR): CNSDFG 2 / $80 / $FF all redraw the key line (CNSDFG becomes 255); a second garbage set; H / L 3 / 9 ignored; the name table moved (TXTNAM $1000, T32NAM $1C00 -- cleared there); CRTCNT 13 in SCREEN 1; 15-character labels cut to slot − 1; in SCREEN 2 the colour table's BYTES read BAKCLR as it is ($16, $C5) and the pattern table's 0 -- every cell, the cursor, LINTTB and the whole VRAM's sum as the model says. With the cursor ON the key line's row (24, or 13 at CRTCNT 13) CLS does not scroll: it clears, homes, and draws the line. With TXTNAM / T32NAM changed AFTER INITXT / INIT32 it clears the table the mode's call set up, not the one TXTNAM now names. | 15 | ✓ | ✗ 2: XS 41, XS3 08 |
 | **R-C-MLT** CLS in SCREEN 3 (Z set): the multicolour pattern table ($0000, 1.5 KB) becomes $66 -- BAKCLR 6 in both nibbles, one BAKCLR measured -- and nothing else changes: the name table, the cursor, LINTTB. | 1 | ✓ | ✓ |
 
 #### 2. POSIT ($00C6): place the cursor
@@ -125,9 +127,7 @@ Declared NOT evidence (5 cases: XS 36, XS 37, XS 43, XS 47 … (+1)): linlen —
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-KEYLINESHIFT** (the key line shows keys 6–10) | R-C-TEXT, R-C-SEVERAL |
 | **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24) | R-C-TEXT, R-CP-STATE, R-C-SEVERAL |
-| **D-LINTTBVAL** (LINTTB's values) | R-C-HOME, R-C-GATE, R-C-SEVERAL |
 | **D-POSITCLAMP** (POSIT does not clamp, and moves the cursor in SCREEN 2 / 3) | R-P-CLAMP, R-P-GRP |
 | **D-TEXTAF** (A / F on return) | R-CP-AF |
 
