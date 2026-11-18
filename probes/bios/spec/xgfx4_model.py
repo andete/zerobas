@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The loader for SCALXY's EXECUTABLE RULES (docs/spec-method.md §3a):
-scratchpad/XGFX4_run1.out (rows N and D; probes/bios/spec/xgfx4.asm documents the presets, the case table and the
+scratchpad/XGFX4_run2.out (rows N and D; probes/bios/spec/xgfx4.asm documents the presets, the case table and the
 28-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XGFX4_run1.out"
+RUN = "XGFX4_run2.out"
 ASM = os.path.join(HERE, "xgfx4.asm")
 REC = 28
 GTB = -1                                    # no case gets the second ASPCT preset

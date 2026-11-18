@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX4 -- docs/bios/SCALXY.md round 1 (2026-11-19): the call that clips a graphics coordinate to the screen. xgfx1.asm's
+; XGFX4 -- docs/bios/SCALXY.md round 2 (2026-11-19; round 1 had cases 0-31): the call that clips a graphics coordinate to the screen. xgfx1.asm's
 ; frame with its own table. Per case (the table `cases` at the end: op, A, F, interrupts, SCRMOD, BC, DE, HL, CLOC,
 ; CMASK, GRPCGP, MLTCGP) the probe sets, BY HAND: CLOC ($F92A), CMASK ($F92C), GRPCGP ($F3CB), MLTCGP ($F3D5), SCRMOD
 ; ($FCAF) := the case's; ATRBYT ($F3F2) := $77, ASPCT1 / ASPCT2 ($F40B / $F40D) := $1234 / $5678; then IX $4321, IY
@@ -17,7 +17,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area RAM.
 ;
 ; @cap C000
-; @caplen 0900
+; @caplen 0800
 ; @timeout 60
 
 GTB     equ     $FF                     ; (no case gets GTASPC's second ASPCT1 / ASPCT2 preset)
@@ -65,7 +65,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $08FF
+                ld      bc, $07FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -395,4 +395,152 @@ cases:
                 dw      $012C, $012C, $2468, $5A5A
                 db      $A5
                 dw      $2000, $1000   ; 31
+                db      $00, $A7, $00, $00, $03
+                dw      $0080, $0001, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 32
+                db      $00, $A7, $00, $00, $03
+                dw      $0080, $0002, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 33
+                db      $00, $A7, $00, $00, $03
+                dw      $0080, $0003, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 34
+                db      $00, $00, $FF, $00, $03
+                dw      $0001, $0004, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 35
+                db      $00, $A7, $00, $01, $03
+                dw      $0005, $000C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 36
+                db      $00, $00, $FF, $00, $03
+                dw      $0009, $0014, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 37
+                db      $00, $A7, $00, $01, $03
+                dw      $000D, $001C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 38
+                db      $00, $00, $FF, $00, $03
+                dw      $0011, $0024, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 39
+                db      $00, $A7, $00, $01, $03
+                dw      $0015, $002C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 40
+                db      $00, $00, $FF, $00, $03
+                dw      $0019, $0034, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 41
+                db      $00, $A7, $00, $01, $03
+                dw      $001D, $003C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 42
+                db      $00, $00, $FF, $00, $03
+                dw      $0021, $0044, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 43
+                db      $00, $A7, $00, $01, $03
+                dw      $0025, $004C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 44
+                db      $00, $00, $FF, $00, $03
+                dw      $0029, $0054, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 45
+                db      $00, $A7, $00, $01, $03
+                dw      $002D, $005C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 46
+                db      $00, $00, $FF, $00, $03
+                dw      $0031, $0064, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 47
+                db      $00, $A7, $00, $01, $03
+                dw      $0035, $006C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 48
+                db      $00, $00, $FF, $00, $03
+                dw      $0039, $0074, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 49
+                db      $00, $A7, $00, $01, $03
+                dw      $003D, $007C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 50
+                db      $00, $00, $FF, $00, $03
+                dw      $0041, $0084, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 51
+                db      $00, $A7, $00, $01, $03
+                dw      $0045, $008C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 52
+                db      $00, $00, $FF, $00, $03
+                dw      $0049, $0094, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 53
+                db      $00, $A7, $00, $01, $03
+                dw      $004D, $009C, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 54
+                db      $00, $00, $FF, $00, $03
+                dw      $0051, $00A4, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 55
+                db      $00, $A7, $00, $01, $03
+                dw      $0055, $00AC, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 56
+                db      $00, $00, $FF, $00, $03
+                dw      $0059, $00B4, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 57
+                db      $00, $A7, $00, $01, $03
+                dw      $005D, $00BC, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 58
+                db      $00, $00, $FF, $01, $00
+                dw      $FFFF, $FFFF, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 59
+                db      $00, $00, $FF, $01, $00
+                dw      $0000, $0000, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 60
+                db      $00, $00, $FF, $01, $00
+                dw      $00FF, $00BF, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 61
+                db      $00, $00, $FF, $01, $01
+                dw      $FFFF, $FFFF, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 62
+                db      $00, $00, $FF, $01, $01
+                dw      $0000, $0000, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 63
+                db      $00, $00, $FF, $01, $01
+                dw      $00FF, $00BF, $2468, $5A5A
+                db      $A5
+                dw      $2000, $1000   ; 64
+                db      $00, $5A, $00, $01, $02
+                dw      $012C, $FFFF, $DB97, $A5A5
+                db      $5A
+                dw      $DFFF, $EFFF   ; 65
+                db      $00, $5A, $FF, $00, $02
+                dw      $004D, $0085, $DB97, $A5A5
+                db      $5A
+                dw      $DFFF, $EFFF   ; 66
+                db      $00, $5A, $00, $01, $03
+                dw      $012C, $FFFF, $DB97, $A5A5
+                db      $5A
+                dw      $DFFF, $EFFF   ; 67
+                db      $00, $5A, $FF, $00, $03
+                dw      $004D, $0085, $DB97, $A5A5
+                db      $5A
+                dw      $DFFF, $EFFF   ; 68
                 db      $FF
