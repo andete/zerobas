@@ -103,7 +103,7 @@ def rules(op, tag, section, r0text, r1text, regtext):
                                                                  else "") + ". Whatever they held ($A5, or $5A), "
              "RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published "
              "defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 "
-             "and 15 apart, each way round (a plain shift: NAM $4000 gives $10, ATR $C000 $80, PAT $C000 $18).", ALL,
+             "and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20).", ALL,
              lambda c: c.sav[2:] == sav_after(c)[2:]),
         Rule(f"R-{tag}-R01", section, f"RG0SAV := {r0text}; RG1SAV := {r1text} (RG0SAV / RG1SAV $00 / $00, $FF / $FF, "
              "$5A / $A5, and apart: $01 / $00, $FE / $FF).", ALL, lambda c: c.sav[:2] == sav_after(c)[:2]),

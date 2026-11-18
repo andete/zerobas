@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `SETTXT` ($0078) — set the VDP up for 40-column text
 
-> **Spec:** DRAFT 4 (2026-11-18), after three test-writer reviews, measured again (run 4). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-18), the core rules: the fourth test-writer review found no new behaviour, and
+> its unpinned items are bit-level combinations, open below (§7's small-call stop). Measured on the VG-8020, alone and with a disk
 > interface, with the VDP's registers read back by the emulator's debugger after every call.
 
 ## Summary
@@ -35,7 +36,8 @@ record:
 - Before each case the probe sets, by hand: the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT
   ($F3D9) to one of six sets (0 the published defaults; 1 other aligned values; 2 other values,
   most with low bits set -- SETGRP's are all $3FFF; 3 every cell $FFFF; 4 and 5 cells of $4000,
-  $8000 and $C000, bits 14 and 15 apart, each way round); RG0SAV / RG1SAV to $00 /
+  $8000 and $C000, bits 14 and 15 apart, each way round in most cells -- PAT for SETTXT /
+  SETGRP and ATR for SETT32 / SETMLT are $C000 in both); RG0SAV / RG1SAV to $00 /
   $00, $FF / $FF, $5A / $A5, or (cases 48-63) apart: $01 / $00, $FE / $FF; RG2SAV-RG6SAV to $A5
   ($5A in cases 72-75); RG7SAV and SCRMOD to the case's ($00, $FF, $5A and 0-3 in cases 48-63, $A5 and
   $77 in the others);
@@ -64,7 +66,7 @@ record:
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-TX-SHADOW** RG2SAV-RG6SAV := TXTNAM / $400, TXTCOL / $40, TXTCGP / $800, TXTATR / $80, TXTPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F). Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart, each way round (a plain shift: NAM $4000 gives $10, ATR $C000 $80, PAT $C000 $18). | 38 | ✓ | ✗ 12: XS N06, XS N07, XS N08, XS N09, XS N10, XS N11 … (+6) |
+| **R-TX-SHADOW** RG2SAV-RG6SAV := TXTNAM / $400, TXTCOL / $40, TXTCGP / $800, TXTATR / $80, TXTPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F). Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20). | 38 | ✓ | ✗ 12: XS N06, XS N07, XS N08, XS N09, XS N10, XS N11 … (+6) |
 | **R-TX-R01** RG0SAV := RG0SAV AND $01 (only bit 0 kept); RG1SAV := (RG1SAV AND $E7) OR $10 (bits 4 and 3 the mode: M1 set) (RG0SAV / RG1SAV $00 / $00, $FF / $FF, $5A / $A5, and apart: $01 / $00, $FE / $FF). | 38 | ✓ | ✓ |
 | **R-TX-VDP** The VDP registers R#0-R#6 := those values, as the VDP holds them (R#0 bits 1-0, R#1 all but bit 2, R#2 bits 3-0, R#4 / R#6 bits 2-0, R#5 bits 6-0); R#7 is not written. | 38 | ✓ | ✓ |
 | **R-TX-REGS** On return A = the new RG6SAV, F = $00, BC = $0007, DE = $0000 and HL = $F3BD (just past TXTPAT); IX and IY are kept -- whatever F was on entry ($00, $FF). | 38 | ✓ | ✗ 38: XS N00, XS N01, XS N02, XS N03, XS N04, XS N05 … (+32) |
@@ -82,13 +84,16 @@ record:
 
 ## Open (not measured)
 
-- **[A]** Cells and RG0SAV / RG1SAV values other than the measured sets; RG2SAV-RG6SAV and the VDP
-  registers with presets other than the probe's one; entry F other than $00 and $FF, and entry A
+- **[A]** Cells and RG0SAV / RG1SAV values other than the measured sets: cell bits that always move
+  together in them (walking-one values would pin each bit), RG1SAV only $00 / $FF / $A5 (its bits
+  move in two groups), and the PAT (SETTXT / SETGRP) or ATR (SETT32 / SETMLT) cell with bits 14 and
+  15 apart; RG2SAV-RG6SAV preset to $5A only with cell set 1, so a merge of the old shadow into the
+  bits that set computes as 0 is not ruled out; VDP register presets other than the probe's one; entry F other than $00 and $FF, and entry A
   other than $A7.
 - **[A]** VRAM writes that keep every 1 KB block's sum (the read-back compares sums, not bytes).
 - **[A]** Whether the register writes are protected from an interrupt arriving during the call.
 - **[A]** Entry with a VDP interrupt pending (the probe reads the status just before the call), and an
-  interrupt arriving during it once the call has set R#1's interrupt bit (RG1SAV $FF, $A5, $FE).
+  interrupt arriving during it once the call has set R#1's interrupt bit (RG1SAV $FF, $A5).
 - **[A]** Transient, repeated or reordered register writes (the snapshot shows the state after the
   call; a port trace would show each write).
 - **[A]** Entry SCRMOD other than $77 and 0-3, RG7SAV other than $A5 / $00 / $FF / $5A, and BC, DE, HL,

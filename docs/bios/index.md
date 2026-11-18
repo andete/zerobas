@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**54 of 108 calls have a page; 48 are FINAL.**
+**57 of 108 calls have a page; 52 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -36,18 +36,18 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | D-VRAMF |
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
-| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
+| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](CHGMOD.md) | 4 | D-CHGMODRANGE, D-INITXTBAS |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CHGCLR.md) | 6 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 3](CLRSPR.md) | 6 | D-CLRSPRR1, D-CLRSPRMODE, D-CLRSPRORDER, D-CLRREGS |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
-| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | — | — | — |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETTXT.md) | 10 | D-SETSHADOW, D-SETREGS |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETT32.md) | 10 | D-SETSHADOW, D-SETREGS |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETGRP.md) | 10 | D-SETSHADOW, D-SETREGS |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 4](SETMLT.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](INIGRP.md) | 4 | D-SETSHADOW, D-INIREGS |
+| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [DRAFT 1](INIMLT.md) | 4 | D-INIMLTCOL, D-SETSHADOW, D-INIREGS |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 10 | D-SETSHADOW, D-SETREGS |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 10 | D-SETSHADOW, D-SETREGS |
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
