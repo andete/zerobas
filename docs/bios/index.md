@@ -73,7 +73,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-KEYGRAPH, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-LINTTBVAL, D-TEXTAF |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-DSPFNKSCROLL, D-LINTTBVAL, D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-LINTTBVAL, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | input (concept page to come) | L3 | — | — | — |
 | $00D8 | GTTRIG | input (concept page to come) | L3 | — | — | — |

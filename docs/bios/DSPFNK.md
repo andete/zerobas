@@ -36,7 +36,7 @@ Reference: the Philips VG-8020's main BIOS. Ours: the C-BIOS repack. The key lin
 INITXT / INIT32 ([INITXT.md](INITXT.md)); what the calls touch is on
 [the shared-state map](shared-state.md).
 
-**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XKEY_fix2.out`](../../scratchpad/XKEY_fix2.out), [`XSCR_fix3.out`](../../scratchpad/XSCR_fix3.out), [`XSCR3_fix3.out`](../../scratchpad/XSCR3_fix3.out), [`XSCR4_fix3.out`](../../scratchpad/XSCR4_fix3.out), [`XSCR5_fix3.out`](../../scratchpad/XSCR5_fix3.out), and XFSW's run 2 [`XFSW_run2.out`](../../scratchpad/XFSW_run2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
+**Re-runs (2026-11-18).** The rules read zerobas's side of each probe below re-run, unchanged, on the 2026-11-18 build: [`XKEY_fix2.out`](../../scratchpad/XKEY_fix2.out), [`XSCR_fix4.out`](../../scratchpad/XSCR_fix4.out), [`XSCR3_fix4.out`](../../scratchpad/XSCR3_fix4.out), [`XSCR4_fix4.out`](../../scratchpad/XSCR4_fix4.out), [`XSCR5_fix4.out`](../../scratchpad/XSCR5_fix4.out), and XFSW's run 2 [`XFSW_run2.out`](../../scratchpad/XFSW_run2.out). The runs cited below are the ones the rules were written from; the reference's side is the same machine and setup.
 
 **Evidence.** **[XK n]**: case `n` of the XKEY matrix, run 1,
 [`scratchpad/XKEY_run1.out`](../../scratchpad/XKEY_run1.out). The case list, the setup and the record
@@ -139,8 +139,7 @@ Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen —
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-KEYGRAPH** (a label's $01 graphic prefix: zerobas shows a space and the letter) | R-K-LABELS, R-K-LABELS2 |
-| **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24; the whole row written, margins included) | R-K-DSP, R-K-SB-ON, R-K-ERA, R-K-STATE, R-K-SEVERAL, R-K-LINLEN |
-| **D-DSPFNKSCROLL** (no scroll with the cursor on the key line's row) | R-K-SCROLL |
+| **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24; the whole row written, margins included) | R-K-DSP, R-K-SB-ON, R-K-ERA, R-K-STATE, R-K-SEVERAL, R-K-LINLEN, R-K-SCROLL (CRTCNT 13) |
 | **D-LINTTBVAL** (LINTTB: no $AF marks written) | R-K-SCROLL, R-K-ERALT, R-K-LINLEN |
 | **D-TEXTAF** (A / F on return; ERAFNK's A is not LINLEN on zerobas) | R-K-AF, R-K-ERA-A |
 

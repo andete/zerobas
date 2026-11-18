@@ -16918,7 +16918,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rule holds on zerobas (R-G-EI 11 -> 0 cases failing, R-G-FLAGS 13 -> 0, R-G-WFLAGS 2 -> 0, R-G-CODE2 9 -> 0,
       R-G-F2 10 -> 0).
 
-- [ ] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
+- [x] **D-DSPFNKSCROLL — DSPFNK / FNKSB WITH THE CURSOR ON THE KEY LINE'S ROW: THE VG-8020 SCROLLS FIRST, ZEROBAS DRAWS OVER THE CURSOR**
       🏗️ **RULED (Joost, 2026-11-18, "I agree with your recommendation"): SCOUT a promote pass in the low region** (promote_scout.py); re-land this fix if it frees ~30 B with margin for the switch-off builds, else report the numbers and park.
       💰 **ROOM MADE (2026-11-18): SOUND / BEEP PROMOTED into main page 1** (basic/soundstmt.asm, in front of the $6CF3
       pin). tools/promote_scout.py seeded with every bios_* entry, crt_rows / crt_cp and the ISR path
@@ -16937,6 +16937,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       54): with CSRY = CRTCNT the VG-8020 scrolls the text rows up by one (row CRTCNT - 1 comes in blank, its LINTTB
       entry 175), moves the cursor up a row, then draws the key line; zerobas draws over the cursor's row and leaves the
       cursor there. Fix in the C-BIOS repack's DSPFNK.
+      ✅ **FIXED 2026-11-18, RE-LANDED** (the revert of 49bde3de: bios_fnk calls bf_scroll, 20 B at the low region's end) in
+      the room the SOUND / BEEP promotion made. Walls after it: low region 61 B free, the switch-off builds' floor 54 B (all
+      7 assemble). WITNESS: the four XSCR probes re-run ([`XSCR4_fix4.out`](scratchpad/XSCR4_fix4.out),
+      [`XSCR_fix4.out`](scratchpad/XSCR_fix4.out)). In the 7 scroll cases at CRTCNT 24 the cursor, rows and row 1 now match;
+      the one cell left is the new last row's LINTTB entry ($AF on the VG-8020: D-LINTTBVAL's marks). The two CRTCNT 13 cases
+      are D-INITEDGES's row. R-K-SCROLL is therefore attributed to those two items.
 
 - [ ] **D-PINLINSTART — PINLIN RETURNS ONLY THE TEXT FROM THE CURSOR; THE VG-8020'S RETURNS THE WHOLE SCREEN LINE**
       🏗️ **RULED (Joost, 2026-11-18): the PINLIN half rides D-DSPFNKSCROLL's promote scout** (re-land with it, or park with it).
