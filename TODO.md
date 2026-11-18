@@ -16856,6 +16856,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
 
+- [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
+      2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
+      🤖 **AUTONOMOUS** — docs/bios/TUPC.md / TDOWNC.md R-TU-* / R-TD-* ([`XGFX2_run2.out`](scratchpad/XGFX2_run2.out)):
+      the VG-8020 stops TUPC where CLOC's high byte is GRPCGP's, TDOWNC where it is GRPCGP's + $17; zerobas stops
+      TUPC only at high byte 0 and TDOWNC at any high byte of $17 or more. Priced when picked up.
+
 - [ ] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
       🎚️ TIER 6 — every edge (a pattern table moved off $0000 with BASE, then a graphics call; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-GRP / R-MX-MLT ([`XGFX1_run4.out`](scratchpad/XGFX1_run4.out)):
