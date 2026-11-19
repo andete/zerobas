@@ -16865,30 +16865,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
 
-- [ ] **D-SCANLPAINT — SCANL PAINTS 8 PIXELS SHORT IN SCREEN 2 ON ZEROBAS**
+- [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 3 — common: every PAINT in SCREEN 2 goes through SCANL (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): the VG-8020 paints HL + 8 pixels from the left end (through the
-      start pixel and 7 more); zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
+      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): the VG-8020 paints HL + K pixels from the left end, K the run
+      length of the most recent SCREEN 2 SCANR; zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
       calls SCANL at all is to be checked first. Priced when picked up.
 
-- [ ] **D-SCANLSTOP — SCANL MISSES A FOREGROUND-COLOURED BORDER PIXEL ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): start X 104, BDRATR 3 (the foreground of X 98-102): the VG-8020
-      counts 1, zerobas runs to X 0. docs/bios/SCANL.md case 43. Priced when picked up.
+- [ ] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
+      🎚️ TIER 3 — common: in SCREEN 2 PAINT's border is the paint colour, which drawn lines carry as foreground; check
+      first whether BASIC's PAINT on zerobas goes through these calls (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): in the run / count the VG-8020 stops at the
+      first BDRATR pixel, foreground or background; zerobas runs past a foreground one to the row's end. docs/bios/
+      SCANR.md R-SR-SCAN (cases 62, 77), SCANL.md R-SL-SCAN (43, 75). Priced when picked up.
 
 - [ ] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
-
-- [ ] **D-SCANRSKIP — SCANR WITH DE ABOVE THE SKIPPED BORDER PIXELS RUNS TO THE ROW END ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): docs/bios/SCANR.md case 62. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
 
 - [ ] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): the VG-8020 keeps BC, DE, HL and the interrupt
+      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): the VG-8020 keeps BC, DE, HL and the interrupt
       state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
-      C := 0, HL := $000E, other flags, interrupts on. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
+      C := 0, HL := $000E, other flags, interrupts on, and with SCRMOD 0 / 1 takes ATRBYT. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
 
 - [ ] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
       🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).

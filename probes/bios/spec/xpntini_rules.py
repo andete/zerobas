@@ -32,9 +32,10 @@ def logical(v):
 
 RULES = [
     Rule("R-PI-BDR", S1, "BDRATR ($FCB2) := ATRBYT in SCREEN 2, whatever A is ($05, $0F, $10, $FF measured); := A in any "
-         "other mode (SCREEN 3: $05, $09, $10, $FF measured, none refused).", ALL,
+         "other mode (SCREEN 3: $05, $09, $10, $80, $FF; SCRMOD 0 and 1: $05 measured; none refused). ATRBYT whole: "
+         "$1A gives $1A.", ALL,
          lambda c: c.bdratr == (c.catr if c.cscr == 2 else c.ca)),
-    Rule("R-PI-AF", S1, "SCREEN 2: A := ATRBYT, F its flags as an AND leaves them (H set: $10 for $07). Other modes: A "
+    Rule("R-PI-AF", S1, "SCREEN 2: A := ATRBYT, F its flags as an AND leaves them (H set: $10 for $07, $54 for $00, $1C for $0A). Other modes: A "
          "kept, F as CP $10 then CCF leave it (as SETATR: the carry set when A is $10 or more) -- whatever F was.", ALL,
          lambda c: (c.a, c.f) == ((c.catr, logical(c.catr) | 0x10) if c.cscr == 2 else (c.ca, cp_ccf(c.ca)))),
     Rule("R-PI-KEEP", S1, "BC, DE, HL, IX, IY and the interrupt state are kept; CLOC, CMASK, ATRBYT, the work area "

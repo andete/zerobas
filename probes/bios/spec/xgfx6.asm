@@ -1,8 +1,11 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XGFX6 -- docs/bios/PNTINI.md, SCANR.md, SCANL.md round 4 (2026-11-19; round 1 had cases 0-30, round 3 31-47; round 2, a work-area poke sweep that changed nothing, dropped): the PAINT helpers. xgfx3.asm's frame, its case
-; fields read anew: op, F, interrupts, SCRMOD, CMASK, ATRBYT, BDRATR, B, CLOC, DE, cell set, W1, W2, HL, A.
+; XGFX6 -- docs/bios/PNTINI.md, SCANR.md, SCANL.md round 7 (2026-11-19; round 1 had cases 0-30, round 3 31-47, round 4 48-62, round 5 63-78, round 6 a B sweep (one case kept, 79); from round 7 the
+; alternate registers and the 64 bytes below the call's stack are preset; round 2, a work-area poke sweep that changed nothing, dropped): the PAINT helpers. xgfx3.asm's frame, its case
+; fields read anew: op, F, interrupts, SCRMOD, CMASK, ATRBYT, BDRATR, B, CLOC, DE, ALT, W1, W2, HL, A. ALT picks
+; the alternate registers BC', DE', HL' from `altset` and seeds the stale-stack fill below (the table cells are always
+; the published defaults).
 ; Per case the probe first sets, BY HAND:
 ;   - the 20 screen-table cells TXTNAM ($F3B3) .. MLTPAT ($F3D9) := one of `tsets` (0 the published defaults);
 ;   - SCRMOD ($FCAF), CLOC ($F92A), CMASK ($F92C), ATRBYT ($F3F2), BDRATR ($FCB2) := the case's; RG0SAV-RG7SAV := $A5;
@@ -27,7 +30,7 @@
 ; registers read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 2400
+; @caplen 2D00
 ; @timeout 180
 ; @vdpsnap EE00 EF00
 
@@ -52,6 +55,7 @@ cW3     equ     $EE21
 cA      equ     $EE23
 mask    equ     $EE26
 cidx    equ     $EE27
+altp    equ     $EE28
 raf     equ     $EE30
 rbc     equ     $EE32
 rde     equ     $EE34
@@ -79,7 +83,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $23FF
+                ld      bc, $2CFF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -107,6 +111,60 @@ next:
                 sbc     a, a
                 ld      (mask), a
                 call    preset
+                ld      a, (cts)                ; the alternate registers BC', DE', HL' := the case's `altset` entry
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                ld      d, h
+                ld      e, l
+                add     hl, hl
+                add     hl, de
+                ld      de, altset
+                add     hl, de
+                ld      (altp), hl
+                exx
+                ld      hl, (altp)
+                ld      c, (hl)
+                inc     hl
+                ld      b, (hl)
+                inc     hl
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                inc     hl
+                ld      a, (hl)
+                inc     hl
+                ld      h, (hl)
+                ld      l, a
+                exx
+                ld      hl, 0                   ; the 64 bytes below the call's stack (SP - 68 .. SP - 5 here; the call
+                add     hl, sp                  ; and STUB push two return addresses) := (64 - j) XOR (ALT x 16), j from
+                ld      de, -68                 ; the lowest: the calls read stale stack there
+                add     hl, de
+                ld      a, (cts)
+                rlca
+                rlca
+                rlca
+                rlca
+                ld      c, a
+                ld      b, 64
+st_lp:
+                ld      a, b
+                xor     c
+                ld      (hl), a
+                inc     hl
+                djnz    st_lp
+                ld      hl, 0                   ; and the 16 bytes from SP up (the caller's frame) := $C0 + j XOR (ALT x 16)
+                add     hl, sp
+                ld      b, 16
+                ld      e, $C0
+sa_lp:
+                ld      a, e
+                xor     c
+                ld      (hl), a
+                inc     hl
+                inc     e
+                djnz    sa_lp
                 ld      a, (cF)
                 ld      c, a
                 ld      a, (cA)
@@ -280,7 +338,7 @@ wv:
 
 ; preset -- the table cells, the work-area cells, the VDP registers, VRAM, the stub
 preset:
-                ld      a, (cts)
+                xor     a                       ; the table cells: always set 0, the published defaults
                 ld      l, a
                 ld      h, 0
                 add     hl, hl                  ; x 40
@@ -402,6 +460,17 @@ tsets:
                 dw      $0000, $0000, $0800, $0000, $0000,  $1800, $2000, $0000, $1B00, $3800
                 dw      $1800, $2000, $0800, $1B00, $3800,  $0800, $0000, $0000, $1B00, $3800
 
+; the alternate-register presets: BC', DE', HL'
+altset:
+                dw      $0000, $0000, $0000
+                dw      $0005, $0000, $0000
+                dw      $0000, $0005, $0000
+                dw      $0000, $0000, $0005
+                dw      $0005, $0005, $0005
+                dw      $0100, $0000, $0000
+                dw      $0000, $0100, $0000
+                dw      $0000, $0000, $0100
+
 finish:
                 ld      a, $C3
                 call    emit
@@ -478,265 +547,395 @@ cases:
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 10
+                db      $A7   ; 0
                 db      $01, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 11
+                db      $A7   ; 1
                 db      $01, $00, $00, $02, $10, $0C, $03, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 12
+                db      $A7   ; 2
                 db      $01, $00, $00, $02, $80, $0C, $0F, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 13
+                db      $A7   ; 3
                 db      $01, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0003
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 14
+                db      $A7   ; 4
                 db      $01, $00, $00, $02, $80, $0C, $06, $01
                 dw      $0662, $0003
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 15
+                db      $A7   ; 5
                 db      $01, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0100
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 16
+                db      $A7   ; 6
                 db      $01, $FF, $01, $02, $80, $0C, $06, $01
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 17
+                db      $A7   ; 7
                 db      $01, $00, $00, $03, $F0, $0C, $0E, $00
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0360, $2468
-                db      $A7   ; 18
+                db      $A7   ; 8
                 db      $01, $00, $00, $03, $F0, $0C, $0E, $01
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0360, $2468
-                db      $A7   ; 19
+                db      $A7   ; 9
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 20
+                db      $A7   ; 10
                 db      $02, $00, $00, $02, $80, $0C, $06, $01
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 21
+                db      $A7   ; 11
                 db      $02, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 22
+                db      $A7   ; 12
                 db      $02, $00, $00, $02, $10, $0C, $03, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 23
+                db      $A7   ; 13
                 db      $02, $00, $00, $02, $80, $0C, $0F, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 24
+                db      $A7   ; 14
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0003
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 25
+                db      $A7   ; 15
                 db      $02, $00, $00, $02, $80, $0C, $06, $01
                 dw      $0662, $0003
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 26
+                db      $A7   ; 16
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0100
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 27
+                db      $A7   ; 17
                 db      $02, $FF, $01, $02, $80, $0C, $06, $01
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 28
+                db      $A7   ; 18
                 db      $02, $00, $00, $03, $F0, $0C, $0E, $00
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0360, $2468
-                db      $A7   ; 29
+                db      $A7   ; 19
                 db      $02, $00, $00, $03, $F0, $0C, $0E, $01
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0360, $2468
-                db      $A7   ; 30
+                db      $A7   ; 20
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 31
+                db      $A7   ; 21
                 db      $02, $00, $00, $02, $40, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 32
+                db      $A7   ; 22
                 db      $02, $00, $00, $02, $20, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 33
+                db      $A7   ; 23
                 db      $02, $00, $00, $02, $10, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 34
+                db      $A7   ; 24
                 db      $02, $00, $00, $02, $08, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 35
+                db      $A7   ; 25
                 db      $02, $00, $00, $02, $04, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 36
+                db      $A7   ; 26
                 db      $02, $00, $00, $02, $02, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 37
+                db      $A7   ; 27
                 db      $02, $00, $00, $02, $01, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 38
+                db      $A7   ; 28
                 db      $02, $00, $00, $02, $02, $0C, $06, $00
                 dw      $066A, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 39
+                db      $A7   ; 29
                 db      $02, $00, $00, $02, $40, $0C, $06, $00
                 dw      $066A, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 40
+                db      $A7   ; 30
                 db      $02, $00, $00, $02, $80, $0C, $0E, $00
                 dw      $0672, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 41
+                db      $A7   ; 31
                 db      $02, $00, $00, $02, $01, $0C, $0E, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 42
+                db      $A7   ; 32
                 db      $02, $00, $00, $02, $80, $0C, $03, $00
                 dw      $066A, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 43
+                db      $A7   ; 33
                 db      $02, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $0001
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 44
+                db      $A7   ; 34
                 db      $02, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $0008
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 45
+                db      $A7   ; 35
                 db      $02, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $FFFF
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 46
+                db      $A7   ; 36
                 db      $02, $00, $00, $02, $10, $0C, $0E, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0650, $0660, $2468
-                db      $A7   ; 47
+                db      $A7   ; 37
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $00   ; 48
+                db      $00   ; 38
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $FF   ; 49
+                db      $FF   ; 39
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $0000
-                db      $A7   ; 50
+                db      $A7   ; 40
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $FFFF
-                db      $A7   ; 51
+                db      $A7   ; 41
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $0003
-                db      $A7   ; 52
+                db      $A7   ; 42
                 db      $02, $00, $00, $02, $02, $0C, $0D, $00
                 dw      $06FA, $0000
                 db      $00
                 dw      $06F0, $26F0, $2468
-                db      $A7   ; 53
+                db      $A7   ; 43
                 db      $02, $00, $00, $02, $80, $0C, $0D, $00
                 dw      $06FA, $0000
                 db      $00
                 dw      $06F0, $26F0, $2468
-                db      $A7   ; 54
+                db      $A7   ; 44
                 db      $02, $00, $00, $02, $80, $0C, $06, $00
                 dw      $0602, $0000
                 db      $00
                 dw      $0600, $2600, $2468
-                db      $A7   ; 55
+                db      $A7   ; 45
                 db      $02, $00, $00, $03, $F0, $0C, $0E, $00
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0270, $2468
-                db      $A7   ; 56
+                db      $A7   ; 46
                 db      $02, $00, $00, $03, $0F, $0C, $0E, $00
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0270, $2468
-                db      $A7   ; 57
+                db      $A7   ; 47
                 db      $01, $FF, $00, $03, $F0, $0C, $0E, $00
                 dw      $0264, $0000
                 db      $00
                 dw      $0260, $0270, $2468
-                db      $A7   ; 58
+                db      $A7   ; 48
                 db      $01, $00, $00, $03, $0F, $0C, $0C, $01
                 dw      $02F4, $0000
                 db      $00
                 dw      $02F0, $0300, $2468
-                db      $A7   ; 59
+                db      $A7   ; 49
                 db      $01, $00, $00, $02, $02, $0C, $0D, $01
                 dw      $06FA, $0000
                 db      $00
                 dw      $06F0, $26F0, $2468
-                db      $A7   ; 60
+                db      $A7   ; 50
                 db      $01, $00, $00, $02, $80, $0C, $06, $01
                 dw      $0662, $0000
                 db      $00
                 dw      $0660, $2660, $0000
-                db      $00   ; 61
+                db      $00   ; 51
                 db      $01, $00, $00, $02, $10, $0C, $03, $01
                 dw      $0662, $0005
                 db      $00
                 dw      $0660, $2660, $2468
-                db      $A7   ; 62
+                db      $A7   ; 52
+                db      $01, $00, $00, $02, $10, $0C, $03, $00
+                dw      $0662, $0001
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 53
+                db      $01, $00, $00, $02, $10, $0C, $03, $00
+                dw      $0662, $0002
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 54
+                db      $01, $00, $00, $02, $10, $0E, $06, $01
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 55
+                db      $01, $00, $00, $02, $10, $03, $06, $01
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 56
+                db      $00, $00, $00, $02, $80, $00, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $05   ; 57
+                db      $00, $00, $00, $02, $80, $0A, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $05   ; 58
+                db      $00, $00, $00, $02, $80, $1A, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $05   ; 59
+                db      $01, $00, $00, $02, $80, $0C, $06, $02
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 60
+                db      $01, $00, $00, $02, $80, $0C, $06, $80
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 61
+                db      $00, $00, $00, $00, $80, $07, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $05   ; 62
+                db      $00, $00, $00, $01, $80, $07, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $05   ; 63
+                db      $02, $00, $00, $02, $02, $0C, $0D, $00
+                dw      $06FA, $0000
+                db      $00
+                dw      $0700, $2700, $2468
+                db      $A7   ; 64
+                db      $02, $00, $00, $02, $40, $0C, $03, $00
+                dw      $066A, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 65
+                db      $00, $00, $00, $03, $80, $07, $33, $00
+                dw      $0662, $9BDF
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $80   ; 66
+                db      $01, $00, $00, $02, $80, $0C, $03, $01
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 67
+                db      $02, $00, $00, $02, $08, $0C, $06, $02
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 68
+                db      $02, $00, $00, $02, $80, $0C, $06, $02
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 69
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $00
+                dw      $0660, $2660, $2468
+                db      $A7   ; 70
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $01
+                dw      $0660, $2660, $2468
+                db      $A7   ; 71
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $02
+                dw      $0660, $2660, $2468
+                db      $A7   ; 72
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $03
+                dw      $0660, $2660, $2468
+                db      $A7   ; 73
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $04
+                dw      $0660, $2660, $2468
+                db      $A7   ; 74
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $05
+                dw      $0660, $2660, $2468
+                db      $A7   ; 75
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $06
+                dw      $0660, $2660, $2468
+                db      $A7   ; 76
+                db      $02, $00, $00, $02, $08, $0C, $06, $00
+                dw      $0662, $0000
+                db      $07
+                dw      $0660, $2660, $2468
+                db      $A7   ; 77
+                db      $02, $00, $00, $02, $80, $0C, $06, $00
+                dw      $0662, $0000
+                db      $04
+                dw      $0660, $2660, $2468
+                db      $A7   ; 78
                 db      $FF

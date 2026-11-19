@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""The shared loader for PNTINI / SCANR / SCANL's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX6_run4.out
+"""The shared loader for PNTINI / SCANR / SCANL's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX6_run9.out
 (rows N and D; probes/bios/spec/xgfx6.asm documents the presets, the case table and the 128-byte record). Each page's
 module takes its op's cases from `load(op)`."""
 import os
@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
-RUN = "XGFX6_run4.out"
+RUN = "XGFX6_run9.out"
 ASM = os.path.join(HERE, "xgfx6.asm")
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "regs", "sums", "w1", "w2", "gwork", "cloc", "cmask",
@@ -143,3 +143,36 @@ def paint(c, v, x, y, n):
         a = addr(c, x + k, y)
         o = v.get(a, fill(a))
         v[a] = (o & 0x0F) | ((c.catr << 4) & 0xF0) if (x + k) % 2 == 0 else (o & 0xF0) | c.catr
+
+
+def scanr(c):
+    """SCANR's model: (VRAM writes, HL, DE, CLOC / CMASK, the run's start CLOC / CMASK or None when the skip ended the
+    call)"""
+    v, (x, y) = {}, start(c)
+    w, de = (256 if c.cscr == 2 else 64), c.cde
+    while x < w - 1 and colour(c, v, x, y) == c.cbdr:
+        de = (de - 1) & 0xFFFF
+        if de == 0:
+            return v, 0, 0, place(c, x, y), None
+        x += 1
+    xs = x
+    while x < w and colour(c, v, x, y) != c.cbdr:
+        x += 1
+    n = x - xs
+    if c.cb or c.cscr != 2:
+        paint(c, v, xs, y, n)
+    return v, n, de, place(c, min(x, w - 1), y), place(c, xs, y)
+
+
+def last_scanr_run(c):
+    """HL of the most recent SCREEN 2 SCANR before case c in the probe's table (SCANL paints that many past its
+    count): the model's, from the case table -- the probe runs its cases in table order"""
+    k = None
+    for i, t in enumerate(table()):
+        if i >= c.i:
+            break
+        cop, cf, ei, scr, cm, at, bd, cb, cl, de, cs, w1, w2, w3, ca = t
+        if cop == 1 and scr == 2:
+            from types import SimpleNamespace as _NS
+            k = scanr(_NS(cscr=scr, ccm=cm, catr=at, cbdr=bd, cb=cb, cclo=cl, cde=de))[1]
+    return k

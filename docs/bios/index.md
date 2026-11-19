@@ -103,9 +103,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0120 | SETC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETC.md) | 9 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
 | $0123 | NSETCX | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](NSETCX.md) | 9 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
 | $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
-| $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](PNTINI.md) | 3 | D-PNTINIREGS |
-| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](SCANR.md) | 5 | D-SCANRSAVE, D-SCANRSKIP |
-| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](SCANL.md) | 5 | D-SCANLPAINT, D-SCANLSTOP |
+| $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 2](PNTINI.md) | 3 | D-PNTINIREGS |
+| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 2](SCANR.md) | 5 | D-SCANRSAVE, D-SCANSTOP |
+| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 2](SCANL.md) | 5 | D-SCANLPAINT, D-SCANSTOP |
 | $0132 | CHGCAP | input (concept page to come) | L3 | — | — | — |
 | $0135 | CHGSND | sound (concept page to come) | L3 | — | — | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |

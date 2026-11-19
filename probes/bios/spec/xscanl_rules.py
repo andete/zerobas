@@ -32,7 +32,7 @@ def scan(c):
     while x >= 0 and G.colour(c, v, x, y) != c.cbdr:
         x -= 1
     n, xl = x0 - 1 - x, x + 1
-    G.paint(c, v, xl, y, n + (8 if c.cscr == 2 else 0))
+    G.paint(c, v, xl, y, n + (G.last_scanr_run(c) if c.cscr == 2 else 0))
     return v, n, G.place(c, xl, y)
 
 
@@ -41,9 +41,10 @@ RULES = [
          "BDRATR's colour, leftwards, to the first that is or to X 0. HL := that count; CLOC / CMASK := the leftmost "
          "counted pixel (the start itself when the count is 0). B, DE, A and HL on entry are not used.", ALL,
          lambda c: (c.hl, (c.cloc, c.cmask)) == (scan(c)[1], scan(c)[2])),
-    Rule("R-SL-PAINT", S1, "It paints, whatever B is, in ATRBYT from the new CLOC rightwards: in SCREEN 2 HL + 8 pixels "
-         "-- through the start pixel and 7 more, on into the next character row's cells past X 255 -- as NSETCX "
-         "sets them; in SCREEN 3 HL blocks, the start block not included. Nothing else in VRAM changes.", ALL,
+    Rule("R-SL-PAINT", S1, "It paints, whatever B is, in ATRBYT from the new CLOC rightwards: in SCREEN 2 HL + K "
+         "pixels, K the run length (HL) of the most recent SCREEN 2 SCANR -- 8 and 2 measured -- on into the next "
+         "character row's cells past X 255, as NSETCX sets them; in SCREEN 3 HL blocks, the start block not included. "
+         "Nothing else in VRAM changes.", ALL,
          lambda c: G.vram_after(c, scan(c)[0]) == (c.sums, (c.w1, c.w2))),
     Rule("R-SL-KEEP", S1, "IX and IY are kept; the work area recorded ($F92D-$F933, $F942-$F954), ATRBYT, BDRATR, "
          "RG0SAV-RG7SAV, SCRMOD and the VDP registers are kept; interrupts are on after. (A, F, BC and DE are left "
