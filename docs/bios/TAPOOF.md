@@ -14,8 +14,8 @@ SPDX-License-Identifier: 0BSD
 `TAPOOF` stops the motor (port C bit 4 := 1) and returns with interrupts **on**; A, F, BC, DE and
 HL are kept.
 
-zerobas stops the motor, but clears port C bit 5 (the cassette output) as it does, and changes A, F,
-BC and DE (below).
+zerobas does the same (D-TAPOOFBIT5 / D-TAPOFFREGS, 2026-11-19): its trailing carrier ends with the
+cassette output back where it was on entry, and A, F, BC, DE and HL are kept.
 
 ## The specification
 
@@ -77,10 +77,7 @@ Port C's low nibble after the call is the timer interrupt's key row (interrupts 
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-TAPOOFBIT5** (zerobas clears port C bit 5 -- the cassette output -- where the VG-8020 keeps it: $E0 gives $F_ there, $D_ here) | R-TO-MOTOR |
-| **D-TAPOFFREGS** (zerobas returns A $09, F $44, BC $0034 and DE $0000 -- outside a write too -- where the VG-8020 keeps them) | R-TO-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

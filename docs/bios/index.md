@@ -81,11 +81,11 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
 | $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPION.md) | 13 | — |
 | $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIN.md) | 10 | — |
-| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIOF.md) | 7 | D-TAPOFFREGS |
-| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOON.md) | 10 | D-TAPOONPORT, D-TAPOONDE |
+| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIOF.md) | 7 | — |
+| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOON.md) | 10 | — |
 | $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOUT.md) | 9 | — |
-| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOOF.md) | 7 | D-TAPOOFBIT5, D-TAPOFFREGS |
-| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [FINAL](STMOTR.md) | 7 | D-STMOTRTOGGLE, D-STMOTRAF |
+| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOOF.md) | 7 | — |
+| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [FINAL](STMOTR.md) | 7 | — |
 | $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](LFTQ.md) | 5 | — |
 | $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](PUTQ.md) | 5 | — |
 | $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |

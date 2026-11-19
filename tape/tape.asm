@@ -237,14 +237,20 @@ CASIN_R14:      equ     14              ; PSG register holding CAS-in on bit 7
 ; control register's Bit-Set/Reset mode -- the same published mechanism CASW
 ; (Port C bit 5) uses. Implementing it here means the patch depends on no
 ; stock-C-BIOS code or address; it works on any C-BIOS build with the spare ROM.
-; In:      A = 0 stop, 0xFF toggle, otherwise start  (MSX STMOTR convention)
+; In:      A = 0 stop; bit 7 set toggle; otherwise start -- as the VG-8020 (D-STMOTRTOGGLE:
+;          $80, $81, $FE toggle there too, not only $FF; zerobas docs/bios/STMOTR.md R-SM-MOTOR)
+; Out:     A = the PPI bit command left behind ($08 running, $09 stopped); F = $54 when it ends
+;          stopped, $10 when a toggle starts it, else the flags AND A gives on the entry A
+;          (D-STMOTRAF, R-SM-AF). BC, DE, HL kept.
 ; Changes: AF only  (so it is safe for the tape routines to call mid-operation)
 stmotr:
-                or      a
-                jr      z,stmotr_off    ; A = 0 -> stop
-                inc     a
-                jr      z,stmotr_tog    ; A = 0xFF -> toggle
-stmotr_on:                              ; ⚠️ MUST stay the fall-through of the dispatch
+                and     a               ; F = AND A's flags: the start answer; Z for A = 0
+                jr      z,stmotr_off    ; A = 0 -> stop (F $54: an AND of 0)
+                jp      p,stmotr_on     ; bit 7 clear -> start
+                in      a,(PPI_PORTC)   ; bit 7 set -> toggle: read the Port C output latch
+                and     $10             ; Z: running -> stop (F $54); NZ: stopped -> start (F $10)
+                jr      z,stmotr_off
+stmotr_on:                              ; ⚠️ MUST stay the fall-through of the toggle
                 ld      a,MOTOR_ON      ; Port C bit 4 := 0  (D-TAPLEAD's first reorder put
 stmotr_out:                             ; stmotr_off here and A=1 stopped the motor --
                 out     (PPI_REGS),a    ; test_tape caught it)
@@ -252,11 +258,6 @@ stmotr_out:                             ; stmotr_off here and A=1 stopped the mo
 stmotr_off:
                 ld      a,MOTOR_OFF     ; Port C bit 4 := 1
                 jr      stmotr_out      ; D-TAPLEAD: one shared out/ret tail (-1 B)
-stmotr_tog:
-                in      a,(PPI_PORTC)   ; read the Port C output latch
-                bit     4,a
-                jr      z,stmotr_off    ; bit 4 = 0 (motor on) -> turn off
-                jr      stmotr_on
 
 ;--------------------------------
 ; cas_seed: seed-if-zero of the CS120/CS240 reference LOW words. On a real MSX the
@@ -674,10 +675,12 @@ tapin_bit:
 
 ;--------------------------------
 ; $00E7 TAPIOF
-; Stops reading from the tape: motor off, interrupts back on.
+; Stops reading from the tape: motor off, interrupts back on. A, F, BC, DE and HL are kept, as
+; the VG-8020's (D-TAPOFFREGS, zerobas docs/bios/TAPIOF.md R-TI-KEEP).
 tapiof:
-                xor     a
-                call    stmotr          ; motor off
+                push    af
+                call    stmotr_off      ; motor off -- touches A / F only
+                pop     af
                 ei
                 ret
 
@@ -688,6 +691,7 @@ tapiof:
 ; Output:  CF = reset (success)
 ; Changes: all
 tapoon:
+                push    de              ; D-TAPOONDE: DE kept, as the VG-8020's (TAPOON.md R-TN-DE)
                 push    af              ; remember long/short selector
                 ; Resolve the system baud BEFORE the motor is on, so cas_baud's
                 ; cost does not lengthen the motor-on -> leader gap: at 2400 a
@@ -696,9 +700,15 @@ tapoon:
                 call    cas_seed        ; ensure CS120/CS240 hold their reference words
                 call    cas_baud        ; resolve the system baud from the work area
                 ld      (CASBAUD),a     ; cache it for this session (0=1200, $FF=2400)
-                ld      a,1
-                call    stmotr          ; motor on
                 di                      ; waveform timing must not be jittered
+                ; D-TAPOONPORT: one write to Port C, as the VG-8020 leaves it (TAPOON.md R-TN-PORT):
+                ; bits 6-7 kept, bit 4 := 0 (motor on), bit 5 := 0 (CAS-out low), the low nibble
+                ; (the keyboard row select) := 7. Interrupts are off first, so the timer's key
+                ; scan cannot rewrite the row select under us.
+                in      a,(PPI_PORTC)
+                and     $C0
+                or      7
+                out     (PPI_PORTC),a
                 ; D-TAPOONDLY (2026-11-13): the motor runs SILENT for 0.567 s before the
                 ; leader, as on the VG-8020 -- every SAVE / CSAVE / BSAVE "CAS:" and a direct
                 ; TAPOON recording starts its signal 0.567 s after the motor (zerobas
@@ -743,6 +753,7 @@ tapoon_emit:
                 or      e
                 jr      nz,tapoon_emit
                 or      a               ; CF = 0: success
+                pop     de
                 ret
 
 ;--------------------------------
@@ -807,7 +818,14 @@ tapout_brk:
 ;--------------------------------
 ; $00F0 TAPOOF
 ; Stops writing on the tape: flush a trailing carrier, motor off.
+; A, F, BC, DE and HL are kept and CAS-out (Port C bit 5) is left as it was on entry, as the
+; VG-8020's (D-TAPOFFREGS / D-TAPOOFBIT5, zerobas docs/bios/TAPOOF.md R-TO-KEEP / R-TO-MOTOR).
 tapoof:
+                push    af
+                push    bc
+                push    de              ; (HL: the flush never touches it)
+                in      a,(PPI_PORTC)
+                push    af              ; CAS-out as it was on entry
                 call    cas_short       ; flush a short trailing carrier (cached baud)
                 ld      de,CAS_FLUSHLEN
 tapoof_lp:
@@ -815,11 +833,17 @@ tapoof_lp:
                 dec     de
                 ld      a,d
                 or      e
-                jr      nz,tapoof_lp
-                xor     a
-                call    stmotr          ; motor off
-                ei
-                ret
+                jr      nz,tapoof_lp    ; (the flush ends with CAS-out low)
+                pop     af
+                and     $20
+                jr      z,tapoof_lo
+                ld      a,CASW_1
+                out     (PPI_REGS),a    ; ...high again, as it was on entry
+tapoof_lo:
+                pop     de
+                pop     bc
+                pop     af
+                jp      tapiof          ; motor off, A / F kept, interrupts on (out of jr range)
 
 ;================================================================================
 ; $00A5 LPTOUT -- send one character to the Centronics printer port.
@@ -920,14 +944,11 @@ gtpdl:
                 ld      l,a             ; L = index-1
                 srl     a               ; A = terminal bit position 0..5 = (n-1)>>1
                 ld      b,a
-                ld      a,1
-                inc     b               ; shift (bit+1) times, leaving 1<<bit
-gtpdl_mk:
-                dec     b
-                jr      z,gtpdl_mkd
-                add     a,a
-                jr      gtpdl_mk
-gtpdl_mkd:
+                inc     b
+                ld      a,$80           ; bit+1 left rotations of $80 leave 1<<bit (D-TAPOONPORT
+gtpdl_mk:                               ; paid for: 3 B under the old shift loop)
+                rlca
+                djnz    gtpdl_mk
                 ld      h,a             ; H = R14 mask for this paddle's terminal
                 bit     0,l             ; index-1 bit0: 0 -> port 1 (odd n), 1 -> port 2
                 ld      a,$BF           ; port 1 8th-terminal HIGH: b7=1 b6=0(if1) b5=1 b4=1
@@ -975,8 +996,8 @@ gtpdl_loop:
                 dec     c               ; one more count                    (4)
                 jp      nz,gtpdl_loop   ; until the window caps at 255       (10)
 gtpdl_done:                             ; count = 255 - c (c=0 on the cap path)
-                ld      a,255
-                sub     c
+                ld      a,c
+                cpl                     ; = 255 - c (F is not GTPDL's answer: R-PD-KEEP)
                 ei
                 ret
 

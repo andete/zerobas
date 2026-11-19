@@ -17,7 +17,8 @@ A is left as the PPI bit command, $09 when the motor ends stopped, $08 when it e
 when it ends stopped, $10 when a bit-7 A starts it, and the flags AND A gives on A when A $01-$7F
 starts it.
 
-zerobas toggles only for A = $FF -- $80-$FE start the motor -- and returns another F (below).
+zerobas does the same (D-STMOTRTOGGLE / D-STMOTRAF, 2026-11-19): any A with bit 7 set toggles, and A / F
+are the PPI command and flags above.
 
 ## The specification
 
@@ -77,10 +78,7 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-STMOTRTOGGLE** (zerobas toggles only for A = $FF; with $80, $81 or $FE from a running motor it keeps it running, where the VG-8020 stops it) | R-SM-MOTOR, R-SM-AF |
-| **D-STMOTRAF** (zerobas's F matches only for some A $FF toggles -- XT 04 / 05, XU 09 / 10, XV 08; elsewhere it returns $44 / $74 stopping and $00 / $28 / $30 / $80 / $94 / $A8 starting, where the VG-8020 returns $54 stopping and $10 / $14 / $3C / $38 starting) | R-SM-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

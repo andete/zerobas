@@ -16851,7 +16851,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
-      R-PD-PORT. Priced when picked up.
+      R-PD-PORT. Priced when picked up.      ⚠️ ROOM (2026-11-19): GTPDL is in the tape module (tape/tape.asm), whose region ends at C-BIOS's pinned $0D01
+      and is EXACTLY FULL since the cassette fixes. Find bytes in the module first (or move GTPAD / GTPDL out of it --
+      it is also the standalone tape patch's code, so that is a deliverable change: ask).
+
 
 - [ ] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
@@ -16946,42 +16949,84 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       276, 285-289, 310-313): the VG-8020 tests bit 7 -- RIGHTC moves on when it is clear, LEFTC back when it is
       set, otherwise $0F / $F0 with CLOC kept; zerobas swaps the mask's nibbles and tests bit 3 / bit 4. Priced when picked up.
 
-- [ ] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
+- [x] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)): A matches (the PPI bit command, $09 / $08); F is $54 stopping, $10 starting ($38 for A $7F) on the
       VG-8020 (the flags AND A gives, for A $01-$7F), other values on zerobas
       ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out)). docs/bios/STMOTR.md R-SM-AF. Tape: outside the current focus
       (filed, not fixed). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
-- [ ] **D-TAPOFFREGS — TAPIOF / TAPOOF CHANGE A, F, BC AND DE ON ZEROBAS**
+- [x] **D-TAPOFFREGS — TAPIOF / TAPOOF CHANGE A, F, BC AND DE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)): the VG-8020 keeps them; zerobas returns A $09, F $44, and TAPOOF also BC $0034 / DE $0000.
       docs/bios/TAPIOF.md R-TI-KEEP, TAPOOF.md R-TO-KEEP. Tape: outside the current focus
       (filed, not fixed). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
-- [ ] **D-TAPOOFBIT5 — TAPOOF CLEARS PORT C BIT 5 ON ZEROBAS**
+- [x] **D-TAPOOFBIT5 — TAPOOF CLEARS PORT C BIT 5 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — the VG-8020 keeps bits 5-7 when it stops the motor; zerobas clears bit 5 (the cassette output).
       docs/bios/TAPOOF.md R-TO-MOTOR ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out), steps XU 15, 16, 18). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
-- [ ] **D-TAPOONDE — TAPOON RETURNS DE $0000 ON ZEROBAS**
+- [x] **D-TAPOONDE — TAPOON RETURNS DE $0000 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — the VG-8020 keeps DE. docs/bios/TAPOON.md R-TN-DE ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
-- [ ] **D-STMOTRTOGGLE — STMOTR TOGGLES ONLY FOR A = $FF ON ZEROBAS**
+- [x] **D-STMOTRTOGGLE — STMOTR TOGGLES ONLY FOR A = $FF ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — the VG-8020 toggles the motor for any A with bit 7 set ($80, $81, $FE from a running motor stop it);
       zerobas starts it. docs/bios/STMOTR.md R-SM-MOTOR ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out), XV 00-02). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
-- [ ] **D-TAPOONPORT — TAPOON KEEPS PORT C'S LOW NIBBLE ON ZEROBAS**
+- [x] **D-TAPOONPORT — TAPOON KEEPS PORT C'S LOW NIBBLE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — the VG-8020 sets port C's low nibble to 7 ($40 / $4A / $E0 give $47 / $47 / $C7); zerobas keeps the
       entry low nibble.
       docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
 
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).

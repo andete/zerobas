@@ -17,7 +17,7 @@ port C bits 4 and 5 := 0 (motor on, cassette output low), its low nibble := 7 (k
 selected), bits 6 and 7 kept. DE is kept; A, BC and HL are left with working
 values (the VG-8020: A $10, BC $0000, HL $0000).
 
-zerobas does all of it the same but for DE and port C's low nibble (below).
+zerobas does all of it the same (DE and port C's low nibble since D-TAPOONDE / D-TAPOONPORT, 2026-11-19).
 
 ## The specification
 
@@ -78,10 +78,7 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-TAPOONPORT** (zerobas keeps port C's low nibble -- $40 / $45 / $4A stay, $50 gives $40, $E0 $C0 -- where the VG-8020 sets it to 7: $47, $C7) | R-TN-PORT |
-| **D-TAPOONDE** (zerobas returns DE $0000 where the VG-8020 keeps it) | R-TN-DE |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

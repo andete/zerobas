@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 `TAPIOF` stops the motor (port C bit 4 := 1) and returns with interrupts **on**; A, F, BC, DE and
 HL are kept.
 
-zerobas stops the motor the same way and changes A and F (below).
+zerobas does the same, A and F kept too (D-TAPOFFREGS, 2026-11-19).
 
 ## The specification
 
@@ -74,9 +74,7 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-TAPOFFREGS** (zerobas returns A $09 / F $44 where the VG-8020 keeps A and F) | R-TI-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

@@ -15,7 +15,8 @@ polls until the sampled level flips*, which the test controls exactly. So the
 whole surface is reachable without an emulator and without any wall-clock timing.
 
 Oracle basis (every expected value is independent of the ROM's own output):
-  - STMOTR convention: A=0 stop / A=$FF toggle / else start; motor = i8255 PPI
+  - STMOTR convention: A=0 stop / bit 7 set toggle (the VG-8020's, D-STMOTRTOGGLE; $FF is one
+    such A) / else start; motor = i8255 PPI
     Port C bit 4 driven via the BSR control register (MSX2 TH / MSX Assembly
     Page). The BSR command bytes (MOTOR_ON/OFF, CASW_0/1) and ports come from
     tape.asm's own EQUs, pulled from the symbol file.
@@ -356,8 +357,12 @@ def test_tapoon_header(m, fails):
         count = [0]
         m.trap("cas_cycle", lambda mm, count=count: count.__setitem__(0, count[0] + 1))
         out = m.record_out()
+        m.cpu.io_in = lambda port: 0xFF      # Port C on entry: motor off, CAS-out high, row $F
         m.call("tapoon", a=sel)
-        motor_on = (s["PPI_REGS"], s["MOTOR_ON"]) in out
+        # D-TAPOONPORT (2026-11-19): the motor goes on in ONE Port C write, as the VG-8020
+        # leaves the port (docs/bios/TAPOON.md R-TN-PORT): bits 6-7 kept, bits 4-5 := 0,
+        # the low nibble := 7 -- $FF on entry gives $C7. (It was a BSR MOTOR_ON command.)
+        motor_on = (s["PPI_PORTC"], 0xC7) in out
         ok = count[0] == want_len and motor_on
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  tapoon({label}) cycles={count[0]} "
