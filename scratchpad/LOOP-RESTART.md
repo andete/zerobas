@@ -22,7 +22,19 @@ session and the loop resumes exactly where it stopped.
 | EXECUTABLE RULES | *"yes, add executable rules"* | spec-method §3a: every page's behaviour rules are checks (probes/bios/spec/<name>_rules.py, tools/spec_rules.py); its rule tables are GENERATED; `make spec-rules-check` in STATIC. A false rule is fixed in the rule, never the data |
 | THE ORDER | *"let's go with the new order"* (after weighing whole-BIOS-first: no -- region by region) | (1) finish CHPUT: round 3 for its 5 unmeasured items, then goldfish pass 3 (the stopping test); (2) the BASE BIOS page `docs/concepts/bios.md` (calling conventions, the BIOS slot, interrupts, registers) and a SHARED-STATE MAP (which work-area cells / VDP registers / ports each of the 108 calls reads or writes, from published references + existing evidence: where regions touch); (3) the rest of the text region in this order: INITXT / INIT32 -> DSPFNK / ERAFNK / FNKSB -> CLS / POSIT -> CHGET / CHSNS -> CNVCHR / PINLIN / INLIN / QINLIN / TOTEXT -> the screen-editor concept page's contract section; (4) FIX the region's differences together (D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL, ...), then the test audit per call; (5) the next region. Joost: spec the whole region first (synergies), not the whole BIOS |
 
-STATE 2026-11-19 (recount, never quote): the GRAPHICS region is in progress. FINAL: FETCHC, STOREC, SETATR, GTASPC,
+STATE 2026-11-19 NIGHT (recount, never quote): the SOUND region's ten calls have DRAFT 3 pages (XSND1 + XSND1B, the
+second file because the first's capture area was full); review pass 3 launched. Lesson: the disk row's VG-8020 keeps
+something in RS2IQ ($FAF5-$FB34) -- overwriting it stops that machine; probes leave it alone (queue 3's buffer at $E800).
+Interrupts-on cases: the timer interrupt sets port C's keyboard row and PSG R15 -- compare those only with interrupts off.
+NEXT: sound FINAL (+ its concept page), then the INPUT region (BREAKX, ISCNTC, CKCNTC, GTSTCK, GTTRIG, GTPAD, GTPDL, CHGCAP,
+SNSMAT, KILBUF).
+PREVIOUS STATE 2026-11-19 LATER (recount, never quote): the GRAPHICS region's SPECS are done -- all 19 calls FINAL (XGFX1-6,
+XGFX5B), concept page docs/concepts/graphics-calls.md. Notable: SCANL paints HL + K in SCREEN 2, K = the most recent
+SCREEN 2 SCANR's run (its carrier unknown: not registers, alternates, $EF04-$FFFF, nor the stack; open item). Filed:
+D-SETCLAST (TIER 1), D-SCANSTOP / D-SCANLPAINT (TIER 3, check BASIC PAINT's path first), the rest TIER 6. Lesson: when a
+call's output varies across identical cases, look at the case ORDER -- it was state left by an earlier call. NEXT: the
+SOUND region (GICINI, WRTPSG, RDPSG, STRTMS, BEEP, CHGSND, LFTQ, PUTQ, GETVCP, GETVC2) per docs/bios/index.md order.
+PREVIOUS STATE 2026-11-19 (recount, never quote): the GRAPHICS region is in progress. FINAL: FETCHC, STOREC, SETATR, GTASPC,
 MAPXYC (XGFX1), RIGHTC/LEFTC/UPC/TUPC/DOWNC/TDOWNC (XGFX2, 7 runs). DRAFT: READC/SETC/NSETCX (XGFX3, 5 runs; review
 pass 3 launched), SCALXY (XGFX4; pass 1 launched). Measured surprises: the SCREEN 2 colour byte is at CLOC XOR $2000
 (GRPCOL / GRPCGP unused); SETC's per-byte choice (background test on the whole ATRBYT, foreground on its low nibble,
