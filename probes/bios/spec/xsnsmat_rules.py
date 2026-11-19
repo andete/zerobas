@@ -29,11 +29,12 @@ QUIET = ("With interrupts off after the call, the cells the timer interrupt's ke
 
 RULES = [
     Rule("R-SM-A", S1, "A := key-matrix row A as the PPI reads it (bit 0 = pressed; rows 0-10 measured, one key or none "
-         "or four); A of 11 and up: $FF.", ALL, lambda c: c.a == G.matrix(c, c.ca)),
+         "or four; rows 3 and 4 too); the row is A AND $0F (A $12 reads row 2), and rows 11-15 give $FF.", ALL,
+         lambda c: c.a == G.matrix(c, c.ca & 0x0F)),
     Rule("R-SM-C", S1, "C := the row number (A on entry).", ALL, lambda c: c.bc & 0xFF == c.ca),
-    Rule("R-SM-PORT", S1, "The PPI's port C high nibble := (port C AND $F0) + the row number, an ADD: $50 stays $5x for "
-         "rows 0-11, and row $FF gives $4x. (The low nibble selects the row; the timer interrupt's scan sets it again.)",
-         ALL, lambda c: c.aa & 0xF0 == ((0x50 + c.ca) & 0xF0)),
+    Rule("R-SM-PORT", S1, "The PPI's port C := (port C AND $F0) + A, an 8-bit ADD of the whole A: $50 + 8 is $58, $5A "
+         "+ 8 is $58 too, $D0 + 2 is $D2, $50 + $12 is $62, $50 + $FF is $4F.", ALL,
+         lambda c: c.aa == ((c.cpc & 0xF0) + c.ca) & 0xFF),
     G.keep_rule("SM", S1, "B, DE, HL, IX, IY, INTFLG, CAPST and R14 are kept. " + "(F is left holding a working value: "
                 "not compared, the group `XIF`.)",
                 lambda c: (c.bc >> 8, c.de, c.hl) == (c.cbc >> 8, c.cde, c.chl) and G.ixiy(c) and G.cells(c)

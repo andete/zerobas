@@ -29,8 +29,8 @@ QUIET = ("With interrupts off after the call, the cells the timer interrupt's ke
 
 RULES = [
     Rule("R-CC-BIT", S1, "The PPI's port C bit 6 (the CAPS lamp, lit at 0) := 0 when A is 0, 1 for any other A ($01, "
-         "$80, $FF measured); its other bits are kept (with interrupts on only the high nibble is compared).", ALL,
-         lambda c: c.aa & (0xF0 if c.iff else 0xFF) == ((0x50 & ~0x40) | (0x40 if c.ca else 0)) & (0xF0 if c.iff else 0xFF)),
+         "$80, $FF measured); its other bits are kept ($50 and $A0 preset).", ALL,
+         lambda c: c.aa == (c.cpc & ~0x40) | (0x40 if c.ca else 0)),
     Rule("R-CC-AF", S1, "A := $0C when A was 0, $0D otherwise (the PPI bit reset / set command for bit 6); F := $54 / "
          "$08 -- whatever F was on entry.", ALL, lambda c: (c.a, c.f) == ((0x0C, 0x54) if c.ca == 0 else (0x0D, 0x08))),
     G.keep_rule("CC", S1, "BC, DE, HL, IX, IY, INTFLG, CAPST (not changed: only the lamp) and R14 are kept. " + "",

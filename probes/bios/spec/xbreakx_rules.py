@@ -41,7 +41,7 @@ RULES = [
     G.keep_rule("BX", S1, "BC, DE, HL, IX, IY, INTFLG, CAPST, R14, NEWKEY, the other OLDKEY rows and TRGFLG are kept; "
                 "the PPI port C's high nibble is kept.",
                 lambda c: (c.bc, c.de, c.hl) == (c.cbc, c.cde, c.chl) and G.ixiy(c) and G.cells(c)
-                and c.aa & 0xF0 == 0x50 and c.newkey == (0xFF,) * 11 and c.trgflg == 0xF1 and c.r15 == 0xCF
+                and c.aa & 0xF0 == c.cpc & 0xF0 and c.newkey == (0xFF,) * 11 and c.trgflg == 0xF1 and c.r15 == 0xCF
                 and c.oldkey[:7] + c.oldkey[8:] == (0xFF,) * 10),
     Rule("R-BX-EI", S1, "The interrupt state is kept.", ALL, lambda c: c.iff == c.ei),
 ]

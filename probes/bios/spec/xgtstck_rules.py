@@ -37,13 +37,16 @@ def direction(c):
 
 
 RULES = [
+    Rule("R-GS-PORT", S1, "PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an "
+         "even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF).", ALL,
+         lambda c: c.r15 == G.r15_port(c)),
     Rule("R-GS-A", S1, "A 0: the cursor keys (row 8: bit 4 left, 5 up, 6 down, 7 right) give A := 1 up, 2 up-right, 3 "
          "right, 4 down-right, 5 down, 6 down-left, 7 left, 8 up-left, 0 none; opposite keys cancel (up + down, left + "
          "right, all four: 0; left + up + down: 7). A 1 / 2 (the joystick ports, nothing plugged) and 3: 0.", ALL,
          lambda c: c.a == direction(c)),
     G.keep_rule("GS", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept. (F, BC, DE and "
                 "HL are left holding working values: not compared, the group `XIW`.)",
-                lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == 0x50 and G.quiet(c)),
+                lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == c.cpc & 0xF0 and G.quiet(c, r15=G.r15_port(c))),
     Rule("R-GS-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
 ]

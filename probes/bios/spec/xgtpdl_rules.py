@@ -28,10 +28,13 @@ QUIET = ("With interrupts off after the call, the cells the timer interrupt's ke
 
 
 RULES = [
+    Rule("R-PD-PORT", S1, "PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an "
+         "even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF).", ALL,
+         lambda c: c.r15 == G.r15_port(c)),
     Rule("R-PD-A", S1, "Nothing plugged: A := $FF (A 1, 2, 12 measured).", ALL, lambda c: c.a == 0xFF),
     G.keep_rule("PD", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept. (F, BC, DE and HL "
-                "are left holding working values.)", lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == 0x50
-                and G.quiet(c)),
+                "are left holding working values.)", lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == c.cpc & 0xF0
+                and G.quiet(c, r15=G.r15_port(c))),
     Rule("R-PD-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
 ]

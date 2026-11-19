@@ -32,7 +32,7 @@ RULES = [
          lambda c: (c.a, c.f) == (0, 0x54)),
     G.keep_rule("CK", S1, "BC, DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept.",
                 lambda c: (c.bc, c.de, c.hl) == (c.cbc, c.cde, c.chl) and G.ixiy(c) and G.cells(c)
-                and c.aa & 0xF0 == 0x50 and G.quiet(c)),
+                and c.aa & 0xF0 == c.cpc & 0xF0 and G.quiet(c)),
     Rule("R-CK-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
 ]

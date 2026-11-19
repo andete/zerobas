@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for the input region's EXECUTABLE RULES (SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
-CKCNTC, GTPAD, GTPDL; docs/spec-method.md §3a): scratchpad/XINP1_run1.out (rows N and D; probes/bios/spec/xinp1.asm
+CKCNTC, GTPAD, GTPDL; docs/spec-method.md §3a): scratchpad/XINP1_run2.out (rows N and D; probes/bios/spec/xinp1.asm
 documents the presets, the key matrix per case, the case table and the 48-byte record)."""
 import os
 import re
@@ -14,25 +14,22 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XINP1_run1.out"
+RUN = "XINP1_run2.out"
 ASM = os.path.join(HERE, "xinp1.asm")
 REC = 48
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "aa", "r14", "r15", "putpnt", "getpnt", "intflg", "capst",
           "trgflg", "newkey", "oldkey"]
 # GTSTCK, GTTRIG, SNSMAT, GTPAD, GTPDL leave F (and some of BC, DE, HL) holding working values: groups without them
 OUTPUTS = {"XI": FIELDS, "XIF": [f for f in FIELDS if f != "f"],
-           "XIW": [f for f in FIELDS if f not in ("f", "bc", "de", "hl")], "XIA": [f for f in FIELDS if f != "a"]}
-# a call that returns with interrupts on lets the timer interrupt scan the keys: the cells that scan writes are not
-# evidence in those cases (the groups with a Q)
-SCAN = ("putpnt", "getpnt", "newkey", "oldkey", "trgflg", "r15")
-OUTPUTS.update({g + "Q": [f for f in fs if f not in SCAN] for g, fs in list(OUTPUTS.items())})
+           "XIW": [f for f in FIELDS if f not in ("f", "bc", "de", "hl")], "XIA": [f for f in FIELDS if f != "a"],
+           "XIP": [f for f in FIELDS if f not in ("f", "bc", "de", "hl", "r15")]}
 KEYBUF = 0xFBF0
 PUT0, GET0 = KEYBUF + 5, KEYBUF + 2
 
 
 def table():
     src = open(ASM).read()
-    pat = (r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\n"
+    pat = (r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\n"
            r"\s+dw\s+\$(....), \$(....), \$(....)")
     return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src[src.index("\ncases:"):])]
 
@@ -50,7 +47,7 @@ def load(op, group="XI"):
             b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
             if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
                 sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
-            for i, (cop, ca, cf, ei, r1, m1, r2, m2, it, bc, de, hl) in enumerate(tab):
+            for i, (cop, ca, cf, ei, r1, m1, r2, m2, it, pc, bc, de, hl) in enumerate(tab):
                 if cop != op:
                     continue
                 r = b[1 + REC * i:1 + REC * (i + 1)]
@@ -59,7 +56,7 @@ def load(op, group="XI"):
                     if rr < 11:
                         keys[rr] |= mm
                 out[who].append(NS(
-                    src=group + ("Q" if r[12] else ""), id=f"XI {row}{i:02}", i=i, row=row, op=cop, ca=ca, cf=cf, ei=ei, keys=tuple(keys),
+                    src=group, id=f"XI {row}{i:02}", cpc=pc, i=i, row=row, op=cop, ca=ca, cf=cf, ei=ei, keys=tuple(keys),
                     cint=it, cbc=bc, cde=de, chl=hl, mask=0xFF if i & 4 else 0,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], aa=r[13], r14=r[14], r15=r[15],
@@ -78,14 +75,20 @@ def ixiy(c):
     return (c.ix, c.iy) == (0x4321 ^ m, 0x8765 ^ m)
 
 
-def quiet(c, put=PUT0, get=GET0, oldkey=None):
-    """the cells the timer interrupt's keyboard scan writes, as preset (or as given) -- compared only when the call
-    returns with interrupts off; with them on, the interrupt may have run and scanned the keys"""
-    if c.iff:
-        return True
+def quiet(c, put=PUT0, get=GET0, oldkey=None, r15=0xCF):
+    """the key-scan cells (the key buffer pointers, NEWKEY, OLDKEY, TRGFLG) and PSG R15 as preset, or as given: the
+    probe runs with the VDP's frame interrupt off, so no timer interrupt scans the keys behind the call"""
     ok = (c.newkey == (0xFF,) * 11 and c.oldkey == (oldkey or (0xFF,) * 11) and c.trgflg == 0xF1
-          and (c.putpnt, c.getpnt) == (put, get) and c.r15 == 0xCF)
+          and (c.putpnt, c.getpnt) == (put, get) and (r15 is None or c.r15 == r15))
     return ok
+
+
+def r15_port(c):
+    """PSG R15 after a joystick-port call: bit 6 (the port select) := 0 for an odd port number, 1 for an even one
+    (A 0, the keyboard, keeps it); the other bits kept ($CF preset)"""
+    if c.ca == 0:
+        return 0xCF
+    return 0x8F if c.ca & 1 else 0xCF
 
 
 def cells(c):
