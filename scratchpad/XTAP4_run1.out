@@ -1,0 +1,84 @@
+WARNING: Var odata is never used on line 151 of file probes/bios/spec/xtap4.asm
+WARNING: Var pcrec is never used on line 202 of file probes/bios/spec/xtap4.asm
+===== probes/bios/spec/xtap4.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=c100 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8800 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf24680040101000001234000000c7a70013579bdf2468015a10100000567800000087a70013579bdf24680150
+  CAP ours: 080013579bdf24680040082813579bdf24680040089413579bdf24680040080013579bdf24680040080013579bdf246800400044003400002f2e00c0094400340000246801500044003400002f2e008509440034000024680150
+  DIFF (34 unexcused byte(s)):
+  CAP E002: ref=14 ours=00
+  CAP E00C: ref=3C ours=28
+  CAP E016: ref=38 ours=94
+  CAP E020: ref=10 ours=00
+  CAP E02A: ref=10 ours=00
+  CAP E033: ref=10 ours=00
+  CAP E034: ref=10 ours=44
+  CAP E036: ref=00 ours=34
+  CAP E037: ref=12 ours=00
+  CAP E038: ref=34 ours=00
+  CAP E039: ref=00 ours=2F
+  CAP E03A: ref=00 ours=2E
+  CAP E03C: ref=C7 ours=C0
+  CAP E03D: ref=A7 ours=09
+  CAP E03E: ref=00 ours=44
+  CAP E03F: ref=13 ours=00
+  CAP E040: ref=57 ours=34
+  CAP E041: ref=9B ours=00
+  CAP E042: ref=DF ours=00
+  CAP E046: ref=5A ours=50
+  CAP E047: ref=10 ours=00
+  CAP E048: ref=10 ours=44
+  CAP E04A: ref=00 ours=34
+  CAP E04B: ref=56 ours=00
+  CAP E04C: ref=78 ours=00
+  CAP E04D: ref=00 ours=2F
+  CAP E04E: ref=00 ours=2E
+  CAP E050: ref=87 ours=85
+  CAP E051: ref=A7 ours=09
+  CAP E052: ref=00 ours=44
+  CAP E053: ref=13 ours=00
+  CAP E054: ref=57 ours=34
+  CAP E055: ref=9B ours=00
+  CAP E056: ref=DF ours=00
+===== probes/bios/spec/xtap4.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=e800 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8800 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf24680040101000001234000000c7a70013579bdf2468015010100000567800000087a70013579bdf24680150
+  CAP ours: 080013579bdf24680040082813579bdf24680040089413579bdf24680040080013579bdf24680040080013579bdf246800400044003400002f2e00c0094400340000246801500044003400002f2e008509440034000024680150
+  DIFF (33 unexcused byte(s)):
+  CAP E002: ref=14 ours=00
+  CAP E00C: ref=3C ours=28
+  CAP E016: ref=38 ours=94
+  CAP E020: ref=10 ours=00
+  CAP E02A: ref=10 ours=00
+  CAP E033: ref=10 ours=00
+  CAP E034: ref=10 ours=44
+  CAP E036: ref=00 ours=34
+  CAP E037: ref=12 ours=00
+  CAP E038: ref=34 ours=00
+  CAP E039: ref=00 ours=2F
+  CAP E03A: ref=00 ours=2E
+  CAP E03C: ref=C7 ours=C0
+  CAP E03D: ref=A7 ours=09
+  CAP E03E: ref=00 ours=44
+  CAP E03F: ref=13 ours=00
+  CAP E040: ref=57 ours=34
+  CAP E041: ref=9B ours=00
+  CAP E042: ref=DF ours=00
+  CAP E047: ref=10 ours=00
+  CAP E048: ref=10 ours=44
+  CAP E04A: ref=00 ours=34
+  CAP E04B: ref=56 ours=00
+  CAP E04C: ref=78 ours=00
+  CAP E04D: ref=00 ours=2F
+  CAP E04E: ref=00 ours=2E
+  CAP E050: ref=87 ours=85
+  CAP E051: ref=A7 ours=09
+  CAP E052: ref=00 ours=44
+  CAP E053: ref=13 ours=00
+  CAP E054: ref=57 ours=34
+  CAP E055: ref=9B ours=00
+  CAP E056: ref=DF ours=00
+===== biosl: DIVERGENCE =====

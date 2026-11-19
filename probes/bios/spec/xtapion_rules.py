@@ -30,4 +30,6 @@ RULES = [
          "left holding working values, the group `XTW`.)", ALL, lambda c: c.f & 1 == 0),
     Rule("R-TA-MOTOR", S1, "The motor runs (port C bit 4 := 0); interrupts are off after the call.", ALL,
          lambda c: G.motor(c) == 0 and c.iff == 0),
+    Rule("R-TA-PORT", S1, "Port C := $47 after the call (from $50): the motor on, the low nibble (the keyboard row "
+         "select) 7, as TAPOON leaves it.", ALL, lambda c: c.aa == 0x47),
 ]

@@ -48,12 +48,13 @@ def want_f(c):
 
 RULES = [
     Rule("R-SM-MOTOR", S1, "The motor relay (port C bit 4, 0 = running): A 0 stops it; an A with bit 7 set toggles it "
-         "($80, $81, $FE, $FF measured, from both states); any other A ($01, $02, $03, $28, $7F) starts it. Port C's "
-         "other bits are kept (bits 5-7 and the low nibble varied).", ALL,
-         lambda c: c.aa == (c.cpc & ~0x10) | (after(c) << 4)),
+         "($80, $81, $FE, $FF measured, from both states); any other A ($01, $02, $03, $28, $40, $7F, from both "
+         "states) starts it. Port C's other bits are kept (bits 5-7 and the low nibble varied; the low nibble is not "
+         "compared where interrupts are on after the call: the timer interrupt selects its key row).", ALL,
+         lambda c: (c.aa ^ ((c.cpc & ~0x10) | (after(c) << 4))) & (0xF0 if c.iff else 0xFF) == 0),
     Rule("R-SM-AF", S1, "A := the PPI bit command left behind: $09 (bit 4 set: stopped) or $08 (reset: running). F, "
          "whatever it was: $54 when the motor ends stopped; when it ends running, $10 for an A with bit 7 set, otherwise "
-         "the flags AND A gives on A ($10 for $01 / $02, $14 for $03, $3C for $28, $38 for $7F).", ALL,
+         "the flags AND A gives on A ($10 for $01 / $02 / $40, $14 for $03, $3C for $28, $38 for $7F).", ALL,
          lambda c: (c.a, c.f) == ((0x09 if after(c) else 0x08), want_f(c))),
     Rule("R-SM-KEEP", S1, "BC, DE, HL and the interrupt state are kept.", ALL,
          lambda c: (c.bc, c.de, c.hl, c.iff) == (0x1357, 0x9BDF, 0x2468, c.ei)),

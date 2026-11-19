@@ -79,13 +79,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | D-GTTRIGRANGE |
 | $00DB | GTPAD | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPAD.md) | 5 | — |
 | $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
-| $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPION.md) | 9 | — |
-| $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPIN.md) | 8 | — |
-| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPIOF.md) | 5 | D-TAPOFFREGS |
-| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPOON.md) | 8 | D-TAPOONPORT, D-TAPOONDE |
-| $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPOUT.md) | 8 | — |
-| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](TAPOOF.md) | 6 | D-TAPOOFBIT5, D-TAPOFFREGS |
-| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [DRAFT 3](STMOTR.md) | 5 | D-STMOTRTOGGLE, D-STMOTRAF |
+| $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPION.md) | 11 | — |
+| $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPIN.md) | 9 | — |
+| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPIOF.md) | 6 | D-TAPOFFREGS |
+| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPOON.md) | 8 | D-TAPOONPORT, D-TAPOONDE |
+| $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPOUT.md) | 8 | — |
+| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](TAPOOF.md) | 6 | D-TAPOOFBIT5, D-TAPOFFREGS |
+| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [DRAFT 4](STMOTR.md) | 6 | D-STMOTRTOGGLE, D-STMOTRAF |
 | $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](LFTQ.md) | 5 | D-LFTQBC, D-LFTQSIZE |
 | $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](PUTQ.md) | 5 | D-PUTQREGS |
 | $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
