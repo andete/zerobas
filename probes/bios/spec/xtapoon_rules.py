@@ -14,7 +14,7 @@ from spec_rules import Rule  # noqa: E402
 import xtap1_model as G  # noqa: E402
 
 PAGE = "docs/bios/TAPOON.md"
-OUTPUTS = G.OUTPUTS
+OUTPUTS = dict(G.OUTPUTS, XTW=["f", "de", "iff", "aa"])
 
 
 def cases():
@@ -26,8 +26,9 @@ ALL = lambda c: True  # noqa: E731
 
 
 RULES = [
-    Rule("R-TN-OK", S1, "With a recorder ready, the carry is clear (no CTRL+STOP): the leader is written. (A, BC, DE and "
-         "HL are left holding working values: not compared, the group `XTW`.)", ALL, lambda c: c.f & 1 == 0),
+    Rule("R-TN-OK", S1, "With a recorder ready, the carry is clear (no CTRL+STOP): the leader is written. (A, BC and HL "
+         "are left holding working values: not compared, the group `XTW`.)", ALL, lambda c: c.f & 1 == 0),
     Rule("R-TN-MOTOR", S1, "The motor runs (port C bit 4 := 0); interrupts are off after the call.", ALL,
          lambda c: G.motor(c) == 0 and c.iff == 0),
+    Rule("R-TN-DE", S1, "DE is kept ($1234 measured).", ALL, lambda c: c.de == c.cde),
 ]

@@ -1,0 +1,106 @@
+WARNING: Var odata is never used on line 271 of file probes/bios/spec/xtap2.asm
+WARNING: Var pcrec is never used on line 322 of file probes/bios/spec/xtap2.asm
+===== probes/bios/spec/xtap2.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=c300 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8900 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 095413579bdf246800b0081013579bdf246800a0095413579bdf246800b0095413579bdf246800f0095413579bdf246800f0083813579bdf24680040081013579bdf24680040081013579bdf24680040095413579bdf24680150095413579bdf24680150081013579bdf246801403c0013579bdf246801f03c0013579bdf246801b0a70013579bdf24680150a70013579bdf246801703c0013579bdf246801fa3c0013579bdf246801b0a70013579bdf24680150a70013579bdf2468017a
+  CAP ours: 094413579bdf246800b0080013579bdf246800a0097413579bdf246800b0097413579bdf246800f0094413579bdf246800f0089413579bdf2468004008a813579bdf24680040088013579bdf24680040094413579bdf24680150095413579bdf24680150081013579bdf24680140094413579bdf246801f0094413579bdf246801b0094413579bdf24680150094413579bdf24680170094400340000246801d009440034000024680190094400340000246801500944003400002468015a
+  DIFF (44 unexcused byte(s)):
+  CAP E002: ref=54 ours=44
+  CAP E00C: ref=10 ours=00
+  CAP E016: ref=54 ours=74
+  CAP E020: ref=54 ours=74
+  CAP E02A: ref=54 ours=44
+  CAP E034: ref=38 ours=94
+  CAP E03E: ref=10 ours=A8
+  CAP E048: ref=10 ours=80
+  CAP E052: ref=54 ours=44
+  CAP E06F: ref=3C ours=09
+  CAP E070: ref=00 ours=44
+  CAP E079: ref=3C ours=09
+  CAP E07A: ref=00 ours=44
+  CAP E083: ref=A7 ours=09
+  CAP E084: ref=00 ours=44
+  CAP E08D: ref=A7 ours=09
+  CAP E08E: ref=00 ours=44
+  CAP E097: ref=3C ours=09
+  CAP E098: ref=00 ours=44
+  CAP E099: ref=13 ours=00
+  CAP E09A: ref=57 ours=34
+  CAP E09B: ref=9B ours=00
+  CAP E09C: ref=DF ours=00
+  CAP E0A0: ref=FA ours=D0
+  CAP E0A1: ref=3C ours=09
+  CAP E0A2: ref=00 ours=44
+  CAP E0A3: ref=13 ours=00
+  CAP E0A4: ref=57 ours=34
+  CAP E0A5: ref=9B ours=00
+  CAP E0A6: ref=DF ours=00
+  CAP E0AA: ref=B0 ours=90
+  CAP E0AB: ref=A7 ours=09
+  CAP E0AC: ref=00 ours=44
+  CAP E0AD: ref=13 ours=00
+  CAP E0AE: ref=57 ours=34
+  CAP E0AF: ref=9B ours=00
+  CAP E0B0: ref=DF ours=00
+  CAP E0B5: ref=A7 ours=09
+  CAP E0B6: ref=00 ours=44
+  CAP E0B7: ref=13 ours=00
+  CAP E0B8: ref=57 ours=34
+  CAP E0B9: ref=9B ours=00
+  CAP E0BA: ref=DF ours=00
+  CAP E0BE: ref=7A ours=5A
+===== probes/bios/spec/xtap2.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=eb00 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8900 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 095413579bdf246800b0081013579bdf246800a0095413579bdf246800b0095413579bdf246800f0095413579bdf246800f0083813579bdf24680040081013579bdf24680040081013579bdf24680040095413579bdf24680150095413579bdf24680150081013579bdf246801403c0013579bdf246801f03c0013579bdf246801b0a70013579bdf24680150a70013579bdf246801703c0013579bdf246801f03c0013579bdf246801b0a70013579bdf2468015aa70013579bdf24680170
+  CAP ours: 094413579bdf246800b0080013579bdf246800a0097413579bdf246800b0097413579bdf246800f0094413579bdf246800f0089413579bdf2468004008a813579bdf24680040088013579bdf24680040094413579bdf24680150095413579bdf24680150081013579bdf24680140094413579bdf246801f0094413579bdf246801b0094413579bdf24680150094413579bdf24680170094400340000246801d009440034000024680190094400340000246801500944003400002468015a
+  DIFF (45 unexcused byte(s)):
+  CAP E002: ref=54 ours=44
+  CAP E00C: ref=10 ours=00
+  CAP E016: ref=54 ours=74
+  CAP E020: ref=54 ours=74
+  CAP E02A: ref=54 ours=44
+  CAP E034: ref=38 ours=94
+  CAP E03E: ref=10 ours=A8
+  CAP E048: ref=10 ours=80
+  CAP E052: ref=54 ours=44
+  CAP E06F: ref=3C ours=09
+  CAP E070: ref=00 ours=44
+  CAP E079: ref=3C ours=09
+  CAP E07A: ref=00 ours=44
+  CAP E083: ref=A7 ours=09
+  CAP E084: ref=00 ours=44
+  CAP E08D: ref=A7 ours=09
+  CAP E08E: ref=00 ours=44
+  CAP E097: ref=3C ours=09
+  CAP E098: ref=00 ours=44
+  CAP E099: ref=13 ours=00
+  CAP E09A: ref=57 ours=34
+  CAP E09B: ref=9B ours=00
+  CAP E09C: ref=DF ours=00
+  CAP E0A0: ref=F0 ours=D0
+  CAP E0A1: ref=3C ours=09
+  CAP E0A2: ref=00 ours=44
+  CAP E0A3: ref=13 ours=00
+  CAP E0A4: ref=57 ours=34
+  CAP E0A5: ref=9B ours=00
+  CAP E0A6: ref=DF ours=00
+  CAP E0AA: ref=B0 ours=90
+  CAP E0AB: ref=A7 ours=09
+  CAP E0AC: ref=00 ours=44
+  CAP E0AD: ref=13 ours=00
+  CAP E0AE: ref=57 ours=34
+  CAP E0AF: ref=9B ours=00
+  CAP E0B0: ref=DF ours=00
+  CAP E0B4: ref=5A ours=50
+  CAP E0B5: ref=A7 ours=09
+  CAP E0B6: ref=00 ours=44
+  CAP E0B7: ref=13 ours=00
+  CAP E0B8: ref=57 ours=34
+  CAP E0B9: ref=9B ours=00
+  CAP E0BA: ref=DF ours=00
+  CAP E0BE: ref=70 ours=5A
+===== biosl: DIVERGENCE =====

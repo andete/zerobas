@@ -36,10 +36,12 @@ def after(c):
 
 RULES = [
     Rule("R-SM-MOTOR", S1, "The motor relay (port C bit 4, 0 = running): A 0 stops it, $FF toggles it, any other A ($01, "
-         "$02, $80) starts it. Port C's other bits are kept.", ALL,
+         "$02, $7F, $80, $81, $FE) starts it. Port C's other bits are kept.", ALL,
          lambda c: c.aa == (c.cpc & ~0x10) | (after(c) << 4)),
-    Rule("R-SM-AF", S1, "A := the PPI bit command left behind: $09 (bit 4 set: stopped) or $08 (reset: running); F := $54 "
-         "/ $10 -- whatever F was.", ALL, lambda c: (c.a, c.f) == ((0x09, 0x54) if after(c) else (0x08, 0x10))),
+    Rule("R-SM-AF", S1, "A := the PPI bit command left behind: $09 (bit 4 set: stopped) or $08 (reset: running). F, "
+         "whatever it was: $54 stopping; starting, $10 -- but $38 for A $7F (A $01, $02, $80, $81, $FE and the "
+         "toggle measured).", ALL,
+         lambda c: (c.a, c.f) == ((0x09, 0x54) if after(c) else (0x08, 0x38 if c.ca == 0x7F else 0x10))),
     Rule("R-SM-KEEP", S1, "BC, DE, HL and the interrupt state are kept.", ALL,
          lambda c: (c.bc, c.de, c.hl, c.iff) == (0x1357, 0x9BDF, 0x2468, c.ei)),
 ]

@@ -27,7 +27,7 @@ ALL = lambda c: True  # noqa: E731
 
 RULES = [
     Rule("R-TI-MOTOR", S1, "The motor stops (port C bit 4 := 1); bits 5-7 are kept.", ALL,
-         lambda c: c.aa & 0xF0 == ((c.cpc if c.cpc is not None else 0x40) & 0xE0) | 0x10),
+         lambda c: c.aa & 0xF0 == (c.cpc & 0xE0) | 0x10),
     Rule("R-TI-KEEP", S1, "A, F, BC, DE and HL are kept, whatever they were.", ALL, G.regs_kept),
     Rule("R-TI-EI", S1, "Interrupts are on after the call, whether they were on or off before it. (Port C's low nibble "
          "is then the timer interrupt's key row: not compared.)", ALL, lambda c: c.iff == 1),

@@ -1,13 +1,14 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XTAP1 -- the tape region's BIOS calls round 1 (2026-11-19): STMOTR, TAPIOF, TAPOOF without a tape, then a round trip
-; TAPOON, TAPOUT x 4, TAPOOF -- the harness rewinds and plays the recording (@tape) -- TAPION, TAPIN x 4, TAPIOF; the
-; TAPOUT and TAPIN calls in tight loops recording A and F only (2 bytes each): the reference's reader needs the bytes
-; back to back (with a 10-byte record between them it read each byte shifted one bit).
-; Each step: port C ($AA) preset as listed (bit 4 the motor relay, 0 = running), BC $1357, DE $9BDF, HL $2468, A and F
-; and the interrupt state as listed, the call, then a 10-byte record: A, F, B, C, D, E, H, L, the interrupt state
-; after (1 on, read twice), port C after.
+; XTAP1 -- the tape region's BIOS calls (2026-11-19; run 2): STMOTR, TAPIOF, TAPOOF without a tape, then a round trip
+; TAPOON, TAPOUT x 8, TAPOOF -- the harness rewinds and plays the recording (@tape) -- TAPION, TAPIN x 8, TAPIOF; the
+; TAPOUT and TAPIN calls in tight loops recording A and F only (2 bytes each), then port C once (1 byte): the
+; reference's reader needs the bytes back to back (with a 10-byte record between them it read each byte shifted one
+; bit, run 0).
+; Each other step: port C ($AA) preset as listed (bit 4 the motor relay, 0 = running; none for the TAPOOF / TAPIOF after
+; a loop), BC $1357, DE $9BDF (TAPOON $1234, TAPION $4321), HL $2468, A and F and the interrupt state as listed, the
+; call, then a 10-byte record: A, F, B, C, D, E, H, L, the interrupt state after (1 on, read twice), port C after.
 ; The tape is each machine's own fresh recording, so what is compared is each machine's round trip.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xtap1.asm --row both
 ; CLEAN-ROOM: 100% own code; published BIOS entries, the PPI's port C.
@@ -39,6 +40,7 @@ init:
                 ld      (TREADY), a
                 ld      hl, CAP
                 ld      (ptr), hl
+
                 ; STMOTR ($00F3)
                 ld      a, $50
                 out     ($AA), a
@@ -201,15 +203,16 @@ init:
                 ld      bc, $FF00
                 push    bc
                 ld      bc, $1357
-                ld      de, $9BDF
+                ld      de, $1234
                 ld      hl, $2468
                 pop     af
                 ei
                 call    $00EA
                 call    rec
-                ; TAPOUT x 4 in a tight loop (the reference's reader needs the bytes back to back): A, F after each
+                ; TAPOUT x 8 in a tight loop (the reference's reader needs the bytes back to back): A, F after
+                ; each, then port C once
                 ld      hl, odata
-                ld      b, 4
+                ld      b, 8
 ol:
                 ld      a, (hl)
                 push    hl
@@ -227,6 +230,7 @@ ol:
                 pop     hl
                 inc     hl
                 djnz    ol
+                call    pcrec
                 ; TAPOOF ($00F0)
                 ld      bc, $A700
                 push    bc
@@ -249,14 +253,14 @@ wack:
                 ld      bc, $A700
                 push    bc
                 ld      bc, $1357
-                ld      de, $9BDF
+                ld      de, $4321
                 ld      hl, $2468
                 pop     af
                 ei
                 call    $00E1
                 call    rec
-                ; TAPIN x 4 in a tight loop: A, F after each
-                ld      b, 4
+                ; TAPIN x 8 in a tight loop: A, F after each, then port C once
+                ld      b, 8
 il:
                 push    bc
                 call    $00E4
@@ -270,6 +274,7 @@ il:
                 ld      (ptr), hl
                 pop     bc
                 djnz    il
+                call    pcrec
                 ; TAPIOF ($00E7)
                 ld      bc, $A700
                 push    bc
@@ -285,7 +290,7 @@ il:
 halt_lp:
                 jr      halt_lp
 
-odata:          db      $00, $55, $AA, $FF
+odata:          db      $00, $55, $AA, $FF, $01, $80, $7F, $FE
 
 ; rec -- the 10-byte record: A F B C D E H L, the interrupt state, port C
 rec:
@@ -333,4 +338,13 @@ ioff:
                 ld      (ptr), hl
                 pop     af
                 ld      hl, (rsave)
+                ret
+
+; pcrec -- port C, one byte
+pcrec:
+                in      a, ($AA)
+                ld      hl, (ptr)
+                ld      (hl), a
+                inc     hl
+                ld      (ptr), hl
                 ret
