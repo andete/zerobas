@@ -15,7 +15,7 @@ SPDX-License-Identifier: 0BSD
 It returns A = $0E / $0F (the PPI's bit reset / set command) and F = $54 / $08, and keeps everything
 else.
 
-zerobas switches the bit the same and returns another F for A = 0 (below).
+zerobas does all of it the same (since D-CHGSNDF, 2026-11-19).
 
 ## The specification
 
@@ -80,9 +80,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-CHGSNDF** (A = 0: zerobas returns F $44, the VG-8020 $54) | R-CS-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

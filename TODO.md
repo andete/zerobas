@@ -16921,14 +16921,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): docs/bios/BREAKX.md R-BX-BUF, cases 46, 49. Priced when picked up.
 
-- [ ] **D-ISCNTCEI — ISCNTC / CKCNTC RETURN F $44 AND KEEP THE INTERRUPT STATE ON ZEROBAS**
+- [x] **D-ISCNTCEI — ISCNTC / CKCNTC RETURN F $44 AND KEEP THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): with no break pending the VG-8020 returns F $54 with
       interrupts on. docs/bios/ISCNTC.md / CKCNTC.md. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_iscntc: `ei` + `and a` on the no-break path (+1 B, the $3283 pad); spec-live: the page's rules all hold on zerobas.
 
-- [ ] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
+- [x] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/sound-flags.patch: CHGSND's `and a`; spec-live: the page's rules all hold on zerobas.
 
 - [ ] **D-LFTQBC — LFTQ LEAVES OTHER VALUES IN B AND C ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
@@ -16959,10 +16961,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
       and the voice buffers re-initialised, and returns A 0, F $44, BC 0, E 7. docs/bios/BEEP.md. Priced when picked up.
 
-- [ ] **D-GETVCF — GETVCP / GETVC2 RETURN F $44 FOR EVERY VOICE ON ZEROBAS**
+- [x] **D-GETVCF — GETVCP / GETVC2 RETURN F $44 FOR EVERY VOICE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 returns $42 for voices 1-3. docs/bios/GETVCP.md
       R-GV-AF, GETVC2.md R-G2-AF. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/sound-flags.patch: GETVC2's loop exits on its last `dec a`; spec-live: the page's rules all hold on zerobas.
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,

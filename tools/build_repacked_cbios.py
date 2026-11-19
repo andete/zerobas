@@ -140,11 +140,14 @@ PATCHES = [
     # GTTRIG.md); GTTRIG's space bar keeps BC with SNSMAT's 2 B, so the labels between them move
     # down 2 (the $0144-$014C / $00D5 / $00D8 vectors follow; ISFLIO's guard in tools/build_mainrom.py too).
     os.path.join(REPO, "cbios-repack", "input-calls.patch"),
+    # D-CHGSNDF / D-GETVCF (2026-11-19): CHGSND's `and a` (F $54 for A 0) and GETVC2's loop exiting on
+    # its last `dec a` (F $42 / $43 for voices 1-3), as the VG-8020; same size -- 3 bytes differ.
+    os.path.join(REPO, "cbios-repack", "sound-flags.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "a31a0d8ecb2a3500db0df99423b8e99f4057948a"   # the input calls, 2026-11-19
+REPACKED_SHA1 = "ff14503359e089d9f5bb89198621d501a4a7a765"   # the sound calls' flags, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

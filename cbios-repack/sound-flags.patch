@@ -1,0 +1,32 @@
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2106,7 +2106,9 @@
+ ; Input:   A = zero to set sound state to 0, non-zero to set sound state to 1
+ ; Changes: AF
+ chgsnd:
+-                or      a
++                ; zerobas D-CHGSNDF (2026-11-19): `and a`, so A = 0 leaves F $54 as the
++                ; VG-8020 (zerobas docs/bios/CHGSND.md R-CS-AF). Same size.
++                and     a
+                 ld      a,$0E           ; $0E = command to reset bit 7
+                 jr      z,chgsnd_write
+                 inc     a               ; $0F = command to set bit 7
+@@ -2518,12 +2520,16 @@
+                 ld      hl,VCBA
+                 add     hl,de
+                 ld      e,37            ; Size of a structure
+-getvc2_loop:
++                ; zerobas D-GETVCF (2026-11-19): the loop exits on its last `dec a`, so
++                ; voices 1-3 leave F $42 (Z, N; the carry of the last add: $43) and voice 0
++                ; `or a`'s $44, as the VG-8020 (zerobas docs/bios/GETVCP.md R-GV-AF, GETVC2.md
++                ; R-G2-AF). Same size.
+                 or      a
+                 jr      z,getvc2_exit
++getvc2_loop:
+                 add     hl,de
+                 dec     a
+-                jr      getvc2_loop
++                jr      nz,getvc2_loop
+ getvc2_exit:
+                 pop     de
+                 ret

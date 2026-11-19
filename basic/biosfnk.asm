@@ -159,8 +159,9 @@ bios_iscntc:
                 ld      a,(BASROM)
                 or      a
                 ret     nz                  ; a protected ROM BASIC: A = BASROM
-                ld      a,(INTFLG)
-                or      a
+                ei                          ; D-ISCNTCEI (2026-11-19): interrupts on after, and
+                ld      a,(INTFLG)          ;   with nothing pending A = 0, F $54 (an AND's), as
+                and     a                   ;   the VG-8020 (docs/bios/ISCNTC.md R-IS-AF / R-IS-EI)
                 ret     z                   ; nothing pending: A = 0
                 jp      isc_slow
 

@@ -13,7 +13,7 @@ SPDX-License-Identifier: 0BSD
 
 `CKCNTC` does what ISCNTC does with no break pending: A = 0, F = $54, interrupts **on**, the rest kept.
 
-zerobas returns another F and leaves interrupts as they were (below).
+zerobas does all of it the same (since D-ISCNTCEI, 2026-11-19).
 
 ## The specification
 
@@ -65,9 +65,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-ISCNTCEI** (as ISCNTC: F $44 and the interrupt state kept on zerobas) | R-CK-AF, R-CK-EI |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

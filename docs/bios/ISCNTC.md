@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 `ISCNTC` checks the break flag INTFLG ($FC9B) the timer interrupt sets; with no break pending it
 returns A = 0, F = $54 and with interrupts **on**, keeping the rest.
 
-zerobas returns another F and leaves interrupts as they were (below).
+zerobas does all of it the same (since D-ISCNTCEI, 2026-11-19).
 
 ## The specification
 
@@ -66,9 +66,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-ISCNTCEI** (no break pending: zerobas returns F $44 and keeps the interrupt state, where the VG-8020 returns F $54 with interrupts on; as CKCNTC) | R-IS-AF, R-IS-EI |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

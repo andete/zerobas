@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 `GETVCP` returns in HL the address of byte 2 of voice A's buffer: VCBA ($FB41) + 37 x A + 2, 16-bit.
 A is 0 after, F $44 for voice 0 and $42 for the others ($43 when the address wraps); the rest is kept.
 
-zerobas returns the same address, with F $44 for every voice (below).
+zerobas does all of it the same (since D-GETVCF, 2026-11-19).
 
 ## The specification
 
@@ -79,9 +79,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-GETVCF** (zerobas returns F $44 for every voice -- 1-3, 4, 6, $21 -- the VG-8020 $42, or $43 when the address wraps; as GETVC2) | R-GV-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
