@@ -39,11 +39,10 @@ The fourth (RS-232) queue, QUEUES itself, PLAY's parse cells and the PPI's port 
 the click, the cassette motor, the keyboard row) are not touched. It returns A = $FF, F = $54, E = $0B and
 interrupts enabled; BC, HL, IX, IY, D, I and the shadow registers are kept.
 
-zerobas does all of it the same, apart from:
-- it does not rewrite the voice control blocks (D-INITIOVCB). It writes only 0 into voice 0's tempo
-  byte ($FB52). Already at a cartridge's INIT, during boot, its blocks hold 0 and the VG-8020's the
-  defaults;
-- it writes the queue descriptors at $F959 whatever QUEUES says (D-INITIOQUEUES).
+zerobas does all of it the same (the descriptors where QUEUES points since D-INITIOQUEUES, 2026-11-19),
+apart from the voice control blocks, which it does not rewrite (D-INITIOVCB). It writes only 0 into
+voice 0's tempo byte ($FB52). Already at a cartridge's INIT, during boot, its blocks hold 0 and the
+VG-8020's the defaults.
 
 Whether a PLAY after INITIO sounds the same on both is not measured here.
 
@@ -229,7 +228,6 @@ Declared UNSTABLE on the reference itself (4 cases: XI7 1, XI7 2, XI7 3, XI7 4):
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-INITIOVCB** (the voice control blocks are not rewritten; they hold 0 after boot) | R-IO-VCB, R-IO-SEED, R-IO-VCB3, R-IO-VCB4, R-IO-VCB7, R-IO-MP / R-IO-PARSE / R-IO-MP5 (through the blocks' cells) |
-| **D-INITIOQUEUES** (the descriptors go to $F959, not where QUEUES points) | R-IO-QUEUES, R-IO-QUEUES6, R-IO-EI7 / R-IO-Q7 (QUEUES moved), R-IO-MP5 (the extra writes at $F959) |
 
 ## Open (not measured)
 

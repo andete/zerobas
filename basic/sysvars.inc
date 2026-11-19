@@ -3732,6 +3732,7 @@ BN_STAT         equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 reject (-> CF
 ; bytes* are own-design (byte-exact match to the reference queue content is the
 ; deferred Slice-3 stretch); the drain algorithm is Slice 3.
 QUETAB          equ     $F959   ; 4 x 6-byte ring descriptors (3 voice + 1 RS232)
+QUEUES          equ     $F3F3   ; (2) the queue table's address: QUETAB as the boot leaves it
 VOICAQ          equ     $F975   ; voice-0 packet buffer (128 B)
 VOICBQ          equ     $F9F5   ; voice-1 packet buffer (128 B)
 VOICCQ          equ     $FA75   ; voice-2 packet buffer (128 B)

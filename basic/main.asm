@@ -385,7 +385,7 @@ bios_gicini:
                 ld      (MUSICF),a
                 ld      (PLYCNT),a
                 ld      (VCBA+VCX_TEMPO),a
-                ld      hl,QUETAB
+                ld      hl,(QUEUES)         ; D-INITIOQUEUES: where QUEUES points, as the VG-8020
                 ld      de,VOICAQ
                 ld      b,3
 bgi_lp:

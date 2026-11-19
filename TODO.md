@@ -16794,7 +16794,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
       -- not cheap; match only if a real program reads the blocks.
 
-- [ ] **D-INITIOQUEUES — INITIO WRITES THE VOICE-QUEUE DESCRIPTORS AT $F959; THE VG-8020 WRITES THEM WHERE QUEUES ($F3F3) POINTS**
+- [x] **D-INITIOQUEUES — INITIO WRITES THE VOICE-QUEUE DESCRIPTORS AT $F959; THE VG-8020 WRITES THEM WHERE QUEUES ($F3F3) POINTS**
       🎚️ TIER 6 — every edge (a program that moves QUEUES and then calls INITIO / GICINI; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-QUEUES / R-IO-QUEUES6 ([`XINITIO6_run1.out`](scratchpad/XINITIO6_run1.out): INITIO
       itself, no interrupt, QUEUES $9EB7 and $A123 each over a garbage table; [`XINITIO5_run4.out`](scratchpad/XINITIO5_run4.out)). With QUEUES :=
@@ -16802,6 +16802,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       leaves $F959..; QUEUES itself is kept. zerobas writes them at $F959 and leaves $9EB7. As the boot leaves QUEUES at
       $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset
       (basic/playsvc.asm psv_flush / the GICINI teardown), priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** bios_gicini (basic/main.asm, which INITIO's GICINI runs) loads the table
+      address from QUEUES ($F3F3, now in basic/sysvars.inc) instead of the constant QUETAB: `ld hl,(QUEUES)`, 0 B.
+      spec-live on the fixed build: R-IO-QUEUES, R-IO-QUEUES6, R-IO-Q7 and R-IO-EI7 hold on zerobas; R-IO-MP5 still fails
+      through D-INITIOVCB alone. PLAY itself still uses QUETAB (basic/playsvc.asm, sub/playparse.asm) -- the boot's
+      QUEUES; a program that moves QUEUES and then PLAYs is not measured.
 
 - [ ] **D-CALSLTSTACK — A CALSLT / CALLF TARGET RUNS 10 BYTES BELOW THE CALLER'S SP ON ZEROBAS; 6 ON THE VG-8020 AND CF-3300 (14 FOR THE CF-3300'S EXPANDED RAM)**
       🎚️ TIER 6 — every edge (a target, or an interrupt in it, that runs within a few bytes of the stack's bottom;

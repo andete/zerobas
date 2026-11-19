@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **446** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **447** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -283,6 +283,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3EE` | 2 B | `basic` | `GFX_SDESC` | $F3EE: SPRITE$(n)= RHS string descriptor |  |
 | `$F3F0` | 2 B | `basic` | `GFX_SC` | $F3F0: PUT SPRITE colour (2). x/y need no cells -- (2 B) |  |
 | `$F3F2` | 1 B | `basic` | `ATRBYT` | current graphics attribute / plot colour (1) |  |
+| `$F3F3` |  | `basic` | `QUEUES` | (2) the queue table's address: QUETAB as the boot leaves it |  |
 | `$F3F5` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$F3F6` |  | `basic` | `SCNCNT` | key-scan countdown: the interrupt scans the keyboard when it reaches 0 (MSX work area; D-BOOTSCAN) |  |
 | `$F3F6` | 1 B | `disk` | `BD_SCNCNT` | MSX work area: SCNCNT, the key-scan countdown (1 B) |  |
