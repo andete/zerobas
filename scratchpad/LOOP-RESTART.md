@@ -34,9 +34,18 @@ LESSONS: (1) gate_wt --tier plan does NOT always re-take the knife pin: run kwkn
 change, or tiers-md-check goes RED; (2) a new equ in basic/sysvars.inc needs `make ram-map-doc`; (3) stage the generated
 files (resident-abi includes, tape .ips / .bps) -- patch-freshness-check; (4) tests that never load the BIOS can slide
 through zero bytes into a newly filled vector (test_repl: trap the BIOS call instead).
-NEXT: the remaining TIER 6 BIOS items -- most need room (D-SETCCOL / D-SETCATR / D-SETCF, D-MOVEMASK, the GRPPRT / SCAN
-tenant items in the full sub ROM, D-GTPDLPORT, D-OUTDLP*); D-INIREGS / D-SETSHADOW / D-CALSLT* are reference leftovers
-(price before matching); tape items stay filed (out of focus).
+NEXT (2026-11-19 evening): D-SETCCOL / D-SETCATR / D-SETCF LANDED, and D-SETCCUT cut C-BIOS's dead readc / setc
+(low region 185 B free). FIRST D-CBIOSDEAD: a REACHABILITY walk over the C-BIOS listing (every entry zerobas does not
+overlay + boot + hooks + tables), then cut what nothing reaches -- grpprt (304 B), pinlin/qinlin/inlin (239), clrspr (100),
+mapxy, scalxy, the RST debug stubs, ... ~900 B by label spans, NOT yet proven. Then by group: sound (one GICINI reset:
+D-INITIOVCB / D-GICINIVCB / D-STRTMS / D-BEEPRESET), SCAN / PAINT, GRPPRT, D-MOVEMASK, D-GTPDLPORT, D-OUTDLP*;
+D-INIREGS / D-SETSHADOW / D-CALSLT* are reference leftovers (price before matching).
+🔴 CASSETTE BIOS CALLS ARE IN (Joost 2026-11-19: "yes, fold the cassette BIOS calls in, that was my intention"): fix
+D-STMOTRAF, D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT in this pass. Only BASIC's cassette
+STATEMENTS stay out. (The older "tape stays filed" lines below were a misreading.)
+GATE NOTES (2026-11-19): D-LASTGREENPATH fixed -- every ROM gate had run FULL; a handler-local ROM change now plans
+SCOPED. Pre-commit runs ONLY the knife pin + regenerators + one targeted check (the gate runs the rest); when the knives
+AND the tape corpus ran locally on the committed bytes, gate with --no-knives. Never `make clean` before repack-machine.
 PREVIOUS STATE 2026-11-19 LATE NIGHT (recount, never quote): SOUND and INPUT FINAL (+ concept pages); the TAPE region's seven
 calls FINAL (XTAP1-XTAP5, five passes; tape is outside the FOCUS, so differences are FILED, not fixed: D-STMOTRAF,
 D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT); its contract section is in

@@ -1,0 +1,536 @@
+diff --git a/src/debug.asm b/src/debug.asm
+index 076fb04..2cfff4e 100644
+--- a/src/debug.asm
++++ b/src/debug.asm
+@@ -49,44 +49,5 @@ print_debug_asciiz:
+                 out     (DBG_DATA),a
+                 jr      print_debug_asciiz
+ 
+-;--------------------------------
+-; Print nibble in hexidecimal format as part of an existing line.
+-; Input:   A = nibble to print (bit 7-4 are ignored)
+-; Changes: AF
+-print_debug_hexnibble:
+-                and     $0F
+-                cp      10
+-                jr      nc,print_debug_hexnibble_letter
+-                add     a,'0'
+-                out     (DBG_DATA),a
+-                ret
+-print_debug_hexnibble_letter:
+-                add     a,'A' - 10
+-                out     (DBG_DATA),a
+-                ret
+-
+-;--------------------------------
+-; Print byte in hexidecimal format as part of an existing line.
+-; Input:   A = byte to print
+-; Changes: AF
+-print_debug_hexbyte:
+-                push    af
+-                rrca
+-                rrca
+-                rrca
+-                rrca
+-                call    print_debug_hexnibble
+-                pop     af
+-                call    print_debug_hexnibble
+-                ret
+-
+-;--------------------------------
+-; Print word in hexidecimal format as part of an existing line.
+-; Input:   HL = word to print
+-; Changes: HL, AF
+-print_debug_hexword:
+-                ld      a,h
+-                call    print_debug_hexbyte
+-                ld      a,l
+-                call    print_debug_hexbyte
+-                ret
++; zerobas cbios-repack (D-CBIOSDEAD): print_debug_hexnibble / _hexbyte / _hexword cut --
++; nothing in the merged ROM calls them (zerobas scratchpad/cbios_reach.py).
+diff --git a/src/main.asm b/src/main.asm
+index 2cfdcf0..e4ec632 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -216,7 +216,7 @@ romid:
+ 
+ ; $0069 CLRSPR  Clear sprites
+                 ds      $0069 - $
+-                jp      clrspr
++                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
+ 
+ ; $006C INITXT  Initialize display to mode TEXT1    (SCREEN 0)
+                 ds      $006C - $
+@@ -264,7 +264,7 @@ romid:
+ 
+ ; $008D GRPPRT
+                 ds      $008D - $
+-                jp      grpprt
++                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
+ 
+ ; $0090 GICINI  initialize sound IC
+                 ds      $0090 - $
+@@ -434,11 +434,11 @@ romid:
+ 
+ ; $010E SCALXY
+                 ds      $010E - $
+-                jp      scalxy
++                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
+ 
+ ; $0111 MAPXY
+                 ds      $0111 - $
+-                jp      mapxy
++                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
+ 
+ ; $0114 FETCHC
+                 ds      $0114 - $
+diff --git a/src/video.asm b/src/video.asm
+index ab7e2fe..bd8f909 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -481,55 +481,11 @@ chgclr_r7:
+                 ld      bc,$0020
+                 jp      filvrm
+ 
+-;--------------------------------
+-; $0069 CLRSPR
+-; Function : Initialises all sprites
+-; Input    : SCRMOD
+-; Registers: All
+-clrspr:
+-; Check screen mode.
+-                ld      a,(SCRMOD)
+-                or      a
+-                ret     z               ; no sprites in SCREEN0
+-
+-; Clear sprite attribute table.
+-                call    clrspr_attr
+-
+-; Clear sprite colour table.
+-                ld      a,(SCRMOD)
+-                cp      4               ; sprite mode 1?
+-                jr      c,clrspr_col_skip
+-                ld      hl,(ATRBAS)
+-                dec     h
+-                dec     h               ; HL = (ATRBAS) - $200
+-                ld      bc,32 * 16
+-                ld      a,(FORCLR)
+-                and     $0F
+-        IF VDP = TMS99X8
+-                call    filvrm
+-        ELSE
+-                call    bigfil
+-        ENDIF
+-clrspr_col_skip:
+-
+-; Clear sprite pattern generator table.
+-                ld      hl,(PATBAS)
+-                ld      bc,256 * 8
+-                xor     a
+-        IF VDP = TMS99X8
+-                call    filvrm
+-        ELSE
+-                call    bigfil
+-        ENDIF
+-                ret
++; zerobas cbios-repack (D-CBIOSDEAD): CLRSPR ($0069) is zerobas's (basic/biosfnk.asm); C-BIOS's body is cut,
++; not left dead -- nothing in the merged ROM reaches it (zerobas scratchpad/cbios_reach.py).
+ 
+ ;--------------------------------
+-; Clear sprite attribute table.
+-clrspr_attr:
+-                ld      a,(SCRMOD)
+-                cp      4
+-                jr      c,clrspr_attr_spritemode1
+-
++; Clear sprite attribute table (called by INIT32 / INIGRP / INIMLT).
+ ; Note: This label is called directly by external routines.
+ clrspr_attr_spritemode2:
+                 ld      e,217           ; Y coordinate
+@@ -1106,258 +1062,8 @@ gspsiz:
+                 ld      a,32
+                 ret
+ 
+-;------------------------------
+-; $008D GRPPRT
+-; Function:  Places a character on graphic screen
+-; Input:     A  - Character
+-;            GRPACX , GRPACY : X, Y coordinate
+-;            FORCLR
+-; Input (SCREEN 5 and above) :
+-;            LOGOPR for logical operator
+-; NOTE : the function doesn't support without SCREEN 2
+-;        and also slower yet.
+-; Register : AF ???
+-grpprt:
+-                push    af
+-
+-                ; Printable character or control character?
+-                cp      $20
+-                jr      c,grpprt_control
+-
+-                ; Different implementation depending on screen mode.
+-                ld      a,(SCRMOD)
+-                cp      2
+-                jr      z,grpprt_sc2
+-                cp      5
+-                jr      nc,grpprt_sc5 ; SCRMOD >= 5
+-grpprt_end:
+-                pop     af
+-                ret
+-
+-grpprt_control:
+-                ; Ignore everything except carriage return ($0D).
+-                cp      $0D
+-                jr      nz,grpprt_end
+-
+-                pop     af
+-                ; Handle carriage return.
+-                push    hl
+-                push    bc
+-                ld      hl,(GRPACY)
+-                ld      bc,$0008
+-                add     hl,bc
+-                ld      (GRPACY),hl
+-                ld      hl,$0000
+-                ld      (GRPACX),hl
+-                pop     bc
+-                pop     hl
+-                ret
+-
+-grpprt_sc5:
+-                pop     af
+-
+-        ; TODO: should these routines be merged?
+-
+-        IF CALL_SUB = YES
+-                push    ix
+-                ld      ix,$0089
+-                jp      subrom
+-        ENDIF
+-                ret
+-
+-grpprt_sc2:
+-                pop     af
+-                push    hl
+-                push    de
+-                push    bc
+-                push    af
+-
+-                call    getpat
+-
+-                ld      de,(GRPACY)
+-                ld      bc,(GRPACX)
+-                call    mapxy           ; HL = CLOC
+-                ld      a,(CMASK)
+-                add     a,a
+-                dec     a
+-                ld      (CMASK),a       ; the pixel's bit and all bits right of it
+-
+-                ld      a,(FORCLR)
+-                ld      (ATRBYT),a
+-
+-                ld      de,PATWRK
+-                ld      a,(GRPACY)
+-                and     $07
+-                ld      c,a
+-                call    grpprt_chr_x
+-
+-                ld      bc,$00F0
+-                add     hl,bc
+-                ld      a,(GRPACY)
+-                cpl
+-                and     $07
+-                ld      c,a
+-
+-                call    grpprt_chr_x
+-
+-                ld      hl,(GRPACX)
+-                ld      bc,$0008
+-                add     hl,bc
+-                ld      (GRPACX),hl
+-
+-                pop     af
+-                pop     bc
+-                pop     de
+-                pop     hl
+-
+-                ret
+-
+-grpprt_chr_x:
+-                ld      a,(GRPACX)
+-                and     $07
+-                push    af
+-                push    bc
+-                push    de
+-                push    hl
+-                call    grpprt_chr ; half left
+-                ld      a,(GRPACX)
+-                and     $07
+-                jr      z,grpprt_skip_hr
+-                ld      a,(CMASK)
+-                cpl
+-                ld      (CMASK),a
+-                pop     hl
+-                ld      bc,$0008
+-                add     hl,bc
+-                pop     de
+-                pop     bc
+-                pop     af
+-
+-                call    grpprt_chr ; half right
+-                ld      a,(CMASK)
+-                cpl
+-                ld      (CMASK),a
+-                ret
+-grpprt_skip_hr:
+-                pop     bc ; HL = the result of last grpprt_chr
+-                ld      bc,$0008
+-                add     hl,bc
+-                pop     bc ; DE = the result of last grpprt_chr
+-                pop     bc
+-                pop     af
+-                ret
+-
+-
+-
+-; A = Pattern , B = Pattern in VRAM
+-grpprt_attr:
+-                push    af
+-                push    hl
+-                push    bc
+-                push    de
+-
+-                ld      d,a   ; D = Pattern of charactor
+-                ld      e,b   ; E = Pattern in VRAM
+-
+-                ld      bc,(GRPCOL)
+-                add     hl,bc
+-                ld      c,a
+-                ld      a,(ATRBYT)
+-                and     $0f
+-                ld      b,a
+-                call    rdvrm
+-
+-                push    af    ; A = an attribute in VRAM
+-                and     $0f
+-                cp      b
+-                jr      z,grpprt_attr_black
+-                pop     af
+-                push    af
+-                rrca
+-                rrca
+-                rrca
+-                rrca
+-                and     $0f
+-                cp      b
+-                jr      nz,grpprt_attr_nomatch
+-                pop     af
+-grpprt_attr_end:
+-                pop     de
+-                pop     bc
+-                pop     hl
+-                pop     af
+-                ret
+-grpprt_attr_black:
+-                pop     af
+-grpprt_attr_blk_end:
+-                pop     de
+-                pop     bc
+-                pop     hl
+-                pop     af
+-                cpl
+-                ret
+-grpprt_attr_nomatch:
+-                ld      a,d
+-                or      e
+-                cp      $ff
+-                jr      z,grpprt_attr_make_black
+-                pop     af
+-                rlc     b
+-                rlc     b
+-                rlc     b
+-                rlc     b
+-                and     $0f
+-                or      b
+-                call    wrtvrm
+-                jr      grpprt_attr_end
+-grpprt_attr_make_black:
+-                pop     af
+-                and     $f0
+-                or      b
+-                call    wrtvrm
+-                jr      grpprt_attr_blk_end
+-
+-
+-; A = X MOD 8,C = Y MOD 8, HL = CLOC
+-grpprt_chr:
+-                ld      b,c
+-                inc     a
+-                ld      c,a
+-
+-                ld      a,$07
+-                xor     b
+-                inc     a
+-                ld      b,a
+-
+-grpprt_lp:
+-                push    bc
+-                call    rdvrm
+-                ld      b,a
+-                ld      a,(de)
+-                call    grpprt_attr
+-grpprt_sft_lp:
+-                dec     c
+-                jr      z,grpprt_sft_ed
+-                rrca
+-                jr      grpprt_sft_lp
+-grpprt_sft_ed:
+-                ld      c,a
+-                ld      a,(CMASK)
+-                and     c
+-                ld      c,a       ; charactor with mask
+-
+-                ld      a,b       ; B = pattern in VRAM
+-                or      c
+-
+-                call    wrtvrm
+-                inc     hl
+-                inc     de
+-                pop     bc
+-                djnz    grpprt_lp
+-                ret
+-
+-
+-grpprt_text:    db      "GRPPRT",0
++; zerobas cbios-repack (D-CBIOSDEAD): GRPPRT ($008D) is zerobas's (basic/biosfnk.asm); C-BIOS's body is cut,
++; not left dead -- nothing in the merged ROM reaches it (zerobas scratchpad/cbios_reach.py).
+ 
+ ;--------------------------------
+ ; 0165h CHKNEW
+@@ -2340,60 +2046,8 @@ upc_st:
+                 pop     hl
+                 ret
+ 
+-;--------------------------------
+-; $010E SCALXY
+-; Function : Clips the X / Y coordinate to the screen
+-; Input    : BC = X, DE = Y
+-; Output   : BC / DE clipped (X 0..255, Y 0..191, negatives to 0), then both
+-;            divided by 4 in SCREEN 3; A = $80 if neither was clipped, else 0
+-; Registers: AF, BC, DE (HL kept)
+-scalxy:
+-                push    hl
+-                ld      h,$80           ; "in range" until a clip says otherwise
+-                ld      a,b
+-                or      a
+-                jr      z,scalxy_xok
+-                rla                     ; Cy = negative
+-                ld      bc,255
+-                jr      nc,scalxy_xc
+-                ld      c,b             ; BC = 0
+-scalxy_xc:
+-                ld      h,b             ; H = 0: clipped
+-scalxy_xok:
+-                ld      a,d
+-                or      a
+-                jr      nz,scalxy_yhi
+-                ld      a,e
+-                cp      192
+-                jr      c,scalxy_yok
+-                xor     a               ; 192..255: over, not negative
+-scalxy_yhi:
+-                rla
+-                ld      de,191
+-                jr      nc,scalxy_yc
+-                ld      e,d             ; DE = 0
+-scalxy_yc:
+-                ld      h,d
+-scalxy_yok:
+-                ld      a,(SCRMOD)
+-                cp      3
+-                jr      nz,scalxy_done
+-                srl     c
+-                srl     c
+-                srl     e
+-                srl     e
+-scalxy_done:
+-                ; zerobas D-SCALXYF (2026-11-13): F IS the answer, as on the VG-8020
+-                ; (zerobas probes/basic/basic_probe_biosflags.py): $41 when nothing was
+-                ; clipped, $40 when something was -- Z set, S / P/V clear, Cy = in range.
+-                ; `cp a` makes Z = 1 and S / P/V / Cy = 0; `rlca` then sets only Cy (A's
+-                ; bit 7, $80 = in range); A is reloaded, which leaves F alone.
+-                ld      a,h
+-                cp      a
+-                rlca
+-                ld      a,h
+-                pop     hl
+-                ret
++; zerobas cbios-repack (D-CBIOSDEAD): SCALXY ($010E) is zerobas's (basic/biosfnk.asm); C-BIOS's body is cut,
++; not left dead -- nothing in the merged ROM reaches it (zerobas scratchpad/cbios_reach.py).
+ 
+ ;--------------------------------
+ ; $0126 GTASPC
+@@ -2407,59 +2061,8 @@ scanr:
+ scanl:
+                 ret
+ 
+-;--------------------------------
+-; $0111 MAPXYC
+-; Function : Places the graphics cursor at X / Y (SCREEN 2; SCREEN 3 in 4x4 blocks:
+-;            X 0..63, Y 0..47, CLOC = (Y AND $F8) * 32 + (Y AND 7) + (X / 2) * 8,
+-;            CMASK $F0 / $0F for an even / odd X, A = H, BC / DE kept -- zerobas
+-;            scratchpad/scr3sweep_run.out)
+-; Input    : BC = X coordinate, DE = Y coordinate
+-; Output   : CLOC = (Y AND $F8) * 32 + (Y AND 7) + (X AND $F8), CMASK = $80 >> (X AND 7);
+-;            A = the low byte of CLOC and D = X, as the VG-8020 leaves them
+-;            (zerobas scratchpad/biossweep_mxy.out); GRPACX / GRPACY untouched
+-mapxy:
+-                ld      a,e
+-                rrca
+-                rrca
+-                rrca
+-                and     $1F
+-                ld      h,a
+-                call    is_sc3
+-                jr      z,mapxy_sc3
+-                ld      a,c
+-                and     7
+-                inc     a
+-                ld      d,a
+-                ld      a,1
+-mapxy_mask:
+-                rrca
+-                dec     d
+-                jr      nz,mapxy_mask
+-                ld      (CMASK),a
+-                ld      a,c
+-                xor     e
+-                and     $F8
+-                xor     e               ; (X AND $F8) OR (Y AND 7)
+-                ld      l,a
+-                ld      (CLOC),hl
+-                ld      d,c
+-                ret
+-mapxy_sc3:
+-                ld      a,c             ; SCREEN 3: CMASK = $F0 for an even X block, else $0F
+-                rrca
+-                sbc     a,a
+-                xor     $F0
+-                ld      (CMASK),a
+-                ld      a,c
+-                add     a,a
+-                add     a,a
+-                xor     e
+-                and     $F8
+-                xor     e               ; (X / 2) * 8 OR (Y AND 7)
+-                ld      l,a
+-                ld      (CLOC),hl
+-                ld      a,h
+-                ret
++; zerobas cbios-repack (D-CBIOSDEAD): MAPXYC ($0111) is zerobas's (basic/biosfnk.asm); C-BIOS's body is cut,
++; not left dead -- nothing in the merged ROM reaches it (zerobas scratchpad/cbios_reach.py).
+ 
+ ; Z set iff SCRMOD is 3 (multicolour); A = SCRMOD
+ is_sc3:

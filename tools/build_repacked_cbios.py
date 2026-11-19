@@ -162,11 +162,17 @@ PATCHES = [
     # the debug helpers move down 121 (TUPC $085E, TDOWNC $087C, SCALXY $089F, MAPXYC $08DD, the $0129
     # rets $08DC); `ds $0D01 - $` holds everything above, so island 3 grows to $096A-$09ED (132 B).
     os.path.join(REPO, "cbios-repack", "readc-setc-cut.patch"),
+    # D-CBIOSDEAD part 1 (2026-11-19): every other body zerobas replaced whole below $0D01 is cut --
+    # grpprt (with mapxy, its only caller's), scalxy, clrspr + clrspr_attr's head, and debug.asm's
+    # hex printers; scratchpad/cbios_reach.py proves nothing in the merged ROM reaches them. 353 B:
+    # CLS $0600, NSETCX $0692 (its overlaid call $069A), TUPC $06FD, TDOWNC $071B, the $0129 rets $0745;
+    # island 3 is $0773-$09ED (635 B). Everything from $0D01 up keeps its address.
+    os.path.join(REPO, "cbios-repack", "dead-bodies-video.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "32f5bf4c25381ece10aba9e08728f9e3387449e0"   # READC / SETC bodies cut, 2026-11-19
+REPACKED_SHA1 = "e61d88cb2837d9ca9a7d90f104745c44ede9f136"   # dead video bodies cut, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

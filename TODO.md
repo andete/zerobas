@@ -16794,20 +16794,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
       -- not cheap; match only if a real program reads the blocks.
 
-- [x] **D-INITIOQUEUES — INITIO WRITES THE VOICE-QUEUE DESCRIPTORS AT $F959; THE VG-8020 WRITES THEM WHERE QUEUES ($F3F3) POINTS**
-      🎚️ TIER 6 — every edge (a program that moves QUEUES and then calls INITIO / GICINI; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-QUEUES / R-IO-QUEUES6 ([`XINITIO6_run1.out`](scratchpad/XINITIO6_run1.out): INITIO
-      itself, no interrupt, QUEUES $9EB7 and $A123 each over a garbage table; [`XINITIO5_run4.out`](scratchpad/XINITIO5_run4.out)). With QUEUES :=
-      $9EB7 the VG-8020's INITIO writes the three reset descriptors (0, 0, 0, $7F, $F975 / $F9F5 / $FA75) at $9EB7.. and
-      leaves $F959..; QUEUES itself is kept. zerobas writes them at $F959 and leaves $9EB7. As the boot leaves QUEUES at
-      $F959, a program that never moves it sees no difference. The fix is a load of QUEUES in zerobas's queue reset
-      (basic/playsvc.asm psv_flush / the GICINI teardown), priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** bios_gicini (basic/main.asm, which INITIO's GICINI runs) loads the table
-      address from QUEUES ($F3F3, now in basic/sysvars.inc) instead of the constant QUETAB: `ld hl,(QUEUES)`, 0 B.
-      spec-live on the fixed build: R-IO-QUEUES, R-IO-QUEUES6, R-IO-Q7 and R-IO-EI7 hold on zerobas; R-IO-MP5 still fails
-      through D-INITIOVCB alone. PLAY itself still uses QUETAB (basic/playsvc.asm, sub/playparse.asm) -- the boot's
-      QUEUES; a program that moves QUEUES and then PLAYs is not measured.
-
 - [ ] **D-CALSLTSTACK — A CALSLT / CALLF TARGET RUNS 10 BYTES BELOW THE CALLER'S SP ON ZEROBAS; 6 ON THE VG-8020 AND CF-3300 (14 FOR THE CF-3300'S EXPANDED RAM)**
       🎚️ TIER 6 — every edge (a target, or an interrupt in it, that runs within a few bytes of the stack's bottom;
       filed 2026-11-18).
@@ -16857,100 +16843,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01; zerobas's differs on every call ($1A for a letter, $54 after a TAB ...). Not published. The LPTOUT half is
       D-LPTOUTF. Priced when picked up.
 
-- [x] **D-ISFLIO — ISFLIO LOOKS AT PTRFIL'S LOW BYTE ONLY: A FILE WHOSE FCB IS AT $xx00 READS AS "NO FILE"**
-      🎚️ TIER 6 — every edge (a caller -- an extension ROM printing through OUTDO -- asking ISFLIO while PTRFIL's low
-      byte is 0; filed 2026-11-18). A WRONG ANSWER, not a flag: likely a one-instruction fix (OR the high byte in).
-      🤖 **AUTONOMOUS** — docs/bios/ISFLIO.md R-IF-A / R-IF-F ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out),
-      [`XOUTDO_run2d.out`](scratchpad/XOUTDO_run2d.out)): the VG-8020 returns A = PTRFIL's two bytes ORed ($0100 ->
-      $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
-      file") with other flags. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_isflio (8 B in the $3283 pin pad), the ISFLIO entry
-      $014A repointed by basic/islands.asm (PATCH_RANGES C3 1B 17): `ld hl,(PRDEST)` -- PTRFIL, both bytes -- `ld a,h /
-      or l`, HL kept. spec-live: R-IF-A and R-IF-F hold on zerobas.
-
 - [ ] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
       (where its TDOWNC steps end); zerobas its own last pixel. docs/bios/GRPPRT.md R-GP-POS. Priced when picked up.
 
-- [x] **D-GRPPRTEI — GRPPRT TURNS INTERRUPTS ON FOR A CONTROL CODE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_grpprt keeps the entry IFF2 across the tenant and, for a control code entered with interrupts off, turns them off again (+14 B, the $3283 pad); spec-live: R-GP-EI holds on zerobas.
-
-- [x] **D-SNSMATC — SNSMAT KEEPS C ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 leaves the row number in C. docs/bios/SNSMAT.md R-SM-C. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: C := A on entry; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-SNSMATPORT — SNSMAT WITH A OF $10 AND UP SETS PORT C OTHERWISE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): A $FF is written whole (the CAPS lamp, the 1-bit sound and the
-      cassette motor bits with it), A $12 masked to its low nibble; the VG-8020 adds the whole A to (port C AND $F0).
-      docs/bios/SNSMAT.md R-SM-PORT, cases 12, 71. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: `add a,c` for `or c`; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-KILBUFPTR — KILBUF MOVES THE PUT POINTER BACK ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 moves the get pointer forward (GETPNT := PUTPNT,
-      HL the put pointer). docs/bios/KILBUF.md R-KB-BUF. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: GETPNT := PUTPNT; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-CHGCAPAF — CHGCAP RETURNS OTHER A / F ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 returns the PPI bit command $0C / $0D and F $54 / $08.
-      docs/bios/CHGCAP.md R-CC-AF. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: the PPI bit command, A $0C / $0D; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-GTTRIGRANGE — GTTRIG WITH A 5 READS THE SPACE BAR ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 returns 0. docs/bios/GTTRIG.md R-GT-A, case 43. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: `cp 6`; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-JOYPORT — GTSTCK / GTTRIG WITH A 3 / 5 DO NOT SELECT JOYSTICK PORT 1 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 clears R15 bit 6 for an odd A. docs/bios/GTSTCK.md
-      R-GS-PORT (case 35), GTTRIG.md (43). Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/input-calls.patch: `rrca / jr c` -- an odd A selects port 1; spec-live: the page's rules all hold on zerobas.
-
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
       R-PD-PORT. Priced when picked up.
-
-- [x] **D-BREAKXBUF — BREAKX DOES NOT EMPTY THE KEY BUFFER ON CTRL+STOP ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): docs/bios/BREAKX.md R-BX-BUF, cases 46, 49. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_breakx: on CTRL+STOP GETPNT := PUTPNT (HL kept) and OLDKEY row 7 := $EF (+5 B, the $3283 pad; PUTPNT / GETPNT now in basic/sysvars.inc); spec-live: BREAKX's rules all hold on zerobas.
-
-- [x] **D-ISCNTCEI — ISCNTC / CKCNTC RETURN F $44 AND KEEP THE INTERRUPT STATE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): with no break pending the VG-8020 returns F $54 with
-      interrupts on. docs/bios/ISCNTC.md / CKCNTC.md. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_iscntc: `ei` + `and a` on the no-break path (+1 B, the $3283 pad); spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/sound-flags.patch: CHGSND's `and a`; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-LFTQBC — LFTQ LEAVES OTHER VALUES IN B AND C ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves B = (put + 1) AND size, C = get; zerobas
-      C = 6 x the queue number and B unmasked when put + 1 wraps. docs/bios/LFTQ.md R-LQ-BC. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/lftq-bc.patch (#42): B := (put + 1) AND size, C := get; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-LFTQSIZE — LFTQ COUNTS A QUEUE WHOSE SIZE IS NOT 2^N - 1 OTHERWISE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 gives (get - ((put + 1) AND size)) AND size,
-      zerobas (get - put - 1) AND size: $4E against $4C for size $7E, put 2, get $50. docs/bios/LFTQ.md R-LQ-HL. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/lftq-bc.patch (#42): the count from the masked put; spec-live: the page's rules all hold on zerobas.
-
-- [x] **D-PUTQREGS — PUTQ ON A FULL QUEUE LEAVES OTHER BC / HL ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves B the old put pointer, C the new, HL the
-      QUETAB entry + 3; zerobas keeps B, C := the queue number, HL := the entry. docs/bios/PUTQ.md R-PQ-REGS. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_putq: full -- B the old PUT, C the new, HL the entry + 3 (+4 B, the $3283 pad); spec-live: the page's rules all hold on zerobas.
 
 - [ ] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
@@ -16965,12 +16866,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
       and the voice buffers re-initialised, and returns A 0, F $44, BC 0, E 7. docs/bios/BEEP.md. Priced when picked up.
-
-- [x] **D-GETVCF — GETVCP / GETVC2 RETURN F $44 FOR EVERY VOICE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 returns $42 for voices 1-3. docs/bios/GETVCP.md
-      R-GV-AF, GETVC2.md R-G2-AF. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/sound-flags.patch: GETVC2's loop exits on its last `dec a`; spec-live: the page's rules all hold on zerobas.
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
@@ -17013,87 +16908,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
       nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
 
-- [x] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (SCALXY called outside the graphics modes; filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX4_run2.out`](scratchpad/XGFX4_run2.out)): the VG-8020 divides X and Y by 4 whenever SCRMOD is not 2; zerobas only in SCREEN 3.
-      docs/bios/SCALXY.md R-SX-CLIP / R-SX-AF, cases 28-31. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** SCALXY ($010E) is basic/biosfnk.asm bios_scalxy (86 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 18 09): divided by 4 for every SCRMOD but 2, A / F built and popped (SCREEN 2 Z; otherwise Z / P/V from the new E; the carry when nothing was clipped); spec-live: SCALXY's rules all hold on zerobas.
-
-- [x] **D-SCALXYF — SCALXY RETURNS SCREEN 2'S FLAGS IN THE OTHER MODES ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX4_run2.out`](scratchpad/XGFX4_run2.out)): with SCRMOD not 2 the VG-8020's S / Z / P/V come from the new E (H, N, bits 3 / 5
-      clear; the carry as in SCREEN 2); zerobas returns $41 / $40. docs/bios/SCALXY.md R-SX-AF. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** SCALXY ($010E) is basic/biosfnk.asm bios_scalxy (86 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 18 09): divided by 4 for every SCRMOD but 2, A / F built and popped (SCREEN 2 Z; otherwise Z / P/V from the new E; the carry when nothing was clipped); spec-live: SCALXY's rules all hold on zerobas.
-
-- [x] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
-      🎚️ TIER 1 — happy path: SETC on any SCREEN 2 byte whose other 7 pixels are set, with a third colour, changes 7
-      pixels on the screen (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 leaves the bit clear and puts ATRBYT into the
-      background nibble (the other pixels keep the foreground); zerobas sets the bit and puts ATRBYT into the foreground
-      nibble. docs/bios/SETC.md R-SC-VRAM (cases 47, 62, 77, 80, 84), NSETCX.md R-NX-VRAM (cases 39, 72, 73, 82). Priced when picked up.
-      🟡 **PART 1 LANDED 2026-11-19: SETC.** basic/main.asm `setc_col`, entered from our repacked SETC's colour-byte
-      `call wrtvrm` at $0877 (basic/islands.asm `cbios_setc_col`, tools/build_mainrom.py PATCH_RANGES CD 4D 02): with
-      pattern OR CMASK = $FF it clears the bit and ORs ATRBYT into (colour AND $F0). 22 B of the low region (43 -> 21 B
-      free). Witness ([`XGFX3_fix1.out`](scratchpad/XGFX3_fix1.out), zerobas live): SETC R-SC-VRAM cases 47, 77, 80, 84
-      pass (62 stays: D-SETCCOL), NSETCX's single pixel (82) too. **STILL OPEN: NSETCX's run** (cases 39, 72, 73): a run
-      whose pixels fill a byte's last clear bits -- the VG-8020 decides the byte with the run's pixels counted together;
-      zerobas's NSETCX calls setc pixel by pixel (C-BIOS nsetcx, cbios-repack/graphics-cursor.patch). Price before fixing.
-      ✅ **PART 2 LANDED 2026-11-19, NSETCX; ITEM CLOSED.** basic/biosfnk.asm `nsx_px`, entered from our repacked NSETCX's
-      per-pixel `call setc` at $07FB (islands.asm `cbios_nsx_px`, PATCH_RANGES CD 4E 08): the run's pixels in a byte go
-      to SETC as ONE mask (SETC's rule holds for a multi-bit CMASK), a full byte is pattern $00 + colour ATRBYT at CLOC
-      XOR $2000 (closes D-NSETCXFULL too). 70 B, paid by PROMOTING basic/input.asm (546 B) from the low region into main
-      page 1's $6CF3 pin pad (738 -> 192 B); the low region's $3283 pin pad is now 476 B. Witness
-      ([`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out)): NSETCX R-NX-VRAM cases 12, 13, 32, 39, 58, 63, 64, 72, 73, 82 now
-      as the reference, none new.
-
-- [x] **D-SETCCOL — READC / SETC / NSETCX SWAP THE PATTERN AND COLOUR BYTES FOR CLOC $2000-$3FFF ON ZEROBAS**
-      🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 uses the pattern byte at CLOC
-      and the colour byte at CLOC XOR $2000 (GRPCOL / GRPCGP unused); zerobas uses CLOC AND NOT $2000 and CLOC OR $2000,
-      so the two swap -- and SCREEN 3 writes CLOC AND NOT $2000. docs/bios/READC.md R-RD-A (29, 60), SETC.md R-SC-VRAM
-      (17, 30, 41, 62, 88), NSETCX.md R-NX-VRAM (18, 59). Priced when picked up.
-      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
-      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
-      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
-      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
-      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
-      SETC and NSETCX hold every rule, no row new.
-
-- [x] **D-SETCATR — SETC / NSETCX TAKE ATRBYT OVER 15 DIFFERENTLY IN SCREEN 3 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes (ATRBYT x 16) AND $F0 into a high nibble
-      and ORs ATRBYT in whole into a low one ($1A over $A4 gives $BA); zerobas writes $B. Cases 25, 33, 83, 67. docs/bios/SETC.md R-SC-VRAM (25, 33), NSETCX.md R-NX-VRAM (67). Priced when picked up.
-      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
-      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
-      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
-      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
-      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
-      SETC and NSETCX hold every rule, no row new.
-
-- [x] **D-SETCF — SETC RETURNS ANOTHER A / F ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 returns the colour byte written and its OR
-      flags, or -- when only the pattern byte is written -- that byte and its S / Z / P flags. docs/bios/SETC.md R-SC-AF. Priced when picked up.
-      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
-      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
-      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
-      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
-      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
-      SETC and NSETCX hold every rule, no row new.
-
-- [x] **D-SETCCUT — C-BIOS'S DEAD READC / GCELL / SETC BODIES LEFT IN THE REPACK**
-      🎚️ TIER 6 — ROM space (Joost 2026-11-19: "if a C-BIOS body is completely replaced, I'd expect the old one to be
-      removed? Any other way leaves valuable space wasted.").
-      🤖 **AUTONOMOUS** — after D-SETCCOL zerobas answers READC / SETC itself, so C-BIOS's readc / gcell / setc (121 B,
-      $0822-$089A) were dead.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/readc-setc-cut.patch (#46) cuts them; the vectors become `ret`
-      (zerobas overlays both), NSETCX calls SETC through $0120 (overlaid with nsx_px). RIGHTC .. the debug helpers move
-      down 121 and `ds $0D01 - $` keeps everything from $0D01 up (checked: the 15 bytes that differ above $0D01 are all
-      call / jump operands into the moved span, each exactly 121 lower). Re-derived: PATCH_RANGES for TUPC / TDOWNC /
-      SCALXY / MAPXYC / the $0129 rets / READC / SETC / $07FB, CBIOS_TUPC $085E, CBIOS_TDOWNC $087C, island 3
-      $096A-$09ED (132 B). bios_setc (125 B) moved into island 3: the page-0 low region went 60 -> 185 B free.
-      spec-live: the 14 pages from RIGHTC to SETC agree, none new.
-
 - [ ] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
       🎚️ TIER 6 — ROM space (the same ruling as D-SETCCUT).
       🤖 **AUTONOMOUS** — vectors zerobas overlays with its own full body (tools/build_mainrom.py PATCH_RANGES) and whose
@@ -17101,25 +16915,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       PUTQ's `ret` + 29 B pad. For each, grep C-BIOS's own internal callers first (a body C-BIOS still calls stays, and
       it may be reachable only that way); cut the rest in one patch, re-derive the pins as D-SETCCUT did, and say where
       the bytes land (gap 1 / island 3 only grows for cuts below $0D01; a cut above it moves the font-pad side).
-
-- [x] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
-      🎚️ TIER 6 — every edge (the same pixels, other bytes) (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT;
-      zerobas pattern $FF with ATRBYT in the foreground nibble. docs/bios/NSETCX.md R-NX-VRAM, cases 12, 13, 32, 58, 63, 64. Priced when picked up.
-      ✅ **LANDED 2026-11-19 with D-SETCLAST part 2 (nsx_px's full-byte arm); ITEM CLOSED.** [`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out).
-
-- [x] **D-NSETCXL — NSETCX IN SCREEN 3 COUNTS ALL OF HL ON ZEROBAS, L ALONE ON THE VG-8020**
-      🎚️ TIER 6 — every edge (HL 256 or more) (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): HL $0102 sets 2 pixels on the VG-8020, 258 on zerobas.
-      docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS, cases 55, 56. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** NSETCX ($0123) enters basic/biosfnk.asm bios_nsetcx (40 B in the $3283 pad; PATCH_RANGES C3 F3 07 pins CBIOS_NSETCX): outside SCREEN 2 the count is L alone, 0 giving 256; SCREEN 2 HL = 0 is SETC with CMASK 0, interrupts on after; else C-BIOS's body. spec-live: R-NX-POS / R-NX-EI hold; R-NX-VRAM's remaining cases are D-SETCCOL (18, 59, and 71 -- HL = 0 with GRPCGP $2000) and D-SETCATR (67).
-
-- [x] **D-NSETCX0 — NSETCX WITH HL = 0 DOES NOTHING ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-18).
-      🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes ATRBYT into the colour byte at CLOC
-      (SCREEN 2) or sets 256 pixels (SCREEN 3), and returns with interrupts on; zerobas returns at once, interrupts as
-      they were. docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS / R-NX-EI, cases 15, 38, 57, 69-71, 86. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** NSETCX ($0123) enters basic/biosfnk.asm bios_nsetcx (40 B in the $3283 pad; PATCH_RANGES C3 F3 07 pins CBIOS_NSETCX): outside SCREEN 2 the count is L alone, 0 giving 256; SCREEN 2 HL = 0 is SETC with CMASK 0, interrupts on after; else C-BIOS's body. spec-live: R-NX-POS / R-NX-EI hold; R-NX-VRAM's remaining cases are D-SETCCOL (18, 59, and 71 -- HL = 0 with GRPCGP $2000) and D-SETCATR (67).
+      🔬 **MEASURED 2026-11-19** -- scratchpad/cbios_reach.py: a span / fallthrough fixed point over C-BIOS's own source
+      (tools/check_dead_code.py's model), seeded by every vector the merged ROM does NOT overlay (read off the two built
+      ROMs: 44 are), every `ds $XXXX - $` pin, the prologues and zerobas's six `CBIOS_*` jump-backs. Four model fixes
+      before it was believable (each a wrong row first): an overlaid vector's `jp body` sits INSIDE romid's span and
+      kept every body alive; fallthrough must follow ROM ADDRESS order (an `include` after a `ret` "fell into" lptout);
+      a label this build does not assemble (an `IF VDP` arm) must not end its span (filvrm_lp read DEAD); an all-DATA
+      span and three labels stacked on one `ret` do not fall through. Dead, below $0D01: grpprt 303 B, mapxy 58 (its
+      only caller is grpprt), scalxy 54, clrspr + clrspr_attr's head 49, debug.asm's hex printers. $0D12-$1BBE: the
+      cassette stubs 136, lptout 42, synchr .. outdo / getypr 69, calbas 31, pinlin / qinlin 30, PUTQ's pad 30, inifnk /
+      strtms 23, iscntc / ckcntc 21, isflio 5. After the font: gtpdl 51 + gtpad 2 (needs BASIC_BASE moved -- left).
+      🟡 **PART 1 LANDED 2026-11-19: below $0D01.** cbios-repack/dead-bodies-video.patch (#47) cuts grpprt, mapxy, scalxy,
+      clrspr (+ clrspr_attr's head; INIT32 / INIGRP still call clrspr_attr_spritemode1/2) and the hex printers: 353 B.
+      The four vectors become `ret`. Re-derived from the new ROM's own bytes (nine PATCH_RANGES guards), the NSETCX
+      overlay $07FB -> $069A, CBIOS_CLS $0600, CBIOS_NSETCX $0692, CBIOS_TUPC $06FD, CBIOS_TDOWNC $071B. Island 3 is
+      $0773-$09ED (635 B; bios_setc at its start, 510 B free). Checked: the 34 bytes that differ above $0D01 are all
+      operands into the moved span. **STILL OPEN: part 2**, the $0D12-$1BBE list above -- it moves the $0FD7 / $116E
+      overlays, CBIOS_BREAKX and CBIOS_GICINI, and grows island 1 ($1AF5-$1BBF) by ~390 B.
 
 - [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).
@@ -17164,39 +16976,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
 
-- [x] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
-      2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
-      🤖 **AUTONOMOUS** — docs/bios/TUPC.md / TDOWNC.md R-TU-* / R-TD-* ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out)):
-      the VG-8020 stops TUPC where CLOC is below GRPCGP + $100, TDOWNC where it is GRPCGP + $1700 or more (unsigned);
-      zerobas stops TUPC only where CLOC AND $FF07 is 0 and TDOWNC wherever CLOC is $1700 or more. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** TUPC ($0105) / TDOWNC ($010B) are basic/biosfnk.asm bios_tupc / bios_tdownc (79 B in the $3283 pad; the vectors repointed by basic/islands.asm, PATCH_RANGES C3 D7 08 / C3 F5 08): in SCREEN 2 the edge is CLOC below GRPCGP + $100 / at or past GRPCGP + $1700, unsigned; a move is UPC's / DOWNC's, every other case C-BIOS's own body; spec-live: TUPC's and TDOWNC's rules all hold on zerobas.
-
-- [x] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
-      🎚️ TIER 6 — every edge (a pattern table moved off $0000 with BASE, then a graphics call; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-GRP / R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out)):
-      the VG-8020's CLOC is GRPCGP (SCREEN 2) or MLTCGP (else) plus the offset; zerobas's is the offset alone. The
-      same while those cells hold 0. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
-
-- [x] **D-MAPXYCWRAP — MAPXYC DOES NOT WRAP Y IN SCREEN 3 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (MAPXYC in SCREEN 3 with a block Y of 64 or more; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out), cases 39, 40,
-      42): the VG-8020 takes Y modulo 64 (Y 64 -> offset $0000), zerobas does not ($0800). Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
-
-- [x] **D-MAPXYCMODE — MAPXYC TAKES THE SCREEN 2 WAY FOR SCRMOD 0 / 1 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (MAPXYC called in a text mode; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out), cases 30, 31):
-      the VG-8020 takes the multicolour way for any SCRMOD but 2 (0, 1, 4, $FF measured). Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
-
-- [x] **D-MAPXYCF — MAPXYC RETURNS OTHER A / F ON ZEROBAS**
-      🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-AF ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out)). Priced when
-      picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
-
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out)):
@@ -17210,63 +16989,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
       VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
 
-- [x] **D-INIMLTCOL — INIMLT MASKS A BAKCLR OVER 15 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (BAKCLR over 15 when INIMLT runs; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INIMLT.md R-IM-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 08, 23):
-      the VG-8020 fills the multicolour pattern table with BAKCLR x 16 OR BAKCLR as a byte ($75 for $25); zerobas
-      with (BAKCLR AND 15) x $11 ($55). Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/inimlt-col.patch (#45): `cls_screen3` fills BAKCLR x 16 OR BAKCLR, a byte (a shift, no 4-bit mask); R-IM-VRAM's failing cases 10 -> 4 on the fixed build (08, 23, 30 now as the VG-8020; 38 / 39 are D-INIGRPORDER).
-
-- [x] **D-CHGMODRANGE — CHGMOD DOES NOTHING FOR A ABOVE 3 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (CHGMOD with A above 3; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-MODE ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 16, 17):
-      the VG-8020 goes by A - 1 as a signed byte (SCREEN 0 for $81-$FF, SCREEN 3 for 4-$80; $7F, $80, $81, $FE
-      measured too); zerobas returns at once for any A above 3. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/chgmod-range.patch (#43): CHGMOD's `ret nc` -> `jp nc,totext_map`, TOTEXT's own 4..$80 -> 3 / $81..$FF -> 0 mapping; 2 B from INIGRP's NOPs (CHGMOD .. INIGRP move down 2, CLRSPR's guard -> C3 FD 02). spec-live: R-CM-MODE holds on zerobas.
-
-- [x] **D-INITXTBAS — INITXT SETS PATBAS / ATRBAS ON ZEROBAS**
-      🎚️ TIER 6 — every edge (a program reading PATBAS / ATRBAS after SCREEN 0; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-TXTBAS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 14 and
-      its direct INITXT partner 20): the VG-8020's INITXT leaves PATBAS / ATRBAS; zerobas's sets them from TXTPAT /
-      TXTATR ($0000 by default). Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/initxt-bas.patch (#44): INITXT's TXTATR / TXTPAT loads into ATRBAS / PATBAS become 12 NOPs; spec-live: R-CM-TXTBAS holds on zerobas.
-
-- [x] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (RG1SAV and R#1 out of step when CLRSPR is called -- the VG-8020's CLRSPR brings the
-      sprite size into R#1; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-R1 ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)): the VG-8020
-      writes RG1SAV to R#1; zerobas leaves R#1 alone. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
-
-- [x] **D-CLRSPRMODE — CLRSPR DOES NOTHING IN SCREEN 0 ON ZEROBAS, AND WRITES Y $D9 FOR SCRMOD ABOVE 3**
-      🎚️ TIER 6 — every edge (CLRSPR called in SCREEN 0, or with SCRMOD over 3; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM / R-CS-EI / R-CS-REGS ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)):
-      the VG-8020 clears the sprite tables in every SCRMOD measured (0-4, $77, $81) with Y $D1; zerobas returns at
-      once in SCREEN 0 (VRAM untouched, registers and interrupts as on entry) and writes Y $D9 for SCRMOD above 3
-      (4, $77, $81).
-      Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
-
-- [x] **D-CLRSPRORDER — CLRSPR WRITES THE ATTRIBUTES BEFORE CLEARING THE PATTERNS ON ZEROBAS**
-      🎚️ TIER 6 — every edge (an attribute table inside the sprite pattern table's 2 KB; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM ([`XCLR_run5.out`](scratchpad/XCLR_run5.out), case 31: PATBAS
-      $3C00, ATRBAS $3FC0): the VG-8020 clears the patterns first, so the attribute entries stay; zerobas clears them
-      last and the overlapping entries read 0. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
-
 - [ ] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CHGCLR.md R-CC-R7 ([`XCLR_run5.out`](scratchpad/XCLR_run5.out), cases 39 and 48): the
       VG-8020 takes the SCREEN 0 path when SCRMOD - 1 is negative (SCRMOD $81 and $FF measured: R#7 := (FORCLR x 16)
       OR BAKCLR); zerobas sets the border colour there.
       Priced when picked up.
-
-- [x] **D-CLRREGS — CLRSPR / CHGCLR RETURN OTHER REGISTERS ON ZEROBAS**
-      🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-REGS, CHGCLR.md R-CC-REGS ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)):
-      the VG-8020's values are listed in the rules; zerobas returns A = 0 / F $42 / HL = PATBAS after CLRSPR and
-      other A, F, DE, HL after CHGCLR. Priced when picked up.
-      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
 
 - [ ] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
       🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV
