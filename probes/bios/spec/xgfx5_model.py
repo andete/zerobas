@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""The loader and drawing model for GRPPRT's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX5_run3.out
-(rows N and D; probes/bios/spec/xgfx5.asm documents the presets, the probe's RAM font, the case table and the 128-byte
-record)."""
+"""The loader and drawing model for GRPPRT's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX5_run3.out and
+XGFX5B_run1.out (rows N and D; probes/bios/spec/xgfx5.asm and xgfx5b.asm document the presets, the probe's RAM font,
+the case tables and the 128-byte record; xgfx5b's cases are numbered from 63)."""
 import os
 import re
 import sys
@@ -13,13 +13,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
-RUN = "XGFX5_run3.out"
-ASM = os.path.join(HERE, "xgfx5.asm")
+SOURCES = ((os.path.join(HERE, "xgfx5.asm"), "XGFX5_run3.out", 0), (os.path.join(HERE, "xgfx5b.asm"), "XGFX5B_run1.out", 63))
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "regs", "sums", "w1", "w2", "w3", "cloc", "cmask", "atrbyt",
           "grpac", "forclr", "logopr"]
 OUTPUTS = {"XT": FIELDS}
-TSETS = {0: (0x0000, 0x0000), 1: (0x2000, 0x1000), 6: (0x0800, 0x0000)}     # cell sets: GRPCGP, MLTCGP
+TSETS = {0: (0x0000, 0x0000), 1: (0x2000, 0x1000), 6: (0x0800, 0x0000), 7: (0x0000, 0x0000)}     # cell sets: GRPCGP, MLTCGP
 VPRE = (0x00, 0x80, 0x06, 0x80, 0x00, 0x36, 0x07, 0xF4)
 
 
@@ -32,16 +31,22 @@ def glyph(ch, j):
     return ((ch * 7) & 0xFF) ^ ((j * 0x33) & 0xFF) ^ 0x96
 
 
-def table():
-    src = open(ASM).read()
+def table(asm):
+    src = open(asm).read()
     pat = (r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..), \$(..)\n\s+dw\s+\$(....), \$(....)\n"
            r"\s+db\s+\$(..)\n\s+dw\s+\$(....), \$(....), \$(....)\n\s+db\s+\$(..)")
     return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src[src.index("\ncases:"):])]
 
 
 def load():
-    tab = table()
     out = {"ref": [], "zb": []}
+    for asm, run, base in SOURCES:
+        load_one(asm, run, base, out)
+    return out
+
+
+def load_one(asm, RUN, base, out):
+    tab = table(asm)
     text = open(os.path.join(ROOT, "scratchpad", RUN)).read()
     secs = re.findall(r"===== \S+ (nodisk|disk): .*?CAP ref : (\w+)\n  CAP ours: (\w+)", text, re.S)
     if [s[0] for s in secs] != ["nodisk", "disk"]:
@@ -52,18 +57,17 @@ def load():
             b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
             if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
                 sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
-            for i, (op, cf, ei, scr, fo, lo, at, _, x, y, cs, w1, w2, w3, ch) in enumerate(tab):
-                r = b[1 + REC * i:1 + REC * (i + 1)]
+            for i, (op, cf, ei, scr, fo, lo, at, _, x, y, cs, w1, w2, w3, ch) in enumerate(tab, base):
+                r = b[1 + REC * (i - base):1 + REC * (i - base + 1)]
                 out[who].append(NS(
                     src="XT", id=f"XT {row}{i:02}", i=i, row=row, cf=cf, ei=ei, cscr=scr, cfor=fo, clog=lo, catr=at,
-                    cx=x, cy=y, cset=cs, cw=(w1, w2, w3), ch=ch, mask=0xFF if i & 4 else 0,
+                    cx=x, cy=y, cset=cs, cw=(w1, w2, w3), ch=ch, mask=0xFF if (i - base) & 4 else 0,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], regs=tuple(r[13:22]) + tuple(r[25:33]),
                     sums=tuple(r[33 + 2 * k] | r[34 + 2 * k] << 8 for k in range(16)),
                     w1=tuple(r[65:81]), w2=tuple(r[81:97]), w3=tuple(r[97:113]),
                     cloc=r[113] | r[114] << 8, cmask=r[115], atrbyt=r[116],
                     grpac=(r[117] | r[118] << 8, r[119] | r[120] << 8), forclr=r[121], logopr=r[122]))
-    return out
 
 
 def marker(c, v):

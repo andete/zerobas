@@ -16900,12 +16900,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT
       := FORCLR; zerobas moves GRPACX on, keeps ATRBYT, and with Y $FFFF draws at the top. docs/bios/GRPPRT.md cases
-      13, 14, 21, 23, 38. Priced when picked up.
+      13, 14, 21, 23, 38, 46-49, 55, 67, 72. Priced when picked up.
 
-- [ ] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15, A MOVED PATTERN TABLE, OR MLTCGP $1000 DRAWS OTHERWISE ON ZEROBAS**
+- [ ] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15 OR A MOVED PATTERN TABLE DRAWS OTHERWISE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16 (the background nibble
-      changes), 17 (GRPCGP $2000), 22 (SCREEN 3 does not stop where TDOWNC stops). Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
+      nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
 
 - [ ] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (SCALXY called outside the graphics modes; filed 2026-11-19).

@@ -587,7 +587,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-A01BD4 |
 | — | TIER 6 | 🤖 | every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19). | T-844A66 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-502628 |
-| — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-21DA75 |
+| — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-74165E |
 | — | TIER 6 | 🤖 | every edge (SCALXY called outside the graphics modes; filed 2026-11-19). | T-06A921 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-A938B9 |
 | — | TIER 6 | 🤖 | every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18). | T-CE01B2 |
