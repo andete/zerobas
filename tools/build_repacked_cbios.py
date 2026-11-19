@@ -147,11 +147,15 @@ PATCHES = [
     # masked put, as the VG-8020; 3 B longer, paid by C-BIOS's PUTQ body (dead: $00F9 is zerobas's
     # bios_putq), now a `ret` + pad, so calc_queue_address stays; PUTQ's guard follows ($17EA).
     os.path.join(REPO, "cbios-repack", "lftq-bc.patch"),
+    # D-CHGMODRANGE (2026-11-19): CHGMOD takes A above 3 as the VG-8020 (4..$80 SCREEN 3, $81..$FF
+    # SCREEN 0) through TOTEXT's own mapping; 2 B paid by 2 of INIGRP's NOPs, so CHGMOD .. INIGRP move
+    # down 2 (CLRSPR's vector -- and its PATCH_RANGES guard -- follow: $02FD).
+    os.path.join(REPO, "cbios-repack", "chgmod-range.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "67a5441b119746e2e6432eb308e438b2fcfb1999"   # LFTQ, 2026-11-19
+REPACKED_SHA1 = "28616eaf9063414cb42eed5b234a213d72517000"   # CHGMOD's range, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

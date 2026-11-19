@@ -17168,11 +17168,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the VG-8020 fills the multicolour pattern table with BAKCLR x 16 OR BAKCLR as a byte ($75 for $25); zerobas
       with (BAKCLR AND 15) x $11 ($55). Priced when picked up.
 
-- [ ] **D-CHGMODRANGE — CHGMOD DOES NOTHING FOR A ABOVE 3 ON ZEROBAS**
+- [x] **D-CHGMODRANGE — CHGMOD DOES NOTHING FOR A ABOVE 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGMOD with A above 3; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-MODE ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 16, 17):
       the VG-8020 goes by A - 1 as a signed byte (SCREEN 0 for $81-$FF, SCREEN 3 for 4-$80; $7F, $80, $81, $FE
       measured too); zerobas returns at once for any A above 3. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/chgmod-range.patch (#43): CHGMOD's `ret nc` -> `jp nc,totext_map`, TOTEXT's own 4..$80 -> 3 / $81..$FF -> 0 mapping; 2 B from INIGRP's NOPs (CHGMOD .. INIGRP move down 2, CLRSPR's guard -> C3 FD 02). spec-live: R-CM-MODE holds on zerobas.
 
 - [ ] **D-INITXTBAS — INITXT SETS PATBAS / ATRBAS ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program reading PATBAS / ATRBAS after SCREEN 0; filed 2026-11-18).
