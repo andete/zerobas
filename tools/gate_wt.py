@@ -87,7 +87,7 @@ def knife_key(wt: str) -> str:
 LOCK = os.path.join(OUTDIR, "running.pid")
 STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
 REWRITE_DIRS = ("machines", "extensions")
-ROM_TREES = ("basic/", "sub/", "disk/")
+ROM_TREES = ("basic/", "sub/", "disk/", "tape/", "cbios-repack/")   # = pick_gates.ROM_TREES (D-TAPEPLAN)
 EXCLUDED5 = ("bdos-acceptance", "bdos-cfhost-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
              "input-devices-acceptance", "lnblank-say-acceptance",
              "dskfmt-acceptance CHOICES=1,4",

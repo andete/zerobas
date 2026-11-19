@@ -58,7 +58,12 @@ DAILY_HOURS = 24               # Joost 2026-10-13: the full battery once a day
 # sysvars.inc; those are planned like any ROM file now, and a RAM-address move
 # in sysvars.inc is caught by layout_moves() instead.)
 SHARED = ("Makefile", "tools/run_gates.py", "tools/pick_gates.py", "probes/lib/")
-ROM_TREES = ("basic/", "sub/", "disk/")
+# 🔴 D-TAPEPLAN (2026-11-19): tape/ (the cassette / LPTOUT / GTPAD module, overlaid into the merged
+# main ROM at $09EE) and cbios-repack/ (the C-BIOS patches the merged ROM is built from) ARE ROM
+# sources. Without them the six-item cassette fix (4aabd3cd) planned "probe/tool change" and ZERO
+# emulator suites, and gate_wt skipped its knives and tape corpus for it.
+ROM_TREES = ("basic/", "sub/", "disk/", "tape/", "cbios-repack/")
+TAPE_SUITES = ("tape", "cas", "lstout")      # name prefixes a tape/ change schedules
 # Broad, FAST suites that exercise the interpreter core -- the canary for a
 # handler-local ROM change (each measured well under a minute in the battery).
 CANARY = ("error-acceptance", "string-acceptance", "runline-acceptance",
@@ -411,6 +416,10 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
                 pick.add(t)
             elif any(f in (read(g) if read else _text(g)) for g in files):
                 pick.add(t)
+    if any(f.startswith("tape/") for f in rom):
+        tp = sorted(t for t in suites if t.startswith(TAPE_SUITES))
+        pick |= set(tp)
+        reasons.append("tape module change: its suites (" + " ".join(tp) + ")")
     if rom:
         pick |= set(c for c in CANARY if c in suites)
         if kws:
@@ -452,6 +461,16 @@ def selftest():
         and ".." not in run_gates.LAST_GREEN.split(os.sep))
     m, r, e, x = plan(["probes/lib/omsx_repl.py"], files, h_width, 0, read=rd)
     arm("P2 NEGATIVE: the harness is shared -> FULL", m == "FULL")
+    tfiles = dict(files, **{"tapebios-acceptance": {"probes/bios/x.py"},
+                            "lstout-acceptance": {"probes/disk/y.py"}})
+    m, r, e, x = plan(["tape/tape.asm"], tfiles, lambda f: None, 0, read=rd)
+    arm("P-TAPEPLAN a tape/ change is a ROM change: SCOPED with the tape suites and the canary",
+        m == "SCOPED" and "tapebios-acceptance" in e and "lstout-acceptance" in e
+        and "error-acceptance" in e)
+    m, r, e, x = plan(["cbios-repack/x.patch"], tfiles, lambda f: None, 0, read=rd)
+    arm("P-TAPEPLAN a cbios-repack/ patch is a ROM change (the canary), not STATIC -- and "
+        "NEGATIVE: it does not drag the tape suites in",
+        m == "SCOPED" and "error-acceptance" in e and "tapebios-acceptance" not in e)
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, 0, read=rd)
     arm("P3 a WIDTH-handler change -> SCOPED: the WIDTH suite + the canary, "
         "not math", m == "SCOPED" and "width-acceptance" in e
