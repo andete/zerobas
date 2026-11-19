@@ -16887,24 +16887,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012F does).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
       length of the most recent SCREEN 2 SCANR; zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
-      calls SCANL at all is to be checked first. Priced when picked up.
+      calls SCANL at all is to be checked first. Priced when picked up.      ⏳ 2026-11-19: SCANL now counts first and paints the counted run via NSETCX; the + K needs WHERE the VG-8020
+      keeps K (the last SCREEN 2 SCANR's run) -- the recorded work area keeps it nowhere zerobas has read. A probe round
+      first (sub page 1 was 1 B free on 2026-11-19, so the fix also needs room).
 
-- [ ] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
+
+- [x] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
       🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
       basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012C / $012F does).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): in the run / count the VG-8020 stops at the
       first BDRATR pixel, foreground or background; zerobas runs past a foreground one to the row's end. docs/bios/
       SCANR.md R-SR-SCAN (cases 62, 77), SCANL.md R-SL-SCAN (43, 75). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** sub/paintbios.asm: SCANR / SCANL COUNT the run first and then paint it in one
+      NSETCX call from its first pixel (the cursor put back). The per-pixel SETC while scanning recoloured a cell's
+      foreground to ATRBYT before the scan reached that cell's border pixel -- the mechanism, confirmed by the four
+      cases flipping. sub page 1: 1 B free. spec-live: SCANR R-SR-SCAN / R-SR-PAINT and SCANL R-SL-SCAN hold.
 
 - [ ] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.      ⛔ BLOCKED 2026-11-19 ON A RAM RULING: CSAVEA / CSAVEM ($F942 / $F944) are inside zerobas's sub-ROM interrupt
+      trampoline (basic/sysvars.inc SUB_INT_RAM, $F92D-$F950: 36 B of code that runs from RAM -- D-WSZERO slice 7 moved
+      it into the reference's idle CIRCLE / PAINT scratch). Writing them means moving the trampoline: Joost's call.
 
-- [ ] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
+
+- [x] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 keeps BC, DE, HL and the interrupt
       state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
       C := 0, HL := $000E, other flags, interrupts on, and with SCRMOD 0 / 1 takes ATRBYT. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** PNTINI is answered in main (basic/biosfnk.asm bios_pntini, 25 B of the $3283
+      pad), no longer by the sub-ROM paint tenant: BDRATR := ATRBYT in SCREEN 2 (A := ATRBYT, AND flags), else := A (CP $10 +
+      CCF flags); BC, DE, HL and the interrupt state kept. The tenant's PNTINI op went (sub page 1: 6 -> 24 B, spent below).
+      spec-live: PNTINI holds every rule (R-PI-BDR too: SCRMOD 0 / 1 took ATRBYT).
 
 - [ ] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
       🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).

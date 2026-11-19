@@ -17,8 +17,8 @@ other modes it takes A, keeps it, and returns the flags of CP $10 then CCF -- th
 colour of 16 or more, which it stores all the same. Everything else is kept, the interrupt state
 included.
 
-zerobas sets the same BDRATR; it changes BC and HL, returns other flags and turns interrupts on
-(below).
+zerobas does the same (D-PNTINIREGS, 2026-11-19: PNTINI is answered in the main ROM, not by the
+sub-ROM paint tenant).
 
 ## The specification
 
@@ -60,9 +60,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-PNTINIREGS** (zerobas returns B := A, C := 0, HL := $000E, other flags -- not an AND's in SCREEN 2 ($00 for $07, $44 / $0C / $08 for $00 / $0A / $1A), $04 / $00 / $AC / $0C / $80 in SCREEN 3 -- and interrupts on; with SCRMOD 0 / 1 it takes ATRBYT into BDRATR and A, where the VG-8020 takes A and keeps it -- cases 72, 73) | R-PI-BDR, R-PI-AF, R-PI-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

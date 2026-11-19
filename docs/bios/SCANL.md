@@ -19,8 +19,8 @@ PAINT's left half joins the right half SCANR found), as NSETCX sets them; in SCR
 only. B, DE, A and HL on entry are not used; A, F, BC and DE are left with
 working values; interrupts are **on** after.
 
-zerobas counts the same in most cases, but paints only the HL pixels counted, and misses a border
-pixel drawn in a cell's foreground colour (below).
+zerobas counts the same (D-SCANSTOP, 2026-11-19: counted first, then painted), but paints only the HL
+pixels counted (below).
 
 ## The specification
 
@@ -80,7 +80,6 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-SCANLPAINT** (SCREEN 2: zerobas paints the HL pixels counted, where the VG-8020 paints HL + K -- K the last SCREEN 2 SCANR's run) | R-SL-PAINT |
-| **D-SCANSTOP** (zerobas misses a border pixel drawn in a cell's foreground colour and counts on to X 0: X 104 / 105 with BDRATR 3 -- cases 43, 75) | R-SL-SCAN, R-SL-PAINT |
 
 ## Open (not measured)
 

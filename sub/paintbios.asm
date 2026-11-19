@@ -8,8 +8,7 @@
 ; Behaviour measured on the Philips VG-8020 (MSX1), called directly with the cursor
 ; placed by MAPXYC (zerobas scratchpad/paintbios_probe.py, paintbios_run.out ..
 ; paintbios_run10.out; TODO.md D-BIOSRUNG). Black-box: registers, work-area RAM, VRAM.
-;   PNTINI   GFX_B (BDRATR, $FCB2) := A in SCREEN 3; in SCREEN 2 := ATRBYT (the
-;            border IS the paint colour there, A is ignored).
+;   PNTINI   (main's own since D-PNTINIREGS: basic/biosfnk.asm bios_pntini.)
 ;   SCANR    B = the fill switch (SCREEN 2; SCREEN 3 always fills), DE = the skip
 ;            count. While the pixel at the cursor is border-coloured: DE -= 1, stop
 ;            with HL = 0 when it reaches 0, else step right. Then count (HL) and fill
@@ -20,17 +19,19 @@
 ;            the next border pixel; the cursor left on the LAST FILLED pixel
 ;            (unmoved when the first one is a border); stops on x 0 / block 0. HL =
 ;            the count.
-;   The fill, SCREEN 2: per pixel as SETC (the pattern bit set, the colour byte
-;   ATRBYT << 4 | background); a byte the run covers WHOLLY becomes pattern $00,
-;   colour byte = ATRBYT (the foreground cleared, measured over $C4).
-;   SCREEN 3: per block as SETC (the nibble under CMASK).
-;   BC / A on exit are not the VG-8020's leftovers (B the last partial mask, C $05
-;   in SCREEN 2; BC $0F01 in SCREEN 3 -- no documented contract, origin unread).
+;   The fill: the run is COUNTED first and then painted in one NSETCX call from its first
+;   pixel (D-SCANSTOP, 2026-11-19) -- SCREEN 2 bytes decided whole, a covered byte pattern
+;   $00 / colour ATRBYT; SCREEN 3 the blocks' nibbles. Painting while scanning recoloured a
+;   cell's foreground before the scan reached the cell's border pixel.
+;   CSAVEA / CSAVEM ($F942 / $F944), where the VG-8020's SCANR records the run's start, are
+;   inside zerobas's interrupt trampoline (SUB_INT_RAM, $F92D-$F950): not written (D-SCANRSAVE).
+;   BC / A on exit are not the VG-8020's leftovers (no documented contract, origin unread).
 ;
 ; The tenant runs through CALSLT into page 1 with slot-0 page 0 still mapped, so it
-; uses the BIOS's own cursor family (READC / SETC / RIGHTC / LEFTC -- the
+; uses the BIOS's own cursor family (READC / NSETCX / RIGHTC / LEFTC -- the
 ; graphics-cursor span, cbios-repack/graphics-cursor.patch) instead of a copy.
-; In: C = the op (0 SCANR, 1 SCANL, 2 PNTINI with the caller's A in B).
+; In: C = the op (0 SCANR, 1 SCANL). PNTINI moved to main (basic/biosfnk.asm bios_pntini,
+; D-PNTINIREGS 2026-11-19): its registers and interrupt state are kept there.
 ;
 ; Clean-room: own design from the black-box measurements above (registers, work-area
 ; RAM and VRAM read after a direct call); C-BIOS's own versions were bare `ret`s.
@@ -40,28 +41,16 @@
 PB_RIGHTC       equ     $00FC
 PB_LEFTC        equ     $00FF
 PB_READC        equ     $011D
-PB_SETC         equ     $0120
+PB_NSETCX       equ     $0123
 
 paint_tenant:
                 dec     c
-                jr      z,pb_scanl
-                dec     c
-                jr      nz,pb_scanr
-                ld      a,(SCRMOD)              ; PNTINI
-                cp      3
-                ld      a,b
-                jr      z,pb_bd                 ; SCREEN 3: the border is A
-                ld      a,(ATRBYT)              ; else the paint colour
-pb_bd:
-                ld      (GFX_B),a
-                ret
-
+                jr      z,pb_scanl              ; (PNTINI is main's own since D-PNTINIREGS)
 pb_scanr:
-                ld      c,$01                   ; a byte is whole at its last pixel
                 ld      hl,0
 pb_skip:
                 call    pb_isbd
-                jr      nz,pb_fill
+                jr      nz,pb_run
                 dec     de
                 ld      a,d
                 or      e
@@ -69,26 +58,51 @@ pb_skip:
                 call    pb_right
                 jr      nc,pb_skip
                 ret
-pb_fill:
+; D-SCANSTOP (2026-11-19): COUNT the run first, THEN paint it -- as the VG-8020 (docs/bios/
+; SCANR.md R-SR-SCAN / R-SR-PAINT). Painting pixel by pixel while scanning recoloured a
+; cell's foreground to ATRBYT before the scan reached that cell's border pixel, so a
+; border drawn in a cell's foreground colour was read as paint and the run went on.
+pb_run:
+                push    de                      ; DE back as the skip left it
+                ld      de,(CLOC)
+                ld      a,(CMASK)
+                ld      c,a                     ; DE / C = the run's first pixel
+pb_cnt:
                 inc     hl
-                call    pb_set
                 call    pb_right
-                ret     c                       ; the screen's edge: stay on it
+                jr      c,pb_rend               ; the screen's edge: stay on its last pixel
                 call    pb_isbd
-                jr      nz,pb_fill
-                ret                             ; on the border
+                jr      nz,pb_cnt               ; (the cursor is left ON the border)
+pb_rend:
+                ld      a,(SCRMOD)
+                cp      3
+                jr      z,pb_rpaint             ; SCREEN 3 always fills
+                ld      a,b
+                or      a
+                jr      z,pb_rout               ; SCREEN 2 without the fill switch
+pb_rpaint:
+                ld      b,c
+                call    pb_paint
+pb_rout:
+                pop     de
+                ret
 
 pb_scanl:
-                ld      bc,$0180                ; always fills; whole at the first pixel
                 ld      hl,0
 pb_lft:
                 call    pb_left
-                ret     c                       ; the screen's edge
+                jr      c,pb_lend               ; the screen's edge: on the last counted one
                 call    pb_isbd
-                jp      z,PB_RIGHTC             ; a border: back on the last filled one
+                jr      z,pb_lbd
                 inc     hl
-                call    pb_set
                 jr      pb_lft
+pb_lbd:
+                call    PB_RIGHTC               ; a border: back on the last counted one
+pb_lend:
+                ld      de,(CLOC)               ; always fills, from the leftmost counted pixel
+                ld      a,(CMASK)               ; (D-SCANLPAINT: the VG-8020 paints HL + K there,
+                ld      b,a                     ;  K the last SCREEN 2 SCANR's run -- open)
+                jp      pb_paint
 
 ; Z iff the pixel at the cursor is the border colour. HL / DE / BC kept.
 pb_isbd:
@@ -120,29 +134,27 @@ pb_left:
 pb_lgo:
                 jp      PB_LEFTC
 
-; Fill the pixel at the cursor. B = the fill switch (SCREEN 2 only), C = CMASK at
-; the byte's far end in the scan's direction, HL = the count so far. HL / DE / BC kept.
-pb_set:
-                ld      a,(SCRMOD)
-                cp      3
-                jp      z,PB_SETC               ; SCREEN 3: always, the block's nibble
-                ld      a,b
-                or      a
-                ret     z                       ; SCANR without the fill switch
-                call    PB_SETC
-                ld      a,(CMASK)
-                cp      c
-                ret     nz                      ; not the byte's far end
-                ld      a,l
-                and     $F8
-                or      h
-                ret     z                       ; fewer than 8: the byte is partial
+; Paint HL pixels (blocks) in ATRBYT from DE / B (a CLOC / CMASK), as NSETCX sets them (a
+; whole byte: pattern $00, colour ATRBYT); the cursor, HL and DE kept, B lost. HL 0: nothing
+; (NSETCX's HL 0 would still rewrite the colour byte).
+pb_paint:
+                ld      a,h
+                or      l
+                ret     z
                 push    hl
-                ld      hl,(CLOC)
-                xor     a
-                call    WRTVRM                  ; whole: the pattern byte cleared ...
-                set     5,h
-                ld      a,(ATRBYT)
-                call    WRTVRM                  ; ... and the colour byte = the paint colour
+                push    de
+                ld      a,(CMASK)
+                push    af
+                ld      a,b
+                ld      (CMASK),a
+                ld      bc,(CLOC)
+                push    bc                      ; the cursor now
+                ld      (CLOC),de
+                call    PB_NSETCX
+                pop     hl
+                ld      (CLOC),hl
+                pop     af
+                ld      (CMASK),a
+                pop     de
                 pop     hl
                 ret

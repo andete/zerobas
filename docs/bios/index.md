@@ -103,9 +103,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0120 | SETC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETC.md) | 9 | — |
 | $0123 | NSETCX | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](NSETCX.md) | 9 | — |
 | $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
-| $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | D-PNTINIREGS |
-| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | D-SCANRSAVE, D-SCANSTOP |
-| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT, D-SCANSTOP |
+| $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | — |
+| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | D-SCANRSAVE |
+| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT |
 | $0132 | CHGCAP | [input](../concepts/input-calls.md) | L3 | [FINAL](CHGCAP.md) | 4 | — |
 | $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [FINAL](CHGSND.md) | 3 | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |

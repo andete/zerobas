@@ -169,14 +169,29 @@ bios_iscntc:
                 jp      isc_slow
 
 ; PNTINI ($0129) / SCANL ($012F) / SCANR ($012C) -- D-BIOSRUNG (2026-11-12): C-BIOS's
-; were bare `ret`s. The body is the sub-ROM's paint tenant (sub/paintbios.asm, which
-; carries the VG-8020's measured behaviour); here only the op in C (PNTINI's A goes in
-; B). Each `db $21` is an `ld hl,nn` that swallows the next entry's `ld c,n` -- HL is
+; were bare `ret`s. SCANL / SCANR's body is the sub-ROM's paint tenant (sub/paintbios.asm,
+; which carries the VG-8020's measured behaviour); here only the op in C. PNTINI is below. Each `db $21` is an `ld hl,nn` that swallows the next entry's `ld c,n` -- HL is
 ; an input to none of the three. IX kept, as bios_beep.
+; D-PNTINIREGS (2026-11-19): PNTINI is answered HERE, not by the tenant: BDRATR (GFX_B) :=
+; ATRBYT in SCREEN 2 -- A := ATRBYT, F an AND's flags -- else := A, A kept, F as CP $10 + CCF
+; leave it; BC, DE, HL and the interrupt state kept (docs/bios/PNTINI.md R-PI-BDR / R-PI-AF /
+; R-PI-KEEP). The tenant set BC and HL, enabled interrupts, and took ATRBYT in SCREEN 0 / 1 too.
 bios_pntini:
-                ld      b,a
-                ld      c,2
-                db      $21                 ; skips bios_scanl's `ld c,1`
+                push    af
+                ld      a,(SCRMOD)
+                cp      2
+                jr      z,bpi_s2
+                pop     af
+                ld      (GFX_B),a
+                cp      $10
+                ccf
+                ret
+bpi_s2:
+                pop     af
+                ld      a,(ATRBYT)
+                ld      (GFX_B),a
+                and     a
+                ret
 bios_scanl:
                 ld      c,1
                 db      $21                 ; skips bios_scanr's `ld c,0`
