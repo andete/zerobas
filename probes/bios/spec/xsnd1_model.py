@@ -73,7 +73,7 @@ def load_one(op, asm, RUN, base, out):
                 q = qs[(st & (0x1E if second else 0x0E)) >> 1]
                 out[who].append(NS(
                     src="XS", id=f"XS {row}{i:02}", i=i, row=row, op=cop, ca=ca, cf=cf, ei=ei, cset=st, cbc=bc, cde=de,
-                    chl=hl, cwin=win, q=q, mask=0xFF if (i - base) & 4 else 0, pcbase=0x2F if second and st & 0x80 else 0x50,
+                    chl=hl, cwin=win, q=q, second=second, mask=0xFF if (i - base) & 4 else 0, pcbase=0x2F if second and st & 0x80 else 0x50,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], psg=tuple(r[13:29]), aa=r[29],
                     quetab=tuple(r[30:58]), cells=tuple(r[58:62]), win=tuple(r[62:78])))

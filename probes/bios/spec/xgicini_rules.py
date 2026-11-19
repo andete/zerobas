@@ -46,7 +46,9 @@ def reset(c):
             win.append(c.q[28])
         elif a in (0xFB3F, 0xFB40):                     # MUSICF, PLYCNT
             win.append(0)
-        elif 0xFB30 <= a < 0xFB41:                      # not preset by the probe: not compared
+        elif c.second and (0xFB35 <= a <= 0xFB37 or 0xFB39 <= a <= 0xFB3D):    # XSND1B presets these: kept
+            win.append(G.fill(a))
+        elif 0xFB30 <= a < 0xFB41:                      # not preset by the probe (XSND1): not compared
             win.append(c.win[a - c.cwin])
         elif a >= 0xFB41 + 111:                         # not preset by the probe: not compared
             win.append(c.win[a - c.cwin])
@@ -63,7 +65,8 @@ RULES = [
          "and QUEBAK are kept. MUSICF ($FB3F) and PLYCNT ($FB40) := 0; QUEUEN and VOICEN are kept.", ALL,
          lambda c: (c.quetab, c.cells) == reset(c)[1:3]),
     Rule("R-GI-VCB", S1, "The three 37-byte voice buffers from VCBA ($FB41) := 0, except bytes 15-19 of each := $04 $04 "
-         "$78 $88 $FF. The queue buffers are not cleared.", ALL, lambda c: c.win == reset(c)[3]),
+         "$78 $88 $FF. The queue buffers are not cleared; $FB35-$FB37 and $FB39-$FB3D (PRSCNT, SAVSP, SAVVOL, MCLLEN, "
+         "MCLPTR) are kept (XSND1B presets them).", ALL, lambda c: c.win == reset(c)[3]),
     G.keep_rule("GI", S1, "A, F, BC, DE, HL, IX and IY are kept; the PPI port C's high nibble is kept (its low nibble is "
                 "the timer interrupt's).", lambda c: (c.a, c.f, c.bc, c.de, c.hl) == (c.ca, c.cf, c.cbc, c.cde, c.chl)
                 and G.ixiy(c) and c.aa & 0xF0 == G.aa_in(c) & 0xF0),

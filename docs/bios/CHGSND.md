@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `CHGSND` ($0135) — switch the 1-bit sound port
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary

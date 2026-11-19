@@ -46,7 +46,9 @@ def reset(c):
             win.append(c.q[28])
         elif a in (0xFB3F, 0xFB40):                     # MUSICF, PLYCNT
             win.append(0)
-        elif 0xFB30 <= a < 0xFB41:                      # not preset by the probe: not compared
+        elif c.second and (0xFB35 <= a <= 0xFB37 or 0xFB39 <= a <= 0xFB3D):    # XSND1B presets these: kept
+            win.append(G.fill(a))
+        elif 0xFB30 <= a < 0xFB41:                      # not preset by the probe (XSND1): not compared
             win.append(c.win[a - c.cwin])
         elif a >= 0xFB41 + 111:                         # not preset by the probe: not compared
             win.append(c.win[a - c.cwin])

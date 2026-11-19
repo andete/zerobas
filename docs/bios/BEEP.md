@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `BEEP` ($00C0) — sound the beep
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -83,11 +84,12 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-BEEPRESET** (zerobas leaves R9 / R10, the queues, MUSICF / PLYCNT and the voice buffers as they were, and returns A $B8, F $AC, E $80) | R-BP-PSG, R-BP-RESET, R-BP-REGS |
+| **D-BEEPRESET** (zerobas leaves R9 / R10, the queues, MUSICF / PLYCNT and the voice buffers as they were, and R7 not set to $B8 ($3F gives $38); it returns A / F / E $B8 / $AC / $80, or $38 / $28 / $00 after R7 $3F) | R-BP-PSG, R-BP-RESET, R-BP-REGS |
 
 ## Open (not measured)
 
-- **[A]** The tone's length and envelope while it sounds (only the state after the call is recorded).
+- **[A]** The tone's length and envelope while it sounds (only the state after the call is recorded); R14 /
+  R15 after the call.
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.
 - **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).

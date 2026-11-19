@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `LFTQ` ($00F6) — room left in a queue
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -88,6 +89,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 ## Open (not measured)
 
 - **[A]** Queue numbers above 4 (4 reads QUEBAK and the first buffer bytes as an entry: case 93).
+- **[A]** The final mask: AND size and AND $7F agree on every case (no non-zero count from a size-$3F queue).
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.
 - **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).

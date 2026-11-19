@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `PUTQ` ($00F9) — put a byte in a queue
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -88,6 +89,8 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Open (not measured)
 
+- **[A]** The stored path's F with pointers of $80 and up, an address + put crossing $x7FF / $FFFF (bits
+  5 / 3 from the address stored to or the queue's; H / C), and B when full with put above size.
 - **[A]** Queue numbers of 4 and up (case 93 shows LFTQ reading QUEBAK as queue 4's entry; a PUTQ there would
   store at an address made of buffer bytes, so it was not run).
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.

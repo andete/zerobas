@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**86 of 108 calls have a page; 76 are FINAL.**
+**86 of 108 calls have a page; 86 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -52,10 +52,10 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
 | $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
-| $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](GICINI.md) | 4 | D-GICINIVCB |
-| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](WRTPSG.md) | 4 | — |
-| $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](RDPSG.md) | 3 | — |
-| $0099 | STRTMS | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](STRTMS.md) | 4 | D-STRTMS |
+| $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | D-GICINIVCB |
+| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 4 | — |
+| $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](RDPSG.md) | 3 | — |
+| $0099 | STRTMS | [sound](../concepts/sound-calls.md) | L3 | [FINAL](STRTMS.md) | 4 | D-STRTMS |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHGET.md) | 8 | — |
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | — |
@@ -68,7 +68,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00B7 | BREAKX | input (concept page to come) | L3 | — | — | — |
 | $00BA | ISCNTC | input (concept page to come) | L3 | — | — | — |
 | $00BD | CKCNTC | input (concept page to come) | L3 | — | — | — |
-| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](BEEP.md) | 4 | D-BEEPRESET |
+| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 4 | D-BEEPRESET |
 | $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-INITEDGES, D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-KEYGRAPH, D-INITEDGES |
@@ -86,8 +86,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | — | — | — |
-| $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](LFTQ.md) | 4 | D-LFTQBC, D-LFTQSIZE |
-| $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](PUTQ.md) | 4 | D-PUTQREGS |
+| $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](LFTQ.md) | 5 | D-LFTQBC, D-LFTQSIZE |
+| $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](PUTQ.md) | 5 | D-PUTQREGS |
 | $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
 | $00FF | LEFTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](LEFTC.md) | 6 | D-MOVEMASK |
 | $0102 | UPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](UPC.md) | 6 | — |
@@ -107,7 +107,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | D-SCANRSAVE, D-SCANSTOP |
 | $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT, D-SCANSTOP |
 | $0132 | CHGCAP | input (concept page to come) | L3 | — | — | — |
-| $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](CHGSND.md) | 3 | D-CHGSNDF |
+| $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [FINAL](CHGSND.md) | 3 | D-CHGSNDF |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |
 | $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
 | $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVDP.md) | 7 | — |
@@ -116,8 +116,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | D-ISFLIO |
 | $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | D-OUTDLPGRAPH, D-OUTDLPF |
-| $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](GETVCP.md) | 3 | D-GETVCF |
-| $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [DRAFT 3](GETVC2.md) | 3 | D-GETVCF |
+| $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | D-GETVCF |
+| $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | D-GETVCF |
 | $0156 | KILBUF | input (concept page to come) | L3 | — | — | — |
 | $0159 | CALBAS | [slots](../concepts/slots.md) | L3 | [FINAL](CALBAS.md) | 5 | — |
 

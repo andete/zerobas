@@ -5,15 +5,16 @@ SPDX-License-Identifier: 0BSD
 
 # `WRTPSG` ($0093) — write a PSG register
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
 
 `WRTPSG` writes E into PSG register A (0-13: the tone, noise, mixer, volume and envelope registers).
 A register number of 14 and up changes none of R0-R13. It keeps every register and the flags, and
-returns with interrupts **on**. R7 is written whole ($BF, $3F); R15 takes E ($80, $C0) -- after which the
-timer interrupt, now enabled, may change it, so R15 is not compared.
+returns with interrupts **on**. R7 is written whole ($BF, $3F). R15 is not compared: the timer interrupt,
+now enabled, writes it too.
 
 zerobas does all of it the same.
 
@@ -72,7 +73,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-WP-REG** PSG register A := E for A 0-13 (R0, R1, R8, R13 measured); the other registers R0-R13 are kept (R0, R1, R2, R7, R8, R13 measured; R7 $BF and $3F, so written whole). A 14 (port A, an input), 15, 16 and $40 change none of R0-R13. (R14 / R15 after the call are not compared: interrupts are on after it, and the timer interrupt itself selects through R15.) | 28 | ✓ | ✓ |
+| **R-WP-REG** PSG register A := E for A 0-13; the other registers R0-R13 are kept (R0, R1, R2, R7, R8, R13 measured; R7 $BF and $3F, so written whole). A 14 (port A, an input), 15, 16 and $40 change none of R0-R13. (R14 / R15 after the call are not compared: interrupts are on after it, and the timer interrupt itself selects through R15.) | 28 | ✓ | ✓ |
 | **R-WP-KEEP** A, F, BC, DE, HL, IX and IY are kept; the PPI port C's high nibble (bit 7 the 1-bit sound) and the queue cells are kept. (Its low nibble, the keyboard row, is the timer interrupt's.) | 28 | ✓ | ✓ |
 | **R-WP-EI** Interrupts are on after the call, whether they were on or off before it. | 28 | ✓ | ✓ |
 

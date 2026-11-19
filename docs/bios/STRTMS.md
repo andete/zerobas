@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `STRTMS` ($0099) — start the background music
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -15,7 +16,7 @@ SPDX-License-Identifier: 0BSD
 is already playing, or there is nothing to play, it changes nothing. A, F and HL are left as the rules
 say; the rest is kept.
 
-zerobas starts the same, but leaves voice A's word and returns another HL (below).
+zerobas starts the same, but leaves the voices' first words and returns another HL (below).
 
 ## The specification
 
@@ -82,11 +83,12 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-STRTMS** (zerobas does not set the voices' first words to 1, returns HL $FB40 when it starts and keeps HL when there is nothing to play -- the VG-8020 the other way round -- and another F when it starts) | R-ST-PLAY, R-ST-REGS |
+| **D-STRTMS** (zerobas leaves all three voices' first words as they were, and returns HL $FB40 when it starts and keeps HL when there is nothing to play -- the VG-8020 the other way round; its F is the same) | R-ST-PLAY, R-ST-REGS |
 
 ## Open (not measured)
 
-- **[A]** The play that follows on the timer interrupt; PLYCNT values other than 3, 1 and 5.
+- **[A]** The play that follows on the timer interrupt; PLYCNT values other than 3, 1 and 5; the start path
+  entered with F $FF (the carry) or with interrupts on.
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.
 - **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).

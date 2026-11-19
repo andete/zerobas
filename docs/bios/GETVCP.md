@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `GETVCP` ($0150) — get a voice buffer's address
 
-> **Spec:** DRAFT 3 (2026-11-19), after the test-writer reviews, measured again (XSND1B). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the last test-writer review found no new behaviour -- only
+> combinations (open items below) and citations, fixed. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -84,6 +85,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Open (not measured)
 
+- **[A]** Which addition's carry shows in F: the last one's (A $21) or any one's (A $22 would separate them).
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.
 - **[A]** RAM other than the cells recorded.
 - **[A]** The CF-3300 (the second reference).

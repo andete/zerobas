@@ -33,7 +33,7 @@ def psg_after(c):
 
 
 RULES = [
-    Rule("R-WP-REG", S1, "PSG register A := E for A 0-13 (R0, R1, R8, R13 measured); the other registers R0-R13 are "
+    Rule("R-WP-REG", S1, "PSG register A := E for A 0-13; the other registers R0-R13 are "
          "kept (R0, R1, R2, R7, R8, R13 measured; R7 $BF and $3F, so written whole). A 14 (port A, an input), 15, 16 and $40 "
          "change none of R0-R13. (R14 / R15 after the call are not "
          "compared: interrupts are on after it, and the timer interrupt itself selects through R15.)", ALL,
