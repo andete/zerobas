@@ -462,7 +462,9 @@ st_go:
                 org     $010B
                 jp      bios_tdownc         ; TDOWNC: GRPCGP's bottom edge (D-TEDGE)
                 org     $010E
-                jp      bios_scalxy         ; SCALXY: as the VG-8020 (D-SCALXY*)
+                jp      bios_scalxy
+                org     $0123
+                jp      bios_nsetcx         ; NSETCX: HL 0 / L alone (D-NSETCX0 / D-NSETCXL)         ; SCALXY: as the VG-8020 (D-SCALXY*)
                 org     $0111
                 jp      bios_mapxyc         ; MAPXYC: as the VG-8020 (D-MAPXYC*)
                 org     $014A

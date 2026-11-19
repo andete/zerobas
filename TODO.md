@@ -17069,16 +17069,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas pattern $FF with ATRBYT in the foreground nibble. docs/bios/NSETCX.md R-NX-VRAM, cases 12, 13, 32, 58, 63, 64. Priced when picked up.
       ✅ **LANDED 2026-11-19 with D-SETCLAST part 2 (nsx_px's full-byte arm); ITEM CLOSED.** [`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out).
 
-- [ ] **D-NSETCXL — NSETCX IN SCREEN 3 COUNTS ALL OF HL ON ZEROBAS, L ALONE ON THE VG-8020**
+- [x] **D-NSETCXL — NSETCX IN SCREEN 3 COUNTS ALL OF HL ON ZEROBAS, L ALONE ON THE VG-8020**
       🎚️ TIER 6 — every edge (HL 256 or more) (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): HL $0102 sets 2 pixels on the VG-8020, 258 on zerobas.
       docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS, cases 55, 56. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** NSETCX ($0123) enters basic/biosfnk.asm bios_nsetcx (40 B in the $3283 pad; PATCH_RANGES C3 F3 07 pins CBIOS_NSETCX): outside SCREEN 2 the count is L alone, 0 giving 256; SCREEN 2 HL = 0 is SETC with CMASK 0, interrupts on after; else C-BIOS's body. spec-live: R-NX-POS / R-NX-EI hold; R-NX-VRAM's remaining cases are D-SETCCOL (18, 59, and 71 -- HL = 0 with GRPCGP $2000) and D-SETCATR (67).
 
-- [ ] **D-NSETCX0 — NSETCX WITH HL = 0 DOES NOTHING ON ZEROBAS**
+- [x] **D-NSETCX0 — NSETCX WITH HL = 0 DOES NOTHING ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes ATRBYT into the colour byte at CLOC
       (SCREEN 2) or sets 256 pixels (SCREEN 3), and returns with interrupts on; zerobas returns at once, interrupts as
       they were. docs/bios/NSETCX.md R-NX-VRAM / R-NX-POS / R-NX-EI, cases 15, 38, 57, 69-71, 86. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** NSETCX ($0123) enters basic/biosfnk.asm bios_nsetcx (40 B in the $3283 pad; PATCH_RANGES C3 F3 07 pins CBIOS_NSETCX): outside SCREEN 2 the count is L alone, 0 giving 256; SCREEN 2 HL = 0 is SETC with CMASK 0, interrupts on after; else C-BIOS's body. spec-live: R-NX-POS / R-NX-EI hold; R-NX-VRAM's remaining cases are D-SETCCOL (18, 59, and 71 -- HL = 0 with GRPCGP $2000) and D-SETCATR (67).
 
 - [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).

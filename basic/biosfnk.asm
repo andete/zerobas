@@ -652,3 +652,35 @@ bios_tdownc:
                 pop     hl
                 jr      nc,btu_stop
                 jp      BIOS_DOWNC
+
+; bios_nsetcx -- NSETCX ($0123). D-NSETCX0 / D-NSETCXL (2026-11-19), as the VG-8020
+; (docs/bios/NSETCX.md): outside SCREEN 2 the count is L alone, L = 0 giving 256 (HL $0102 sets 2);
+; in SCREEN 2 HL = 0 still takes the byte at CLOC through SETC's steps with no bit -- SETC with
+; CMASK 0 (the colour into the background nibble when the pattern byte is $FF, else the foreground,
+; unless ATRBYT is one already there), CLOC / CMASK kept, interrupts on after. Every other case
+; C-BIOS's own body (CBIOS_NSETCX, pinned by PATCH_RANGES' old vector bytes), whose per-pixel
+; `call setc` is nsx_px (above). C-BIOS's returned at once for HL = 0 and counted all of HL. Page 0.
+CBIOS_NSETCX    equ     $07F3
+bios_nsetcx:
+                ld      a,(SCRMOD)
+                cp      2
+                jr      z,bnx_s2
+                ld      h,0                 ; L alone ...
+                ld      a,l
+                or      a
+                jp      nz,CBIOS_NSETCX
+                inc     h                   ; ... and 0 is 256
+                jp      CBIOS_NSETCX
+bnx_s2:
+                ld      a,h
+                or      l
+                jp      nz,CBIOS_NSETCX
+                ld      a,(CMASK)
+                push    af
+                xor     a
+                ld      (CMASK),a
+                call    BIOS_SETC           ; no bit: the colour byte alone
+                pop     af
+                ld      (CMASK),a
+                ei
+                ret

@@ -96,6 +96,7 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0105: bytes([0xC3, 0xD7, 0x08]),     # TUPC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TUPC)
                 0x010B: bytes([0xC3, 0xF5, 0x08]),     # TDOWNC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TDOWNC)
                 0x010E: bytes([0xC3, 0x18, 0x09]),     # SCALXY -> basic/biosfnk.asm (D-SCALXY*)
+                0x0123: bytes([0xC3, 0xF3, 0x07]),     # NSETCX -> basic/biosfnk.asm (D-NSETCX0; = CBIOS_NSETCX)
                 0x0111: bytes([0xC3, 0x56, 0x09]),     # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
                 0x014A: bytes([0xC3, 0x19, 0x17]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;
                                                        #  $1719 since cbios-repack #40)

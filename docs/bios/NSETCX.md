@@ -23,9 +23,9 @@ foreground nibble otherwise. In SCREEN 3 each pixel's nibble takes ATRBYT as SET
 on the pixel after the last; in SCREEN 2 they are kept. The VDP registers are kept; interrupts are
 **on** after.
 
-zerobas writes the same bytes for HL from 1 to 255 where the pattern table is below $2000 and ATRBYT
-is below 16 in SCREEN 3 (a byte decided whole, and a full byte as $00 / ATRBYT, since D-SETCLAST and
-D-NSETCXFULL, 2026-11-19); it counts all of HL in SCREEN 3 and does nothing for HL = 0 (below).
+zerobas writes the same bytes where the pattern table is below $2000 and ATRBYT is below 16 in
+SCREEN 3 (a byte decided whole, a full byte as $00 / ATRBYT, L alone in SCREEN 3 and HL = 0 since
+D-SETCLAST, D-NSETCXFULL, D-NSETCXL and D-NSETCX0, 2026-11-19); the rest is below.
 
 ## The specification
 
@@ -96,10 +96,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 18, 59) | R-NX-VRAM |
+| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 18, 59, and 71 -- HL = 0 with GRPCGP $2000) | R-NX-VRAM |
 | **D-SETCATR** (as SETC, SCREEN 3 ATRBYT over 15 -- case 67) | R-NX-VRAM |
-| **D-NSETCXL** (SCREEN 3: zerobas counts HL, the VG-8020 L alone -- HL $0102 sets 258 pixels, not 2; cases 55, 56) | R-NX-VRAM, R-NX-POS |
-| **D-NSETCX0** (HL = 0: zerobas returns at once, writing nothing and leaving interrupts as they were; the VG-8020 writes the colour byte in SCREEN 2 and sets 256 pixels in SCREEN 3 -- cases 15, 38, 57, 71, 86; in 69 and 70 ATRBYT matches a colour, so only the interrupt state differs) | R-NX-VRAM, R-NX-POS, R-NX-EI |
 
 ## Open (not measured)
 
