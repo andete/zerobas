@@ -16873,9 +16873,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
       (where its TDOWNC steps end); zerobas its own last pixel. docs/bios/GRPPRT.md R-GP-POS. Priced when picked up.
 
-- [ ] **D-GRPPRTEI — GRPPRT TURNS INTERRUPTS ON FOR A CONTROL CODE ON ZEROBAS**
+- [x] **D-GRPPRTEI — GRPPRT TURNS INTERRUPTS ON FOR A CONTROL CODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_grpprt keeps the entry IFF2 across the tenant and, for a control code entered with interrupts off, turns them off again (+14 B, the $3283 pad); spec-live: R-GP-EI holds on zerobas.
 
 - [x] **D-SNSMATC — SNSMAT KEEPS C ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).

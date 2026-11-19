@@ -51,7 +51,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
-| $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
+| $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | D-GRPPRTPOS, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
 | $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | D-GICINIVCB |
 | $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 4 | — |
 | $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](RDPSG.md) | 3 | — |

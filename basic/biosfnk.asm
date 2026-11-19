@@ -201,9 +201,19 @@ bios_grpprt:
                 push    af
                 push    ix
                 ld      e,a
+                ld      a,i                 ; D-GRPPRTEI (2026-11-19): P/V := the entry IFF2
+                push    af
                 call    sr_inl1
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_GRPPRT)
+                pop     af
                 pop     ix
+                jp      pe,bgp_out          ; on at entry: on after, as the tenant leaves it
+                pop     af                  ; A = the code
+                push    af
+                cp      $20
+                jr      nc,bgp_out          ; printable: on after (docs/bios/GRPPRT.md R-GP-EI)
+                di                          ; a control code: off again, as it was
+bgp_out:
                 pop     af
                 pop     bc
                 pop     de
