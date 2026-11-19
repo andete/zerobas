@@ -186,7 +186,11 @@ GATES = STATIC + EMULATOR
 IMAGES = ["build/basic-reloc.rom", "build/sub.rom", "build/zerobas-main-eu.rom",
           "build/disk.rom"]   # build/sub2.rom (D-SUB2) left with D-SUB2RETIRE 2f
 
-LAST_GREEN = os.path.join(OUT, "..", "gate_last_green.json")
+# 🔴 D-LASTGREENPATH (2026-11-19): this was os.path.join(OUT, "..", ...). A path that
+# climbs OUT with `..` only resolves when OUT EXISTS, and gate_wt's worktree is
+# `git clean -fdx`'d, so pick_gates read "no full green on record" before the
+# battery made gate_logs -- and every ROM gate since ran FULL (~19 min, not SCOPED).
+LAST_GREEN = os.path.join(os.path.dirname(OUT), "gate_last_green.json")
 
 # What an EMULATOR unit reads BESIDES the ROM: its own code, the harness, and
 # the Makefile recipe that launches it. If none of those moved and the ROM did

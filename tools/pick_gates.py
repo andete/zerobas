@@ -446,6 +446,10 @@ def selftest():
     h_width = lambda f: {"WIDTH"}
     m, r, e, x = plan(["TODO.md", "docs/a.md"], files, h_width, 0, read=rd)
     arm("P1 docs-only -> STATIC, no emulator suite", m == "STATIC" and e == [])
+    arm("P-LASTGREENPATH the full-green record's path has no `..` step (it does not "
+        "resolve in a freshly cleaned worktree, where gate_logs does not exist yet)",
+        ".." not in os.path.normpath(run_gates.LAST_GREEN).split(os.sep)
+        and ".." not in run_gates.LAST_GREEN.split(os.sep))
     m, r, e, x = plan(["probes/lib/omsx_repl.py"], files, h_width, 0, read=rd)
     arm("P2 NEGATIVE: the harness is shared -> FULL", m == "FULL")
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, 0, read=rd)
