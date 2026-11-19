@@ -38,6 +38,7 @@ page lists where zerobas still differs.
 | [The BIOS](bios.md) | the machine's own routines: where they live, how to call them, one page per call |
 | [Slots](slots.md) | how an MSX reaches more than 64 KB, and the BIOS's slot calls |
 | [The graphics calls](graphics-calls.md) | pixels, the graphics cursor and PAINT in the BIOS |
+| [The sound calls](sound-calls.md) | the PSG, PLAY's queues and the 1-bit port in the BIOS |
 | [The interpreter entries](interpreter-entries.md) | BASIC's text and value helpers in the BIOS table |
 
 ## Storage
