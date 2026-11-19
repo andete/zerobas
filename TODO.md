@@ -17162,11 +17162,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
       VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
 
-- [ ] **D-INIMLTCOL — INIMLT MASKS A BAKCLR OVER 15 ON ZEROBAS**
+- [x] **D-INIMLTCOL — INIMLT MASKS A BAKCLR OVER 15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (BAKCLR over 15 when INIMLT runs; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIMLT.md R-IM-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), cases 08, 23):
       the VG-8020 fills the multicolour pattern table with BAKCLR x 16 OR BAKCLR as a byte ($75 for $25); zerobas
       with (BAKCLR AND 15) x $11 ($55). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/inimlt-col.patch (#45): `cls_screen3` fills BAKCLR x 16 OR BAKCLR, a byte (a shift, no 4-bit mask); R-IM-VRAM's failing cases 10 -> 4 on the fixed build (08, 23, 30 now as the VG-8020; 38 / 39 are D-INIGRPORDER).
 
 - [x] **D-CHGMODRANGE — CHGMOD DOES NOTHING FOR A ABOVE 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGMOD with A above 3; filed 2026-11-18).

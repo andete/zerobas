@@ -43,7 +43,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-SETSHADOW, D-INIGRPORDER, D-INIREGS |
-| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIGRPORDER, D-INIMLTCOL, D-SETSHADOW, D-INIREGS |
+| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIGRPORDER, D-SETSHADOW, D-INIREGS |
 | $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETSHADOW, D-SETREGS |
 | $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETSHADOW, D-SETREGS |
 | $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETSHADOW, D-SETREGS |

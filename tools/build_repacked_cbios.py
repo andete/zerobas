@@ -153,11 +153,14 @@ PATCHES = [
     os.path.join(REPO, "cbios-repack", "chgmod-range.patch"),
     # D-INITXTBAS (2026-11-19): INITXT leaves ATRBAS / PATBAS as the VG-8020; 12 NOPs, nothing moves.
     os.path.join(REPO, "cbios-repack", "initxt-bas.patch"),
+    # D-INIMLTCOL (2026-11-19): SCREEN 3's clear fills BAKCLR x 16 OR BAKCLR as a byte, as the VG-8020
+    # (a shift, not a rotate, and no 4-bit mask); 2 B shorter, padded -- nothing moves.
+    os.path.join(REPO, "cbios-repack", "inimlt-col.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "c38e400dcdbecfc378f5aa69ca484d566667a32d"   # INITXT's bases, 2026-11-19
+REPACKED_SHA1 = "8f0aeb4cefd01ddc4d5dae4a46a5c4883019f1bf"   # SCREEN 3's fill byte, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

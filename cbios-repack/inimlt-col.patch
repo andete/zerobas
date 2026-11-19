@@ -1,0 +1,30 @@
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -2014,19 +2014,22 @@
+                 jp      filvrm
+ 
+ cls_screen3:
++                ; zerobas D-INIMLTCOL (2026-11-19): the fill byte is BAKCLR x 16 OR BAKCLR, a
++                ; byte -- $75 for BAKCLR $25 -- as the VG-8020 (zerobas docs/bios/INIMLT.md
++                ; R-IM-VRAM); C-BIOS masked BAKCLR to 4 bits ($55). 2 B shorter, padded below.
+                 ld      a,(BAKCLR)
+-                and     $0F
+                 ld      b,a
+-                rlca
+-                rlca
+-                rlca
+-                rlca
++                add     a,a
++                add     a,a
++                add     a,a
++                add     a,a
+                 or      b
+                 ld      bc,$600         ; zerobas D-INITKEYS: the 1536-byte multicolour
+                                         ; pattern table; the VG-8020 leaves $0600.. as it
+                                         ; was (zerobas scratchpad/CL_run1.out; was $800)
+                 ld      hl,(MLTCGP)     ; D-GRPBASE: not CGPBAS (text only)
+                 jp      filvrm
++                ds      2, 0            ; D-INIMLTCOL's 2 B
+ 
+         IF VDP != TMS99X8
+ cls_screen5:
