@@ -16865,6 +16865,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
 
+- [ ] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run1.out`](scratchpad/XGFX6_run1.out)): the VG-8020 keeps BC, DE, HL and the interrupt
+      state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
+      C := 0, HL := $000E, other flags, interrupts on. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
+
 - [ ] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
       🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 clears GRPACX's low byte and adds
