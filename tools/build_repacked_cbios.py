@@ -156,11 +156,17 @@ PATCHES = [
     # D-INIMLTCOL (2026-11-19): SCREEN 3's clear fills BAKCLR x 16 OR BAKCLR as a byte, as the VG-8020
     # (a shift, not a rotate, and no 4-bit mask); 2 B shorter, padded -- nothing moves.
     os.path.join(REPO, "cbios-repack", "inimlt-col.patch"),
+    # D-SETCCUT (2026-11-19): READC / SETC are zerobas's since D-SETCCOL (basic/main.asm), so C-BIOS's
+    # readc / gcell / setc bodies are CUT (121 B), not left dead (Joost: a fully replaced body is
+    # removed); their vectors become `ret`s zerobas overlays, NSETCX calls SETC through $0120. RIGHTC ..
+    # the debug helpers move down 121 (TUPC $085E, TDOWNC $087C, SCALXY $089F, MAPXYC $08DD, the $0129
+    # rets $08DC); `ds $0D01 - $` holds everything above, so island 3 grows to $096A-$09ED (132 B).
+    os.path.join(REPO, "cbios-repack", "readc-setc-cut.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "8f0aeb4cefd01ddc4d5dae4a46a5c4883019f1bf"   # SCREEN 3's fill byte, 2026-11-19
+REPACKED_SHA1 = "32f5bf4c25381ece10aba9e08728f9e3387449e0"   # READC / SETC bodies cut, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

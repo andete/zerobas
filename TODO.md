@@ -17081,6 +17081,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
       SETC and NSETCX hold every rule, no row new.
 
+- [x] **D-SETCCUT — C-BIOS'S DEAD READC / GCELL / SETC BODIES LEFT IN THE REPACK**
+      🎚️ TIER 6 — ROM space (Joost 2026-11-19: "if a C-BIOS body is completely replaced, I'd expect the old one to be
+      removed? Any other way leaves valuable space wasted.").
+      🤖 **AUTONOMOUS** — after D-SETCCOL zerobas answers READC / SETC itself, so C-BIOS's readc / gcell / setc (121 B,
+      $0822-$089A) were dead.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/readc-setc-cut.patch (#46) cuts them; the vectors become `ret`
+      (zerobas overlays both), NSETCX calls SETC through $0120 (overlaid with nsx_px). RIGHTC .. the debug helpers move
+      down 121 and `ds $0D01 - $` keeps everything from $0D01 up (checked: the 15 bytes that differ above $0D01 are all
+      call / jump operands into the moved span, each exactly 121 lower). Re-derived: PATCH_RANGES for TUPC / TDOWNC /
+      SCALXY / MAPXYC / the $0129 rets / READC / SETC / $07FB, CBIOS_TUPC $085E, CBIOS_TDOWNC $087C, island 3
+      $096A-$09ED (132 B). bios_setc (125 B) moved into island 3: the page-0 low region went 60 -> 185 B free.
+      spec-live: the 14 pages from RIGHTC to SETC agree, none new.
+
+- [ ] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
+      🎚️ TIER 6 — ROM space (the same ruling as D-SETCCUT).
+      🤖 **AUTONOMOUS** — vectors zerobas overlays with its own full body (tools/build_mainrom.py PATCH_RANGES) and whose
+      C-BIOS body nothing in zerobas jumps back into: SCALXY (scalxy), MAPXYC (mapxy), CLRSPR (clrspr), ISFLIO (isflio),
+      PUTQ's `ret` + 29 B pad. For each, grep C-BIOS's own internal callers first (a body C-BIOS still calls stays, and
+      it may be reachable only that way); cut the rest in one patch, re-derive the pins as D-SETCCUT did, and say where
+      the bytes land (gap 1 / island 3 only grows for cuts below $0D01; a cut above it moves the font-pad side).
+
 - [x] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
       🎚️ TIER 6 — every edge (the same pixels, other bytes) (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT;

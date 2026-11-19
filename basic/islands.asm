@@ -423,6 +423,110 @@ st_go:
 ; sat here; fperr_to_err moved to main page 1 (basic/catalias.asm), its one reader an
 ; absolute `ld hl,fperr_to_err`. $09E3..$09ED (11 B) stays a declared island
 ; (tools/build_mainrom.py ISLAND_RANGES) for the next tenant.
+; 📦 D-SETCCUT (2026-11-19): cbios-repack/readc-setc-cut.patch cut C-BIOS's dead readc / gcell /
+; setc (121 B) -- zerobas answers READC / SETC since D-SETCCOL -- and the graphics span moved
+; down 121, so island 3 is $096A..$09ED (132 B). Its tenant is CODE now: bios_setc (SETC, $0120),
+; reached only through its page-0 vector; it calls sc_cell / sc_wpat in the low region and
+; WRTVRM. Page 0 is C-BIOS's slot, as the low region is, so nothing pages between them.
+
+                org     $096A
+bios_setc:
+                push    hl
+                push    bc
+                push    de
+                call    sc_cell
+                ld      a,(ATRBYT)
+                ld      e,a
+                ld      a,(CMASK)
+                ld      d,a
+                ld      a,(SCRMOD)
+                cp      3
+                jr      z,bsc_s3
+                ld      a,c
+                and     $0F
+                cp      e
+                ld      a,d
+                jr      nz,bsc_nbg
+                cpl                         ; ATRBYT is the background: the bit cleared
+                and     b
+                jr      bsc_pat
+bsc_nbg:
+                or      b                   ; A: the bit set
+                push    af
+                ld      a,e
+                rlca
+                rlca
+                rlca
+                rlca
+                xor     c
+                and     $F0                 ; Z: ATRBYT's low nibble is the foreground
+                jr      z,bsc_fg
+                pop     af
+                inc     a
+                jr      nz,bsc_set          ; another bit of the byte is clear
+                ld      a,d                 ; the byte's last clear bit: it stays clear and
+                cpl                         ; ATRBYT goes into the background
+                and     b
+                call    sc_wpat
+                ld      a,c
+                and     $F0
+                or      e                   ; ATRBYT ORed in whole ($1A over $E_ gives $FA)
+                jr      bsc_col
+bsc_set:
+                dec     a
+                call    sc_wpat
+                ld      a,c
+                and     $0F
+                ld      c,a
+                ld      a,e
+                rlca
+                rlca
+                rlca
+                rlca
+                and     $F0
+                or      c                   ; ATRBYT the foreground
+bsc_col:
+                call    WRTVRM              ; the colour byte, at CLOC XOR $2000; AF kept
+                jr      bsc_out
+bsc_fg:
+                pop     af
+bsc_pat:
+                call    sc_wpat             ; the pattern byte alone: A = it, F its S / Z / P/V
+                or      a
+                push    af
+                pop     de
+                ld      a,e
+                and     $C4
+                ld      e,a
+                push    de
+                pop     af
+                jr      bsc_out
+bsc_s3:
+                bit     7,d
+                jr      z,bsc_lo
+                ld      a,e                 ; the high nibble: (ATRBYT x 16) AND $F0
+                rlca
+                rlca
+                rlca
+                rlca
+                and     $F0
+                ld      e,a
+                ld      a,b
+                and     $0F
+                or      e
+                jr      bsc_s3w
+bsc_lo:
+                ld      a,b                 ; the low nibble: ATRBYT ORed in whole
+                and     $F0
+                or      e
+bsc_s3w:
+                call    sc_wpat             ; F: the OR flags (AF kept)
+bsc_out:
+                pop     de
+                pop     bc
+                pop     hl
+                ret
+
 
                 org     $0008
                 jp      synchr              ; D-SYNCHR (was C-BIOS's `jp $10ED` debug stub)
