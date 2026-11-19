@@ -17045,7 +17045,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)): A matches (the PPI bit command, $09 / $08); F is $54 stopping, $10 starting ($38 for A $7F) on the
-      VG-8020, other values on zerobas ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out)). docs/bios/STMOTR.md R-SM-AF. Tape: outside the current focus
+      VG-8020 (the flags AND A gives, for A $01-$7F), other values on zerobas
+      ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out)). docs/bios/STMOTR.md R-SM-AF. Tape: outside the current focus
       (filed, not fixed). Priced when picked up.
 
 - [ ] **D-TAPOFFREGS — TAPIOF / TAPOOF CHANGE A, F, BC AND DE ON ZEROBAS**
@@ -17063,6 +17064,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-TAPOONDE — TAPOON RETURNS DE $0000 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — the VG-8020 keeps DE. docs/bios/TAPOON.md R-TN-DE ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+
+- [ ] **D-STMOTRTOGGLE — STMOTR TOGGLES ONLY FOR A = $FF ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 toggles the motor for any A with bit 7 set ($80, $81, $FE from a running motor stop it);
+      zerobas starts it. docs/bios/STMOTR.md R-SM-MOTOR ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out), XV 00-02). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+
+- [ ] **D-TAPOONPORT — TAPOON KEEPS PORT C'S LOW NIBBLE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 leaves port C $47 (keyboard row 7 selected); zerobas keeps the entry low nibble.
+      docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
 
 - [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**

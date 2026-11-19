@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for the tape region's EXECUTABLE RULES (STMOTR, TAPIOF, TAPOOF, TAPOON, TAPOUT, TAPION, TAPIN;
-docs/spec-method.md §3a): scratchpad/XTAP1_run2.out and XTAP2_run1.out (rows N and D; probes/bios/spec/xtap1.asm / xtap2.asm document the steps:
+docs/spec-method.md §3a): scratchpad/XTAP1_run2.out, XTAP2_run1.out and XTAP3_run1.out (rows N and D; probes/bios/spec/xtap1.asm / xtap2.asm /
+xtap3.asm document the steps:
 10-byte records -- A F B C D E H L, the interrupt state, port C -- and, for the TAPOUT / TAPIN loops, A and F, then port C once)."""
 import os
 import re
@@ -33,7 +34,11 @@ STEPS2 = ([("STMOTR", a, f, ei, pc, D) for a, f, ei, pc in (
     (0xFE, 0, 0, 0x50), (0x81, 0, 0, 0x50), (0x00, 0xFF, 1, 0x40), (0xFF, 0xFF, 1, 0x40), (0xFF, 0xFF, 1, 0x50))]
           + [(nm, a, 0x00, 0, pc, D) for nm in ("TAPIOF", "TAPOOF") for a, pc in ((0x3C, 0xE0), (0x3C, 0xA0), (0xA7, 0x50),
                                                                                  (0xA7, 0x70))])
-SOURCES = (("XT", "XTAP1_run2.out", STEPS1), ("XU", "XTAP2_run1.out", STEPS2))
+STEPS3 = ([("STMOTR", a, 0x00, 0, pc, D) for a, pc in ((0x80, 0x40), (0xFE, 0x40), (0x81, 0x40), (0x02, 0x50), (0x03, 0x50),
+                                                      (0x28, 0x50), (0x01, 0x5A), (0x00, 0x4A), (0xFF, 0x45))]
+          + [("TAPOON", 0x00, 0x00, 0, 0x40, 0x1234), ("TAPOOF", 0xA7, 0x00, 0, 0x40, D),
+             ("TAPOON", 0xFF, 0x00, 0, 0x45, 0x5678), ("TAPOOF", 0xA7, 0x00, 0, 0x40, D)])
+SOURCES = (("XT", "XTAP1_run2.out", STEPS1), ("XU", "XTAP2_run1.out", STEPS2), ("XV", "XTAP3_run1.out", STEPS3))
 
 
 def load(call, group="XT"):
