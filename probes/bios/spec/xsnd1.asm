@@ -1,20 +1,21 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XSND1 -- docs/bios/WRTPSG.md, RDPSG.md, CHGSND.md, LFTQ.md, PUTQ.md, GETVCP.md, GETVC2.md round 1 (2026-11-19): the
-; sound region's register and queue calls. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,
+; XSND1 -- docs/bios/WRTPSG.md, RDPSG.md, CHGSND.md, LFTQ.md, PUTQ.md, GETVCP.md, GETVC2.md, GICINI.md, STRTMS.md, BEEP.md
+; round 3 (2026-11-19; round 1 had cases 0-57, round 2 58-71): the sound region's calls. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,
 ; HL, WIN) the probe sets, BY HAND:
 ;   - PSG registers R0-R13 := $A1 $02 $B3 $04 $C5 $06 $17 $B8 $09 $0A $0B $5C $1D $0E (R7 $B8: port A in, port B out)
-;     and R15 := $CF, through the PSG's ports $A0 / $A1; R14 (port A, an input) is not written;
+;     and R15 := $CF, through the PSG's ports $A0 / $A1 (R7 := $BF with bit 4 of SET); R14 (port A, an input) is not
+;     written;
 ;   - the PPI's port C ($AA) := $50, or $D0 with bit 0 of SET (bit 7 the 1-bit sound);
 ;   - QUETAB ($F959, 4 queues x 6 bytes: put, get, back flag, size, address), QUEBAK ($F971-$F974), QUEUEN ($FB3E),
-;     VOICEN ($FB38), MUSICF ($FB3F), PLYCNT ($FB40) := the `qsets` entry SET names;
+;     VOICEN ($FB38), MUSICF ($FB3F), PLYCNT ($FB40) := the `qsets` entry (SET AND $0E) / 2 names;
 ;   - the queue buffers VOICAQ ($F975, 128), VOICBQ ($F9F5, 128), VOICCQ ($FA75, 128), queue 3's buffer at $DF00 (the
 ;     probe's own RAM: RS2IQ, $FAF5-$FB34, is left alone -- the disk interface's reference keeps something there, and
 ;     overwriting it stops that machine) and the voice buffers VCBA ($FB41) .. VCBC ($FB8B + 37) := (address low) XOR $A5.
 ; Then IX $4321, IY $8765 (XOR $FF when bit 2 of the case number is set), A, F, BC, DE, HL and interrupts as listed,
 ; and calls: op 0 WRTPSG ($0093), 1 RDPSG ($0096), 2 CHGSND ($0135), 3 LFTQ ($00F6), 4 PUTQ ($00F9), 5 GETVCP ($0150),
-; 6 GETVC2 ($0153).
+;  6 GETVC2 ($0153), 7 GICINI ($0090), 8 STRTMS ($0099), 9 BEEP ($00C0).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsnd1.asm --row both
 ; The capture: CAP+0 = $A5 when finished; per case an 80-byte record from CAP+1:
 ;   +0 A  +1 F  +2 B  +3 C  +4 D  +5 E  +6 H  +7 L  +8,9 IX  +10,11 IY  after the call  +12 interrupts after (1 on;
@@ -26,7 +27,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries, work-area RAM, the PSG's and the PPI's I/O ports.
 ;
 ; @cap C000
-; @caplen 1400
+; @caplen 1900
 ; @timeout 180
 
 DONE    equ     $C000
@@ -70,7 +71,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $13FF
+                ld      bc, $18FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -108,6 +109,14 @@ p_lp:
                 ld      a, c
                 cp      14
                 jr      nz, p_lp
+                ld      a, (cset)               ; SET bit 4: R7 := $BF instead (every channel off)
+                and     $10
+                jr      z, r7k
+                ld      a, 7
+                out     ($A0), a
+                ld      a, $BF
+                out     ($A1), a
+r7k:
                 ld      a, 15                   ; R15 := $CF (port B: what the BIOS leaves there)
                 out     ($A0), a
                 ld      a, $CF
@@ -312,7 +321,7 @@ w_lp:
                 jp      next
 
 targets:
-                dw      $0093, $0096, $0135, $00F6, $00F9, $0150, $0153
+                dw      $0093, $0096, $0135, $00F6, $00F9, $0150, $0153, $0090, $0099, $00C0
 psgpre:
                 db      $A1, $02, $B3, $04, $C5, $06, $17, $B8, $09, $0A, $0B, $5C, $1D, $0E
 
@@ -349,6 +358,26 @@ qsets:
                 dw      $DF00
                 db      $00, $00, $00, $00
                 db      $00, $02, $00, $00
+                db      $00, $00, $00, $7F
+                dw      $F975
+                db      $05, $02, $00, $7F
+                dw      $F9F5
+                db      $00, $00, $00, $7F
+                dw      $FA75
+                db      $00, $00, $00, $3F
+                dw      $DF00
+                db      $00, $00, $00, $00
+                db      $00, $00, $00, $03
+                db      $00, $00, $00, $7F
+                dw      $F975
+                db      $00, $00, $00, $7F
+                dw      $F9F5
+                db      $00, $00, $00, $7F
+                dw      $FA75
+                db      $00, $00, $00, $3F
+                dw      $DF00
+                db      $00, $00, $00, $00
+                db      $00, $00, $07, $00
 
 finish:
                 ld      a, $C3
@@ -488,4 +517,38 @@ cases:
                 dw      $1357, $9BDF, $2400, $F975   ; 56
                 db      $06, $A7, $00, $00, $04
                 dw      $1357, $9BDF, $2424, $F975   ; 57
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB41   ; 58
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB51   ; 59
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB61   ; 60
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB71   ; 61
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB81   ; 62
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB91   ; 63
+                db      $07, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FBA1   ; 64
+                db      $07, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $F975   ; 65
+                db      $07, $A7, $00, $00, $04
+                dw      $1357, $9BDF, $2468, $FB30   ; 66
+                db      $08, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB41   ; 67
+                db      $08, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2468, $FB41   ; 68
+                db      $08, $A7, $00, $00, $04
+                dw      $1357, $9BDF, $2468, $FB41   ; 69
+                db      $08, $A7, $00, $00, $06
+                dw      $1357, $9BDF, $2468, $FB41   ; 70
+                db      $08, $A7, $00, $00, $08
+                dw      $1357, $9BDF, $2468, $FB41   ; 71
+                db      $07, $A7, $00, $00, $10
+                dw      $1357, $9BDF, $2468, $FB41   ; 72
+                db      $09, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB41   ; 73
+                db      $09, $A7, $00, $01, $02
+                dw      $1357, $9BDF, $2468, $FB41   ; 74
                 db      $FF

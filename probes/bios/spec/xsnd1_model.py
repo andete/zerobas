@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for WRTPSG / RDPSG / CHGSND / LFTQ / PUTQ / GETVCP / GETVC2's EXECUTABLE RULES
-(docs/spec-method.md §3a): scratchpad/XSND1_run1.out (rows N and D; probes/bios/spec/xsnd1.asm documents the presets,
+(docs/spec-method.md §3a): scratchpad/XSND1_run3.out (rows N and D; probes/bios/spec/xsnd1.asm documents the presets,
 the case table and the 80-byte record). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XSND1_run1.out"
+RUN = "XSND1_run3.out"
 ASM = os.path.join(HERE, "xsnd1.asm")
 REC = 80
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "psg", "aa", "quetab", "cells", "win"]
