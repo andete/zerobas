@@ -342,11 +342,9 @@ ndd_tape:
                 pop     hl                  ; Z already (the cassette): both arrivals set
                 ret                         ; it, and pop keeps F
 
-; The event-trap STATEMENTS (D-SUB2RETIRE step 2c, 2026-11-04, Joost: trapstmt goes
-; "Into main (543 B low free)"): back from zerobas-sub2 page 0, with every p0cb
-; crossing a direct call. LAST in the region, after every low-region pin, so no
-; existing label moves; ex_on / ex_ff_stmt in page 1 reach it by `jp`.
-                include "basic/trapstmt.asm"
+; The event-trap STATEMENTS (basic/trapstmt.asm, D-SUB2RETIRE step 2c) are PROMOTED to main page 1,
+; in front of the $72D4 pin (2026-11-19, promote_scout: 206 B, 0 pinned): the low region's tail goes to
+; BIOS bodies, which must be page 0.
 ; var_find_typed's no-FN-call walk (D-TRAPCOST): after trapstmt for the same
 ; reason -- every low-region pin is already behind it.
                 include "basic/varfind.asm"
@@ -669,6 +667,9 @@ __MEAS_LOW_END:
 ; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the
 ; file-channel manager (fch_select/fch_check) in files.asm and the string layer,
 ; so it follows files.asm + strvar.asm in the include order.
+; The event-trap STATEMENTS (D-SUB2RETIRE step 2c), promoted from the low region's tail (2026-11-19):
+; into the $72D4 pin's pad. ex_on / ex_ff_stmt reach them by `jp`; nothing falls into or out of them.
+                include "basic/trapstmt.asm"
                 include "basic/field.asm"
 
 ; CALL FORMAT (defines `ex_call`/`ex_call_us`; the menu is resident, the sector

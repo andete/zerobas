@@ -105,7 +105,7 @@ req_operand equ 04124H
 str_eval equ 048E5H
 type_mismatch_error equ 04259H
 stmt_error equ 0424BH
-lrset_finish equ 070B8H
+lrset_finish equ 07186H
 fch_ctx_addr equ 06EA7H
 disk_error equ 06A6CH
 read_line equ 04541H
