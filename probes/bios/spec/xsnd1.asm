@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: 0BSD
 ;
 ; XSND1 -- docs/bios/WRTPSG.md, RDPSG.md, CHGSND.md, LFTQ.md, PUTQ.md, GETVCP.md, GETVC2.md, GICINI.md, STRTMS.md, BEEP.md
-; round 3 (2026-11-19; round 1 had cases 0-57, round 2 58-71): the sound region's calls. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,
+; round 4 (2026-11-19; round 1 had cases 0-57, round 2 58-71, round 3 72-74): the sound region's calls. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,
 ; HL, WIN) the probe sets, BY HAND:
 ;   - PSG registers R0-R13 := $A1 $02 $B3 $04 $C5 $06 $17 $B8 $09 $0A $0B $5C $1D $0E (R7 $B8: port A in, port B out)
 ;     and R15 := $CF, through the PSG's ports $A0 / $A1 (R7 := $BF with bit 4 of SET); R14 (port A, an input) is not
@@ -10,7 +10,7 @@
 ;   - the PPI's port C ($AA) := $50, or $D0 with bit 0 of SET (bit 7 the 1-bit sound);
 ;   - QUETAB ($F959, 4 queues x 6 bytes: put, get, back flag, size, address), QUEBAK ($F971-$F974), QUEUEN ($FB3E),
 ;     VOICEN ($FB38), MUSICF ($FB3F), PLYCNT ($FB40) := the `qsets` entry (SET AND $0E) / 2 names;
-;   - the queue buffers VOICAQ ($F975, 128), VOICBQ ($F9F5, 128), VOICCQ ($FA75, 128), queue 3's buffer at $DF00 (the
+;   - the queue buffers VOICAQ ($F975, 128), VOICBQ ($F9F5, 128), VOICCQ ($FA75, 128), queue 3's buffer at $E800 (the
 ;     probe's own RAM: RS2IQ, $FAF5-$FB34, is left alone -- the disk interface's reference keeps something there, and
 ;     overwriting it stops that machine) and the voice buffers VCBA ($FB41) .. VCBC ($FB8B + 37) := (address low) XOR $A5.
 ; Then IX $4321, IY $8765 (XOR $FF when bit 2 of the case number is set), A, F, BC, DE, HL and interrupts as listed,
@@ -27,7 +27,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries, work-area RAM, the PSG's and the PPI's I/O ports.
 ;
 ; @cap C000
-; @caplen 1900
+; @caplen 2700
 ; @timeout 180
 
 DONE    equ     $C000
@@ -71,7 +71,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $18FF
+                ld      bc, $26FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+1
@@ -139,7 +139,7 @@ b_lp:
                 ld      a, b
                 or      c
                 jr      nz, b_lp
-                ld      hl, $DF00
+                ld      hl, $E800
                 ld      b, 64
 d_lp:
                 ld      a, l
@@ -335,7 +335,7 @@ qsets:
                 db      $7E, $7F, $00, $7F
                 dw      $FA75
                 db      $03, $04, $00, $3F
-                dw      $DF00
+                dw      $E800
                 db      $11, $22, $33, $44
                 db      $01, $00, $00, $00
                 db      $10, $10, $01, $7F
@@ -345,7 +345,7 @@ qsets:
                 db      $00, $01, $00, $7F
                 dw      $FA75
                 db      $3F, $00, $01, $3F
-                dw      $DF00
+                dw      $E800
                 db      $55, $66, $77, $88
                 db      $02, $01, $07, $03
                 db      $40, $3F, $00, $7F
@@ -355,7 +355,7 @@ qsets:
                 db      $20, $20, $00, $7F
                 dw      $FA75
                 db      $3E, $3F, $00, $3F
-                dw      $DF00
+                dw      $E800
                 db      $00, $00, $00, $00
                 db      $00, $02, $00, $00
                 db      $00, $00, $00, $7F
@@ -365,7 +365,7 @@ qsets:
                 db      $00, $00, $00, $7F
                 dw      $FA75
                 db      $00, $00, $00, $3F
-                dw      $DF00
+                dw      $E800
                 db      $00, $00, $00, $00
                 db      $00, $00, $00, $03
                 db      $00, $00, $00, $7F
@@ -375,9 +375,19 @@ qsets:
                 db      $00, $00, $00, $7F
                 dw      $FA75
                 db      $00, $00, $00, $3F
-                dw      $DF00
+                dw      $E800
                 db      $00, $00, $00, $00
                 db      $00, $00, $07, $00
+                db      $0F, $00, $00, $7F
+                dw      $F9F0
+                db      $7F, $05, $00, $7F
+                dw      $F9F5
+                db      $03, $50, $00, $7E
+                dw      $FA75
+                db      $3F, $05, $00, $3F
+                dw      $E800
+                db      $00, $00, $00, $00
+                db      $00, $03, $00, $00
 
 finish:
                 ld      a, $C3
@@ -482,7 +492,7 @@ cases:
                 db      $04, $02, $00, $00, $00
                 dw      $1357, $9B5A, $2468, $FAE5   ; 39
                 db      $04, $03, $00, $00, $00
-                dw      $1357, $9B5A, $2468, $DF00   ; 40
+                dw      $1357, $9B5A, $2468, $E800   ; 40
                 db      $04, $00, $00, $00, $02
                 dw      $1357, $9B5A, $2468, $F980   ; 41
                 db      $04, $01, $00, $00, $02
@@ -490,11 +500,11 @@ cases:
                 db      $04, $02, $00, $00, $02
                 dw      $1357, $9B5A, $2468, $FA75   ; 43
                 db      $04, $03, $00, $00, $02
-                dw      $1357, $9B5A, $2468, $DF30   ; 44
+                dw      $1357, $9B5A, $2468, $E830   ; 44
                 db      $04, $00, $00, $00, $04
                 dw      $1357, $9B5A, $2468, $F9B0   ; 45
                 db      $04, $03, $00, $00, $04
-                dw      $1357, $9B5A, $2468, $DF30   ; 46
+                dw      $1357, $9B5A, $2468, $E830   ; 46
                 db      $05, $00, $00, $00, $00
                 dw      $1357, $9BDF, $2468, $F975   ; 47
                 db      $05, $01, $00, $00, $00
@@ -551,4 +561,68 @@ cases:
                 dw      $1357, $9BDF, $2468, $FB41   ; 73
                 db      $09, $A7, $00, $01, $02
                 dw      $1357, $9BDF, $2468, $FB41   ; 74
+                db      $02, $01, $FF, $01, $01
+                dw      $1357, $9BDF, $2468, $F975   ; 75
+                db      $03, $01, $FF, $01, $01
+                dw      $1357, $9BDF, $2468, $F9F5   ; 76
+                db      $04, $00, $FF, $01, $01
+                dw      $1357, $9B5A, $2468, $F975   ; 77
+                db      $05, $01, $FF, $01, $01
+                dw      $1357, $9BDF, $2468, $FB66   ; 78
+                db      $06, $A7, $FF, $01, $01
+                dw      $1357, $9BDF, $2405, $FB41   ; 79
+                db      $00, $02, $00, $00, $01
+                dw      $1357, $9B33, $2468, $F975   ; 80
+                db      $01, $02, $00, $00, $01
+                dw      $1357, $9BDF, $2468, $F975   ; 81
+                db      $04, $01, $00, $00, $0A
+                dw      $1357, $9B5A, $2468, $F9F5   ; 82
+                db      $04, $00, $00, $00, $0A
+                dw      $1357, $9B5A, $2468, $F9F8   ; 83
+                db      $04, $03, $00, $00, $0A
+                dw      $1357, $9B5A, $2468, $E800   ; 84
+                db      $04, $01, $00, $00, $02
+                dw      $1357, $9B5A, $2468, $F9F5   ; 85
+                db      $04, $03, $00, $00, $02
+                dw      $1357, $9B5A, $2468, $E800   ; 86
+                db      $04, $02, $00, $00, $00
+                dw      $2468, $9B5A, $2468, $FA75   ; 87
+                db      $03, $01, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $F9F5   ; 88
+                db      $03, $02, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FA75   ; 89
+                db      $03, $03, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $E800   ; 90
+                db      $03, $02, $00, $00, $0A
+                dw      $1357, $9BDF, $2468, $F975   ; 91
+                db      $03, $00, $00, $00, $0A
+                dw      $1357, $9BDF, $2468, $F975   ; 92
+                db      $03, $04, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $F975   ; 93
+                db      $05, $04, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $F975   ; 94
+                db      $05, $06, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $F975   ; 95
+                db      $05, $00, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB41   ; 96
+                db      $05, $02, $00, $00, $00
+                dw      $1357, $9BDF, $2468, $FB8B   ; 97
+                db      $06, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $24C0, $F975   ; 98
+                db      $06, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $0005, $F975   ; 99
+                db      $06, $A7, $00, $00, $00
+                dw      $1357, $9BDF, $FF05, $F975   ; 100
+                db      $06, $A7, $00, $00, $0A
+                dw      $1357, $9BDF, $2405, $F975   ; 101
+                db      $06, $A7, $00, $00, $02
+                dw      $1357, $9BDF, $2405, $FB66   ; 102
+                db      $00, $07, $00, $00, $00
+                dw      $1357, $9BBF, $2468, $F975   ; 103
+                db      $00, $07, $00, $00, $00
+                dw      $1357, $9B3F, $2468, $F975   ; 104
+                db      $00, $0F, $00, $00, $00
+                dw      $1357, $9B80, $2468, $F975   ; 105
+                db      $00, $0F, $00, $00, $00
+                dw      $1357, $9BC0, $2468, $F975   ; 106
                 db      $FF

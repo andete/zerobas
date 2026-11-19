@@ -16867,35 +16867,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
 
-- [ ] **D-LFTQBC — LFTQ LEAVES ANOTHER VALUE IN C ON ZEROBAS**
+- [ ] **D-LFTQBC — LFTQ LEAVES OTHER VALUES IN B AND C ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 leaves C = get, zerobas 6 x the queue number.
-      docs/bios/LFTQ.md R-LQ-BC. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 leaves B = (put + 1) AND size, C = get; zerobas
+      C = 6 x the queue number and B unmasked when put + 1 wraps. docs/bios/LFTQ.md R-LQ-BC. Priced when picked up.
 
 - [ ] **D-PUTQREGS — PUTQ ON A FULL QUEUE LEAVES OTHER BC / HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 leaves B the old put pointer, C the new, HL the
-      QUETAB entry + 3; zerobas B $13, C the queue number, HL the entry. docs/bios/PUTQ.md R-PQ-REGS. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 leaves B the old put pointer, C the new, HL the
+      QUETAB entry + 3; zerobas keeps B, C := the queue number, HL := the entry. docs/bios/PUTQ.md R-PQ-REGS. Priced when picked up.
 
 - [ ] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 clears them and sets bytes 15-19 of each to $04
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 clears them and sets bytes 15-19 of each to $04
       $04 $78 $88 $FF. docs/bios/GICINI.md R-GI-VCB. Priced when picked up.
 
 - [ ] **D-STRTMS — STRTMS DOES NOT SET VOICE A'S FIRST WORD, AND RETURNS OTHER HL, ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): docs/bios/STRTMS.md R-ST-PLAY / R-ST-REGS. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): docs/bios/STRTMS.md R-ST-PLAY / R-ST-REGS. Priced when picked up.
 
 - [ ] **D-BEEPRESET — BEEP DOES NOT END WITH GICINI'S RESET ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
       and the voice buffers re-initialised, and returns A 0, F $44, BC 0, E 7. docs/bios/BEEP.md. Priced when picked up.
 
 - [ ] **D-GETVCF — GETVCP / GETVC2 RETURN F $44 FOR EVERY VOICE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XSND1_run3.out`](scratchpad/XSND1_run3.out)): the VG-8020 returns $42 for voices 1-3. docs/bios/GETVCP.md
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out)): the VG-8020 returns $42 for voices 1-3. docs/bios/GETVCP.md
       R-GV-AF, GETVC2.md R-G2-AF. Priced when picked up.
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**

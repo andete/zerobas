@@ -32,5 +32,5 @@ RULES = [
          lambda c: (c.a, c.f) == (0, 0x44 if c.q[29] == 0 else 0x42)),
     G.keep_rule("G2", S1, "BC, DE, IX, IY and the interrupt state are kept; the queue cells are kept.",
                 lambda c: (c.bc, c.de, c.iff) == (c.cbc, c.cde, c.ei) and G.ixiy(c) and c.psg[:14] == G.PSGPRE
-                and c.aa == G.aa_in(c) and c.quetab == c.q[:28] and c.cells == c.q[28:32] and G.win_kept(c)),
+                and G.aa_ok(c) and c.quetab == c.q[:28] and c.cells == c.q[28:32] and G.win_kept(c)),
 ]

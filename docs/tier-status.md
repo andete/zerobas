@@ -583,7 +583,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-F540AE |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-F7D3AB |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-5237AC |
-| — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-A2CFE4 |
+| — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-47B028 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-C4121B |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-5728C3 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-9349E1 |

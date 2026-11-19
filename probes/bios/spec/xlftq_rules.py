@@ -42,6 +42,7 @@ RULES = [
     Rule("R-LQ-BC", S1, "B := (put + 1) AND size, C := get.", ALL,
          lambda c: c.bc == (((entry(c)[0] + 1) & entry(c)[3]) << 8 | entry(c)[1])),
     G.keep_rule("LQ", S1, "DE, IX, IY and the interrupt state are kept; QUETAB, the queue cells and the buffers are "
-                "kept; the PSG registers R0-R13 and the PPI port C are kept.", lambda c: (c.de, c.iff) == (c.cde, c.ei) and G.ixiy(c) and c.psg[:14] == G.PSGPRE and c.aa == G.aa_in(c)
+                "kept (the window recorded: queue 0, 1, 2 or 3's first 16 bytes); the PSG registers R0-R13 and the PPI port C "
+                "are kept.", lambda c: (c.de, c.iff) == (c.cde, c.ei) and G.ixiy(c) and c.psg[:14] == G.PSGPRE and G.aa_ok(c)
                 and c.quetab == c.q[:28] and c.cells == c.q[28:32] and G.win_kept(c)),
 ]

@@ -44,5 +44,5 @@ RULES = [
          "Started: A := 7, F := $02, HL := 1.", ALL, lambda c: (c.a, c.f, c.hl) == start(c)[:3]),
     G.keep_rule("ST", S1, "BC, DE, IX, IY and the interrupt state are kept; the PSG and the PPI port C are kept.",
                 lambda c: (c.bc, c.de, c.iff) == (c.cbc, c.cde, c.ei) and G.ixiy(c) and c.psg[:14] == G.PSGPRE
-                and c.aa == G.aa_in(c)),
+                and G.aa_ok(c)),
 ]
