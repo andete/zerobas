@@ -17002,6 +17002,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 leaves the bit clear and puts ATRBYT into the
       background nibble (the other pixels keep the foreground); zerobas sets the bit and puts ATRBYT into the foreground
       nibble. docs/bios/SETC.md R-SC-VRAM (cases 47, 62, 77, 80, 84), NSETCX.md R-NX-VRAM (cases 39, 72, 73, 82). Priced when picked up.
+      🟡 **PART 1 LANDED 2026-11-19: SETC.** basic/main.asm `setc_col`, entered from our repacked SETC's colour-byte
+      `call wrtvrm` at $0877 (basic/islands.asm `cbios_setc_col`, tools/build_mainrom.py PATCH_RANGES CD 4D 02): with
+      pattern OR CMASK = $FF it clears the bit and ORs ATRBYT into (colour AND $F0). 22 B of the low region (43 -> 21 B
+      free). Witness ([`XGFX3_fix1.out`](scratchpad/XGFX3_fix1.out), zerobas live): SETC R-SC-VRAM cases 47, 77, 80, 84
+      pass (62 stays: D-SETCCOL), NSETCX's single pixel (82) too. **STILL OPEN: NSETCX's run** (cases 39, 72, 73): a run
+      whose pixels fill a byte's last clear bits -- the VG-8020 decides the byte with the run's pixels counted together;
+      zerobas's NSETCX calls setc pixel by pixel (C-BIOS nsetcx, cbios-repack/graphics-cursor.patch). Price before fixing.
 
 - [ ] **D-SETCCOL — READC / SETC / NSETCX SWAP THE PATTERN AND COLOUR BYTES FOR CLOC $2000-$3FFF ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18).

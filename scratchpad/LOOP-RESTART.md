@@ -27,8 +27,9 @@ calls FINAL (XTAP1-XTAP5, five passes; tape is outside the FOCUS, so differences
 D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT); its contract section is in
 docs/concepts/cassette.md "The BIOS calls". Lessons: the reference's TAPIN needs the calls back to back (a 10-byte
 record between two calls shifted each byte one bit) -- run TAPOUT / TAPIN in tight loops; "carry clear" needs a
-carry-SET entry to separate it from "carry kept". NEXT: the DISK region (PHYDIO; FORMAT is ruled indirect), then the
-test audit / the fixes by tier.
+carry-SET entry to separate it from "carry kept". NEXT -- JOOST 2026-11-19: *"the disk related bios calls should only be done when all other msx1 bios
+calls are done"*: so FIRST the non-disk regions' FIXES by tier (step 4) + the test audit; the disk region (PHYDIO;
+probe drafted at probes/bios/spec/xdsk1.asm, NOT run) waits until then. D-SETCLAST part 1 (SETC) landed 2026-11-19.
 PREVIOUS STATE 2026-11-19 NIGHT (recount, never quote): the SOUND region's ten calls have DRAFT 3 pages (XSND1 + XSND1B, the
 second file because the first's capture area was full); review pass 3 launched. Lesson: the disk row's VG-8020 keeps
 something in RS2IQ ($FAF5-$FB34) -- overwriting it stops that machine; probes leave it alone (queue 3's buffer at $E800).

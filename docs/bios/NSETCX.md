@@ -97,7 +97,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-NSETCXFULL** (a pattern byte with all 8 pixels to set: zerobas writes pattern $FF with ATRBYT in the foreground nibble -- with ATRBYT the background colour, pattern $00 and the colour byte left -- where the VG-8020 writes pattern $00 and colour byte ATRBYT: the same pixels, other bytes -- cases 12, 13, 32, 58, 63, 64) | R-NX-VRAM |
-| **D-SETCLAST** (as SETC: a byte whose other bits are all set, ATRBYT neither colour -- the first byte of a run, its last, or the only one: zerobas turns the whole byte to ATRBYT -- cases 39, 72, 73, 82) | R-NX-VRAM |
+| **D-SETCLAST** (a byte whose other bits are all set once the RUN's pixels in it are counted, ATRBYT neither colour -- the first byte of a run or its last: zerobas sets the run pixel by pixel, so the first pixel finds a clear bit still to come and turns the whole byte to ATRBYT, where the VG-8020 clears the run's bits and ORs ATRBYT into the colour's high nibble -- cases 39, 72, 73; a single pixel, case 82, is the same since SETC's fix) | R-NX-VRAM |
 | **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 18, 59) | R-NX-VRAM |
 | **D-SETCATR** (as SETC, SCREEN 3 ATRBYT over 15 -- case 67) | R-NX-VRAM |
 | **D-NSETCXL** (SCREEN 3: zerobas counts HL, the VG-8020 L alone -- HL $0102 sets 258 pixels, not 2; cases 55, 56) | R-NX-VRAM, R-NX-POS |

@@ -470,6 +470,35 @@ bios_pinlin:
                 ld      hl,read_line_col1
                 jp      bil_go
 
+; setc_col -- D-SETCLAST (2026-11-19): SETC ($0120) in SCREEN 2, when ATRBYT is neither the
+; cell's background nor its foreground colour and every OTHER bit of the pattern byte is set
+; (pattern OR CMASK = $FF), leaves the pixel's bit CLEAR and ORs ATRBYT into the colour byte's
+; high nibble masked off -- (colour AND $F0) OR ATRBYT: ATRBYT becomes the BACKGROUND, the 7
+; set pixels keep theirs (docs/bios/SETC.md R-SC-VRAM; NSETCX goes through the same setc).
+; C-BIOS's setc_set made ATRBYT the foreground, recolouring all 8. Entered by C-BIOS's
+; setc_set at $0877 (basic/islands.asm, `cbios_setc_col`) in place of its colour-byte `call
+; wrtvrm`, with A = the colour byte it would write, B = the pattern byte, C = the colour byte,
+; D = CMASK, E = ATRBYT, HL = the colour byte's address. Its tail then writes `D OR B` as the
+; pattern byte and returns A: so here D and B both := NOT CMASK (setc saved BC / DE). Page 0.
+setc_col:
+                push    af
+                ld      a,d
+                or      b
+                inc     a                   ; Z: no other bit of the pattern byte clear
+                jr      z,scl_last
+                pop     af
+                jp      WRTVRM
+scl_last:
+                pop     af
+                ld      a,d
+                cpl
+                ld      d,a                 ; the tail's `ld a,d / or b` := NOT CMASK
+                ld      b,a
+                ld      a,c
+                and     $F0
+                or      e                   ; ATRBYT ORed in whole ($1A over $E_ gives $FA)
+                jp      WRTVRM
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

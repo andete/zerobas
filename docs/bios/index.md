@@ -100,7 +100,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0117 | STOREC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](STOREC.md) | 3 | — |
 | $011A | SETATR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETATR.md) | 4 | — |
 | $011D | READC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](READC.md) | 7 | D-SETCCOL |
-| $0120 | SETC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETC.md) | 9 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
+| $0120 | SETC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETC.md) | 9 | D-SETCCOL, D-SETCATR, D-SETCF |
 | $0123 | NSETCX | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](NSETCX.md) | 9 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
 | $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | D-PNTINIREGS |

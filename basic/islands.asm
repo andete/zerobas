@@ -483,6 +483,14 @@ st_go:
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
 
+; --- C-BIOS's SETC: the last background pixel of a pattern byte (D-SETCLAST) --------
+; $0877 is the colour-byte `call wrtvrm` in our repacked SETC's setc_set (cbios-repack/
+; graphics-cursor.patch); setc_col (basic/main.asm) decides that write and the pattern
+; byte's. PATCH_RANGES refuses unless it reads CD 4D 02.
+                org     $0877
+cbios_setc_col:                             ; a root: C-BIOS enters it (PATCH_ROOTS)
+                call    setc_col
+
 ; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
 ; $0FD6 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
 ; hook"; $0FCA on 0.30, $1037 before; D-CBIOS030 / D-CBIOS031); only its operand byte changes.
