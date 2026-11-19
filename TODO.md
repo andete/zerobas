@@ -16865,6 +16865,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
 
+- [ ] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run1.out`](scratchpad/XSND1_run1.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
+
+- [ ] **D-LFTQBC — LFTQ LEAVES ANOTHER VALUE IN C ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run1.out`](scratchpad/XSND1_run1.out)): the VG-8020 leaves C = get, zerobas 6 x the queue number.
+      docs/bios/LFTQ.md R-LQ-BC. Priced when picked up.
+
+- [ ] **D-PUTQREGS — PUTQ ON A FULL QUEUE LEAVES OTHER BC / HL ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run1.out`](scratchpad/XSND1_run1.out)): the VG-8020 leaves B the old put pointer, C the new, HL the
+      QUETAB entry + 3; zerobas B $13, C the queue number, HL the entry. docs/bios/PUTQ.md R-PQ-REGS. Priced when picked up.
+
+- [ ] **D-GETVCF — GETVCP / GETVC2 RETURN F $44 FOR EVERY VOICE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run1.out`](scratchpad/XSND1_run1.out)): the VG-8020 returns $42 for voices 1-3. docs/bios/GETVCP.md
+      R-GV-AF, GETVC2.md R-G2-AF. Priced when picked up.
+
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 3 — common: every PAINT in SCREEN 2 goes through SCANL (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
