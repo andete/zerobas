@@ -168,11 +168,19 @@ PATCHES = [
     # CLS $0600, NSETCX $0692 (its overlaid call $069A), TUPC $06FD, TDOWNC $071B, the $0129 rets $0745;
     # island 3 is $0773-$09ED (635 B). Everything from $0D01 up keeps its address.
     os.path.join(REPO, "cbios-repack", "dead-bodies-video.patch"),
+    # D-CBIOSDEAD part 2 (2026-11-19): the dead bodies between $0D12 and the font pad -- SYNCHR /
+    # CHRGTR / OUTDO / GETYPR, INIFNK / STRTMS, LPTOUT, PINLIN / QINLIN, ISCNTC / CKCNTC, the cassette
+    # stubs TAPION .. STMOTR, ISFLIO, PUTQ's ret + pad, CALBAS (381 B); scratchpad/cbios_reach.py.
+    # Their vectors become `ret`, except LPTOUT's and the cassette ones, which stay `jp` (to a bare
+    # `ret`) because zerobas's tape module repoints them over C-BIOS's C3. Everything from CALLF to
+    # the font pad moves down (GICINI $1588, BREAKX $1510, CHPUT's TTYPOS overlay $1110); island 1 is
+    # $196E-$1BBE (593 B). $0D01-$0D11 and the font keep their addresses.
+    os.path.join(REPO, "cbios-repack", "dead-bodies-main.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "e61d88cb2837d9ca9a7d90f104745c44ede9f136"   # dead video bodies cut, 2026-11-19
+REPACKED_SHA1 = "8dc96e8c931ea98374ecfe4f5527d0da772d4077"   # dead main bodies cut, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

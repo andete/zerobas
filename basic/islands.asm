@@ -27,7 +27,11 @@
 ; from the main slot (a sub-ROM PAGE-0 tenant cannot reach it).
 ; ===========================================================================
 
-; --- island 1: before the font ($1AF5..$1BBE, 202 B usable) -----------------
+; --- island 1: before the font ($196E..$1BBE, 593 B usable) -----------------
+; D-CBIOSDEAD part 2 (2026-11-19): cbios-repack/dead-bodies-main.patch cut C-BIOS's dead
+; RST / INIFNK / STRTMS / LPTOUT / PINLIN / QINLIN / ISCNTC / CKCNTC / cassette / ISFLIO /
+; PUTQ / CALBAS bodies (381 B), so the island starts at $196E, not $1AF5; its tenants keep
+; their place at $1AF5 for now, with the 391 B in front of them free.
 ; D-LINTTBWRAP (2026-10-06): cbios-repack/linttb-scroll.patch adds 3 bytes to
 ; chput_esc_m, before the font pad: this island starts 3 B later than $1AF2.
 ; D-CTRLKEYS (2026-10-05): cbios-repack/ctrl-keys.patch puts 23 bytes in
@@ -599,10 +603,10 @@ bsc_out:
                 jp      bios_dspfnk
 
 ; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
-; $116E is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
-; "CSRX -> TTYPOS"; $1162 on 0.30, $11CF before; D-CBIOS030 / D-CBIOS031). PATCH_RANGES refuses
-; unless it reads 3A DD F3.
-                org     $116E
+; $1110 is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
+; "CSRX -> TTYPOS"; chput+27: $116E until D-CBIOSDEAD part 2, $1162 on 0.30, $11CF before;
+; D-CBIOS030 / D-CBIOS031). PATCH_RANGES refuses unless it reads 3A DD F3.
+                org     $1110
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
 

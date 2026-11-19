@@ -16908,7 +16908,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
       nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
 
-- [ ] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
+- [x] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
       🎚️ TIER 6 — ROM space (the same ruling as D-SETCCUT).
       🤖 **AUTONOMOUS** — vectors zerobas overlays with its own full body (tools/build_mainrom.py PATCH_RANGES) and whose
       C-BIOS body nothing in zerobas jumps back into: SCALXY (scalxy), MAPXYC (mapxy), CLRSPR (clrspr), ISFLIO (isflio),
@@ -16932,6 +16932,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $0773-$09ED (635 B; bios_setc at its start, 510 B free). Checked: the 34 bytes that differ above $0D01 are all
       operands into the moved span. **STILL OPEN: part 2**, the $0D12-$1BBE list above -- it moves the $0FD7 / $116E
       overlays, CBIOS_BREAKX and CBIOS_GICINI, and grows island 1 ($1AF5-$1BBF) by ~390 B.
+      ✅ **PART 2 LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/dead-bodies-main.patch (#48): SYNCHR / CHRGTR / OUTDO /
+      GETYPR, INIFNK / STRTMS, LPTOUT, PINLIN / QINLIN, ISCNTC / CKCNTC, the cassette stubs TAPION .. STMOTR, ISFLIO, PUTQ's
+      pad and CALBAS -- 381 B. LPTOUT's and the cassette vectors stay `jp` (to a bare `ret`): the tape module repoints
+      them over C-BIOS's C3. Re-derived: 17 guards, CHPUT's TTYPOS overlay $116E -> $1110, CBIOS_BREAKX $1510,
+      CBIOS_GICINI $1588; island 1 $196E-$1BBE (593 B). spec-live (full): 96 pages agree; knives, tape corpus, kwsweep
+      green. Left, on purpose: gtpdl (51 B) / gtpad (2 B) after the font -- reclaiming them means moving BASIC_BASE
+      ($2781), a different change; and stack_error (9 B, pasmo-unused) inside EXTROM's block.
 
 - [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).

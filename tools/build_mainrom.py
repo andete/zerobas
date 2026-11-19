@@ -67,29 +67,29 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # $0CCF, and gone when its residual's cycle verify took the rest -- err_msgtab is
 # back in main page 1. ISLAND4_LO stays as the tape's CAP: C-BIOS's compat tail.
 ISLAND4_LO = 0x0D01
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x0773, 0x09EE))   # island 3: $0773 since D-CBIOSDEAD (bios_setc + free)
+ISLAND_RANGES = ((0x0160, 0x0200), (0x196E, 0x1BBF), (0x0773, 0x09EE))   # island 3: $0773 since D-CBIOSDEAD (bios_setc + free)
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).
 # D-CBIOS030 (2026-11-11): the old bytes below are C-BIOS 0.30's (+ our repack); the
 # vectors' targets moved, and the two code patches moved with their code ($1038 ->
 # $0FCB, $11CF -> $1162).
-PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SYNCHR)
-                0x0010: bytes([0xC3, 0x9E, 0x10]),     # RST 10h -> chrgtr
-                0x0018: bytes([0xC3, 0xBA, 0x10]),     # RST 18h -> outdo
-                0x0028: bytes([0xC3, 0xC6, 0x10]),     # RST 28h -> getypr
-                0x003E: bytes([0xC3, 0x03, 0x11]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
+PATCH_RANGES = {0x0008: bytes([0xC9, 0x00, 0x00]),     # RST 08h -> synchr (D-SYNCHR)
+                0x0010: bytes([0xC9, 0x00, 0x00]),     # RST 10h -> chrgtr
+                0x0018: bytes([0xC9, 0x00, 0x00]),     # RST 18h -> outdo
+                0x0028: bytes([0xC9, 0x00, 0x00]),     # RST 28h -> getypr
+                0x003E: bytes([0xC9, 0x00, 0x00]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
                                                        #  stub is 12 B on since D-INITIO + D-GICINIQ)
-                0x00AE: bytes([0xC3, 0xC7, 0x14,       # PINLIN / INLIN / QINLIN
-                               0xC3, 0xE5, 0x14,       #  -> basic/biosfnk.asm
-                               0xC3, 0xDC, 0x14]),
-                0x00B7: bytes([0xC3, 0xB6, 0x15]),     # BREAKX -> basic/biosfnk.asm (D-BRKLATCH)
-                0x00BA: bytes([0xC3, 0xD2, 0x15,       # ISCNTC / CKCNTC -> basic/biosfnk.asm
-                               0xC3, 0xE4, 0x15]),     #  (D-BIOSRUNG)
-                0x00C0: bytes([0xC3, 0xE7, 0x15]),     # BEEP -> basic/biosfnk.asm
+                0x00AE: bytes([0xC9, 0x00, 0x00,       # PINLIN / INLIN / QINLIN
+                               0xC3, 0x3F, 0x14,       #  -> basic/biosfnk.asm
+                               0xC9, 0x00, 0x00]),
+                0x00B7: bytes([0xC3, 0x10, 0x15]),     # BREAKX -> basic/biosfnk.asm (D-BRKLATCH)
+                0x00BA: bytes([0xC9, 0x00, 0x00,       # ISCNTC / CKCNTC -> basic/biosfnk.asm
+                               0xC9, 0x00, 0x00]),     #  (D-BIOSRUNG)
+                0x00C0: bytes([0xC3, 0x2C, 0x15]),     # BEEP -> basic/biosfnk.asm
                 0x00C3: bytes([0xC3, 0xFF, 0x05]),     # CLS -> basic/main.asm bios_cls
                                                        #  (D-INITKEYS; cls_z, CBIOS_CLS - 1)
-                0x00C9: bytes([0xC3, 0x19, 0x16]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG; C-BIOS's
+                0x00C9: bytes([0xC3, 0x5E, 0x15]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG; C-BIOS's
                                                        #  stub is POSIT's ret since D-POSITCLAMP)
                 0x0069: bytes([0xC9, 0x00, 0x00]),     # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*;
                                                        #  C-BIOS's body cut, D-CBIOSDEAD)
@@ -100,25 +100,25 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x011D: bytes([0xC9, 0x00, 0x00]),     # READC -> basic/main.asm (D-SETCCOL; C-BIOS's body cut, D-SETCCUT)
                 0x0120: bytes([0xC9, 0x00, 0x00]),     # SETC -> island 3 (D-SETCCOL / D-SETCATR / D-SETCF; body cut)
                 0x0111: bytes([0xC9, 0x00, 0x00]),     # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
-                0x014A: bytes([0xC3, 0x19, 0x17]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;
+                0x014A: bytes([0xC9, 0x00, 0x00]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;
                                                        #  $1719 since cbios-repack #40)
-                0x014D: bytes([0xC3, 0x21, 0x18]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x0159: bytes([0xC3, 0x19, 0x1A]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x014D: bytes([0xC3, 0xBB, 0x16]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x0159: bytes([0xC9, 0x00, 0x00]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x008D: bytes([0xC9, 0x00, 0x00]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG;
                                                        #  its C-BIOS body 4 B down since D-GRPHEDCLS)
-                0x0099: bytes([0xC3, 0x09, 0x11]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x0090: bytes([0xC3, 0xCB, 0x16]),     # GICINI -> basic/main.asm bios_gicini
+                0x0099: bytes([0xC9, 0x00, 0x00]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x0090: bytes([0xC3, 0x88, 0x15]),     # GICINI -> basic/main.asm bios_gicini
                                                        #  (D-GICINIQ; = CBIOS_GICINI)
-                0x00F9: bytes([0xC3, 0xEA, 0x17]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG;
+                0x00F9: bytes([0xC9, 0x00, 0x00]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG;
                                                        #  $17EA since cbios-repack #42)
                 0x0129: bytes([0xC3, 0x45, 0x07,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
                                0xC3, 0x45, 0x07,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 121 B
                                0xC3, 0x45, 0x07]),     #  down since D-SETCCUT)
-                0x00CC: bytes([0xC3, 0x19, 0x16,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
-                               0xC3, 0x19, 0x16]),     #  (D-BIOSCONTRACT; both stubs are POSIT's
+                0x00CC: bytes([0xC3, 0x5E, 0x15,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
+                               0xC3, 0x5E, 0x15]),     #  (D-BIOSCONTRACT; both stubs are POSIT's
                                                        #  ret since D-POSITCLAMP)
                 0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
-                0x116E: bytes([0x3A, 0xDD, 0xF3]),     # CHPUT: TTYPOS = CSRX-1 (0-based)
+                0x1110: bytes([0x3A, 0xDD, 0xF3]),     # CHPUT: TTYPOS = CSRX-1 (0-based; $116E before D-CBIOSDEAD part 2)
                 0x069A: bytes([0xCD, 0x20, 0x01])}     # NSETCX: call SETC ($0120) -> nsx_px ($069A since D-CBIOSDEAD)
                                                        #  (D-SETCLAST part 2, D-NSETCXFULL)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
