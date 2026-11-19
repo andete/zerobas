@@ -33,7 +33,7 @@ INDEX = os.path.join(PAGES, "index.md")
 REGION_PAGE = {
     "text": "../concepts/screen-editor.md",
     "vdp": "../concepts/screen-modes.md",
-    "graphics": None,
+    "graphics": "../concepts/graphics-calls.md",
     "input": None,
     "sound": None,
     "slots": "../concepts/slots.md",

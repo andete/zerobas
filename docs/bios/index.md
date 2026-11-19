@@ -51,7 +51,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
-| $008D | GRPPRT | graphics (concept page to come) | L3 | [FINAL](GRPPRT.md) | 10 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
+| $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | D-GRPPRTPOS, D-GRPPRTEI, D-GRPPRTCR, D-GRPPRTOFF, D-GRPPRTCOL |
 | $0090 | GICINI | sound (concept page to come) | L3 | — | — | — |
 | $0093 | WRTPSG | sound (concept page to come) | L3 | — | — | — |
 | $0096 | RDPSG | sound (concept page to come) | L3 | — | — | — |
@@ -88,24 +88,24 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00F6 | LFTQ | sound (concept page to come) | L3 | — | — | — |
 | $00F9 | PUTQ | sound (concept page to come) | L3 | — | — | — |
-| $00FC | RIGHTC | graphics (concept page to come) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
-| $00FF | LEFTC | graphics (concept page to come) | L3 | [FINAL](LEFTC.md) | 6 | D-MOVEMASK |
-| $0102 | UPC | graphics (concept page to come) | L3 | [FINAL](UPC.md) | 6 | — |
-| $0105 | TUPC | graphics (concept page to come) | L3 | [FINAL](TUPC.md) | 6 | D-TEDGE |
-| $0108 | DOWNC | graphics (concept page to come) | L3 | [FINAL](DOWNC.md) | 6 | — |
-| $010B | TDOWNC | graphics (concept page to come) | L3 | [FINAL](TDOWNC.md) | 6 | D-TEDGE |
-| $010E | SCALXY | graphics (concept page to come) | L3 | [FINAL](SCALXY.md) | 3 | D-SCALXYMODE, D-SCALXYF |
-| $0111 | MAPXYC | graphics (concept page to come) | L3 | [FINAL](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCWRAP, D-MAPXYCMODE, D-MAPXYCF |
-| $0114 | FETCHC | graphics (concept page to come) | L3 | [FINAL](FETCHC.md) | 3 | — |
-| $0117 | STOREC | graphics (concept page to come) | L3 | [FINAL](STOREC.md) | 3 | — |
-| $011A | SETATR | graphics (concept page to come) | L3 | [FINAL](SETATR.md) | 4 | — |
-| $011D | READC | graphics (concept page to come) | L3 | [FINAL](READC.md) | 7 | D-SETCCOL |
-| $0120 | SETC | graphics (concept page to come) | L3 | [FINAL](SETC.md) | 9 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
-| $0123 | NSETCX | graphics (concept page to come) | L3 | [FINAL](NSETCX.md) | 9 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
-| $0126 | GTASPC | graphics (concept page to come) | L3 | [FINAL](GTASPC.md) | 3 | — |
-| $0129 | PNTINI | graphics (concept page to come) | L3 | [DRAFT 1](PNTINI.md) | 3 | D-PNTINIREGS |
-| $012C | SCANR | graphics (concept page to come) | L3 | [DRAFT 1](SCANR.md) | 5 | D-SCANRSAVE, D-SCANRSKIP |
-| $012F | SCANL | graphics (concept page to come) | L3 | [DRAFT 1](SCANL.md) | 5 | D-SCANLPAINT, D-SCANLSTOP |
+| $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
+| $00FF | LEFTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](LEFTC.md) | 6 | D-MOVEMASK |
+| $0102 | UPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](UPC.md) | 6 | — |
+| $0105 | TUPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TUPC.md) | 6 | D-TEDGE |
+| $0108 | DOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](DOWNC.md) | 6 | — |
+| $010B | TDOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TDOWNC.md) | 6 | D-TEDGE |
+| $010E | SCALXY | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCALXY.md) | 3 | D-SCALXYMODE, D-SCALXYF |
+| $0111 | MAPXYC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](MAPXYC.md) | 5 | D-MAPXYCBASE, D-MAPXYCWRAP, D-MAPXYCMODE, D-MAPXYCF |
+| $0114 | FETCHC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](FETCHC.md) | 3 | — |
+| $0117 | STOREC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](STOREC.md) | 3 | — |
+| $011A | SETATR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETATR.md) | 4 | — |
+| $011D | READC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](READC.md) | 7 | D-SETCCOL |
+| $0120 | SETC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETC.md) | 9 | D-SETCLAST, D-SETCCOL, D-SETCATR, D-SETCF |
+| $0123 | NSETCX | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](NSETCX.md) | 9 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
+| $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
+| $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](PNTINI.md) | 3 | D-PNTINIREGS |
+| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](SCANR.md) | 5 | D-SCANRSAVE, D-SCANRSKIP |
+| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [DRAFT 1](SCANL.md) | 5 | D-SCANLPAINT, D-SCANLSTOP |
 | $0132 | CHGCAP | input (concept page to come) | L3 | — | — | — |
 | $0135 | CHGSND | sound (concept page to come) | L3 | — | — | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |

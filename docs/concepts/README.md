@@ -37,6 +37,7 @@ page lists where zerobas still differs.
 | [The memory map](memory-map.md) | where BASIC keeps things in RAM |
 | [The BIOS](bios.md) | the machine's own routines: where they live, how to call them, one page per call |
 | [Slots](slots.md) | how an MSX reaches more than 64 KB, and the BIOS's slot calls |
+| [The graphics calls](graphics-calls.md) | pixels, the graphics cursor and PAINT in the BIOS |
 | [The interpreter entries](interpreter-entries.md) | BASIC's text and value helpers in the BIOS table |
 
 ## Storage
