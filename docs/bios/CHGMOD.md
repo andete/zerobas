@@ -16,8 +16,8 @@ SPDX-License-Identifier: 0BSD
 same set-up every recorded output but IX / IY (kept) is the same as the direct call's. Other values go
 by A - 1 as a signed byte: $81-$FF as 0, and 4-$80 as 3.
 
-zerobas does the same for every A (above 3 since D-CHGMODRANGE, 2026-11-19); its INITXT, reached
-through CHGMOD 0, also sets PATBAS / ATRBAS (below).
+zerobas does all of it the same (A above 3 since D-CHGMODRANGE, INITXT's PATBAS / ATRBAS since
+D-INITXTBAS, 2026-11-19).
 
 ## The specification
 
@@ -67,9 +67,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-INITXTBAS** (zerobas's INITXT sets PATBAS / ATRBAS from TXTPAT / TXTATR -- $0000 by default; the VG-8020 leaves them) | R-CM-TXTBAS |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

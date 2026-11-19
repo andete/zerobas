@@ -36,7 +36,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | D-VRAMF |
 | $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
 | $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
-| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGMOD.md) | 6 | D-INITXTBAS |
+| $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGMOD.md) | 6 | — |
 | $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGCLR.md) | 7 | D-CHGCLRMODE, D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CLRSPR.md) | 8 | — |

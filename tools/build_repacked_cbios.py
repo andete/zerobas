@@ -151,11 +151,13 @@ PATCHES = [
     # SCREEN 0) through TOTEXT's own mapping; 2 B paid by 2 of INIGRP's NOPs, so CHGMOD .. INIGRP move
     # down 2 (CLRSPR's vector -- and its PATCH_RANGES guard -- follow: $02FD).
     os.path.join(REPO, "cbios-repack", "chgmod-range.patch"),
+    # D-INITXTBAS (2026-11-19): INITXT leaves ATRBAS / PATBAS as the VG-8020; 12 NOPs, nothing moves.
+    os.path.join(REPO, "cbios-repack", "initxt-bas.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "28616eaf9063414cb42eed5b234a213d72517000"   # CHGMOD's range, 2026-11-19
+REPACKED_SHA1 = "c38e400dcdbecfc378f5aa69ca484d566667a32d"   # INITXT's bases, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

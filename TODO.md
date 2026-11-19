@@ -17175,11 +17175,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measured too); zerobas returns at once for any A above 3. Priced when picked up.
       ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/chgmod-range.patch (#43): CHGMOD's `ret nc` -> `jp nc,totext_map`, TOTEXT's own 4..$80 -> 3 / $81..$FF -> 0 mapping; 2 B from INIGRP's NOPs (CHGMOD .. INIGRP move down 2, CLRSPR's guard -> C3 FD 02). spec-live: R-CM-MODE holds on zerobas.
 
-- [ ] **D-INITXTBAS — INITXT SETS PATBAS / ATRBAS ON ZEROBAS**
+- [x] **D-INITXTBAS — INITXT SETS PATBAS / ATRBAS ON ZEROBAS**
       🎚️ TIER 6 — every edge (a program reading PATBAS / ATRBAS after SCREEN 0; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CHGMOD.md R-CM-TXTBAS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 14 and
       its direct INITXT partner 20): the VG-8020's INITXT leaves PATBAS / ATRBAS; zerobas's sets them from TXTPAT /
       TXTATR ($0000 by default). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/initxt-bas.patch (#44): INITXT's TXTATR / TXTPAT loads into ATRBAS / PATBAS become 12 NOPs; spec-live: R-CM-TXTBAS holds on zerobas.
 
 - [x] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RG1SAV and R#1 out of step when CLRSPR is called -- the VG-8020's CLRSPR brings the
