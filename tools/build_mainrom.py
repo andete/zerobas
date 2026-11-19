@@ -100,7 +100,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                 0x0099: bytes([0xC3, 0x09, 0x11]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
                 0x0090: bytes([0xC3, 0xCB, 0x16]),     # GICINI -> basic/main.asm bios_gicini
                                                        #  (D-GICINIQ; = CBIOS_GICINI)
-                0x00F9: bytes([0xC3, 0xE7, 0x17]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG)
+                0x00F9: bytes([0xC3, 0xEA, 0x17]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG;
+                                                       #  $17EA since cbios-repack #42)
                 0x0129: bytes([0xC3, 0x55, 0x09,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
                                0xC3, 0x55, 0x09,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 3 B
                                0xC3, 0x55, 0x09]),     #  on since D-SCALXYF)

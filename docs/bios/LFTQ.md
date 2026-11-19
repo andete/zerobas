@@ -16,7 +16,7 @@ from the queue's QUETAB entry ($F959 + 6 x A: put, get, back flag, size, address
 mod 2^n for a size of 2^n - 1; the back flag is not used.
 F is A's AND flags; B and C are left with (put + 1) AND size and get. Everything else is kept.
 
-zerobas returns the same count for the sizes BASIC uses ($7F, $3F), with other values in B and C (below).
+zerobas does all of it the same (since D-LFTQBC / D-LFTQSIZE, 2026-11-19).
 
 ## The specification
 
@@ -81,10 +81,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-LFTQBC** (zerobas leaves C = 6 x the queue number where the VG-8020 leaves get, and B = put + 1 unmasked where the VG-8020 masks it with size -- $80 / $40 against $00 when it wraps) | R-LQ-BC |
-| **D-LFTQSIZE** (a size that is not 2^n - 1: zerobas counts (get - put - 1) AND size, $4C where the VG-8020 gives $4E for size $7E, put 2, get $50 -- cases 133, 134) | R-LQ-HL |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

@@ -143,11 +143,15 @@ PATCHES = [
     # D-CHGSNDF / D-GETVCF (2026-11-19): CHGSND's `and a` (F $54 for A 0) and GETVC2's loop exiting on
     # its last `dec a` (F $42 / $43 for voices 1-3), as the VG-8020; same size -- 3 bytes differ.
     os.path.join(REPO, "cbios-repack", "sound-flags.patch"),
+    # D-LFTQBC / D-LFTQSIZE (2026-11-19): LFTQ leaves B (put + 1) AND size, C get, and counts with that
+    # masked put, as the VG-8020; 3 B longer, paid by C-BIOS's PUTQ body (dead: $00F9 is zerobas's
+    # bios_putq), now a `ret` + pad, so calc_queue_address stays; PUTQ's guard follows ($17EA).
+    os.path.join(REPO, "cbios-repack", "lftq-bc.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "ff14503359e089d9f5bb89198621d501a4a7a765"   # the sound calls' flags, 2026-11-19
+REPACKED_SHA1 = "67a5441b119746e2e6432eb308e438b2fcfb1999"   # LFTQ, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

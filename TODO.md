@@ -16932,20 +16932,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 returns $54. docs/bios/CHGSND.md R-CS-AF. Priced when picked up.
       ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/sound-flags.patch: CHGSND's `and a`; spec-live: the page's rules all hold on zerobas.
 
-- [ ] **D-LFTQBC — LFTQ LEAVES OTHER VALUES IN B AND C ON ZEROBAS**
+- [x] **D-LFTQBC — LFTQ LEAVES OTHER VALUES IN B AND C ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves B = (put + 1) AND size, C = get; zerobas
       C = 6 x the queue number and B unmasked when put + 1 wraps. docs/bios/LFTQ.md R-LQ-BC. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/lftq-bc.patch (#42): B := (put + 1) AND size, C := get; spec-live: the page's rules all hold on zerobas.
 
-- [ ] **D-LFTQSIZE — LFTQ COUNTS A QUEUE WHOSE SIZE IS NOT 2^N - 1 OTHERWISE ON ZEROBAS**
+- [x] **D-LFTQSIZE — LFTQ COUNTS A QUEUE WHOSE SIZE IS NOT 2^N - 1 OTHERWISE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 gives (get - ((put + 1) AND size)) AND size,
       zerobas (get - put - 1) AND size: $4E against $4C for size $7E, put 2, get $50. docs/bios/LFTQ.md R-LQ-HL. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/lftq-bc.patch (#42): the count from the masked put; spec-live: the page's rules all hold on zerobas.
 
-- [ ] **D-PUTQREGS — PUTQ ON A FULL QUEUE LEAVES OTHER BC / HL ON ZEROBAS**
+- [x] **D-PUTQREGS — PUTQ ON A FULL QUEUE LEAVES OTHER BC / HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves B the old put pointer, C the new, HL the
       QUETAB entry + 3; zerobas keeps B, C := the queue number, HL := the entry. docs/bios/PUTQ.md R-PQ-REGS. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_putq: full -- B the old PUT, C the new, HL the entry + 3 (+4 B, the $3283 pad); spec-live: the page's rules all hold on zerobas.
 
 - [ ] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).

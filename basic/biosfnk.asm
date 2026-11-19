@@ -227,9 +227,9 @@ bios_strtms:
 
 ; PUTQ ($00F9) -- A = the queue (0..2), E = the byte. C-BIOS's writes at PUT and then
 ; steps it; the VG-8020's steps FIRST (three bytes land at VOICAQ+1..3, PUT 3), as its
-; rings are read (scratchpad/strtms_run4.out). A full queue: Z, nothing written.
-; Leaves HL = the descriptor, BC = the new PUT, A = the buffer's low byte, Z / C clear,
-; DE kept -- as the VG-8020.
+; rings are read (scratchpad/strtms_run4.out). A full queue: Z, nothing written, B / C
+; the old / new PUT, HL the entry + 3. Stored: HL = the descriptor, BC = the new PUT,
+; A = the buffer's low byte, Z / C clear, DE kept -- as the VG-8020.
 bios_putq:
                 ld      c,a
                 add     a,a
@@ -239,18 +239,23 @@ bios_putq:
                 ld      l,a
                 ld      h,high QUETAB       ; HL = the descriptor (no carry: QUETAB is
                 ld      a,(hl)              ;   $F959, queue 2 at $F965)
+                ld      b,a                 ; B = the old PUT
                 inc     a                   ; PUT + 1 ...
                 inc     hl
                 inc     hl
                 inc     hl
                 and     (hl)                ; ... AND the size
+                ld      c,a                 ; C = the new PUT
                 dec     hl
                 dec     hl
-                cp      (hl)                ; = GET: full
-                dec     hl
+                cp      (hl)                ; = GET: full -- D-PUTQREGS (2026-11-19): B the old
+                inc     hl                  ;   PUT, C the new, HL the entry + 3, as the VG-8020
+                inc     hl                  ;   (docs/bios/PUTQ.md R-PQ-REGS)
                 ret     z
+                dec     hl
+                dec     hl
+                dec     hl
                 ld      (hl),a              ; PUT := it
-                ld      c,a
                 ld      b,0
                 push    hl
                 inc     hl

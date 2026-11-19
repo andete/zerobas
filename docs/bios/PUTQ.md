@@ -16,8 +16,7 @@ stays 2) and E is stored at the queue's address + that pointer -- unless the poi
 stored and Z is set. A, F, BC and HL are left as the rules say; DE, IX, IY and the interrupt state are
 kept.
 
-zerobas stores the same and reports full the same; it leaves other values in BC and HL when the queue
-is full (below).
+zerobas does all of it the same (since D-PUTQREGS, 2026-11-19).
 
 ## The specification
 
@@ -83,9 +82,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-PUTQREGS** (a full queue: zerobas keeps B, and returns C the queue number and HL the QUETAB entry, where the VG-8020 returns B the old put pointer, C the new one and HL the entry + 3) | R-PQ-REGS |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
