@@ -16,7 +16,7 @@ added. It returns with the carry clear (sent), A kept, and the other registers k
 flags on A. With no printer ready it waits; CTRL + STOP ends the wait with the carry set (aborted),
 F $01, A and the registers kept.
 
-zerobas does all of the measured behaviour the same, apart from the rest of F on return (below).
+zerobas does all of the measured behaviour the same, apart from the rest of F after an abort (below).
 
 ## The specification
 
@@ -61,7 +61,7 @@ row 6 bit 1, row 7 bit 4) for 0.3 s while it waits.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-LPTOUTF** (zerobas returns an OR's flags on A: H clear where the VG-8020's is set; aborted, F $A9 where the VG-8020's is $01 -- the carry agrees) | R-LO-F, R-LO-ABORTF |
+| **D-LPTOUTF** (aborted by CTRL + STOP, zerobas returns F $A9 where the VG-8020's is $01 -- the carry agrees; the sent byte's F is the same since 2026-11-19) | R-LO-ABORTF |
 
 ## Open (not measured)
 

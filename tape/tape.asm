@@ -864,8 +864,8 @@ lptout_wait:
                 out     (PRN_STAT),a    ; 90H <- $FF: STROBE* released (bit0 = 1)
                 ld      a,b             ; restore the character to A
                 pop     bc
-                or      a               ; CY = 0 (success)
-                ret
+                and     a               ; CY = 0 (success); D-LPTOUTF (2026-11-19): an AND's
+                ret                     ;   flags on A (H set), as the VG-8020 (docs/bios/LPTOUT.md R-LO-F)
 lptout_stop:
                 ld      a,b             ; A kept, as the VG-8020's
                 pop     bc

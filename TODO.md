@@ -16829,6 +16829,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bytes on both, and A and the registers are kept on both. Aborted by CTRL + STOP (R-LO-ABORTF,
       [`XLPT3_run1.out`](scratchpad/XLPT3_run1.out)) both set the carry, but the VG-8020's F is $01 and zerobas's $A9.
       Only the carry (aborted) is published. Priced when picked up.
+      🟡 **PART 1 LANDED 2026-11-19: the sent byte's F.** tape/tape.asm lptout's success exit `or a` -> `and a`
+      (0 B): R-LO-F holds on zerobas (spec-live, 512 cases). **STILL OPEN: the abort's F** ($01 against $A9, R-LO-ABORTF):
+      `ld a,b / pop bc / scf` leaves BREAKX's flags; F := $01 with A kept costs bytes in the tape body. Priced when
+      picked up.
 
 - [ ] **D-OUTDLPGRAPH — OUTDLP COUNTS A GRAPHIC CHARACTER'S $01 AS A COLUMN, AND SENDS IT RAW TO A PRINTER THAT IS NOT AN MSX ONE**
       🎚️ TIER 6 — every edge (LPRINT of graphic characters: a later TAB stops one column short per graphic
@@ -16947,14 +16951,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-GV-AF, GETVC2.md R-G2-AF. Priced when picked up.
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
-      🎚️ TIER 3 — common: every PAINT in SCREEN 2 goes through SCANL (filed 2026-11-19).
+      🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
+      basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012F does).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
       length of the most recent SCREEN 2 SCANR; zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
       calls SCANL at all is to be checked first. Priced when picked up.
 
 - [ ] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
-      🎚️ TIER 3 — common: in SCREEN 2 PAINT's border is the paint colour, which drawn lines carry as foreground; check
-      first whether BASIC's PAINT on zerobas goes through these calls (filed 2026-11-19).
+      🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
+      basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012C / $012F does).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): in the run / count the VG-8020 stops at the
       first BDRATR pixel, foreground or background; zerobas runs past a foreground one to the row's end. docs/bios/
       SCANR.md R-SR-SCAN (cases 62, 77), SCANL.md R-SL-SCAN (43, 75). Priced when picked up.
