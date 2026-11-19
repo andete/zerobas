@@ -22,8 +22,9 @@ ATRBYT into the nibble CMASK selects -- for the low nibble ORed in whole, so ATR
 into the high one. A is the byte written last (F its flags, below); BC, DE, HL, IX, IY, the cells and
 the VDP registers are kept, and interrupts are **on** after.
 
-zerobas does all four the same (the third since D-SETCLAST, 2026-11-19); it differs in where the bytes
-are with CLOC $2000 and above, in ATRBYT over 15 in SCREEN 3 and in F (below).
+zerobas does the same (D-SETCLAST, D-SETCCOL, D-SETCATR and D-SETCF, 2026-11-19): one shared cell
+step reads the pattern byte at CLOC and the colour byte at CLOC XOR $2000, as [READC](READC.md) does,
+and [NSETCX](NSETCX.md) takes its pixels through this call.
 
 ## The specification
 
@@ -92,11 +93,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 17, 30, 41, 62, 88) | R-SC-VRAM, R-SC-AF |
-| **D-SETCATR** (SCREEN 3, ATRBYT over 15: zerobas writes $B for $1A into the nibble, where the VG-8020 writes (ATRBYT x 16) AND $F0 into the high one and ORs ATRBYT in whole into the low one -- cases 25, 33, 83) | R-SC-VRAM, R-SC-AF |
-| **D-SETCF** (zerobas returns another F on most cases -- the colour-write steps too, A the same: case 06 $08 against $28 -- and other A / F where its bytes differ) | R-SC-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

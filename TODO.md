@@ -17046,22 +17046,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out)): NSETCX R-NX-VRAM cases 12, 13, 32, 39, 58, 63, 64, 72, 73, 82 now
       as the reference, none new.
 
-- [ ] **D-SETCCOL — READC / SETC / NSETCX SWAP THE PATTERN AND COLOUR BYTES FOR CLOC $2000-$3FFF ON ZEROBAS**
+- [x] **D-SETCCOL — READC / SETC / NSETCX SWAP THE PATTERN AND COLOUR BYTES FOR CLOC $2000-$3FFF ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 uses the pattern byte at CLOC
       and the colour byte at CLOC XOR $2000 (GRPCOL / GRPCGP unused); zerobas uses CLOC AND NOT $2000 and CLOC OR $2000,
       so the two swap -- and SCREEN 3 writes CLOC AND NOT $2000. docs/bios/READC.md R-RD-A (29, 60), SETC.md R-SC-VRAM
       (17, 30, 41, 62, 88), NSETCX.md R-NX-VRAM (18, 59). Priced when picked up.
+      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
+      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
+      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
+      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
+      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
+      SETC and NSETCX hold every rule, no row new.
 
-- [ ] **D-SETCATR — SETC / NSETCX TAKE ATRBYT OVER 15 DIFFERENTLY IN SCREEN 3 ON ZEROBAS**
+- [x] **D-SETCATR — SETC / NSETCX TAKE ATRBYT OVER 15 DIFFERENTLY IN SCREEN 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes (ATRBYT x 16) AND $F0 into a high nibble
       and ORs ATRBYT in whole into a low one ($1A over $A4 gives $BA); zerobas writes $B. Cases 25, 33, 83, 67. docs/bios/SETC.md R-SC-VRAM (25, 33), NSETCX.md R-NX-VRAM (67). Priced when picked up.
+      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
+      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
+      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
+      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
+      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
+      SETC and NSETCX hold every rule, no row new.
 
-- [ ] **D-SETCF — SETC RETURNS ANOTHER A / F ON ZEROBAS**
+- [x] **D-SETCF — SETC RETURNS ANOTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 returns the colour byte written and its OR
       flags, or -- when only the pattern byte is written -- that byte and its S / Z / P flags. docs/bios/SETC.md R-SC-AF. Priced when picked up.
+      ✅ **LANDED 2026-11-19 with D-SETCCOL / D-SETCATR / D-SETCF; ITEM CLOSED.** READC ($011D) and SETC ($0120) enter
+      basic/main.asm `bios_readc` / `bios_setc` (islands.asm `org $011D` / `org $0120`, PATCH_RANGES C3 22 08 / C3 4E 08),
+      one shared cell step (`sc_cell`: the pattern byte at CLOC, the colour byte at CLOC XOR $2000); `setc_col` and its
+      $0877 hook are gone, and NSETCX's pixels reach the new SETC through the $0120 vector. 189 B of the low region
+      (227 -> 60 B free; C-BIOS's own readc / gcell / setc bodies are now dead and are the next cut). spec-live: READC,
+      SETC and NSETCX hold every rule, no row new.
 
 - [x] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
       🎚️ TIER 6 — every edge (the same pixels, other bytes) (filed 2026-11-18).

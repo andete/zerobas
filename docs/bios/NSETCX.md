@@ -23,9 +23,9 @@ foreground nibble otherwise. In SCREEN 3 each pixel's nibble takes ATRBYT as SET
 on the pixel after the last; in SCREEN 2 they are kept. The VDP registers are kept; interrupts are
 **on** after.
 
-zerobas writes the same bytes where the pattern table is below $2000 and ATRBYT is below 16 in
-SCREEN 3 (a byte decided whole, a full byte as $00 / ATRBYT, L alone in SCREEN 3 and HL = 0 since
-D-SETCLAST, D-NSETCXFULL, D-NSETCXL and D-NSETCX0, 2026-11-19); the rest is below.
+zerobas writes the same bytes (a byte decided whole, a full byte as $00 / ATRBYT, L alone in SCREEN 3,
+HL = 0, the pattern table at $2000 and ATRBYT over 15 since D-SETCLAST, D-NSETCXFULL, D-NSETCXL,
+D-NSETCX0, D-SETCCOL and D-SETCATR, 2026-11-19).
 
 ## The specification
 
@@ -94,10 +94,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- and in SCREEN 3 the byte at CLOC AND NOT $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 18, 59, and 71 -- HL = 0 with GRPCGP $2000) | R-NX-VRAM |
-| **D-SETCATR** (as SETC, SCREEN 3 ATRBYT over 15 -- case 67) | R-NX-VRAM |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

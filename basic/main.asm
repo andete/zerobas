@@ -469,34 +469,164 @@ bios_pinlin:
                 ld      hl,read_line_col1
                 jp      bil_go
 
-; setc_col -- D-SETCLAST (2026-11-19): SETC ($0120) in SCREEN 2, when ATRBYT is neither the
-; cell's background nor its foreground colour and every OTHER bit of the pattern byte is set
-; (pattern OR CMASK = $FF), leaves the pixel's bit CLEAR and ORs ATRBYT into the colour byte's
-; high nibble masked off -- (colour AND $F0) OR ATRBYT: ATRBYT becomes the BACKGROUND, the 7
-; set pixels keep theirs (docs/bios/SETC.md R-SC-VRAM; NSETCX goes through the same setc).
-; C-BIOS's setc_set made ATRBYT the foreground, recolouring all 8. Entered by C-BIOS's
-; setc_set at $0877 (basic/islands.asm, `cbios_setc_col`) in place of its colour-byte `call
-; wrtvrm`, with A = the colour byte it would write, B = the pattern byte, C = the colour byte,
-; D = CMASK, E = ATRBYT, HL = the colour byte's address. Its tail then writes `D OR B` as the
-; pattern byte and returns A: so here D and B both := NOT CMASK (setc saved BC / DE). Page 0.
-setc_col:
+; bios_readc / bios_setc -- READC ($011D) / SETC ($0120) as the VG-8020 (D-SETCCOL / D-SETCATR /
+; D-SETCF / D-SETCLAST, 2026-11-19; docs/bios/READC.md, SETC.md). SCREEN 2: the pattern byte at
+; CLOC, its colour byte at CLOC XOR $2000 (GRPCOL / GRPCGP unused; C-BIOS's took CLOC AND NOT
+; $2000 and CLOC OR $2000, which swap with the pattern table at $2000). SETC takes the first
+; that applies: ATRBYT (whole) the background -- the bit cleared; ATRBYT's low nibble the
+; foreground -- set; the pattern byte OR CMASK = $FF -- cleared, colour := (colour AND $F0) OR
+; ATRBYT; else set, colour := (ATRBYT x 16) AND $F0 OR the background. A = the byte written
+; last; a colour byte's F its OR flags, a pattern byte's only S / Z / P/V. SCREEN 3: ATRBYT into
+; the nibble CMASK selects at CLOC -- the low one ORed in whole ($1A over $A4: $BA), the high
+; one (ATRBYT x 16) AND $F0; F its OR flags. BC / DE / HL kept; interrupts on after (the last
+; RDVRM / WRTVRM). NSETCX's pixels come here too (nsx_px / bios_nsetcx call BIOS_SETC). Page 0.
+bios_readc:
+                push    hl
+                push    bc
+                call    sc_cell
+                ld      a,(SCRMOD)
+                cp      3
+                ld      a,(CMASK)
+                jr      nz,brc_s2
+                ld      c,b                 ; SCREEN 3: the pattern byte's nibble under CMASK
+                and     $F0                 ; Z: the low nibble
+                jr      brc_tst
+brc_s2:
+                and     b
+brc_tst:
+                ld      a,c
+                jr      z,brc_bg
+                rrca
+                rrca
+                rrca
+                rrca
+brc_bg:
+                and     $0F                 ; F: the AND flags (R-RD-F)
+                pop     bc
+                pop     hl
+                ret
+
+bios_setc:
+                push    hl
+                push    bc
+                push    de
+                call    sc_cell
+                ld      a,(ATRBYT)
+                ld      e,a
+                ld      a,(CMASK)
+                ld      d,a
+                ld      a,(SCRMOD)
+                cp      3
+                jr      z,bsc_s3
+                ld      a,c
+                and     $0F
+                cp      e
+                ld      a,d
+                jr      nz,bsc_nbg
+                cpl                         ; ATRBYT is the background: the bit cleared
+                and     b
+                jr      bsc_pat
+bsc_nbg:
+                or      b                   ; A: the bit set
                 push    af
-                ld      a,d
-                or      b
-                inc     a                   ; Z: no other bit of the pattern byte clear
-                jr      z,scl_last
+                ld      a,e
+                rlca
+                rlca
+                rlca
+                rlca
+                xor     c
+                and     $F0                 ; Z: ATRBYT's low nibble is the foreground
+                jr      z,bsc_fg
                 pop     af
-                jp      WRTVRM
-scl_last:
-                pop     af
-                ld      a,d
-                cpl
-                ld      d,a                 ; the tail's `ld a,d / or b` := NOT CMASK
-                ld      b,a
+                inc     a
+                jr      nz,bsc_set          ; another bit of the byte is clear
+                ld      a,d                 ; the byte's last clear bit: it stays clear and
+                cpl                         ; ATRBYT goes into the background
+                and     b
+                call    sc_wpat
                 ld      a,c
                 and     $F0
                 or      e                   ; ATRBYT ORed in whole ($1A over $E_ gives $FA)
-                jp      WRTVRM
+                jr      bsc_col
+bsc_set:
+                dec     a
+                call    sc_wpat
+                ld      a,c
+                and     $0F
+                ld      c,a
+                ld      a,e
+                rlca
+                rlca
+                rlca
+                rlca
+                and     $F0
+                or      c                   ; ATRBYT the foreground
+bsc_col:
+                call    WRTVRM              ; the colour byte, at CLOC XOR $2000; AF kept
+                jr      bsc_out
+bsc_fg:
+                pop     af
+bsc_pat:
+                call    sc_wpat             ; the pattern byte alone: A = it, F its S / Z / P/V
+                or      a
+                push    af
+                pop     de
+                ld      a,e
+                and     $C4
+                ld      e,a
+                push    de
+                pop     af
+                jr      bsc_out
+bsc_s3:
+                bit     7,d
+                jr      z,bsc_lo
+                ld      a,e                 ; the high nibble: (ATRBYT x 16) AND $F0
+                rlca
+                rlca
+                rlca
+                rlca
+                and     $F0
+                ld      e,a
+                ld      a,b
+                and     $0F
+                or      e
+                jr      bsc_s3w
+bsc_lo:
+                ld      a,b                 ; the low nibble: ATRBYT ORed in whole
+                and     $F0
+                or      e
+bsc_s3w:
+                call    sc_wpat             ; F: the OR flags (AF kept)
+bsc_out:
+                pop     de
+                pop     bc
+                pop     hl
+                ret
+
+; sc_cell: B := the byte at CLOC, C := the byte at CLOC XOR $2000, HL := CLOC XOR $2000.
+sc_cell:
+                ld      hl,(CLOC)
+                call    RDVRM
+                ld      b,a
+                call    sc_flip
+                call    RDVRM
+                ld      c,a
+                ret
+; sc_wpat: A written at HL XOR $2000 (the byte at CLOC); AF / HL kept.
+sc_wpat:
+                push    hl
+                call    sc_flip
+                call    WRTVRM
+                pop     hl
+                ret
+; sc_flip: HL := HL XOR $2000; AF kept.
+sc_flip:
+                push    af
+                ld      a,h
+                xor     $20
+                ld      h,a
+                pop     af
+                ret
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

@@ -462,9 +462,13 @@ st_go:
                 org     $010B
                 jp      bios_tdownc         ; TDOWNC: GRPCGP's bottom edge (D-TEDGE)
                 org     $010E
-                jp      bios_scalxy
+                jp      bios_scalxy         ; SCALXY: as the VG-8020 (D-SCALXY*)
                 org     $0123
-                jp      bios_nsetcx         ; NSETCX: HL 0 / L alone (D-NSETCX0 / D-NSETCXL)         ; SCALXY: as the VG-8020 (D-SCALXY*)
+                jp      bios_nsetcx         ; NSETCX: HL 0 / L alone (D-NSETCX0 / D-NSETCXL)
+                org     $011D
+                jp      bios_readc          ; READC: the colour byte at CLOC XOR $2000 (D-SETCCOL)
+                org     $0120
+                jp      bios_setc           ; SETC: as the VG-8020 (D-SETCCOL / D-SETCATR / D-SETCF)
                 org     $0111
                 jp      bios_mapxyc         ; MAPXYC: as the VG-8020 (D-MAPXYC*)
                 org     $014A
@@ -496,14 +500,6 @@ st_go:
                 org     $116E
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
-
-; --- C-BIOS's SETC: the last background pixel of a pattern byte (D-SETCLAST) --------
-; $0877 is the colour-byte `call wrtvrm` in our repacked SETC's setc_set (cbios-repack/
-; graphics-cursor.patch); setc_col (basic/main.asm) decides that write and the pattern
-; byte's. PATCH_RANGES refuses unless it reads CD 4D 02.
-                org     $0877
-cbios_setc_col:                             ; a root: C-BIOS enters it (PATCH_ROOTS)
-                call    setc_col
 
 ; --- C-BIOS's NSETCX: a run's pixels in a byte, decided whole (D-SETCLAST part 2) --------
 ; $07FB is nsetcx_lp's `call setc` in our repacked NSETCX (cbios-repack/graphics-cursor.patch);

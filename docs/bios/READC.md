@@ -18,8 +18,7 @@ and 6 measured); in SCREEN 3
 the nibble CMASK selects. F is an AND's flags on A. It changes nothing, keeps BC, DE, HL, IX and IY,
 and returns with interrupts **on**.
 
-zerobas does the same where the pattern table is below $2000; with it at $2000 it reads another byte
-(below).
+zerobas does the same (D-SETCCOL, 2026-11-19), with the same cell step as [SETC](SETC.md).
 
 ## The specification
 
@@ -88,9 +87,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SETCCOL** (with CLOC $2000-$3FFF zerobas swaps the two bytes: the pattern byte at CLOC AND NOT $2000, the colour byte at CLOC OR $2000 -- where the VG-8020 uses CLOC and CLOC XOR $2000; they part where the pattern table is at $2000 -- cases 29, 60) | R-RD-A |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

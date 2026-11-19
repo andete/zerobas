@@ -337,7 +337,7 @@ bil_go:
 ; mask M, and SETC's rule applies with M for CMASK -- ATRBYT the background: M's bits cleared; the
 ; foreground: set; pattern OR M = $FF: cleared, ATRBYT ORed into (colour AND $F0); else set,
 ; ATRBYT the foreground. All 8 pixels (M = $FF): pattern $00 and colour byte := ATRBYT, at CLOC
-; XOR $2000 (cases 12, 13). zerobas's SETC takes a multi-bit CMASK as it is (setc_col,
+; XOR $2000 (cases 12, 13). zerobas's SETC takes a multi-bit CMASK as it is (bios_setc,
 ; basic/main.asm). Entered from our repacked NSETCX's per-pixel `call setc` at $07FB
 ; (basic/islands.asm `cbios_nsx_px`) with HL = the pixels left, this one included, and CLOC /
 ; CMASK on this pixel; it does the run's pixels in this byte and leaves HL / CMASK on their last,
