@@ -17042,6 +17042,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       276, 285-289, 310-313): the VG-8020 tests bit 7 -- RIGHTC moves on when it is clear, LEFTC back when it is
       set, otherwise $0F / $F0 with CLOC kept; zerobas swaps the mask's nibbles and tests bit 3 / bit 4. Priced when picked up.
 
+- [ ] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XTAP1_run1.out`](scratchpad/XTAP1_run1.out)): A matches (the PPI bit command, $09 / $08); F is $54 stopping, $10 starting on the VG-8020, zerobas $44
+      / $00 / $80 (only the toggle matches). docs/bios/STMOTR.md R-SM-AF. Tape: outside the current focus
+      (filed, not fixed). Priced when picked up.
+
+- [ ] **D-TAPOFFREGS — TAPIOF / TAPOOF CHANGE A, F, BC AND DE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XTAP1_run1.out`](scratchpad/XTAP1_run1.out)): the VG-8020 keeps them; zerobas returns A $09, F $44, and TAPOOF also BC $0034 / DE $0000.
+      docs/bios/TAPIOF.md R-TI-KEEP, TAPOOF.md R-TO-KEEP. Tape: outside the current focus
+      (filed, not fixed). Priced when picked up.
+
 - [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
       2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
