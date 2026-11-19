@@ -16996,7 +16996,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX4_run2.out`](scratchpad/XGFX4_run2.out)): with SCRMOD not 2 the VG-8020's S / Z / P/V come from the new E (H, N, bits 3 / 5
       clear; the carry as in SCREEN 2); zerobas returns $41 / $40. docs/bios/SCALXY.md R-SX-AF. Priced when picked up.
 
-- [ ] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
+- [x] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
       🎚️ TIER 1 — happy path: SETC on any SCREEN 2 byte whose other 7 pixels are set, with a third colour, changes 7
       pixels on the screen (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 leaves the bit clear and puts ATRBYT into the
@@ -17009,6 +17009,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pass (62 stays: D-SETCCOL), NSETCX's single pixel (82) too. **STILL OPEN: NSETCX's run** (cases 39, 72, 73): a run
       whose pixels fill a byte's last clear bits -- the VG-8020 decides the byte with the run's pixels counted together;
       zerobas's NSETCX calls setc pixel by pixel (C-BIOS nsetcx, cbios-repack/graphics-cursor.patch). Price before fixing.
+      ✅ **PART 2 LANDED 2026-11-19, NSETCX; ITEM CLOSED.** basic/biosfnk.asm `nsx_px`, entered from our repacked NSETCX's
+      per-pixel `call setc` at $07FB (islands.asm `cbios_nsx_px`, PATCH_RANGES CD 4E 08): the run's pixels in a byte go
+      to SETC as ONE mask (SETC's rule holds for a multi-bit CMASK), a full byte is pattern $00 + colour ATRBYT at CLOC
+      XOR $2000 (closes D-NSETCXFULL too). 70 B, paid by PROMOTING basic/input.asm (546 B) from the low region into main
+      page 1's $6CF3 pin pad (738 -> 192 B); the low region's $3283 pin pad is now 476 B. Witness
+      ([`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out)): NSETCX R-NX-VRAM cases 12, 13, 32, 39, 58, 63, 64, 72, 73, 82 now
+      as the reference, none new.
 
 - [ ] **D-SETCCOL — READC / SETC / NSETCX SWAP THE PATTERN AND COLOUR BYTES FOR CLOC $2000-$3FFF ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved to $2000, or SCREEN 3 at CLOC $2000+; filed 2026-11-18).
@@ -17027,10 +17034,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 returns the colour byte written and its OR
       flags, or -- when only the pattern byte is written -- that byte and its S / Z / P flags. docs/bios/SETC.md R-SC-AF. Priced when picked up.
 
-- [ ] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
+- [x] **D-NSETCXFULL — NSETCX WRITES A WHOLE PATTERN BYTE AS $FF + FOREGROUND ON ZEROBAS**
       🎚️ TIER 6 — every edge (the same pixels, other bytes) (filed 2026-11-18).
       🤖 **AUTONOMOUS** — ([`XGFX3_run6.out`](scratchpad/XGFX3_run6.out)): the VG-8020 writes pattern $00 and colour byte ATRBYT;
       zerobas pattern $FF with ATRBYT in the foreground nibble. docs/bios/NSETCX.md R-NX-VRAM, cases 12, 13, 32, 58, 63, 64. Priced when picked up.
+      ✅ **LANDED 2026-11-19 with D-SETCLAST part 2 (nsx_px's full-byte arm); ITEM CLOSED.** [`XGFX3_fix2.out`](scratchpad/XGFX3_fix2.out).
 
 - [ ] **D-NSETCXL — NSETCX IN SCREEN 3 COUNTS ALL OF HL ON ZEROBAS, L ALONE ON THE VG-8020**
       🎚️ TIER 6 — every edge (HL 256 or more) (filed 2026-11-18).

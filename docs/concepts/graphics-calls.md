@@ -23,8 +23,7 @@ cell row) and SCREEN 3 (64 x 48 blocks of 4 x 4 pixels, any colour each).
 zerobas draws the same pixels in the ordinary cases; most of its differences are at edges -- moved
 tables, colours over 15, off-screen positions -- and in the flags left behind. The one that showed
 in ordinary use, **D-SETCLAST** (setting a SCREEN 2 cell row's last background pixel in a third
-colour recoloured its other seven pixels), is fixed for SETC; NSETCX still does it when a run's pixels
-fill a byte's last background bits.
+colour recoloured its other seven pixels), is fixed, for SETC and NSETCX alike (2026-11-19).
 
 ## How it works
 

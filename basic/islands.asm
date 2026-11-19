@@ -491,6 +491,14 @@ cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_RO
 cbios_setc_col:                             ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    setc_col
 
+; --- C-BIOS's NSETCX: a run's pixels in a byte, decided whole (D-SETCLAST part 2) --------
+; $07FB is nsetcx_lp's `call setc` in our repacked NSETCX (cbios-repack/graphics-cursor.patch);
+; nsx_px (basic/biosfnk.asm) does the run's pixels in that byte at once. PATCH_RANGES refuses
+; unless it reads CD 4E 08.
+                org     $07FB
+cbios_nsx_px:                               ; a root: C-BIOS enters it (PATCH_ROOTS)
+                call    nsx_px
+
 ; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
 ; $0FD6 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
 ; hook"; $0FCA on 0.30, $1037 before; D-CBIOS030 / D-CBIOS031); only its operand byte changes.

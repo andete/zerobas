@@ -312,3 +312,62 @@ bil_go:
                 xor     a
                 scf
                 ret
+
+; nsx_px -- D-SETCLAST part 2 + D-NSETCXFULL (2026-11-19): NSETCX ($0123) decides each pattern
+; byte WHOLE on the VG-8020 (docs/bios/NSETCX.md R-NX-VRAM): the run's pixels in a byte are one
+; mask M, and SETC's rule applies with M for CMASK -- ATRBYT the background: M's bits cleared; the
+; foreground: set; pattern OR M = $FF: cleared, ATRBYT ORed into (colour AND $F0); else set,
+; ATRBYT the foreground. All 8 pixels (M = $FF): pattern $00 and colour byte := ATRBYT, at CLOC
+; XOR $2000 (cases 12, 13). zerobas's SETC takes a multi-bit CMASK as it is (setc_col,
+; basic/main.asm). Entered from our repacked NSETCX's per-pixel `call setc` at $07FB
+; (basic/islands.asm `cbios_nsx_px`) with HL = the pixels left, this one included, and CLOC /
+; CMASK on this pixel; it does the run's pixels in this byte and leaves HL / CMASK on their last,
+; so nsetcx's own `call rightc / dec hl` steps past them. SCREEN 3 (nibbles): SETC per pixel, as
+; before. BC / DE are free here (nsetcx keeps neither). Page 0: a caller's page 1 may be RAM.
+BIOS_SETC       equ     $0120
+nsx_px:
+                ld      a,(SCRMOD)
+                cp      2
+                jp      nz,BIOS_SETC
+                ld      a,(CMASK)
+                ld      c,a                 ; C: the pixel, B: the mask so far
+                ld      b,a
+nsx_lp:
+                bit     0,c
+                jr      nz,nsx_go           ; the byte's last pixel
+                ld      a,h
+                or      a
+                jr      nz,nsx_more
+                ld      a,l
+                dec     a
+                jr      z,nsx_go            ; the run's last pixel
+nsx_more:
+                srl     c
+                ld      a,b
+                or      c
+                ld      b,a
+                dec     hl
+                jr      nsx_lp
+nsx_go:
+                ld      a,b
+                inc     a
+                jr      z,nsx_full          ; all 8 pixels
+                dec     a
+                ld      (CMASK),a
+                call    BIOS_SETC           ; BC / DE / HL kept
+nsx_end:
+                ld      a,c
+                ld      (CMASK),a           ; on the run's last pixel in this byte
+                ret
+nsx_full:
+                push    hl
+                ld      hl,(CLOC)
+                xor     a
+                call    WRTVRM              ; the pattern byte: $00
+                ld      a,h
+                xor     $20
+                ld      h,a
+                ld      a,(ATRBYT)
+                call    WRTVRM              ; the colour byte: ATRBYT, whole
+                pop     hl
+                jr      nsx_end

@@ -73,7 +73,8 @@ DISK_BUILD      equ     0
 ; resident table recovers wave-2's duplication + its low-region bytes and removes
 ; the drift risk (one source of truth). docs/spec-basic-subrom-wave3-detok.md §2.
                 include "basic/str-engine.asm"
-                include "basic/input.asm"
+; basic/input.asm (BASIC INPUT, 537 B) is PROMOTED to main page 1, in front of the $6CF3 pin
+; (D-SETCLAST, 2026-11-19): the low region needs the room for BIOS bodies, which must be page 0.
                 include "basic/float.asm"
                 include "basic/float-arith.asm"
 ; zerobas-sub discovery recorder + dispatch helper (subrom S2b): lives in the
@@ -639,6 +640,8 @@ __MEAS_LOW_END:
 
 ; BLOAD's main half: the ,R handoff (load_handoff) and the sub-ROM call
 ; (bload_sub); the statement's parse is sub2/loadsave.asm's (D-P0CB slice C2).
+; INPUT, promoted from the low region (D-SETCLAST, 2026-11-19): into the $6CF3 pin's pad.
+                include "basic/input.asm"
                 include "basic/bload.asm"
 
 ; The program loaders (do_tape_prog, disk_prog_load) and RUN's bare / <line>

@@ -107,8 +107,10 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                                                        #  ret since D-POSITCLAMP)
                 0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
                 0x116E: bytes([0x3A, 0xDD, 0xF3]),     # CHPUT: TTYPOS = CSRX-1 (0-based)
-                0x0877: bytes([0xCD, 0x4D, 0x02])}     # SETC: colour write -> setc_col
+                0x0877: bytes([0xCD, 0x4D, 0x02]),     # SETC: colour write -> setc_col
                                                        #  (D-SETCLAST)
+                0x07FB: bytes([0xCD, 0x4E, 0x08])}     # NSETCX: call setc -> nsx_px
+                                                       #  (D-SETCLAST part 2, D-NSETCXFULL)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 
