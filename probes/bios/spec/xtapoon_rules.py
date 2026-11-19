@@ -26,13 +26,13 @@ ALL = lambda c: True  # noqa: E731
 
 
 RULES = [
-    Rule("R-TN-OK", S1, "With a recorder ready, the carry is clear (no CTRL+STOP): the leader is written (A $FF and "
-         "$00). (A, BC and HL are left holding working values: not compared, the group `XTW`.)", ALL,
+    Rule("R-TN-OK", S1, "With a recorder ready, the carry is clear -- set on entry too (no CTRL+STOP): the leader is "
+         "written (A $FF and $00). (A, BC and HL are left holding working values: not compared, the group `XTW`.)", ALL,
          lambda c: c.f & 1 == 0),
     Rule("R-TN-MOTOR", S1, "The motor runs (port C bit 4 := 0, from stopped or running); interrupts are off after the "
          "call, whether they were on or off before it.", ALL, lambda c: G.motor(c) == 0 and c.iff == 0),
     Rule("R-TN-PORT", S1, "Port C: bits 6 and 7 kept, bits 4 and 5 := 0 (motor on, cassette output low), the low "
-         "nibble (the keyboard row select) := 7 -- $40, $45, $50 give $47; $E0 $C7; $A5 $87.", ALL,
+         "nibble (the keyboard row select) := 7 -- $40, $45, $4A, $50 give $47; $E0 $C7; $A5 $87.", ALL,
          lambda c: c.aa == (c.cpc & 0xC0) | 0x07),
     Rule("R-TN-DE", S1, "DE is kept ($1234, $5678 measured).", ALL, lambda c: c.de == c.cde),
 ]

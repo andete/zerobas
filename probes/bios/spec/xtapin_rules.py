@@ -26,7 +26,7 @@ ALL = lambda c: True  # noqa: E731
 
 
 RULES = [
-    Rule("R-TP-A", S1, "A := the next byte written, in order ($00, $55, $AA, $FF, $01, $80, $7F, $FE), the carry clear -- when the calls "
-         "come back to back (see the evidence).", ALL,
+    Rule("R-TP-A", S1, "A := the next byte written, in order ($00, $55, $AA, $FF, $01, $80, $7F, $FE), the carry clear (set on entry or "
+         "not) -- when the calls come back to back (see the evidence).", ALL,
          lambda c: (c.a, c.f & 1) == (G.WRITTEN[c.ca], 0)),
 ]

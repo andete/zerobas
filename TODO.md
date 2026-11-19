@@ -17074,8 +17074,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-TAPOONPORT — TAPOON KEEPS PORT C'S LOW NIBBLE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — the VG-8020 sets port C's low nibble to 7 ($40 / $E0 give $47 / $C7); zerobas keeps the entry low
-      nibble.
+      🤖 **AUTONOMOUS** — the VG-8020 sets port C's low nibble to 7 ($40 / $4A / $E0 give $47 / $47 / $C7); zerobas keeps the
+      entry low nibble.
       docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
 

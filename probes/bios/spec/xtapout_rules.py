@@ -26,6 +26,6 @@ ALL = lambda c: True  # noqa: E731
 
 
 RULES = [
-    Rule("R-TU-OK", S1, "The carry is clear (no CTRL+STOP) after each byte. (A is left holding a working value: what "
+    Rule("R-TU-OK", S1, "The carry is clear (no CTRL+STOP) after each byte, set on entry or not. (A is left holding a working value: what "
          "the byte became is TAPIN's to show; the group `XTO`.)", ALL, lambda c: c.f & 1 == 0),
 ]
