@@ -84,6 +84,8 @@ GYPOS           equ     $FCB5   ; pending plot Y (int16 LE)
 GRPACX          equ     $FCB7   ; last-referenced point X (int16 LE)
 GRPACY          equ     $FCB9   ; last-referenced point Y (int16 LE)
 CLOC            equ     $F92A   ; computed VRAM byte address of the current pixel (2)
+GRPCGP          equ     $F3CB   ; SCREEN 2's pattern table VRAM address (2)
+MLTCGP          equ     $F3D5   ; SCREEN 3's pattern table VRAM address (2)
 CMASK           equ     $F92C   ; MSB-first bit mask of the current pixel (1)
 ; ATRBYT -- the SHARED graphics attribute (published MSX work area). Introduced
 ; in G6 (docs/spec-basic-graphics-g6.md §6, D-G6-3) because DRAW's colour is

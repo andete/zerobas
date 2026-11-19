@@ -17128,26 +17128,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the VG-8020 stops TUPC where CLOC is below GRPCGP + $100, TDOWNC where it is GRPCGP + $1700 or more (unsigned);
       zerobas stops TUPC only where CLOC AND $FF07 is 0 and TDOWNC wherever CLOC is $1700 or more. Priced when picked up.
 
-- [ ] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
+- [x] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
       🎚️ TIER 6 — every edge (a pattern table moved off $0000 with BASE, then a graphics call; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-GRP / R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out)):
       the VG-8020's CLOC is GRPCGP (SCREEN 2) or MLTCGP (else) plus the offset; zerobas's is the offset alone. The
       same while those cells hold 0. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
 
-- [ ] **D-MAPXYCWRAP — MAPXYC DOES NOT WRAP Y IN SCREEN 3 ON ZEROBAS**
+- [x] **D-MAPXYCWRAP — MAPXYC DOES NOT WRAP Y IN SCREEN 3 ON ZEROBAS**
       🎚️ TIER 6 — every edge (MAPXYC in SCREEN 3 with a block Y of 64 or more; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out), cases 39, 40,
       42): the VG-8020 takes Y modulo 64 (Y 64 -> offset $0000), zerobas does not ($0800). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
 
-- [ ] **D-MAPXYCMODE — MAPXYC TAKES THE SCREEN 2 WAY FOR SCRMOD 0 / 1 ON ZEROBAS**
+- [x] **D-MAPXYCMODE — MAPXYC TAKES THE SCREEN 2 WAY FOR SCRMOD 0 / 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (MAPXYC called in a text mode; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-MLT ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out), cases 30, 31):
       the VG-8020 takes the multicolour way for any SCRMOD but 2 (0, 1, 4, $FF measured). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
 
-- [ ] **D-MAPXYCF — MAPXYC RETURNS OTHER A / F ON ZEROBAS**
+- [x] **D-MAPXYCF — MAPXYC RETURNS OTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/MAPXYC.md R-MX-AF ([`XGFX1_run5.out`](scratchpad/XGFX1_run5.out)). Priced when
       picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** MAPXYC ($0111) is basic/biosfnk.asm bios_mapxyc (91 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 56 09): GRPCGP / MLTCGP added by `add hl,de` (which gives the reference's H / C / bits 5, 3 over the OR's S / Z / P/V), the SCREEN 2 way for SCRMOD 2 only, block numbers modulo 64; spec-live: MAPXYC's four rules all hold on zerobas.
 
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).

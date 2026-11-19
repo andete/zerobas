@@ -22,9 +22,8 @@ CMASK:
 HL ends equal to CLOC; A and F, and in SCREEN 2 D, carry intermediate values (the rules list them).
 BC, IX, IY and the interrupt state are kept.
 
-zerobas leaves out the pattern table's base (GRPCGP / MLTCGP: the same CLOC while they hold 0, their
-default), does not wrap Y in SCREEN 3, takes the SCREEN 2 way for any SCRMOD but 3, and returns
-other A and F (below).
+zerobas does all of it the same (since D-MAPXYCBASE / D-MAPXYCWRAP / D-MAPXYCMODE / D-MAPXYCF,
+2026-11-19: its MAPXYC is basic/biosfnk.asm bios_mapxyc).
 
 ## The specification
 
@@ -73,12 +72,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-MAPXYCBASE** (zerobas leaves out GRPCGP / MLTCGP -- the same CLOC as the VG-8020 when they hold 0, cases 47 and 50) | R-MX-GRP, R-MX-MLT, R-MX-REGS |
-| **D-MAPXYCWRAP** (in SCREEN 3 zerobas does not take Y modulo 64: Y 64 gives offset $0800, Y 127 $0F07, where the VG-8020 gives $0000 and $0707; its A is Y >> 3 without AND 7 too. Two zerobas passes, cases 26 and 41, are coincidences: the missing wrap adds just the $1000 its missing MLTCGP drops) | R-MX-MLT, R-MX-AF, R-MX-REGS |
-| **D-MAPXYCMODE** (for any SCRMOD but 2 and 3 -- 0, 1, 4, 6, $82, $FF measured -- zerobas takes the SCREEN 2 way, where the VG-8020 takes the multicolour way) | R-MX-MLT, R-MX-AF, R-MX-REGS |
-| **D-MAPXYCF** (zerobas returns another F in both screens -- and in SCREEN 3 another A for Y from 64, D-MAPXYCWRAP) | R-MX-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

@@ -455,3 +455,78 @@ bcs_8:
                 ld      a,e
                 ei
                 ret
+
+; bios_mapxyc -- MAPXYC ($0111). D-MAPXYCBASE / D-MAPXYCWRAP / D-MAPXYCMODE / D-MAPXYCF
+; (2026-11-19), as the VG-8020 (docs/bios/MAPXYC.md), X in C and Y in E (B and D play no part):
+;   SCRMOD 2: CLOC := GRPCGP + (Y AND $F8) x 32 + (X AND $F8) + (Y AND 7), CMASK := $80 >> (X AND 7),
+;     A := the offset's low byte, D := X;
+;   any other SCRMOD: CLOC := MLTCGP + ((Y >> 3) AND 7) x 256 + ((X >> 1) AND 31) x 8 + (Y AND 7),
+;     CMASK := $F0 / $0F for an even / odd X, A := (Y >> 3) AND 7.
+; F: S / Z / P/V from A, then `add hl,de` adds the base -- H the carry out of bit 11, C out of bit
+; 15, bits 5 / 3 from CLOC's high byte, N clear -- exactly the reference's. HL := CLOC, BC kept, DE
+; kept (but D), the interrupt state kept. C-BIOS's left the base out, did not wrap Y in SCREEN 3,
+; took the SCREEN 2 way for SCRMOD 0 / 1 and left other flags. Page 0.
+bios_mapxyc:
+                push    de
+                ld      a,(SCRMOD)
+                cp      2
+                jr      nz,bmx_mlt
+                ld      a,c
+                and     7
+                ld      h,a                 ; H: the shift count
+                inc     h
+                ld      a,$80
+bmx_sh:
+                dec     h
+                jr      z,bmx_shd
+                rrca
+                jr      bmx_sh
+bmx_shd:
+                ld      (CMASK),a
+                ld      a,e
+                rrca
+                rrca
+                rrca
+                and     $1F
+                ld      h,a                 ; (Y AND $F8) x 32: the high byte
+                ld      a,e
+                and     7
+                ld      l,a
+                ld      a,c
+                and     $F8
+                or      l                   ; A = the offset's low byte; S / Z / P/V
+                ld      l,a
+                ld      de,(GRPCGP)
+                add     hl,de               ; H / C / bits 5, 3: the base addition's
+                ld      (CLOC),hl
+                pop     de
+                ld      d,c                 ; D := X
+                ret
+bmx_mlt:
+                ld      a,c
+                and     1
+                ld      a,$F0
+                jr      z,bmx_even
+                ld      a,$0F
+bmx_even:
+                ld      (CMASK),a
+                ld      a,c
+                and     $3E
+                add     a,a
+                add     a,a                 ; ((X >> 1) AND 31) x 8
+                ld      l,a
+                ld      a,e
+                and     7
+                or      l
+                ld      l,a
+                ld      a,e
+                rrca
+                rrca
+                rrca
+                and     7                   ; A = (Y >> 3) AND 7; S / Z / P/V
+                ld      h,a
+                ld      de,(MLTCGP)
+                add     hl,de
+                ld      (CLOC),hl
+                pop     de
+                ret
