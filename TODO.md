@@ -16917,9 +16917,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
       R-PD-PORT. Priced when picked up.
 
-- [ ] **D-BREAKXBUF — BREAKX DOES NOT EMPTY THE KEY BUFFER ON CTRL+STOP ON ZEROBAS**
+- [x] **D-BREAKXBUF — BREAKX DOES NOT EMPTY THE KEY BUFFER ON CTRL+STOP ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): docs/bios/BREAKX.md R-BX-BUF, cases 46, 49. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_breakx: on CTRL+STOP GETPNT := PUTPNT (HL kept) and OLDKEY row 7 := $EF (+5 B, the $3283 pad; PUTPNT / GETPNT now in basic/sysvars.inc); spec-live: BREAKX's rules all hold on zerobas.
 
 - [x] **D-ISCNTCEI — ISCNTC / CKCNTC RETURN F $44 AND KEEP THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).

@@ -21,9 +21,10 @@ standing in for joystick 0), GTPAD / GTPDL the pads and paddles; BREAKX checks C
 ISCNTC / CKCNTC the flag the timer interrupt sets; KILBUF empties the key buffer and CHGCAP switches
 the CAPS lamp.
 
-zerobas reads the keys the same. SNSMAT, KILBUF, CHGCAP, GTSTCK and GTTRIG match the VG-8020 in every
-measured case since 2026-11-19 (cbios-repack/input-calls.patch); what is left is at the edges --
-BREAKX leaving the typed-ahead keys, the paddle's port bits, flags and the interrupt state.
+zerobas reads the keys the same. SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC and CKCNTC
+match the VG-8020 in every measured case since 2026-11-19 (cbios-repack/input-calls.patch and
+basic/biosfnk.asm); what is left is GTPDL's
+port bits (D-GTPDLPORT).
 
 ## How it works
 

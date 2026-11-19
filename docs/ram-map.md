@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **447** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **449** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -287,6 +287,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3F5` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$F3F6` |  | `basic` | `SCNCNT` | key-scan countdown: the interrupt scans the keyboard when it reaches 0 (MSX work area; D-BOOTSCAN) |  |
 | `$F3F6` | 1 B | `disk` | `BD_SCNCNT` | MSX work area: SCNCNT, the key-scan countdown (1 B) |  |
+| `$F3F8` | 2 B | `basic` | `PUTPNT` | the key buffer's put pointer (2) |  |
+| `$F3FA` | 2 B | `basic` | `GETPNT` | the key buffer's get pointer (2) |  |
 | `$F3FC` | 2 B | `basic` | `CS120_LOW` | 1200-baud reference low-signal length word |  |
 | `$F401` | 2 B | `basic` | `CS240_LOW` | 2400-baud reference low-signal length word |  |
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |

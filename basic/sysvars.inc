@@ -3958,6 +3958,8 @@ NEWKEY          equ     $FBE5   ; key matrix snapshot, 11 B (row 6 bit 0 = SHIFT
 ; CTRL-STOP, still set ten frames after the release (scratchpad/intflg_isr_run6.out).
 INTFLG          equ     $FC9B   ; STOP / CTRL-STOP latch (1)
 OLDKEY          equ     $FBDA   ; the key matrix as of the last scan, 11 B, active low (1)
+PUTPNT          equ     $F3F8   ; the key buffer's put pointer (2)
+GETPNT          equ     $F3FA   ; the key buffer's get pointer (2)
 CBIOS_BREAKX    equ     $15B6   ; C-BIOS's BREAKX body -- pinned by PATCH_RANGES' $00B7 bytes
 CBIOS_CLS       equ     $0761   ; C-BIOS's CLS body, past cls_z's `ret nz` -- PATCH_RANGES' $00C3
 CBIOS_GICINI    equ     $16CB   ; C-BIOS's GICINI body (PSG only) -- pinned by PATCH_RANGES' $0090

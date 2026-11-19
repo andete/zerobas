@@ -16,7 +16,7 @@ it also empties the key buffer (GETPNT := PUTPNT) and marks STOP in OLDKEY's row
 working value, port C's low nibble at the last row it read (7, or 6 when STOP is pressed); the
 interrupt state and the rest are kept.
 
-zerobas sets the carry the same, but does not empty the key buffer (below).
+zerobas does all of it the same (since D-BREAKXBUF, 2026-11-19).
 
 ## The specification
 
@@ -69,9 +69,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-BREAKXBUF** (CTRL+STOP: zerobas leaves the keys queued, where the VG-8020 empties the buffer -- cases 46, 49) | R-BX-BUF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

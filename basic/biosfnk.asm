@@ -107,8 +107,11 @@ odl_tab:
 bios_breakx:
                 call    CBIOS_BREAKX
                 ret     nc
-                ld      a,(OLDKEY+7)
-                and     $EF                 ; STOP (row 7 bit 4) already down
+                push    hl                  ; D-BREAKXBUF (2026-11-19): the key buffer emptied,
+                ld      hl,(PUTPNT)         ;   GETPNT := PUTPNT, and OLDKEY row 7 := $EF, as the
+                ld      (GETPNT),hl         ;   VG-8020 (docs/bios/BREAKX.md R-BX-BUF); HL kept
+                pop     hl
+                ld      a,$EF               ; STOP (row 7 bit 4) already down
                 ld      (OLDKEY+7),a
                 scf
                 ret
