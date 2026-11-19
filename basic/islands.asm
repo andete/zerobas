@@ -430,11 +430,12 @@ st_go:
 ; 📦 D-SETCCUT (2026-11-19): cbios-repack/readc-setc-cut.patch cut C-BIOS's dead readc / gcell /
 ; setc (121 B) -- zerobas answers READC / SETC since D-SETCCOL -- and the graphics span moved
 ; down 121, so island 3 was $096A..$09ED (132 B); D-CBIOSDEAD's cut of C-BIOS's dead grpprt / mapxy /
-; scalxy / clrspr / debug-hex helpers (353 B) moved it to $0773..$09ED (635 B). Its tenant is CODE: bios_setc (SETC, $0120),
+; scalxy / clrspr / debug-hex helpers (353 B) moved it to $0773..$09ED (635 B); D-MOVEMASK's RIGHTC / LEFTC
+; fix (+14 B of C-BIOS) to $0781..$09ED (621 B). Its tenants are CODE: bios_setc (SETC, $0120) and bios_grpprt,
 ; reached only through its page-0 vector; it calls sc_cell / sc_wpat in the low region and
 ; WRTVRM. Page 0 is C-BIOS's slot, as the low region is, so nothing pages between them.
 
-                org     $0773
+                org     $0781
 bios_setc:
                 push    hl
                 push    bc

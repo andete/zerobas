@@ -16,8 +16,8 @@ shifts right a bit, and from the cell's last pixel ($01) it becomes $80 with CLO
 the mask flips between $F0 and $0F, and from $0F CLOC moves on 8. It checks no edge. A is the new
 mask, F an AND's flags on it; the other registers, the interrupt state and the other cells are kept.
 
-zerobas does all of it the same for a pixel's mask; it treats a SCREEN 3 mask that is not one
-differently (below).
+zerobas does all of it the same, a SCREEN 3 mask that is not a block's included (D-MOVEMASK,
+2026-11-19: cbios-repack/movemask.patch tests CMASK's bit 7).
 
 ## The specification
 
@@ -78,9 +78,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-MOVEMASK** (SCREEN 3, a CMASK that is not a pixel's: zerobas swaps its nibbles -- $F1 to $1F, $8F to $F8, $70 to $07 -- and moves CLOC on when its bit 3 is set ($1F, $4F, $8F, $FF), where the VG-8020 tests bit 7: $1F / $4F / $70 move on to $F0, $F1 / $8F / $FF become $0F, CLOC kept -- cases 275, 285-287, 310, 311) | R-RC-POS, R-RC-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

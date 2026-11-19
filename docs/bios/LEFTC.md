@@ -15,8 +15,8 @@ SPDX-License-Identifier: 0BSD
 from $80 it becomes $01 with CLOC - 8; in SCREEN 3 the mask flips, and from $F0 CLOC moves back 8.
 It checks no edge. A is the new mask, F an AND's flags on it; the rest is kept.
 
-zerobas does all of it the same for a pixel's mask; it treats a SCREEN 3 mask that is not one
-differently (below).
+zerobas does all of it the same, a SCREEN 3 mask that is not a block's included (D-MOVEMASK,
+2026-11-19: cbios-repack/movemask.patch tests CMASK's bit 7).
 
 ## The specification
 
@@ -77,9 +77,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-MOVEMASK** (SCREEN 3, a CMASK that is not a pixel's: zerobas swaps its nibbles -- $1F to $F1, $80 to $08, $70 to $07 -- and moves CLOC back when its bit 4 is set ($1F, $F1, $70), where the VG-8020 tests bit 7: $80 / $F1 move back to $0F, $1F / $4F / $70 become $F0, CLOC kept -- cases 276, 288, 289, 312, 313) | R-LC-POS, R-LC-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

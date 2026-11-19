@@ -88,8 +88,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [FINAL](STMOTR.md) | 7 | — |
 | $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](LFTQ.md) | 5 | — |
 | $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](PUTQ.md) | 5 | — |
-| $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
-| $00FF | LEFTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](LEFTC.md) | 6 | D-MOVEMASK |
+| $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | — |
+| $00FF | LEFTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](LEFTC.md) | 6 | — |
 | $0102 | UPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](UPC.md) | 6 | — |
 | $0105 | TUPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TUPC.md) | 6 | — |
 | $0108 | DOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](DOWNC.md) | 6 | — |

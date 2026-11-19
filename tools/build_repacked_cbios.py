@@ -176,11 +176,16 @@ PATCHES = [
     # the font pad moves down (GICINI $1588, BREAKX $1510, CHPUT's TTYPOS overlay $1110); island 1 is
     # $196E-$1BBE (593 B). $0D01-$0D11 and the font keep their addresses.
     os.path.join(REPO, "cbios-repack", "dead-bodies-main.patch"),
+    # D-MOVEMASK (2026-11-19): RIGHTC / LEFTC in SCREEN 3 test CMASK's bit 7, as the VG-8020, so a
+    # mask that is not a block's goes to $F0 / $0F like the block masks (four rotations swapped its
+    # nibbles); lr_n shrinks to `ld hl,CMASK / jp is_sc3`. +14 B: everything after rightc moves
+    # (TUPC $0711, TDOWNC $072F; island 3 $0781-$09ED).
+    os.path.join(REPO, "cbios-repack", "movemask.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "8dc96e8c931ea98374ecfe4f5527d0da772d4077"   # dead main bodies cut, 2026-11-19
+REPACKED_SHA1 = "a71e2be1286b193ebf2689d118f88df2906d5fa3"   # RIGHTC / LEFTC SCREEN 3 masks, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

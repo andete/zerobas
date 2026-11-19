@@ -17005,11 +17005,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       green. Left, on purpose: gtpdl (51 B) / gtpad (2 B) after the font -- reclaiming them means moving BASIC_BASE
       ($2781), a different change; and stack_error (9 B, pasmo-unused) inside EXTROM's block.
 
-- [ ] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
+- [x] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
       🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/RIGHTC.md / LEFTC.md ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out), cases 275,
       276, 285-289, 310-313): the VG-8020 tests bit 7 -- RIGHTC moves on when it is clear, LEFTC back when it is
       set, otherwise $0F / $F0 with CLOC kept; zerobas swaps the mask's nibbles and tests bit 3 / bit 4. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/movemask.patch (#49): C-BIOS's own rightc / leftc in SCREEN 3
+      test CMASK's bit 7 (RIGHTC: clear -> $F0, CLOC + 8; set -> $0F. LEFTC: set -> $0F, CLOC - 8; clear -> $F0) instead
+      of rotating four times; lr_n shrank to `ld hl,CMASK / jp is_sc3`. Fixed in the source, not overlaid (one body).
+      +14 B before $0D01: re-derived three guards, CBIOS_TUPC $0711, CBIOS_TDOWNC $072F, island 3 $0781-$09ED (both
+      ISLAND_RANGES copies); the 25 bytes that changed outside the edit are all operands to their labels' new
+      addresses (checked through the two listings). spec-live (full): RIGHTC / LEFTC hold every rule, 94 pages agree.
 
 - [x] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).

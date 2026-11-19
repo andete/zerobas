@@ -607,8 +607,8 @@ bsx_out:
 ; C-BIOS's ignored GRPCGP. Here only that test: a SCREEN 2 move is UPC's / DOWNC's (the rules'
 ; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, pinned by
 ; PATCH_RANGES' old vector bytes). BC / DE / HL kept. Page 0.
-CBIOS_TUPC      equ     $06FD
-CBIOS_TDOWNC    equ     $071B
+CBIOS_TUPC      equ     $0711
+CBIOS_TDOWNC    equ     $072F
 BIOS_UPC        equ     $0102
 BIOS_DOWNC      equ     $0108
 bios_tupc:
