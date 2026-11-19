@@ -16865,9 +16865,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves them as they were. docs/bios/GRPPRT.md R-GP-EI. Priced when picked up.
 
+- [ ] **D-SCANLPAINT — SCANL PAINTS 8 PIXELS SHORT IN SCREEN 2 ON ZEROBAS**
+      🎚️ TIER 3 — common: every PAINT in SCREEN 2 goes through SCANL (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): the VG-8020 paints HL + 8 pixels from the left end (through the
+      start pixel and 7 more); zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
+      calls SCANL at all is to be checked first. Priced when picked up.
+
+- [ ] **D-SCANLSTOP — SCANL MISSES A FOREGROUND-COLOURED BORDER PIXEL ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): start X 104, BDRATR 3 (the foreground of X 98-102): the VG-8020
+      counts 1, zerobas runs to X 0. docs/bios/SCANL.md case 43. Priced when picked up.
+
+- [ ] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
+
+- [ ] **D-SCANRSKIP — SCANR WITH DE ABOVE THE SKIPPED BORDER PIXELS RUNS TO THE ROW END ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): docs/bios/SCANR.md case 62. Priced when picked up.
+
 - [ ] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run1.out`](scratchpad/XGFX6_run1.out)): the VG-8020 keeps BC, DE, HL and the interrupt
+      🤖 **AUTONOMOUS** — ([`XGFX6_run4.out`](scratchpad/XGFX6_run4.out)): the VG-8020 keeps BC, DE, HL and the interrupt
       state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
       C := 0, HL := $000E, other flags, interrupts on. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
 

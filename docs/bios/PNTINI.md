@@ -24,15 +24,15 @@ zerobas sets the same BDRATR; it changes BC and HL, returns other flags and turn
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XQ rNN]**: case `NN` of the XGFX6 probe, run 1, on row `r`, both rows in
-[`scratchpad/XGFX6_run1.out`](../../scratchpad/XGFX6_run1.out) (the two rows recorded the same bytes).
+**Evidence.** **[XQ rNN]**: case `NN` of the XGFX6 probe, run 4, on row `r`, both rows in
+[`scratchpad/XGFX6_run4.out`](../../scratchpad/XGFX6_run4.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx6.asm` documents the presets, the case table and the 128-byte record:
 - Before each case the probe sets, by hand: the screen-table cells to the published defaults; SCRMOD,
   CLOC ($0662), CMASK, ATRBYT ($07) and BDRATR ($33) to the case's; the 41 bytes $F92D-$F955 (the
   graphics work area) to a known pattern; every VRAM byte to ((address low) XOR (address high) XOR
   $5A) OR (address high AND $3C); the VDP registers to a preset with the display off. It reads the
   VDP status last.
-- B $00, C $57, DE $9BDF, HL $2468, IX $4321, IY $8765 (C, IX, IY complemented when bit 2 of the case
+- B $00, C $57, DE $9BDF, HL $2468 (RG0SAV-RG7SAV preset $A5), IX $4321, IY $8765 (C, IX, IY complemented when bit 2 of the case
   number is set), A, F and the interrupt state as the case lists them. After the call it records
   every register, the interrupt state (read twice), RG0SAV-RG7SAV, SCRMOD, the VDP registers, VRAM's
   1 KB block sums and two windows, CLOC, CMASK, ATRBYT, BDRATR and the work-area bytes $F92D-$F933,

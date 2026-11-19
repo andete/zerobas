@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**74 of 108 calls have a page; 72 are FINAL.**
+**76 of 108 calls have a page; 72 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -104,8 +104,8 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0123 | NSETCX | graphics (concept page to come) | L3 | [FINAL](NSETCX.md) | 9 | D-NSETCXFULL, D-SETCLAST, D-SETCCOL, D-SETCATR, D-NSETCXL, D-NSETCX0 |
 | $0126 | GTASPC | graphics (concept page to come) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | graphics (concept page to come) | L3 | [DRAFT 1](PNTINI.md) | 3 | D-PNTINIREGS |
-| $012C | SCANR | graphics (concept page to come) | L3 | — | — | — |
-| $012F | SCANL | graphics (concept page to come) | L3 | — | — | — |
+| $012C | SCANR | graphics (concept page to come) | L3 | [DRAFT 1](SCANR.md) | 5 | D-SCANRSAVE, D-SCANRSKIP |
+| $012F | SCANL | graphics (concept page to come) | L3 | [DRAFT 1](SCANL.md) | 5 | D-SCANLPAINT, D-SCANLSTOP |
 | $0132 | CHGCAP | input (concept page to come) | L3 | — | — | — |
 | $0135 | CHGSND | sound (concept page to come) | L3 | — | — | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |
