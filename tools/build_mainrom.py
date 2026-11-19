@@ -91,6 +91,7 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                                                        #  (D-INITKEYS; cls_z, CBIOS_CLS - 1)
                 0x00C9: bytes([0xC3, 0x19, 0x16]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG; C-BIOS's
                                                        #  stub is POSIT's ret since D-POSITCLAMP)
+                0x0069: bytes([0xC3, 0xFB, 0x02]),     # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*)
                 0x014A: bytes([0xC3, 0x19, 0x17]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;
                                                        #  $1719 since cbios-repack #40)
                 0x014D: bytes([0xC3, 0x21, 0x18]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)

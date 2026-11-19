@@ -17180,25 +17180,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       its direct INITXT partner 20): the VG-8020's INITXT leaves PATBAS / ATRBAS; zerobas's sets them from TXTPAT /
       TXTATR ($0000 by default). Priced when picked up.
 
-- [ ] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
+- [x] **D-CLRSPRR1 — CLRSPR DOES NOT WRITE VDP R#1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RG1SAV and R#1 out of step when CLRSPR is called -- the VG-8020's CLRSPR brings the
       sprite size into R#1; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-R1 ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)): the VG-8020
       writes RG1SAV to R#1; zerobas leaves R#1 alone. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
 
-- [ ] **D-CLRSPRMODE — CLRSPR DOES NOTHING IN SCREEN 0 ON ZEROBAS, AND WRITES Y $D9 FOR SCRMOD ABOVE 3**
+- [x] **D-CLRSPRMODE — CLRSPR DOES NOTHING IN SCREEN 0 ON ZEROBAS, AND WRITES Y $D9 FOR SCRMOD ABOVE 3**
       🎚️ TIER 6 — every edge (CLRSPR called in SCREEN 0, or with SCRMOD over 3; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM / R-CS-EI / R-CS-REGS ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)):
       the VG-8020 clears the sprite tables in every SCRMOD measured (0-4, $77, $81) with Y $D1; zerobas returns at
       once in SCREEN 0 (VRAM untouched, registers and interrupts as on entry) and writes Y $D9 for SCRMOD above 3
       (4, $77, $81).
       Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
 
-- [ ] **D-CLRSPRORDER — CLRSPR WRITES THE ATTRIBUTES BEFORE CLEARING THE PATTERNS ON ZEROBAS**
+- [x] **D-CLRSPRORDER — CLRSPR WRITES THE ATTRIBUTES BEFORE CLEARING THE PATTERNS ON ZEROBAS**
       🎚️ TIER 6 — every edge (an attribute table inside the sprite pattern table's 2 KB; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-VRAM ([`XCLR_run5.out`](scratchpad/XCLR_run5.out), case 31: PATBAS
       $3C00, ATRBAS $3FC0): the VG-8020 clears the patterns first, so the attribute entries stay; zerobas clears them
       last and the overlapping entries read 0. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
 
 - [ ] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
@@ -17207,11 +17210,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       OR BAKCLR); zerobas sets the border colour there.
       Priced when picked up.
 
-- [ ] **D-CLRREGS — CLRSPR / CHGCLR RETURN OTHER REGISTERS ON ZEROBAS**
+- [x] **D-CLRREGS — CLRSPR / CHGCLR RETURN OTHER REGISTERS ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CLRSPR.md R-CS-REGS, CHGCLR.md R-CC-REGS ([`XCLR_run5.out`](scratchpad/XCLR_run5.out)):
       the VG-8020's values are listed in the rules; zerobas returns A = 0 / F $42 / HL = PATBAS after CLRSPR and
       other A, F, DE, HL after CHGCLR. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** CLRSPR ($0069) is basic/biosfnk.asm bios_clrspr (69 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 FB 02): R#1 := RG1SAV, the patterns cleared first, the 32 entries with Y $D1 in every SCRMOD, the loop's own last GSPSIZ / `inc c` leaving the VG-8020's F; spec-live: CLRSPR's four rules all hold on zerobas.
 
 - [ ] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
       🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV

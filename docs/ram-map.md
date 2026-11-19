@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **449** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **451** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -622,6 +622,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F91F` | 1 B | `basic` | `CGPNT` | published: the font's slot (1 B) then address (2 B) |  |
 | `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
+| `$F926` | 2 B | `basic` | `PATBAS` | the sprite pattern table's VRAM address (2) |  |
+| `$F928` | 2 B | `basic` | `ATRBAS` | the sprite attribute table's VRAM address (2) |  |
 | `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |
 | `$F92C` | 1 B | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |
 | `$F92D` | 36 B | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 36 B; executes from RAM) |  |

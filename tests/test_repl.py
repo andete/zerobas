@@ -101,6 +101,12 @@ def feed(m, keys):
     m.trap("CHSNS", chsns)
     m.trap("CHPUT", chput)
     m.trap("RDVRM", rdvrm)
+    # The cursor tenant (sub/cursor.asm ct_put) writes its glyph into the pattern table through
+    # WRTVRM ($004D). These tests never load the BIOS: untrapped, the call slid through the
+    # image's zero bytes until something returned -- until CLRSPR's vector at $0069 became a
+    # `jp bios_clrspr` (2026-11-19) and the slide ran into it. The glyph is not part of the
+    # screen this model keeps: the write is dropped.
+    m.trap("WRTVRM", lambda mm: None)
     m.call("read_line")
     base = m.sym["LINEBUF"]
     end = base

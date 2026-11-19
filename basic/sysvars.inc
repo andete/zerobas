@@ -11,6 +11,9 @@
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook.
 CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
 WRTVDP          equ     $0047   ; write VDP register C with value B (and update RGnSAV)
+SETWRT          equ     $0053   ; set the VDP address HL for writing
+FILVRM          equ     $0056   ; fill BC bytes of VRAM from HL with A
+GSPSIZ          equ     $008A   ; A := the sprite size (8 / 32), C set for 16 x 16
 CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
 INIT32          equ     $006F   ; init SCREEN 1 (TEXT2), LINLEN := LINL32 (published BIOS)
@@ -857,6 +860,8 @@ GFX_CPHASE      equ     $F3F5   ; CIRCLE-parse co-routine phase (sub/circleparse
 ; window next to GFX_VBUF below (the G3/G4/G5 window's last 9 B do not fit it).
 GFX_SPAT_BASE   equ     $3800   ; SCREEN 1/2 sprite PATTERN generator table base
 GFX_SATR_BASE   equ     $1B00   ; SCREEN 1/2 sprite ATTRIBUTE table base (4 B per plane)
+PATBAS          equ     $F926   ; the sprite pattern table's VRAM address (2)
+ATRBAS          equ     $F928   ; the sprite attribute table's VRAM address (2)
 RG1SAV          equ     $F3E0   ; VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size
                                 ; argument (bit1 = 16x16, bit0 = magnify), which measurably
                                 ; PERSISTS across later SCREEN statements (spec G7 §5)

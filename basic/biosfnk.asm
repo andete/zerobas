@@ -402,3 +402,56 @@ bios_isflio:
                 or      l
                 pop     hl
                 ret
+
+; bios_clrspr -- CLRSPR ($0069). D-CLRSPRR1 / D-CLRSPRMODE / D-CLRSPRORDER / D-CLRREGS
+; (2026-11-19), as the VG-8020 (docs/bios/CLRSPR.md): VDP R#1 := RG1SAV; the sprite pattern
+; table (2 KB from PATBAS) := 0 FIRST, then the 32 attribute entries from ATRBAS -- Y $D1 in
+; every SCRMOD (SCREEN 0 too), X not written, pattern k (4 x k with 16 x 16 sprites), colour
+; FORCLR as it is. On return A = E = FORCLR, D kept, BC = $0020 / $0080, HL = ATRBAS + $80,
+; F as the loop's last GSPSIZ / `inc c` leaves it, interrupts on. C-BIOS's returned at once in
+; SCREEN 0, wrote Y $D9 above SCREEN 3, cleared the patterns last and left R#1 alone. Page 0.
+bios_clrspr:
+                ld      a,(RG1SAV)
+                ld      b,a
+                ld      c,1
+                call    WRTVDP              ; R#1 := RG1SAV
+                ld      hl,(PATBAS)
+                ld      bc,2048
+                xor     a
+                call    FILVRM              ; the patterns first
+                ld      hl,(ATRBAS)
+                call    SETWRT
+                ld      a,(FORCLR)
+                ld      e,a
+                ld      bc,$2000            ; B = 32 entries, C = the pattern number
+                di
+bcs_lp:
+                ld      a,$D1
+                out     ($98),a             ; Y
+                nop                         ; >= 29 T between VRAM accesses (MSX1)
+                nop
+                nop
+                nop
+                in      a,($98)             ; X: kept
+                ld      a,c
+                nop
+                nop
+                nop
+                out     ($98),a             ; the pattern number
+                inc     c
+                call    GSPSIZ              ; C set: 16 x 16, 4 numbers a sprite
+                jr      nc,bcs_8
+                inc     c
+                inc     c
+                inc     c
+bcs_8:
+                ld      a,e
+                out     ($98),a             ; the colour: FORCLR
+                inc     hl                  ; HL steps with the entry (flags kept)
+                inc     hl
+                inc     hl
+                inc     hl
+                djnz    bcs_lp
+                ld      a,e
+                ei
+                ret

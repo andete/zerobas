@@ -24,9 +24,8 @@ measured (0-4, $77, $81), takes
 the places from ATRBAS / PATBAS (AND $3FFF) rather than the screen-table cells, and returns with
 interrupts **on**.
 
-zerobas writes the same VRAM in SCREEN 1-3 when the two tables do not overlap. It does not write
-R#1, does nothing in SCREEN 0 (VRAM, BC, DE, HL, IX, IY and the interrupt state as on entry), writes
-Y $D9 for SCRMOD $77, clears the patterns last, and returns other registers (below).
+zerobas does all of it the same (since D-CLRSPRR1 / D-CLRSPRMODE / D-CLRSPRORDER / D-CLRREGS, 2026-11-19:
+its CLRSPR is basic/biosfnk.asm bios_clrspr).
 
 ## The specification
 
@@ -80,12 +79,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-CLRSPRR1** (zerobas leaves VDP R#1 as it was; the VG-8020 writes RG1SAV to it) | R-CS-R1 |
-| **D-CLRSPRMODE** (in SCREEN 0 zerobas returns at once -- VRAM, BC, DE, HL, IX, IY and the interrupts as on entry, A $00, F $44; for SCRMOD above 3 -- 4, $77, $81 -- it writes Y $D9, not $D1) | R-CS-VRAM, R-CS-EI, R-CS-REGS |
-| **D-CLRSPRORDER** (zerobas writes the attributes and then clears the patterns: an attribute table inside the pattern table's span ends up 0) | R-CS-VRAM |
-| **D-CLRREGS** (zerobas returns A = 0, F $42, BC = 0, DE = FORCLR / $D1 -- $D9 with SCRMOD above 3, D-CLRSPRMODE -- and HL = PATBAS) | R-CS-REGS |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
