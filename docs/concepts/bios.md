@@ -80,7 +80,7 @@ call's page finds becomes a TODO item, fixed as a patch and then pinned by the p
 - [docs/bios/index.md](../bios/index.md): every call, its region, its page.
 - [The screen editor](screen-editor.md): the text region's shared facts.
 - [The graphics calls](graphics-calls.md): the graphics region's shared facts; [the sound calls](sound-calls.md):
-  the sound region's.
+  the sound region's; [the input calls](input-calls.md): the input region's.
 - [Slots](slots.md): the slots region's shared facts; [the interpreter entries](interpreter-entries.md): the
   interpreter region's.
 - [Interrupts and traps](interrupts-and-traps.md), [Screen modes](screen-modes.md),

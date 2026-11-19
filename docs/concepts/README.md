@@ -39,6 +39,7 @@ page lists where zerobas still differs.
 | [Slots](slots.md) | how an MSX reaches more than 64 KB, and the BIOS's slot calls |
 | [The graphics calls](graphics-calls.md) | pixels, the graphics cursor and PAINT in the BIOS |
 | [The sound calls](sound-calls.md) | the PSG, PLAY's queues and the 1-bit port in the BIOS |
+| [The input calls](input-calls.md) | the key matrix, joysticks and CTRL+STOP in the BIOS |
 | [The interpreter entries](interpreter-entries.md) | BASIC's text and value helpers in the BIOS table |
 
 ## Storage

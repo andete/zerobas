@@ -34,7 +34,7 @@ REGION_PAGE = {
     "text": "../concepts/screen-editor.md",
     "vdp": "../concepts/screen-modes.md",
     "graphics": "../concepts/graphics-calls.md",
-    "input": None,
+    "input": "../concepts/input-calls.md",
     "sound": "../concepts/sound-calls.md",
     "slots": "../concepts/slots.md",
     "system": "../concepts/interrupts-and-traps.md",

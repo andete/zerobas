@@ -65,9 +65,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF |
 | $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF |
-| $00B7 | BREAKX | input (concept page to come) | L3 | [FINAL](BREAKX.md) | 4 | D-BREAKXBUF |
-| $00BA | ISCNTC | input (concept page to come) | L3 | [FINAL](ISCNTC.md) | 5 | D-ISCNTCEI |
-| $00BD | CKCNTC | input (concept page to come) | L3 | [FINAL](CKCNTC.md) | 5 | D-ISCNTCEI |
+| $00B7 | BREAKX | [input](../concepts/input-calls.md) | L3 | [FINAL](BREAKX.md) | 4 | D-BREAKXBUF |
+| $00BA | ISCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](ISCNTC.md) | 5 | D-ISCNTCEI |
+| $00BD | CKCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](CKCNTC.md) | 5 | D-ISCNTCEI |
 | $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 4 | D-BEEPRESET |
 | $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-INITEDGES, D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
@@ -75,10 +75,10 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-TEXTAF |
 | $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
-| $00D5 | GTSTCK | input (concept page to come) | L3 | [FINAL](GTSTCK.md) | 6 | D-JOYPORT |
-| $00D8 | GTTRIG | input (concept page to come) | L3 | [FINAL](GTTRIG.md) | 6 | D-GTTRIGRANGE |
-| $00DB | GTPAD | input (concept page to come) | L3 | [FINAL](GTPAD.md) | 5 | — |
-| $00DE | GTPDL | input (concept page to come) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
+| $00D5 | GTSTCK | [input](../concepts/input-calls.md) | L3 | [FINAL](GTSTCK.md) | 6 | D-JOYPORT |
+| $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | D-GTTRIGRANGE |
+| $00DB | GTPAD | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPAD.md) | 5 | — |
+| $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
 | $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | — | — | — |
 | $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | — | — | — |
@@ -106,19 +106,19 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | D-PNTINIREGS |
 | $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | D-SCANRSAVE, D-SCANSTOP |
 | $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT, D-SCANSTOP |
-| $0132 | CHGCAP | input (concept page to come) | L3 | [FINAL](CHGCAP.md) | 4 | D-CHGCAPAF |
+| $0132 | CHGCAP | [input](../concepts/input-calls.md) | L3 | [FINAL](CHGCAP.md) | 4 | D-CHGCAPAF |
 | $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [FINAL](CHGSND.md) | 3 | D-CHGSNDF |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |
 | $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
 | $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVDP.md) | 7 | — |
-| $0141 | SNSMAT | input (concept page to come) | L3 | [FINAL](SNSMAT.md) | 5 | D-SNSMATC, D-SNSMATPORT |
+| $0141 | SNSMAT | [input](../concepts/input-calls.md) | L3 | [FINAL](SNSMAT.md) | 5 | D-SNSMATC, D-SNSMATPORT |
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | D-ISFLIO |
 | $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | D-OUTDLPGRAPH, D-OUTDLPF |
 | $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | D-GETVCF |
 | $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | D-GETVCF |
-| $0156 | KILBUF | input (concept page to come) | L3 | [FINAL](KILBUF.md) | 4 | D-KILBUFPTR |
+| $0156 | KILBUF | [input](../concepts/input-calls.md) | L3 | [FINAL](KILBUF.md) | 4 | D-KILBUFPTR |
 | $0159 | CALBAS | [slots](../concepts/slots.md) | L3 | [FINAL](CALBAS.md) | 5 | — |
 
 Contract level: tools/bios_levels.py (L1 called · L2 happy path · L3 full contract · L4 errors / edges), measured against the VG-8020. It says how much a GATE compares; the page says what the call DOES.
