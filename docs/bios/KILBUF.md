@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 `KILBUF` empties the key buffer by moving the get pointer to the put pointer: GETPNT := PUTPNT,
 HL := that pointer. Everything else, the interrupt state included, is kept.
 
-zerobas empties it too, but by moving the put pointer back instead (below).
+zerobas does all of it the same (since D-KILBUFPTR, 2026-11-19).
 
 ## The specification
 
@@ -66,9 +66,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-KILBUFPTR** (zerobas sets PUTPNT := GETPNT -- HL the get pointer -- where the VG-8020 sets GETPNT := PUTPNT: the buffer is empty either way, at another place) | R-KB-BUF, R-KB-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

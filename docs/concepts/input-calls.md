@@ -21,8 +21,9 @@ standing in for joystick 0), GTPAD / GTPDL the pads and paddles; BREAKX checks C
 ISCNTC / CKCNTC the flag the timer interrupt sets; KILBUF empties the key buffer and CHGCAP switches
 the CAPS lamp.
 
-zerobas reads the keys the same; its differences are at the edges -- row numbers of 16 and up, port
-numbers past the second joystick, BREAKX leaving the typed-ahead keys, flags and the interrupt state.
+zerobas reads the keys the same. SNSMAT, KILBUF, CHGCAP, GTSTCK and GTTRIG match the VG-8020 in every
+measured case since 2026-11-19 (cbios-repack/input-calls.patch); what is left is at the edges --
+BREAKX leaving the typed-ahead keys, the paddle's port bits, flags and the interrupt state.
 
 ## How it works
 
@@ -81,7 +82,8 @@ disk interface. The rules are checked against every case ([docs/spec-method.md](
 ## How zerobas does it
 
 The input calls are C-BIOS's, in the main ROM
-([cbios-repack-provenance.md](../cbios-repack-provenance.md)).
+([cbios-repack-provenance.md](../cbios-repack-provenance.md)); SNSMAT, KILBUF, CHGCAP, GTSTCK and GTTRIG carry
+zerobas's repack patch for their measured contracts (`cbios-repack/input-calls.patch`).
 
 ## Related pages
 

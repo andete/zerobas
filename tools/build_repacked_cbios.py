@@ -135,11 +135,16 @@ PATCHES = [
     # D-INITEDGES (2026-11-18): TOTEXT dispatches on OLDSCR through CHGMOD as the VG-8020 (0..3 that
     # screen, 4..$80 SCREEN 3, $81..$FF SCREEN 0); 7 B from POSIT's pad -- nothing else moves.
     os.path.join(REPO, "cbios-repack", "totext-dispatch.patch"),
+    # D-SNSMATC / D-SNSMATPORT / D-KILBUFPTR / D-CHGCAPAF / D-JOYPORT / D-GTTRIGRANGE (2026-11-19): the
+    # input calls' measured contracts (zerobas docs/bios/SNSMAT.md, KILBUF.md, CHGCAP.md, GTSTCK.md,
+    # GTTRIG.md); GTTRIG's space bar keeps BC with SNSMAT's 2 B, so the labels between them move
+    # down 2 (the $0144-$014C / $00D5 / $00D8 vectors follow; ISFLIO's guard in tools/build_mainrom.py too).
+    os.path.join(REPO, "cbios-repack", "input-calls.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "4e83c449eb81f6ab329430f803aacc6f505bf3b7"   # D-INITEDGES TOTEXT, 2026-11-18
+REPACKED_SHA1 = "a31a0d8ecb2a3500db0df99423b8e99f4057948a"   # the input calls, 2026-11-19
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

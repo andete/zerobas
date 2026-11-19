@@ -16,7 +16,7 @@ rows 11 and 15 measured give $FF. It selects the row by setting port C := (port 
 whole A (A $12 gives $x2 + $10, A $FF carries out of the high nibble), leaves C = A, keeps B, DE and HL,
 and returns with interrupts **on**.
 
-zerobas returns the same rows; it keeps C, and sets port C otherwise for A of $10 and up (below).
+zerobas does all of it the same (since D-SNSMATC / D-SNSMATPORT, 2026-11-19).
 
 ## The specification
 
@@ -70,10 +70,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SNSMATC** (zerobas keeps C, the VG-8020 leaves the row number there) | R-SM-C |
-| **D-SNSMATPORT** (A of $10 and up: zerobas sets port C := (port C AND $F0) OR A -- $FF for A $FF, the CAPS lamp, the 1-bit sound and the cassette motor bits with it; $52 for $12 -- where the VG-8020 adds: $4F / $62 -- cases 12, 71, 90) | R-SM-PORT |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

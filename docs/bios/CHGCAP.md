@@ -15,7 +15,7 @@ SPDX-License-Identifier: 0BSD
 returns A = $0C / $0D (the PPI's bit reset / set command) and F = $54 / $08, leaves CAPST alone, and
 keeps everything else.
 
-zerobas switches the lamp the same and returns other A / F (below).
+zerobas does all of it the same (since D-CHGCAPAF, 2026-11-19).
 
 ## The specification
 
@@ -68,9 +68,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-CHGCAPAF** (zerobas returns A = port C's new value and an F that follows the entry A -- $44 / $00 / $AC / $80 for A 0 / 1 / $FF / $80 -- where the VG-8020 returns the bit command $0C / $0D and F $54 / $08) | R-CC-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

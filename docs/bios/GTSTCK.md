@@ -16,7 +16,7 @@ keys, opposite keys cancelling; for A = 1 / 2 from the joystick ports (empty her
 port with PSG R15 bit 6 (0 for an odd A, 1 for an even one; A 3 selects port 1). It returns with
 interrupts **on**; F, BC, DE and HL are left with working values.
 
-zerobas does the same for A 0-2; for A 3 it does not select port 1 (below).
+zerobas does all of it the same (A 3 since D-JOYPORT, 2026-11-19).
 
 ## The specification
 
@@ -69,9 +69,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-JOYPORT** (A 3: zerobas leaves R15's port select, where the VG-8020 selects port 1 as for A 1 -- case 35; GTTRIG / GTPDL likewise) | R-GS-PORT, R-GS-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

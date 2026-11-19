@@ -16,7 +16,7 @@ the joystick triggers (empty here: 0; A 5 also 0, selecting port 1), the port se
 bit 6 as GTSTCK does. HOME, INS and DEL (row 8 bits 1-3) do not count. It returns with interrupts
 **on**; F and BC are left with working values.
 
-zerobas does the same for A 0-4; for A 5 it returns the space bar's state (below).
+zerobas does all of it the same (A 5 since D-GTTRIGRANGE, 2026-11-19).
 
 ## The specification
 
@@ -69,9 +69,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-GTTRIGRANGE** (A 5: zerobas returns the space bar's state, $FF with it pressed, and leaves R15, where the VG-8020 returns 0 and selects port 1 -- case 43) | R-GT-A, R-GT-PORT, R-GT-KEEP |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
