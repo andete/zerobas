@@ -512,6 +512,7 @@ brc_bg:
 ; sc_cell: B := the byte at CLOC, C := the byte at CLOC XOR $2000, HL := CLOC XOR $2000.
 sc_cell:
                 ld      hl,(CLOC)
+sc_cellhl:                                  ; HL = the pattern byte's address (bios_grpprt)
                 call    RDVRM
                 ld      b,a
                 call    sc_flip

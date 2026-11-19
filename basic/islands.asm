@@ -532,6 +532,240 @@ bsc_out:
                 pop     hl
                 ret
 
+; bios_grpprt -- GRPPRT ($008D) as the VG-8020 (D-GRPPRTPOS / D-GRPPRTCR / D-GRPPRTOFF /
+; D-GRPPRTCOL, 2026-11-19; docs/bios/GRPPRT.md), built on the BIOS's own graphics cursor
+; calls, which match the VG-8020 since today: MAPXYC to the position (GRPCGP- / MLTCGP-based),
+; each glyph line written from the line's first column, then the cursor put back and moved
+; down as TDOWNC moves it -- drawing ends where TDOWNC stops, and CLOC / CMASK stay where it
+; left them (R-GP-POS). SCREEN 2: each pattern byte gets the line's bits with SETC's colour
+; rule MINUS its last-clear-bit step ("a line $FF sets pattern $FF"); SCREEN 3: each glyph
+; pixel is one block, written by SETC itself, none past block column 63 (R-GP-VRAM).
+; ATRBYT := FORCLR for a printable code, drawn or not (R-GP-ATR); a position outside the
+; screen draws nothing and keeps GRPACX / GRPACY. CR is a line feed on the LOW bytes
+; (R-GP-ACC). A, F, BC, DE, HL, IX, IY kept; interrupts on after a printable code, as they
+; were after a control code (R-GP-KEEP / R-GP-EI). The font through CGPNT's slot (RDSLT).
+; BASIC's PRINT # to GRP: keeps its own tenant (sub2/grpprt.asm), measured at BASIC level.
+BGP_RIGHTC      equ     $00FC
+BGP_TDOWNC      equ     $010B
+BGP_MAPXYC      equ     $0111
+bios_grpprt:
+                push    hl
+                push    de
+                push    bc
+                push    af
+                cp      $20
+                jr      nc,bgp_chr
+                cp      $0D
+                jr      nz,bgp_out          ; other control codes: nothing
+                xor     a
+                ld      (GRPACX),a          ; CR: GRPACX's LOW byte := 0 (X 300 gives 256)
+                call    bgp_step
+                ld      hl,GRPACY
+                add     a,(hl)              ; GRPACY's low byte + the step, no carry out
+                ld      (hl),a              ;   (Y $FFFF gives $FF07)
+                cp      192
+                jr      c,bgp_out
+                xor     a                   ; past 191: GRPACY := 0
+                ld      (hl),a
+                inc     hl
+                ld      (hl),a
+bgp_out:
+                pop     af
+                pop     bc
+                pop     de
+                pop     hl
+                ret
+bgp_step:                                   ; A := the step: 8 in SCREEN 2, 32 otherwise
+                ld      a,(SCRMOD)
+                cp      2
+                ld      a,8
+                ret     z
+                ld      a,32
+                ret
+bgp_chr:
+                push    ix
+                ld      e,a                 ; E = the code
+                ld      a,(FORCLR)
+                ld      (ATRBYT),a
+                ld      hl,(GRPACX)
+                ld      a,h
+                or      a
+                jr      nz,bgp_done         ; X past 255: outside, nothing drawn or moved
+                ld      bc,(GRPACY)
+                ld      a,b
+                or      a
+                jr      nz,bgp_done
+                ld      a,c
+                cp      192
+                jr      nc,bgp_done         ; Y past 191
+                ld      b,l                 ; B = X, C = Y
+                ld      l,e
+                ld      h,0
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl
+                ld      de,(CGPNT+1)
+                add     hl,de
+                push    hl
+                pop     ix                  ; IX = the glyph's first line
+                ld      e,c                 ; E = Y
+                ld      c,b                 ; C = X
+                call    bgp_step
+                cp      8
+                jr      z,bgp_map
+                srl     c                   ; SCREEN 3: the block numbers
+                srl     c
+                srl     e
+                srl     e
+bgp_map:
+                push    bc
+                call    BGP_MAPXYC
+                pop     bc
+                ld      b,8                 ; B = the lines, C = the first column
+bgp_row:
+                push    bc
+                ld      a,(CGPNT)
+                push    ix
+                pop     hl
+                call    RDSLT               ; A = the glyph line (CGPNT's slot)
+                ld      d,a
+                pop     bc                  ; RDSLT changes BC: C = the first column again
+                push    bc
+                ld      hl,(CLOC)
+                push    hl                  ; the line's first column
+                ld      a,(CMASK)
+                push    af
+                call    bgp_line
+                pop     af
+                ld      (CMASK),a
+                pop     hl
+                ld      (CLOC),hl
+                inc     ix
+                call    BGP_TDOWNC
+                pop     bc
+                jr      c,bgp_adv           ; TDOWNC stopped: the glyph ends here
+                djnz    bgp_row
+bgp_adv:
+                call    bgp_step
+                ld      hl,GRPACX
+                add     a,(hl)
+                ld      (hl),a
+                jr      nc,bgp_done         ; still on the line
+                xor     a
+                ld      (hl),a              ; past 255: X := 0, Y on by the step
+                call    bgp_step
+                ld      hl,GRPACY
+                add     a,(hl)
+                ld      (hl),a
+                cp      192
+                jr      c,bgp_done
+                xor     a
+                ld      (hl),a              ; past 191: Y := 0
+bgp_done:
+                pop     ix
+                ei                          ; a printable code: interrupts on after
+                jp      bgp_out
+; bgp_line: one glyph line, D = its bits (bit 7 leftmost), C = the first column (SCREEN 2:
+; X; else the block column), the cursor on its first pixel / block.
+bgp_line:
+                ld      a,(SCRMOD)
+                cp      2
+                jr      nz,bgp_l3
+                ld      a,c
+                and     7
+                ld      b,a                 ; B = X AND 7
+                ld      e,d
+                ld      d,0                 ; E = the first byte's bits, D = the spill
+                jr      z,bgp_l2
+bgp_sh:
+                srl     e
+                rr      d
+                djnz    bgp_sh
+bgp_l2:
+                ld      hl,(CLOC)
+                call    gp_wb
+                ld      a,d
+                or      a
+                ret     z                   ; nothing for the next cell
+                ld      a,c
+                and     $F8
+                cp      $F8
+                ret     z                   ; X 248..255: none past X 255, no wrap
+                ld      a,8
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL += 8: the next cell's pattern byte
+                ld      e,d
+                ; falls into gp_wb
+; gp_wb: E's bits into the pattern byte at HL, as the VG-8020's GRPPRT writes it: FORCLR
+; (whole) the background -- cleared; FORCLR's low nibble the foreground -- set; else set
+; and (FORCLR x 16) AND $F0 into the foreground nibble. No step for a full byte. Keeps
+; BC, DE, HL.
+gp_wb:
+                ld      a,e
+                or      a
+                ret     z
+                push    hl
+                push    bc
+                push    de
+                call    sc_cellhl           ; B = the pattern, C = the colour, HL = its address
+                ld      a,(FORCLR)
+                ld      d,a
+                ld      a,c
+                and     $0F
+                cp      d
+                jr      nz,gw_nbg
+                ld      a,e
+                cpl
+                and     b
+                jr      gw_pat
+gw_nbg:
+                ld      a,c
+                rrca
+                rrca
+                rrca
+                rrca
+                xor     d
+                and     $0F
+                jr      z,gw_set
+                ld      a,d
+                rlca
+                rlca
+                rlca
+                rlca
+                and     $F0
+                ld      d,a
+                ld      a,c
+                and     $0F
+                or      d
+                call    WRTVRM              ; the colour byte
+gw_set:
+                ld      a,e
+                or      b
+gw_pat:
+                call    sc_wpat             ; the pattern byte (at HL XOR $2000)
+                pop     de
+                pop     bc
+                pop     hl
+                ret
+; SCREEN 3 (and every SCRMOD but 2, as MAPXYC): each lit pixel one block, by SETC.
+bgp_l3:
+                ld      b,8
+bgp_l3b:
+                sla     d
+                jr      nc,bgp_l3n
+                call    BIOS_SETC           ; the block's nibble := ATRBYT (= FORCLR)
+bgp_l3n:
+                ld      a,c
+                cp      63
+                ret     z                   ; block column 63: none past it
+                inc     c
+                call    BGP_RIGHTC
+                djnz    bgp_l3b
+                ret
+
 
                 org     $0008
                 jp      synchr              ; D-SYNCHR (was C-BIOS's `jp $10ED` debug stub)
@@ -593,7 +827,7 @@ bsc_out:
                 org     $00F9
                 jp      bios_putq           ; PUTQ: pre-incrementing, as the VG-8020 (D-BIOSRUNG)
                 org     $008D
-                jp      bios_grpprt         ; GRPPRT: C-BIOS's drew in SCREEN 2 only (D-BIOSRUNG)
+                jp      bios_grpprt         ; GRPPRT: island 3, as the VG-8020 (D-GRPPRTPOS and kin)
                 org     $0129
                 jp      bios_pntini         ; PNTINI / SCANR / SCANL: C-BIOS's were bare
                 jp      bios_scanr          ;   `ret`s (D-BIOSRUNG; the sub-ROM's paint

@@ -16843,10 +16843,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01; zerobas's differs on every call ($1A for a letter, $54 after a TAB ...). Not published. The LPTOUT half is
       D-LPTOUTF. Priced when picked up.
 
-- [ ] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
+- [x] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
       (where its TDOWNC steps end); zerobas its own last pixel. docs/bios/GRPPRT.md R-GP-POS. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
 
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
@@ -16920,22 +16929,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CCF flags); BC, DE, HL and the interrupt state kept. The tenant's PNTINI op went (sub page 1: 6 -> 24 B, spent below).
       spec-live: PNTINI holds every rule (R-PI-BDR too: SCRMOD 0 / 1 took ATRBYT).
 
-- [ ] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
+- [x] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
       🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 clears GRPACX's low byte and adds
       the step to GRPACY's low byte without a carry (X 300 gives 256, Y $FFFF gives $FF07); zerobas GRPACX := 0 and a
       16-bit add. docs/bios/GRPPRT.md R-GP-ACC, cases 50, 52. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
 
-- [ ] **D-GRPPRTOFF — GRPPRT AT A POSITION OUTSIDE THE SCREEN MOVES / DRAWS ON ZEROBAS**
+- [x] **D-GRPPRTOFF — GRPPRT AT A POSITION OUTSIDE THE SCREEN MOVES / DRAWS ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT
       := FORCLR; zerobas moves GRPACX on, keeps ATRBYT, and with Y $FFFF draws at the top. docs/bios/GRPPRT.md cases
       13, 14, 21, 23, 38, 46-49, 55, 67, 72. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
 
-- [ ] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15 OR A MOVED PATTERN TABLE DRAWS OTHERWISE ON ZEROBAS**
+- [x] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15 OR A MOVED PATTERN TABLE DRAWS OTHERWISE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
       nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
 
 - [x] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
       🎚️ TIER 6 — ROM space (the same ruling as D-SETCCUT).

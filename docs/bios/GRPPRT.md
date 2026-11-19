@@ -22,9 +22,10 @@ and GRPACY only; the other control codes do nothing.
 ATRBYT becomes FORCLR; the registers are kept; interrupts are **on** after, except after a control
 code.
 
-zerobas draws the same glyph pixels in the ordinary case; it leaves CLOC / CMASK elsewhere, does CR
-on whole words, and handles positions outside the screen,
-FORCLR over 15 and a moved pattern table differently (below).
+zerobas does the same (D-GRPPRTPOS / D-GRPPRTCR / D-GRPPRTOFF / D-GRPPRTCOL, 2026-11-19): its GRPPRT
+is built on the BIOS's own MAPXYC / TDOWNC / SETC / RIGHTC, as these rules describe the VG-8020's,
+with the SCREEN 2 byte rule above. (BASIC's PRINT # to GRP keeps its own code, measured at BASIC
+level.)
 
 ## The specification
 
@@ -87,12 +88,7 @@ tables and the 128-byte record:
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-GRPPRTPOS** (CLOC / CMASK after a drawn character: zerobas leaves them at its own last pixel, where the VG-8020 leaves the first column's pixel on the line after the glyph) | R-GP-POS |
-| **D-GRPPRTCR** (CR: zerobas sets GRPACX := 0 and adds the step to the whole GRPACY, where the VG-8020 works on the low bytes -- X 300 gives 256, Y $FFFF gives $FF07 -- cases 50, 52) | R-GP-ACC |
-| **D-GRPPRTOFF** (a position outside the screen: zerobas moves GRPACX on (X 256 / 300 wrap to 0 and Y + the step; Y 192 / 200 / $0130 and X $FFF8 move too) and keeps ATRBYT -- with Y $FFFF it draws at the top and sets ATRBYT; the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT -- cases 13, 14, 23, 38, 46-49, 55, 67, 72; and zerobas treats SCREEN 3 (252, 188), inside, as outside: case 21, which differs only in CLOC / CMASK and ATRBYT) | R-GP-VRAM, R-GP-POS, R-GP-ACC, R-GP-ATR |
-| **D-GRPPRTCOL** (FORCLR over 15, and a moved table: zerobas writes other colour nibbles for FORCLR $1x -- the background nibble in SCREEN 2 (16, 57, 62), both nibbles in SCREEN 3 (56) -- and draws where the default tables would put the glyph with GRPCGP $2000 / $0800 or MLTCGP $1000 (17, 42, 65, 66, 22)) | R-GP-VRAM |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
