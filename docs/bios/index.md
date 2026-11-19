@@ -17,7 +17,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $000C | RDSLT | [slots](../concepts/slots.md) | L3 | [FINAL](RDSLT.md) | 12 | — |
 | $0010 | CHRGTR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
 | $0014 | WRSLT | [slots](../concepts/slots.md) | L3 | [FINAL](WRSLT.md) | 13 | — |
-| $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | D-OUTDOINIT, D-OUTDLPGRAPH, D-OUTDLPF |
+| $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | D-OUTDOINIT |
 | $001C | CALSLT | [slots](../concepts/slots.md) | L3 | [FINAL](CALSLT.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0020 | DCOMPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](DCOMPR.md) | 8 | — |
 | $0024 | ENASLT | [slots](../concepts/slots.md) | L3 | [FINAL](ENASLT.md) | 7 | — |
@@ -115,7 +115,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
-| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | D-OUTDLPGRAPH, D-OUTDLPF |
+| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | — |
 | $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | — |
 | $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | — |
 | $0156 | KILBUF | [input](../concepts/input-calls.md) | L3 | [FINAL](KILBUF.md) | 4 | — |

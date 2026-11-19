@@ -302,7 +302,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F415` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F415` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F416` |  | `basic` | `PRTFLG` | the published "output to the printer" flag: OUTDO |  |
-| `$F417` | 2 B | `basic` | `GFX_SPATN` | $F417: ...pattern number (2) |  |
+| `$F417` | 2 B | `basic` | `GFX_SPATN/NTMSXP` | $F417: ...pattern number (2) |  |
 | `$F419` | 2 B | `basic` | `GFX_G8N` | $F419: written index n (int16 LE) (2) |  |
 | `$F41B` | 1 B | `basic` | `GFX_VLEN` | $F41B: the entry size the tenant read back (1) |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |

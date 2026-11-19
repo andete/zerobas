@@ -24,7 +24,7 @@ bios_inifnk:
                 push    bc
                 push    ix
                 xor     a                   ; op 0: the defaults
-                jr      bios_fnk_key
+                jp      bios_fnk_key        ; (out of jr range since D-OUTDLPGRAPH)
 
 ; FNKSB ($00C9) -- D-BIOSRUNG (2026-11-12). C-BIOS's was a print_debug stub. Measured on
 ; the VG-8020 with CNSDFG changed BEHIND BASIC's back (scratchpad/fnksb_probe.py,
@@ -36,7 +36,7 @@ bios_fnksb:
                 ld      a,(CNSDFG)
                 or      a
                 ret     z
-                jr      bios_dspfnk
+                jp      bios_dspfnk
 
 ; CALBAS ($0159) -- D-BIOSRUNG (2026-11-12). C-BIOS's printed "ERROR:CALLED NON EXISTING
 ; BASIC." and never returned (scratchpad/calbas_run.out). The published contract: call
@@ -54,17 +54,59 @@ bios_calbas:
 ; `A` + 7 spaces + `B` + 7 spaces + `C\r\n`; `ABC TAB D` pads from column 3 to 8 --
 ; a TAB is spaces to the next multiple of 8 of LPTPOS, and LPTPOS is 0 after the CR.
 ; LPTPOS is kept as BASIC's LPRINT keeps it (pch_lpt, basic/print.asm: CR -> 0, LF
-; leaves it, else +1, saturating at 255). A failing LPTOUT returns its CF (⚠️ the
-; published Device I/O error, and a non-MSX printer's character transform, are NOT
-; measured yet -- TODO D-BIOSRUNG). A kept, as the contract's "Registers: F".
+; leaves it, else +1, saturating at 255). A failing LPTOUT is BASIC's Device I/O error, as the
+; VG-8020's (D-LPTSTOP). The graphic characters and a non-MSX printer: below.
+; D-OUTDLPGRAPH / D-OUTDLPF (2026-11-19), docs/bios/OUTDLP.md R-OD-PRN / R-OD-POS / R-OD-A /
+; R-OD-F: a graphic character's $01 does not move LPTPOS (on any printer); on a printer that is
+; not an MSX one (NTMSXP, $F417, not 0) the $01 is held back -- A 1, F $42 -- and the next code,
+; if $40-$5F, goes out as one space (A $20), any other as it is. F is LPTOUT's on the byte sent
+; (its AND flags), as on entry after a TAB. The held $01 is bit 1 of GRP_HDR (bit 0 is the GRP:
+; channel's own header) -- no new RAM; a PRINT # to GRP in between clears it. (zerobas's PUT
+; SPRITE uses $F417 as GFX_SPATN: D-NTMSXPCLASH.)
+NTMSXP          equ     $F417
 bios_outdlp:
+                push    hl
+                push    af                  ; A / F as on entry (a TAB returns them)
+                ld      hl,GRP_HDR
                 cp      9
                 jr      z,odl_tab
-odl_put:
-                push    af
+                pop     af
+                bit     1,(hl)
+                res     1,(hl)
+                jr      z,odl_nh            ; no $01 held
+                cp      $40
+                jr      c,odl_nh            ; held $01 + a code outside $40-$5F: as it is
+                cp      $60
+                jr      nc,odl_nh
+                ld      a,' '               ; a graphic code, to a non-MSX printer: a space
+                jr      odl_send
+odl_nh:
+                cp      1
+                jr      nz,odl_send
+                ld      a,(NTMSXP)
+                or      a
+                ld      a,1
+                jr      z,odl_lpt           ; an MSX printer: $01 goes out, uncounted
+                set     1,(hl)              ; else held back for the next byte
+                ld      hl,$0142
+                push    hl
+                pop     af                  ; A 1, F $42
+                pop     hl
+                ret
+odl_send:
+                call    odl_put
+                pop     hl
+                ret
+odl_lpt:
                 call    LPTOUT
                 jr      c,odl_fail
-                pop     af
+                pop     hl
+                ret
+; odl_put: A to the printer, LPTPOS moved (CR -> 0, LF kept, else +1, saturating at 255).
+; Out: A as sent, F LPTOUT's.
+odl_put:
+                call    LPTOUT
+                jr      c,odl_fail
                 push    af
                 cp      13
                 jr      z,odl_home
@@ -84,17 +126,17 @@ odl_done:
 odl_fail:
                 ; D-LPTSTOP: the published face -- the VG-8020 says `Device I/O error`
                 ; (outdlp_fail_run5.out), through BASIC as its other errors
-                pop     af
                 ld      a,19                ; Device I/O error
                 jp      raise_error
-odl_tab:
+odl_tab:                                    ; (stack: the entry AF, HL)
+odl_tlp:
                 ld      a,' '
                 call    odl_put
-                ret     c
                 ld      a,(LPTPOS)
                 and     7
-                jr      nz,odl_tab
-                ld      a,9
+                jr      nz,odl_tlp
+                pop     af                  ; A 9, F as on entry
+                pop     hl
                 ret
 
 ; BREAKX ($00B7) -- D-BRKLATCH (2026-11-12). C-BIOS's body reads CTRL+STOP; on the

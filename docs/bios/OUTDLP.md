@@ -18,9 +18,9 @@ $F417, 0). On a printer that is not one (NTMSXP $FF or $01) the $01 is dropped a
 as one space ($41, $5F) or as it is ($7E). The $01 never counts as a column. A and the other
 registers are kept (A is $20 for a code sent as a space).
 
-zerobas does the TABs, CR, LF and the plain bytes the same. It counts the $01 of a graphic
-character as a column, sends graphic characters raw to any printer, and returns other flags
-(below).
+zerobas does the same (D-OUTDLPGRAPH / D-OUTDLPF, 2026-11-19). Its held $01 for a printer that is
+not an MSX one is a bit of zerobas's GRP_HDR cell, so a PRINT # to GRP in between drops it; and
+zerobas's PUT SPRITE uses NTMSXP's address as a scratch cell (D-NTMSXPCLASH).
 
 ## The specification
 
@@ -58,10 +58,7 @@ pass `P`; **[XP r]** what the printer received on row `r`.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-OUTDLPGRAPH** (zerobas counts a graphic character's $01 as a column, so LPTPOS runs one ahead after each and a later TAB stops one column short; and sends $01 + the code to a printer that is not an MSX one, returning A as given, where the VG-8020 drops the $01 and sends $41 / $5F as a space, returning $20) | R-OD-PRN, R-OD-POS, R-OD-A |
-| **D-OUTDLPF** (zerobas's F differs after every call) | R-OD-F |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

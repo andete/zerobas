@@ -39978,3 +39978,275 @@ the phase narrative above still have somewhere to land.
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
 The record is unchanged there; this heading is kept only so the citations and
 the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-OUTDLPGRAPH — OUTDLP COUNTS A GRAPHIC CHARACTER'S $01 AS A COLUMN, AND SENDS IT RAW TO A PRINTER THAT IS NOT AN MSX ONE**
+      🎚️ TIER 6 — every edge (LPRINT of graphic characters: a later TAB stops one column short per graphic
+      character on any printer -- measured, XOUTDLP pass 3; on a printer that is not an MSX one (NTMSXP set) the
+      printer gets $01 + the code where the VG-8020 sends a space for $41 / $5F; filed 2026-11-18). Joost may rank the
+      TAB drift higher: it touches the default printer.
+      🤖 **AUTONOMOUS** — docs/bios/OUTDLP.md R-OD-POS / R-OD-PRN / R-OD-A ([`XOUTDLP_run2.out`](scratchpad/XOUTDLP_run2.out),
+      [`XOUTDLP_run2d.out`](scratchpad/XOUTDLP_run2d.out)): the VG-8020's OUTDLP leaves LPTPOS ($F415) as it is for
+      the $01 of a graphic character; zerobas's adds 1. With NTMSXP ($F417) $FF or $01 the VG-8020 drops the $01 and
+      sends $41 / $5F as one space ($20, returned in A), $7E as it is; zerobas sends both bytes. TABs, CR, LF and other bytes agree. Priced when
+      picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-OUTDLPF). basic/biosfnk.asm bios_outdlp: the $01 of a graphic character
+      does not move LPTOUT (any printer); NTMSXP ($F417) not 0 -- the $01 held (A 1, F $42), the next $40-$5F sent as one
+      space (A $20), any other as it is; F LPTOUT's on the byte sent, as on entry after a TAB (the first build saved AF
+      AFTER its `cp 9`: the TAB cases caught it). The held $01 is GRP_HDR bit 1 -- no new RAM; a PRINT # to GRP in
+      between clears it. +53 B of the $3283 pad (it was 10 B free on 2026-11-19). spec-live: OUTDLP holds every rule.
+
+- [x] **D-OUTDLPF — OUTDLP'S F ON RETURN DIFFERS FROM THE VG-8020'S**
+      🎚️ TIER 6 — every edge (a program testing F after OUTDLP; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/OUTDLP.md R-OD-F ([`XOUTDLP_run2.out`](scratchpad/XOUTDLP_run2.out)): the
+      VG-8020's F is LPTOUT's on the byte sent (an AND's flags, H set), F as on entry after a TAB, $42 after a held
+      $01; zerobas's differs on every call ($1A for a letter, $54 after a TAB ...). Not published. The LPTOUT half is
+      D-LPTOUTF. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-OUTDLPF). basic/biosfnk.asm bios_outdlp: the $01 of a graphic character
+      does not move LPTOUT (any printer); NTMSXP ($F417) not 0 -- the $01 held (A 1, F $42), the next $40-$5F sent as one
+      space (A $20), any other as it is; F LPTOUT's on the byte sent, as on entry after a TAB (the first build saved AF
+      AFTER its `cp 9`: the TAB cases caught it). The held $01 is GRP_HDR bit 1 -- no new RAM; a PRINT # to GRP in
+      between clears it. +53 B of the $3283 pad (it was 10 B free on 2026-11-19). spec-live: OUTDLP holds every rule.
+
+- [x] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 leaves the first column's pixel on the line after the glyph
+      (where its TDOWNC steps end); zerobas its own last pixel. docs/bios/GRPPRT.md R-GP-POS. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
+
+- [x] **D-STRTMS — STRTMS DOES NOT SET THE VOICES' FIRST WORDS, AND RETURNS OTHER HL / F, ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): docs/bios/STRTMS.md R-ST-PLAY / R-ST-REGS. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_strtms: nothing waiting -- `ld hl,PLYCNT / or (hl)` (A 0,
+      F $44, HL $FB40); started -- st_go's DEC flags, A 7, then each voice's first word := 1 and HL := 1 (zerobas's PLAY
+      keeps nothing in a VCB's bytes 0-1; the servicer's sync call saves every register). 13 B. spec-live: STRTMS holds
+      every rule.
+
+- [x] **D-BEEPRESET — BEEP DOES NOT END WITH GICINI'S RESET ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
+      and the voice buffers re-initialised, and returns A 0, F $44, BC 0, E 7. docs/bios/BEEP.md. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_beep ends with `call bios_gicini` (R7 $B8, the volumes,
+      the queues, MUSICF / PLYCNT) and returns A 0, F $44, BC 0, E 7, D / HL kept: R-BP-PSG / R-BP-REGS hold. R-BP-RESET's
+      voice-buffer part is D-GICINIVCB's (BEEP.md lists it there). 10 B.
+
+- [x] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
+      🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
+      basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012C / $012F does).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): in the run / count the VG-8020 stops at the
+      first BDRATR pixel, foreground or background; zerobas runs past a foreground one to the row's end. docs/bios/
+      SCANR.md R-SR-SCAN (cases 62, 77), SCANL.md R-SL-SCAN (43, 75). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** sub/paintbios.asm: SCANR / SCANL COUNT the run first and then paint it in one
+      NSETCX call from its first pixel (the cursor put back). The per-pixel SETC while scanning recoloured a cell's
+      foreground to ATRBYT before the scan reached that cell's border pixel -- the mechanism, confirmed by the four
+      cases flipping. sub page 1: 1 B free. spec-live: SCANR R-SR-SCAN / R-SR-PAINT and SCANL R-SL-SCAN hold.
+
+- [x] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 keeps BC, DE, HL and the interrupt
+      state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
+      C := 0, HL := $000E, other flags, interrupts on, and with SCRMOD 0 / 1 takes ATRBYT. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** PNTINI is answered in main (basic/biosfnk.asm bios_pntini, 25 B of the $3283
+      pad), no longer by the sub-ROM paint tenant: BDRATR := ATRBYT in SCREEN 2 (A := ATRBYT, AND flags), else := A (CP $10 +
+      CCF flags); BC, DE, HL and the interrupt state kept. The tenant's PNTINI op went (sub page 1: 6 -> 24 B, spent below).
+      spec-live: PNTINI holds every rule (R-PI-BDR too: SCRMOD 0 / 1 took ATRBYT).
+
+- [x] **D-GRPPRTCR — GRPPRT'S CR WORKS ON WHOLE WORDS ON ZEROBAS**
+      🎚️ TIER 6 — every edge (CR with GRPACX / GRPACY above 255; filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 clears GRPACX's low byte and adds
+      the step to GRPACY's low byte without a carry (X 300 gives 256, Y $FFFF gives $FF07); zerobas GRPACX := 0 and a
+      16-bit add. docs/bios/GRPPRT.md R-GP-ACC, cases 50, 52. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
+
+- [x] **D-GRPPRTOFF — GRPPRT AT A POSITION OUTSIDE THE SCREEN MOVES / DRAWS ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): the VG-8020 draws nothing, keeps GRPACX / GRPACY and sets ATRBYT
+      := FORCLR; zerobas moves GRPACX on, keeps ATRBYT, and with Y $FFFF draws at the top. docs/bios/GRPPRT.md cases
+      13, 14, 21, 23, 38, 46-49, 55, 67, 72. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
+
+- [x] **D-GRPPRTCOL — GRPPRT WITH FORCLR OVER 15 OR A MOVED PATTERN TABLE DRAWS OTHERWISE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
+      nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (with D-GRPPRTPOS / CR / OFF / COL together). GRPPRT is a main-ROM routine in
+      island 3 (basic/islands.asm bios_grpprt, ~310 B of the room D-CBIOSDEAD opened), built on the BIOS's own MAPXYC /
+      TDOWNC / SETC / RIGHTC as GRPPRT.md's rules describe the VG-8020's: MAPXYC, each line from its first column (SCREEN
+      2: SETC's colour rule minus its last-clear-bit step, the spill into the next cell, none past X 255; SCREEN 3: one
+      SETC block per pixel, none past column 63), the cursor put back and TDOWNC -- drawing ends where TDOWNC stops and
+      CLOC / CMASK stay there. Outside the screen: ATRBYT := FORCLR, nothing drawn or moved; CR on the low bytes. The
+      font through CGPNT's slot (RDSLT). The first build failed R-GP-VRAM in exactly the shifted cases (X AND 7 not 0):
+      RDSLT changes BC and the line's first column was in C -- reloaded. spec-live: GRPPRT holds every rule. BASIC's
+      PRINT # to GRP keeps the sub-ROM tenant (measured at BASIC level).
+
+- [x] **D-CBIOSDEAD — MORE C-BIOS BODIES ZEROBAS REPLACED WHOLE MAY STILL BE IN THE REPACK**
+      🎚️ TIER 6 — ROM space (the same ruling as D-SETCCUT).
+      🤖 **AUTONOMOUS** — vectors zerobas overlays with its own full body (tools/build_mainrom.py PATCH_RANGES) and whose
+      C-BIOS body nothing in zerobas jumps back into: SCALXY (scalxy), MAPXYC (mapxy), CLRSPR (clrspr), ISFLIO (isflio),
+      PUTQ's `ret` + 29 B pad. For each, grep C-BIOS's own internal callers first (a body C-BIOS still calls stays, and
+      it may be reachable only that way); cut the rest in one patch, re-derive the pins as D-SETCCUT did, and say where
+      the bytes land (gap 1 / island 3 only grows for cuts below $0D01; a cut above it moves the font-pad side).
+      🔬 **MEASURED 2026-11-19** -- scratchpad/cbios_reach.py: a span / fallthrough fixed point over C-BIOS's own source
+      (tools/check_dead_code.py's model), seeded by every vector the merged ROM does NOT overlay (read off the two built
+      ROMs: 44 are), every `ds $XXXX - $` pin, the prologues and zerobas's six `CBIOS_*` jump-backs. Four model fixes
+      before it was believable (each a wrong row first): an overlaid vector's `jp body` sits INSIDE romid's span and
+      kept every body alive; fallthrough must follow ROM ADDRESS order (an `include` after a `ret` "fell into" lptout);
+      a label this build does not assemble (an `IF VDP` arm) must not end its span (filvrm_lp read DEAD); an all-DATA
+      span and three labels stacked on one `ret` do not fall through. Dead, below $0D01: grpprt 303 B, mapxy 58 (its
+      only caller is grpprt), scalxy 54, clrspr + clrspr_attr's head 49, debug.asm's hex printers. $0D12-$1BBE: the
+      cassette stubs 136, lptout 42, synchr .. outdo / getypr 69, calbas 31, pinlin / qinlin 30, PUTQ's pad 30, inifnk /
+      strtms 23, iscntc / ckcntc 21, isflio 5. After the font: gtpdl 51 + gtpad 2 (needs BASIC_BASE moved -- left).
+      🟡 **PART 1 LANDED 2026-11-19: below $0D01.** cbios-repack/dead-bodies-video.patch (#47) cuts grpprt, mapxy, scalxy,
+      clrspr (+ clrspr_attr's head; INIT32 / INIGRP still call clrspr_attr_spritemode1/2) and the hex printers: 353 B.
+      The four vectors become `ret`. Re-derived from the new ROM's own bytes (nine PATCH_RANGES guards), the NSETCX
+      overlay $07FB -> $069A, CBIOS_CLS $0600, CBIOS_NSETCX $0692, CBIOS_TUPC $06FD, CBIOS_TDOWNC $071B. Island 3 is
+      $0773-$09ED (635 B; bios_setc at its start, 510 B free). Checked: the 34 bytes that differ above $0D01 are all
+      operands into the moved span. **STILL OPEN: part 2**, the $0D12-$1BBE list above -- it moves the $0FD7 / $116E
+      overlays, CBIOS_BREAKX and CBIOS_GICINI, and grows island 1 ($1AF5-$1BBF) by ~390 B.
+      ✅ **PART 2 LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/dead-bodies-main.patch (#48): SYNCHR / CHRGTR / OUTDO /
+      GETYPR, INIFNK / STRTMS, LPTOUT, PINLIN / QINLIN, ISCNTC / CKCNTC, the cassette stubs TAPION .. STMOTR, ISFLIO, PUTQ's
+      pad and CALBAS -- 381 B. LPTOUT's and the cassette vectors stay `jp` (to a bare `ret`): the tape module repoints
+      them over C-BIOS's C3. Re-derived: 17 guards, CHPUT's TTYPOS overlay $116E -> $1110, CBIOS_BREAKX $1510,
+      CBIOS_GICINI $1588; island 1 $196E-$1BBE (593 B). spec-live (full): 96 pages agree; knives, tape corpus, kwsweep
+      green. Left, on purpose: gtpdl (51 B) / gtpad (2 B) after the font -- reclaiming them means moving BASIC_BASE
+      ($2781), a different change; and stack_error (9 B, pasmo-unused) inside EXTROM's block.
+
+- [x] **D-MOVEMASK — RIGHTC / LEFTC TREAT A SCREEN 3 MASK THAT IS NOT A PIXEL'S DIFFERENTLY ON ZEROBAS**
+      🎚️ TIER 6 — every edge (CMASK not $F0 / $0F in SCREEN 3; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/RIGHTC.md / LEFTC.md ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out), cases 275,
+      276, 285-289, 310-313): the VG-8020 tests bit 7 -- RIGHTC moves on when it is clear, LEFTC back when it is
+      set, otherwise $0F / $F0 with CLOC kept; zerobas swaps the mask's nibbles and tests bit 3 / bit 4. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** cbios-repack/movemask.patch (#49): C-BIOS's own rightc / leftc in SCREEN 3
+      test CMASK's bit 7 (RIGHTC: clear -> $F0, CLOC + 8; set -> $0F. LEFTC: set -> $0F, CLOC - 8; clear -> $F0) instead
+      of rotating four times; lr_n shrank to `ld hl,CMASK / jp is_sc3`. Fixed in the source, not overlaid (one body).
+      +14 B before $0D01: re-derived three guards, CBIOS_TUPC $0711, CBIOS_TDOWNC $072F, island 3 $0781-$09ED (both
+      ISLAND_RANGES copies); the 25 bytes that changed outside the edit are all operands to their labels' new
+      addresses (checked through the two listings). spec-live (full): RIGHTC / LEFTC hold every rule, 94 pages agree.
+
+- [x] **D-STMOTRAF — STMOTR RETURNS ANOTHER A / F ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)): A matches (the PPI bit command, $09 / $08); F is $54 stopping, $10 starting ($38 for A $7F) on the
+      VG-8020 (the flags AND A gives, for A $01-$7F), other values on zerobas
+      ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out)). docs/bios/STMOTR.md R-SM-AF. Tape: outside the current focus
+      (filed, not fixed). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+- [x] **D-TAPOFFREGS — TAPIOF / TAPOOF CHANGE A, F, BC AND DE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)): the VG-8020 keeps them; zerobas returns A $09, F $44, and TAPOOF also BC $0034 / DE $0000.
+      docs/bios/TAPIOF.md R-TI-KEEP, TAPOOF.md R-TO-KEEP. Tape: outside the current focus
+      (filed, not fixed). Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+- [x] **D-TAPOOFBIT5 — TAPOOF CLEARS PORT C BIT 5 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 keeps bits 5-7 when it stops the motor; zerobas clears bit 5 (the cassette output).
+      docs/bios/TAPOOF.md R-TO-MOTOR ([`XTAP2_run1.out`](scratchpad/XTAP2_run1.out), steps XU 15, 16, 18). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+- [x] **D-TAPOONDE — TAPOON RETURNS DE $0000 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 keeps DE. docs/bios/TAPOON.md R-TN-DE ([`XTAP1_run2.out`](scratchpad/XTAP1_run2.out)). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+- [x] **D-STMOTRTOGGLE — STMOTR TOGGLES ONLY FOR A = $FF ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 toggles the motor for any A with bit 7 set ($80, $81, $FE from a running motor stop it);
+      zerobas starts it. docs/bios/STMOTR.md R-SM-MOTOR ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out), XV 00-02). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+- [x] **D-TAPOONPORT — TAPOON KEEPS PORT C'S LOW NIBBLE ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — the VG-8020 sets port C's low nibble to 7 ($40 / $4A / $E0 give $47 / $47 / $C7); zerobas keeps the
+      entry low nibble.
+      docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
+      Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED** (Joost 2026-11-19: the cassette BIOS calls are IN the pass; only BASIC's
+      cassette statements stay out). tape/tape.asm: STMOTR starts with `and a` (its flags are the start answer, $54
+      for A 0) and toggles on bit 7 (`jp p`); TAPIOF / TAPOOF keep A, F, BC, DE (HL was never touched) and TAPOOF
+      puts CAS-out back as it was on entry; TAPOON keeps DE and turns the motor on with ONE Port C write (bits 6-7
+      kept, 4-5 := 0, row select 7). +19 B, 4 of them paid by GTPDL's mask builder (`rlca` / `djnz`) and `cpl`:
+      tape_end is $0D01 -- the cassette region is now EXACTLY FULL (D-GTPDLPORT needs room found first).
+      spec-live: STMOTR / TAPIOF / TAPOOF / TAPOON hold every rule; the tape corpus green.
+
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
