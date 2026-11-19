@@ -16,7 +16,7 @@ carry is set. The top is, in SCREEN 2, CLOC AND 7 = 0 with CLOC below GRPCGP + $
 comparison: a CLOC below the table stops too); in SCREEN 3, CLOC AND $FF07 = 0 -- an absolute test that ignores MLTCGP, so with the pattern table
 elsewhere than $0000 SCREEN 3 never stops inside it (CLOC $0020, outside, stops).
 
-zerobas does the same in SCREEN 3; in SCREEN 2 it ignores GRPCGP (below).
+zerobas does all of it the same (SCREEN 2's edge since D-TEDGE, 2026-11-19).
 
 ## The specification
 
@@ -78,9 +78,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-TEDGE** (SCREEN 2: zerobas's TUPC ignores GRPCGP -- it stops only where CLOC AND $FF07 is 0, so with GRPCGP $1800 or above it moves off the top) | R-TU-POS, R-TU-EDGE, R-TU-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

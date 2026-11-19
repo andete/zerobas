@@ -93,6 +93,8 @@ PATCH_RANGES = {0x0008: bytes([0xC3, 0x8C, 0x10]),     # RST 08h -> synchr (D-SY
                                                        #  stub is POSIT's ret since D-POSITCLAMP)
                 0x0069: bytes([0xC3, 0xFD, 0x02]),     # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*;
                                                        #  $02FD since cbios-repack #43)
+                0x0105: bytes([0xC3, 0xD7, 0x08]),     # TUPC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TUPC)
+                0x010B: bytes([0xC3, 0xF5, 0x08]),     # TDOWNC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TDOWNC)
                 0x010E: bytes([0xC3, 0x18, 0x09]),     # SCALXY -> basic/biosfnk.asm (D-SCALXY*)
                 0x0111: bytes([0xC3, 0x56, 0x09]),     # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
                 0x014A: bytes([0xC3, 0x19, 0x17]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;

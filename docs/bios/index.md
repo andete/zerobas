@@ -91,9 +91,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |
 | $00FF | LEFTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](LEFTC.md) | 6 | D-MOVEMASK |
 | $0102 | UPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](UPC.md) | 6 | — |
-| $0105 | TUPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TUPC.md) | 6 | D-TEDGE |
+| $0105 | TUPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TUPC.md) | 6 | — |
 | $0108 | DOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](DOWNC.md) | 6 | — |
-| $010B | TDOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TDOWNC.md) | 6 | D-TEDGE |
+| $010B | TDOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TDOWNC.md) | 6 | — |
 | $010E | SCALXY | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCALXY.md) | 3 | — |
 | $0111 | MAPXYC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](MAPXYC.md) | 5 | — |
 | $0114 | FETCHC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](FETCHC.md) | 3 | — |

@@ -596,3 +596,59 @@ bsx_out:
                 ex      (sp),hl             ; HL restored, (A, F) on the stack
                 pop     af
                 ret
+
+; bios_tupc / bios_tdownc -- TUPC ($0105) / TDOWNC ($010B). D-TEDGE (2026-11-19): in SCREEN 2 the
+; VG-8020 stops at the pattern table's own edge -- TUPC when CLOC AND 7 is 0 and CLOC is below
+; GRPCGP + $100, TDOWNC when CLOC AND 7 is 7 and CLOC is GRPCGP + $1700 or more, both unsigned --
+; with CLOC / CMASK kept, A = 0, F $45 (docs/bios/TUPC.md / TDOWNC.md R-TU-EDGE / R-TD-EDGE).
+; C-BIOS's ignored GRPCGP. Here only that test: a SCREEN 2 move is UPC's / DOWNC's (the rules'
+; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, pinned by
+; PATCH_RANGES' old vector bytes). BC / DE / HL kept. Page 0.
+CBIOS_TUPC      equ     $08D7
+CBIOS_TDOWNC    equ     $08F5
+BIOS_UPC        equ     $0102
+BIOS_DOWNC      equ     $0108
+bios_tupc:
+                ld      a,(SCRMOD)
+                cp      2
+                jp      nz,CBIOS_TUPC
+                ld      a,(CLOC)
+                and     7
+                jp      nz,CBIOS_TUPC       ; not a cell's top line: it moves
+                push    hl
+                push    de
+                ld      hl,(GRPCGP)
+                inc     h                   ; GRPCGP + $100
+                ld      de,(CLOC)
+                ex      de,hl
+                or      a
+                sbc     hl,de               ; C: CLOC below it -- the top
+                pop     de
+                pop     hl
+                jp      nc,BIOS_UPC
+btu_stop:
+                xor     a
+                scf                         ; A 0, F $45
+                ret
+bios_tdownc:
+                ld      a,(SCRMOD)
+                cp      2
+                jp      nz,CBIOS_TDOWNC
+                ld      a,(CLOC)
+                and     7
+                cp      7
+                jp      nz,CBIOS_TDOWNC     ; not a cell's bottom line: it moves
+                push    hl
+                push    de
+                ld      hl,(GRPCGP)
+                ld      a,h
+                add     a,$17
+                ld      d,a
+                ld      e,l                 ; DE = GRPCGP + $1700
+                ld      hl,(CLOC)
+                or      a
+                sbc     hl,de               ; NC: CLOC at or past it -- the bottom
+                pop     de
+                pop     hl
+                jr      nc,btu_stop
+                jp      BIOS_DOWNC

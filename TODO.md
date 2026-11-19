@@ -17123,12 +17123,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/bios/TAPOON.md R-TN-PORT ([`XTAP3_run1.out`](scratchpad/XTAP3_run1.out)). Tape: outside the current focus (filed, not fixed).
       Priced when picked up.
 
-- [ ] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
+- [x] **D-TEDGE — TUPC / TDOWNC IGNORE GRPCGP IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (a SCREEN 2 pattern table moved off $0000, then TUPC / TDOWNC at its rows; filed
       2026-11-18). With GRPCGP $0000, the default, zerobas agrees.
       🤖 **AUTONOMOUS** — docs/bios/TUPC.md / TDOWNC.md R-TU-* / R-TD-* ([`XGFX2_run7.out`](scratchpad/XGFX2_run7.out)):
       the VG-8020 stops TUPC where CLOC is below GRPCGP + $100, TDOWNC where it is GRPCGP + $1700 or more (unsigned);
       zerobas stops TUPC only where CLOC AND $FF07 is 0 and TDOWNC wherever CLOC is $1700 or more. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** TUPC ($0105) / TDOWNC ($010B) are basic/biosfnk.asm bios_tupc / bios_tdownc (79 B in the $3283 pad; the vectors repointed by basic/islands.asm, PATCH_RANGES C3 D7 08 / C3 F5 08): in SCREEN 2 the edge is CLOC below GRPCGP + $100 / at or past GRPCGP + $1700, unsigned; a move is UPC's / DOWNC's, every other case C-BIOS's own body; spec-live: TUPC's and TDOWNC's rules all hold on zerobas.
 
 - [x] **D-MAPXYCBASE — MAPXYC LEAVES OUT GRPCGP / MLTCGP ON ZEROBAS**
       🎚️ TIER 6 — every edge (a pattern table moved off $0000 with BASE, then a graphics call; filed 2026-11-18).

@@ -16,7 +16,7 @@ carry set. The bottom is, in SCREEN 2, CLOC AND 7 = 7 with CLOC GRPCGP + $1700 o
 a CLOC below the table moves on); in SCREEN 3, CLOC AND 7 = 7 with a high byte of 5 or more -- absolute again, so with MLTCGP $1000
 it stops at every block row's last line.
 
-zerobas does the same in SCREEN 3; in SCREEN 2 it ignores GRPCGP (below).
+zerobas does all of it the same (SCREEN 2's edge since D-TEDGE, 2026-11-19).
 
 ## The specification
 
@@ -78,9 +78,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-TEDGE** (SCREEN 2: zerobas's TDOWNC ignores GRPCGP -- it stops wherever CLOC AND 7 is 7 and CLOC is $1700 or more, so with GRPCGP $1800 or $2000 it stops on every row) | R-TD-POS, R-TD-EDGE, R-TD-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
