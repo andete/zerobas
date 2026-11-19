@@ -22,7 +22,22 @@ session and the loop resumes exactly where it stopped.
 | EXECUTABLE RULES | *"yes, add executable rules"* | spec-method §3a: every page's behaviour rules are checks (probes/bios/spec/<name>_rules.py, tools/spec_rules.py); its rule tables are GENERATED; `make spec-rules-check` in STATIC. A false rule is fixed in the rule, never the data |
 | THE ORDER | *"let's go with the new order"* (after weighing whole-BIOS-first: no -- region by region) | (1) finish CHPUT: round 3 for its 5 unmeasured items, then goldfish pass 3 (the stopping test); (2) the BASE BIOS page `docs/concepts/bios.md` (calling conventions, the BIOS slot, interrupts, registers) and a SHARED-STATE MAP (which work-area cells / VDP registers / ports each of the 108 calls reads or writes, from published references + existing evidence: where regions touch); (3) the rest of the text region in this order: INITXT / INIT32 -> DSPFNK / ERAFNK / FNKSB -> CLS / POSIT -> CHGET / CHSNS -> CNVCHR / PINLIN / INLIN / QINLIN / TOTEXT -> the screen-editor concept page's contract section; (4) FIX the region's differences together (D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL, ...), then the test audit per call; (5) the next region. Joost: spec the whole region first (synergies), not the whole BIOS |
 
-STATE 2026-11-19 LATE NIGHT (recount, never quote): SOUND and INPUT FINAL (+ concept pages); the TAPE region's seven
+STATE 2026-11-19 EVENING (recount, never quote): THE FIXES BY TIER (step 4) are under way, non-disk regions first
+(Joost: disk only after every other MSX1 BIOS call is DONE). Landed and pushed today: D-SETCLAST (SETC + NSETCX), D-NSETCXFULL,
+D-LPTOUTF part 1, D-INITIOQUEUES, D-ISFLIO, the six input items (cbios-repack #40), D-CHGSNDF / D-GETVCF / D-ISCNTCEI (#41),
+D-LFTQBC / D-LFTQSIZE (#42) / D-PUTQREGS, D-BREAKXBUF, D-GRPPRTEI, CLRSPR (4 items), D-CHGMODRANGE (#43), D-INITXTBAS (#44),
+D-INIMLTCOL (#45), MAPXYC (4 items), SCALXY (2), D-TEDGE, D-NSETCX0 / D-NSETCXL. THE PATTERN: a BIOS entry repointed by
+basic/islands.asm (PATCH_RANGES pins the old vector, so the fixed C-BIOS address stays honest) to a page-0 body in
+basic/biosfnk.asm, in the $3283 pin's pad -- opened by PROMOTING basic/input.asm into main page 1 (546 B). THAT PAD IS NEARLY
+SPENT (`make basic-reloc`: read it, never quote it); the next fixes need a carve or another promotion first (promote_scout).
+LESSONS: (1) gate_wt --tier plan does NOT always re-take the knife pin: run kwknife --all / --allfn yourself after EVERY ROM
+change, or tiers-md-check goes RED; (2) a new equ in basic/sysvars.inc needs `make ram-map-doc`; (3) stage the generated
+files (resident-abi includes, tape .ips / .bps) -- patch-freshness-check; (4) tests that never load the BIOS can slide
+through zero bytes into a newly filled vector (test_repl: trap the BIOS call instead).
+NEXT: the remaining TIER 6 BIOS items -- most need room (D-SETCCOL / D-SETCATR / D-SETCF, D-MOVEMASK, the GRPPRT / SCAN
+tenant items in the full sub ROM, D-GTPDLPORT, D-OUTDLP*); D-INIREGS / D-SETSHADOW / D-CALSLT* are reference leftovers
+(price before matching); tape items stay filed (out of focus).
+PREVIOUS STATE 2026-11-19 LATE NIGHT (recount, never quote): SOUND and INPUT FINAL (+ concept pages); the TAPE region's seven
 calls FINAL (XTAP1-XTAP5, five passes; tape is outside the FOCUS, so differences are FILED, not fixed: D-STMOTRAF,
 D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT); its contract section is in
 docs/concepts/cassette.md "The BIOS calls". Lessons: the reference's TAPIN needs the calls back to back (a 10-byte
