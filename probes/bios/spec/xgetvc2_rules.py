@@ -26,7 +26,7 @@ ALL = lambda c: True  # noqa: E731
 
 
 RULES = [
-    Rule("R-G2-HL", S1, "HL := VCBA ($FB41) + 37 x VOICEN ($FB38) + L (VOICEN 0, 1, 2; L 0, 5, 7, 36 measured); H on "
+    Rule("R-G2-HL", S1, "HL := VCBA ($FB41) + 37 x VOICEN ($FB38) + L (VOICEN 0-3; L 0, 5, 7, 36, $C0 measured); H on "
          "entry is not used.", ALL, lambda c: c.hl == G.VCBA + 37 * c.q[29] + (c.chl & 0xFF)),
     Rule("R-G2-AF", S1, "A := 0; F := $44 for voice 0, $42 for the others.", ALL,
          lambda c: (c.a, c.f) == (0, 0x44 if c.q[29] == 0 else 0x42)),

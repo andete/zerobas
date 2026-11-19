@@ -2,8 +2,9 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for WRTPSG / RDPSG / CHGSND / LFTQ / PUTQ / GETVCP / GETVC2's EXECUTABLE RULES
-(docs/spec-method.md §3a): scratchpad/XSND1_run4.out (rows N and D; probes/bios/spec/xsnd1.asm documents the presets,
-the case table and the 80-byte record). Each page's module takes its op's cases from `load(op)`."""
+(and GICINI / STRTMS / BEEP's) (docs/spec-method.md §3a): scratchpad/XSND1_run4.out and XSND1B_run1.out (rows N and D;
+probes/bios/spec/xsnd1.asm and xsnd1b.asm document the presets, the case tables and the 80-byte record; xsnd1b's cases
+are numbered from 107 and read SET with its own bits). Each page's module takes its op's cases from `load(op)`."""
 import os
 import re
 import sys
@@ -14,8 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XSND1_run4.out"
-ASM = os.path.join(HERE, "xsnd1.asm")
+SOURCES = ((os.path.join(HERE, "xsnd1.asm"), "XSND1_run4.out", 0), (os.path.join(HERE, "xsnd1b.asm"), "XSND1B_run1.out", 107))
 REC = 80
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "psg", "aa", "quetab", "cells", "win"]
 OUTPUTS = {"XS": FIELDS}
@@ -23,15 +23,15 @@ PSGPRE = (0xA1, 0x02, 0xB3, 0x04, 0xC5, 0x06, 0x17, 0xB8, 0x09, 0x0A, 0x0B, 0x5C
 VCBA = 0xFB41
 
 
-def table():
-    src = open(ASM).read()
+def table(asm):
+    src = open(asm).read()
     pat = r"db\s+\$(..), \$(..), \$(..), \$(..), \$(..)\n\s+dw\s+\$(....), \$(....), \$(....), \$(....)"
     return [tuple(int(x, 16) for x in m) for m in re.findall(pat, src[src.index("\ncases:"):])]
 
 
-def qsets():
+def qsets(asm):
     """the probe's `qsets`: per set, QUETAB + QUEBAK (28 bytes) and QUEUEN, VOICEN, MUSICF, PLYCNT"""
-    src = open(ASM).read()
+    src = open(asm).read()
     body = src[src.index("\nqsets:"):src.index("\nfinish:")]
     vals = []
     for kind, args in re.findall(r"\b(db|dw)\s+([^\n;]+)", body):
@@ -47,8 +47,15 @@ def fill(a):
 
 
 def load(op):
-    tab, qs = table(), qsets()
     out = {"ref": [], "zb": []}
+    for asm, run, base in SOURCES:
+        load_one(op, asm, run, base, out)
+    return out
+
+
+def load_one(op, asm, RUN, base, out):
+    tab, qs = table(asm), qsets(asm)
+    second = base > 0
     text = open(os.path.join(ROOT, "scratchpad", RUN)).read()
     secs = re.findall(r"===== \S+ (nodisk|disk): .*?CAP ref : (\w+)\n  CAP ours: (\w+)", text, re.S)
     if [s[0] for s in secs] != ["nodisk", "disk"]:
@@ -59,22 +66,21 @@ def load(op):
             b = bytes.fromhex(h).ljust(1 + REC * len(tab) + 1, b"\0")
             if b[0] != 0xA5 or b[1 + REC * len(tab)] != 0xC3:
                 sys.exit(f"FAIL: the {RUN} {rowname} {who} block is not complete (no sentinel)")
-            for i, (cop, ca, cf, ei, st, bc, de, hl, win) in enumerate(tab):
+            for i, (cop, ca, cf, ei, st, bc, de, hl, win) in enumerate(tab, base):
                 if cop != op:
                     continue
-                r = b[1 + REC * i:1 + REC * (i + 1)]
-                q = qs[(st & 0x0E) >> 1]
+                r = b[1 + REC * (i - base):1 + REC * (i - base + 1)]
+                q = qs[(st & (0x1E if second else 0x0E)) >> 1]
                 out[who].append(NS(
                     src="XS", id=f"XS {row}{i:02}", i=i, row=row, op=cop, ca=ca, cf=cf, ei=ei, cset=st, cbc=bc, cde=de,
-                    chl=hl, cwin=win, q=q, mask=0xFF if i & 4 else 0,
+                    chl=hl, cwin=win, q=q, mask=0xFF if (i - base) & 4 else 0, pcbase=0x2F if second and st & 0x80 else 0x50,
                     a=r[0], f=r[1], bc=r[2] << 8 | r[3], de=r[4] << 8 | r[5], hl=r[6] << 8 | r[7],
                     ix=r[8] << 8 | r[9], iy=r[10] << 8 | r[11], iff=r[12], psg=tuple(r[13:29]), aa=r[29],
                     quetab=tuple(r[30:58]), cells=tuple(r[58:62]), win=tuple(r[62:78])))
-    return out
 
 
 def aa_in(c):
-    return 0x50 | (0x80 if c.cset & 1 else 0)
+    return c.pcbase | (0x80 if c.cset & 1 else 0)
 
 
 def aa_ok(c):

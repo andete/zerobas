@@ -31,12 +31,13 @@ def entry(c):
 
 def room(c):
     put, get, bak, size = entry(c)[:4]
-    return (get - put - 1) & size
+    return (get - ((put + 1) & size)) & size
 
 
 RULES = [
     Rule("R-LQ-HL", S1, "For queue A (0-3; QUETAB $F959, 6 bytes each: put, get, back flag, size, address): HL := (get - "
-         "put - 1) AND size, the bytes free; the back flag is not used. A := L, F its flags as an AND leaves them (H "
+         "((put + 1) AND size)) AND size, the bytes free -- with a size of 2^n - 1 that is (get - put - 1) mod 2^n; "
+         "with $7E, put 2 and get $50 it gives $4E; the back flag is not used. A := L, F its flags as an AND leaves them (H "
          "set).", ALL,
          lambda c: (c.hl, c.a, c.f) == (room(c), room(c), G.logical(room(c)) | 0x10)),
     Rule("R-LQ-BC", S1, "B := (put + 1) AND size, C := get.", ALL,

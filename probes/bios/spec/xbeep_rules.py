@@ -33,8 +33,8 @@ def reset(c):
     psg = list(G.PSGPRE)
     psg[7], psg[8], psg[9], psg[10] = 0xB8, 0, 0, 0
     q = list(c.q[:28])
-    for k in range(3):
-        q[6 * k:6 * k + 4] = [0, 0, 0, 0x7F]
+    for k, adr in enumerate((0xF975, 0xF9F5, 0xFA75)):          # VOICAQ, VOICBQ, VOICCQ
+        q[6 * k:6 * k + 6] = [0, 0, 0, 0x7F, adr & 0xFF, adr >> 8]
     cells = (c.q[28], c.q[29], 0, 0)
     win = []
     for a in range(c.cwin, c.cwin + 16):

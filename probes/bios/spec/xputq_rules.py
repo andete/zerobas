@@ -35,17 +35,19 @@ def put(c):
     if new == g:
         return tuple(q), {}, new, 0x42 | (new & 0x28), p << 8 | new, 0xF959 + e + 3
     q[e] = new
-    return tuple(q), {adr + new: c.cde & 0xFF}, adr & 0xFF, 0x28 if new else 0xA8, new, 0xF959 + e
+    f = (0x80 if (new - g) & 0x80 else 0) | (((adr + new) >> 8) & 0x28)
+    return tuple(q), {(adr + new) & 0xFFFF: c.cde & 0xFF}, adr & 0xFF, f, new, 0xF959 + e
 
 
 RULES = [
-    Rule("R-PQ-PUT", S1, "Queue A's put pointer goes to (put + 1) AND size; if that equals get the queue is full: "
+    Rule("R-PQ-PUT", S1, "Queue A's put pointer goes to (put + 1) AND size (with size $7E, put 2 stays 2); if that equals get the queue is full: "
          "nothing is written and put is kept. Otherwise put := it and E is stored at the queue's address + the new "
          "put (the first byte stored goes at address + 1; a put of 0 at the address itself; the 16-bit sum carries: "
          "$F9F0 + $10 is $FA00). Nothing else in QUETAB, nor QUEUEN / VOICEN / MUSICF / PLYCNT, changes.", ALL,
          lambda c: c.quetab == put(c)[0] and G.win_kept(c, put(c)[1]) and c.cells == c.q[28:32]),
     Rule("R-PQ-AF", S1, "Full: A := the new put, F := $42 OR (A AND $28) (Z set). Stored: A := the queue address's low "
-         "byte, F := $28 (Z clear) -- $A8 when the new put is 0, the pointer wrapping.", ALL, lambda c: (c.a, c.f) == put(c)[2:4]),
+         "byte, F := S from (new put - get) -- bit 7 of the difference -- and bits 5 / 3 from the high byte of the "
+         "address stored to, the rest clear ($28 for $F9xx with new put above get, $A8 below, $80 for $C0xx).", ALL, lambda c: (c.a, c.f) == put(c)[2:4]),
     Rule("R-PQ-REGS", S1, "Full: B := the old put, C := the new put, HL := the queue's QUETAB entry + 3. Stored: B := "
          "0, C := the new put, HL := the entry.", ALL, lambda c: (c.bc, c.hl) == put(c)[4:6]),
     G.keep_rule("PQ", S1, "DE, IX, IY and the interrupt state are kept; the PSG registers and the PPI port C are kept.",

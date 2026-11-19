@@ -33,6 +33,6 @@ RULES = [
                 "R15 $CF), the PPI port C (its high nibble only when interrupts are on: the timer interrupt sets the keyboard "
                 "row) and the queue cells are kept.",
                 lambda c: (c.f, c.bc, c.de, c.hl, c.iff) == (c.cf, c.cbc, c.cde, c.chl, c.ei) and G.ixiy(c)
-                and c.psg[:14] == G.PSGPRE and c.psg[15] == 0xCF
+                and c.psg[:14] == G.PSGPRE and (c.ei or c.psg[15] == 0xCF)
                 and (c.aa if not c.ei else c.aa & 0xF0) == (G.aa_in(c) if not c.ei else G.aa_in(c) & 0xF0) and c.quetab == c.q[:28] and c.cells == c.q[28:32] and G.win_kept(c)),
 ]

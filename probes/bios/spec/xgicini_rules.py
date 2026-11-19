@@ -33,8 +33,8 @@ def reset(c):
     psg = list(G.PSGPRE)
     psg[7], psg[8], psg[9], psg[10] = 0xB8, 0, 0, 0
     q = list(c.q[:28])
-    for k in range(3):
-        q[6 * k:6 * k + 4] = [0, 0, 0, 0x7F]
+    for k, adr in enumerate((0xF975, 0xF9F5, 0xFA75)):          # VOICAQ, VOICBQ, VOICCQ
+        q[6 * k:6 * k + 6] = [0, 0, 0, 0x7F, adr & 0xFF, adr >> 8]
     cells = (c.q[28], c.q[29], 0, 0)
     win = []
     for a in range(c.cwin, c.cwin + 16):
@@ -58,7 +58,8 @@ def reset(c):
 RULES = [
     Rule("R-GI-PSG", S1, "PSG R7 := $B8 (tones on, noise off, port A in, port B out: from $BF too), R8-R10 (the volumes) "
          ":= 0; R0-R6 and R11-R13 are kept.", ALL, lambda c: c.psg[:14] == reset(c)[0]),
-    Rule("R-GI-QUE", S1, "Queues 0-2 in QUETAB: put, get and the back flag := 0, size := $7F, the address kept; queue 3 "
+    Rule("R-GI-QUE", S1, "Queues 0-2 in QUETAB: put, get and the back flag := 0, size := $7F, the address := VOICAQ / VOICBQ / "
+         "VOICCQ ($F975 / $F9F5 / $FA75; from $F9F0 and size $7E too); queue 3 "
          "and QUEBAK are kept. MUSICF ($FB3F) and PLYCNT ($FB40) := 0; QUEUEN and VOICEN are kept.", ALL,
          lambda c: (c.quetab, c.cells) == reset(c)[1:3]),
     Rule("R-GI-VCB", S1, "The three 37-byte voice buffers from VCBA ($FB41) := 0, except bytes 15-19 of each := $04 $04 "
