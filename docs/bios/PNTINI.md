@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # `PNTINI` ($0129) — set the PAINT border colour
 
-> **Spec:** DRAFT 2 (2026-11-19), after one test-writer review, measured again (runs 5-9). Measured on the VG-8020, alone and with a disk
+> **Spec:** FINAL (2026-11-19), the core rules: the second test-writer review found no new behaviour; the
+> separating cases it asked for (run 10) all confirmed the rules. Measured on the VG-8020, alone and with a disk
 > interface.
 
 ## Summary
@@ -24,8 +25,8 @@ zerobas sets the same BDRATR; it changes BC and HL, returns other flags and turn
 References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 1200 disk interface
 (row `D`). Ours: the C-BIOS repack, diskless on row `N`, the disk build on `D`.
 
-**Evidence.** **[XQ rNN]**: case `NN` of the XGFX6 probe, run 9, on row `r`, both rows in
-[`scratchpad/XGFX6_run9.out`](../../scratchpad/XGFX6_run9.out) (the two rows recorded the same bytes).
+**Evidence.** **[XQ rNN]**: case `NN` of the XGFX6 probe, run 10, on row `r`, both rows in
+[`scratchpad/XGFX6_run10.out`](../../scratchpad/XGFX6_run10.out) (the two rows recorded the same bytes).
 `probes/bios/spec/xgfx6.asm` documents the presets, the case table and the 128-byte record:
 - Before each case the probe sets, by hand: the screen-table cells to the published defaults; SCRMOD,
   CLOC ($0662), CMASK, ATRBYT ($07) and BDRATR ($33) to the case's; the 41 bytes $F92D-$F955 (the
@@ -61,12 +62,13 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-PNTINIREGS** (zerobas returns B := A, C := 0, HL := $000E, other flags -- $00 in SCREEN 2, $04 / $00 / $AC / $0C in SCREEN 3 -- and interrupts on; with SCRMOD 0 / 1 it takes ATRBYT, where the VG-8020 takes A -- cases 72, 73) | R-PI-BDR, R-PI-AF, R-PI-KEEP |
+| **D-PNTINIREGS** (zerobas returns B := A, C := 0, HL := $000E, other flags -- not an AND's in SCREEN 2 ($00 for $07, $44 / $0C / $08 for $00 / $0A / $1A), $04 / $00 / $AC / $0C / $80 in SCREEN 3 -- and interrupts on; with SCRMOD 0 / 1 it takes ATRBYT into BDRATR and A, where the VG-8020 takes A and keeps it -- cases 72, 73) | R-PI-BDR, R-PI-AF, R-PI-KEEP |
 
 ## Open (not measured)
 
-- **[A]** SCRMOD other than 2 and 3; entry values other than those measured; the alternate registers
-  and SP; the time it takes.
+- **[A]** ATRBYT of $20 and up in SCREEN 2 (only $00-$1A: whether the whole byte is taken); B, DE and
+  HL measured with one entry value each ($00, $9BDF, $2468); the alternate registers and SP; the time
+  it takes.
 - **[A]** RAM other than the cells recorded; VRAM beyond the block sums and two windows.
 - **[A]** The CF-3300 (the second reference).
 

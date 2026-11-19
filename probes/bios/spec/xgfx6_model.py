@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""The shared loader for PNTINI / SCANR / SCANL's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX6_run9.out
+"""The shared loader for PNTINI / SCANR / SCANL's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX6_run10.out
 (rows N and D; probes/bios/spec/xgfx6.asm documents the presets, the case table and the 128-byte record). Each page's
 module takes its op's cases from `load(op)`."""
 import os
@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
-RUN = "XGFX6_run9.out"
+RUN = "XGFX6_run10.out"
 ASM = os.path.join(HERE, "xgfx6.asm")
 REC = 128
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "regs", "sums", "w1", "w2", "gwork", "cloc", "cmask",

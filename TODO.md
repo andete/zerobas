@@ -16867,24 +16867,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 3 — common: every PAINT in SCREEN 2 goes through SCANL (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): the VG-8020 paints HL + K pixels from the left end, K the run
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
       length of the most recent SCREEN 2 SCANR; zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
       calls SCANL at all is to be checked first. Priced when picked up.
 
 - [ ] **D-SCANSTOP — SCANR / SCANL MISS A BORDER PIXEL DRAWN IN A CELL'S FOREGROUND COLOUR ON ZEROBAS**
       🎚️ TIER 3 — common: in SCREEN 2 PAINT's border is the paint colour, which drawn lines carry as foreground; check
       first whether BASIC's PAINT on zerobas goes through these calls (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): in the run / count the VG-8020 stops at the
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): in the run / count the VG-8020 stops at the
       first BDRATR pixel, foreground or background; zerobas runs past a foreground one to the row's end. docs/bios/
       SCANR.md R-SR-SCAN (cases 62, 77), SCANL.md R-SL-SCAN (43, 75). Priced when picked up.
 
 - [ ] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.
 
 - [ ] **D-PNTINIREGS — PNTINI CHANGES BC / HL, F AND THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run9.out`](scratchpad/XGFX6_run9.out)): the VG-8020 keeps BC, DE, HL and the interrupt
+      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 keeps BC, DE, HL and the interrupt
       state, and returns an AND's flags on ATRBYT (SCREEN 2) or CP $10 + CCF's (other modes); zerobas returns B := A,
       C := 0, HL := $000E, other flags, interrupts on, and with SCRMOD 0 / 1 takes ATRBYT. docs/bios/PNTINI.md R-PI-AF / R-PI-KEEP. Priced when picked up.
 
