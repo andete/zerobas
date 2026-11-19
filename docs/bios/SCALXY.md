@@ -17,7 +17,8 @@ divides both by 4, giving SCREEN 3's block numbers. The carry is set, and A = $8
 clipped; the carry is clear and A = 0 when either was. HL, IX, IY, the interrupt state and the work
 area are kept.
 
-zerobas clips the same, but divides only in SCREEN 3 and returns other flags there (below).
+zerobas does all of it the same (since D-SCALXYMODE / D-SCALXYF, 2026-11-19: its SCALXY is
+basic/biosfnk.asm bios_scalxy).
 
 ## The specification
 
@@ -58,10 +59,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SCALXYMODE** (SCRMOD 0 or 1: zerobas does not divide by 4 -- it divides only in SCREEN 3 -- cases 28-31) | R-SX-CLIP, R-SX-AF |
-| **D-SCALXYF** (SCRMOD other than 2: zerobas returns SCREEN 2's flags, Z set and the carry, where the VG-8020 takes S / Z / P/V from the new E) | R-SX-AF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

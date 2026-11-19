@@ -457,6 +457,8 @@ st_go:
                 jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $0069
                 jp      bios_clrspr         ; CLRSPR: as the VG-8020 (D-CLRSPR*)
+                org     $010E
+                jp      bios_scalxy         ; SCALXY: as the VG-8020 (D-SCALXY*)
                 org     $0111
                 jp      bios_mapxyc         ; MAPXYC: as the VG-8020 (D-MAPXYC*)
                 org     $014A

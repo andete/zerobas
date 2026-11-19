@@ -530,3 +530,69 @@ bmx_even:
                 ld      (CLOC),hl
                 pop     de
                 ret
+
+; bios_scalxy -- SCALXY ($010E). D-SCALXYMODE / D-SCALXYF (2026-11-19), as the VG-8020
+; (docs/bios/SCALXY.md): BC (X) and DE (Y) clipped as signed 16-bit numbers to 0..255 / 0..191,
+; then, with SCRMOD other than 2, both divided by 4. The carry set and A $80 when neither was
+; clipped, clear and $00 when either was; the other flags: SCREEN 2 Z alone; otherwise Z and P/V
+; from the new E, the rest clear. A / F are built in HL and popped, which also restores HL; IX,
+; IY and the interrupt state are kept. C-BIOS's divided only in SCREEN 3 and left SCREEN 2's
+; flags there. Page 0.
+bios_scalxy:
+                push    hl
+                ld      h,0                 ; H: the coordinates clipped
+                bit     7,b
+                jr      z,bsx_xpos
+                ld      bc,0
+                inc     h
+                jr      bsx_y
+bsx_xpos:
+                ld      a,b
+                or      a
+                jr      z,bsx_y
+                ld      bc,255
+                inc     h
+bsx_y:
+                bit     7,d
+                jr      z,bsx_ypos
+                ld      de,0
+                inc     h
+                jr      bsx_mode
+bsx_ypos:
+                ld      a,d
+                or      a
+                jr      nz,bsx_yclip
+                ld      a,e
+                cp      192
+                jr      c,bsx_mode
+bsx_yclip:
+                ld      de,191
+                inc     h
+bsx_mode:
+                ld      l,$40               ; SCREEN 2: Z alone
+                ld      a,(SCRMOD)
+                cp      2
+                jr      z,bsx_af
+                srl     c
+                srl     c
+                srl     e
+                srl     e                   ; block numbers
+                ld      l,0
+                ld      a,e
+                or      a
+                jr      nz,bsx_nz
+                set     6,l                 ; Z
+bsx_nz:
+                jp      po,bsx_af
+                set     2,l                 ; P/V: E's parity
+bsx_af:
+                xor     a
+                cp      h
+                jr      nz,bsx_out          ; clipped: A $00, carry clear
+                ld      a,$80
+                set     0,l
+bsx_out:
+                ld      h,a
+                ex      (sp),hl             ; HL restored, (A, F) on the stack
+                pop     af
+                ret

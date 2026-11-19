@@ -17013,15 +17013,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — ([`XGFX5_run3.out`](scratchpad/XGFX5_run3.out)): docs/bios/GRPPRT.md R-GP-VRAM cases 16, 56, 57, 62 (other colour
       nibbles), 17, 42, 65, 66 (GRPCGP $2000 / $0800), 22 (MLTCGP $1000): zerobas draws where the default tables would. Priced when picked up.
 
-- [ ] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**
+- [x] **D-SCALXYMODE — SCALXY DOES NOT DIVIDE BY 4 IN SCREEN 0 / 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (SCALXY called outside the graphics modes; filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX4_run2.out`](scratchpad/XGFX4_run2.out)): the VG-8020 divides X and Y by 4 whenever SCRMOD is not 2; zerobas only in SCREEN 3.
       docs/bios/SCALXY.md R-SX-CLIP / R-SX-AF, cases 28-31. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** SCALXY ($010E) is basic/biosfnk.asm bios_scalxy (86 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 18 09): divided by 4 for every SCRMOD but 2, A / F built and popped (SCREEN 2 Z; otherwise Z / P/V from the new E; the carry when nothing was clipped); spec-live: SCALXY's rules all hold on zerobas.
 
-- [ ] **D-SCALXYF — SCALXY RETURNS SCREEN 2'S FLAGS IN THE OTHER MODES ON ZEROBAS**
+- [x] **D-SCALXYF — SCALXY RETURNS SCREEN 2'S FLAGS IN THE OTHER MODES ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX4_run2.out`](scratchpad/XGFX4_run2.out)): with SCRMOD not 2 the VG-8020's S / Z / P/V come from the new E (H, N, bits 3 / 5
       clear; the carry as in SCREEN 2); zerobas returns $41 / $40. docs/bios/SCALXY.md R-SX-AF. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** SCALXY ($010E) is basic/biosfnk.asm bios_scalxy (86 B in the $3283 pad; the vector repointed by basic/islands.asm, PATCH_RANGES C3 18 09): divided by 4 for every SCRMOD but 2, A / F built and popped (SCREEN 2 Z; otherwise Z / P/V from the new E; the carry when nothing was clipped); spec-live: SCALXY's rules all hold on zerobas.
 
 - [x] **D-SETCLAST — SETC / NSETCX TURN A WHOLE PATTERN BYTE TO THE NEW COLOUR WHEN ITS LAST BACKGROUND PIXEL IS SET, ON ZEROBAS**
       🎚️ TIER 1 — happy path: SETC on any SCREEN 2 byte whose other 7 pixels are set, with a third colour, changes 7
