@@ -44,9 +44,9 @@ RULES = [
          "right, 4 down-right, 5 down, 6 down-left, 7 left, 8 up-left, 0 none; opposite keys cancel (up + down, left + "
          "right, all four: 0; left + up + down: 7). A 1 / 2 (the joystick ports, nothing plugged) and 3: 0.", ALL,
          lambda c: c.a == direction(c)),
-    G.keep_rule("GS", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept. (F, BC, DE and "
+    G.keep_rule("GS", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F, BC, DE and "
                 "HL are left holding working values: not compared, the group `XIW`.)",
-                lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == c.cpc & 0xF0 and G.quiet(c, r15=G.r15_port(c))),
+                lambda c: G.ixiy(c) and G.cells(c) and c.aa == ((c.cpc & 0xF0) | 8 if c.ca == 0 else c.cpc) and G.quiet(c, r15=G.r15_port(c))),
     Rule("R-GS-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),
 ]

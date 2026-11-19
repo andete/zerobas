@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """The shared loader for the input region's EXECUTABLE RULES (SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
-CKCNTC, GTPAD, GTPDL; docs/spec-method.md §3a): scratchpad/XINP1_run2.out (rows N and D; probes/bios/spec/xinp1.asm
+CKCNTC, GTPAD, GTPDL; docs/spec-method.md §3a): scratchpad/XINP1_run3.out (rows N and D; probes/bios/spec/xinp1.asm
 documents the presets, the key matrix per case, the case table and the 48-byte record)."""
 import os
 import re
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
 
-RUN = "XINP1_run2.out"
+RUN = "XINP1_run3.out"
 ASM = os.path.join(HERE, "xinp1.asm")
 REC = 48
 FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "aa", "r14", "r15", "putpnt", "getpnt", "intflg", "capst",
@@ -22,7 +22,8 @@ FIELDS = ["a", "f", "bc", "de", "hl", "ix", "iy", "iff", "aa", "r14", "r15", "pu
 # GTSTCK, GTTRIG, SNSMAT, GTPAD, GTPDL leave F (and some of BC, DE, HL) holding working values: groups without them
 OUTPUTS = {"XI": FIELDS, "XIF": [f for f in FIELDS if f != "f"],
            "XIW": [f for f in FIELDS if f not in ("f", "bc", "de", "hl")], "XIA": [f for f in FIELDS if f != "a"],
-           "XIP": [f for f in FIELDS if f not in ("f", "bc", "de", "hl", "r15")]}
+           "XIP": [f for f in FIELDS if f not in ("f", "bc", "de", "hl", "r15")],
+           "XIT": [f for f in FIELDS if f not in ("f", "bc")]}
 KEYBUF = 0xFBF0
 PUT0, GET0 = KEYBUF + 5, KEYBUF + 2
 

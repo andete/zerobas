@@ -18,7 +18,7 @@ OUTPUTS = G.OUTPUTS
 
 
 def cases():
-    return G.load(4, "XIW")
+    return G.load(4, "XIT")
 
 
 S1 = "1. GTTRIG ($00D8): read a trigger or the space bar"
@@ -34,9 +34,9 @@ RULES = [
     Rule("R-GT-A", S1, "A 0: A := $FF when the space bar (row 8 bit 0) is pressed, 0 when not. A 1-4 (the joystick "
          "triggers, nothing plugged) and 5: 0.", ALL,
          lambda c: c.a == (0xFF if c.ca == 0 and c.keys[8] & 1 else 0)),
-    G.keep_rule("GT", S1, "DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept. (F and "
-                "BC are left holding working values: not compared.)",
-                lambda c: (c.de, c.hl) == (c.cde, c.chl) and G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == c.cpc & 0xF0
+    G.keep_rule("GT", S1, "DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F and "
+                "BC are left holding working values: not compared, the group `XIT`.)",
+                lambda c: (c.de, c.hl) == (c.cde, c.chl) and G.ixiy(c) and G.cells(c) and c.aa == ((c.cpc & 0xF0) | 8 if c.ca == 0 else c.cpc)
                 and G.quiet(c, r15=G.r15_port(c))),
     Rule("R-GT-EI", S1, "Interrupts are on after the call, whether they were on or off before it.", ALL,
          lambda c: c.iff == 1),

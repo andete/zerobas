@@ -29,9 +29,9 @@ QUIET = ("With interrupts off after the call, the cells the timer interrupt's ke
 
 RULES = [
     Rule("R-GP-A", S1, "Nothing plugged: A := 0 for A 0-4 and 7.", ALL, lambda c: c.a == 0),
-    G.keep_rule("GP", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C's high nibble is kept. (F, BC, DE and HL "
+    G.keep_rule("GP", S1, "IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept. (F, BC, DE and HL "
                 "and PSG R15 -- bit-banged by the pad protocol -- are left holding working values: not compared, the group `XIP`.)",
-                lambda c: G.ixiy(c) and G.cells(c) and c.aa & 0xF0 == c.cpc & 0xF0 and G.quiet(c, r15=None)),
+                lambda c: G.ixiy(c) and G.cells(c) and c.aa == c.cpc and G.quiet(c, r15=None)),
     Rule("R-GP-EI", S1, "Interrupts are on after the call -- except for A 1 and 2 (the touch pad's X / Y), which keep "
          "the interrupt state.", ALL, lambda c: c.iff == (c.ei if c.ca in (1, 2) else 1)),
 ]

@@ -1,7 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XINP1 -- the input region's BIOS calls round 2 (2026-11-19; round 1 had cases 0-62, run with the frame interrupt on): SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
+; XINP1 -- the input region's BIOS calls round 3 (2026-11-19; round 1 had cases 0-62, run with the frame interrupt on, round 2 63-80): SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
 ; CKCNTC, GTPAD, GTPDL. At the start the probe turns the VDP's frame interrupt off (R#1 := RG1SAV AND $DF), so no timer
 ; interrupt runs (and scans the keys) whatever the calls do with IFF. Per case (the table `cases` at the end: op, A, F,
 ; interrupts, ROW1, MASK1, ROW2, MASK2, INTFLG, PORTC; BC, DE, HL) the probe sets, BY HAND:
@@ -495,4 +495,32 @@ cases:
                 dw      $1357, $9BDF, $2468   ; 79
                 db      $03, $00, $00, $00, $08, $20, $FF, $00, $00, $D0
                 dw      $1357, $9BDF, $2468   ; 80
+                db      $03, $01, $00, $00, $08, $20, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 81
+                db      $03, $02, $00, $00, $08, $20, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 82
+                db      $03, $03, $00, $00, $08, $20, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 83
+                db      $05, $A7, $FF, $00, $FF, $00, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 84
+                db      $05, $A7, $FF, $00, $07, $10, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 85
+                db      $06, $A7, $00, $00, $06, $02, $07, $10, $00, $50
+                dw      $1357, $9BDF, $2468   ; 86
+                db      $07, $A7, $00, $00, $06, $02, $07, $10, $00, $50
+                dw      $1357, $9BDF, $2468   ; 87
+                db      $04, $00, $00, $00, $08, $02, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 88
+                db      $04, $00, $00, $00, $08, $08, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 89
+                db      $00, $20, $00, $00, $FF, $00, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 90
+                db      $00, $02, $00, $00, $0A, $04, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 91
+                db      $02, $02, $00, $00, $FF, $00, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 92
+                db      $02, $40, $00, $00, $FF, $00, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 93
+                db      $08, $02, $00, $01, $FF, $00, $FF, $00, $00, $50
+                dw      $1357, $9BDF, $2468   ; 94
                 db      $FF

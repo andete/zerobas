@@ -16867,45 +16867,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **D-SNSMATC — SNSMAT KEEPS C ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 leaves the row number in C. docs/bios/SNSMAT.md R-SM-C. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 leaves the row number in C. docs/bios/SNSMAT.md R-SM-C. Priced when picked up.
 
 - [ ] **D-SNSMATPORT — SNSMAT WITH A OF $10 AND UP SETS PORT C OTHERWISE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): A $FF is written whole (the CAPS lamp, the 1-bit sound and the
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): A $FF is written whole (the CAPS lamp, the 1-bit sound and the
       cassette motor bits with it), A $12 masked to its low nibble; the VG-8020 adds the whole A to (port C AND $F0).
       docs/bios/SNSMAT.md R-SM-PORT, cases 12, 71. Priced when picked up.
 
 - [ ] **D-KILBUFPTR — KILBUF MOVES THE PUT POINTER BACK ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 moves the get pointer forward (GETPNT := PUTPNT,
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 moves the get pointer forward (GETPNT := PUTPNT,
       HL the put pointer). docs/bios/KILBUF.md R-KB-BUF. Priced when picked up.
 
 - [ ] **D-CHGCAPAF — CHGCAP RETURNS OTHER A / F ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 returns the PPI bit command $0C / $0D and F $54 / $08.
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 returns the PPI bit command $0C / $0D and F $54 / $08.
       docs/bios/CHGCAP.md R-CC-AF. Priced when picked up.
 
 - [ ] **D-GTTRIGRANGE — GTTRIG WITH A 5 READS THE SPACE BAR ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 returns 0. docs/bios/GTTRIG.md R-GT-A, case 43. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 returns 0. docs/bios/GTTRIG.md R-GT-A, case 43. Priced when picked up.
 
 - [ ] **D-JOYPORT — GTSTCK / GTTRIG WITH A 3 / 5 DO NOT SELECT JOYSTICK PORT 1 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 clears R15 bit 6 for an odd A. docs/bios/GTSTCK.md
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 clears R15 bit 6 for an odd A. docs/bios/GTSTCK.md
       R-GS-PORT (case 35), GTTRIG.md (43). Priced when picked up.
 
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
       R-PD-PORT. Priced when picked up.
 
 - [ ] **D-BREAKXBUF — BREAKX DOES NOT EMPTY THE KEY BUFFER ON CTRL+STOP ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): docs/bios/BREAKX.md R-BX-BUF, cases 46, 49. Priced when picked up.
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): docs/bios/BREAKX.md R-BX-BUF, cases 46, 49. Priced when picked up.
 
 - [ ] **D-ISCNTCEI — ISCNTC / CKCNTC RETURN F $44 AND KEEP THE INTERRUPT STATE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XINP1_run2.out`](scratchpad/XINP1_run2.out)): with no break pending the VG-8020 returns F $54 with
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): with no break pending the VG-8020 returns F $54 with
       interrupts on. docs/bios/ISCNTC.md / CKCNTC.md. Priced when picked up.
 
 - [ ] **D-CHGSNDF — CHGSND RETURNS F $44 FOR A = 0 ON ZEROBAS**
