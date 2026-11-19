@@ -371,3 +371,15 @@ nsx_full:
                 call    WRTVRM              ; the colour byte: ATRBYT, whole
                 pop     hl
                 jr      nsx_end
+
+; bios_isflio -- ISFLIO ($014A). D-ISFLIO (2026-11-19): the VG-8020 returns A = PTRFIL ($F864)'s
+; two bytes ORed -- non-zero exactly when a file is the I/O target -- with that OR's flags, BC / DE /
+; HL kept (docs/bios/ISFLIO.md R-IF-A / R-IF-F / R-IF-KEEP). C-BIOS's looked at the low byte only,
+; so a file whose FCB sits at $xx00 read as "no file". Page 0: a caller's page 1 may be RAM.
+bios_isflio:
+                push    hl
+                ld      hl,(PRDEST)         ; PTRFIL, both bytes (zerobas writes only the low one)
+                ld      a,h
+                or      l
+                pop     hl
+                ret

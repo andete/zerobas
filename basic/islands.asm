@@ -455,6 +455,8 @@ st_go:
                 jp      bios_cls            ; CLS: + the key line in a text mode (D-INITKEYS)
                 org     $00C9
                 jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
+                org     $014A
+                jp      bios_isflio         ; ISFLIO: both bytes of PTRFIL (D-ISFLIO)
                 org     $014D
                 jp      bios_outdlp         ; OUTDLP: C-BIOS's was a stub (D-BIOSRUNG)
                 org     $0159

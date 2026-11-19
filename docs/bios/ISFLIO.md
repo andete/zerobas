@@ -14,7 +14,7 @@ SPDX-License-Identifier: 0BSD
 non-zero exactly when PTRFIL is -- and F that OR's flags (Z set: no file). The other registers are
 kept.
 
-zerobas looks at PTRFIL's low byte only: a PTRFIL of $0100 or $8000 reads as "no file" (below).
+zerobas does all of it the same (since D-ISFLIO, 2026-11-19: it looked at PTRFIL's low byte only).
 
 ## The specification
 
@@ -53,9 +53,7 @@ before BASIC, with the emulator's printer logger plugged into the printer port.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-ISFLIO** (zerobas's A is PTRFIL's low byte, not the two bytes ORed: $0100 and $8000 read as 0, Z set; its F differs too) | R-IF-A, R-IF-F |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

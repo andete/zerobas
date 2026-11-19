@@ -16857,13 +16857,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $01; zerobas's differs on every call ($1A for a letter, $54 after a TAB ...). Not published. The LPTOUT half is
       D-LPTOUTF. Priced when picked up.
 
-- [ ] **D-ISFLIO — ISFLIO LOOKS AT PTRFIL'S LOW BYTE ONLY: A FILE WHOSE FCB IS AT $xx00 READS AS "NO FILE"**
+- [x] **D-ISFLIO — ISFLIO LOOKS AT PTRFIL'S LOW BYTE ONLY: A FILE WHOSE FCB IS AT $xx00 READS AS "NO FILE"**
       🎚️ TIER 6 — every edge (a caller -- an extension ROM printing through OUTDO -- asking ISFLIO while PTRFIL's low
       byte is 0; filed 2026-11-18). A WRONG ANSWER, not a flag: likely a one-instruction fix (OR the high byte in).
       🤖 **AUTONOMOUS** — docs/bios/ISFLIO.md R-IF-A / R-IF-F ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out),
       [`XOUTDO_run2d.out`](scratchpad/XOUTDO_run2d.out)): the VG-8020 returns A = PTRFIL's two bytes ORed ($0100 ->
       $01, $8000 -> $80), F their logical flags; zerobas returns the low byte ($0100 -> $00, $8000 -> $00: Z set, "no
       file") with other flags. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_isflio (8 B in the $3283 pin pad), the ISFLIO entry
+      $014A repointed by basic/islands.asm (PATCH_RANGES C3 1B 17): `ld hl,(PRDEST)` -- PTRFIL, both bytes -- `ld a,h /
+      or l`, HL kept. spec-live: R-IF-A and R-IF-F hold on zerobas.
 
 - [ ] **D-GRPPRTPOS — GRPPRT LEAVES CLOC / CMASK ELSEWHERE ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).

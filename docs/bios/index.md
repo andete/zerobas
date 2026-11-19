@@ -114,7 +114,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0141 | SNSMAT | [input](../concepts/input-calls.md) | L3 | [FINAL](SNSMAT.md) | 5 | D-SNSMATC, D-SNSMATPORT |
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
-| $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | D-ISFLIO |
+| $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
 | $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | D-OUTDLPGRAPH, D-OUTDLPF |
 | $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | D-GETVCF |
 | $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | D-GETVCF |
