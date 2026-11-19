@@ -228,15 +228,23 @@ bgp_out:
 ; servicer's sync, where every voice has reached its end marker (basic/playsvc.asm).
 ; st_go sits in island 1 (basic/islands.asm): this pad and the low region had no room
 ; for both halves (switch-build-check: the switch-off builds overran the low region).
-; A / HL / F changed.
+; Registers as the VG-8020's (D-STRTMS, docs/bios/STRTMS.md R-ST-REGS): playing -- A = MUSICF,
+; F its OR flags, HL kept; nothing waiting -- A 0, F $44, HL = PLYCNT ($FB40); started -- A 7,
+; F the flags DEC leaves on PLYCNT (st_go's), HL 1, and each voice's first word ($FB41, $FB66,
+; $FB8B) := 1 (R-ST-PLAY; zerobas's PLAY keeps nothing in a VCB's bytes 0-1).
 bios_strtms:
                 ld      a,(MUSICF)
                 or      a
                 ret     nz                  ; playing: nothing
-                ld      a,(PLYCNT)
-                or      a
+                ld      hl,PLYCNT
+                or      (hl)
                 ret     z                   ; no statement waiting
-                jp      st_go
+                call    st_go               ; PLYCNT - 1 (F), MUSICF := 7, A = 7
+                ld      hl,1
+                ld      (VCBA),hl
+                ld      (VCBB),hl
+                ld      (VCBC),hl
+                ret
 
 ; PUTQ ($00F9) -- A = the queue (0..2), E = the byte. C-BIOS's writes at PUT and then
 ; steps it; the VG-8020's steps FIRST (three bytes land at VOICAQ+1..3, PUT 3), as its
@@ -284,13 +292,23 @@ bios_putq:
                 pop     hl
                 ret                         ; Z clear from the `cp`, C clear from `add hl,bc`
 
+; D-BEEPRESET (2026-11-19): the VG-8020's BEEP ends with GICINI's reset -- R7 $B8, the volumes
+; 0, the queues and MUSICF / PLYCNT -- and returns A 0, F $44, BC 0, E 7, D and HL kept
+; (docs/bios/BEEP.md R-BP-PSG / R-BP-REGS; the voice buffers' bytes are D-GICINIVCB's).
 bios_beep:
                 push    hl
+                push    de
                 push    ix
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BEEP
                 call    subrom_call
                 pop     ix
+                call    bios_gicini         ; keeps every register; interrupts on after
+                pop     de
                 pop     hl
+                xor     a                   ; A 0, F $44
+                ld      b,a
+                ld      c,a
+                ld      e,7
                 ret
 
 ; PINLIN ($00AE) / INLIN ($00B1) / QINLIN ($00B4): C-BIOS's INLIN is a skeleton --

@@ -16859,16 +16859,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 clears them and sets bytes 15-19 of each to $04
-      $04 $78 $88 $FF. docs/bios/GICINI.md R-GI-VCB. Priced when picked up.
+      $04 $78 $88 $FF. docs/bios/GICINI.md R-GI-VCB. Priced when picked up.      ⚠️ PRICED 2026-11-19 (picked up with D-STRTMS / D-BEEPRESET, left open): the reset itself is a loop, but the
+      VG-8020's bytes ($88 volume, $FF envelope at offsets 18-19) are NOT zerobas PLAY's encoding (VCX_VOLUME 0..15,
+      VCX_ENVSH 0..15 + the $10 env bit; tempo 0 is its reseed sign). Matching them means PLAY adopts the VG-8020's
+      encoding -- BASIC's PLAY engine, outside the current focus -- so it waits for Joost (with D-INITIOVCB). BEEP's
+      R-BP-RESET is listed here too.
 
-- [ ] **D-STRTMS — STRTMS DOES NOT SET THE VOICES' FIRST WORDS, AND RETURNS OTHER HL / F, ON ZEROBAS**
+
+- [x] **D-STRTMS — STRTMS DOES NOT SET THE VOICES' FIRST WORDS, AND RETURNS OTHER HL / F, ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): docs/bios/STRTMS.md R-ST-PLAY / R-ST-REGS. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_strtms: nothing waiting -- `ld hl,PLYCNT / or (hl)` (A 0,
+      F $44, HL $FB40); started -- st_go's DEC flags, A 7, then each voice's first word := 1 and HL := 1 (zerobas's PLAY
+      keeps nothing in a VCB's bytes 0-1; the servicer's sync call saves every register). 13 B. spec-live: STRTMS holds
+      every rule.
 
-- [ ] **D-BEEPRESET — BEEP DOES NOT END WITH GICINI'S RESET ON ZEROBAS**
+- [x] **D-BEEPRESET — BEEP DOES NOT END WITH GICINI'S RESET ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 leaves volumes 0, queues empty, MUSICF / PLYCNT 0
       and the voice buffers re-initialised, and returns A 0, F $44, BC 0, E 7. docs/bios/BEEP.md. Priced when picked up.
+      ✅ **LANDED 2026-11-19; ITEM CLOSED.** basic/biosfnk.asm bios_beep ends with `call bios_gicini` (R7 $B8, the volumes,
+      the queues, MUSICF / PLYCNT) and returns A 0, F $44, BC 0, E 7, D / HL kept: R-BP-PSG / R-BP-REGS hold. R-BP-RESET's
+      voice-buffer part is D-GICINIVCB's (BEEP.md lists it there). 10 B.
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,

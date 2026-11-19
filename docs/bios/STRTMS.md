@@ -16,7 +16,7 @@ SPDX-License-Identifier: 0BSD
 is already playing, or there is nothing to play, it changes nothing. A, F and HL are left as the rules
 say; the rest is kept.
 
-zerobas starts the same, but leaves the voices' first words and returns another HL (below).
+zerobas does the same, the voices' first words and HL included (D-STRTMS, 2026-11-19).
 
 ## The specification
 
@@ -81,9 +81,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-STRTMS** (zerobas leaves all three voices' first words as they were, and returns HL $FB40 when it starts and keeps HL when there is nothing to play -- the VG-8020 the other way round; its F is the same) | R-ST-PLAY, R-ST-REGS |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

@@ -15,7 +15,8 @@ SPDX-License-Identifier: 0BSD
 reset: volumes 0, R7 $B8, queues 0-2 emptied, MUSICF / PLYCNT 0, the voice buffers re-initialised. It
 returns A = 0, F = $44, BC = 0, E = 7, and with interrupts **on**.
 
-zerobas sounds a tone but does not end with the reset, and returns other registers (below).
+zerobas sounds the tone and ends with GICINI's reset, with the same registers (D-BEEPRESET, 2026-11-19);
+the reset leaves the voice buffers as zerobas's GICINI does (below).
 
 ## The specification
 
@@ -84,7 +85,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-BEEPRESET** (zerobas leaves R9 / R10, the queues, MUSICF / PLYCNT and the voice buffers as they were, and R7 not set to $B8 ($3F gives $38); it returns A / F / E $B8 / $AC / $80, or $38 / $28 / $00 after R7 $3F) | R-BP-PSG, R-BP-RESET, R-BP-REGS |
+| **D-GICINIVCB** (BEEP ends with GICINI's reset, and zerobas's GICINI leaves the voice buffers as they were, all but one byte -- docs/bios/GICINI.md) | R-BP-RESET |
 
 ## Open (not measured)
 
