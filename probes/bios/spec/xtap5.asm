@@ -1,8 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XTAP5 -- the tape region's BIOS calls round 5 (2026-11-19): every tape call entered with the CARRY SET (does it
-; clear it, or keep it?). STMOTR at port C $B0 / $F0 / $48; then the round trip with interrupts off: TAPOON (A $FF,
+; XTAP5 -- the tape region's BIOS calls round 5 (2026-11-19): TAPOON, TAPOUT, TAPION and TAPIN entered with the
+; CARRY SET (does each clear it, or keep it?); STMOTR, TAPOOF and TAPIOF with F $00. STMOTR at port C $B0 / $F0 / $48; then the round trip with interrupts off: TAPOON (A $FF,
 ; F $FF, port C $4A: the low nibble := 7, or OR 7?), TAPOUT x 4 (SCF before each), TAPOOF -- the harness rewinds and
 ; plays the recording (@tape) -- TAPION (F $FF, port C $F8: := $47, or bits 6-7 kept?), TAPIN x 4 (SCF before each),
 ; TAPIOF. The TAPOUT / TAPIN calls in tight loops recording A and F (2 bytes each), then port C once.

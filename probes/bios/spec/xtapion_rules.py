@@ -30,7 +30,7 @@ RULES = [
          "left holding working values, the group `XTW`.)", ALL, lambda c: c.f & 1 == 0),
     Rule("R-TA-MOTOR", S1, "The motor runs (port C bit 4 := 0); interrupts are off after the call.", ALL,
          lambda c: G.motor(c) == 0 and c.iff == 0),
-    Rule("R-TA-PORT", S1, "Port C: bits 5-7 kept, bit 4 := 0 (the motor on), the low nibble (the keyboard row "
+    Rule("R-TA-PORT", S1, "Port C: bits 5-7 kept (bit 6 was set on entry in both), bit 4 := 0 (the motor on), the low nibble (the keyboard row "
          "select) := 7 -- $50 gives $47, $F8 $E7. (Unlike TAPOON, bit 5 -- the cassette output -- is kept.)", ALL,
          lambda c: c.aa == (c.cpc & 0xE0) | 0x07),
 ]

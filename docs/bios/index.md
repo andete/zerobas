@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**103 of 108 calls have a page; 96 are FINAL.**
+**103 of 108 calls have a page; 103 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -79,13 +79,13 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | D-GTTRIGRANGE |
 | $00DB | GTPAD | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPAD.md) | 5 | — |
 | $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
-| $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPION.md) | 11 | — |
-| $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPIN.md) | 9 | — |
-| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPIOF.md) | 6 | D-TAPOFFREGS |
-| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPOON.md) | 8 | D-TAPOONPORT, D-TAPOONDE |
-| $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPOUT.md) | 8 | — |
-| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](TAPOOF.md) | 6 | D-TAPOOFBIT5, D-TAPOFFREGS |
-| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [DRAFT 5](STMOTR.md) | 6 | D-STMOTRTOGGLE, D-STMOTRAF |
+| $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPION.md) | 13 | — |
+| $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIN.md) | 10 | — |
+| $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIOF.md) | 7 | D-TAPOFFREGS |
+| $00EA | TAPOON | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOON.md) | 10 | D-TAPOONPORT, D-TAPOONDE |
+| $00ED | TAPOUT | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOUT.md) | 9 | — |
+| $00F0 | TAPOOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPOOF.md) | 7 | D-TAPOOFBIT5, D-TAPOFFREGS |
+| $00F3 | STMOTR | [tape](../concepts/cassette.md) | L3 | [FINAL](STMOTR.md) | 7 | D-STMOTRTOGGLE, D-STMOTRAF |
 | $00F6 | LFTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](LFTQ.md) | 5 | D-LFTQBC, D-LFTQSIZE |
 | $00F9 | PUTQ | [sound](../concepts/sound-calls.md) | L3 | [FINAL](PUTQ.md) | 5 | D-PUTQREGS |
 | $00FC | RIGHTC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](RIGHTC.md) | 6 | D-MOVEMASK |

@@ -5,8 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # `STMOTR` ($00F3) — switch the cassette motor
 
-> **Spec:** DRAFT 5 (2026-11-19), after four test-writer reviews, measured again (XTAP5). Measured on the VG-8020, alone and with a disk
-> interface.
+> **Spec:** FINAL (2026-11-19), the core rules: the fifth test-writer review found no new behaviour; the
+> separating cases the earlier ones asked for (XTAP2-XTAP5) all landed in the rules. Measured on the VG-8020,
+> alone and with a disk interface.
 
 ## Summary
 
@@ -52,8 +53,9 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 - XW 00-08 ([`scratchpad/XTAP4_run1.out`](../../scratchpad/XTAP4_run1.out), the XTAP4 probe, run 1): STMOTR with A
   $03, $28, $7F, $40 from a running motor and $40 from a stopped one; TAPOON with interrupts off and A
   $00 at port C $E0 (DE $1234) and $A5 (DE $5678), each followed by TAPOOF.
-- XX 00-14 ([`scratchpad/XTAP5_run1.out`](../../scratchpad/XTAP5_run1.out), the XTAP5 probe, run 1): every tape call
-  entered with the CARRY SET. STMOTR A $FF / $01 / $00 at port C $B0 / $F0 / $48; then a second round
+- XX 00-14 ([`scratchpad/XTAP5_run1.out`](../../scratchpad/XTAP5_run1.out), the XTAP5 probe, run 1): TAPOON, TAPOUT,
+  TAPION and TAPIN entered with the CARRY SET (STMOTR, TAPOOF and TAPIOF with F $00). STMOTR A $FF /
+  $01 / $00 at port C $B0 / $F0 / $48; then a second round
   trip with interrupts off: TAPOON (A $FF, F $FF, port C $4A, DE $1234), TAPOUT of $00, $55, $AA, $FF
   (an SCF before each), TAPOOF; TAPION (F $FF, port C $F8, DE $4321), TAPIN x 4 (an SCF before each),
   TAPIOF.
@@ -82,6 +84,7 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 ## Open (not measured)
 
+- **[A]** Entry with the carry set and interrupts off: the F $FF cases all had interrupts on.
 - **[A]** A values other than those measured ($01, $02, $03, $28, $40, $7F, $80, $81, $FE, $FF).
 - **[A]** Whether the toggle reads port C itself or a copy in RAM: the probe writes port C directly, so
   the two agree in every case.

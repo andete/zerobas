@@ -58,6 +58,25 @@ The tape verbs switch it on while they read or write and off afterwards;
 `MOTOR ON`, `MOTOR OFF` and a bare `MOTOR` (toggle) switch it by hand, through
 `STMOTR`. `INP(&HAA) AND 16` reads it back: 16 stopped, 0 running.
 
+### The BIOS calls
+
+Measured one by one on the VG-8020 (the pages in [docs/bios](../bios/index.md) carry the rules and
+the evidence):
+
+- [`STMOTR`](../bios/STMOTR.md): A = 0 stops the motor, an A with bit 7 set toggles it, A $01-$7F
+  starts it; the rest of port C, BC, DE and HL are kept.
+- [`TAPOON`](../bios/TAPOON.md) / [`TAPION`](../bios/TAPION.md): start the motor, write / find the
+  leader, return with the carry clear and interrupts **off**, and select keyboard row 7 in port C.
+- [`TAPOUT`](../bios/TAPOUT.md) / [`TAPIN`](../bios/TAPIN.md): one byte, the carry clear on success.
+  The reader needs the calls back to back: with a few dozen instructions between two `TAPIN` calls the
+  VG-8020 read each byte shifted one bit.
+- [`TAPOOF`](../bios/TAPOOF.md) / [`TAPIOF`](../bios/TAPIOF.md): stop the motor, turn interrupts **on**,
+  and keep every register.
+
+zerobas's round trip gives the same bytes back; its calls differ in the registers and port C bits
+they leave (D-STMOTRAF, D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT in
+[TODO.md](../../TODO.md)).
+
 ### A file on tape
 
 A **header block** is ten identical type bytes and the six-byte name, padded

@@ -5,8 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # `TAPOON` ($00EA) — start writing the tape
 
-> **Spec:** DRAFT 5 (2026-11-19), after four test-writer reviews, measured again (XTAP5). Measured on the VG-8020, alone and with a disk
-> interface.
+> **Spec:** FINAL (2026-11-19), the core rules: the fifth test-writer review found no new behaviour; the
+> separating cases the earlier ones asked for (XTAP2-XTAP5) all landed in the rules. Measured on the VG-8020,
+> alone and with a disk interface.
 
 ## Summary
 
@@ -52,8 +53,9 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 - XW 00-08 ([`scratchpad/XTAP4_run1.out`](../../scratchpad/XTAP4_run1.out), the XTAP4 probe, run 1): STMOTR with A
   $03, $28, $7F, $40 from a running motor and $40 from a stopped one; TAPOON with interrupts off and A
   $00 at port C $E0 (DE $1234) and $A5 (DE $5678), each followed by TAPOOF.
-- XX 00-14 ([`scratchpad/XTAP5_run1.out`](../../scratchpad/XTAP5_run1.out), the XTAP5 probe, run 1): every tape call
-  entered with the CARRY SET. STMOTR A $FF / $01 / $00 at port C $B0 / $F0 / $48; then a second round
+- XX 00-14 ([`scratchpad/XTAP5_run1.out`](../../scratchpad/XTAP5_run1.out), the XTAP5 probe, run 1): TAPOON, TAPOUT,
+  TAPION and TAPIN entered with the CARRY SET (STMOTR, TAPOOF and TAPIOF with F $00). STMOTR A $FF /
+  $01 / $00 at port C $B0 / $F0 / $48; then a second round
   trip with interrupts off: TAPOON (A $FF, F $FF, port C $4A, DE $1234), TAPOUT of $00, $55, $AA, $FF
   (an SCF before each), TAPOOF; TAPION (F $FF, port C $F8, DE $4321), TAPIN x 4 (an SCF before each),
   TAPIOF.
@@ -87,6 +89,10 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 - **[A]** That the leader is written is shown only by TAPION locking on to it, on the same machine,
   and TAPION's own lock-on is not pinned (see TAPION); the time TAPOON takes (A $00 against $FF) is
   not recorded.
+- **[A]** The carry set on entry with A $00 (only A $FF was); a stopped motor with interrupts off on
+  entry.
+- **[A]** STOP alone or CTRL alone held during the call: whether the low nibble stays 7 (or is the
+  last keyboard row the STOP check selected), and the carry.
 - **[A]** Reading a short (A = 0) leader back: the round trip wrote the long one ($FF).
 - **[A]** Tapes across machines: each machine read its own recording, so a writer and a reader that
   agree on a wrong format (bit order, polarity, speed) pass. The tape corpus (real recordings, which

@@ -22,7 +22,14 @@ session and the loop resumes exactly where it stopped.
 | EXECUTABLE RULES | *"yes, add executable rules"* | spec-method §3a: every page's behaviour rules are checks (probes/bios/spec/<name>_rules.py, tools/spec_rules.py); its rule tables are GENERATED; `make spec-rules-check` in STATIC. A false rule is fixed in the rule, never the data |
 | THE ORDER | *"let's go with the new order"* (after weighing whole-BIOS-first: no -- region by region) | (1) finish CHPUT: round 3 for its 5 unmeasured items, then goldfish pass 3 (the stopping test); (2) the BASE BIOS page `docs/concepts/bios.md` (calling conventions, the BIOS slot, interrupts, registers) and a SHARED-STATE MAP (which work-area cells / VDP registers / ports each of the 108 calls reads or writes, from published references + existing evidence: where regions touch); (3) the rest of the text region in this order: INITXT / INIT32 -> DSPFNK / ERAFNK / FNKSB -> CLS / POSIT -> CHGET / CHSNS -> CNVCHR / PINLIN / INLIN / QINLIN / TOTEXT -> the screen-editor concept page's contract section; (4) FIX the region's differences together (D-CHPUTDEL, D-CHPUTKEYROW, D-CHPUTESCY, D-LINTTBVAL, ...), then the test audit per call; (5) the next region. Joost: spec the whole region first (synergies), not the whole BIOS |
 
-STATE 2026-11-19 NIGHT (recount, never quote): the SOUND region's ten calls have DRAFT 3 pages (XSND1 + XSND1B, the
+STATE 2026-11-19 LATE NIGHT (recount, never quote): SOUND and INPUT FINAL (+ concept pages); the TAPE region's seven
+calls FINAL (XTAP1-XTAP5, five passes; tape is outside the FOCUS, so differences are FILED, not fixed: D-STMOTRAF,
+D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT); its contract section is in
+docs/concepts/cassette.md "The BIOS calls". Lessons: the reference's TAPIN needs the calls back to back (a 10-byte
+record between two calls shifted each byte one bit) -- run TAPOUT / TAPIN in tight loops; "carry clear" needs a
+carry-SET entry to separate it from "carry kept". NEXT: the DISK region (PHYDIO; FORMAT is ruled indirect), then the
+test audit / the fixes by tier.
+PREVIOUS STATE 2026-11-19 NIGHT (recount, never quote): the SOUND region's ten calls have DRAFT 3 pages (XSND1 + XSND1B, the
 second file because the first's capture area was full); review pass 3 launched. Lesson: the disk row's VG-8020 keeps
 something in RS2IQ ($FAF5-$FB34) -- overwriting it stops that machine; probes leave it alone (queue 3's buffer at $E800).
 Interrupts-on cases: the timer interrupt sets port C's keyboard row and PSG R15 -- compare those only with interrupts off.
