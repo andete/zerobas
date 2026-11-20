@@ -581,7 +581,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (unpublished return registers; filed 2026-11-18). | T-E728BF |
 | — | TIER 6 | 🤖 | every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18). | T-2C1769 |
 | — | TIER 6 | 🤖 | every edge (unpublished return registers; filed 2026-11-18). | T-A47A7B |
-| — | TIER 6 | 🤖 | every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed | T-B985E8 |
+| — | TIER 6 | 🤖 | apparatus (filed 2026-11-20). | T-EF08E2 |
 | — | TIER 6 | 🤖 | every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00; | T-6B93C6 |
 | — | TIER 6 | 🤖 | every edge (machine code -- a USR routine or a CALL handler -- walking program text with CHRGTR across | T-AA51FA |
 | — | TIER 6 | 🤖 | every edge (a program testing A or the flags after DSPFNK / ERAFNK / FNKSB / CLS / POSIT; filed | T-74BFF1 |

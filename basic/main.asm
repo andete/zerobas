@@ -429,6 +429,17 @@ outdo_dest:
                 pop     af
                 jp      bios_outdlp
 odd_scr:
+                ; D-OUTDOINIT (2026-11-20): PRDEST 0 -- the screen -- is CHPUT itself, in page 0, as the
+                ; VG-8020's OUTDO prints (docs/bios/OUTDO.md R-OU-SCR / R-OU-CELL / R-OU-KEEP / R-OU-SF:
+                ; every register and F kept). pchar is MAIN PAGE 1: a cartridge calling RST 18h from its
+                ; init has its own ROM there, and the jump ran the cartridge's bytes. A BASIC channel
+                ; (PRDEST not 0) is only ever set with BASIC's page 1 in place.
+                ld      a,(PRDEST)
+                or      a
+                jr      nz,odd_chan
+                pop     af
+                jp      CHPUT
+odd_chan:
                 pop     af
                 jp      pchar
 

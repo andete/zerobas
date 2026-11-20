@@ -16963,7 +16963,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
       spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
-- [ ] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
+- [x] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
       🎚️ TIER 6 — every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed
       2026-11-18). BASIC's own context is not measured here (the harness runs cartridges at init).
       🤖 **AUTONOMOUS** — docs/bios/OUTDO.md R-OU-SCR / R-OU-CELL / R-OU-KEEP / R-OU-SF ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out)):
@@ -16972,6 +16972,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       returns A $FE, F $08 and other BC, DE, HL (R-OU-KEEP / R-OU-SF). The printer did not get the characters
       either (PRN identical). Priced when picked up -- first measure where zerobas's OUTDO sends it (PRDEST / the
       hook) at cartridge time.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED.** The cause: OUTDO's screen arm went to pchar, which is MAIN PAGE 1 -- at a
+      cartridge's init page 1 is the cartridge's own ROM, so the jump ran the cartridge's bytes (hence nothing printed
+      and garbage A / F / BC / DE / HL). basic/main.asm outdo_dest: PRDEST 0 goes to CHPUT (page 0) directly, as the
+      VG-8020's OUTDO prints; only a BASIC channel (PRDEST not 0) goes through pchar. 10 B of the low region. BASIC's own
+      screen output is the same path (pchar's PRDEST 0 arm was `call CHPUT`). spec-live: OUTDO holds every rule.
+
+- [ ] **D-TAPECORPUSNOISE — THE TAPE CORPUS'S PER-TITLE DIFFERENCE COUNTS SWING WITH TIMING, NOT ONLY WITH CORRECTNESS**
+      🎚️ TIER 6 — apparatus (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — scratchpad/tapecorpus_run.py compares screens captured at fixed times after a load. Five runs
+      on 2026-11-19 were byte-identical; then two commits that only shifted timing moved titles: the VDP batch
+      (FILVRM / LDIRMV / LDIRVM a few cycles longer) took Ballblazer RUNS? 279 -> SAME and Elite RUNS? 254 -> NEAR 18,
+      and D-OUTDOINIT (BASIC's screen output a few cycles shorter) took them back, Elite to RUNS? 3004. So a count,
+      and a category near its boundary, can move with any speed change: read a corpus change as a TIMING signal
+      first. Worth a capture taken at a game-synchronised moment (a known screen state) rather than a fixed time,
+      or a per-title tolerance. Not a regression in either commit (no title lost a category against the run before
+      the pair).
 
 - [ ] **D-CHRGTRSKIP — CHRGTR SKIPS ONLY THE SPACE; THE VG-8020'S SKIPS TAB AND LF TOO, AND ITS END-OF-LINE F IS $44**
       🎚️ TIER 6 — every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00;

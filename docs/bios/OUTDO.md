@@ -15,9 +15,8 @@ the screen: the character appears in the cell of the cursor and CSRX moves on by
 or $FF it is the printer, through OUTDLP's conversions (a TAB as spaces, the column in LPTPOS). A
 and the other registers are kept; to the screen, F too.
 
-zerobas does the printer path the same (OUTDLP's differences closed 2026-11-19). Before BASIC runs, its
-OUTDO to the screen prints nothing, and with the carry set on entry it returns another A and other
-BC, DE, HL (below).
+zerobas does the same (the printer path since OUTDLP's fixes, 2026-11-19; the screen path before
+BASIC runs since D-OUTDOINIT, 2026-11-20: it is CHPUT itself, in page 0).
 
 ## The specification
 
@@ -60,9 +59,7 @@ before BASIC, with the emulator's printer logger plugged into the printer port.
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-OUTDOINIT** (before BASIC runs, zerobas's OUTDO to the screen prints nothing: the cursor and the name table stay as they were; entered with F $FF it returns A $FE, F $08 and other BC, DE, HL) | R-OU-SCR, R-OU-CELL, R-OU-KEEP, R-OU-SF |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 

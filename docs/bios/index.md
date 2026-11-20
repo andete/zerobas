@@ -17,7 +17,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $000C | RDSLT | [slots](../concepts/slots.md) | L3 | [FINAL](RDSLT.md) | 12 | — |
 | $0010 | CHRGTR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
 | $0014 | WRSLT | [slots](../concepts/slots.md) | L3 | [FINAL](WRSLT.md) | 13 | — |
-| $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | D-OUTDOINIT |
+| $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | — |
 | $001C | CALSLT | [slots](../concepts/slots.md) | L3 | [FINAL](CALSLT.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0020 | DCOMPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](DCOMPR.md) | 8 | — |
 | $0024 | ENASLT | [slots](../concepts/slots.md) | L3 | [FINAL](ENASLT.md) | 7 | — |
