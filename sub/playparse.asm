@@ -127,7 +127,14 @@ pf_none:
                 di                          ; leave the tenant (the trampoline contract: DI);
                 ret                         ; AUDIO_STATUS stays main's 0
 ; --- pt_parse: one WINDOW over the voices still in AUDIO_VMASK -------------------
-; A finished voice leaves AUDIO_VMASK; a full ring ends the window (PLAY_MORE).
+; A finished voice leaves AUDIO_VMASK. D-PLAYVOICEORDER (2026-11-20): a FULL ring no
+; longer ends the window -- that voice stays in AUDIO_VMASK and the others still get
+; theirs, so behind a ring-filling A an empty B and C queue their end markers in the
+; FIRST window and the servicer ends them while PLAY waits. A full A had kept them
+; "playing" until its last window: MUSICF 7 right after PLAY "T255L64CDEFGAB..." where
+; the VG-8020 reads 1 (probes/basic/basic_probe_strtms.py row `long`; zerobas's MUSICF
+; writes, scratchpad/PLAYLONG_run1.out). A short PLAY is unchanged: MUSICF 7 right
+; after it on both (row `behind`). PLAY_MORE when a voice is still to do at the end.
 pt_parse:
                 ld      bc,$0001            ; B = voice index 0, C = voice-0 mask bit
 pt_vloop:
@@ -146,18 +153,23 @@ pt_vloop:
                 call    pt_publish          ; QD_PUT := the window's; start idle music
                 pop     bc
                 pop     af
-                ret     c                   ; error, or PLAY_MORE -- AUDIO_STATUS says which
-                ld      a,c
-                cpl
+                jr      nc,pt_vdone
+                cp      PLAY_MORE           ; A = AUDIO_STATUS (pk_full / px_err leave it in A)
+                ret     nz                  ; an error: AUDIO_STATUS says which
+                jr      pt_vnext            ; a full ring: the voice stays, the others go on
+pt_vdone:
                 ld      hl,AUDIO_VMASK
-                and     (hl)
+                ld      a,(hl)
+                xor     c                   ; (its bit is set: it was parsed)
                 ld      (hl),a              ; this voice is done
 pt_vnext:
                 rlc     c                   ; next voice's mask bit (1->2->4)
                 inc     b
-                ld      a,b
-                cp      3
-                jr      c,pt_vloop
+                bit     3,c
+                jr      z,pt_vloop
+                ld      a,(AUDIO_VMASK)
+                or      a
+                ret     nz                  ; a voice still to do: PLAY_MORE (its pk_full set it)
                 ld      hl,PLYCNT
                 inc     (hl)                ; a PLAY statement queued
                 xor     a
@@ -485,52 +497,54 @@ pt_cmd_n:
 pt_cmd_octave:
                 call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 or      a
-                jp      z,pt_illegal
+                jr      z,pcs_ill
                 cp      9
-                jp      nc,pt_illegal
+                jr      nc,pcs_ill
                 ld      (ix+VCX_OCTAVE),a
                 jp      pt_ch_loop
+pcs_ill:                                    ; the setters' ERR 5, in jr reach of them all
+                jp      pt_illegal          ; (D-PLAYVOICEORDER's bytes: 10 jp -> jr)
 pt_cmd_length:
                 call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 or      a
-                jp      z,pt_illegal
+                jr      z,pcs_ill
                 cp      65
-                jp      nc,pt_illegal
+                jr      nc,pcs_ill
                 ld      (ix+VCX_NOTEL),a
                 jp      pt_ch_loop
 pt_cmd_tempo:
                 call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      32
-                jp      c,pt_illegal
+                jr      c,pcs_ill
                 ld      (ix+VCX_TEMPO),a
                 jp      pt_ch_loop
 pt_cmd_volume:
                 call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      16
-                jp      nc,pt_illegal
+                jr      nc,pcs_ill
                 ld      (ix+VCX_VOLUME),a
                 res     7,(ix+VCX_ENVSH)    ; V disables envelope mode
                 jp      pt_ch_loop
 pt_cmd_env_shape:
                 call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      16
-                jp      nc,pt_illegal
+                jr      nc,pcs_ill
                 or      $80                 ; set envelope-mode bit
                 ld      (ix+VCX_ENVSH),a
                 jp      pt_ch_loop          ; S queues nothing: every envelope note
                                             ; carries its shape (the vol byte)
 pt_cmd_env_per:
                 call    pt_numeq    
-                jp      nc,pt_illegal
+                jr      nc,pcs_ill
                 ld      a,(PLY_NUMOVF)
                 or      a
-                jp      nz,pt_illegal       ; M65600 wraps -> ERR 5 on both refs
+                jr      nz,pcs_ill       ; M65600 wraps -> ERR 5 on both refs
                                             ; (m.wrap); M65535 itself is LEGAL
                                             ; (m.max), which is why the latch is
                                             ; read here and not the $FFFF value
                 ld      a,h
                 or      l
-                jp      z,pt_illegal        ; M0 -> ERR 5 on both refs (m.zero)
+                jr      z,pcs_ill        ; M0 -> ERR 5 on both refs (m.zero)
                 ld      a,(ix+VCX_ENVPER)
                 cp      l
                 jr      nz,pcm_new

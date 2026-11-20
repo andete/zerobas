@@ -16846,6 +16846,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       putsprite: $F417 / $F418 no longer zerobas-only; $FC18 / $FC19 written by both (the values differ, as scratch).
       graphics-acceptance, sprite-trap-acceptance, spec-live OUTDLP / OUTDO green.
 
+- [x] **D-PLAYVOICEORDER — BEHIND A RING-FILLING VOICE A, AN EMPTY B AND C STAYED "PLAYING" UNTIL A'S LAST WINDOW**
+      🎚️ TIER 6 — every edge (MUSICF's bits during a long PLAY; filed and fixed 2026-11-20).
+      🤖 **AUTONOMOUS** — found by the FULL gate of cdf47f6d: strtms-acceptance row `long` read MUSICF 7 where the
+      VG-8020 reads 1. Bisected: 3e302ee5 and 6843f185 pass, 4b51b610 (D-TRGFLGISR part 2) fails. The cause is older:
+      sub/playparse.asm pt_parse ended a window on a full ring, so after a ring-filling A the empty voices B and C
+      queued their end markers only in A's LAST window. A MUSICF watchpoint (zerobas's own code) showed MUSICF := 7 at
+      jiffy 104 and B / C ended only at 188, as PLAY returned. Whether the row's PEEK saw 7 or 1 was then a
+      sub-frame race, and part 2's longer key scan tipped it. A first fix (parse C, B, A) broke row `behind`: right
+      after a SHORT PLAY the VG-8020 reads 7, so it does not end the voices before PLAY returns. The fix: a full ring
+      no longer ends the window. That voice stays in AUDIO_VMASK, the others still get theirs, and PLAY_MORE is
+      returned when a voice is still to do at the end. B / C now end at jiffy 104 (scratchpad/PLAYLONG_run1.out,
+      probe scratchpad/playlong_probe.py). Bytes (+11): the setters' ten `jp ..,pt_illegal` became `jr` to one
+      trampoline (pcs_ill). Sub page 1: 2 B free. strtms 14/14; playeq, playarr, playqueue, gicini, sound, play,
+      play-trace and beep green.
+- [ ] **D-PLAYLONGTIME — A RING-FILLING PLAY RETURNS 14-15 JIFFIES EARLIER THAN ON THE VG-8020**
+      🎚️ TIER 5 — on-par speed (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — `PLAY "T255L64CDEFGAB..."` (40 notes, the ring fills) returns after 86 jiffies here and
+      100-101 on the VG-8020, the same on 3e302ee5 (before D-TRGFLGISR / D-PLAYVOICEORDER):
+      scratchpad/PLAYLONG_run1.out, probe scratchpad/playlong_probe.py (program and direct forms). D-PLAYRATE's floor
+      (closed) and playqueue-acceptance's tolerance cover shorter cases. Measure first: the total play time
+      (PLAY(0) = 0) against the reference, and whether it is the start or the wait that differs.
+- [ ] **D-ISRPLAN — A C-BIOS PATCH THAT CHANGES THE INTERRUPT HANDLER PLANS AS "CANARY ONLY"**
+      🎚️ APPARATUS — a regression rides to main until the next FULL (filed 2026-11-20).
+      🙋 **NEEDS-JOOST** — gate policy (the ⏱ rule). D-TRGFLGISR part 2 (4b51b610) changed C-BIOS's key-scan interrupt,
+      and tools/pick_gates.py planned it SCOPED: "ROM change with no enclosing ex_ handler (canary only, the daily FULL
+      backs it)". The scan's longer run moved a sub-frame race in PLAY (D-PLAYVOICEORDER), and strtms-acceptance went
+      red. Nothing in that gate ran it. The next FULL (cdf47f6d, forced by a RAM move) caught it, as the policy
+      intends. The question: should a cbios-repack patch touching the interrupt path (keyint, the hooks' callers) plan
+      FULL, since every suite runs under that handler? Cost: one FULL (~25-38 min) per such patch, which is rare.
 - [x] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
       🎚️ APPARATUS — a spec rule that can fail on a timing shift alone (filed 2026-11-20).
       🤖 **AUTONOMOUS** — an interrupt ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on (the
@@ -16955,6 +16984,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ($F952, the self-test tenant only), GRP_HDR ($F953: the GRP: channel's header bit, and OUTDLP's held $01 in bit 1)
       and STRPTR ($F954-$F955) there. Joost's ruling for D-SCANRSAVE / D-NTMSXPCLASH ("measure how reference does it
       ram-wise and match") covers them in spirit; moving them is a RAM-layout change: confirm scope first.
+      🏗️ **RULED (Joost, 2026-11-20): "Move them".** Same ruling as CSAVEA / CSAVEM: off the reference's PAINT scratch.
+      ✅ **MOVED 2026-11-20.** No published cell the reference leaves idle fits the role. The home is zerobas's OWN slot 0
+      SLTWRK entries ($FD09.., the published per-ROM work area; the reference never writes $FCC9-$FFFE,
+      scratchpad/REFWRITES_union.out; C-BIOS and the disk ROM do not use SLTWRK). Moves: GRP_HDR $F953 -> $FD0B (the
+      retired SUBSLOT2), SUB_INT_DELTA $F952 -> $FD0D, STRPTR $F954 -> $FD0E-$FD0F. $FD09 / $FD0A (SUBSLOT /
+      SUBSLOT_OK) and $FD0C (SUB_PING) were there already; $FD10 stays free. Equates only: no code changes size.
+      🔁 **REOPENED (Joost, 2026-11-20): "why not figure what cells the reference uses for this and just use the same?"**
+      The SLTWRK move is a fallback, held uncommitted. First MEASURE the reference's own cell for each role:
+      GRP_HDR (a GRP: channel's pending CHR$(1); dump after the CHR$(1) and after the next byte) and STRPTR (the
+      string engine's descriptor pointer; differential dumps over string expressions; the candidate must match in
+      value and LIFETIME). SUB_INT_DELTA has no reference counterpart (zerobas's self-test): SLTWRK stays.
 
 
 
