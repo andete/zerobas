@@ -1836,7 +1836,15 @@ STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
 ;      (2026-08-21). Filed in TODO.md; reopen it for a new caller that READS
 ;      BEFORE WRITING, not for a spare byte.
 ; (VALTYP $EF35 deleted in D-WSZERO S9: write-only -- nothing read it in any image)
-STRPTR          equ     $F954   ; pointer to the [len][bytes] descriptor (2 bytes)
+STRPTR          equ     $FD0E   ; pointer to the [len][bytes] descriptor (2 bytes)
+                                ; D-PAINTRAMCLASH (2026-11-20): was $F954, inside the VG-8020's PAINT
+                                ; scratch ($F94A-$F955). MEASURED (scratchpad/STRPTR_run1.out): the
+                                ; references point at the current string result's descriptor from
+                                ; DAC+2 ($F7F8 -> TEMPST $F67A), inside the numeric accumulator --
+                                ; and zerobas's FAC IS DAC, with STRPTR's lifetime not the same
+                                ; (D-STRPTRDAC: adopting DAC+2 needs an audit of every use). Until
+                                ; then: SLTWRK, our own slot 0's page-2 entry (the reference never
+                                ; writes $FCC9-$FFFE, scratchpad/REFWRITES_union.out).
 ; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
 ; file channel (fat_io_putbyte). The print primitives emit through `pchar`, which
 ; consults this. Zeroed at cold start (init_filechan) and re-cleared at every

@@ -16982,7 +16982,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       region, scan_isbd, for the room). Gates: subrom-inttest (JIFFY delta 28, PASS), graphics-floor, wszero (74/74);
       spec-live: SCANR holds every rule.
 
-- [ ] **D-PAINTRAMCLASH — THREE MORE ZEROBAS CELLS SIT IN THE REFERENCE'S PAINT SCRATCH ($F94F-$F955)**
+- [ ] **D-STRPTRDAC — THE REFERENCE KEEPS THE CURRENT STRING RESULT AT DAC+2; ZEROBAS KEEPS STRPTR APART**
+      🎚️ TIER 4 — RAM usage (VG-8020) (filed 2026-11-20, from D-PAINTRAMCLASH's measurement).
+      🤖 **AUTONOMOUS** — scratchpad/STRPTR_run1.out: after `A$="AB"+"CDE"` (and LEFT$, a literal, CHR$+...) both references
+      hold DAC+2 ($F7F8) -> TEMPST $F67A, the result's descriptor; TEMPPT ($F678) -> $F67A. zerobas: STRPTR (now SLTWRK
+      $FD0E) points at DSCTMP ($F698) for a literal and at nothing matching otherwise. Adopting DAC+2 puts the pointer
+      inside zerobas's FAC (FAC = DAC, $F7F6), so first AUDIT every STRPTR use (181 in basic/ and sub/) for one held
+      across a numeric evaluation. Price it against TIER 4's other RAM items before starting.
+- [x] **D-PAINTRAMCLASH — THREE MORE ZEROBAS CELLS SIT IN THE REFERENCE'S PAINT SCRATCH ($F94F-$F955)**
       🎚️ TIER 6 — every edge / TIER 4 RAM usage (filed 2026-11-20, from D-SCANRSAVE's measurement).
       🤖 **AUTONOMOUS** — the VG-8020's PAINT writes $F94A-$F955 (kwram pin, paintkw); zerobas keeps SUB_INT_DELTA
       ($F952, the self-test tenant only), GRP_HDR ($F953: the GRP: channel's header bit, and OUTDLP's held $01 in bit 1)
@@ -17005,7 +17012,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       uses (GRPHDR_run1.out, OUTDLPHOLD_run1.out). zerobas kept them as bits 0 / 1 of $F953. GRP_HDR is now an alias of
       GRPHED: one flag, as theirs (basic/biosfnk.asm bios_outdlp stores the byte, 0 / 1, as CNVCHR does). zerobas
       reads $FCA6 = 01 in the same cases (GRPHDR_run2.out, OUTDLPHOLD_run2.out). SUB_INT_DELTA -> $FD0D (SLTWRK).
-      STILL OPEN: STRPTR ($F954-$F955), its measurement next.
+      ✅ **STRPTR LANDED 2026-11-20; ITEM CLOSED.** MEASURED (scratchpad/strptr_probe.py, STRPTR_run1.out: four string
+      assignments, then every work-area cell that points at a descriptor of the result): on both references DAC+2
+      ($F7F8) points at TEMPST's first entry ($F67A), and TEMPPT ($F678) too. That is Microsoft BASIC's string result,
+      in the numeric accumulator. zerobas's STRPTR points at a matching descriptor (DSCTMP $F698) only for a plain
+      literal, and zerobas's FAC IS DAC: same role, different lifetime. STRPTR takes the fallback, SLTWRK $FD0E-$FD0F;
+      adopting DAC+2 is D-STRPTRDAC. Nothing of zerobas is left in $F94A-$F955.
 
 
 

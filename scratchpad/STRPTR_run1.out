@@ -1,0 +1,12 @@
+vg8020  cat   $F678->$F67A $F6A7->$8022 $F7F8->$F67A
+vg8020  left  $F678->$F67A $F6A7->$8025 $F7F8->$F67A
+vg8020  lit   $F678->$F67A $F6A7->$8020 $F7F8->$F67A
+vg8020  chr   $F678->$F67A $F6A7->$8033 $F7F8->$F67A
+cf3300  cat   $F678->$F67A $F6A7->$8022 $F7F8->$F67A
+cf3300  left  $F678->$F67A $F6A7->$8025 $F7F8->$F67A
+cf3300  lit   $F678->$F67A $F6A7->$8020 $F7F8->$F67A
+cf3300  chr   $F678->$F67A $F6A7->$8033 $F7F8->$F67A
+zb      cat   -
+zb      left  -
+zb      lit   $F954->$F698
+zb      chr   -

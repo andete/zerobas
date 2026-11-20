@@ -631,8 +631,6 @@ extents the standard already fixes would be noise, not rigour.
 | `$F92C` | 1 B | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |
 | `$F942` | 2 B | `basic` | `CSAVEA` | published: SCANR's run start, the CLOC of its first pixel (2 B) |  |
 | `$F944` | 1 B | `basic` | `CSAVEM` | published: SCANR's run start, its CMASK (1 B) |  |
-| `$F954` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
-| `$F954` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$F956` | 2 B | `basic` | `INP_CURSOR` | console INPUT LINEBUF read pointer (2 B) |  |
 | `$F958` | 1 B | `basic` | `GFX_SFLAGS` | $F958: which arguments were GIVEN -- (1 B) |  |
 | `$F959` | 6 B | `basic` | `QUETAB` | 4 x 6-byte ring descriptors (3 voice + 1 RS232) |  |
@@ -721,6 +719,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FD0B` | 1 B | `basic` | `SUBSLOT2` | UNUSED: zerobas-sub2's slot id until it was retired (2f) |  |
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
 | `$FD0D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
+| `$FD0E` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
+| `$FD0E` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$FD89` |  | `disk` | `PROCNM` | PUBLISHED: a CALL statement's name, 0-terminated (expansion-ROM STATEMENT handler) |  |
 | `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
 | `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |
