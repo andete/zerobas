@@ -188,11 +188,17 @@ PATCHES = [
     # RG0SAV masks. +4 B: CLS $0604, NSETCX $0696 (its overlaid call $069E), TUPC $0715, TDOWNC $0733,
     # island 3 $0785-$09ED.
     os.path.join(REPO, "cbios-repack", "vdp-calls.patch"),
+    # D-SETREGS / D-INIGRPORDER (2026-11-20): the SET calls return HL past the mode's five cells,
+    # A = RG6SAV, F $00, DE 0 ($7F03 for SETGRP), as the VG-8020; INIGRP fills the colour table
+    # before the patterns, as GRPCGP is (not rounded to $xx00), and both INIGRP / INIMLT clear the
+    # sprites last. +15 B: CLS $0614, NSETCX $06A5 (its overlaid call $06AD), TUPC $0724, TDOWNC $0742,
+    # island 3 $0794-$09ED.
+    os.path.join(REPO, "cbios-repack", "setregs-order.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "9d069d7a2f0e6fc32138aefca48b8404cf6670c9"   # the VDP calls' flags and edges, 2026-11-20
+REPACKED_SHA1 = "849270e86f20db42ce9b723b03a02d02c29798b0"   # SET returns, INIGRP / INIMLT order, 2026-11-20
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

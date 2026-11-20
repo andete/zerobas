@@ -22,8 +22,8 @@ SPDX-License-Identifier: 0BSD
 
 It returns with interrupts **on**.
 
-zerobas writes the same VRAM when the tables do not overlap (a BAKCLR over 15 too, since D-INIMLTCOL,
-2026-11-19), programs the VDP and stores RG0SAV and the shadow bytes the same (D-SETSHADOW, 2026-11-20, cbios-repack/vdp-calls.patch);
+zerobas writes the same VRAM, overlapping tables (D-INIGRPORDER, 2026-11-20) and a BAKCLR over 15
+(D-INIMLTCOL, 2026-11-19) included, programs the VDP and stores RG0SAV and the shadow bytes the same (D-SETSHADOW, 2026-11-20, cbios-repack/vdp-calls.patch);
 it returns other DE and HL (below).
 
 ## The specification
@@ -79,7 +79,6 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-INIGRPORDER** (with overlapping tables -- every cell $3FFF / $FFFF, cases 38, 39 -- zerobas writes the sprites before the patterns, so the patterns win) | R-IM-VRAM |
 | **D-INIREGS** (zerobas returns other DE and HL: DE $88D1, HL $F3E7, where the VG-8020 returns $0000 and $F3DB) | R-IM-REGS |
 
 ## Open (not measured)

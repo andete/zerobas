@@ -654,7 +654,7 @@ def disk_abi_seeds(spans):
 
 # fix (14): labels on the stubs basic/islands.asm patches INTO C-BIOS's code
 PATCH_ROOTS = ('cbios_chput_ttypos',
-               'cbios_nsx_px',        # D-SETCLAST part 2: C-BIOS's NSETCX calls it ($069E)
+               'cbios_nsx_px',        # D-SETCLAST part 2: C-BIOS's NSETCX calls it ($06AD)
                # CRTCNT UNDER KEY ON (2026-11-10): C-BIOS's CHPUT (cbios-repack/
                # crtcnt-bound.patch) and the sub-ROM's line editor call it at its
                # fixed $328D; no main label does

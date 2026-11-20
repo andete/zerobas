@@ -42,12 +42,12 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CLRSPR.md) | 8 | — |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
-| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-INIGRPORDER, D-INIREGS |
-| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIGRPORDER, D-INIREGS |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETREGS |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETREGS |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETREGS, D-SETSHADOW |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | D-SETREGS |
+| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-INIREGS |
+| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIREGS |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | — |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | — |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | — |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | — |
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | — |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |

@@ -383,7 +383,7 @@ bil_go:
 ; foreground: set; pattern OR M = $FF: cleared, ATRBYT ORed into (colour AND $F0); else set,
 ; ATRBYT the foreground. All 8 pixels (M = $FF): pattern $00 and colour byte := ATRBYT, at CLOC
 ; XOR $2000 (cases 12, 13). zerobas's SETC takes a multi-bit CMASK as it is (bios_setc,
-; basic/main.asm). Entered from our repacked NSETCX's per-pixel SETC call at $069E
+; basic/main.asm). Entered from our repacked NSETCX's per-pixel SETC call at $06AD
 ; (basic/islands.asm `cbios_nsx_px`) with HL = the pixels left, this one included, and CLOC /
 ; CMASK on this pixel; it does the run's pixels in this byte and leaves HL / CMASK on their last,
 ; so nsetcx's own `call rightc / dec hl` steps past them. SCREEN 3 (nibbles): SETC per pixel, as
@@ -649,8 +649,8 @@ bsx_out:
 ; C-BIOS's ignored GRPCGP. Here only that test: a SCREEN 2 move is UPC's / DOWNC's (the rules'
 ; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, pinned by
 ; PATCH_RANGES' old vector bytes). BC / DE / HL kept. Page 0.
-CBIOS_TUPC      equ     $0715
-CBIOS_TDOWNC    equ     $0733
+CBIOS_TUPC      equ     $0724
+CBIOS_TDOWNC    equ     $0742
 BIOS_UPC        equ     $0102
 BIOS_DOWNC      equ     $0108
 bios_tupc:
@@ -705,7 +705,7 @@ bios_tdownc:
 ; unless ATRBYT is one already there), CLOC / CMASK kept, interrupts on after. Every other case
 ; C-BIOS's own body (CBIOS_NSETCX, pinned by PATCH_RANGES' old vector bytes), whose per-pixel
 ; `call setc` is nsx_px (above). C-BIOS's returned at once for HL = 0 and counted all of HL. Page 0.
-CBIOS_NSETCX    equ     $0696
+CBIOS_NSETCX    equ     $06A5
 bios_nsetcx:
                 ld      a,(SCRMOD)
                 cp      2

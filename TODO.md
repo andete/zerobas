@@ -16800,7 +16800,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — docs/bios/CALSLT.md R-CS-SP, docs/bios/CALLF.md R-CF-SP ([`XCALSLT_run4.out`](scratchpad/XCALSLT_run4.out),
       [`XCALSLT_run4c.out`](scratchpad/XCALSLT_run4c.out)): the references' inter-slot call pushes 6 bytes before
       the target runs for a slot that is not expanded, 14 for the CF-3300's expanded 3-0; zerobas's pushes 10 for
-      both. The stack is not a published part of the contract. Priced when picked up.
+      both. The stack is not a published part of the contract. Priced when picked up.      💰 **PRICED 2026-11-20: left unmatched.** Matching the 6-byte stack (14 for an expanded slot) means rewriting
+      CALSLT's slot-switch core (C-BIOS slot.asm), which every inter-slot call and interrupt goes through, for a
+      value the contract does not publish. Re-open only if a program is found that runs out of stack there.
+
 
 - [ ] **D-CALSLTIY — IY IN A CALLF TARGET (AND IN A TARGET IN AN EXPANDED SLOT) DIFFERS FROM THE REFERENCES'**
       🎚️ TIER 6 — every edge (a target reading IY on entry after CALLF, or after CALSLT into an expanded slot;
@@ -16810,7 +16813,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       over the entry F (IY was $8765); zerobas's the slot ID over $55 (a slot that is not expanded) or $8388 (its
       expanded RAM). For a call into the expanded RAM 3-0 the CF-3300's IY in the target is $0314, whatever the
       caller's IY and the page; zerobas's CALSLT passes the caller's. After the call both return the target's IY.
-      CALLF publishes IY as destroyed; the values are not published. Priced when picked up.
+      CALLF publishes IY as destroyed; the values are not published. Priced when picked up.      💰 **PRICED 2026-11-20: left unmatched.** Same core as D-CALSLTSTACK; CALLF publishes IY as destroyed.
+
 
 - [ ] **D-LPTOUTF — LPTOUT RETURNS AN OR'S FLAGS ON A; THE VG-8020'S AN AND'S (H SET)**
       🎚️ TIER 6 — every edge (a program testing H after LPTOUT; filed 2026-11-18).
@@ -16872,14 +16876,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out)):
       the VG-8020 returns DE $7F03 / $0000 and HL $F3D1 / $F3DB; zerobas DE $88D1 and HL $F3E7 in every case.
-      A, F and BC agree. Priced when picked up.
+      A, F and BC agree. Priced when picked up.      💰 **PRICED 2026-11-20: left unmatched.** The VG-8020's INIGRP / INIMLT return SETGRP's / SETMLT's own DE / HL
+      ($7F03 / $F3D1, 0 / $F3DB -- since D-SETREGS exactly what zerobas's SET calls return), so its mode calls END on
+      the SET call. C-BIOS's end on chgmod_finish, which re-sends R0-R7 through HL / DE and enables the display;
+      restructuring that shared finish for two unpublished registers is risk with no measured program behind it.
 
-- [ ] **D-INIGRPORDER — INIGRP / INIMLT WRITE OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
+
+- [x] **D-INIGRPORDER — INIGRP / INIMLT WRITE OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
       🎚️ TIER 6 — every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 28):
       the VG-8020 writes the name and colour tables, then clears the patterns, then the sprite attributes; zerobas's
       order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
       VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (with D-INIGRPORDER / D-SETREGS together). cbios-repack/setregs-order.patch (#51):
+      the SET calls end on a shared tail -- HL past the mode's five cells, A = RG6SAV, F $00 (push / pop), DE 0, SETGRP
+      then DE $7F03; INIGRP fills the colour table before the patterns, from GRPCGP as it is (C-BIOS rounded it to $xx00:
+      the first build still failed R-IG-VRAM in exactly the unaligned cases 28 / 36), and INIGRP / INIMLT clear the
+      sprites last. CLS shares cls_screen2; its measured cases all use aligned tables, so nothing it measured moved.
+      +15 B before $0D01, re-derived as #50. spec-live (full): every listed rule of the two holds.
 
 - [x] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
@@ -16912,11 +16926,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
       spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
-- [ ] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
+- [x] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run4.out`](scratchpad/XSET_run4.out)): the VG-8020
       returns A = the new RG6SAV, F = $00, DE = 0 ($7F03 for SETGRP), HL = the address past the mode's five cells;
       zerobas returns F $42 (or $00), DE = that address, HL = 0 or $FFE0, and another A. Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (with D-INIGRPORDER / D-SETREGS together). cbios-repack/setregs-order.patch (#51):
+      the SET calls end on a shared tail -- HL past the mode's five cells, A = RG6SAV, F $00 (push / pop), DE 0, SETGRP
+      then DE $7F03; INIGRP fills the colour table before the patterns, from GRPCGP as it is (C-BIOS rounded it to $xx00:
+      the first build still failed R-IG-VRAM in exactly the unaligned cases 28 / 36), and INIGRP / INIMLT clear the
+      sprites last. CLS shares cls_screen2; its measured cases all use aligned tables, so nothing it measured moved.
+      +15 B before $0D01, re-derived as #50. spec-live (full): every listed rule of the two holds.
 
 - [x] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
       🎚️ TIER 6 — every edge (F is not published; a caller testing it; filed 2026-11-18).

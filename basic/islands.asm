@@ -431,11 +431,11 @@ st_go:
 ; setc (121 B) -- zerobas answers READC / SETC since D-SETCCOL -- and the graphics span moved
 ; down 121, so island 3 was $096A..$09ED (132 B); D-CBIOSDEAD's cut of C-BIOS's dead grpprt / mapxy /
 ; scalxy / clrspr / debug-hex helpers (353 B) moved it to $0773..$09ED (635 B); D-MOVEMASK's RIGHTC / LEFTC
-; fix (+14 B of C-BIOS) to $0781..$09ED (621 B); repack #50 (+4 B) to $0785..$09ED (617 B). Its tenants are CODE: bios_setc (SETC, $0120) and bios_grpprt,
+; fix (+14 B of C-BIOS) to $0781..$09ED (621 B); repack #50 (+4 B) to $0785..$09ED (617 B); repack #51 (+15 B) to $0794..$09ED (602 B). Its tenants are CODE: bios_setc (SETC, $0120) and bios_grpprt,
 ; reached only through its page-0 vector; it calls sc_cell / sc_wpat in the low region and
 ; WRTVRM. Page 0 is C-BIOS's slot, as the low region is, so nothing pages between them.
 
-                org     $0785
+                org     $0794
 bios_setc:
                 push    hl
                 push    bc
@@ -846,10 +846,10 @@ cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_RO
                 call    ttypos_col
 
 ; --- C-BIOS's NSETCX: a run's pixels in a byte, decided whole (D-SETCLAST part 2) --------
-; $069E is nsetcx_lp's per-pixel `call $0120` (SETC) in our repacked NSETCX ($07FB until
-; D-CBIOSDEAD's cut, $069A until repack #50, 2026-11-19); nsx_px (basic/biosfnk.asm) does the run's pixels in that byte at
+; $06AD is nsetcx_lp's per-pixel `call $0120` (SETC) in our repacked NSETCX ($07FB until
+; D-CBIOSDEAD's cut, $069A until repack #50, $069E until #51); nsx_px (basic/biosfnk.asm) does the run's pixels in that byte at
 ; once. PATCH_RANGES refuses unless it reads CD 20 01.
-                org     $069E
+                org     $06AD
 cbios_nsx_px:                               ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    nsx_px
 
