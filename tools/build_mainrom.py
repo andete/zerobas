@@ -67,7 +67,7 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # $0CCF, and gone when its residual's cycle verify took the rest -- err_msgtab is
 # back in main page 1. ISLAND4_LO stays as the tape's CAP: C-BIOS's compat tail.
 ISLAND4_LO = 0x0D01
-ISLAND_RANGES = ((0x0160, 0x0200), (0x196E, 0x1BBF), (0x0794, 0x09EE))   # island 3: $0794 since repack #51 ($0785 after #50)
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1970, 0x1BBF), (0x0794, 0x09EE))   # island 3: $0794 since repack #51 ($0785 after #50)
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).

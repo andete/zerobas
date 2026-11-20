@@ -16846,6 +16846,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       putsprite: $F417 / $F418 no longer zerobas-only; $FC18 / $FC19 written by both (the values differ, as scratch).
       graphics-acceptance, sprite-trap-acceptance, spec-live OUTDLP / OUTDO green.
 
+- [ ] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
+      🎚️ APPARATUS — a spec rule that can fail on a timing shift alone (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — an interrupt ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on (the
+      NMOS erratum; openMSX emulates it). Found 2026-11-20 by spec-live: D-TRGFLGISR part 1 moved the boot timing,
+      and docs/bios/FILVRM.md R-FV-EI failed on zerobas in cases XM N57 / XM D57 (iff 0) with nothing in FILVRM
+      changed. probes/bios/spec/xvram.asm now reads twice and ORs (the idiom of probes/bios/spec/xcalslt.asm), and
+      the seven VRAM pages agree again. Still reading ONCE: probes/bios/spec/xchg.asm, xchg2.asm, xchgw.asm, xcnv2.asm,
+      xenaslt2.asm, xfnk3.asm, xinitio.asm, xinitio2.asm, xinitio3.asm, xspr.asm, xvdpreg.asm. Each rule built on
+      those reads can go red on an unrelated commit. Fix: the same doubled read in each. The reference's side stays
+      the committed run files, and a doubled read can only turn a false 0 into 1, so no reference re-run is needed.
+      Then re-run tools/spec_live.py on their pages.
 - [ ] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
       🎚️ TIER 6 — every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20).
       🤖 **AUTONOMOUS** — C-BIOS's key-scan interrupt (src/main.asm, its own "TODO read joystick triggers and space for
@@ -16853,7 +16864,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bits (1 = released), read 0 = pressed. Found 2026-11-20 by spec-live: D-SCANRSAVE's commit removed the boot-time
       trampoline install, the boot got shorter, and a key scan now lands inside docs/bios/INITIO.md case XI 1's window
       and changes the cell, where the VG-8020's window leaves it (R-IO-PLAY, listed under this item). The VG-8020's
-      TRGFLG VALUE is not yet measured (a probe reading it idle and with each trigger held is the first step).
+      TRGFLG VALUE is not yet measured (a probe reading it idle and with each trigger held is the first step).      🟡 **PART 1 LANDED 2026-11-20: the idle value.** Measured (scratchpad/trgflg_probe.py): the VG-8020 and the CF-3300
+      read TRGFLG $F1 idle and $F0 with the space bar held; zerobas $01 / $00. cbios-repack/trgflg.patch (#52): the key
+      scan stores `or $F0` after the space bit (2 B); basic/missing.asm sub_first starts TRGFLG at $F1 at boot, as the
+      VG-8020's is when a cartridge starts (its boot has already scanned). zerobas now reads $F1 / $F0 (TRGFLG_run3.out,
+      _run4.out) and INITIO's R-IO-PLAY holds again. **STILL OPEN: the trigger bits themselves** -- the scan still does
+      not read the joysticks, so a held trigger reads released. Reading them means GTTRIG's PSG R15 port switching from
+      the interrupt: measure first a held trigger's TRGFLG on the VG-8020 and what its interrupt leaves in R15.
+
 
 
 

@@ -1,0 +1,3 @@
+vg8020  idle   TRGFLG = $F1 (241)
+cf3300  idle   TRGFLG = $F1 (241)
+zb      idle   TRGFLG = $F1 (241)

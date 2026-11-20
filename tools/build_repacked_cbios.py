@@ -194,11 +194,15 @@ PATCHES = [
     # sprites last. +15 B: CLS $0614, NSETCX $06A5 (its overlaid call $06AD), TUPC $0724, TDOWNC $0742,
     # island 3 $0794-$09ED.
     os.path.join(REPO, "cbios-repack", "setregs-order.patch"),
+    # D-TRGFLGISR (2026-11-20): the key scan stores TRGFLG with bits 4-7 (the joystick triggers,
+    # 1 = released) set, as the VG-8020 / CF-3300 leave it idle ($F1; $F0 with space held); the
+    # triggers themselves are still not read. +2 B after the ISR: island 1 $1970-$1BBE.
+    os.path.join(REPO, "cbios-repack", "trgflg.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "849270e86f20db42ce9b723b03a02d02c29798b0"   # SET returns, INIGRP / INIMLT order, 2026-11-20
+REPACKED_SHA1 = "6428cd9f0d53215ffa0d26a6ee560dd0e5a7dd33"   # TRGFLG's trigger bits, 2026-11-20
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

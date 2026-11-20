@@ -1,0 +1,19 @@
+diff --git a/src/main.asm b/src/main.asm
+index b5e48be..3ecd530 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2302,10 +2302,14 @@ keyint:
+                 ld      (SCNCNT),a
+ 
+                 ; TODO read joystick triggers and space for TRGFLG
++                ; zerobas D-TRGFLGISR (2026-11-20): bits 4-7 (the joystick triggers, 1 = released) set, as
++                ; the VG-8020 / CF-3300 leave them idle ($F1; $F0 with the space bar held, zerobas
++                ; scratchpad/TRGFLG_run1.out / _run2.out). The triggers themselves are still not read.
+                 xor     a
+                 call    gttrig
+                 cpl
+                 and     $01
++                or      $F0
+                 ld      (TRGFLG),a
+ 
+                 call    key_in

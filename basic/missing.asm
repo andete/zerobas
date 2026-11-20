@@ -833,6 +833,10 @@ lha_kept:
 sub_first:
                 ld      a,1                 ; D-BOOTSCAN / B1: the key scan from here on
                 ld      (SCNCNT),a          ; (interp.asm's note, before init_ext_roms)
+                ld      a,$F1               ; D-TRGFLGISR (2026-11-20): TRGFLG idle -- triggers and
+                ld      ($F3E8),a           ; space released -- as the VG-8020's has it when a
+                                            ; cartridge starts (its boot has scanned by then; ours
+                                            ; scans from here; docs/bios/INITIO.md case XI 1)
                 ld      a,11                ; D-PSGINIT (2026-11-10): R11 = $0B, as the
                 out     ($A0),a             ; VG-8020 has it when a cartridge starts (B5);
                 out     ($A1),a             ; its GICINI does NOT write R11 (a program's

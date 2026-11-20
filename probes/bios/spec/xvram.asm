@@ -104,11 +104,15 @@ next:
                 push    af
                 pop     hl
                 ld      (raf), hl
-                ld      a, i                    ; P/V := IFF2
+                ld      a, i                    ; P/V := IFF2, read twice and ORed: an interrupt accepted
+                push    af                      ; DURING a read makes it read 0 (the NMOS erratum)
+                ld      a, i
                 di
                 push    af
                 pop     hl
                 ld      a, l
+                pop     hl
+                or      l
                 and     4
                 jr      z, i0
                 ld      a, 1

@@ -1,0 +1,6 @@
+vg8020  idle   TRGFLG = $F1 (241)
+vg8020  space  TRGFLG = $F1 (241)
+cf3300  idle   TRGFLG = $F1 (241)
+cf3300  space  TRGFLG = $F1 (241)
+zb      idle   TRGFLG = $01 (1)
+zb      space  TRGFLG = $01 (1)
