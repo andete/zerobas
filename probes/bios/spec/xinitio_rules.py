@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/INITIO.md's EXECUTABLE RULES (docs/spec-method.md §3a): INITIO ($003B) from five desynced states --
-scratchpad/XINITIO_run3.out (probes/bios/spec/xinitio.asm documents the cases and the 105-byte record)."""
+scratchpad/XINITIO_run4.out (probes/bios/spec/xinitio.asm documents the cases and the 105-byte record)."""
 import os
 import re
 import sys
@@ -23,7 +23,7 @@ REC = 105
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XINITIO_run3.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO_run4.out")).read()
     out = {}
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
@@ -102,7 +102,7 @@ UNREAD = {f"XI {i + 1}": (["r14"], "R14 is the PSG's INPUT port A: it reads the 
           for i in range(len(CASES))}
 
 
-# ---- round 2: XINITIO2 (probes/bios/spec/xinitio2.asm; scratchpad/XINITIO2_run2.out), after the first review ----
+# ---- round 2: XINITIO2 (probes/bios/spec/xinitio2.asm; scratchpad/XINITIO2_run3.out), after the first review ----
 OUTPUTS["XI2"] = ["af", "bc", "de", "hl", "ix", "iy", "afx", "bcx", "dex", "hlx", "iff", "psg", "r14", "aa", "nchg",
                   "cells", "vcb"]
 # interrupts on, PSG base, step, port $AA's high nibble, entry F, the register set, the seed mode
@@ -117,7 +117,7 @@ _cases1 = cases
 
 def cases():                                     # noqa: F811
     out = _cases1()
-    t = open(os.path.join(ROOT, "scratchpad", "XINITIO2_run2.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO2_run3.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
         b += bytes(1 + REC2 * len(CASES2) - len(b))
@@ -196,7 +196,7 @@ UNREAD.update({f"XI2 {i + 1}": (["r14"], "R14 is the PSG's INPUT port A: it read
                                          "anything INITIO writes") for i in range(len(CASES2))})
 
 
-# ---- round 3: XINITIO3 (probes/bios/spec/xinitio3.asm; scratchpad/XINITIO3_run1.out), after the confirming review ----
+# ---- round 3: XINITIO3 (probes/bios/spec/xinitio3.asm; scratchpad/XINITIO3_run2.out), after the confirming review ----
 OUTPUTS["XI3"] = OUTPUTS["XI2"]
 # ei, PSG base, step, port $AA (whole byte), F, register set, desc seed, VCB seed, MUSICF/PLYCNT written, MUSICF, PLYCNT
 CASES3 = [(0, 0x40, 0x01, 0x35, 0x00, 0, 0, 0, 0, 0x00, 0x00), (0, 0xA0, 0x07, 0x35, 0xFF, 0, 1, 1, 1, 0x00, 0x5A),
@@ -207,7 +207,7 @@ _cases2 = cases
 
 def cases():                                     # noqa: F811
     out = _cases2()
-    t = open(os.path.join(ROOT, "scratchpad", "XINITIO3_run1.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XINITIO3_run2.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
         b += bytes(1 + REC2 * len(CASES3) - len(b))

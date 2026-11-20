@@ -202,7 +202,7 @@ PATCHES = [
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "6428cd9f0d53215ffa0d26a6ee560dd0e5a7dd33"   # TRGFLG's trigger bits, 2026-11-20
+REPACKED_SHA1 = "9bd805496b916a2cb79217f5bf24543e14d6725a"   # TRGFLG's trigger bits read, 2026-11-20
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

@@ -1,0 +1,9 @@
+centre vg8020  TRGFLG $F1  R15 $CF  R14 $BF
+centre cf3300  TRGFLG $F1  R15 $CF  R14 $BF
+centre zb      TRGFLG $F1  R15 $CF  R14 $BF
+trig1  vg8020  TRGFLG $B1  R15 $CF  R14 $AF
+trig1  cf3300  TRGFLG $B1  R15 $CF  R14 $AF
+trig1  zb      TRGFLG $F1  R15 $CF  R14 $AF
+trig2  vg8020  TRGFLG $71  R15 $CF  R14 $9F
+trig2  cf3300  TRGFLG $71  R15 $CF  R14 $9F
+trig2  zb      TRGFLG $F1  R15 $CF  R14 $9F

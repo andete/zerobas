@@ -113,8 +113,10 @@ g_done:
                 ld      e, a
                 ld      d, $A7
                 push    de
-                ld      a, (cei)
-                or      a
+                ld      a, 30                   ; SCNCNT: no key scan inside the window, on any machine -- the
+                ld      ($F3F6), a              ; scan writes TRGFLG and PSG R15, and where it lands is timing
+                ld      a, (cei)                ; (D-TRGFLGISR: zerobas's landed INSIDE INITIO, the references'
+                or      a                       ; after it). SCNCNT is an interrupt cell the compare skips.
                 jr      z, c_di
                 ei
 c_di:

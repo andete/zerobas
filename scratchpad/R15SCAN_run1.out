@@ -1,0 +1,6 @@
+vg8020  latch  R15 = $CF
+vg8020  input  R15 = $DF
+cf3300  latch  R15 = $CF
+cf3300  input  R15 = $DF
+zb      latch  R15 = $EF
+zb      input  R15 = $FF

@@ -107,14 +107,14 @@ before the call, so no interrupt is pending, and makes `di` the first instructio
 interrupt runs before the reads; its IFF2 bit therefore reads that `di`, not INITIO.
 
 **[XI3 n]**: case `n` of round 3's XINITIO3 probe, run 1,
-[`scratchpad/XINITIO3_run1.out`](../../scratchpad/XINITIO3_run1.out). `probes/bios/spec/xinitio3.asm` keeps
+[`scratchpad/XINITIO3_run2.out`](../../scratchpad/XINITIO3_run2.out). `probes/bios/spec/xinitio3.asm` keeps
 XINITIO2's record and sets each seed independently: the queue descriptors / QUEBAK, the voice control
 blocks, and MUSICF / PLYCNT written with chosen values. That includes MUSICF 0 with garbage elsewhere,
 so the blocks' rewrite is seen with interrupts on. Port $AA's whole byte is written, and case 1 is the
 first call after boot.
 
 **[XI2 n]**: case `n` of round 2's XINITIO2 probe, run 2,
-[`scratchpad/XINITIO2_run2.out`](../../scratchpad/XINITIO2_run2.out). `probes/bios/spec/xinitio2.asm` adds a
+[`scratchpad/XINITIO2_run3.out`](../../scratchpad/XINITIO2_run3.out). `probes/bios/spec/xinitio2.asm` adds a
 second register set (entry A $00) and the shadow registers, and seeds PLAY in three modes:
 - none;
 - all of it with interrupts off, the voice control blocks ($FB41-$FBAF) included;
@@ -124,7 +124,7 @@ It records the voice control blocks whole after the call, and skips STATFL / TRG
 interrupt writes them.
 
 **[XI n]**: case `n` of the XINITIO probe, run 3,
-[`scratchpad/XINITIO_run3.out`](../../scratchpad/XINITIO_run3.out). `probes/bios/spec/xinitio.asm` lists the
+[`scratchpad/XINITIO_run4.out`](../../scratchpad/XINITIO_run4.out). `probes/bios/spec/xinitio.asm` lists the
 five cases and the 105-byte record:
 - The PSG's 16 registers are set to a pattern (register k := base + k × step), R7's top two bits
   included, and read back through the PSG's own ports, not through RDPSG.
@@ -266,6 +266,12 @@ Declared UNSTABLE on the reference itself (4 cases: XI7 1, XI7 2, XI7 3, XI7 4):
   own cells are not compared: SCNCNT / REPCNT ($F3F6-$F3F7), the key matrices ($FBDA-$FBEF), JIFFY,
   INTVAL and INTCNT's low byte ($FC9E-$FCA2), and from round 2 on STATFL / TRGFLG ($F3E7-$F3E8). RAM below $F380, VRAM, and the ports other
   than $A0-$A2 and $AA are not read.
+- **[A]** Rounds 1-3 set SCNCNT to 30 before the call (since 2026-11-20), so no KEY SCAN runs inside the
+  window on any machine. A scan writes TRGFLG and PSG R15 and leaves port $AA's keyboard row, and where it lands
+  is timing: zerobas's had moved inside INITIO, between the R15 and R11 writes, while the preset still had port B
+  as an input. The VG-8020's had landed in round 3's cases 1 and 4 (port $AA's row $A there; $5, as the probe
+  wrote it, in the re-run). The re-runs' reference captures are otherwise byte-identical to the earlier ones.
+  The interrupt itself still runs. Rounds 4-7 do not hold the scan off.
 - **[A]** The RS-232 queue's buffer and the voice buffers' contents ($F975..) from garbage.
 - **[A]** When inside the call interrupts come back on. Rounds 1-3's pending interrupt ran right after
   it, with R8-R10 still 0 afterwards (see the evidence note), but no probe records the PSG writes or

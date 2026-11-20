@@ -27,7 +27,7 @@
 ; from the main slot (a sub-ROM PAGE-0 tenant cannot reach it).
 ; ===========================================================================
 
-; --- island 1: before the font ($1970..$1BBE, 591 B usable; $196E until D-TRGFLGISR) ---
+; --- island 1: before the font ($199C..$1BBE, 547 B usable; $196E before D-TRGFLGISR, $1970 after its part 1) ---
 ; D-CBIOSDEAD part 2 (2026-11-19): cbios-repack/dead-bodies-main.patch cut C-BIOS's dead
 ; RST / INIFNK / STRTMS / LPTOUT / PINLIN / QINLIN / ISCNTC / CKCNTC / cassette / ISFLIO /
 ; PUTQ / CALBAS bodies (381 B), so the island starts at $196E, not $1AF5; its tenants keep

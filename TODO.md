@@ -16857,7 +16857,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       those reads can go red on an unrelated commit. Fix: the same doubled read in each. The reference's side stays
       the committed run files, and a doubled read can only turn a false 0 into 1, so no reference re-run is needed.
       Then re-run tools/spec_live.py on their pages.
-- [ ] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
+- [x] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
       🎚️ TIER 6 — every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20).
       🤖 **AUTONOMOUS** — C-BIOS's key-scan interrupt (src/main.asm, its own "TODO read joystick triggers and space for
       TRGFLG") stores NOT GTTRIG(0) AND 1: bit 0 only, so the idle value is $01 -- and bits 4-7, the published trigger
@@ -16871,6 +16871,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       _run4.out) and INITIO's R-IO-PLAY holds again. **STILL OPEN: the trigger bits themselves** -- the scan still does
       not read the joysticks, so a held trigger reads released. Reading them means GTTRIG's PSG R15 port switching from
       the interrupt: measure first a held trigger's TRGFLG on the VG-8020 and what its interrupt leaves in R15.
+      ✅ **DONE 2026-11-20 (part 2): the trigger bits.** Measured on the RP2040 rig with each trigger held, the stick
+      in port 1 (scratchpad/TRGFLG_rig1.out), then in port 2 (TRGFLG_rig2.out): the VG-8020 and CF-3300 agree --
+      bit 0 the space bar, 4 / 5 port 1's triggers A / B, 6 / 7 port 2's, 0 = pressed ($E1 / $D1 / $B1 / $71), and
+      their interrupt leaves R15 $CF. cbios-repack/trgflg.patch now reads port 1's R14, then port 2's, so R15 ends as
+      theirs (+44 B in the interrupt; island 1 starts at $199C). R15 is set as their scan sets it (scratchpad/R15SCAN_run1.out:
+      read back, AND $BF OR $03, then AND $DF OR $4C; $CF from $AC, $DF while port B is an input). zerobas reads all six held cases as both references
+      (TRGFLG_rig3.out, _rig4.out), and $F1 / $F0 idle / space still (TRGFLG_run5.out).
+      Spec-live then failed 5 INITIO rules (cases XI 1, XI 4, XI2 1, XI3 1): zerobas's scan now landed INSIDE INITIO,
+      read R15 while the probe's preset had port B as an input (the pins, $FF), and wrote that back. That was timing,
+      not INITIO -- the VG-8020's own scan had landed in round 3's cases 1 / 4 (port $AA's row). probes/bios/spec/
+      xinitio.asm, xinitio2.asm and xinitio3.asm now hold SCNCNT at 30 across the call. The references were re-run
+      (XINITIO_run4.out, XINITIO2_run3.out, XINITIO3_run2.out; byte-identical but for those two row nibbles). Every
+      rule holds on the reference, and zerobas fails exactly the 8 listed rules.
 
 
 

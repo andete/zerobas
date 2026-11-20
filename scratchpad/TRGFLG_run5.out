@@ -1,0 +1,3 @@
+vg8020  space  TRGFLG = $F0 (240)
+cf3300  space  TRGFLG = $F0 (240)
+zb      space  TRGFLG = $F0 (240)
