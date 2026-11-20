@@ -85,7 +85,9 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   assert (`../tools/check_kwtable_identity.py`, run by `make basic-reloc`) guards
   against drift. No stock-ROM bytes involved.
 
-- **Interrupt trampoline — the sub-ROM's own `$0038` (trampoline slice).** *Own
+- **Interrupt trampoline — the sub-ROM's own `$0038` (trampoline slice).** 🔁 *Superseded 2026-11-20 (D-SCANRSAVE):*
+  the sub ROM's `$0038` jumps to `sub_isr` ([`sub/sub.asm`](sub.asm), in the `$0010`-`$0037` pad), which calls the BIOS's own `CLPRIM` (`$F38C`, through `p0cb`) with the main-ROM helper `sub_isr_main` ([`basic/islands.asm`](../basic/islands.asm): `call $0038 / di / ret`) as its target, saves AF' and IX, and puts slot 3's secondary register back itself. The RAM stub and its `$F92D` home are gone: the reference keeps PAINT / CIRCLE / SCANR scratch there (D-SCANRSAVE; Joost: "measure how reference does it ram-wise and match"). The text below is the original design.
+  *Own
   design.* Lets a page-0 tenant run interrupt-live: the sub-ROM reserves the
   maskable-interrupt vector `$0038` (`jp SUB_INT_RAM`, [`sub.asm`](sub.asm)); the
   RAM-resident stub it targets ([`../basic/subromcall.asm`](../basic/subromcall.asm)

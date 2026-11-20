@@ -18,8 +18,8 @@ run's length, DE the counted-down skip, CLOC / CMASK the stopping pixel; CSAVEA 
 $F944) keep the run's start. In SCREEN 2 it paints the run in ATRBYT when B is not 0; in SCREEN 3 it
 always does. A, F and BC are left with working values; interrupts are **on** after.
 
-zerobas scans and paints the same (D-SCANSTOP, 2026-11-19: the run is counted first, then painted);
-it does not keep the run's start in CSAVEA / CSAVEM, which are inside its interrupt trampoline (below).
+zerobas does the same (D-SCANSTOP, 2026-11-19: the run counted first, then painted; D-SCANRSAVE,
+2026-11-20: the run's start in CSAVEA / CSAVEM -- the RAM interrupt trampoline that sat there went).
 
 ## The specification
 
@@ -77,9 +77,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SCANRSAVE** (zerobas leaves CSAVEA / CSAVEM as they were; the VG-8020 stores the run's first pixel there. On zerobas $F92D-$F950 hold its sub-ROM interrupt trampoline -- SUB_INT_RAM -- so writing them waits on a RAM ruling) | R-SR-SAVE |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

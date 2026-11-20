@@ -23,8 +23,8 @@
 ;   pixel (D-SCANSTOP, 2026-11-19) -- SCREEN 2 bytes decided whole, a covered byte pattern
 ;   $00 / colour ATRBYT; SCREEN 3 the blocks' nibbles. Painting while scanning recoloured a
 ;   cell's foreground before the scan reached the cell's border pixel.
-;   CSAVEA / CSAVEM ($F942 / $F944), where the VG-8020's SCANR records the run's start, are
-;   inside zerobas's interrupt trampoline (SUB_INT_RAM, $F92D-$F950): not written (D-SCANRSAVE).
+;   SCANR records the run's start in CSAVEA / CSAVEM ($F942 / $F944), as the VG-8020 (D-SCANRSAVE,
+;   2026-11-20: the RAM interrupt trampoline that sat there went, sub/sub.asm sub_isr).
 ;   BC / A on exit are not the VG-8020's leftovers (no documented contract, origin unread).
 ;
 ; The tenant runs through CALSLT into page 1 with slot-0 page 0 still mapped, so it
@@ -67,6 +67,8 @@ pb_run:
                 ld      de,(CLOC)
                 ld      a,(CMASK)
                 ld      c,a                     ; DE / C = the run's first pixel
+                ld      (CSAVEA),de             ; D-SCANRSAVE: recorded, as the VG-8020 (SCANR.md
+                ld      (CSAVEM),a              ; R-SR-SAVE); a skip that ends the call leaves them
 pb_cnt:
                 inc     hl
                 call    pb_right
@@ -104,14 +106,9 @@ pb_lend:
                 ld      b,a                     ;  K the last SCREEN 2 SCANR's run -- open)
                 jp      pb_paint
 
-; Z iff the pixel at the cursor is the border colour. HL / DE / BC kept.
-pb_isbd:
-                call    PB_READC
-                push    hl
-                ld      hl,GFX_B
-                cp      (hl)
-                pop     hl
-                ret
+; Z iff the pixel at the cursor is the border colour. HL / DE / BC kept. In main's low region
+; since D-SCANRSAVE (basic/main.asm scan_isbd, through the resident ABI): this page had no room.
+pb_isbd         equ     scan_isbd
 
 ; One pixel (block) right / left; Cy and no move on the screen's last / first one.
 pb_right:

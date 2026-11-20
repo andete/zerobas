@@ -19,8 +19,7 @@ as one space ($41, $5F) or as it is ($7E). The $01 never counts as a column. A a
 registers are kept (A is $20 for a code sent as a space).
 
 zerobas does the same (D-OUTDLPGRAPH / D-OUTDLPF, 2026-11-19). Its held $01 for a printer that is
-not an MSX one is a bit of zerobas's GRP_HDR cell, so a PRINT # to GRP in between drops it; and
-zerobas's PUT SPRITE uses NTMSXP's address as a scratch cell (D-NTMSXPCLASH).
+not an MSX one is a bit of zerobas's GRP_HDR cell, so a PRINT # to GRP in between drops it.
 
 ## The specification
 

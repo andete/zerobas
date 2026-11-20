@@ -1,5 +1,7 @@
 # Spec — zerobas-sub interrupt trampoline (page-0 EI enabler)
 
+> 🔁 **SUPERSEDED 2026-11-20 (D-SCANRSAVE).** The design below -- a 36-byte RAM stub at `$F92D` -- is history. Now the sub ROM's `$0038` jumps to `sub_isr` ([`sub/sub.asm`](../sub/sub.asm), in the `$0010`-`$0037` pad), which calls the BIOS's own `CLPRIM` (`$F38C`, through `p0cb`) with the main-ROM helper `sub_isr_main` ([`basic/islands.asm`](../basic/islands.asm): `call $0038 / di / ret`) as its target, saves AF' and IX, and puts slot 3's secondary register back itself. The RAM stub and its `$F92D` home are gone: the reference keeps PAINT / CIRCLE / SCANR scratch there (D-SCANRSAVE; Joost: "measure how reference does it ram-wise and match"). §1.4a's DI requirement is met by the helper's `di`, so `CLPRIM` restores the sub ROM with interrupts off. Adversarially reviewed before it was written. Gate: `subrom-inttest` (JIFFY delta 28, PASS).
+
 **Status: SIGNED OFF + IMPLEMENTED (2026-07-12).** Q1–Q4 all confirmed as
 recommended ("all good go"). Landed: sub-ROM `$0038` `jp SUB_INT_RAM`
 ([`sub/sub.asm`](../sub/sub.asm)); the RAM trampoline template + boot install

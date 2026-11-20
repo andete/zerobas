@@ -76,27 +76,51 @@ DISK_BUILD      equ     0   ; D-FATENG: 1 only in disk.rom, where DSKIO is LOCAL
                 dw      0,0,0,0                  ; $0008-$000F: reserved (RST area,
                                                  ;   unused — tenants run under DI)
 
-; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
-; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
-; EI, an IRQ lands here with page 0 = sub-ROM; jump to the RAM-resident stub, which
-; maps the BIOS back into page 0, runs the real ISR, and returns (see
-; basic/subromcall.asm sub_int_template, docs/spec-basic-subrom-trampoline.md). One
-; instruction, executed BEFORE any slot switch, so it never pages out its own
-; continuation. SUB_INT_RAM is a fixed RAM address, so this `jp` is byte-identical
-; every build and needs no relocation.
-;
-; ⚠️ THIS VECTOR IS WHY THE ENTRY TABLE NOW SITS ABOVE IT (D-P0BASE, docs/spec-
-; rom-region-p0base.md). The table used to start at $0010 and grow UP INTO this
-; fixed address: 13 rows filled $0010..$0036 and a 14th would have ended at $0039,
-; on top of the vector. That capped the page-0 island at 13 tenants while 3913 B
-; of its space sat free -- a capacity wall nobody had connected to the ROM REGION
-; STRUCTURE REVIEW's "future evictions should prefer page 0" rule
-; (docs/rom-region-structure-review.md §6). The base moved to $0040 instead.
+; --- the page-0 interrupt entry: $0038 -> sub_isr (here, $0010) ----------------
+; While a page-0 tenant runs EI, an IRQ lands on THIS ROM's $0038. sub_isr maps main's
+; page 0 back through the BIOS's own RAM inter-slot primitive CLPRIM ($F38C, via p0cb
+; below -- the published mechanism every MSX keeps at $F380-$F399), runs the real ISR
+; there (sub_isr_main, basic/islands.asm: `call $0038 / di / ret` -- the DI makes CLPRIM
+; switch this ROM back with interrupts OFF, docs/spec-basic-subrom-trampoline.md §1.4a),
+; puts slot 3's secondary register back as the interrupt found it (CLPRIM restores only
+; the primary; a hook that ENASLTs without undoing it would otherwise leave the tenant in
+; the wrong subslot), and RETIs. AF' is saved: p0cb / CLPRIM carry values in it, and
+; p0cb's own caller can hold live AF' with interrupts on.
+; D-SCANRSAVE (2026-11-20; Joost: "measure how reference does it ram-wise and match"): the reference
+; keeps PAINT / CIRCLE / SCANR scratch at $F92D-$F958 (CSAVEA / CSAVEM at $F942 / $F944), so the
+; 36-byte RAM stub that sat there is gone.
+; Adversarially reviewed before it was written (2026-11-20): enter CLPRIM by `jp`
+; (p0cb), save AF' / IX, keep the $FFFF restore. HOST ASSUMPTIONS, unchanged from the
+; stub: main is primary slot 0, unexpanded; page 3 is slot 3 (so $FFFF is slot 3's).
+; ⚠️ The RST addresses $10 / $18 / $20 / $28 / $30 land INSIDE this handler now (they
+; landed on $FF pad before). Tenants run under DI and call no RST; a stray RST was a
+; bug either way. sub_isr_main's address comes from the generated resident ABI
+; (tools/gen_resident_abi.py), regenerated with every build.
+sub_isr:                                ; entered from $0038, interrupts off (the CPU's)
+                push    af
+                push    bc
+                ld      a,($FFFF)           ; slot 3's secondary register (reads inverted)
+                cpl
+                ld      b,a                 ; B: put back below (the ISR keeps BC)
+                ex      af,af'
+                push    af                  ; the interrupted code's AF'
+                push    ix
+                ld      ix,sub_isr_main     ; main page 0: the real ISR, then DI
+                call    p0cb                ; CLPRIM: page 0 := main, back to the live $A8 after
+                pop     ix
+                pop     af
+                ex      af,af'
+                ld      a,b
+                ld      ($FFFF),a           ; slot 3's page-0 subslot, as the interrupt found it
+                pop     bc
+                pop     af
+                ei
+                reti
     IF $ > $0038
-                db      SUB_P0_HEADER_OVERRAN_0038__RESERVED_AREA_TOO_BIG
+                db      SUB_P0_ISR_OVERRAN_0038__SHRINK_SUB_ISR
     ENDIF
-                ds      $0038 - $, $FF          ; pad the reserved header up to the vector
-                jp      SUB_INT_RAM             ; $0038: -> the RAM trampoline
+                ds      $0038 - $, $FF
+                jp      sub_isr                 ; $0038
 
 ; --- Page-0 entry table (append-only jp table; base $0040, §3c/D-5) --------
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index dispatches here. Index 0 = the S2a PING.
@@ -104,8 +128,7 @@ DISK_BUILD      equ     0   ; D-FATENG: 1 only in disk.rom, where DSKIO is LOCAL
 ; main-ROM stub hard-codes only its index. The base is $0040, not $0010: past the
 ; fixed $0038 vector (see above), and a round number so `base + 3*index` is
 ; checkable by hand -- index 8 = $0058, index 12 = $0064. $003B..$003F is dead
-; pad; so is $0010..$0037, which has the side benefit that the RST addresses
-; $10/$18/$20/$28/$30 now land on $FF rather than mid-instruction inside a row.
+; pad; $0010..$0037 holds the interrupt handler sub_isr (D-SCANRSAVE, above).
 ;
 ; TWO ASSERTS, and they guard different things.
 ;
@@ -322,7 +345,7 @@ sis_spin:
 ; were LOST (`PRINT 5` typed right after the line arrived as `NT 5`, `RUN` as
 ; `RRUN`; the VG-8020, which tokenises with interrupts on, lost nothing --
 ; scratchpad/typeblind_probe.py). The sub-ROM owns its page-0 $0038 trampoline
-; (sub_int_template), which is what lets beep and the graphics tenants run with
+; (sub_isr, through CLPRIM since D-SCANRSAVE), which is what lets beep and the graphics tenants run with
 ; `ei`; the tokeniser uses no alternate registers and no SP tricks, and the
 ; real ISR saves what it touches. It RETURNS under DI, as every tenant did: the
 ; CALSLT slot restore that follows must stay atomic. `di` sets no flags, so the
@@ -403,7 +426,7 @@ tokenise_ei:
 ;        ROM, harmless while the primary register says slot 0).
 ;   interrupts: unchanged both ways (CLPRIM has no di / ei). One while the callee
 ;        runs takes main's $0038; one back in THIS page takes this ROM's $0038
-;        -> SUB_INT_RAM, which restores the interrupted tenant's live slot.
+;        -> sub_isr, which restores the interrupted tenant's live slot.
 ;   stack: 6 B (its call, the old $A8, CLPRIM's call).
 ; Main is slot 0, unexpanded on both repack machines, so "page 0 := main" is
 ; clearing bits 0-1 of the primary register. Sited HERE (after keystr, before

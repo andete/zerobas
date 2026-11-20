@@ -24,7 +24,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0028 | GETYPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](GETYPR.md) | 5 | — |
 | $0030 | CALLF | [slots](../concepts/slots.md) | L3 | [FINAL](CALLF.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 25 | D-INITIOVCB |
+| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 25 | D-TRGFLGISR, D-INITIOVCB |
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
@@ -104,7 +104,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0123 | NSETCX | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](NSETCX.md) | 9 | — |
 | $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | — |
-| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | D-SCANRSAVE |
+| $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | — |
 | $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT |
 | $0132 | CHGCAP | [input](../concepts/input-calls.md) | L3 | [FINAL](CHGCAP.md) | 4 | — |
 | $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [FINAL](CHGSND.md) | 3 | — |

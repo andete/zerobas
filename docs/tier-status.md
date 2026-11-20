@@ -573,11 +573,11 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | every edge (a target, or an interrupt in it, that runs within a few bytes of the stack's bottom; | T-1CA5DE |
 | — | TIER 6 | 🤖 | every edge (a target reading IY on entry after CALLF, or after CALSLT into an expanded slot; | T-E960A4 |
 | — | TIER 6 | 🤖 | every edge (a program testing H after LPTOUT; filed 2026-11-18). | T-1F80D5 |
-| — | TIER 6 | 🤖 | every edge (a machine-code program calling OUTDLP after BASIC's PUT SPRITE; filed 2026-11-19). | T-C11020 |
+| — | TIER 6 | 🤖 | every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20). | T-6EDBFC |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-7BE613 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-5728C3 |
 | — | TIER 6 | 🤖 | every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT, | T-DD3BD8 |
-| — | TIER 6 | 🤖 | every edge (filed 2026-11-19). | T-B94ED4 |
+| — | TIER 6 | 🤖 | every edge / TIER 4 RAM usage (filed 2026-11-20, from D-SCANRSAVE's measurement). | T-641A9A |
 | — | TIER 6 | 🤖 | every edge (unpublished return registers; filed 2026-11-18). | T-E728BF |
 | — | TIER 6 | 🤖 | apparatus (filed 2026-11-20). | T-EF08E2 |
 | — | TIER 6 | 🤖 | every edge (a TAB or an LF inside stored program text, or a program testing F after CHRGTR at 00; | T-6B93C6 |

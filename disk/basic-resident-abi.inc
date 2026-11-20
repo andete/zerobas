@@ -97,7 +97,7 @@ fch_mode_class equ 04F7CH
 field_item equ 072F6H
 tgt_store_desc equ 05CB3H
 req_letter equ 040E1H
-var_str_type equ 04661H
+var_str_type equ 04649H
 tgt_parse_req equ 05298H
 tgt_desc equ 0477DH
 skip_eq equ 04225H
@@ -108,7 +108,7 @@ stmt_error equ 0424BH
 lrset_finish equ 07186H
 fch_ctx_addr equ 06EA7H
 disk_error equ 06A6CH
-read_line equ 04541H
+read_line equ 04529H
 chget_getbyte equ 0700AH
 fch_close_all equ 06F67H
 eval_int16_checked equ 0448DH

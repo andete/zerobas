@@ -80,6 +80,11 @@ REQUIRED_SUB = [
     # parser tenant calls its second entry (PLYCNT - 1, MUSICF := 7) when a window
     # queued something while the music is idle (basic/biosfnk.asm).
     "st_go",
+    # D-SCANRSAVE (2026-11-20): the sub ROM's page-0 interrupt handler (sub/sub.asm sub_isr)
+    # reaches the real ISR through CLPRIM at this main page-0 helper (basic/islands.asm).
+    "sub_isr_main",
+    # D-SCANRSAVE: the paint tenant's border test, moved to main's low region for room.
+    "scan_isbd",
 ]
 
 # --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------

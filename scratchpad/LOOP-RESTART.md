@@ -40,6 +40,11 @@ overlay + boot + hooks + tables), then cut what nothing reaches -- grpprt (304 B
 mapxy, scalxy, the RST debug stubs, ... ~900 B by label spans, NOT yet proven. Then by group: sound (one GICINI reset:
 D-INITIOVCB / D-GICINIVCB / D-STRTMS / D-BEEPRESET), SCAN / PAINT, GRPPRT, D-MOVEMASK, D-GTPDLPORT, D-OUTDLP*;
 D-INIREGS / D-SETSHADOW / D-CALSLT* are reference leftovers (price before matching).
+🏗️ RULINGS 2026-11-20 (Joost, asked when the non-disk BIOS queue had only blocked items left): (1) RULE ON THE
+BLOCKERS BEFORE ANY DISK WORK; (2) the RAM clashes D-SCANRSAVE / D-NTMSXPCLASH: "measure how reference does it
+ram-wise and match" -- measure the VG-8020's use of the cells, then move zerobas's own RAM (SUB_INT_RAM, GFX_SPATN)
+to match; (3) D-GICINIVCB / D-INITIOVCB: LEAVE FILED. D-KEYGRAPH and D-INITEDGES' key row stay parked (11-18).
+Priced and left: D-TEXTAF, D-INIREGS, D-CALSLTSTACK / D-CALSLTIY; D-TESTAUDIT deferred (measured not worth it).
 🔴 CASSETTE BIOS CALLS ARE IN (Joost 2026-11-19: "yes, fold the cassette BIOS calls in, that was my intention"): fix
 D-STMOTRAF, D-STMOTRTOGGLE, D-TAPOFFREGS, D-TAPOOFBIT5, D-TAPOONDE, D-TAPOONPORT in this pass. Only BASIC's cassette
 STATEMENTS stay out. (The older "tape stays filed" lines below were a misreading.)

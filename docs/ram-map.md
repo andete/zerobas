@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **453** in the MSX standard work area at or above `$F380`.
+* **basic** — 70 declared addresses in this project's own workspace `$E000..$F37F` (69 with a machine-readable width), plus **454** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **71** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -302,7 +302,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F415` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F415` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F416` |  | `basic` | `PRTFLG` | the published "output to the printer" flag: OUTDO |  |
-| `$F417` | 2 B | `basic` | `GFX_SPATN/NTMSXP` | $F417: ...pattern number (2) |  |
+| `$F417` |  | `basic` | `NTMSXP` |  |  |
 | `$F419` | 2 B | `basic` | `GFX_G8N` | $F419: written index n (int16 LE) (2) |  |
 | `$F41B` | 1 B | `basic` | `GFX_VLEN` | $F41B: the entry size the tenant read back (1) |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
@@ -628,8 +628,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F928` | 2 B | `basic` | `ATRBAS` | the sprite attribute table's VRAM address (2) |  |
 | `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |
 | `$F92C` | 1 B | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |
-| `$F92D` | 36 B | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 36 B; executes from RAM) |  |
-| `$F951` | 1 B | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) (1 B) |  |
+| `$F942` | 2 B | `basic` | `CSAVEA` | published: SCANR's run start, the CLOC of its first pixel (2 B) |  |
+| `$F944` | 1 B | `basic` | `CSAVEM` | published: SCANR's run start, its CMASK (1 B) |  |
 | `$F952` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
 | `$F953` | 1 B | `basic` | `GRP_HDR` | D-OPENGRP: bit 0 = a CHR$(1) header is pending on the |  |
 | `$F954` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
@@ -670,6 +670,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FBDA` | 11 B | `basic` | `OLDKEY` | the key matrix as of the last scan, 11 B, active low (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
 | `$FC17` | 1 B | `basic` | `DISKOP_A` | tenant -> main: the primitive's real A output (LIMPNT, idle) (was $EE3A), |  |
+| `$FC18` | 40 B | `basic` | `GFX_SPATN` | PUT SPRITE's pattern number (2) -- D-NTMSXPCLASH (2026-11-20): it was |  |
 | `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |
 | `$FC4A` |  | `disk` | `HIMEM` | the published BASIC ceiling (MSX2 Technical Handbook, |  |
 | `$FC4C` | 54 B | `basic` | `ZTRAP` | 18 entries * 3 B = 54 B ($FC4C..$FC81; was $EDD1..$EE06; it was |  |

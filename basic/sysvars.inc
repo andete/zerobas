@@ -832,6 +832,8 @@ GFX_WRAPF       equ     $F5E3   ; wedge wraps 0: pair S > pair E lexicographical
 ; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
 ; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
 ; (GFX_PSTK).
+CSAVEA          equ     $F942   ; published: SCANR's run start, the CLOC of its first pixel (2 B)
+CSAVEM          equ     $F944   ; published: SCANR's run start, its CMASK (1 B)
 GFX_B           equ     $FCB2   ; border colour B, RANGE-CHECKED against the mode's
                                   ; D-WSZERO S8: the reference's BRDATR (PAINT's border colour) (was $EFBD)
                                 ; domain before it is stored: 0..255 in SCREEN 2,
@@ -2345,7 +2347,12 @@ GFX_SC          equ     $F3F0           ; $F3F0: PUT SPRITE colour (2). x/y need
                                         ; they ride the arc's pinned GXPOS/GYPOS pair, which
                                         ; PUT SPRITE writes anyway (the work area keeps the
                                         ; raw, unwrapped coordinate)
-GFX_SPATN       equ     $F417           ; $F417: ...pattern number (2)
+GFX_SPATN       equ     $FC18           ; PUT SPRITE's pattern number (2) -- D-NTMSXPCLASH (2026-11-20): it was
+                                        ; $F417, the published NTMSXP (OUTDLP's "not an MSX printer" flag),
+                                        ; which the VG-8020's PUT SPRITE never writes; it is now in LINWRK
+                                        ; ($FC18, 40 B), which the VG-8020's PUT SPRITE DOES use as scratch
+                                        ; (kwram pin, putsprite). C-BIOS uses LINWRK only inside CHPUT (ESC
+                                        ; L / M, a glyph copy); none runs between the parse and the tenant.
 GFX_SSIZE       equ     $F669           ; $F669: SCREEN's sprite-size argument while a mode
                                         ; set is in flight (RG1SAV bits 1..0 hold it after) (1)
 GFX_SARGN       equ     $F662           ; $F662: how many extra SCREEN arguments have been
@@ -5118,6 +5125,8 @@ DB_CUR          equ     $F5F4   ; wave-3 detok: the DETOKBUF write cursor, held 
                                 ; RAM, the $F108.. tail of the $F01A-$F194 window (below
                                 ; DRVA_DPB $F195); idle outside a LIST/ASCII-SAVE. (2)
 ; --- interrupt trampoline (subrom trampoline slice, docs/spec-basic-subrom-trampoline.md) ----
+; 🔁 SUPERSEDED 2026-11-20 (D-SCANRSAVE): the block below describes the RAM stub that is gone; the
+; sub ROM's $0038 now goes through CLPRIM (sub/sub.asm sub_isr). History kept for its reasons.
 ; Lets a page-0 sub-ROM tenant run EI. The sub-ROM's own $0038 does `jp SUB_INT_RAM`,
 ; a RAM-resident stub (page 3 stays mapped through any page-0 switch) that maps the
 ; MAIN (BIOS) slot back into page 0, `call $0038` the real ISR (VDP ack, JIFFY++,
@@ -5135,8 +5144,10 @@ DB_CUR          equ     $F5F4   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; to $F125-$F127 with $A5 fill: scratchpad/wszero_s7_rich_bisect3.out -- with the
 ; bisect's `ret` byte first it survived, which hid it). Home: the reference's
 ; CIRCLE / PAINT scratch MINDEL..MCLFLG $F92D-$F958, idle on zerobas and C-BIOS.
-SUB_INT_RAM     equ     $F92D   ; the copied trampoline stub (<= 36 B; executes from RAM)
-INT_MAIN_PRIM   equ     $F951   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
+; 🔁 D-SCANRSAVE (2026-11-20; Joost: "measure how reference does it ram-wise and match"): the reference
+; keeps PAINT / CIRCLE / SCANR scratch at $F92D-$F958 (CSAVEA / CSAVEM at $F942 / $F944), so the
+; 36-byte RAM stub that sat there is gone.
+; The sub ROM's $0038 now goes through CLPRIM (sub/sub.asm sub_isr): no RAM of its own.
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
 ; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.

@@ -7,8 +7,8 @@
 Proves the whole trampoline path end-to-end on the REAL merged machine
 (C-BIOS_MSX1_EU_REPACK_DISK: merged repack main ROM in slot 0, zerobas-disk in
 3-1, zerobas-sub in 3-2). On boot, init_ext_roms records the sub-ROM slot and
-runs sub_int_install, which copies the RAM trampoline stub into SUB_INT_RAM and
-records the two page-0 slot configs. So by the time we inject, the trampoline is
+records the sub-ROM slot. (Since D-SCANRSAVE, 2026-11-20, nothing is installed: the sub-ROM's
+$0038 goes to sub_isr, which uses the BIOS's own CLPRIM.) So by the time we inject, the path is
 already live — this gate never sets it up itself, it exercises the shipped boot
 path.
 
@@ -24,7 +24,7 @@ Then it injects a tiny stub into RAM ($C000) and redirects the CPU to it:
 
 sub_int_selftest reads JIFFY, EI's, spins well past one 50/60 Hz frame, DI's, and
 stores the JIFFY delta in SUB_INT_DELTA. While it spins with page 0 = sub-ROM, the
-timer interrupt fires into the sub-ROM's own $0038 (`jp SUB_INT_RAM`), which maps
+timer interrupt fires into the sub-ROM's own $0038 (`jp sub_isr`, via CLPRIM), which maps
 the BIOS back into page 0, runs the real ISR (JIFFY++), and returns. So a delta
 >= 1 proves the trampoline serviced the interrupt through the paged-out BIOS. With
 the trampoline broken the machine would instead execute garbage at sub-ROM $0038

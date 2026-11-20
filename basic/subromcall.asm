@@ -24,7 +24,7 @@
 ; bytes; the CD signature / EXBRSA / CALSLT contracts are public MSX2 Technical
 ; Handbook ABIs, and the dispatch glue is own-design. See basic/PROVENANCE.md.
 
-; try_sub_slot and sub_int_install were PROMOTED out of this file and into main
+; try_sub_slot (and sub_int_install, gone since D-SCANRSAVE) were PROMOTED out of this file and into main
 ; page 1 (basic/subrom-boot.asm) to fund the KEY trap's low-region hook — see that
 ; file's header for the rule that permits it. Both are boot-time-only, so neither
 ; a page-1 tenant nor the $0038 ISR can reach them. What is left here is what must
@@ -309,97 +309,12 @@ htg_skip:
                 ret                         ; -> ISR
 
 ; ===========================================================================
-; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)
-; ===========================================================================
-; Lets a page-0 sub-ROM tenant run EI. While a page-0 tenant runs, CALSLT has
-; switched slot-0 page 0 (BIOS + the real $0038 ISR) OUT and mapped the sub-ROM
-; in, so the CPU's $0038 vector reads sub-ROM bytes — an interrupt there would
-; crash. The sub-ROM therefore carries its OWN $0038 (`jp SUB_INT_RAM`) pointing
-; at a RAM-resident stub that maps the BIOS back into page 0, `call $0038`s the
-; real ISR, maps the sub-ROM back, and RETIs. The stub lives in RAM (page 3,
-; always mapped) so the page-0 slot write never pages out its own next instruction
-; (spec §1.2). A tenant opts in simply by running EI after entry and DI before ret;
-; short tenants (ping/tokenise/detok) keep running fully-DI and are unaffected.
-;
-; CANONICAL MECHANISM. A RAM-resident inter-slot caller is exactly what the MSX
-; BIOS itself installs: RDPRIM $F380 / WRPRIM $F385 / CLPRIM $F38C are copied into
-; RAM at boot (C-BIOS main.asm) precisely so the $A8-writing code does not page
-; itself out. So this stub is the STANDARD technique, not a novel one. We do NOT
-; route through CLPRIM, though: CLPRIM restores the caller's slot with interrupts
-; in the CALLER's state, and our target — the real ISR — ends EI/RETI, so a
-; CLPRIM tail would run its slot-restore interrupts-live (an IRQ landing just after
-; page 0 flips back to sub-ROM re-enters $0038). Our stub adds the explicit `di`
-; before the switch-back that CLPRIM lacks — the adaptation an interrupt target
-; needs. So: CLPRIM is the precedent, this is CLPRIM + an interrupt-safe DI guard.
-;
-; SOURCES (allowed): $0038 maskable-interrupt vector + CLPRIM $F38C RAM inter-slot
-; primitive (published MSX contracts — CALLed/cited, never read/disassembled,
-; exactly as the disk ROM calls BIOS entries); $A8 primary + $FFFF secondary slot
-; registers — MSX2 TH slot architecture; the host-adaptive page-0 primary switch
-; mirrors our own disk/init.asm page0_ram_in. No C-BIOS code is read or relocated
-; (firewall §3g / cbios-repack-provenance.md). Own-design divergence (the DI-guarded
-; adaptation) logged in sub/PROVENANCE.md.
-
-; sub_int_template: the RAM trampoline, copied verbatim to SUB_INT_RAM. Entered
-; from the sub-ROM $0038 with IFF already cleared by the CPU. POSITION-INDEPENDENT
-; — every memory reference is absolute ($A8/$FFFF/$0038 and the fixed INT_* cells),
-; no internal branch — so the flat copy runs correctly at its RAM address. A, B,
-; C, H and L are touched around the ISR call; the real ISR saves/restores every
-; register, as any transparent maskable handler must, so B and C CARRY the
-; entry slot state across it and AF/BC/HL are preserved for the tenant.
-; 🔁 D-SUB2 stage 2a (2026-10-12): THE SWITCH-BACK RESTORES THE LIVE ENTRY STATE,
-; NOT A BOOT-TIME CONSTANT. It used to rebuild page 0 from INT_SUB_PRIM /
-; INT_SUB_SUBSL, captured once from SUBSLOT -- so a page-0 tenant in ANY other
-; subslot (a second sub ROM in 3-3) would have come back from every interrupt
-; running 3-2's bytes. Now $A8 and the slot-3 secondary register are read on
-; entry (the interrupted tenant's own slot, whatever it is) and written back
-; verbatim; the two cells and their boot-time setup are gone (-2 B RAM, and
-; sub_int_install shrinks). One assumption stays and is the host's: page 3 is
-; slot 3 (the secondary register at $FFFF is the sub ROM's) -- true on both
-; machines, where 3-0 is the RAM.
-sub_int_template:
-                push    af
-                push    bc
-                push    hl
-                ld      a,($FFFF)           ; slot-3 secondary reg (reads inverted)
-                cpl
-                ld      b,a                 ; B = the live secondary state
-                in      a,(PSLTREG)
-                ld      c,a                 ; C = the live primary state
-                ; --- page 0: sub-ROM -> MAIN (BIOS); primary field only (main
-                ;     slot is unexpanded, so no page-0 subslot to set) ---
-                and     %11111100
-                ld      hl,INT_MAIN_PRIM
-                or      (hl)
-                out     (PSLTREG),a
-                ; page 0 now = BIOS; $0038 reads the real `JP int_h`.
-                call    $0038               ; VDP ack, JIFFY++, H.TIMI/H.KEYI hooks
-                di                          ; the ISR EI'd on the way out; guard the switch-back
-                ; --- page 0: MAIN -> the interrupted sub-ROM (primary, then subslot) ---
-                ld      a,c
-                out     (PSLTREG),a
-                ld      a,b
-                ld      ($FFFF),a
-                pop     hl
-                pop     bc
-                pop     af
-                ei
-                reti                        ; resume the tenant, interrupts live
-sub_int_template_end:
-
-; --- RND_SEED tail-slack guard (math pack slice 2e, docs/spec-basic- -------
-; mathpack-slice2.md §15.3). RND_SEED USED TO live in the unused tail of the
-; SUB_INT_RAM reservation above ($F142..$F148, inside the conservative 64-byte
-; reservation that runs $F10A..$F149), and this assert was bounded by it.
-; 🔁 D-ADDR29 RNDX (2026-09-25) moved the seed to the published RNDX+1
-; ($F858), so the bound is now the next CLAIMED cell, INT_MAIN_PRIM ($F14A) --
-; bounding it by RND_SEED would have let the stub grow ~1.8 KB unchecked, the
-; exact "derived constant falsified from another file" shape. The assert still
-; makes any growth that would collide FAIL THE BUILD loudly (an undefined
-; symbol, pasmo's own diagnostic). 36 <= 64 since D-SUB2 stage 2a (2026-10-12).
-    IF (sub_int_template_end - sub_int_template) > (INT_MAIN_PRIM - SUB_INT_RAM)
-                db      INT_TRAMPOLINE_GREW_INTO_INT_MAIN_PRIM__SHRINK_OR_MOVE
-    ENDIF
+; The page-0 interrupt path (docs/spec-basic-subrom-trampoline.md): the sub ROM's own
+; $0038 -> sub/sub.asm sub_isr -> the BIOS's CLPRIM ($F38C) -> basic/islands.asm
+; sub_isr_main (the real ISR, then DI). The RAM stub that lived here, copied to $F92D at
+; boot, is gone -- D-SCANRSAVE (2026-11-20; Joost: "measure how reference does it ram-wise
+; and match"): the reference keeps PAINT / CIRCLE / SCANR scratch at $F92D-$F958 (CSAVEA /
+; CSAVEM at $F942 / $F944).
 
 ; --- fch_park (D-ASAVECHAN, 2026-10-03): park the live file channel --------
 ; FCH_ACTIVE := 0, "no channel live", for the verbs that stream a file of their

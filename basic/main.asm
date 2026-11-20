@@ -421,6 +421,17 @@ bgi_nc:         xor     a
 ; channel BASIC's PRDEST / PRDEV name; zerobas's own LPRINT never sets PRTFLG). The
 ; printer arm is bios_outdlp (basic/biosfnk.asm); AF is restored before either arm.
 ; Here, at the low region's end: biosfnk.asm's pad in front of the $3283 pin is 9 B.
+; scan_isbd -- the paint tenant's border test (sub/paintbios.asm, D-SCANRSAVE 2026-11-20): Z iff the
+; pixel at the cursor is the border colour (GFX_B / BDRATR); HL / DE / BC kept. Here, in main's low
+; region -- mapped while a page-1 tenant runs -- for the 10 B the tenant needed for CSAVEA / CSAVEM.
+scan_isbd:
+                call    $011D               ; READC
+                push    hl
+                ld      hl,GFX_B
+                cp      (hl)
+                pop     hl
+                ret
+
 outdo_dest:
                 push    af
                 ld      a,(PRTFLG)
@@ -578,8 +589,8 @@ __MEAS_LOW_END:
 ; slots for "AB" ROMs (e.g. zerobas-disk) and CALSLTs their INIT before the REPL.
                 include "basic/initext.asm"
 
-; The BOOT-TIME half of the zerobas-sub plumbing (defines `try_sub_slot`,
-; `sub_int_install`) — PROMOTED here out of the page-0 low region to fund the KEY
+; The BOOT-TIME half of the zerobas-sub plumbing (defines `try_sub_slot`; `sub_int_install`
+; went with the RAM stub, D-SCANRSAVE) — PROMOTED here out of the page-0 low region to fund the KEY
 ; trap's $0038-path hook, which cannot leave it.
                 include "basic/subrom-boot.asm"
 

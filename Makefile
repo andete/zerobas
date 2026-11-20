@@ -1095,7 +1095,7 @@ subrom-acceptance: $(SUB_ROM)
 
 # --- Interrupt-trampoline gate (subrom trampoline slice) -----------------------
 # Proves a page-0 sub-ROM tenant can run EI: the shipped merged machine installs
-# the RAM interrupt trampoline at boot (init_ext_roms -> sub_int_install), then the
+# the page-0 interrupt path (sub/sub.asm sub_isr -> CLPRIM -> sub_isr_main; D-SCANRSAVE), then the
 # probe CALSLTs the self-test tenant (index 3), which spins under EI and returns the
 # JIFFY delta serviced through the sub-ROM's own $0038. Asserts delta >= 1. Depends
 # on repack-machine (the C-BIOS_MSX1_EU_REPACK_DISK machine with the sub-ROM in 3-2).

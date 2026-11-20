@@ -227,6 +227,7 @@ Declared UNSTABLE on the reference itself (4 cases: XI7 1, XI7 2, XI7 3, XI7 4):
 
 | TODO item | rules zerobas fails |
 |---|---|
+| **D-TRGFLGISR** (zerobas's interrupt rewrites TRGFLG ($F3E8) on every key scan with the space bar's bit only -- $01 idle, where the published layout keeps the four joystick-trigger bits too ($F1 idle); a scan that lands inside case XI 1's window changes the cell, which the VG-8020's window leaves as it was) | R-IO-PLAY |
 | **D-INITIOVCB** (the voice control blocks are not rewritten; they hold 0 after boot) | R-IO-VCB, R-IO-SEED, R-IO-VCB3, R-IO-VCB4, R-IO-VCB7, R-IO-MP / R-IO-PARSE / R-IO-MP5 (through the blocks' cells) |
 
 ## Open (not measured)

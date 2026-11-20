@@ -153,8 +153,6 @@ ier_pnext:
                 inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      ier_ploop
 ier_done:
-                call    sub_int_install     ; install the page-0 EI trampoline if a
-                                            ; sub-ROM was recorded (subrom trampoline)
                 call    play_install        ; install the PLAY servicer H.TIMI seam
                                             ; (audio Slice 3; H.TIMI is C9-free here)
     IF TRAPS_T3
@@ -765,6 +763,14 @@ bgp_l3n:
                 inc     c
                 call    BGP_RIGHTC
                 djnz    bgp_l3b
+                ret
+
+; sub_isr_main -- the sub ROM's page-0 interrupt target (sub/sub.asm sub_isr, D-SCANRSAVE
+; 2026-11-20), reached through CLPRIM with main's page 0 mapped: the real ISR, then DI, so
+; CLPRIM's switch back to the sub ROM runs with interrupts off (the ISR ends EI / RET).
+sub_isr_main:
+                call    $0038
+                di
                 ret
 
 

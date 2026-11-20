@@ -31,9 +31,6 @@
 ;     --switchers note: the pin is on the code that performs the switch, which a
 ;     call-graph walk cannot see).
 ;   * htimi_guard — literally the ISR path.
-;   * sub_int_template — the RAM trampoline BODY. It is copied to SUB_INT_RAM and
-;     executed from there, so its own residence is free; it is left beside the
-;     guard it belongs to rather than moved for 72 B this slice does not need.
 ;
 ; Clean-room: nothing here is derived from a disassembly or byte-copy of any
 ; reference BIOS/BASIC ROM; the routines are unchanged from their reviewed form
@@ -70,29 +67,6 @@ try_sub_slot:
 
 ; (sub_first, which records the sub-ROM before the boot scan, is at the end of
 ; basic/missing.asm: the stretch here, in front of the $475A pin, is full.)
-
-; sub_int_install: copy the trampoline template into RAM and record the main
-; page-0 primary. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
-; the boot DI, only when a sub-ROM was found. Clobbers AF/BC/DE/HL.
-; The `ldir` source (sub_int_template) stays in the low region — a plain in-slot
-; read under the fully-mapped boot configuration, the same as any page-1 routine
-; calling a low-region one.
-sub_int_install:
-                ld      a,(SUBSLOT_OK)
-                or      a
-                ret     z                   ; no sub-ROM -> no trampoline to install
-                ld      hl,sub_int_template
-                ld      de,SUB_INT_RAM
-                ld      bc,sub_int_template_end - sub_int_template
-                ldir                        ; copy the stub into page-3 RAM
-                ; MAIN page-0 primary field (page 0 is the BIOS right now).
-                in      a,(PSLTREG)
-                and     %00000011
-                ld      (INT_MAIN_PRIM),a
-                ; D-SUB2 stage 2a (2026-10-12): the sub ROM's page-0 primary and
-                ; subslot fields are no longer recorded here -- the trampoline
-                ; reads the interrupted tenant's live slot state on entry.
-                ret
 
     IF TRAPS_T3
 ; zkey_install: point the C-BIOS fn-key hook at zkey_hook. Called once at boot

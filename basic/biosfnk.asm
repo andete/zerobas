@@ -61,8 +61,7 @@ bios_calbas:
 ; not an MSX one (NTMSXP, $F417, not 0) the $01 is held back -- A 1, F $42 -- and the next code,
 ; if $40-$5F, goes out as one space (A $20), any other as it is. F is LPTOUT's on the byte sent
 ; (its AND flags), as on entry after a TAB. The held $01 is bit 1 of GRP_HDR (bit 0 is the GRP:
-; channel's own header) -- no new RAM; a PRINT # to GRP in between clears it. (zerobas's PUT
-; SPRITE uses $F417 as GFX_SPATN: D-NTMSXPCLASH.)
+; channel's own header) -- no new RAM; a PRINT # to GRP in between clears it.
 NTMSXP          equ     $F417
 bios_outdlp:
                 push    hl

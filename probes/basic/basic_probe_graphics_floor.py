@@ -6,8 +6,8 @@
 
 docs/spec-basic-graphics-g1.md §7. Runs on the shipped merged machine
 (C-BIOS_MSX1_EU_REPACK_DISK: merged repack main ROM in slot 0, zerobas-disk in
-3-1, zerobas-sub in 3-2). On boot, init_ext_roms installs the RAM interrupt
-trampoline (sub_int_install), so a page-0 tenant can already run EI.
+3-1, zerobas-sub in 3-2). The sub-ROM's $0038 (sub_isr, through the BIOS's CLPRIM) lets
+a page-0 tenant run EI.
 
 The probe injects a stub at $C000 and redirects the CPU into it:
 

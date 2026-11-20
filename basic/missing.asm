@@ -828,7 +828,8 @@ lha_kept:
 ; INIT -- which a game never returns from -- found SUBSLOT_OK 0, so BEEP and the key
 ; line of ERAFNK / DSPFNK did nothing (probes/bios/biosl/b5sound.asm). All our machines
 ; have the sub-ROM in the EXPANDED slot 3 (the 2026-07-11 slot map); the scan itself
-; still records one found anywhere else, and calls sub_int_install again (idempotent).
+; still records one found anywhere else. (No trampoline install since D-SCANRSAVE: the sub
+; ROM's $0038 goes through the BIOS's own CLPRIM.)
 sub_first:
                 ld      a,1                 ; D-BOOTSCAN / B1: the key scan from here on
                 ld      (SCNCNT),a          ; (interp.asm's note, before init_ext_roms)
@@ -840,5 +841,4 @@ sub_first:
                                             ; writer runs from the interrupt yet.
                 ld      a,$8B               ; slot 3-2
                 ld      (SCAN_SLOT),a
-                call    try_sub_slot
-                jp      sub_int_install
+                jp      try_sub_slot

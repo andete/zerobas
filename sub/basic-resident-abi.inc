@@ -20,14 +20,16 @@ arga_pack_fac equ 0331CH
 widen_fac_to equ 0371BH
 widen_uint_to equ 039B7H
 flt_to_int16 equ 02E80H
-vars_reset equ 03C12H
+vars_reset equ 03BEEH
 penderr_set equ 02827H
 flt_fmt equ 02DBEH
-rl_vpeek equ 03AF4H
-rl_vpoke equ 03AFFH
-rl_vaddr equ 03B0CH
-rl_lastrow equ 03B33H
+rl_vpeek equ 03AD0H
+rl_vpoke equ 03ADBH
+rl_vaddr equ 03AE8H
+rl_lastrow equ 03B0FH
 st_go equ 001F6H
+sub_isr_main equ 0094AH
+scan_isbd equ 03EADH
 
 ; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00168H   ; main's chrgtr
@@ -65,7 +67,7 @@ p0_upcase equ 0422BH   ; main's upcase
 p0_eval equ 04A8AH   ; main's eval
 p0_eval_byte_arg equ 044A1H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 0423BH   ; main's stmt_bare_end
-p0_mxf_require_end equ 03DB0H   ; main's mxf_require_end
+p0_mxf_require_end equ 03D8CH   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
 p0_fch_check_d equ 06F18H   ; main's fch_check_d
 p0_fch_check_nz equ 06F29H   ; main's fch_check_nz
@@ -75,7 +77,7 @@ p0_fch_do_close_ch equ 06F33H   ; main's fch_do_close_ch
 p0_fch_close_all equ 06F67H   ; main's fch_close_all
 p0_fopen_cross equ 06A32H   ; main's fopen_cross
 p0_fatprim_op equ 063FDH   ; main's fatprim_op
-p0_cas_capture_cut equ 03DD4H   ; main's cas_capture_cut
+p0_cas_capture_cut equ 03DB0H   ; main's cas_capture_cut
 p0_cas_open_match equ 0685FH   ; main's cas_open_match
 p0_cas_bufp_set equ 0686EH   ; main's cas_bufp_set
 p0_cas_ascii_setup equ 068ACH   ; main's cas_ascii_setup
@@ -88,11 +90,11 @@ p0_run_prog_top equ 0681FH   ; main's run_prog_top
 p0_disk_prog_load equ 068F5H   ; main's disk_prog_load
 p0_sv_tenant equ 06A0DH   ; main's sv_tenant
 p0_bload_cont equ 06779H   ; main's bload_cont
-p0_fch_park equ 03AF0H   ; main's fch_park
+p0_fch_park equ 03ACCH   ; main's fch_park
 p0_list_all equ 062E3H   ; main's list_all
 p0_cas_ascii_finish equ 069A7H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 06831H   ; main's cas_capture_name
-p0_cas_name_cut equ 03DD7H   ; main's cas_name_cut
+p0_cas_name_cut equ 03DB3H   ; main's cas_name_cut
 p0_req_comma equ 02DB6H   ; main's req_comma
 p0_check_expr_errors equ 04369H   ; main's check_expr_errors
 p0_key_drain equ 05AFDH   ; main's key_drain
@@ -109,7 +111,7 @@ p0_print_msg equ 0763FH   ; main's print_msg
 p0_err_verify equ 0688CH   ; main's err_verify
 p0_exa_loop equ 076BBH   ; main's exa_loop
 p0_le_call_op equ 06EADH   ; main's le_call_op
-p0_print_string equ 04534H   ; main's print_string
+p0_print_string equ 0451CH   ; main's print_string
 p0_list_num equ 0631DH   ; main's list_num
 p0_print_in_hl equ 07615H   ; main's print_in_hl
 p0_rn_undefined equ 001B8H   ; main's rn_undefined

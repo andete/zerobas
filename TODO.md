@@ -16792,7 +16792,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sound the same, so only the RAM a program PEEKs differs (TIER 6). The page does not claim it. A PLAY with other O / L
       / T / V / M, then INITIO, then PLAY "C", compared on both machines, would settle it (TIER 3 if it differs). Priced
       2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
-      -- not cheap; match only if a real program reads the blocks.
+      -- not cheap; match only if a real program reads the blocks.      🏗️ **RULED (Joost, 2026-11-20): LEAVE FILED** (with D-GICINIVCB).
+
 
 - [ ] **D-CALSLTSTACK — A CALSLT / CALLF TARGET RUNS 10 BYTES BELOW THE CALLER'S SP ON ZEROBAS; 6 ON THE VG-8020 AND CF-3300 (14 FOR THE CF-3300'S EXPANDED RAM)**
       🎚️ TIER 6 — every edge (a target, or an interrupt in it, that runs within a few bytes of the stack's bottom;
@@ -16829,13 +16830,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ld a,b / pop bc / scf` leaves BREAKX's flags; F := $01 with A kept costs bytes in the tape body. Priced when
       picked up.
 
-- [ ] **D-NTMSXPCLASH — ZEROBAS'S PUT SPRITE USES THE PUBLISHED NTMSXP CELL ($F417) AS SCRATCH**
+- [x] **D-NTMSXPCLASH — ZEROBAS'S PUT SPRITE USES THE PUBLISHED NTMSXP CELL ($F417) AS SCRATCH**
       🎚️ TIER 6 — every edge (a machine-code program calling OUTDLP after BASIC's PUT SPRITE; filed 2026-11-19).
       🤖 **AUTONOMOUS** — basic/sysvars.inc GFX_SPATN equ $F417 (2 B: PUT SPRITE's pattern number; basic/graphics.asm,
       sub/graphics.asm) is NTMSXP, the published "printer is not an MSX one" flag OUTDLP reads (docs/bios/OUTDLP.md
       R-OD-PRN). After a PUT SPRITE with a pattern number not 0, OUTDLP treats the printer as a non-MSX one and holds
       a graphic character's $01. Found writing D-OUTDLPGRAPH. Fixing it moves GFX_SPATN -- a RAM layout change:
-      Joost's ruling.
+      Joost's ruling.      🏗️ **RULED (Joost, 2026-11-20): "measure how reference does it ram-wise and match".** Measure where the VG-8020 keeps
+      PUT SPRITE's working values (which cells a PUT SPRITE changes, $F417 untouched?), then move GFX_SPATN to match.      📏 **MEASURED 2026-11-20** (kwram's pin, putsprite / putsprite_b): the VG-8020's PUT SPRITE writes nothing at
+      $F417-$F418; zerobas writes GFX_SPATN there. Next: move GFX_SPATN (2 B) off NTMSXP to a cell zerobas owns.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED.** GFX_SPATN moved from $F417 (the published NTMSXP) to $FC18, in LINWRK -- the
+      40 B scratch the VG-8020's own PUT SPRITE writes (kwram pin, putsprite); C-BIOS uses LINWRK only inside CHPUT, which
+      never runs between the pattern's parse and the sprite tenant. The first choice, zerobas's free window $F023, was
+      REFUSED by ram-map-check: it is program RAM on the diskless build ([TXTMAX, TXTMAX_NODISK)). kwram --only
+      putsprite: $F417 / $F418 no longer zerobas-only; $FC18 / $FC19 written by both (the values differ, as scratch).
+      graphics-acceptance, sprite-trap-acceptance, spec-live OUTDLP / OUTDO green.
+
+- [ ] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
+      🎚️ TIER 6 — every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20).
+      🤖 **AUTONOMOUS** — C-BIOS's key-scan interrupt (src/main.asm, its own "TODO read joystick triggers and space for
+      TRGFLG") stores NOT GTTRIG(0) AND 1: bit 0 only, so the idle value is $01 -- and bits 4-7, the published trigger
+      bits (1 = released), read 0 = pressed. Found 2026-11-20 by spec-live: D-SCANRSAVE's commit removed the boot-time
+      trampoline install, the boot got shorter, and a key scan now lands inside docs/bios/INITIO.md case XI 1's window
+      and changes the cell, where the VG-8020's window leaves it (R-IO-PLAY, listed under this item). The VG-8020's
+      TRGFLG VALUE is not yet measured (a probe reading it idle and with each trigger held is the first step).
+
+
 
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
@@ -16852,7 +16872,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       VG-8020's bytes ($88 volume, $FF envelope at offsets 18-19) are NOT zerobas PLAY's encoding (VCX_VOLUME 0..15,
       VCX_ENVSH 0..15 + the $10 env bit; tempo 0 is its reseed sign). Matching them means PLAY adopts the VG-8020's
       encoding -- BASIC's PLAY engine, outside the current focus -- so it waits for Joost (with D-INITIOVCB). BEEP's
-      R-BP-RESET is listed here too.
+      R-BP-RESET is listed here too.      🏗️ **RULED (Joost, 2026-11-20): LEAVE FILED.** (Matching the bytes means PLAY adopting the VG-8020's encoding.)
+
 
 
 - [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
@@ -16865,11 +16886,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first (sub page 1 was 1 B free on 2026-11-19, so the fix also needs room).
 
 
-- [ ] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
+- [x] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.      ⛔ BLOCKED 2026-11-19 ON A RAM RULING: CSAVEA / CSAVEM ($F942 / $F944) are inside zerobas's sub-ROM interrupt
       trampoline (basic/sysvars.inc SUB_INT_RAM, $F92D-$F950: 36 B of code that runs from RAM -- D-WSZERO slice 7 moved
-      it into the reference's idle CIRCLE / PAINT scratch). Writing them means moving the trampoline: Joost's call.
+      it into the reference's idle CIRCLE / PAINT scratch). Writing them means moving the trampoline: Joost's call.      🏗️ **RULED (Joost, 2026-11-20): "measure how reference does it ram-wise and match".** Measure which work-area cells the
+      VG-8020 uses for what around $F92D-$F958 (SCANR's CSAVEA / CSAVEM, CIRCLE / PAINT's scratch), then move zerobas's
+      interrupt trampoline (SUB_INT_RAM) to RAM the reference does not use, so CSAVEA / CSAVEM mean what they mean there.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (the ruling: match the reference's RAM use). The measurement: kwram's pin,
+      both machines' work-area writes per keyword -- the VG-8020's PAINT writes $F92D-$F930, $F942-$F944 (CSAVEA /
+      CSAVEM) and $F94A-$F955, its CIRCLE $F931-$F941 / $F945-$F948 (scratchpad/refwrites_union.py, the reference's
+      write union across all 300 rows, REFWRITES_union.out). No published MSX1 gap and no zerobas FREE-RAM window holds
+      36 B, and $F380-$F399 is full (RDPRIM / WRPRIM / CLPRIM, 26 B). Joost asked whether CLPRIM is not that routine:
+      it is. The stub went: the sub ROM's $0038 -> sub/sub.asm sub_isr (32 B, in the $0010-$0037 pad) -> CLPRIM (via
+      p0cb) -> basic/islands.asm sub_isr_main (`call $0038 / di / ret`: the DI makes CLPRIM switch back with
+      interrupts off, spec 1.4a). An ADVERSARIAL REVIEW before writing (a fresh agent) found three must-fixes, all
+      taken: save AF' and IX (p0cb's callers hold live AF'), enter CLPRIM by `jp` (p0cb), and keep restoring slot 3's
+      secondary register (CLPRIM restores only the primary). No RAM; low region +36 B (the template and installer).
+      Then SCANR stores CSAVEA / CSAVEM at the run's start (sub/paintbios.asm; its border test moved to main's low
+      region, scan_isbd, for the room). Gates: subrom-inttest (JIFFY delta 28, PASS), graphics-floor, wszero (74/74);
+      spec-live: SCANR holds every rule.
+
+- [ ] **D-PAINTRAMCLASH — THREE MORE ZEROBAS CELLS SIT IN THE REFERENCE'S PAINT SCRATCH ($F94F-$F955)**
+      🎚️ TIER 6 — every edge / TIER 4 RAM usage (filed 2026-11-20, from D-SCANRSAVE's measurement).
+      🤖 **AUTONOMOUS** — the VG-8020's PAINT writes $F94A-$F955 (kwram pin, paintkw); zerobas keeps SUB_INT_DELTA
+      ($F952, the self-test tenant only), GRP_HDR ($F953: the GRP: channel's header bit, and OUTDLP's held $01 in bit 1)
+      and STRPTR ($F954-$F955) there. Joost's ruling for D-SCANRSAVE / D-NTMSXPCLASH ("measure how reference does it
+      ram-wise and match") covers them in spirit; moving them is a RAM-layout change: confirm scope first.
+
 
 
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
