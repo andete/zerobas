@@ -20,7 +20,7 @@ It returns with interrupts **on**, whatever they were before.
 It leaves the VDP reading the next byte: a read of port $98 right after it returns the byte at
 HL + 1.
 
-zerobas reads the same bytes; its F lacks the H flag (below).
+zerobas does the same, F included (D-VRAMF, 2026-11-20, cbios-repack/vdp-calls.patch).
 
 ## The specification
 
@@ -72,9 +72,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-VRAMF** (zerobas's F is that value's flags without H: $04 / $2C / $44 / $00 / $08 / $20 where the VG-8020 has $14 / $3C / $54 / $10 / $18 / $30) | R-RV-F |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

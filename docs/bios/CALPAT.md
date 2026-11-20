@@ -18,7 +18,7 @@ It returns the size in A and the offset in DE. BC, IX, IY and the interrupt stat
 Its F: H, C and bits 5 / 3 from the addition; Z set exactly for 8 x 8 sprites; S and P/V clear,
 whatever F was on entry.
 
-zerobas returns the same address, A and DE; its F keeps the entry's S, Z and P/V (below).
+zerobas does the same, F included (D-CALPATF, 2026-11-20, cbios-repack/vdp-calls.patch).
 
 ## The specification
 
@@ -63,9 +63,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-CALPATF** (zerobas's F keeps S, Z and P/V from entry; the VG-8020's has Z set exactly for 8 x 8 sprites and S, P/V clear) | R-CP-F |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

@@ -19,7 +19,7 @@ the entry HL + BC. IX and IY are kept. It returns with interrupts **on**, whatev
 It leaves the VDP writing after the copied span: a byte written to port $98 right after it lands at
 DE + BC. The source RAM is not changed.
 
-zerobas copies the same bytes and leaves the same registers; its F differs (below).
+zerobas does the same, F included (D-VRAMF, 2026-11-20, cbios-repack/vdp-calls.patch).
 
 ## The specification
 
@@ -69,9 +69,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-VRAMF** (zerobas returns F $42 or $43 -- Z and N, with or without the carry -- where the VG-8020 returns $44, Z and P/V) | R-VM-REGS |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

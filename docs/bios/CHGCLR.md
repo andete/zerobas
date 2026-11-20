@@ -22,8 +22,8 @@ SPDX-License-Identifier: 0BSD
 Colours over 15 are used as they are, and FORCLR is shifted, not rotated ($1F with BAKCLR 0 gives
 $F0). It writes nothing else and returns with interrupts **on**.
 
-zerobas sets the same registers and VRAM, except for SCRMOD $81 and $FF, which it treats as graphics
-modes. It returns other registers: DE on every path, F on the SCREEN 0 / 1 paths and where the entry
+zerobas sets the same registers and VRAM, SCRMOD $81 and $FF included (D-CHGCLRMODE, 2026-11-20, cbios-repack/vdp-calls.patch). It
+returns other registers: DE on every path, F on the SCREEN 0 / 1 paths and where the entry
 carry is set, A and HL outside SCREEN 0 / 1 (below).
 
 ## The specification
@@ -80,7 +80,6 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-CHGCLRMODE** (SCRMOD $81 and $FF: zerobas sets R#7 to BDRCLR and returns the other path's A, F and HL; the VG-8020 takes the SCREEN 0 path) | R-CC-R7, R-CC-REGS |
 | **D-CLRREGS** (zerobas returns another DE everywhere -- D = SCRMOD - 1, E the colour byte; another F on the SCREEN 0 / 1 paths and, in the other modes, where the entry carry is set; and outside SCREEN 0 / 1 A = BDRCLR and HL $F3EB) | R-CC-REGS |
 
 ## Open (not measured)

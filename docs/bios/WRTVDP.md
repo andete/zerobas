@@ -18,9 +18,8 @@ the bits each register has (R#2's low four, for example).
 It returns with A = B, B = 0, C kept and F $A0 or $A4 (P/V set when C OR $80 has an even number of 1
 bits), and with interrupts **on**, whatever they were before. DE, HL, IX and IY are kept.
 
-zerobas does all of it the same for the C values measured below $80 (0-$28). For C $80 and $FF it
-differs: C = $80 writes B into RG0SAV and returns C = 0, and C = $FF leaves $F4DE alone and returns
-$7F, as if it used C AND $7F (below).
+zerobas does all of it the same, C $80 and $FF included (D-WRTVDPC, 2026-11-20, cbios-repack/vdp-calls.patch: C kept, B stored at
+RG0SAV + C).
 
 ## The specification
 
@@ -73,9 +72,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-WRTVDPC** (for C $80 and up zerobas takes C AND $7F: C = $80 writes B into RG0SAV itself, not $F45F, and returns C = 0; C = $FF does not write $F4DE and returns $7F) | R-WV-SAV, R-WV-ABC |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

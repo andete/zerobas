@@ -16881,20 +16881,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
       VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
 
-- [ ] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
+- [x] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
       🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CHGCLR.md R-CC-R7 ([`XCLR_run5.out`](scratchpad/XCLR_run5.out), cases 39 and 48): the
       VG-8020 takes the SCREEN 0 path when SCRMOD - 1 is negative (SCRMOD $81 and $FF measured: R#7 := (FORCLR x 16)
       OR BAKCLR); zerobas sets the border colour there.
       Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
+      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
+      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
+      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
+      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
+      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
+      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
+      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
-- [ ] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
+- [x] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
       🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV
       copies -- BASIC's VDP() reads them; or RG0SAV with bits 2-7 set; filed 2026-11-18). The VDP itself agrees.
       🤖 **AUTONOMOUS** — docs/bios/SETTXT.md / SETT32.md / SETGRP.md / SETMLT.md R-xx-SHADOW, and SETGRP / SETMLT
       R-xx-R01 ([`XSET_run4.out`](scratchpad/XSET_run4.out)): the VG-8020 stores each cell shifted right (TXTNAM
       $3D23 -> RG2SAV $0F, $FFFF -> $3F); zerobas stores $CF / $FF (rotated, not shifted). SETGRP: RG0SAV OR $02 there,
       (RG0SAV AND $F3) OR $02 on zerobas; SETMLT: RG0SAV AND $01 there, AND $F1 on zerobas. Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
+      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
+      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
+      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
+      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
+      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
+      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
+      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
 - [ ] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
@@ -16902,26 +16918,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       returns A = the new RG6SAV, F = $00, DE = 0 ($7F03 for SETGRP), HL = the address past the mode's five cells;
       zerobas returns F $42 (or $00), DE = that address, HL = 0 or $FFE0, and another A. Priced when picked up.
 
-- [ ] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
+- [x] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
       🎚️ TIER 6 — every edge (F is not published; a caller testing it; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run3.out`](scratchpad/XSPR_run3.out)): the VG-8020's
       CALPAT returns H, C and bits 5 / 3 from the addition, Z set exactly for 8 x 8 sprites, S and P/V clear,
       whatever F was on entry; zerobas's keeps the entry's S, Z and P/V. HL, A and DE agree. Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
+      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
+      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
+      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
+      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
+      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
+      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
+      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
-- [ ] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
+- [x] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
       🎚️ TIER 6 — every edge (F is not published for any of them; a caller testing it; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/RDVRM.md R-RV-F, FILVRM.md R-FV-F, LDIRMV.md R-MV-REGS, LDIRVM.md R-VM-REGS
       ([`XVRAM_run4.out`](scratchpad/XVRAM_run4.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
       leaves them (H set), zerobas's without H ($04 for $14); FILVRM keeps F there, zerobas returns $42 / $43;
       LDIRMV / LDIRVM return $44 there, $42 / $43 on zerobas. The bytes, A and the other registers agree.
       Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
+      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
+      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
+      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
+      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
+      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
+      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
+      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
-- [ ] **D-WRTVDPC — WRTVDP WITH C $80 AND UP WRITES THE WRONG WORK-AREA BYTE ON ZEROBAS (C AND $7F)**
+- [x] **D-WRTVDPC — WRTVDP WITH C $80 AND UP WRITES THE WRONG WORK-AREA BYTE ON ZEROBAS (C AND $7F)**
       🎚️ TIER 6 — every edge (a caller passing a register number of $80 or more to WRTVDP; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/WRTVDP.md R-WV-SAV / R-WV-ABC ([`XVDPREG_run4.out`](scratchpad/XVDPREG_run4.out)):
       the VG-8020 stores B at RG0SAV + C for every C ($F45F for C $80, $F4DE for $FF) and returns C unchanged;
       zerobas acts as if it took C AND $7F -- C = $80 overwrites RG0SAV itself with B and returns C = 0, C = $FF
       leaves $F4DE alone and returns $7F (where it writes then is not recorded). The VDP register written (C AND 7) and F agree. Priced when picked up.
+      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
+      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
+      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
+      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
+      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
+      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
+      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
+      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
 
 - [ ] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
       🎚️ TIER 6 — every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed

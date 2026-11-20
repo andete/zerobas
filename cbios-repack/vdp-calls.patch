@@ -1,0 +1,110 @@
+diff --git a/src/video.asm b/src/video.asm
+index 69a2437..57cdcca 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -61,8 +61,9 @@ enascr:
+ ; Output   : RG0SAV(F3DF)-RG7SAV(F3E6)
+ ; Registers: AF, BC
+ wrtvdp:
+-                di
+-                res     7,c             ; fixes High Way Star
++                di                      ; zerobas D-WRTVDPC: C is kept and B stored at RG0SAV + C for any C, as the
++                                        ; VG-8020 (WRTVDP.md R-WV-SAV / R-WV-ABC); `res 7,c` ("fixes High
++                                        ; Way Star") made C $80 overwrite RG0SAV itself
+                 ld      a,b
+                 out     (VDP_ADDR),a
+                 ld      a,c
+@@ -110,8 +111,8 @@ rdvrm:
+                 call    setrd
+         IF VDP = TMS99X8
+                 ; wait (at least) 29 t-states between VRAM accesses
+-                or      0
+-        ENDIF
++                and     $FF             ; zerobas D-VRAMF: F as an AND leaves it on (H AND $3F), H set,
++        ENDIF                           ; as the VG-8020 (RDVRM.md R-RV-F); `or 0` cleared H. Same 7 T.
+                 in      a,(VDP_DATA)
+                 ret
+ 
+@@ -210,6 +211,7 @@ filvrm_cont:
+                 ;       Penguin Adventure can hang on boot if the interrupt
+                 ;       comes just after our RET, which is certain if the
+                 ;       memory block written is large enough.
++                push    af              ; zerobas D-VRAMF: F kept, as the VG-8020 (FILVRM.md R-FV-F)
+ filvrm_lp:
+                 out     (VDP_DATA),a
+         IF VDP = TMS99X8
+@@ -221,6 +223,7 @@ filvrm_lp:
+         ENDIF
+                 dec     c
+                 jr      nz,filvrm_lp
++                pop     af
+                 ret
+ 
+ ;--------------------------------
+@@ -270,6 +273,7 @@ ldirmv_lp:
+                 ld      c,b             ; BC := 0
+         ENDIF
+                 ex      de,hl           ; HL := VRAM start, DE := memory end
++                or      a               ; zerobas D-VRAMF: F $44 (A is 0 here), as the VG-8020 (LDIRMV.md R-MV-REGS)
+                 ret
+ 
+ ;--------------------------------
+@@ -322,6 +326,7 @@ ldirvm_lp:
+                 ; Note: Without this, Quinpl shows glitches.
+                 ; TODO: Investigate why.
+                 ex      de,hl
++                or      a               ; zerobas D-VRAMF: F $44 (A is 0 here), as the VG-8020 (LDIRVM.md R-VM-REGS)
+                 ret
+ 
+ ;----------------------------------
+@@ -465,8 +470,9 @@ chgclr:
+                 ; the border colour in all other screens.
+                 ld      a,(SCRMOD)
+                 ld      d,a
+-                or      a
+-                jr      z,chgclr_r7
++                dec     a               ; zerobas D-CHGCLRMODE: the SCREEN 0 path when SCRMOD - 1 is negative
++                rla                     ; (0, $81-$FF), as the VG-8020 (CHGCLR.md R-CC-R7)
++                jr      c,chgclr_r7
+                 inc     hl
+                 ld      b,(hl)                  ; B := BDRCLR
+ chgclr_r7:
+@@ -886,8 +892,7 @@ sett32:
+ ; Registers: All
+ setgrp:
+                 ld      a,(RG0SAV)
+-                and     $F1             ; MASK 11110001
+-                or      $02             ; M3 = 1
++                or      $02             ; M3 = 1 -- zerobas D-SETSHADOW: RG0SAV's other bits kept, as the VG-8020
+                 ld      b,a
+                 ld      c,0
+                 call    wrtvdp          ; write VDP R#0
+@@ -924,7 +929,7 @@ setgrp:
+ ; Registers: All
+ setmlt:
+                 ld      a,(RG0SAV)
+-                and     $F1
++                and     $01             ; zerobas D-SETSHADOW: bit 0 only, as the VG-8020 (SETMLT.md R-MT-R01)
+                 ld      b,a
+                 ld      c,0
+                 call    wrtvdp
+@@ -985,7 +990,8 @@ set_base_address:
+ 
+                 ; Shift it to left in register A. After this A contains the
+                 ; converted address.
+-set_base_address_loop:
++                xor     a               ; zerobas D-SETSHADOW: a plain shift, as the VG-8020 (SETTXT.md
++set_base_address_loop:                  ; R-TX-SHADOW ...); A still held the address's low byte
+                 add     hl,hl
+                 adc     a,a
+                 djnz    set_base_address_loop
+@@ -1027,7 +1033,8 @@ calpat:
+                 add     hl,hl
+ calpat_8:       ex      de,hl
+                 ld      hl,(PATBAS)
+-                add     hl,de
++                cp      8               ; zerobas D-CALPATF: Z exactly for 8 x 8 (A = gspsiz's 8 / 32), S and P/V
++                add     hl,de           ; clear; H, C and bits 5 / 3 from the add (CALPAT.md R-CP-F)
+                 ret
+ 
+ ;------------------------------

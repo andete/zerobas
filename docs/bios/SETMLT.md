@@ -21,7 +21,7 @@ It leaves SCRMOD and the cells alone, returns A = the new RG6SAV, F = $00, BC = 
 interrupts **on**.
 
 zerobas programs the VDP the same and leaves VRAM, SCRMOD and the interrupts as the VG-8020 does.
-It differs in the shadow bytes it stores and in RG0SAV, and in the registers it returns (below).
+It stores the same shadow bytes and RG0SAV (D-SETSHADOW, 2026-11-20, cbios-repack/vdp-calls.patch); it returns other registers (below).
 
 ## The specification
 
@@ -78,7 +78,6 @@ record:
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-SETSHADOW** (zerobas stores the cells' shifted values with junk in RG2SAV-RG6SAV's top bits -- $CE for MLTNAM $3BFF, $FF for $FFFF -- where the VG-8020 stores a plain shift; the VDP drops those bits, so the registers agree, and its RG0SAV clears bits 3-2 (SETGRP) or keeps bits 7-4 (SETMLT) where the VG-8020 keeps them / clears them) | R-MT-SHADOW, R-MT-R01 |
 | **D-SETREGS** (zerobas returns other A, F, DE and HL: F $42, DE the address past the mode's cells, HL $0000 or $FFE0) | R-MT-REGS |
 
 ## Open (not measured)

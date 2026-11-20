@@ -20,7 +20,7 @@ they were before.
 It leaves the VDP writing after the filled span: a byte written to port $98 right after it lands at
 HL + BC.
 
-zerobas writes the same bytes; its F is not kept (below).
+zerobas does the same, F kept (D-VRAMF, 2026-11-20, cbios-repack/vdp-calls.patch).
 
 ## The specification
 
@@ -71,9 +71,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-VRAMF** (zerobas returns F $42 or $43 -- Z and N set, the entry carry kept (entry F $01 and $04 separate it from the other flags) -- where the VG-8020 keeps F) | R-FV-F |
+None measured: every rule holds on zerobas.
+
 
 ## Open (not measured)
 

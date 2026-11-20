@@ -28,27 +28,27 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
-| $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | D-WRTVDPC |
-| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVRM.md) | 9 | D-VRAMF |
+| $0047 | WRTVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVDP.md) | 9 | — |
+| $004A | RDVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVRM.md) | 9 | — |
 | $004D | WRTVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](WRTVRM.md) | 9 | — |
 | $0050 | SETRD | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETRD.md) | 9 | — |
 | $0053 | SETWRT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETWRT.md) | 10 | — |
-| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | D-VRAMF |
-| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | D-VRAMF |
-| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | D-VRAMF |
+| $0056 | FILVRM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](FILVRM.md) | 10 | — |
+| $0059 | LDIRMV | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRMV.md) | 11 | — |
+| $005C | LDIRVM | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](LDIRVM.md) | 10 | — |
 | $005F | CHGMOD | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGMOD.md) | 6 | — |
-| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGCLR.md) | 7 | D-CHGCLRMODE, D-CLRREGS |
+| $0062 | CHGCLR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CHGCLR.md) | 7 | D-CLRREGS |
 | $0066 | NMI | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
 | $0069 | CLRSPR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CLRSPR.md) | 8 | — |
 | $006C | INITXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](INITXT.md) | 15 | D-INITEDGES, D-BIOSINT |
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
-| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-SETSHADOW, D-INIGRPORDER, D-INIREGS |
-| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIGRPORDER, D-SETSHADOW, D-INIREGS |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETSHADOW, D-SETREGS |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETSHADOW, D-SETREGS |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETSHADOW, D-SETREGS |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | D-SETSHADOW, D-SETREGS |
-| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | D-CALPATF |
+| $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-INIGRPORDER, D-INIREGS |
+| $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIGRPORDER, D-INIREGS |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETREGS |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETREGS |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETREGS, D-SETSHADOW |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | D-SETREGS |
+| $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | — |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
 | $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | — |

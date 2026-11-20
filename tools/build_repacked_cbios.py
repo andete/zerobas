@@ -181,11 +181,18 @@ PATCHES = [
     # nibbles); lr_n shrinks to `ld hl,CMASK / jp is_sc3`. +14 B: everything after rightc moves
     # (TUPC $0711, TDOWNC $072F; island 3 $0781-$09ED).
     os.path.join(REPO, "cbios-repack", "movemask.patch"),
+    # D-VRAMF / D-WRTVDPC / D-CHGCLRMODE / D-CALPATF / D-SETSHADOW (2026-11-20): the VDP calls' flags
+    # and edges as the VG-8020 -- RDVRM `and $FF` for the TMS wait (H set), FILVRM keeps F, LDIRMV /
+    # LDIRVM end on `or a` ($44), WRTVDP keeps C (no `res 7,c`), CHGCLR's SCREEN 0 path when SCRMOD - 1
+    # is negative, CALPAT `cp 8` before its add, set_base_address a plain shift, SETGRP / SETMLT's
+    # RG0SAV masks. +4 B: CLS $0604, NSETCX $0696 (its overlaid call $069E), TUPC $0715, TDOWNC $0733,
+    # island 3 $0785-$09ED.
+    os.path.join(REPO, "cbios-repack", "vdp-calls.patch"),
 ]
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "a71e2be1286b193ebf2689d118f88df2906d5fa3"   # RIGHTC / LEFTC SCREEN 3 masks, 2026-11-19
+REPACKED_SHA1 = "9d069d7a2f0e6fc32138aefca48b8404cf6670c9"   # the VDP calls' flags and edges, 2026-11-20
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
