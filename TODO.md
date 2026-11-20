@@ -16867,7 +16867,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       scratchpad/PLAYLONG_run1.out, probe scratchpad/playlong_probe.py (program and direct forms). D-PLAYRATE's floor
       (closed) and playqueue-acceptance's tolerance cover shorter cases. Measure first: the total play time
       (PLAY(0) = 0) against the reference, and whether it is the start or the wait that differs.
-- [ ] **D-ISRPLAN — A C-BIOS PATCH THAT CHANGES THE INTERRUPT HANDLER PLANS AS "CANARY ONLY"**
+- [x] **D-ISRPLAN — A C-BIOS PATCH THAT CHANGES THE INTERRUPT HANDLER PLANS AS "CANARY ONLY"**
       🎚️ APPARATUS — a regression rides to main until the next FULL (filed 2026-11-20).
       🙋 **NEEDS-JOOST** — gate policy (the ⏱ rule). D-TRGFLGISR part 2 (4b51b610) changed C-BIOS's key-scan interrupt,
       and tools/pick_gates.py planned it SCOPED: "ROM change with no enclosing ex_ handler (canary only, the daily FULL
@@ -16875,6 +16875,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       red. Nothing in that gate ran it. The next FULL (cdf47f6d, forced by a RAM move) caught it, as the policy
       intends. The question: should a cbios-repack patch touching the interrupt path (keyint, the hooks' callers) plan
       FULL, since every suite runs under that handler? Cost: one FULL (~25-38 min) per such patch, which is rare.
+      🏗️ **RULED (Joost, 2026-11-20): "yes, make interrupt-path patches plan FULL".** ✅ DONE: tools/pick_gates.py
+      INTERRUPT_PATH (keyint / int_end / H_TIMI / H_KEYI / KEY_SCAN / SCNCNT in the patch's text) makes such a
+      cbios-repack/ patch plan FULL. Today that matches chget-ei, scan-from-basic and trgflg. Self-test arms P-ISRPLAN
+      (positive, and NEGATIVE: a patch off the path stays SCOPED).
 - [x] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
       🎚️ APPARATUS — a spec rule that can fail on a timing shift alone (filed 2026-11-20).
       🤖 **AUTONOMOUS** — an interrupt ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on (the

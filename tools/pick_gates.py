@@ -18,6 +18,8 @@ says when they are due)
   ROM change (any handler, shared     SCOPED  -- static + suites that mention the
     code, unknown blast radius)                  keyword + a fixed CANARY (kwsweep)
   a RAM address added or moved        FULL    -- (+ the five excluded suites)
+  a C-BIOS patch on the interrupt     FULL    -- every suite runs under that
+    path (D-ISRPLAN, 2026-11-20)                 handler (INTERRUPT_PATH)
   the gate harness itself             FULL    -- an instrument change cannot be
                                                  vouched for by a scoped run of it
   --handoff, or 24 h since the last full green   FULL
@@ -31,7 +33,9 @@ radius runs the canary (kwsweep included) instead of everything -- Joost chose
 the speed knowing a breakage can sit on public main until the daily FULL. What
 still runs FULL at once is the class that breaks ANYTHING ANYWHERE: a RAM
 address added or moved (layout_moves) -- D-ARYCUR's hang was one cell landing
-on another.
+on another. And, since 2026-11-20 (D-ISRPLAN, Joost: *"yes, make interrupt-path
+patches plan FULL"*), a cbios-repack/ patch on the interrupt path: D-TRGFLGISR part 2
+changed the key scan, planned SCOPED, and a PLAY race it tipped reached main.
 
     python3 tools/pick_gates.py              # print the plan
     python3 tools/pick_gates.py --run        # run it (`make gates-scoped`)
@@ -357,6 +361,13 @@ def layout_moves(diff=None, value_of=None):
     return [n for n in cand if (value_of(n) or 0) >= 0x8000]
 
 
+# D-ISRPLAN (Joost, 2026-11-20: "yes, make interrupt-path patches plan FULL"): a C-BIOS
+# patch that touches the interrupt path -- the handler (keyint / int_end), its hooks
+# (H.KEYI / H.TIMI) or the key scan's counter -- runs under EVERY suite. D-TRGFLGISR
+# part 2 planned SCOPED ("canary only") and a PLAY race it tipped reached main.
+INTERRUPT_PATH = re.compile(r"keyint|int_end|H_TIMI|H_KEYI|KEY_SCAN|SCNCNT")
+
+
 def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None,
          layout=()):
     """-> (mode, reasons, emulator suites, excluded-five suites).
@@ -381,6 +392,10 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
     if layout:
         reasons.append("RAM addresses added or moved: " + " ".join(layout[:8])
                        + (f" (+{len(layout) - 8})" if len(layout) > 8 else ""))
+    isr = [f for f in changed if f.startswith("cbios-repack/") and f.endswith(".patch")
+           and INTERRUPT_PATH.search(read(f) if read else _text(f))]
+    if isr:
+        reasons.append("a C-BIOS patch on the interrupt path (D-ISRPLAN): " + " ".join(isr))
     kws, unknown = set(), []
     for f in rom:
         if f.endswith(".asm"):
@@ -471,6 +486,13 @@ def selftest():
     arm("P-TAPEPLAN a cbios-repack/ patch is a ROM change (the canary), not STATIC -- and "
         "NEGATIVE: it does not drag the tape suites in",
         m == "SCOPED" and "error-acceptance" in e and "tapebios-acceptance" not in e)
+    rdi = lambda p: dict(text, **{"cbios-repack/isr.patch": "@@ -2301 +2301 @@ keyint:\n+ ld a,$0F"}).get(p, "")
+    m, r, e, x = plan(["cbios-repack/isr.patch"], tfiles, lambda f: None, 0, read=rdi)
+    arm("P-ISRPLAN a cbios-repack/ patch on the interrupt path (keyint) -> FULL with the five "
+        "excluded suites", m == "FULL" and x == sorted(EXCLUDED5)
+        and any("D-ISRPLAN" in w for w in r))
+    m, r, e, x = plan(["cbios-repack/x.patch"], tfiles, lambda f: None, 0, read=rdi)
+    arm("P-ISRPLAN NEGATIVE: a patch off the interrupt path stays SCOPED", m == "SCOPED")
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, 0, read=rd)
     arm("P3 a WIDTH-handler change -> SCOPED: the WIDTH suite + the canary, "
         "not math", m == "SCOPED" and "width-acceptance" in e
