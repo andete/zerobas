@@ -631,8 +631,6 @@ extents the standard already fixes would be noise, not rigour.
 | `$F92C` | 1 B | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |
 | `$F942` | 2 B | `basic` | `CSAVEA` | published: SCANR's run start, the CLOC of its first pixel (2 B) |  |
 | `$F944` | 1 B | `basic` | `CSAVEM` | published: SCANR's run start, its CMASK (1 B) |  |
-| `$F952` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
-| `$F953` | 1 B | `basic` | `GRP_HDR` | D-OPENGRP: bit 0 = a CHR$(1) header is pending on the |  |
 | `$F954` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$F954` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$F956` | 2 B | `basic` | `INP_CURSOR` | console INPUT LINEBUF read pointer (2 B) |  |
@@ -696,6 +694,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC9B` | 1 B | `basic` | `INTFLG` | STOP / CTRL-STOP latch (1) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FC9E` |  | `disk` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area; D-DSKCHG) |  |
+| `$FCA6` | 1 B | `basic` | `GRPHED/GRP_HDR` | published: 1 = the previous character was a graphic header (1 B) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
 | `$FCAC` | 1 B | `basic` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
@@ -721,6 +720,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FD0A` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$FD0B` | 1 B | `basic` | `SUBSLOT2` | UNUSED: zerobas-sub2's slot id until it was retired (2f) |  |
 | `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
+| `$FD0D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
 | `$FD89` |  | `disk` | `PROCNM` | PUBLISHED: a CALL statement's name, 0-terminated (expansion-ROM STATEMENT handler) |  |
 | `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
 | `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |

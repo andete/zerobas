@@ -5157,9 +5157,18 @@ SUBSLOT2        equ     $FD0B   ; UNUSED: zerobas-sub2's slot id until it was re
                                 ; slot ("Z2", 3-3: $8F), cleared by init_ext_roms and set
                                 ; by try_sub_slot. No code reads or writes it now; the cell
                                 ; is kept, not freed -- moving RAM is a ruling. (1 B)
-GRP_HDR         equ     $F953   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the
-                                ; GRP: channel (the next byte draws glyph byte-64).
-                                ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
+GRPHED          equ     $FCA6   ; published: 1 = the previous character was a graphic header (1 B)
+GRP_HDR         equ     GRPHED  ; D-OPENGRP: 1 = a CHR$(1) header is pending on the GRP:
+                                ; channel (the next byte draws glyph byte-64), or held back by
+                                ; OUTDLP for a non-MSX printer (basic/biosfnk.asm). Cleared by
+                                ; OPEN "GRP:"; sub2/grpprt.asm and bios_outdlp keep it.
+                                ; D-PAINTRAMCLASH (2026-11-20; Joost: "use the cells the reference
+                                ; uses"): was $F953, inside the VG-8020's PAINT scratch, with the
+                                ; GRP: header in bit 0 and OUTDLP's held $01 in bit 1. MEASURED: the
+                                ; VG-8020 and the CF-3300 keep BOTH in GRPHED, value 1 -- CNVCHR's
+                                ; own flag (scratchpad/GRPHDR_run1.out, OUTDLPHOLD_run1.out). One
+                                ; flag now, as theirs: a held $01 and a pending header are the same
+                                ; state, and CHPUT's CNVCHR shares it. (1 B)
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
 ; (SUB2_IDX_GRPPRT 1 / EDCTRL 2 / FRELIVE 3, zerobas-sub2's page-1 indexes, are
 ; RETIRED by D-SUB2RETIRE 2026-11-03: those tenants are SUBROM_IDX_GRPPRT 29 /
@@ -5179,7 +5188,11 @@ CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address 
 CLPRIM          equ     $F38C   ; MSX work area: the BIOS's RAM inter-slot call primitive,
                                 ; copied there at boot (C-BIOS src/slot.asm m_clprim);
                                 ; zerobas-sub2's p0cb calls main through it (D-P0CB) (14)
-SUB_INT_DELTA   equ     $F952   ; self-test tenant result: JIFFY ticks observed under EI (1)
+SUB_INT_DELTA   equ     $FD0D   ; self-test tenant result: JIFFY ticks observed under EI (1)
+                                ; D-PAINTRAMCLASH (2026-11-20): was $F952 (the VG-8020's PAINT
+                                ; scratch). zerobas's own self-test has no counterpart on the
+                                ; reference: SLTWRK, our own slot 0, beside SUB_PING ($FD0C) -- the
+                                ; reference never writes $FCC9-$FFFE (scratchpad/REFWRITES_union.out).
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
 ; state, packed BCD (2 digits/byte, MSD-first -- same nibble convention as

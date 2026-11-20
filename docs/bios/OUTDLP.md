@@ -18,8 +18,10 @@ $F417, 0). On a printer that is not one (NTMSXP $FF or $01) the $01 is dropped a
 as one space ($41, $5F) or as it is ($7E). The $01 never counts as a column. A and the other
 registers are kept (A is $20 for a code sent as a space).
 
-zerobas does the same (D-OUTDLPGRAPH / D-OUTDLPF, 2026-11-19). Its held $01 for a printer that is
-not an MSX one is a bit of zerobas's GRP_HDR cell, so a PRINT # to GRP in between drops it.
+zerobas does the same (D-OUTDLPGRAPH / D-OUTDLPF, 2026-11-19). The held $01 for a printer that is
+not an MSX one is GRPHED ($FCA6) := 1 on both references and on zerobas (D-PAINTRAMCLASH,
+[`scratchpad/OUTDLPHOLD_run1.out`](../../scratchpad/OUTDLPHOLD_run1.out)): the published graphic-header
+flag, which CNVCHR and a GRP: channel's pending CHR$(1) share.
 
 ## The specification
 

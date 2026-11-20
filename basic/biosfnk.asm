@@ -60,8 +60,9 @@ bios_calbas:
 ; R-OD-F: a graphic character's $01 does not move LPTPOS (on any printer); on a printer that is
 ; not an MSX one (NTMSXP, $F417, not 0) the $01 is held back -- A 1, F $42 -- and the next code,
 ; if $40-$5F, goes out as one space (A $20), any other as it is. F is LPTOUT's on the byte sent
-; (its AND flags), as on entry after a TAB. The held $01 is bit 1 of GRP_HDR (bit 0 is the GRP:
-; channel's own header) -- no new RAM; a PRINT # to GRP in between clears it.
+; (its AND flags), as on entry after a TAB. The held $01 is GRPHED ($FCA6) := 1, where the VG-8020
+; and the CF-3300 keep it -- the same flag as the GRP: channel's pending header and CNVCHR's
+; (D-PAINTRAMCLASH, scratchpad/OUTDLPHOLD_run1.out); a PRINT # to GRP in between consumes it.
 NTMSXP          equ     $F417
 bios_outdlp:
                 push    hl
@@ -70,8 +71,8 @@ bios_outdlp:
                 cp      9
                 jr      z,odl_tab
                 pop     af
-                bit     1,(hl)
-                res     1,(hl)
+                bit     0,(hl)
+                ld      (hl),0              ; (GRPHED is 0 or 1: every writer stores the byte)
                 jr      z,odl_nh            ; no $01 held
                 cp      $40
                 jr      c,odl_nh            ; held $01 + a code outside $40-$5F: as it is
@@ -86,7 +87,7 @@ odl_nh:
                 or      a
                 ld      a,1
                 jr      z,odl_lpt           ; an MSX printer: $01 goes out, uncounted
-                set     1,(hl)              ; else held back for the next byte
+                ld      (hl),1              ; else held back for the next byte
                 ld      hl,$0142
                 push    hl
                 pop     af                  ; A 1, F $42

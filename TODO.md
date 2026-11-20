@@ -16999,6 +16999,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       GRP_HDR (a GRP: channel's pending CHR$(1); dump after the CHR$(1) and after the next byte) and STRPTR (the
       string engine's descriptor pointer; differential dumps over string expressions; the candidate must match in
       value and LIFETIME). SUB_INT_DELTA has no reference counterpart (zerobas's self-test): SLTWRK stays.
+      ✅ **GRP_HDR AND SUB_INT_DELTA LANDED 2026-11-20.** MEASURED (scratchpad/grphdr_probe.py, outdlphold_probe.py;
+      $F380-$FFFF dumped, two pending and two idle variants each): the VG-8020 and the CF-3300 keep a GRP: channel's
+      pending CHR$(1) AND OUTDLP's held $01 in GRPHED ($FCA6), value 1 -- the published graphic-header flag CNVCHR
+      uses (GRPHDR_run1.out, OUTDLPHOLD_run1.out). zerobas kept them as bits 0 / 1 of $F953. GRP_HDR is now an alias of
+      GRPHED: one flag, as theirs (basic/biosfnk.asm bios_outdlp stores the byte, 0 / 1, as CNVCHR does). zerobas
+      reads $FCA6 = 01 in the same cases (GRPHDR_run2.out, OUTDLPHOLD_run2.out). SUB_INT_DELTA -> $FD0D (SLTWRK).
+      STILL OPEN: STRPTR ($F954-$F955), its measurement next.
 
 
 

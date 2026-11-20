@@ -1,0 +1,40 @@
+zb      none   ok
+zb      pend   ok
+zb      done   ok
+zb      pend2  ok
+  $F3F8: pend 0B pend2 10 none FA done 14
+  $F3FA: pend 0B pend2 10 none FA done 14
+  $F58E: pend 20 pend2 28 none 00 done 48
+  $F58F: pend 20 pend2 31 none 00 done 52
+  $F590: pend 20 pend2 29 none 00 done 24
+  $F591: pend 20 pend2 3B none 00 done 28
+  $F593: pend 20 pend2 20 none 00 done 35
+  $F594: pend 20 pend2 20 none 00 done 29
+  $F595: pend 20 pend2 20 none 00 done 3B
+  $F596: pend 20 pend2 20 none 00 done 00
+  $F6AF: pend 28 pend2 2D none 1D done 2F
+  $F6C2: pend 30 pend2 35 none 25 done 37
+  $F6C4: pend 30 pend2 35 none 25 done 37
+  $F6C6: pend 30 pend2 35 none 25 done 37
+  $F6E8: pend 2E pend2 33 none 23 done 35
+  $F6FA: pend 24 pend2 29 none 19 done 2B
+  $F6FC: pend 24 pend2 29 none 19 done 2B
+  $F718: pend 32 pend2 37 none 27 done 39
+  $F84B: pend 8B pend2 90 none 7B done 94
+  $FBFB: pend 0D pend2 24 none 45 done 43
+  $FBFC: pend 32 pend2 28 none 4E done 48
+  $FBFD: pend 30 pend2 31 none 20 done 52
+  $FBFE: pend 20 pend2 29 none 32 done 24
+  $FBFF: pend 47 pend2 3B none 3A done 28
+  $FC01: pend 54 pend2 32 none 50 done 35
+  $FC02: pend 4F pend2 30 none 45 done 29
+  $FC03: pend 20 pend2 20 none 4E done 3B
+  $FC04: pend 32 pend2 47 none 20 done 0D
+  $FC05: pend 30 pend2 4F none 22 done 32
+  $FC06: pend 0D pend2 54 none 47 done 30
+  $FC08: pend 55 pend2 20 none 50 done 47
+  $FC09: pend 4E pend2 32 none 3A done 4F
+  $FC0A: pend 0D pend2 30 none 22 done 54
+  $FC12: pend 50 pend2 50 none 0D done 4E
+  $FC13: pend 52 pend2 52 none 32 done 0D
+  $FCA6: pend 01 pend2 01 none 00 done 00

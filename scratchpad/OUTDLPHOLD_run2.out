@@ -1,0 +1,40 @@
+zb      none   ok
+zb      none2  ok
+zb      held   ok
+zb      held2  ok
+  $F3F8: held FA held2 06 none F1 none2 FD
+  $F3FA: held FA held2 06 none F1 none2 FD
+  $F56D: held 5F held2 6B none 58 none2 64
+  $F6AB: held 4E held2 5A none 00 none2 00
+  $F6AD: held 52 held2 5E none 00 none2 00
+  $F6AE: held 80 held2 80 none 00 none2 00
+  $F6AF: held 57 held2 63 none 50 none2 5C
+  $F6C2: held 5F held2 6B none 58 none2 64
+  $F6C4: held 75 held2 8C none 63 none2 7A
+  $F6C6: held 75 held2 8C none 63 none2 7A
+  $F6E8: held 5D held2 69 none 56 none2 62
+  $F6EC: held 58 held2 58 none 49 none2 5A
+  $F6F4: held 53 held2 5F none 4C none2 58
+  $F6F7: held 6A held2 81 none 58 none2 6F
+  $F6FA: held 53 held2 5F none 4C none2 58
+  $F6FC: held 53 held2 5F none 4C none2 58
+  $F718: held 77 held2 8E none 65 none2 7C
+  $F7F6: held 00 held2 00 none 42 none2 41
+  $F7F7: held 00 held2 00 none 11 none2 30
+  $F7FF: held 02 held2 02 none 01 none2 01
+  $F800: held 00 held2 00 none 01 none2 01
+  $F844: held 00 held2 00 none 01 none2 01
+  $F84B: held CB held2 D7 none C3 none2 CF
+  $FBF0: held 54 held2 55 none 0D none2 20
+  $FBF1: held 4F held2 53 none 55 none2 47
+  $FBF2: held 20 held2 52 none 53 none2 4F
+  $FBF3: held 32 held2 28 none 52 none2 54
+  $FBF4: held 30 held2 30 none 3D none2 4F
+  $FBF5: held 0D held2 29 none 26 none2 20
+  $FBF6: held 52 held2 0D none 48 none2 32
+  $FBF7: held 55 held2 32 none 44 none2 30
+  $FBF9: held 0D held2 20 none 30 none2 52
+  $FC15: held 20 held2 3A none 52 none2 0D
+  $FC16: held 47 held2 58 none 55 none2 32
+  $FC17: held 4F held2 3D none 4E none2 30
+  $FCA6: held 01 held2 01 none 00 none2 00
