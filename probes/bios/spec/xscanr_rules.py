@@ -2,9 +2,12 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/bios/SCANR.md's EXECUTABLE RULES (docs/spec-method.md §3a): SCANR ($012C) -- probes/bios/spec/xgfx6.asm, op 1
-(the loader and the pixel model are xgfx6_model)."""
+(the loader and the pixel model are xgfx6_model), and probes/bios/spec/xscank.asm (scratchpad/XSCANK_run3.out, the
+group XK: where SCREEN 2 keeps the run for SCANL)."""
 import os
+import re
 import sys
+from types import SimpleNamespace as NS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -14,11 +17,25 @@ from spec_rules import Rule  # noqa: E402
 import xgfx6_model as G  # noqa: E402
 
 PAGE = "docs/bios/SCANR.md"
-OUTPUTS = G.OUTPUTS
+OUTPUTS = dict(G.OUTPUTS)
+OUTPUTS["XK"] = ["hl", "k"]
+XK_RUNS = (8, 2, 5)                     # the border pixel's X in xscank.asm's three cases
+XK_REC = 3203
 
 
 def cases():
-    return G.load(1)
+    out = G.load(1)
+    t = open(os.path.join(ROOT, "scratchpad", "XSCANK_run3.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+        b += bytes(max(0, XK_REC * len(XK_RUNS) - len(b)))
+        for i, x in enumerate(XK_RUNS):
+            r = b[XK_REC * i: XK_REC * (i + 1)]
+            if r[XK_REC - 1] != 0xC3:
+                sys.exit("FAIL: an XSCANK record has no sentinel")
+            k = 2 + 0xF867 - 0xF380
+            out[who].append(NS(src="XK", id=f"XK {i + 1}", x=x, hl=r[0] | (r[1] << 8), k=r[k] | (r[k + 1] << 8)))
+    return out
 
 
 S1 = "1. SCANR ($012C): scan right for the PAINT border"
@@ -47,8 +64,16 @@ RULES = [
          lambda c: c.gwork == (G.gwork_kept() if scan(c)[4] is None else G.gwork_kept()[0:7] + (
              lambda p: (p[0] & 0xFF, p[0] >> 8, p[1]))(scan(c)[4]) + G.gwork_kept()[10:])
          and (c.atrbyt, c.bdratr) == (c.catr, c.cbdr)),
+    Rule("R-SR-K", S1, "In SCREEN 2 it keeps the run's length -- HL, 16-bit -- at FILNAM+1 ($F867-$F868), the K that "
+         "SCANL paints on top of its own count (docs/bios/SCANL.md); runs of 8, 2 and 5 pixels measured.",
+         lambda c: c.src == "XK", lambda c: (c.hl, c.k) == (c.x, c.x)),
     Rule("R-SR-KEEP", S1, "IX and IY are kept; RG0SAV-RG7SAV, SCRMOD and the VDP registers are kept; interrupts are on "
          "after. (A, F and BC are left holding working values: not compared, the group `XR`.)", ALL,
          lambda c: (c.ix, c.iy, c.iff) == (G.marker(c, 0x4321), G.marker(c, 0x8765), 1)
          and c.regs == (0xA5,) * 8 + (c.cscr,) + G.VPRE),
 ]
+
+
+for _r in RULES:
+    if _r.id != "R-SR-K":
+        _r.select = (lambda s: (lambda c: c.src != "XK" and s(c)))(_r.select)

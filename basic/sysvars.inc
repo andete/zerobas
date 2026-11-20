@@ -3193,6 +3193,7 @@ TSV_END         equ     $F87D   ; tape save: last source-byte address, inclusive
                                   ; D-WSZERO S8: the reference's SAVEND (was $EF5F)
 TSV_CNT         equ     $F5FC   ; tape save: loop counter (1)
                                 ; D-WSZERO S14c: BUF (was $EF61)
+SCAN_K          equ     CAS_WANT+1 ; SCANR's last SCREEN 2 run (2), FILNAM+1 $F867 as the VG-8020 keeps it (D-SCANLPAINT)
 TSV_NAME        equ     CAS_WANT ; tape save: 6-char filename buffer (space-padded), FILNAM $F866..$F86B
                                 ; D-WSZERO S14f put it in BUFTX ($F567, was $EF62). 🔴 D-TSVOVL
                                 ; (2026-10-17): fname_expr STAGES the whole name string at

@@ -239,10 +239,12 @@ bios_scanl:
 bios_scanr:
                 ld      c,0
                 push    ix
+                push    bc                  ; C: the op, for scan_k (D-SCANLPAINT)
                 call    sr_inl1
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PAINT)
+                pop     bc
                 pop     ix
-                ret
+                jp      scan_k              ; basic/main.asm: SCREEN 2's K
 
 ; GRPPRT ($008D): basic/islands.asm bios_grpprt (island 3; D-GRPPRTPOS and kin, 2026-11-19).
 

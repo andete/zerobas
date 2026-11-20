@@ -15,12 +15,12 @@ SPDX-License-Identifier: 0BSD
 non-border pixels leftwards, to the first border pixel (BDRATR) or X 0; HL returns the count and CLOC /
 CMASK the leftmost counted pixel. Then it paints in ATRBYT, whatever B is, from there rightwards: in
 SCREEN 2 HL + K pixels, K the run length the most recent SCREEN 2 [SCANR](SCANR.md) returned (so a
-PAINT's left half joins the right half SCANR found), as NSETCX sets them; in SCREEN 3 the HL blocks
-only. B, DE, A and HL on entry are not used; A, F, BC and DE are left with
+PAINT's left half joins the right half SCANR found; SCANR keeps it at FILNAM+1, $F867), as NSETCX sets
+them; in SCREEN 3 the HL blocks only. B, DE, A and HL on entry are not used; A, F, BC and DE are left with
 working values; interrupts are **on** after.
 
-zerobas counts the same (D-SCANSTOP, 2026-11-19: counted first, then painted), but paints only the HL
-pixels counted (below).
+zerobas does the same (D-SCANSTOP, 2026-11-19: counted first, then painted; D-SCANLPAINT, 2026-11-20:
++ K from FILNAM+1, where its SCANR now keeps the run).
 
 ## The specification
 
@@ -77,18 +77,17 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 ## Differences from the reference
 
-| TODO item | rules zerobas fails |
-|---|---|
-| **D-SCANLPAINT** (SCREEN 2: zerobas paints the HL pixels counted, where the VG-8020 paints HL + K -- K the last SCREEN 2 SCANR's run) | R-SL-PAINT |
+None measured: every rule holds on zerobas.
 
 ## Open (not measured)
 
-- **[A]** Where K is kept between the calls: not in the entry registers (A, B, DE, HL), the alternate
-  registers, the work area $F92D-$F955 (a sweep zeroing each byte painted the same), RAM $EF04-$FFFF
-  (snapshots between calls), nor the stack around the call. Any SCREEN 2 SCANR sets it, painting or
-  not (82-84: K 4 after a B 0 SCANR); whether one stopped by its skip (HL 0), PNTINI in SCREEN 2 / 3
-  or a reset changes it is not measured (PNTINI in SCRMOD 0 / 1 does not: 72-75); K measured 8, 4
-  and 2 (2 only as 2 or 3: the pixels beyond were already ATRBYT's).
+- **[A]** K is kept at FILNAM+1, $F867-$F868, 16-bit (docs/bios/SCANR.md R-SR-K: probes/bios/spec/xscank.asm,
+  three SCREEN 2 SCANRs with B 0, runs of 8 / 2 / 5, the whole of $F380-$FFFF dumped after each; a run of 256
+  left $0100 there, [`scratchpad/XSCANK_run1.out`](../../scratchpad/XSCANK_run1.out)). An earlier note here
+  said RAM $EF04-$FFFF did not hold it ("snapshots between calls"). That was wrong: the cell is in that range.
+  Any SCREEN 2 SCANR sets it, painting or not (82-84: K 4 after a B 0 SCANR). Not measured: whether one stopped by its skip
+  (HL 0), PNTINI in SCREEN 2 / 3, a reset or a tape operation (the same FILNAM cells) changes it (PNTINI in
+  SCRMOD 0 / 1 does not: 72-75). zerobas takes the skip's HL 0 as K too.
 - **[A]** SCRMOD other than 2 and 3; moved tables (only the published defaults); rows other than Y
   50 (SCREEN 2) and block row 20 (SCREEN 3).
 - **[A]** ATRBYT other than $0C (the NSETCX steps for ATRBYT equal to a cell's colour never ran in a

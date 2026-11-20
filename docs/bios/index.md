@@ -105,7 +105,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0126 | GTASPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GTASPC.md) | 3 | — |
 | $0129 | PNTINI | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](PNTINI.md) | 3 | — |
 | $012C | SCANR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANR.md) | 5 | — |
-| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | D-SCANLPAINT |
+| $012F | SCANL | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCANL.md) | 5 | — |
 | $0132 | CHGCAP | [input](../concepts/input-calls.md) | L3 | [FINAL](CHGCAP.md) | 4 | — |
 | $0135 | CHGSND | [sound](../concepts/sound-calls.md) | L3 | [FINAL](CHGSND.md) | 3 | — |
 | $0138 | RSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](RSLREG.md) | 4 | — |

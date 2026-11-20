@@ -432,6 +432,43 @@ scan_isbd:
                 pop     hl
                 ret
 
+; scan_k -- SCANR / SCANL's tail (basic/biosfnk.asm bios_scanr, C the op: 0 SCANR, 1 SCANL), D-SCANLPAINT
+; (2026-11-20). In SCREEN 2 the VG-8020 keeps the run length (HL) of the most recent SCANR at FILNAM+1 ($F867,
+; 16-bit; scratchpad/XSCANK_run2.out: 8 / 2 / 5 there after runs of 8 / 2 / 5, $0100 after 256), and its SCANL
+; paints HL + K pixels from the leftmost counted one (docs/bios/SCANL.md R-SL-PAINT). The tenant has painted HL;
+; here the HL + K run is painted again from the new CLOC (the same bytes over the first HL), CLOC / CMASK, HL and DE
+; kept; interrupts on after, as the tenant leaves them. Not SCREEN 2: nothing.
+scan_k:
+                ld      a,(SCRMOD)
+                cp      2
+                ret     nz
+                dec     c
+                jr      z,scan_kl
+                ld      (SCAN_K),hl         ; SCANR: the next SCANL's K
+                ret
+scan_kl:
+                push    hl
+                push    de
+                ld      de,(SCAN_K)
+                ld      a,d
+                or      e
+                jr      z,scan_kx           ; K 0: the tenant's paint is the whole of it
+                add     hl,de
+                ld      de,(CLOC)
+                ld      a,(CMASK)
+                push    de
+                push    af
+                call    $0123               ; NSETCX: HL + K pixels in ATRBYT from CLOC
+                pop     af
+                pop     de
+                ld      (CLOC),de
+                ld      (CMASK),a
+                ei
+scan_kx:
+                pop     de
+                pop     hl
+                ret
+
 outdo_dest:
                 push    af
                 ld      a,(PRTFLG)

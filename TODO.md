@@ -16910,7 +16910,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 
 
-- [ ] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
+- [x] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
       🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
       basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012F does).
       🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
@@ -16918,6 +16918,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       calls SCANL at all is to be checked first. Priced when picked up.      ⏳ 2026-11-19: SCANL now counts first and paints the counted run via NSETCX; the + K needs WHERE the VG-8020
       keeps K (the last SCREEN 2 SCANR's run) -- the recorded work area keeps it nowhere zerobas has read. A probe round
       first (sub page 1 was 1 B free on 2026-11-19, so the fix also needs room).
+      ✅ **DONE 2026-11-20.** The probe round: probes/bios/spec/xscank.asm, three SCREEN 2 SCANRs (B 0; runs 8 / 2 / 5),
+      the whole of $F380-$FFFF dumped after each. The VG-8020 keeps K at FILNAM+1, $F867-$F868, 16-bit
+      (scratchpad/XSCANK_run2.out; $0100 after a 256-pixel run, XSCANK_run1.out). SCANL.md's old open note
+      ("not in RAM $EF04-$FFFF") was wrong and is corrected. The fix is in main, with the sub ROM untouched (4 B free):
+      basic/biosfnk.asm bios_scanr keeps the op across the tenant call and jumps to basic/main.asm scan_k (low
+      region). In SCREEN 2, SCANR stores HL at SCAN_K (= CAS_WANT+1, the published FILNAM+1). SCANL then paints
+      HL + K from the new CLOC through NSETCX, keeping CLOC / CMASK, HL and DE. New rule docs/bios/SCANR.md R-SR-K
+      (XSCANK_run3.out: zerobas $F867 = 8 / 2 / 5 as the VG-8020). R-SL-PAINT holds; SCANL.md lists no difference.
 
 
 - [x] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**

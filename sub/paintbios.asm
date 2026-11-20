@@ -102,8 +102,8 @@ pb_lbd:
                 call    PB_RIGHTC               ; a border: back on the last counted one
 pb_lend:
                 ld      de,(CLOC)               ; always fills, from the leftmost counted pixel
-                ld      a,(CMASK)               ; (D-SCANLPAINT: the VG-8020 paints HL + K there,
-                ld      b,a                     ;  K the last SCREEN 2 SCANR's run -- open)
+                ld      a,(CMASK)               ; (SCREEN 2's + K, the last SCANR's run, is main's:
+                ld      b,a                     ;  basic/main.asm scan_k, D-SCANLPAINT)
                 jp      pb_paint
 
 ; Z iff the pixel at the cursor is the border colour. HL / DE / BC kept. In main's low region
