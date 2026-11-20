@@ -127,6 +127,8 @@ c_fk:
                 push    bc
                 push    af
                 ld      a, i
+                jp      pe, $+5                 ; off? read again: an interrupt accepted DURING `ld a,i` reads
+                ld      a, i                    ; P/V 0 (the NMOS erratum, D-IFFREAD1)
                 push    af
                 di
                 ; the record: FNKSTR

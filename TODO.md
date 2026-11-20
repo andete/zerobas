@@ -16846,7 +16846,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       putsprite: $F417 / $F418 no longer zerobas-only; $FC18 / $FC19 written by both (the values differ, as scratch).
       graphics-acceptance, sprite-trap-acceptance, spec-live OUTDLP / OUTDO green.
 
-- [ ] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
+- [x] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
       🎚️ APPARATUS — a spec rule that can fail on a timing shift alone (filed 2026-11-20).
       🤖 **AUTONOMOUS** — an interrupt ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on (the
       NMOS erratum; openMSX emulates it). Found 2026-11-20 by spec-live: D-TRGFLGISR part 1 moved the boot timing,
@@ -16857,6 +16857,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       those reads can go red on an unrelated commit. Fix: the same doubled read in each. The reference's side stays
       the committed run files, and a doubled read can only turn a false 0 into 1, so no reference re-run is needed.
       Then re-run tools/spec_live.py on their pages.
+      ✅ **DONE 2026-11-20:** each of the eleven now follows its `ld a,i` with `jp pe, $+5` / `ld a, i`, so a
+      reading of "off" is read again. Full spec-live: every page agrees. docs/spec-method.md's probe list states the
+      rule, and the key-scan hold-off D-TRGFLGISR needed for INITIO.
 - [x] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
       🎚️ TIER 6 — every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20).
       🤖 **AUTONOMOUS** — C-BIOS's key-scan interrupt (src/main.asm, its own "TODO read joystick triggers and space for

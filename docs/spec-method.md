@@ -123,6 +123,13 @@ that was measured (the wraps, the scroll, the edges).
 - **A capture ends with a sentinel byte, and the decoder refuses when it is missing.** The harness
   trims trailing zeros, so a short capture padded with zeros reads as real zero outputs (INITXT
   run 2 was 2 bytes short).
+- **Read the interrupt state twice.** An interrupt accepted DURING `ld a,i` makes P/V read 0 although
+  interrupts were on (the NMOS erratum; openMSX emulates it). One read went red on FILVRM's R-FV-EI
+  when an unrelated commit moved the boot timing. Follow a reading of "off" with
+  `jp pe, $+5` / `ld a, i`: the second read decides.
+- **Hold the key scan off across a short window that compares the work area or the PSG.** A scan
+  writes TRGFLG, PSG R15 and port $AA's keyboard row, and where it lands is timing: it landed inside
+  INITIO on one machine and after it on the other. Set SCNCNT ($F3F6) high before the call.
 - **A probe's setup must not use the call under test.** CHPUT rounds 2 and 3 placed the cursor with
   CHPUT's own `ESC Y`. Where the two machines' `ESC Y` differs, every case STARTED somewhere else,
   so the differences were the setup's. Set the state through other means: VRAM writes, the work-area

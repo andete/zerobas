@@ -147,6 +147,8 @@ c_di:
                 call    jpstub
                 push    af
                 ld      a, i                    ; P/V := IFF2
+                jp      pe, $+5                 ; off? read again: an interrupt accepted DURING `ld a,i` reads
+                ld      a, i                    ; P/V 0 (the NMOS erratum, D-IFFREAD1)
                 push    af
                 di
                 pop     hl
