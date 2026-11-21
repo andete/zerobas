@@ -537,6 +537,8 @@ bios_pinlin:
 bil_stop:
                 xor     a
                 ld      (LINEBUF),a
+                ld      (INSFLG),a          ; insert mode ends (R-L-STOP): whichever way our editor
+                                            ; saw the key -- its ^C or BREAKX -- by timing
                 ld      a,(CNSDFG)
                 ld      hl,CRTCNT
                 add     a,(hl)

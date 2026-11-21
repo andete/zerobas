@@ -204,6 +204,14 @@ The editing keys cannot be typed by that checker; the gates below cover them.
 
 ## What we found, and how
 
+- **Insert mode kept on through SELECT and CTRL+G, and a pushed line misplaced the
+  rows below it** (fixed 2026-11-21, D-EDITINS; the C-BIOS 0.32 port's
+  measurements). On the VG-8020 every control key but ESC, BS and DEL ends insert
+  mode; ours dropped the ones it had no use for and stayed in it. A full line that
+  grows a row moved the line table entries below it twice, and the bottom row's
+  entries after a scroll held values the reference never writes. Measured through
+  [PINLIN](../bios/PINLIN.md) (section 5).
+
 - **BS did nothing at column 1** (fixed 2026-11-21, D-EDITDELBS; found by the
   C-BIOS 0.32 port's measurements). On the VG-8020, BS at column 1 of a line's
   first row stays there and still deletes (`XYZ` with the cursor on the `X`

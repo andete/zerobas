@@ -97,7 +97,7 @@ fch_mode_class equ 04F7CH
 field_item equ 072F6H
 tgt_store_desc equ 05C78H
 req_letter equ 040E1H
-var_str_type equ 0464EH
+var_str_type equ 04639H
 tgt_parse_req equ 05298H
 tgt_desc equ 0477DH
 skip_eq equ 04225H

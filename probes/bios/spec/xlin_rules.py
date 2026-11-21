@@ -346,3 +346,89 @@ RULES += [
          lambda c: all(c.linttb[r - 1] == 0xAF for r in lt_marked(c)) and lt_rest(c)),
     Rule("R-L-F4", S4, "The whole F is 18 here too.", lambda c: c.src == "XL4", lambda c: c.f == 0x18),
 ]
+
+
+# ---- round 5: XLIN5 (probes/bios/spec/xlin5.asm; scratchpad/XLIN5_run3.out) -- insert mode (D-EDITINS). XLIN3's
+# record; all PINLIN; the keys queued, INS ($12) first.
+OUTPUTS["XL5"] = OUTPUTS["XL3"]
+# the line Enter reads (first, last rows), the cursor row after, the LINTTB rows marked $AF, rows A / B and their text
+# after, BUF's first 8 bytes
+X5 = [(5, 5, 6, {5}, b"AXBCDE", b"", b"AXBCDE\0 "),
+      (7, 8, 9, {8}, b"ABXCDEFGHIJK", b"def", b"ABXCDEFG"),
+      (5, 6, 7, {6}, b"9", b"XYZ", b"0Q123456"),
+      (22, 23, 24, {23, 24}, b"9", b"", b"0Q123456"),
+      (5, 5, 6, {5}, b"A       BCDE", b"", b"A       "),
+      (5, 5, 6, {5}, b"AXBCDE", b"", b"AXBCDE\0 "),
+      (5, 5, 6, {5}, b"AXCDE", b"", b"AXCDE\0  "),
+      (5, 5, 6, {5}, b"AXCDE", b"", b"AXCDE\0  "),
+      (5, 5, 6, {5}, b"ABXDE", b"", b"ABXDE\0  "),
+      (5, 5, 6, {5}, b"XBCDE", b"", b"XBCDE\0  "),
+      (5, 5, 6, {5}, b"AXCDE", b"", b"AXCDE\0  "),
+      (5, 5, 6, {5}, b"AXCDE", b"", b"AXCDE\0  ")]
+_cases5 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases5()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN5_run3.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))[1:]
+        b += bytes(max(0, 72 * len(X5) - len(b)))
+        for i, (first, last, ny, marks, ta, tb, bf) in enumerate(X5):
+            r = b[72 * i: 72 * (i + 1)]
+            out[who].append(NS(src="XL5", id=f"XL5 {i + 1}", name="PINLIN", end="ENTER", first=first, last=last,
+                               y0=first, ny=ny, marks=marks, ta=ta, tb=tb, bf=list(bf), num=i + 1,
+                               stage=r[0], f=r[1], hl=(r[2] << 8) | r[3], csrx=r[4], csry=r[5], intflg=r[6],
+                               insflg=r[7], cstyle=r[8], keys=list(r[9:11]), buf=list(r[11:19]),
+                               linttb=list(r[19:43]), rowa=list(r[43:55]), rowb=list(r[55:67]), held=list(r[67:69])))
+    return out
+
+
+def lt5(c):
+    """LINTTB: the marked rows $AF, the line's inner rows 0, every other row an ending entry (not 0, not $AF) --
+    and after case 3's new row the bottom row $FB"""
+    for r in range(1, 25):
+        v = c.linttb[r - 1]
+        if r in c.marks:
+            ok = v == 0xAF
+        elif c.first <= r < c.last:
+            ok = v == 0
+        elif c.num == 3 and r == 24:
+            ok = v == 0xFB
+        else:
+            ok = v not in (0, 0xAF)
+        if not ok:
+            return False
+    return True
+
+
+S5 = "5. Round 5: insert mode (XLIN5)"
+X5C = lambda *n: (lambda c: c.src == "XL5" and c.num in n)     # noqa: E731
+
+RULES += [
+    Rule("R-L-INSPUSH", S5, "INS, then a character: it is INSERTED, the rest of the LOGICAL line moving right across "
+         "the row end ('ABCDE' at column 2: 'AXBCDE'; a 42-character line on rows 7-8 at row 7 column 3: row 8 reads "
+         "'def').", X5C(1, 2), line4),
+    Rule("R-L-INSROW", S5, "A one-row line whose last cell is not a space first gets a NEW row below it: the rows below "
+         "move down ('XYZ' from row 6 to 7) with their LINTTB entries, the bottom row's entry becomes $FB, and the "
+         "pushed-out last character starts the new row ('9'); the line reads '0Q1234...'.", X5C(3),
+         lambda c: line4(c) and c.linttb[23] == 0xFB and c.linttb[4] == 0),
+    Rule("R-L-INSBOT", S5, "The same on the bottom row SCROLLS the screen instead (and Enter scrolls again): the line "
+         "ends on rows 22-23, '9' on row 23, row 24 blank.", X5C(4), line4),
+    Rule("R-L-INSTAB", S5, "TAB in insert mode inserts spaces to the next tab stop ('ABCDE' at column 2: 'A', 7 spaces, "
+         "'BCDE').", X5C(5), line4),
+    Rule("R-L-INSKEEP", S5, "ESC, BS and DEL keep insert mode: the 'X' typed after them is inserted (ESC: 'AXBCDE'; BS "
+         "at column 3 and DEL at column 2 delete the 'B' first: 'AXCDE').", X5C(6, 7, 8), line4),
+    Rule("R-L-INSEND", S5, "Every other control key ends insert mode: the 'X' after RIGHT overwrites ('ABXDE'), after "
+         "CTRL+B (to the word's start) 'XBCDE', after SELECT ($18) and CTRL+G ($07) 'AXCDE'.", X5C(9, 10, 11, 12),
+         line4),
+    Rule("R-L-RET5", S5, "Every case returns with the carry clear, HL = BUF − 1, the cursor at column 1 of the row after "
+         "the line, INTFLG 0, the key buffer empty, insert mode off after Enter (INSFLG 0, CSTYLE 0), no key held.",
+         lambda c: c.src == "XL5",
+         lambda c: (c.stage == c.num and c.f & 1 == 0 and c.hl == BUFM1 and (c.csrx, c.csry) == (1, c.ny)
+                    and c.intflg == 0 and c.keys[0] == c.keys[1] and (c.insflg, c.cstyle) == (0, 0)
+                    and c.held == [0xFF, 0xFF])),
+    Rule("R-L-INSLT", S5, "LINTTB after Enter: the line's last row $AF (after the bottom row's scroll, rows 23 and 24), "
+         "its inner rows 0, every other row an ending entry.", lambda c: c.src == "XL5", lt5),
+    Rule("R-L-F5", S5, "The whole F is 18 here too.", lambda c: c.src == "XL5", lambda c: c.f == 0x18),
+]

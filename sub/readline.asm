@@ -83,15 +83,18 @@ rl_key:
                 jr      z,rl_ins
                 cp      $20
                 jr      nc,rl_char          ; printable (>= $20; $7F went above)
-                cp      $1C                 ; $1C..$1F cursor keys
-                jr      nc,rl_ctl
-                cp      $0B                 ; HOME
-                jr      z,rl_ctl
-                cp      $0C                 ; CLS
-                jr      z,rl_ctl
                 cp      9                   ; TAB (D-EDCTRL)
                 jr      z,rl_tab
-                jr      rl_more             ; other control bytes: dropped, as before
+                cp      27                  ; ESC: nothing, insert mode kept (measured)
+                jr      z,rl_more
+                dec     a                   ; $01, a graphic character's prefix: dropped
+                jr      z,rl_more
+                inc     a
+                ; 🔤 D-EDITINS (2026-11-21): EVERY other control key ends insert mode and
+                ; reaches CHPUT -- the cursor keys, HOME, CLS as before, and now SELECT,
+                ; CTRL+G, CTRL+J ... (docs/bios/PINLIN.md R-L-INSEND, XLIN5_run1.out:
+                ; ours dropped them and stayed in insert mode).
+                jr      rl_ctl
 ; 🔤 TAB (D-EDCTRL, 2026-10-05): it TYPES SPACES to the next 8-column stop --
 ; the VG-8020 read, scratchpad/edctrl_probe.py: `AB`+TAB puts the cursor on
 ; column 9 (blanks 3..8), and over existing text it OVERWRITES (`ABCDEFGHIJ`,
@@ -268,7 +271,7 @@ rl_crlf:
                 call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
                 ld      hl,RL_LAST
                 cp      (hl)                ; NZ: the LF did not scroll, the table is intact
-                ld      a,1
+                ld      a,$AF               ; (D-EDITINS: $AF, R-L-ENTERLT's value; it was 1)
                 call    z,rl_botfix         ; Z: it did: the line's last row moved up, and ENDS
                 ld      a,1                 ; 1: Enter -- the line is in the buffer
                 jp      rl_stat
@@ -288,8 +291,8 @@ rl_botfix:
                 call    ek_hladd            ; (clobbers A, HL only)
                 ld      (hl),c              ; [bottom-2]
                 inc     hl
-                ld      (hl),1              ; [bottom-1]
-                ret
+                ld      (hl),$AF            ; [bottom-1]: a fresh bottom row, $AF as the
+                ret                         ; VG-8020's (D-EDITINS: it was 1; R-L-INSLT)
 
 ; --- rl_scrolled: bookkeeping after a scroll this reader caused -------------
 ; The row above the bottom now continues onto it (rl_botfix), and the row where
@@ -339,25 +342,11 @@ rl_shift_right:
                 call    CHPUT               ; below it down (its chput_esc_ll) ...
                 ld      a,'L'
                 call    CHPUT
-                ; ... but NOT their LINTTB entries: its update loads DE from
-                ; `ld d,a / ld e,0` (CRTCNT * 256, not CRTCNT), so its lddr lands in
-                ; page-0 ROM and the table never moves. Shift it here: rows B+1 ..
-                ; CRTCNT-1 move to B+2 .. CRTCNT.
-                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
-                sub     b
-                dec     a                   ; the rows to move: CRTCNT - (B+1)
-                jr      z,rsr_marks         ; none: the new row is the bottom one
-                ld      c,a
-                push    bc
-                call    CRT_ROWS            ; CRTCNT + CNSDFG (main page 0, $3283)
-                ld      hl,LINTTB-1
-                call    ek_hladd            ; DE -> LINTTB[bottom row - 1]
-                ld      d,h
-                ld      e,l
-                dec     hl                  ; HL -> the entry above it
-                ld      b,0
-                lddr
-                pop     bc
+                ; ... and their LINTTB entries, the bottom row's $FB (the repack's
+                ; chput_esc_ll, D-LINTTBVAL). 🔴 D-EDITINS (2026-11-21): this file
+                ; shifted the table AGAIN here, from when C-BIOS's did not -- every
+                ; entry below landed two rows down and the bottom lost its $FB
+                ; (docs/bios/PINLIN.md R-L-INSROW, scratchpad/XLIN5_run1.out).
 rsr_marks:
                 ld      hl,LINTTB-1
                 ld      e,b

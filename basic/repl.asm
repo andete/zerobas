@@ -205,24 +205,11 @@ rl_entry:
                 ld      a,1
 rl_col0:
                 ld      (RL_COL0),a
-                ; C-BIOS's scroll never rewrites the last two LINTTB entries
-                ; (D-SCREDIT, write-watchpoint), so after any output that wrapped
-                ; at the row above the bottom and then scrolled, the row above the
-                ; prompt still reads "continues" and Enter would splice it into the
-                ; line (linemax's list-max: a LIST that filled the screen). The
-                ; prompt always opens a FRESH line, so on the bottom row both
-                ; entries are set to "ends" here; the tenant's own wraps re-mark.
-                call    crt_rows            ; the console's bottom row (CRTCNT + CNSDFG)
-                ld      hl,CSRY
-                cp      (hl)
-                jr      nz,rl_wait          ; not on the bottom row: the table is C-BIOS's own
-                ld      hl,LINTTB-2
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                ld      (hl),1              ; the row above the prompt ended a line
-                inc     hl
-                ld      (hl),1              ; and so does the prompt row, until it wraps
+                ; (Until D-EDITINS, 2026-11-21, the bottom row's two LINTTB entries were
+                ; forced to 1 here: C-BIOS's scroll then never rewrote them -- D-SCREDIT,
+                ; linemax's list-max. The repack's scroll moves the whole table and marks
+                ; its new row $AF now (D-LINTTBVAL), and the VG-8020 leaves both entries
+                ; as they are: docs/bios/PINLIN.md R-L-INSLT, scratchpad/XLIN5_run3.out.)
 rl_wait:
                 ; D-CURSORBLOCK: the block cursor is up while the editor waits for
                 ; a key and down while the tenant edits (sub/cursor.asm).

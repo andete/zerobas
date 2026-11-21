@@ -16953,7 +16953,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       start over the WHOLE screen; words are runs of 0-9 A-Z a-z only; CTRL+F first leaves its word; no word left: row 24
       column 40 / row 1 column 1. All end insert mode. (Timing: typed text then CTRL too close together turns the last
       letters into control codes in openMSX.)
-- [ ] **D-EDITINS — THE LINE EDITOR'S INSERT MODE, MEASURED (30 CASES)**
+- [x] **D-EDITINS — THE LINE EDITOR'S INSERT MODE, MEASURED (30 CASES)**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       INS ($12) toggles INSFLG $FF / 0 and CSTYLE $AF / 0; Enter leaves both 0. A typed character pushes the rest of the
@@ -16961,6 +16961,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       below move down, the bottom row's LINTTB $FB), linked to it; on the bottom row the screen scrolls instead. TAB inserts
       spaces to the next stop. ESC does nothing in the editor and keeps insert mode; BS and DEL keep it; every other control
       key ends it (cursor keys, HOME, CLS, CTRL+U/E/B/F/N/J/G, SELECT, CTRL+R toggles).
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin5.asm, 12 cases, scratchpad/XLIN5_run1.out):
+      every claim tested held. zerobas pushed, inserted TAB and kept insert mode on ESC / BS / DEL already; it differed
+      in (1) SELECT and CTRL+G (and every other control byte it dropped) keeping insert mode -- sub/readline.asm now
+      ends it on every control key but ESC ($01, a graphic prefix, still dropped); (2) the new row a full line gets:
+      the repack's ESC L now moves LINTTB itself (D-LINTTBVAL) and readline shifted it AGAIN -- the second shift is
+      gone (-20 B); (3) the bottom row's LINTTB after scrolls: rl_botfix wrote 1 for a fresh bottom row ($AF now) and
+      read_line forced the bottom two entries to 1 at every bottom-row read (removed: the scroll it guarded against
+      is fixed). docs/bios/PINLIN.md section 5 (R-L-INSPUSH / INSROW / INSBOT / INSTAB / INSKEEP / INSEND / INSLT).
+      Not measured: INSFLG / CSTYLE while insert mode is on.
 - [x] **D-EDITDELBS — THE LINE EDITOR'S DEL / BS, THE INLIN START COLUMN AND LINTTB ON ENTER**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
