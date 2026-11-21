@@ -268,7 +268,15 @@ bios_strtms:
                 ld      hl,PLYCNT
                 or      (hl)
                 ret     z                   ; no statement waiting
-                call    st_go               ; PLYCNT - 1 (F), MUSICF := 7, A = 7
+; st_start: the start itself -- also PLAY's (the parser's st_go, basic/islands.asm, jumps
+; here) and the player's next round. PLYCNT - 1 (F as DEC leaves it), MUSICF := 7, A = 7,
+; and each voice's first word := 1: the player's counter, so every voice reads its
+; first packet on the next frame. HL = 1; B, C, D, E, IX, IY kept.
+st_start:
+                ld      hl,PLYCNT
+                dec     (hl)
+                ld      a,7
+                ld      (MUSICF),a
                 ld      hl,1
                 ld      (VCBA),hl
                 ld      (VCBB),hl

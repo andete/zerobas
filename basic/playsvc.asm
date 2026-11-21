@@ -1,230 +1,162 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; playsvc.asm — the live PLAY music servicer (audio arc, Slice 3).
+; playsvc.asm — the background music player (audio arc, Slice 3; rebuilt 2026-11-21).
 ; ===========================================================================
-; play_service drains one frame of PLAY music each VBLANK. It is the async half
-; of PLAY: the parser tenant (sub/playparse.asm) fills the three VOICxQ packet
-; queues and sets MUSICF; from then on this routine, reached from C-BIOS's $0038
-; timer ISR through the H.TIMI ($FD9F) hook, dequeues one frame's worth per voice
-; and writes the PSG directly. See docs/audio-slice3-characterization.md — every
-; behavioral constant here (frame = the packet's own dur field; silence = amp 0;
-; R7 never touched; MUSICF bit cleared at OP_END) was pinned by a per-VBLANK PSG
-; register trace of the real VG-8020, black-box, no disassembly.
+; play_service plays one frame of the queued music. PLAY's parser tenant
+; (sub/playparse.asm) -- or any program, through PUTQ ($00F9) -- fills the three
+; queues (QUETAB $F959, VOICAQ / VOICBQ / VOICCQ) in the VG-8020's packet format and
+; STRTMS ($0099) starts them; from then on this routine plays them from the BIOS's
+; OWN timer interrupt: C-BIOS's $0038 handler calls isr_music (basic/subromcall.asm,
+; page 0) in place of its `ld (JIFFY),hl` ($170F, basic/islands.asm), and isr_music
+; maps main page 1 in and calls here when MUSICF is not 0. No BASIC set-up is needed,
+; and a program that takes H.TIMI over still hears its music (H.TIMI is called first,
+; as before; it now carries only the traps poll).
 ;
-; PLACEMENT (docs §4a). This is main-ROM PAGE-1 resident, reached from H.TIMI --
-; not page-0 window resident, not a sub-ROM tenant. The spec required page-0
-; residence to survive a VBLANK landing mid page-1-tenant CALSLT (spec §4.3
-; reentrancy hazard: main page 1 switched out to a sub-ROM tenant when the ISR
-; fires -> the H.TIMI JP lands in sub-ROM bytes). The original §4a rationale for
-; keeping page-1 residence claimed that invariant could never be reached because
-; "every page-1 tenant runs DI and none opts into EI" -- this was WRONG: the
-; FATPRIM tenant's dskio_calslt CALSLTs the disk ROM's DSKIO, which EIs, so a
-; VBLANK CAN fire while main page 1 is switched out (this crashed the boot for a
-; band of page-1 sizes -- docs/traps-t1-wiring-blocker.md). FIX: H.TIMI no longer
-; points here directly; play_install routes it through htimi_guard (PAGE-0
-; resident, always mapped when the ISR runs), which only falls through to
-; play_service when main-ROM owns page 1, and skips PLAY one frame otherwise.
-; So the servicer STAYS page-1 resident (page 0 has ~6 B free, page 1 ~860 B) and
-; the reentrancy hazard is closed by the guard, not by an untrue DI invariant.
-; See docs/spec-traps-t1-htimi-page1-safety.md.
+; THE MODEL, black-box (probes/bios/play_trace.py: PUTQ'd packets + STRTMS, every PSG
+; write per frame, scratchpad/playtrace_run1.out; the VG-8020 and the NMS 8250 the
+; same in all 12 scenarios; zerobas against the VG-8020: scratchpad/playtrace_run2.out). Per frame, for voices A, B, C in that order whose MUSICF
+; bit is set: the voice block's FIRST WORD ($FB41 / $FB66 / $FB8B -- STRTMS sets it to
+; 1) counts down by one; when it reaches 0 the next packet is read:
+;   - the queue empty: nothing -- the word stays 0, so the next frame takes it to
+;     $FFFF (a voice whose queue runs dry is silent for 65536 frames: measured);
+;   - $FF (the end): R(8+v) := 0 and the voice's MUSICF bit is cleared;
+;   - otherwise [n << 5 | dur 12..8] [dur 7..0] [vol] ...: the word := dur (0 counts
+;     as 65536), R(8+v) := vol; for n = 1 (a rest) nothing more; else R13 := vol when
+;     vol bit 4 (the envelope) is set, then, when vol bit 6 is set, the M bytes (high,
+;     low in the queue) as R11 := low, R12 := high, then the tone (high, low) as
+;     R(2v) := low, R(2v+1) := high.
+; After the three voices, when MUSICF is 0 the next round starts as STRTMS (PLYCNT
+; not 0: PLYCNT - 1, MUSICF 7, the words := 1). A frame with MUSICF 0 does nothing,
+; whatever PLYCNT says. R7 is never written.
 ;
-; INTERRUPT DISCIPLINE. Entered with interrupts already disabled (the ISR); it must
-; stay DI (never EI) and is therefore inherently non-reentrant -- no busy flag
-; needed. It is register-transparent (saves/restores everything it uses), the
-; H.TIMI convention. It touches only the PSG ($A0/$A1), the RAM queues, MUSICF, and
-; the per-voice VCX_FRAMES counters -- never JIFFY or the keyboard.
+; INTERRUPT DISCIPLINE. Called by isr_music inside the BIOS's interrupt handler, DI,
+; which has saved every register (main and alternate, IX, IY) and needs none of them
+; after: play_service clobbers what it likes and stays DI.
 ;
-; Repack-only, like ex_sound / ex_play: the whole body is under IF the repack build
-; (the H.TIMI seam only makes sense with the servicer present, and the servicer is
-; reachable only in the repacked page-1 window). The.
-;
-; CLEAN-ROOM: own-design drain loop + packet decode. The queue packet format is
-; own-design (sub/playparse.asm); the work-area addresses (MUSICF/QUETAB/VCB) are
-; the MSX2 Technical Handbook layout, also reserved by our C-BIOS target. H.TIMI /
-; the $0038 ISR contract is the published BIOS work-area appendix. No ROM bytes
-; lifted ([memory: no-reference-rom-disasm]).
+; CLEAN-ROOM: own code; the model is the black-box trace above (PSG port writes and
+; work-area RAM, never a ROM byte). The work-area addresses are the published layout.
 
-
-; play_install: point H.TIMI at htimi_guard (which gates play_service). Called once
-; at boot from init_ext_roms (basic/initext.asm), after the extension-ROM scan. H.TIMI
-; is C9-free on our target (verified: $FD9F = C9 C9 C9 C9 C9 after boot -- neither
-; C-BIOS nor the disk ROM hooks it), so a bare JP with no chain; play_service's own
-; MUSICF==0 fast-out makes the always-installed seam cheap. Clobbers A, HL.
-; (Interrupt-traps T1 will re-point this at htimi_service, which htimi_guard will gate
-; the same way -- the guard sits in front of whatever the H.TIMI target is.)
+; play_install: point H.TIMI at htimi_guard (BASIC's traps poll). Called once at boot
+; from init_ext_roms (basic/initext.asm), after the extension-ROM scan. The music is no
+; longer on this hook: the BIOS's own interrupt plays it (isr_music). Clobbers A, HL.
 play_install:
                 ld      a,$C3               ; JP opcode
                 ld      (H_TIMI),a
-                ld      hl,htimi_guard      ; page-1-safety gate (subromcall.asm), NOT
-                ld      (H_TIMI+1),hl       ; play_service directly: a VBLANK can land
-                ret                         ; while page 1 is a sub-ROM tenant (FATPRIM's
-                                            ; DSKIO EIs) -> play_service would be paged
-                                            ; out. See docs/spec-traps-t1-htimi-page1-
-                                            ; safety.md + traps-t1-wiring-blocker.md.
+                ld      hl,htimi_guard      ; page-1-safety gate (subromcall.asm): a
+                ld      (H_TIMI+1),hl       ; VBLANK can land while page 1 is a sub-ROM
+                ret                         ; tenant (FATPRIM's DSKIO EIs). See docs/
+                                            ; spec-traps-t1-htimi-page1-safety.md.
 
-; play_service: H.TIMI seam target. One frame of drain across the 3 voice queues.
+; play_service: one frame of the music (the model above). IN: MUSICF not 0 (isr_music
+; tests it), main page 1 mapped, DI. Clobbers every register.
 play_service:
-                push    af
-                ld      a,(MUSICF)
-                or      a
-                jr      nz,psv_run
-                pop     af
-                ret                         ; no music active -> fast out (common)
-psv_run:
-                push    bc
-                push    de
-                push    hl
-                push    ix
-                push    iy
-                ld      ix,VCBA             ; voice 0 VCB
-                ld      iy,QUETAB           ; voice 0 ring descriptor
-                ld      bc,$0001            ; B = voice index 0, C = voice bitmask $01
+                ld      ix,VCBA             ; voice A's block
+                ld      iy,QUETAB           ; queue 0's descriptor
+                ld      bc,$0001            ; B = the voice, C = its MUSICF bit
 psv_loop:
                 ld      a,(MUSICF)
                 and     c
-                call    nz,psv_voice        ; service voice B when its MUSICF bit is set
-                inc     b
-                ld      a,b
-                cp      3
-                jr      z,psv_ret
+                call    nz,psv_voice
                 ld      de,VCB_STRIDE
                 add     ix,de
                 ld      de,QD_STRIDE
                 add     iy,de
-                sla     c                   ; advance to the next voice's mask bit
-                jr      psv_loop
-psv_ret:
+                inc     b
+                sla     c
+                bit     3,c
+                jr      z,psv_loop          ; voices A, B, C
                 ld      a,(MUSICF)
                 or      a
-                call    z,bios_strtms       ; nobody playing: the sync -- the next PLAY
-                                            ; statement queued starts, or nothing
-                pop     iy
-                pop     ix
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af
-                ret
+                ret     nz
+                jp      bios_strtms         ; every voice at its end: the next round
 
-; psv_voice: service one active voice. IN: IX = its VCB, IY = its ring descriptor,
-; B = voice index (0..2), C = its MUSICF/voice bitmask. Preserves B/C/IX/IY (the
-; loop state); freely uses A/DE/HL.
-;
-; Counter model (docs §2): a note occupies exactly `dur` consecutive VBLANKs with
-; no gap. VCX_FRAMES holds the frames still to run for the current note. When it is
-; 0 we fetch+program the next packet THIS frame, load VCX_FRAMES=dur, then fall
-; through to tick it down once (so this frame counts as the note's first). The seed
-; 0 the parser leaves makes the first VBLANK after a PLAY fetch packet 0.
+; psv_voice: IX = the voice's block, IY = its queue's descriptor, B = the voice, C = its
+; bit. Count the block's first word down; at 0 read a packet.
 psv_voice:
-                ld      l,(ix+VCX_FRAMES)
-                ld      h,(ix+VCX_FRAMES+1)
+                ld      l,(ix+0)
+                ld      h,(ix+1)
+                dec     hl
+                ld      (ix+0),l
+                ld      (ix+1),h
                 ld      a,h
                 or      l
-                jr      nz,psv_tick         ; still running -> just count this frame down
-psv_fetch:
-                ; 🔴 D-PLAYQUEUE (2026-10-31): THE QUEUE IS A RING NOW, read up to
-                ; QD_PUT and wrapped at 128 (sysvars.inc, PK_*: the reference's
-                ; packet sizes). An empty ring is not the end -- a PLAY still being
-                ; written (main waiting for room) may not have reached its end
-                ; marker yet -- so the voice stays on and looks again next frame.
+                ret     nz                  ; the note goes on
                 ld      a,(iy+QD_GET)
                 cp      (iy+QD_PUT)
-                ret     z                   ; nothing queued yet
-                ; THE VG-8020's PACKET (basic/sysvars.inc PK_*; D-BIOSRUNG / STRTMS):
-                ; [n << 5 | dur 12..8] [dur 7..0] [vol] ([M hi] [M lo]) [tone hi] [tone lo]
+                ret     z                   ; the queue is empty: nothing (the word wraps)
                 call    psv_get
-                cp      PK_END
-                jp      z,psv_end
+                inc     a
+                jr      z,psv_end           ; $FF: the end
+                dec     a
                 ld      d,a                 ; D = byte 0
                 and     $1F
-                ld      (ix+VCX_FRAMES+1),a
+                ld      (ix+1),a            ; the duration, high ...
                 call    psv_get
-                ld      (ix+VCX_FRAMES),a
+                ld      (ix+0),a            ; ... and low
                 call    psv_get
                 ld      e,a                 ; E = the vol byte
                 ld      a,b
-                add     a,8                 ; A = 8+v = amplitude register
-                out     ($A0),a
-                ld      a,e
-                out     ($A1),a             ; the amplitude := the WHOLE vol byte, FIRST
-                                            ; (the VG-8020: R8 = $93 for S3, before R13;
-                                            ; the PSG keeps 5 bits -- a rest's $80 is 0)
+                add     a,8
+                call    psg_out             ; R(8+v) := vol, first
                 ld      a,d
-                cp      PK_NOTE3
-                jr      c,psv_tick          ; a rest (n = 1): nothing more
+                cp      $40
+                ret     c                   ; n = 1: a rest, nothing more
                 bit     4,e
-                jr      z,psv_nenv
                 ld      a,13
-                out     ($A0),a
-                ld      a,e
-                out     ($A1),a             ; R13 := the vol byte on EVERY envelope note --
-                                            ; the envelope restarts, as the VG-8020
-psv_nenv:
+                call    nz,psg_out          ; the envelope: R13 := vol (it restarts)
                 bit     6,e
-                jr      z,psv_tone          ; no M bytes
-                call    psv_get             ; M high
-                push    af
                 ld      a,11
-                out     ($A0),a
+                call    nz,psv_pair         ; M: R11 := low, R12 := high
+                ld      a,b
+                add     a,a                 ; the tone: R(2v) := low, R(2v+1) := high
+; psv_pair: A = a register; reads high then low from the queue, writes R(A) := low,
+; then R(A+1) := high.
+psv_pair:
+                push    af
                 call    psv_get
-                out     ($A1),a             ; R11 := M low ...
-                ld      a,12
-                out     ($A0),a
+                ld      d,a                 ; high
+                call    psv_get
+                ld      e,a                 ; low
                 pop     af
-                out     ($A1),a             ; ... then R12 := M high (the VG-8020's order)
-psv_tone:
-                ld      a,b
-                add     a,a
-                inc     a                   ; A = 2v+1 = tone-period HIGH register
+                call    psg_out
+                inc     a
+                ld      e,d
+; psg_out: PSG register A := E; A and E kept.
+psg_out:
                 out     ($A0),a
-                call    psv_get
+                push    af
+                ld      a,e
                 out     ($A1),a
-                ld      a,b
-                add     a,a                 ; A = 2v = tone-period LOW register
-                out     ($A0),a
-                call    psv_get
-                out     ($A1),a
-psv_tick:
-                ld      l,(ix+VCX_FRAMES)
-                ld      h,(ix+VCX_FRAMES+1)
-                dec     hl
-                ld      (ix+VCX_FRAMES),l
-                ld      (ix+VCX_FRAMES+1),h
+                pop     af
                 ret
-; psv_get: A = the ring's next byte; QD_GET steps on, wrapping at 128. Uses HL.
-psv_get:
-                ld      l,(iy+QD_ADDR)
-                ld      h,(iy+QD_ADDR+1)
-                ld      a,(iy+QD_GET)
-                inc     a                   ; PRE-increment, as the VG-8020's rings
-                and     127                 ; (GET = the last byte read)
-                ld      (iy+QD_GET),a
-                add     a,l
-                ld      l,a
-                adc     a,h
-                sub     l
-                ld      h,a                 ; HL = base + get
-                ld      a,(hl)
-                ret
-; psv_end: a PLAY's end marker. The voice goes silent and WAITS (its MUSICF bit
-; clear, so PLAY(n) reads 0 -- measured, scratchpad/playsync_measure.out) until no
-; voice is playing; play_service then calls STRTMS (bios_strtms, basic/biosfnk.asm),
-; which starts the next statement queued -- PLYCNT - 1, MUSICF := 7 -- or nothing.
-; That is the VG-8020's sync: a voice reaching its end marker waits for every voice
-; still playing, even when the next PLAY named only that voice.
+; psv_end: the voice's end marker -- R(8+v) := 0, its MUSICF bit cleared.
 psv_end:
                 ld      a,b
-                add     a,8                 ; amplitude register 8+v
-                out     ($A0),a
-                xor     a
-                out     ($A1),a             ; amplitude 0 -> channel silent
+                add     a,8
+                ld      e,0
+                call    psg_out
                 ld      a,c
-                cpl                         ; ~(this voice's bit)
-                ld      e,a
-                ld      a,(MUSICF)
-                and     e
-                ld      (MUSICF),a          ; clear the voice's MUSICF bit
+                cpl
+                ld      hl,MUSICF
+                and     (hl)
+                ld      (hl),a
+                ret
+; psv_get: A = the queue's next byte. The get index is stepped FIRST (the VG-8020's
+; rings: GET = the last byte read) and masked with the descriptor's size byte.
+psv_get:
+                ld      a,(iy+QD_GET)
+                inc     a
+                and     (iy+QD_SIZE)
+                ld      (iy+QD_GET),a
+                ld      l,(iy+QD_ADDR)
+                ld      h,(iy+QD_ADDR+1)
+                add     a,l
+                ld      l,a
+                jr      nc,psv_g1
+                inc     h
+psv_g1:
+                ld      a,(hl)
                 ret
 ; psv_flush: BEEP, a break, an abort (psg_silence, basic/sound.asm, under its DI)
 ; reset PLAY as the VG-8020 does: the queues EMPTY -- they are rings kept across

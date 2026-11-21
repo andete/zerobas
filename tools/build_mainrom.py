@@ -119,8 +119,10 @@ PATCH_RANGES = {0x0008: bytes([0xC9, 0x00, 0x00]),     # RST 08h -> synchr (D-SY
                                                        #  ret since D-POSITCLAMP)
                 0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
                 0x1110: bytes([0x3A, 0xDD, 0xF3]),     # CHPUT: TTYPOS = CSRX-1 (0-based; $116E before D-CBIOSDEAD part 2)
-                0x06AD: bytes([0xCD, 0x20, 0x01])}     # NSETCX: call SETC ($0120) -> nsx_px ($06AD since repack #51)
+                0x06AD: bytes([0xCD, 0x20, 0x01]),     # NSETCX: call SETC ($0120) -> nsx_px ($06AD since repack #51)
                                                        #  (D-SETCLAST part 2, D-NSETCXFULL)
+                0x170F: bytes([0x22, 0x9E, 0xFC])}     # the $0038 handler's `ld (JIFFY),hl` -> isr_music
+                                                       #  (the background music, from the BIOS's own interrupt)
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 

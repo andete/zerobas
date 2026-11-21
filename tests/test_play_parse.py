@@ -105,11 +105,19 @@ def decode_queue(m, voice, start=None):
 
 def machine():
     """The sub ROM at 0. st_go lives in MAIN's page 0, which this harness does not load:
-    its five instructions are planted at the ABI address -- ld hl,PLYCNT / dec (hl) /
-    ld a,7 / ld (MUSICF),a / ret -- so PLAY's start (pt_publish) runs as on the machine."""
+    st_play's logic (basic/subromcall.asm) is planted at the ABI address, so PLAY's start
+    (pt_parse, after the window's last voice) runs as on the machine: MUSICF not 0 -> ret;
+    every ring's PUT = GET -> ret; else ld hl,PLYCNT / dec (hl) / ld a,7 / ld (MUSICF),a /
+    ret (st_start's words := 1 left out: the parser never reads them)."""
     m = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
-    for i, b in enumerate([0x21, PLYCNT & 255, PLYCNT >> 8, 0x35, 0x3E, 7,
-                           0x32, MUSICF & 255, MUSICF >> 8, 0xC9]):
+    quetab = 0xF959
+    code = [0x3A, MUSICF & 255, MUSICF >> 8, 0xB7, 0xC0,       # ld a,(MUSICF) / or a / ret nz
+            0x21, quetab & 255, quetab >> 8, 0x06, 0x03,        # ld hl,QUETAB / ld b,3
+            0x7E, 0x23, 0xBE, 0x20, 0x07,                       # lp: ld a,(hl) / inc hl / cp (hl) / jr nz,go
+            0x11, 0x05, 0x00, 0x19, 0x10, 0xF5, 0xC9,           # ld de,5 / add hl,de / djnz lp / ret
+            0x21, PLYCNT & 255, PLYCNT >> 8, 0x35, 0x3E, 7,     # go: ld hl,PLYCNT / dec (hl) / ld a,7
+            0x32, MUSICF & 255, MUSICF >> 8, 0xC9]              # ld (MUSICF),a / ret
+    for i, b in enumerate(code):
         m.mem[ST_GO + i] = b
     return m
 

@@ -387,15 +387,12 @@ zks_paint:
                 push    ix
                 jp      zks_p2
 
-; st_go -- STRTMS's start (bios_strtms, basic/biosfnk.asm; D-BIOSRUNG / STRTMS): PLYCNT -
-; 1, MUSICF := 7. Also PLAY's start (the parser tenant through the resident ABI) and the
-; servicer's sync (through bios_strtms). Here because page 0 had no other 10 B.
+; st_go -- PLAY's start (the parser tenant, through the resident ABI, which pins this
+; address): st_play (basic/biosfnk.asm) -- when the music is idle and a ring holds
+; something, STRTMS's start (PLYCNT - 1, MUSICF := 7, the voices' first words := 1).
+; Its body moved there 2026-11-21; the entry stays so the sub ROM's ABI does not move.
 st_go:
-                ld      hl,PLYCNT
-                dec     (hl)
-                ld      a,7
-                ld      (MUSICF),a
-                ret
+                jp      st_play
 
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
@@ -850,6 +847,14 @@ sub_isr_main:
                 org     $1110
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
+
+; --- C-BIOS's timer interrupt plays the background music --------------------------------
+; $170F is the `ld (JIFFY),hl` in C-BIOS's $0038 handler, right after its H.TIMI call
+; (src/main.asm keyint, at its "TODO: MUSICF"); isr_music (basic/subromcall.asm) does
+; that store and then the music. PATCH_RANGES refuses unless it reads 22 9E FC.
+                org     $170F
+cbios_isr_music:                            ; a root: C-BIOS enters it (PATCH_ROOTS)
+                call    isr_music
 
 ; --- C-BIOS's NSETCX: a run's pixels in a byte, decided whole (D-SETCLAST part 2) --------
 ; $06AD is nsetcx_lp's per-pixel `call $0120` (SETC) in our repacked NSETCX ($07FB until

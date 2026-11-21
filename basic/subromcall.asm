@@ -247,7 +247,48 @@ sc_call:
                 jr      c,subrom_absent_error   ; jr: both low, same file (B-11)
                 ret
 
-; htimi_guard: page-1-safety gate for the H.TIMI PLAY servicer seam
+; isr_music: the background music, from the BIOS's OWN timer interrupt. C-BIOS's
+; $0038 handler calls here in place of its `ld (JIFFY),hl` (patched at $170F,
+; basic/islands.asm), right after H.TIMI -- so the music plays without BASIC and
+; whoever owns H.TIMI, as on the VG-8020. MUSICF 0: nothing (the reference starts
+; nothing from the interrupt then, whatever PLYCNT says: probes/bios/play_trace.py
+; scenario 12). Else main page 1 (primary slot 0, the merged-machine invariant below)
+; is mapped for play_service (basic/playsvc.asm) and the caller's page 1 put back.
+; The handler has saved every register and reads none after this.
+isr_music:
+                ld      (JIFFY),hl          ; the instruction the call replaced
+                ld      a,(MUSICF)
+                or      a
+                ret     z
+                in      a,(PSLTREG)
+                push    af                  ; the caller's slot layout
+                and     %11110011           ; page 1 -> primary slot 0: main ROM
+                out     (PSLTREG),a
+                call    play_service
+                pop     af
+                out     (PSLTREG),a         ; page 1 back
+                ret
+
+; st_play: PLAY's start, after a window has published every voice (sub/playparse.asm,
+; through st_go): music playing, or every ring empty -> nothing; else st_start (basic/biosfnk.asm). B, DE, HL
+; clobbered; C kept.
+st_play:
+                ld      a,(MUSICF)
+                or      a
+                ret     nz
+                ld      hl,QUETAB
+                ld      b,3
+stp_lp:
+                ld      a,(hl)              ; PUT ...
+                inc     hl
+                cp      (hl)                ; ... against GET
+                jp      nz,st_start
+                ld      de,QD_STRIDE-1
+                add     hl,de
+                djnz    stp_lp
+                ret
+
+; htimi_guard: page-1-safety gate for the H.TIMI traps seam
 ; (docs/spec-traps-t1-htimi-page1-safety.md). play_install points H.TIMI here
 ; instead of straight at play_service. WHY: play_service is main-ROM PAGE-1
 ; resident, but a VBLANK can land while page 1 is switched out to a sub-ROM

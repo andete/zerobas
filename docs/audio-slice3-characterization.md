@@ -1,5 +1,15 @@
 # Audio Slice 3 — reference drain characterization (the `play_service` contract)
 
+> **Superseded in part (2026-11-21).** The player was rebuilt from a black-box trace of
+> PUTQ'd packets + STRTMS on the VG-8020 and NMS 8250 (`probes/bios/play_trace.py`,
+> [`playtrace_run1.out`](../scratchpad/playtrace_run1.out)); the model is in
+> [`basic/playsvc.asm`](../basic/playsvc.asm)'s header. Where this page differs, that
+> header wins: the counter is the voice block's FIRST word (not an own-design byte); a
+> voice whose queue is empty at 0 is NOT retried next frame (its word wraps to $FFFF);
+> the tone is written LOW register first; the player runs from the BIOS's own timer
+> interrupt (`isr_music`), not from H.TIMI. The packet format below predates the switch
+> to the VG-8020's packets (2026-11-12, TODO D-STRTMS).
+
 Status: **IMPLEMENTED + GATED (2026-07-21).** Characterization was reviewed and signed
 off, then `play_service` was built to this contract. All gates green: `make
 play-trace-acceptance` (per-VBLANK PSG trace differential vs VG-8020 — byte-faithful

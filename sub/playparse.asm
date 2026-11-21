@@ -150,12 +150,12 @@ pt_vloop:
                 pop     bc                  ; (ld sp does not touch the flags)
                 push    af                  ; the voice's result
                 push    bc
-                call    pt_publish          ; QD_PUT := the window's; start idle music
+                call    pt_publish          ; QD_PUT := the window's
                 pop     bc
                 pop     af
                 jr      nc,pt_vdone
                 cp      PLAY_MORE           ; A = AUDIO_STATUS (pk_full / px_err leave it in A)
-                ret     nz                  ; an error: AUDIO_STATUS says which
+                jr      nz,pt_err           ; an error: AUDIO_STATUS says which
                 jr      pt_vnext            ; a full ring: the voice stays, the others go on
 pt_vdone:
                 ld      hl,AUDIO_VMASK
@@ -167,6 +167,7 @@ pt_vnext:
                 inc     b
                 bit     3,c
                 jr      z,pt_vloop
+                call    st_go               ; every voice published: start idle music
                 ld      a,(AUDIO_VMASK)
                 or      a
                 ret     nz                  ; a voice still to do: PLAY_MORE (its pk_full set it)
@@ -175,24 +176,28 @@ pt_vnext:
                 xor     a
                 ld      (AUDIO_STATUS),a    ; 0 = ok
                 ret
-; --- pt_publish: B = voice, C = its bit. QD_PUT := VCX_WPUT; when it queued
-; something and the music is idle, START it as the VG-8020's PLAY does -- STRTMS's
-; own st_go (basic/biosfnk.asm, page 0: mapped under this tenant): PLYCNT - 1, MUSICF
-; := 7. The statement's +1 comes at its end (pt_parse), so a PLAY that started nets 0
-; and one queued behind playing music leaves 1 for the sync (scratchpad/plycnt_run.out).
-; No tick runs between the two: htimi_guard skips the servicer while this tenant
-; holds page 1.
+; --- pt_err: a voice's error ends the window -- what was published still starts
+pt_err:
+                push    af
+                call    st_go
+                pop     af
+                ret
+; --- pt_publish: B = voice, C = its bit. QD_PUT := VCX_WPUT. The start comes after
+; the window's LAST voice (pt_parse's `call st_go`; st_play, basic/biosfnk.asm, page 0:
+; mapped under this tenant): when the music is idle and a ring holds something, PLYCNT
+; - 1, MUSICF := 7, the words := 1 -- STRTMS's start. Until 2026-11-21 each voice's
+; publish started it, and a frame landing between voices (the timer interrupt plays
+; whatever page 1 holds) found B and C still empty: with the VG-8020's empty-queue rule
+; (the word wraps, probes/bios/play_trace.py scenario 2) they stalled -- PLAY(3) -1 after
+; PLAY "","L1CDEFGAB" (play-acceptance fn_v2). The statement's +1 comes at its end, so a
+; PLAY that started nets 0 and one queued behind playing music leaves 1 for the sync
+; (scratchpad/plycnt_run.out).
 pt_publish:
                 call    pt_vcb_ix
                 call    pt_qd
                 ld      a,(ix+VCX_WPUT)
                 ld      (iy+QD_PUT),a
-                cp      (iy+QD_GET)
-                ret     z                   ; nothing queued
-                ld      a,(MUSICF)
-                or      a
-                ret     nz                  ; playing: this statement waits for the sync
-                jp      st_go
+                ret
 
 ; --- pt_init: seed the PLAY defaults into all three VCBs and empty the rings --
 ; At cold boot, and again after BEEP / a break / an abort (psv_flush zeroes the
@@ -209,8 +214,6 @@ pi_lp:
                 ld      (ix+VCX_ENVPER),255 ; M255, the default (M255C sends nothing on
                 ld      (ix+VCX_ENVPER+1),0 ; the VG-8020, scratchpad/playq_run2.out)
                 ld      (ix+VCX_ENVDIRTY),0 ; no M pending (BEEP drops one, measured)
-                ld      (ix+VCX_FRAMES),0   ; no note running
-                ld      (ix+VCX_FRAMES+1),0
                 ld      de,VCB_STRIDE
                 add     ix,de
                 djnz    pi_lp

@@ -50,13 +50,12 @@
 ; TRAPPEND/service-stack mechanism are own-design. No ROM bytes lifted.
 
 
-; htimi_service: the H.TIMI seam target (installed by play_install, playsvc.asm).
-; Poll the traps, then fall into the PLAY drain (its own MUSICF==0 fast-out keeps
-; the always-installed seam cheap). jp (not call) so play_service's ret returns
-; straight to the $0038 ISR.
+; htimi_service: the H.TIMI seam target (installed by play_install, playsvc.asm):
+; the traps poll. Until 2026-11-21 it fell into the PLAY drain too; the music is the
+; BIOS interrupt's own now (isr_music, basic/subromcall.asm), so it plays whether or
+; not BASIC set this hook up, and whoever owns H.TIMI.
 htimi_service:
-                call    event_poll
-                jp      play_service
+                jp      event_poll
 
 ; event_poll: one frame of trap event detection. Called from htimi_service every
 ; VBLANK, DI, register-transparent. Fast-out when no trap is ON (the common case).

@@ -3786,12 +3786,10 @@ VCX_NOTEL       equ     16      ; NOTELX: default note length 1..64
 VCX_TEMPO       equ     17      ; TEMPOX: tempo 32..255
 VCX_VOLUME      equ     18      ; VOLUMX: volume 0..15
 VCX_ENVSH       equ     19      ; ENVLPX: envelope shape 0..15 ($10 bit = env mode on)
-; Audio Slice 3 (docs/audio-slice3-characterization.md §2): the live drain servicer's
-; per-voice frame down-counter. OWN-DESIGN offset (past the parse-state fields; the
-; MSX music player keeps an equivalent counter in the VCB, exact offset not lifted --
-; no disassembly). Seeded to 0 by the parser's queue reset so the first VBLANK fetches
-; packet 0; play_service loads it with a note's `dur` and decrements once per frame.
-VCX_FRAMES      equ     20      ; frames remaining for this voice's current note, 2 B
+; Bytes 20-21 held play_service's own frame counter until 2026-11-21. The player now
+; counts in the block's FIRST WORD (offset 0), as the VG-8020 does (measured: the word
+; STRTMS sets to 1 counts down each frame, probes/bios/play_trace.py), so 20-21 are
+; unused.
 ; D-PLAYQUEUE (2026-10-31): own-design fields in the VCB's unused tail (37 B a
 ; voice, the reference's size -- no RAM beyond it). The parse is WINDOWED: when a
 ; voice's ring is full the tenant stops, main waits a frame, and the next call
