@@ -16891,6 +16891,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-PD-MEDIA (cases D11 C $00, D19 C $32): the reference refuses before any transfer -- A 12, F $89, B as
       entered, C 0, the buffer untouched; $F8, $F9 and $FF are taken. zerobas reads the sector. Which media bytes
       the reference takes besides those three is open (PHYDIO.md).
+      Round 3 (2026-11-22, XDSK3_run2.out D20-D36): $80, $F0, $F7 refused too, $FA taken; the media check comes BEFORE
+      the sector check ($00 with sector 1440: 12); and the media byte sizes the disk on both machines ($F8: 720
+      sectors, $FF / $FA: 640 -- zerobas does that already). zerobas takes all five refused bytes and reads sector 0.
 - [ ] **D-SCANKSKIP — A SCANR THAT ENDS IN ITS SKIP KEEPS K; ZEROBAS STORES THE SKIP'S HL 0**
       🎚️ TIER 6 — every edge (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
