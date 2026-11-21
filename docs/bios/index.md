@@ -112,7 +112,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
 | $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVDP.md) | 7 | — |
 | $0141 | SNSMAT | [input](../concepts/input-calls.md) | L3 | [FINAL](SNSMAT.md) | 5 | — |
-| $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | [DRAFT 2](PHYDIO.md) | 7 | D-PHYDIOREGS, D-PHYDIOPAST, D-PHYDIOB0, D-PHYDIOMEDIA |
+| $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | [DRAFT 3](PHYDIO.md) | 7 | D-PHYDIOREGS, D-PHYDIOPAST, D-PHYDIOB0, D-PHYDIOGEOM, D-PHYDIOMEDIA |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
 | $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | — |

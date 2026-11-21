@@ -5,28 +5,31 @@ SPDX-License-Identifier: 0BSD
 
 # `PHYDIO` ($0144) — read or write physical disk sectors
 
-> **Spec:** DRAFT 2 (2026-11-22), three measured rounds; round 3 answers the first review's findings
-> (scratchpad/PHYDIO_review1.md). Measured on the VG-8020, alone and with an NMS 1200 disk interface.
+> **Spec:** DRAFT 3 (2026-11-22), four measured rounds; round 3 answers the first review's findings
+> (scratchpad/PHYDIO_review1.md), round 4 the second's (the geometry model; scratchpad/PHYDIO_review2.md). Measured on the VG-8020, alone and with an NMS 1200 disk interface.
 
 ## Summary
 
 `PHYDIO` is the BIOS's door to the disk interface: it passes the call on through the hook H.PHYD
 ($FFA7), which a disk interface fills at start-up. With no interface the hook is a bare `RET`, and the
 call changes nothing. With one, it reads (carry clear) or writes (carry set) B physical sectors of
-drive A, starting at sector DE, from or to memory at HL; C is the media byte, and it decides the
-disk's size: 1440 sectors for $F9, 720 for $F8, 640 for $FF and $FA (the standard geometries). B 0
-means 256.
+drive A, starting at sector DE, from or to memory at HL; C is the media byte, and it names the
+disk's geometry: $F9 2 sides x 9 sectors x 80 tracks, $F8 1 x 9 x 80, $FA 1 x 8 x 80, $FF 2 x 8 x 40
+(the standard formats). A sector number is a place on that disk -- track = sector / (sides x sectors
+per track), then side, then sector -- and a track number at or past the media's count is past the
+end; the track number is taken modulo 256, so some sector numbers far past the end wrap back onto the
+disk ($FFFF, $1200). B 0 means 256.
 
 A good transfer returns A 0, F $42 and B 0, C $32, D 0 and E the entry F (D is the entry A or a
 constant: A was 0 throughout); HL is kept. A
 failure returns an error code in A with the carry set and B the sectors not transferred: 2 for a read
 past the disk's last sector, 8 for a write past it (the sectors before the end are transferred first),
-12 for a media byte the interface does not take ($00, $32, $80, $F0, $F7: checked before anything
-else). Sectors $FFFE and $FFFF are not refused. Interrupts are off after the call.
+12 for a media byte the interface does not take ($00, $32, $80, $F0, $F7: checked before the sector,
+on a read and on a write). Interrupts are off after the call.
 
-zerobas's diskless build does the same. Its disk build sizes the disk by the media byte too and moves
-the same bytes for every media byte the reference takes, but answers every register differently, gives
-other error codes, takes every media byte, and transfers nothing for B 0 (below).
+zerobas's diskless build does the same. Its disk build places sectors by the same geometry and wraps the
+track the same way, but gives $FF disks 80 tracks, answers every register differently, gives other
+error codes, takes every media byte, and transfers nothing for B 0 (below).
 
 ## The specification
 
@@ -36,8 +39,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 **Evidence.** **[XP rNN]**: case `NN` on row `r` -- cases 00-10 from the XDSK1 probe, run 2
 ([`scratchpad/XDSK1_run2.out`](../../scratchpad/XDSK1_run2.out)), cases 11-19 from XDSK2, run 1
 ([`scratchpad/XDSK2_run1.out`](../../scratchpad/XDSK2_run1.out)), cases 20-36 from XDSK3, run 2
-([`scratchpad/XDSK3_run2.out`](../../scratchpad/XDSK3_run2.out)). `probes/bios/spec/xdsk1.asm` to
-`xdsk3.asm` document the frame, the case tables and the 14-byte record:
+([`scratchpad/XDSK3_run2.out`](../../scratchpad/XDSK3_run2.out)), cases 38-53 from XDSK4, run 1
+([`scratchpad/XDSK4_run1.out`](../../scratchpad/XDSK4_run1.out)). `probes/bios/spec/xdsk1.asm` to
+`xdsk4.asm` document the frame, the case tables and the 14-byte record:
 - The probe is a 16 KB "AB" cartridge whose INIT only hooks H.STKE: a disk interface in a later slot is
   initialised after it, and H.STKE runs once every ROM has been. Drive A holds a fresh copy of the
   generated empty 720 KB disk (`disk/empty720.dsk`), the same image on both machines.
@@ -45,31 +49,35 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   (always 0, drive A: another drive would ask for a disk), F (bit 0, the carry: write), B, C, DE, HL
   and the interrupt state, calls PHYDIO, and records A, F, B, C, D, E, H, L, the interrupt state
   (read twice), the buffer's 16-bit sum and its bytes +0 and +512.
-- Round 1 (00-10) runs on one disk in order: case 06 writes sector 1439, so 07-10 find the pattern
-  there. Round 2 (11-19) starts from a fresh copy. Case 04 (B 0) started at sector 0 in run 1, and the
+- Round 1 (00-10) runs on one disk in order: case 06 writes sector 1439, so 07 and 10 read the pattern
+  back from there (08 and 09 read sector 0). Round 2 (11-19) starts from a fresh copy. Case 04 (B 0) started at sector 0 in run 1, and the
   VG-8020 + NMS 1200 never returned (256 sectors read over the probe); run 2 starts it at 1439.
-- Round 3 (20-36) starts from a fresh copy; case 23 writes 2 sectors from 1439, so 24-36 find the pattern
-  there. Its run 1 ([`XDSK3_run1.out`](../../scratchpad/XDSK3_run1.out)) had a case 37, a WRITE of B 0 (256
-  sectors) from 1184, to separate "B 0 = 256" from "unbounded": the VG-8020 + NMS 1200 never returned from
-  it, so it is out.
+- Round 3 (20-36) starts from a fresh copy; case 23 (2 sectors from 1439) writes 1439 and stops at 1440,
+  so 24-36 find the pattern there. Its run 1 ([`XDSK3_run1.out`](../../scratchpad/XDSK3_run1.out)) had a
+  case 37, a WRITE of B 0 (256 sectors) from 1184: the VG-8020 + NMS 1200 had not returned when the 60 s
+  limit ended the run (never returning and still writing look the same), so it is out.
+- Round 4 (38-53) starts from a fresh copy: case 38 writes sector 9 from $A400 (the pattern) and case 39
+  sector 8 from $A500 (the pattern's second half: another content), sector 18 stays zero -- so which IMAGE
+  sector a read with $F8 / $FF / $FA reaches shows in the buffer. A case's buffer can differ from its HL
+  (case 39); the record's sum is the buffer's.
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xphydio_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xphydio_rules.py --write` -->
 
-**8 rules; 8 hold on the reference. Of the 740 recorded outputs (each case's cursor, cells, A, table entries ...): 740 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
+**8 rules; 8 hold on the reference. Of the 1060 recorded outputs (each case's cursor, cells, A, table entries ...): 1060 read by a rule's check, 0 declared NOT evidence (below), 0 unread.**
 
 #### 1. PHYDIO ($0144): a physical sector read or write through the disk interface
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-PD-NODISK** With no disk interface (row N) PHYDIO returns at once: A, F, BC, DE, HL and the interrupt state as entered; the buffer is not touched. | 37 | ✓ | ✓ |
-| **R-PD-READ** A read (carry clear) with an accepted media byte ($F8, $F9, $FA, $FF measured) and the sectors within the disk THAT MEDIA BYTE NAMES (DE + B <= 1440 for $F9, 720 for $F8, 640 for $FF / $FA -- the standard geometries) puts sectors DE, DE + 1, ... into memory from HL ($A400 and $8000 measured) and returns A 0, F $42, B 0, C $32, D 0 (the entry A, 0 in every case), E = the entry F, HL as entered. Cases 07 and 24 read back what cases 06 and 23 wrote. | 13 | ✓ | ✗ 13: XP D00, XP D01, XP D02, XP D05, XP D07, XP D08 … (+7) |
-| **R-PD-WRITE** A write (carry set) of sectors within the disk writes them (cases 07-10 read case 06's pattern back from 1439), and returns as a read does: A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered; the buffer is not changed. | 1 | ✓ | ✗ 1: XP D06 |
-| **R-PD-PAST** A read that runs past the media's last sector (1439 for $F9; sector 720 with $F8 and 1439 with $FF are past) reads the sectors before it, then stops: A 2, F $41, B = the sectors not read, C 0, D / E the entry A / F (E $5A in case 27), HL as entered. B 0 counts as 256 (case 04: one sector read from 1439, B $FF left). Sector $F000 is past. | 9 | ✓ | ✗ 9: XP D03, XP D04, XP D10, XP D14, XP D15, XP D21 … (+3) |
-| **R-PD-WPAST** A write that runs past the last sector writes the sectors before it (case 23: 2 from 1439 -- case 24 reads 1439 back), then stops: A 8, F $11, B = the sectors not written, C 0, D / E the entry A / F (E $FF in case 29), HL as entered; the buffer is not changed. | 4 | ✓ | ✗ 4: XP D17, XP D23, XP D26, XP D29 |
-| **R-PD-FFFF** Sectors $FFFE and $FFFF are NOT refused: a 1-sector read there returns as a good read (A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered) and the buffer's sum and first byte are those of 512 zero bytes (not a byte-by-byte check). Which sector it reads is not measured. | 2 | ✓ | ✗ 2: XP D16, XP D30 |
-| **R-PD-MEDIA** A media byte the interface does not take ($00, $32, $80, $F0, $F7 measured) refuses the call before any transfer -- before the sector check too (case 36: $00 and sector 1440 give 12) and with interrupts on: A 12, F $89, B as entered, C 0, D / E the entry A / F (E $A4 in case 28), HL as entered; the buffer is not touched. | 8 | ✓ | ✗ 8: XP D11, XP D19, XP D25, XP D28, XP D32, XP D33 … (+2) |
-| **R-PD-DI** With a disk interface, interrupts are OFF after the call, whether they were on or off before it. | 37 | ✓ | ✓ |
+| **R-PD-NODISK** With no disk interface (row N) PHYDIO returns at once: A, F, BC, DE, HL and the interrupt state as entered; the buffer is not touched. | 53 | ✓ | ✓ |
+| **R-PD-READ** A read (carry clear) with an accepted media byte ($F8, $F9, $FA, $FF measured) and the sectors within the disk its GEOMETRY names ($F9 2 sides x 9 sectors x 80 tracks, $F8 1 x 9 x 80, $FA 1 x 8 x 80, $FF 2 x 8 x 40) puts sectors DE, DE + 1, ... in that order (case 43: the FAT second) into memory from HL ($A400 and $8000 measured), each from the place the geometry gives it ($F8 sector 9 is track 1: the image's sector 18; $FF sector 8 is side 1: image 9) and returns A 0, F $42, B 0, C $32, D 0 (the entry A, 0 in every case), E = the entry F, HL as entered. Cases 07 and 24 read back what cases 06 and 23 wrote. | 19 | ✓ | ✗ 19: XP D00, XP D01, XP D02, XP D05, XP D07, XP D08 … (+13) |
+| **R-PD-WRITE** A write (carry set) of sectors within the disk writes them (cases 07 and 10 read case 06's pattern back from 1439; case 24 case 23's), and returns as a read does: A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered; the buffer is not changed. | 3 | ✓ | ✗ 3: XP D06, XP D38, XP D39 |
+| **R-PD-PAST** A read that reaches a sector whose TRACK -- sector / (sides x sectors per track), taken modulo 256 -- is at or past the media's track count (sector 1440 with $F9, 720 with $F8, 700 and 1439 with $FF; $F000: track 85) reads the sectors before it, then stops: A 2, F $41, B = the sectors not read, C 0, D / E the entry A / F (E $5A in case 27), HL as entered ($A400, $8000). B 0 counts as 256 (case 04: one sector read from 1439, B $FF left). | 11 | ✓ | ✗ 11: XP D03, XP D04, XP D10, XP D14, XP D15, XP D21 … (+5) |
+| **R-PD-WPAST** A write that runs past the last sector writes the sectors before it (case 23: 2 from 1439 writes 1439 -- case 24 reads it back -- and stops at 1440), then stops: A 8, F $11, B = the sectors not written, C 0, D / E the entry A / F (E $FF in case 29), HL as entered; the buffer is not changed. | 5 | ✓ | ✗ 5: XP D17, XP D23, XP D26, XP D29, XP D53 |
+| **R-PD-FFFF** A sector number past the disk whose track WRAPS (modulo 256) into it is NOT refused: $FFFE and $FFFF (track 56) read as a good read (A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered), and $F9 sector $1200 (track 256 = 0) reads the boot sector -- each the image sector its wrapped place names (checked by the buffer's sum and bytes +0 / +512). | 3 | ✓ | ✗ 3: XP D16, XP D30, XP D50 |
+| **R-PD-MEDIA** A media byte the interface does not take ($00, $32, $80, $F0, $F7 measured) refuses the call before any transfer -- before the sector check too (case 36: $00 and sector 1440 give 12), with interrupts on, and for a WRITE (case 44: nothing written, case 45 reads the sector unchanged): A 12, F $89, B as entered (1, 2, 0), C 0, D / E the entry A / F (E $A4 in case 28), HL as entered; the buffer is not touched. | 12 | ✓ | ✗ 12: XP D11, XP D19, XP D25, XP D28, XP D32, XP D33 … (+6) |
+| **R-PD-DI** With a disk interface, interrupts are OFF after the call, whether they were on or off before it. | 53 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -77,24 +85,27 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-PHYDIOREGS** (zerobas's DSKIO returns other F, C, DE and HL: F $44 on a good transfer, C and DE / HL working values) | R-PD-READ, R-PD-WRITE, R-PD-FFFF, R-PD-WPAST, R-PD-PAST |
+| **D-PHYDIOREGS** (zerobas's DSKIO returns other F, C, DE and HL: F $44 on a good transfer and $09 / $0B on an error, C and DE / HL working values) | R-PD-READ, R-PD-WRITE, R-PD-FFFF, R-PD-WPAST, R-PD-PAST |
 | **D-PHYDIOPAST** (a read past the last sector returns error 8, not 2) | R-PD-PAST |
 | **D-PHYDIOB0** (B 0 transfers nothing; the VG-8020's NMS 1200 reads 256 sectors) | R-PD-PAST |
+| **D-PHYDIOGEOM** ($FF disks get 80 tracks: sector 700 is read, the reference's 40-track $FF refuses it) | R-PD-PAST |
 | **D-PHYDIOMEDIA** (media bytes $00, $32, $80, $F0, $F7 are taken -- sector 0 read -- the reference refuses them with error 12, before the sector check) | R-PD-MEDIA |
 
 ## Open (not measured)
 
-- **[A]** Drives other than A (drive B asks for a disk on a one-drive interface); the media bytes other
-  than those measured ($00 $32 $80 $F0 $F7 refused; $F8 $F9 $FA $FF taken); the exact last sector of
-  $FF / $FA (the geometry model says 639; measured only 0 in, and for $FF 1439 past); a write-protected
-  disk; a disk that is not there; a read error.
-- **[A]** Which sector sectors $FFFE / $FFFF read (the buffer's sum and first byte are those of zeros,
-  not every byte); sectors between 1441 and $FFFD other than 1440 and $F000.
-- **[A]** A write of B 0 (256 sectors): the VG-8020 + NMS 1200 never returned from one (round 3 run 1);
-  writes of more than one sector within the disk; writes with F other than $01 / $FF.
-- **[A]** Memory at HL other than $A400 and $8000 (page 1, where the disk ROM itself sits, and page 0);
-  transfers longer than 1 KB (case 15 reads 2 sectors, the whole buffer); memory past HL + 1 KB.
-- **[A]** Whether D is the entry A or a constant 0 (A was 0 in every case; A 1 is drive B).
+- **[A]** Drives other than A (not tried: the probe's interface has one drive, and drive B would be the
+  phantom drive asking for a disk -- an expectation, not a measurement); the media bytes other than
+  those measured ($00 $32 $80 $F0 $F7 refused; $F8 $F9 $FA $FF taken); each geometry's last track
+  exactly ($F8 79 in / 80 past, $FF 43 past and 0 in, $FA only sector 8 -- the model's 40 / 80 tracks
+  for $FF / $FA rest on the formats); a write-protected disk; a disk that is not there; a read error.
+- **[A]** The geometry for WRITES with a media byte other than $F9; writes to wrapped sector numbers;
+  which side / sector a wrapped number reaches beyond the buffer's sum and two bytes.
+- **[A]** A write of B 0 (256 sectors) -- not finished within 60 s (round 3 run 1); writes of more than
+  one sector within the disk; writes with F other than $01 / $FF.
+- **[A]** Memory at HL other than $A400, $A500 and $8000 (page 1, where the disk ROM itself sits, and
+  page 0); transfers longer than 1 KB (case 15 reads 2 sectors, the whole buffer); memory past HL + 1 KB.
+- **[A]** Whether D is the entry A or a constant 0 (A was 0 in every case; A 1 is drive B); A on row N
+  with A other than 0.
 - **[A]** IX, IY, the alternate registers and SP; the work area; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 

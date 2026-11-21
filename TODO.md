@@ -16882,6 +16882,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
       R-PD-PAST, case D04 (from sector 1439: the reference reads one sector, then error 2 with B $FF left; from
       sector 0, run 1, it read on over the probe and never returned). zerobas returns A 0, B 0, nothing read.
+- [ ] **D-PHYDIOGEOM — A $FF DISK HAS 80 TRACKS IN ZEROBAS'S DSKIO; THE REFERENCE'S HAS 40**
+      🎚️ TIER 6 — every error (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md R-PD-PAST (scratchpad/XDSK4_run1.out D49): PHYDIO with media $FF,
+      sector 700 (track 43 of a 2-side x 8-sector disk): the VG-8020 + NMS 1200 refuses it as past (A 2), zerobas's
+      DSKIO reads it. Both place sectors by the media byte's geometry and take the track modulo 256; only the track
+      count differs ($FF: 40 tracks on the reference, the standard 2DD-40 format). The fix is DSKIO's (disk/), with
+      D-PHYDIOMEDIA's; disk.rom's room: read `make basic-reloc` first.
 - [ ] **D-PHYDIOMEDIA — ZEROBAS TAKES MEDIA BYTES THE REFERENCE REFUSES ($00, $32: ERROR 12)**
       🎚️ TIER 6 — every error (filed 2026-11-20).
       🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against
