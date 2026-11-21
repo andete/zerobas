@@ -216,7 +216,7 @@ stke:
 halt_lp:
                 jr      halt_lp
 
-; fill_e5 / fill_pat -- the 1 KB at (buf): $E5, or the pattern $77 + n, n (pairs)
+; fill_e5 / fill_pat -- the 1 KB at (buf): $E5, or the pattern $77 + n, -n (pairs: B counts down from 0)
 fill_e5:
                 ld      hl, (buf)
                 ld      bc, $0400
