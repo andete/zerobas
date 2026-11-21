@@ -854,6 +854,37 @@ ex_on_interval:
                 jp      tt_eos_gosub        ; GOSUB [<line>], as ON STOP's (low region)
     ENDIF
 
+; rl_inl_bios / rl_pin_bios -- the BIOS line reads' LINTTB marks (D-EDITDELBS, 2026-11-21), as the
+; VG-8020's (docs/bios/PINLIN.md R-L-ABOVE / R-L-ENTERLT, scratchpad/XLIN3_run4.out), around
+; read_line / read_line_col1; bil_go (basic/biosfnk.asm) calls them with page 1 = main ROM. INLIN /
+; QINLIN first leave the row ABOVE the cursor's LINTTB $AF (row 1 has none): the line read starts on
+; the call's own row even when the row above ran on into it; PINLIN does not. On Enter the line's
+; last row -- the row above the cursor Enter left at column 1 of the next row (row 23 after the
+; bottom row's scroll) -- gets $AF. The carry (CTRL+STOP / CTRL+C) and F ride through. BASIC's own
+; reads (the prompt, INPUT, AUTO) call read_line directly, unchanged. In the $6CF3 pin's pad.
+rl_inl_bios:
+                ld      a,(CSRY)
+                dec     a
+                call    nz,rlb_mark         ; LINTTB[row - 1] := $AF
+                call    read_line
+                jr      rlb_enter
+rl_pin_bios:
+                call    read_line_col1
+rlb_enter:
+                ret     c                   ; CTRL+STOP / CTRL+C: bil_stop marks its own
+                push    af
+                ld      a,(CSRY)
+                dec     a                   ; the line's last row
+                call    rlb_mark
+                pop     af
+                ret
+rlb_mark:                                   ; A = row (1-24): LINTTB[A] := $AF
+                ld      hl,LINTTB-1
+                add     a,l                 ; (LINTTB + 24 stays in its page)
+                ld      l,a
+                ld      (hl),$AF
+                ret
+
 ; 📌 D-BASICINT PIN $6CF3 (2026-10-15): games (Harry Fox) drop BLOAD,R's return
 ; address and `jp $6CF3`, the reference's continuation, which then runs the rest
 ; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row

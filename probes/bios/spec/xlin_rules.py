@@ -196,7 +196,7 @@ _cases3 = cases
 
 def cases():                                     # noqa: F811
     out = _cases3()
-    t = open(os.path.join(ROOT, "scratchpad", "XLIN3_run4.out")).read()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN3_run5.out")).read()
     for who, key in (("ref", "ref"), ("zb", "ours")):
         b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))[1:]
         b += bytes(max(0, 72 * len(X3) - len(b)))
@@ -271,4 +271,78 @@ RULES += [
          lambda c: c.src == "XL3" and c.end == "PAUSE", lambda c: c.linttb[c.last - 1] == 0xAF and lt_rest(c)),
     Rule("R-L-F3", S3, "The whole F after Enter is 18 here too.", lambda c: c.src == "XL3" and c.end == "PAUSE",
          lambda c: c.f == 0x18),
+]
+
+
+# ---- round 4: XLIN4 (probes/bios/spec/xlin4.asm; scratchpad/XLIN4_run2.out) -- DEL / BS, INLIN's start column and
+# QINLIN's prompt deleted, Enter on another line (D-EDITDELBS). XLIN3's record; no key held.
+OUTPUTS["XL4"] = OUTPUTS["XL3"]
+# the call; the line Enter reads (first, last rows), the row the call starts on, the cursor row after; rows A / B and
+# their text after; BUF's first 8 bytes
+X4 = [("PINLIN", 7, 8, 7, 9, b"ABDEFGHIJKLM", b"f", b"ABDEFGHI"),
+      ("PINLIN", 7, 8, 7, 9, b"ABDEFGHIJKLM", b"", b"ABDEFGHI"),
+      ("PINLIN", 5, 5, 5, 6, b"YZ", b"", b"YZ\0     "),
+      ("PINLIN", 7, 8, 8, 9, b"f", b"", b"ABCDEFGH"),
+      ("PINLIN", 6, 6, 6, 7, b"QC", b"XYZ", b"QC\0     "),
+      ("INLIN", 5, 5, 5, 6, b"XQ", b"", b"\0       "),
+      ("QINLIN", 5, 5, 5, 6, b"A", b"", b"\0       "),
+      ("INLIN", 3, 3, 5, 4, b"HELLO", b"XYZ", b"HELLO\0  "),
+      ("INLIN", 5, 5, 5, 6, b"XYZQ", b"", b"Q\0      ")]
+_cases4 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases4()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN4_run2.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))[1:]
+        b += bytes(max(0, 72 * len(X4) - len(b)))
+        for i, (name, first, last, y0, ny, ta, tb, bf) in enumerate(X4):
+            r = b[72 * i: 72 * (i + 1)]
+            out[who].append(NS(src="XL4", id=f"XL4 {i + 1}", name=name, end="ENTER", first=first, last=last, y0=y0,
+                               ny=ny, ta=ta, tb=tb, bf=list(bf), num=i + 1,
+                               stage=r[0], f=r[1], hl=(r[2] << 8) | r[3], csrx=r[4], csry=r[5], intflg=r[6],
+                               insflg=r[7], cstyle=r[8], keys=list(r[9:11]), buf=list(r[11:19]),
+                               linttb=list(r[19:43]), rowa=list(r[43:55]), rowb=list(r[55:67]), held=list(r[67:69])))
+    return out
+
+
+S4 = "4. Round 4: DEL and BS, the start column, Enter on another line (XLIN4)"
+X4C = lambda *n: (lambda c: c.src == "XL4" and c.num in n)     # noqa: E731
+
+
+def line4(c):
+    """the case's line state: rows A / B and BUF's first 8 bytes as the case's text and keys make them"""
+    return c.rowa == cells(c.ta) and c.rowb == cells(c.tb) and c.buf == c.bf
+
+
+RULES += [
+    Rule("R-L-DEL", S4, "DEL deletes the character under the cursor and pulls the rest of the LOGICAL line left across "
+         "the row end: a 42-character line on rows 7-8, DEL at row 7 column 3, reads 'ABDE...' with row 8 holding "
+         "'f'; with 41 characters row 8 empties and stays part of the line (its row 7 LINTTB still 0).", X4C(1, 2),
+         line4),
+    Rule("R-L-BS1", S4, "BS at column 1 of a line's FIRST row stays there and still deletes: 'XYZ' gives 'YZ'; with "
+         "'Q' typed after it, 'ABC' gives 'QC' (the line above, 'XYZ', untouched).", X4C(3, 5), line4),
+    Rule("R-L-BSUP", S4, "BS at column 1 of a row the row above runs on into goes to that row's LAST column and deletes "
+         "there: a 42-character line, BS at row 8 column 1, then 'Z' -- row 8 still reads 'f' (the 'Z' went to row 7 "
+         "column 40), the line from column 1 'ABCDEFGH...'.", X4C(4), line4),
+    Rule("R-L-BSSTART", S4, "BS may delete INLIN's start column and QINLIN's '? ' (INLIN at column 4 over 'XYZ', BS BS "
+         "'Q': the row reads 'XQ'; QINLIN, BS x3 'A': the row reads 'A'), and the line is still read from the start "
+         "column: an empty line.", X4C(6, 7), line4),
+    Rule("R-L-OTHERROW", S4, "Enter on ANOTHER line than the one input started on (INLIN at row 5 column 4, UP UP to "
+         "'HELLO' on row 3): INLIN reads that line from column 1, 'HELLO' (not 'LO'), and the cursor goes to the row "
+         "after it.", X4C(8), line4),
+    Rule("R-L-INL4", S4, "The plain read for comparison: INLIN at column 4 over 'XYZ', 'Q' Enter gives 'Q'.", X4C(9),
+         line4),
+    Rule("R-L-RET4", S4, "Every case returns with the carry clear, HL = BUF − 1, the cursor at column 1 of the row after "
+         "the line Enter read, INTFLG 0, the key buffer empty, insert mode off, no key held.",
+         lambda c: c.src == "XL4",
+         lambda c: (c.stage == c.num and c.f & 1 == 0 and c.hl == BUFM1 and (c.csrx, c.csry) == (1, c.ny)
+                    and c.intflg == 0 and c.keys[0] == c.keys[1] and (c.insflg, c.cstyle) == (0, 0)
+                    and c.held == [0xFF, 0xFF])),
+    Rule("R-L-LT4", S4, "LINTTB after Enter: the line's last row $AF (INLIN / QINLIN: the row above their start row "
+         "too); the line's inner rows 0 (a DEL that empties the last row keeps it); every other row an ending "
+         "entry.", lambda c: c.src == "XL4",
+         lambda c: all(c.linttb[r - 1] == 0xAF for r in lt_marked(c)) and lt_rest(c)),
+    Rule("R-L-F4", S4, "The whole F is 18 here too.", lambda c: c.src == "XL4", lambda c: c.f == 0x18),
 ]

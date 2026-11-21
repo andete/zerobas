@@ -62,9 +62,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | D-LPTOUTF |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 4 | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | D-TEXTAF |
-| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF, D-EDITDELBS, D-EDITSTOPHELD |
-| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF, D-EDITDELBS, D-EDITSTOPHELD |
-| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF, D-EDITDELBS, D-EDITSTOPHELD |
+| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF, D-EDITSTOPHELD |
+| $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
+| $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
 | $00B7 | BREAKX | [input](../concepts/input-calls.md) | L3 | [FINAL](BREAKX.md) | 4 | — |
 | $00BA | ISCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](ISCNTC.md) | 5 | — |
 | $00BD | CKCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](CKCNTC.md) | 5 | — |

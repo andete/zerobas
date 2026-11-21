@@ -204,6 +204,14 @@ The editing keys cannot be typed by that checker; the gates below cover them.
 
 ## What we found, and how
 
+- **BS did nothing at column 1** (fixed 2026-11-21, D-EDITDELBS; found by the
+  C-BIOS 0.32 port's measurements). On the VG-8020, BS at column 1 of a line's
+  first row stays there and still deletes (`XYZ` with the cursor on the `X`
+  gives `YZ`), and on a row that continues the one above it goes to that row's
+  last column and deletes there. Ours ignored the key at column 1. Measured
+  through the BIOS line reads ([PINLIN](../bios/PINLIN.md), rules R-L-BS1 and
+  R-L-BSUP), which share this editor with the prompt.
+
 - **zerobas used to have a line buffer, not a screen editor.** RETURN gave the
   characters typed since the prompt; the cursor keys were thrown away, so a
   typo fixed with ← came out wrong (`A=1`, ←, `2` gave `A=12` instead of `A=2`).

@@ -76,9 +76,9 @@ rl_key:
                 cp      13                  ; Enter -> read the logical line back
                 jp      z,rl_enter
                 cp      8                   ; Backspace -> erase left, pull the line in
-                jr      z,rl_bs
+                jp      z,rl_bs
                 cp      $7F                 ; DEL -> delete under the cursor
-                jr      z,rl_del
+                jp      z,rl_del
                 cp      18                  ; INS -> toggle insert mode
                 jr      z,rl_ins
                 cp      $20
@@ -158,14 +158,23 @@ rl_echo:
 rl_put:
                 ld      a,c
                 jp      CHPUT               ; tail: CHPUT's ret is ours
+; 🔙 D-EDITDELBS (2026-11-21): BS at COLUMN 1 measured (docs/bios/PINLIN.md R-L-BS1,
+; scratchpad/XLIN4_run1.out): on the logical line's first row it STAYS and still deletes
+; ('XYZ' -> 'YZ'); on a row the one above runs on into, it goes to that row's last column and
+; deletes there. Ours did nothing at column 1. Elsewhere: one cell left, then DEL, as before.
 rl_bs:
-                ld      a,(CSRX)
+                call    ek_getcsr           ; B = row, C = column, A = column
                 dec     a
-                jp      z,rl_more           ; column 1: nothing to erase on this row
-                                            ; (unmeasured at a continuation row's
-                                            ; column 1 -- today's behaviour kept)
-                ld      a,$1D               ; cursor left, then delete there
-                call    CHPUT
+                jr      nz,rbs_prev         ; not column 1: the cell to the left
+                ld      d,b
+                call    ek_firstrow         ; B = the logical line's first row (D, C kept)
+                ld      a,d
+                cp      b
+                jr      z,rl_del            ; the line starts here: stay, delete
+                ld      b,d                 ; (B,C) = (row, 1): ek_prev gives the row above's end
+rbs_prev:
+                call    ek_prev
+                call    ek_setcsr
 rl_del:
                 call    rl_shift_left
                 jp      rl_more

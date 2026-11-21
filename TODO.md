@@ -16961,7 +16961,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       below move down, the bottom row's LINTTB $FB), linked to it; on the bottom row the screen scrolls instead. TAB inserts
       spaces to the next stop. ESC does nothing in the editor and keeps insert mode; BS and DEL keep it; every other control
       key ends it (cursor keys, HOME, CLS, CTRL+U/E/B/F/N/J/G, SELECT, CTRL+R toggles).
-- [ ] **D-EDITDELBS — THE LINE EDITOR'S DEL / BS, THE INLIN START COLUMN AND LINTTB ON ENTER**
+- [x] **D-EDITDELBS — THE LINE EDITOR'S DEL / BS, THE INLIN START COLUMN AND LINTTB ON ENTER**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       DEL deletes under the cursor and pulls the rest of the LOGICAL line left across row ends (last cell a space; cursor
@@ -16971,6 +16971,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       column). INLIN reads from the start column only when the line's first row is the row input started on (the FSTPOS
       row, which follows scrolls), else from column 1. On Enter the line's last row gets LINTTB $AF; INLIN / QINLIN also
       set the row above their start row to $AF at the start (PINLIN does not). A visible cursor changes none of it.
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin4.asm, 9 cases; scratchpad/XLIN4_run1.out):
+      every claim held. zerobas already matched DEL across rows, BS into INLIN's start column / QINLIN's prompt, the
+      start-column rule (Enter on another line: column 1); it differed in BS at column 1 (did nothing: on a line's first
+      row the VG-8020 stays and deletes, on a continued row it goes to the row above's last column) -- sub/readline.asm
+      rl_bs, through edctrl's ek_firstrow / ek_prev (+11 B, the sub page's last) -- and in the two LINTTB marks
+      (XLIN3: R-L-ABOVE, R-L-ENTERLT) -- basic/files.asm rl_inl_bios / rl_pin_bios, around read_line for the BIOS
+      entries only (the $6CF3 pin's pad; the low region was full). docs/bios/PINLIN.md section 4 (R-L-DEL / BS1 /
+      BSUP / BSSTART / OTHERROW / LT4); run 2 holds them all, run 1 fails R-L-BS1 / R-L-BSUP. Not measured: the
+      visible-cursor claim.
 - [x] **D-EDITSTOP — CTRL+STOP / CTRL+C END THE LINE EDITOR: BUF, HL, THE CURSOR, INTFLG**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.

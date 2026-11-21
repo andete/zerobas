@@ -366,7 +366,7 @@ bios_qinlin:
 ; at the low region's end: this file's pad in front of the $3283 pin is full) hands
 ; read_line_col1 (D-PINLINSTART, docs/bios/PINLIN.md R-L-PIN).
 bios_inlin:
-                ld      hl,read_line
+                ld      hl,rl_inl_bios      ; read_line + D-EDITDELBS's two marks (basic/files.asm)
 bil_go:
                 in      a,(PSLTREG)
                 push    af                  ; the caller's slot layout

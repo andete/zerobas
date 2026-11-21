@@ -525,7 +525,7 @@ bf_eramark:
 ; docs/bios/PINLIN.md R-L-PIN): bios_inlin's shared tail (basic/biosfnk.asm) with
 ; read_line_col1. Here, not beside bios_inlin: that file's pad in front of the $3283 pin is full.
 bios_pinlin:
-                ld      hl,read_line_col1
+                ld      hl,rl_pin_bios      ; read_line_col1 + D-EDITDELBS's Enter mark (files.asm)
                 jp      bil_go
 
 ; bil_stop -- D-EDITSTOP (2026-11-21): PINLIN / INLIN / QINLIN ended by CTRL+STOP or CTRL+C leave,
