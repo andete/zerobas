@@ -1,0 +1,9 @@
+vg8020  halves 39545
+vg8020  leader end     n=2     HI 740 x2
+vg8020  start bit 1st  n=54    1487 x17 1568 x13 1494 x9 1498 x6
+vg8020  start bit 2nd  n=54    1492 x54
+zb      halves 39673
+zb      leader end     n=2     LO 795 x1 LO 861 x1
+zb      start bit 1st  n=54    1504 x54
+zb      start bit 2nd  n=54    1496 x21 1493 x16 1498 x12 1495 x5
+refcache: 0 hit, 2 miss, 2 stored

@@ -355,7 +355,10 @@ def test_tapoon_header(m, fails):
     ]:
         set_baud_area(m, baud1200=b1200)     # cas_baud resolves deterministically
         count = [0]
+        # D-TAPELEADEREND (2026-11-21): the leader's LAST cycle goes through cas_cycle_last
+        # (its low half carries TAPOON's exit and TAPOUT's entry), so both are counted.
         m.trap("cas_cycle", lambda mm, count=count: count.__setitem__(0, count[0] + 1))
+        m.trap("cas_cycle_last", lambda mm, count=count: count.__setitem__(0, count[0] + 1))
         out = m.record_out()
         m.cpu.io_in = lambda port: 0xFF      # Port C on entry: motor off, CAS-out high, row $F
         m.call("tapoon", a=sel)

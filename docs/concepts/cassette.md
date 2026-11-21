@@ -220,6 +220,23 @@ Not compared, or not measured:
 
 ## What we found, and how
 
+- **Two half-periods of our recordings were too long** (fixed 2026-11-21,
+  D-TAPELEADEREND / D-TAPESTARTBIT; found by the C-BIOS 0.32 port, which
+  carries our tape routines). The work between the leader's last cycle and
+  the first byte's start bit (leaving `TAPOON`, the caller, entering
+  `TAPOUT`) landed in the leader's last low half: 1067 T on a `CSAVE`,
+  against the VG-8020's 740-756, and on the port's recordings the VG-8020
+  read the first byte after the leader wrong. The start bit's low half was
+  1597 T against the data `0` bits' 1498. Both now take that work out of the
+  half they lengthen, as the data bits already did: 795 T (861 after the
+  second block's leader, which carries more of `CSAVE`'s own work) and
+  1493-1498 T. Measured with a watchpoint on the cassette-out bit
+  ([`CASTRACE_LEAD_run1.out`](../../scratchpad/CASTRACE_LEAD_run1.out),
+  [`run3`](../../scratchpad/CASTRACE_LEAD_run3.out), both machines in
+  [`run4`](../../scratchpad/CASTRACE_LEAD_run4.out)). The same trace shows
+  our cycles start high where the VG-8020's start low (D-TAPEPHASE, open);
+  the VG-8020 reads ours regardless.
+
 - **A search with no file ahead gave up by itself** (fixed 2026-11-06,
   D-TAPENEXT; found by a typed session). On a tape whose only file has another
   name, the VG-8020 prints `Skip :OTHER` and then keeps searching until

@@ -158,6 +158,15 @@ CAS_BITCOMP0:   equ     14              ; '0' bit: its own tail, its own figure
 ; with the M1 waits = eight 14 T iterations. Its own figure, so the '1' bit's last
 ; cycle keeps CAS_BITCOMP; 21 < CAS_HHALF24 = 24.
 CAS_BYTECOMP:   equ     CAS_BITCOMP + 8
+; D-TAPELEADEREND (2026-11-21): the leader's LAST cycle is followed by TAPOON's exit, the
+; caller and TAPOUT's entry (di, push, BREAKX, cas_long) before the start bit's first edge:
+; ~317 T more low half (1067 T on a CSAVE, the VG-8020's 740-756; the C-BIOS 0.32 port
+; measured 1043 and the VG-8020 reading the first byte after the leader wrong). 23 = the
+; largest tail below CAS_HHALF24 = 24 (24 would wrap the djnz at 2400 baud).
+CAS_LEADCOMP:   equ     23
+; D-TAPESTARTBIT: the start bit's tail (pop af, ld b, rra, push, push, jr, cas_long, ld e)
+; -- 1597 T against the 0 bits' 1498 and the VG-8020's 1492.
+CAS_STARTCOMP:  equ     12
 CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAPOOF
 
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
@@ -355,7 +364,9 @@ cas_cycle_l:    djnz    cas_cycle_l
 ; 🎯 ONLY the final cycle of a bit: a `1` bit's first cycle is followed by a bare
 ; `call cas_cycle` and measures clean, and the LEADER loop measures clean too --
 ; both keep the uncompensated routine, which is what the measurement says they
-; should. Input/Output/Changes as cas_cycle.
+; should. (Since D-TAPELEADEREND / D-TAPESTARTBIT, 2026-11-21, the leader's LAST
+; cycle and the start bit are compensated too: their tails are TAPOON's exit + the
+; caller + TAPOUT's entry, and the bit loop's entry.) Input/Output/Changes as cas_cycle.
 cas_cycle_last:
                 ld      a,CASW_1
                 out     (PPI_REGS),a
@@ -734,12 +745,10 @@ tpo_dly2:
                 ; uncounted -- scratchpad/leader_count_run1.out, header_cell.out). Ours was a
                 ; fixed 4000 / 16000 at BOTH bauds -- half the reference's leader at 2400. From
                 ; the resolved baud, not the cell: our CSAVE ,n / SCREEN ,,,n set only ACT_LOW.
-                ld      a,(CASBAUD)     ; 0 = 1200, $FF = 2400
-                or      a
-                ld      d,15
-                jr      z,tpo_hdr
-                ld      d,31
-tpo_hdr:
+                ; cas_short left A = CASBAUD (0 = 1200, $FF = 2400): D = 15 + (A and 16)
+                and     16
+                add     a,15
+                ld      d,a
                 ld      e,0             ; DE = HEADER x 256: the short leader
                 pop     af
                 or      a               ; selector zero -> short header
@@ -747,11 +756,15 @@ tpo_hdr:
                 sla     d
                 sla     d               ; DE = HEADER x 1024: the long leader
 tapoon_emit:
+                dec     de              ; D-TAPELEADEREND: the last cycle is cas_cycle_last's
+tpo_emit:
                 call    cas_cycle
                 dec     de
                 ld      a,d
                 or      e
-                jr      nz,tapoon_emit
+                jr      nz,tpo_emit
+                ld      e,CAS_LEADCOMP
+                call    cas_cycle_last  ; its low half carries the exit + TAPOUT's entry
                 or      a               ; CF = 0: success
                 pop     de
                 ret
@@ -774,7 +787,8 @@ tapout:
                 call    BREAKX          ; CF = Ctrl-STOP held
                 jr      c,tapout_brk
                 call    cas_long        ; start bit = '0' = one low-freq cycle
-                call    cas_cycle
+                ld      e,CAS_STARTCOMP
+                call    cas_cycle_last  ; D-TAPESTARTBIT: its low half carries the bit loop's entry
                 pop     af
                 ld      b,8             ; 8 data bits, LSB first
 tapout_bit:
@@ -827,12 +841,10 @@ tapoof:
                 in      a,(PPI_PORTC)
                 push    af              ; CAS-out as it was on entry
                 call    cas_short       ; flush a short trailing carrier (cached baud)
-                ld      de,CAS_FLUSHLEN
+                ld      e,CAS_FLUSHLEN  ; (E alone counts: DE is restored below)
 tapoof_lp:
                 call    cas_cycle
-                dec     de
-                ld      a,d
-                or      e
+                dec     e
                 jr      nz,tapoof_lp    ; (the flush ends with CAS-out low)
                 pop     af
                 and     $20

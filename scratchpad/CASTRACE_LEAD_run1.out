@@ -1,0 +1,5 @@
+vg8020  leader end LO  n=0     
+vg8020  start bit LO   n=0     
+zb      leader end LO  n=1     1067 x1
+zb      start bit LO   n=53    1597 x21 1594 x15 1498 x12 1495 x5
+refcache: 0 hit, 2 miss, 2 stored

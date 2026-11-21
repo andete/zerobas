@@ -16901,7 +16901,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       value), nothing painted, CSAVEA / CSAVEM and K kept (SCANR.md lists it open). (3) SCANL in SCREEN 2 with HL + K = 0
       still runs NSETCX with 0: the first byte's colour changes (the cell's foreground becomes ATRBYT); zerobas paints
       nothing (pb_paint and scan_kl both return on 0). In SCREEN 3, HL 0 paints nothing on the references too.
-- [ ] **D-TAPELEADEREND — THE TAPE LEADER'S LAST LOW HALF IS 1043 T; THE VG-8020'S IS 740-756**
+- [x] **D-TAPELEADEREND — THE TAPE LEADER'S LAST LOW HALF IS 1043 T; THE VG-8020'S IS 740-756**
       🎚️ TIER 1 — happy path (a tape written here reads its FIRST byte wrong on the VG-8020) (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       zerobas's tape/tape.asm write path (TAPOON long, 16 x TAPOUT, TAPOOF; openMSX recording, read back on the VG-8020,
@@ -16910,13 +16910,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first byte after the leader wrong ($D0 -> $A0, one extra 0 bit) at 1200 AND 2400 baud; zerobas's own reader too at
       2400. The port's fix: the leader loop runs HEADER x 256/1024 - 1 cycles, the last one cas_cycle_last with E = 23
       (24 would equal CAS_HHALF24 and wrap djnz at 2400 baud), `dec de` on BOTH paths: 757-771 T. Reproduce on zerobas first.
-- [ ] **D-TAPESTARTBIT — A WRITTEN BYTE'S START-BIT LOW HALF IS 1597 T; THE VG-8020'S IS 1492**
+      ✅ **DONE 2026-11-21.** Reproduced on a CSAVE (scratchpad/castrace_lead.py, a watchpoint on the PPI's cassette-out
+      bit): 1067 T after the header block's leader, 1133 after the data block's (scratchpad/CASTRACE_LEAD_run1.out);
+      the VG-8020's leader ends on a clean 740 and puts its byte-boundary work in the start bit's first half instead
+      (1487-1568 T, run 4). Fixed as the port did (tape/tape.asm CAS_LEADCOMP = 23, the `dec de` before the loop):
+      795 / 861 T (run 3; the second block's leader still carries CSAVE's own work between the blocks, and 23 is the
+      most the 2400-baud count allows). The 8 B it costs came out of TAPOON (cas_short leaves A = CASBAUD: the leader
+      length is 15 + (A and 16), no reload) and TAPOOF's flush (E alone counts its 32 cycles), so FREE_ORG stays.
+- [x] **D-TAPESTARTBIT — A WRITTEN BYTE'S START-BIT LOW HALF IS 1597 T; THE VG-8020'S IS 1492**
       🎚️ TIER 1 — happy path (tape interchange) (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       tape/tape.asm: the start bit's tail (pop af, ld b,8, rra, push af, push bc, jr, call cas_long, ld e, call) is not
       compensated; zerobas's own 0 bits are 1498 T. The port's fix: cas_cycle_last with E = 12 (1496 T; the `ld e,12` lands
       in the previous boundary's low half). With this and D-TAPELEADEREND, 1200 / 2400-baud tapes written by the port read
       exactly on the VG-8020, NMS 8250 and C-BIOS (16 / 16). Edge traces: VG-8020 leader end 740 / 756, start bit 1448 / 1492.
+      ✅ **DONE 2026-11-21.** Reproduced on a CSAVE: the start bit's second half 1594 / 1597 T, the data 0 bits' 1495 /
+      1498 (scratchpad/CASTRACE_LEAD_run1.out); the VG-8020's is 1492 (run 4). tape/tape.asm CAS_STARTCOMP = 12:
+      1493-1498 T (run 3).
+- [ ] **D-TAPEPHASE — OUR TAPE CYCLES START HIGH; THE VG-8020'S START LOW (THE SIGNAL IS INVERTED)**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — Found by scratchpad/castrace_lead.py run 4 (scratchpad/CASTRACE_LEAD_run4.out, a CSAVE on
+      each machine, a watchpoint on the PPI's cassette-out bit): the VG-8020's start bit is LO 1487-1568 T then HI
+      1492, its leader ends on a HI half; zerobas's start bit is HI 1504 then LO 1493-1498, its leader ends on a LO half
+      -- every cycle the other way up. The VG-8020 reads our recordings anyway (cassave-acceptance's reference-load leg)
+      and our reader takes real tapes (the corpus), so no read fails that is known. Open: whether a reader that keys on
+      one edge (a turbo loader, a later MSX) cares; the CF-3300's phase. A fix swaps CASW_1 / CASW_0 in cas_cycle /
+      cas_cycle_last and moves the compensations (CAS_DUTY, CAS_BITCOMP*, CAS_LEADCOMP, CAS_STARTCOMP) to the other half:
+      re-solve them from a new trace, not by hand.
 - [ ] **D-TAPOUTEI — TAPOUT LEAVES INTERRUPTS OFF; THE REFERENCES KEEP THE ENTRY STATE**
       🎚️ TIER 6 — every edge (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
