@@ -91,7 +91,8 @@ eke_mlp:
                 ld      hl,LINTTB-1
                 ld      a,b
                 call    ek_hladd            ; HL = LINTTB[row-1]
-                ld      (hl),1              ; this row ends a line now
+                ld      (hl),$AF            ; this row ends a line now: $AF, as the VG-8020's
+                                            ; (D-EDITKEYS, docs/bios/PINLIN.md R-L-CTLLT; it was 1)
                 ld      a,b                 ; the row just marked
                 inc     b
                 cp      d                   ; AFTER the inc: `inc` sets Z itself, so

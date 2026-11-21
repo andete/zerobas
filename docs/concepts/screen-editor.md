@@ -204,6 +204,12 @@ The editing keys cannot be typed by that checker; the gates below cover them.
 
 ## What we found, and how
 
+- **The CTRL editing keys measured against the reference** (2026-11-22, D-EDITKEYS;
+  the C-BIOS 0.32 port's measurements). CTRL+U, CTRL+E, CTRL+N, CTRL+F and CTRL+B
+  already moved and cleared as the VG-8020's do; the one difference was the value
+  the line table gets for the rows CTRL+U and CTRL+E clear. Measured through
+  [PINLIN](../bios/PINLIN.md) (section 6).
+
 - **Insert mode kept on through SELECT and CTRL+G, and a pushed line misplaced the
   rows below it** (fixed 2026-11-21, D-EDITINS; the C-BIOS 0.32 port's
   measurements). On the VG-8020 every control key but ESC, BS and DEL ends insert

@@ -16942,7 +16942,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       The VG-8020's and NMS 8250's TAPOUT: DI in -> DI out, EI in -> EI out. zerobas's leaves interrupts off. A spec page
       rule for TAPOUT may already pin the DI-in half only: check docs/concepts/cassette.md first.
-- [ ] **D-EDITKEYS — THE LINE EDITOR'S CTRL+U / E / N / F / B, MEASURED (23 CASES)**
+- [x] **D-EDITKEYS — THE LINE EDITOR'S CTRL+U / E / N / F / B, MEASURED (23 CASES)**
       🎚️ TIER 3 — common (keys a user types at the prompt) (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       PINLIN / INLIN / QINLIN. CTRL+U: the cursor to where the line is read from (the logical line's first row; INLIN's /
@@ -16953,6 +16953,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       start over the WHOLE screen; words are runs of 0-9 A-Z a-z only; CTRL+F first leaves its word; no word left: row 24
       column 40 / row 1 column 1. All end insert mode. (Timing: typed text then CTRL too close together turns the last
       letters into control codes in openMSX.)
+      ✅ **DONE 2026-11-22.** Measured on the VG-8020 (probes/bios/spec/xlin6.asm, 15 cases, keys queued so no typing
+      race; scratchpad/XLIN6_run1.out): every claim tested held. zerobas's keys (D-EDCTRL) already did the same but for
+      one value: the rows CTRL+U / CTRL+E clear were marked LINTTB 1, the VG-8020's $AF (sub2/edctrl.asm ek_erase).
+      docs/bios/PINLIN.md section 6 (R-L-CTLU / CTLE / CTLN / CTLF / CTLB / CTLINS / CTLLT); run 1 fails R-L-CTLLT.
+      Not measured: CTRL+F with no word left (row 24 column 40), CTRL+U / E in insert mode.
 - [x] **D-EDITINS — THE LINE EDITOR'S INSERT MODE, MEASURED (30 CASES)**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.

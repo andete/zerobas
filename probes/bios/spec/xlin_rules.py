@@ -432,3 +432,75 @@ RULES += [
          "its inner rows 0, every other row an ending entry.", lambda c: c.src == "XL5", lt5),
     Rule("R-L-F5", S5, "The whole F is 18 here too.", lambda c: c.src == "XL5", lambda c: c.f == 0x18),
 ]
+
+
+# ---- round 6: XLIN6 (probes/bios/spec/xlin6.asm; scratchpad/XLIN6_run2.out) -- CTRL+U / E / N / F / B (D-EDITKEYS).
+# XLIN3's record; where a key leaves the cursor shows in the 'X' (or 'W') typed after it.
+OUTPUTS["XL6"] = OUTPUTS["XL3"]
+# the call; the line Enter reads (its row), the cursor row after, the LINTTB rows marked $AF; rows A / B and their text
+# after; BUF's first 8 bytes
+X6 = [("PINLIN", 5, 6, {5}, b"X", b"", b"X\0      "),
+      ("INLIN", 5, 6, {4, 5}, b"XYZW", b"", b"W\0      "),
+      ("INLIN", 3, 4, {3, 4}, b"W", b"XYZ", b"W\0      "),
+      ("PINLIN", 7, 8, {7, 8}, b"X", b"", b"X\0      "),
+      ("PINLIN", 7, 8, {7, 8}, b"ABX", b"", b"ABX\0    "),
+      ("PINLIN", 5, 6, {5}, b"ABCX", b"", b"ABCX\0   "),
+      ("PINLIN", 6, 7, {6}, b"012345678901", b"X", b"X\0      "),
+      ("PINLIN", 5, 6, {5}, b"X", b"", b"X\0      "),
+      ("PINLIN", 5, 6, {5}, b"AB XD.EF", b"", b"AB XD.EF"),
+      ("PINLIN", 5, 6, {5}, b"AB CD.XF", b"", b"AB CD.XF"),
+      ("PINLIN", 7, 8, {7}, b"AB", b"XD", b"XD\0     "),
+      ("PINLIN", 1, 2, {1}, b"X", b"AB", b"X\0      "),
+      ("PINLIN", 5, 6, {5}, b"AB CD.XF", b"", b"AB CD.XF"),
+      ("PINLIN", 5, 6, {5}, b"XB CD.EF", b"", b"XB CD.EF"),
+      ("PINLIN", 5, 6, {5}, b"AB XD", b"", b"AB XD\0  ")]
+_cases6 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases6()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN6_run2.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))[1:]
+        b += bytes(max(0, 72 * len(X6) - len(b)))
+        for i, (name, row, ny, marks, ta, tb, bf) in enumerate(X6):
+            r = b[72 * i: 72 * (i + 1)]
+            out[who].append(NS(src="XL6", id=f"XL6 {i + 1}", name=name, end="ENTER", first=row, last=row, y0=row,
+                               ny=ny, marks=marks, ta=ta, tb=tb, bf=list(bf), num=i + 1,
+                               stage=r[0], f=r[1], hl=(r[2] << 8) | r[3], csrx=r[4], csry=r[5], intflg=r[6],
+                               insflg=r[7], cstyle=r[8], keys=list(r[9:11]), buf=list(r[11:19]),
+                               linttb=list(r[19:43]), rowa=list(r[43:55]), rowb=list(r[55:67]), held=list(r[67:69])))
+    return out
+
+
+S6 = "6. Round 6: CTRL+U, CTRL+E, CTRL+N, CTRL+F, CTRL+B (XLIN6)"
+X6C = lambda *n: (lambda c: c.src == "XL6" and c.num in n)     # noqa: E731
+
+RULES += [
+    Rule("R-L-CTLU", S6, "CTRL+U moves the cursor to where the line is read from and clears the rest of the LOGICAL "
+         "line: PINLIN's column 1 ('ABC DEF', then 'X': 'X'); INLIN's start column on the row input started on ('XYZ' "
+         "+ 'QRS': 'XYZW', the line 'W'); column 1 on another line ('HELLO', reached with UP UP: 'W'); the FIRST row "
+         "of a two-row line, from its second row (row 7 'X', row 8 blank).", X6C(1, 2, 3, 4), line4),
+    Rule("R-L-CTLE", S6, "CTRL+E clears from the cursor to the end of the logical line, the linked row too, and the "
+         "cursor stays ('X' at row 7 column 3: 'ABX', row 8 blank).", X6C(5), line4),
+    Rule("R-L-CTLN", S6, "CTRL+N goes to the cell after the line's last non-space ('ABC': 'ABCX'); a character in the "
+         "last column sends it to column 1 of the NEXT row, outside the line (a full row 5: the 'X' on row 6); an "
+         "empty line: column 1.", X6C(6, 7, 8), line4),
+    Rule("R-L-CTLF", S6, "CTRL+F goes to the next word's start -- words are runs of letters and digits ('AB CD.EF': "
+         "'C', then 'E') -- over the whole screen (no word left on row 5: row 7's 'CD').", X6C(9, 10, 11), line4),
+    Rule("R-L-CTLB", S6, "CTRL+B goes to the previous word's start (from 'F': 'E'; from 'C', a word's start: 'A'); "
+         "with no word before the cursor, to row 1 column 1.", X6C(12, 13, 14), line4),
+    Rule("R-L-CTLINS", S6, "They end insert mode: INS, CTRL+F, 'X' over 'AB CD' overwrites ('AB XD').", X6C(15), line4),
+    Rule("R-L-RET6", S6, "Every case returns with the carry clear, HL = BUF − 1, the cursor at column 1 of the row after "
+         "the line Enter read, INTFLG 0, the key buffer empty, insert mode off, no key held.",
+         lambda c: c.src == "XL6",
+         lambda c: (c.stage == c.num and c.f & 1 == 0 and c.hl == BUFM1 and (c.csrx, c.csry) == (1, c.ny)
+                    and c.intflg == 0 and c.keys[0] == c.keys[1] and (c.insflg, c.cstyle) == (0, 0)
+                    and c.held == [0xFF, 0xFF])),
+    Rule("R-L-CTLLT", S6, "LINTTB: every row CTRL+U / CTRL+E cleared is $AF (both rows of the two-row line), the line "
+         "Enter read $AF (INLIN: the row above its start row too), every other row an ending entry.",
+         lambda c: c.src == "XL6",
+         lambda c: all((c.linttb[r - 1] == 0xAF) if r in c.marks else (c.linttb[r - 1] not in (0, 0xAF))
+                       for r in range(1, 25))),
+    Rule("R-L-F6", S6, "The whole F is 18 here too.", lambda c: c.src == "XL6", lambda c: c.f == 0x18),
+]
