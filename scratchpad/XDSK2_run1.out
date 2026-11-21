@@ -1,0 +1,67 @@
+===== probes/bios/spec/xdsk2.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=c000 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8800 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c39d3ac9c9
+  CAP ref : 000001000000a400000094e5e500000001ff0000a400000094e5e500005a01f90000a400010094e5e500000001f905a0a400010094e5e500000003f9059ea400000094e5e500000001f9ffffa400000094e5e500000101f905a0a4000000c977e50000a402f90001a400010094e5e50000fe01320000a400000094e5e5
+  CAP ours: 000001000000a400000094e5e500000001ff0000a400000094e5e500005a01f90000a400010094e5e500000001f905a0a400010094e5e500000003f9059ea400000094e5e500000001f9ffffa400000094e5e500000101f905a0a4000000c977e50000a402f90001a400010094e5e50000fe01320000a400000094e5e5
+  SAME (0 allowlisted)
+===== probes/bios/spec/xdsk2.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=0c01 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=f403 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c39d3ac9c9
+  CAP ref : 0c8901000000a400000094e5e500004200320000a400006ad3ebe50000420032005aa400006ad3ebe500024101000000a400000094e5e500024101000000a400000000000000004200320000a4000000ca00e500081101000001a4000000c977e5000042003200a4a40000f702f900000c89010000fea400000094e5e5
+  CAP ours: 0044000100000001006ad3ebe5000044000100000001006ad3ebe5000044000100000001006ad3ebe500080901015002a400000094e5e500080901015002a80000000000000000440007380000000000ca00e500080b01015002a4000000c977e500004400030000000300f702f900000044000100000001006ad3ebe5
+  DIFF (52 unexcused byte(s)):
+  CAP A001: ref=0C ours=00
+  CAP A002: ref=89 ours=44
+  CAP A003: ref=01 ours=00
+  CAP A004: ref=00 ours=01
+  CAP A007: ref=A4 ours=00
+  CAP A008: ref=00 ours=01
+  CAP A00A: ref=00 ours=6A
+  CAP A00B: ref=94 ours=D3
+  CAP A00C: ref=E5 ours=EB
+  CAP A010: ref=42 ours=44
+  CAP A012: ref=32 ours=01
+  CAP A015: ref=A4 ours=00
+  CAP A016: ref=00 ours=01
+  CAP A01E: ref=42 ours=44
+  CAP A020: ref=32 ours=01
+  CAP A022: ref=5A ours=00
+  CAP A023: ref=A4 ours=00
+  CAP A024: ref=00 ours=01
+  CAP A02B: ref=02 ours=08
+  CAP A02C: ref=41 ours=09
+  CAP A02E: ref=00 ours=01
+  CAP A02F: ref=00 ours=50
+  CAP A030: ref=00 ours=02
+  CAP A039: ref=02 ours=08
+  CAP A03A: ref=41 ours=09
+  CAP A03C: ref=00 ours=01
+  CAP A03D: ref=00 ours=50
+  CAP A03E: ref=00 ours=02
+  CAP A03F: ref=A4 ours=A8
+  CAP A048: ref=42 ours=44
+  CAP A04A: ref=32 ours=07
+  CAP A04B: ref=00 ours=38
+  CAP A04D: ref=A4 ours=00
+  CAP A056: ref=11 ours=0B
+  CAP A058: ref=00 ours=01
+  CAP A059: ref=00 ours=50
+  CAP A05A: ref=01 ours=02
+  CAP A064: ref=42 ours=44
+  CAP A066: ref=32 ours=03
+  CAP A068: ref=A4 ours=00
+  CAP A069: ref=A4 ours=00
+  CAP A06A: ref=00 ours=03
+  CAP A071: ref=0C ours=00
+  CAP A072: ref=89 ours=44
+  CAP A073: ref=01 ours=00
+  CAP A074: ref=00 ours=01
+  CAP A076: ref=FE ours=00
+  CAP A077: ref=A4 ours=00
+  CAP A078: ref=00 ours=01
+  CAP A07A: ref=00 ours=6A
+  CAP A07B: ref=94 ours=D3
+  CAP A07C: ref=E5 ours=EB
+===== biosl: DIVERGENCE =====

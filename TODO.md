@@ -16830,36 +16830,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ld a,b / pop bc / scf` leaves BREAKX's flags; F := $01 with A kept costs bytes in the tape body. Priced when
       picked up.
 
-- [x] **D-NTMSXPCLASH — ZEROBAS'S PUT SPRITE USES THE PUBLISHED NTMSXP CELL ($F417) AS SCRATCH**
-      🎚️ TIER 6 — every edge (a machine-code program calling OUTDLP after BASIC's PUT SPRITE; filed 2026-11-19).
-      🤖 **AUTONOMOUS** — basic/sysvars.inc GFX_SPATN equ $F417 (2 B: PUT SPRITE's pattern number; basic/graphics.asm,
-      sub/graphics.asm) is NTMSXP, the published "printer is not an MSX one" flag OUTDLP reads (docs/bios/OUTDLP.md
-      R-OD-PRN). After a PUT SPRITE with a pattern number not 0, OUTDLP treats the printer as a non-MSX one and holds
-      a graphic character's $01. Found writing D-OUTDLPGRAPH. Fixing it moves GFX_SPATN -- a RAM layout change:
-      Joost's ruling.      🏗️ **RULED (Joost, 2026-11-20): "measure how reference does it ram-wise and match".** Measure where the VG-8020 keeps
-      PUT SPRITE's working values (which cells a PUT SPRITE changes, $F417 untouched?), then move GFX_SPATN to match.      📏 **MEASURED 2026-11-20** (kwram's pin, putsprite / putsprite_b): the VG-8020's PUT SPRITE writes nothing at
-      $F417-$F418; zerobas writes GFX_SPATN there. Next: move GFX_SPATN (2 B) off NTMSXP to a cell zerobas owns.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED.** GFX_SPATN moved from $F417 (the published NTMSXP) to $FC18, in LINWRK -- the
-      40 B scratch the VG-8020's own PUT SPRITE writes (kwram pin, putsprite); C-BIOS uses LINWRK only inside CHPUT, which
-      never runs between the pattern's parse and the sprite tenant. The first choice, zerobas's free window $F023, was
-      REFUSED by ram-map-check: it is program RAM on the diskless build ([TXTMAX, TXTMAX_NODISK)). kwram --only
-      putsprite: $F417 / $F418 no longer zerobas-only; $FC18 / $FC19 written by both (the values differ, as scratch).
-      graphics-acceptance, sprite-trap-acceptance, spec-live OUTDLP / OUTDO green.
-
-- [x] **D-PLAYVOICEORDER — BEHIND A RING-FILLING VOICE A, AN EMPTY B AND C STAYED "PLAYING" UNTIL A'S LAST WINDOW**
-      🎚️ TIER 6 — every edge (MUSICF's bits during a long PLAY; filed and fixed 2026-11-20).
-      🤖 **AUTONOMOUS** — found by the FULL gate of cdf47f6d: strtms-acceptance row `long` read MUSICF 7 where the
-      VG-8020 reads 1. Bisected: 3e302ee5 and 6843f185 pass, 4b51b610 (D-TRGFLGISR part 2) fails. The cause is older:
-      sub/playparse.asm pt_parse ended a window on a full ring, so after a ring-filling A the empty voices B and C
-      queued their end markers only in A's LAST window. A MUSICF watchpoint (zerobas's own code) showed MUSICF := 7 at
-      jiffy 104 and B / C ended only at 188, as PLAY returned. Whether the row's PEEK saw 7 or 1 was then a
-      sub-frame race, and part 2's longer key scan tipped it. A first fix (parse C, B, A) broke row `behind`: right
-      after a SHORT PLAY the VG-8020 reads 7, so it does not end the voices before PLAY returns. The fix: a full ring
-      no longer ends the window. That voice stays in AUDIO_VMASK, the others still get theirs, and PLAY_MORE is
-      returned when a voice is still to do at the end. B / C now end at jiffy 104 (scratchpad/PLAYLONG_run1.out,
-      probe scratchpad/playlong_probe.py). Bytes (+11): the setters' ten `jp ..,pt_illegal` became `jr` to one
-      trampoline (pcs_ill). Sub page 1: 2 B free. strtms 14/14; playeq, playarr, playqueue, gicini, sound, play,
-      play-trace and beep green.
 - [ ] **D-PLAYLONGTIME — A RING-FILLING PLAY RETURNS 14-15 JIFFIES EARLIER THAN ON THE VG-8020**
       🎚️ TIER 5 — on-par speed (filed 2026-11-20).
       🤖 **AUTONOMOUS** — `PLAY "T255L64CDEFGAB..."` (40 notes, the ring fills) returns after 86 jiffies here and
@@ -16867,63 +16837,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       scratchpad/PLAYLONG_run1.out, probe scratchpad/playlong_probe.py (program and direct forms). D-PLAYRATE's floor
       (closed) and playqueue-acceptance's tolerance cover shorter cases. Measure first: the total play time
       (PLAY(0) = 0) against the reference, and whether it is the start or the wait that differs.
-- [x] **D-ISRPLAN — A C-BIOS PATCH THAT CHANGES THE INTERRUPT HANDLER PLANS AS "CANARY ONLY"**
-      🎚️ APPARATUS — a regression rides to main until the next FULL (filed 2026-11-20).
-      🙋 **NEEDS-JOOST** — gate policy (the ⏱ rule). D-TRGFLGISR part 2 (4b51b610) changed C-BIOS's key-scan interrupt,
-      and tools/pick_gates.py planned it SCOPED: "ROM change with no enclosing ex_ handler (canary only, the daily FULL
-      backs it)". The scan's longer run moved a sub-frame race in PLAY (D-PLAYVOICEORDER), and strtms-acceptance went
-      red. Nothing in that gate ran it. The next FULL (cdf47f6d, forced by a RAM move) caught it, as the policy
-      intends. The question: should a cbios-repack patch touching the interrupt path (keyint, the hooks' callers) plan
-      FULL, since every suite runs under that handler? Cost: one FULL (~25-38 min) per such patch, which is rare.
-      🏗️ **RULED (Joost, 2026-11-20): "yes, make interrupt-path patches plan FULL".** ✅ DONE: tools/pick_gates.py
-      INTERRUPT_PATH (keyint / int_end / H_TIMI / H_KEYI / KEY_SCAN / SCNCNT in the patch's text) makes such a
-      cbios-repack/ patch plan FULL. Today that matches chget-ei, scan-from-basic and trgflg. Self-test arms P-ISRPLAN
-      (positive, and NEGATIVE: a patch off the path stays SCOPED).
-- [x] **D-IFFREAD1 — ELEVEN SPEC PROBES STILL READ THE INTERRUPT STATE WITH ONE `ld a,i`**
-      🎚️ APPARATUS — a spec rule that can fail on a timing shift alone (filed 2026-11-20).
-      🤖 **AUTONOMOUS** — an interrupt ACCEPTED during `ld a,i` makes P/V read 0 although interrupts were on (the
-      NMOS erratum; openMSX emulates it). Found 2026-11-20 by spec-live: D-TRGFLGISR part 1 moved the boot timing,
-      and docs/bios/FILVRM.md R-FV-EI failed on zerobas in cases XM N57 / XM D57 (iff 0) with nothing in FILVRM
-      changed. probes/bios/spec/xvram.asm now reads twice and ORs (the idiom of probes/bios/spec/xcalslt.asm), and
-      the seven VRAM pages agree again. Still reading ONCE: probes/bios/spec/xchg.asm, xchg2.asm, xchgw.asm, xcnv2.asm,
-      xenaslt2.asm, xfnk3.asm, xinitio.asm, xinitio2.asm, xinitio3.asm, xspr.asm, xvdpreg.asm. Each rule built on
-      those reads can go red on an unrelated commit. Fix: the same doubled read in each. The reference's side stays
-      the committed run files, and a doubled read can only turn a false 0 into 1, so no reference re-run is needed.
-      Then re-run tools/spec_live.py on their pages.
-      ✅ **DONE 2026-11-20:** each of the eleven now follows its `ld a,i` with `jp pe, $+5` / `ld a, i`, so a
-      reading of "off" is read again. Full spec-live: every page agrees. docs/spec-method.md's probe list states the
-      rule, and the key-scan hold-off D-TRGFLGISR needed for INITIO.
-- [x] **D-TRGFLGISR — ZEROBAS'S INTERRUPT WRITES TRGFLG WITH THE SPACE BAR'S BIT ONLY ($01 IDLE; THE TRIGGERS READ PRESSED)**
-      🎚️ TIER 6 — every edge (a program reading TRGFLG, $F3E8, for the joystick triggers; filed 2026-11-20).
-      🤖 **AUTONOMOUS** — C-BIOS's key-scan interrupt (src/main.asm, its own "TODO read joystick triggers and space for
-      TRGFLG") stores NOT GTTRIG(0) AND 1: bit 0 only, so the idle value is $01 -- and bits 4-7, the published trigger
-      bits (1 = released), read 0 = pressed. Found 2026-11-20 by spec-live: D-SCANRSAVE's commit removed the boot-time
-      trampoline install, the boot got shorter, and a key scan now lands inside docs/bios/INITIO.md case XI 1's window
-      and changes the cell, where the VG-8020's window leaves it (R-IO-PLAY, listed under this item). The VG-8020's
-      TRGFLG VALUE is not yet measured (a probe reading it idle and with each trigger held is the first step).      🟡 **PART 1 LANDED 2026-11-20: the idle value.** Measured (scratchpad/trgflg_probe.py): the VG-8020 and the CF-3300
-      read TRGFLG $F1 idle and $F0 with the space bar held; zerobas $01 / $00. cbios-repack/trgflg.patch (#52): the key
-      scan stores `or $F0` after the space bit (2 B); basic/missing.asm sub_first starts TRGFLG at $F1 at boot, as the
-      VG-8020's is when a cartridge starts (its boot has already scanned). zerobas now reads $F1 / $F0 (TRGFLG_run3.out,
-      _run4.out) and INITIO's R-IO-PLAY holds again. **STILL OPEN: the trigger bits themselves** -- the scan still does
-      not read the joysticks, so a held trigger reads released. Reading them means GTTRIG's PSG R15 port switching from
-      the interrupt: measure first a held trigger's TRGFLG on the VG-8020 and what its interrupt leaves in R15.
-      ✅ **DONE 2026-11-20 (part 2): the trigger bits.** Measured on the RP2040 rig with each trigger held, the stick
-      in port 1 (scratchpad/TRGFLG_rig1.out), then in port 2 (TRGFLG_rig2.out): the VG-8020 and CF-3300 agree --
-      bit 0 the space bar, 4 / 5 port 1's triggers A / B, 6 / 7 port 2's, 0 = pressed ($E1 / $D1 / $B1 / $71), and
-      their interrupt leaves R15 $CF. cbios-repack/trgflg.patch now reads port 1's R14, then port 2's, so R15 ends as
-      theirs (+44 B in the interrupt; island 1 starts at $199C). R15 is set as their scan sets it (scratchpad/R15SCAN_run1.out:
-      read back, AND $BF OR $03, then AND $DF OR $4C; $CF from $AC, $DF while port B is an input). zerobas reads all six held cases as both references
-      (TRGFLG_rig3.out, _rig4.out), and $F1 / $F0 idle / space still (TRGFLG_run5.out).
-      Spec-live then failed 5 INITIO rules (cases XI 1, XI 4, XI2 1, XI3 1): zerobas's scan now landed INSIDE INITIO,
-      read R15 while the probe's preset had port B as an input (the pins, $FF), and wrote that back. That was timing,
-      not INITIO -- the VG-8020's own scan had landed in round 3's cases 1 / 4 (port $AA's row). probes/bios/spec/
-      xinitio.asm, xinitio2.asm and xinitio3.asm now hold SCNCNT at 30 across the call. The references were re-run
-      (XINITIO_run4.out, XINITIO2_run3.out, XINITIO3_run2.out; byte-identical but for those two row nibbles). Every
-      rule holds on the reference, and zerobas fails exactly the 8 listed rules.
-
-
-
-
 - [ ] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
       🎚️ TIER 6 — every edge (filed 2026-11-19).
       🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
@@ -16943,45 +16856,173 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 
 
-- [x] **D-SCANLPAINT — SCANL PAINTS ONLY THE PIXELS IT COUNTED IN SCREEN 2 ON ZEROBAS**
-      🎚️ TIER 6 — every edge (RE-TIERED 2026-11-19 from TIER 3, its own condition checked: zerobas's BASIC PAINT,
-      basic/graphics.asm ex_paint, does NOT go through SCANR / SCANL -- only a machine-code caller of $012F does).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): the VG-8020 paints HL + K pixels from the left end, K the run
-      length of the most recent SCREEN 2 SCANR; zerobas the HL counted. docs/bios/SCANL.md R-SL-PAINT. Whether BASIC's PAINT on zerobas
-      calls SCANL at all is to be checked first. Priced when picked up.      ⏳ 2026-11-19: SCANL now counts first and paints the counted run via NSETCX; the + K needs WHERE the VG-8020
-      keeps K (the last SCREEN 2 SCANR's run) -- the recorded work area keeps it nowhere zerobas has read. A probe round
-      first (sub page 1 was 1 B free on 2026-11-19, so the fix also needs room).
-      ✅ **DONE 2026-11-20.** The probe round: probes/bios/spec/xscank.asm, three SCREEN 2 SCANRs (B 0; runs 8 / 2 / 5),
-      the whole of $F380-$FFFF dumped after each. The VG-8020 keeps K at FILNAM+1, $F867-$F868, 16-bit
-      (scratchpad/XSCANK_run2.out; $0100 after a 256-pixel run, XSCANK_run1.out). SCANL.md's old open note
-      ("not in RAM $EF04-$FFFF") was wrong and is corrected. The fix is in main, with the sub ROM untouched (4 B free):
-      basic/biosfnk.asm bios_scanr keeps the op across the tenant call and jumps to basic/main.asm scan_k (low
-      region). In SCREEN 2, SCANR stores HL at SCAN_K (= CAS_WANT+1, the published FILNAM+1). SCANL then paints
-      HL + K from the new CLOC through NSETCX, keeping CLOC / CMASK, HL and DE. New rule docs/bios/SCANR.md R-SR-K
-      (XSCANK_run3.out: zerobas $F867 = 8 / 2 / 5 as the VG-8020). R-SL-PAINT holds; SCANL.md lists no difference.
-
-
-- [x] **D-SCANRSAVE — SCANR DOES NOT STORE THE RUN START IN CSAVEA / CSAVEM ON ZEROBAS**
-      🎚️ TIER 6 — every edge (filed 2026-11-19).
-      🤖 **AUTONOMOUS** — ([`XGFX6_run10.out`](scratchpad/XGFX6_run10.out)): docs/bios/SCANR.md R-SR-SAVE. Priced when picked up.      ⛔ BLOCKED 2026-11-19 ON A RAM RULING: CSAVEA / CSAVEM ($F942 / $F944) are inside zerobas's sub-ROM interrupt
-      trampoline (basic/sysvars.inc SUB_INT_RAM, $F92D-$F950: 36 B of code that runs from RAM -- D-WSZERO slice 7 moved
-      it into the reference's idle CIRCLE / PAINT scratch). Writing them means moving the trampoline: Joost's call.      🏗️ **RULED (Joost, 2026-11-20): "measure how reference does it ram-wise and match".** Measure which work-area cells the
-      VG-8020 uses for what around $F92D-$F958 (SCANR's CSAVEA / CSAVEM, CIRCLE / PAINT's scratch), then move zerobas's
-      interrupt trampoline (SUB_INT_RAM) to RAM the reference does not use, so CSAVEA / CSAVEM mean what they mean there.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (the ruling: match the reference's RAM use). The measurement: kwram's pin,
-      both machines' work-area writes per keyword -- the VG-8020's PAINT writes $F92D-$F930, $F942-$F944 (CSAVEA /
-      CSAVEM) and $F94A-$F955, its CIRCLE $F931-$F941 / $F945-$F948 (scratchpad/refwrites_union.py, the reference's
-      write union across all 300 rows, REFWRITES_union.out). No published MSX1 gap and no zerobas FREE-RAM window holds
-      36 B, and $F380-$F399 is full (RDPRIM / WRPRIM / CLPRIM, 26 B). Joost asked whether CLPRIM is not that routine:
-      it is. The stub went: the sub ROM's $0038 -> sub/sub.asm sub_isr (32 B, in the $0010-$0037 pad) -> CLPRIM (via
-      p0cb) -> basic/islands.asm sub_isr_main (`call $0038 / di / ret`: the DI makes CLPRIM switch back with
-      interrupts off, spec 1.4a). An ADVERSARIAL REVIEW before writing (a fresh agent) found three must-fixes, all
-      taken: save AF' and IX (p0cb's callers hold live AF'), enter CLPRIM by `jp` (p0cb), and keep restoring slot 3's
-      secondary register (CLPRIM restores only the primary). No RAM; low region +36 B (the template and installer).
-      Then SCANR stores CSAVEA / CSAVEM at the run's start (sub/paintbios.asm; its border test moved to main's low
-      region, scan_isbd, for the room). Gates: subrom-inttest (JIFFY delta 28, PASS), graphics-floor, wszero (74/74);
-      spec-live: SCANR holds every rule.
-
+- [ ] **D-PHYDIOREGS — PHYDIO / DSKIO RETURN OTHER F, C, DE AND HL ON ZEROBAS**
+      🎚️ TIER 6 — every edge (a machine-code caller reading PHYDIO's registers; filed 2026-11-20).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against
+      zerobas's disk build). zerobas's H.PHYD ($FFA7) goes to its own DSKIO ($4010, disk/init.asm installs the hook), so
+      the fix is DSKIO's -- the next region of the disk BIOS. ⚠️ ROOM: disk.rom's interior holes read 0 B free on
+      2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
+      The reference: a good transfer A 0, F $42, B 0, C $32, D / E = the entry A / F, HL as entered; a failure the
+      same D / E / HL and C 0 (R-PD-READ, R-PD-WRITE, R-PD-FFFF, R-PD-PAST, R-PD-WPAST). zerobas: F $44, C and DE / HL
+      working values (e.g. case D00: C $01, DE $0000, HL $0001; D02: DE $4F00, HL $05A0).
+- [ ] **D-PHYDIOPAST — A READ PAST THE DISK'S LAST SECTOR RETURNS ERROR 8 ON ZEROBAS, 2 ON THE REFERENCE**
+      🎚️ TIER 6 — every error (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against
+      zerobas's disk build). zerobas's H.PHYD ($FFA7) goes to its own DSKIO ($4010, disk/init.asm installs the hook), so
+      the fix is DSKIO's -- the next region of the disk BIOS. ⚠️ ROOM: disk.rom's interior holes read 0 B free on
+      2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
+      R-PD-PAST (cases D03, D10, D14, D15): the reference reads the sectors before 1440, then A 2 ("not ready"), F
+      $41, B the sectors not read. zerobas the same sectors and B, but A 8, F $09. A WRITE past the end is 8 on both
+      (R-PD-WPAST).
+- [ ] **D-PHYDIOB0 — PHYDIO WITH B 0 TRANSFERS NOTHING ON ZEROBAS; THE REFERENCE READS 256 SECTORS**
+      🎚️ TIER 6 — every edge (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against
+      zerobas's disk build). zerobas's H.PHYD ($FFA7) goes to its own DSKIO ($4010, disk/init.asm installs the hook), so
+      the fix is DSKIO's -- the next region of the disk BIOS. ⚠️ ROOM: disk.rom's interior holes read 0 B free on
+      2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
+      R-PD-PAST, case D04 (from sector 1439: the reference reads one sector, then error 2 with B $FF left; from
+      sector 0, run 1, it read on over the probe and never returned). zerobas returns A 0, B 0, nothing read.
+- [ ] **D-PHYDIOMEDIA — ZEROBAS TAKES MEDIA BYTES THE REFERENCE REFUSES ($00, $32: ERROR 12)**
+      🎚️ TIER 6 — every error (filed 2026-11-20).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against
+      zerobas's disk build). zerobas's H.PHYD ($FFA7) goes to its own DSKIO ($4010, disk/init.asm installs the hook), so
+      the fix is DSKIO's -- the next region of the disk BIOS. ⚠️ ROOM: disk.rom's interior holes read 0 B free on
+      2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
+      R-PD-MEDIA (cases D11 C $00, D19 C $32): the reference refuses before any transfer -- A 12, F $89, B as
+      entered, C 0, the buffer untouched; $F8, $F9 and $FF are taken. zerobas reads the sector. Which media bytes
+      the reference takes besides those three is open (PHYDIO.md).
+- [ ] **D-SCANKSKIP — A SCANR THAT ENDS IN ITS SKIP KEEPS K; ZEROBAS STORES THE SKIP'S HL 0**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      docs/bios/SCANR.md / SCANL.md (34 cases, registers included). (1) A SCANR ending in its skip (DE runs out, HL 0) KEEPS
+      K at FILNAM+1: K 6 from an earlier SCANR stays after a DE 1 / DE 2 skip, a preset K 7 after a skip to the row's end.
+      zerobas's scan_k (basic/main.asm, D-SCANLPAINT) stores HL on EVERY SCREEN 2 SCANR exit -- a skip stores 0. (2) A skip
+      that reaches the row's last pixel still on the border ends there: CLOC on X 255, HL 0, DE 0 (not the counted-down
+      value), nothing painted, CSAVEA / CSAVEM and K kept (SCANR.md lists it open). (3) SCANL in SCREEN 2 with HL + K = 0
+      still runs NSETCX with 0: the first byte's colour changes (the cell's foreground becomes ATRBYT); zerobas paints
+      nothing (pb_paint and scan_kl both return on 0). In SCREEN 3, HL 0 paints nothing on the references too.
+- [ ] **D-TAPELEADEREND — THE TAPE LEADER'S LAST LOW HALF IS 1043 T; THE VG-8020'S IS 740-756**
+      🎚️ TIER 1 — happy path (a tape written here reads its FIRST byte wrong on the VG-8020) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      zerobas's tape/tape.asm write path (TAPOON long, 16 x TAPOUT, TAPOOF; openMSX recording, read back on the VG-8020,
+      NMS 8250 and C-BIOS). The leader's last low half covers TAPOON's exit, the caller and TAPOUT's entry (DI, PUSH, CALL
+      BREAKX, CALL cas_long) up to the start bit's first edge, uncompensated: 1043 T. The VG-8020 and NMS 8250 then read the
+      first byte after the leader wrong ($D0 -> $A0, one extra 0 bit) at 1200 AND 2400 baud; zerobas's own reader too at
+      2400. The port's fix: the leader loop runs HEADER x 256/1024 - 1 cycles, the last one cas_cycle_last with E = 23
+      (24 would equal CAS_HHALF24 and wrap djnz at 2400 baud), `dec de` on BOTH paths: 757-771 T. Reproduce on zerobas first.
+- [ ] **D-TAPESTARTBIT — A WRITTEN BYTE'S START-BIT LOW HALF IS 1597 T; THE VG-8020'S IS 1492**
+      🎚️ TIER 1 — happy path (tape interchange) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      tape/tape.asm: the start bit's tail (pop af, ld b,8, rra, push af, push bc, jr, call cas_long, ld e, call) is not
+      compensated; zerobas's own 0 bits are 1498 T. The port's fix: cas_cycle_last with E = 12 (1496 T; the `ld e,12` lands
+      in the previous boundary's low half). With this and D-TAPELEADEREND, 1200 / 2400-baud tapes written by the port read
+      exactly on the VG-8020, NMS 8250 and C-BIOS (16 / 16). Edge traces: VG-8020 leader end 740 / 756, start bit 1448 / 1492.
+- [ ] **D-TAPOUTEI — TAPOUT LEAVES INTERRUPTS OFF; THE REFERENCES KEEP THE ENTRY STATE**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      The VG-8020's and NMS 8250's TAPOUT: DI in -> DI out, EI in -> EI out. zerobas's leaves interrupts off. A spec page
+      rule for TAPOUT may already pin the DI-in half only: check docs/concepts/cassette.md first.
+- [ ] **D-EDITKEYS — THE LINE EDITOR'S CTRL+U / E / N / F / B, MEASURED (23 CASES)**
+      🎚️ TIER 3 — common (keys a user types at the prompt) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      PINLIN / INLIN / QINLIN. CTRL+U: the cursor to where the line is read from (the logical line's first row; INLIN's /
+      QINLIN's start column if input started on that row, else column 1), then the rest of the logical line cleared as
+      CTRL+E. CTRL+E: clears from the cursor to the end of the LOGICAL line, following linked rows too; every row touched
+      gets LINTTB $AF; the cursor stays. CTRL+N: the cell after the line's last non-space; a last-column character gives
+      column 1 of the next row (even outside the line); an empty line column 1. CTRL+F / CTRL+B: the next / previous word
+      start over the WHOLE screen; words are runs of 0-9 A-Z a-z only; CTRL+F first leaves its word; no word left: row 24
+      column 40 / row 1 column 1. All end insert mode. (Timing: typed text then CTRL too close together turns the last
+      letters into control codes in openMSX.)
+- [ ] **D-EDITINS — THE LINE EDITOR'S INSERT MODE, MEASURED (30 CASES)**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      INS ($12) toggles INSFLG $FF / 0 and CSTYLE $AF / 0; Enter leaves both 0. A typed character pushes the rest of the
+      LOGICAL line right across row ends; a line whose last cell is not a space first gets a new row below (as ESC L: rows
+      below move down, the bottom row's LINTTB $FB), linked to it; on the bottom row the screen scrolls instead. TAB inserts
+      spaces to the next stop. ESC does nothing in the editor and keeps insert mode; BS and DEL keep it; every other control
+      key ends it (cursor keys, HOME, CLS, CTRL+U/E/B/F/N/J/G, SELECT, CTRL+R toggles).
+- [ ] **D-EDITDELBS — THE LINE EDITOR'S DEL / BS, THE INLIN START COLUMN AND LINTTB ON ENTER**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      DEL deletes under the cursor and pulls the rest of the LOGICAL line left across row ends (last cell a space; cursor
+      and LINTTB unchanged, also when the last row empties). BS moves one cell left within the logical line (to the row
+      above only if it continues onto this one), then acts as DEL; at column 1 of a line's first row it stays and still
+      deletes ('XYZ' -> 'YZ'); it may delete INLIN's start column and QINLIN's '? ' (the line is still read from the start
+      column). INLIN reads from the start column only when the line's first row is the row input started on (the FSTPOS
+      row, which follows scrolls), else from column 1. On Enter the line's last row gets LINTTB $AF; INLIN / QINLIN also
+      set the row above their start row to $AF at the start (PINLIN does not). A visible cursor changes none of it.
+- [ ] **D-EDITSTOP — CTRL+STOP / CTRL+C END THE LINE EDITOR: BUF, HL, THE CURSOR, INTFLG**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      Both end PINLIN / INLIN / QINLIN with carry set: BUF's first byte 0, the rest kept; HL = BUF-1; the cursor to column
+      1 of the row after the logical line (the bottom row scrolls); that line's last row LINTTB $AF; the text stays; insert
+      mode ends; the key buffer is empty. INTFLG: CTRL+STOP leaves the interrupt's 3, CTRL+C 0. STOP alone does nothing in
+      the editor ('AB STOP C Enter' -> 'ABC').
+- [ ] **D-CHGETSTOP — CHGET WITH INTFLG 4 (STOP'S PAUSE) CLEARS IT AND RETURNS THE NEXT KEY**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      With INTFLG = 4, CHGET sets INTFLG to 0 and returns the next key from the buffer as usual, already there or typed
+      while waiting (an earlier note said a key was dropped: corrected by measurement). Other INTFLG values stay; CHSNS
+      leaves INTFLG alone. Check docs/bios/CHGET.md and zerobas's CHGET.
+- [ ] **D-SELECTKEY — THE SELECT KEY DELIVERS NOTHING; THE REFERENCES DELIVER $18**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      Row 7 bit 6: $18 on both machines; C-BIOS's scode_tbl_otherkeys has $00 there, so zerobas's key scan (C-BIOS's)
+      produces nothing. A cbios-repack table byte.
+- [ ] **D-GRPHEDCLS2 — RE-CHECK D-GRPHEDCLS: THE REFERENCES KEEP GRPHED THROUGH INITXT / INIT32 / CLS / CHGMOD**
+      🎚️ TIER 6 — every edge (a patch that may be wrong) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      cbios-repack/grphed-cls.patch clears GRPHED ($FCA6) in the text clear, because the VG-8020 read 0 there. Measured
+      with GRPHED poked to 1 before each direct BIOS call: it STAYS 1 after INITXT, INIT32, CLS in SCREEN 0-3, CHGMOD 0-3,
+      SETTXT, SETT32 and TOTEXT, on both machines; only CHPUT of a following character clears it (CNVCHR). Find where
+      zerobas's 0 came from (BASIC's SCREEN / CLS path, or a character printed after the call) before keeping the patch.
+      Note GRP_HDR is GRPHED since D-PAINTRAMCLASH.
+- [ ] **D-GRPPRTSETC — GRPPRT DRAWS EACH SET GLYPH BIT AS ONE SETC; docs/bios/GRPPRT.md R-GP-VRAM SAYS OTHERWISE**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      With a RAM font (CGPNT -> RAM, glyph $41 = FF 81 00 C3 3C 00 01 80): each set bit is one SETC, left to right, RIGHTC
+      between, TDOWNC after each line -- so SETC's 'all 8 bits set' step DOES happen: pixel $20 over $FF / $14, FORCLR $0A
+      -> $DF / $1A; glyph line $81 over $FF / $1A with FORCLR $1A -> $7F / $AA. R-GP-VRAM ('no whole-byte or last-clear-bit
+      step') holds only for a full glyph line over an empty byte. Also: CR in SCREEN 0, 1 and 3 steps 32, not 8; GRPACY's
+      low byte wraps to 0 past 191 with the high byte kept ($01BA -> $0100; $00FA -> $0002). Re-measure, then fix the page.
+- [ ] **D-GCSC01 — IN SCREEN 0 / 1 THE GRAPHICS-CURSOR CALLS WORK AS IN SCREEN 3 ON THE VG-8020**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      19 cases in SCREEN 1, 19 in SCREEN 0, registers included: MAPXYC, RIGHTC, LEFTC, UPC, DOWNC, TUPC, TDOWNC, SETC, READC
+      and NSETCX behave exactly as in SCREEN 3 (CMASK $F0 / $0F, blocks, TDOWNC stopping at block row 47, CLOC $05x7, SETC a
+      nibble into the pattern byte and no colour byte, NSETCX block by block). So GRPPRT in SCREEN 0 / 1 writes what SCREEN
+      3 drawing writes. C-BIOS's SETC / RIGHTC / TDOWNC treat only SCRMOD 3 as blocks. (The NMS 8250 differs here.)
+- [ ] **D-GTSTCKODDA — GTSTCK'S ODD-A PORT RULE (input-calls.patch) FAILS AT A 4**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      PSG R15 after GTSTCK with A 3-6: the VG-8020 selects port 1 for A 3, 4 and 6, and A 5 flips the port; the NMS 8250
+      port 1 for 3-5, and 6 leaves it. zerobas's patch selects port 1 for an odd A: wrong at 4 (and 5 / 6). Match the
+      VG-8020 (Joost's split rule: the VG-8020 is the reference).
+- [ ] **D-CNVCHRCP20 — CNVCHR'S UNDOCUMENTED F: `cp $20` MATCHES THE VG-8020 EXACTLY**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      With `cp $20` the undocumented F bits match the VG-8020 ($A3 for a converted code); zerobas's cnvchr-flags.patch
+      (`cp $FF`) does not. docs/bios/CNVCHR.md's F rule decides; re-check its cases.
+- [ ] **D-C032TEXT — TEXT-REGION FACTS TO CHECK: FSTPOS ON SCROLL, BUFMIN, LINL40 / LINL32 AT START, CLS SIZES**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      (1) CHPUT's scroll (LF or a wrap on the bottom row) and ESC M move FSTPOS's row ($FBCA) up by one (16 -> 15, 0 -> $FF);
+      a plain LF without scroll does not. (2) BUFMIN ($F55D) holds ',' ($2C) from boot on. (3) At cartridge start LINL40
+      is 37 and LINL32 29 (C-BIOS had 39). (4) CLS SCREEN 0 clears 960 bytes at any LINLEN on the VG-8020; SCREEN 3 clears
+      $600 bytes.
+- [ ] **D-C032GFX — GRAPHICS FACTS TO CHECK: SETC SCREEN 3 WITH ANY CMASK, CLRSPR IN SCREEN 0, INIT32'S ORDER**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      (1) SETC in SCREEN 3 with any CMASK: (byte AND NOT CMASK) OR ATRBYT, shifted to the upper nibble when CMASK bit 7 is
+      set (96 cases; docs/bios/SETC.md covers only $F0 / $0F). (2) CLRSPR also clears the sprites in SCREEN 0, writes
+      RG1SAV to VDP R1, and clears the patterns before the attributes. (3) INIT32: the VG-8020 clears the name table, then
+      sets up the sprites (the NMS 8250 the other way round).
+- [ ] **D-C032INPUT — INPUT FACTS TO CHECK: BREAKX ON CTRL+STOP, ISCNTC / CKCNTC IDLE, OUTDO WITH PRTFLG**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      (1) BREAKX on CTRL+STOP also empties the key buffer and marks STOP down in OLDKEY row 7 ($EF). (2) ISCNTC / CKCNTC
+      with no break pending: A 0, F Z+H+P/V, interrupts on (D-ISCNTCEI covered ISCNTC). (3) OUTDO with PRTFLG 1, $FF or 2
+      goes to the printer through OUTDLP; H.OUTD stays $C9 x5 after boot.
 - [ ] **D-STRPTRDAC — THE REFERENCE KEEPS THE CURRENT STRING RESULT AT DAC+2; ZEROBAS KEEPS STRPTR APART**
       🎚️ TIER 4 — RAM usage (VG-8020) (filed 2026-11-20, from D-PAINTRAMCLASH's measurement).
       🤖 **AUTONOMOUS** — scratchpad/STRPTR_run1.out: after `A$="AB"+"CDE"` (and LEFT$, a literal, CHR$+...) both references
@@ -16989,38 +17030,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $FD0E) points at DSCTMP ($F698) for a literal and at nothing matching otherwise. Adopting DAC+2 puts the pointer
       inside zerobas's FAC (FAC = DAC, $F7F6), so first AUDIT every STRPTR use (181 in basic/ and sub/) for one held
       across a numeric evaluation. Price it against TIER 4's other RAM items before starting.
-- [x] **D-PAINTRAMCLASH — THREE MORE ZEROBAS CELLS SIT IN THE REFERENCE'S PAINT SCRATCH ($F94F-$F955)**
-      🎚️ TIER 6 — every edge / TIER 4 RAM usage (filed 2026-11-20, from D-SCANRSAVE's measurement).
-      🤖 **AUTONOMOUS** — the VG-8020's PAINT writes $F94A-$F955 (kwram pin, paintkw); zerobas keeps SUB_INT_DELTA
-      ($F952, the self-test tenant only), GRP_HDR ($F953: the GRP: channel's header bit, and OUTDLP's held $01 in bit 1)
-      and STRPTR ($F954-$F955) there. Joost's ruling for D-SCANRSAVE / D-NTMSXPCLASH ("measure how reference does it
-      ram-wise and match") covers them in spirit; moving them is a RAM-layout change: confirm scope first.
-      🏗️ **RULED (Joost, 2026-11-20): "Move them".** Same ruling as CSAVEA / CSAVEM: off the reference's PAINT scratch.
-      ✅ **MOVED 2026-11-20.** No published cell the reference leaves idle fits the role. The home is zerobas's OWN slot 0
-      SLTWRK entries ($FD09.., the published per-ROM work area; the reference never writes $FCC9-$FFFE,
-      scratchpad/REFWRITES_union.out; C-BIOS and the disk ROM do not use SLTWRK). Moves: GRP_HDR $F953 -> $FD0B (the
-      retired SUBSLOT2), SUB_INT_DELTA $F952 -> $FD0D, STRPTR $F954 -> $FD0E-$FD0F. $FD09 / $FD0A (SUBSLOT /
-      SUBSLOT_OK) and $FD0C (SUB_PING) were there already; $FD10 stays free. Equates only: no code changes size.
-      🔁 **REOPENED (Joost, 2026-11-20): "why not figure what cells the reference uses for this and just use the same?"**
-      The SLTWRK move is a fallback, held uncommitted. First MEASURE the reference's own cell for each role:
-      GRP_HDR (a GRP: channel's pending CHR$(1); dump after the CHR$(1) and after the next byte) and STRPTR (the
-      string engine's descriptor pointer; differential dumps over string expressions; the candidate must match in
-      value and LIFETIME). SUB_INT_DELTA has no reference counterpart (zerobas's self-test): SLTWRK stays.
-      ✅ **GRP_HDR AND SUB_INT_DELTA LANDED 2026-11-20.** MEASURED (scratchpad/grphdr_probe.py, outdlphold_probe.py;
-      $F380-$FFFF dumped, two pending and two idle variants each): the VG-8020 and the CF-3300 keep a GRP: channel's
-      pending CHR$(1) AND OUTDLP's held $01 in GRPHED ($FCA6), value 1 -- the published graphic-header flag CNVCHR
-      uses (GRPHDR_run1.out, OUTDLPHOLD_run1.out). zerobas kept them as bits 0 / 1 of $F953. GRP_HDR is now an alias of
-      GRPHED: one flag, as theirs (basic/biosfnk.asm bios_outdlp stores the byte, 0 / 1, as CNVCHR does). zerobas
-      reads $FCA6 = 01 in the same cases (GRPHDR_run2.out, OUTDLPHOLD_run2.out). SUB_INT_DELTA -> $FD0D (SLTWRK).
-      ✅ **STRPTR LANDED 2026-11-20; ITEM CLOSED.** MEASURED (scratchpad/strptr_probe.py, STRPTR_run1.out: four string
-      assignments, then every work-area cell that points at a descriptor of the result): on both references DAC+2
-      ($F7F8) points at TEMPST's first entry ($F67A), and TEMPPT ($F678) too. That is Microsoft BASIC's string result,
-      in the numeric accumulator. zerobas's STRPTR points at a matching descriptor (DSCTMP $F698) only for a plain
-      literal, and zerobas's FAC IS DAC: same role, different lifetime. STRPTR takes the fallback, SLTWRK $FD0E-$FD0F;
-      adopting DAC+2 is D-STRPTRDAC. Nothing of zerobas is left in $F94A-$F955.
-
-
-
 - [ ] **D-INIREGS — INIGRP / INIMLT RETURN OTHER DE AND HL ON ZEROBAS**
       🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-REGS, INIMLT.md R-IM-REGS ([`XINIG_run3.out`](scratchpad/XINIG_run3.out)):
@@ -17030,122 +17039,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the SET call. C-BIOS's end on chgmod_finish, which re-sends R0-R7 through HL / DE and enables the display;
       restructuring that shared finish for two unpublished registers is risk with no measured program behind it.
 
-
-- [x] **D-INIGRPORDER — INIGRP / INIMLT WRITE OVERLAPPING TABLES IN ANOTHER ORDER ON ZEROBAS**
-      🎚️ TIER 6 — every edge (GRP cells whose tables overlap -- every cell $3FFF; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/INIGRP.md R-IG-VRAM ([`XINIG_run3.out`](scratchpad/XINIG_run3.out), case 28):
-      the VG-8020 writes the name and colour tables, then clears the patterns, then the sprite attributes; zerobas's
-      order leaves other bytes where they overlap. INIMLT too (docs/bios/INIMLT.md R-IM-VRAM, cases 38, 39): the
-      VG-8020 writes the patterns, then the sprites; zerobas the sprites first. Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (with D-INIGRPORDER / D-SETREGS together). cbios-repack/setregs-order.patch (#51):
-      the SET calls end on a shared tail -- HL past the mode's five cells, A = RG6SAV, F $00 (push / pop), DE 0, SETGRP
-      then DE $7F03; INIGRP fills the colour table before the patterns, from GRPCGP as it is (C-BIOS rounded it to $xx00:
-      the first build still failed R-IG-VRAM in exactly the unaligned cases 28 / 36), and INIGRP / INIMLT clear the
-      sprites last. CLS shares cls_screen2; its measured cases all use aligned tables, so nothing it measured moved.
-      +15 B before $0D01, re-derived as #50. spec-live (full): every listed rule of the two holds.
-
-- [x] **D-CHGCLRMODE — CHGCLR TREATS SCRMOD $81-$FF AS A GRAPHICS MODE ON ZEROBAS**
-      🎚️ TIER 6 — every edge (CHGCLR with SCRMOD over $80; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CHGCLR.md R-CC-R7 ([`XCLR_run5.out`](scratchpad/XCLR_run5.out), cases 39 and 48): the
-      VG-8020 takes the SCREEN 0 path when SCRMOD - 1 is negative (SCRMOD $81 and $FF measured: R#7 := (FORCLR x 16)
-      OR BAKCLR); zerobas sets the border colour there.
-      Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
-      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
-      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
-      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
-      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
-      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
-      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
-      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
-
-- [x] **D-SETSHADOW — SETTXT / SETT32 / SETGRP / SETMLT STORE JUNK BITS IN RG2SAV-RG6SAV (AND SETGRP / SETMLT IN RG0SAV)**
-      🎚️ TIER 6 — every edge (screen-table cells with low bits set, or $FFFF, then a program reading the RGxSAV
-      copies -- BASIC's VDP() reads them; or RG0SAV with bits 2-7 set; filed 2026-11-18). The VDP itself agrees.
-      🤖 **AUTONOMOUS** — docs/bios/SETTXT.md / SETT32.md / SETGRP.md / SETMLT.md R-xx-SHADOW, and SETGRP / SETMLT
-      R-xx-R01 ([`XSET_run4.out`](scratchpad/XSET_run4.out)): the VG-8020 stores each cell shifted right (TXTNAM
-      $3D23 -> RG2SAV $0F, $FFFF -> $3F); zerobas stores $CF / $FF (rotated, not shifted). SETGRP: RG0SAV OR $02 there,
-      (RG0SAV AND $F3) OR $02 on zerobas; SETMLT: RG0SAV AND $01 there, AND $F1 on zerobas. Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
-      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
-      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
-      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
-      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
-      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
-      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
-      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
-
-- [x] **D-SETREGS — SETTXT / SETT32 / SETGRP / SETMLT RETURN OTHER A, F, DE, HL ON ZEROBAS**
-      🎚️ TIER 6 — every edge (unpublished return registers; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — the four pages' R-xx-REGS ([`XSET_run4.out`](scratchpad/XSET_run4.out)): the VG-8020
-      returns A = the new RG6SAV, F = $00, DE = 0 ($7F03 for SETGRP), HL = the address past the mode's five cells;
-      zerobas returns F $42 (or $00), DE = that address, HL = 0 or $FFE0, and another A. Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (with D-INIGRPORDER / D-SETREGS together). cbios-repack/setregs-order.patch (#51):
-      the SET calls end on a shared tail -- HL past the mode's five cells, A = RG6SAV, F $00 (push / pop), DE 0, SETGRP
-      then DE $7F03; INIGRP fills the colour table before the patterns, from GRPCGP as it is (C-BIOS rounded it to $xx00:
-      the first build still failed R-IG-VRAM in exactly the unaligned cases 28 / 36), and INIGRP / INIMLT clear the
-      sprites last. CLS shares cls_screen2; its measured cases all use aligned tables, so nothing it measured moved.
-      +15 B before $0D01, re-derived as #50. spec-live (full): every listed rule of the two holds.
-
-- [x] **D-CALPATF — CALPAT'S F KEEPS THE ENTRY'S S / Z / P/V ON ZEROBAS**
-      🎚️ TIER 6 — every edge (F is not published; a caller testing it; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/CALPAT.md R-CP-F ([`XSPR_run3.out`](scratchpad/XSPR_run3.out)): the VG-8020's
-      CALPAT returns H, C and bits 5 / 3 from the addition, Z set exactly for 8 x 8 sprites, S and P/V clear,
-      whatever F was on entry; zerobas's keeps the entry's S, Z and P/V. HL, A and DE agree. Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
-      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
-      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
-      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
-      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
-      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
-      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
-      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
-
-- [x] **D-VRAMF — THE VRAM CALLS' F DIFFERS ON ZEROBAS (RDVRM, FILVRM, LDIRMV, LDIRVM)**
-      🎚️ TIER 6 — every edge (F is not published for any of them; a caller testing it; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/RDVRM.md R-RV-F, FILVRM.md R-FV-F, LDIRMV.md R-MV-REGS, LDIRVM.md R-VM-REGS
-      ([`XVRAM_run4.out`](scratchpad/XVRAM_run4.out)): the VG-8020's RDVRM returns (H AND $3F)'s flags as an AND
-      leaves them (H set), zerobas's without H ($04 for $14); FILVRM keeps F there, zerobas returns $42 / $43;
-      LDIRMV / LDIRVM return $44 there, $42 / $43 on zerobas. The bytes, A and the other registers agree.
-      Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
-      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
-      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
-      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
-      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
-      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
-      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
-      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
-
-- [x] **D-WRTVDPC — WRTVDP WITH C $80 AND UP WRITES THE WRONG WORK-AREA BYTE ON ZEROBAS (C AND $7F)**
-      🎚️ TIER 6 — every edge (a caller passing a register number of $80 or more to WRTVDP; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/bios/WRTVDP.md R-WV-SAV / R-WV-ABC ([`XVDPREG_run4.out`](scratchpad/XVDPREG_run4.out)):
-      the VG-8020 stores B at RG0SAV + C for every C ($F45F for C $80, $F4DE for $FF) and returns C unchanged;
-      zerobas acts as if it took C AND $7F -- C = $80 overwrites RG0SAV itself with B and returns C = 0, C = $FF
-      leaves $F4DE alone and returns $7F (where it writes then is not recorded). The VDP register written (C AND 7) and F agree. Priced when picked up.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED** (one repack patch for five items: D-VRAMF, D-WRTVDPC, D-CHGCLRMODE, D-CALPATF,
-      D-SETSHADOW). cbios-repack/vdp-calls.patch (#50): RDVRM's TMS wait `and $FF` (H set, same 7 T as `or 0`); FILVRM
-      keeps F; LDIRMV / LDIRVM end on `or a` ($44); WRTVDP keeps C (no `res 7,c`); CHGCLR's SCREEN 0 path when SCRMOD - 1
-      is negative; CALPAT `cp 8` before its add; set_base_address a plain shift (A held the address's low byte);
-      SETGRP / SETMLT's RG0SAV masks. +4 B before $0D01: re-derived five guards, the NSETCX overlay $069E, CBIOS_CLS
-      $0604 / NSETCX $0696 / TUPC $0715 / TDOWNC $0733, island 3 $0785. Every byte that changed outside the edited
-      routines is an operand to its label's new address or a moved `jr`'s displacement (label-aligned comparison).
-      spec-live (full): every listed rule of the five holds, and INIGRP's R-IG-VDP / INIMLT's R-IM-VDP with them.
-
-- [x] **D-OUTDOINIT — OUTDO TO THE SCREEN BEFORE BASIC RUNS PRINTS NOTHING ON ZEROBAS**
-      🎚️ TIER 6 — every edge (a cartridge printing with OUTDO / RST 18h from its init, before BASIC; filed
-      2026-11-18). BASIC's own context is not measured here (the harness runs cartridges at init).
-      🤖 **AUTONOMOUS** — docs/bios/OUTDO.md R-OU-SCR / R-OU-CELL / R-OU-KEEP / R-OU-SF ([`XOUTDO_run2.out`](scratchpad/XOUTDO_run2.out)):
-      with PRTFLG 0 the VG-8020 prints the character in the cursor's cell and moves CSRX on, keeping A, F and the
-      registers; zerobas leaves CSRX and the name table (RG2SAV * $400) as they were, and entered with F $FF it
-      returns A $FE, F $08 and other BC, DE, HL (R-OU-KEEP / R-OU-SF). The printer did not get the characters
-      either (PRN identical). Priced when picked up -- first measure where zerobas's OUTDO sends it (PRDEST / the
-      hook) at cartridge time.
-      ✅ **LANDED 2026-11-20; ITEM CLOSED.** The cause: OUTDO's screen arm went to pchar, which is MAIN PAGE 1 -- at a
-      cartridge's init page 1 is the cartridge's own ROM, so the jump ran the cartridge's bytes (hence nothing printed
-      and garbage A / F / BC / DE / HL). basic/main.asm outdo_dest: PRDEST 0 goes to CHPUT (page 0) directly, as the
-      VG-8020's OUTDO prints; only a BASIC channel (PRDEST not 0) goes through pchar. 10 B of the low region. BASIC's own
-      screen output is the same path (pchar's PRDEST 0 arm was `call CHPUT`). spec-live: OUTDO holds every rule.
 
 - [ ] **D-TAPECORPUSNOISE — THE TAPE CORPUS'S PER-TITLE DIFFERENCE COUNTS SWING WITH TIMING, NOT ONLY WITH CORRECTNESS**
       🎚️ TIER 6 — apparatus (filed 2026-11-20).

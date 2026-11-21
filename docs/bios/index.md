@@ -8,7 +8,7 @@ SPDX-License-Identifier: 0BSD
 
 One page per BIOS call: what it does, its contract as measured against the reference machines, and how zerobas differs. How the pages are made: [docs/spec-method.md](../spec-method.md). What every call shares (where the BIOS lives, how to call it, hooks, the work area): [the BIOS concept page](../concepts/bios.md); which call touches which cell, register and port: [the shared-state map](shared-state.md). The shared facts of a region live in its concept page, not repeated on each call's page.
 
-**103 of 108 calls have a page; 103 are FINAL.**
+**104 of 108 calls have a page; 103 are FINAL.**
 
 | address | call | region | contract level | page | open (not measured) | differences (TODO items, from the page) |
 |---|---|---|---|---|---|---|
@@ -112,7 +112,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $013B | WSLREG | [slots](../concepts/slots.md) | L3 | [FINAL](WSLREG.md) | 4 | — |
 | $013E | RDVDP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](RDVDP.md) | 7 | — |
 | $0141 | SNSMAT | [input](../concepts/input-calls.md) | L3 | [FINAL](SNSMAT.md) | 5 | — |
-| $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | — | — | — |
+| $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | [DRAFT 1](PHYDIO.md) | 6 | D-PHYDIOREGS, D-PHYDIOPAST, D-PHYDIOB0, D-PHYDIOMEDIA |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
 | $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | — |
