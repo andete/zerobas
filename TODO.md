@@ -16971,13 +16971,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       column). INLIN reads from the start column only when the line's first row is the row input started on (the FSTPOS
       row, which follows scrolls), else from column 1. On Enter the line's last row gets LINTTB $AF; INLIN / QINLIN also
       set the row above their start row to $AF at the start (PINLIN does not). A visible cursor changes none of it.
-- [ ] **D-EDITSTOP — CTRL+STOP / CTRL+C END THE LINE EDITOR: BUF, HL, THE CURSOR, INTFLG**
+- [x] **D-EDITSTOP — CTRL+STOP / CTRL+C END THE LINE EDITOR: BUF, HL, THE CURSOR, INTFLG**
       🎚️ TIER 3 — common (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       Both end PINLIN / INLIN / QINLIN with carry set: BUF's first byte 0, the rest kept; HL = BUF-1; the cursor to column
       1 of the row after the logical line (the bottom row scrolls); that line's last row LINTTB $AF; the text stays; insert
       mode ends; the key buffer is empty. INTFLG: CTRL+STOP leaves the interrupt's 3, CTRL+C 0. STOP alone does nothing in
       the editor ('AB STOP C Enter' -> 'ABC').
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin3.asm, scratchpad/XLIN3_run4.out, 9 cases:
+      every claim above held, STOP alone as a pending INTFLG 4). zerobas left BUF, the cursor and LINTTB as they were (no
+      scroll on row 24), and its INTFLG was 3 or 0 by timing (its editor polls BREAKX; the interrupt's latch may come
+      later). Now basic/main.asm `bil_stop` (the BIOS entries' carry exit only: BASIC's prompt / INPUT / AUTO take
+      read_line's carry themselves) and `rl_break` sets INTFLG 3. docs/bios/PINLIN.md section 3, rules R-L-STOP /
+      STOPCSR / STOPLT / STOPINT / PAUSE. Two differences the probe also shows are D-EDITDELBS's (R-L-ABOVE,
+      R-L-ENTERLT); a third is new, D-EDITSTOPHELD.
+- [ ] **D-EDITSTOPHELD — CTRL+STOP ENDS OUR LINE EDITOR ONLY ONCE THE KEYS ARE UP; THE VG-8020'S RETURNS AT THE PRESS**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — docs/bios/PINLIN.md R-L-STOPHELD (scratchpad/XLIN3_run4.out): right after PINLIN / INLIN /
+      QINLIN return from a CTRL+STOP, SNSMAT reads rows 6 / 7 $FD / $EF on the VG-8020 (still held) and $FF / $FF on
+      zerobas: basic/repl.asm rl_break waits for the release (rl_release, D-STOPINPUT / D-STOPKEY3) before it returns.
+      For a person the difference is the length of the press. A fix must keep BASIC's prompt safe from the SAME press
+      (rl_release_kil at the next read already waits a held key out, so rl_break's own wait may be the redundant one --
+      measure with the typed sessions S2_stopcont / S8_input before moving it). Case 1 returned with the keys held on
+      zerobas too, once (BREAKX's torn read, D-STOPTEAR): the rule's zerobas failures can vary by a case.
 - [ ] **D-CHGETSTOP — CHGET WITH INTFLG 4 (STOP'S PAUSE) CLEARS IT AND RETURNS THE NEXT KEY**
       🎚️ TIER 6 — every edge (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.

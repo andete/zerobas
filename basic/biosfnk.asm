@@ -381,11 +381,9 @@ bil_go:
                 ret     nc
                 ; D-INLINSTOPF (2026-11-14): on CTRL-STOP the VG-8020 returns A = 0 and
                 ; F = $45 (Z, P/V, Cy) from all three entries -- `xor a / scf`'s flags
-                ; exactly, read as a result (scratchpad/IN_run2.out); zerobas left A = $0D,
-                ; F = $21. Cy was already right.
-                xor     a
-                scf
-                ret
+                ; exactly (scratchpad/IN_run2.out). D-EDITSTOP: and BUF, the cursor and
+                ; LINTTB as it leaves them -- bil_stop (basic/main.asm: this file's pad is full).
+                jp      bil_stop
 
 ; nsx_px -- D-SETCLAST part 2 + D-NSETCXFULL (2026-11-19): NSETCX ($0123) decides each pattern
 ; byte WHOLE on the VG-8020 (docs/bios/NSETCX.md R-NX-VRAM): the run's pixels in a byte are one

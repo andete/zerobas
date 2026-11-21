@@ -274,6 +274,8 @@ rl_tenant:
                 rla                         ; 1 -> CF clear (Enter); $FF -> CF set (break)
                 ret
 rl_break:                                   ; Ctrl-STOP while a line is read: the
+                ld      a,3                 ; D-EDITSTOP: INTFLG 3, as the VG-8020's interrupt
+                ld      (INTFLG),a          ; leaves it (our poll can see the press first)
                 call    rl_release          ; press is CONSUMED first
                 call    KILBUF              ; D-STOPKEY3: and its ^C with it
                 ld      e,0                 ; then the cursor comes down, CF rides through

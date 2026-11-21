@@ -528,6 +528,60 @@ bios_pinlin:
                 ld      hl,read_line_col1
                 jp      bil_go
 
+; bil_stop -- D-EDITSTOP (2026-11-21): PINLIN / INLIN / QINLIN ended by CTRL+STOP or CTRL+C leave,
+; as the VG-8020's (docs/bios/PINLIN.md R-L-STOP*, scratchpad/XLIN3_run3.out): BUF's first byte 0
+; (the rest kept); the logical line's LAST row LINTTB $AF; the cursor at column 1 of the row after
+; it -- the bottom row scrolls, and both bottom entries read $AF after. A 0, F $45 (D-INLINSTOPF).
+; Only the BIOS entries: BASIC's prompt / INPUT / AUTO take read_line's carry themselves (repl_abort
+; prints its own newline). Page 0, with the caller's page 1 back: CRTCNT + CNSDFG inline.
+bil_stop:
+                xor     a
+                ld      (LINEBUF),a
+                ld      a,(CNSDFG)
+                ld      hl,CRTCNT
+                add     a,(hl)
+                ld      c,a                 ; C = the console's bottom row
+                ld      a,(CSRY)
+                ld      b,a
+                ld      e,a
+                ld      d,0
+                ld      hl,LINTTB-1
+                add     hl,de               ; HL -> LINTTB[row]
+bst_lp:
+                ld      a,b
+                cp      c
+                jr      nc,bst_end          ; the bottom row ends every line
+                ld      a,(hl)
+                or      a
+                jr      nz,bst_end          ; not 0: the line ends on this row
+                inc     hl
+                inc     b
+                jr      bst_lp
+bst_end:
+                ld      (hl),$AF
+                ld      a,b
+                ld      (CSRY),a
+                ld      a,1
+                ld      (CSRX),a
+                ld      a,b
+                cp      c
+                push    af                  ; Z: on the bottom row (the LF scrolls)
+                ld      a,10
+                call    CHPUT
+                pop     af
+                jr      nz,bst_ret
+                ld      hl,LINTTB-2
+                ld      b,0
+                add     hl,bc
+                ld      (hl),$AF            ; the scrolled line's row
+                inc     hl
+                ld      (hl),$AF            ; and the fresh bottom row
+bst_ret:
+                ld      hl,LINEBUF - 1      ; the published HL (the walk above used it)
+                xor     a
+                scf
+                ret
+
 ; bios_readc / bios_setc -- READC ($011D) / SETC ($0120) as the VG-8020 (D-SETCCOL / D-SETCATR /
 ; D-SETCF / D-SETCLAST, 2026-11-19; docs/bios/READC.md, SETC.md). SCREEN 2: the pattern byte at
 ; CLOC, its colour byte at CLOC XOR $2000 (GRPCOL / GRPCGP unused; C-BIOS's took CLOC AND NOT

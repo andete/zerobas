@@ -9,4 +9,4 @@ SPDX-License-Identifier: 0BSD
 
 ## Differences from the reference
 
-As PINLIN's page states for INLIN: **D-TEXTAF**.
+As PINLIN's page states for INLIN: **D-TEXTAF**, **D-EDITDELBS** and **D-EDITSTOPHELD**.

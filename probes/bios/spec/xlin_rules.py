@@ -176,3 +176,99 @@ RULES += [
          "row 24 after the scroll).", lambda c: c.src == "XL2C",
          lambda c: (c.hl, c.f & 1, c.csrx, c.csry) == (BUFM1, 0, 1, min(c.y + 1, 24))),
 ]
+
+
+# ---- round 3: XLIN3 (probes/bios/spec/xlin3.asm; scratchpad/XLIN3_run4.out) -- CTRL+STOP / CTRL+C end the line
+# (D-EDITSTOP), and a STOP pause pending (INTFLG 4). The 72-byte record: stage, F, H, L, CSRX, CSRY, INTFLG, INSFLG,
+# CSTYLE, GETPNT / PUTPNT low, BUF 8, LINTTB 24, rows A / B 12 cells each, SNSMAT rows 6 / 7 after the return.
+OUTPUTS["XL3"] = ["stage", "f", "hl", "csrx", "csry", "intflg", "insflg", "cstyle", "keys", "buf", "linttb", "rowa",
+                  "rowb", "held"]
+# the case: the call, how it ends, the line's rows (first, last) and the row the call starts on, rows A / B and the
+# text the screen holds there after the call
+X3 = [("PINLIN", "STOP", 5, 5, 5, 5, 6, b"AB", b""), ("INLIN", "STOP", 5, 5, 5, 5, 6, b"AB", b""),
+      ("QINLIN", "STOP", 5, 5, 5, 5, 6, b"AB? ", b""),
+      ("PINLIN", "STOP", 7, 8, 8, 8, 9, b"ef", b""), ("PINLIN", "STOP", 7, 8, 7, 8, 9, b"ef", b""),
+      ("PINLIN", "STOP", 24, 24, 24, 23, 24, b"AB", b""),
+      ("PINLIN", "CTRLC", 5, 5, 5, 5, 6, b"AB", b""), ("INLIN", "CTRLC", 5, 5, 5, 5, 6, b"XYQ", b""),
+      ("PINLIN", "PAUSE", 5, 5, 5, 5, 6, b"ABC", b"")]
+_cases3 = cases
+
+
+def cases():                                     # noqa: F811
+    out = _cases3()
+    t = open(os.path.join(ROOT, "scratchpad", "XLIN3_run4.out")).read()
+    for who, key in (("ref", "ref"), ("zb", "ours")):
+        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))[1:]
+        b += bytes(max(0, 72 * len(X3) - len(b)))
+        for i, (name, end, first, last, y0, ra, rb, ta, tb) in enumerate(X3):
+            r = b[72 * i: 72 * (i + 1)]
+            out[who].append(NS(src="XL3", id=f"XL3 {i + 1}", name=name, end=end, first=first, last=last, y0=y0,
+                               ra=ra, rb=rb, ta=ta, tb=tb, num=i + 1,
+                               stage=r[0], f=r[1], hl=(r[2] << 8) | r[3], csrx=r[4], csry=r[5], intflg=r[6],
+                               insflg=r[7], cstyle=r[8], keys=list(r[9:11]), buf=list(r[11:19]),
+                               linttb=list(r[19:43]), rowa=list(r[43:55]), rowb=list(r[55:67]), held=list(r[67:69])))
+    return out
+
+
+def lt_marked(c):
+    """the LINTTB rows (1-based) the reference marks $AF after the call"""
+    if c.last == 24 and c.end == "STOP":
+        return {23, 24}                         # the line's row scrolled up to 23, the fresh bottom row
+    rows = {c.last}
+    if c.name in ("INLIN", "QINLIN"):
+        rows.add(c.y0 - 1)
+    return rows
+
+
+def lt_rest(c):
+    """every other row: an ending row (not 0) the call did not mark -- except the rows inside the line, 0"""
+    for r in range(1, 25):
+        if r in lt_marked(c):
+            continue
+        v = c.linttb[r - 1]
+        if c.first <= r < c.last:
+            if v != 0:
+                return False
+        elif v in (0, 0xAF):
+            return False
+    return True
+
+
+S3 = "3. Round 3: CTRL+STOP and CTRL+C end the line; a STOP pause (XLIN3)"
+BRK = lambda c: c.src == "XL3" and c.end != "PAUSE"           # noqa: E731
+
+RULES += [
+    Rule("R-L-STOP", S3, "CTRL+STOP held, or CTRL+C typed, ends all three with the carry set: F $45, HL = BUF − 1, "
+         "BUF's first byte 0 and the rest as it was ($FF here), the key buffer empty, insert mode off (INSFLG 0, "
+         "CSTYLE 0; case 1 entered with INSFLG $FF), and the text left on the screen.", BRK,
+         lambda c: (c.stage == c.num and c.f == 0x45 and c.hl == BUFM1 and c.buf == [0] + [0xFF] * 7
+                    and c.keys[0] == c.keys[1] and (c.insflg, c.cstyle) == (0, 0)
+                    and c.rowa == cells(c.ta) and c.rowb == cells(c.tb))),
+    Rule("R-L-STOPCSR", S3, "The cursor goes to column 1 of the row after the LOGICAL line -- from either of its rows "
+         "(a 42-character line on rows 7-8: row 9) -- and on row 24 the screen scrolls (the line moves to row 23, "
+         "the cursor stays on row 24).", BRK,
+         lambda c: (c.csrx, c.csry) == (1, min(c.last + 1, 24))),
+    Rule("R-L-STOPLT", S3, "The line's last row gets LINTTB $AF (after the scroll: rows 23 and 24); the line's inner "
+         "rows stay 0 (continued) and the other rows keep an ending entry.", BRK,
+         lambda c: all(c.linttb[r - 1] == 0xAF for r in lt_marked(c) if not (c.name != "PINLIN" and r == c.y0 - 1))
+         and lt_rest(c)),
+    Rule("R-L-ABOVE", S3, "INLIN and QINLIN also leave the row ABOVE their start row LINTTB $AF (PINLIN does not): the "
+         "line they read starts on their own row.", lambda c: c.src == "XL3" and c.name != "PINLIN",
+         lambda c: c.linttb[c.y0 - 2] == 0xAF),
+    Rule("R-L-STOPINT", S3, "INTFLG is 3 after CTRL+STOP (the interrupt's latch, left set) and 0 after CTRL+C (a key "
+         "like any other).", BRK, lambda c: c.intflg == (3 if c.end == "STOP" else 0)),
+    Rule("R-L-STOPHELD", S3, "CTRL+STOP ends the call while the keys are still DOWN (rows 6 / 7 read $FD / $EF right "
+         "after it): the editor does not wait for the release. (CTRL+C: nothing held, $FF / $FF.)", BRK,
+         lambda c: c.held == ([0xFD, 0xEF] if c.end == "STOP" else [0xFF, 0xFF])),
+    Rule("R-L-PAUSE", S3, "With a STOP pause pending (INTFLG 4) the editor reads on: 'C' and Enter after 'AB' give "
+         "'ABC' with the carry clear, HL = BUF − 1, INTFLG 0 after, the key buffer empty, the cursor at column 1 of "
+         "the next row, nothing held.", lambda c: c.src == "XL3" and c.end == "PAUSE",
+         lambda c: (c.stage == c.num and c.f & 1 == 0 and c.hl == BUFM1 and c.buf == list(b"ABC\0    ")
+                    and c.intflg == 0 and c.keys[0] == c.keys[1] and (c.insflg, c.cstyle) == (0, 0)
+                    and (c.csrx, c.csry) == (1, 6) and c.rowa == cells(c.ta) and c.rowb == cells(c.tb)
+                    and c.held == [0xFF, 0xFF])),
+    Rule("R-L-ENTERLT", S3, "Enter leaves the line's last row LINTTB $AF; the other rows keep an ending entry.",
+         lambda c: c.src == "XL3" and c.end == "PAUSE", lambda c: c.linttb[c.last - 1] == 0xAF and lt_rest(c)),
+    Rule("R-L-F3", S3, "The whole F after Enter is 18 here too.", lambda c: c.src == "XL3" and c.end == "PAUSE",
+         lambda c: c.f == 0x18),
+]
