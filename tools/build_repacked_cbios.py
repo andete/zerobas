@@ -56,11 +56,15 @@ PATCHES = [
     # Register leftovers the VG-8020 keeps (biosregs-acceptance): INLIN / PINLIN / QINLIN return A = $0D after
     # Enter (+2 B), and DSPFNK / ERAFNK in SCREEN 2 and up keep HL (fnk_span drops its return with `inc sp` x2, +1 B).
     os.path.join(REPO, "cbios-repack", "regs-leftovers.patch"),
+    # D-DISKNOBASIC (2026-11-22): a ROM's INIT gets its slot in A, as on the reference (the CF-3300's BIOS calls the
+    # disk INIT with A = C = $87); C-BIOS's VDP wait left the status there, so zerobas's disk ROM, read on C-BIOS
+    # without zerobas's BASIC, hooked the wrong slot and every BDOS call came back empty. +1 B, offered to C-BIOS.
+    os.path.join(REPO, "cbios-repack", "init-slot-a.patch"),
 ]
 
 PINNED_TAG = "fff98e8"   # C-BIOS prepare-0.33 (not master; kept fast-forward only): d23d87b + the KEY(n) ON trap
 PRISTINE_SHA1 = "3fc2c7ec71648cba490f7bd7d01a795c6890f270"
-REPACKED_SHA1 = "32d04b86e2244c247a7ebae9c187f00be71bf7e0"   # fff98e8 + 5 layout / leftover patches (D-CBIOS032), 2026-11-22
+REPACKED_SHA1 = "dda945e89ffedbeccd9d20464e665a105ada66d6"   # fff98e8 + 6 patches (D-CBIOS032, D-DISKNOBASIC), 2026-11-22
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

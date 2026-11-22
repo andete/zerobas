@@ -1,0 +1,929 @@
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+  live XBABS1_run1.out disk: xbabs1.asm 1.0 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+  live XBABS1_run2.out cf3300: xbabs1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+  live XBABS2_run1.out disk: xbabs2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+  live XBABS2_run2.out cf3300: xbabs2.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+  live XBABS1_run1.out disk: xbabs1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs1.asm
+  live XBABS1_run2.out cf3300: xbabs1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+  live XBABS2_run1.out disk: xbabs2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbabs2.asm
+  live XBABS2_run2.out cf3300: xbabs2.asm 0.1 s, zerobas as committed
+xbabs_rules.py: 6 rules; zerobas fails ['R-BA-WORK']; candidate fails ['R-BA-WORK']; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+  live XBBLK10_run1.out disk: xbblk10.asm 0.3 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+  live XBBLK10_run2.out cf3300: xbblk10.asm 0.3 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var fde is never used on line 237 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+  live XBBLK11_run1.out disk: xbblk11.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var fde is never used on line 237 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+  live XBBLK11_run2.out cf3300: xbblk11.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var buf is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var cb is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+  live XBBLK1_run1.out disk: xbblk1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var buf is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var cb is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+  live XBBLK1_run2.out cf3300: xbblk1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+  live XBBLK2_run1.out disk: xbblk2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+  live XBBLK2_run2.out cf3300: xbblk2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+  live XBBLK3_run1.out disk: xbblk3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+  live XBBLK3_run2.out cf3300: xbblk3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var DTA is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var buf is never used on line 64 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var cb is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var entry is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+  live XBBLK4_run1.out disk: xbblk4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var DTA is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var buf is never used on line 64 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var cb is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var entry is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+  live XBBLK4_run2.out cf3300: xbblk4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var cb is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+  live XBBLK5_run1.out disk: xbblk5.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var cb is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+  live XBBLK5_run2.out cf3300: xbblk5.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+  live XBBLK6_run1.out disk: xbblk6.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+  live XBBLK6_run2.out cf3300: xbblk6.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var fde is never used on line 239 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+  live XBBLK7_run1.out disk: xbblk7.asm 1.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var fde is never used on line 239 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+  live XBBLK7_run2.out cf3300: xbblk7.asm 5.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+  live XBBLK8_run1.out disk: xbblk8.asm 0.8 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+  live XBBLK8_run2.out cf3300: xbblk8.asm 0.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var fde is never used on line 234 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+  live XBBLK9_run1.out disk: xbblk9.asm 2.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var fde is never used on line 234 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+  live XBBLK9_run2.out cf3300: xbblk9.asm 2.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+  live XRRND1_run1.out disk: xrrnd1.asm 3.6 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+  live XRRND1_run2.out cf3300: xrrnd1.asm 0.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+  live XBBLK10_run1.out disk: xbblk10.asm 0.3 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk10.asm
+  live XBBLK10_run2.out cf3300: xbblk10.asm 0.3 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var fde is never used on line 237 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+  live XBBLK11_run1.out disk: xbblk11.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+WARNING: Var fde is never used on line 237 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk11.asm
+  live XBBLK11_run2.out cf3300: xbblk11.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var buf is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var cb is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+  live XBBLK1_run1.out disk: xbblk1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var buf is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var cb is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk1.asm
+  live XBBLK1_run2.out cf3300: xbblk1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+  live XBBLK2_run1.out disk: xbblk2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk2.asm
+  live XBBLK2_run2.out cf3300: xbblk2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+  live XBBLK3_run1.out disk: xbblk3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk3.asm
+  live XBBLK3_run2.out cf3300: xbblk3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var DTA is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var buf is never used on line 64 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var cb is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var entry is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+  live XBBLK4_run1.out disk: xbblk4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var DTA is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var buf is never used on line 64 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var cb is never used on line 54 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+WARNING: Var entry is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk4.asm
+  live XBBLK4_run2.out cf3300: xbblk4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var cb is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+  live XBBLK5_run1.out disk: xbblk5.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var cb is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk5.asm
+  live XBBLK5_run2.out cf3300: xbblk5.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+  live XBBLK6_run1.out disk: xbblk6.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var DTA is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var entry is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+WARNING: Var fde is never used on line 240 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk6.asm
+  live XBBLK6_run2.out cf3300: xbblk6.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var fde is never used on line 239 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+  live XBBLK7_run1.out disk: xbblk7.asm 1.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var DTA is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var buf is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var entry is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+WARNING: Var fde is never used on line 239 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk7.asm
+  live XBBLK7_run2.out cf3300: xbblk7.asm 4.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+  live XBBLK8_run1.out disk: xbblk8.asm 0.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var DTA is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var entry is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+WARNING: Var fde is never used on line 236 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk8.asm
+  live XBBLK8_run2.out cf3300: xbblk8.asm 0.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var fde is never used on line 234 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+  live XBBLK9_run1.out disk: xbblk9.asm 2.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var DTA is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var entry is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+WARNING: Var fde is never used on line 234 of file /Users/joost/projects/zerobas/probes/bios/spec/xbblk9.asm
+  live XBBLK9_run2.out cf3300: xbblk9.asm 2.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+  live XRRND1_run1.out disk: xrrnd1.asm 3.6 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var DTA is never used on line 35 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var entry is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+WARNING: Var fde is never used on line 230 of file /Users/joost/projects/zerobas/probes/bios/spec/xrrnd1.asm
+  live XRRND1_run2.out cf3300: xrrnd1.asm 0.9 s, zerobas as committed
+xbblk_rules.py: 18 rules; zerobas fails ['R-BK-FSIZE', 'R-BK-PAST255FCB', 'R-BK-RDABS', 'R-BK-ROUND10', 'R-BK-ROUND11', 'R-BK-ROUND4', 'R-BK-ROUND5', 'R-BK-ROUND6', 'R-BK-ROUND7', 'R-BK-ROUND8', 'R-BK-ROUND9', 'R-BK-WORK']; candidate fails ['R-BK-FSIZE', 'R-BK-PAST255FCB', 'R-BK-RDABS', 'R-BK-ROUND10', 'R-BK-ROUND11', 'R-BK-ROUND4', 'R-BK-ROUND5', 'R-BK-ROUND6', 'R-BK-ROUND7', 'R-BK-ROUND8', 'R-BK-ROUND9', 'R-BK-WORK']; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run1.out disk: xbcon1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run2.out cf3300: xbcon1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run1.out disk: xbcon2.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run2.out cf3300: xbcon2.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run1.out disk: xbcon3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run2.out cf3300: xbcon3.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run1.out disk: xbcon1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run2.out cf3300: xbcon1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run1.out disk: xbcon2.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run2.out cf3300: xbcon2.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run1.out disk: xbcon3.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run2.out cf3300: xbcon3.asm 0.1 s, zerobas as committed
+xbcon_rules.py: 9 rules; zerobas fails ['R-BC-CONST', 'R-BC-ECHO', 'R-BC-HOLD', 'R-BC-HOLD2', 'R-BC-HOLD3', 'R-BC-RAW', 'R-BC-WORK']; candidate fails ['R-BC-CONST', 'R-BC-ECHO', 'R-BC-HOLD', 'R-BC-HOLD2', 'R-BC-HOLD3', 'R-BC-RAW', 'R-BC-WORK']; noread zb=[] cand=[]
+WARNING: Var QUEBAK is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1b.asm
+  live XSND1B_run1.out nodisk: xsnd1b.asm 0.1 s, zerobas as committed
+WARNING: Var QUEBAK is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1b.asm
+  live XSND1B_run1.out disk: xsnd1b.asm 0.1 s, zerobas as committed
+WARNING: Var QUEBAK is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1.asm
+  live XSND1_run4.out nodisk: xsnd1.asm 0.1 s, zerobas as committed
+WARNING: Var QUEBAK is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1.asm
+  live XSND1_run4.out disk: xsnd1.asm 0.1 s, zerobas as committed
+WARNING: Var QUEBAK is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1b.asm
+  live XSND1B_run1.out nodisk: xsnd1b.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var QUEBAK is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1b.asm
+  live XSND1B_run1.out disk: xsnd1b.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var QUEBAK is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1.asm
+  live XSND1_run4.out nodisk: xsnd1.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var QUEBAK is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xsnd1.asm
+  live XSND1_run4.out disk: xsnd1.asm 0.1 s, zerobas CHANGED since the committed run
+xbeep_rules.py: 5 rules; zerobas fails []; candidate fails []; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var DTA is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cde is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var chl is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var rsave is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+  live XBFILE1_run1.out disk: xbfile1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var DTA is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cde is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var chl is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var rsave is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+  live XBFILE1_run2.out cf3300: xbfile1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+  live XBFILE2_run1.out disk: xbfile2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+  live XBFILE2_run2.out cf3300: xbfile2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var rsave is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+  live XBFILE3_run1.out disk: xbfile3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var rsave is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+  live XBFILE3_run2.out cf3300: xbfile3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var DTA is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var rsave is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+  live XBFILE4_run1.out disk: xbfile4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var DTA is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var rsave is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+  live XBFILE4_run2.out cf3300: xbfile4.asm 5.0 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var DTA is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cde is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var chl is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var rsave is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+  live XBFILE1_run1.out disk: xbfile1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var DTA is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var cde is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var chl is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+WARNING: Var rsave is never used on line 50 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile1.asm
+  live XBFILE1_run2.out cf3300: xbfile1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+  live XBFILE2_run1.out disk: xbfile2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile2.asm
+  live XBFILE2_run2.out cf3300: xbfile2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var rsave is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+  live XBFILE3_run1.out disk: xbfile3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var DTA is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var buf is never used on line 58 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var cb is never used on line 49 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var entry is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+WARNING: Var rsave is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile3.asm
+  live XBFILE3_run2.out cf3300: xbfile3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var DTA is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var rsave is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+  live XBFILE4_run1.out disk: xbfile4.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var DTA is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+WARNING: Var rsave is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbfile4.asm
+  live XBFILE4_run2.out cf3300: xbfile4.asm 0.2 s, zerobas as committed
+xbfile_rules.py: 18 rules; zerobas fails ['R-BF-CARRY', 'R-BF-CLOSE4', 'R-BF-EXTENT', 'R-BF-MAKE2', 'R-BF-MISS', 'R-BF-OPEN3', 'R-BF-OPEN4', 'R-BF-SEQ3', 'R-BF-SETDTA2', 'R-BF-SETDTA4', 'R-BF-WORK']; candidate fails ['R-BF-CARRY', 'R-BF-CLOSE4', 'R-BF-EXTENT', 'R-BF-MAKE2', 'R-BF-MISS', 'R-BF-OPEN3', 'R-BF-OPEN4', 'R-BF-SEQ3', 'R-BF-SETDTA2', 'R-BF-SETDTA4', 'R-BF-WORK']; noread zb=[] cand=[]
+  live XINP1_run3.out nodisk: xinp1.asm 0.1 s, zerobas as committed
+  live XINP1_run3.out disk: xinp1.asm 0.1 s, zerobas as committed
+  live XINP1_run3.out nodisk: xinp1.asm 0.1 s, zerobas CHANGED since the committed run
+  live XINP1_run3.out disk: xinp1.asm 0.1 s, zerobas CHANGED since the committed run
+xbreakx_rules.py: 4 rules; zerobas fails []; candidate fails []; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+  live XBREC1_run1.out disk: xbrec1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+  live XBREC1_run2.out cf3300: xbrec1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var DTA is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var cb is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var entry is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var rsave is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+  live XBREC2_run1.out disk: xbrec2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var DTA is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var cb is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var entry is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var rsave is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+  live XBREC2_run2.out cf3300: xbrec2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var DTA is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var cb is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var entry is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var rsave is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+  live XBREC3_run1.out disk: xbrec3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var DTA is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var cb is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var entry is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var rsave is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+  live XBREC3_run2.out cf3300: xbrec3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+  live XBREC1_run1.out disk: xbrec1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var DTA is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var buf is never used on line 57 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var cb is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var entry is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+WARNING: Var rsave is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec1.asm
+  live XBREC1_run2.out cf3300: xbrec1.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var DTA is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var cb is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var entry is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var rsave is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+  live XBREC2_run1.out disk: xbrec2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var DTA is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var buf is never used on line 61 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var cb is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var entry is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+WARNING: Var rsave is never used on line 60 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec2.asm
+  live XBREC2_run2.out cf3300: xbrec2.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var DTA is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var cb is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var entry is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var rsave is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+  live XBREC3_run1.out disk: xbrec3.asm 0.2 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var DTA is never used on line 37 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var cb is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var entry is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+WARNING: Var rsave is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbrec3.asm
+  live XBREC3_run2.out cf3300: xbrec3.asm 0.2 s, zerobas as committed
+xbrec_rules.py: 11 rules; zerobas fails ['R-BR-SETRND3', 'R-BR-SIZE2', 'R-BR-WORK']; candidate fails ['R-BR-SETRND3', 'R-BR-SIZE2', 'R-BR-WORK']; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run1.out disk: xbsys1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run2.out cf3300: xbsys1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run1.out disk: xbsys2.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run2.out cf3300: xbsys2.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run1.out disk: xbsys3.asm 5.9 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run2.out cf3300: xbsys3.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run1.out disk: xbsys1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run2.out cf3300: xbsys1.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run1.out disk: xbsys2.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run2.out cf3300: xbsys2.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run1.out disk: xbsys3.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run2.out cf3300: xbsys3.asm 0.1 s, zerobas as committed
+xbsys_rules.py: 15 rules; zerobas fails ['R-BS-ALLOC', 'R-BS-ALLOC2', 'R-BS-DI', 'R-BS-DTA', 'R-BS-SLOT', 'R-BS-WORK']; candidate fails ['R-BS-ALLOC', 'R-BS-ALLOC2', 'R-BS-DI', 'R-BS-DTA', 'R-BS-SLOT', 'R-BS-WORK']; noread zb=[] cand=[]
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out nodisk: xchoice1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out disk: xchoice1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run2.out cf3300: xchoice1.asm 0.1 s, zerobas as committed
+  live XCHOICE1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out nodisk: xchoice2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out disk: xchoice2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run2.out cf3300: xchoice2.asm 0.1 s, zerobas as committed
+  live XCHOICE2_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out nodisk: xchoice1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out disk: xchoice1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run2.out cf3300: xchoice1.asm 0.1 s, zerobas as committed
+  live XCHOICE1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out nodisk: xchoice2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out disk: xchoice2.asm 0.2 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run2.out cf3300: xchoice2.asm 0.1 s, zerobas as committed
+  live XCHOICE2_run3.out nms8250: reference-only row, not re-run
+xchoice_rules.py: 4 rules; zerobas fails ['R-CH-READ']; candidate fails ['R-CH-READ']; noread zb=[] cand=[]
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out nodisk: xdent1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out disk: xdent1.asm 0.1 s, zerobas as committed
+  live XDENT1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out nodisk: xdent2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out disk: xdent2.asm 0.2 s, zerobas as committed
+  live XDENT2_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out nodisk: xdent3.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out disk: xdent3.asm 0.2 s, zerobas as committed
+  live XDENT3_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out nodisk: xdent4.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out disk: xdent4.asm 0.2 s, zerobas as committed
+  live XDENT4_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out nodisk: xdent5.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out disk: xdent5.asm 0.1 s, zerobas as committed
+  live XDENT5_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out nodisk: xdent6.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out disk: xdent6.asm 0.1 s, zerobas as committed
+  live XDENT6_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out nodisk: xdent7.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out disk: xdent7.asm 0.1 s, zerobas as committed
+  live XDENT7_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out nodisk: xdent1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out disk: xdent1.asm 0.1 s, zerobas as committed
+  live XDENT1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out nodisk: xdent2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out disk: xdent2.asm 0.2 s, zerobas as committed
+  live XDENT2_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out nodisk: xdent3.asm 5.9 s, zerobas as committed
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out disk: xdent3.asm 0.2 s, zerobas as committed
+  live XDENT3_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out nodisk: xdent4.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out disk: xdent4.asm 0.2 s, zerobas as committed
+  live XDENT4_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out nodisk: xdent5.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out disk: xdent5.asm 0.1 s, zerobas as committed
+  live XDENT5_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out nodisk: xdent6.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out disk: xdent6.asm 0.1 s, zerobas as committed
+  live XDENT6_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out nodisk: xdent7.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out disk: xdent7.asm 0.1 s, zerobas as committed
+  live XDENT7_run3.out nms8250: reference-only row, not re-run
+xdskchg_rules.py: 5 rules; zerobas fails ['R-DC-F', 'R-DC-NOTREADY', 'R-DC-NRREGS', 'R-DC-READ', 'R-DC-RECENT']; candidate fails ['R-DC-F', 'R-DC-NOTREADY', 'R-DC-NRREGS', 'R-DC-READ', 'R-DC-RECENT']; noread zb=[] cand=[]
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+WARNING: Var cc is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+WARNING: Var entry is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+  live XDFMT1_run2.out cf3300: xdfmt1.asm 0.8 s, zerobas as committed
+WARNING: Var buf is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+WARNING: Var cc is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+WARNING: Var entry is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+  live XDFMT2_run1.out cf3300: xdfmt2.asm 0.6 s, zerobas as committed
+WARNING: Var buf is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+  live XDFMT3_run1.out cf3300: xdfmt3.asm 0.3 s, zerobas as committed
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+WARNING: Var cc is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+WARNING: Var entry is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt1.asm
+  live XDFMT1_run2.out cf3300: xdfmt1.asm 0.8 s, zerobas as committed
+WARNING: Var buf is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+WARNING: Var cc is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+WARNING: Var entry is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt2.asm
+  live XDFMT2_run1.out cf3300: xdfmt2.asm 0.5 s, zerobas as committed
+WARNING: Var buf is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+  live XDFMT3_run1.out cf3300: xdfmt3.asm 0.3 s, zerobas as committed
+xdskfmt_rules.py: 5 rules; zerobas fails ['R-DF-BAD', 'R-DF-BADF', 'R-DF-OKREGS', 'R-DF-READBACK']; candidate fails ['R-DF-BAD', 'R-DF-BADF', 'R-DF-OKREGS', 'R-DF-READBACK']; noread zb=[] cand=[]
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out nodisk: xdrvtbl.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out disk: xdrvtbl.asm 0.1 s, zerobas as committed
+  live XDSK1_cf3300.out cf3300: xdsk1.asm 0.2 s, zerobas as committed
+  live XDSK1_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK1_run2.out nodisk: xdsk1.asm 0.1 s, zerobas as committed
+  live XDSK1_run2.out disk: xdsk1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out nodisk: xdskio1.asm 4.9 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out disk: xdskio1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run2.out cf3300: xdskio1.asm 0.2 s, zerobas as committed
+  live XDSKIO1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out nodisk: xdskio2p.asm 0.1 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out disk: xdskio2p.asm 0.2 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run2.out cf3300: xdskio2p.asm 0.2 s, zerobas as committed
+  live XDSKIO2P_run3.out nms8250: reference-only row, not re-run
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out nodisk: xdskio2.asm 0.1 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out disk: xdskio2.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run2.out cf3300: xdskio2.asm 0.2 s, zerobas as committed
+  live XDSKIO2_run3.out nms8250: reference-only row, not re-run
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out nodisk: xdrvtbl.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out disk: xdrvtbl.asm 0.1 s, zerobas as committed
+  live XDSK1_cf3300.out cf3300: xdsk1.asm 0.2 s, zerobas as committed
+  live XDSK1_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK1_run2.out nodisk: xdsk1.asm 0.1 s, zerobas as committed
+  live XDSK1_run2.out disk: xdsk1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out nodisk: xdskio1.asm 0.1 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out disk: xdskio1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run2.out cf3300: xdskio1.asm 0.2 s, zerobas as committed
+  live XDSKIO1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out nodisk: xdskio2p.asm 0.1 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out disk: xdskio2p.asm 0.2 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run2.out cf3300: xdskio2p.asm 0.2 s, zerobas as committed
+  live XDSKIO2P_run3.out nms8250: reference-only row, not re-run
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out nodisk: xdskio2.asm 0.1 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out disk: xdskio2.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run2.out cf3300: xdskio2.asm 0.2 s, zerobas as committed
+  live XDSKIO2_run3.out nms8250: reference-only row, not re-run
+xdskio_rules.py: 4 rules; zerobas fails ['R-DI-HL', 'R-DI-REGS', 'R-DI-SAME']; candidate fails ['R-DI-HL', 'R-DI-REGS', 'R-DI-SAME']; noread zb=[] cand=[]
+xgetdpb_rules.py: 3 rules; zerobas fails ['R-GD-DPB', 'R-GD-REGS']; candidate fails ['R-GD-DPB', 'R-GD-REGS']; noread zb=[] cand=[]
+  live XDSK2_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK2_run1.out nodisk: xdsk2.asm 0.1 s, zerobas as committed
+  live XDSK2_run1.out disk: xdsk2.asm 0.2 s, zerobas as committed
+  live XDSK3_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK3_run2.out nodisk: xdsk3.asm 0.1 s, zerobas as committed
+  live XDSK3_run2.out disk: xdsk3.asm 0.3 s, zerobas as committed
+  live XDSK4_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK4_run1.out nodisk: xdsk4.asm 0.1 s, zerobas as committed
+  live XDSK4_run1.out disk: xdsk4.asm 0.2 s, zerobas as committed
+  live XDSK5_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK5_run2.out nodisk: xdsk5.asm 0.1 s, zerobas as committed
+  live XDSK5_run2.out disk: xdsk5.asm 0.2 s, zerobas as committed
+  live XDSK6_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK6_run1.out nodisk: xdsk6.asm 0.1 s, zerobas as committed
+  live XDSK6_run1.out disk: xdsk6.asm 6.0 s, zerobas as committed
+  live XDSK2_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK2_run1.out nodisk: xdsk2.asm 0.1 s, zerobas as committed
+  live XDSK2_run1.out disk: xdsk2.asm 0.2 s, zerobas as committed
+  live XDSK3_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK3_run2.out nodisk: xdsk3.asm 0.1 s, zerobas as committed
+  live XDSK3_run2.out disk: xdsk3.asm 0.3 s, zerobas as committed
+  live XDSK4_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK4_run1.out nodisk: xdsk4.asm 0.1 s, zerobas as committed
+  live XDSK4_run1.out disk: xdsk4.asm 0.2 s, zerobas as committed
+  live XDSK5_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK5_run2.out nodisk: xdsk5.asm 0.1 s, zerobas as committed
+  live XDSK5_run2.out disk: xdsk5.asm 0.2 s, zerobas as committed
+  live XDSK6_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK6_run1.out nodisk: xdsk6.asm 0.1 s, zerobas as committed
+  live XDSK6_run1.out disk: xdsk6.asm 0.2 s, zerobas as committed
+xphydio_rules.py: 9 rules; zerobas fails ['R-PD-FFFF', 'R-PD-MEDIA', 'R-PD-PAST', 'R-PD-READ', 'R-PD-WPAST', 'R-PD-WRITE']; candidate fails ['R-PD-FFFF', 'R-PD-MEDIA', 'R-PD-PAST', 'R-PD-READ', 'R-PD-WPAST', 'R-PD-WRITE']; noread zb=[] cand=[]
+===== spec done =====

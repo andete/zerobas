@@ -16751,6 +16751,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
+- [x] **D-DISKNOBASIC — ZEROBAS'S DISK ROM ON C-BIOS WITHOUT ZEROBAS'S BASIC: EVERY BDOS CALL CAME BACK EMPTY**
+      🎚️ TIER 1 — Joost 2026-11-22's order: after the rebase, "the disk ROM working without zerobas BASIC".
+      ✅ **DONE 2026-11-22.** On the review machine (C-BIOS fff98e8 + zerobas's disk ROM, no zerobas BASIC) 41 disk /
+      BDOS rules failed that pass on zerobas; every BDOS call returned A 0, F $54, nothing done. CAUSE: the disk ROM
+      reads its own slot from A at INIT (as the CF-3300's BIOS passes it: A = C = $87, measured), and C-BIOS's boot
+      waited for the VDP with `in a,($99)` right before the CALSLT, so A held the VDP status and the hooks / $F37D stub
+      pointed at a wrong slot. FIX in C-BIOS's boot (cbios-repack/init-slot-a.patch, `ld a,c`, +1 B; offered to
+      C-BIOS): every disk / BDOS page now fails EXACTLY the rules zerobas itself fails, module for module
+      (tools/cbios_review.py spec on 14 modules, scratchpad/AE_slota_review.out).
 - [ ] **D-SETREGSCBIOS — SETTXT / SETT32 / SETGRP / SETMLT RETURN C-BIOS'S LEFTOVER REGISTERS SINCE THE REBASE**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — d23d87b's bodies return DE / HL the other way round and another F (R-TX-REGS / R-T3-REGS /
