@@ -1,14 +1,10 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 ;
-; XDSKIO2P -- XDSKIO2's cases through PHYDIO ($0144), the twin, round 2 (2026-11-22), answering review pass 1 (scratchpad/
-; BDIO_review1.md): HL after a multi-sector call -- the buffer + $200, or + 512 x (the sectors attempted - 1)? -- with the
-; first sector past the end, B 3, other buffers. Twin: xdskio2p.asm, the same cases through PHYDIO. XDSKIO1's frame
-; (probes/bios/spec/xdskio1.asm): CALSLT ($001C) to $4010 in the disk
-; interface's slot -- DRVTBL's first slot byte ($FB22, IY high), IX $4010 -- with the same A, F, B, C, DE, HL. CALSLT
-; leaves interrupts off on its way in (case 08's `ei` reaches DSKIO as di). The NODISK row has no disk interface ($FB22
-; 0): the call is skipped and the record holds the registers as entered. Everything else is XDSK1's: the buffer, the
-; 14-byte record (A, F, B, C, D, E, H, L, the interrupt state after, the buffer's 16-bit sum, +0, +512, a pad).
+; XDSKIO2P -- XDSKIO2's cases (probes/bios/spec/xdskio2.asm) through PHYDIO ($0144): its twin, the expected values for
+; docs/disk/DSKIO.md's round 2. XDSKIO2's frame with every `call dskio` a plain `CALL PHYDIO` (the dskio routine is
+; left unused). Everything else is XDSK1's: the buffer, the 14-byte record (A, F, B, C, D, E, H, L, the interrupt
+; state after, the buffer's 16-bit sum, +0, +512, a pad).
 ; Cases:
 ;   00: read 2 from past the end: A 0, F $00, B 2, C $F9, DE 1440, HL $A400, di, fill E5
 ;   01: read 3 from the boot: A 0, F $00, B 3, C $F9, DE 0, HL $A400, di, fill E5

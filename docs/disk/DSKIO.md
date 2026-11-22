@@ -5,8 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # `DSKIO` ($4010, disk ROM) — called directly
 
-> **Spec:** DRAFT 2 (2026-11-22), two measured rounds on two references, review pass 1 answered
-> ([`scratchpad/BDIO_review1.md`](../../scratchpad/BDIO_review1.md)).
+> **Spec:** FINAL (2026-11-22), two measured rounds on two references, review passes 1 and 2 answered
+> ([`scratchpad/BDIO_review1.md`](../../scratchpad/BDIO_review1.md),
+> [`scratchpad/BDIO_review2.md`](../../scratchpad/BDIO_review2.md)): pass 2 found no new behaviour, only
+> combinations, now [A] (docs/spec-method.md §7, the small-call stop).
 > The disk interface's own sector entry. Programs normally reach it through the main BIOS's
 > [PHYDIO](../bios/PHYDIO.md) ($0144), which goes through H.PHYD to it; this page measures the DIRECT call
 > (CALSLT into the interface's slot) against PHYDIO's answers, so everything PHYDIO's page pins about the
@@ -40,7 +42,8 @@ $8000, two sectors across the last) and the same 14-byte record (A, F, B, C, D, 
 state, the buffer's 16-bit sum, +0, +512). The expected values are the same machine's PHYDIO answers:
 [`scratchpad/XDSK1_run2.out`](../../scratchpad/XDSK1_run2.out) (the VG-8020 + NMS 1200) and
 [`scratchpad/XDSK1_cf3300.out`](../../scratchpad/XDSK1_cf3300.out) (the CF-3300, run for this page). The
-NODISK row of run 1 has no interface: the call is skipped there, and no rule reads it.
+NODISK row of run 1 has no interface: the reference's record holds the registers as entered (the call
+skipped); ours is all zeros with one malformed record -- no rule reads that row.
 
 **[XI2 rNN]**: case `NN` of the XDSKIO2 probe (round 2, answering review pass 1) -- run 1
 ([`scratchpad/XDSKIO2_run1.out`](../../scratchpad/XDSKIO2_run1.out), the disk section), run 2
@@ -77,13 +80,18 @@ values.
 
 ## Open (not measured)
 
-- **[A]** HL after a multi-sector write; writes past the end, write-protected, not ready, a wrong media
+- **[A]** A read that fails in the MIDDLE of the disk (a bad CRC, a missing sector -- every failure here
+  was past the end, error 2, refused before a transfer): B, HL and the bytes then; bytes outside the 1 KB
+  the record sums (a B 3 read's third sector, a failed third sector's untouched bytes, anything written
+  past the transfer).
+- **[A]** HL after a multi-sector write; the bytes, A and B of a multi-sector write; writes past the end, write-protected, not ready, a wrong media
   byte (error codes other than 2); the media $F8 beyond track 0 (C as the geometry on a direct call).
 - **[A]** The interrupt state: CALSLT turns interrupts off on the way in and the inter-slot return sets the
   state seen after, on both paths -- DSKIO's own entry / exit state is not observable this way (a plain CALL
   with the interface selected in page 1 would be); a drive number other than 0; a buffer in page 1 or across
-  a page boundary on a direct call; D and E after the call (0 / the entry F on the references here: a
-  working value, checked against PHYDIO's).
+  a page boundary on a direct call; WHO sets D and E (0 / the entry F here, checked against PHYDIO's on
+  every case) -- DSKIO or the inter-slot call both paths share; with A always 0, "D 0" and "D = the drive"
+  are not told apart.
 - **[A]** The NMS 8250 (built-in drive, another FDC) as a third reference (D-DISKFORCBIOS).
 
 ## Related pages
