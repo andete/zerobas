@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from spec_rules import Rule  # noqa: E402
+from datetime import date  # noqa: E402
 
 PAGE = "docs/bdos/SYSTEM.md"
 FN = ["VERSION", "CURDRV", "SELDSK", "LOGIN", "SETDTA", "ALLOC", "GDATE", "SDATE", "GDATE2", "GTIME", "STIME", "GTIME2",
@@ -23,9 +24,16 @@ FN2 = ["SDATE23", "GDATE23", "SDATE13", "GDATE23B", "SDATEM0", "SDATED0", "SDATE
        "STIMES60", "ALLOC", "ALLOC1", "SELDSK1", "CURDRV1", "DSKRST", "CURDRV0", "LOGIN"]
 # (run file, row, group, names, record length)
 RUNS = [("XBSYS1_run1.out", "D", "XS", FN, 15), ("XBSYS1_run2.out", "C", "XS", FN, 15),
-        ("XBSYS2_run1.out", "D", "XS2", FN2, 23), ("XBSYS2_run2.out", "C", "XS2", FN2, 23)]
+        ("XBSYS2_run1.out", "D", "XS2", FN2, 23), ("XBSYS2_run2.out", "C", "XS2", FN2, 23),
+        ("XBSYS3_run1.out", "D", "XS3", None, 15), ("XBSYS3_run2.out", "C", "XS3", None, 15)]
+# round 3: (name, function, what it sets / expects) -- the date's weekday from the calendar, never a reading
+X3 = [("SD", (2026, 12, 1), True), ("GD", (2026, 12, 1), None), ("SD", (1999, 13, 1), False), ("GD", (2026, 12, 1), None),
+      ("SD", (2026, 1, 32), False), ("GD", (2026, 12, 1), None), ("SD", (2026, 11, 31), False),
+      ("GD", (2026, 12, 1), None), ("SD", (2026, 12, 31), True), ("SD", (2026, 1, 1), True), ("GD", (2026, 1, 1), None),
+      ("ST", (23, 59, 59), True), ("SELDSK1", None, None), ("DSKRST", None, None), ("CURDRV0", None, None)]
 OUTPUTS = {"XS": ["a", "f", "b", "c", "d", "e", "h", "l", "iff", "ix", "iy", "dta"]}
 OUTPUTS["XS2"] = OUTPUTS["XS"] + ["atix", "atiy"]
+OUTPUTS["XS3"] = OUTPUTS["XS"]
 _cache = {}
 
 
@@ -34,6 +42,7 @@ def cases():
         return _cache["d"]
     d = {"ref": [], "zb": []}
     for run, row, src, names, n in RUNS:
+        names = names or [x[0] for x in X3]
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
         for who, key in (("ref", "ref"), ("zb", "ours")):
             b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
@@ -45,6 +54,8 @@ def cases():
                        ix=(r[9] << 8) | r[10], iy=(r[11] << 8) | r[12], dta=(r[13] << 8) | r[14])
                 if src == "XS2":
                     c.atix, c.atiy = list(r[15:19]), list(r[19:23])
+                if src == "XS3":
+                    c.arg, c.ok = X3[i][1], X3[i][2]
                 d[who].append(c)
     _cache["d"] = d
     return d
@@ -92,7 +103,17 @@ RULES = [
                                                                                       "CURDRV0", "LOGIN"),
          lambda c: {"SELDSK1": c.a == 2, "CURDRV1": c.a == 1, "DSKRST": c.a == 0, "CURDRV0": c.a == 0,
                     "LOGIN": (c.a, hl(c)) == (3, 3)}[c.fn]),
-    Rule("R-BS-ALLOC", S1, "ALLOC ($1B) with E 0 on the empty 720 KB disk: A 2 (sectors per cluster), BC 512 (bytes per "
+    Rule("R-BS-DATE3", S1, "Round 3: GDATE's A is the day of the WEEK (2026-12-01: 2, a Tuesday; 2026-01-01: 4, a "
+         "Thursday -- not (day - 1) mod 7). A refused SDATE writes NO field (month 13 with the year 1999, day 32 of "
+         "January, day 31 of November: GDATE still reads 2026-12-01) -- days are checked against the month's own "
+         "length. The edges 2026-12-31 and 2026-01-01 are accepted (A 0), and STIME takes 23:59:59 (A 0).",
+         lambda c: c.src == "XS3" and c.fn in ("SD", "GD", "ST"),
+         lambda c: (c.a == (0 if c.ok else 0xFF)) if c.fn in ("SD", "ST")
+         else (hl(c), c.d, c.e, c.a) == (c.arg[0], c.arg[1], c.arg[2], (date(*c.arg).weekday() + 1) % 7)),
+    Rule("R-BS-DSKRST3", S1, "DSKRST makes drive A current whatever E is (E 1, after SELDSK 1: CURDRV 0).",
+         lambda c: c.src == "XS3" and c.fn in ("SELDSK1", "DSKRST", "CURDRV0"),
+         lambda c: {"SELDSK1": 2, "DSKRST": 0, "CURDRV0": 0}[c.fn] == c.a),
+    Rule("R-BS-ALLOC", S1, "ALLOC ($1B) with E 0 or 1 on the empty 720 KB disk: A 2 (sectors per cluster), BC 512 (bytes per "
          "sector), DE 713 (clusters), HL 713 (free clusters), IX and IY pointing into the disk ROM's work area (the "
          "DPB and the FAT buffer: $F197 / $E597 on the VG-8020 + NMS 1200, $F195 / $E595 on the CF-3300).",
          F("ALLOC", "ALLOC1"), lambda c: (c.a, (c.b << 8) | c.c, de(c), hl(c)) == (2, 512, 713, 713)
@@ -108,7 +129,7 @@ RULES = [
                     "GTIME2": (c.a, hl(c), de(c)) == (0, 0, 0), "STIME25": c.a == 0xFF}[c.fn]),
     Rule("R-BS-DI", S1, "Every call leaves interrupts off (entered off).", lambda c: True, lambda c: c.iff == 0),
     Rule("R-BS-WORK", S1, "The registers the published contract leaves open -- F, and the rest of A, BC, DE, HL, IX and "
-         "IY -- are the SAME on both references, but for the values that are addresses in the disk ROM's work area "
+         "IY -- and the DTA cell are the SAME on both references, but for the values that are addresses in the disk ROM's work area "
          "or carry its slot (ALLOC's IX / IY, DSKRST's DE / IX, and IY, which R-BS-ALLOC and R-BS-SLOT state).",
          lambda c: True,
          lambda c: (lambda o: (c.a, c.f, c.b, c.c, c.dta) == (o.a, o.f, o.b, o.c, o.dta)
