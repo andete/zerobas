@@ -21,12 +21,18 @@ PAGE = "docs/bdos/RECORDS.md"
 FN = ["SETDTA", "FMAKE", "WRSEQ0", "WRSEQ1", "FCLOSE1", "FOPEN", "RDSEQ0", "RDSEQ1", "RDSEQEOF", "SETRND", "RDRND0",
       "WRRND5", "RDRND5", "RDRND3", "FCLOSE2", "FSIZE"]
 RUNS = [("XBREC1_run1.out", "D"), ("XBREC1_run2.out", "C")]
-OUTPUTS = {"XR": ["a", "f", "fcb", "dta"], "XR0": ["a", "f", "dta"]}
+FN2 = ["SETDTA2", "FMAKE2", "W0", "W1", "SETRNDW", "FCLOSEW", "FOPEN2", "SETRND0", "RDSEQ0B", "SETRND1", "WRRND5B",
+       "RDSEQCR3", "RDRND6", "RDRND20", "WRRND1", "RDRND1", "FCLOSER", "FOPEN6", "FSIZEPF"]
+RUNS2 = [("XBREC2_run1.out", "D"), ("XBREC2_run2.out", "C")]
+OUTPUTS = {"XR": ["a", "f", "fcb", "dta"], "XR0": ["a", "f", "dta"], "XR2": ["a", "f", "fcb", "dta"],
+           "XR20": ["a", "f", "dta"]}
 R = list(b"R       TXT")
 # the never-written record 3: its bytes are what the sector buffer held -- the two references read different bytes
 UNSTABLE = {f"XR {row}13": (["dta"], "the never-written record 3's bytes: XBREC1 run 1 (the VG-8020 + NMS 1200) and run 2 "
                             "(the CF-3300) read different stale bytes for the same case -- undefined content")
             for row in "DC"}
+UNSTABLE.update({f"XR2 {row}11": (["dta"], "RDSEQ of the never-written record 3: XBREC2 run 1 and run 2 read different "
+                                  "stale bytes -- undefined content") for row in "DC"})
 _cache = {}
 
 
@@ -46,6 +52,18 @@ def cases():
                 if i:
                     c.fcb = list(r[2:39])
                 d[who].append(c)
+    for run, row in RUNS2:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 52 * len(FN2) - len(b)))
+            for i, fn in enumerate(FN2):
+                r = b[52 * i: 52 * (i + 1)]
+                c = NS(src="XR20" if i == 0 else "XR2", id=f"XR2 {row}{i:02}", row=row, num=100 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
     _cache["d"] = d
     return d
 
@@ -59,7 +77,12 @@ def mark(n):
     return [0x40 + n] * 13
 
 
-W = dict(idx=0, c1=2, c2=2)                          # the file's one cluster, 2
+W = dict(idx=0, c1=2, c2=2)
+
+
+def mark2(n):
+    """XBREC2's DTA fill as case n left it: byte i = $40 + n + i (its first 13)"""
+    return [(0x40 + n + i) & 0xFF for i in range(13)]                          # the file's one cluster, 2
 F = lambda *names: (lambda c: c.fn in names)          # noqa: E731
 S1 = "1. The record functions through $F37D"
 RULES = [
@@ -91,6 +114,36 @@ RULES = [
              c.fn, fcb(R, rc=2, size=768, b24=0, cr=5 if c.fn == "RDRND5" else 3, rr=5 if c.fn == "RDRND5" else 3, **W))),
     Rule("R-BR-SIZE", S1, "FSIZE of the file then answers 6 records (+33 .. +35), records 0 .. 5.", F("FSIZE"),
          lambda c: c.a == 0 and c.dta == mark(15) and c.fcb == fcb(R, b24=0, date=0, rr=6)),
+    Rule("R-BR-SETRND2", S1, "SETRND sets the random record to 1 (+33 1, +34 / +35 0) whatever the position: after "
+         "two writes (CR 2), after FOPEN (CR 0) and after a good read (CR 1) -- not CR, not the last record; +36 is left. "
+         "A $12.", F("SETRNDW", "SETRND0", "SETRND1"),
+         lambda c: c.a == 0x12 and c.dta == mark2(c.num - 100) and c.fcb == {
+             "SETRNDW": fcb(R, size=256, b24=0, cr=2, rr=1, **W), "SETRND0": fcb(R, rc=2, size=256, cr=0, rr=1, **W),
+             "SETRND1": fcb(R, rc=2, size=256, cr=1, rr=1, **W)}[c.fn]),
+    Rule("R-BR-SEQ2", S1, "Round 2's sequential side: WRSEQ writes the DTA's bytes in ORDER (the read-back of record 0 is "
+         "case 2's $42, $43, ... -- byte i at offset i); RDSEQ ends at the file's SIZE, not at +15: at CR 3 after WRRND "
+         "made the file 768 bytes (+15 still 2) it reads (A 0, the never-written record's bytes: UNSTABLE) and CR "
+         "becomes 4. FOPEN of the 6-record file sets +15 6.", F("FMAKE2", "W0", "W1", "FCLOSEW", "FOPEN2", "RDSEQ0B",
+                                                                "RDSEQCR3", "FOPEN6"),
+         lambda c: c.a == 0 and (c.fn == "RDSEQCR3" or c.dta == {"RDSEQ0B": mark2(2)}.get(c.fn, mark2(c.num - 100)))
+         and c.fcb == {"FMAKE2": fcb(R), "W0": fcb(R, size=128, b24=0, cr=1, **W), "W1": fcb(R, size=256, b24=0, cr=2,
+                                                                                            **W),
+                       "FCLOSEW": fcb(R, size=256, b24=0, cr=2, rr=1, **W), "FOPEN2": fcb(R, rc=2, size=256, **W),
+                       "RDSEQ0B": fcb(R, rc=2, size=256, cr=1, rr=1, **W),
+                       "RDSEQCR3": fcb(R, rc=2, size=768, b24=0, cr=4, rr=5, **W),
+                       "FOPEN6": fcb(R, rc=6, size=768, **W)}[c.fn]),
+    Rule("R-BR-RND2", S1, "RDRND past the end (RR 6 and 20 on the 6-record file) answers A 1, sets CR to RR and leaves "
+         "the DTA. WRRND inside the file (RR 1) overwrites that record -- the size stays 768 -- and RDRND 1 reads the "
+         "new bytes back in order. WRRND 5 grows the file to 768 as in round 1. FCLOSE answers A 0.",
+         F("WRRND5B", "RDRND6", "RDRND20", "WRRND1", "RDRND1", "FCLOSER"),
+         lambda c: c.a == {"RDRND6": 1, "RDRND20": 1}.get(c.fn, 0)
+         and c.dta == {"RDRND1": mark2(14)}.get(c.fn, mark2(c.num - 100))
+         and c.fcb == fcb(R, rc=2, size=768, b24=0, cr={"WRRND5B": 5, "RDRND6": 6, "RDRND20": 20}.get(c.fn, 1),
+                          rr={"WRRND5B": 5, "RDRND6": 6, "RDRND20": 20}.get(c.fn, 1), **W)),
+    Rule("R-BR-SIZE2", S1, "FSIZE over $FF at +34 .. +36 writes 6 to +33 .. +35 and leaves +36; SETDTA answers A $08.",
+         lambda c: c.fn in ("FSIZEPF", "SETDTA2"),
+         lambda c: (c.a, c.dta) == ((0x08, mark2(0)) if c.fn == "SETDTA2" else (0, mark2(18)))
+         and (c.fn == "SETDTA2" or c.fcb == fcb(R, b24=0, date=0, rr=6, r36=0xFF))),
     Rule("R-BR-WORK", S1, "A and F are the same on both references in every case (F $44 on most; FCLOSE $42 after the "
          "sequential writes, $93 after the random ones; RDSEQ's EOF $44; SETRND $00; SETDTA A $08, F 0).",
          lambda c: True, lambda c: (lambda o: (c.a, c.f) == (o.a, o.f))(other_ref(c))
