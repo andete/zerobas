@@ -40550,3 +40550,121 @@ the phase narrative above still have somewhere to land.
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
 The record is unchanged there; this heading is kept only so the citations and
 the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-TAPELEADEREND — THE TAPE LEADER'S LAST LOW HALF IS 1043 T; THE VG-8020'S IS 740-756**
+      🎚️ TIER 1 — happy path (a tape written here reads its FIRST byte wrong on the VG-8020) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      zerobas's tape/tape.asm write path (TAPOON long, 16 x TAPOUT, TAPOOF; openMSX recording, read back on the VG-8020,
+      NMS 8250 and C-BIOS). The leader's last low half covers TAPOON's exit, the caller and TAPOUT's entry (DI, PUSH, CALL
+      BREAKX, CALL cas_long) up to the start bit's first edge, uncompensated: 1043 T. The VG-8020 and NMS 8250 then read the
+      first byte after the leader wrong ($D0 -> $A0, one extra 0 bit) at 1200 AND 2400 baud; zerobas's own reader too at
+      2400. The port's fix: the leader loop runs HEADER x 256/1024 - 1 cycles, the last one cas_cycle_last with E = 23
+      (24 would equal CAS_HHALF24 and wrap djnz at 2400 baud), `dec de` on BOTH paths: 757-771 T. Reproduce on zerobas first.
+      ✅ **DONE 2026-11-21.** Reproduced on a CSAVE (scratchpad/castrace_lead.py, a watchpoint on the PPI's cassette-out
+      bit): 1067 T after the header block's leader, 1133 after the data block's (scratchpad/CASTRACE_LEAD_run1.out);
+      the VG-8020's leader ends on a clean 740 and puts its byte-boundary work in the start bit's first half instead
+      (1487-1568 T, run 4). Fixed as the port did (tape/tape.asm CAS_LEADCOMP = 23, the `dec de` before the loop):
+      795 / 861 T (run 3; the second block's leader still carries CSAVE's own work between the blocks, and 23 is the
+      most the 2400-baud count allows). The 8 B it costs came out of TAPOON (cas_short leaves A = CASBAUD: the leader
+      length is 15 + (A and 16), no reload) and TAPOOF's flush (E alone counts its 32 cycles), so FREE_ORG stays.
+- [x] **D-TAPESTARTBIT — A WRITTEN BYTE'S START-BIT LOW HALF IS 1597 T; THE VG-8020'S IS 1492**
+      🎚️ TIER 1 — happy path (tape interchange) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      tape/tape.asm: the start bit's tail (pop af, ld b,8, rra, push af, push bc, jr, call cas_long, ld e, call) is not
+      compensated; zerobas's own 0 bits are 1498 T. The port's fix: cas_cycle_last with E = 12 (1496 T; the `ld e,12` lands
+      in the previous boundary's low half). With this and D-TAPELEADEREND, 1200 / 2400-baud tapes written by the port read
+      exactly on the VG-8020, NMS 8250 and C-BIOS (16 / 16). Edge traces: VG-8020 leader end 740 / 756, start bit 1448 / 1492.
+      ✅ **DONE 2026-11-21.** Reproduced on a CSAVE: the start bit's second half 1594 / 1597 T, the data 0 bits' 1495 /
+      1498 (scratchpad/CASTRACE_LEAD_run1.out); the VG-8020's is 1492 (run 4). tape/tape.asm CAS_STARTCOMP = 12:
+      1493-1498 T (run 3).
+- [x] **D-EDITKEYS — THE LINE EDITOR'S CTRL+U / E / N / F / B, MEASURED (23 CASES)**
+      🎚️ TIER 3 — common (keys a user types at the prompt) (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      PINLIN / INLIN / QINLIN. CTRL+U: the cursor to where the line is read from (the logical line's first row; INLIN's /
+      QINLIN's start column if input started on that row, else column 1), then the rest of the logical line cleared as
+      CTRL+E. CTRL+E: clears from the cursor to the end of the LOGICAL line, following linked rows too; every row touched
+      gets LINTTB $AF; the cursor stays. CTRL+N: the cell after the line's last non-space; a last-column character gives
+      column 1 of the next row (even outside the line); an empty line column 1. CTRL+F / CTRL+B: the next / previous word
+      start over the WHOLE screen; words are runs of 0-9 A-Z a-z only; CTRL+F first leaves its word; no word left: row 24
+      column 40 / row 1 column 1. All end insert mode. (Timing: typed text then CTRL too close together turns the last
+      letters into control codes in openMSX.)
+      ✅ **DONE 2026-11-22.** Measured on the VG-8020 (probes/bios/spec/xlin6.asm, 15 cases, keys queued so no typing
+      race; scratchpad/XLIN6_run1.out): every claim tested held. zerobas's keys (D-EDCTRL) already did the same but for
+      one value: the rows CTRL+U / CTRL+E clear were marked LINTTB 1, the VG-8020's $AF (sub2/edctrl.asm ek_erase).
+      docs/bios/PINLIN.md section 6 (R-L-CTLU / CTLE / CTLN / CTLF / CTLB / CTLINS / CTLLT); run 1 fails R-L-CTLLT.
+      Not measured: CTRL+F with no word left (row 24 column 40), CTRL+U / E in insert mode.
+- [x] **D-EDITINS — THE LINE EDITOR'S INSERT MODE, MEASURED (30 CASES)**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      INS ($12) toggles INSFLG $FF / 0 and CSTYLE $AF / 0; Enter leaves both 0. A typed character pushes the rest of the
+      LOGICAL line right across row ends; a line whose last cell is not a space first gets a new row below (as ESC L: rows
+      below move down, the bottom row's LINTTB $FB), linked to it; on the bottom row the screen scrolls instead. TAB inserts
+      spaces to the next stop. ESC does nothing in the editor and keeps insert mode; BS and DEL keep it; every other control
+      key ends it (cursor keys, HOME, CLS, CTRL+U/E/B/F/N/J/G, SELECT, CTRL+R toggles).
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin5.asm, 12 cases, scratchpad/XLIN5_run1.out):
+      every claim tested held. zerobas pushed, inserted TAB and kept insert mode on ESC / BS / DEL already; it differed
+      in (1) SELECT and CTRL+G (and every other control byte it dropped) keeping insert mode -- sub/readline.asm now
+      ends it on every control key but ESC ($01, a graphic prefix, still dropped); (2) the new row a full line gets:
+      the repack's ESC L now moves LINTTB itself (D-LINTTBVAL) and readline shifted it AGAIN -- the second shift is
+      gone (-20 B); (3) the bottom row's LINTTB after scrolls: rl_botfix wrote 1 for a fresh bottom row ($AF now) and
+      read_line forced the bottom two entries to 1 at every bottom-row read (removed: the scroll it guarded against
+      is fixed). docs/bios/PINLIN.md section 5 (R-L-INSPUSH / INSROW / INSBOT / INSTAB / INSKEEP / INSEND / INSLT).
+      Not measured: INSFLG / CSTYLE while insert mode is on.
+- [x] **D-EDITDELBS — THE LINE EDITOR'S DEL / BS, THE INLIN START COLUMN AND LINTTB ON ENTER**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      DEL deletes under the cursor and pulls the rest of the LOGICAL line left across row ends (last cell a space; cursor
+      and LINTTB unchanged, also when the last row empties). BS moves one cell left within the logical line (to the row
+      above only if it continues onto this one), then acts as DEL; at column 1 of a line's first row it stays and still
+      deletes ('XYZ' -> 'YZ'); it may delete INLIN's start column and QINLIN's '? ' (the line is still read from the start
+      column). INLIN reads from the start column only when the line's first row is the row input started on (the FSTPOS
+      row, which follows scrolls), else from column 1. On Enter the line's last row gets LINTTB $AF; INLIN / QINLIN also
+      set the row above their start row to $AF at the start (PINLIN does not). A visible cursor changes none of it.
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin4.asm, 9 cases; scratchpad/XLIN4_run1.out):
+      every claim held. zerobas already matched DEL across rows, BS into INLIN's start column / QINLIN's prompt, the
+      start-column rule (Enter on another line: column 1); it differed in BS at column 1 (did nothing: on a line's first
+      row the VG-8020 stays and deletes, on a continued row it goes to the row above's last column) -- sub/readline.asm
+      rl_bs, through edctrl's ek_firstrow / ek_prev (+11 B, the sub page's last) -- and in the two LINTTB marks
+      (XLIN3: R-L-ABOVE, R-L-ENTERLT) -- basic/files.asm rl_inl_bios / rl_pin_bios, around read_line for the BIOS
+      entries only (the $6CF3 pin's pad; the low region was full). docs/bios/PINLIN.md section 4 (R-L-DEL / BS1 /
+      BSUP / BSSTART / OTHERROW / LT4); run 2 holds them all, run 1 fails R-L-BS1 / R-L-BSUP. Not measured: the
+      visible-cursor claim.
+- [x] **D-EDITSTOP — CTRL+STOP / CTRL+C END THE LINE EDITOR: BUF, HL, THE CURSOR, INTFLG**
+      🎚️ TIER 3 — common (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
+      Both end PINLIN / INLIN / QINLIN with carry set: BUF's first byte 0, the rest kept; HL = BUF-1; the cursor to column
+      1 of the row after the logical line (the bottom row scrolls); that line's last row LINTTB $AF; the text stays; insert
+      mode ends; the key buffer is empty. INTFLG: CTRL+STOP leaves the interrupt's 3, CTRL+C 0. STOP alone does nothing in
+      the editor ('AB STOP C Enter' -> 'ABC').
+      ✅ **DONE 2026-11-21.** Measured on the VG-8020 (probes/bios/spec/xlin3.asm, scratchpad/XLIN3_run4.out, 9 cases:
+      every claim above held, STOP alone as a pending INTFLG 4). zerobas left BUF, the cursor and LINTTB as they were (no
+      scroll on row 24), and its INTFLG was 3 or 0 by timing (its editor polls BREAKX; the interrupt's latch may come
+      later). Now basic/main.asm `bil_stop` (the BIOS entries' carry exit only: BASIC's prompt / INPUT / AUTO take
+      read_line's carry themselves) and `rl_break` sets INTFLG 3. docs/bios/PINLIN.md section 3, rules R-L-STOP /
+      STOPCSR / STOPLT / STOPINT / PAUSE. Two differences the probe also shows are D-EDITDELBS's (R-L-ABOVE,
+      R-L-ENTERLT); a third is new, D-EDITSTOPHELD.
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
