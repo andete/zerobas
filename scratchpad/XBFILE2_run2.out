@@ -1,0 +1,86 @@
+WARNING: Var CALSLT is never used on line 37 of file probes/bios/spec/xbfile2.asm
+WARNING: Var DTA is never used on line 42 of file probes/bios/spec/xbfile2.asm
+WARNING: Var buf is never used on line 57 of file probes/bios/spec/xbfile2.asm
+WARNING: Var cb is never used on line 48 of file probes/bios/spec/xbfile2.asm
+WARNING: Var entry is never used on line 47 of file probes/bios/spec/xbfile2.asm
+WARNING: Var rsave is never used on line 56 of file probes/bios/spec/xbfile2.asm
+===== probes/bios/spec/xbfile2.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=a501 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=fb03 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 0800ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50800ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005445535420202020545854ffff000000000000cf5a00004000000000000000ffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50144005445535420202020545854ffff000000000000cf5a000000000000000000007fffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50093005445535420202020545854ffff000000000000cf5a000000000000000000007fffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005445535420202020545854ffff000000000000cf5a000000000000000000007fffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005345434f4e442020545854ffff000000000000765d00004001000000000000ffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5ff82005445535420202020545854ffff00ffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5004400544553542020202054585400000000000000000000000000000000000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e50044003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000015445535420202020545854000044003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000015345434f4e44202054585400ff45003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e5ff44005345434f4e44202054585400000000005445535420202020545854000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e500440054455354202020205458540000000000000000765d000040000000000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e5ffffffff
+  CAP ours: e14af0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5e14af0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5ff43f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005445535420202020545854ffffffff00000000210800004000000000000000ffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5004400544553542020202054585400ffffff8000000021080000000002000200000001ffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5004400544553542020202054585400ffffff8000000021080000000002000200000001ffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5ff4300544553542020202054585400ffffff8000000021080000000002000200000001ffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005345434f4e442020545854ffffffff00000000210800004001000000000000ffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e50044005445535420202020545854ffff000180000000210800004000020002000000ffffffffffe5e5e5e5e5e5e5e5e5e5e5e5e5004400544553542020202054585400000000000000000000000000000000000000000001000000e5e5e5e5e5e5e5e5e5e5e5e5e50044003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000015445535420202020545854000044003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000015345434f4e44202054585400ff44003f3f3f3f3f3f3f3f3f3f3f00000000000000000000000000000000000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e5ff45005345434f4e44202054585400000000005445535420202020545854000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e5004400544553542020202054585400000000000000002108000040000000000000000000000000e5e5e5e5e5e5e5e5e5e5e5e5e5ffffffff
+  DIFF (72 unexcused byte(s)):
+  CAP A001: ref=08 ours=E1
+  CAP A002: ref=00 ours=4A
+  CAP A003: ref=FF ours=F0
+  CAP A035: ref=08 ours=E1
+  CAP A036: ref=00 ours=4A
+  CAP A037: ref=FF ours=F0
+  CAP A069: ref=00 ours=FF
+  CAP A06A: ref=44 ours=43
+  CAP A06B: ref=FF ours=F0
+  CAP A0AD: ref=00 ours=FF
+  CAP A0AE: ref=00 ours=FF
+  CAP A0B3: ref=CF ours=21
+  CAP A0B4: ref=5A ours=08
+  CAP A0D1: ref=01 ours=00
+  CAP A0DF: ref=FF ours=00
+  CAP A0E1: ref=00 ours=FF
+  CAP A0E2: ref=00 ours=FF
+  CAP A0E3: ref=00 ours=80
+  CAP A0E7: ref=CF ours=21
+  CAP A0E8: ref=5A ours=08
+  CAP A0ED: ref=00 ours=02
+  CAP A0EF: ref=00 ours=02
+  CAP A0F3: ref=7F ours=01
+  CAP A106: ref=93 ours=44
+  CAP A113: ref=FF ours=00
+  CAP A115: ref=00 ours=FF
+  CAP A116: ref=00 ours=FF
+  CAP A117: ref=00 ours=80
+  CAP A11B: ref=CF ours=21
+  CAP A11C: ref=5A ours=08
+  CAP A121: ref=00 ours=02
+  CAP A123: ref=00 ours=02
+  CAP A127: ref=7F ours=01
+  CAP A139: ref=00 ours=FF
+  CAP A13A: ref=44 ours=43
+  CAP A147: ref=FF ours=00
+  CAP A149: ref=00 ours=FF
+  CAP A14A: ref=00 ours=FF
+  CAP A14B: ref=00 ours=80
+  CAP A14F: ref=CF ours=21
+  CAP A150: ref=5A ours=08
+  CAP A155: ref=00 ours=02
+  CAP A157: ref=00 ours=02
+  CAP A15B: ref=7F ours=01
+  CAP A17D: ref=00 ours=FF
+  CAP A17E: ref=00 ours=FF
+  CAP A183: ref=76 ours=21
+  CAP A184: ref=5D ours=08
+  CAP A1A1: ref=FF ours=00
+  CAP A1A2: ref=82 ours=44
+  CAP A1B2: ref=FF ours=01
+  CAP A1B3: ref=FF ours=80
+  CAP A1B4: ref=FF ours=00
+  CAP A1B5: ref=FF ours=00
+  CAP A1B6: ref=FF ours=00
+  CAP A1B7: ref=FF ours=21
+  CAP A1B8: ref=FF ours=08
+  CAP A1B9: ref=FF ours=00
+  CAP A1BA: ref=FF ours=00
+  CAP A1BB: ref=FF ours=40
+  CAP A1BC: ref=FF ours=00
+  CAP A1BD: ref=FF ours=02
+  CAP A1BE: ref=FF ours=00
+  CAP A1BF: ref=FF ours=02
+  CAP A1C0: ref=FF ours=00
+  CAP A1C1: ref=FF ours=00
+  CAP A1C2: ref=FF ours=00
+  CAP A1F8: ref=00 ours=01
+  CAP A272: ref=45 ours=44
+  CAP A2A6: ref=44 ours=45
+  CAP A2EF: ref=76 ours=21
+  CAP A2F0: ref=5D ours=08
+===== biosl: DIVERGENCE =====

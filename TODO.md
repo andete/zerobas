@@ -16898,6 +16898,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `bdos_tab` (the $F37D dispatch) has no $2B / $2D rows, so they fall to "not in the table". sdate_body /
       stime_body serve MSX-DOS already (k_5552, k_55E6). The fix is 2 rows (6 B) -- disk.rom reads 0 B free
       (`make basic-reloc`): a carve first (the exact-fit pads of D-DISKCARVE6's list).
+- [ ] **D-FMAKERS — FMAKE LEAVES THE FCB'S RECORD SIZE AND THE SIZE'S LOW WORD; THE REFERENCES CLEAR +14 .. +31**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-MAKE2 (scratchpad/XBFILE2_run1.out, run2.out XB2 3 / 7): over an FCB
+      pre-filled with $FF, FMAKE through $F37D writes +14 .. +31 on both references (record size and size 0, date,
+      time, $40, the entry index) and leaves +12 / +13 and +32 .. +36; zerobas leaves +14 .. +17 at $FF. A caller that
+      reuses an FCB gets a stale record size. disk/ (bdos_create_body).
+- [ ] **D-FCBEXTENT — THE FCB'S EXTENT BYTE IS IGNORED: WRSEQ WRITES AND FOPEN OPENS WITH EXTENT $FF; THE REFERENCES DO NOT**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-EXTENT (XB2 4-9): with +12 = $FF (left by FMAKE over a pre-filled
+      FCB) the references' WRSEQ answers A 1 and writes nothing, FOPEN answers A $FF (no extent 255); zerobas's write
+      and open succeed, so FSIZE reads 1 record against 0. disk/ (wrseq_body, bdos_open: the extent).
 - [ ] **D-BDOSCARRY — SNEXT / SFIRST ANSWER "NOT FOUND" (A $FF) WITH THE CARRY CLEAR; BOTH REFERENCES SET IT**
       🎚️ TIER 6 — every error (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-CARRY (scratchpad/XBFILE1_run1.out, run2.out, cases 4 and 10): through

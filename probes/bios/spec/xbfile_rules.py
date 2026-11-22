@@ -18,8 +18,12 @@ from spec_rules import Rule  # noqa: E402
 PAGE = "docs/bdos/FILES.md"
 FN = ["SETDTA", "FMAKE", "FCLOSE", "SFIRST", "SNEXT", "FOPEN", "FSIZE", "FREN", "FOPENOLD", "FDEL", "SFIRSTALL"]
 RUNS = [("XBFILE1_run1.out", "D"), ("XBFILE1_run2.out", "C")]
+FN2 = ["SETDTA93", "SETDTAA8", "SDATE25", "FMAKEPF", "WRSEQ", "FCLOSE2", "SDATE26", "FMAKE2PF", "FOPENPF", "FSIZE2",
+       "SFIRSTQ", "SNEXT1", "SNEXT2", "FRENEX", "FMAKEEX"]
+RUNS2 = [("XBFILE2_run1.out", "D"), ("XBFILE2_run2.out", "C")]
 # case 0 (SETDTA) runs on the FCB as start-up left it -- not set up, not evidence: its group records no FCB
-OUTPUTS = {"XB": ["a", "f", "fcb", "dta"], "XB0": ["a", "f", "dta"]}
+OUTPUTS = {"XB": ["a", "f", "fcb", "dta"], "XB0": ["a", "f", "dta"], "XB2": ["a", "f", "fcb", "dta"],
+           "XB20": ["a", "f", "dta"]}
 TEST, NEW, ALLQ = list(b"TEST    TXT"), list(b"NEW     TXT"), list(b"????????TXT")
 _cache = {}
 
@@ -38,6 +42,18 @@ def cases():
                 c = NS(src="XB0" if i == 0 else "XB", id=f"XB {row}{i:02}", row=row, num=i, fn=fn,
                        a=r[0], f=r[1], dta=list(r[39:52]))
                 if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS2:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 52 * len(FN2) - len(b)))
+            for i, fn in enumerate(FN2):
+                r = b[52 * i: 52 * (i + 1)]
+                c = NS(src="XB20" if i < 3 else "XB2", id=f"XB2 {row}{i:02}", row=row, num=100 + i, fn=fn,
+                       a=r[0], f=r[1], dta=list(r[39:52]))
+                if i >= 3:
                     c.fcb = list(r[2:39])
                 d[who].append(c)
     _cache["d"] = d
@@ -65,6 +81,18 @@ def named(name, new=None):
 
 
 E5 = [0xE5] * 13
+TEST2, SECOND = TEST, list(b"SECOND  TXT")
+
+
+def dword(y, m, d):
+    return ((y - 1980) << 9) | (m << 5) | d
+
+
+def made2(name, date, index, pre):
+    """FMAKE's FCB over one pre-filled with `pre` at +12 .. +36: +12 / +13 kept, +14 .. +19 0 (record size, file size),
+    the date word at +20, the time 0, $40 at +24, the directory entry's index at +25, +26 .. +31 0, +32 .. +36 kept"""
+    dw = dword(*date)
+    return [0] + name + [pre, pre] + [0] * 6 + [dw & 0xFF, dw >> 8, 0, 0, 0x40, index] + [0] * 6 + [pre] * 5
 F = lambda *names: (lambda c: c.fn in names)          # noqa: E731
 S1 = "1. The FCB directory functions through $F37D"
 RULES = [
@@ -84,10 +112,44 @@ RULES = [
          "TEST.TXT then answers A $FF; FDEL ($13) of NEW.TXT answers A 0.", F("FREN", "FOPENOLD", "FDEL"),
          lambda c: {"FREN": c.a == 0 and c.fcb == named(TEST, NEW), "FOPENOLD": c.a == 0xFF and c.fcb == named(TEST),
                     "FDEL": c.a == 0 and c.fcb == named(NEW)}[c.fn] and c.dta == E5),
-    Rule("R-BF-CARRY", S1, "The carry is SET exactly when A is $FF (SNEXT with no more, FOPEN of a missing file, SFIRST "
-         "on an empty disk) and clear on A 0.", lambda c: c.src == "XB", lambda c: (c.f & 1) == (c.a == 0xFF)),
+    Rule("R-BF-CARRY", S1, "The carry is SET on a NOT-FOUND answer (A $FF from SNEXT with no more, FOPEN of a missing "
+         "file, SFIRST finding nothing) and clear on A 0 -- but FREN refusing a name that exists answers A $FF with the "
+         "carry CLEAR (XB2 13): it marks not-found, not every A $FF. (The extent-$FF cases are R-BF-EXTENT's.)",
+         lambda c: c.src in ("XB", "XB2") and c.fn not in ("WRSEQ", "FCLOSE2", "SDATE26", "FOPENPF"),
+         lambda c: (c.f & 1) == (c.a == 0xFF and c.fn != "FRENEX")),
+    Rule("R-BF-MAKE2", S1, "FMAKE writes the FCB's +14 .. +31 -- record size 0, file size 0, the DATE word of the current "
+         "date ($5ACF after SDATE 2025-06-15, $5D76 after 2026-11-22), time 0, $40 at +24, the new entry's INDEX in the "
+         "directory at +25 (0, then 1 for the second file), +26 .. +31 0 -- and leaves +12 / +13 and +32 .. +36 as they "
+         "were ($FF here). FMAKE of a name that exists answers A 0 and makes it again (today's date).",
+         F("FMAKEPF", "FMAKE2PF", "FMAKEEX"),
+         lambda c: c.a == 0 and c.fcb == {"FMAKEPF": made2(TEST, (2025, 6, 15), 0, 0xFF),
+                                           "FMAKE2PF": made2(SECOND, (2026, 11, 22), 1, 0xFF),
+                                           "FMAKEEX": made2(TEST, (2026, 11, 22), 0, 0)}[c.fn] and c.dta == E5),
+    Rule("R-BF-EXTENT", S1, "The FCB's EXTENT byte (+12) counts: left $FF by FMAKE, it makes WRSEQ ($15) answer A 1 and "
+         "write nothing (+24 then 0, +32 $7F; FCLOSE answers A 0 with that FCB; FSIZE of the file then reads 0 "
+         "records), and FOPEN with +12 $FF answers A $FF (no extent 255), setting +15 .. +36 to $FF. The flags there: "
+         "WRSEQ F $44, FCLOSE F $93 (the carry SET with A 0), FOPEN F $82 (the carry CLEAR with A $FF); an SDATE "
+         "between them leaves the FCB.", F("WRSEQ", "FCLOSE2", "SDATE26", "FSIZE2", "FOPENPF"),
+         lambda c: {"WRSEQ": (c.a, c.f) == (1, 0x44), "FCLOSE2": (c.a, c.f) == (0, 0x93),
+                    "SDATE26": (c.a, c.f) == (0, 0x44), "FSIZE2": (c.a, c.f) == (0, 0x44),
+                    "FOPENPF": (c.a, c.f) == (0xFF, 0x82)}[c.fn]
+         and c.fcb == {"FSIZE2": named(TEST),
+                       "FOPENPF": [0] + TEST + [0xFF, 0xFF, 0x00] + [0xFF] * 22}.get(
+             c.fn, (lambda f: f[:24] + [0] + f[25:32] + [0x7F] + f[33:])(made2(TEST, (2025, 6, 15), 0, 0xFF)))
+         and c.dta == E5),
+    Rule("R-BF-SEARCH2", S1, "With two files, SFIRST ??????????? finds TEST.TXT (the first entry), SNEXT SECOND.TXT, the "
+         "next SNEXT A $FF.", F("SFIRSTQ", "SNEXT1", "SNEXT2"),
+         lambda c: c.fcb == named(list(b"???????????")) and (c.a, c.dta) == {"SFIRSTQ": (0, [1] + TEST + [0]),
+                                                                            "SNEXT1": (0, [1] + SECOND + [0]),
+                                                                            "SNEXT2": (0xFF, E5)}[c.fn]),
+    Rule("R-BF-RENEX", S1, "FREN onto a name that exists answers A $FF (carry clear, R-BF-CARRY) and leaves the FCB.",
+         F("FRENEX"), lambda c: c.a == 0xFF and c.fcb == named(SECOND, TEST) and c.dta == E5),
+    Rule("R-BF-SETDTA2", S1, "SETDTA answers A $08 whatever DE is ($9300 and $A800), F 0; SDATE of a valid date answers "
+         "A 0 (as on the system functions' page).", lambda c: c.src == "XB20",
+         lambda c: (c.a, c.f) == ((0x08, 0) if c.fn.startswith("SETDTA") else (0, 0x44)) and c.dta == E5),
     Rule("R-BF-WORK", S1, "The rest of F, and SETDTA's A (case 0), are the same on both references (F $44 after FMAKE, "
          "SFIRST, FOPEN, FSIZE, FREN; $10 after FCLOSE; $42 after FDEL; $45 on the A $FF answers; SETDTA A $08, F 0); "
          "SETDTA leaves the DTA alone.", lambda c: True,
-         lambda c: (lambda o: (c.a, c.f) == (o.a, o.f))(other_ref(c)) and (c.fn != "SETDTA" or c.dta == E5)),
+         lambda c: (lambda o: (c.a, c.f) == (o.a, o.f))(other_ref(c)) and (c.fn != "SETDTA" or c.dta == E5)
+         and (c.src not in ("XB2",) or True)),
 ]
