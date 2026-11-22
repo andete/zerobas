@@ -16898,6 +16898,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `bdos_tab` (the $F37D dispatch) has no $2B / $2D rows, so they fall to "not in the table". sdate_body /
       stime_body serve MSX-DOS already (k_5552, k_55E6). The fix is 2 rows (6 B) -- disk.rom reads 0 B free
       (`make basic-reloc`): a carve first (the exact-fit pads of D-DISKCARVE6's list).
+- [ ] **D-BDOSCARRY — SNEXT / SFIRST ANSWER "NOT FOUND" (A $FF) WITH THE CARRY CLEAR; BOTH REFERENCES SET IT**
+      🎚️ TIER 6 — every error (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-CARRY (scratchpad/XBFILE1_run1.out, run2.out, cases 4 and 10): through
+      $F37D every A $FF answer carries the carry SET on the VG-8020 + NMS 1200 and the CF-3300 (F $45); zerobas's
+      FOPEN does too, its SNEXT and SFIRST do not (F $44). A caller testing `jr c` after a search misses the end on
+      zerobas. disk/ (snext_body / sfirst_body's exit).
 - [ ] **D-F37DEI — THE $F37D BDOS LEAVES INTERRUPTS ON; BOTH REFERENCES LEAVE THEM OFF**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DI: after each of the 15 calls (entered with interrupts off) the
