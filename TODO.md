@@ -16882,6 +16882,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       2026-11-20 (`make basic-reloc`, tools/check_disk_walls.py): a carve first. Priced when picked up.
       R-PD-PAST, case D04 (from sector 1439: the reference reads one sector, then error 2 with B $FF left; from
       sector 0, run 1, it read on over the probe and never returned). zerobas returns A 0, B 0, nothing read.
+- [ ] **D-GETDPBMEDIA — GETDPB READS THE DISK AND FILLS ITS FORMAT'S DPB; THE REFERENCE BUILDS IT FROM THE MEDIA BYTE IN B**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/GETDPB.md R-GD-DPB / R-GD-REGS (scratchpad/XDENT1_run1.out, XDENT2_run1.out): the
+      VG-8020 + NMS 1200's GETDPB ($4016) fills HL + 1 .. HL + 18 with the standard format of the media byte in B
+      ($F8 $F9 $FA $FC $FD $FE $FF, each its own block; C ignored) without touching the disk, carry clear, BC 0, DE =
+      HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
+      HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
+      table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
+- [ ] **D-DSKCHGREGS — DSKCHG'S "UNKNOWN" ANSWER RETURNS WORKING VALUES WHERE THE REFERENCE RETURNS THE MEDIA BYTE**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKCHG.md R-DC-UNKNOWN / R-DC-F (scratchpad/XDENT2_run1.out): when DSKCHG ($4013)
+      answers B 0 (after 3 s idle, or first), the VG-8020 + NMS 1200 returns A = the disk's media byte, C as entered,
+      DE = HL + 19, F $50; zerobas A $03, C 0, DE $0007, F $04, HL $A412. Its clock (B 1 within ~1 s, B 0 after
+      ~3 s) and its DPB are the reference's. Fix with D-GETDPBMEDIA (the same disk/ code).
 - [ ] **D-PHYDIOGEOM — A $FF DISK HAS 80 TRACKS IN ZEROBAS'S DSKIO; THE REFERENCE'S HAS 40**
       🎚️ TIER 6 — every error (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md R-PD-PAST (scratchpad/XDSK4_run1.out D49): PHYDIO with media $FF,
