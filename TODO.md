@@ -16890,6 +16890,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
       HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
       table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
+- [ ] **D-DSKFMTREGS — DSKFMT RETURNS OTHER WORKING REGISTERS THAN THE CF-3300'S (THE DISKS ARE THE SAME)**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKFMT.md R-DF-OKREGS / R-DF-BADF (scratchpad/XDFMT1_run2.out, the CF-3300 row):
+      both format the same four disks (choices 1-4: $FC $FD $F8 $F9) and refuse 0 / 5 the same way (A 12, carry, B
+      $20, E = choice - 1, HL kept, nothing written). The CF-3300 returns F $42, C $3C, DE $0049, HL $9020 after a
+      format and F $3B / $93 on a refusal; zerobas F $44, C $05, DE $0000 / $0100, HL $000E, and F $89 / $49. Working
+      values; fix only if a program is found reading them.
 - [ ] **D-DSKCHGFF — DSKCHG NEVER ANSWERS B $FF ("CHANGED"); THE REFERENCE DOES WHEN THE DISK'S MEDIA BYTE IS NOT C**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/disk/DSKCHG.md R-DC-READ (scratchpad/XDENT3_run1.out XE3 0): DSKCHG ($4013) with C $F8
