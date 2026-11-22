@@ -1,0 +1,25 @@
+WARNING: Var CALSLT is never used on line 29 of file probes/bios/spec/xbabs1.asm
+WARNING: Var DTA is never used on line 35 of file probes/bios/spec/xbabs1.asm
+WARNING: Var buf is never used on line 51 of file probes/bios/spec/xbabs1.asm
+WARNING: Var entry is never used on line 40 of file probes/bios/spec/xbabs1.asm
+WARNING: Var fde is never used on line 230 of file probes/bios/spec/xbabs1.asm
+===== probes/bios/spec/xbabs1.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=c701 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=f803 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 0800ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff404142434445464748494a4b4c5808cfd02c4f60dfe05f70786f800042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4142434445464748494a4b4c4d0000d0d12d5061e0e160717970810042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4142434445464748494a4b4c4d0000d0d12d5062e1e261727a71820042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff434445464748494a4b4c4d4e4f0000d2d32f5263e2e362737b72830042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff636465666768696a6b6c6d6e6f0000f2f34f7264e3e463747c73840042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff434445464748494a4b4c4d4e4f0000d2d32f5263e2e362737b72850042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff464748494a4b4c4d4e4f5051520000d5d6325566e5e665767e75860042ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff464748494a4b4c4d4e4f5051520000d5d6325567e6e766777f7687
+  CAP ours: e14af0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff404142434445464748494a4b4c0000cfd02c4f60dfe05f70786f800042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4142434445464748494a4b4c4d0000d0d12d5061e0e160717970810042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4142434445464748494a4b4c4d0000d0d12d5062e1e261727a71820042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff434445464748494a4b4c4d4e4f0000d2d32f5263e2e362737b72830042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff636465666768696a6b6c6d6e6f0000f2f34f7264e3e463747c73840042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff434445464748494a4b4c4d4e4f0000d2d32f5263e2e362737b72850042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff464748494a4b4c4d4e4f5051520000d5d6325566e5e665767e75860042f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff464748494a4b4c4d4e4f5051520000d5d6325567e6e766777f7687
+  DIFF (12 unexcused byte(s)):
+  CAP 9001: ref=08 ours=E1
+  CAP 9002: ref=00 ours=4A
+  CAP 9003: ref=FF ours=F0
+  CAP 9035: ref=58 ours=00
+  CAP 9036: ref=08 ours=00
+  CAP 9045: ref=FF ours=F0
+  CAP 9087: ref=FF ours=F0
+  CAP 90C9: ref=FF ours=F0
+  CAP 910B: ref=FF ours=F0
+  CAP 914D: ref=FF ours=F0
+  CAP 918F: ref=FF ours=F0
+  CAP 91D1: ref=FF ours=F0
+===== biosl: DIVERGENCE =====
