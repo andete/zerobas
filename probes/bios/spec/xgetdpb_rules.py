@@ -43,8 +43,10 @@ RULES = [
     Rule("R-GD-DPB", S1, "GETDPB writes the 18 bytes after the DPB's drive byte (HL + 1 .. HL + 18) from the MEDIA "
          "BYTE in B alone -- the disk is not read: the media byte, sector size 512, directory mask / shift $0F / 4, "
          "the cluster mask / shift, first FAT sector 1, 2 FATs, the root entries, the first data sector, the clusters "
-         "+ 1, the FAT sectors and the first root sector of that standard format ($F8 $F9 $FA $FC $FD $FE $FF "
-         "measured; $FA is 1 side x 8 x 80). HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part "
+         "+ 1, the FAT sectors and the first root sector of that standard format. Measured (cluster mask / shift, root "
+         "entries, first data, clusters + 1, FAT sectors, first root): $F8 and $FD 1/2, 112, 12, 355, 2, 5; $F9 1/2, "
+         "112, 14, 714, 3, 7; $FA and $FF 1/2, 112, 10, 316, 1, 3; $FC 0/1, 64, 9, 352, 2, 5; $FE 0/1, 64, 7, 314, 1, "
+         "3. HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part "
          "(XE1 5: C $00, and XE3 1: C $F8 -- a valid media byte -- both give B's $F9 block). It does not touch the "
          "drive: with drive A EMPTY (XE5 0) the block and the registers are the same.", lambda c: True,
          lambda c: c.dpb[1:19] == dpb_of(c.bin) and c.dpb[0] == 0xE5 and c.dpb[19:21] == [0xE5, 0xE5]),

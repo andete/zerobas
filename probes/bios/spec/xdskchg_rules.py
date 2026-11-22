@@ -57,13 +57,14 @@ RULES = [
          "later one: C $F8), else B 0, unknown.", reads,
          lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.iff) == (expect_b(c), DISK_MEDIA, 0, c.cin, X.HL_IN + 19, 0)
          and c.dpb[1:19] == dpb_of(DISK_MEDIA) and c.dpb[0] == 0xE5 and c.dpb[19:] == [0xE5, 0xE5]),
-    Rule("R-DC-NOTREADY", S1, "With drive A EMPTY, a call that would read fails (XE5 1, the first call): the carry "
-         "set, A 2 (not ready), B 1, the buffer at HL untouched, interrupts off. It READS the disk -- it does not answer "
-         "from a media byte it keeps.", notready,
+    Rule("R-DC-NOTREADY", S1, "With drive A EMPTY, a call that would read fails (XE5 1, XE6 0: the first call): the "
+         "carry set, A 2 (not ready), B 1, the buffer at HL untouched, interrupts off. A failure does not restart the "
+         "count: the next call tries again and fails again (XE6 1).", notready,
          lambda c: (c.f & 1, c.a, c.b, c.iff) == (1, 2, 1, 0) and c.dpb == [0xE5] * 21),
     Rule("R-DC-NRREGS", S1, "The rest on that failure: F $91, C 0, DE $01F9, HL $EF97 (working values).", notready,
          lambda c: (c.f, c.c, c.de, c.hl) == (0x91, 0, 0x01F9, 0xEF97)),
-    Rule("R-DC-F", S1, "F and HL when it reads: F $50 with B 0, $38 with B $FF; HL $7429 (a working value -- GETDPB "
-         "returns the same HL for $F9).", reads,
-         lambda c: (c.f, c.hl) == (0x50 if expect_b(c) == 0 else 0x38, 0x7429)),
+    Rule("R-DC-F", S1, "F and HL when it reads: F $50 with B 0; with B $FF, $38 when C is below the disk's media byte "
+         "($F8) and $B8 when above ($FA) -- the sign of the comparison; HL $7429 (a working value -- GETDPB returns the "
+         "same HL for $F9).", reads,
+         lambda c: (c.f, c.hl) == (0x50 if expect_b(c) == 0 else (0x38 if c.cin < DISK_MEDIA else 0xB8), 0x7429)),
 ]

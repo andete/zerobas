@@ -1,0 +1,110 @@
+WARNING: Var buf is never used on line 31 of file probes/bios/spec/xdent6.asm
+===== probes/bios/spec/xdent6.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=bd00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8500 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 0000000000000000000000000000000000000000000000000000000000000000
+  CAP ours: c900e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5c9540001a10040520000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  DIFF (250 unexcused byte(s)):
+  CAP A001: ref=00 ours=C9
+  CAP A003: ref=00 ours=E5
+  CAP A004: ref=00 ours=E5
+  CAP A005: ref=00 ours=E5
+  CAP A006: ref=00 ours=E5
+  CAP A007: ref=00 ours=E5
+  CAP A008: ref=00 ours=E5
+  CAP A009: ref=00 ours=E5
+  CAP A00A: ref=00 ours=E5
+  CAP A00B: ref=00 ours=E5
+  CAP A00C: ref=00 ours=E5
+  CAP A00D: ref=00 ours=E5
+  CAP A00E: ref=00 ours=E5
+  CAP A00F: ref=00 ours=E5
+  CAP A010: ref=00 ours=E5
+  CAP A011: ref=00 ours=E5
+  CAP A012: ref=00 ours=E5
+  CAP A013: ref=00 ours=E5
+  CAP A014: ref=00 ours=E5
+  CAP A015: ref=00 ours=E5
+  CAP A016: ref=00 ours=E5
+  CAP A017: ref=00 ours=E5
+  CAP A018: ref=00 ours=E5
+  CAP A019: ref=00 ours=E5
+  CAP A01A: ref=00 ours=E5
+  CAP A01B: ref=00 ours=E5
+  CAP A01C: ref=00 ours=E5
+  CAP A01D: ref=00 ours=E5
+  CAP A01E: ref=00 ours=E5
+  CAP A01F: ref=00 ours=C9
+  CAP A020: ref=00 ours=54
+  CAP A022: ref=00 ours=01
+  CAP A023: ref=00 ours=A1
+  CAP A025: ref=00 ours=40
+  CAP A026: ref=00 ours=52
+  CAP A029: ref=00 ours=E5
+  CAP A02A: ref=00 ours=E5
+  CAP A02B: ref=00 ours=E5
+  CAP A02C: ref=00 ours=E5
+  CAP A02D: ref=00 ours=E5
+  CAP A02E: ref=00 ours=E5
+  CAP A02F: ref=00 ours=E5
+  CAP A030: ref=00 ours=E5
+  CAP A031: ref=00 ours=E5
+  CAP A032: ref=00 ours=E5
+  CAP A033: ref=00 ours=E5
+  CAP A034: ref=00 ours=E5
+  CAP A035: ref=00 ours=E5
+  CAP A036: ref=00 ours=E5
+  CAP A037: ref=00 ours=E5
+  CAP A038: ref=00 ours=E5
+  CAP A039: ref=00 ours=E5
+  CAP A03A: ref=00 ours=E5
+  CAP A03B: ref=00 ours=E5
+  CAP A03C: ref=00 ours=E5
+  CAP A03D: ref=00 ours=FF
+  CAP A03E: ref=00 ours=FF
+  CAP A03F: ref=00 ours=FF
+  CAP A040: ref=00 ours=FF
+  CAP A041: ref=00 ours=FF
+  CAP A042: ref=00 ours=FF
+  CAP A043: ref=00 ours=FF
+  CAP A044: ref=00 ours=FF
+  CAP A045: ref=00 ours=FF
+  CAP A046: ref=00 ours=FF
+  CAP A047: ref=00 ours=FF
+  CAP A048: ref=00 ours=FF
+  CAP A049: ref=00 ours=FF
+  CAP A04A: ref=00 ours=FF
+  CAP A04B: ref=00 ours=FF
+  CAP A04C: ref=00 ours=FF
+  CAP A04D: ref=00 ours=FF
+  CAP A04E: ref=00 ours=FF
+  CAP A04F: ref=00 ours=FF
+  CAP A050: ref=00 ours=FF
+  CAP A051: ref=00 ours=FF
+  CAP A052: ref=00 ours=FF
+  CAP A053: ref=00 ours=FF
+  CAP A054: ref=00 ours=FF
+  CAP A055: ref=00 ours=FF
+===== probes/bios/spec/xdent6.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=2f01 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=8500 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 0291010001f9ef9700e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50291010001f9ef9700e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  CAP ours: 004401f90000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004401f90000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  DIFF (14 unexcused byte(s)):
+  CAP A001: ref=02 ours=00
+  CAP A002: ref=91 ours=44
+  CAP A004: ref=00 ours=F9
+  CAP A005: ref=01 ours=00
+  CAP A006: ref=F9 ours=00
+  CAP A007: ref=EF ours=A4
+  CAP A008: ref=97 ours=00
+  CAP A01F: ref=02 ours=00
+  CAP A020: ref=91 ours=44
+  CAP A022: ref=00 ours=F9
+  CAP A023: ref=01 ours=00
+  CAP A024: ref=F9 ours=00
+  CAP A025: ref=EF ours=A4
+  CAP A026: ref=97 ours=00
+===== biosl: DIVERGENCE =====

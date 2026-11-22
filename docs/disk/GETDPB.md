@@ -5,8 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # `GETDPB` ($4016, disk ROM) — the drive parameter block for a media byte
 
-> **Spec:** DRAFT 3 (2026-11-22), with DSKCHG's rounds; rounds 3 and 5 answer review passes 1-2
-> (scratchpad/DENT_review1.md, DENT_review2.md). Measured on the VG-8020 with an
+> **Spec:** FINAL (2026-11-22), the core rule: review pass 3 (one reviewer for this page and its twin)
+> found no unpinned behaviour that rounds 6-7 left open -- a failed read does not restart DSKCHG's count, B $FF
+> means "differs" (C above or below) -- only combinations, now [A] below, and citations, fixed
+> (docs/spec-method.md §7, the small-call stop). Seven measured rounds; rounds 3-7 answer passes 1-3
+> (scratchpad/DENT_review1.md to DENT_review3.md). Measured on the VG-8020 with an
 > NMS 1200 disk interface.
 
 ## Summary
@@ -45,7 +48,7 @@ $A400, interrupts off; B and C as the probe lists.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GD-DPB** GETDPB writes the 18 bytes after the DPB's drive byte (HL + 1 .. HL + 18) from the MEDIA BYTE in B alone -- the disk is not read: the media byte, sector size 512, directory mask / shift $0F / 4, the cluster mask / shift, first FAT sector 1, 2 FATs, the root entries, the first data sector, the clusters + 1, the FAT sectors and the first root sector of that standard format ($F8 $F9 $FA $FC $FD $FE $FF measured; $FA is 1 side x 8 x 80). HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part (XE1 5: C $00, and XE3 1: C $F8 -- a valid media byte -- both give B's $F9 block). It does not touch the drive: with drive A EMPTY (XE5 0) the block and the registers are the same. | 11 | ✓ | ✗ 7: XE1 2, XE1 3, XE1 4, XE2 5, XE2 6, XE2 7 … (+1) |
+| **R-GD-DPB** GETDPB writes the 18 bytes after the DPB's drive byte (HL + 1 .. HL + 18) from the MEDIA BYTE in B alone -- the disk is not read: the media byte, sector size 512, directory mask / shift $0F / 4, the cluster mask / shift, first FAT sector 1, 2 FATs, the root entries, the first data sector, the clusters + 1, the FAT sectors and the first root sector of that standard format. Measured (cluster mask / shift, root entries, first data, clusters + 1, FAT sectors, first root): $F8 and $FD 1/2, 112, 12, 355, 2, 5; $F9 1/2, 112, 14, 714, 3, 7; $FA and $FF 1/2, 112, 10, 316, 1, 3; $FC 0/1, 64, 9, 352, 2, 5; $FE 0/1, 64, 7, 314, 1, 3. HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part (XE1 5: C $00, and XE3 1: C $F8 -- a valid media byte -- both give B's $F9 block). It does not touch the drive: with drive A EMPTY (XE5 0) the block and the registers are the same. | 11 | ✓ | ✗ 7: XE1 2, XE1 3, XE1 4, XE2 5, XE2 6, XE2 7 … (+1) |
 | **R-GD-REGS** It returns the carry clear, BC 0, DE = the entry HL + 19 (the end of the 18-byte copy), interrupts off, and A = 2 x (B - $F8) ($F8 0 .. $FF 14: the format's index); the rest of F and HL are working values that follow the media byte alone (HL $7405 + 18 x (B - $F7) in every case: the end of an 18-byte block per format). | 11 | ✓ | ✗ 11: XE1 1, XE1 2, XE1 3, XE1 4, XE1 5, XE2 5 … (+5) |
 
 <!-- RULES END -->
@@ -60,7 +63,9 @@ $A400, interrupts off; B and C as the probe lists.
 
 - **[A]** Media bytes other than $F8, $F9, $FA, $FC, $FD, $FE, $FF ($FB -- A and HL's pattern predicts
   a block for it -- and bytes below $F8); A (the drive) other than 0; HL other than $A400; the buffer
-  past HL + 20 (filled, not recorded); whether it READS HL + 0 (the drive byte was $E5 in every case);
+  past HL + 20 (filled, not recorded); whether it READS HL + 0 (the drive byte was $E5 in every case;
+  a second fill value would also show whether it WRITES $E5 there); F for media bytes other than $F9
+  measured once each ($F8 $28, $FA $00, $FC $08, $FD $28, $FE $08, $FF $28);
   entry with interrupts on or the carry set.
 - **[A]** IX, IY, the alternate registers and SP; the work area; the CF-3300 (the second reference).
 

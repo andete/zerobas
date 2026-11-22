@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: 0BSD
 """The XDENT probes' cases, shared by docs/disk/GETDPB.md's and docs/disk/DSKCHG.md's rules (xgetdpb_rules.py,
 xdskchg_rules.py): probes/bios/spec/xdent1.asm (run 1, scratchpad/XDENT1_run1.out) and xdent2.asm (run 1,
-XDENT2_run1.out), xdent3.asm, xdent4.asm and xdent5.asm (run 1 each; xdent5 with drive A EMPTY), row D -- the VG-8020 + NMS 1200 against zerobas's disk build (the NODISK row has no disk ROM: its
+XDENT2_run1.out), xdent3.asm to xdent7.asm (run 1 each; xdent5 and xdent6 with drive A EMPTY), row D -- the VG-8020 + NMS 1200 against zerobas's disk build (the NODISK row has no disk ROM: its
 records are skipped, 0). The 30-byte record: A, F, B, C, D, E, H, L, the interrupt state after, the buffer's 21 bytes
 from HL ($A400, filled with $E5 before each call)."""
 import os
@@ -43,8 +43,11 @@ STEPS = {
                         W(304), ("XE4 5", "DSKCHG", 0x00, 0xF9, "at 304")],
     # drive A EMPTY (no @disk): a DSKCHG that would read fails, and the count does not restart
     "XDENT5_run1.out": [("XE5 0", "GETDPB", 0xF9, 0xF9, "drive A empty"),
-                        ("XE5 1", "DSKCHG", 0x00, 0xF9, "first, drive A empty")]}
-NODISK = {"XDENT5_run1.out"}
+                        ("XE5 1", "DSKCHG", 0x00, 0xF9, "first, drive A empty")],
+    "XDENT6_run1.out": [("XE6 0", "DSKCHG", 0x00, 0xF9, "first, drive A empty"),
+                        ("XE6 1", "DSKCHG", 0x00, 0xF9, "at once, still empty")],
+    "XDENT7_run1.out": [("XE7 0", "DSKCHG", 0x00, 0xFA, "first, C $FA (above the disk's $F9)")]}
+NODISK = {"XDENT5_run1.out", "XDENT6_run1.out"}         # a failed read does not restart the count (XE6 1)
 
 
 def timeline(run):
