@@ -3,7 +3,7 @@
 ;
 ; XBCON2 -- the BDOS's console INPUT functions through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BCON_review1.md): DIRIO E $FF with no key AND no hold; the hold with CONST twice (one place, overwritten, or a
-; queue?); the held key for $07, $08 and BUFIN; CONIN with TWO keys waiting (does its echo take the second?); CONST
+; queue?); the held key for $07 and BUFIN ($08 ran with the hold empty); CONIN with TWO keys waiting (does its echo take the second?); CONST
 ; with two keys waiting (GETPNT to PUTPNT, or by one?); CONIN with TAB, BS, CTRL+B and LF; CONOUT with a key waiting
 ; (does any output take it into the hold?). XBCON1's frame and 24-byte record (probes/bios/spec/xbcon1.asm): the key
 ; buffer is emptied and the case's keys put in it before EACH case -- the DOS's hold is NOT touched, it carries over.

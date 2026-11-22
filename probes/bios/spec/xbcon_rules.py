@@ -23,7 +23,10 @@ RUNS = [("XBCON1_run1.out", "D"), ("XBCON1_run2.out", "C")]
 FN2 = ["DIRIO00", "CONSTX2", "CONSTY2", "IN07H", "IN08D2", "CONST02", "CONSTZ", "BUFINZ", "CONINEF", "DIRIOF",
        "CONSTXY", "DIRIOX", "CONINTAB", "CONINBS", "CONINCB", "CONINLF", "DIRIO02", "CONOUTQ", "DIRIOK", "DIRIO03"]
 RUNS2 = [("XBCON2_run1.out", "D"), ("XBCON2_run2.out", "C")]
-OUTPUTS = {"XN": ["a", "f", "hl", "csr", "put", "get", "buf", "scr"], "XN2": ["a", "f", "hl", "csr", "put", "get", "buf",
+FN3 = ["CONSTX3", "CONSTH", "IN08H", "CONSTX3B", "DIRIOHB", "CONSTX3C", "CONOUTFULL", "DIRIOX3", "DIRIO3",
+       "CONINCR3", "CONINE3", "BUFINC2", "CONINF3"]
+RUNS3 = [("XBCON3_run1.out", "D"), ("XBCON3_run2.out", "C")]
+OUTPUTS = {"XN3": ["a", "f", "hl", "csr", "put", "get", "buf", "scr"], "XN": ["a", "f", "hl", "csr", "put", "get", "buf", "scr"], "XN2": ["a", "f", "hl", "csr", "put", "get", "buf",
                                                                              "scr"]}
 UNSTABLE = {}
 _cache = {}
@@ -51,6 +54,16 @@ def cases():
             for i, fn in enumerate(FN2):
                 r = b[24 * i: 24 * (i + 1)]
                 d[who].append(NS(src="XN2", id=f"XN2 {row}{i:02}", row=row, num=100 + i, fn=fn, a=r[0], f=r[1],
+                                 hl=(r[2] << 8) | r[3], csr=(r[4], r[5]), put=r[6], get=r[7], buf=list(r[8:20]),
+                                 scr=list(r[20:24])))
+    for run, row in RUNS3:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 24 * len(FN3) - len(b)))
+            for i, fn in enumerate(FN3):
+                r = b[24 * i: 24 * (i + 1)]
+                d[who].append(NS(src="XN3", id=f"XN3 {row}{i:02}", row=row, num=200 + i, fn=fn, a=r[0], f=r[1],
                                  hl=(r[2] << 8) | r[3], csr=(r[4], r[5]), put=r[6], get=r[7], buf=list(r[8:20]),
                                  scr=list(r[20:24])))
     _cache["d"] = d
@@ -101,6 +114,24 @@ EXPECT.update({
 })
 
 
+Q_ = [0x51, SP, SP, SP]
+EXPECT.update({
+    "CONSTX3": (0xFF, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),
+    "CONSTH": (0xFF, (1, 1), 0xF0, 0xF0, BUF0, [SP] * 4),         # a key HELD, none waiting: $FF
+    "IN08H": (0x58, (1, 1), 0xF1, 0xF0, BUF0, [SP] * 4),          # $08 serves the held 'X'; 'D' stays
+    "CONSTX3B": (0xFF, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),
+    "DIRIOHB": (0x58, (1, 1), 0xF1, 0xF0, BUF0, [SP] * 4),        # DIRIO serves the held 'X'; 'B' stays
+    "CONSTX3C": (0xFF, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),
+    "CONOUTFULL": (0x51, (1, 2), 0xF1, 0xF0, BUF0, Q_),           # output with the hold FULL: 'K' stays
+    "DIRIOX3": (0x58, (1, 2), 0xF0, 0xF0, BUF0, Q_),
+    "DIRIO3": (0x00, (1, 2), 0xF0, 0xF0, BUF0, Q_),
+    "CONINCR3": (0x0D, (1, 1), 0xF1, 0xF1, BUF0, Q_),
+    "CONINE3": (0x45, (1, 2), 0xF1, 0xF1, BUF0, [0x45, SP, SP, SP]),
+    "BUFINC2": (0x0D, (1, 1), 0xF3, 0xF3, [10, 2, 0x48, 0x49, 0x0D] + [0xEE] * 7, [0x45, 0x48, 0x49, SP]),
+    "CONINF3": (0x46, (1, 2), 0xF1, 0xF1, BUF0, [0x46, 0x48, 0x49, SP]),
+})
+
+
 def holds(c):
     a, csr, put, get, buf, scr = EXPECT[c.fn]
     return (c.a, c.csr, c.put, c.get, c.buf, c.scr) == (a, csr, put, get, buf, scr)
@@ -114,7 +145,7 @@ F = lambda *names: (lambda c: c.fn in names)          # noqa: E731
 S1 = "1. The console input functions through $F37D"
 RULES = [
     Rule("R-BC-CONST", S1, "CONST ($0B) answers A 0 with no key waiting and A $FF with one -- and TAKES that key out of "
-         "the BIOS key buffer (GETPNT moves up to PUTPNT) into the DOS's own one-key hold: the next input call "
+         "the BIOS key buffer (GETPNT moves by one) into the DOS's own one-key hold: the next input call "
          "returns it. Nothing is echoed.", F("CONST0", "CONSTX"), holds),
     Rule("R-BC-HOLD", S1, "A held key comes first. CONIN after CONST returns CONST's 'X' though 'A' was put in the "
          "BIOS buffer for it; echoing 'X', CONIN takes the waiting 'A' into the hold too (the buffer is empty after "
@@ -139,9 +170,15 @@ RULES = [
          F("DIRIO00", "CONSTX2", "CONSTY2", "IN07H", "IN08D2", "CONST02", "CONSTZ", "BUFINZ", "CONINEF", "DIRIOF",
            "CONSTXY", "DIRIOX", "DIRIO02", "CONOUTQ", "DIRIOK", "DIRIO03"), holds),
     Rule("R-BC-CTRL", S1, "CONIN's echo of control keys: TAB ($09) is expanded with SPACES to the next multiple of 8 "
-         "(column 1 -> 9, the cells written); BS ($08), CTRL+B ($02) and LF ($0A) go to the screen raw -- back one "
+         "(column 2 -> 9, the cells 2 .. 8 written); BS ($08), CTRL+B ($02) and LF ($0A) go to the screen raw -- back one "
          "column, nothing shown, down one row with the column kept. A is the key.",
          F("CONINTAB", "CONINBS", "CONINCB", "CONINLF"), holds),
+    Rule("R-BC-HOLD3", S1, "Round 3: CONST answers $FF with a key HELD and none waiting (it counts the hold). $08 and "
+         "DIRIO E $FF serve a held key and leave the waiting one in the BIOS buffer. Console output with the hold "
+         "FULL takes nothing (CONOUT 'Q': 'K' stays waiting; DIRIO then returns the held 'X', then A 0). BUFIN "
+         "started at column 2 echoes there ('HI' at 2 .. 3) and still ends at column 1 of the same row: a carriage "
+         "return alone, not a return to where input began.",
+         F(*FN3), holds),
     Rule("R-BC-WORK", S1, "F and HL are working values; the two references give the same ones in every case "
          "(e.g. HL $3C00 / $3CFF after CONST, H 0 L $0D after BUFIN, L = the key after the others).",
          lambda c: True, lambda c: (lambda o: (c.f, c.hl) == (o.f, o.hl))(other_ref(c))),

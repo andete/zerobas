@@ -1,0 +1,75 @@
+WARNING: Var CALSLT is never used on line 32 of file probes/bios/spec/xbcon3.asm
+===== probes/bios/spec/xbcon3.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=3501 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=f203 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : ffac3cff0101f1f10aeeeeeeeeeeeeeeeeeeeeee20202020ffac3cff0101f0f00aeeeeeeeeeeeeeeeeeeeeee2020202058024e580101f1f00aeeeeeeeeeeeeeeeeeeeeee20202020ffac3cff0101f1f10aeeeeeeeeeeeeeeeeeeeeee20202020583b54580101f1f00aeeeeeeeeeeeeeeeeeeeeee20202020ffac3cff0101f1f10aeeeeeeeeeeeeeeeeeeeeee202020205144a7510102f1f00aeeeeeeeeeeeeeeeeeeeeee51202020583b54580102f0f00aeeeeeeeeeeeeeeeeeeeeee51202020004454000102f0f00aeeeeeeeeeeeeeeeeeeeeee512020200d02450d0101f1f10aeeeeeeeeeeeeeeeeeeeeee51202020450245450102f1f10aeeeeeeeeeeeeeeeeeeeeee452020200d9b000d0101f3f30a0248490deeeeeeeeeeeeee45484920460245460102f1f10aeeeeeeeeeeeeeeeeeeeeee4648492000000000000000ff
+  CAP ours: ffbba70c0101f1f00aeeeeeeeeeeeeeeeeeeeeee202020200042a70c0101f0f00aeeeeeeeeeeeeeeeeeeeeee20202020ff43a70c0101f1f00aeeeeeeeeeeeeeeeeeeeeee20202020ffbba70c0101f1f00aeeeeeeeeeeeeeeeeeeeeee20202020429aa70c0101f1f10aeeeeeeeeeeeeeeeeeeeeee20202020ffbba70c0101f1f00aeeeeeeeeeeeeeeeeeeeeee202020205142a70c0102f1f00aeeeeeeeeeeeeeeeeeeeeee512020200044a70c0102f0f00aeeeeeeeeeeeeeeeeeeeeee512020200044a70c0102f0f00aeeeeeeeeeeeeeeeeeeeeee51202020ff43a70c0102f1f00aeeeeeeeeeeeeeeeeeeeeee51202020ff43a70c0102f1f00aeeeeeeeeeeeeeeeeeeeeee51202020ff43a70c0102f3f00aeeeeeeeeeeeeeeeeeeeeee51202020ff43a70c0102f1f00aeeeeeeeeeeeeeeeeeeeeee5120202000000000000000ff
+  DIFF (66 unexcused byte(s)):
+  CAP A002: ref=AC ours=BB
+  CAP A003: ref=3C ours=A7
+  CAP A004: ref=FF ours=0C
+  CAP A008: ref=F1 ours=F0
+  CAP A019: ref=FF ours=00
+  CAP A01A: ref=AC ours=42
+  CAP A01B: ref=3C ours=A7
+  CAP A01C: ref=FF ours=0C
+  CAP A031: ref=58 ours=FF
+  CAP A032: ref=02 ours=43
+  CAP A033: ref=4E ours=A7
+  CAP A034: ref=58 ours=0C
+  CAP A04A: ref=AC ours=BB
+  CAP A04B: ref=3C ours=A7
+  CAP A04C: ref=FF ours=0C
+  CAP A050: ref=F1 ours=F0
+  CAP A061: ref=58 ours=42
+  CAP A062: ref=3B ours=9A
+  CAP A063: ref=54 ours=A7
+  CAP A064: ref=58 ours=0C
+  CAP A068: ref=F0 ours=F1
+  CAP A07A: ref=AC ours=BB
+  CAP A07B: ref=3C ours=A7
+  CAP A07C: ref=FF ours=0C
+  CAP A080: ref=F1 ours=F0
+  CAP A092: ref=44 ours=42
+  CAP A094: ref=51 ours=0C
+  CAP A0A9: ref=58 ours=00
+  CAP A0AA: ref=3B ours=44
+  CAP A0AB: ref=54 ours=A7
+  CAP A0AC: ref=58 ours=0C
+  CAP A0C3: ref=54 ours=A7
+  CAP A0C4: ref=00 ours=0C
+  CAP A0D9: ref=0D ours=FF
+  CAP A0DA: ref=02 ours=43
+  CAP A0DB: ref=45 ours=A7
+  CAP A0DC: ref=0D ours=0C
+  CAP A0DE: ref=01 ours=02
+  CAP A0E0: ref=F1 ours=F0
+  CAP A0F1: ref=45 ours=FF
+  CAP A0F2: ref=02 ours=43
+  CAP A0F3: ref=45 ours=A7
+  CAP A0F4: ref=45 ours=0C
+  CAP A0F8: ref=F1 ours=F0
+  CAP A105: ref=45 ours=51
+  CAP A109: ref=0D ours=FF
+  CAP A10A: ref=9B ours=43
+  CAP A10B: ref=00 ours=A7
+  CAP A10C: ref=0D ours=0C
+  CAP A10E: ref=01 ours=02
+  CAP A110: ref=F3 ours=F0
+  CAP A112: ref=02 ours=EE
+  CAP A113: ref=48 ours=EE
+  CAP A114: ref=49 ours=EE
+  CAP A115: ref=0D ours=EE
+  CAP A11D: ref=45 ours=51
+  CAP A11E: ref=48 ours=20
+  CAP A11F: ref=49 ours=20
+  CAP A121: ref=46 ours=FF
+  CAP A122: ref=02 ours=43
+  CAP A123: ref=45 ours=A7
+  CAP A124: ref=46 ours=0C
+  CAP A128: ref=F1 ours=F0
+  CAP A135: ref=46 ours=51
+  CAP A136: ref=48 ours=20
+  CAP A137: ref=49 ours=20
+===== biosl: DIVERGENCE =====
