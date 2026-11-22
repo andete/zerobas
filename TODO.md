@@ -16762,6 +16762,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
+- [x] **D-SUITEWIN — THE BATTERY'S LONGEST UNITS RAN THEIR INDEPENDENT ROWS ONE AT A TIME**
+      🎚️ TIER 2 — reasonable time (filed and done 2026-11-22; Joost: "the time spent on improving the tests will pay
+      itself back for every round afterwards").
+      ✅ ramfree-acceptance (450 s in f6ad987d's FULL battery, its longest unit; 564 s in bdc7b881's) runs its 11 rows
+      on a pool (RAMFREE_JOBS, default 4): 125 s, every row identical to the battery's
+      (scratchpad/AE_ramfree_pool.out). ctllim-acceptance (186 s) runs zerobas's 5 rows on a pool (CTLLIM_JOBS),
+      the references still one call per side for the reference cache's keys: 55 s, rows identical
+      (scratchpad/AE_ctllim_pool.out). Next in that battery: kwsweep 299, biosregs 261 (D-TESTAUDIT), programs 197,
+      spec-live 193, graphics 182.
 - [ ] **D-STATICSLOW — A DOCS-ONLY GATE TAKES ~17 MIN; ITS "STATIC" TIER WAS ~20 S**
       🎚️ TIER 2 — reasonable time (the gate's wall time on every docs / TODO commit; filed 2026-11-22, Joost: "docs only
       commit takes pretty long as well?").

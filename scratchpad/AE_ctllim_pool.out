@@ -1,0 +1,25 @@
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+
+row             vg8020          cf3300              zb   what it does
+l.ctl         4051 0 7        3282 0 7        3267 0 7   CONTROL: five scalars, no bulk allocation
+l.ary         3715 0 7        2946 0 7        2931 0 7   DIM A(300), filled, then the pool driven down
+l.scal        3800 0 7        3031 0 7        3016 0 7   60 scalars -- the OTHER allocator
+l.nest        4060 0 7        3290 0 7        3276 0 7   pool exhausted, then 16 nested parentheses -- the FRAME margin (D-STACKFLOOR)
+l.expr           0 0 7           0 0 7           0 0 7   DIM to 340 B, then 40 nested ABS -- the EVALUATOR's floor (D-STACKFLOOR)
+
+reads `[depth  corrupted-cells  ERR]`  -- S must be 0 everywhere
+
+does an allocation COST depth? (the floor must rise with ARYEND)
+  vg8020     4051 frames bare ->   3715 with DIM A(300)   cost   336   ok
+  cf3300     3282 frames bare ->   2946 with DIM A(300)   cost   336   ok
+  zb         3267 frames bare ->   2931 with DIM A(300)   cost   336   ok
+
+rows 5  red 0
+CTLLIM: PASS
+refcache: 2 hit, 5 miss, 5 stored
+real 54.51
+user 72.17
+sys 126.75

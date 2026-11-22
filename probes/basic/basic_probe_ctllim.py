@@ -259,10 +259,17 @@ def main():
         return 2
 
     got = {}
-    for side, kw in list(SIDES.items()) + [("zb", dict(machine=args.zb_machine,
-                                                       boot=8.0, reset=("NEW",)))]:
+    for side, kw in SIDES.items():
         got[side] = dict(zip([c[0] for c in sel],
                              run(kw["machine"], kw["boot"], kw["reset"], sel)))
+    # ⏱ D-SUITEWIN (2026-11-22): zerobas's rows, one boot each, on a small pool (CTLLIM_JOBS, default 4; 1 = one at
+    # a time) -- 284 s in bdc7b881's full battery. The references stay ONE call per side above: the reference cache
+    # keys a whole call, so splitting them would only make the battery measure them again. zerobas is never cached.
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max(1, int(os.environ.get("CTLLIM_JOBS") or 4))) as ex:
+        zb = list(ex.map(lambda c: run(args.zb_machine, 8.0, ("NEW",), [c])[0], sel))
+    got["zb"] = dict(zip([c[0] for c in sel], zb))
 
     sides = ["vg8020", "cf3300", "zb"]
     # 🔴 A BLANK ON A **REFERENCE** IS AN INSTRUMENT FAULT; A BLANK ON ZEROBAS

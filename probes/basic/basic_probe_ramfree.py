@@ -239,7 +239,12 @@ def main():
         sel = [c for c in CASES if c[0].startswith("ctl.")] + sel
 
     fails, w = [], max(len(c[0]) for c in CASES)
-    for label, lines, step, disk, errcont, expect in sel:
+
+    # ⏱ D-SUITEWIN (2026-11-22): every row is its own boot (~50 s under the watchpoints) on its own disk copy, and
+    # nothing is shared between rows -- so they run on a small pool (RAMFREE_JOBS, default 4; 1 = one at a time).
+    # 564 s alone in bdc7b881's full battery, its longest unit. The report keeps the rows' order.
+    def one(case):
+        label, lines, step, disk, errcont, expect = case
         # the pool window's ADDRESSES are placeholders -- only its LENGTH is
         # used, because build() computes the base from CTLTOP on the machine
         watch = spans + ([(0, POOL_N)] if expect == "POOL" else [])
@@ -286,6 +291,13 @@ def main():
         else:
             ok = all(int(v) == 0 for v in vals)
             note = "clean" if ok else "🔴 A DECLARED-FREE WINDOW WAS WRITTEN"
+        return label, ok, got, note
+
+    import concurrent.futures
+    jobs = max(1, int(os.environ.get("RAMFREE_JOBS") or 4))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+        results = list(ex.map(one, sel))
+    for label, ok, got, note in results:
         if not ok:
             fails.append(label)
         print(f"  {'OK  ' if ok else 'FAIL'} {label:{w}s} {got:24s} {note}")

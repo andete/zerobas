@@ -1,0 +1,26 @@
+
+watching 5 declared FREE-RAM span(s):
+    $EB80..$EB92     18 B
+    $EDA9..$EDAB      2 B
+    $EE3E..$EE40      2 B
+    $EF24..$EF26      2 B
+    $F023..$F03C     25 B
+
+  OK   ctl.poke  1 1 1 1 1                every span saw its one poked byte
+  OK   ctl.pool  0 0 0 0 0 16             the pool moved (16 B) and no declared span did
+  OK   base.none 0 0 0 0 0                clean
+  OK   n.for8    0 0 0 0 0                clean
+  OK   n.deep    0 0 0 0 0                clean
+  OK   n.crunch  0 0 0 0 0                clean
+  OK   s.paint   0 0 0 0 0                clean
+  OK   s.draw    0 0 0 0 0                clean
+  OK   s.play    0 0 0 0 0                clean
+  OK   s.str     0 0 0 0 0                clean
+  OK   s.files   0 0 0 0 0                clean
+
+rows 11  red 0
+RAMFREE: PASS
+refcache: 0 hit, 11 miss, 11 stored
+real 124.90
+user 215.54
+sys 441.40
