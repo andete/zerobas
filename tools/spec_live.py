@@ -102,14 +102,14 @@ def live_run(run_file, td):
         m = HEADER.search(lines[h])
         asm, row = m.group(1), m.group(2)
         if row in REF_ONLY_ROWS:
-            print(f"  live {os.path.basename(run_file)} {row}: reference-only row, not re-run")
+            sys.stdout.write(f"  live {os.path.basename(run_file)} {row}: reference-only row, not re-run\n")
             continue
         st = biosl_run.settings(open(os.path.join(ROOT, asm)).read())
         rom = biosl_run.build(os.path.join(ROOT, asm), td)
         t0 = time.time()
         zb = biosl_run.run(biosl_run.ROWS[row][1], rom, st, td, disk=(row != "nodisk"))
         if not zb or zb.get("DONE") != "165":
-            print(f"  NO READING: {asm} {row} (DONE {zb and zb.get('DONE')})")
+            sys.stdout.write(f"  NO READING: {asm} {row} (DONE {zb and zb.get('DONE')})\n")
             return None
         b = bytes.fromhex(zb["CAP"])
         cap = b[:max(32, len(b.rstrip(b"\0")))].hex()
@@ -118,8 +118,10 @@ def live_run(run_file, td):
             pl = [lines[i] for i in range(c, next((i for i in heads if i > c), len(lines)))
                   if lines[i].startswith("  PRN ours:")]
             same = same and bool(pl) and pl[0].split(":", 1)[1].strip() == zb["PRN"]
-        print(f"  live {os.path.basename(run_file)} {row}: {os.path.basename(asm)} {time.time() - t0:.1f} s, "
-              f"zerobas {'as committed' if same else 'CHANGED since the committed run'}")
+        # one write per line: the pool's threads would otherwise run two lines together (print writes the newline
+        # on its own)
+        sys.stdout.write(f"  live {os.path.basename(run_file)} {row}: {os.path.basename(asm)} {time.time() - t0:.1f} s, "
+                         f"zerobas {'as committed' if same else 'CHANGED since the committed run'}\n")
         lines[c] = f"  CAP ours: {cap}\n"
         if st["printer"]:                  # the section's `PRN ours:` line, re-measured too
             end = next((i for i in heads if i > c), len(lines))
@@ -141,15 +143,31 @@ def main(argv):
     td = tempfile.mkdtemp(prefix="spec_live_")
     redirect, rc = {}, 0
     try:
+        # ⏱ D-SUITEWIN (2026-11-22): every run file's zerobas re-run is independent, so they run on a small pool
+        # (SPEC_LIVE_JOBS, default 4; 1 = one at a time) -- 193 s in f6ad987d's FULL battery. Each file gets its OWN
+        # temp dir: a probe's run 1 and run 2 (disk / cf3300) build the same .asm, which one shared dir would mix.
+        # evaluate() swaps builtins.open, so collecting the files and judging the pages stay serial.
+        files_of, order = {}, []
         for path in mods:
             _, _, files = evaluate(path, {})
+            files_of[path] = files
             for f in sorted(files):
-                if f not in redirect:
-                    live = live_run(f, td)
-                    if live is None:
-                        rc = 2
-                        continue
-                    redirect[f] = live
+                if f not in order:
+                    order.append(f)
+        import concurrent.futures
+        jobs = max(1, int(os.environ.get("SPEC_LIVE_JOBS") or 4))
+        dirs = {f: os.path.join(td, str(i)) for i, f in enumerate(order)}
+        for d in dirs.values():
+            os.makedirs(d)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+            lives = list(ex.map(lambda f: live_run(f, dirs[f]), order))
+        for f, live in zip(order, lives):
+            if live is None:
+                rc = 2
+            else:
+                redirect[f] = live
+        for path in mods:
+            files = files_of[path]
             mod, fails, _ = evaluate(path, redirect)
             failing = {r for r, bad in fails.items() if bad}
             listed = page_listed(mod)

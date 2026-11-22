@@ -16762,33 +16762,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
-- [ ] **D-STATICSLOW — A DOCS-ONLY GATE TAKES ~17 MIN; ITS "STATIC" TIER WAS ~20 S**
-      🎚️ TIER 2 — reasonable time (the gate's wall time on every docs / TODO commit; filed 2026-11-22, Joost: "docs only
-      commit takes pretty long as well?").
-      🤖 **AUTONOMOUS** — gate_wt 35c4032d (docs only, STATIC): 1022 s. From its unit logs' end times
-      (zerobas-gate/scratchpad/gate_logs): selftest-check ~410 s, unit-test ~190 s (100 files, serial), spec-live
-      ~145 s, kwsweep ~117 s, tiers-md-check ~66 s, the other ~20 static units + warmup ~90 s.
-      ✅ (1) selftest-check DONE 2026-11-22 (scratchpad/AE_selftest_times.out: 90 selftests, 283 s alone, two of them
-      256 s): check_disk_deps 191 -> 31 s (the parse and a probes/ index cached; `--list` byte-identical) and
-      tier_table 65 -> 26 s (tools/entry_table.py: _dir_asms cached, _differential_scripts by word sets, one witness
-      scan per entry; `entry_table.py`, `--bios`, `--bdos` and docs/tier-status.md byte-identical). tiers-md-check
-      gains the same.
-      LEFT: (2) kwsweep runs in a STATIC plan -- D-PINSTALE re-measures the pins when build/sweeps-rom.txt is not the
-      built ROM, and the gate worktree's wiped build/ never matches: carry the pins and stamp into the worktree, or
-      skip the re-measure when no ROM source changed. (3) spec-live sits in STATIC but boots zerobas per run file
-      (~145 s, and it grows with every page): an emulator unit by run_gates' own rule ("split by what a unit reads").
-      (4) unit-test runs its 100 files serially: a worker pool.
-      ✅ (4) DONE 2026-11-22: tests/run.py runs GROUPS on a worker pool (ZB_UNIT_JOBS, default the CPU count; 1 =
-      serial) -- files sharing a tp() artifact name or taking another test's build are one group, run in order in
-      one worker (88 groups of 100). 379 serial s -> 91 s (scratchpad/AE_unit_times.out, AE_unit_par.out); a planted
-      failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this; ee1ef5fd's 335 s.
-      Left after that: spec-live ~42 s and kwsweep ~37 s in a docs-only plan, tiers-md-check ~27 s.
-      ✅ (2) DONE 2026-11-22: tools/gate_wt.py's `git clean -fdx` now keeps build/sweeps-rom.txt and the three sweep
-      pins (`-e`): wiped, run_gates read "no recorded ROM" and re-ran kwsweep in EVERY gate (162 s in 77d3567a's
-      gate); D-PINSTALE still re-measures when the built ROM is another.
-      ✅ (3) DONE 2026-11-22: a STATIC plan leaves spec-live out unless a spec page (docs/bios, bdos, disk), probes/bios,
-      a scratchpad run file or tools/spec_* changed (tools/pick_gates.py spec_live_inputs, arms P-SPECLIVE). A ROM
-      change is never STATIC, so the pages still run live on every ROM commit.
+- [ ] **D-SPLITSTUB — split_todo_archive.py --apply RE-APPENDS THE THREE "Moved to" STUB SECTIONS ON EVERY RUN**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — with nothing to move it appended "Appended by a later split pass" + the stubs of
+      "Phase 1 record", "Done — Phase 1", "Done — storage transports" to docs/TODO-done.md again (TODO.md unchanged);
+      each real split carries them too. tools/split_todo_archive.py: skip a whole section already a stub.
 - [ ] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
       🎚️ TIER 1 — the base every C-BIOS-side fix builds on (filed 2026-11-22, Joost: "cbios 0.32 was released and it
       shipped with tape, so our tape patch is obsolete"; "have a look at each of c-bios 0.32's fixes to see if we can
@@ -16817,6 +16795,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           ours against theirs, byte for byte.
       (5) re-pin REPACKED_SHA1 / PRISTINE_SHA1, full battery + the excluded five, the tape corpus, HANDOFF gate.
       The biosregs audit (D-TESTAUDIT, scratchpad/biosregs_audit.py) is re-run on the rebased patch set after this.
+      🏗️ RULED 2026-11-22 (Joost, after the patch-or-coexist discussion: zerobas is C-BIOS's STAGING AREA; BASIC
+      graduates too, gradually, the port a refinement for size and placement; docs and spec pages stay in zerobas;
+      one disk ROM with core + Disk BASIC; one FDC interface, National; relicensed BSD-2-Clause): "yes to all three,
+      go with that order" -- (1) rebase onto 0.32 as a THIN patch set tracking C-BIOS's latest commits, (2) RETIRE
+      zerobas's own BIOS bodies where stock 0.32 passes the pages (keep ours only where BASIC is entangled, saying
+      why), (3) SEND upstream what 0.32 lacks instead of carrying it. Order: this rebase, then the disk ROM working
+      without zerobas BASIC, then the test cleanup against the rebased build. The hosting variant is not now.
       📏 STAGE 0 (2) 2026-11-22 -- every BIOS spec page on STOCK v0.32 (tools/cbios_review.py all --tag v032,
       scratchpad/AE_cbios032_vs_zerobas.out): on the BIOS pages 0.32 fails 15 rules zerobas passes (TUPC / TDOWNC
       edge + position -- our tdownc-ge; GRPPRT position + VRAM; the SET* / CLRSPR / PUTQ / SETC registers or AF),

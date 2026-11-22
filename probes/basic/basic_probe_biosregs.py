@@ -393,8 +393,15 @@ def read(machine, p):
 def main():
     only = sys.argv[1:] or list(ROWS)
     bad, blind = [], []
-    for name in only:
-        got = {side: read(m, ROWS[name]) for side, m in MACHINES}
+    # ⏱ D-SUITEWIN (2026-11-22): the rows share nothing -- each is its own boot per side -- so they run on a small
+    # pool (BIOSREGS_JOBS, default 4; 1 = one at a time); 261 s in f6ad987d's FULL battery. Each row stays ONE call
+    # per side, so the reference cache's keys (the VG-8020 is replayed in the battery) are unchanged. The report
+    # keeps the rows' order.
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max(1, int(os.environ.get("BIOSREGS_JOBS") or 4))) as ex:
+        reads = list(ex.map(lambda n: {side: read(m, ROWS[n]) for side, m in MACHINES}, only))
+    for name, got in zip(only, reads):
         if not got["VG"]:
             blind.append(name)
             verdict = "NO-REFERENCE"

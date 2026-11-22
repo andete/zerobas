@@ -40829,3 +40829,61 @@ the phase narrative above still have somewhere to land.
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
 The record is unchanged there; this heading is kept only so the citations and
 the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-STATICSLOW — A DOCS-ONLY GATE TAKES ~17 MIN; ITS "STATIC" TIER WAS ~20 S**
+      🎚️ TIER 2 — reasonable time (the gate's wall time on every docs / TODO commit; filed 2026-11-22, Joost: "docs only
+      commit takes pretty long as well?").
+      🤖 **AUTONOMOUS** — gate_wt 35c4032d (docs only, STATIC): 1022 s. From its unit logs' end times
+      (zerobas-gate/scratchpad/gate_logs): selftest-check ~410 s, unit-test ~190 s (100 files, serial), spec-live
+      ~145 s, kwsweep ~117 s, tiers-md-check ~66 s, the other ~20 static units + warmup ~90 s.
+      ✅ (1) selftest-check DONE 2026-11-22 (scratchpad/AE_selftest_times.out: 90 selftests, 283 s alone, two of them
+      256 s): check_disk_deps 191 -> 31 s (the parse and a probes/ index cached; `--list` byte-identical) and
+      tier_table 65 -> 26 s (tools/entry_table.py: _dir_asms cached, _differential_scripts by word sets, one witness
+      scan per entry; `entry_table.py`, `--bios`, `--bdos` and docs/tier-status.md byte-identical). tiers-md-check
+      gains the same.
+      LEFT: (2) kwsweep runs in a STATIC plan -- D-PINSTALE re-measures the pins when build/sweeps-rom.txt is not the
+      built ROM, and the gate worktree's wiped build/ never matches: carry the pins and stamp into the worktree, or
+      skip the re-measure when no ROM source changed. (3) spec-live sits in STATIC but boots zerobas per run file
+      (~145 s, and it grows with every page): an emulator unit by run_gates' own rule ("split by what a unit reads").
+      (4) unit-test runs its 100 files serially: a worker pool.
+      ✅ (4) DONE 2026-11-22: tests/run.py runs GROUPS on a worker pool (ZB_UNIT_JOBS, default the CPU count; 1 =
+      serial) -- files sharing a tp() artifact name or taking another test's build are one group, run in order in
+      one worker (88 groups of 100). 379 serial s -> 91 s (scratchpad/AE_unit_times.out, AE_unit_par.out); a planted
+      failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this; ee1ef5fd's 335 s.
+      Left after that: spec-live ~42 s and kwsweep ~37 s in a docs-only plan, tiers-md-check ~27 s.
+      ✅ (2) DONE 2026-11-22: tools/gate_wt.py's `git clean -fdx` now keeps build/sweeps-rom.txt and the three sweep
+      pins (`-e`): wiped, run_gates read "no recorded ROM" and re-ran kwsweep in EVERY gate (162 s in 77d3567a's
+      gate); D-PINSTALE still re-measures when the built ROM is another.
+      ✅ (3) DONE 2026-11-22: a STATIC plan leaves spec-live out unless a spec page (docs/bios, bdos, disk), probes/bios,
+      a scratchpad run file or tools/spec_* changed (tools/pick_gates.py spec_live_inputs, arms P-SPECLIVE). A ROM
+      change is never STATIC, so the pages still run live on every ROM commit.
+      ✅ (D-SUITEWIN, cont.) biosregs-acceptance rows pooled (BIOSREGS_JOBS; one call per side kept for the reference
+      cache): 261 -> 38 s, all 143 rows identical to 8525679e's FULL battery (scratchpad/AE_biosregs_pool.out).
+      spec-live's zerobas re-runs pooled (SPEC_LIVE_JOBS), each run file in its OWN temp dir -- a probe's disk and
+      cf3300 runs build the same .asm: 193 -> 36 s, every page's verdict and all 89 CHANGED lines as the battery's
+      (scratchpad/AE_speclive_pool.out; one write per line, or two threads ran them together).
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
