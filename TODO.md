@@ -16973,6 +16973,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Round 3 (XBFILE3 XB3 13): FDEL of a missing file -- A $FF, carry SET on both references -- carry clear on
       zerobas too; FREN / FSIZE of a missing file agree.
 - [ ] **D-DISKFORCBIOS — WHAT A C-BIOS DISK-DRIVER PORT NEEDS FROM ZEROBAS: DSKIO / CHOICE / MTOFF PAGES, AN NMS 8250 ROW, A DRIVER-RAM NOTE**
+      ➕ 2026-11-22: (a) DONE -- docs/disk/DSKIO.md and docs/disk/CHOICE.md (with MTOFF) FINAL. (c) and (d) DONE --
+      docs/concepts/disk.md "The driver alone needs far less" (the driver's own cells, read from its code and the
+      work-area map) and "The DOS 1 driver interface's own routines are not entries". LEFT: (b) the NMS 8250 row,
+      (e) blocked on 2-Tier2-a.
       🎚️ TIER 1 — entry points (the disk-ROM entries are the BDOS / disk-BIOS focus's own subject; filed 2026-11-22).
       🤖 **AUTONOMOUS** — C-BIOS is weighing folding the disk BIOS calls in (0.32 / 0.33) and ports by spec page. Wanted:
       (a) spec pages for the driver entries without one: DSKIO ($4010, called DIRECTLY -- docs/bios/PHYDIO.md

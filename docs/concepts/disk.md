@@ -206,6 +206,34 @@ since 2026-10-10: its disk ROM then installs nothing and BASIC starts as on the
 diskless machine (`HIMEM` `&HF380`, as on the VG-8020, since 2026-10-16 —
 [memory map](memory-map.md)).
 
+**The driver alone needs far less.** The six driver entries a program calls —
+[DSKIO](../disk/DSKIO.md) `&H4010`, [DSKCHG](../disk/DSKCHG.md) `&H4013`,
+[GETDPB](../disk/GETDPB.md) `&H4016`, [CHOICE](../disk/CHOICE.md) `&H4019`,
+[DSKFMT](../disk/DSKFMT.md) `&H401C`, MTOFF `&H401F` — use, in
+zerobas (read from the driver's own code and the work-area map, 2026-11-22):
+
+| cells | bytes | what for |
+|---|---|---|
+| `&HEFF7`–`&HEFFD` | 7 | the transfer in flight: the caller's interrupt state, sectors left, the current sector and address, the retry count |
+| `&HEFF6` | 1 | the media ID DSKIO seats a sector by (sides, sectors per track) |
+| `&HEDBD` | 2 | `JIFFY` at the last sector command: DSKCHG's "unchanged" window |
+| `&HE8AD`, `&HED85`, `&HEFFE` | 512 + 2 + 27 | a transfer to or from page 1 — where the disk ROM itself sits — goes through a sector buffer, copied by a routine in page 3 |
+| the geometry cells from `&HECAD` | ~12 | the boot sector's layout (sectors per cluster, FAT start and size, root and data start), which GETDPB reads — and DSKCHG through it, when it answers "unknown"; the FAT layer shares them |
+
+plus the published cells every disk ROM fills (`DRVTBL`, the drive's DPB, the
+disk ROM's slot at `&HF348`, the `H.PHYD` / `H.FORM` hooks the BIOS's `PHYDIO`
+and `FORMAT` go through). None of the rest — the FAT and directory buffers,
+the 750 bytes of channel state under `HIMEM`, zerobas BASIC's own layout — is
+the driver's.
+
+**The DOS 1 driver interface's own routines are not entries.** A Disk BASIC
+ROM maker writes `INIHRD`, `DRIVES`, `INIENV`, `DEFDPB`, `MYSIZE` / `SECLEN`,
+`OEMSTA` and `DSKSTP` for the shared Disk BASIC kernel to call; they sit
+wherever that maker put them, and no program calls them. zerobas's disk ROM
+is written whole, not as a driver under that kernel, so it has none of them.
+The disk pages measure only what a program sees: the six entries above, and
+`PHYDIO` / `FORMAT` through the BIOS ([PHYDIO](../bios/PHYDIO.md)).
+
 ## Example
 
 Read the boot sector and the FAT, write a file, read its directory entry
