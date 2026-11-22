@@ -5,9 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # `PHYDIO` ($0144) — read or write physical disk sectors
 
-> **Spec:** DRAFT 5 (2026-11-22), six measured rounds; rounds 3-6 answer review passes 1-4
-> (scratchpad/PHYDIO_review1.md to review4.md: the geometry model, the 8-bit side-and-track count, the
-> 16-bit refusal). Measured on the VG-8020, alone and with an NMS 1200 disk interface.
+> **Spec:** FINAL (2026-11-22), the core rule: review pass 5 found no new behaviour and no unpinned core
+> rule, only combinations of measured rules (now [A] below) and three citations, fixed (docs/spec-method.md
+> §7, the small-call stop). Six measured rounds; rounds 3-6 answer passes 1-4 (scratchpad/PHYDIO_review1.md
+> to review5.md: the geometry model, the 8-bit side-and-track count, the 16-bit refusal). Measured on the VG-8020, alone and with an NMS 1200 disk interface.
 
 ## Summary
 
@@ -21,7 +22,8 @@ per track), then side, then sector -- and a track number at or past the media's 
 end. The side-and-track count (sector / sectors per track) is kept in 8 bits, so some sector numbers
 far past the end wrap back onto the disk ($0900 and $1200 read the boot sector with $F9); a transfer
 whose last sector does not fit in 16 bits is refused before any sector. Sectors go in order across sides and tracks, and a write
-takes its data from HL. B 0 means 256.
+takes its data from HL. B 0 starts the sector count at 0, counting down in 8 bits (after one sector it
+reads $FF); how far it runs is not measured.
 
 A good transfer returns A 0, F $42 and B 0, C $32, D 0 and E the entry F (D is the entry A or a
 constant: A was 0 throughout); HL is kept. A
@@ -110,11 +112,13 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 - **[A]** Drives other than A (not tried: the probe's interface has one drive, and drive B would be the
   phantom drive asking for a disk -- an expectation, not a measurement); the media bytes other than
   those measured ($00 $32 $80 $F0 $F7 refused; $F8 $F9 $FA $FF taken); each geometry's last track
-  exactly ($F8's 79 in / 80 past is measured; $FF only 0 in and tracks 43 / 89 past; $FA sectors 0, 8, 9
+  exactly ($F8's 79 in / 80 past is measured; $FF tracks 0 and 1 in, 43 / 89 past; $FA sectors 0, 8, 9
   -- the 40 / 80 tracks for $FF / $FA rest on the formats); a write-protected disk; a disk that is not
   there; a read error.
 - **[A]** The geometry for WRITES with a media byte other than $F9; writes to wrapped sector numbers;
-  which zero sector $FFFE / $FFFF reach; the 8-bit wrap with $FF / $FA (measured with $F9 and $F8); where
+  which zero sector $FFFE / $FFFF reach, and which side / track a wrapped count other than 0 selects
+  ($0909, $0912); the 8-bit wrap with $F8 / $FF / $FA (measured wrapping with $F9; with $F8 only that
+  count 128 does NOT wrap -- 8 bits or more); where
   a write refused for its media byte might have gone under another geometry (only its own sector was read
   back); memory just below HL on a read (HL was always the buffer's start).
 - **[A]** A write of B 0 (256 sectors) -- not finished within 60 s (round 3 run 1): the one case that
@@ -122,8 +126,11 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
   writes of more than one sector within the disk; writes with F other than $01 / $FF.
 - **[A]** Memory at HL other than $A400, $A500 and $8000 (page 1, where the disk ROM itself sits, and
   page 0); transfers longer than 1 KB (case 15 reads 2 sectors, the whole buffer); memory past HL + 1 KB.
-- **[A]** Whether D is the entry A or a constant 0 (A was 0 in every case; A 1 is drive B); A on row N
-  with A other than 0.
+- **[A]** Whether D (and C, B on return) depend on the entry A or are constants (A was 0 in every case;
+  A 1 is drive B); A on row N with A other than 0.
+- **[A]** The 16-bit up-front refusal, measured on one read (2 from $FFFF): on a WRITE (its error code,
+  and whether $FFFF is written); its scope (2 from $FFFE: the last sector $FFFF fits -- read, or refused
+  as "starting past the end"); with B 0 (does the check count 256); its order against the media check.
 - **[A]** IX, IY, the alternate registers and SP; the work area; the time it takes.
 - **[A]** The CF-3300 (the second reference).
 
