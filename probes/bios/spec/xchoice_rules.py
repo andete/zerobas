@@ -83,8 +83,8 @@ S1 = "1. CHOICE and MTOFF"
 RULES = [
     Rule("R-CH-CHOICE", S1, "CHOICE ($4019) answers HL = a pointer into the disk ROM (page 1, $4000 .. $7FFF, not 0: "
          "the format-choice text, whose bytes are the ROM's own and not read here) -- the same whatever goes in, "
-         "and after a read too -- and KEEPS every other register: AF ($5AD7 in, $5AD7 out), BC (B and C unequal "
-         "too), DE. Interrupts off after the CALSLT; nothing written (the buffer at HL's entry value keeps its $E5, "
+         "and after a read too (after MTOFF) -- and keeps AF ($5AD7 in, $5AD7 out), BC (B and C unequal too) "
+         "and DE (the registers recorded). Interrupts off after the CALSLT; nothing written (the buffer at HL's entry value keeps its $E5, "
          "all 32 bytes in round 2). The pointer's value is the ROM's layout: $799B on the VG-8020's NMS 1200, $78AD "
          "on the CF-3300.", lambda c: c.fn == "CHOICE",
          lambda c: 0x4000 <= c.hl <= 0x7FFF and c.iff == 0 and (
@@ -101,7 +101,8 @@ RULES = [
          lambda c: (c.a, c.f) == (0, 0x44) and (c.b, c.c, c.hl) == (
              (c.bin, c.cin, 0xA400) if c.src == "XH" else (c.bcin >> 8, c.bcin & 0xFF, c.hlin))),
     Rule("R-CH-READ", S1, "Round 2's set-up read (DSKIO, sector 0 to $A800) moves the image's boot sector (the 32 "
-         "bytes recorded), A 0, the carry clear, interrupts off after; its F, B, DE, HL as the other reference's.",
+         "bytes recorded), A 0, the carry clear, interrupts off after; its F, B, DE, HL as the other reference's "
+         "(zerobas differs in F and HL only).",
          lambda c: c.fn == "DSKIO",
          lambda c: c.buf == BOOT and c.a == 0 and not (c.f & 1) and c.iff == 0
          and (lambda o: (c.f, c.b, c.de, c.hl) == (o.f, o.b, o.de, o.hl))(other_ref(c))),

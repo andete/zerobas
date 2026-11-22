@@ -5,8 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # `CHOICE` ($4019) and `MTOFF` ($401F), disk ROM
 
-> **Spec:** DRAFT 2 (2026-11-22), two measured rounds on two references, review pass 1 answered
-> ([`scratchpad/BCHO_review1.md`](../../scratchpad/BCHO_review1.md)).
+> **Spec:** FINAL (2026-11-22), two measured rounds on two references, review passes 1 and 2 answered
+> ([`scratchpad/BCHO_review1.md`](../../scratchpad/BCHO_review1.md),
+> [`scratchpad/BCHO_review2.md`](../../scratchpad/BCHO_review2.md)): pass 2 found no measurable new
+> behaviour (the registers not recorded and the pointer's target are [A]; the target is ROM bytes the
+> clean room does not read), the rest combinations (docs/spec-method.md §7, the small-call stop).
 > Two small driver entries on one page, sharing one probe.
 
 ## Summary
@@ -15,10 +18,10 @@ Called with CALSLT into the disk interface's slot:
 
 - **CHOICE** answers HL = a pointer into the disk ROM (page 1) -- the text a FORMAT shows to choose the
   disk type; its bytes are the ROM's own and are not read here -- the same whatever goes in and after a
-  read too, and KEEPS every other register (AF, BC, DE). It writes nothing.
+  read too (after MTOFF), and keeps AF, BC and DE (the registers recorded). It writes nothing.
 - **MTOFF** writes nothing and keeps DE, with the motor off or right after a read; its A, F, BC and HL are
-  the interface's own: the NMS 1200 always answers A 3, F $28, BC $0022, HL $F1C1; the CF-3300 A 0, F $44,
-  BC and HL kept.
+  the interface's own: on the CF-3300 A 0, F $44, BC and HL kept (a rule); the NMS 1200's answers (A 3, F
+  $28, BC $0022, HL $F1C1 in every case measured) are recorded, not checked -- declared by interface.
 
 zerobas's CHOICE answers a page-1 pointer and keeps the rest; its MTOFF answers as the CF-3300's (its
 disk ROM is a CF-3300-style interface). Only the set-up read's working registers differ (D-PHYDIOREGS).
@@ -44,7 +47,8 @@ rule reads the NODISK row.
 ([`scratchpad/XCHOICE2_run1.out`](../../scratchpad/XCHOICE2_run1.out), the disk section), run 2
 ([`scratchpad/XCHOICE2_run2.out`](../../scratchpad/XCHOICE2_run2.out), `--row cf3300`);
 `probes/bios/spec/xchoice2.asm`: every entry register from the table (AF $5AD7, B not C, DE $1234 /
-$5678, HL $C000), a DSKIO read of sector 0 and then MTOFF and CHOICE (the motor running); a 41-byte
+$5678, HL $C000), a DSKIO read of sector 0 and then MTOFF (the motor running) and CHOICE (after that
+MTOFF); a 41-byte
 record with all 32 buffer bytes. Interrupts are off on entry (`di`, then CALSLT) in both rounds.
 
 <!-- RULES BEGIN -->
@@ -56,10 +60,10 @@ record with all 32 buffer bytes. Interrupts are off on entry (`di`, then CALSLT)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CH-CHOICE** CHOICE ($4019) answers HL = a pointer into the disk ROM (page 1, $4000 .. $7FFF, not 0: the format-choice text, whose bytes are the ROM's own and not read here) -- the same whatever goes in, and after a read too -- and KEEPS every other register: AF ($5AD7 in, $5AD7 out), BC (B and C unequal too), DE. Interrupts off after the CALSLT; nothing written (the buffer at HL's entry value keeps its $E5, all 32 bytes in round 2). The pointer's value is the ROM's layout: $799B on the VG-8020's NMS 1200, $78AD on the CF-3300. | 12 | ✓ | ✓ |
+| **R-CH-CHOICE** CHOICE ($4019) answers HL = a pointer into the disk ROM (page 1, $4000 .. $7FFF, not 0: the format-choice text, whose bytes are the ROM's own and not read here) -- the same whatever goes in, and after a read too (after MTOFF) -- and keeps AF ($5AD7 in, $5AD7 out), BC (B and C unequal too) and DE (the registers recorded). Interrupts off after the CALSLT; nothing written (the buffer at HL's entry value keeps its $E5, all 32 bytes in round 2). The pointer's value is the ROM's layout: $799B on the VG-8020's NMS 1200, $78AD on the CF-3300. | 12 | ✓ | ✓ |
 | **R-CH-MTOFF** MTOFF ($401F) writes nothing a program passed it (the buffer keeps its $E5), keeps DE ($5678 in, out) and returns with interrupts off -- with the motor off and right after a read alike. Its A, F, BC and HL are the interface's own: the NMS 1200 answers A 3, F $28, BC $0022, HL $F1C1 whatever goes in (UNSTABLE below, by interface); the CF-3300 as R-CH-MTOFFCF. | 10 | ✓ | ✓ |
 | **R-CH-MTOFFCF** On the CF-3300 (the interface zerobas's disk ROM is) MTOFF answers A 0, F $44 and KEEPS BC and HL ($1234 / $C000 in, out). | 5 | ✓ | ✓ |
-| **R-CH-READ** Round 2's set-up read (DSKIO, sector 0 to $A800) moves the image's boot sector (the 32 bytes recorded), A 0, the carry clear, interrupts off after; its F, B, DE, HL as the other reference's. | 2 | ✓ | ✗ 2: XH2 D03, XH2 C03 |
+| **R-CH-READ** Round 2's set-up read (DSKIO, sector 0 to $A800) moves the image's boot sector (the 32 bytes recorded), A 0, the carry clear, interrupts off after; its F, B, DE, HL as the other reference's (zerobas differs in F and HL only). | 2 | ✓ | ✗ 2: XH2 D03, XH2 C03 |
 
 Declared UNSTABLE on the reference itself (5 cases: XH D03, XH D04, XH D05, XH2 D02 … (+1)): a, f, b, c, hl — MTOFF's registers are the INTERFACE's: on the VG-8020's NMS 1200 (XCHOICE1 run 1, XCHOICE2 run 1) always A 3, F $28, BC $0022, HL $F1C1, whatever goes in and after a read too; on the CF-3300 (run 2) A 0, F $44, BC and HL kept -- R-CH-MTOFFCF pins that row
 
@@ -71,7 +75,7 @@ Declared UNSTABLE on the reference itself (2 cases: XH2 D03, XH2 C03): c — DSK
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-PHYDIOREGS** (the set-up read's working F, B, DE, HL) | R-CH-READ |
+| **D-PHYDIOREGS** (the set-up read's working F and HL; B and DE agree) | R-CH-READ |
 
 ## Open (not measured)
 
@@ -80,9 +84,12 @@ Declared UNSTABLE on the reference itself (2 cases: XH2 D03, XH2 C03): c — DSK
 - **[A]** What MTOFF does to the drive: the motor (no published cell shows it; the FDC's registers sit in
   the ROM's memory map); its effect on DSKCHG's count is on [DSKCHG](DSKCHG.md) (none).
 - **[A]** Interrupts ON at the call and a call not made through CALSLT (the interface selected in page 1):
-  what CHOICE and MTOFF themselves do to the interrupt state; writes outside the 32-byte buffer (the work
-  area, VRAM); whether the answers repeat after another boot; a formatted disk in the drive; the NMS 1200's
-  second drive; the NMS 8250 (D-DISKFORCBIOS).
+  what CHOICE and MTOFF themselves do to the interrupt state; IX, IY, the alternate registers and SP after
+  the call (not recorded; CALSLT takes IX / IY as inputs); writes outside the 32-byte buffer (the work area,
+  VRAM); whether the answers repeat after another boot; no disk in the drive, an unformatted or other-media
+  disk (the drive held the formatted empty image); the after-read cases with non-zero entry values; CHOICE
+  straight after a read (without MTOFF between), MTOFF after a write or a failed read; the NMS 1200's second
+  drive; the NMS 8250 (D-DISKFORCBIOS).
 
 ## Related pages
 
