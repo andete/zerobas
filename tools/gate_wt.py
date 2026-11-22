@@ -201,7 +201,11 @@ def run(a) -> int:
         git("worktree", "add", "--detach", WT, sha)
     git("checkout", "-q", "--detach", "-f", sha, cwd=WT)
     git("reset", "-q", "--hard", sha, cwd=WT)
-    git("clean", "-q", "-fdx", cwd=WT)
+    # ⏱ D-STATICSLOW (2) (2026-11-22): the keyword-sweep pins and the ROM they were measured on survive the clean.
+    # Wiped, run_gates found "no recorded ROM" every time and re-ran kwsweep in EVERY gate, docs-only ones too
+    # (162 s in 77d3567a's). Kept, its D-PINSTALE check still re-measures whenever the built ROM is another.
+    git("clean", "-q", "-fdx", "-e", "build/sweeps-rom.txt", "-e", "build/kwsweep-verdicts.json",
+        "-e", "build/kwtime.json", "-e", "build/kwram.json", cwd=WT)
     share = os.path.join(WT, ".omsx-share")
     seed_share(share)
     copy_state(ROOT, WT)

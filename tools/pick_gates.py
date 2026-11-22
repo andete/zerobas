@@ -127,6 +127,19 @@ def git(*args):
                           text=True).stdout
 
 
+# ⏱ D-STATICSLOW (3) (2026-11-22): spec-live boots zerobas once per run file (~40 s and growing with every page),
+# and a STATIC plan ran it for every TODO / docs commit. It reads the spec pages (their Differences tables), the
+# rules modules and probes, the committed run files and its own tools -- a STATIC change to none of them cannot
+# move it (a ROM change is never STATIC). So a STATIC plan leaves it out unless one of these changed.
+SPEC_LIVE_DIRS = ("docs/bios/", "docs/bdos/", "docs/disk/", "probes/bios/", "tools/spec_")
+
+
+def spec_live_inputs(changed):
+    """the changed files spec-live reads"""
+    return [f for f in changed if f.startswith(SPEC_LIVE_DIRS)
+            or (f.startswith("scratchpad/") and f.endswith(".out"))]
+
+
 def changed_files():
     """Tracked files changed against BASE (HEAD), staged or not (a staged ADD counts)."""
     return sorted({l for l in git("diff", "--name-only", BASE).splitlines() if l})
@@ -470,6 +483,12 @@ def selftest():
     h_width = lambda f: {"WIDTH"}
     m, r, e, x = plan(["TODO.md", "docs/a.md"], files, h_width, 0, read=rd)
     arm("P1 docs-only -> STATIC, no emulator suite", m == "STATIC" and e == [])
+    arm("P-SPECLIVE a TODO / concept-page change reads nothing spec-live reads",
+        spec_live_inputs(["TODO.md", "docs/concepts/disk.md", "docs/tier-status.md"]) == [])
+    arm("P-SPECLIVE NEGATIVE: a spec page, a rules module, a run file or its tool does",
+        all(spec_live_inputs([f]) for f in ("docs/disk/DSKIO.md", "docs/bdos/CONIN.md", "docs/bios/CHPUT.md",
+                                             "probes/bios/spec/xbcon_rules.py", "scratchpad/XBCON1_run1.out",
+                                             "tools/spec_rules.py", "tools/spec_live.py")))
     arm("P-LASTGREENPATH the full-green record's path has no `..` step (it does not "
         "resolve in a freshly cleaned worktree, where gate_logs does not exist yet)",
         ".." not in os.path.normpath(run_gates.LAST_GREEN).split(os.sep)
@@ -669,7 +688,12 @@ def main(argv):
         return 0
     # ⚠️ LIST LITERALS, NOT A `cmd` VARIABLE: `preflight-check` cannot prove a
     # variable argv is not an openMSX launch, and caught this file's first cut.
-    if mode == "STATIC":
+    if mode == "STATIC" and not spec_live_inputs(changed):
+        print("  spec-live left out: no spec page, rules module, probe, run file or spec tool changed "
+              "(D-STATICSLOW (3))")
+        rc = subprocess.run(["python3", "tools/run_gates.py", "--static", "--exclude", "spec-live"],
+                            cwd=ROOT).returncode
+    elif mode == "STATIC":
         rc = subprocess.run(["python3", "tools/run_gates.py", "--static"],
                             cwd=ROOT).returncode
     elif mode == "FULL":

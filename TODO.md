@@ -16783,6 +16783,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       one worker (88 groups of 100). 379 serial s -> 91 s (scratchpad/AE_unit_times.out, AE_unit_par.out); a planted
       failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this; ee1ef5fd's 335 s.
       Left after that: spec-live ~42 s and kwsweep ~37 s in a docs-only plan, tiers-md-check ~27 s.
+      ✅ (2) DONE 2026-11-22: tools/gate_wt.py's `git clean -fdx` now keeps build/sweeps-rom.txt and the three sweep
+      pins (`-e`): wiped, run_gates read "no recorded ROM" and re-ran kwsweep in EVERY gate (162 s in 77d3567a's
+      gate); D-PINSTALE still re-measures when the built ROM is another.
+      ✅ (3) DONE 2026-11-22: a STATIC plan leaves spec-live out unless a spec page (docs/bios, bdos, disk), probes/bios,
+      a scratchpad run file or tools/spec_* changed (tools/pick_gates.py spec_live_inputs, arms P-SPECLIVE). A ROM
+      change is never STATIC, so the pages still run live on every ROM commit.
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
