@@ -827,7 +827,7 @@ rp_break:
                 push    hl
                 call    KILBUF
                 pop     hl
-                set     7,(hl)              ; the entry's PENDING
+                set     2,(hl)              ; the entry's PENDING (ZTS_PENDING)
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact

@@ -1681,8 +1681,8 @@ strig-trap-acceptance: $(DISK_ROM) repack-machine
 # VG-8020 differential for `ON KEY GOSUB` / `KEY(n) ON|OFF|STOP`. Function keys are
 # pressed straight through the matrix (row 6 bits 5/6/7 = F1..F3, row 7 bits 0/1 =
 # F4/F5, + row 6 bit 0 SHIFT for F6..F10). Needs the repack machine because the
-# event source is a C-BIOS hook (H_ZKEY, cbios-repack/key-trap-hook.patch), so an
-# unrepacked ROM cannot fire it at all. Scope with `make key-trap-acceptance ONLY=A_`.
+# event source is the repacked C-BIOS's keyboard scan (FNKFLG / TRPTBL / ONGSBF,
+# cbios-repack/key-trap-bios.patch, D-KEYTRAPREF), which stock C-BIOS lacks. Scope with `make key-trap-acceptance ONLY=A_`.
 # `make key-trap-acceptance CALIBRATE=1` re-measures the two machines' loop rates,
 # which is what the iteration-count observation windows are sized from -- the spec
 # requires calibrating them rather than assuming (§1.0).

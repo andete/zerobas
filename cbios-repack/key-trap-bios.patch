@@ -1,0 +1,53 @@
+diff --git a/src/main.asm b/src/main.asm
+index a68f355..3685148 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -3050,6 +3050,48 @@ put_key_fnk:
+                 push   hl
+                 push   bc
+                 push   de
++                ; zerobas repack (D-KEYTRAPREF, 2026-11-22): the function-key TRAP, as
++                ; the reference's keyboard scan does it, on the published cells only.
++                ; Measured on the VG-8020 (zerobas scratchpad/keytrapref_vg*.out):
++                ; with FNKFLG(n) non-zero and a program running (CURLIN != $FFFF),
++                ; the key is NOT typed; if its TRPTBL entry is ON (bit 0) the event
++                ; is recorded (bit 2), and if the entry is not also STOPped (bit 1:
++                ; its handler is running) ONGSBF := 1. With FNKFLG(n) 0, or at the
++                ; prompt, the key is typed as before. BASIC's KEY(n) ON sets FNKFLG(n)
++                ; to 1, OFF / STOP set 0. F6-F10 are SHIFT + F1-F5.
++                ld     e,a
++                ld     a,(NEWKEY+6)
++                rrca                    ; CF = SHIFT up (the matrix is active low)
++                ld     a,e
++                jr     c,put_key_fnk_n
++                add    a,5              ; SHIFT: F6-F10
++put_key_fnk_n:
++                ld     e,a
++                ld     d,0
++                ld     hl,FNKFLG
++                add    hl,de
++                ld     a,(hl)
++                and    a
++                jr     z,put_key_fnk_type
++                ld     hl,(CURLIN)
++                inc    hl
++                ld     a,h
++                or     l
++                jr     z,put_key_fnk_type
++                ld     hl,TRPTBL
++                add    hl,de
++                add    hl,de
++                add    hl,de
++                bit    0,(hl)
++                jr     z,put_key_fnk_nul ; trapped but not ON: only swallowed
++                set    2,(hl)           ; the event happened
++                bit    1,(hl)
++                jr     nz,put_key_fnk_nul ; its handler runs: held until RETURN
++                ld     a,1
++                ld     (ONGSBF),a
++                jr     put_key_fnk_nul
++put_key_fnk_type:
++                ld     a,e
+                 rlca
+                 rlca
+                 rlca

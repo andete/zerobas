@@ -62,7 +62,7 @@ LOWREGION = 0x2781
 # The ISR-side pins. htimi_guard is the frame-skip decision itself; a trap hook
 # that must NOT skip a frame (zkey_isr -- a missed frame leaks an undiverted
 # keystroke, docs/spec-traps-t3-key.md §5) is pinned with its whole closure.
-DEFAULT_ISR_SEEDS = ("htimi_guard", "zkey_isr", "zkey_hook")
+DEFAULT_ISR_SEEDS = ("htimi_guard", "zkey_isr")   # zkey_hook went with H_ZKEY (D-KEYTRAPREF)
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
 
 

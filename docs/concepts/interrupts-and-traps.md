@@ -95,6 +95,37 @@ nothing, F3 300. `INTERVAL` is not a keyword on MSX1 — it is typed as `INT`,
   again as soon as it returns, and the main program never gets another turn —
   on both machines.
 
+### The function-key trap in the BIOS
+
+On the reference the keyboard scan itself decides whether a function key is
+typed, by three published work-area cells. Measured on the VG-8020 by reading
+them while keys were pressed on the keyboard matrix
+([`keytrapref_vg2.out`](../../scratchpad/keytrapref_vg2.out),
+[`keytrapref_vg3.out`](../../scratchpad/keytrapref_vg3.out),
+[`keytrapref_vg4.out`](../../scratchpad/keytrapref_vg4.out),
+[`keytrapref_vg5.out`](../../scratchpad/keytrapref_vg5.out)):
+
+- **`FNKFLG`** (`&HFBCE`, one byte per key, F1–F10): `KEY(n) ON` sets it to 1,
+  `KEY(n) OFF` and `KEY(n) STOP` to 0.
+- **`TRPTBL`** (`&HFC4C`, three bytes per trap: a status byte and the
+  handler's line). `KEY` 1–10 are entries 0–9. Status 1 is on, 2 stopped, 3 on
+  while its handler runs; bit 2 means "the event happened".
+- **`ONGSBF`** (`&HFBD8`): set to 1 when a trap is waiting to be served.
+
+When function key n is pressed while `FNKFLG(n)` is not 0 and a program is
+running (`CURLIN` is not `&HFFFF`), its text is not typed. If the key's entry
+is on, the scan sets bit 2; if its handler is not running as well, it also
+sets `ONGSBF`. A press during the handler is thus remembered without waking
+BASIC, and BASIC serves it after the handler's `RETURN`. With `FNKFLG(n)` 0, or
+at the `Ok` prompt, the key is typed as usual, even when `KEY(n) ON` was
+used and the cell cleared afterwards by `POKE`. A program can also set
+`FNKFLG(n)` with `POKE`: the key is then swallowed while the program runs,
+with nothing recorded.
+
+zerobas does the same: the scan is C-BIOS's, patched with exactly this rule,
+and BASIC writes `FNKFLG` and keeps its trap table in the reference's `TRPTBL`
+order ([`keytrapref_zb3.out`](../../scratchpad/keytrapref_zb3.out)).
+
 ### When traps are checked
 
 Traps fire **between statements**, never in the middle of one. zerobas checks
@@ -186,6 +217,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **The function-key trap lives in the BIOS's keyboard scan** (changed
+  2026-11-22, D-KEYTRAPREF). zerobas used to catch a trapped key through a
+  hook it added to C-BIOS at `&HFFCF`; C-BIOS declined that hook, since that
+  address is the MIDI hook on machines with MSX-MIDI. Reading `FNKFLG`,
+  `TRPTBL` and `ONGSBF` on the VG-8020 while keys were pressed showed the
+  reference's own rule (above). Two cases separated it from zerobas's old
+  one: a `FNKFLG` set by `POKE` with no `KEY ON` swallows the key on the
+  VG-8020, where zerobas typed it; and `KEY(1) ON` followed by clearing
+  `FNKFLG` types the key, where zerobas swallowed it. Now the scan follows the
+  cells, and zerobas's trap table uses the reference's entry order. With
+  `KEY` 1 at entry 0, BASIC searches the table from the end, which keeps the
+  measured "highest key first"; the order between different traps that fire
+  in the same frame (a key and a button, say) has not been measured.
 - **Traps were served at the end of a line, not between its statements**
   (fixed 2026-11-05, D-TRAPSTMT and D-TRAPLATCHWHEN). With a timer firing every
   frame and markers between a line's statements, the VG-8020's handler ran at
@@ -271,18 +315,22 @@ is mapped in, it runs `htimi_service` in [basic/traps.asm](../../basic/traps.asm
 `event_poll` (the Ctrl-STOP hold count, the `INTERVAL` counter, the `STRIG`
 buttons through the BIOS `GTTRIG`), then `play_service`, which plays one frame
 of music. When a sub-ROM routine holds that part of memory, both are skipped
-for the frame; the sprite sample is not. The `KEY` trap needs to see a key
-*before* it is typed, which no documented hook allows, so the repacked C-BIOS
-calls `zkey_hook` in [basic/keytrap.asm](../../basic/keytrap.asm) from inside
-its keyboard scan
-([cbios-repack/key-trap-hook.patch](../../cbios-repack/key-trap-hook.patch)).
+for the frame; the sprite sample is not. The `KEY` trap's event comes from
+the keyboard scan itself, as on the reference: the repacked C-BIOS checks
+`FNKFLG`, `CURLIN` and the key's `TRPTBL` entry before typing a function key
+([cbios-repack/key-trap-bios.patch](../../cbios-repack/key-trap-bios.patch);
+until 2026-11-22 it called a zerobas routine through a RAM hook at `&HFFCF`
+instead).
 Ctrl-STOP is read with the BIOS `BREAKX` by the run loop (`rp_exec` and
 `rp_break` in [basic/program.asm](../../basic/program.asm)).
 
-The trap table is zerobas's own design, not the reference's layout: `ZTRAP`
-in [basic/sysvars.inc](../../basic/sysvars.inc), 18 entries of a state byte
-(off, on, stopped, in service; an event-waiting bit; an edge bit for buttons
-and Ctrl-STOP) and the handler's line. The interrupt side only sets bits and a `TRAPPEND` flag. The
+The trap table is the reference's `TRPTBL` order: `ZTRAP`
+in [basic/sysvars.inc](../../basic/sysvars.inc), 18 entries (`KEY` 1–10, `STOP`,
+`SPRITE`, `STRIG` 0–4, `INTERVAL`) of a status byte (off, on, stopped, in
+service; bit 2 the event; bit 6 zerobas's own edge bit for buttons and
+Ctrl-STOP) and the handler's line. zerobas keeps its `INTERVAL` counters and
+bookkeeping in the unused rest of `TRPTBL`, where the reference has zeros.
+The interrupt side only sets bits and the `TRAPPEND` flag, which is `ONGSBF`. The
 run loop reads that flag at `rp_trapchk`, and `check_traps` in
 [basic/traps.asm](../../basic/traps.asm) pushes an ordinary `GOSUB` frame plus
 a small service record, marks the trap in service and jumps to the handler.

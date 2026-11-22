@@ -339,10 +339,10 @@ ep_stop_held:
                 jr      nz,ep_ivl_done      ; period not elapsed yet
                 ld      hl,(ZINTVAL)        ; reload AT THE FIRE (not at RETURN)
                 ld      (ZINTCNT),hl
-                ld      hl,ZTRAP            ; ZTRAP+0 = the INTERVAL state byte
+                ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ  ; the INTERVAL state byte
                 bit     6,(hl)              ; D-TRAPNEVERON: running (ON since the last
                 jr      z,ep_ivl_done       ; OFF)? Not -> elapse silently, do not latch
-                set     7,(hl)              ; PENDING
+                set     2,(hl)              ; PENDING (ZTS_PENDING)
                 call    trap_pend   ; wake the run-loop dispatcher
 ep_ivl_done:
     ENDIF
@@ -384,7 +384,7 @@ ep_strig_down:
                 bit     6,(hl)
                 jr      nz,ep_strig_next    ; still held since last frame -> no edge
                 set     6,(hl)              ; 0->1 edge: latch the level...
-                set     7,(hl)              ; ...and the entry's PENDING
+                set     2,(hl)              ; ...and the entry's PENDING (ZTS_PENDING)
                 call    trap_pend   ; wake the run-loop dispatcher
 ep_strig_next:
                 inc     hl
@@ -409,13 +409,24 @@ ep_out:
 ; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($FC4C..$FC88, in TRPTBL since D-WSZERO) in one fill. The edge
 ; shadow needs no byte of its own -- it is bit 6 of each entry (T2 STRIG, T3 KEY and
 ; now T1 STOP), so this same fill clears it. Clobbers A, BC, DE, HL.
+; D-KEYTRAPREF (2026-11-22): TRAPPEND is ONGSBF ($FBD8) now, just past FNKFLG ($FBCE, 10 B), so a
+; second fill clears both -- every KEY(n) is OFF after RUN, so FNKFLG must not divert a key.
 trap_init:
+                ld      hl,FNKFLG
+                ld      bc,TRAPPEND-FNKFLG  ; FNKFLG..ONGSBF (= TRAPPEND), 11 B
+                call    ti_fill
                 ld      hl,ZTRAP
+                ld      bc,TRAPSVC+1-ZTRAP  ; ZTRAP..$FC88, as before the move
+ti_fill:
                 ld      (hl),0
-                ld      de,ZTRAP+1
-                ld      bc,TRAPPEND-ZTRAP   ; bytes after the first = fill through TRAPPEND
+                ld      d,h
+                ld      e,l
+                inc     de
                 ldir
                 ret
+    IF TRAPPEND != FNKFLG+10
+                db      TRAP_INIT_ASSUMES_ONGSBF_RIGHT_AFTER_FNKFLG
+    ENDIF
 
 ; ===========================================================================
 ; THE DISPATCH HALF (slice T1 = STOP; docs/spec-traps-t1-stop-reslice.md).
@@ -504,12 +515,14 @@ ss_off:
 ;   OUT: CF=1 -> HL = &entry state byte, C = index, DE = handler link (all set);
 ;        CF=0 -> none firable.  Firable == state==ON && PENDING && handler!=0.
 ;   Clobbers A, B, C, DE, HL.
+; D-KEYTRAPREF: DESCENDING over the reference's TRPTBL order -- KEY 3 -> 2 -> 1 in one frame,
+; as measured (spec-traps-t3-key.md §1.3 V2); the other families' relative order is unmeasured.
 ct_find:
-                ld      hl,ZTRAP
-                ld      bc,ZTRAP_NENT*256   ; D-PEEPHOLE: b=count, c=0 in one
+                ld      hl,ZTRAP+(ZTRAP_NENT-1)*ZTRAP_ENTSZ
+                ld      bc,ZTRAP_NENT*256+ZTRAP_NENT-1  ; b = count, c = the last index
 ctf_lp:
                 ld      a,(hl)
-                bit     7,a                 ; PENDING?
+                bit     2,a                 ; PENDING (ZTS_PENDING)?
                 jr      z,ctf_next
                 and     ZTS_STATE_MASK
                 cp      ZTS_ON              ; state exactly ON?
@@ -525,10 +538,10 @@ ctf_lp:
                 scf
                 ret     nz                  ; handler != 0 -> found
 ctf_next:
-                inc     hl
-                inc     hl
-                inc     hl                  ; next entry (3 B)
-                inc     c
+                dec     hl
+                dec     hl
+                dec     hl                  ; the entry before (3 B)
+                dec     c
                 djnz    ctf_lp
                 or      a                   ; CF = 0, none firable
                 ret
@@ -645,16 +658,16 @@ trap_return_check:
                 and     ZTS_STATE_MASK
                 ret     nz                  ; handler changed the state -> leave it
                 res     1,(hl)              ; SERVICING (3) -> ON (1); PENDING kept
-    IF ZTS_SERVICING != 3 || ZTS_ON != 1 || ZTS_PENDING != $80
-                db      TRAP_RETURN_CHECK_NEEDS_SERVICING_3_ON_1_PENDING_BIT7
+    IF ZTS_SERVICING != 3 || ZTS_ON != 1
+                db      TRAP_RETURN_CHECK_NEEDS_SERVICING_3_ON_1
     ENDIF
-                ld      a,(hl)              ; bit 7 = PENDING, read BEFORE HL moves (the
+                ld      a,(hl)              ; PENDING, read BEFORE HL moves (the
                                             ; D-PEEPHOLE hazard: the old `inc (hl)` would
                                             ; have hit the wrong byte)
                 ld      hl,TRAPENA
-                inc     (hl)                ; one more trap ON (inc keeps CF)
-                rla                         ; CF = PENDING: re-latched in the handler?
-                ret     nc
+                inc     (hl)                ; one more trap ON
+                and     ZTS_PENDING         ; re-latched in the handler? (bit 2 since
+                ret     z                   ; D-KEYTRAPREF; an `rla` read bit 7 before)
                 jp      trap_pend           ; yes -> fire again at the next boundary
                 ; 🟢 NO GRACE AFTER RETURN, AS ON THE VG-8020 (D-TRAPSTMT, 2026-11-05):
                 ; a handler that outlasts a frame under ON INTERVAL=1 livelocks both

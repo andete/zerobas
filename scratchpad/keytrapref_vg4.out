@@ -1,0 +1,8 @@
+on_after      Philips_VG_8 raw[] FNKFLG=01000000000000000000 ONGSBF=00 INTFLG=00 CURLIN=5a00 D0=ff010001 pending=b'' TRPTBL[0:01/8071]
+      write 45.513 FC4C 5 30
+      write 45.513 FBD8 1 30
+      write 45.514 FC4C 1 30
+      write 45.514 FBD8 0 30
+      write 45.514 FC4C 3 30
+      write 45.516 FC4C 1 100
+fnkflg_run    Philips_VG_8 raw[X] FNKFLG=01000000000000000000 ONGSBF=00 INTFLG=00 CURLIN=5a00 D0=ffff0001 pending=b'' TRPTBL[-]

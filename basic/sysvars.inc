@@ -1448,28 +1448,24 @@ ZTRAP           equ     $FC4C   ; 18 entries * 3 B = 54 B ($FC4C..$FC81; was $ED
                                 ; entry = [state:1][handler_line_link:2].
                                 ; state bits: 1-0 = 00 OFF / 01 ON / 10 STOP(user)
                                 ; / 11 SERVICING(auto-suspend in handler);
-                                ; bit 7 = PENDING (event latched, awaiting dispatch).
+                                ; bit 2 = PENDING (event latched, awaiting dispatch).
                                 ; handler_line_link = the find_line_bc/GOTOTGT-shaped
-                                ; LINK address (0 = no handler armed). Entry order:
-                                ;   0      INTERVAL   1      STOP       2      SPRITE
-                                ;   3..7   STRIG 0..4  8..17  KEY 1..10
+                                ; LINK address (0 = no handler armed). Entry order AS THE
+                                ; REFERENCE'S TRPTBL (D-KEYTRAPREF 2026-11-22, measured:
+                                ; KEY(1)..(5) at entries 0..4, status ON 1 / STOP 2 /
+                                ; handler running 3, the event bit 2 -- the BIOS scan sets
+                                ; it, cbios-repack/key-trap-bios.patch):
+                                ;   0..9   KEY 1..10   10     STOP       11     SPRITE
+                                ;   12..16 STRIG 0..4  17     INTERVAL
 ZTRAP_ENTSZ     equ     3       ; bytes per entry
-ZTI_INTERVAL    equ     0       ; entry index: INTERVAL
-ZTI_STOP        equ     1       ; entry index: STOP
-ZTI_SPRITE      equ     2       ; entry index: SPRITE
-ZTI_STRIG0      equ     3       ; entry index: STRIG 0 (STRIG n -> 3+n, n=0..4)
-ZTI_KEY1        equ     8       ; entry index: the KEY band's BASE. 🔴 NOT "KEY n
-                                ; -> 7+n": the band is laid out REVERSED, KEY 10
-                                ; at ZTI_KEY1 and KEY 1 at ZTI_KEY1+9, which is
-                                ; what basic/keytrap.asm:121 and
-                                ; basic/program.asm:2924 both say and what the
-                                ; three `ld a,ZTI_KEY1+9` sites implement.
-                                ; ~~KEY n -> 7+n, n=1..10~~ was false here while
-                                ; two other files carried the right rule
-                                ; (D-TRAPSTATE 2026-09-06, found by a probe that
-                                ; flagged `KEY(1) ON` arming entry 17 as
-                                ; unexpected -- the entry was right and the
-                                ; comment that set the expectation was wrong).
+ZTI_KEY1        equ     0       ; entry index: KEY n -> n-1, n=1..10 (the reference's order;
+                                ; ct_find scans DESCENDING, so KEY 3 -> 2 -> 1 in one frame
+                                ; as measured, spec-traps-t3-key.md §1.3 V2 -- the band was
+                                ; laid out reversed for an ascending scan before D-KEYTRAPREF)
+ZTI_STOP        equ     10      ; entry index: STOP
+ZTI_SPRITE      equ     11      ; entry index: SPRITE
+ZTI_STRIG0      equ     12      ; entry index: STRIG 0 (STRIG n -> 12+n, n=0..4)
+ZTI_INTERVAL    equ     17      ; entry index: INTERVAL
 ZTRAP_NENT      equ     18      ; total entries
 ; trap state field bit values
 ZTS_OFF         equ     0       ; disabled (OFF clears PENDING too)
@@ -1477,7 +1473,8 @@ ZTS_ON          equ     1       ; enabled — the only state the dispatcher fire
 ZTS_STOP        equ     2       ; user-suspended (event latches, does not fire)
 ZTS_SERVICING   equ     3       ; auto-suspended while its handler runs
 ZTS_STATE_MASK  equ     3       ; bits 1-0 = tri/quad-state
-ZTS_PENDING     equ     $80     ; bit 7 = an event occurred, awaiting dispatch
+ZTS_PENDING     equ     $04     ; bit 2 = an event occurred, awaiting dispatch (the reference's
+                                ; TRPTBL bit, written by the BIOS scan for KEY: D-KEYTRAPREF)
 ZTS_SHADOW      equ     $40     ; bit 6 = the DEVICE EDGE SHADOW (traps T2,
                                 ; spec-traps-t2-strig.md §3): "this entry's device read
                                 ; PRESSED at the last sample". event_poll fires only on a
@@ -1498,12 +1495,16 @@ TRAPENA         equ     $FC86   ; 1 B: count of traps currently in state ON. Gat
                                 ; H.TIMI event_poll (fast-out when 0 — the common no-trap
                                 ; program's cost). Bumped by set_state on OFF/STOP->ON,
                                 ; dropped on ON->anything (incl. the auto ON->SERVICING).
-TRAPPEND        equ     $FC88   ; 1 B (was just past the retired TRAPSTK): 1 =
+TRAPPEND        equ     $FBD8   ; 1 B = ONGSBF, the published "a trap is pending" cell, which the
+                                ; BIOS scan sets for a KEY event (D-KEYTRAPREF; $FC88 before): 1 =
                                 ; event_poll has latched a PENDING on some ON
                                 ; trap since the last dispatch. Gates the run-loop
                                 ; check_traps subrom_call — set (resident) by event_poll,
                                 ; cleared by the dispatch tenant once it drains the
                                 ; pending set. Keeps the per-statement cost a RAM load.
+FNKFLG          equ     $FBCE   ; 10 B, published: FNKFLG(n) = 1 while KEY(n) is ON, else 0 (OFF and
+                                ; STOP). The BIOS scan diverts F-key n while it is non-zero and a
+                                ; program runs (D-KEYTRAPREF, measured; cleared with ONGSBF at RUN).
 TRAPSVC         equ     $FC87   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
@@ -3969,7 +3970,6 @@ H_ERRO          equ     $FFB1   ; PUBLISHED error hook (D-HERRO, 2026-10-27): ca
 ; `ret` with CF undisturbed -- an unpatched or non-BASIC boot is unaffected. The
 ; span is C-BIOS-managed scratch with no standard hook meaning and nothing else in
 ; zerobas claims it (checked against the whole RAM map).
-H_ZKEY          equ     $FFCF   ; fn-key delivery hook, 5-byte JP vector (zkey_install)
 ; NEWKEY ($FBE5): the published MSX key-matrix work area, 11 rows, ACTIVE LOW
 ; (0 = pressed; C-BIOS seeds it $FF at boot). zkey_hook reads row 6 bit 0 = SHIFT
 ; to fold F1-F5 into F6-F10 -- C-BIOS does not fold it itself (D-T3-7, measured).

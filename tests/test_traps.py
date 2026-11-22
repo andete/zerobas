@@ -34,10 +34,10 @@ RELOC_BASE = 0x2781
 
 # trap state-byte encoding (basic/sysvars.inc)
 ZTS_OFF, ZTS_ON, ZTS_STOP, ZTS_SERVICING = 0, 1, 2, 3
-ZTS_PENDING = 0x80
+ZTS_PENDING = 0x04        # bit 2, the reference's TRPTBL event bit (D-KEYTRAPREF; bit 7 before)
 ZTS_SHADOW = 0x40         # traps T2: the per-entry device edge shadow
-ZTI_STOP = 1
-ZTI_STRIG0 = 3            # STRIG n -> entry 3 + n
+ZTI_STOP = 10             # the reference's TRPTBL order (D-KEYTRAPREF): KEY 0-9, STOP 10,
+ZTI_STRIG0 = 12           # SPRITE 11, STRIG n -> entry 12 + n, INTERVAL 17
 ENTSZ = 3
 
 
@@ -60,7 +60,9 @@ def stop_entry(m):
 def reset_traps(m):
     """Clear the whole ZTRAP window + bookkeeping (mirror trap_init)."""
     z = m.addr("ZTRAP")
-    for a in range(z, m.addr("TRAPPEND") + 1):
+    for a in range(z, m.addr("TRAPSVC") + 2):           # ZTRAP..$FC88, as trap_init
+        m.poke(a, b"\x00")
+    for a in range(m.addr("FNKFLG"), m.addr("TRAPPEND") + 1):   # FNKFLG..ONGSBF (= TRAPPEND)
         m.poke(a, b"\x00")
 
 
@@ -84,7 +86,7 @@ def t_set_state(fails):
     m.poke(TRAPENA, b"\x00")
     m.call("set_state", hl=e, a=ZTS_ON)
     fails = check(fails, "set_state OFF->ON state", m.peek(e)[0] & 3, ZTS_ON)
-    fails = check(fails, "set_state OFF->ON keeps PENDING", m.peek(e)[0] & 0x80, 0x80)
+    fails = check(fails, "set_state OFF->ON keeps PENDING", m.peek(e)[0] & ZTS_PENDING, ZTS_PENDING)
     fails = check(fails, "set_state OFF->ON TRAPENA", m.peek(TRAPENA)[0], 1)
 
     # ON -> STOP: TRAPENA -1, PENDING preserved (suspend remembers)
@@ -92,7 +94,7 @@ def t_set_state(fails):
     m.poke(TRAPENA, b"\x01")
     m.call("set_state", hl=e, a=ZTS_STOP)
     fails = check(fails, "set_state ON->STOP state", m.peek(e)[0] & 3, ZTS_STOP)
-    fails = check(fails, "set_state ON->STOP keeps PENDING", m.peek(e)[0] & 0x80, 0x80)
+    fails = check(fails, "set_state ON->STOP keeps PENDING", m.peek(e)[0] & ZTS_PENDING, ZTS_PENDING)
     fails = check(fails, "set_state ON->STOP TRAPENA", m.peek(TRAPENA)[0], 0)
 
     # ON -> OFF: TRAPENA -1, PENDING CLEARED (disabled forgets)
@@ -100,7 +102,7 @@ def t_set_state(fails):
     m.poke(TRAPENA, b"\x01")
     m.call("set_state", hl=e, a=ZTS_OFF)
     fails = check(fails, "set_state ON->OFF state", m.peek(e)[0] & 3, ZTS_OFF)
-    fails = check(fails, "set_state ON->OFF clears PENDING", m.peek(e)[0] & 0x80, 0)
+    fails = check(fails, "set_state ON->OFF clears PENDING", m.peek(e)[0] & ZTS_PENDING, 0)
     fails = check(fails, "set_state ON->OFF TRAPENA", m.peek(TRAPENA)[0], 0)
 
     # STOP -> ON: TRAPENA +1 (a re-enable of a suspended trap)
@@ -171,7 +173,7 @@ def t_check_traps_fire(fails):
     r = m.call("check_traps", hl=STMT)
     fails = check(fails, "check_traps fired (CF=1)", carry(r), True)
     fails = check(fails, "STOP now SERVICING", m.peek(e)[0] & 3, ZTS_SERVICING)
-    fails = check(fails, "STOP PENDING cleared", m.peek(e)[0] & 0x80, 0)
+    fails = check(fails, "STOP PENDING cleared", m.peek(e)[0] & ZTS_PENDING, 0)
     fails = check(fails, "TRAPENA dropped to 0", m.peek(m.addr("TRAPENA"))[0], 0)
     fails = check(fails, "TRAPSVC bumped to 1", m.peek(m.addr("TRAPSVC"))[0], 1)
     fails = check(fails, "CURLINE = handler", m.peek(m.addr("CURLINE"), 2), bytes([HANDLER & 0xFF, HANDLER >> 8]))
@@ -312,7 +314,7 @@ def t_strig_shadow(fails):
     r = m.call("check_traps", hl=0x9C40)
     fails = check(fails, "STRIG fire: CF=1", carry(r), True)
     fails = check(fails, "STRIG fire: state SERVICING", m.peek(e0)[0] & 3, ZTS_SERVICING)
-    fails = check(fails, "STRIG fire: PENDING cleared", m.peek(e0)[0] & 0x80, 0)
+    fails = check(fails, "STRIG fire: PENDING cleared", m.peek(e0)[0] & ZTS_PENDING, 0)
     fails = check(fails, "STRIG fire: SHADOW PRESERVED", m.peek(e0)[0] & ZTS_SHADOW,
                   ZTS_SHADOW)
 

@@ -107,7 +107,7 @@ ei_noton:       or      a                   ; OFF?
                 jr      nz,ei_keep
                 res     6,(hl)
 ei_keep:
-                bit     7,(hl)
+                bit     2,(hl)              ; PENDING (ZTS_PENDING)
                 call    nz,trap_pend_late   ; make check_traps look once more -- AFTER
                                             ; the next statement (D-TRAPLATCHWHEN)
                 jp      pop_exec
@@ -135,12 +135,13 @@ tt_eostr_lp:
 tt_eostr_store:
                 push    hl
                 ld      a,c
-                bit     3,b                 ; B = 10: ON KEY -- the REVERSED band
-                jr      z,tt_eostr_idx
-                neg
-                add     a,ZTI_KEY1+9-ZTI_STRIG0 ; + ZTI_STRIG0 below = ZTI_KEY1+9-C
-tt_eostr_idx:
-                add     a,ZTI_STRIG0        ; A = the ZTRAP index
+                bit     3,b                 ; B = 10: ON KEY -- KEY n at entry n-1 = C
+                jr      nz,tt_eostr_idx     ;   (the reference's TRPTBL order, D-KEYTRAPREF)
+                add     a,ZTI_STRIG0        ; STRIG n at ZTI_STRIG0 + n
+tt_eostr_idx:                               ; A = the ZTRAP index
+    IF ZTI_KEY1 != 0
+                db      TT_EOSTR_ASSUMES_KEY1_AT_ENTRY_0
+    ENDIF
                 ld      l,a
                 add     a,a
                 add     a,l                 ; 3 * index (the assert above: no carry)
@@ -174,13 +175,30 @@ ex_key_stmt:
                 dec     a                   ; 1..10 -> slot 0..9; KEY(0) wraps to 255
                 cp      10
                 jp      nc,gb_illegal       ; KEY(0) and KEY(11..255) -> ERR 5
-                ld      c,a
-                ld      a,ZTI_KEY1+9
-                sub     c                   ; the REVERSED band
+                push    af                  ; [slot] -- A is also the entry index (ZTI_KEY1 = 0)
                 call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
+                pop     bc                  ; B = the slot
                 push    de                  ; the exec-continue cursor
-                call    set_state           ; main's trap_state_done: set_state, then
+                ld      e,b                 ; E = the slot: set_state clobbers B, keeps DE
+                call    set_state           ; C = the new state; HL, DE kept
+                ; D-KEYTRAPREF (2026-11-22): FNKFLG(n) := 1 for ON, 0 for OFF and STOP, as the
+                ; VG-8020 (scratchpad/keytrapref_vg2.out `static`). The BIOS scan diverts the
+                ; key on this cell alone (cbios-repack/key-trap-bios.patch), so a key pressed
+                ; under STOP is typed as an ordinary key, as on the reference.
+                ld      hl,FNKFLG
+                ld      a,l
+                add     a,e
+                ld      l,a                 ; FNKFLG..FNKFLG+9 on one page (guard below)
+                ld      (hl),0
+                ld      a,c
+                cp      ZTS_ON
+                jr      nz,eks_flag
+                inc     (hl)
+eks_flag:
                 jp      pop_exec            ; (tt_px went up with ex_strig_stmt)
+    IF (high FNKFLG) != (high (FNKFLG+9))
+                db      EX_KEY_STMT_ASSUMES_FNKFLG_ON_ONE_PAGE
+    ENDIF
 
 ; tt_entry_paren -- STRIG(n) / KEY(n)'s shared middle: A = the ZTRAP index ->
 ; `)` required, then ON | OFF | STOP. Out: HL = the entry pointer, DE = the cursor

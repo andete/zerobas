@@ -664,6 +664,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FBB1` | 1 B | `basic` | `BASROM` | != 0: a protected ROM BASIC, not breakable (1) |  |
 | `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
 | `$FBCD` | 1 B | `basic` | `FNKSWI` | function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1) |  |
+| `$FBCE` | 10 B | `basic` | `FNKFLG` | 10 B, published: FNKFLG(n) = 1 while KEY(n) is ON, else 0 (OFF and |  |
+| `$FBD8` | 1 B | `basic` | `TRAPPEND` | 1 B = ONGSBF, the published "a trap is pending" cell, which the |  |
 | `$FBDA` | 11 B | `basic` | `OLDKEY` | the key matrix as of the last scan, 11 B, active low (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
 | `$FC17` | 1 B | `basic` | `DISKOP_A` | tenant -> main: the primitive's real A output (LIMPNT, idle) (was $EE3A), |  |
@@ -675,7 +677,6 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC84` | 2 B | `basic` | `ZINTCNT` | 2 B: INTERVAL live down-counter (frames to next fire) |  |
 | `$FC86` | 1 B | `basic` | `TRAPENA` | 1 B: count of traps currently in state ON. Gates the |  |
 | `$FC87` | 1 B | `basic` | `TRAPSVC` | 1 B: count of live SERVICING entries == depth of the |  |
-| `$FC88` | 1 B | `basic` | `TRAPPEND` | 1 B (was just past the retired TRAPSTK): 1 = |  |
 | `$FC89` | 1 B | `basic` | `STOPHOLD` | (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
 | `$FC8A` | 2 B | `basic` | `GFX_DPTR` | $FC8A: parse cursor in the current frame (2) |  |
 | `$FC8C` | 2 B | `basic` | `GFX_DEND` | $FC8C: one past the current frame's last byte (2) |  |
@@ -778,6 +779,5 @@ extents the standard already fixes would be noise, not rigour.
 | `$FFAC` |  | `basic` | `H_FORM` | CALL FORMAT handler (D-FMTHOOK) |  |
 | `$FFAC` |  | `disk` | `H_FORM` | CALL FORMAT (D-FMTHOOK): H.FORM, MSX2 TH hook table; |  |
 | `$FFB1` |  | `basic` | `H_ERRO` | PUBLISHED error hook (D-HERRO, 2026-10-27): called on EVERY |  |
-| `$FFCF` | 5 B | `basic` | `H_ZKEY` | fn-key delivery hook, 5-byte JP vector (zkey_install) |  |
 | `$FFF9` |  | `basic` | `LINENO_CEIL` |  |  |
 

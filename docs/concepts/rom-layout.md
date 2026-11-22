@@ -162,9 +162,11 @@ VG-8020. Some of the cells zerobas's disk ROM claims:
 Every row is among the 35 cells the CF-3300's disk ROM claims, all pointing
 into its page 1; the verb rows were also checked by writing a `RET` into the
 cell there and watching the keyword answer `Illegal function call`. The main
-ROM claims two hooks itself: `H.TIMI` (`&HFD9F`, the frame interrupt), which
-drives `PLAY` and the `ON … GOSUB` traps, and `H_ZKEY` (`&HFFCF`), which is
-not a standard hook (see *Differences*).
+ROM claims one hook itself: `H.TIMI` (`&HFD9F`, the frame interrupt), which
+drives `PLAY` and the `ON … GOSUB` traps. (Until 2026-11-22 it also used
+`&HFFCF`, a hook zerobas had added to C-BIOS for the `KEY` trap; the keyboard
+scan now does that job itself, as on the reference --
+[interrupts-and-traps.md](interrupts-and-traps.md).)
 
 ### The sub-ROM and its tenants
 
@@ -227,10 +229,6 @@ never for the code it points at. The allowed sources are listed in the
   reading `EXBRSA` (`&HFAF8`) until 2026-10-11: both references leave it 0 and
   zerobas wrote its sub-ROM's slot, 139. It no longer writes it
   ([`subsig_probe.out`](../../scratchpad/subsig_probe.out)).
-- **`H_ZKEY` (`&HFFCF`) is a hook zerobas added to C-BIOS.** The `KEY` trap
-  must see a function key as the keyboard scan stores it; `H.KEYI` and
-  `H.TIMI` both run before that scan, on C-BIOS and on the VG-8020 (D-T3-3),
-  and a sweep of the hook cells found no later one. Unclaimed, it is a `RET`.
 - **`RST 8` (SYNCHR) is C-BIOS's stub**, which prints `SYNCHR` and returns.
   It matters to machine code and extension ROMs that use it; filed as
   D-SYNCHR, TIER 6, not yet measured on either reference.

@@ -39,11 +39,13 @@ PATCHES = [
     # vdp-reg7, calpat-de, bios-regs, bios-keyscan, key-repeat. ctrlstop-key and
     # crtcnt-bound were re-made against 0.30's rewritten key_ascii / ESC L / ESC M.
     os.path.join(REPO, "cbios-repack", "eu-drop-statements.patch"),
-    # interrupt-traps T3: the function-key DELIVERY hook (H_ZKEY $FFCF + a
-    # 5-byte call at put_key_fnk). No published MSX hook can see -- let alone
-    # divert -- the current frame's KEYBUF insertion, so BASIC's KEY trap needs
-    # a seam that stock C-BIOS does not have. docs/spec-traps-t3-key.md SS4.
-    os.path.join(REPO, "cbios-repack", "key-trap-hook.patch"),
+    # D-KEYTRAPREF (2026-11-22, Joost: "do the key trap properly"): the function-key TRAP in the
+    # scan itself, as the reference does it, on the published cells only -- FNKFLG(n) non-zero and a
+    # program running -> the key is not typed; its TRPTBL entry ON -> bit 2, and not STOPped ->
+    # ONGSBF := 1; F6-F10 = SHIFT + F1-F5. Replaces key-trap-hook.patch (H_ZKEY $FFCF, a RAM vector
+    # C-BIOS declined: it is H.MDIN on MSX-MIDI machines). ~55 B before the font pad (island 1 at
+    # $1AF5 keeps its 345 B in front).
+    os.path.join(REPO, "cbios-repack", "key-trap-bios.patch"),
     # C3-CBIOS-TAIL-STRINGS: drop the two boot strings the merged machine can
     # never print (str_nocart 143 B + str_basic 30 B, both AFTER the font pin
     # and before the scan-code tables); vdp_bios ends at $2765, not $2812, and
@@ -200,7 +202,7 @@ PATCHES = [
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "bdc075a142eadcabea58efda322ad8a5b5cdb557"   # grphed-cls.patch retired (D-GRPHEDCLS2), 2026-11-22
+REPACKED_SHA1 = "bc388f787fe383f5fa8689edeed8d15c36dad712"   # key-trap-bios.patch replaces key-trap-hook.patch (D-KEYTRAPREF), 2026-11-22
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

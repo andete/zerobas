@@ -75,7 +75,7 @@
                 ; is required -- an enabled trap must not change what a program sees
                 ; through VDP(8). MEASURED: VDP(8) reads $BF while colliding whether
                 ; the trap is enabled or not, and VDP(8) IS STATFL (spec §1.6).
-                set     7,(hl)              ; the entry's PENDING
+                set     2,(hl)              ; the entry's PENDING (ZTS_PENDING, bit 2 since D-KEYTRAPREF)
                 ld      (TRAPPEND),a        ; wake the run-loop dispatcher. A is still
                                             ; the $20 the `and` left -- TRAPPEND is a
                                             ; pure "nonzero = something pending" gate

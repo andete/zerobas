@@ -40923,3 +40923,45 @@ the section headings they were written beneath.
       back to 6 B; REPACKED_SHA1 re-pinned); sub/keystr.asm ks_paint clears GRPHED (4 B: ks_paint moved beside
       keystr_tenant so its `jp z` became `jr z`, 1 B, + the 3 B free -- sub page 0 now 0 B free). The probe runs every
       row key-on and key-off: 26/26 SAME ([`CV_grphed3.out`](scratchpad/CV_grphed3.out)). docs/bios/DSPFNK.md states it.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-KEYTRAPREF — THE KEY TRAP THE REFERENCE'S WAY: THE BIOS SCAN CHECKS THE PUBLISHED CELLS (FNKFLG / TRPTBL / ONGSBF); RETIRE THE H_ZKEY HOOK**
+      🎚️ TIER 1 — Joost 2026-11-22: "do the key trap properly first, then rebase" (before D-CBIOS032).
+      🤖 **AUTONOMOUS** — C-BIOS declined key-trap-hook.patch ($FFCF is H.MDIN on MSX-MIDI machines; inbox
+      2026-11-22). Joost: "that whole key trap thing seems to be a thing which could just be fixed properly instead
+      of keeping a workaround alive". On a real MSX the scan itself diverts a trapped function key: FNKFLG ($FBCE,
+      10 B, the handbook names it as FNKSB's input only), TRPTBL ($FC4C, 26 x [status][line:2]; the 2026-10-14
+      watch saw KEY 1 at entry 0 status 1, INTERVAL at entry 17 status 1 -> 5 -> 3: bit 0 ON, bit 1 STOP, bit 2
+      occurred, provisionally -- scratchpad/trapcells_probe.out) and ONGSBF ($FBD8). zerobas keeps its own layout
+      (ZTRAP) in the same span and diverts through the hook. Steps: (1) MEASURE the VG-8020's cells per case
+      (scratchpad/keytrapref_probe.py: the static table, a press under STOP / ON / after the handler, and the BIOS
+      half -- FNKFLG poked with no KEY ON, with a program running and at the prompt); (2) the rule into
+      docs/concepts/interrupts-and-traps.md (+ executable rules); (3) zerobas: the reference TRPTBL layout for the
+      KEY entries (then STOP / SPRITE / STRIG / INTERVAL if the measurement says the BIOS sets them too), FNKFLG
+      written by KEY(n); the scan's check as a C-BIOS patch on published cells; key-trap-hook.patch, H_ZKEY and
+      zkey_install retired; (4) the BIOS half to C-BIOS through the inbox once the page proves it.
+      ✅ **DONE 2026-11-22 (steps 1-3; step 4 = the inbox note with this commit).** MEASURED on the VG-8020
+      (scratchpad/keytrapref_vg2.out .. vg5.out, matrix presses, a no-trap baseline that MUST deliver 'X'):
+      KEY(n) ON -> FNKFLG(n) 1, OFF / STOP -> 0; TRPTBL KEY n at entry n-1, status ON 1 / STOP 2 / in handler 3,
+      bit 2 = the event. The scan diverts F-key n iff FNKFLG(n) != 0 AND CURLIN != $FFFF (at the prompt it is
+      typed); entry ON -> bit 2, and not STOPped -> ONGSBF := 1 (a press in the handler sets bit 2 only; BASIC
+      re-raises at RETURN, the handler runs twice); FNKFLG poked with no KEY ON swallows the key, records nothing;
+      KEY(1) ON + FNKFLG cleared types the key. 🔮 MISSED one: predicted STOP sets FNKFLG too (it is 0).
+      BUILT: cbios-repack/key-trap-bios.patch (replaces key-trap-hook.patch; +48 B C-BIOS in put_key_fnk, incl. the
+      SHIFT fold v0.31 lacks; island 2 now from $19CC); ZTRAP in the reference's order (KEY 0-9, STOP 10, SPRITE
+      11, STRIG 12-16, INTERVAL 17), PENDING bit 7 -> bit 2 (6 sites + sprtrap-body.inc's, which the sprite gate
+      caught), TRAPPEND = ONGSBF ($FBD8), trap_init also clears FNKFLG..ONGSBF, KEY(n) writes FNKFLG, ct_find
+      scans DESCENDING (keeps the measured KEY 3 -> 2 -> 1); zkey_hook / zkey_install / H_ZKEY gone (main low
+      region +36 B: 30 -> 66). zerobas = VG-8020 on every case (scratchpad/keytrapref_zb3.out; zb2 had FNKFLG
+      on the wrong key -- set_state clobbers B -- fixed). All 9 trap gates green.
+      LEFT: zerobas's INTERVAL counters / bookkeeping sit in TRPTBL's unused tail (entries 18-25 read non-zero
+      where the reference has 0) -- own layout, no program known to read them; the order BETWEEN families firing
+      in one frame is unmeasured (descending now: INTERVAL, STRIG 4..0, SPRITE, STOP, KEY 10..1).

@@ -1,0 +1,13 @@
+on_twice      Philips_VG_8 raw[X] FNKFLG=01000000000000000000 ONGSBF=00 INTFLG=00 CURLIN=5a00 D0=ff020001 pending=b'' TRPTBL[0:01/8079]
+      write 49.520 FC4C 5 30
+      write 49.520 FBD8 1 30
+      write 49.522 FC4C 1 30
+      write 49.522 FBD8 0 30
+      write 49.522 FC4C 3 30
+      write 51.016 FC4C 7 100
+      write 53.480 FC4C 5 100
+      write 53.480 FBD8 1 100
+      write 53.480 FC4C 1 30
+      write 53.480 FBD8 0 30
+      write 53.480 FC4C 3 30
+      write 57.447 FC4C 1 100

@@ -1,5 +1,12 @@
 # spec — interrupt-traps T3: the KEY trap (`ON KEY GOSUB` + `KEY(n) ON/OFF/STOP`)
 
+> ⚠️ **The event source in this spec is SUPERSEDED (2026-11-22, D-KEYTRAPREF).** The `H_ZKEY`
+> hook (`$FFCF`, key-trap-hook.patch, `zkey_hook`) and the reversed KEY band are gone: the
+> repacked C-BIOS's keyboard scan diverts a trapped key on the published cells (FNKFLG / TRPTBL /
+> ONGSBF), as the VG-8020 does, and the table is the reference's TRPTBL order, scanned
+> descending ([concepts/interrupts-and-traps.md](concepts/interrupts-and-traps.md) "The
+> function-key trap in the BIOS"). The behaviour this spec measured still holds.
+
 Status: ✅ **LANDED AND VERIFIED 2026-07-25.** `TRAPS_T3 = 1`; the low-region half is
 funded by promotion (§7.8) on top of the BLOAD carve (§7.7); `make key-trap-acceptance`
 is **28 cases, 54/54 ALL PASS** against the VG-8020 (§8.1). The gate found one real bug
