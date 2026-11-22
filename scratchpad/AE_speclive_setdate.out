@@ -1,0 +1,36 @@
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run1.out disk: xbsys1.asm 0.3 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 36 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys1.asm
+  live XBSYS1_run2.out cf3300: xbsys1.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run1.out disk: xbsys2.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var buf is never used on line 55 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var cb is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+WARNING: Var entry is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys2.asm
+  live XBSYS2_run2.out cf3300: xbsys2.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run1.out disk: xbsys3.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 34 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var buf is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var cb is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+WARNING: Var entry is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbsys3.asm
+  live XBSYS3_run2.out cf3300: xbsys3.asm 0.2 s, zerobas CHANGED since the committed run
+FAIL docs/bdos/SYSTEM.md: 15 rules, 6 failing on zerobas (live, 6 run file(s))
+     STALE PAGE R-BS-DATE: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-BS-DATE2: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-BS-DATE3: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-BS-TIME: the page lists it as a difference, but it holds on zerobas
+===== spec-live: DISAGREEMENT =====

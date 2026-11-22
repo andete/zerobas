@@ -16900,14 +16900,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
       HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
       table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
-- [ ] **D-F37DSETDATE — SDATE AND STIME THROUGH $F37D REFUSE A VALID DATE / TIME (A $FF): BDOS_TAB HAS NO ROWS FOR THEM**
-      🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DATE / R-BS-TIME (scratchpad/XBSYS1_run1.out, run2.out): through
-      $F37D, SDATE ($2B) of 2026-11-22 and STIME ($2D) of 12:34:56 answer A 0 on the VG-8020 + NMS 1200 and the
-      CF-3300 (GDATE then reads the new date); zerobas answers A $FF and keeps 1984-01-01 -- disk/kernel.asm
-      `bdos_tab` (the $F37D dispatch) has no $2B / $2D rows, so they fall to "not in the table". sdate_body /
-      stime_body serve MSX-DOS already (k_5552, k_55E6). The fix is 2 rows (6 B) -- disk.rom reads 0 B free
-      (`make basic-reloc`): a carve first (the exact-fit pads of D-DISKCARVE6's list).
 - [ ] **D-FMAKERS — FMAKE LEAVES THE FCB'S RECORD SIZE (+14 / +15); THE REFERENCES CLEAR +14 .. +31**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-MAKE2 (scratchpad/XBFILE2_run1.out, run2.out XB2 3 / 7): over an FCB
@@ -16925,24 +16917,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- and FOPEN refuses an extent the file lacks (+12 1 on a 0-record file); zerobas writes record 0 every time and
       opens any extent. A program that positions by CR (or by extent) writes at the wrong place on zerobas: tier 6
       as filed, but read it again when a corpus program writes files.
-- [x] **D-RDBLKPART — RDBLK OF A PARTIAL LAST RECORD ANSWERS A 1; BOTH REFERENCES COUNT IT AS READ (A 0)**
-      ✅ FIXED 2026-11-22: k47b2_body (disk/kernel.asm) counts the zero-padded record as any record and goes
-      back to the count test -- A 0 when it was the last asked, A 1 when the next meets the clean end (it
-      jumped straight to the EOF exit); 9 B freed. spec_live: R-BK-RDBLK, R-BK-ROUND2 and R-BK-FOPENRS now
-      hold on zerobas (scratchpad/AE_speclive_rdblkpart.out); tests/test_rdblk_randrecord.py case (b'').
-      One body serves $F37D and MSX-DOS's $0005 (k_47B2's veneer).
-      🎚️ TIER 3 — a loader that checks A stops one record early (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-RDBLK (scratchpad/XBBLK1_run1.out, run2.out XK 8): RDBLK ($27) through
-      $F37D, record size 128, RR 1 of a 200-byte file (bytes 128 .. 199): the VG-8020 + NMS 1200 and the CF-3300 answer
-      A 0, HL 1, RR 2; zerobas answers A 1 (HL 1, RR 2 the same). A program reading whole 128-byte records and
-      testing A for the end gives up on the last, partial one. Round 2 (R-BK-ROUND2, scratchpad/XBBLK2_run1.out,
-      run2.out XK2 5 / 7) shows it twice more: RDBLK HL 1 straight after FOPEN (a 512-byte record over the 200-byte
-      file) and the partial record again -- the bytes and the zero tail are RIGHT on zerobas, only A is 1. Round 3
-      (R-BK-FOPENRS, scratchpad/XBBLK3_run1.out, run2.out XK3 5 / 10): the same after FOPEN of a 512- and a 300-byte
-      file (a 1024- / 768-byte record, +15 x 256): A 1 on zerobas, A 0 on both references. Round 4 (XK4 9) names
-      the references' rule: RDBLK 3 x 128 over a 50-byte file answers A 1, HL 1 on all three -- A is 1 when HL
-      comes back SHORT of what was asked, a partial record counting as one. Check the
-      MSX-DOS ($0005) path too. disk/ (k47b2_body: the end-of-file test after a partial record).
 - [ ] **D-FSIZERS — FSIZE LEAVES THE FCB'S +14; BOTH REFERENCES CLEAR IT (AND KEEP +15)**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-FSIZE (XK 9, 11): FSIZE over a record size 1 / 128 answers the
@@ -16958,42 +16932,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
       size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
       disk/ (WRZER's record count / record size).
-- [x] **D-RRND256 — RANDOM ACCESS PAST RECORD 255 (32 KB) ADDRESSES RECORD RR MOD 256: RDRND / WRRND / WRZER READ AND OVERWRITE THE WRONG RECORD**
-      🎚️ TIER 3 — silent data corruption on files over 32 KB (filed 2026-11-22; the root of D-WRZER64K).
-      🤖 **AUTONOMOUS** — disk/kernel.asm rrnd_position reads the target record from +33 ALONE ("only r0 (0..255, up
-      to a 32640-byte file) positions the record; r1 / r2 are NOT read" -- a scope narrowing signed off when it was
-      written, never filed). The size and cluster bookkeeping use the whole RR (wrrnd_extend), so the FCB looks right
-      (docs/bdos/BLOCKS.md round 7: RR 300's size and clusters agree) while the BYTES go to record RR mod 256: RR 600
-      lands on 88, RR 300 on 44. FIRST measure it (a probe writing distinct records at RR 44 and 300, reading both
-      back, both references and zerobas), then let rrnd_position seek by the whole record (sector = RR >> 2 over 16
-      bits; the seek loop's count is 8-bit today). disk.rom reads 0 B free: a carve first. Check BASIC's GET / PUT and
-      MSX-DOS's $0005 path, which reach the same body.
-      ✅ **MEASURED 2026-11-22** (probes/bios/spec/xrrnd1.asm, scratchpad/XRRND1_run1.out / run2.out): P.TXT grown to
-      301 records, WRRND record 44 (fill 3) then record 300 (fill 4): on the VG-8020 + NMS 1200 and the CF-3300
-      RDRND 44 and RDBLK 44 read fill 3 back; on zerobas fill 4 -- record 300's write landed on 44. 🔮 HIT. The fix
-      touches rrnd_position (the record in HL, a 16-bit sector count, a 24-bit bytes-left) and its other caller
-      srd_pos (SEQREAD after a random move past 255 is the same bug); price it, then a D-DISKCARVE round (the
-      exact-fit pads STEP 3 lists -- read build/disk.rom, never the list).
-      ✅ **FIXED 2026-11-22.** rrnd_position takes the whole record (+33 / +34, or srd_pos's EX x 128 + CR, in HL:
-      rrnd_pos_hl): record-in-sector = rec AND 3, a 16-bit seek count (rec >> 2) + 1, BDOS_BYTESLEFT = the size -
-      rec x 128 over 24 bits; srd_pos lost its "past 255: don't re-position" bail-out. It came to 4 B over the
-      $782B .. $7F7C span: paid inside the routine (record-in-sector on the stack, not in RRND_RECSEC; the product's
-      top byte built in BC). XRRND1 re-run: zerobas reads record 44 and 300 back as written, as both references.
-      Pinned by docs/bdos/BLOCKS.md R-BK-PAST255 (its FCB rule R-BK-PAST255FCB fails on the extent / cluster fields:
-      D-WRZEREXT, widened to WRRND).
-- [x] **D-WRZER64K — WRZER GROWING A FILE PAST 64 KB WRITES THE SIZE ONE RECORD SHORT AND $0FFF INTO +28**
-      ✅ FIXED 2026-11-22 BY D-RRND256 (the root): XK9 10 re-run (scratchpad/XBBLK9_run1.out, the ref line
-      unchanged) -- the size 76928 (601 records), the DTA kept and FSIZE 601, as both references; +28 $0073 / +30
-      $4B is now RR's own cluster where the references point at the one before (where the zero fill ended):
-      D-WRZEREXT's round-10 class, added there.
-      🎚️ TIER 3 — a program writing a large random file loses its last record (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND9 (scratchpad/XBBLK9_run1.out, run2.out XK9 10 / 12): WRZER
-      ($28) through $F37D at RR 600 on N.TXT (256 records): the VG-8020 + NMS 1200 and the CF-3300 make the size
-      76928 (601 records) and point +28 / +30 at cluster $72 / $4A; zerobas makes it 76800 (600 records) and puts
-      $0FFF -- the end-of-chain mark -- into +28 (+30 $4B), zeroes the DTA (HL 1, +15 0: not D-WRZERHL's
-      trigger), and FSIZE then answers 600. RR 255 (32768 bytes)
-      agrees, so the break is between 32 KB and 76 KB, likely at 64 KB (the size's third byte). Check WRBLK /
-      WRRND / WRSEQ past 64 KB too. disk/ (the size update and the FAT walk past 64 KB).
 - [ ] **D-WRZEREXT — WRZER PAST 16 KB LEAVES +12 0 AND RR'S LOW BYTE IN +32; THE REFERENCES SPLIT RR INTO EXTENT AND RECORD**
       ➕ 2026-11-22: WRRND too (docs/bdos/BLOCKS.md R-BK-PAST255FCB, scratchpad/XRRND1_run1.out XRR 3 / 4): after
       WRRND 300 the references hold +12 2, zerobas 0; after WRRND 44 they point +28 / +30 at its cluster, zerobas not.
@@ -17047,21 +16985,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       interface's internal entries (INIHRD, DRIVES, INIENV, DEFDPB, MYSIZE / SECLEN, OEMSTA, DSKSTP) are not
       published entries a program calls -- say so in disk.md, measure only what a black box can see; (e) the
       MSX-DOS 1 boot test is 2-Tier2-a (blocked): C-BIOS would like the same disk image when it lands.
-- [x] **D-DRVTBLNODISK — THE DISKLESS TARGET'S DRVTBL NAMES A DISK INTERFACE IN SLOT 1 ($FB21 / $FB22 = 1 / 1); THE VG-8020: 0 / 0**
-      🎚️ TIER 3 — a published "is there a disk?" answer is wrong (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — probes/bios/spec/xdrvtbl.asm (scratchpad/XDRVTBL_run1.out, the NODISK row): from H.STKE,
-      DRVTBL $FB21 .. $FB2C on the VG-8020 is all 0 (no drives); on C-BIOS_MSX1_EU_REPACK_NODISK $FB21 = 1 and $FB22 =
-      1 (one drive, interface in slot 1). H.PHYD is a bare RET on both. A program that finds the disk interface
-      through DRVTBL (the published way; docs/disk/CHOICE.md's probe does) calls into slot 1 -- here the program's
-      own cartridge -- and crashes (XCHOICE1's NODISK row never finished). Find what writes them on the diskless
-      build (the boot's drive-count / DRVTBL builder run without a disk ROM?) and leave DRVTBL 0 as the VG-8020 does;
-      check D-F37DNODISK ($F37D $C9) alongside. Check the disk build's DRVTBL too (XDRVTBL's disk row: $FB22 $87 vs
-      the NMS 1200's $81 -- the slot, so expected to differ).
-      ✅ **FIXED 2026-11-22.** Main's extension-ROM scan (basic/islands.asm try_init_slot) wrote every started "AB"
-      ROM's slot to $FB22 and bumped $FB21 -- a leftover from before D-DRVINT, when the disk ROM did not write DRVTBL
-      itself. It now records nothing: DRVTBL is the disk ROM's (install_res_print), and the SHIFT-held "stay out"
-      path writes 0 itself (disk/kernel.asm init_gate, `xor a`: 1 B smaller). XDRVTBL re-run: the NODISK row reads 0
-      / 0 as the VG-8020; the disk row 2 / $87 as before. Pinned by docs/disk/DSKIO.md R-DI-FIND.
 - [ ] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
       🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,

@@ -141,12 +141,7 @@ install_f37d:
 ; (map.grauw.nl), derived from our OWN DRVCNT cell ($F347, =2 here) rather than
 ; a hardcoded constant. B := 0. Only B (the loop counter, no longer needed once
 ; the shift is done) is clobbered besides A/HL — C/D/E (§5.3) are never touched.
-stime_body:
-                xor     a
-                ld      b, h
-                ld      c, l
-                ret
-
+; (stime_body moved to the hole in front of $75A5 by D-F37DSETDATE: it checks the time now)
 
 ; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
 ; A := E (the published VERIFY contract: echo the requested on/off flag); B
@@ -1315,8 +1310,12 @@ bdos_tab:
                 dw      getalloc_body
                 db      $2A
                 dw      gdate_body
+                db      $2B                 ; D-F37DSETDATE (2026-11-22): both references
+                dw      sdate_body          ; take a valid date / time from $F37D (A 0);
                 db      $2C
                 dw      bb_gtime
+                db      $2D                 ; this answered $FF to both (SYSTEM.md R-BS-DATE)
+                dw      stime_body
                 db      $2E
                 dw      verify_body
                 db      $2F                 ; D-BDOSABS (2026-10-22): RDABS / WRABS for a
@@ -1364,13 +1363,7 @@ bb_dskrst:
                 ret
 ; (moved here from init.asm by the D-DSKFMT defrag)
 ; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
-; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
-; Keeps A (INIT's 0 is still needed after the call). (Moved here from disk/fat.asm's
-; $47C1 fill by D-WRZER, which needed the bytes for the $47D1 veneer.)
-rh_init:
-                ld      hl, 0
-                ld      (RND_HSEC), hl
-                ret
+; (rh_init moved to the hole in front of $75A5 by D-F37DSETDATE: bdos_tab's $2B / $2D rows)
                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
 k_543C:
                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
@@ -7544,6 +7537,33 @@ wba_loop:
                 ld      (hl), a
                 inc     hl
                 djnz    wba_loop
+                ret
+; rh_init -- INIT's half of D-PUTCACHE (disk/init.asm calls it): no sector held.
+; Keeps A (INIT's 0 is still needed after the call). (Moved here from in front of
+; $543C by D-F37DSETDATE, whose bdos_tab rows needed those bytes; before that from
+; disk/fat.asm's $47C1 fill by D-WRZER.)
+rh_init:
+                ld      hl, 0
+                ld      (RND_HSEC), hl
+                ret
+; stime_body -- BDOS $2D STIME ($55E6's body, and bdos_tab's row for $F37D): H hour,
+; L minute, D second. 🔴 D-F37DSETDATE (2026-11-22): it checks them now -- the
+; VG-8020 + NMS 1200 and the CF-3300 refuse hour 24, minute 60 and second 60 with A
+; $FF (docs/bdos/SYSTEM.md R-BS-TIME2) and take 23:59:59 (R-BS-DATE3); it took any
+; time. An MSX1 keeps no clock: nothing is stored (GTIME still reads 0, R-BS-TIME).
+; Out: A = 0 / $FF; BC = HL as before. (Moved here from in front of verify_body.)
+stime_body:
+                ld      a, 23
+                cp      h
+                jr      c, st_res           ; hour > 23
+                ld      a, 59
+                cp      l
+                jr      c, st_res           ; minute > 59
+                cp      d                   ; second > 59 -> Cy
+st_res:
+                sbc     a, a                ; A = $FF refused / 0 taken
+                ld      b, h
+                ld      c, l
                 ret
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5

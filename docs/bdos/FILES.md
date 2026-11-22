@@ -40,8 +40,7 @@ zerobas writes round 1's every FCB and DTA byte the same (its SETDTA's A differs
 clear on SNEXT's, SFIRST's and FDEL's "not found" and sets it on FREN's refusal (D-BDOSCARRY), leaves
 FMAKE's record size (+14 / +15) as it was (D-FMAKERS), writes sequentially at its own
 position, ignoring the extent and the current record (D-FCBEXTENT),
-stamps 1984-01-01 because its $F37D SDATE refuses (D-F37DSETDATE), and its other flags differ
-(D-F37DREGS).
+and its other flags differ (D-F37DREGS). It stamps the date SDATE set (since D-F37DSETDATE, 2026-11-22).
 
 ## The specification
 
@@ -87,11 +86,11 @@ it alone.
 | **R-BF-SIZE** FSIZE ($23) of the empty TEST.TXT answers A 0 with the random record +33 .. +35 = 0 (the FCB otherwise as set up). | 2 | ✓ | ✓ |
 | **R-BF-REN** FREN ($17) TEST.TXT -> NEW.TXT (the new name at +17) answers A 0 and leaves the FCB; FOPEN of TEST.TXT then answers A $FF; FDEL ($13) of NEW.TXT answers A 0. | 6 | ✓ | ✓ |
 | **R-BF-CARRY** The carry is SET on a NOT-FOUND answer (A $FF from SNEXT with no more, FOPEN of a missing file, SFIRST finding nothing) and clear on A 0 -- but FREN refusing a name that exists answers A $FF with the carry CLEAR (XB2 13): it marks not-found, not every A $FF. (The extent-$FF cases are R-BF-EXTENT's.) | 36 | ✓ | ✗ 8: XB D04, XB D10, XB C04, XB C10, XB2 D12, XB2 D13 … (+2) |
-| **R-BF-MAKE2** FMAKE writes the FCB's +14 .. +31 -- record size 0, file size 0, the DATE word of the current date ($5ACF after SDATE 2025-06-15, $5D76 after 2026-11-22), time 0, $40 at +24, the new entry's INDEX in the directory at +25 (0, then 1 for the second file), +26 .. +31 0 -- and leaves +12 / +13 and +32 .. +36 as they were ($FF here). FMAKE of a name that exists answers A 0 and makes it again (today's date). | 6 | ✓ | ✗ 6: XB2 D03, XB2 D07, XB2 D14, XB2 C03, XB2 C07, XB2 C14 |
+| **R-BF-MAKE2** FMAKE writes the FCB's +14 .. +31 -- record size 0, file size 0, the DATE word of the current date ($5ACF after SDATE 2025-06-15, $5D76 after 2026-11-22), time 0, $40 at +24, the new entry's INDEX in the directory at +25 (0, then 1 for the second file), +26 .. +31 0 -- and leaves +12 / +13 and +32 .. +36 as they were ($FF here). FMAKE of a name that exists answers A 0 and makes it again (today's date). | 6 | ✓ | ✗ 5: XB2 D03, XB2 D07, XB2 C03, XB2 C07, XB2 C14 |
 | **R-BF-EXTENT** The FCB's EXTENT byte (+12) counts: left $FF by FMAKE, it makes WRSEQ ($15) answer A 1 and write nothing (+24 then 0, +32 $7F; FCLOSE answers A 0 with that FCB; FSIZE of the file then reads 0 records), and FOPEN with +12 $FF answers A $FF (no extent 255), writing +14 0 and leaving the rest. (Round 3 shows the extent ALONE does it: R-BF-SEQ3.) The flags there: WRSEQ F $44, FCLOSE F $93 (the carry SET with A 0), FOPEN F $82 (the carry CLEAR with A $FF); an SDATE between them leaves the FCB. | 10 | ✓ | ✗ 10: XB2 D04, XB2 D05, XB2 D06, XB2 D08, XB2 D09, XB2 C04 … (+4) |
 | **R-BF-SEARCH2** With two files, SFIRST ??????????? finds TEST.TXT (the first entry), SNEXT SECOND.TXT, the next SNEXT A $FF. | 6 | ✓ | ✓ |
 | **R-BF-RENEX** FREN onto a name that exists answers A $FF (carry clear, R-BF-CARRY) and leaves the FCB. | 2 | ✓ | ✓ |
-| **R-BF-SETDTA2** SETDTA answers A $08 whatever DE is ($9300 and $A800), F 0; SDATE of a valid date answers A 0 (as on the system functions' page). | 6 | ✓ | ✗ 6: XB2 D00, XB2 D01, XB2 D02, XB2 C00, XB2 C01, XB2 C02 |
+| **R-BF-SETDTA2** SETDTA answers A $08 whatever DE is ($9300 and $A800), F 0; SDATE of a valid date answers A 0 (as on the system functions' page). | 6 | ✓ | ✗ 5: XB2 D00, XB2 D01, XB2 C00, XB2 C01, XB2 C02 |
 | **R-BF-SEQ3** Round 3 separates round 2's cause. With ONLY the extent +12 $FF, WRSEQ answers A 1 and writes nothing (+24's bit 6 cleared; FCLOSE then F $93). With only the current record +32 $FF it WRITES: at record (+32 AND $7F) = 127 of the extent -- the file becomes 16384 bytes, the clusters 2 .. 17 -- then the extent advances (+12 1) and +32 is 0; with +24 $41 and +32 $85 it writes record 5 (768 bytes, cluster 18), +32 becomes 6 and +24 $01: WRSEQ CLEARS bit 6 of +24, it does not write it. FCLOSE answers A 0 and leaves the FCB (F $42). | 18 | ✓ | ✗ 12: XB3 D01, XB3 D02, XB3 D04, XB3 D05, XB3 D07, XB3 D08 … (+6) |
 | **R-BF-OPEN3** FOPEN asks for the extent in +12: with +12 $FF, or 1 on a file of one extent, it answers A $FF (F $82 / $42 -- the carry CLEAR) and leaves the FCB. FOPEN of THREE.TXT (6 records) fills +15 (the records in the extent) 6, the size 768, the date, $40, its index 2, the clusters 18 / 18, the rest 0. FSIZE over $FF at +33 .. +36 writes the record count 6 to +33 .. +35 and leaves +36. | 8 | ✓ | ✗ 8: XB3 D09, XB3 D10, XB3 D11, XB3 D12, XB3 C09, XB3 C10 … (+2) |
 | **R-BF-MISS** FDEL, FREN (the source) and FSIZE of a MISSING file answer A $FF with the carry SET and leave the FCB. | 6 | ✓ | ✗ 2: XB3 D13, XB3 C13 |
@@ -99,7 +98,7 @@ it alone.
 | **R-BF-INDEX** FMAKE takes the FIRST free directory entry: after FDEL of entry 0 a new name gets index 0, the next new one 2; making the existing BBB.TXT again keeps its 1. FDEL answers A 0 and leaves the FCB. | 12 | ✓ | ✓ |
 | **R-BF-CLOSE4** FCLOSE answers A 0 and leaves the FCB; its F is $10 after FMAKE with no write -- also with +12 poked to $FF (so round 2-3's $93 belongs to the FAILED write, not the extent) -- and $42 after a write. The WRSEQ between them (the setup that gives BBB.TXT its 16384 bytes) writes as R-BF-SEQ3 states. | 8 | ✓ | ✗ 8: XB4 D02, XB4 D04, XB4 D05, XB4 D12, XB4 C02, XB4 C04 … (+2) |
 | **R-BF-SETDTA4** SETDTA $A800 again answers A $08, F 0 (XBFILE4 sets it, so its DTA checks are real). | 2 | ✓ | ✗ 2: XB4 D00, XB4 C00 |
-| **R-BF-WORK** F, and SETDTA's A, are the same on both references in every case (mostly $44 on A 0, $45 on a not-found; but $10 / $42 / $93 after FCLOSE, $42 after FDEL, $44 on FREN's refusal, $82 / $42 on FOPEN's extent refusals; SETDTA A $08, F 0); SETDTA leaves the DTA alone. | 110 | ✓ | ✗ 52: XB D00, XB D02, XB D04, XB D09, XB D10, XB C00 … (+46) |
+| **R-BF-WORK** F, and SETDTA's A, are the same on both references in every case (mostly $44 on A 0, $45 on a not-found; but $10 / $42 / $93 after FCLOSE, $42 after FDEL, $44 on FREN's refusal, $82 / $42 on FOPEN's extent refusals; SETDTA A $08, F 0); SETDTA leaves the DTA alone. | 110 | ✓ | ✗ 50: XB D00, XB D02, XB D04, XB D09, XB D10, XB C00 … (+44) |
 
 <!-- RULES END -->
 
@@ -110,7 +109,6 @@ it alone.
 | **D-BDOSCARRY** (SNEXT, SFIRST and FDEL answer "not found" -- A $FF -- with the carry clear; FREN's refusal sets it) | R-BF-CARRY, R-BF-MISS, R-BF-WORK |
 | **D-FMAKERS** (FMAKE leaves +14 / +15 -- the record size -- as entered) | R-BF-MAKE2 |
 | **D-FCBEXTENT** (WRSEQ writes at its own position, record 0, ignoring the extent and the current record; FOPEN opens any extent; sizes and clusters follow from that) | R-BF-EXTENT, R-BF-SEQ3, R-BF-OPEN3, R-BF-OPEN4, R-BF-CLOSE4 |
-| **D-F37DSETDATE** (SDATE refuses, so FMAKE stamps 1984-01-01) | R-BF-MAKE2, R-BF-SETDTA2 |
 | **D-F37DREGS** (other working A / F: SETDTA's A and F, F after FCLOSE / FDEL) | R-BF-WORK, R-BF-SETDTA2, R-BF-SETDTA4 |
 
 ## Open (not measured)

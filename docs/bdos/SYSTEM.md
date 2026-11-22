@@ -33,7 +33,8 @@ and ROM programs call it without MSX-DOS loaded. Through it:
 - Interrupts are off after every call.
 
 zerobas answers VERSION, CURDRV, SELDSK, LOGIN, ALLOC's numbers, GDATE, GTIME and DSKRST's drive the
-same; its SDATE / STIME refusals agree only because it refuses EVERY date and time (below). Through $F37D it REFUSES a valid SDATE and STIME (D-F37DSETDATE), leaves interrupts on
+same, and SDATE / STIME too (taking a valid date / time and refusing the rest, since D-F37DSETDATE,
+2026-11-22: they refused every one). Through $F37D it leaves interrupts on
 (D-F37DEI), leaves IX / IY alone after ALLOC (D-ALLOCIXIY), starts the DTA cell at $0080 and does not
 reset it on DSKRST (D-F37DDTA), and returns other working registers (D-F37DREGS).
 
@@ -90,7 +91,6 @@ state, IX, IY, the DTA cell. Every case enters with IX $1111, IY $2222, interrup
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-F37DSETDATE** ($F37D has no SDATE / STIME row: both answer A $FF, the date stays 1984-01-01 -- its SDATE and STIME refusals agree only for that reason) | R-BS-DATE, R-BS-TIME, R-BS-DATE2, R-BS-DATE3 |
 | **D-F37DEI** (interrupts on after every call) | R-BS-DI |
 | **D-ALLOCIXIY** (ALLOC leaves IX and IY as entered) | R-BS-ALLOC, R-BS-ALLOC2 |
 | **D-F37DDTA** (the DTA cell is $0080 before any SETDTA; DSKRST leaves it) | R-BS-DTA |
