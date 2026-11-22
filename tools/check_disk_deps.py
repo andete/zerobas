@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import functools
 import os
 import re
 import sys
@@ -51,15 +52,40 @@ TARGET_RE = re.compile(r'(?m)^([A-Za-z0-9_.-]+):([^\n]*)\n((?:\t[^\n]*\n)*)')
 PROBE_RE = re.compile(r'probes/\S+\.py')
 
 
+# ⏱ D-STATICSLOW (2026-11-22): the parse and the probes/ index are CACHED per process.
+# `_local_imports` walked the whole probes/ tree once per import name of every file it
+# visited, and every file was parsed twice: one walk() took ~27 s, and --selftest runs
+# six of them (191 s, two thirds of the static tier's selftest-check). Only PROBE files
+# are cached -- the selftest mutates the Makefile, which walk() still re-reads every
+# time -- and _literals_name_image stays a module-level name the blind vectors replace.
+@functools.lru_cache(maxsize=None)
+def _parse(path: str):
+    try:
+        return ast.parse(open(path, encoding="utf-8").read(), filename=path)
+    except (OSError, SyntaxError):
+        return None
+
+
+@functools.lru_cache(maxsize=None)
+def _probe_index() -> dict:
+    """stem -> [paths under probes/], in os.walk's order (the order the old per-name
+    walk appended them in)."""
+    idx: dict = {}
+    for root, _dirs, files in os.walk(os.path.join(REPO, "probes")):
+        for f in files:
+            if f.endswith(".py"):
+                idx.setdefault(f[:-3], []).append(os.path.join(root, f))
+    return idx
+
+
 def _literals_name_image(path: str) -> bool:
     """True iff any string literal in this file's AST contains the basename.
 
     AST, not `in open(path).read()`: a `#` comment mentioning the image is prose
     ABOUT the tree, not a use of it, and must not enlarge the denominator.
     """
-    try:
-        tree = ast.parse(open(path, encoding="utf-8").read(), filename=path)
-    except (OSError, SyntaxError):
+    tree = _parse(path)
+    if tree is None:
         return False
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, str) \
@@ -70,9 +96,8 @@ def _literals_name_image(path: str) -> bool:
 
 def _local_imports(path: str) -> list[str]:
     """Modules imported by `path` that resolve to a .py file under probes/."""
-    try:
-        tree = ast.parse(open(path, encoding="utf-8").read(), filename=path)
-    except (OSError, SyntaxError):
+    tree = _parse(path)
+    if tree is None:
         return []
     names = []
     for node in ast.walk(tree):
@@ -82,10 +107,7 @@ def _local_imports(path: str) -> list[str]:
             names.append(node.module)
     out = []
     for n in names:
-        stem = n.split(".")[-1]
-        for root, _dirs, files in os.walk(os.path.join(REPO, "probes")):
-            if stem + ".py" in files:
-                out.append(os.path.join(root, stem + ".py"))
+        out += _probe_index().get(n.split(".")[-1], [])
     return out
 
 

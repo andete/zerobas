@@ -16762,6 +16762,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
+- [ ] **D-STATICSLOW — A DOCS-ONLY GATE TAKES ~17 MIN; ITS "STATIC" TIER WAS ~20 S**
+      🎚️ TIER 2 — reasonable time (the gate's wall time on every docs / TODO commit; filed 2026-11-22, Joost: "docs only
+      commit takes pretty long as well?").
+      🤖 **AUTONOMOUS** — gate_wt 35c4032d (docs only, STATIC): 1022 s. From its unit logs' end times
+      (zerobas-gate/scratchpad/gate_logs): selftest-check ~410 s, unit-test ~190 s (100 files, serial), spec-live
+      ~145 s, kwsweep ~117 s, tiers-md-check ~66 s, the other ~20 static units + warmup ~90 s.
+      ✅ (1) selftest-check DONE 2026-11-22 (scratchpad/AE_selftest_times.out: 90 selftests, 283 s alone, two of them
+      256 s): check_disk_deps 191 -> 31 s (the parse and a probes/ index cached; `--list` byte-identical) and
+      tier_table 65 -> 26 s (tools/entry_table.py: _dir_asms cached, _differential_scripts by word sets, one witness
+      scan per entry; `entry_table.py`, `--bios`, `--bdos` and docs/tier-status.md byte-identical). tiers-md-check
+      gains the same.
+      LEFT: (2) kwsweep runs in a STATIC plan -- D-PINSTALE re-measures the pins when build/sweeps-rom.txt is not the
+      built ROM, and the gate worktree's wiped build/ never matches: carry the pins and stamp into the worktree, or
+      skip the re-measure when no ROM source changed. (3) spec-live sits in STATIC but boots zerobas per run file
+      (~145 s, and it grows with every page): an emulator unit by run_gates' own rule ("split by what a unit reads").
+      (4) unit-test runs its 100 files serially: a worker pool.
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the

@@ -29,6 +29,7 @@ HOW A ROW IS FILLED -- MECHANICALLY, AND WHAT THAT DOES NOT PROVE:
 """
 import collections
 import glob
+import functools
 import os
 import re
 import sys
@@ -279,8 +280,11 @@ DIR_RUNNERS = {"biosl_run.py": (os.path.join("probes", "bios"),          # the r
                                  os.path.join("probes", "bios", "biosl"))}  # the dir it lists
 
 
+@functools.lru_cache(maxsize=None)
 def _dir_asms():
-    """runner script -> the CODE of every .asm in the directory it lists (comments off)."""
+    """runner script -> the CODE of every .asm in the directory it lists (comments off).
+    ⏱ D-STATICSLOW (2026-11-22): cached -- the per-entry witness scans called it 228 times
+    in one tier sheet, re-reading the directory each time. Callers only read it."""
     out = {}
     for runner, (home, d) in DIR_RUNNERS.items():
         src = open(os.path.join(REPO, home, runner)).read()
@@ -293,18 +297,12 @@ def _dir_asms():
 
 
 def _witnesses(pat, reach, pys, asms):
+    # ⏱ D-STATICSLOW (2026-11-22): the gates reaching the scripts _witness_scripts finds --
+    # its three branches (a listing runner, a script naming the entry, a script naming an
+    # .asm that does) are exactly the three this scanned again for every entry.
     gates = set()
-    for runner, codes in _dir_asms().items():
-        if any(pat.search(c) for c in codes):
-            gates |= reach.get(runner, set())
-    for p, txt in pys.items():
-        if pat.search(txt):
-            gates |= reach.get(p, set())
-    for a, txt in asms.items():
-        if pat.search(txt):
-            for p, ptxt in pys.items():
-                if a in ptxt:
-                    gates |= reach.get(p, set())
+    for w in _witness_scripts(pat, pys, asms):
+        gates |= reach.get(w, set())
     return gates
 
 
@@ -315,23 +313,51 @@ def _witnesses(pat, reach, pys, asms):
 REFNAME = re.compile(r"Philips_VG_8020|National_CF-3300|probe_sides|REF_MACHINE|\bREF\s*=\s*\"")
 
 
+_WORD = re.compile(r"\w+")
+_IDENT = re.compile(r"\w+\Z")
+
+
 def _differential_scripts(pys):
+    # ⏱ D-STATICSLOW (2026-11-22): each script's words are taken ONCE. `\bstem\b` on a
+    # stem of word characters only matches exactly when the stem is one of the text's
+    # \w+ runs, so set membership gives the same answer; any other stem keeps the regex.
+    # It was a fresh regex per (script, stem) per round: 28 s of the tier sheet's 68.
+    words = {p: set(_WORD.findall(txt)) for p, txt in pys.items()}
     direct = {p for p, txt in pys.items() if REFNAME.search(txt)}
     out = set(direct)
     changed = True
     while changed:
         changed = False
+        stems = [q[:-3] for q in out]
+        plain = [st for st in stems if _IDENT.match(st)]
+        other = [st for st in stems if not _IDENT.match(st)]
         for p, txt in pys.items():
             # a script that names a differential one -- by file name (`run(... x.py)`)
             # or by module stem (`import x as B`)
-            if p not in out and any(re.search(r"\b%s\b" % re.escape(q[:-3]), txt) for q in out):
+            if p not in out and (any(st in words[p] for st in plain) or
+                                 any(re.search(r"\b%s\b" % re.escape(st), txt) for st in other)):
                 out.add(p)
                 changed = True
     return out
 
 
+_WS_MEMO = {}
+
+
 def _witness_scripts(pat, pys, asms):
-    """The probe scripts (not gates) that name the entry -- or run a probe .asm that does."""
+    """The probe scripts (not gates) that name the entry -- or run a probe .asm that does.
+    Memoised per pattern for the SAME pys / asms objects (identity, not id(): a freed
+    dict's id can come back)."""
+    key = (pat.pattern, pat.flags)
+    m = _WS_MEMO.get(key)
+    if m and m[0] is pys and m[1] is asms:
+        return set(m[2])
+    hit = _witness_scripts_scan(pat, pys, asms)
+    _WS_MEMO[key] = (pys, asms, frozenset(hit))
+    return hit
+
+
+def _witness_scripts_scan(pat, pys, asms):
     hit = {p for p, txt in pys.items() if pat.search(txt)}
     hit |= {r for r, codes in _dir_asms().items() if any(pat.search(c) for c in codes)}
     for a, txt in asms.items():
