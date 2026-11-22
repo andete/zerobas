@@ -16802,6 +16802,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas's own BIOS bodies where stock 0.32 passes the pages (keep ours only where BASIC is entangled, saying
       why), (3) SEND upstream what 0.32 lacks instead of carrying it. Order: this rebase, then the disk ROM working
       without zerobas BASIC, then the test cleanup against the rebased build. The hosting variant is not now.
+      🔀 SEQUENCE (Joost 2026-11-22, "yes, go that way"; bugs are fixed in zerobas FIRST): the C-BIOS side lands
+      the fixes note's A-C (CLRSPR / PUTQ / SETC / TUPC-TDOWNC / GRPPRT / SET* registers, H_ZKEY, the SCNCNT option,
+      the GRPHED clear) on C-BIOS master; zerobas rebases onto THAT commit with layout patches only and retires
+      those six bodies too. ✅ Meanwhile D-CBIOSSYM: the repacked build keeps C-BIOS's symbol table
+      (build/cbios_main_msx1_eu-repacked.sym); BASIC's CBIOS_* addresses are generated from it (basic/cbios-abi.inc,
+      tools/gen_cbios_abi.py, `make cbios-abi-check` in the static tier) and tools/build_mainrom.py's overlay guards
+      are C-BIOS labels (PATCH_SPEC) -- ROMs byte-identical. ISLAND_RANGES is still by hand (re-derived in the rebase).
       📏 STAGE 0 (2) 2026-11-22 -- every BIOS spec page on STOCK v0.32 (tools/cbios_review.py all --tag v032,
       scratchpad/AE_cbios032_vs_zerobas.out): on the BIOS pages 0.32 fails 15 rules zerobas passes (TUPC / TDOWNC
       edge + position -- our tdownc-ge; GRPPRT position + VRAM; the SET* / CLRSPR / PUTQ / SETC registers or AF),

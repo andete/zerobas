@@ -31,6 +31,8 @@ byte that a direct CALL/JP targets, stop. Asserts the tape body region is free
 """
 from __future__ import annotations
 
+import re
+import os
 import sys
 
 from overlay_page1 import refs_into, spans
@@ -74,55 +76,95 @@ ISLAND_RANGES = ((0x0160, 0x0200), (0x199C, 0x1BBF), (0x0794, 0x09EE))   # islan
 # D-CBIOS030 (2026-11-11): the old bytes below are C-BIOS 0.30's (+ our repack); the
 # vectors' targets moved, and the two code patches moved with their code ($1038 ->
 # $0FCB, $11CF -> $1162).
-PATCH_RANGES = {0x0008: bytes([0xC9, 0x00, 0x00]),     # RST 08h -> synchr (D-SYNCHR)
-                0x0010: bytes([0xC9, 0x00, 0x00]),     # RST 10h -> chrgtr
-                0x0018: bytes([0xC9, 0x00, 0x00]),     # RST 18h -> outdo
-                0x0028: bytes([0xC9, 0x00, 0x00]),     # RST 28h -> getypr
-                0x003E: bytes([0xC9, 0x00, 0x00]),     # INIFNK -> basic/biosfnk.asm (its C-BIOS
-                                                       #  stub is 12 B on since D-INITIO + D-GICINIQ)
-                0x00AE: bytes([0xC9, 0x00, 0x00,       # PINLIN / INLIN / QINLIN
-                               0xC3, 0x3F, 0x14,       #  -> basic/biosfnk.asm
-                               0xC9, 0x00, 0x00]),
-                0x00B7: bytes([0xC3, 0x10, 0x15]),     # BREAKX -> basic/biosfnk.asm (D-BRKLATCH)
-                0x00BA: bytes([0xC9, 0x00, 0x00,       # ISCNTC / CKCNTC -> basic/biosfnk.asm
-                               0xC9, 0x00, 0x00]),     #  (D-BIOSRUNG)
-                0x00C0: bytes([0xC3, 0x2C, 0x15]),     # BEEP -> basic/biosfnk.asm
-                0x00C3: bytes([0xC3, 0x13, 0x06]),     # CLS -> basic/main.asm bios_cls
-                                                       #  (D-INITKEYS; cls_z, CBIOS_CLS - 1)
-                0x00C9: bytes([0xC3, 0x5E, 0x15]),     # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG; C-BIOS's
-                                                       #  stub is POSIT's ret since D-POSITCLAMP)
-                0x0069: bytes([0xC9, 0x00, 0x00]),     # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*;
-                                                       #  C-BIOS's body cut, D-CBIOSDEAD)
-                0x0105: bytes([0xC3, 0x24, 0x07]),     # TUPC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TUPC)
-                0x010B: bytes([0xC3, 0x42, 0x07]),     # TDOWNC -> basic/biosfnk.asm (D-TEDGE; = CBIOS_TDOWNC)
-                0x010E: bytes([0xC9, 0x00, 0x00]),     # SCALXY -> basic/biosfnk.asm (D-SCALXY*)
-                0x0123: bytes([0xC3, 0xA5, 0x06]),     # NSETCX -> basic/biosfnk.asm (D-NSETCX0; = CBIOS_NSETCX)
-                0x011D: bytes([0xC9, 0x00, 0x00]),     # READC -> basic/main.asm (D-SETCCOL; C-BIOS's body cut, D-SETCCUT)
-                0x0120: bytes([0xC9, 0x00, 0x00]),     # SETC -> island 3 (D-SETCCOL / D-SETCATR / D-SETCF; body cut)
-                0x0111: bytes([0xC9, 0x00, 0x00]),     # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
-                0x014A: bytes([0xC9, 0x00, 0x00]),     # ISFLIO -> basic/biosfnk.asm (D-ISFLIO;
-                                                       #  $1719 since cbios-repack #40)
-                0x014D: bytes([0xC3, 0xBB, 0x16]),     # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x0159: bytes([0xC9, 0x00, 0x00]),     # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x008D: bytes([0xC9, 0x00, 0x00]),     # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG;
-                                                       #  its C-BIOS body 4 B down since D-GRPHEDCLS)
-                0x0099: bytes([0xC9, 0x00, 0x00]),     # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
-                0x0090: bytes([0xC3, 0x88, 0x15]),     # GICINI -> basic/main.asm bios_gicini
-                                                       #  (D-GICINIQ; = CBIOS_GICINI)
-                0x00F9: bytes([0xC9, 0x00, 0x00]),     # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG;
-                                                       #  $17EA since cbios-repack #42)
-                0x0129: bytes([0xC3, 0x6C, 0x07,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm
-                               0xC3, 0x6C, 0x07,       #  (D-BIOSRUNG; C-BIOS's three `ret`s, 121 B
-                               0xC3, 0x6C, 0x07]),     #  down since D-SETCCUT)
-                0x00CC: bytes([0xC3, 0x5E, 0x15,       # ERAFNK / DSPFNK -> basic/biosfnk.asm
-                               0xC3, 0x5E, 0x15]),     #  (D-BIOSCONTRACT; both stubs are POSIT's
-                                                       #  ret since D-POSITCLAMP)
-                0x0FD7: bytes([0xC3]),                 # boot: H.OUTD = RET, not jp chput
-                0x1110: bytes([0x3A, 0xDD, 0xF3]),     # CHPUT: TTYPOS = CSRX-1 (0-based; $116E before D-CBIOSDEAD part 2)
-                0x06AD: bytes([0xCD, 0x20, 0x01]),     # NSETCX: call SETC ($0120) -> nsx_px ($06AD since repack #51)
-                                                       #  (D-SETCLAST part 2, D-NSETCXFULL)
-                0x170F: bytes([0x22, 0x9E, 0xFC])}     # the $0038 handler's `ld (JIFFY),hl` -> isr_music
-                                                       #  (the background music, from the BIOS's own interrupt)
+# D-CBIOSSYM (2026-11-22, for D-CBIOS032): the guards are stated by C-BIOS's own LABELS and resolved from the repacked
+# build's symbol table (build/cbios_main_msx1_eu-repacked.sym, next to the repacked ROM): a vector's old bytes are a
+# `jp <label>` or a 3-byte `ret` stub, an in-code patch is <label> + offset. A C-BIOS that moves its code moves the
+# guards with it; a renamed label refuses the build; the bytes found must still match (the guard is unchanged).
+RET3 = ("ret3",)
+
+
+def JP(label):
+    return ("jp", label)
+
+
+def CODE(label, off, old):
+    return ("code", label, off, bytes(old))
+
+
+PATCH_SPEC = {0x0008: [RET3],                   # RST 08h -> synchr (D-SYNCHR)
+              0x0010: [RET3],                   # RST 10h -> chrgtr
+              0x0018: [RET3],                   # RST 18h -> outdo
+              0x0028: [RET3],                   # RST 28h -> getypr
+              0x003E: [RET3],                   # INIFNK -> basic/biosfnk.asm
+              0x00AE: [RET3, JP("inlin"), RET3],  # PINLIN / INLIN / QINLIN -> basic/biosfnk.asm
+              0x00B7: [JP("breakx")],           # BREAKX -> basic/biosfnk.asm (D-BRKLATCH)
+              0x00BA: [RET3, RET3],             # ISCNTC / CKCNTC -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x00C0: [JP("beep")],             # BEEP -> basic/biosfnk.asm
+              0x00C3: [JP("cls_z")],            # CLS -> basic/main.asm bios_cls (D-INITKEYS)
+              0x00C9: [JP("fnksb")],            # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x0069: [RET3],                   # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*; C-BIOS's body cut)
+              0x0105: [JP("tupc")],             # TUPC -> basic/biosfnk.asm (D-TEDGE)
+              0x010B: [JP("tdownc")],           # TDOWNC -> basic/biosfnk.asm (D-TEDGE)
+              0x010E: [RET3],                   # SCALXY -> basic/biosfnk.asm (D-SCALXY*)
+              0x0123: [JP("nsetcx")],           # NSETCX -> basic/biosfnk.asm (D-NSETCX0)
+              0x011D: [RET3],                   # READC -> basic/main.asm (D-SETCCOL; C-BIOS's body cut)
+              0x0120: [RET3],                   # SETC -> island 3 (D-SETCCOL / D-SETCATR / D-SETCF; body cut)
+              0x0111: [RET3],                   # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
+              0x014A: [RET3],                   # ISFLIO -> basic/biosfnk.asm (D-ISFLIO)
+              0x014D: [JP("outdlp")],           # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x0159: [RET3],                   # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x008D: [RET3],                   # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x0099: [RET3],                   # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x0090: [JP("gicini")],           # GICINI -> basic/main.asm bios_gicini (D-GICINIQ)
+              0x00F9: [RET3],                   # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x0129: [JP("pntini")] * 3,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm (D-BIOSRUNG;
+                                                #  C-BIOS's three `ret`s share one label)
+              0x00CC: [JP("erafnk"), JP("dspfnk")],  # ERAFNK / DSPFNK -> basic/biosfnk.asm (D-BIOSCONTRACT;
+                                                #  both stubs are POSIT's ret since D-POSITCLAMP)
+              # the in-code patches: <C-BIOS label> + offset, and the bytes that must be there
+              "boot_houtd": CODE("init_ram", 285, [0xC3]),             # boot: H.OUTD = RET, not jp chput
+              "chput_ttypos": CODE("chput", 27, [0x3A, 0xDD, 0xF3]),   # CHPUT: TTYPOS = CSRX-1 (0-based)
+              "nsetcx_px": CODE("nsetcx_lp", 0, [0xCD, 0x20, 0x01]),   # NSETCX: call SETC ($0120) -> nsx_px
+                                                                       #  (D-SETCLAST part 2, D-NSETCXFULL)
+              "isr_music": CODE("keyint", 33, [0x22, 0x9E, 0xFC])}     # the $0038 handler's `ld (JIFFY),hl`
+                                                                       #  -> isr_music (the background music)
+
+
+def load_cbios_sym(path):
+    out = {}
+    for line in open(path):
+        m = re.match(r"(\S+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
+        if m:
+            out[m.group(1)] = int(m.group(2), 16)
+    return out
+
+
+def resolve_patch_ranges(sym):
+    """PATCH_SPEC -> {address: the exact old bytes}, from the repacked C-BIOS's labels."""
+    out = {}
+    for key, spec in PATCH_SPEC.items():
+        if isinstance(spec, tuple) and spec[0] == "code":
+            _, label, off, old = spec
+            if label not in sym:
+                sys.exit(f"PATCH_SPEC {key}: C-BIOS has no label {label!r} -- renamed upstream?")
+            out[sym[label] + off] = old
+            continue
+        b = bytearray()
+        for part in spec:
+            if part == RET3:
+                b += bytes([0xC9, 0x00, 0x00])
+            else:
+                if part[1] not in sym:
+                    sys.exit(f"PATCH_SPEC ${key:04X}: C-BIOS has no label {part[1]!r} -- renamed upstream?")
+                t = sym[part[1]]
+                b += bytes([0xC3, t & 0xFF, t >> 8])
+        out[key] = bytes(b)
+    return out
+
+
+PATCH_RANGES = None   # resolved in main() from the repacked ROM's symbol table
+
+
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 
@@ -221,6 +263,8 @@ def main() -> int:
     if len(sys.argv) not in (6, 7):
         sys.exit(__doc__)
     repacked = open(sys.argv[1], "rb").read()
+    global PATCH_RANGES
+    PATCH_RANGES = resolve_patch_ranges(load_cbios_sym(os.path.splitext(sys.argv[1])[0] + ".sym"))
     basic = open(sys.argv[2], "rb").read()
     tape = open(sys.argv[3], "rb").read()
     tape_end = sym_value(sys.argv[4], "tape_end")

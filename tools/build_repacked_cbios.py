@@ -235,6 +235,11 @@ def build(cbios: str, out: str, pristine: str | None = None) -> None:
                          f"       (is the checkout on the pinned tag {PINNED_TAG}?)")
             os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
             shutil.copyfile(built, out)
+            # D-CBIOSSYM (2026-11-22): the repacked build's symbol table (pasmo writes it as derived/lst/*.lst) goes
+            # next to the ROM, so the merge (tools/build_mainrom.py) and BASIC's C-BIOS addresses read the labels
+            # instead of pinning bytes -- what makes tracking C-BIOS's latest commits cheap (D-CBIOS032).
+            sym_src = os.path.join(work, "derived", "lst", os.path.basename(ROM_REL)[:-4] + ".lst")
+            shutil.copyfile(sym_src, os.path.splitext(out)[0] + ".sym")
             print(f"OK: repacked C-BIOS -> {out}  (sha1 {got})")
             if pristine is not None:
                 # Also emit the pristine stock from the same tag (the diff target /

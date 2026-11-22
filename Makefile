@@ -105,7 +105,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/deffn.asm basic/keytrap.asm basic/playsvc.asm basic/subrom-boot.asm \
          basic/pdfcb-body.inc basic/title-body.inc basic/sprtrap-body.inc \
          basic/kwtable.inc \
-         basic/sysvars.inc basic/aliases-early.inc
+         basic/sysvars.inc basic/cbios-abi.inc basic/aliases-early.inc
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
 # in internal slot 3-1; built with the same pasmo + pad_rom flow as the BASIC image.
@@ -241,7 +241,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \
-             sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
+             sub/math-coeffs.inc basic/sysvars.inc basic/cbios-abi.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc \
              sub2/grpprt.asm sub2/edctrl.asm sub2/frelive.asm \
@@ -370,6 +370,11 @@ rom-parts-check:
 
 subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
+# D-CBIOSSYM (2026-11-22, for D-CBIOS032): the C-BIOS bodies BASIC calls, generated from the repacked C-BIOS's
+# symbol table (written next to it by the main-ROM build) -- stale = a C-BIOS change moved them.
+cbios-abi-check: basic/cbios-abi.inc $(MAIN_ROM)
+	python3 tools/gen_cbios_abi.py --check
 
 # --- Standing closure gates for sub-ROM tenants (both page directions) ---------
 # CALSLT switches only the called page, so the two flavours have OPPOSITE

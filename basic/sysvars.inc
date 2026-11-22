@@ -3981,9 +3981,9 @@ INTFLG          equ     $FC9B   ; STOP / CTRL-STOP latch (1)
 OLDKEY          equ     $FBDA   ; the key matrix as of the last scan, 11 B, active low (1)
 PUTPNT          equ     $F3F8   ; the key buffer's put pointer (2)
 GETPNT          equ     $F3FA   ; the key buffer's get pointer (2)
-CBIOS_BREAKX    equ     $1510   ; C-BIOS's BREAKX body -- pinned by PATCH_RANGES' $00B7 bytes
-CBIOS_CLS       equ     $0614   ; C-BIOS's CLS body, past cls_z's `ret nz` -- PATCH_RANGES' $00C3
-CBIOS_GICINI    equ     $1588   ; C-BIOS's GICINI body (PSG only) -- pinned by PATCH_RANGES' $0090
+; CBIOS_BREAKX / CBIOS_CLS / CBIOS_GICINI / CBIOS_TUPC / CBIOS_TDOWNC / CBIOS_NSETCX: the C-BIOS bodies BASIC calls,
+; GENERATED from the repacked C-BIOS's symbol table (D-CBIOSSYM; tools/gen_cbios_abi.py, `make cbios-abi-check`)
+                include "basic/cbios-abi.inc"
 BASROM          equ     $FBB1   ; != 0: a protected ROM BASIC, not breakable (1)
 ; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
 ; reliable because C-BIOS zeroes $F380.. at boot):

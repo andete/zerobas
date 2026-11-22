@@ -655,10 +655,8 @@ bsx_out:
 ; GRPCGP + $100, TDOWNC when CLOC AND 7 is 7 and CLOC is GRPCGP + $1700 or more, both unsigned --
 ; with CLOC / CMASK kept, A = 0, F $45 (docs/bios/TUPC.md / TDOWNC.md R-TU-EDGE / R-TD-EDGE).
 ; C-BIOS's ignored GRPCGP. Here only that test: a SCREEN 2 move is UPC's / DOWNC's (the rules'
-; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, pinned by
-; PATCH_RANGES' old vector bytes). BC / DE / HL kept. Page 0.
-CBIOS_TUPC      equ     $0724
-CBIOS_TDOWNC    equ     $0742
+; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, from C-BIOS's
+; symbol table: basic/cbios-abi.inc). BC / DE / HL kept. Page 0.
 BIOS_UPC        equ     $0102
 BIOS_DOWNC      equ     $0108
 bios_tupc:
@@ -711,9 +709,8 @@ bios_tdownc:
 ; in SCREEN 2 HL = 0 still takes the byte at CLOC through SETC's steps with no bit -- SETC with
 ; CMASK 0 (the colour into the background nibble when the pattern byte is $FF, else the foreground,
 ; unless ATRBYT is one already there), CLOC / CMASK kept, interrupts on after. Every other case
-; C-BIOS's own body (CBIOS_NSETCX, pinned by PATCH_RANGES' old vector bytes), whose per-pixel
+; C-BIOS's own body (CBIOS_NSETCX, from C-BIOS's symbol table: basic/cbios-abi.inc), whose per-pixel
 ; `call setc` is nsx_px (above). C-BIOS's returned at once for HL = 0 and counted all of HL. Page 0.
-CBIOS_NSETCX    equ     $06A5
 bios_nsetcx:
                 ld      a,(SCRMOD)
                 cp      2
