@@ -16943,6 +16943,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
       size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
       disk/ (WRZER's record count / record size).
+- [ ] **D-WRBLKGAP — WRBLK PAST THE END: THE SECTOR IT WRITES INTO IS ZEROED; BOTH REFERENCES BUILD IT FROM THE DOS'S SECTOR BUFFER**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND5 (scratchpad/XBBLK5_run1.out, run2.out XK5 10 / 15): WRBLK
+      1 x 1 at RR 2000 on an 896-byte file through $F37D; read back, the VG-8020 + NMS 1200 and the CF-3300 both show
+      bytes 1536 .. 2000 as the file's sector 0 (the last sector transferred, as case 9 left it) with byte 2000 in
+      it; zerobas shows zeros. The rest of the gap agrees on all three (896 .. 1023 the older bytes, 1024 .. 1535
+      the blank image's zeros). A program that writes a sparse record and reads the gap sees different garbage.
+      disk/ (the write path's partial sector past the end: take the buffer, do not clear it).
 - [ ] **D-SETRNDR36 — SETRND CLEARS THE FCB'S +36; BOTH REFERENCES LEAVE IT**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/RECORDS.md R-BR-SETRND3 (scratchpad/XBREC3_run1.out, run2.out XR3 2 / 6): over $FF

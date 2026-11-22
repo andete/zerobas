@@ -32,11 +32,16 @@ FN4 = ["SETDTA4", "FMAKEE", "WRBLKE512", "FSIZE4A", "WRBLK0RS1", "FSIZE4B", "FCL
        "RDBLK3", "WRBLKOVER", "WRBLK0EXT", "WRZERHL2", "WRZERLOW", "FCLOSE4B", "FSIZE4D", "FOPEN4B", "RDBLK8"]
 RUNS4 = [("XBBLK4_run1.out", "D"), ("XBBLK4_run2.out", "C")]
 SPOTS4 = (49, 50, 127, 128, 255, 383, 511, 767, 1023, 1024)
+FN5 = ["SETDTA5", "FMAKEF", "WRBLKF1024", "FCLOSE5A", "FOPENF80", "RDBLK180", "WRBLK0SHR", "RDBLK400", "WRZER6",
+       "WRBLKRR2", "WRBLKGAP", "FCLOSE5B", "FSIZE5", "FOPEN5", "RDBLK8A", "RDBLK8B"]
+RUNS5 = [("XBBLK5_run1.out", "D"), ("XBBLK5_run2.out", "C")]
+SPOTS5 = (127, 128, 383, 384, 511, 512, 520, 700, 767, 768, 1023, 1024)
 BOOT512 = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:512])
 OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"], "XK2": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK20": ["a", "f", "dta", "hl", "spots"], "XK3": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK30": ["a", "f", "dta", "hl", "spots"], "XK4": ["a", "f", "fcb", "dta", "hl", "spots"],
-           "XK40": ["a", "f", "dta", "hl", "spots"]}
+           "XK40": ["a", "f", "dta", "hl", "spots"], "XK5": ["a", "f", "fcb", "dta", "hl", "spots"],
+           "XK50": ["a", "f", "dta", "hl", "spots"]}
 B = list(b"B       TXT")
 BOOT = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:13])   # our own generated image's sector 0
 # bytes 128 .. 199 of the file came from RAM past the probe's 128-byte DTA fill (WRBLK wrote 200 bytes): reads of them
@@ -105,6 +110,18 @@ def cases():
                 r = b[64 * i: 64 * (i + 1)]
                 c = NS(src="XK40" if i == 0 else "XK4", id=f"XK4 {row}{i:02}", row=row, num=300 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:64]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS5:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 66 * len(FN5) - len(b)))
+            for i, fn in enumerate(FN5):
+                r = b[66 * i: 66 * (i + 1)]
+                c = NS(src="XK50" if i == 0 else "XK5", id=f"XK5 {row}{i:02}", row=row, num=400 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
                 if i:
                     c.fcb = list(r[2:39])
                 d[who].append(c)
@@ -183,6 +200,39 @@ def expect4(c):
     return [at(i) for i in range(13)], [at(o) for o in SPOTS4]
 
 
+FT = list(b"F       TXT")
+
+
+def file5(fn, j):
+    """byte j of F.TXT as RDBLK reads it in XBBLK5 case 5, 7, 14 or 15"""
+    if fn == "RDBLK180":
+        return m2(2, j)                        # the 1024 bytes case 2 wrote
+    if fn == "RDBLK400":
+        return m2(2, j) if j < 384 else 0      # shrunk to 384: zeros past it, not the older bytes
+    if j >= 2001:
+        return 0                               # past the end
+    if 1536 <= j:                              # the sector WRBLK RR 2000 wrote into: the DOS's buffer -- the
+        k = j - 1536                           # file's sector 0 as case 9 left it -- with byte 2000 in it
+        return m2(10, 0) if j == 2000 else (m2(2, k) if k < 256 else m2(9, k - 256))
+    if 1024 <= j:
+        return 0                               # the new cluster's first sector: never written (the blank image)
+    if 256 <= j < 512:
+        return m2(9, j - 256)                  # WRBLK 2 x 128 at RR 2
+    if 512 <= j < 768:
+        return 0                               # WRZER RR 6's zero fill, over the older bytes
+    if 768 <= j < 896:
+        return m2(8, j - 768)                  # WRZER's record
+    return m2(2, j)                            # case 2's bytes: 0 .. 255, and 896 .. 1023 (the gap's older bytes)
+
+
+def expect5(c):
+    n = c.num - 400
+    span = {"RDBLK180": 384, "RDBLK400": 1024, "RDBLK8A": 1024, "RDBLK8B": 1024}.get(c.fn, 0)
+    base = 1024 if c.fn == "RDBLK8B" else 0
+    at = lambda o: file5(c.fn, base + o) if o < span else m2(n, o)
+    return [at(i) for i in range(13)], [at(o) for o in SPOTS5]
+
+
 def expect2(c):
     """(DTA's first 13, spots +72 / +128 / +511) after case c of XBBLK2; +512 is checked against the residue"""
     n = c.num - 100
@@ -223,12 +273,10 @@ RULES = [
          lambda c: (c.a, c.hl) == (0, 0) and c.dta == mark(10)
          and c.fcb == fcb(B, size=512, b24=0, c1=3, c2=3, cr=3, rr=3)),
     Rule("R-BK-RDABS", S1, "RDABS ($2F) with DE 0, H 1, L 0 reads sector 0 of drive A into the DTA (the generated "
-         "image's boot sector) and answers A 0, HL 0. It takes no FCB (DE is the sector): the FCB in RAM keeps what "
-         "FSIZE left there.", F("RDABS0"),
+         "image's boot sector) and answers A 0, HL 0. (DE is the sector; it takes no FCB).", F("RDABS0"),
          lambda c: (c.a, c.hl) == (0, 0) and c.dta == BOOT and c.fcb == fcb(B, b24=0, date=0, rr=2)),
     Rule("R-BK-ROUND2", S1, "Round 2 (the DTA filled for 512 bytes): FOPEN leaves +14 0 and +15 the records of 128 (2 for "
-         "200 bytes), so the record-size word is $0200 -- 512 -- and RDBLK HL 1 straight after it reads one 512-byte record: B.TXT's 200 bytes, then ZEROS to byte "
-         "511 (A 0, HL 1, RR 1). RDBLK at the end (RS 1, RR 200, HL 5) reads nothing: A 1, HL 0, RR and the DTA left. "
+         "200 bytes), so the record-size word is $0200 -- 512 -- and RDBLK HL 1 straight after it reads one 512-byte record: B.TXT's 200 bytes, then ZEROS (+511 0; A 0, HL 1, RR 1). RDBLK at the end (RS 1, RR 200, HL 5) reads nothing: A 1, HL 0, RR and the DTA left. "
          "The partial record (RS 128, RR 1) puts bytes 128 .. 199 in the DTA and zeros after them (+72: byte 200). "
          "WRBLK with HL 0 sets the file's size to RR x the record size (128) and writes nothing. WRZER ignores the "
          "record size (RS 1 at RR 3 writes 128-byte record 3: the size 512), zero-fills the records it skips "
@@ -271,7 +319,7 @@ RULES = [
          "at RR 0 over 50 bytes: 50). WRBLK HL 0 sets the size to RR x the record size whichever way that moves it "
          "(RS 1, RR 50: 512 -> 50; RS 128, RR 3: 50 -> 384) and writes nothing: the bytes it takes in are whatever "
          "the sectors held (case 2's, read back at +50 .. +383). WRZER writes the DTA's record at RR, zero-fills the "
-         "records between the old end and RR (+384 .. +639 read 0), ignores HL (HL 2: one record, size 768) and "
+         "records between the old end and RR (+511 reads 0), ignores HL (HL 2: one record, size 768) and "
          "never shrinks the file (RR 1 under 768: the size stays). FSIZE and WRZER clear +14 and KEEP +15 (RS $0180 "
          "in: $0100 out). FSIZE reads the directory: 0 records before the first FCLOSE, then 1 for 50 bytes and 6 "
          "for exactly 768 (rounded up, not + 1). RDBLK 3 x 128 over the 50-byte file reads its one partial record: "
@@ -293,10 +341,42 @@ RULES = [
              "WRZERLOW": fcb(E, size=768, b24=0, cr=1, rr=1, **O), "FCLOSE4B": fcb(E, size=768, b24=0, cr=1, rr=1, **O),
              "FSIZE4D": rs(fcb(E, date=0, b24=0, rr=6), 0x0100), "FOPEN4B": fcb(E, rc=6, size=768, **O),
              "RDBLK8": rs(fcb(E, rc=6, size=768, rr=6, **O), 128)}[c.fn]),
+    Rule("R-BK-ROUND5", S1, "Round 5. FOPEN overwrites +14 / +15 ($80 / $FF going in: 0 / 8 for 1024 bytes). The "
+         "record size is ONE word: RS $0180 reads 384 bytes (+383 the file's, +384 left), not +14's 128. WRBLK "
+         "writes at RR x RS (2 x 128 at RR 2: bytes 256 .. 511; RR 4, HL 2, the size kept). WRZER at RR 6 over a "
+         "file shrunk from 1024 to 384 zero-fills 512 .. 767 although the sector still held the older bytes, and "
+         "clears +14. A read of a 1024-byte record over the 384-byte file: the 384 bytes, then zeros to +1023 -- "
+         "not the older sector bytes; A 0, HL 1. WRBLK 1 x 1 at RR 2000 sets the size 2001 and links a second "
+         "cluster (+28 3, +30 1); what the gap reads: 896 .. 1023 the OLDER bytes still in that sector, the new "
+         "cluster's first sector the blank image's zeros, and the sector the byte went into the DOS's sector "
+         "buffer -- the file's sector 0 as it last transferred it -- with byte 2000 in it, then zeros past the "
+         "end. FSIZE keeps +15 $FF (+14 cleared). RDBLK 8 x 128 twice: A 0, HL 8, RR 8 then 16 (the second ends "
+         "in the partial record 15, which counts).",
+         lambda c: c.src == "XK5",
+         lambda c: (c.dta, c.spots) == expect5(c)
+         and (c.fn.startswith("FCLOSE") or c.a == 0)
+         and (c.hl == {"RDBLK180": 1, "RDBLK400": 1, "WRBLKRR2": 2, "WRBLKGAP": 1, "RDBLK8A": 8, "RDBLK8B": 8,
+                       "WRBLKF1024": 1024}[c.fn]
+              if c.fn in ("RDBLK180", "RDBLK400", "WRBLKRR2", "WRBLKGAP", "RDBLK8A", "RDBLK8B", "WRBLKF1024")
+              else True)
+         and c.fcb == {
+             "FMAKEF": fcb(FT), "WRBLKF1024": rs(fcb(FT, size=1024, b24=0, rr=1024, **O), 1),
+             "FCLOSE5A": rs(fcb(FT, size=1024, b24=0, rr=1024, **O), 1), "FOPENF80": fcb(FT, rc=8, size=1024, **O),
+             "RDBLK180": rs(fcb(FT, size=1024, rr=1, **O), 0x0180),
+             "WRBLK0SHR": rs(fcb(FT, size=384, b24=0, rr=3, **O), 128),
+             "RDBLK400": rs(fcb(FT, size=384, b24=0, rr=1, **O), 0x0400),
+             "WRZER6": fcb(FT, size=896, b24=0, cr=6, rr=6, **O),
+             "WRBLKRR2": rs(fcb(FT, size=896, b24=0, cr=6, rr=4, **O), 128),
+             "WRBLKGAP": rs(fcb(FT, size=2001, b24=0, c1=2, c2=3, c3=1, cr=6, rr=2001), 1),
+             "FCLOSE5B": rs(fcb(FT, size=2001, b24=0, c1=2, c2=3, c3=1, cr=6, rr=2001), 1),
+             "FSIZE5": rs(fcb(FT, date=0, b24=0, rr=16), 0xFF00), "FOPEN5": fcb(FT, rc=16, size=2001, **O),
+             "RDBLK8A": rs(fcb(FT, size=2001, rr=8, **O), 128),
+             "RDBLK8B": rs(fcb(FT, size=2001, c1=2, c2=3, c3=1, rr=16), 128)}[c.fn]),
     Rule("R-BK-WORK", S1, "A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE "
          "below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA.",
          lambda c: True,
          lambda c: (c.fn in ("FCLOSE2B", "FCLOSE4A", "FCLOSE4B") or (lambda o: (c.a, c.f, c.hl) == (o.a, o.f, o.hl))(other_ref(c)))
+         and (c.fn != "SETDTA5" or (c.dta, c.spots) == ([m2(0, i) for i in range(13)], [m2(0, o) for o in SPOTS5]))
          and (c.fn != "SETDTA4" or (c.dta, c.spots) == ([m2(0, i) for i in range(13)], [m2(0, o) for o in SPOTS4]))
          and (c.fn not in ("SETDTA", "SETDTA2", "SETDTA3") or c.dta == (mark(0) if c.fn == "SETDTA" else
                                                                          [m2(0, i) for i in range(13)]))
