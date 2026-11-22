@@ -1,0 +1,14 @@
+ROW initxt   VG=1 ZB=0 DIVERGES
+ROW init32   VG=1 ZB=0 DIVERGES
+ROW inigrp   VG=1 ZB=1 SAME
+ROW inimlt   VG=1 ZB=1 SAME
+ROW chgmod0  VG=1 ZB=0 DIVERGES
+ROW chgmod1  VG=1 ZB=0 DIVERGES
+ROW totext   VG=1 ZB=1 SAME
+ROW settxt   VG=1 ZB=1 SAME
+ROW sett32   VG=1 ZB=1 SAME
+ROW cls      VG=1 ZB=0 DIVERGES
+ROW erafnk   VG=1 ZB=1 SAME
+ROW kilbuf   VG=1 ZB=1 SAME
+FAIL: GRPHED after the screen entries (7/12)
+refcache: 1 hit, 23 miss, 23 stored

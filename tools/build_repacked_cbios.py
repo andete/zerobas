@@ -92,10 +92,8 @@ PATCHES = [
     # a plain / non-graphic one Z + C, the header Z + NC (C-BIOS had the first two swapped;
     # zerobas basic_probe_biosflags.py cnv_*). Same size: 8 bytes change, nothing moves.
     os.path.join(REPO, "cbios-repack", "cnvchr-flags.patch"),
-    # D-GRPHEDCLS (2026-11-14): the text-mode clear (cls_text: INITXT, INIT32, CHGMOD 0 / 1,
-    # a text CLS) sets GRPHED := 0 as the VG-8020 does; 4 B from INIMLT's D-GRPBASE pad, so
-    # the code between that pad and cls_text moves 4 B and nothing after it moves.
-    os.path.join(REPO, "cbios-repack", "grphed-cls.patch"),
+    # (grphed-cls.patch RETIRED 2026-11-22, D-GRPHEDCLS2: the reference's 0 came from
+    # drawing the key line; zerobas clears GRPHED in sub/keystr.asm ks_paint instead.)
     os.path.join(REPO, "cbios-repack", "initio-gicini.patch"),
     # D-TDOWNCGE (2026-11-14): TDOWNC stops at the bottom cell row OR below it, as the
     # VG-8020 in SCREEN 2 and 3 -- `jr z` -> `jr c` against the row less one; same size.
@@ -202,7 +200,7 @@ PATCHES = [
 
 PINNED_TAG = "v0.31"
 PRISTINE_SHA1 = "0d7f546f10ac11b3cdbf4da9941941c18aea2fef"
-REPACKED_SHA1 = "3ed9a5671ed40ff84e7a5559576c3cb5301cc017"   # INITIO: GICINI before the PSG writes, 2026-11-21
+REPACKED_SHA1 = "bdc075a142eadcabea58efda322ad8a5b5cdb557"   # grphed-cls.patch retired (D-GRPHEDCLS2), 2026-11-22
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

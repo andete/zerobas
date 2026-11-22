@@ -226,6 +226,11 @@ def build_main(cbios_checkout, out_dir=None):
     print("building repacked + pristine C-BIOS from the pinned tag...")
     run([PY, os.path.join(TOOLS, "build_repacked_cbios.py"),
          "--cbios", cbios_checkout, "-o", repacked, "--pristine", pristine])
+    # D-CBIOSSYM: the C-BIOS addresses BASIC calls come from THIS build's symbol table, before BASIC is
+    # assembled. In the repo build it rewrites basic/cbios-abi.inc (a change shows in `git status`); a side
+    # build (out_dir, the freshness gate) only checks, so it never writes a tracked file.
+    sym = os.path.join(build, "cbios_main_msx1_eu-repacked.sym")
+    run([PY, os.path.join(TOOLS, "gen_cbios_abi.py"), "--sym", sym] + (["--check"] if out_dir else []))
     print("assembling relocated BASIC ($2765) + its C-BIOS-padding islands + tape...")
     with tempfile.TemporaryDirectory() as work:
         # MAKING ROOM lever B: pasmo emits ONE image from the lowest org, so an

@@ -1,0 +1,8 @@
+ROW dspfnk   VG=0 ZB=1 DIVERGES
+FAIL: GRPHED after the screen entries (0/1)
+refcache: 0 hit, 2 miss, 2 stored
+ROW dspfnk   VG=0 ZB=1 DIVERGES
+ROW initxt   VG=0 ZB=0 SAME
+ROW cls      VG=0 ZB=0 SAME
+FAIL: GRPHED after the screen entries (2/3)
+refcache: 2 hit, 4 miss, 4 stored

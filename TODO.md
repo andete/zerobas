@@ -16762,15 +16762,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
-- [x] **D-SPLITSTUB — split_todo_archive.py --apply RE-APPENDS THE THREE "Moved to" STUB SECTIONS ON EVERY RUN**
-      🎚️ TIER 6 — every edge (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — with nothing to move it appended "Appended by a later split pass" + the stubs of
-      "Phase 1 record", "Done — Phase 1", "Done — storage transports" to docs/TODO-done.md again (TODO.md unchanged);
-      each real split carries them too. tools/split_todo_archive.py: skip a whole section already a stub.
-      ✅ **DONE 2026-11-22:** build() leaves a WHOLE section alone when its source is already the stub (STUB_MARK), and
-      main() writes nothing when no line moves ("nothing to move"). Selftest arms S12 (stubbed: nothing moves) and S13
-      (the control: an un-stubbed section still moves); knife: the guard removed -> S12 RED, S13 PASS. Dry run on
-      today's TODO.md: nothing to move, no file written (it appended the stubs before).
 - [ ] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
       🎚️ TIER 1 — the base every C-BIOS-side fix builds on (filed 2026-11-22, Joost: "cbios 0.32 was released and it
       shipped with tape, so our tape patch is obsolete"; "have a look at each of c-bios 0.32's fixes to see if we can
@@ -17195,14 +17186,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
       Row 7 bit 6: $18 on both machines; C-BIOS's scode_tbl_otherkeys has $00 there, so zerobas's key scan (C-BIOS's)
       produces nothing. A cbios-repack table byte.
-- [ ] **D-GRPHEDCLS2 — RE-CHECK D-GRPHEDCLS: THE REFERENCES KEEP GRPHED THROUGH INITXT / INIT32 / CLS / CHGMOD**
-      🎚️ TIER 6 — every edge (a patch that may be wrong) (filed 2026-11-21).
-      🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
-      cbios-repack/grphed-cls.patch clears GRPHED ($FCA6) in the text clear, because the VG-8020 read 0 there. Measured
-      with GRPHED poked to 1 before each direct BIOS call: it STAYS 1 after INITXT, INIT32, CLS in SCREEN 0-3, CHGMOD 0-3,
-      SETTXT, SETT32 and TOTEXT, on both machines; only CHPUT of a following character clears it (CNVCHR). Find where
-      zerobas's 0 came from (BASIC's SCREEN / CLS path, or a character printed after the call) before keeping the patch.
-      Note GRP_HDR is GRPHED since D-PAINTRAMCLASH.
 - [ ] **D-GRPPRTSETC — GRPPRT DRAWS EACH SET GLYPH BIT AS ONE SETC; docs/bios/GRPPRT.md R-GP-VRAM SAYS OTHERWISE**
       🎚️ TIER 6 — every edge (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.

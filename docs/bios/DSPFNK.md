@@ -21,6 +21,12 @@ name table up, not where TXTNAM points later. `FNKSB` draws the line when CNSDFG
 the work-area cells read (CNSDFG, CRTCNT, the cursor, LINLEN, SCRMOD, LINL40 / LINL32, LINTTB); only
 A / F.
 In SCREEN 2 all three only set the flag.
+Drawing the line also ends a pending graphic header (GRPHED $FCA6 := 0, the reference draws it
+through CHPUT / CNVCHR): DSPFNK clears it whether the line was on or off; ERAFNK keeps it; the mode
+calls (INITXT, INIT32, CHGMOD 0 / 1, a text CLS) clear it only when they redraw the line, so with KEY
+OFF they keep it. Measured directly, GRPHED := 1 before each call
+([`CV_grphed3.out`](../../scratchpad/CV_grphed3.out), `make grphed-acceptance`; D-GRPHEDCLS2). zerobas
+the same.
 
 zerobas does all of it the same, apart from:
 - a label's $01 graphic prefix shows as a space and the letter (D-KEYGRAPH);

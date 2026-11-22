@@ -9,7 +9,7 @@
 ; `python3 tools/gen_cbios_abi.py` rewrites it, `make cbios-abi-check` checks it.
 ; The C-BIOS bodies zerobas's BASIC calls directly, by C-BIOS's own labels (D-CBIOSSYM).
 CBIOS_BREAKX    equ     $1510   ; breakx: C-BIOS's BREAKX body (basic/biosfnk.asm bios_breakx calls it)
-CBIOS_CLS       equ     $0614   ; cls: C-BIOS's CLS body, past cls_z's `ret nz` (basic/main.asm bios_cls)
+CBIOS_CLS       equ     $0618   ; cls: C-BIOS's CLS body, past cls_z's `ret nz` (basic/main.asm bios_cls)
 CBIOS_GICINI    equ     $1588   ; gicini: C-BIOS's GICINI body, the PSG only (basic/main.asm bios_gicini)
 CBIOS_TUPC      equ     $0724   ; tupc: C-BIOS's TUPC body (basic/biosfnk.asm bios_tupc, every case but the edge)
 CBIOS_TDOWNC    equ     $0742   ; tdownc: C-BIOS's TDOWNC body (basic/biosfnk.asm bios_tdownc, every case but the edge)

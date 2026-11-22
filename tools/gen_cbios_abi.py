@@ -11,6 +11,11 @@ them too, and a renamed label fails here, loudly.
 
     python3 tools/gen_cbios_abi.py            # write basic/cbios-abi.inc
     python3 tools/gen_cbios_abi.py --check    # exit 1 if the committed file differs from a fresh one
+    python3 tools/gen_cbios_abi.py --sym F    # read another build's symbol table
+
+tools/build_patches.py runs it right after the repacked C-BIOS is built and before BASIC is assembled, so a
+C-BIOS whose code moved can never be merged with the old addresses (2026-11-22: retiring grphed-cls.patch moved
+`cls` by 4 B, and a hand-run build used the stale $0614 -- CLS's spec page failed 8 rules).
 """
 import os
 import re
@@ -62,7 +67,8 @@ def render(sym):
 
 
 def main(argv):
-    text = render(load())
+    sym = argv[argv.index("--sym") + 1] if "--sym" in argv else SYM
+    text = render(load(sym))
     if "--check" in argv:
         cur = open(OUT).read() if os.path.exists(OUT) else ""
         if cur != text:
@@ -70,6 +76,11 @@ def main(argv):
                   f"run `python3 tools/gen_cbios_abi.py` and rebuild")
             return 1
         print(f"OK: basic/cbios-abi.inc matches the repacked C-BIOS's labels ({len(ABI)} addresses)")
+        return 0
+    # only on a change: a rewrite with the same bytes bumps the mtime, and every ROM that includes the file
+    # (sub.rom too) then reads as stale to the probe preflight -- 136 knife cuts refused on 2026-11-22
+    if os.path.exists(OUT) and open(OUT).read() == text:
+        print(f"unchanged: {os.path.relpath(OUT, ROOT)} ({len(ABI)} addresses)")
         return 0
     open(OUT, "w").write(text)
     print(f"wrote {os.path.relpath(OUT, ROOT)} ({len(ABI)} addresses)")

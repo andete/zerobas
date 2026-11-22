@@ -58,6 +58,33 @@ KEYSLOTS        equ     10
 KEYSTRIDE       equ     16
 KEYMAX          equ     15                  ; measured truncation (D-KEYSCOUT2)
 
+; ks_geom -- the key row for the current text mode.
+;   out: HL = row 23's first name-table cell, C = the row's length (what
+;        ks_blank clears, and what the border is measured against). Clobbers
+;        A, DE.
+ks_geom:
+                ld      hl,(NAMBAS)
+                ld      a,(SCRMOD)
+                dec     a
+                ld      de,FNK_ROW
+                ld      c,40
+                jr      nz,ksg_have
+                ld      de,FNK_ROW32
+                ld      c,32
+ksg_have:
+                add     hl,de
+                ret
+
+ks_blank:
+                call    ks_geom             ; HL -> row 23, column 0; C = length
+                ld      b,c
+ksb_lp:
+                ld      c,' '
+                call    gfx_vram_wr
+                inc     hl
+                djnz    ksb_lp
+                ret
+
 ; ks_paint / ks_blank: draw or erase the function-key line.
 ; 🔴 VRAM FROM A PAGE-0 TENANT IS ALLOWED AND PRECEDENTED -- `gfx_vram_wr`
 ; (sub/graphics.asm, itself a page-0 tenant) is a page-local `call`, takes
@@ -65,6 +92,13 @@ KEYMAX          equ     15                  ; measured truncation (D-KEYSCOUT2)
 ; tenant may NOT call the BIOS, so `WRTVRM`/`LDIRVM` are out; that is the whole
 ; reason the primitive matters here.
 ks_paint:
+                ; D-GRPHEDCLS2 (2026-11-22): drawing the key line ends a pending graphic
+                ; header -- GRPHED := 0 -- as on the VG-8020, whose line goes through CHPUT
+                ; (CNVCHR). DSPFNK clears it; INITXT / INIT32 / CHGMOD 0-1 / a text CLS
+                ; clear it ONLY with the line on (KEY OFF: all keep 1), ERAFNK never
+                ; (scratchpad/CV_grphed_keyoff.out, CV_grphed_dspfnk.out).
+                xor     a
+                ld      (GRPHED),a
                 call    ks_blank            ; start from a clean row, so a macro
                                             ; that shortened leaves no tail
                 call    ks_geom             ; HL -> row 23, column 0; C = row length
@@ -132,33 +166,6 @@ ksp_put:
                 djnz    ksp_field
                 ret
 
-; ks_geom -- the key row for the current text mode.
-;   out: HL = row 23's first name-table cell, C = the row's length (what
-;        ks_blank clears, and what the border is measured against). Clobbers
-;        A, DE.
-ks_geom:
-                ld      hl,(NAMBAS)
-                ld      a,(SCRMOD)
-                dec     a
-                ld      de,FNK_ROW
-                ld      c,40
-                jr      nz,ksg_have
-                ld      de,FNK_ROW32
-                ld      c,32
-ksg_have:
-                add     hl,de
-                ret
-
-ks_blank:
-                call    ks_geom             ; HL -> row 23, column 0; C = length
-                ld      b,c
-ksb_lp:
-                ld      c,' '
-                call    gfx_vram_wr
-                inc     hl
-                djnz    ksb_lp
-                ret
-
 keystr_tenant:
                 ; 🔁 D-WSZERO S14b (2026-10-16): the KEY-bar PAINT and BLANK are
                 ; dispatched FIRST. They write VRAM only and nothing drains the
@@ -168,7 +175,7 @@ keystr_tenant:
                 ; BUF now, over a LINE INPUT answer being typed.
                 ld      a,(KEYARG)
                 cp      KEYOP_FNKPAINT
-                jp      z,ks_paint   ; (jp: D-KEYSHIFT's 8 B put ks_paint out of jr range)
+                jr      z,ks_paint   ; (jr again since D-GRPHEDCLS2 moved ks_paint next to the tenant: its 1 B paid the GRPHED clear)
                 cp      KEYOP_FNKBLANK
                 jr      z,ks_blank
                 ; Every other op leaves DETOKBUF printable for the resident drain:
