@@ -17012,6 +17012,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       interface's internal entries (INIHRD, DRIVES, INIENV, DEFDPB, MYSIZE / SECLEN, OEMSTA, DSKSTP) are not
       published entries a program calls -- say so in disk.md, measure only what a black box can see; (e) the
       MSX-DOS 1 boot test is 2-Tier2-a (blocked): C-BIOS would like the same disk image when it lands.
+- [ ] **D-DSKIOHL — DSKIO CALLED DIRECTLY RETURNS HL AS ENTERED AFTER A MULTI-SECTOR CALL; THE REFERENCES RETURN THE BUFFER + $200**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKIO.md R-DI-HL (scratchpad/XDSKIO1_run1.out, run2.out XI 1 / 4 / 10): CALSLT to
+      $4010 with B 2, B 0 and 2 across the last sector: the VG-8020 + NMS 1200 and the CF-3300 return HL $A600 from
+      $A400; through PHYDIO both return $A400 (H.PHYD's way restores it). zerobas returns $A400 either way. Measure B 3
+      first (+ $200, or + (B - 1) x $200?). disk/driver.asm (DSKIO's exit).
 - [ ] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
       🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,
