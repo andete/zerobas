@@ -3863,8 +3863,8 @@ hsy_name:       db      "SYSTEM"
 ; stays $F380, FRE(0) +5385 B, DSKF is Illegal function call (scratchpad/
 ; bootkeys_run.out). The ROM header's INIT word points here: SHIFT (keyboard row
 ; 6 bit 0, low when held -- SNSMAT $0141, MSX2 TH) held -> touch nothing (no
-; hooks, no work area, no DOS boot) and leave $FF in main's DISKSLOT_OK, which
-; main's scan then `inc`s to 0 (basic/islands.asm): a diskless machine. Else the
+; hooks, no work area, no DOS boot) and leave DISKSLOT_OK ($FB21, DRVTBL's drive count) 0:
+; a diskless machine (main's scan writes nothing there since D-DRVTBLNODISK). Else the
 ; normal INIT, with A (this ROM's slot byte, which init reads) intact.
 init_gate:
                 push    af
@@ -3873,8 +3873,8 @@ init_gate:
                 rrca                        ; SHIFT -> Cy
                 jr      c, ig_init          ; not held: the normal INIT
                 pop     af
-                ld      a, $FF
-                ld      (DISKSLOT_OK), a    ; -> 0 after main's inc: no disk ROM
+                xor     a
+                ld      (DISKSLOT_OK), a    ; 0: no disk ROM (D-DRVTBLNODISK: main no longer inc's it)
                 ret
 ig_init:
                 pop     af

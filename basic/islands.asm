@@ -70,31 +70,15 @@ try_init_slot:
                 ld      (SCAN_IY+1),a       ; CALSLT reads the slot from IYh
                 ld      iy,(SCAN_IY)
                 ld      ix,(SCAN_INIT)
-                call    CALSLT
-                ; Record this external AB ROM's slot id for cross-slot BDOS calls
-                ; from BLOAD (it CALSLTs the disk ROM's bdos_entry). On the
-                ; combined machine the disk ROM is the only external AB ROM the
-                ; scan reaches, so its slot is unambiguous; a multi-ROM setup
-                ; would need per-ROM tracking (last-one-wins here — documented
-                ; limitation, PROVENANCE.md §disk-ROM slot capture).
-                ld      a,(SCAN_SLOT)
-                ld      (DISKSLOT),a
-                ; D-BOOTKEYS (2026-10-10): `inc`, not `ld 1` -- the scan zeroed the
-                ; cell, so a normal INIT makes it 1; a disk ROM that SHIFT told to
-                ; stay out (as the CF-3300's does: no Disk BASIC, HIMEM $F380 --
-                ; scratchpad/bootkeys_run.out) left $FF, which wraps to 0: no disk.
-                ; 🔴 D-DRVCOUNT (2026-11-13): the cell is DRVINF, and since D-DRVINT our
-                ; disk ROM's INIT writes the drive count there (2, as the CF-3300 holds):
-                ; a plain `inc` made it 3, and facdemo3.di2's drive loop ran on where the
-                ; CF-3300's ends (scratchpad/facusr_run7.out / run8.out). 0 -> 1 and $FF
-                ; -> 0 as before; a count the disk ROM wrote stays.
-                ld      hl,DISKSLOT_OK
-                ld      a,(hl)
-                inc     a
-                cp      2
-                ret     nc                  ; the disk ROM set the drive count: keep it
-                ld      (hl),a
-                ret
+                ; 🔴 D-DRVTBLNODISK (2026-11-22): nothing is recorded here any more. DRVTBL's
+                ; first entry ($FB21 the drive count, $FB22 the interface's slot -- DISKSLOT_OK /
+                ; DISKSLOT) is the DISK ROM's to write, as on the reference: ours does in its INIT
+                ; since D-DRVINT (install_res_print). This scan used to write the slot of EVERY
+                ; external "AB" ROM it started and bump the count, so a diskless machine with any
+                ; cartridge reported a disk interface in that cartridge's slot (1 / 1 where the
+                ; VG-8020 has 0 / 0: probes/bios/spec/xdrvtbl.asm) and a program finding the disk
+                ; through DRVTBL called into it. The cells stay as init_ext_roms cleared them.
+                jp      CALSLT
 
 
 ; init_ext_roms -- the boot-time extension-ROM scan (from basic/initext.asm,

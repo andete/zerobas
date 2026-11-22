@@ -17012,7 +17012,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       interface's internal entries (INIHRD, DRIVES, INIENV, DEFDPB, MYSIZE / SECLEN, OEMSTA, DSKSTP) are not
       published entries a program calls -- say so in disk.md, measure only what a black box can see; (e) the
       MSX-DOS 1 boot test is 2-Tier2-a (blocked): C-BIOS would like the same disk image when it lands.
-- [ ] **D-DRVTBLNODISK — THE DISKLESS TARGET'S DRVTBL NAMES A DISK INTERFACE IN SLOT 1 ($FB21 / $FB22 = 1 / 1); THE VG-8020: 0 / 0**
+- [x] **D-DRVTBLNODISK — THE DISKLESS TARGET'S DRVTBL NAMES A DISK INTERFACE IN SLOT 1 ($FB21 / $FB22 = 1 / 1); THE VG-8020: 0 / 0**
       🎚️ TIER 3 — a published "is there a disk?" answer is wrong (filed 2026-11-22).
       🤖 **AUTONOMOUS** — probes/bios/spec/xdrvtbl.asm (scratchpad/XDRVTBL_run1.out, the NODISK row): from H.STKE,
       DRVTBL $FB21 .. $FB2C on the VG-8020 is all 0 (no drives); on C-BIOS_MSX1_EU_REPACK_NODISK $FB21 = 1 and $FB22 =
@@ -17022,6 +17022,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       build (the boot's drive-count / DRVTBL builder run without a disk ROM?) and leave DRVTBL 0 as the VG-8020 does;
       check D-F37DNODISK ($F37D $C9) alongside. Check the disk build's DRVTBL too (XDRVTBL's disk row: $FB22 $87 vs
       the NMS 1200's $81 -- the slot, so expected to differ).
+      ✅ **FIXED 2026-11-22.** Main's extension-ROM scan (basic/islands.asm try_init_slot) wrote every started "AB"
+      ROM's slot to $FB22 and bumped $FB21 -- a leftover from before D-DRVINT, when the disk ROM did not write DRVTBL
+      itself. It now records nothing: DRVTBL is the disk ROM's (install_res_print), and the SHIFT-held "stay out"
+      path writes 0 itself (disk/kernel.asm init_gate, `xor a`: 1 B smaller). XDRVTBL re-run: the NODISK row reads 0
+      / 0 as the VG-8020; the disk row 2 / $87 as before. Pinned by docs/disk/DSKIO.md R-DI-FIND.
 - [ ] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
       🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,
