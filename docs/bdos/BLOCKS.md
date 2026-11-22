@@ -5,14 +5,15 @@ SPDX-License-Identifier: 0BSD
 
 # The BDOS's block functions through `$F37D`
 
-> **Spec:** DRAFT 8 (2026-11-22), nine measured rounds on two references, review passes 1 .. 7 answered
+> **Spec:** DRAFT 9 (2026-11-22), ten measured rounds on two references, review passes 1 .. 8 answered
 > ([`scratchpad/BBLK_review1.md`](../../scratchpad/BBLK_review1.md),
 > [`scratchpad/BBLK_review2.md`](../../scratchpad/BBLK_review2.md),
 > [`scratchpad/BBLK_review3.md`](../../scratchpad/BBLK_review3.md),
 > [`scratchpad/BBLK_review4.md`](../../scratchpad/BBLK_review4.md),
 > [`scratchpad/BBLK_review5.md`](../../scratchpad/BBLK_review5.md),
 > [`scratchpad/BBLK_review6.md`](../../scratchpad/BBLK_review6.md),
-> [`scratchpad/BBLK_review7.md`](../../scratchpad/BBLK_review7.md)).
+> [`scratchpad/BBLK_review7.md`](../../scratchpad/BBLK_review7.md),
+> [`scratchpad/BBLK_review8.md`](../../scratchpad/BBLK_review8.md)).
 > One page for WRBLK ($26), RDBLK ($27), WRZER ($28) and RDABS ($2F), sharing one probe.
 
 ## Summary
@@ -35,16 +36,19 @@ Through the disk ROM's BDOS entry at $F37D (C the function, DE the FCB, HL the r
 - **FSIZE** ignores the record size: it answers records of 128 (rounded up) and clears +14, keeping
   +15; it reads the directory, so a size not yet closed is not counted.
 - **WRZER** writes the DTA's 128-byte record at the random record whatever the record size and HL,
-  zero-fills the records between the old end and it, never shrinks the file, and clears +14 (keeping
+  zero-fills the records between the old end and it (in newly allocated clusters too, over whatever the
+  disk held), never shrinks the file, and clears +14 (keeping
   +15); **RDABS** reads absolute sectors (512 bytes each) into the DTA.
 - **Past 16 KB, WRZER** keeps CP/M's split of the position in the FCB: +12 the extent (RR / 128) and +32
   the record inside it (RR mod 128); +33 .. +35 hold the whole RR. It rewrites them on every call, below
-  the end too, and points +28 / +30 at the cluster holding RR. WRBLK and RDBLK neither use +12 / +32
+  the end too, and points +28 / +30 at the cluster it reached last: RR's own, except when it zero-fills a
+  gap -- the fill runs after the record, so it ends in the cluster before RR's. WRBLK and RDBLK neither use +12 / +32
   (they position by RR alone) nor change them: they leave what they find.
 - **Registers.** A is the answer (0, or 1 / $FF as above). F and HL are working values: the two references
   agree in every case (R-BK-WORK checks them case by case), but beyond these the page does not predict
   them -- e.g. H after a growing WRZER is RR's high byte, after FSIZE the record count's; FCLOSE answers F
-  $93 / HL 0 after FOPEN then writes, F $42 / HL $0300 after the other sequences measured.
+  $93 / HL 0 after FOPEN then writes with no read between, F $42 / HL $0300 after the other sequences
+  measured.
 - **The FCB's other fields** (checked byte for byte by the rules, stated here): every write (WRBLK, WRBLK
   HL 0, WRZER) clears +24's bit 6, the reads keep it; only WRZER sets +32 (CR) -- to RR mod 128; +28 / +30 hold
   the cluster last reached and its index in the file (2 / 0 inside the first cluster, 3 / 1 in the
@@ -54,7 +58,8 @@ zerobas transfers the same bytes and records; it answers A 1 for a partial last 
 what was asked (D-RDBLKPART), leaves +14 in FSIZE (D-FSIZERS), writes a different size and clusters for
 WRZER with HL 2 and +15 nonzero, and zeroes the DTA there (D-WRZERHL), keeps the disk's bytes in the new-cluster sector WRBLK
 writes into past the end (D-WRBLKGAP), leaves +12 0 and the low byte of RR in +32 past 16 KB
-(D-WRZEREXT), and past 64 KB writes WRZER's size one record short with $0FFF in +28 (D-WRZER64K), and its flags and working HL differ (D-F37DREGS).
+(D-WRZEREXT), and past 64 KB writes WRZER's size one record short with $0FFF in +28, +30 one higher and the DTA
+zeroed (D-WRZER64K), and its flags and working HL differ (D-F37DREGS).
 
 ## The specification
 
@@ -130,12 +135,19 @@ going in, and FSIZE; XBBLK7's record.
 ([`scratchpad/XBBLK9_run1.out`](../../scratchpad/XBBLK9_run1.out), `--row disk`), run 2
 ([`scratchpad/XBBLK9_run2.out`](../../scratchpad/XBBLK9_run2.out), `--row cf3300`);
 `probes/bios/spec/xbblk9.asm`: WRZER below the end in a later cluster, FOPEN / WRBLK / FCLOSE, and N.TXT
-grown to 256 and to 601 records (76928 bytes, past 64 KB) with FSIZE after; XBBLK8's record. In every round, case 0's FCB is left out (start-up RAM).
+grown to 256 and to 601 records (76928 bytes, past 64 KB) with FSIZE after; XBBLK8's record.
+
+**[XKA rNN]** (round 10, answering review pass 8) -- run 1
+([`scratchpad/XBBLK10_run1.out`](../../scratchpad/XBBLK10_run1.out), `--row disk`), run 2
+([`scratchpad/XBBLK10_run2.out`](../../scratchpad/XBBLK10_run2.out), `--row cf3300`);
+`probes/bios/spec/xbblk10.asm`: Q.TXT written to 4096 bytes and deleted, R.TXT grown over its clusters
+with WRZER and read back, and WRZER at a cluster boundary with and without a gap; XBBLK9's record. In
+every round, case 0's FCB is left out (start-up RAM).
 
 <!-- RULES BEGIN -->
 <!-- GENERATED by tools/spec_rules.py from probes/bios/spec/xbblk_rules.py -- do not edit; `python3 tools/spec_rules.py probes/bios/spec/xbblk_rules.py --write` -->
 
-**14 rules; 14 hold on the reference. Of the 16278 recorded outputs (each case's cursor, cells, A, table entries ...): 16208 read by a rule's check, 70 declared NOT evidence (below), 0 unread.**
+**15 rules; 15 hold on the reference. Of the 18674 recorded outputs (each case's cursor, cells, A, table entries ...): 18604 read by a rule's check, 70 declared NOT evidence (below), 0 unread.**
 
 #### 1. The block functions through $F37D
 
@@ -153,8 +165,9 @@ grown to 256 and to 601 records (76928 bytes, past 64 KB) with FSIZE after; XBBL
 | **R-BK-ROUND6** Round 6 (the fill differs in every sector). WRBLK and WRBLK HL 0 read +14 / +15 as one word too: 1 x $0180 at RR 1 writes bytes 384 .. 767 (RR 2, HL 1), and HL 0 at RR 1 sets the size 384. Past the end, nothing is zeroed: after the shrink to 384, bytes 384 .. 639 keep what case 8 wrote and 768 .. 1023 what case 7 did; WRBLK 1 x 1 at RR 1800 links a new cluster whose first sector keeps the deleted H.TXT's bytes (the DISK's, not zeros) and builds the sector it writes into from the DOS's buffer -- the LAST sector transferred (G's sector 1, as case 10 left it), not the file's first -- with byte 1800 in it. RDBLK 8 x 128 from RR 8 over 1801 bytes: A 1, HL 7, RR 15 (record 14, partial, counts; record 15 is past the end). FDEL leaves the FCB; G takes H's directory entry 0 and cluster 2 again. | 30 | ✓ | ✗ 2: XK6 D15, XK6 C15 |
 | **R-BK-ROUND7** Round 7 (past one 16 KB extent). WRZER at RR 156 (157 records, 20096 bytes) and RR 300 (301 records, 38528 bytes) keeps CP/M's split of the position: +12 the extent (RR / 128: 1, 2) and +32 CR the record inside it (RR mod 128: 28, 44), +33 the whole RR; the clusters run 2 .. $15 for J.TXT (+28 $15, +30 $13) and $16 .. $3B for K.TXT (+30 $25). FOPEN then leaves +15 $80 -- the records in extent 0, at most 128 -- NOT the file's records (157, 301); a block read straight after it would take $8000 as the record size (inferred, not run: it would overrun RAM). FSIZE answers 157 and 301 (+14 cleared, +15 kept). FCLOSE after WRZER below the end with HL 0 and with HL 1 answers A 0 on both references (F $93, HL 0): HL 0 is not what makes the CF-3300 answer $FF elsewhere. Nothing reads the DTA. | 32 | ✓ | ✗ 12: XK7 D02, XK7 D03, XK7 D05, XK7 D07, XK7 D08, XK7 D10 … (+6) |
 | **R-BK-ROUND8** Round 8 (L.TXT, directory entry 2, grown past 16 KB). The block functions IGNORE +12 / +32 going in: straight after WRZER RR 300 (+12 2, +32 44) WRBLK 1 x 128 at RR 5 writes record 5 (read back after FOPEN: its DTA) and RDBLK at RR 200 reads record 200 (WRZER's zeros); both LEAVE +12 2 / +32 44. WRZER rewrites them every time: RR 3 (below the end) sets +12 0, +32 3 and +28 / +30 to the cluster holding record 3 (2 / 0: the first); RR 300 again sets 2 / 44 and the last cluster. FOPEN with +12 1 going in keeps +12 1 (+15 $80: extent 1 is full too, so this does not tell extent 0 from extent +12). HL after WRZER is $0100 when it grows the file to 301 records (case 4) and 0 when it does not (5, 6), whatever the directory entry (2 here, 1 for K.TXT): RR's high byte when growing (round 9). FSIZE answers 301, HL $0100. | 28 | ✓ | ✗ 12: XK8 D04, XK8 D05, XK8 D06, XK8 D07, XK8 D08, XK8 D09 … (+6) |
-| **R-BK-ROUND9** Round 9. WRZER below the end at RR 200 (M.TXT, 301 records) points +28 / +30 at the cluster HOLDING the record ($1B, the file's 25th) -- not the first -- and splits RR as always (+12 1, +32 72). Growing, WRZER answers H = RR's high byte: RR 255 (256 records, exactly 32768 bytes) H 0, RR 600 (601 records, 76928 bytes -- past 64 KB, +16 .. +19 three bytes) H 2; not growing, H 0. FSIZE answers H = the record count's high byte (601: 2). FCLOSE after FOPEN and WRBLK with no read between answers F $93, HL 0, as after FOPEN and WRZER (the $42 / $0300 pair follows the other sequences). | 24 | ✓ | ✗ 16: XK9 D02, XK9 D03, XK9 D04, XK9 D07, XK9 D09, XK9 D10 … (+10) |
-| **R-BK-WORK** A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA. | 272 | ✓ | ✗ 214: XK D00, XK D01, XK D02, XK D03, XK D04, XK D05 … (+208) |
+| **R-BK-ROUND9** Round 9. WRZER below the end at RR 200 (M.TXT, 301 records) points +28 / +30 at the cluster HOLDING the record ($1B, +30 $19: index 25, the 26th) -- not the first -- and splits RR as always (+12 1, +32 72). Growing, WRZER answers H = RR's high byte: RR 255 (256 records, exactly 32768 bytes) H 0, RR 600 (601 records, 76928 bytes -- past 64 KB, +16 .. +19 three bytes) H 2; not growing, H 0. FSIZE answers H = the record count's high byte (601: 2). FCLOSE after FOPEN and WRBLK with no read between answers F $93, HL 0, as after FOPEN and WRZER (the $42 / $0300 pair follows the other sequences). | 24 | ✓ | ✗ 16: XK9 D02, XK9 D03, XK9 D04, XK9 D07, XK9 D09, XK9 D10 … (+10) |
+| **R-BK-ROUND10** Round 10. WRZER ZERO-FILLS the records it skips in NEWLY allocated clusters too: R.TXT grown to 32 records (RR 31) over the clusters a deleted 4096-byte Q.TXT left full of bytes reads 0 at records 0 .. 7 and 16 .. 23 -- unlike a WRBLK gap, which keeps the disk's. +28 / +30 after a growing WRZER are the cluster it reached LAST: with a gap, the zero fill runs after the record and ends in the cluster before record RR (RR 8 on an empty S.TXT: +28 6, +30 0, though record 8 is in index 1); with no gap, the record's own cluster (T.TXT at 8 records, WRZER RR 8: +28 9, +30 1). FDEL frees Q.TXT's entry and clusters: R.TXT takes entry 0 and clusters 2 .. 5 again. | 36 | ✓ | ✗ 2: XKA D15, XKA C15 |
+| **R-BK-WORK** A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA. | 310 | ✓ | ✗ 244: XK D00, XK D01, XK D02, XK D03, XK D04, XK D05 … (+238) |
 
 Declared UNSTABLE on the reference itself (4 cases: XK D06, XK D08, XK C06, XK C08): dta — bytes 128 .. 199 of B.TXT: WRBLK took them from RAM past the probe's 128-byte fill, so XBBLK1 run 1 (VG-8020 + NMS 1200) and run 2 (CF-3300) read different bytes
 
@@ -170,7 +183,7 @@ Declared UNSTABLE on the reference itself (4 cases: XK4 D06, XK4 D14, XK4 C06, X
 |---|---|
 | **D-RDBLKPART** (RDBLK of a partial last record answers A 1; the references count it as read, A 0) | R-BK-RDBLK, R-BK-ROUND2, R-BK-FOPENRS, R-BK-ROUND5, R-BK-WORK |
 | **D-WRZERHL** (WRZER with HL 2 and record size $0180: another size, clusters and DTA) | R-BK-ROUND4, R-BK-WORK |
-| **D-WRZEREXT** (WRZER past 16 KB leaves +12 0 and puts RR's low byte in +32; the references split RR into extent and record; below the end it keeps +28 / +30) | R-BK-ROUND7, R-BK-ROUND8, R-BK-ROUND9 |
+| **D-WRZEREXT** (WRZER past 16 KB leaves +12 0 and puts RR's low byte in +32; the references split RR into extent and record; below the end it keeps +28 / +30) | R-BK-ROUND7, R-BK-ROUND8, R-BK-ROUND9, R-BK-ROUND10 |
 | **D-WRZER64K** (WRZER growing a file past 64 KB: the size one record short, $0FFF in +28) | R-BK-ROUND9 |
 | **D-WRBLKGAP** (the new-cluster sector WRBLK writes into past the end keeps the disk's bytes; the references build it from the DOS's sector buffer) | R-BK-ROUND5, R-BK-ROUND6 |
 | **D-FSIZERS** (FSIZE leaves +14; the references clear it) | R-BK-FSIZE, R-BK-RDABS, R-BK-ROUND4, R-BK-ROUND5, R-BK-ROUND7 |
@@ -182,15 +195,16 @@ Declared UNSTABLE on the reference itself (4 cases: XK4 D06, XK4 D14, XK4 C06, X
   found on both references (UNSTABLE above). WRZER before it is not the cause (FCLOSE after WRZER answers
   A 0 there at XK2 C12, XK3 C03), nor is HL 0 (WRZER HL 0 below the end, then FCLOSE: A 0 at XK7 C13);
   nor is WRBLK HL 0 (FCLOSE after it answers A 0 there at XK4 C06 -- A only: that case's F / HL are
-  UNSTABLE; case 5 between them is an FSIZE through the second FCB). A candidate the rows fit: an RDBLK
-  between FOPEN and a size-changing write (XK2 C09, XK4 C14), limited by XK5 C11 (FOPEN, RDBLK, writes:
-  A 0).
+  UNSTABLE; case 5 between them is an FSIZE through the second FCB). "An RDBLK between FOPEN and a
+  size-changing write" fits XK2 C09 and XK4 C14 but is FALSIFIED by XK5 C11 (FOPEN, RDBLK, WRBLK HL 0:
+  A 0); rows left that fit: the file stays in one cluster, or the last write links no new cluster.
 - **[A]** Record sizes other than those run: 1 and 128 for every function, $0180 for RDBLK / WRBLK /
   WRBLK HL 0 / WRZER, $0200 / $0300 / $0400 for RDBLK only ($8000 -- +15 $80 -- was NOT run); WRBLK past
   the first extent; a single transfer crossing a cluster boundary; RDBLK / WRBLK on an FCB never opened; RDBLK with HL 0 or RR past the end; RDABS of several sectors, other drives,
   other sectors; RDABS with H 0 (the VG-8020 + NMS 1200 did not come back); WRABS ($30); a write-protected
   disk; a full disk.
-- **[A]** WRZER: which of HL 2 and +15 nonzero moves zerobas (D-WRZERHL); a skipped record in another
+- **[A]** WRZER: which of HL 2, +15 nonzero and growing past 64 KB (XK9 10: HL 1, +15 0) makes zerobas
+  zero the DTA (D-WRZERHL, D-WRZER64K); a skipped record in another
   sector or cluster; the FAT after it (+28 3 for the FCB never opened, XK r10).
 - **[A]** FCLOSE after WRZER on an FCB that was never opened (the directory entry, the FAT, cluster 2).
 - **[A]** +24's bit 6 going in set with other bits (only $40 was measured); +36 written by FSIZE.
@@ -200,6 +214,8 @@ Declared UNSTABLE on the reference itself (4 cases: XK4 D06, XK4 D14, XK4 C06, X
   the gap sector's bytes past the written byte, read raw with RDABS.
 - **[A]** FOPEN with +12 nonzero going in on a file whose extent +12 is NOT full (XK8 13's was): +15 of
   extent 0 or of extent +12?
+- **[A]** RDBLK / WRBLK at a byte offset past 64 KB (N.TXT was never read back); FOPEN with RR / CR /
+  +28 / +30 nonzero going in; which sector the DOS's buffer holds after a growing WRZER.
 - **[A]** FOPEN with +12 past the file's last extent (A $FF as in CP/M?); WRZER exactly at the end (no
   gap); RR of 4096 and more (+12 past $1F); a DTA below $8000 or across a page boundary; a transfer
   wrapping past $FFFF; a drive byte other than 0; +28 / +30 after WRBLK HL 0 across clusters.

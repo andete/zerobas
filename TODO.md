@@ -16948,7 +16948,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND9 (scratchpad/XBBLK9_run1.out, run2.out XK9 10 / 12): WRZER
       ($28) through $F37D at RR 600 on N.TXT (256 records): the VG-8020 + NMS 1200 and the CF-3300 make the size
       76928 (601 records) and point +28 / +30 at cluster $72 / $4A; zerobas makes it 76800 (600 records) and puts
-      $0FFF -- the end-of-chain mark -- into +28 (+30 $4B), and FSIZE then answers 600. RR 255 (32768 bytes)
+      $0FFF -- the end-of-chain mark -- into +28 (+30 $4B), zeroes the DTA (HL 1, +15 0: not D-WRZERHL's
+      trigger), and FSIZE then answers 600. RR 255 (32768 bytes)
       agrees, so the break is between 32 KB and 76 KB, likely at 64 KB (the size's third byte). Check WRBLK /
       WRRND / WRSEQ past 64 KB too. disk/ (the size update and the FAT walk past 64 KB).
 - [ ] **D-WRZEREXT — WRZER PAST 16 KB LEAVES +12 0 AND RR'S LOW BYTE IN +32; THE REFERENCES SPLIT RR INTO EXTENT AND RECORD**
@@ -16958,7 +16959,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and +32 28 / 44 (RR mod 128); zerobas leaves +12 0 and +32 156 / 44 (RR AND $FF). Size, clusters and +33 ..
       agree. Round 8 (R-BK-ROUND8, scratchpad/XBBLK8_run1.out, run2.out XK8 4 .. 9): the same on L.TXT, and WRZER
       below the end points +28 / +30 at the cluster holding RR on the references (round 9, XK9 3: $1B / $19 at RR
-      200; zerobas keeps the last). WRBLK and
+      200; zerobas keeps the last). Round 10 (R-BK-ROUND10, scratchpad/XBBLK10_run1.out, run2.out XKA 15): after a
+      growing WRZER with a gap the references point +28 / +30 at the cluster the zero fill ended in (before RR's);
+      zerobas at RR's own. WRBLK and
       RDBLK ignore +12 / +32 on all three. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
       place. Check WRRND / RDRND / SETRND past 16 KB too (RECORDS.md measured only below it). disk/ (WRZER's
       FCB update: the extent / record split).

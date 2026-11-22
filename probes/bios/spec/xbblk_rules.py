@@ -49,6 +49,9 @@ RUNS8 = [("XBBLK8_run1.out", "D"), ("XBBLK8_run2.out", "C")]
 FN9 = ["SETDTA9", "FMAKEM", "WRZERM300", "WRZERM200", "FCLOSE9A", "FOPENM", "WRBLKM1", "FCLOSE9B", "FMAKEN",
        "WRZERN255", "WRZERN600", "FCLOSE9C", "FSIZEN"]
 RUNS9 = [("XBBLK9_run1.out", "D"), ("XBBLK9_run2.out", "C")]
+FN10 = ["SETDTA10", "FMAKEQ", "WRBLKQ0", "WRBLKQ1", "WRBLKQ2", "WRBLKQ3", "FCLOSE10A", "FDELQ", "FMAKER", "WRZERR31",
+        "FCLOSE10B", "FOPENR", "RDBLKR0", "RDBLKR16", "FMAKES", "WRZERS8", "FMAKET", "WRZERT7", "WRZERT8"]
+RUNS10 = [("XBBLK10_run1.out", "D"), ("XBBLK10_run2.out", "C")]
 BOOT512 = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:512])
 OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"], "XK2": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK20": ["a", "f", "dta", "hl", "spots"], "XK3": ["a", "f", "fcb", "dta", "hl", "spots"],
@@ -58,7 +61,8 @@ OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"],
            "XK60": ["a", "f", "dta", "hl", "spots"], "XK7": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK70": ["a", "f", "dta", "hl", "spots"], "XK8": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK80": ["a", "f", "dta", "hl", "spots"], "XK9": ["a", "f", "fcb", "dta", "hl", "spots"],
-           "XK90": ["a", "f", "dta", "hl", "spots"]}
+           "XK90": ["a", "f", "dta", "hl", "spots"], "XKA": ["a", "f", "fcb", "dta", "hl", "spots"],
+           "XKA0": ["a", "f", "dta", "hl", "spots"]}
 B = list(b"B       TXT")
 BOOT = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:13])   # our own generated image's sector 0
 # bytes 128 .. 199 of the file came from RAM past the probe's 128-byte DTA fill (WRBLK wrote 200 bytes): reads of them
@@ -186,6 +190,18 @@ def cases():
             for i, fn in enumerate(FN9):
                 r = b[66 * i: 66 * (i + 1)]
                 c = NS(src="XK90" if i == 0 else "XK9", id=f"XK9 {row}{i:02}", row=row, num=800 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS10:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 66 * len(FN10) - len(b)))
+            for i, fn in enumerate(FN10):
+                r = b[66 * i: 66 * (i + 1)]
+                c = NS(src="XKA0" if i == 0 else "XKA", id=f"XKA {row}{i:02}", row=row, num=900 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
                 if i:
                     c.fcb = list(r[2:39])
@@ -352,6 +368,15 @@ M9, N9 = list(b"M       TXT"), list(b"N       TXT")
 M300 = dict(ext=2, size=38528, b24=0, c1=2, c2=0x27, c3=0x25, cr=44, rr=300)
 M200 = dict(ext=1, size=38528, b24=0, c1=2, c2=0x1B, c3=0x19, cr=72, rr=200)
 N600 = dict(ext=4, size=76928, b24=0, idx=1, c1=0x28, c2=0x72, c3=0x4A, cr=88, rr=600)
+
+
+QA, RA, SA, TA = (list(n.encode()) for n in ("Q       TXT", "R       TXT", "S       TXT", "T       TXT"))
+
+
+def expectA(c):
+    n = c.num - 900
+    at = (lambda o: 0 if o < 1024 else m6(n, o)) if c.fn in ("RDBLKR0", "RDBLKR16") else (lambda o: m6(n, o))
+    return [at(i) for i in range(13)], [at(o) for o in SPOTS6]
 
 
 def expect2(c):
@@ -570,7 +595,7 @@ RULES = [
              "FOPENL12": fcb(L8, ext=1, rc=0x80, size=38528, idx=2, c1=2, c2=2),
              "FSIZEL": fcb(L8, b24=0, date=0, rr=301)}[c.fn]),
     Rule("R-BK-ROUND9", S1, "Round 9. WRZER below the end at RR 200 (M.TXT, 301 records) points +28 / +30 at the "
-         "cluster HOLDING the record ($1B, the file's 25th) -- not the first -- and splits RR as always (+12 1, +32 "
+         "cluster HOLDING the record ($1B, +30 $19: index 25, the 26th) -- not the first -- and splits RR as always (+12 1, +32 "
          "72). Growing, WRZER answers H = RR's high byte: RR 255 (256 records, exactly 32768 bytes) H 0, RR 600 "
          "(601 records, 76928 bytes -- past 64 KB, +16 .. +19 three bytes) H 2; not growing, H 0. FSIZE answers H "
          "= the record count's high byte (601: 2). FCLOSE after FOPEN and WRBLK with no read between answers F "
@@ -589,10 +614,37 @@ RULES = [
              "WRZERN255": fcb(N9, ext=1, size=32768, b24=0, idx=1, c1=0x28, c2=0x47, c3=0x1F, cr=127, rr=255),
              "WRZERN600": fcb(N9, **N600), "FCLOSE9C": fcb(N9, **N600),
              "FSIZEN": fcb(N9, b24=0, date=0, rr=601)}[c.fn]),
+    Rule("R-BK-ROUND10", S1, "Round 10. WRZER ZERO-FILLS the records it skips in NEWLY allocated clusters too: R.TXT "
+         "grown to 32 records (RR 31) over the clusters a deleted 4096-byte Q.TXT left full of bytes reads 0 at "
+         "records 0 .. 7 and 16 .. 23 -- unlike a WRBLK gap, which keeps the disk's. +28 / +30 after a growing "
+         "WRZER are the cluster it reached LAST: with a gap, the zero fill runs after the record and ends in the "
+         "cluster before record RR (RR 8 on an empty S.TXT: +28 6, +30 0, though record 8 is in index 1); with "
+         "no gap, the record's own cluster (T.TXT at 8 records, WRZER RR 8: +28 9, +30 1). FDEL frees Q.TXT's "
+         "entry and clusters: R.TXT takes entry 0 and clusters 2 .. 5 again.",
+         lambda c: c.src == "XKA",
+         lambda c: c.a == 0 and (c.dta, c.spots) == expectA(c)
+         and (c.hl == {"WRBLKQ0": 1024, "WRBLKQ1": 1024, "WRBLKQ2": 1024, "WRBLKQ3": 1024, "RDBLKR0": 8,
+                       "RDBLKR16": 8, "WRZERR31": 0, "WRZERS8": 0, "WRZERT7": 0, "WRZERT8": 0}.get(c.fn, c.hl))
+         and c.fcb == {
+             "FMAKEQ": fcb(QA), "WRBLKQ0": rs(fcb(QA, size=1024, b24=0, rr=1024, **O), 1),
+             "WRBLKQ1": rs(fcb(QA, size=2048, b24=0, c1=2, c2=3, c3=1, rr=2048), 1),
+             "WRBLKQ2": rs(fcb(QA, size=3072, b24=0, c1=2, c2=4, c3=2, rr=3072), 1),
+             "WRBLKQ3": rs(fcb(QA, size=4096, b24=0, c1=2, c2=5, c3=3, rr=4096), 1),
+             "FCLOSE10A": rs(fcb(QA, size=4096, b24=0, c1=2, c2=5, c3=3, rr=4096), 1),
+             "FDELQ": fcb(QA, b24=0, date=0), "FMAKER": fcb(RA),
+             "WRZERR31": fcb(RA, size=4096, b24=0, c1=2, c2=5, c3=3, cr=31, rr=31),
+             "FCLOSE10B": fcb(RA, size=4096, b24=0, c1=2, c2=5, c3=3, cr=31, rr=31),
+             "FOPENR": fcb(RA, rc=0x20, size=4096, c1=2, c2=2),
+             "RDBLKR0": rs(fcb(RA, size=4096, c1=2, c2=2, rr=8), 128),
+             "RDBLKR16": rs(fcb(RA, size=4096, c1=2, c2=4, c3=2, rr=24), 128), "FMAKES": fcb(SA, idx=1),
+             "WRZERS8": fcb(SA, size=1152, b24=0, idx=1, c1=6, c2=6, cr=8, rr=8), "FMAKET": fcb(TA, idx=2),
+             "WRZERT7": fcb(TA, size=1024, b24=0, idx=2, c1=8, c2=8, cr=7, rr=7),
+             "WRZERT8": fcb(TA, size=1152, b24=0, idx=2, c1=8, c2=9, c3=1, cr=8, rr=8)}[c.fn]),
     Rule("R-BK-WORK", S1, "A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE "
          "below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA.",
          lambda c: True,
          lambda c: (c.fn in ("FCLOSE2B", "FCLOSE4A", "FCLOSE4B") or (lambda o: (c.a, c.f, c.hl) == (o.a, o.f, o.hl))(other_ref(c)))
+         and (c.fn != "SETDTA10" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA9" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA8" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA7" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
