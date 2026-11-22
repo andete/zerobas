@@ -17004,7 +17004,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       on both references CONST answers $FF and takes the waiting key out of the BIOS buffer into a hold that the next
       input call returns first; CONIN's echo takes a waiting key into it too, so DIRIO E $FF returns a key with the
       BIOS buffer empty. zerobas's CONST answers $FF and leaves the key; its DIRIO answers 0 there. A program that
-      clears the BIOS buffer (KILBUF) after CONST loses the key on zerobas only. disk/ (the $F37D console input).
+      clears the BIOS buffer (KILBUF) after CONST loses the key on zerobas only. Round 2 (R-BC-HOLD2,
+      scratchpad/XBCON2_run1.out, run2.out XN2 1 .. 18): the hold is one place, taken by CONST one key at a time and
+      by ANY console output (CONOUT too), and served first by every input call. disk/ (the $F37D console input).
 - [ ] **D-F37DEI — THE $F37D BDOS LEAVES INTERRUPTS ON; BOTH REFERENCES LEAVE THEM OFF**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DI: after each of the 15 calls (entered with interrupts off) the

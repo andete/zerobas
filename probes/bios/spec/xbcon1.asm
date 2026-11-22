@@ -5,8 +5,8 @@
 ; DIRIO ($06) with E $FF, $07, $08 and BUFIN ($0A). Run from H.STKE (the disk ROM up, BASIC not started), as the
 ; XBBLK probes. Before the first case the screen is cleared (CLS). Before EACH case the probe empties the BIOS key
 ; buffer (GETPNT := PUTPNT := KEYBUF, work-area RAM) and puts that case's keys in it (KEYBUF, PUTPNT advanced), so no
-; call ever waits. The 20-byte record: A, F, H, L, CSRY, CSRX, PUTPNT's and GETPNT's low bytes, then BUFIN's
-; buffer at $A700 (12 bytes: max 10 going in, the rest $EE) -- then (24 bytes in all) the screen's first row at
+; call ever waits. The 24-byte record: A, F, H, L, CSRY, CSRX, PUTPNT's and GETPNT's low bytes, then BUFIN's
+; buffer at $A700 (12 bytes: max 10 going in, the rest $EE) -- then the screen's first row at
 ; columns 2 .. 5 of the current name table (NAMBAS + 2 .., read with RDVRM: the CF-3300 starts in another mode).
 ; Cases:
 ;   0: CONST, no key (C $0B)

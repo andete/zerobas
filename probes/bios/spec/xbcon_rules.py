@@ -20,7 +20,11 @@ from spec_rules import Rule  # noqa: E402
 PAGE = "docs/bdos/CONIN.md"
 FN = ["CONST0", "CONSTX", "CONINA", "DIRIO0", "DIRIOB", "IN07C", "IN08D", "CONINCR", "CONINCA", "BUFINHI", "CONINE"]
 RUNS = [("XBCON1_run1.out", "D"), ("XBCON1_run2.out", "C")]
-OUTPUTS = {"XN": ["a", "f", "hl", "csr", "put", "get", "buf", "scr"]}
+FN2 = ["DIRIO00", "CONSTX2", "CONSTY2", "IN07H", "IN08D2", "CONST02", "CONSTZ", "BUFINZ", "CONINEF", "DIRIOF",
+       "CONSTXY", "DIRIOX", "CONINTAB", "CONINBS", "CONINCB", "CONINLF", "DIRIO02", "CONOUTQ", "DIRIOK", "DIRIO03"]
+RUNS2 = [("XBCON2_run1.out", "D"), ("XBCON2_run2.out", "C")]
+OUTPUTS = {"XN": ["a", "f", "hl", "csr", "put", "get", "buf", "scr"], "XN2": ["a", "f", "hl", "csr", "put", "get", "buf",
+                                                                             "scr"]}
 UNSTABLE = {}
 _cache = {}
 
@@ -37,6 +41,16 @@ def cases():
             for i, fn in enumerate(FN):
                 r = b[24 * i: 24 * (i + 1)]
                 d[who].append(NS(src="XN", id=f"XN {row}{i:02}", row=row, num=i, fn=fn, a=r[0], f=r[1],
+                                 hl=(r[2] << 8) | r[3], csr=(r[4], r[5]), put=r[6], get=r[7], buf=list(r[8:20]),
+                                 scr=list(r[20:24])))
+    for run, row in RUNS2:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 24 * len(FN2) - len(b)))
+            for i, fn in enumerate(FN2):
+                r = b[24 * i: 24 * (i + 1)]
+                d[who].append(NS(src="XN2", id=f"XN2 {row}{i:02}", row=row, num=100 + i, fn=fn, a=r[0], f=r[1],
                                  hl=(r[2] << 8) | r[3], csr=(r[4], r[5]), put=r[6], get=r[7], buf=list(r[8:20]),
                                  scr=list(r[20:24])))
     _cache["d"] = d
@@ -59,6 +73,32 @@ EXPECT = {
     "BUFINHI": (0x0D, (1, 1), 0xF3, 0xF3, [10, 2, 0x48, 0x49, 0x0D] + [0xEE] * 7, [0x08, 0x49, SP, SP]),
     "CONINE": (0x45, (1, 2), 0xF1, 0xF1, BUF0, [0x45, 0x49, SP, SP]),
 }
+
+
+E_ = [0x45, SP, SP, SP]
+EHI = [0x45, 0x48, 0x49, SP]
+EXPECT.update({
+    "DIRIO00": (0x00, (1, 1), 0xF0, 0xF0, BUF0, [SP] * 4),        # nothing held, no key: A 0
+    "CONSTX2": (0xFF, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),        # 'X' into the hold
+    "CONSTY2": (0xFF, (1, 1), 0xF1, 0xF0, BUF0, [SP] * 4),        # the hold full: 'Y' STAYS in the buffer
+    "IN07H": (0x58, (1, 1), 0xF1, 0xF0, BUF0, [SP] * 4),          # $07 returns the held 'X'; 'C' stays
+    "IN08D2": (0x44, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),
+    "CONST02": (0x00, (1, 1), 0xF0, 0xF0, BUF0, [SP] * 4),
+    "CONSTZ": (0xFF, (1, 1), 0xF1, 0xF1, BUF0, [SP] * 4),
+    "BUFINZ": (0x0D, (1, 1), 0xF3, 0xF3, [10, 3, 0x5A, 0x48, 0x49, 0x0D] + [0xEE] * 6, [0x5A, 0x48, 0x49, SP]),
+    "CONINEF": (0x45, (1, 2), 0xF2, 0xF2, BUF0, EHI),             # 'E'; the echo takes 'F' into the hold
+    "DIRIOF": (0x46, (1, 2), 0xF0, 0xF0, BUF0, EHI),
+    "CONSTXY": (0xFF, (1, 2), 0xF2, 0xF1, BUF0, EHI),             # ONE key taken, 'Y' stays
+    "DIRIOX": (0x58, (1, 2), 0xF0, 0xF0, BUF0, EHI),
+    "CONINTAB": (0x09, (1, 9), 0xF1, 0xF1, BUF0, E_),             # TAB: spaces to column 9
+    "CONINBS": (0x08, (1, 8), 0xF1, 0xF1, BUF0, E_),              # BS raw: back one column
+    "CONINCB": (0x02, (1, 8), 0xF1, 0xF1, BUF0, E_),              # CTRL+B raw: nothing shown, the cursor stays
+    "CONINLF": (0x0A, (2, 8), 0xF1, 0xF1, BUF0, E_),              # LF raw: down one row, the column kept
+    "DIRIO02": (0x00, (2, 8), 0xF0, 0xF0, BUF0, E_),
+    "CONOUTQ": (0x51, (2, 9), 0xF1, 0xF1, BUF0, E_),              # CONOUT prints 'Q' and takes 'K' into the hold
+    "DIRIOK": (0x4B, (2, 9), 0xF0, 0xF0, BUF0, E_),
+    "DIRIO03": (0x00, (2, 9), 0xF0, 0xF0, BUF0, E_),
+})
 
 
 def holds(c):
@@ -88,8 +128,20 @@ RULES = [
          "graphic-character prefix, so the NEXT character printed shows as a graphic (BUFIN's 'H' -> $08).",
          F("CONINCR", "CONINCA", "CONINE"), holds),
     Rule("R-BC-BUFIN", S1, "BUFIN ($0A) at DE with 'HI' + Return and a maximum of 10: +1 the count 2, +2 'HI', then "
-         "the $0D STORED after the text; the rest of the buffer untouched. It echoes 'HI' at the cursor and ends "
-         "with a carriage return alone (column 1, the same row: no line feed). A $0D.", F("BUFINHI"), holds),
+         "the $0D STORED after the text; the rest of the buffer untouched. It echoes 'HI' at the cursor (the 'H' shown as "
+         "graphic $08: CONIN had echoed the $01 prefix just before) and ends with a carriage return alone (column 1, the same row: no line feed). A $0D.", F("BUFINHI"), holds),
+    Rule("R-BC-HOLD2", S1, "Round 2: the hold is ONE place. DIRIO E $FF with nothing held and no key answers A 0. "
+         "CONST with a key held answers $FF and leaves a new key in the BIOS buffer ('Y' stays); with two keys "
+         "waiting it takes ONE ('X'; 'Y' stays). Every input call serves the held key first: $07 returns the held "
+         "'X' and leaves 'C' waiting; BUFIN puts the held 'Z' before the typed 'HI' (count 3). Any console OUTPUT "
+         "takes a waiting key into an empty hold: CONIN's echo of 'E' takes 'F' (DIRIO then returns it), and so "
+         "does CONOUT ($02, 'Q' printed, 'K' then returned by DIRIO).",
+         F("DIRIO00", "CONSTX2", "CONSTY2", "IN07H", "IN08D2", "CONST02", "CONSTZ", "BUFINZ", "CONINEF", "DIRIOF",
+           "CONSTXY", "DIRIOX", "DIRIO02", "CONOUTQ", "DIRIOK", "DIRIO03"), holds),
+    Rule("R-BC-CTRL", S1, "CONIN's echo of control keys: TAB ($09) is expanded with SPACES to the next multiple of 8 "
+         "(column 1 -> 9, the cells written); BS ($08), CTRL+B ($02) and LF ($0A) go to the screen raw -- back one "
+         "column, nothing shown, down one row with the column kept. A is the key.",
+         F("CONINTAB", "CONINBS", "CONINCB", "CONINLF"), holds),
     Rule("R-BC-WORK", S1, "F and HL are working values; the two references give the same ones in every case "
          "(e.g. HL $3C00 / $3CFF after CONST, H 0 L $0D after BUFIN, L = the key after the others).",
          lambda c: True, lambda c: (lambda o: (c.f, c.hl) == (o.f, o.hl))(other_ref(c))),
