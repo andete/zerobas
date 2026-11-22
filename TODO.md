@@ -16890,6 +16890,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
       HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
       table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
+- [ ] **D-DSKFMTHIGH — DSKFMT TAKES CHOICE $81 AS A SUCCESS AND FORMATS NOTHING; THE REFERENCE REFUSES IT**
+      🎚️ TIER 6 — every error (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKFMT.md R-DF-BAD (scratchpad/XDFMT3_run1.out XF3 0): DSKFMT ($401C) with A = $81
+      on the CF-3300 returns A 12, carry set, E $80, the disk untouched (as 0, 5-8, $80, $FF); zerobas returns A 0
+      with the carry clear and formats nothing -- a caller is told the disk is formatted. Its range test lets a high
+      bit through; fix in disk/ (the choice check).
 - [ ] **D-DSKFMTREGS — DSKFMT RETURNS OTHER WORKING REGISTERS THAN THE CF-3300'S (THE DISKS ARE THE SAME)**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/disk/DSKFMT.md R-DF-OKREGS / R-DF-BADF (scratchpad/XDFMT1_run2.out, the CF-3300 row):

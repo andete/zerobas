@@ -1,0 +1,31 @@
+WARNING: Var buf is never used on line 38 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file probes/bios/spec/xdfmt3.asm
+===== probes/bios/spec/xdfmt3.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=5207 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 0c872000008080000000420002020100027000a005f90300090002000000f9ffff00000000000042003c0041942000004200020101000240006801fc0200090001000000fcffff00000000000042003c0049903000004200020101000240006801fc0200090001000000fcffff
+  CAP ours: 00000000000000000000440002020100027000a005f90300090002000000f9ffff0000000000004400050100000e00004400020101000240006801fc0200090001000000fcffff0000000000004400050100000e00004400020101000240006801fc0200090001000000fcffff
+  DIFF (20 unexcused byte(s)):
+  CAP A001: ref=0C ours=00
+  CAP A002: ref=87 ours=00
+  CAP A003: ref=20 ours=00
+  CAP A006: ref=80 ours=00
+  CAP A007: ref=80 ours=00
+  CAP A00B: ref=42 ours=44
+  CAP A028: ref=42 ours=44
+  CAP A02A: ref=3C ours=05
+  CAP A02B: ref=00 ours=01
+  CAP A02C: ref=41 ours=00
+  CAP A02D: ref=94 ours=00
+  CAP A02E: ref=20 ours=0E
+  CAP A031: ref=42 ours=44
+  CAP A04E: ref=42 ours=44
+  CAP A050: ref=3C ours=05
+  CAP A051: ref=00 ours=01
+  CAP A052: ref=49 ours=00
+  CAP A053: ref=90 ours=00
+  CAP A054: ref=30 ours=0E
+  CAP A057: ref=42 ours=44
+===== biosl: DIVERGENCE =====
