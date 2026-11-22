@@ -99,6 +99,10 @@ ROWS = {
     "nodisk": ("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"),
     "disk": ("Philips_VG_8020_NMS1200", "C-BIOS_MSX1_EU_REPACK_DISK"),
     "cf3300": ("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"),
+    # D-DISKFORCBIOS (b) (2026-11-22): a THIRD disk interface -- the NMS 8250's built-in drive (MSX2, the
+    # Philips-style FDC) -- for the disk pages' black-box rules. MSX2: a run here answers "does the rule hold on
+    # another interface", not "is zerobas an MSX2"; zerobas's side is the same disk machine as the other rows.
+    "nms8250": ("Philips_NMS_8250", "C-BIOS_MSX1_EU_REPACK_DISK"),
 }
 
 
@@ -274,7 +278,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rung", nargs="?")
     ap.add_argument("--all", action="store_true", help="every rung in probes/bios/biosl")
-    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300"), default="both")
+    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300", "nms8250"), default="both")
     a = ap.parse_args()
     if a.all:
         rungs = sorted(f[:-4] for f in os.listdir(HERE) if f.endswith(".asm"))

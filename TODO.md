@@ -16781,7 +16781,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ (4) DONE 2026-11-22: tests/run.py runs GROUPS on a worker pool (ZB_UNIT_JOBS, default the CPU count; 1 =
       serial) -- files sharing a tp() artifact name or taking another test's build are one group, run in order in
       one worker (88 groups of 100). 379 serial s -> 91 s (scratchpad/AE_unit_times.out, AE_unit_par.out); a planted
-      failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this.
+      failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this; ee1ef5fd's 335 s.
+      Left after that: spec-live ~42 s and kwsweep ~37 s in a docs-only plan, tiers-md-check ~27 s.
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
@@ -16997,6 +16998,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/concepts/disk.md "The driver alone needs far less" (the driver's own cells, read from its code and the
       work-area map) and "The DOS 1 driver interface's own routines are not entries". LEFT: (b) the NMS 8250 row,
       (e) blocked on 2-Tier2-a.
+      ✅ (b) DONE 2026-11-22: a reference-only NMS 8250 row (`biosl_run.py --row nms8250`; spec_rules' c.ref_only,
+      spec_live does not re-run it) on PHYDIO, DSKIO, DSKCHG, GETDPB and CHOICE / MTOFF -- every rule there now
+      holds on all three interfaces, the interface's own values per row (scratchpad/AE_speclive_nms8250.out). Found:
+      interrupts ON after every call on the NMS 8250 (off on the other two); it refuses media $FF in PHYDIO and
+      $FC .. $FF in GETDPB (R-GD-REFUSE); MTOFF A 3 with F / BC / HL kept; DSKCHG's 48 / 96 model the same case for
+      case; its first call after start-up, a track-1 read, got track 0 (R-PD-FIRSTE, measured twice). DSKFMT not
+      run: its choices are each interface's own. Summary for the port: docs/concepts/disk.md "What every interface
+      keeps". ⏸️ ONLY (e) LEFT, BLOCKED on 2-Tier2-a.
       🎚️ TIER 1 — entry points (the disk-ROM entries are the BDOS / disk-BIOS focus's own subject; filed 2026-11-22).
       🤖 **AUTONOMOUS** — C-BIOS is weighing folding the disk BIOS calls in (0.32 / 0.33) and ports by spec page. Wanted:
       (a) spec pages for the driver entries without one: DSKIO ($4010, called DIRECTLY -- docs/bios/PHYDIO.md

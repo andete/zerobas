@@ -36,7 +36,10 @@ import spec_rules  # noqa: E402
 import biosl_run  # noqa: E402
 
 SCRATCH = os.path.join(ROOT, "scratchpad")
-HEADER = re.compile(r"^===== (\S+\.asm) (nodisk|disk|cf3300): ")
+HEADER = re.compile(r"^===== (\S+\.asm) (nodisk|disk|cf3300|nms8250): ")
+# rows that are REFERENCE-ONLY (a further reference machine; tools/spec_rules.py's c.ref_only): no rule reads their
+# `CAP ours`, so they are NOT re-run -- the committed line stays (D-DISKFORCBIOS (b): the NMS 8250's drive)
+REF_ONLY_ROWS = {"nms8250"}
 CAP_OURS = re.compile(r"^  CAP ours: [0-9a-fA-F]+$", re.M)
 RULE_ID = re.compile(r"\bR\d?-[A-Z0-9][A-Z0-9-]*[A-Z0-9]\b")
 
@@ -98,6 +101,9 @@ def live_run(run_file, td):
     for h, c in zip(heads, caps):
         m = HEADER.search(lines[h])
         asm, row = m.group(1), m.group(2)
+        if row in REF_ONLY_ROWS:
+            print(f"  live {os.path.basename(run_file)} {row}: reference-only row, not re-run")
+            continue
         st = biosl_run.settings(open(os.path.join(ROOT, asm)).read())
         rom = biosl_run.build(os.path.join(ROOT, asm), td)
         t0 = time.time()

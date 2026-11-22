@@ -153,7 +153,7 @@ def run(mod):
         seen[i] |= sl
         declared += len(sl)
         for f in fields:
-            if getattr(ref[i], f) != getattr(zb[i], f):
+            if not getattr(ref[i], "ref_only", False) and getattr(ref[i], f) != getattr(zb[i], f):
                 unread_diffs.append(f"{cid} {f}")
     # UNSTABLE: {case id: (fields, reason)} -- outputs the REFERENCE itself does not reproduce (the same inputs gave
     # different values in two probes / runs; the reason must cite both). Accounted for like UNREAD, but exempt from
@@ -173,7 +173,10 @@ def run(mod):
         if not idx:
             sys.exit(f"FAIL: rule {r.id} selects no case -- a rule about nothing")
         ref_bad = [ref[i].id for i in idx if not r.expect(_Tracked(ref[i], outputs[ref[i].src], seen[i]))]
-        zb_bad = [zb[i].id for i in idx if not r.expect(zb[i])]
+        # a REFERENCE-ONLY case (c.ref_only: D-DISKFORCBIOS (b), 2026-11-22) is a further reference machine -- the
+        # NMS 8250's drive -- asking whether the rule is every interface's; zerobas's side of it is the same disk
+        # machine again, judged against ANOTHER interface's own values, so it is not judged at all
+        zb_bad = [zb[i].id for i in idx if not getattr(ref[i], "ref_only", False) and not r.expect(zb[i])]
         out.append((r, len(idx), ref_bad, zb_bad))
     total = 0
     uncovered = []                        # (case id, [field[entry] ...])

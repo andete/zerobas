@@ -226,6 +226,16 @@ and `FORMAT` go through). None of the rest — the FAT and directory buffers,
 the 750 bytes of channel state under `HIMEM`, zerobas BASIC's own layout — is
 the driver's.
 
+**What every interface keeps, and what is its own.** Measured on three disk interfaces — the
+VG-8020 with an NMS 1200, the CF-3300, and the NMS 8250's built-in drive (2026-11-22) — the driver entries
+agree on what a caller acts on: the bytes moved, A, the carry, PHYDIO's B, DSKCHG's answer and its 48 /
+96-interrupt windows, GETDPB's block for media bytes `&HF8`, `&HF9` and `&HFA`. They differ in what a port may choose
+freely: the interrupt state after a call (off on the NMS 1200 and the CF-3300, ON on the NMS 8250), the
+working C, DE and HL, MTOFF's registers, and which media bytes a drive takes (the NMS 8250 refuses
+`&HFC`–`&HFF` in GETDPB and `&HFF` in PHYDIO). Each page has the details:
+[PHYDIO](../bios/PHYDIO.md), [DSKIO](../disk/DSKIO.md), [DSKCHG](../disk/DSKCHG.md),
+[GETDPB](../disk/GETDPB.md), [CHOICE](../disk/CHOICE.md).
+
 **The DOS 1 driver interface's own routines are not entries.** A Disk BASIC
 ROM maker writes `INIHRD`, `DRIVES`, `INIENV`, `DEFDPB`, `MYSIZE` / `SECLEN`,
 `OEMSTA` and `DSKSTP` for the shared Disk BASIC kernel to call; they sit

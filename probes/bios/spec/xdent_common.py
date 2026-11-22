@@ -66,23 +66,32 @@ def timeline(run):
     return out
 
 
+# D-DISKFORCBIOS (b) (2026-11-22): row N, the NMS 8250's built-in drive (MSX2, the Philips-style FDC), the same
+# probes' run 3 (XDENTn_run3.out, `--row nms8250`) -- does the model hold on another interface? Its ids carry an N
+# ("XE2 N1"); row D's are as they were.
+ROWS = [("D", "_run1.out", " disk: "), ("N", "_run3.out", " nms8250: ")]
+
+
 def cases(entry):
     d = {"ref": [], "zb": []}
-    for run, steps in STEPS.items():
+    for run1, steps in STEPS.items():
+      for row, suffix, head in ROWS:
+        run = run1.replace("_run1.out", suffix)
         t = open(os.path.join(ROOT, "scratchpad", run)).read()
-        sec = t[t.index(" disk: "):]
+        sec = t[t.index(head):]
         sec = sec[:sec.index("\n=====")] if "\n=====" in sec else sec
         for who, key in (("ref", "ref"), ("zb", "ours")):
             b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", sec).group(1))
             b += bytes(max(0, 30 * len(steps) - len(b)))          # (calls only record; this pads enough)
-            tl = timeline(run)
+            tl = timeline(run1)
             calls = [st for st in steps if st[0] not in ("WAIT", "BUSY")]
             for i, (cid, ent, bin_, cin, what) in enumerate(calls):
                 if ent != entry:
                     continue
                 r = b[30 * i: 30 * (i + 1)]
-                d[who].append(NS(src="XE", id=cid, entry=ent, bin=bin_, cin=cin, what=what, run=run, since=tl[cid],
-                                 empty=run in NODISK,
+                rid = cid if row == "D" else cid.replace(" ", " N")
+                d[who].append(NS(src="XE", id=rid, row=row, ref_only=(row == "N"), entry=ent, bin=bin_, cin=cin, what=what, run=run1,
+                                 since=tl[cid], empty=run1 in NODISK,
                                  a=r[0], f=r[1], b=r[2], c=r[3], de=(r[4] << 8) | r[5], hl=(r[6] << 8) | r[7],
                                  iff=r[8], dpb=list(r[9:30])))
     return d

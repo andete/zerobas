@@ -19,21 +19,29 @@ PAGE = "docs/disk/CHOICE.md"
 REC = 30
 FN = [("CHOICE", 0x00, 0x00), ("CHOICE", 0xF9, 0xF9), ("CHOICE", 0xFF, 0xFF),
       ("MTOFF", 0x00, 0x00), ("MTOFF", 0xFF, 0xFF), ("MTOFF", 0x12, 0x34)]
-ROWS = [("D", "XCHOICE1_run1.out", "disk"), ("C", "XCHOICE1_run2.out", "cf3300")]
+ROWS = [("D", "XCHOICE1_run1.out", "disk"), ("C", "XCHOICE1_run2.out", "cf3300"),
+        ("N", "XCHOICE1_run3.out", "nms8250")]   # N: the NMS 8250 (D-DISKFORCBIOS (b))
 REC2 = 41
 FN2 = [("CHOICE", 0x5AD7, 0xF800, 0x1234, 0xC000), ("CHOICE", 0x0000, 0x00F9, 0x0000, 0xA400),
        ("MTOFF", 0x5AD7, 0x1234, 0x5678, 0xC000), ("DSKIO", 0x0000, 0x01F9, 0x0000, 0xA800),
        ("MTOFF", 0x0000, 0x0000, 0x0000, 0xA400), ("CHOICE", 0x0000, 0x0000, 0x0000, 0xA400)]
-ROWS2 = [("D", "XCHOICE2_run1.out", "disk"), ("C", "XCHOICE2_run2.out", "cf3300")]
+ROWS2 = [("D", "XCHOICE2_run1.out", "disk"), ("C", "XCHOICE2_run2.out", "cf3300"),
+         ("N", "XCHOICE2_run3.out", "nms8250")]
 BOOT = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:32])   # our own generated image's sector 0
 OUTPUTS = {"XH": ["a", "f", "b", "c", "de", "hl", "iff", "buf"], "XH2": ["a", "f", "b", "c", "de", "hl", "iff", "buf"]}
 _NMS = ("MTOFF's registers are the INTERFACE's: on the VG-8020's NMS 1200 (XCHOICE1 run 1, XCHOICE2 run 1) always A 3, "
         "F $28, BC $0022, HL $F1C1, whatever goes in and after a read too; on the CF-3300 (run 2) A 0, F $44, BC and HL "
-        "kept -- R-CH-MTOFFCF pins that row")
+        "kept -- R-CH-MTOFFCF pins that row; on the NMS 8250's built-in drive (XCHOICE1 / XCHOICE2 run 3) A 3, and "
+        "F, BC and HL KEPT (F $D7 out for $5AD7 in, $00 for $0000)")
 UNSTABLE = {f"XH D{i:02}": (["a", "f", "b", "c", "hl"], _NMS) for i in (3, 4, 5)}
 UNSTABLE.update({f"XH2 D{i:02}": (["a", "f", "b", "c", "hl"], _NMS) for i in (2, 4)})
 UNSTABLE.update({f"XH2 {row}03": (["c"], "DSKIO's C after a read: XCHOICE2 run 1 (VG-8020 + NMS 1200) $22, run 2 "
                                   "(CF-3300) $3C -- a working value of each interface") for row in "DC"})
+UNSTABLE.update({f"XH N{i:02}": (["a", "f", "b", "c", "hl"], _NMS) for i in (3, 4, 5)})
+UNSTABLE.update({f"XH2 N{i:02}": (["a", "f", "b", "c", "hl"], _NMS) for i in (2, 4)})
+UNSTABLE["XH2 N03"] = (["b", "c", "de", "hl", "iff"], "the set-up read on the NMS 8250 (XCHOICE2 run 3) leaves DE $400A and "
+                       "INTERRUPTS ON (R-CH-READ: on the other two, off), C $3C as the CF-3300's -- its working "
+                       "registers are the interface's")
 _cache = {}
 
 
@@ -50,7 +58,7 @@ def cases():
             b += bytes(max(0, REC * len(FN) - len(b)))
             for i, (fn, bi, ci) in enumerate(FN):
                 r = b[REC * i: REC * (i + 1)]
-                d[who].append(NS(src="XH", id=f"XH {tag}{i:02}", row=tag, num=i, fn=fn, bin=bi, cin=ci, a=r[0],
+                d[who].append(NS(src="XH", id=f"XH {tag}{i:02}", row=tag, ref_only=(tag == "N"), num=i, fn=fn, bin=bi, cin=ci, a=r[0],
                                  f=r[1], b=r[2], c=r[3], de=(r[4] << 8) | r[5], hl=(r[6] << 8) | r[7], iff=r[8],
                                  buf=list(r[9:30])))
     for tag, run, row in ROWS2:
@@ -62,7 +70,7 @@ def cases():
             b += bytes(max(0, REC2 * len(FN2) - len(b)))
             for i, (fn, af, bc, de, hl) in enumerate(FN2):
                 r = b[REC2 * i: REC2 * (i + 1)]
-                d[who].append(NS(src="XH2", id=f"XH2 {tag}{i:02}", row=tag, num=100 + i, fn=fn, afin=af, bcin=bc,
+                d[who].append(NS(src="XH2", id=f"XH2 {tag}{i:02}", row=tag, ref_only=(tag == "N"), num=100 + i, fn=fn, afin=af, bcin=bc,
                                  dein=de, hlin=hl, a=r[0], f=r[1], b=r[2], c=r[3], de=(r[4] << 8) | r[5],
                                  hl=(r[6] << 8) | r[7], iff=r[8], buf=list(r[9:41])))
     _cache["d"] = d
@@ -76,7 +84,8 @@ def kept(c, *regs):
 
 
 def other_ref(c):
-    return next(o for o in cases()["ref"] if o.src == c.src and o.num == c.num and o.row != c.row)
+    """the VG-8020 + NMS 1200 for the CF-3300 and back (the NMS 8250, row N, is no one's pair)"""
+    return next(o for o in cases()["ref"] if o.src == c.src and o.num == c.num and o.row != c.row and o.row != "N")
 
 
 S1 = "1. CHOICE and MTOFF"
@@ -101,9 +110,11 @@ RULES = [
          lambda c: (c.a, c.f) == (0, 0x44) and (c.b, c.c, c.hl) == (
              (c.bin, c.cin, 0xA400) if c.src == "XH" else (c.bcin >> 8, c.bcin & 0xFF, c.hlin))),
     Rule("R-CH-READ", S1, "Round 2's set-up read (DSKIO, sector 0 to $A800) moves the image's boot sector (the 32 "
-         "bytes recorded), A 0, the carry clear, interrupts off after; its F, B, DE, HL as the other reference's "
-         "(zerobas differs in F and HL only).",
+         "bytes recorded), A 0, the carry clear, on all three interfaces. On the VG-8020 + NMS 1200 and the CF-3300 "
+         "interrupts are off after and F, B, DE, HL are the same (zerobas differs in F and HL only); the NMS 8250 "
+         "leaves interrupts ON and DE $400A (UNSTABLE below) -- a caller cannot count on DSKIO's interrupt state.",
          lambda c: c.fn == "DSKIO",
-         lambda c: c.buf == BOOT and c.a == 0 and not (c.f & 1) and c.iff == 0
-         and (lambda o: (c.f, c.b, c.de, c.hl) == (o.f, o.b, o.de, o.hl))(other_ref(c))),
+         lambda c: c.buf == BOOT and c.a == 0 and not (c.f & 1)
+         and (c.row == "N" or c.iff == 0
+              and (lambda o: (c.f, c.b, c.de, c.hl) == (o.f, o.b, o.de, o.hl))(other_ref(c)))),
 ]

@@ -1,0 +1,21 @@
+WARNING: Var buf is never used on line 39 of file probes/bios/spec/xchoice1.asm
+===== probes/bios/spec/xchoice1.asm nms8250: Philips_NMS_8250 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 112, ours 240
+  ref : jiffy=0d01 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78f0079c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 00000000000079aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000f9f9000079aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000ffff000079aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5030000000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50300ffff0000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5030012340000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  CAP ours: 000000000000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000f9f90000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000ffff0000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004400000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50044ffff0000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004412340000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  DIFF (12 unexcused byte(s)):
+  CAP A007: ref=79 ours=55
+  CAP A008: ref=AA ours=7C
+  CAP A025: ref=79 ours=55
+  CAP A026: ref=AA ours=7C
+  CAP A043: ref=79 ours=55
+  CAP A044: ref=AA ours=7C
+  CAP A05B: ref=03 ours=00
+  CAP A05C: ref=00 ours=44
+  CAP A079: ref=03 ours=00
+  CAP A07A: ref=00 ours=44
+  CAP A097: ref=03 ours=00
+  CAP A098: ref=00 ours=44
+===== biosl: DIVERGENCE =====

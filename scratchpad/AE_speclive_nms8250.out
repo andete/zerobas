@@ -1,0 +1,129 @@
+  live XDSK1_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK1_run2.out nodisk: xdsk1.asm 0.9 s, zerobas as committed
+  live XDSK1_run2.out disk: xdsk1.asm 0.2 s, zerobas as committed
+  live XDSK2_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK2_run1.out nodisk: xdsk2.asm 0.1 s, zerobas as committed
+  live XDSK2_run1.out disk: xdsk2.asm 0.2 s, zerobas as committed
+  live XDSK3_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK3_run2.out nodisk: xdsk3.asm 0.1 s, zerobas as committed
+  live XDSK3_run2.out disk: xdsk3.asm 0.3 s, zerobas as committed
+  live XDSK4_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK4_run1.out nodisk: xdsk4.asm 0.1 s, zerobas as committed
+  live XDSK4_run1.out disk: xdsk4.asm 0.2 s, zerobas as committed
+  live XDSK5_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK5_run2.out nodisk: xdsk5.asm 0.1 s, zerobas as committed
+  live XDSK5_run2.out disk: xdsk5.asm 0.2 s, zerobas as committed
+  live XDSK6_nms8250.out nms8250: reference-only row, not re-run
+  live XDSK6_run1.out nodisk: xdsk6.asm 0.1 s, zerobas as committed
+  live XDSK6_run1.out disk: xdsk6.asm 0.2 s, zerobas as committed
+OK   docs/bios/PHYDIO.md: 9 rules, 6 failing on zerobas (live, 12 run file(s))
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out nodisk: xdrvtbl.asm 0.1 s, zerobas as committed
+WARNING: Var CALSLT is never used on line 15 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var DRVSLT is never used on line 16 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var buf is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cases is never used on line 139 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cb is never used on line 19 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var entry is never used on line 18 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var fin is never used on line 86 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var rec is never used on line 93 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+WARNING: Var tptr is never used on line 17 of file /Users/joost/projects/zerobas/probes/bios/spec/xdrvtbl.asm
+  live XDRVTBL_run1.out disk: xdrvtbl.asm 0.1 s, zerobas as committed
+  live XDSK1_cf3300.out cf3300: xdsk1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out nodisk: xdskio1.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run1.out disk: xdskio1.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio1.asm
+  live XDSKIO1_run2.out cf3300: xdskio1.asm 0.2 s, zerobas as committed
+  live XDSKIO1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out nodisk: xdskio2p.asm 0.1 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run1.out disk: xdskio2p.asm 0.2 s, zerobas as committed
+WARNING: Var dskio is never used on line 204 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2p.asm
+  live XDSKIO2P_run2.out cf3300: xdskio2p.asm 0.2 s, zerobas as committed
+  live XDSKIO2P_run3.out nms8250: reference-only row, not re-run
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out nodisk: xdskio2.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run1.out disk: xdskio2.asm 0.2 s, zerobas as committed
+WARNING: Var PHYDIO is never used on line 29 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+WARNING: Var fill_pat is never used on line 187 of file /Users/joost/projects/zerobas/probes/bios/spec/xdskio2.asm
+  live XDSKIO2_run2.out cf3300: xdskio2.asm 0.2 s, zerobas as committed
+  live XDSKIO2_run3.out nms8250: reference-only row, not re-run
+OK   docs/disk/DSKIO.md: 4 rules, 3 failing on zerobas (live, 13 run file(s))
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out nodisk: xchoice1.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run1.out disk: xchoice1.asm 0.2 s, zerobas as committed
+WARNING: Var buf is never used on line 39 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice1.asm
+  live XCHOICE1_run2.out cf3300: xchoice1.asm 0.1 s, zerobas as committed
+  live XCHOICE1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out nodisk: xchoice2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run1.out disk: xchoice2.asm 0.1 s, zerobas as committed
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+  live XCHOICE2_run2.out cf3300: xchoice2.asm 0.1 s, zerobas as committed
+  live XCHOICE2_run3.out nms8250: reference-only row, not re-run
+OK   docs/disk/CHOICE.md: 4 rules, 1 failing on zerobas (live, 6 run file(s))
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out nodisk: xdent1.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 42 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent1.asm
+  live XDENT1_run1.out disk: xdent1.asm 0.2 s, zerobas as committed
+  live XDENT1_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out nodisk: xdent2.asm 5.8 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent2.asm
+  live XDENT2_run1.out disk: xdent2.asm 0.2 s, zerobas as committed
+  live XDENT2_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out nodisk: xdent3.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 52 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent3.asm
+  live XDENT3_run1.out disk: xdent3.asm 0.2 s, zerobas as committed
+  live XDENT3_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out nodisk: xdent4.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent4.asm
+  live XDENT4_run1.out disk: xdent4.asm 0.2 s, zerobas as committed
+  live XDENT4_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out nodisk: xdent5.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent5.asm
+  live XDENT5_run1.out disk: xdent5.asm 0.1 s, zerobas as committed
+  live XDENT5_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out nodisk: xdent6.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent6.asm
+  live XDENT6_run1.out disk: xdent6.asm 0.1 s, zerobas as committed
+  live XDENT6_run3.out nms8250: reference-only row, not re-run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out nodisk: xdent7.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var buf is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xdent7.asm
+  live XDENT7_run1.out disk: xdent7.asm 0.1 s, zerobas as committed
+  live XDENT7_run3.out nms8250: reference-only row, not re-run
+OK   docs/disk/DSKCHG.md: 5 rules, 5 failing on zerobas (live, 14 run file(s))
+OK   docs/disk/GETDPB.md: 3 rules, 2 failing on zerobas (live, 14 run file(s))
+===== spec-live: ALL PAGES AGREE =====

@@ -1,0 +1,18 @@
+WARNING: Var buf is never used on line 31 of file probes/bios/spec/xdent7.asm
+===== probes/bios/spec/xdent7.asm nms8250: Philips_NMS_8250 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 112, ours 240
+  ref : jiffy=1101 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78f0079c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : f9b8fffaa41374fa01e5f900020f040102010002700e00ca02030700e5e50000
+  CAP ours: 030400000007a41200e5f900020f040102010002700e00ca02030700e5e50000
+  DIFF (9 unexcused byte(s)):
+  CAP A001: ref=F9 ours=03
+  CAP A002: ref=B8 ours=04
+  CAP A003: ref=FF ours=00
+  CAP A004: ref=FA ours=00
+  CAP A005: ref=A4 ours=00
+  CAP A006: ref=13 ours=07
+  CAP A007: ref=74 ours=A4
+  CAP A008: ref=FA ours=12
+  CAP A009: ref=01 ours=00
+===== biosl: DIVERGENCE =====

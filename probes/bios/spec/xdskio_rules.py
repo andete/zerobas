@@ -23,10 +23,14 @@ CASE = re.compile(r";\s+(\d\d): (.*?): A (\d), F \$([0-9A-F]{2}), B (\d+), C \$(
 OUTS = ["a", "f", "b", "c", "de", "hl", "iff", "sum", "b0", "b512"]
 OUTPUTS = {"XI": OUTS, "XI2": OUTS, "XT": ["drvtbl", "hphyd"]}
 # per round: (the probe, its source tag, [(row tag, DSKIO run, the section's row name, PHYDIO run, its row name)])
+# N: the NMS 8250's built-in drive (MSX2, the Philips-style FDC; D-DISKFORCBIOS (b), 2026-11-22) -- a third
+# interface, asking which rules are the interface's and which every DSKIO keeps.
 ROUNDS = [("xdskio1.asm", "XI", [("D", "XDSKIO1_run1.out", "disk", "XDSK1_run2.out", "disk"),
-                                 ("C", "XDSKIO1_run2.out", "cf3300", "XDSK1_cf3300.out", "cf3300")]),
+                                 ("C", "XDSKIO1_run2.out", "cf3300", "XDSK1_cf3300.out", "cf3300"),
+                                 ("N", "XDSKIO1_run3.out", "nms8250", "XDSK1_nms8250.out", "nms8250")]),
           ("xdskio2.asm", "XI2", [("D", "XDSKIO2_run1.out", "disk", "XDSKIO2P_run1.out", "disk"),
-                                   ("C", "XDSKIO2_run2.out", "cf3300", "XDSKIO2P_run2.out", "cf3300")])]
+                                   ("C", "XDSKIO2_run2.out", "cf3300", "XDSKIO2P_run2.out", "cf3300"),
+                                   ("N", "XDSKIO2_run3.out", "nms8250", "XDSKIO2P_run3.out", "nms8250")])]
 
 
 def _section(run, row):
@@ -56,7 +60,7 @@ def cases():
             for who, key in (("ref", "ref"), ("zb", "ours")):
                 b = _recs(sec, key, len(rows))
                 for i, (num, title, a, f, bb, c, de, hl, ei, kind) in enumerate(rows):
-                    d[who].append(NS(src=stag, id=f"{stag} {tag}{num}", row=tag, num=int(num), title=title,
+                    d[who].append(NS(src=stag, id=f"{stag} {tag}{num}", row=tag, ref_only=(tag == "N"), num=int(num), title=title,
                                      bin=int(bb), hlin=int(hl, 16), phy=_vals(phy[REC * i: REC * (i + 1)]),
                                      **_vals(b[REC * i: REC * (i + 1)])))
     t = drvtbl_cases()

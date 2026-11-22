@@ -38,6 +38,16 @@ def cases():
     return X.cases("GETDPB")
 
 
+# D-DISKFORCBIOS (b) (2026-11-22): row N, the NMS 8250's built-in drive (XDENTn_run3.out), takes FEWER media bytes:
+# $F8, $F9 and $FA as row D does (the same 18 bytes), and REFUSES $FC, $FD, $FE and $FF (XE1 N3, XE2 N5 .. N7).
+def taken(c):
+    return c.row == "D" or c.bin <= 0xFB
+
+
+A_PER = {"D": 2, "N": 1}                    # A = A_PER x (B - $F8): the format's index, scaled per interface
+HL_BASE = {"D": 0x7405, "N": 0x74D6}        # HL = base + 18 x (B - $F7): that interface's table, 18 bytes a format
+
+
 S1 = "1. GETDPB ($4016): the drive parameter block a media byte names"
 RULES = [
     Rule("R-GD-DPB", S1, "GETDPB writes the 18 bytes after the DPB's drive byte (HL + 1 .. HL + 18) from the MEDIA "
@@ -48,13 +58,22 @@ RULES = [
          "112, 14, 714, 3, 7; $FA and $FF 1/2, 112, 10, 316, 1, 3; $FC 0/1, 64, 9, 352, 2, 5; $FE 0/1, 64, 7, 314, 1, "
          "3. HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part "
          "(XE1 5: C $00, and XE3 1: C $F8 -- a valid media byte -- both give B's $F9 block). It does not touch the "
-         "drive: with drive A EMPTY (XE5 0) the block and the registers are the same.", lambda c: True,
+         "drive: with drive A EMPTY (XE5 0) the block and the registers are the same. The NMS 8250 (row N) writes "
+         "the same 18 bytes for $F8, $F9 and $FA, and refuses the rest (R-GD-REFUSE).", taken,
          lambda c: c.dpb[1:19] == dpb_of(c.bin) and c.dpb[0] == 0xE5 and c.dpb[19:21] == [0xE5, 0xE5]),
     Rule("R-GD-REGS", S1, "It returns the carry clear, BC 0, DE = the entry HL + 19 (the end of the 18-byte copy), "
-         "interrupts off, and A = 2 x (B - $F8) ($F8 0 .. $FF 14: the format's index); the rest of F and HL are "
-         "working values that follow the media byte alone (HL $7405 + 18 x (B - $F7) in every case: the end of an "
-         "18-byte block per format).", lambda c: True,
-         lambda c: (c.f & 1, c.b, c.c, c.de, c.iff, c.a) == (0, 0, 0, X.HL_IN + 19, 0, 2 * (c.bin - 0xF8))
-         and c.hl == 0x7405 + 18 * (c.bin - 0xF7)
-         and all(o.f == c.f for o in cases()["ref"] if o.bin == c.bin)),
+         "interrupts off, and A = the format's index: 2 x (B - $F8) on the VG-8020's NMS 1200 ($F8 0 .. $FF 14), "
+         "B - $F8 on the NMS 8250; the rest of F and HL are working values that follow the media byte alone on each "
+         "interface (HL = the end of an 18-byte block per format in that interface's table: $7405 + 18 x (B - $F7) "
+         "on the NMS 1200, $74D6 + 18 x (B - $F7) on the NMS 8250).", taken,
+         lambda c: (c.f & 1, c.b, c.c, c.de, c.iff, c.a) == (0, 0, 0, X.HL_IN + 19, 0,
+                                                             A_PER[c.row] * (c.bin - 0xF8))
+         and c.hl == HL_BASE[c.row] + 18 * (c.bin - 0xF7)
+         and all(o.f == c.f for o in cases()["ref"] if o.bin == c.bin and o.row == c.row)),
+    Rule("R-GD-REFUSE", S1, "The NMS 8250 refuses the media bytes its drive has no format for ($FC, $FD, $FE, $FF): "
+         "the carry set, NOTHING written at HL (the 21 bytes keep their $E5), A = B - $F8, B and C both = the media "
+         "byte, DE = the entry HL + 1, HL 0, interrupts off. (The NMS 1200 takes every one of $F8 .. $FF: which "
+         "media bytes GETDPB takes is the interface's.)", lambda c: not taken(c),
+         lambda c: (c.f & 1, c.a, c.b, c.c, c.de, c.hl, c.iff) == (1, c.bin - 0xF8, c.bin, c.bin, X.HL_IN + 1, 0, 0)
+         and c.dpb == [0xE5] * 21),
 ]
