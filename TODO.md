@@ -16762,15 +16762,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
-- [x] **D-SUITEWIN — THE BATTERY'S LONGEST UNITS RAN THEIR INDEPENDENT ROWS ONE AT A TIME**
-      🎚️ TIER 2 — reasonable time (filed and done 2026-11-22; Joost: "the time spent on improving the tests will pay
-      itself back for every round afterwards").
-      ✅ ramfree-acceptance (450 s in f6ad987d's FULL battery, its longest unit; 564 s in bdc7b881's) runs its 11 rows
-      on a pool (RAMFREE_JOBS, default 4): 125 s, every row identical to the battery's
-      (scratchpad/AE_ramfree_pool.out). ctllim-acceptance (186 s) runs zerobas's 5 rows on a pool (CTLLIM_JOBS),
-      the references still one call per side for the reference cache's keys: 55 s, rows identical
-      (scratchpad/AE_ctllim_pool.out). Next in that battery: kwsweep 299, biosregs 261 (D-TESTAUDIT), programs 197,
-      spec-live 193, graphics 182.
 - [ ] **D-STATICSLOW — A DOCS-ONLY GATE TAKES ~17 MIN; ITS "STATIC" TIER WAS ~20 S**
       🎚️ TIER 2 — reasonable time (the gate's wall time on every docs / TODO commit; filed 2026-11-22, Joost: "docs only
       commit takes pretty long as well?").
@@ -16798,6 +16789,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ (3) DONE 2026-11-22: a STATIC plan leaves spec-live out unless a spec page (docs/bios, bdos, disk), probes/bios,
       a scratchpad run file or tools/spec_* changed (tools/pick_gates.py spec_live_inputs, arms P-SPECLIVE). A ROM
       change is never STATIC, so the pages still run live on every ROM commit.
+- [ ] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
+      🎚️ TIER 1 — the base every C-BIOS-side fix builds on (filed 2026-11-22, Joost: "cbios 0.32 was released and it
+      shipped with tape, so our tape patch is obsolete"; "have a look at each of c-bios 0.32's fixes to see if we can
+      learn something from it (e.g. space fixes)").
+      🤖 **AUTONOMOUS** — tools/build_repacked_cbios.py pins v0.31; v0.32 (12a8e43, "Release 0.32") is 102 commits on:
+      tape (reading, writing, the power-on timing tables), the function-key line (INIFNK / DSPFNK / ERAFNK / FNKSB,
+      SHIFT+F1-F5), the graphics-cursor calls in SCREEN 0 / 1, GICINI and the PLAY queues, a background music player,
+      STMOTR, CALBAS, CALSLT, CHRGTR, SYNCHR, GETYPR, GTSTCK, GTTRIG, LFTQ, CLS ... Against v0.32 (applied in PATCHES
+      order, `git apply --check`): 3 still apply (eu-drop-statements, chkram-move, scan-from-basic), 36 CONFLICT, and
+      NONE reverses cleanly -- upstream rewrote what it took, it did not merge our bytes. Steps:
+      (1) per patch: does 0.32 now answer as the reference? -- by the SPEC PAGES, not the diff: build 0.32 with the
+          remaining patches, spec-live + the battery name where it still differs; re-port only those.
+      (2) tape: retire tape/tape.asm and its IPS / BPS for 0.32's cassette code; the tape corpus, the cassette pages
+          and suites decide; what 0.32 does otherwise is a TODO item or a small patch.
+      (3) 🔴 ROM SPACE FIRST: BASIC is relocated into the C-BIOS main ROM from $2765 -- 0.32's music player,
+          function-key line and tape grow C-BIOS; re-measure the placement before anything else (dropping our tape
+          gives some back).
+      (4) LEARN FROM ITS FIXES: for every entry where 0.32 and a patch of ours both changed the code, compare the two
+          (size, technique: shared tails, tables, folded paths) -- adopt the smaller, and carry a technique that
+          applies to basic/ or disk/ over as a carve item. Each 0.32 commit body states its bytes and usually the
+          technique (Joost: "each commit also mentions the bytes added or saved") -- 116 such lines extracted to
+          scratchpad/AE_cbios032_bytes.out, e.g. LPTSTT "ccf / sbc a,a gives directly: 4 bytes smaller", CNVCHR
+          "tests the range with the subtraction itself: 6 bytes smaller", CHSNS 8 smaller, CLS "a djnz loop ... drops
+          the ldir set-up: 5 bytes", CHPUT ESC l "reusing the restore at the end of ESC J". Entries where a patch of
+          ours and 0.32 both changed the code (LPTSTT, CNVCHR, CHSNS, CHGET, POSIT, GTTRIG, LFTQ, CHPUT DEL ...):
+          ours against theirs, byte for byte.
+      (5) re-pin REPACKED_SHA1 / PRISTINE_SHA1, full battery + the excluded five, the tape corpus, HANDOFF gate.
+      The biosregs audit (D-TESTAUDIT, scratchpad/biosregs_audit.py) is re-run on the rebased patch set after this.
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
@@ -16815,6 +16834,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ~1 min of a ~4800 s serial battery, against a rebuild + suite + spec-live run per mutation. The audit's main
       payoff, every rule pinned by a separating case, landed with spec-live. Re-open for a region whose old suites are
       expensive.
+      🔁 REOPENED 2026-11-22 for the BIOS suites (Joost: "at some point we were going to clean up tests now we also
+      have the spec checks"). biosregs-acceptance (261 s in f6ad987d's FULL battery): 140 of its 143 rows call an
+      entry whose page is FINAL (the 3 others are $0D12, the reference BIOS's internal key scan). Phase 1, a
+      patch-drop knife per cbios-repack patch (scratchpad/biosregs_audit.py -> biosregs_audit.jsonl, each patch
+      REVERSED on the patched tree with -C1, the ROM required to move, restored + clean rebuild = baseline): 1 BOTH
+      (tdownc-ge: 3 rows, 7 spec-live lines), 17 that redden NO biosregs row, 21 SKIP (11 do not reverse -- later
+      patches rewrote their lines; 10 reverse but break tools/build_mainrom.py's hard-coded overlays). So biosregs
+      barely watches what our patches carry; its rows guard behaviour already in C-BIOS. Row retirement waits for
+      D-CBIOS032: the per-rule comparison of the pages and the suite against stock 0.32 decides redundancy there.
 
 - [ ] **D-INITIORACE — A FRAME INTERRUPT PENDING AT INITIO'S ENTRY PLAYS A STALE QUEUED NOTE ON THE REFERENCES; ZEROBAS'S GICINI-FIRST DOES NOT**
       🎚️ TIER 6 — every edge (filed 2026-11-22, from a C-BIOS 0.32 port measurement).
@@ -17033,23 +17061,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       interface's internal entries (INIHRD, DRIVES, INIENV, DEFDPB, MYSIZE / SECLEN, OEMSTA, DSKSTP) are not
       published entries a program calls -- say so in disk.md, measure only what a black box can see; (e) the
       MSX-DOS 1 boot test is 2-Tier2-a (blocked): C-BIOS would like the same disk image when it lands.
-- [x] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
-      ✅ FIXED 2026-11-22: bdos_tab rows $01 -> conin_body, $07 / $08 -> innoe_body, $0A -> conin_line_body
-      (disk/kernel.asm); the 12 B from moving bb_dskrst / bb_dirio / bb_conout into the pads in front of $461D /
-      $47BE / $4E4B (the $4775 / $477D pads left EMPTY: D-LOADFAT). Two answers fixed with them: BUFIN's A is
-      $0D (it was the count; 1 B, paid by moving cinl_bs's 4 data bytes in front of $543C) and CONIN of TAB
-      returns $09 (conout_body's TAB answers A 0, the DOS CONOUT's; conin_body echoes through bb_conout,
-      A := E). spec_live: R-BC-BUFIN and R-BC-CTRL hold (scratchpad/AE_speclive_conin.out); R-BC-RAW /
-      R-BC-ECHO now differ only in the screen the missing hold leaves (XN 02: the references echo the held
-      'X', zerobas the waiting 'A') -- moved under D-F37DCONHOLD.
-      🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
-      🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,
-      5 .. 10): through $F37D with the key in the BIOS buffer, the VG-8020 + NMS 1200 and the CF-3300 return it (CONIN
-      and BUFIN echoing it, $07 / $08 not); zerobas answers A $FF, leaves the key in the buffer and echoes nothing --
-      disk/kernel.asm `bdos_tab` has rows for $02, $06, $0B but none for $01, $07, $08, $0A, so they fall to "not in
-      the table". A C-BIOS program reading the keyboard through $F37D gets $FF. The MSX-DOS ($0005) side has bodies
-      for them (check); the fix is rows (+ any glue), and disk.rom reads 0 B free (`make basic-reloc`): a carve
-      first, as D-F37DSETDATE. The hold (D-F37DCONHOLD) comes with it.
 - [ ] **D-F37DCONHOLD — CONST THROUGH $F37D LEAVES THE KEY IN THE BIOS BUFFER; THE REFERENCES MOVE IT INTO THE DOS'S ONE-KEY HOLD**
       ➕ 2026-11-22: since D-F37DCONIN, R-BC-RAW and R-BC-ECHO fail through this alone (the screen shows CONIN's
       echo of the waiting 'A' where the references echoed the held 'X'; scratchpad/AE_speclive_conin.out).

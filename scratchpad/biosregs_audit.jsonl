@@ -1,0 +1,39 @@
+{"patch": "eu-drop-statements.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "key-trap-hook.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "eu-drop-dead-strings.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "graphics-cursor.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "crtcnt-bound.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "chkram-move.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "scan-from-basic.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "initio.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "scalxy-flags.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "grpbase.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "lptstt-flags.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "cnvchr-flags.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "grphed-cls.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "initio-gicini.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "tdownc-ge.patch", "biosregs_red": ["tdownc3_bot", "tdownc3_h8", "tdownc3_h16"], "speclive": ["FAIL docs/bios/GRPPRT.md: 6 rules, 2 failing on zerobas (live, 2 run file(s))", "REGRESSION R-GP-POS: fails on zerobas (XT N22, XT D22) but the page lists no difference for it", "REGRESSION R-GP-VRAM: fails on zerobas (XT N22, XT D22) but the page lists no difference for it", "FAIL docs/bios/TDOWNC.md: 4 rules, 3 failing on zerobas (live, 1 run file(s))", "REGRESSION R-TD-AF: fails on zerobas (XM N121, XM N123, XM N125, XM N227) but the page lists no difference for it", "REGRESSION R-TD-EDGE: fails on zerobas (XM N121, XM N123, XM N125, XM N227) but the page lists no difference for it", "REGRESSION R-TD-POS: fails on zerobas (XM N121, XM N123, XM N125, XM N227) but the page lists no difference for it"], "verdict": "BOTH"}
+{"patch": "chsns-a.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "initkeys.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "linttb-clear.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "initedges.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "posit-clamp.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "chget-ei.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "chput-del.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "chput-keyrow.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "chput-escy.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "linttb-marks.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "totext-dispatch.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "input-calls.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "sound-flags.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "lftq-bc.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "chgmod-range.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "initxt-bas.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "inimlt-col.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}
+{"patch": "readc-setc-cut.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "dead-bodies-video.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "dead-bodies-main.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "movemask.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "vdp-calls.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "setregs-order.patch", "verdict": "SKIP", "why": "build failed"}
+{"patch": "trgflg.patch", "biosregs_red": [], "verdict": "BIOSREGS-BLIND"}

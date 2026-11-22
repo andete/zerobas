@@ -1,0 +1,117 @@
+0f5d172 INITIO: set PSG registers 15 and 11                            || low byte. 6 bytes.
+f19389e GICINI: keep the registers                                     || become a loop, which pays for saving AF and DE: 2 bytes smaller.
+1efb3a4 INITIO: return A, E and F as the reference machines            || keeps everything, so only A and F are set: 4 bytes.
+00312d1 LPTSTT: return the reference machines' flags                   || ccf / sbc a,a gives directly: 4 bytes smaller.
+59251b0 CNVCHR: return the reference machines' flags                   || tests the range with the subtraction itself: 6 bytes smaller.
+70bb983 CHSNS: return PUTPNT - GETPNT in A                             || 8 bytes smaller.
+dbc294b CHGET: return with interrupts enabled                          || always return with them enabled. 1 byte.
+2c43828 CHGET: return the flags of the wrap test                       || place: 1 byte smaller.
+242c9e2 CLS: leave LINTTB counting 24 down to 1                        || CRTCNT. A djnz loop writes that and drops the ldir set-up: 5 bytes
+27b8dff POSIT: keep the cursor on the screen                           || writes both results. 25 bytes.
+77bde11 POSIT: leave the cursor alone in graphic modes                 || now returns at once when SCRMOD is 2 or more. 6 bytes.
+9a3b927 RDVRM: return the flags of an AND on MSX1                      || P/V from the byte. `and $FF` waits as long. 0 bytes; MSX2 already
+0f7afa2 FILVRM: return the reference machines' flags                   || came in. A VG-8020 returns F as it came in, so MSX1 now saves AF
+0f7afa2 FILVRM: return the reference machines' flags                   || around the loop: 2 bytes. An NMS 8250 always returns $43 (Z, N, C),
+0f7afa2 FILVRM: return the reference machines' flags                   || so MSX2 sets C before the loop and the `dec c` does the rest: 1 byte.
+98fa08b LDIRMV, LDIRVM: return Z and P/V set in SCREEN 0-3             || 0 bytes on MSX1, 1 on MSX2. SCREEN 4-8 already matched (Z and N,
+87a6c3a CALPAT: return Z set for 8x8 sprites                           || sets the rest. 2 bytes.
+ba0dcea CHGCLR: invalid SCRMOD $81-$FF gets the text colours           || $81-$FF, and `rla` moves that bit into the carry. 1 byte.
+94958ec SET calls: compute the VDP base registers from the high bits o || shift does the same. 1 byte.
+ece9248 SET calls: keep only bit 0 of register 0 on MSX1               || bit and sets M3. MSX1 now does the same. 2 bytes smaller on MSX1;
+c99eb7d WRTVDP: keep bit 7 of the register number on MSX1              || 2 bytes smaller on MSX1.
+3602c08 INITXT: leave PATBAS and ATRBAS alone                          || TXTATR. A VG-8020 and an NMS 8250 leave them as they were. 12 bytes
+c2283b1 KILBUF: empty the key buffer at the put side                   || HL. 0 bytes.
+d9a2e3c SNSMAT: return the row number in C                             || GTTRIG's space bar check relied on SNSMAT keeping C, so it now saves
+d9a2e3c SNSMAT: return the row number in C                             || BC itself. 0 bytes.
+bb52ae6 GTTRIG: return the reference machines' flags                   || jumps and two endings. 5 bytes smaller.
+424c76b CHGCAP: switch the lamp with the PPI's bit set/reset command   || 3 bytes smaller.
+567a427 Interrupt: read the joystick triggers into TRGFLG              || helper that sets R15 and reads register 14. 29 bytes.
+3014710 CHGSND: test A with an AND                                     || 8250 also set H, as `and a` does. 0 bytes.
+836e4f1 GETVCP, GETVC2: return the flags of the voice count            || loop now tests voice 0 once and counts down with `jr nz`. 0 bytes.
+8ca2f0c LFTQ: count the free space as the reference machines do        || in C, which C-BIOS now does too. 3 bytes.
+4d025e3 PUTQ: store at the next put position, and keep a full queue fu || byte and then looked empty. 4 bytes smaller.
+5ed3040 CHPUT: DEL erases the character to the left of the cursor      || whole screen up. 6 bytes smaller.
+28fa7ec CHPUT: ESC l keeps the cursor where it was                     || ESC l now saves the cursor, clears the line from column 1, and puts the
+28fa7ec CHPUT: ESC l keeps the cursor where it was                     || cursor back, reusing the restore at the end of ESC J. 7 bytes larger.
+2d6c332 CHPUT: ESC Y keeps the cursor on the screen                    || ESC Y now goes through POSIT. 3 bytes larger.
+618f0b6 CHPUT: mark blanked rows in LINTTB with the reference values   || LINTTB has one byte per screen row: 0 means the row continues the
+618f0b6 CHPUT: mark blanked rows in LINTTB with the reference values   || that read LINTTB see a difference. 1 byte larger.
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || SCREEN 0 has 24 rows of 40 characters (960 bytes of VRAM); on MSX2
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || it can also be 80 columns wide (1920 bytes). A VG-8020 clears 960
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || clears 960 bytes up to LINLEN 40 and 1920 from 41 on.
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || C-BIOS cleared 1920 bytes from LINLEN 40 on, on MSX1 and MSX2 alike,
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || so a 40-column SCREEN 0 also wiped the next 960 bytes of VRAM, where
+36741b7 CLS: clear only the 40-column screen in SCREEN 0 up to width 4 || a program may keep its own data. MSX1 is 10 bytes smaller.
+533d8b8 CLS: clear only the used part of SCREEN 3's pattern table      || screen uses $600 bytes of the pattern table. A VG-8020 and an NMS 8250
+533d8b8 CLS: clear only the used part of SCREEN 3's pattern table      || C-BIOS cleared $800 bytes, wiping the 512 bytes of VRAM after the
+cd4769f CLS: fill SCREEN 3 with BAKCLR * 16 OR BAKCLR                  || a normal colour from 0 to 15 both give the same byte. 2 bytes smaller.
+60bbf6c CHGMOD: on MSX1, treat a mode above 3 as SCREEN 3 or SCREEN 0  || did. 6 bytes larger on MSX1.
+1caba16 TOTEXT: switch to the screen mode in OLDSCR through CHGMOD     || now jumps to CHGMOD. 4 bytes smaller.
+4fbef4f Boot with a 37-column SCREEN 0, as the reference machines      || left and two columns wider. 0 bytes.
+ccebf34 WRTVDP: on MSX2 too, leave the RAM copy alone for C of $80 and || 2 bytes smaller on MSX2 and MSX2+.
+0b1ec8f Screen modes: on MSX2, turn the VDP interrupt on in RG1SAV     || ends; on MSX2 that is in the sub-ROM, 7 bytes there.
+2f0d647 CLS: clear SCREEN 2's patterns from GRPCGP, not rounded down   || and an NMS 8250 clear $1800 bytes from exactly that address, in CLS
+2f0d647 CLS: clear SCREEN 2's patterns from GRPCGP, not rounded down   || GRPCGP = $0123 it cleared $0100-$18FF: 35 bytes in front of the table,
+2f0d647 CLS: clear SCREEN 2's patterns from GRPCGP, not rounded down   || and not the table's last 35 bytes. 1 byte smaller.
+0fecc47 INIGRP, INIMLT, CLS, INIT32: write the VRAM tables in the refe || machine type. 0 bytes.
+9e56acf CLRSPR: clear the sprites in SCREEN 0 too                      || 5 bytes smaller on MSX1, 2 on MSX2.
+c816f2d CLRSPR: write RG1SAV to VDP register 1                         || three now share. 0 bytes.
+a221c4d CLRSPR: clear the sprite patterns before the attributes        || cleared the patterns last and wiped them. 2 bytes smaller.
+099317b CLRSPR: on MSX1, always set up sprite mode 1                   || The sprite mode 2 code is now MSX2-only. MSX1 is 33 bytes smaller;
+e5d9395 SETC: in SCREEN 2, use ATRBYT as a whole byte                  || 2 bytes larger.
+7944937 SETC, NSETCX: in SCREEN 3, OR ATRBYT in whole                  || In SCREEN 3 one byte holds two blocks, the left one in its upper
+7944937 SETC, NSETCX: in SCREEN 3, OR ATRBYT in whole                  || pixels through the same code. 6 bytes larger.
+020402b MAPXYC: on MSX1, use SCREEN 3 blocks in every mode but SCREEN  || already did. 0 bytes.
+3fd4b08 BREAKX: on CTRL+STOP, also empty the key buffer and mark STOP  || 10 bytes larger.
+623daef ISCNTC, CKCNTC: answer "no break" as the reference machines do || C-BIOS has no BASIC to break, both now give that answer. 17 bytes
+4de3ea7 OUTDLP: send to the printer, with TAB as spaces                || nothing. 21 bytes larger.
+75a9a9b OUTDO: print to the screen or the printer, as PRTFLG says      || does the choice itself, and H_OUTD stays a RET. 2 bytes smaller.
+67e43c5 ISFLIO: test both bytes of PTRFIL                              || the pointer's two bytes ORed, with that OR's flags (Z: no file).
+67e43c5 ISFLIO: test both bytes of PTRFIL                              || no file, and its AND set the H flag. 3 bytes larger.
+2e07e7a PNTINI: set the colour PAINT stops at                          || 7 bytes on MSX1, 11 on MSX2.
+6162e23 INLIN, PINLIN, QINLIN: return the line when Enter is pressed   || 23 bytes smaller than the old skeleton.
+7e8c87d INLIN: BS and DEL edit the line, and the editor moves behind t || read as a character. 69 bytes larger.
+b1b0b84 INLIN: CTRL+U, CTRL+E, CTRL+N, CTRL+F and CTRL+B               || 214 bytes larger.
+7489181 INLIN: CTRL+STOP and CTRL+C end the input                      || share one entry for it. 10 bytes larger.
+1e6292c CHGET: end the STOP pause                                      || Costs 9 bytes.
+21c6607 GRPPRT: CR as a line feed on the low bytes                     || Costs 11 bytes on MSX1 and 21 on MSX2.
+74b5e5f GRPPRT: draw with the graphics cursor calls                    || Saves 180 bytes on MSX1 and 171 on MSX2.
+55e7c26 GRPPRT: SCREEN 3, and the step in SCREEN 0 and 1               || Saves 9 bytes.
+ba44041 SCANR: PAINT's scan to the right                               || Costs 97 bytes on MSX1 and 119 on MSX2.
+ba44041 SCANR: PAINT's scan to the right                               || Saves 9 bytes.
+42f3b17 SCANL: PAINT's scan to the left                                || Costs 41 bytes on MSX1 and 63 on MSX2.
+2fa1b53 GICINI: reset the PLAY queues and voice buffers                || Costs 39 bytes.
+29fc154 BEEP: sound a short tone                                       || Costs 15 bytes.
+42374e3 STRTMS: start the queued PLAY music                            || Costs 10 bytes.
+7a1f434 INIFNK: the default function key texts                         || FNKSTR holds the text each of the ten function keys types: 16 bytes per
+7a1f434 INIFNK: the default function key texts                         || Costs 76 bytes.
+3ad4189 Keyboard: SHIFT+F1 to F5 are F6 to F10                         || Saves 41 bytes.
+71893a7 DSPFNK, ERAFNK and FNKSB: draw the function key line           || Costs 93 bytes.
+e19dd8f DSPFNK: scroll the text up when the cursor is on the key row   || Costs 17 bytes.
+fd72bb1 INITXT, INIT32 and CHGMOD: draw the function key line          || Costs 3 bytes on MSX1 and 13 on MSX2.
+ab7c2df CHPUT and INLIN: keep off the function key line's row          || Saves 5 bytes before the font; INLIN, behind it, grows by 4.
+4b334b6 CLS: draw the function key line again                          || Costs 8 bytes.
+a550e4b MSX1: graphics cursor calls in SCREEN 0 and 1 as in SCREEN 3   || Costs 1 byte.
+8328a3d Tape: set the timing tables at power-on                        || Costs 26 bytes.
+222bb31 Tape: reading, TAPION, TAPIN and TAPIOF                        || - TAPIN reads one byte, testing CTRL+STOP first;
+222bb31 Tape: reading, TAPION, TAPIN and TAPIOF                        || Costs 195 bytes.
+627c7ae Tape: writing, TAPOON, TAPOUT and TAPOOF                       || TAPOON, TAPOUT and TAPOOF were stubs, so a program could not save to
+627c7ae Tape: writing, TAPOON, TAPOUT and TAPOOF                       || - TAPOUT writes one byte, testing CTRL+STOP first;
+627c7ae Tape: writing, TAPOON, TAPOUT and TAPOOF                       || Costs 181 bytes.
+4551fb9 STMOTR: start, stop and toggle as the reference machines do    || Saves 13 bytes.
+9db9be6 Music: the background music player                             || Costs 156 bytes.
+1b89851 CALBAS: call the routine at IX in the main ROM                 || Saves 43 bytes.
+164314d CALSLT: return with interrupts as the called routine left them || routine's interrupt state is saved first and restored after.
+164314d CALSLT: return with interrupts as the called routine left them || Costs 8 bytes.
+3217cef CHRGTR: return the next character, skipping spaces, TABs and L || Saves 2 bytes.
+6b40a9f SYNCHR: check the expected character, then go on as CHRGTR     || Costs 8 bytes.
+ede11a2 GTTRIG: the space bar for 0 and $81-$FF, a joystick for 1-$80  || Saves 4 bytes.
+e4bc737 CHPUT: cursor right on row 24 goes to the start of row 23      || Costs 2 bytes.
+c726374 OUTDLP: hold back graphic characters from a non-MSX printer    || A graphic character is sent as two bytes: the header $01, then the
+c726374 OUTDLP: hold back graphic characters from a non-MSX printer    || Costs 11 bytes.
+e460a0f GETYPR: return the type of the value in DAC                    || Saves 2 bytes.
+3826feb GICINI: silence the voices before turning the tones on         || Costs 2 bytes.
+1f93972 Remove the unused stack error routine                          || Saves 22 bytes.
+02c018a Text on MSX1: 40 bytes per row at every width                  || machines keep 40 bytes per row there. So with the function key line on
+02c018a Text on MSX1: 40 bytes per row at every width                  || Saves 8 bytes on MSX1.
+116 lines

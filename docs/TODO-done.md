@@ -40777,3 +40777,55 @@ the phase narrative above still have somewhere to land.
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
 The record is unchanged there; this heading is kept only so the citations and
 the phase narrative above still have somewhere to land.
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## Phase 1 record — committed work (all ✅ done)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — its preamble says so: 'nothing here is outstanding'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+## Done — Phase 1 (loader-stub BASIC)
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — 'Complete and oracle-validated; kept below as the provenance record'.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-SUITEWIN — THE BATTERY'S LONGEST UNITS RAN THEIR INDEPENDENT ROWS ONE AT A TIME**
+      🎚️ TIER 2 — reasonable time (filed and done 2026-11-22; Joost: "the time spent on improving the tests will pay
+      itself back for every round afterwards").
+      ✅ ramfree-acceptance (450 s in f6ad987d's FULL battery, its longest unit; 564 s in bdc7b881's) runs its 11 rows
+      on a pool (RAMFREE_JOBS, default 4): 125 s, every row identical to the battery's
+      (scratchpad/AE_ramfree_pool.out). ctllim-acceptance (186 s) runs zerobas's 5 rows on a pool (CTLLIM_JOBS),
+      the references still one call per side for the reference cache's keys: 55 s, rows identical
+      (scratchpad/AE_ctllim_pool.out). Next in that battery: kwsweep 299, biosregs 261 (D-TESTAUDIT), programs 197,
+      spec-live 193, graphics 182.
+- [x] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
+      ✅ FIXED 2026-11-22: bdos_tab rows $01 -> conin_body, $07 / $08 -> innoe_body, $0A -> conin_line_body
+      (disk/kernel.asm); the 12 B from moving bb_dskrst / bb_dirio / bb_conout into the pads in front of $461D /
+      $47BE / $4E4B (the $4775 / $477D pads left EMPTY: D-LOADFAT). Two answers fixed with them: BUFIN's A is
+      $0D (it was the count; 1 B, paid by moving cinl_bs's 4 data bytes in front of $543C) and CONIN of TAB
+      returns $09 (conout_body's TAB answers A 0, the DOS CONOUT's; conin_body echoes through bb_conout,
+      A := E). spec_live: R-BC-BUFIN and R-BC-CTRL hold (scratchpad/AE_speclive_conin.out); R-BC-RAW /
+      R-BC-ECHO now differ only in the screen the missing hold leaves (XN 02: the references echo the held
+      'X', zerobas the waiting 'A') -- moved under D-F37DCONHOLD.
+      🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,
+      5 .. 10): through $F37D with the key in the BIOS buffer, the VG-8020 + NMS 1200 and the CF-3300 return it (CONIN
+      and BUFIN echoing it, $07 / $08 not); zerobas answers A $FF, leaves the key in the buffer and echoes nothing --
+      disk/kernel.asm `bdos_tab` has rows for $02, $06, $0B but none for $01, $07, $08, $0A, so they fall to "not in
+      the table". A C-BIOS program reading the keyboard through $F37D gets $FF. The MSX-DOS ($0005) side has bodies
+      for them (check); the fix is rows (+ any glue), and disk.rom reads 0 B free (`make basic-reloc`): a carve
+      first, as D-F37DSETDATE. The hold (D-F37DCONHOLD) comes with it.
+## Done — storage transports
+
+➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — a prose done-record of disk and tape; no items at all.
+The record is unchanged there; this heading is kept only so the citations and
+the phase narrative above still have somewhere to land.
