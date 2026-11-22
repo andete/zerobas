@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """C5-LOW: ERR 9, 10, 14 and 16's texts moved into the sub-ROM errmsg tenant.
 Each printed by `ERROR n` and, where one is easy, by a real raise -- VG-8020
 against both builds. The line after the typed one is the reading.

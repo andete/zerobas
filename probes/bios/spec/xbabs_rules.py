@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bdos/WRABS.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRABS ($30) through $F37D, read back with RDABS
 ($2F), from the XBABS1 probe (probes/bios/spec/xbabs1.asm documents the 8 cases and the 66-byte record: A, F, the FCB,
 the DTA's first 13, HL, the DTA at +383 .. +1024) on two reference rows: run 1 (scratchpad/XBABS1_run1.out, the

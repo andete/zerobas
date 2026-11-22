@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XFNK3 -- docs/bios/INIFNK.md round 2 (2026-11-17), after its first review (run 2: the work area compared BEFORE the
 ; row-24 VRAM reads, whose RDVRM let an interrupt run on the reference -- the confirming pass's finding): INIFNK ($003E) with SEVERAL inputs and

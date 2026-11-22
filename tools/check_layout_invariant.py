@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LAYOUTINV — the invariant a LAYOUT PASS is allowed to preserve.
 
 ## Why this exists

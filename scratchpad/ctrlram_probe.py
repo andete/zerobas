@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTKEYS CTRL RAM (2026-10-27): after a CTRL boot, does the RAM behave as
 the CF-3300's -- MAXFILES, an OPEN file, a write/read round trip, CLEAR with a
 HIMEM, FRE after each. Derived from scratchpad/bootkeys_probe.py.

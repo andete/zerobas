@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """autorun-acceptance (D-AUTORUN): openMSX's OWN tape autorun, three tape types.
 
 The way a user meets it: `autoruncassettes` on and a tape inserted before the

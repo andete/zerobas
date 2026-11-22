@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKHIMEM (gate: diskfre-acceptance, 2026-10-19): on the DISK machine, does zerobas give the
 user the CF-3300's free memory? (Joost's RAM priority 2, 2026-10-16: "disk machine has the
 same free RAM".) Born as scratchpad/diskfre_probe.py; zerobas read 517 B MORE in every row

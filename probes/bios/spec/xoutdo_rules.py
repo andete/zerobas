@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/OUTDO.md's EXECUTABLE RULES (docs/spec-method.md §3a): OUTDO ($0018) to the screen and to the printer --
 scratchpad/XOUTDO_run2.out (row N) and XOUTDO_run2d.out (row D); probes/bios/spec/xoutdo.asm documents the sections
 and the record. docs/bios/ISFLIO.md's rules (xisflio_rules.py) read the same runs: `load()` serves both."""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knives for D-LATEINT's gcdi-acceptance rows `raise` and `dimshift`: each cut
 takes one `ei` out again, and must turn exactly its own row red on both zerobas
 targets. The ROMs are hashed around every cut, and an unbuilt cut is refused.

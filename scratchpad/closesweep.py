@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Which OPEN items look FINISHED? The `- [ ]` that should be `- [x]`.
 
 TODO.md's header records the failure repeatedly: items that were finished work

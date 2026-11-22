@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FSPECCHAR -- WHICH bytes does a filespec refuse? The domain, swept.
 
 Filed 2026-09-05 by D-FILESINP: `FILES` with a filespec built from CONTROL BYTES

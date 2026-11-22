@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """INTERVAL interrupt-trap characterization / differential — slice T5.
 
 docs/spec-traps-t5-interval.md §1. Produced every reading in that §1. Runs as a

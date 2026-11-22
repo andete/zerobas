@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Drive the `unit-test` pasmo flake until it SAYS WHY, or measure it silent.
 
 The filed item (TODO.md) is explicit: *"Do not close this on the next green

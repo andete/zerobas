@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 5 knife: does wszero-acceptance SEE the raised diskless ceiling?
 
 K-WS6  basic/sysvars.inc: TXTMAX_NODISK back at $E98A, the cells left PACKED where

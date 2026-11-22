@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Classify the open TODO items by WHO HAS TO BE THERE, not by what they touch.
 
 Three buckets, so a /loop when Joost is away picks only from the first:

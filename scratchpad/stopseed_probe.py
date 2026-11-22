@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-STOPSEED -- is the case `ex_stop`'s deleted edge seed would protect REACHABLE?
 
 🔴 WHY. `docs/spec-traps-t1-stop-reslice.md` deletes `ex_stop`/`es_set`'s edge

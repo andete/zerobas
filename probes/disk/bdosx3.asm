@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX3.COM -- Tier-2 BDOS exerciser, M24: block C (mutation + random +
 ; absolute I/O). See disk/docs/tier2-bdos-remaining-spec.md SS5.3 for the

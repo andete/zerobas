@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """todo_inventory.py — the DENOMINATOR instrument for a TODO.md sweep.
 
 A hand-listed denominator is a scope claim, so this one is mechanical and

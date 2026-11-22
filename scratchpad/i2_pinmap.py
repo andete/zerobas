@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """I2 pin-mapping characterization -- which joyport terminal carries which
 uPD7001 signal, derived from OUR OWN black-box oracle.
 

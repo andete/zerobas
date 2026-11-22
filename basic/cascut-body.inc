@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; cascut-body.inc -- cas_capture_cut / cas_name_cut (D-CASDOT, 2026-10-17), shared
 ; by main (basic/main.asm, the end of the low region) and the sub-ROM BLOAD tenant

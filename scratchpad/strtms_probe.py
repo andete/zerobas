@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG / STRTMS step (3): PUTQ ($00F9) and STRTMS ($0099), called DIRECTLY.
 
 Our code PUTQs a packet table onto queue A (A = 0, E = the byte, one call per byte),

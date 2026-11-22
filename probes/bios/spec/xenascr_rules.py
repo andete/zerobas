@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/ENASCR.md's EXECUTABLE RULES (docs/spec-method.md §3a): ENASCR ($0044) -- the run docs/bios/WRTVDP.md
 reads (probes/bios/spec/xvdpreg.asm, op 2; the loader is xwrtvdp_rules.load, the shared rules xdisscr_rules.screen)."""
 import os

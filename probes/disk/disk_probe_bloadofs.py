@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """bloadofs-acceptance (D-BLOADOFS) -- BLOAD's documented `,offset`:
 `BLOAD "f"[,R][,S][,offset]` loads the file at its header addresses PLUS the
 offset (and, with ,R, runs it there).

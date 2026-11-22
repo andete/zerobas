@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATSTRAD: does a BASIC disk write pack a STRADDLING FAT12 entry correctly?
 
 🔴 THE TEST THAT SHOULD HAVE EXISTED. `tests/test_fat_write_fat_entry.py` found

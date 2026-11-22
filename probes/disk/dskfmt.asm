@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; DSKFMT.COM -- D-DSKFMT (TODO.md): what the disk ROM's CHOICE ($4019) offers and
 ; what DSKFMT ($401C) writes, called directly under MSX-DOS through CALSLT with the

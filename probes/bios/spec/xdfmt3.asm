@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDFMT3 -- DSKFMT ($401C) round 3 (2026-11-22), answering review pass 2 (scratchpad/DFMT_review2.md): choice $81 (a
 ; range test that masks the high bit would format $FC); a format with HL $8400 and BC $2000, and with HL $8010 (does

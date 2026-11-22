@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/STRTMS.md's EXECUTABLE RULES (docs/spec-method.md §3a): STRTMS ($0099) -- probes/bios/spec/xsnd1.asm, op 8
 (the loader is xsnd1_model)."""
 import os

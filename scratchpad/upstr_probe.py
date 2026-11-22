@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-UPSTR — the DECLINE paths the string unary-plus arm reaches, and nothing else.
 
 `scratchpad/uplus_probe.py` scores what the fix is FOR (12 rows, all green). This

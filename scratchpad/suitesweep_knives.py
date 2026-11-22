@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SUITESWEEP step 2a: can each never-red suite catch a knife in its OWN subject?
 
 scratchpad/suite_census.py listed the gate suites that have never gone red in any

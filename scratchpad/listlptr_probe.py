@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LISTLPTR: how does LIST show a `$0D` line POINTER?
 
 The VG-8020 rewrites a jump's `$0E <line number>` into `$0D <pointer>` in place

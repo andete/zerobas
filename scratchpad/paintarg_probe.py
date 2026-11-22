@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWPAINT2 — does `PAINT(x,y),C,B` fault, or does the FLOOD outrun the capture?
 
 🔴 AND THE FIRST CUT OF THIS PROBE FAILED ITS OWN CONTROL, WHICH IS WHY THE

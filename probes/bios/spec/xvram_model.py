@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader and model for the VRAM access calls' EXECUTABLE RULES (docs/spec-method.md §3a):
 scratchpad/XVRAM_run4.out (rows N and D; probes/bios/spec/xvram.asm documents the presets, the case table and the
 48-byte record). Each page's module (xrdvrm_rules.py, xwrtvrm_rules.py, xsetrd_rules.py, xsetwrt_rules.py,

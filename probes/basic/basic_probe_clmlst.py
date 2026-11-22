@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CLMLST: two published work-area cells BASIC keeps -- CLMLST ($F3B2, PRINT's last
 comma-zone column) and CLIKSW ($F3DB, the key click switch) -- the VG-8020 against zerobas.
 

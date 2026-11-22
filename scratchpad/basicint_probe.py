@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICINT: characterise undocumented BASIC-ROM internals BLACK-BOX (oracle).
 
 Joost ruled 2026-10-15 to support the internals games call ($73AC, $6CF3, $3297).

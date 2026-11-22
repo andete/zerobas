@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHG2 -- docs/bios/CHGET.md round 2 (2026-11-17): CHGET ($009F) / CHSNS ($009C) with the flag readings separated,
 ; entry F independent of the interrupt choice, every register garbage, CNSDFG 1, and the whole work area compared. The

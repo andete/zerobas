@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-PLAYIY (basic/subromcall.asm sr_slot): a tenant call hands the
 caller's IY back.
 

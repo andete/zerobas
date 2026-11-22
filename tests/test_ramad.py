@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-RAMAD (disk/init.asm set_ramad): the disk ROM's INIT fills
 RAMAD0-3 ($F341-$F344) with the RAM slot id and sets HOKVLD ($FB20) bit 0 on
 EVERY host -- both references read them so from the Disk BASIC prompt on

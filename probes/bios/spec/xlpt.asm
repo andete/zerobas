@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLPT -- docs/bios/LPTOUT.md / LPTSTT.md round 2 (2026-11-18): LPTSTT ($00A8) and LPTOUT ($00A5) with openMSX's
 ; printer logger plugged into the printer port (@printer): LPTSTT, then LPTOUT for every byte value 0..255 in order,

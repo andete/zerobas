@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LETNEWFIRST edges (2026-10-19): with a NEW scalar target created before the right
 side (letnew_run.out), what is left when the statement FAILS? Each row: one statement
 with a new target T, its error trapped; then `VARPTR(T)` says whether T exists (Illegal

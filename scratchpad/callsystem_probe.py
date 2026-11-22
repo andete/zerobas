@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CALLSYSTEM measurement (2026-10-09): what `CALL SYSTEM` does on the CF-3300
 and on zerobas DISK, with and without an MSX-DOS 1 system disk.
 

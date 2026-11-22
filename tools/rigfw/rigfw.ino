@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Joost Yervante Damad
-// SPDX-License-Identifier: 0BSD
+// SPDX-License-Identifier: BSD-2-Clause
 //
 // rigfw -- the host joystick openMSX does not have, as a REAL USB device.
 //

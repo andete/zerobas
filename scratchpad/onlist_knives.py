@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ONLIST knives — one cut for the fix, and THREE for the rule I nearly shipped.
 
 The fix raises `Syntax error` at exactly ONE of `eon_seek_nth`'s seven jump

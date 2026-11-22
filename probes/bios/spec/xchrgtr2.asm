@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHRGTR2 -- docs/bios/CHRGTR.md round 5 (2026-11-18), after the first review: what a caller sees when it goes on
 ; calling CHRGTR after a numeric-constant token, as a caller walking a text does (the call after a token returns

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKIWHERE — does `DSKI$` read a sector at all, and if so, WHERE does it land?
 
 D-DSKI measured the reference's value-face and refuted the obvious reading: on the

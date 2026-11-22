@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""probe-reach-check — which probes does no `make` target ever run?
 
 WHY THIS EXISTS. D-WALLIT (docs/spec-wall-literals.md §3.1) found

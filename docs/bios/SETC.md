@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # `SETC` ($0120) — set the current pixel

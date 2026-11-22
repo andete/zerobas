@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # D-NEGJUDGE — check 3's exemption rule: the filed negation window, measured

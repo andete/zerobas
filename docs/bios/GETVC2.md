@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # `GETVC2` ($0153) — get an address in the current voice buffer

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FREPLUS14 (2026-10-16): what does FRE(0) lose per level of expression nesting,
 inside a GOSUB and inside a FOR, on each machine? The reference counts FRE(0) down
 to the live SP; zerobas to a fixed top. Every reading is taken AFTER the variables

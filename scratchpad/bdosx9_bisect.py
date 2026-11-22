@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Bisect bdosx9.asm: run it cut short before record K (a `jp done` planted in
 front of `; --- record K` or, for K = 'unused', in front of the unused-number loop),
 OURS only, and print the registers at `done` plus the first records.

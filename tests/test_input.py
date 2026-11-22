@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: console INPUT / LINE INPUT — the BIOS-independent core (repack build).
 
 basic/input.asm's console handler is assembled ONLY in the repack build

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-PAINTCELL -- PAINT's SCREEN-2 neighbour-row scan, a CELL at a
 time (sub/graphics.asm gpsr_cells / gfx_paint_cell), against the per-column
 loop it replaced, on REAL VRAM BYTES. No emulator.

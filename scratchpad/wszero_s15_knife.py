@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S15 knife: the diskless ceiling at $F380, and the three FAT-tenant
 cells that had to leave the floor with it.
 

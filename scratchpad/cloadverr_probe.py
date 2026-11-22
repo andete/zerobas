@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""err_verify / brk_msg (Joost 2026-10-27: "Measure first, then decide"): after a
 CLOAD? mismatch, what does ERR hold? `Verify error` is printed by verify_error
 (basic/cload.asm) with no ERRFLG store; adding one would move the message out of

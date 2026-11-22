@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; --- tok_payload: how many constant bytes follow a program-text byte ----------
 ; D-LOADBASE (2026-10-22). Shared by the three tokenised loaders -- CLOAD / LOAD
 ; (sub2/tapeprog.asm ctp_scan, zerobas-sub2 page 0; main's basic/cload.asm until

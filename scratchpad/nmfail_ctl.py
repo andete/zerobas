@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-NMFAIL control — IS THE DRIVE ACTUALLY EMPTY?
 
 `scratchpad/nmfail_probe.py` reports that with `diska=None` the CF-3300 answers

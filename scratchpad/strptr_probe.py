@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PAINTRAMCLASH, STRPTR (Joost 2026-11-20: "use the cells the reference uses"): where does each machine keep the
 pointer to the current string result's descriptor? zerobas: STRPTR ($F954). The Microsoft-BASIC answer would be DAC+2
 ($F7F8, VALTYP 3). Black box: one string assignment per case, then the program loops and $F380-$FFFF is read by the

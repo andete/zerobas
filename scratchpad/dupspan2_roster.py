@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The D-DUPSPAN2 alias roster, taken from the SOURCE rather than from the spec.
 
 The item owes "one row per aliased site", and the first thing a per-site row set

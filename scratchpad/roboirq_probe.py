@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROBOREG: is the CPU stuck in the interrupt path? Per 0.5 s sample, both machines:
 $0038 entries (the IRQ), $FD9A entries (H.KEYI), port $99 reads (the VDP status, the
 acknowledge), and the PC / CURLIN -- each counter reset after the sample. Black-box: a PC

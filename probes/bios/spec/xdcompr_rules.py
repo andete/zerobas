@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DCOMPR.md's EXECUTABLE RULES (docs/spec-method.md §3a): DCOMPR ($0020) over every combination of H, D, L,
 E in {00, 01, 5A, 7F, 80, FE, FF} -- scratchpad/XDCOMPR_run1.out (probes/bios/spec/xdcompr.asm documents the order and
 the 3-byte record)."""

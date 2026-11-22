@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ONLIST — `ON n GOTO` with no target list SILENTLY COMPLETES.
 
 D-MISSOP3 found `ON 1 GOTO` and `ON 1 GOSUB` reading 0 where both references say

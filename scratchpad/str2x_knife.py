@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knives for prstr2x-acceptance (D-PRSTR2X) and keyrepaint-acceptance
 (D-KEYREPAINT). Each cut is byte-neutral and must turn both zerobas rows of ITS
 gate red. The ROMs are hashed around every cut, an unbuilt cut is refused, and

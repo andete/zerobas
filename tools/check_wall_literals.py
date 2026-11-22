@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """A wall figure hardcoded OUTSIDE TODO.md is unpoliced by design. This polices it.
 
 D-DUPSPAN2 §5.2 found `LOW_CEILING = 0x3FE5` in tools/gen_resident_abi.py under a

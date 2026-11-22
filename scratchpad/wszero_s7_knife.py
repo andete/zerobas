@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 7 knife: does wszero-acceptance SEE FNSP's move out of the window?
 
 K-WS9  basic/sysvars.inc: FNSP back at $EF07 (inside the window), FN_FST left in PRMLEN.

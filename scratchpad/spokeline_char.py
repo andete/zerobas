@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SPOKELINE step 1 -- characterize the reference's off-screen spoke line.
 
 The residual: `arc_big_r400`'s spoke differs, ref bbox (128,0,129,96) vs ours

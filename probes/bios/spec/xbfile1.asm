@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBFILE1 -- the BDOS's FCB directory functions through $F37D, round 1 (2026-11-22): FMAKE ($16), FCLOSE ($10), SFIRST
 ; ($11), SNEXT ($12), FOPEN ($0F), FSIZE ($23), FREN ($17), FDEL ($13), on the empty 720 KB disk in drive A. XBSYS1's

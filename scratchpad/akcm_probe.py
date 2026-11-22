@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AKCM scout -- what `AUTO`, `KEY ON/OFF`, `CALL` and `MAX` can be scored ON.
 
 These four are the remaining reachable TIER 1 evidence gaps. Two of them may not

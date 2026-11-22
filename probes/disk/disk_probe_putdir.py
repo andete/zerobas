@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PUTDIR (gate: putdir-acceptance): WHEN does a RANDOM file's directory entry
 change -- at each PUT, or at CLOSE? Read from the disk IMAGE the machine leaves.
 

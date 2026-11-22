@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # Decision — funding `TIME`/`TIME=n` **and** trap slice T5 `INTERVAL` with ONE carve
 

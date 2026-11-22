@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does `CLEAR` let a later GOSUB/RETURN re-enable a trap the program killed?
 
 The filed claim (docs/spec-basic-trapsvc.md §7): after a LEAKED trap dispatch

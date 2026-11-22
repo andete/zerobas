@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Carve scout: repeated ADJACENT INSTRUCTION PAIRS in main's own sources.
 
 The route [[carve-routes-measured-shut]] records as the one clone_scout cannot

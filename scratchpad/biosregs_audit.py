@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TESTAUDIT (BIOS suites), phase 1: does spec-live see every cbios-repack patch biosregs-acceptance sees?
 
 For each patch in tools/build_repacked_cbios.py's PATCHES: apply them all, then REVERSE that one (`git apply -R`

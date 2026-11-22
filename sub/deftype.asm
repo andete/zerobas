@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; deftype.asm -- DEFINT / DEFSNG / DEFDBL / DEFSTR as a PAGE-0 sub-ROM tenant
 ; (SUBROM_IDX_DEFTYPE). docs/spec-eviction-g6-space.md.

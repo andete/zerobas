@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC-ROM `ex_sound` (SOUND statement), no emulator.
 
 SOUND is a repack-only feature (ROM_BASE < $4000), so this builds

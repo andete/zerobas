@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TRAPDEPTH -- what does the REFERENCE RECLAIM when a trap handler is abandoned?
 
 WHY THIS EXISTS. `docs/spec-basic-trapsvc.md` §6 declined a fix and ranked three

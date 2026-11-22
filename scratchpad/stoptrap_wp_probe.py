@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FORINT's parked STOP-trap double fire (TODO D-FORINT, 2026-10-20): WHY does one
 100 ms Ctrl-STOP tap fire stop-trap-acceptance's counting handler twice on the draft and
 once on 508043a2? Instrumenting the BASIC program moved the window, so this instrument does

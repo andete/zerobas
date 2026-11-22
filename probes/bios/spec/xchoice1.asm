@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHOICE1 -- the disk ROM's CHOICE ($4019) and MTOFF ($401F), round 1 (2026-11-22). XDENT1's frame
 ; (probes/bios/spec/xdent1.asm): CALSLT into the disk interface's slot ($FB22), A 0, F 0, B and C as listed, DE 0,

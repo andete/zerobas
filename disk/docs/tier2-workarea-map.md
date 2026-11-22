@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Tier-2 — the MSX-DOS-1 DOS work area ($F100-$F3FF) the disk ROM builds at boot

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B increment 2 design input: LOF and LOC on an APPEND channel. (S10.E, 2026-10-19:
 re-run with a 300 B start, where LOC and LOF read different FCB fields.)
 

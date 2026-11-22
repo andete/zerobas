@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad -- SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad -- SPDX-License-Identifier: BSD-2-Clause -->
 
 # D-VALTYP — `VALTYP` reads `$FF` cold because RAM does, and three comments say otherwise
 

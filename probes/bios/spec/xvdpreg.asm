@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XVDPREG -- docs/bios/WRTVDP.md, DISSCR.md, ENASCR.md, RDVDP.md round 3 (2026-11-18; round 1 had no boot copy and no sprite case; round 2 no C above 15, one B per C 8-15, no
 ; second RDVDP, and sprite cases not synchronised to the frame): the VDP register calls.

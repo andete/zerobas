@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWPLAY scout 3 -- `PLAY"N40"` sounds a DIFFERENT NOTE here than on the
 reference, and this asks by how much and over what range.
 

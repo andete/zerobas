@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF step 2 -- SEARCH for the rows worth booting an emulator for.
 
 Uses the model calibrated in scratchpad/circovf_calib.py (22/22 measured

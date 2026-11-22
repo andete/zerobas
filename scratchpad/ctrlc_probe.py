@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CTRLC -- Ctrl-C in the ORDINARY line editor, the rule D-AUTO's escape rides on.
 
 D-AUTO measured that both references leave `AUTO` when Ctrl-C ($03) is typed and

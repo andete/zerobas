@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GOSUBOOM knife: do probes/basic/basic_probe_gosuboom.py's rows see each half?
 
 K-GO1 CTL_FRAME_MARGIN back at 768 (the pool reset kept) -> `edge` DIVERGES, alone

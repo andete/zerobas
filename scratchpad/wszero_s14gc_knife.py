@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14g-c knife: INPUT$'s count on the stack, PRDEST at PTRFIL's low
 byte, PRDEV in BUF. Do the rows see each move, and the PRDEV placement hazards?
 

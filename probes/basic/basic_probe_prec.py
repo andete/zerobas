@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DIMRESERVE S2 (gate: prec-acceptance): arithmetic precedence and
 associativity, VG-8020 vs zerobas. The arithmetic levels became a precedence
 climber on 2026-10-10 (basic/expr.asm ev_e / ev_pw); this pins what the old

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; filestmt.asm -- zerobas-sub PAGE 0 (since D-SUB2RETIRE step 2e, 2026-11-04;
 ; zerobas-sub2's page 0 before that): the file-channel STATEMENTS OPEN, CLOSE,
 ; MERGE and MAXFILES (D-P0CB slice C1, docs/spec-sub2-p0cb.md §5 and §7). Moved out

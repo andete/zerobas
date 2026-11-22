@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATRES: does the CF-3300 keep the PHANTOM drive B:'s FAT resident too, and
 where? Normal boot, disk/test720.dsk in the one drive: `FILES` (drive A), then
 `FILES "B:"` (the change-disk prompt answered with a key: the same disk), then RAM

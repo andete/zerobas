@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bdos/CONIN.md's EXECUTABLE RULES (docs/spec-method.md §3a): the BDOS's console INPUT functions through $F37D,
 from the XBCON1 probe (probes/bios/spec/xbcon1.asm documents the 11 cases and the 24-byte record: A, F, H, L, CSRY,
 CSRX, PUTPNT's and GETPNT's low bytes, BUFIN's 12-byte buffer, the screen's first row at name-table columns 2 .. 5) on

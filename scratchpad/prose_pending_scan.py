@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PROSEPEND — comments that describe something as PENDING when it has landed.
 
 No gate reads prose, and this session hit the class four times: a worklist sentence

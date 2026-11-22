@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-WCACHE W3a RAM hunt -- is `$EDBF..$EDC0` free (D-WCACHE DBUF_HSEC)? Copied from ramfree_e5ac.py, range changed. Ask the machine.
 
 W3a needs one byte the shared FAT body can read in disk.rom AND in the sub-ROM:

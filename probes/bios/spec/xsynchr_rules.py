@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/SYNCHR.md's EXECUTABLE RULES (docs/spec-method.md §3a): SYNCHR ($0008) on its match path for every byte
 value in two passes -- scratchpad/XSYNCHR_run1.out (probes/bios/spec/xsynchr.asm) -- and on its mismatch path, caught
 at the error hook H.ERRO -- scratchpad/XSYNCHR2_run1.out (probes/bios/spec/xsynchr2.asm)."""

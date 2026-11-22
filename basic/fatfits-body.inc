@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; fatfits-body.inc -- fat_fits, the free-space verdict of the writers the CF-3300
 ; refuses whole (D-SAVEFULLSTAMP). Its own file, not a part of fat-prim-body.inc:

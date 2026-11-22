@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/SCALXY.md's EXECUTABLE RULES (docs/spec-method.md §3a): SCALXY ($010E) -- probes/bios/spec/xgfx4.asm, op 0
 (the loader is xgfx4_model)."""
 import os

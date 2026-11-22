@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OPENGRP round 6: what the CHR$(1) header does with the byte after it.
 The gate's sweep found it: CHR$(1) then CHR$(2) draws NOTHING on the VG-8020
 (zerobas drew glyph 2-64). Font-free: each glyph is compared with a cell drawn

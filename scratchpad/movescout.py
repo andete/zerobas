@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Which disk.rom routines in an address range can MOVE to a hole elsewhere?
 
 A routine is movable when (1) nothing falls into it -- the instruction before its

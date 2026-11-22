@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """dskfmt-acceptance: DSKFMT ($401C) formats as the National CF-3300 does, and the
 disk it makes WORKS (D-DSKFMT; D-SIDEWRITE).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""M-PSETPLOT — make an off-screen PSET *plot*, which is the arm M-PLOTCLIP proved is needed.
 
 M-PLOTCLIP (2026-09-10) cut the TENANT's clip (`gfx_plot_cur`'s three bare

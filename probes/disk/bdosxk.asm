@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXK.COM -- D-DISKCONTRACT gap 5 (2026-11-17): what CONIN's and BUFIN's ECHO put on the
 ; screen. BX2 / D1 / bufinx compare their returned registers and buffer, never the screen.

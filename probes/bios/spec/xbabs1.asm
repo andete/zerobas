@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBABS1 -- WRABS ($30) through $F37D, round 1 (2026-11-22): absolute sector writes on drive A, read back with RDABS
 ; ($2F). DE the first sector, H the count, L the drive (0 = A). XBBLK11's frame and 66-byte record

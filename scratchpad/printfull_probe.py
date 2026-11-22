@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKFULL's PRINT# face: PRINT# past one record on a disk with no free
 cluster, on both machines. The CF-3300 stops with Disk full (ERR 66) at I=12 --
 264 bytes, its first 256 B record flush. Ours HANGS: no [L], no prompt, even with

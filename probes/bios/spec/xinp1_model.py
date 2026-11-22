@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader for the input region's EXECUTABLE RULES (SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
 CKCNTC, GTPAD, GTPDL; docs/spec-method.md §3a): scratchpad/XINP1_run3.out (rows N and D; probes/bios/spec/xinp1.asm
 documents the presets, the key matrix per case, the case table and the 48-byte record)."""

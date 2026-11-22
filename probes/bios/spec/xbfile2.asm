@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBFILE2 -- the BDOS's FCB directory functions through $F37D, round 2 (2026-11-22), answering review pass 1
 ; (scratchpad/BFILE_review1.md): an FCB PRE-FILLED with $FF at +12 .. +36 (which fields does FMAKE / FOPEN write); FOPEN

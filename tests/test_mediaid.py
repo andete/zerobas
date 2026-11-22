@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-MEDIAID: fat_mount takes a disk's geometry from the MEDIA ID in
 the FAT's first byte (logical sector 1), not from the boot sector's BPB -- what
 both references do (scratchpad/bpbrule_probe.py, scratchpad/bpbrule_run.out).

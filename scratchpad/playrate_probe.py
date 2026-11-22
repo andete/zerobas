@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYRATE: what sets the VG-8020's floor on short PLAY notes? Runs a .bas
 (default scratchpad/playrate_measure.bas) on the VG-8020 and a zerobas target and
 prints both outputs side by side. Clean-room: a tape in, the printer port out;

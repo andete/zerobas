@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FNKLINE -- WHAT the reference paints on row 23, so we can paint the same.
 
 Joost ruled option (c) on 2026-09-17: paint the function-key line ourselves, then

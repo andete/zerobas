@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 7 -- the OCTANT-ASYMMETRIC reference model, scored on planes.
 
 Step 6 got 22/51 with "the boundary step index is linear in the distance to the

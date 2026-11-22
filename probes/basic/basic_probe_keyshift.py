@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """keyshift-acceptance (D-KEYSHIFT, Joost's report 2026-10-11): while SHIFT is
 held, the function-key line shows F6..F10 -- whenever BASIC asks the keyboard.
 

@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # M28 — block/random completion: real $23 FSIZE + $26 WRBLK  (APPROVED — 2026-07-04)

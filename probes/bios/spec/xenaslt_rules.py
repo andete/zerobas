@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/ENASLT.md's EXECUTABLE RULES (docs/spec-method.md §3a): ENASLT ($0024) switching pages 1 and 2 to the
 RAM slot and the probe's own cartridge -- scratchpad/XENASLT_run4.out (row N), XENASLT_run4d.out (row D),
 XENASLT_run4c.out (row C); probes/bios/spec/xenaslt.asm documents the header, the cases and the 16-byte record. Round 2,

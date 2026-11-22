@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""slotregs-acceptance -- D-SDSBOOT (2026-11-07): the EXIT registers of the published
 slot entries RDSLT ($000C), WRSLT ($0014), ENASLT ($0024) and (2026-11-13) WSLREG
 ($013B, the `wsl*` rows below), zerobas against the

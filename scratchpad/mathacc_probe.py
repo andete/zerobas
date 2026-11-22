@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-MATHACC — `ATN` and `EXP` scored against TRUTH, not against each other.
 
 TODO.md filed `ATN(1)`, `EXP(-100)` and `EXP(100)` as differing "in the LAST

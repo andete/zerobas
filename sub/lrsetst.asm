@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; lrsetst.asm -- the LSET/RSET record-field STORE as a PAGE-0 sub-ROM tenant
 ; (SUBROM_IDX_LRSETST). docs/spec-basic-fldary.md §6.4 -- the D-FLDARY funding

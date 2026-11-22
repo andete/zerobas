@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLPT3 -- docs/bios/LPTOUT.md round 3 (2026-11-18): LPTOUT ($00A5) ABORTED. Nothing is plugged into the printer port
 ; (no @printer), so LPTOUT waits; the probe sets KEYREADY (CAP+$FF) to 1 right before the call and the harness then

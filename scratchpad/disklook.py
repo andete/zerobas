@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN triage: boot ONE image of the disk collection on one machine, type a
 script of key lines at given times, and print the screen text at each capture.
 Black box -- keys in, the screen (VRAM name table), CURLIN and PC out; the software

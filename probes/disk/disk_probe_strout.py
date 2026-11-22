@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-STROUT (gate: strout-acceptance): BDOS $09 STROUT prints on ours as on the
 CF-3300. A COM prints HELLO-STROUT$ with it; both machines' screens (the name
 table VDP R#2 points at) must show HELLO-STROUT and the DOS banner's

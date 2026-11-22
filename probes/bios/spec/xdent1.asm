@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT1 -- the disk ROM's published entries GETDPB ($4016), DSKCHG ($4013) and MTOFF ($401F), round 1 (2026-11-22).
 ; XDSK1's frame (below): a 16 KB "AB" cartridge whose INIT hooks H.STKE, so the cases run once every ROM (the disk

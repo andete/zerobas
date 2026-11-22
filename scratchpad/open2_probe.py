@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OPEN2 — TWO DISK CHANNELS cannot be open at once; the refusal is `Syntax error`.
 
 Found 2026-08-30 while trying to answer a D-PUT3 question (is the third-PUT

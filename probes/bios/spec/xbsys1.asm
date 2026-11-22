@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBSYS1 -- the BDOS's system functions through $F37D (the disk ROM's BDOS entry, the one Disk BASIC and a ROM use),
 ; round 1 (2026-11-22): VERSION ($0C), CURDRV ($19), SELDSK ($0E), LOGIN ($18), SETDTA ($1A), ALLOC ($1B), GDATE /

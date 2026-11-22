@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The break-latch slice's first question: is INTFLG ($FC9B) latched on the press EDGE,
 or every frame the key is held -- VG-8020 against zerobas? Our own code: ei, wait for
 INTFLG != 0, value -> $D100, clear it, five frames with the key still held, INTFLG ->

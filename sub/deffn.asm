@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; deffn.asm -- D-DEFFNEV: DEF FN's PARSE, as a PAGE-0 sub-ROM tenant
 ; (SUBROM_IDX_DEFFN). docs/spec-basic-deffnev.md, docs/deffn-design-2026-08-22.md.

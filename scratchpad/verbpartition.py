@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Price option 3 of the disk-BASIC relocation: bytes per VERB GROUP.
 
 `spec-diskbasic-relocation-seam.md` §4 records why `seamscout.py`'s branch-

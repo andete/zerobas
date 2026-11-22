@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC-ROM screen verbs (SCREEN/COLOR/CLS/KEY), no emulator.
 
 Tier-2 tests: the handlers call BIOS entry points (CHGMOD, CHGCLR, CLS,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MERGESHAPE: does the reference's `MERGE` share `LOAD`'s whole shape?
 
 `disk/docs/expansion-protocol.md` §8.9 carries exactly one unmeasured line after

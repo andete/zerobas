@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XENASLT2 -- docs/bios/ENASLT.md round 5 (2026-11-18): ENASLT ($0024) and the SECONDARY slot. Run on the cf3300 row
 ; only (the one reference with an expanded slot 3: RAM in 3-0, a ROM in 3-1). Under Joost's ruling of 2026-11-18 the

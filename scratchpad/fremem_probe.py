@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TIER 4 goal (a), SAME FREE MEMORY (Joost 2026-09-24): FRE(0) and FRE("") on
 the VG-8020 and on zerobas's DISKLESS machine (both diskless, like for like), in
 a few states. Each case is a fresh boot. Reports the absolute values AND each

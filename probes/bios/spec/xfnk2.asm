@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XFNK2 -- docs/bios/INIFNK.md round 1 (2026-11-17): INIFNK ($003E) from GARBAGE. XFNK (xfnk.asm) called INIFNK on
 ; the VG-8020's boot-time FNKSTR, which already held the defaults, so "INIFNK writes them" could not be told from

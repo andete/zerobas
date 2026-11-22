@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; playsvc.asm — the background music player (audio arc, Slice 3; rebuilt 2026-11-21).
 ; ===========================================================================

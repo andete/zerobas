@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RAWVAL — the SECOND argument of POKE / VPOKE / OUT has no domain at all.
 
 From the standing per-statement review tier, whose worklist names the raw-I/O

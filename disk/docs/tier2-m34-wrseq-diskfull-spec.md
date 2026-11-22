@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad; SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad; SPDX-License-Identifier: BSD-2-Clause -->
 # M34 — WRSEQ disk-full onset parity (Tier-C case 2, P2)
 
 Status: **SPEC — awaiting sign-off.** Investigation DONE (clean re-characterisation

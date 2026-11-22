@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""errmsg_alphabet — the error messages this ROM can print, DERIVED not typed.
 
 🔴 A HAND-WRITTEN ERROR-MESSAGE ALPHABET IS A BLIND SPOT, AND 19 PROBES CARRY

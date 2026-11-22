@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATRES: where does the CF-3300 keep the FAT in RAM -- normal boot vs a CTRL boot
 (CTRL held at power-on)? Black-box, RAM ONLY (clean-room: work-area RAM contents and
 addresses are readable; no ROM byte is read, nothing is single-stepped).

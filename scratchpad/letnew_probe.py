@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LETNEWFIRST measure-first (2026-10-19): WHICH statements create their target
 variable before the right side on the VG-8020, and in what ORDER two new variables are
 created? scratchpad/freabs_run.out found it for `X=FRE(0)` (11 B: the VG-8020 has made X

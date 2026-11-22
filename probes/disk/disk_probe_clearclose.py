@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CLEARCLOSE (gate: clearclose-acceptance): an ACCEPTED `CLEAR` closes every
 open file, as on the CF-3300; a REJECTED one leaves them open.
 

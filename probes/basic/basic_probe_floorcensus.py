@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """floorcensus-acceptance (D-FLOORCENSUS, 2026-10-13): who WRITES the diskless floor?
 
 On a diskless machine [TXTMAX, TXTMAX_NODISK) is PROGRAM RAM: the string space,

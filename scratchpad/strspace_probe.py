@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Found by playq_probe.py (2026-11-12): zerobas stopped with `Out of string space in
 40` building a 64-character string by 32 concatenations under the default CLEAR 200;
 the VG-8020 ran it. Isolate: with and without a PLAY first, and FRE("") along the way.

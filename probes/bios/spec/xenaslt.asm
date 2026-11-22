@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XENASLT -- docs/bios/ENASLT.md round 4 (2026-11-18): ENASLT ($0024) -- A = a slot ID, H = an address in the page --
 ; switches pages 1 and 2 to the machine's RAM slot and to the probe's own cartridge. The probe runs from RAM ($EA00,

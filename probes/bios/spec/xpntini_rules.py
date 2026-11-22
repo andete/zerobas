@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/PNTINI.md's EXECUTABLE RULES (docs/spec-method.md §3a): PNTINI ($0129) -- probes/bios/spec/xgfx6.asm, op 0
 (the loader is xgfx6_model)."""
 import os

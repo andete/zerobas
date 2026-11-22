@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MIDOP — MID$()='s missing RHS, and whether D-PUSING's rule reaches a second verb.
 
 `MID$(A$,2)=` is ERR 2 here and 24 on both references -- the last of the three

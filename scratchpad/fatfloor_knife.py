@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATFLOOR knife: is a wrong diskless ceiling SEEN?
 
 K-FF1  basic/sysvars.inc: TXTMAX_NODISK $E76A -> $E86A, i.e. 256 B past the

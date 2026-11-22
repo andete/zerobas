@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TANBIG: black-box model of the reference SIN/COS reduction, scored against tanbig_run.out / tanbig_bisect.out."""
 from decimal import Decimal as D, getcontext, ROUND_HALF_UP
 import math

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO (gate: wszero-acceptance): a program owns HIMEM..$F37F.
 
 On a real diskless MSX1 a program that does `CLEAR n,&Hxxxx` owns the RAM from

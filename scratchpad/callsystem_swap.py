@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CALLSYSTEM (2026-10-09): does `CALL SYSTEM` look at the disk in the drive
 NOW, or at what was booted at power-on? Swaps the disk mid-session (openMSX
 `diska`), which omsx_repl cannot do.

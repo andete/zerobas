@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader for the sprite table calls' EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XSPR_run3.out
 (rows N and D; probes/bios/spec/xspr.asm documents the case table and the 20-byte record). xcalpat_rules.py,
 xcalatr_rules.py and xgspsiz_rules.py take their op's cases from `load(op)`."""

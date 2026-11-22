@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """D-STRPAREN — `(A$)` is refused in EVERY string context, and this is the
 denominator that says so.

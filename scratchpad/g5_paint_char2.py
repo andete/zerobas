@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G5 PAINT characterization round 2 (VG-8020) — THE CRUX.
 
 Round-1 fix: capture pattern AND colour plane in ONE boot (consistent snapshot),

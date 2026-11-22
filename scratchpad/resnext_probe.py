@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RESNEXTSTMT: RESUME NEXT after an error in the FIRST statement of a
 multi-statement line -- does it resume at the next STATEMENT (the reference)
 or skip the rest of the line? Found by the numbers concept page's example

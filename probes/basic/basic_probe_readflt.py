@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-READFLT (gate: readflt-acceptance): what READ makes of a NUMERIC DATA item.
 
 READ used to parse a numeric item with an int16 scanner, so `DATA 1.5` / `2E3`

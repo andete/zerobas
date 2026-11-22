@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""M-PLOTCLIP — make the clip STOP CLIPPING, the one arm 35 mutations never tried.
 
 TODO.md's "NINE ACCEPTANCE ROWS STILL NEED A REFUSAL CUT" concluded that six of

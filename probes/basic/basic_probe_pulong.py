@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PULONG + D-PUWIDE (gate: pulong-acceptance): long PRINT USING formats.
 
 zerobas copied a PRINT USING format into a 32 B buffer and CUT a longer one: a

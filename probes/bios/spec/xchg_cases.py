@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHGET.md round 1 (2026-11-17): the XCHG matrix -- CHGET ($009F) and CHSNS ($009C) on the VG-8020 against
 zerobas, with the key buffer FILLED by the probe (no keyboard: what puts keys INTO the buffer is KEYINT's, another
 call's page; a waiting CHGET needs a typed key and is a separate keyed probe). ONE case list that GENERATES

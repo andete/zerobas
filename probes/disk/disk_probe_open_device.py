@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Functional oracle for zerobas-BASIC OPEN device channels (CAS/device option-
 closure Tier 1, Item 3): OPEN"LPT:"/"CRT:" FOR OUTPUT AS #n + PRINT# routes to the

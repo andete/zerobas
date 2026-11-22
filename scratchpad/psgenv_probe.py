@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """STRTMS step (1)(a): is PSG R13 (the envelope shape -- a write restarts the envelope)
 written on EVERY envelope note, or only when S / M change? The packet carries no
 "S changed" flag (playq_run*.out), so the answer decides the servicer. An openMSX

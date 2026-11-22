@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; ===========================================================================
 ; frelive_tenant -- the stack the reference's evaluator holds at one FRE(n)

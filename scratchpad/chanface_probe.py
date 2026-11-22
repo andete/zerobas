@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CHANFACE — what does a verb say about a channel that is not open?
 
 The argument-SHAPE family closed at 123 rows and 4 defects (bare form, wrong type,

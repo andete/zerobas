@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # D-ARR-C — the dimension count (`MAXDIM = 4` is a divergence, not a cap)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BDOSFCB residual (2): what the $F37D BDOS's SETRND writes, from a BASIC program,
 for controlled FCB fields -- EX (+12), +13, RS (+14), +24, CR (+32), the previous RR --
 on a real open file. A copy of bdosfcb_probe.py whose rows also set those bytes.

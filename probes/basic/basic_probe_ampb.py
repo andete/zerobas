@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AMPB (gate: ampb-acceptance): `&B` binary numbers in a program and at the prompt.
 
 Both references crunch `&B101` as the typed characters (no token), and the

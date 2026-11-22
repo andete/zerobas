@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3): PNTINI / SCANR / SCANL ($0129 / $012C / $012F), PAINT's published
 helpers, called DIRECTLY in SCREEN 2 -- VG-8020 against zerobas (whose three are still bare
 `ret`s: the measurement comes first, Joost's plan builds them as sub-ROM tenants and later

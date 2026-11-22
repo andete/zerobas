@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; SETRND.COM -- D-BDOSFCB residual (2): MSX-DOS's own SETRND ($24 through $0005) for
 ; controlled FCB fields, the same ten rows as scratchpad/setrnd_probe.py's $F37D ones.

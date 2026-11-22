@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICROM, measure first: a BASIC-program cartridge (an `AB` header whose
 TEXT field points at a tokenised program in page 2) on the VG-8020 and on
 zerobas. A ONE-OFF probe: the cartridge is a third-party ROM, run but never

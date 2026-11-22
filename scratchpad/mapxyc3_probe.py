@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), PNTINI / SCANR / SCANL's SCREEN 3 rows could not be read: MAPXYC(50,55)
 left CLOC at $6DF (paintbios_run5.out). So MAPXYC alone, SCREEN 3 (and SCREEN 2 for scale):
 our code calls it for (0,0), (8,0), (0,32) and (50,55) and stores CLOC / CMASK after each.

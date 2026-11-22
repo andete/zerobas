@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; sdatex.asm -- SDATE 1999-12-31, then back to the DOS prompt (D-DOSDATEBASIC).
 BDOS    equ     $0005

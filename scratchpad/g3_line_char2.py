@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G3 LINE characterization round 2 (VG-8020): fix the round-1 mistakes (POINT was
 read AFTER SCREEN0 -> text plane). Here every pixel read is a VRAM band dump while
 still in SCREEN 2 (GOTO-self hold), and the error cases are boot-per-case with a

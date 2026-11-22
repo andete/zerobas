@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KNIFEGUARD — does the atexit restore actually fire on the FAILURE path?
 
 Every knife runner writes a cut into a real source file and writes the pristine

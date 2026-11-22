@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Error-handling acceptance — S2b trap/RESUME gate (docs/spec-basic-error-handling-
 s2b-packet.md §10). Differential against the reference oracle Philips VG-8020,
 driven through the typing-free KEYBUF-injection REPL driver (probes/lib/omsx_repl.py),

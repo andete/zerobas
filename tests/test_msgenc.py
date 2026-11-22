@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: main's user-visible error messages are the exact literal text.
 
 docs/spec-basic-msgenc-carve.md §7, as DT-6 left it. D-MSGENC re-spelled the

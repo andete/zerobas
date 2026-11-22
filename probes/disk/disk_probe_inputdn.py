@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """inputdn-acceptance (D-INPUTDN) -- INPUT$'s count outside 1..255 is Illegal
 function call (5), raised at the READ, after the channel checks.
 

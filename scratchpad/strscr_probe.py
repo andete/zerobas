@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM order step (3), measured first: where does the VG-8020 build STRING RESULTS?
 
 zerobas stages every string producer's result in STRSCR (256 B, $EF00..$EFFF,

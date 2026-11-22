@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT4 -- DSKCHG ($4013) round 4 (2026-11-22), answering review pass 2 (scratchpad/DENT_review2.md): C unlike the
 ; disk inside the B 1 window (step 1) and at a LATER read (step 2: is B $FF only a first-call answer); MTOFF at a count

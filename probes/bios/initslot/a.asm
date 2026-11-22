@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D-INITSLOT cartridge A (slot 1): INIT writes $5A to $E001 and RETURNS, so the BIOS's
 ; cartridge search must go on to slot 2 -- with the slot ID it kept across the call.

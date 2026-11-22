@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Open-stack BLOAD regression: zerobas + stock C-BIOS + the cbios-tape patch
 load a tape end-to-end, with NO copyrighted VG-8020 ROM anywhere.

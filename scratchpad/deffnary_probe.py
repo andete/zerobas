@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DEFFNARY, measure first (2026-11-04): what `DEF FNA(C(1))=...` does at the DEF.
 
 Our own program, one case per boot, under ON ERROR:

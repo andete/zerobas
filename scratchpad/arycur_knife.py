@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARYCUR knife: do the new graphics-acceptance rows SEE the alias?
 
 K-AC1  basic/sysvars.inc: ARY_CUR back at $EB2F, where its high byte is GFX_OP.

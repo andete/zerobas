@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWSUBVAR knife: do the new graphics-acceptance rows SEE the check?
 
 K-DS1  sub/graphics.asm: the first-character test in gdrw_sub_scan removed.

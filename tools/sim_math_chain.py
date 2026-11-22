@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Simulate the math-pack transcendental op chains at EXACT 14-digit BCD
 precision and measure end-to-end accuracy vs high-precision truth
 (docs/spec-basic-mathpack-slice2.md §12 -- the slice-2a lesson §11.10: the

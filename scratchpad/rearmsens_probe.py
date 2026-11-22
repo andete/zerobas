@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-REARMSENS -- what actually MOVES `E_rearm_under_held_key_refires`?
 
 `disk/docs/spec-diskcode-eviction.md` 6.6t parked a correlation with no mechanism:

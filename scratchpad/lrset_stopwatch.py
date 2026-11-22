@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LRSETCLOCK — what a FIELD/LSET/RSET statement costs, BEFORE the move.
 
 Joost ruled the full move of the channel trio into disk.rom on 2026-09-17 (*"A,

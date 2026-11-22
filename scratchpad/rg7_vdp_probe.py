@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RG7: the VDP's OWN register 7 (not RG7SAV) after `COLOR 15,4,7`, per mode.
 rg7_probe.out: RG7SAV is FORCLR*16+BDRCLR in every mode on zerobas; the VG-8020
 has FORCLR*16+BAKCLR in SCREEN 0 and BDRCLR alone in 1..3. In SCREEN 0 the low

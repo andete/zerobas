@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; DSKCHG.COM -- D-DSKCHG (TODO.md): does the CF-3300's DSKCHG ($4013) answer
 ; depend on how long ago the disk was last read? A drive without a disk-change

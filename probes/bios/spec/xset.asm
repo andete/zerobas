@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSET -- docs/bios/SETTXT.md, SETT32.md, SETGRP.md, SETMLT.md round 4 (2026-11-18; round 1 had cases 0-47, a $5A fill and no read-back of the
 ; cells; round 2 a fill whose blocks all summed alike, and no cell set 4; round 3 no status read before the call,

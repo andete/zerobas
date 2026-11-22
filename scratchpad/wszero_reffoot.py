@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO after S13's refusal (Joost, 2026-10-16: "investigate what the
 references do"): WHERE does the VG-8020 keep the state of the jobs zerobas's last
 window cells do? scratchpad/ramfoot_probe.py's instrument (a write watch over

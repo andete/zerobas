@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DIMRESERVE S1 (2026-10-10) knife for the logical-layer climber: cutting
 the "rhs takes only TIGHTER operators" step (the three `inc hl` before the rhs
 `call evc_min`) makes a same-level chain RIGHT-associative. AND/OR/XOR/EQV

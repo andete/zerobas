@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Executable page rules (docs/spec-method.md §3a): every behaviour rule a call's page states is
 ALSO a check over the page's measured cases, and the page's rule tables are rendered from them.
 

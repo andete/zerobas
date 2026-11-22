@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-MSGSUB's sub-ROM-hosted error messages say what the MACHINES say.
 
 docs/spec-basic-msgsub.md §7. Fourteen ERR codes that zerobas never RAISES but

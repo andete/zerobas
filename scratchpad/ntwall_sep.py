@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-NTSEP — the row the PAINT item says is missing: what separates the rules.
 
 TODO's SCREEN-2 `PAINT` item ends on a stated gap, and this builds exactly that

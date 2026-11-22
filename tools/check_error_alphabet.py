@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ALPHAGATE — a probe that classifies error text must be able to say "I can't".
 
 🔴 A HAND-WRITTEN ERROR-MESSAGE ALPHABET IS A BLIND SPOT (TODO.md, filed

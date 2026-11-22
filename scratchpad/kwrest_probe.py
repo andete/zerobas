@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KWREST — the surface of the remaining five of D-KWPIN's eight, in one pass.
 
 D-KWPIN pinned eight keywords the reference tokenises and zerobas does not.

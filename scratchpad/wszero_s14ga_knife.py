@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14g-a knife: does `s14ga` see the moves, and does it catch a read
 mode placed where the line reader keeps its quote state?
 

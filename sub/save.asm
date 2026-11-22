@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; zerobas-sub — save.asm  (the SAVE / BSAVE / CSAVE TAPE write-engine tenant)
 ; ===========================================================================

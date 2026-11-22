@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """stubinl-check -- every inline-index tenant call is well formed (D-STUBINL).
 
 basic/subromcall.asm's sc_inl0 / sc_inl1 / sr_inl0 / sr_inl1 read the byte that

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 # Copyright (c) 2026 Joost Yervante Damad
 #
 # z80flow annotations for the C-BIOS part of zerobas's merged main ROM

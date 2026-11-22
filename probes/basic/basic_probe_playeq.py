@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """playeq-acceptance (D-PLAYEQ): PLAY takes `=name;` for a command's number.
 
 Found by the program ladder's L3_turtle: `PLAY "T=T;O4XM$;"` was ERR 5 here.

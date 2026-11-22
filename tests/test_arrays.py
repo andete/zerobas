@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC arrays slice-1, SPLIT design (repack build only),
 sub/arrays.asm (the sub-ROM page-0 tenant half) + basic/sysvars.inc's
 ARY_* param block.

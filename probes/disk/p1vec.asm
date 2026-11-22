@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; p1vec.asm -- D-TPAP1: what an MSX-DOS program sees in PAGE 1, and whether the
 ; page-0 inter-slot entries still work from the TPA. Our own program; each step

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF -- the VG-8020 reference is returning the SAME plane for every row.
 
 scratchpad/circovf_rigcheck.py re-asked the one CIRCLE row whose answer is

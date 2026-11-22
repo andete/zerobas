@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does the BIOS on each machine actually ADVANCE JIFFY ($FC9E)?
 
 INTFLG ($FC9B) was measured DEAD on the zerobas target (C-BIOS's ISR writes it

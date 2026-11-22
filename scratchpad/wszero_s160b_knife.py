@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S16.0(b) knife: does the unit suite see the strheap JUMP TABLE?
 The unit harness assembles the sub ROM from source, so no machine is rebuilt.
 

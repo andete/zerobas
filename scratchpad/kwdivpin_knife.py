@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KWDIVPIN / D-OPENEND knife: cut OPEN's end-of-statement check (the
 D-OPENEND fix) and run kwsweep on t8openappend2 alone.
 

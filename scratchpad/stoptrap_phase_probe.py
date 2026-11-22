@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FORINT's FULL battery (2026-10-20): stop-trap-acceptance's C_handler_baseline -- one
 100 ms Ctrl-STOP tap, a counting handler that RETURNs -- reads flag=2 on zerobas (VG-8020:
 1) after D-FORINT, and 1 on 508043a2. The program has no `%` variable. Is that a timing-

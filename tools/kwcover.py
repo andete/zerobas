@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KWCOVER — which of the 159 keywords does the COLLECTED battery actually type?
 
 `make tiers --keywords` reports most keywords as "no known gap (no item, no

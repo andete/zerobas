@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO7 -- docs/bios/INITIO.md round 7 (2026-11-18), after the ninth review: every recorded call in a window WITNESSED
 ; CLEAN ON BOTH MACHINES. Per case the probe seeds everything, reads the VDP status (no interrupt pending), reads JIFFY

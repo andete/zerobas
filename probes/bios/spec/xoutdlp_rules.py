@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/OUTDLP.md's EXECUTABLE RULES (docs/spec-method.md §3a): OUTDLP ($014D) with the printer logger plugged --
 scratchpad/XOUTDLP_run2.out (row N) and XOUTDLP_run2d.out (row D); probes/bios/spec/xoutdlp.asm documents the
 sequences, the four passes (NTMSXP 0 / $FF / $01 / 0) and the 4-byte record."""

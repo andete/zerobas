@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Move one disk.rom routine (a label through the line before the next top-level
 label, with the comment block directly above it) to just in front of a pinned
 `ds $PIN - $` line. Refuses on a missing / ambiguous anchor. Builds nothing:

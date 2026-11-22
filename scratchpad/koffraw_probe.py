@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KOFFRAW -- print the answer FROM row 23, exactly as missing-acceptance does.
 
 `WIDTH 40:CLS:KEY OFF:LOCATE 5,23` reads `23 5` on both machines when the answer

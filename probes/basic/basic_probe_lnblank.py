@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LNBLANK -- WHAT A BLANK INSIDE A LINE NUMBER DOES.
 
 Spec: docs/spec-basic-lnblank.md.  Measurement: docs/lnblank-msx1-characterization.md.

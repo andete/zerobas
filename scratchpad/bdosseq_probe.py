@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BDOSSEQ: a random write into a file still open from FMAKE, from BASIC's $F37D.
 
 bdosset_probe.py's sequence (FMAKE, one SEQWRITE, ..., SETRND, RDRND, WRRND) never

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX2 -- docs/bios/RIGHTC.md, LEFTC.md, UPC.md, TUPC.md, DOWNC.md, TDOWNC.md round 7 (2026-11-19; round 1 had cases 0-125, round 2 0-251, round 3 0-276, round 4 0-302, round 5 0-319, round 6 0-323): the calls that move
 ; the current graphics position (CLOC $F92A, CMASK $F92C) one pixel. Per case (the table `cases` at the end: op, A, F,

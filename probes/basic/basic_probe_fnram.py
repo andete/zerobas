@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""fnram-acceptance -- D-FNRAM (2026-11-07; Joost on D-FNALIAS: "measure what reference
 does? we try to match RAM?"). The free memory a DEF FN call with arguments costs,
 read with FRE(0), against the VG-8020 (TIER 4: RAM usage, VG-8020). BASIC only.

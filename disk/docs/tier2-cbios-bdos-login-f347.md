@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # C-BIOS DOS: BDOS `$18` LOGIN returns `0x00FF` — root cause `$F347` (DRVCNT) gated out

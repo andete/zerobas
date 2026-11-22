@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-NODISKDEN: the Disk-BASIC verbs `basic_probe_nodisk.py` has never asked about.
 
 Joost ruled 2026-09-15: *"every hook claimed on 3300 we don't presumably is a sign

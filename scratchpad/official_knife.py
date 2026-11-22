@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OFFICIAL knives on `make officialcell-acceptance`.
 
 K-O1  TRACEFLAG back at its private $ED26: predicted trcflg RED only (its

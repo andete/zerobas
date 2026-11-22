@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B design input: the REGISTER CONTRACT at the CF-3300's channel hook cells
 during `OPEN"HK.TXT"FOR OUTPUT AS#1 : PRINT#1,"AB" : CLOSE#1`.
 

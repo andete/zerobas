@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RESNEXTOVF knife: cutting scan_stmt_end's token stride (back to one byte at
 a time) must move EXACTLY the six rows of probes/basic/basic_probe_resnext.py
 whose failing statement holds a numeric constant, judged on the zerobas column

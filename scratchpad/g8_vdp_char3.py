@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 characterization round 3 (Philips VG-8020): the full state delta.
 
 Round 2 asked one register per case and got a confusing picture (a SCREEN-2

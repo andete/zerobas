@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBCON1 -- the BDOS's console INPUT functions through $F37D, round 1 (2026-11-22): CONST ($0B), CONIN ($01),
 ; DIRIO ($06) with E $FF, $07, $08 and BUFIN ($0A). Run from H.STKE (the disk ROM up, BASIC not started), as the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKILOW — the half of D-DSKIWHERE's question that lives BELOW $C000.
 
 WHY THIS EXISTS. D-DSKIWHERE had the CF-3300 checksum every 256-byte page of

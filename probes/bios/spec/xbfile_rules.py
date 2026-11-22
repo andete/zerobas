@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bdos/FILES.md's EXECUTABLE RULES (docs/spec-method.md §3a): the BDOS's FCB directory functions through $F37D,
 from the XBFILE1 probe (probes/bios/spec/xbfile1.asm documents the 11 cases and the 52-byte record: A, F, the FCB's 37
 bytes, the DTA's first 13) on two reference rows: run 1 (scratchpad/XBFILE1_run1.out, the VG-8020 + NMS 1200) and run 2

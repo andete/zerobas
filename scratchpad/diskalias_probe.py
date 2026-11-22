@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Do BASIC's persistent graphics cells and disk.rom's cells collide on the DISK build?
 
 Reading sysvars.inc for RAM order step (2b): on the disk build the BASIC map's

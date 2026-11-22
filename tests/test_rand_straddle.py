@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: fat_rand_put's sector overlay, INCLUDING the straddle — no emulator.
 
 `fat_rand_put` overlays a record into `FWBUF + GP_WITHIN` with ONE `ldir`. When

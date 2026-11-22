@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: BSD-2-Clause -->
 
 # The `load error` family, and the face D-FNEXPR declined to guess
 

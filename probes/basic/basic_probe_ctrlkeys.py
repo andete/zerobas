@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """ctrlkeys-acceptance (D-CTRLKEYS) -- the code a program reads for a CTRL key.
 
 Until cbios-repack/ctrl-keys.patch (2026-10-05), C-BIOS's key decode ignored

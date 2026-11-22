@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SAVEFULLSTAMP, measured: what do tokenised SAVE, SAVE ,A and
 PRINT#+CLOSE leave on a disk with ONE free cluster when the file is bigger than
 a cluster? D-DISKFULLSTAMP measured BSAVE: the CF-3300 refuses the block WHOLE

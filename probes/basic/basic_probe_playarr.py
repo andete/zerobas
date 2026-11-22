@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """playarr-acceptance (D-PLAYEQARR): PLAY's `=name;` with an ARRAY ELEMENT.
 
 `PLAY "V=A(1);"` works on the VG-8020 and was ERR 5 here after D-PLAYEQ.

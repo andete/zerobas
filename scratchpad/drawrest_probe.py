@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWSUBVAR, the measurement its entry names first: what does the VG-8020
 do with the REST of `=A+1;` and `XA$+D$;`? drawsub_probe.out read both as
 `[OK]` there, which says nothing about what was drawn.

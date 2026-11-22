@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICROM, measurement with OUR OWN cartridge: a 16 KB image built to the
 published MSX cartridge header format -- `AB`, INIT / STATEMENT / DEVICE = 0,
 TEXT = $8010 -- holding a program tokenised by our own crunch

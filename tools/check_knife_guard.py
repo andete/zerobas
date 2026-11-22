@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KNIFEROM gate — a knife runner must be able to prove its cut reached the ROM.
 
 A knife writes a source file and invokes `make`. If the rebuild does not happen,

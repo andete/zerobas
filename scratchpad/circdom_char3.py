@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCDOM round 3 -- the OTHER half of the branch my own fix changed.
 
 D-CIRCDOM changed cpt_asp_scale256 from `call cpt_round` to `call flt_to_int16`

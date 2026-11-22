@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D-INITSLOT cartridge B (slot 2): INIT writes $A5 to $E000 (and returns).
 ; CLEAN-ROOM: 100% own code.

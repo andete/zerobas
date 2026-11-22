@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSK6 -- the disk region's BIOS call PHYDIO ($0144) round 6 (2026-11-22): XDSK5's frame, five cases (69-73) for
 ; review pass 4's rule pairs (scratchpad/PHYDIO_review4.md): $FF track 1 on image track 1 or 2 (sector 18 written

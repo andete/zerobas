@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCALSLT -- docs/bios/CALSLT.md / CALLF.md / CALBAS.md round 4 (2026-11-18): the inter-slot calls CALSLT ($001C: IY's
 ; high byte = the slot ID, IX = the address), CALLF ($0030, RST 30h followed by the slot ID and the address) and

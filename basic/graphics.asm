@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; graphics.asm — the SCREEN-2 pixel statements' RESIDENT stubs (graphics arc,
 ; Slice G2). docs/spec-basic-graphics-g2.md.

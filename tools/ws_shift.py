@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMSHIFT: move blocks of zerobas's private workspace, and PROVE that
 exactly those blocks moved.
 

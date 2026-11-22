@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKCONTRACT gap 4 (2026-11-17): SETRND through $F37D with a 16-BIT record size --
 bdosf37d-acceptance found the CF-3300 leaving RR's top bytes 0 for RS = $0400, where the
 D-BDOSFCB rule (r2..r3 = RS / 2) gives r3 = 2; the earlier probe only tried RS = 128 and 1.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INSTR128 knife on `make instr128-acceptance`.
 
 K-I2  sub/strheap.asm sis_next: the wrap guard (`jr z,sis_zero` after

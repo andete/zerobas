@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BFPERF -- how long does a box FILL take, reference vs zerobas?
 
 Filed by D-DRAWCLAMP (§7): `LINE(0,0)-(300,250),,BF` returned NO reading at all

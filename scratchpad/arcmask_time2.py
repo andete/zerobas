@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK aside, round 2 -- the three rows round 1 could not read.
 
 Round 1 (arcmask_time.py, N=20, step=12 s) returned NO `T=` for

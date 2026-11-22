@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBABS2 -- WRABS ($30) through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/BABS_review1.md):
 ; the written sectors read back through ANOTHER path -- PHYDIO ($0144, the BIOS's sector call, which goes to the

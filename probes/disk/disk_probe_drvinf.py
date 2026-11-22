@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRVCOUNT: DRVINF ($FB21, the drive count of the first disk interface) and $FB22 (its
 slot) as a Disk BASIC program reads them -- the CF-3300 against zerobas.
 

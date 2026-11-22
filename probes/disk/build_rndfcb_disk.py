@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for RNDFCB.COM (D-RNDFCB, TODO.md): what RDRND leaves in
 FCB +12..15 and +28..35 over files of 1 / 3 / 21 / 128 / 200 records -- see

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; SETRND.COM — clean single-shot BDOS $24 SETRND characterisation exerciser
 ; (disk/docs/tier2-m32-setrnd-char.md). Runs identically on OURS (C-BIOS +

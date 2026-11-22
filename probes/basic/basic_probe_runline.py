@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RUNLINE2 — `RUN <lineno>` AT THE PROMPT, gated.
 
 `dispatch_line` has a fast path for the REPL's own bare `RUN`, and `is_cmd`

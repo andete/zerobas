@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Spec — evict the disk/file command cluster to sub-ROM tenants (free ~3–4 KB of page-1)

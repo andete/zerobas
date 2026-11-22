@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KEYRIG: can `KEY n,"<str>"`'s ASSIGN form be read by HOLDING the key?
 
 `KEY` is 1/4 forms. The existing `keykw` row already performs an assignment, but

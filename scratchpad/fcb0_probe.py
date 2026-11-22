@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FCBSHAPE FCB #0 (2026-10-10), measure first: does the reference keep FCB #0
 at every MAXFILES, MAXFILES=0 included -- VARPTR(#0) an address, and the
 MAXFILES 0 -> 1 step 267 B like the others?

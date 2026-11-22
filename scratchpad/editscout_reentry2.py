@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDITSCOUT step 3: a re-entry row that is not blind to its own subject.
 
 🔴 STEP 2's PRIMARY ROW WAS BLIND BY CONSTRUCTION. `PRINT"AAA"`, re-entered from

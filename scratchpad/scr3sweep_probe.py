@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), the graphics-cursor family in SCREEN 3 (mapxyc3_run.out found MAPXYC
 taking BLOCK coordinates there on the VG-8020, pixels on zerobas). The rest of the family,
 called DIRECTLY in SCREEN 3: the six moves (CLOC / CMASK POKEd, F captured), SETC / READC

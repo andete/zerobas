@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader for the tape region's EXECUTABLE RULES (STMOTR, TAPIOF, TAPOOF, TAPOON, TAPOUT, TAPION, TAPIN;
 docs/spec-method.md §3a): scratchpad/XTAP1_run2.out, XTAP2_run1.out, XTAP3_run1.out, XTAP4_run1.out and XTAP5_run1.out (rows N and D;
 probes/bios/spec/xtap1.asm ... xtap5.asm document the steps:

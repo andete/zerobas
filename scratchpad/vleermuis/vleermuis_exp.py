@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Vleermuis side experiment (Joost 2026-10-07: "a tape for it ... a side
 experiment"). NOT a gate. Vleermuis (egonw/vleermuis, MIT -- LICENSE beside the
 .BAS) on an ASCII tape, loaded with LOAD"CAS:" on the diskless VG-8020 and on

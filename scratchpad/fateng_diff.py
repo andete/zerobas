@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATDIFF: where do the two FAT12 engines actually differ, and which way?
 
 Option 2 (Joost, 2026-09-18) deletes `disk/fat.asm`'s FAT routines and assembles

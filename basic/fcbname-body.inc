@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; fcbname-body.inc — the build_83_name 8.3-FCB-name builder body.
 ; ===========================================================================

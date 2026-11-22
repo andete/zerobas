@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BRKFRAME: what did removing the per-statement BREAKX actually buy?
 TIME is JIFFY, so the answer is in frames. Longer loops than the 400-iteration
 first cut, whose 99-vs-98 result was inside its own +/-1 frame resolution."""

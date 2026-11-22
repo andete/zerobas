@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """bdosunop-acceptance (D-BDOSUNOP): FCLOSE ($10) and SEQREAD ($14) through $F37D on FCBs
 that were never opened, on the National CF-3300 and on ours.
 

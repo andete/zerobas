@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK2 -- the BDOS's block functions through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BBLK_review1.md): RDBLK straight after FOPEN (the record size FOPEN leaves); RDBLK at the end (nothing to read); the

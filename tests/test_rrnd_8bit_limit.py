@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: RDRND/WRRND ($21/$22) DOCUMENTED 16-bit-record / fixed-128-byte
 boundary, no emulator. (The file name is historical: until D-RRND256, 2026-11-22,
 the boundary was r0 alone -- 8 bits, signed off as option-closure Item 5 / Q5.2,

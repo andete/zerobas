@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-VARPTRN -- what does `VARPTR(#n)` answer, and can a row ever AGREE on it?
 
 `VARPTR(#n)` is the last of Joost's ruling-2 four. It is recorded as DEFERRED in

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 CIRCLE characterization round 2 (VG-8020): errors isolated (fresh boot per
 case so one hang can't poison the batch), GXPOS/GYPOS re-measure, aspect-ratio
 scaling, and start/end-angle arcs. Read-only, no ROM disassembly."""

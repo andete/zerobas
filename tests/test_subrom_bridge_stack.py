@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the sub-ROM bridge lets a tenant write into the CALLER's stack frame
 (D-WSZERO S16.0, scratchpad/shblk_plan.md §4).
 

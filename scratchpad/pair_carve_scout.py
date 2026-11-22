@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PAIRSCOUT — the carve route clone_scout cannot see: an INSTRUCTION PAIR.
 
 `clone_scout` ranks label-BLOCKS that are identical but for one or two operands.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 6 -- a FORWARD model of the reference, scored on whole planes.
 
 What the 60-sample fine sweep says (arcmask_fine.json, r=190, brackets 0.0026

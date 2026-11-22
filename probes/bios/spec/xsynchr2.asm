@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSYNCHR2 -- docs/bios/SYNCHR.md round 2 (2026-11-18): SYNCHR ($0008, RST 08h) on its MISMATCH path. The probe points
 ; the published error hook H.ERRO ($FFB1) at its own RAM code, which records E (the error code the hook receives),

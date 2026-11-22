@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CALATR (2026-10-16, Demonia's sprites): which registers do the BIOS sprite
 helpers CALATR ($0087), CALPAT ($0084) and GSPSIZ ($008A) keep? Demonia's title
 screen places sprites with CALATR + WRTVRM, and zerobas's sprite Y/X bytes came

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FNALIAS build plan §7, the GC-root question (2026-11-05): does the reference
 park a DEF FN call's string ACTUALS on its 10-deep temp-descriptor stack while
 it evaluates them?

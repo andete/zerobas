@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader for PNTINI / SCANR / SCANL's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX6_run10.out
 (rows N and D; probes/bios/spec/xgfx6.asm documents the presets, the case table and the 128-byte record). Each page's
 module takes its op's cases from `load(op)`."""

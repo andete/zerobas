@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-COLONTAIL — does every statement CONTINUE its line? The class D-DATACOLON found one member of.
 
 D-DATACOLON (2026-08-31) measured that bare `RESTORE`'s `ret` ended the WHOLE

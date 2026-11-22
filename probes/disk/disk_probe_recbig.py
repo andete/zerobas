@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECBIG (gate: recbig-acceptance): the domain of GET # / PUT #'s record number.
 
 Measured on the National CF-3300 (2026-11-04), for PUT and GET alike: the value

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DSPFNK -- does C-BIOS actually PAINT the function-key line on our target?
 
 This one fact decides whether `KEY`'s ~10 B fix is a fix or a regression

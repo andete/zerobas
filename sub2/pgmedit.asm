@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; pgmedit.asm -- zerobas-sub PAGE 1: the STATEMENT halves of the program-editing
 ; verbs DELETE, RENUM and AUTO (D-P0CB, docs/spec-sub2-p0cb.md §5). In zerobas-sub2's
 ; page 0 from 2026-10-24 until D-SUB2RETIRE step 2d (2026-11-04) moved it, with

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; casmatch-body.inc — cas_open_match / cas_skip_data shared body (the
 ; cassette Tier-3 name-match / data-skip engine).

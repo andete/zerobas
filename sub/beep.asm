@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; beep.asm -- BEEP as a sub-ROM tenant: zerobas-sub PAGE 1, SUBROM_IDX_BEEP (34).
 ; docs/spec-basic-input-devices.md §7 (the I1 funding carve). Its homes: zerobas-sub

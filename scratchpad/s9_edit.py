@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S9, groups G6 / G3 / G2+G1 / G4: the disk-only cells made disk-only.
 Each edit is anchored on exact text and refuses unless it matches exactly once."""
 import sys

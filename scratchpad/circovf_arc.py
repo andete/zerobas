@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF -- the COUPLED site: the arc mask at a large radius.
 
 D-CIRCDOM predicted one coupling ("fixing the overflow makes `$8000` reachable

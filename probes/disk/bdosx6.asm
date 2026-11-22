@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX6.COM -- Tier-C case 4: PAST-EOF random-record I/O ($21 RDRND / $22
 ; WRRND). See disk/docs/tier2-tierC-spec.md "Candidate cases" #4. The

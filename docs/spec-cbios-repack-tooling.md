@@ -162,7 +162,7 @@ that don't need a stop get logged; forks/irreversible steps hard-stop for sign-o
 
 ## 6. Decisions — RESOLVED (signed off 2026-07-09)
 
-**D1 — C-BIOS source-edit handling → TRACKED PATCH FILE.** Our own 0BSD patch against
+**D1 — C-BIOS source-edit handling → TRACKED PATCH FILE.** Our own BSD-2-Clause patch against
 the pinned C-BIOS tag (`v0.29-3-gb5ad9cb`), applied at build time to the user's
 `~/projects/cbios` checkout. The zerobas repo stays **free of C-BIOS bytes**; the
 patch is a description of edits to BSD source, so the firewall holds (a diff is not a

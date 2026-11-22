@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-GICINI — the abort seam must stop the music. docs/spec-basic-gicini.md.
 
 Both references run a GICINI-equivalent teardown when a program ABORTS (untrapped

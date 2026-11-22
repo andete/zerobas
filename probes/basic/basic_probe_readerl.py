@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-READERL (gate: readerl-acceptance): a DATA item READ refuses is a Syntax
 error IN THE DATA LINE, as on the VG-8020 -- ERL, the printed `in <line>` and
 `LIST .` all name it, in a program and from a READ typed at the prompt -- while

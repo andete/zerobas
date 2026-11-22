@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BUFINX.COM -- D-ENTRYTIERS (TODO.md): BDOS $0A BUFIN, the last console function
 ; the entry table (tools/entry_table.py) counted NOT MEASURED. One call with a

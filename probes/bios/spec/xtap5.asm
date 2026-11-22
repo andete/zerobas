@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XTAP5 -- the tape region's BIOS calls round 5 (2026-11-19): TAPOON, TAPOUT, TAPION and TAPIN entered with the
 ; CARRY SET (does each clear it, or keep it?); STMOTR, TAPOOF and TAPIOF with F $00. STMOTR at port C $B0 / $F0 / $48; then the round trip with interrupts off: TAPOON (A $FF,

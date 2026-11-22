@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TAPELOAD's tape run, rebuilt and TRACKED (2026-10-22): load each tape of a pick
 on the VG-8020 (the tape reference) and on zerobas's diskless machine, and compare
 what is on screen. The old one-off harness and its pick (pick_martos, 51) lived in a

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """anchor_symbols.py -- the CONTENT-GONE half of the line-anchor audit.
 
 scratchpad/anchor_audit_all.py repairs an anchor when the content the author

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XVRAM -- docs/bios/RDVRM.md, WRTVRM.md, SETRD.md, SETWRT.md, FILVRM.md, LDIRMV.md, LDIRVM.md round 4
 ; (2026-11-18; round 3 had a source repeating every 256 bytes; round 1 had cases 0-33, two windows and no port read after the other calls; round 2 cases 0-54, no

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKIO scout — what DSKI$ / DSKO$ actually do on the CF-3300 and the VG-8020.
 
 Three measurements, all black-box (docs/spec-basic-dskio.md §1-2):

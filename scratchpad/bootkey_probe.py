@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Boot-to-first-key latency (Joost 2026-10-09: "it takes a bit of time after
 the ZB prompt till I can actually start typing").
 

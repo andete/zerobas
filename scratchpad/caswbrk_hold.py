@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASWBRK: what happens to a Ctrl-STOP STILL HELD when a broken tape write
 reaches its ON ERROR handler? The VG-8020 printed `[E 19 15 ..]`; zerobas, with
 the write now broken, read `Break in 90` -- the held key broke the handler.

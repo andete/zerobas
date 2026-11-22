@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX9.COM -- D-ENTRYTIERS step 2 (TODO.md): the BDOS functions the entry
 ; table (tools/entry_table.py) found NOT MEASURED, non-interactive half:

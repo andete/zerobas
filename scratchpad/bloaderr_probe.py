@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROMSIZE step 1, BLOAD to disk.rom (2026-10-19): which error does BLOAD give for a
 bad drive, an empty name and a missing file? zerobas's old sub-ROM tenant fell through
 both rejects into the load with a stale 8.3 name (53, or a load of that file); the move

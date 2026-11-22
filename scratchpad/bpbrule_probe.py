@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN triage (facdemo3.di2): WHERE does a disk machine take a disk's geometry
 from -- the boot sector's BPB, or the FAT's first byte (the media ID)?
 

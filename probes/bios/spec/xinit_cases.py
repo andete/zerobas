@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INITXT.md / INIT32.md round 2 (2026-11-17; round 1's layout is in git history): the XINIT matrix. ONE case list that GENERATES
 the rung's case table (probes/bios/spec/xinit.asm) and DECODES its run.
 

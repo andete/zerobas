@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE apparatus check (2026-10-20): input-devices-acceptance phase C, case `up`
 (row 8 $20 held 8 s across a STICK/STRIG sampling RUN), reads MIS-ECHOED 'RUN' -> 'UN' on
 the climber build; a39cefcc passes. Is the R really lost, or is the cursor parked on it?

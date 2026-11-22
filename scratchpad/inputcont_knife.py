@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knives for inputcont-acceptance (D-INPUTCONT). Each cut is byte-neutral and
 must turn both zerobas rows red. The ROMs are hashed around every cut, an
 unbuilt cut is refused, and build() lets the clock tick (make's 1-second mtimes).

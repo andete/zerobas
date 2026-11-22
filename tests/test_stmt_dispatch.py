@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the exec_stmt statement dispatch (D-KW-2), no emulator.
 
 WHY THIS EXISTS

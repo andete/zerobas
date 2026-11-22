@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: OPEN..AS #n LEN=r record geometry (disk.rom frnd_calc), no emulator.
 
 Disk-BASIC option-closure Item 3 generalizes the random-record engine from a

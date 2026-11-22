@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSKIO2 -- the disk ROM's DSKIO ($4010) called DIRECTLY, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BDIO_review1.md): HL after a multi-sector call -- the buffer + $200, or + 512 x (the sectors attempted - 1)? -- with the

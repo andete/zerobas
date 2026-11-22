@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DUPOBS — is each collapsed span OBSERVABLE? Scored HOST-side, not by the battery.
 
 D-DUPSPAN2 collapsed 27 duplicate spans into aliases, and its own entry says what

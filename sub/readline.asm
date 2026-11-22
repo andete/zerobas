@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sub/readline.asm — readline_tenant: the screen editor's line reader (D-SCREDIT)
 ; docs/spec-basic-screditor.md. The REPL, INPUT, LINE INPUT, FORMAT's prompt and

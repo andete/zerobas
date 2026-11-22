@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASBIN: BINARY (BSAVE, $D0) files in a tape search -- the VG-8020 against
 zerobas's diskless machine.
 

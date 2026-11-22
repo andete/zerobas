@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-JOYPLUG -- RE-VERIFY the filed "no joystick pluggable" blocker.
 
 Joost ruled 2026-09-17: *"STICK, STRIG, PAD: we should come up with a way to

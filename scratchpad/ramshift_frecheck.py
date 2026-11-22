@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMSHIFT: boot FRE(0) on all four machines (SCREEN 0 first: the CF-3300
 boots in SCREEN 1, which the screen reader cannot parse). Output:
 scratchpad/ramshift_disk.out. Prediction (2026-10-13): diskless -4360 against

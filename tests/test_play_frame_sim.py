@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Emulator-free fast layer for the PLAY live servicer (audio Slice 3).
 
 The openMSX gate (probes/basic/basic_probe_playtrace.py) proves play_service on real

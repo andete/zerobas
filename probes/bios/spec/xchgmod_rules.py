@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHGMOD.md's EXECUTABLE RULES (docs/spec-method.md §3a): CHGMOD ($005F) -- probes/bios/spec/xinig.asm, op 2,
 each case compared with the same set-up's direct INITXT / INIT32 / INIGRP / INIMLT case (xinig_model.PAIRS)."""
 import os

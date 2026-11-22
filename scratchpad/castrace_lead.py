@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPELEADEREND / D-TAPESTARTBIT: two half-periods of a tape WRITE, in T-states, on each machine. The C-BIOS
 0.32 port measured (on zerobas's own tape routines, ported) the leader's LAST low half at 1043 T against the
 VG-8020's 740-756, and a byte's start-bit low half at 1597 T against 1492. Black box: a watchpoint on the PPI

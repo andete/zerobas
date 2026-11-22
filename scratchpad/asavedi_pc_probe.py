@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ASAVEDI: what runs during the long frame-interrupt holes of an ASCII SAVE /
 RUN / MERGE on disk. The program-ladder harness with its gap watch (JIFFY writes)
 plus a 1 ms sampler of PC, IFF, the primary-slot register and CURLIN; when a gap

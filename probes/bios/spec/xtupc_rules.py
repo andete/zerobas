@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/TUPC.md's EXECUTABLE RULES (docs/spec-method.md §3a): TUPC ($0105) -- probes/bios/spec/xgfx2.asm, op 3
 (the loader and the model are xgfx2_model)."""
 import os

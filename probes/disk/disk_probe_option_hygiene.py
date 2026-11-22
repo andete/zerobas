@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Behavioural probe: BSAVE/BLOAD option-parse HYGIENE — a malformed option flag
 must be REJECTED (our `load error`), never silently perform the operation.

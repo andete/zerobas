@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BLKIOPERCALL step 2, MEASURE FIRST: how many FDC sector commands does a
 32 KB WRBLK write (128 calls of 256 B, disk_probe_wrblk_alt.py's --wseek
 phase, PHASE byte 7 -> 8) issue on the CF-3300, and on ours?

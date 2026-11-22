@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KEYSTR — `KEY n,"str"`, `KEY LIST` and the function-key defaults, gated.
 
 Both forms were `Syntax error` here and work on both references (D-MISSOP3's

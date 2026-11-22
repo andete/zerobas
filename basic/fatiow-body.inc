@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; fatiow-body.inc -- fat_io_putbyte + fwr_bytes_inc + fat_io_close.
 ; ===========================================================================

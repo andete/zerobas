@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; lineno.asm -- the ASCII line-number scanner as a PAGE-1 sub-ROM tenant
 ; (SUBROM_IDX_PARSELN). docs/spec-rom-region-evict-lineno.md (D-EVLNO), which

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CAPGAP -- WHICH KNOB BUYS A CASE ITS RUN->CAPTURE BUDGET.
 
 Pure host Python: no emulator, no ROM. It reads the Tcl `_tcl` actually

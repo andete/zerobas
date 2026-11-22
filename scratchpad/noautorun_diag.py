@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Which launch form actually stops openMSX's tape autorun? An ASCII tape
 mounted, zerobas diskless, the screen read 12 s in: did `RUN"CAS:"` appear?
 

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHPUT2 -- docs/bios/CHPUT.md ROUND 2 (2026-11-17): the separating cases its first fresh review
 ; asked for (docs/spec-method.md §5). CHPUT is called directly; SCREEN 0, width 40 (LINL40 := 40,

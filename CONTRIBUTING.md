@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Contributing to zerobas
@@ -125,7 +125,7 @@ provenance first.
 
 ## License of contributions
 
-zerobas is licensed under **[0BSD](LICENSE)** (code *and* documentation — see the
+zerobas is licensed under the **[BSD 2-Clause License](LICENSE)** (code *and* documentation — see the
 [License section](README.md#license)). **Inbound = outbound:** your contributions are
-accepted under that same 0BSD license. There is no separate CLA; the sign-off above and
+accepted under that same BSD-2-Clause license. There is no separate CLA; the sign-off above and
 the project license are sufficient.

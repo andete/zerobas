@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CLS.md round 1 (2026-11-17): the XCLS matrix -- CLS ($00C3) and POSIT ($00C6) on the VG-8020 against
 zerobas. ONE case list that GENERATES the probe's case table (probes/bios/spec/xcls.asm) and DECODES its run.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 characterization round 8 (Philips VG-8020): how WIDE is the reprogram?
 
 Implementation question left open by rounds 4/7.  In SCREEN 0 and SCREEN 3 a

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Which MAIN-IMAGE bytes are DISK-only or TAPE-only, and in which region?
 
 🎚️ JOOST RULED 2026-09-15: *"disk code should be as much as possible in the disk

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EXPWRAP — a numeric literal whose exponent digits run past 9999.
 
 The tokeniser accumulates an exponent's digits as DE = DE*10 + digit and clamps

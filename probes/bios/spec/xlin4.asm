@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN4 -- docs/bios/PINLIN.md round 4 (2026-11-21, D-EDITDELBS): DEL and BS in the line editor, INLIN's start column
 ; and QINLIN's prompt deleted, the start column against the row Enter is pressed on. The frame, the setup and the record

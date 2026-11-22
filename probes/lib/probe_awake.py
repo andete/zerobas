@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Hold off macOS idle sleep for the life of THIS process.
 
 🔴 WHY THIS EXISTS, AND WHY IT IS AT A CHOKEPOINT RATHER THAN A CALL SITE.

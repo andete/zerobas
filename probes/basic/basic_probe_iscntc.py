@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), ISCNTC / CKCNTC ($00BA / $00BD): the two entries called DIRECTLY with
 a STOP state pending, VG-8020 against zerobas.
 

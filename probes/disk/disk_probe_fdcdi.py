@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FDCDI (gate: fdcdi-acceptance): keys typed during long disk work are kept.
 
 The program writes 4200 B (200 x PRINT#1 + CLOSE) and POKEs &HD000 = 1 when it

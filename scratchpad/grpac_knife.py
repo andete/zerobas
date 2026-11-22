@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND K-GR3/K-GR4 -- do the new error-path rows SEPARATE LINE's two
 work-area writers?
 

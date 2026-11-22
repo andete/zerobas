@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CTRLKEYS: with CTRL held, which code does EVERY key of matrix rows 0-5
 produce -- letters, digits and symbols? One boot per machine: a BASIC loop prints
 the code of each key read, while this script holds CTRL (row 6 bit 1) and

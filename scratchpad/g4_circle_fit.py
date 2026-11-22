@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 host-fit: derive an own-design integer rasteriser that reproduces the
 captured VG-8020 CIRCLE/ellipse/arc point-sets EXACTLY, before any asm is written
 (the recurring arc lesson -- de-risk the crux, don't guess). Loads

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TPAPTAIL (a): an MSX-DOS program calls $F37D (CPMVER) instead of $0005
 from the TPA (probes/disk/f37ddos.asm, our own program, run from AUTOEXEC.BAT).
 $C000 = the last step STARTED (8 = all done), $C001.. the answers.

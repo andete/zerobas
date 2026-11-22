@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PASMO053 gate -- no `equ` whose value pasmo 0.5.3 cannot know yet is USED
 above its own line.
 

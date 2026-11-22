@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECLENDOM — the OPEN-time domain of `LEN=r`, which the filed item calls unscouted.
 
 `oo_parse_reclen` (basic/files.asm) refuses anything that is not a power of two

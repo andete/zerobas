@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""build-assert-check — an ALIGNMENT assert over a moving symbol is a landmine.
 
 🔴 WHY THIS EXISTS (filed 2026-08-22 by D-DEFFN, docs/deffn-impl-2026-08-22.md

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYOP knives — one per SITE, and two of them must redden GREEN rows.
 
 The fix moves exactly two of `pl_syntax`'s four call sites to ERR 24. So there

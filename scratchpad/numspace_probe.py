@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-NUMSPACE — the space axis, asked of the NUMERIC functions.
 
 D-FNSPACE fixed nine sites where `inc hl / ld a,(hl) / cp '('` rejected a space

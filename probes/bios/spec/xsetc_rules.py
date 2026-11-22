@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/SETC.md's EXECUTABLE RULES (docs/spec-method.md §3a): SETC ($0120) -- probes/bios/spec/xgfx3.asm, op 1
 (the loader and the VRAM model are xgfx3_model)."""
 import os

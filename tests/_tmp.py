@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Per-invocation temp base for unit-test build artifacts (parallel-safety).
 
 The unit tests historically hard-coded `/tmp/zb_*.rom` etc. Those fixed names

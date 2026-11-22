@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does zerobas's DRAW HANG on an array-element substitution (`R=B(1);`)?
 
 drawsub_probe.out read NO READING on zerobas for every array-shaped

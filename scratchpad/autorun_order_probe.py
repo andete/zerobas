@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """WHEN and IN WHICH ORDER does the reference call H.READ ($FF07) and H.MAIN
 ($FF0C)? (autorun_hook_probe.py showed the VG-8020 calls both, zerobas
 neither.) openMSX's autorun types CLOAD from an H.READ breakpoint and then

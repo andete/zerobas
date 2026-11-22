@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G6 DRAW char round 6: is DRAW's colour the SHARED graphics attribute cell?
 
 Rounds 2/4/5 showed: C persists into the next DRAW in the same run, but a later

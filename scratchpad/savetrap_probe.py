@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SAVETRAP — are the SAVE/BSAVE/BLOAD PARSE failures TRAPPABLE?
 
 Auditing the review-tier entry that flags its own limit: "Coverage verified by

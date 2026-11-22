@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XRDSLT -- docs/bios/RDSLT.md / WRSLT.md round 5 (2026-11-18): RDSLT ($000C) and WRSLT ($0014) on the machine's RAM
 ; slot and on the probe's own cartridge slot. The probe runs from RAM ($EA00, page 3). It first works out, from the

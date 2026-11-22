@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSINT (2026-10-17): what does the reference BIOS's internal $0D12 do?
 Buzz Off and Shark Hunter CALL it (in A=$FE BC=$1002 DE=0 HL=$FBFE); on zerobas
 that address is C-BIOS's reset.

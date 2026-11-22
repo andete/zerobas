@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHPUT.md's evidence table, from a run of the XCHPUT matrix rung.
 
     python3 -u probes/bios/biosl_run.py probes/bios/spec/xchput.asm --row nodisk > RUN.out

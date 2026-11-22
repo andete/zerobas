@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN -- docs/bios/PINLIN.md round 1 (2026-11-17): the line-input calls PINLIN ($00AE), QINLIN ($00B4) and INLIN
 ; ($00B1) on the VG-8020 against zerobas, fed by ONE typed burst (@type-at: Tcl turns \r / \b into Enter / BS) that

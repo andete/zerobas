@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""nodiskerr-acceptance — a disk verb on an EMPTY drive is ERR 70 (docs/spec-basic-diskerr.md).
 
 D-NMFAIL measured (2026-09-10): NAME / KILL / FILES / LOAD / SAVE on a drive with

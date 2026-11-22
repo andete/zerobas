@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADERRRET / D-GETEJECT siblings: every disk verb with the disk EJECTED
 mid-program, under ON ERROR -- CF-3300 vs zerobas. (Derived from the GET site's
 probe, whose header follows.)

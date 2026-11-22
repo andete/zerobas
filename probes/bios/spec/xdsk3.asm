@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSK3 -- the disk region's BIOS call PHYDIO ($0144) round 3 (2026-11-22): XDSK1's frame and record, new cases
 ; (20-37) answering the first review (scratchpad/PHYDIO_review1.md): media $F8 / $FF away from sector 0; a write

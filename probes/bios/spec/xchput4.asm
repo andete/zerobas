@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHPUT4 -- docs/bios/CHPUT.md ROUND 4 (2026-11-17): the third fresh review's findings.
 ;   - A NEUTRAL SETUP. Rounds 2 / 3 placed the cursor with ESC Y and wrote the markers with CHPUT, so

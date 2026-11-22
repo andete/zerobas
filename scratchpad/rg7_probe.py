@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RG7 measurement: what VDP register 7's RAM copy RG7SAV ($F3E6, published)
 holds after COLOR in each screen mode. Found by the golf screen comparison
 (2026-10-14): in SCREEN 1 / 2 the VG-8020's register 7 was 0 (the border) and

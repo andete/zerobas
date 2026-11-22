@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/PUTQ.md's EXECUTABLE RULES (docs/spec-method.md §3a): PUTQ ($00F9) -- probes/bios/spec/xsnd1.asm, op 4
 (the loader is xsnd1_model)."""
 import os

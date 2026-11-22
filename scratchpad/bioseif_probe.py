@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does a BIOS entry called under DI return with interrupts ENABLED? The VG-8020 against
 zerobas, for the entries Demonia's code calls in the last ~60 ms before it crashes
 (scratchpad/demonia_trace5.out): a game that borrows SP as a copy pointer under DI dies if

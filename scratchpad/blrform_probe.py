@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPELOAD (BMX Simulator, 2026-10-17): which spellings of BLOAD's `,R` run the
 loaded code? BMX's line-50 BLOAD loads a code file with an exec address and the
 VG-8020 runs it; zerobas returned to BASIC with RUNFLAG 0 (no ,R seen) and the

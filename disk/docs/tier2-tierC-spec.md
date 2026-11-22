@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Tier-C — the adversarial / boundary suite (SCOPE — awaiting sign-off)
@@ -40,7 +40,7 @@ check afterwards, it's the pass condition.
 as Tier A) *and* (b) the oracle anchor above. The host test locks in the behaviour cheaply on
 every build; the oracle anchor proves that behaviour is the CF-3300's, not merely ours.
 
-## Fixtures — crafted minimal FAT12 volumes (our own data, 0BSD)
+## Fixtures — crafted minimal FAT12 volumes (our own data, BSD-2-Clause)
 
 A happy-path differential uses `test.dsk` (720 KB MSX-DOS 1.03 oracle). The adversarial cases
 need the disk to already be *at* the corner — full, dir-full, one-file-from-full — which is

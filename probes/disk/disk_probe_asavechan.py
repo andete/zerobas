@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ASAVECHAN (gate: asavechan-acceptance): a disk write BESIDE an open OUTPUT
 channel leaves that channel's file intact, as on the CF-3300.
 

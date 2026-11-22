@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; =============================================================================
 ; fp_log -- math pack slice 2b: LOG(x) (natural logarithm) primitive

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCNV2 -- docs/bios/CNVCHR.md round 2 (2026-11-17): CNVCHR ($00AB) with every register garbage unlike the inputs,
 ; GRPHED values with bits 2 / 5 / 7 set, entry flags beyond $00 / $FF, and the natural header-then-character

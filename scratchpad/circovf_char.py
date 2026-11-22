@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF step 3 -- THE POSITIVE ORACLE, measured.
 
 D-CIRCDOM established "zerobas is wrong when |v|*ASPS >= 65536". It did NOT

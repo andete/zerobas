@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT5 -- GETDPB ($4016) and DSKCHG ($4013) with drive A EMPTY (no @disk), round 5 (2026-11-22, review pass 2,
 ; scratchpad/DENT_review2.md): does GETDPB touch the drive at all (its block is B's either way), and does DSKCHG's first

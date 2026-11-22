@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KEYON -- pin what `KEY ON` does to the text window, before writing the fix.
 
 D-AKCM measured the defect: with `KEY ON`, `LOCATE 0,23` then `CSRLIN` reads

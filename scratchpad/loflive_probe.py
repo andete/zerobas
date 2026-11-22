@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B design input: LOF and LOC on an OUTPUT channel ACROSS record boundaries.
 
 Earlier work (D-LOF, docs/lof-cf3300-characterization.md §2) measured LOF = 0

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ARGSPACE, measure first (2026-10-31): a space AFTER a string function's
 comma or open paren, in front of a STRING argument (D-REREAD batch 7 reviewer:
 STRING$ does `inc hl / call str_eval`, and str_eval_one does not skip spaces).

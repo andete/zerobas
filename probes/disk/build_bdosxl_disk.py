@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the disk for the BDOSXL.COM exerciser (D-CONCOL: the BDOS console's logical column
 $F237 and CSRX after every kind of output -- the data for disk/docs/spec-bdos-concol.md).

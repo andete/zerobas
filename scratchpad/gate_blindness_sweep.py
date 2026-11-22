@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND -- WHICH graphics-acceptance ROWS CAN ANYTHING REDDEN?
 
 Three gate rows were found BLIND in one week, each by re-deriving it rather

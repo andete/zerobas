@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYX2b -- HOW DEEP does `X<var>;` nest? It is 3 B of RAM per level.
 
 D-PLAYX2 found 2, 3, 4, 5 and 6 levels ALL working on the VG-8020 and found no

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: lnblank's SAY_ONLY reader keeps the span reader's reason, and a
 row with no reading on ANY side is refused, not reported as agreement.
 

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-DIVPACK (2026-10-20) -- fp_div over PACKED BCD, on the host Z80,
 as a DIFFERENTIAL against the unpacked-digit fp_div it replaced.
 

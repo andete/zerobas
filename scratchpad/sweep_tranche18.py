@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26, tranche 18 — the arc cluster, on the WHOLE PLANE.
 
 These three items were measured as `ref N px <hash> / zb M px <hash>` over the

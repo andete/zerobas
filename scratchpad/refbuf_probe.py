@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-REFBUF -- how many sector buffers does the REFERENCE use, and where?
 
 D-ALIASBITE: on zerobas a disk verb (`KILL`, `NAME`, `DSKF`, ...) between two

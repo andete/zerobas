@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D3COPY.COM -- D-DOSLADDER rung D3 (TODO.md): what COPY does. COMMAND.COM is
 ; copied record by record (SEQREAD / SEQWRITE) to C.COM, both FCLOSEd; C.COM is

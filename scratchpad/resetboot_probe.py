@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RESETBOOT (Joost, 2026-10-11): "when resetting the msx machine it doesn't
 boot back to basic". Measure first.
 

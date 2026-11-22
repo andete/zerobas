@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-GETREC — GET/PUT's record number is capped at 1..255 here. Is that faithful?
 
 `ex_get` came bottom of the substantial handlers when all 135 were ranked by

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CNVCHR.md's EXECUTABLE RULES (docs/spec-method.md §3a): CNVCHR ($00AB), exhaustively -- every A x GRPHED
 in {0, 1, $5A} x the entry flags {$00, $FF} -- from scratchpad/XCNV_run1.out (probes/bios/spec/xcnv.asm documents the
 order and the 3-byte record)."""

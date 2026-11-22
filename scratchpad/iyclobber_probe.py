@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PLAYIY triage, zerobas ONLY (its own code): type a direct-mode line, arm at a
 zerobas label, and log the PC and the stack (mapped to zerobas symbols) the first
 times IY takes a given value after that -- who hands the caller a clobbered IY.

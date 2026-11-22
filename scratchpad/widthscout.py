@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-WIDTHSCOUT -- what does the CODE say a pinned cell's width is?
 
 🔴 WHY. `tools/ram-width-allow.txt` pins every cell whose extent

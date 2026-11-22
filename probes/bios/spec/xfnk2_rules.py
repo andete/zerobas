@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INIFNK.md's EXECUTABLE RULES (docs/spec-method.md §3a): INIFNK ($003E) from garbage, from the XFNK2 probe --
 scratchpad/XFNK2_run1.out (probes/bios/spec/xfnk2.asm documents the setup and the capture)."""
 import os

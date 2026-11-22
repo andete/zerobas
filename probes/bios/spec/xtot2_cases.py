@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/TOTEXT.md round 2 (2026-11-17): the XTOT2 supplement, after the first review. XTOT's OLDSCR took 0 / 1 /
 $5A, its CRTCNT always 24, its CNSDFG "on" always 1, its colours one set, its entry register copies always the mode
 call's, and SCRMOD always agreed with them. ONE case list that GENERATES probes/bios/spec/xtot2.asm's table and DECODES

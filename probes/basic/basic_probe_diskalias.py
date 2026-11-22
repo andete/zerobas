@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """diskalias-acceptance (D-DSCALEDISK, 2026-10-13): do BASIC's persistent cells survive
 a disk access on the DISK build, as on the CF-3300?
 

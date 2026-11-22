@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS: one row per ENTRY POINT in the tier sheet, BDOS functions first.
 
 Joost, 2026-11-08: *"having the bios and such stable and on par is of higher

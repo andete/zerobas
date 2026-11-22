@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BFBYTE round 4 -- the edges the fast path's CODE has to handle.
 
 D-BFPERF pinned the rule (a fully covered cell row becomes pattern $00 with the

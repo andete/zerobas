@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTSCAN knife: cutting the `ld (SCNCNT),a` store must fail EXACTLY the two
 zerobas rows of probes/basic/basic_probe_bootkey.py (nodisk, disk) and leave the
 VG-8020 control passing. Every row must be PRINTED (D-KNIFEROWS: a run with rows

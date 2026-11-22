@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-READFLT: does READ into a numeric variable take a non-integer DATA item?
 (The READ/DATA engine, basic/readdata-body.inc, parses items with
 data_parse_int -- "no float work" per sub/readdata.asm's header.)

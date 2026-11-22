@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBCON2 -- the BDOS's console INPUT functions through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BCON_review1.md): DIRIO E $FF with no key AND no hold; the hold with CONST twice (one place, overwritten, or a

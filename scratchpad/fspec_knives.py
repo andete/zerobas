@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FS1..3 — the D-FSPEC filespec fix, falsified by planting.
 
 The fix has THREE independent parts and each one owns a different set of rows.

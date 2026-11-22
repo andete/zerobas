@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE (2026-10-20): the evaluator's stack per pending construct, and its
 T-states per construct, measured on the HOST Z80 (tests/z80.py) -- no emulator.
 

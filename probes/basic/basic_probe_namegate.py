@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-NAMEGATE — the NAME operand rows, GATED, with their faces PINNED.
 
 The rows lived only in a sweep instrument, so the row D-NAMEORD fixed

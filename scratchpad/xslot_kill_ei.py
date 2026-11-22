@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKVERB phase 2 -- is hk_kill's `ei` doing what its comment claims?
 
 The comment says: without it, KILL would freeze TIME, PLAY and the traps for the

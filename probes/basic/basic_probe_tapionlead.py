@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPLEAD (gate: tapionlead-acceptance): TAPION called while DATA is playing.
 
 A machine-code tape loader calls the BIOS TAPION to lock onto the next file's

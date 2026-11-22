@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; scrstmt.asm -- zerobas-sub PAGE 1: the screen-setup STATEMENTS SCREEN, COLOR,
 ; WIDTH and KEY (D-P0CB slice D, docs/spec-sub2-p0cb.md §5). Moved out of main
 ; on 2026-10-24 into zerobas-sub2's page 0: ex_screen / ex_color / ex_width /

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-STRSCRBUF knife: does input-acceptance SEE the one-byte shift?
 
 K-SB1  basic/input.asm: the console answer at LINEBUF+0 again (no shift) while

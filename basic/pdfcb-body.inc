@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; pdfcb-body.inc — parse_disk_fcb, the disk drive-letter + 8.3-name parser.
 ; ===========================================================================

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TOKLAG, measure first: what loses `PRINT "ALIVE";1+1` on zerobas?
 
 The filing blamed the refused 253-character line. But tokovf_after.out shows the

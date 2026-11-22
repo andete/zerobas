@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF step 0 -- CALIBRATE the offline model against a MEASURED artifact.
 
 The whole slice hangs on an offline model of the tenant's octant loop + scale.

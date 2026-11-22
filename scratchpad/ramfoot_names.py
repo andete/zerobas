@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMFOOT naming pass: which DOCUMENTED work-area cells the VG-8020 writes
 for the 16 ops and zerobas does not, named from C-BIOS's systemvars.asm (the
 sysvar denominator's own generator), with any D-REHOME verdict attached.

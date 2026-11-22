@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14g-b knife: the widen body takes the operand TYPE in a register
 (WSRC_TYP is gone). Do `s14gb` / `ovwsrc` see a wrong type or a wrong pad?
 

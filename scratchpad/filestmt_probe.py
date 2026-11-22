@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-P0CB slice C1 (2026-10-21): OPEN / CLOSE / MERGE / MAXFILES moved from main
 into zerobas-sub2 page 0 (sub2/filestmt.asm). Each statement's answers against the
 CF-3300, each row under ON ERROR GOTO (basic_probe_deffn's frame: ERR and ERL), with

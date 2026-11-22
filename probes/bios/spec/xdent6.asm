@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT6 -- DSKCHG ($4013) round 6 (2026-11-22, review pass 3, scratchpad/DENT_review3.md): drive A EMPTY, two calls
 ; back to back -- does a FAILED read restart the count (the second answers B 1) or not (it fails again). XDENT1's frame and 30-byte record

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 characterization round 5 (Philips VG-8020): the BASE(n)= value domain.
 
 Rounds 1-4 pinned WHAT `BASE(n)=` does; round 5 pins WHICH VALUES it accepts.

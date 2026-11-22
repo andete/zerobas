@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FREPLUS14 (2026-10-17), the measure-first step: how much does FRE(0) read below a
 plain `A=FRE(0)` in each expression and statement SHAPE, on each machine? Joost ruled
 (2026-10-16) that FRE(0) must match the reference "in every expression shape": the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS step 5 (2026-11-09): BIOS PHYDIO ($0144) called directly from Disk
 BASIC, the National_CF-3300 (stock) against zerobas's disk machine: sector 0 of
 drive A read into $D200 (A = 0, B = 1, C = $F9, DE = 0, HL = $D200, Cy = 0). The

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """catcopy-acceptance (D-CATCOPY): INSTR does not copy an operand it only reads.
 
 Found by the program ladder's calendar (probes/programs/L2_calendar.bas, run

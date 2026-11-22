@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""Does the CLEAR/TRAPSTK defect reproduce on STRIG? The shared-code argument, 3 of 4.
 
 TODO.md's "`KEY / STRIG / SPRITE / STOP` were NOT run against the D-TRAPSVC rows"

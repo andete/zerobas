@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AUTORUN: call H.READ after the prompt and H.MAIN before each line read.
 Anchored on text; refuses on a missing or non-unique anchor."""
 import sys

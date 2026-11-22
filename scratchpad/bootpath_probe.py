@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN triage: WHEN do the boot code's entry ($C01E, the disk's own RAM copy)
 and the published BASIC entry $4022 run, and in what state? One image, one machine.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Gate: every `TODO.md:NNN (T-xxxxxx)` citation still points at that block.
 
 A line number into a file that gets edited is a rotting citation, and this repo

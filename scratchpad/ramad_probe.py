@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMAD (2026-10-16, Buzz Off's reset): the slot cells a program reads to find
 its RAM. Buzz Off's code ends up running $8010 with page 2 on slot 0 on zerobas
 (an inter-slot call through the RAM helpers, slot 0 where its RAM is slot 3).

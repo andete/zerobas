@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""CLOAD? mismatch is ERROR 20 (gate: cloadverr-acceptance; Joost 2026-10-27: "Measure
 first, then decide" -- the err_verify item). On the VG-8020 a CLOAD? that does not
 match the program in memory prints `Verify error` AND sets ERR: `PRINT ERR` reads 20

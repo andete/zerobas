@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-VERBCLASS: of rung 3's 258 B, how much can actually LEAVE main page 1?
 
 Joost approved option 3 of the disk-BASIC relocation -- `COPY`, `FILES`/`LFILES`,

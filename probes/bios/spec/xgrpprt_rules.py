@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/GRPPRT.md's EXECUTABLE RULES (docs/spec-method.md §3a): GRPPRT ($008D) -- probes/bios/spec/xgfx5.asm
 (the loader and the drawing model are xgfx5_model)."""
 import os

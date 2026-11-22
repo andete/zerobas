@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPLEAD knife: does tapionlead-acceptance SEE the leader verify loop?
 
 K-TL1  tape/tape.asm: the verify loop cut -- TAPION returns right after storing

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PUSING knives — one per RULE, because the slice replaced two answers with five.
 
 The head used to give ERR 2 for everything malformed and complete silently for

@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: BSD-2-Clause -->
 
 # A parenthesised string is a string, and a peek is what could not tell
 

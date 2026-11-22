@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # D-HIMDOM — CLEAR's ceiling is an ADDRESS, not an int16, and D-CLRFIX got that wrong
 

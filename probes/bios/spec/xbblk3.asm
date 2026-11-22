@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK3 -- the BDOS's block functions through $F37D, round 3 (2026-11-22): which rule FOPEN follows for the
 ; record-size word +14 / +15. Round 2 could not tell "+15 = the file's records of 128" from "the record size is

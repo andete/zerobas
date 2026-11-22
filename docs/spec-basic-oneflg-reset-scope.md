@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad ; SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad ; SPDX-License-Identifier: BSD-2-Clause -->
 # D-ONEFLG — the stale in-handler flag: reset scope, measured
 
 **Status: ✅ LANDED 2026-07-29 — signed off, built, gated, and each site

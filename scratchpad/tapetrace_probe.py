@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TAPELOAD triage: autorun a tape (openMSX's own `autoruncassettes`), then once a
 second read the published work-area pointers and walk the program's line links --
 on the VG-8020 and on zerobas. Black box: RAM cells and the link chain the BASIC

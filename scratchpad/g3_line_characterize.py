@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G3 LINE black-box characterization on the Philips VG-8020 (design input for
 docs/spec-basic-graphics-g3.md). Read-only investigation: nothing is asserted,
 we DUMP the reference behaviour so the G3 pins can be written from measured fact

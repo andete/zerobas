@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26, tranche 12 — more blocks from the §1.2 set.
 
 Reuses tranche 11's lesson: never read an error off the screen after a MODE

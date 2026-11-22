@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISJOINT scout -- is Joost's option (c) affordable, and WHERE does it go?
 
 Joost ruled (c) on 2026-09-23: **make the two ROMs' RAM maps DISJOINT**, after a

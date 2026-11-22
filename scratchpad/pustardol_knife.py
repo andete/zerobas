@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knife for pustardol-acceptance (D-PUSTARDOL): the `$` after `**` is never
 recognised (its compare becomes `cp $FF`), so `**$` falls back to a literal `$`
 before the field. Both zerobas rows must go red. The ROMs are hashed around the

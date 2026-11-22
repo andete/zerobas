@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Cassette verb probe: RUN"CAS:", MERGE"CAS:", OPEN"CAS:" (tape Tier-2 follow-ons).
 

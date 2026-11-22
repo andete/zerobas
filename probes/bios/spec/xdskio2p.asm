@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSKIO2P -- XDSKIO2's cases (probes/bios/spec/xdskio2.asm) through PHYDIO ($0144): its twin, the expected values for
 ; docs/disk/DSKIO.md's round 2. XDSKIO2's frame with every `call dskio` a plain `CALL PHYDIO` (the dskio routine is

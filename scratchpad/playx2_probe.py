@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYX2 -- the three questions `docs/spec-basic-audio-play.md` §7.5 leaves
 open, which must be answered BEFORE a byte is spent on `X<var>;`.
 

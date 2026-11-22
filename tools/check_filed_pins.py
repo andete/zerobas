@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PINGATE — `tools/filed-row-known.txt` had NO GATE, and its own entry said so.
 
 The filed-row adjudication set pins, per probe, the divergent rows an open

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CLEARWRAP, measure first (2026-11-01): CLEAR's fit check sums PRGEND + the
 requested string space + 680 in 16 bits with no carry test (a D-REREAD batch 8
 reviewer). Does a string space near 32767 get ACCEPTED here where the references

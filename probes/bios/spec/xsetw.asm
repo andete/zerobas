@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSETW -- D-SETWRTEI (2026-11-18): do the VG-8020's SETWRT ($0053) / SETRD ($0050) return with interrupts enabled?
 ; C-BIOS's end `EI / RET`; a caller's first OUT / IN after them can then meet an interrupt. Each entered with

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT7 -- DSKCHG ($4013) round 7 (2026-11-22, review pass 3): a reading call with C $FA, ABOVE the disk's $F9 --
 ; B $FF when C differs, or only when C is below the disk's byte. XDENT1's frame and 30-byte record

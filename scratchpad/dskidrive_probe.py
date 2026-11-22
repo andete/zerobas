@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKIFORM, second half: is the DRIVE argument's numbering why the value is empty?
 
 D-DSKIFORM settled the FORM: `DSKI$` is a FUNCTION only -- `DSKI$0,0`, `DSKI$ 0,0`

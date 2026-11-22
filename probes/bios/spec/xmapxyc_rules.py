@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/MAPXYC.md's EXECUTABLE RULES (docs/spec-method.md §3a): MAPXYC ($0111) -- probes/bios/spec/xgfx1.asm, op 4
 (the loader is xgfx1_model)."""
 import os

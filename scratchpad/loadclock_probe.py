@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADRUN, re-measured 2026-10-10 with a clock OUTSIDE the guest.
 
 scratchpad/loadrun_probe.py reads `TIME` as printed by the loaded program. On

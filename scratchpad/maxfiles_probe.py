@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-MAXFRE — does the per-channel reservation move when MAXFILES moves?
 
 D-RESERVE showed the reference reserves UP FRONT rather than at OPEN. Joost's

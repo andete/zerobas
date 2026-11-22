@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LVSPACE — a space before an ARRAY SUBSCRIPT on the LEFT of an assignment.
 
 D-FNSPACE fixed nine `inc hl / ld a,(hl) / cp '('` sites in the string functions;

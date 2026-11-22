@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; GENERATED FILE -- do not hand-edit. Produced by tools/gen_math_coeffs.py
 ; (own decimal minimax + constants; cross-checked vs Cody & Waite METHOD,

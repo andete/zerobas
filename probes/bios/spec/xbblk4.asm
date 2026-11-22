@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK4 -- the BDOS's block functions through $F37D, round 4 (2026-11-22), answering review pass 2 (scratchpad/
 ; BBLK_review2.md): which size WRBLK sets (overwrite inside the file), WRBLK HL 0 with RS 1 (shrink) and extending,

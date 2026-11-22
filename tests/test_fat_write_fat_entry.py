@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM fat_write_fat_entry (FAT12 write-side 12-bit pack), no emul.
 
 fat_write_fat_entry is the exact inverse of fat_next_cluster: in HL = cluster,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LOFTYPE — is the reference's LOF single or double precision?
 
 A copy of scratchpad/putdomain_probe.py with ONE change: line 300 prints

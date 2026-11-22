@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KWTIER1 — how many FORMS a keyword must be shown to handle, per keyword.
 
 🎚️ JOOST'S RULE (2026-09-14): a keyword reaches TIER 1 when it is knife-proven

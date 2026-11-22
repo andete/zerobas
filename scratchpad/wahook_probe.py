@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TPAP1 step 1: WHEN does MSX-DOS call the disk work area's segment hooks --
 $F368 ("disk ROM into page 1") and $F36B ("RAM into page 1") -- and what is page 1
 before and after each call? On the CF-3300 and on zerobas.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-MISSOPMSG — the entry's premise is falsified; this reads what actually prints.
 
 The `SAVE`/`LOAD`/`BLOAD`-with-no-argument item says *"zerobas has no `Missing

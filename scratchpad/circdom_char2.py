@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCDOM round 2 -- the three round-1 MISSES, chased.
 
 Round 1 (scratchpad/circdom_char.py) predicted 6 DIFF / 6 AGREE and scored 9

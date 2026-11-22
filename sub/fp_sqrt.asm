@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; =============================================================================
 ; fp_sqrt -- math pack slice 1b: SQR(x) primitive (docs/spec-basic-math-

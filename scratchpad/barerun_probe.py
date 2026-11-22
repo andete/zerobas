@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BARERUN — does a bare `RUN` inside a running program re-enter the loop NESTED?
 
 `basic/cload.asm`'s `dr_stored` is the one arm D-RUNTAIL did not convert:

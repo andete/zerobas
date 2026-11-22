@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14c knife: does `s14stx` see the WSTX / tape-save moves, and is a
 WSTX one byte too low caught -- by the row AND by the guard?
 

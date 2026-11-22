@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Ground-truth PAINT via POINT() readback on VG-8020.
 POINT is queried WHILE IN SCREEN 2, stashed to vars, then printed in SCREEN 0.
 Each statement on its own numbered line (avoid over-long injected lines)."""

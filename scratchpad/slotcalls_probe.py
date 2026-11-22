@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN triage (the MemMan class): boot ONE image of the disk collection and log
 every call a program in RAM makes to the PUBLISHED slot entries -- RDSLT $000C,
 WRSLT $0014, CALSLT $001C, ENASLT $0024, CALLF $0030 -- and to EXTBIO $FFCA and the

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XFSW -- docs/bios/DSPFNK.md / D-KEYLINESHIFT (2026-11-18): does the VG-8020's DSPFNK ($00CF) pick the label set
 ; (keys 1-5 or 6-10) from FNKSWI ($FBCD), or from the SHIFT key at call time? zerobas's key-line tenant reads

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; p1dta.asm -- D-P1DOS: an MSX-DOS program reads one 128-byte record of its own
 ; data file into a DTA in PAGE 1 ($4000) with BDOS $27 RDBLK, then leaves the

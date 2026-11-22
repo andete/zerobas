@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # D-MOUNTROW — the mount arm of `KILL`/`NAME` gets a row, and two written-down predicted misses become cuts

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; tokskip-body.inc -- tok_skip, shared VERBATIM between the resident
 ; (basic/interp.asm, unchanged bytes) and the PAGE-0 sub-ROM tenant that needs it

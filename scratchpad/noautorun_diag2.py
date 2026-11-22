@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """noautorun_diag.py found the un-arm works for a tape mounted with
 `-cassetteplayer`; lnblank-say then autoran anyway, because it mounts the tape
 from its Tcl prologue (`cassetteplayer insert`), after startup. ~40 sites in

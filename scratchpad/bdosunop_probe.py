@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BDOSUNOP: CLOSE ($10) and SEQREAD ($14) through $F37D on an FCB that was never opened.
 bdosset_probe.py's one row (NOSUCH.XYZ after a failed OPEN) read $FF / 1 on the CF-3300
 and 0 / 0 here. Two rules fit it -- the CF-3300 SEARCHES the directory for the name, or it

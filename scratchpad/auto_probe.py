@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-AUTO — the last of RENUM / DELETE / AUTO, and the one kwsweep cannot run.
 
 D-RENUM measured RENUM and DELETE (8 rows, three machines, no divergence) and

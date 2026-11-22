@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; soundstmt.asm -- the SOUND and BEEP statement handlers, PROMOTED from basic/sound.asm
 ; (the low region) into main page 1, in front of the $6CF3 pin, whose pad absorbs their

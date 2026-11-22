@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN3 -- docs/bios/PINLIN.md round 3 (2026-11-21, D-EDITSTOP): CTRL+STOP and CTRL+C ending PINLIN / INLIN / QINLIN,
 ; and a STOP pause (INTFLG 4) pending when the line is read. Per case (the table `cases` at the end):

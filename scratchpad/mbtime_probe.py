@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN mb.dsk, before the $5E10 pin (Joost ruled 2026-10-27: "Start BASIC (NMS
 1200)"): what does the screen show over time when mb.dsk boots -- does the NMS 1200
 ask the date before AUTOEXEC.BAS runs? On the VG-8020 + Philips NMS 1200, the

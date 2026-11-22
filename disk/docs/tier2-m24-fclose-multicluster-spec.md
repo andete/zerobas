@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Tier-2 M24 — the FCB **write-tier** kernel entries `$461D`/`$477D`/`$456F` (BDOSX3 FCLOSE crash root cause; the `$456F` NOP-slide → BC=0 LDIR bomb) — CHARACTERISATION + fix-shape spec

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBREC2 -- the BDOS's record functions through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BREC_review1.md): SETRND after a write, after FOPEN and after a good read (its rule); RDSEQ at a CR inside the size but

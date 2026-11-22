@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CLS.md's EXECUTABLE RULES (docs/spec-method.md §3a): CLS ($00C3) and POSIT ($00C6), from the XCLS matrix
 -- scratchpad/XCLS_run2.out (run 1 is run 2's first 27 cases; run 2 adds the separating ones: CRTCNT 13 under POSIT,
 values unlike the garbage cursor in SCREEN 2, a second colour set). The case list, the setup and the record are in

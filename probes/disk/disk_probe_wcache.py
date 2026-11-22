@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WCACHE (gate: wcache-acceptance): how many FDC sector commands a sequential
 PRINT# + CLOSE costs, and that the file still reads back whole. The design and
 its four slices are in docs/spec-diskwcache.md.

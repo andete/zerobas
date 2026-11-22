@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-USING — the PRINT USING format surface, swept.
 
 `ex_print_using` is the largest thinly-commented handler in the tree: 251 lines of

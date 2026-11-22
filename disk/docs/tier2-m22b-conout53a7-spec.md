@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Tier-2 M22b — the `$53A7` CONOUT-worker canonical entry (the DIR-corruption root cause; tab-expansion + `$F237` column cell) — CHARACTERISATION + fix-shape spec (no asm)

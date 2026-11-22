@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSCONTRACT2 gap 8: the queue and voice entries out of their idle state -- the
 VG-8020 against zerobas.
 

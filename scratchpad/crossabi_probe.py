@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CROSSABI: the REGISTER CONTRACT at the main->disk crossing.
 
 D-LOADPROTO (§6.6u) settled the control flow: main calls `$FE67` once and the

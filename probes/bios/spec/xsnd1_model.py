@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader for WRTPSG / RDPSG / CHGSND / LFTQ / PUTQ / GETVCP / GETVC2's EXECUTABLE RULES
 (and GICINI / STRTMS / BEEP's) (docs/spec-method.md §3a): scratchpad/XSND1_run4.out and XSND1B_run1.out (rows N and D;
 probes/bios/spec/xsnd1.asm and xsnd1b.asm document the presets, the case tables and the 80-byte record; xsnd1b's cases

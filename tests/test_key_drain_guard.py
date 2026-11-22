@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LATCH2 (docs/spec-probe-latch2.md) -- the injector's two standing rules.
 
 Pure host Python: no emulator, no ROM. `make latch-check` proves both rules on

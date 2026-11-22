@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CFARCH: how does the CF-3300 actually wire Disk BASIC?  Observed, not guessed.
 
 Joost asked for a thorough investigation rather than invented implementations.

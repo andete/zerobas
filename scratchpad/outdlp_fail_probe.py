@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), OUTDLP's FAILURE face: the published "if failed, Device I/O error".
 No printer plugged in (openMSX's default: the port reads NOT READY), OUTDLP called
 DIRECTLY with A = "A", CTRL-STOP held about 3 s later -- VG-8020 against zerobas. The

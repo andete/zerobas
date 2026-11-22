@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-XSLOTABI phase 1 -- what does a page-1 inter-slot call actually PRESERVE?
 
 hk_mkfloat reasons from "CALSLT is documented to affect most of them" and stages

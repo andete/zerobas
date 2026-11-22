@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Math pack slice 1a+1b probe — ABS/SGN/INT/FIX/CINT/CSNG/CDBL/SQR
 (docs/spec-basic-math-pack.md §9.4/§10.6).

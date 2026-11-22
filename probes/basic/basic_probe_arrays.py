@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Differential arrays probe (docs/spec-basic-arrays.md §9.7) — prove zerobas's
 numeric-array slice behaves byte-for-byte like the stock VG-8020 across the §4.1
 characterization matrix.

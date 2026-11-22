@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14d prep: when does INPUT$ with no string space raise, and are the
 keys consumed? S14d makes INPUT$ allocate its result in string space (as INKEY$
 does, and as the reference does) instead of staging it in BUF; whether the

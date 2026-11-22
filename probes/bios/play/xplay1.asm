@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XPLAY1 -- the background music player, black-box (2026-11-21, for the C-BIOS 0.32 player): queue packets put
 ; with PUTQ ($00F9), started with STRTMS ($0099), no BASIC statement involved. A 16 KB "AB" cartridge whose INIT

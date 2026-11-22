@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND -- aggregate the sweep, with a parser that does NOT lose rows.
 
 🔴 THE SWEEP'S OWN PARSER WAS LOSSY AND IT WAS CAUGHT BEFORE ITS OUTPUT WAS

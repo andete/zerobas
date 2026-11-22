@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TRAPCOST round 3: playqueue_gate's block-point spacing went 98 -> 99/97/98 on a
 pure interpreter speed-up. Prints each blocked PLAY's ABSOLUTE return TIME on the
 VG-8020 and both zerobas targets (scratchpad/playphase.bas). Clean-room: a tape in,

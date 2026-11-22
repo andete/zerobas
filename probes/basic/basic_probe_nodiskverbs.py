@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """nodiskverbs-acceptance (D-NODISKVERBS) -- the file verbs on a DISKLESS
 machine, as on the VG-8020: a device-less name is the cassette's (where the
 verb has a cassette face), a drive name is refused.

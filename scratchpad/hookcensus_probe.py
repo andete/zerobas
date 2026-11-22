@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-HOOKCENSUS: which hook cells does each machine CLAIM? Reference vs zerobas.
 
 `disk/docs/expansion-protocol.md` §8.1 records that the reference claims 35 of

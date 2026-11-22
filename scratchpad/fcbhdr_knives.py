@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FCBHDR knives: each cut must move EXACTLY its own rows of
 probes/basic/basic_probe_fcbhdr.py (crt lpt casout casin dout din dina dapp drnd).
 

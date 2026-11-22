@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """readref-acceptance (D-READREF) -- a string READ from DATA POINTS AT THE
 PROGRAM TEXT, as on the references: it charges the string space nothing, and a
 write into it (MID$ / LSET) writes into the program.

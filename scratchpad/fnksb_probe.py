@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), FNKSB ($00C9): called DIRECTLY after CNSDFG ($F3DE) is changed BEHIND
 BASIC's back, VG-8020 against zerobas.
 

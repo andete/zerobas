@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26, tranche 11 — the divergences filed inside `- [x]` blocks.
 
 Tranche 10 found 38 CLOSED blocks whose headline states a divergence, 30 of which

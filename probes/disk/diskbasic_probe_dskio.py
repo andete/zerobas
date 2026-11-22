@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""dskio-acceptance — DSKI$ / DSKO$ against the CF-3300 (docs/spec-basic-dskio.md).
 
 Rows (each on a PRIVATE copy of disk/test720.dsk, because DSKO$ writes):

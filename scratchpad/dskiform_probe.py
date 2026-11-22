@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKIFORM — is `DSKI$` a FUNCTION or a STATEMENT? The question the other three probes assumed away.
 
 D-DSKI, D-DSKIWHERE and D-DSKIBYTES all drove `A$=DSKI$(0,0)` — the FUNCTION form —

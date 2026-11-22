@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; tapeprog.asm -- zerobas-sub PAGE 1 since D-SUB2RETIRE's p1cb slice (2026-11-03,
 ; with its only caller sub2/loadsave.asm; zerobas-sub2 page 0 before): the TAPE
 ; PROGRAM READER of CLOAD, CLOAD?,

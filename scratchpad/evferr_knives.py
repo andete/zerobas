@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVFERR knives -- five size-neutral jp-retargets, each with a row set.
 
 The fix is five instructions whose TARGET changed and nothing else, so every

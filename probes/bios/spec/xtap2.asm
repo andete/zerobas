@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XTAP2 -- the tape region's BIOS calls round 2 without a tape (2026-11-19): STMOTR with port C $A0 / $E0 / $F0, A $7F /
 ; $FE / $81, and stop / toggle with F $FF and interrupts on; TAPIOF and TAPOOF with port C $E0 / $A0 (motor running,

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDCOMPR -- docs/bios/DCOMPR.md round 1 (2026-11-18): DCOMPR ($0020, RST 20h) over a matrix. H, D, L and E each take
 ; one of seven values {00, 01, 5A, 7F, 80, FE, FF} -- 7^4 = 2401 cases, every combination -- so "A = H - D when the high

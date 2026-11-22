@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AMPB: does a `&B` binary literal in program text / direct mode give its
 value? zerobas stores `&B` as text and does not evaluate it (basic/PROVENANCE.md
 descope); the numbers concept page (2026-10-09) asked what the VG-8020 does.

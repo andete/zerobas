@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CALLSTMT inventory (Joost 2026-11-14, "ideally yes": another MSX BASIC driving OUR
 disk ROM is a target). Every Disk BASIC statement / function under the CF-3300's OWN
 BASIC, with its own disk ROM (National_CF-3300) and with ours

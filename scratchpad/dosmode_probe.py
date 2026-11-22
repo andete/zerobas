@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DOSMODE40 measurement (2026-10-10): what `MODE 40` / `MODE 32` / `MODE 80`
 at MSX-DOS's A> do to the console, on the CF-3300 and zerobas DISK.
 

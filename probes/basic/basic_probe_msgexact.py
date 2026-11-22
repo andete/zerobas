@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Error-MESSAGE TEXT characterization -- the exact wording, on both references.
 
 WHY THIS PROBE EXISTS

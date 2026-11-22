@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TRGFLGISR part 2: TRGFLG ($F3E8) and the PSG's R15 / R14 with port 1's trigger A or B HELD on
 the RP2040-Zero rig (probes/lib/rigfw.py). Black box: a BASIC PEEK of the published cell after a delay
 loop, so several key scans have run, then the PSG registers read through ports $A0 / $A2 (I/O state).

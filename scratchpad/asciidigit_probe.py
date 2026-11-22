@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ASCIIDIGIT — is the ASCII-digit evaluator gap wider than `NAME`?
 
 D-CRUNCHBYTES measured the mechanism on both machines: `AS` is stored as plain

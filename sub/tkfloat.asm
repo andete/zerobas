@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; zerobas-sub — tkfloat.asm  (float literal crunch; WAVE 1 tenant, now a co-located
 ; callee of the WAVE 2 whole-tokeniser eviction, docs/spec-basic-subrom.md)

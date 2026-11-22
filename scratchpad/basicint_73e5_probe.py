@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AVTAK: characterise the undocumented BASIC-ROM internal $73E5 BLACK-BOX.
 
 A View to a Kill CALLs $73E5 (three times in its line 140, from a USR-like

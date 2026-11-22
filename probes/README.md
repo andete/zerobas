@@ -1,5 +1,5 @@
 <!-- Copyright (c) 2026 Joost Yervante Damad -->
-<!-- SPDX-License-Identifier: 0BSD -->
+<!-- SPDX-License-Identifier: BSD-2-Clause -->
 
 # probes/ — the openMSX oracle harness
 
@@ -165,6 +165,6 @@ the replay plan without booting openMSX.
 ## Source of truth
 
 zerobas is the **authoritative home** for these probes going forward. They are
-own-authored ([0BSD](../LICENSE)) and carry no reference-ROM bytes — develop new
+own-authored ([BSD-2-Clause](../LICENSE)) and carry no reference-ROM bytes — develop new
 zerobas probes here, in public, not in a private workbench. Proprietary oracle
 material stays out of the tree by policy ([PUBLISHING.md](../PUBLISHING.md)).

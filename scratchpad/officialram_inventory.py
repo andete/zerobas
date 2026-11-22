@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM-usage audit, step 1 (Joost, 2026-10-13: "for every ram buffer or memory
 location we invented ourselves, we need to verify how reference does it and if
 we should not be using an existing "official" ram location instead").

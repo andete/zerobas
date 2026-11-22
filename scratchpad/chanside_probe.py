@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ASAVECHAN's class, the siblings: does a disk verb that reaches main's FAT
 engine WITHOUT chan_gate disturb a channel open beside it?
 

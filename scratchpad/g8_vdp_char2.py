@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 `VDP(n)` / `BASE(n)=` characterization round 2 (Philips VG-8020).
 
 Round 1 (g8_vdp_char1.py) pinned the tokens, the VDP(n) read map and the write

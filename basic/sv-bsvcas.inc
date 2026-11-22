@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sv-bsvcas.inc -- BSAVE's TAPE write engine (bsv_cas_open .. bsv_cas_fin).
 ; ===========================================================================

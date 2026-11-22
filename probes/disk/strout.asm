@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; strout.asm -- BDOS $09 STROUT, then terminate. PHASE ($C000) 1 before, 2 after.
 BDOS    equ     $0005

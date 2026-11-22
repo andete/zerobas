@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO3 -- docs/bios/INITIO.md round 3 (2026-11-18), after the confirming review: XINITIO2's record, with each
 ; seed set independently -- the queue descriptors / QUEBAK, the voice control blocks, and MUSICF / PLYCNT written with

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for one D-DOSLADDER rung (TODO.md): assemble
 probes/disk/dosl/<prog>.asm with pasmo, inject <PROG>.COM + an AUTOEXEC.BAT that

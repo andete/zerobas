@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; LSTOUTX.COM -- Tier-2 LSTOUT characterisation trigger (M27 follow-up, the
 ; deferred printer-pluggable angle). Issues a handful of REAL BDOS $05 LSTOUT

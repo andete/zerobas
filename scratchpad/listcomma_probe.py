@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LISTCOMMA — a TRAILING SEPARATOR on a verb that takes a LIST.
 
 D-OMITARG measured that `COLOR 15,4,` is `Missing operand` on both references and

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX.COM -- Tier-2 BDOS exerciser, Phase 1 (FCB cluster). See
 ; disk/docs/tier2-bdos-exerciser-spec.md for the full design. Calls a fixed,

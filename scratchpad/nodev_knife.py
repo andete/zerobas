@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knife for nodev-acceptance (D-NODEV): make the colon scan never match, so a
 device-like name reaches the cassette again. The diskless row (the only one the
 gate runs) must go red. The ROMs are hashed

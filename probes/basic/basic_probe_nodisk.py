@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-NODISK — a DISKLESS zerobas, scored against a diskless MSX.
 
 🧭 STANDING DECISION (Joost, 2026-09-03): *"the diskless zerobas should be an

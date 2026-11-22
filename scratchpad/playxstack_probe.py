@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does the reference keep PLAY's `X<var>;` return points on the BASIC (Z80) stack?
 
 Joost's question, 2026-09-24. Black-box, on the VG-8020: a window the program

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DONOTHING3 — SET / IPL / CMD are tokenised, then refused on sight.
 
 Three of the eight words in CRUNCH_DIFF_PINNED that the reference tokenises and

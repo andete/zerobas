@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FCBSHAPE FCB #0 (gate: fcb0-acceptance): channel #0 has an FCB at every
 MAXFILES, and the channel blocks sit in the reference's order -- the FILTAB
 pointer table, then #0, #1 .. #MAXFILES -- as on the VG-8020. Measured

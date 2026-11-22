@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBFILE4 -- the BDOS's FCB directory functions through $F37D, round 4 (2026-11-22), answering review pass 3
 ; (scratchpad/BFILE_review3.md) on the page's OWN functions: FOPEN of a file of exactly one extent (16384 bytes, the

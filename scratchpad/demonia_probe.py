@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INITIO follow-up: Demonia (tape) resets on zerobas once cbios-repack/initio.patch
 moves C-BIOS's bytes at $10ED..$1107 (INITIO + the dead INIFNK stub) -- even a variant
 that changes NO behaviour, only the layout (demonia_C.out). Who executes code there?

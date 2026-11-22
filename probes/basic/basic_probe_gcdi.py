@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """gcdi-acceptance (D-GCDI): string work must not hold interrupts off.
 
 Found by the program ladder (probes/programs/, L2_addr): zerobas ran its string

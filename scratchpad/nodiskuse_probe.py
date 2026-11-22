@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""RAM lever (2) step (b), measure first: which bytes of zerobas's remaining
 workspace ($E26A..$F37F) does the DISKLESS build ever WRITE?
 

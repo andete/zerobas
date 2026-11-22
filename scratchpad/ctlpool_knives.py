@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-CP1..3 — the three CONTROL-FRAME-POOL gates, falsified by planting.
 
 A gate that has never failed is not known to be ABLE to fail, and these three

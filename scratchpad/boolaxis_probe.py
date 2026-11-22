@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWBREADTH batch 8 — can the BOOLEAN rows carry a VALUE without diverging?
 
 `varptr`, `fre` and `rnd` all score a half-plane (`>0`, `>1000`, `<1`) and never

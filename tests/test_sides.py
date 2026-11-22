@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-SIDES: DSKIO seats a logical sector by the MEDIA BYTE, as both
 references do (scratchpad/bpbrule_p8f.out: a valid single-sided 360 KB disk with
 its program at sector 18 runs on the CF-3300 and the VG-8020 + NMS 1200, and did

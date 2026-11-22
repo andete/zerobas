@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """pustardol-acceptance (D-PUSTARDOL): PRINT USING's `**$` floats the dollar.
 
 Found by the program ladder's ledger: `PRINT USING "**$##.##";5` is `***$5.00`

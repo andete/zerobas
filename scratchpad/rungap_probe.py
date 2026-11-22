@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RUNGAP — how much EMULATED time the three-PUT program actually needs, in
 the harness's own units, without trusting the guest's clock.
 

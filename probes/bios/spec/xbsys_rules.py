@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bdos/SYSTEM.md's EXECUTABLE RULES (docs/spec-method.md §3a): the BDOS system functions through $F37D, from the
 XBSYS1 probe (probes/bios/spec/xbsys1.asm documents the 15 cases and the 15-byte record) on TWO reference rows: run 1
 (scratchpad/XBSYS1_run1.out, `--row disk`: the VG-8020 + NMS 1200) and run 2 (XBSYS1_run2.out, `--row cf3300`: the

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTKEYS CTRL, the drive half (2026-10-27, from bootkeys_probe.py): with CTRL held, is B: gone?
 
 Derived from scratchpad/bootkeys_probe.py (2026-10-10): what SHIFT or CTRL held from power-on

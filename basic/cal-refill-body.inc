@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; cal-refill-body.inc — cal_refill shared body (TAPION-relock + slurp one
 ; 256-byte tape block into CAL_BUF).

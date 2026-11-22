@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; dosdate.asm -- D-CLOSESTAMP and D-DOSDATE (TODO), measured on both machines.
 ; Joost 2026-10-01 "Stamp as 3300": files are dated as the CF-3300 dates them.

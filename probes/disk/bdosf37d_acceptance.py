@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """bdosf37d-acceptance (D-DISKCONTRACT gap 4, 2026-11-17): the BDOS through $F37D -- the
 entry a ROM program uses with no MSX-DOS loaded -- for the functions no gate compared that
 way, on the National CF-3300 and on the shipped machine.

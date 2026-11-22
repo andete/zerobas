@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; Part of zerobas-disk, included by disk.asm (build with `pasmo -I disk`).
 ; page-0 DOS environment: lay_page0_env + inter-slot vector handlers + int_h trampoline (Interface B)
 ; CLEAN-ROOM: every constant, address and algorithm here traces to a public source

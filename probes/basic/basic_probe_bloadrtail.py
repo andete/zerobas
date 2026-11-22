@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BLOADRTAIL (gate: bloadrtail-acceptance): what runs after `BLOAD"CAS:",R`.
 
 On the VG-8020 `,R` CALLS the loaded program, and when it returns the rest of

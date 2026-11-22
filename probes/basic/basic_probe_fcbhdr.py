@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FCBHDR (D-FCBSHAPE's left-over, TIER 4): the FCB header bytes a program
 can PEEK through VARPTR(#n) -- the MODE at +0, the DEVICE at +4, the buffer
 POSITION at +6 -- against the reference that owns the device.

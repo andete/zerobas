@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXL.COM -- D-CONCOL (2026-11-17): the BDOS console's LOGICAL COLUMN ($F237, the cell TAB
 ; expansion counts from) after every kind of output, the data for disk/docs/spec-bdos-concol.md.

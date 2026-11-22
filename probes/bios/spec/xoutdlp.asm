@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XOUTDLP -- docs/bios/OUTDLP.md round 2 (2026-11-18): OUTDLP ($014D), the printer output with the BASIC conversions,
 ; with openMSX's printer logger plugged in (@printer). One sequence of bytes, sent twice: pass 0 with NTMSXP ($F417)

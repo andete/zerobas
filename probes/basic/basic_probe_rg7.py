@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RG7 (gate: rg7-acceptance): VDP register 7 after COLOR, per screen mode.
 
 In SCREEN 0 register 7's low nibble IS the text background: the VG-8020 writes

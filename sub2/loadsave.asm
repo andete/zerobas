@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; loadsave.asm -- zerobas-sub PAGE 1 (SUBROM_IDX_LOADSAVE, 32) since D-SUB2RETIRE's
 ; p1cb slice (2026-11-03; zerobas-sub2 page 0 before): the program SAVE / LOAD
 ; statements SAVE, CSAVE, BSAVE, LOAD, CLOAD, BLOAD and the name arm of RUN (D-P0CB

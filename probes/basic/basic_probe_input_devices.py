@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Input-devices acceptance -- the VG-8020 DIFFERENTIAL for STICK / STRIG
 (docs/spec-basic-input-devices.md §8, slice I1).
 

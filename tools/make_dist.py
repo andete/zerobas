@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """zerobas for openMSX: the download (`make dist`) and the install (`make install-openmsx`).
 
 🏗️ Joost, 2026-10-13: the primary use is openMSX, and the download ships the
@@ -132,7 +132,7 @@ or from a terminal:  openmsx -machine zerobas_MSX1
 
 The prompt is `ZB` where a real MSX says `Ok`.
 
-Licences: zerobas is 0BSD (LICENSE). The main ROM contains C-BIOS, BSD-2-Clause
+Licences: zerobas is BSD-2-Clause (LICENSE). The main ROM contains C-BIOS, BSD-2-Clause too
 (LICENSE.C-BIOS). Built from {rev}.
 """
 

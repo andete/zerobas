@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYPHASE: playphase.bas with a busy delay of K empty FOR passes after each
 `T(B)=TIME` -- if the blocked PLAYs' return times move with K, the release is a
 frame-boundary race on the main side, not the queue state. zerobas only unless --ref."""

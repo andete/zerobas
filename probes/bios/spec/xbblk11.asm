@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK11 -- the BDOS's block functions through $F37D, round 11 (2026-11-22), answering review pass 9 (scratchpad/
 ; BBLK_review9.md): what WRZER leaves past its record in a NEWLY allocated cluster over a deleted file's bytes (the rest

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVFERR — the FIVE live `ev_f_err` jump sites, each with its SEPARATOR row.
 
 🔴 THE ORIGINAL CITATION HERE POINTED AT THE WRONG BLOCK. It read

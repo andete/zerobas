@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # C-BIOS repack — provenance firewall for the merged main-ROM patch
@@ -19,7 +19,7 @@ firewall — and both are checkable.
 
 ## 1. Source firewall — no C-BIOS bytes enter the repo (decision D1)
 
-The repack edits C-BIOS *source*, and we hold that edit as **our own 0BSD patch
+The repack edits C-BIOS *source*, and we hold that edit as **our own BSD-2-Clause patch
 against a pinned upstream tag**, never as vendored bytes:
 
 - [`../cbios-repack/eu-drop-statements.patch`](../cbios-repack/eu-drop-statements.patch)

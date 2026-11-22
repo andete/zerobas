@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Falsify the TAPE arm of patch-freshness by planting, in a throwaway clone.
 
 The tape pair was filed as *"unguarded by the same rule"*, and the extension is

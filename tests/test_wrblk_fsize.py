@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: M28 $23 FSIZE + $26 WRBLK arithmetic helpers, no emulator.
 
 Covers the pieces of tier2-m28-blockrandom-spec.md that are pure register/RAM

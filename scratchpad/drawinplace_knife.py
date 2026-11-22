@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWINPLACE knife: does graphics-acceptance SEE the in-place frames?
 
 K-DI1  sub/graphics.asm: the COMMITTED (copying) tenant put back -- frames copied

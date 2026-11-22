@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICINT2 (2026-10-16, Demonia `Syntax error in 50`): what do the BASIC-ROM
 internals $72E9 and $72D4 do? Demonia's machine code calls $72E9 once (HL=$A000,
 DE=$A600; it returns 2.3 s later) and then $72D4 ~3000 times (HL stepping, a byte

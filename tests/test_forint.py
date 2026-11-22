@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-FORINT (2026-10-20) -- NEXT's int16 arm for a `%` loop
 (basic/program.asm nx_fast's `%` arm nx_fint / nx_fput, and the `%` guard that
 moved from nx_have into nx_demote), on the host Z80, as a DIFFERENTIAL against the

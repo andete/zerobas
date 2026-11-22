@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CSRSW -- does LOCATE's cursor switch have a READABLE cell after all?
 
 `docs/decision-missing-class-slicing.md` O-3 proposed LOCATE's third argument be

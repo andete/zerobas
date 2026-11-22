@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CTXADDR — what does `fch_ctx_addr(1)` actually return?
 
 TODO.md's TXTMAX line-store item is open on one measured oddity: with the fix

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-FORFAST (2026-10-20) -- NEXT's int16 path for a float loop
 (basic/program.asm nx_have's gate, nx_fast, nx_demote, nx_pki, nx_pack), on the
 host Z80, as a DIFFERENTIAL against the general (BCD) NEXT path.

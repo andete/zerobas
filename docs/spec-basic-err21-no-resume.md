@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad ; SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad ; SPDX-License-Identifier: BSD-2-Clause -->
 # D-ERR21 — `No RESUME`: raising ERR 21, measured
 
 **Status: ✅ LANDED 2026-07-31 — signed off, built, gated, six falsification

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM order step (3): WHO still writes STRSCR?
 
 strscr_probe.out: concatenation, STR$, MID$ and STRING$ build their results

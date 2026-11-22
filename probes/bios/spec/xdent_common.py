@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The XDENT probes' cases, shared by docs/disk/GETDPB.md's and docs/disk/DSKCHG.md's rules (xgetdpb_rules.py,
 xdskchg_rules.py): probes/bios/spec/xdent1.asm (run 1, scratchpad/XDENT1_run1.out) and xdent2.asm (run 1,
 XDENT2_run1.out), xdent3.asm to xdent7.asm (run 1 each; xdent5 and xdent6 with drive A EMPTY), row D -- the VG-8020 + NMS 1200 against zerobas's disk build (the NODISK row has no disk ROM: its

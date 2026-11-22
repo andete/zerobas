@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FNSPACE — is `LEFT$ ("ABC",2)`, with a space before the paren, accepted?
 
 D-MIDSPACE found the SPACE axis on `MID$ =` and fixed one site. A source sweep for

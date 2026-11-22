@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/WRTVDP.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRTVDP ($0047) -- scratchpad/XVDPREG_run4.out
 (rows N and D; probes/bios/spec/xvdpreg.asm documents the presets, the case table and the 32-byte record).
 DISSCR.md, ENASCR.md and RDVDP.md read the same run: `load(op)` serves all four (op 0 WRTVDP, 1 DISSCR, 2 ENASCR,

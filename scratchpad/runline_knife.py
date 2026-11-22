@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RUNLINE2 knife — can `runline-acceptance` actually see the defect it gates?
 
 The rows were GREEN the day they were written, because D-RUNARG had already

@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # D-RETLN — `RETURN <line>`, measured: it is a POP **and** a GOTO, the empty-stack check comes FIRST, and it is **not** an error-handler exit
 

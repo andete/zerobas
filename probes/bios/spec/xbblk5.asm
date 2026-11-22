@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK5 -- the BDOS's block functions through $F37D, round 5 (2026-11-22), answering review pass 3 (scratchpad/
 ; BBLK_review3.md): WRBLK at a nonzero RR with record size 128 and past the end (a gap); WRZER's zero fill over a

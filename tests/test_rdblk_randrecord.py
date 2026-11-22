@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: M31 k_47B2 faithful Random Block Read ($27 RDBLK), no emulator.
 
 tier2-m31-rdblk-randrecord-spec.md: k_47B2 (the kernel's page-1 $27 handler

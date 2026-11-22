@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; B8SAVE -- D-BIOSLADDER rung B8 (Joost 2026-11-10: "a rom that e.g. uses the disk for
 ; save game"). A 16 KB "AB" cartridge. Its INIT only hooks H.STKE (an RST 30h inter-

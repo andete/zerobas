@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Run the example of every keyword page (docs/keywords/*.md) on zerobas AND on
 the reference, and check that both print what the page says they print.
 

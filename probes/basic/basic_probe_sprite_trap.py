@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """SPRITE interrupt-trap characterization / differential — slice T4.
 
 docs/spec-traps-t4-sprite.md §1 and §8. This is the probe that produced every

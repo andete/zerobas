@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS: INITIO ($003B) called DIRECTLY -- what does it reset? The VG-8020 against
 zerobas. Joost (2026-11-13): "INITIO is a strange one" -- measure it before deciding what a
 gate row should hold.

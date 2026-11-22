@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RESNEXTOVF (gate: resnext-acceptance): RESUME NEXT continues with the
 statement after the one that failed, whatever constants that statement holds.
 Found 2026-10-09 by the numbers concept page: after a trapped Overflow in

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBSYS2 -- the BDOS system functions through $F37D, round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BSYS_review1.md): SDATE / GDATE of a non-Sunday (is GDATE's A the day of the week; is SDATE's A 0 "accepted"); what a

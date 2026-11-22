@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Eviction scout: which resident page-1 code is a CLEAN carve, and how big?
 
 The G6 space work turned up the structural rule worth automating

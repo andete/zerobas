@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Differential PRINT probe — prove zerobas's PRINT produces byte-identical
 *screen output* to a real MSX-BASIC ROM, focused on MULTI-ITEM PRINT.

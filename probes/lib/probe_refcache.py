@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-REFCACHE — do not re-measure a constant.
 
 A differential probe reads three sides. Two of them, the Philips VG-8020 and the

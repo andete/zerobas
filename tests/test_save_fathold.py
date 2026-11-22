@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-SAVEFAT (2026-11-06) -- a tokenised SAVE holds the FAT sector across
 every cluster and writes it once.
 

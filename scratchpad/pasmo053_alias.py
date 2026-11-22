@@ -31,7 +31,7 @@ for f, n in ALIASES:
     print(f"ok {f}: {n}")
 
 hdr = """; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; aliases-early.inc -- label ALIASES that must be defined before any use.
 ; ===========================================================================

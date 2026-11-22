@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md and CLS.md round 2 (2026-11-17): the XSCR supplement, after one test-writer review of each
 page. Both reviews found inputs with ONE value (the cursor, the table bases, CNSDFG's "on", the garbage, the entry
 flags) and outputs read only as sums that alias (2048 equal bytes keep only x mod 32 in a 16-bit sum). XSCR gives

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; RNDFCB.COM -- D-RNDFCB (TODO.md): what does RDRND ($21) leave in the FCB?
 ; BDOSX3 and wrzer.asm disagreed on +15 after RDRND (a 3-record file: $03; a

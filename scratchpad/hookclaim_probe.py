@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CHANHOOK round 2 -- which of the cells the channel verbs enter are CLAIMED?
 
 An entered cell is not a crossing (§6.6v: `$FE67` is entered and is a bare RET).

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does a LIVE, ARMED `ON INTERVAL` trap survive `CLEAR`?
 
 🎯 THIS IS THE QUESTION IN FRONT OF A FIX, NOT THE FIX. TODO's CLEAR/TRAPSTK item

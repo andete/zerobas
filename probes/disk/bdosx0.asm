@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX0.COM -- Tier-2 BDOS exerciser, M23: BDOS $00 TERM0 micro-test. See
 ; disk/docs/tier2-bdos-remaining-spec.md SS5.2 for the full design. TERM0

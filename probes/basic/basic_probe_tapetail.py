@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """tapetail-acceptance (D-TAPETAIL) -- the cassette save verbs' bad tails are
 TRAPPABLE errors on the diskless VG-8020, not our print-and-return `load error`.
 

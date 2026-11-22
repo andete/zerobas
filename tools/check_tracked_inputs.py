@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """check_tracked_inputs -- every file the BUILD reads is tracked by git.
 
 WHY THIS EXISTS (D-UNTRACKED, 2026-10-17). D-BIOSINT (cdaff14a) added

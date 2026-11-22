@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BDOSFCB residual (2): MSX-DOS's own SETRND ($0005, $24), both machines -- the
 ten rows of scratchpad/setrnd_probe.py's $F37D series (scratchpad/setrnd_dos.asm).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Black-box characterisation of the STOCK National CF-3300 allocator's
 free-then-reallocate ORDER (M30 follow-up investigation).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for BUFINX.COM (D-ENTRYTIERS): BDOS $0A BUFIN with typed
 input -- see probes/disk/bufinx.asm. Assembles it with pasmo and injects BUFINX.COM +

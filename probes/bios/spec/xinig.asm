@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINIG -- docs/bios/INIGRP.md, INIMLT.md, CHGMOD.md round 3 (2026-11-18; round 1 had cases 0-25 and a fill whose block 1 summed to 0; round 2 cases
 ; 0-35): the graphics-screen set-ups and the mode

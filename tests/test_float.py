@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: math float pack slice F1 -- literal crunch + PRINT formatter
 (repack build only), docs/spec-basic-float-core.md.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FNARITY — too few and too many arguments to the built-in FUNCTIONS.
 
 Every sweep so far has been about STATEMENTS: shape (5 axes, 123 rows), channel,

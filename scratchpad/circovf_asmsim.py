@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF -- simulate the three new routines' EXACT instruction sequences.
 
 Cheaper than a build+boot round trip, and it catches the class of error that

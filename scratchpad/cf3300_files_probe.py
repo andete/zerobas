@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Re-measure the real CF-3300's `FILES` listing at WIDTH 29.
 
 disk_probe_files.py carries that listing as a FROZEN CONSTANT, and its own

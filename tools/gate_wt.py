@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEWT -- gate a COMMIT in a worktree of its own, so work goes on here meanwhile.
 
     python3 tools/gate_wt.py [--rev REV] [--tier plan|full|scoped|static] [--no-knives]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INITXT.md's EXECUTABLE RULES (docs/spec-method.md §3a): INITXT ($006C) and INIT32 ($006F), from
 the XINIT matrix round 2 -- scratchpad/XINIT_run4.out (a SEPARATING setup: the other width cell 77, CRTCNT 13,
 the register copies $A5, CNSDFG 2 / $80 / $FF, colours above 15, moved screen-table cells, a display-off

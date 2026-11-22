@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASPRIME knives: each cut must move EXACTLY its predicted rows of
 probes/basic/basic_probe_casrbrk.py (zerobas column, rows mb2 ob2 + four
 controls; a process per reading, a clean build per cut).

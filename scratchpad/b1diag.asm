@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; b1diag -- D-BIOSLADDER B1 diagnostic: during a cartridge's INIT, does the
 ; keyboard matrix ever show the typed keys (NEWKEY), and does KEYBUF fill?

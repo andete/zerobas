@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """SOUND acceptance — VG-8020 differential (docs/spec-basic-audio-play.md, Slice 1).
 
 Two halves, both black-box against the Philips VG-8020 reference (no disassembly;

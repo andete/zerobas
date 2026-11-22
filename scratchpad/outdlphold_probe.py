@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PAINTRAMCLASH (Joost 2026-11-20: "use the reference's own cells"): WHERE does each machine keep OUTDLP's held
 $01 -- a graphic character's header to a printer that is not an MSX one (NTMSXP $F417 not 0), held back for the next
 byte (docs/bios/OUTDLP.md R-OD-PRN)? zerobas keeps it in GRP_HDR bit 1. Black box: NTMSXP := 1, then a USR stub

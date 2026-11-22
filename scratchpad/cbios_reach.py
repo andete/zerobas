@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CBIOSDEAD: which C-BIOS code can the MERGED zerobas ROM still reach?
 
 C-BIOS is open (BSD) source and the repack is ours, so this reads C-BIOS's own

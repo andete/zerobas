@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KEYSTR scout — WHERE does `KEY n,"str"` put the string, and what shape?
 
 TODO.md files `KEY n,"str"` / `KEY LIST` as unimplemented: `KEY1,"X"` reads

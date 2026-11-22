@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC-ROM `detok` (list.asm), no emulator.
 
 Tier-2 (BIOS-stub) tests: CHPUT is trapped and every emitted byte accumulated.

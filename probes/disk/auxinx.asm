@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; AUXINX.COM -- D-ENTRYTIERS (TODO.md): BDOS $03 AUXIN, the last function the entry
 ; table (tools/entry_table.py) counted NOT MEASURED. Neither target has an AUX

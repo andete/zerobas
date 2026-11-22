@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX3 -- docs/bios/READC.md, SETC.md, NSETCX.md round 6 (2026-11-19; round 1 had cases 0-28 and cell sets 0 / 1 only, round 2 cases 29-46, round 3 47-59, round 4 60-68, round 5 69-77): the calls that read or set pixels at the current
 ; graphics position. Per case (the table `cases` at the end, xinig.asm's layout with its fields read anew: op, F,

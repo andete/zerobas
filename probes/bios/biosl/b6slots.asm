@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; B6SLOTS -- D-BIOSLADDER rung B6 (TODO.md): the inter-slot entries a ROM uses to
 ; find RAM for page 2 and to read its own slot. A 16 KB "AB" cartridge; INIT runs it.

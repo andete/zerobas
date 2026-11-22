@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk.rom's AUTOEXEC.BAS probe (hk_auto) and NAME (hk_name) on the
 disk ROM's OWN FAT -- no emulator.
 

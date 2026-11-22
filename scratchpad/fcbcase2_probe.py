@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""OPEN twice, the exact rule (Joost 2026-10-27), the second pair of questions (2026-10-28): KILL / NAME / COPY
 of a case-changed name while the file is open, and BDOS _FMAKE's case. Derived from fcbcase_probe.py.
 The first set: before keeping the TYPED case in a

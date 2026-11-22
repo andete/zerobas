@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF -- the reference side of circovf_char.py is an INSTRUMENT FAILURE.
 
 Round 1 read ~5115 px, bbox (0,0,255,127), on the VG-8020 in ALL EIGHT rows --

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FNNEST — what quantity actually caps `FN` calls, measured three ways.
 
 \U0001f534 MY FIRST READING WAS REFUTED BY MY OWN CONTROL. `fn_enter` saves the

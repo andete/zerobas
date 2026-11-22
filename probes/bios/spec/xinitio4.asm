@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO4 -- docs/bios/INITIO.md round 4 (2026-11-18), after the third review: XINITIO3, plus
 ;   - PLAY's parse cells $FB35-$FB3E (VOICEN, MCLPTR, QUEUEN ...) seeded with garbage when the case says so;

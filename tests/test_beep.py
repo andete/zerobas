@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the BEEP body (`beep_tenant`), no emulator.
 
 BEEP's body moved OUT of the main ROM into the sub-ROM tenant sub/beep.asm

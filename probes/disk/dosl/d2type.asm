@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D2TYPE.COM -- D-DOSLADDER rung D2 (TODO.md): what TYPE does. FOPEN COMMAND.COM,
 ; SEQREAD it record by record to the end, counting the records and summing every

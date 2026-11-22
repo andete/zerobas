@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), OUTDLP ($014D): "printer output, TAB expanded to spaces, a failure is
 Device I/O error", called DIRECTLY -- VG-8020 against zerobas. Also LPTOUT ($00A5), LPTSTT
 ($00A8) and OUTDO ($0018) with PRTFLG ($F416) 1 / 0 (D-BIOSCONTRACT2, D-OUTDOPRT).

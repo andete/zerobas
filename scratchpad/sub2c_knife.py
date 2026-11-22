@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SUB2 stage (c) knife on `make sub2-acceptance`: is the discovery store
 the reason main reaches ROM 2?
 

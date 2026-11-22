@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FREPLUS14 follow-up (2026-10-17): the ABSOLUTE FRE(0), VG-8020 vs zerobas (diskless).
 scratchpad/freshape_probe.py measured every shape against a plain `A=FRE(0)` ON THE SAME
 MACHINE, so it cannot see an offset common to all shapes; dimedge's edges (K=113 on the

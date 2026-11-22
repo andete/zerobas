@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTDATE (from D-DISKRUN, 2026-10-21): a stock disk ROM's $4022, entered by a
 boot loader that could not open MSXDOS.SYS, ASKS THE DATE and then starts BASIC.
 What exactly does it accept, and what does the answer set? Measured on BOTH disk

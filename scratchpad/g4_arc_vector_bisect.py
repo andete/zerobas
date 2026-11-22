@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 arc-vector bug bisection (post ellipse-fix, coordinator-directed).
 
 Runs CIRCLE(60,60),15,15,0,1.57 on zerobas and reads back the RESIDENT-

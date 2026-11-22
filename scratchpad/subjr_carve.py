@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LISTFLT's carve: `jp` -> `jr` in the SUB-ONLY sources of sub page 0.
 
 D-LISTFLT's float renderer needs ~190 B of sub page 0 (137 free, 2026-10-11).

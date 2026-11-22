@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DOSMODE40 knife: cutting calslt_body's page-0 branch (back to a bare jump
 into DOS's RAM) must move EXACTLY the rows after the first MODE of
 probes/disk/disk_probe_dosmode.py, judged on the zerobas column against the

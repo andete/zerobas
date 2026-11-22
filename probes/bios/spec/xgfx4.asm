@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX4 -- docs/bios/SCALXY.md round 2 (2026-11-19; round 1 had cases 0-31): the call that clips a graphics coordinate to the screen. xgfx1.asm's
 ; frame with its own table. Per case (the table `cases` at the end: op, A, F, interrupts, SCRMOD, BC, DE, HL, CLOC,

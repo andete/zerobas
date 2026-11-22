@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM directory search — name_cmp/toupper + fat_find, no emulator.
 
 Two levels, both clean-room (our own routines fat.asm/runtime.asm, our own

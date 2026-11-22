@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """nodev-acceptance (D-NODEV): with no disk, a name with a `:` anywhere is 56.
 
 Found by the program ladder's L4_errors: `OPEN "NUL:" FOR INPUT` on zerobas's

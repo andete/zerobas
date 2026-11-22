@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO compaction planner: pack what is left of zerobas's window state
 against the top, so TXTMAX_NODISK can rise by the total of the holes.
 

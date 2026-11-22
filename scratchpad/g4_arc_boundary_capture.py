@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 arc-boundary residual capture (G4-arcbnd / G4-spoke, docs/spec-basic-
 graphics-g4.md §5.4/§9). Targeted VG-8020 captures beyond the original g4_
 circle_char1..3.py pass, run AFTER the host-fit python model (scratchpad/

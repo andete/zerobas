@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """GOSUB 8 -> 7 B knives: does a gate see the frame's one-byte gdelta?
 
 The 7-byte frame keeps the previous GOSUB frame as prevFSP + gdelta; gdelta is 3 when

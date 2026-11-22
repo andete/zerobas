@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; WRBLK.COM — clean single-shot BDOS $26 WRBLK exerciser for the disk-artifact
 ; round-trip (M28 verification). Runs identically on OURS (C-BIOS + zerobas-disk)

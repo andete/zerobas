@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 <!-- example: reference=CF-3300 disk=yes run='SAVE "MY.BAS"' answers='SAVE "MY.TXT",A|NEW|LOAD "MY.TXT"|LIST|FILES "MY.*"' -->
 

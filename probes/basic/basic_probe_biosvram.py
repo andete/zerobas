@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS step 3: BIOS entries that answer in VRAM (or, for LDIRMV, in RAM), compared
 there -- the VG-8020 against zerobas.
 

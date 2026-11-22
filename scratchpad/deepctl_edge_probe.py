@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE R re-bisect (2026-10-20): deepexpr-acceptance row `edge136` -- the gate's own
 program, a trapped flat `B=1` then `PRINT"[";E;A(X);"]"` right after an edge DIM -- the
 VG-8020 completes at K=136 and zerobas at STK_EVAL_RESERVE 119 does not. The room actually

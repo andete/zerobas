@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWTIER1 — is `CLEAR n,himem` safe to make a sweep row, and what does it read?
 
 CLEAR's third form sets the top of memory BASIC may use (`HIMEM`, $FC4A, declared

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 TRIG-FREE arc boundary fit. Replace the float math-pack SIN/COS (the hang
 source) with a compact integer sine TABLE to compute the two boundary vectors
 (round(r*cos), -round(r*sin)) to pixel precision, then feed the UNCHANGED integer

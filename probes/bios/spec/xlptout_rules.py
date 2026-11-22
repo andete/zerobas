@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/LPTOUT.md's EXECUTABLE RULES (docs/spec-method.md §3a): LPTOUT ($00A5) for every byte value, the printer
 logger plugged -- scratchpad/XLPT_run2.out (row N) and XLPT_run2d.out (row D); probes/bios/spec/xlpt.asm documents
 the order and the record. docs/bios/LPTSTT.md's rules (xlptstt_rules.py) read the same runs: `load()` serves both.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.D's second measurement: what H.DGET ($FE80) RECEIVES on the reference.
 
 scratchpad/getputhook_run.out showed GET and PUT entering $FE80 (H.DGET,

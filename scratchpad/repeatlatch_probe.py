@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BRKLATCH: does ZEROBAS's keyboard interrupt (C-BIOS) deliver auto-repeat STOP
 latches during a long press, as the VG-8020's interpreter evidently receives one
 (framelog_key.out: resumed ~36 frames into a 75-frame press)? Our own code on H.TIMI

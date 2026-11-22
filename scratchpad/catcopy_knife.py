@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knife for catcopy-acceptance (D-CATCOPY). Each cut is built, the ROMs hashed
 around the plant (an unbuilt cut is refused), the gate run, the source restored.
 

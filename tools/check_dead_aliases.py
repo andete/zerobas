@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ALIASGATE — an unreferenced `equ` alias of a CODE LABEL is dead code.
 
 🔴 THE HOLE THIS FILLS, AND WHY THE EXISTING SWEEP CANNOT. `check_dead_code`

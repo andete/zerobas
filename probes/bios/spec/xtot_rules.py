@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/TOTEXT.md's EXECUTABLE RULES (docs/spec-method.md §3a): TOTEXT ($00D2), from the XTOT matrix --
 scratchpad/XTOT_run1.out. The case list, the setup and the record are in xtot_cases.py."""
 import os

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; Part of zerobas-disk, included by disk.asm (build with `pasmo -I disk`).
 ; the disk driver: DSKIO/DSKCHG/GETDPB/DSKFMT + WD2793 FDC primitives
 ; CLEAN-ROOM: every constant, address and algorithm here traces to a public source

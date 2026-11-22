@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TXTCEIL RAM hunt — is `$E058..$E080` ACTUALLY free? Ask the machine.
 
 `basic/sysvars.inc` carries two comments:

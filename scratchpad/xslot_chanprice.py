@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CHANPRICE -- what would it cost to move the CHANNEL verbs into disk.rom?
 
 The FAT-light four were cheap for a reason that is easy to miss: each body was

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWBATCH3 — does a `VDP(n)=v` write reach the CHIP, and can zerobas survive it?
 
 🎚️ Joost, 2026-09-14: *"if you choose a clever write, you can see the effects in

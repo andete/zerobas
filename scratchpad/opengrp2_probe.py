@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OPENGRP, measurement round 2 -- what round 1 (opengrp_probe.py) left open.
 VG-8020 only (zerobas has no GRP: device yet). Each case is a stored program;
 the result is read with POINT and the graphic cursor (GRPACX $FCB7 / GRPACY

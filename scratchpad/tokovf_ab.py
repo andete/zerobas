@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TOKOVF A/B: did the crunch bound turn fdcdi-acceptance (d8) and
 geteject-acceptance (put) red? Both are disk probes with timed events, and both
 were green in the D-BASICROM full battery 1.5 h earlier.

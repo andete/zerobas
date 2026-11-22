@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DEVBARE — the `FOR` clause is OPTIONAL on a device channel.
 
 `basic/files.asm`'s device arm read `jr nz,oo_fail_syn ; device channels require

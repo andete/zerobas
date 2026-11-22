@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AUTORUN: the hook order in the two cases autorun_order_probe.py left
 open -- a typed NUMBERED line (stored, no prompt), and what the screen shows
 after CLOAD (the reference calls H.MAIN only there: does it print a prompt?).

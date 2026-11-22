@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-F2-2 int-argument coercion acceptance (docs/spec-basic-df2-2-intarg-coercion.md).
 
 VG-8020 differential: give each int-argument statement/function an out-of-domain

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-STACKPOOL -- do control frames come out of a HIMEM-BOUNDED POOL, or an array?
 
 WHY THIS EXISTS. zerobas caps GOSUB recursion at 8; the VG-8020 reaches ~4080 and

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """relspace-acceptance (D-RELSPACE): a space after a two-character relational
 operator (`<=`, `>=`, `<>`, or between its halves) before a STRING right-hand
 side is ignored, as on the VG-8020.

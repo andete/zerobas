@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-EVALSLOPE (2026-10-20) -- the evaluator's ONE precedence climber
 (basic/expr.asm, `ev_logic` / `ev_e` / `ev_pw` and the cl_* loop), on the host Z80.
 

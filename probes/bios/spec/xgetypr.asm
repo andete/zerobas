@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGETYPR -- docs/bios/GETYPR.md round 1 (2026-11-18): GETYPR ($0028, RST 28h) for every VALTYP ($F663) value 0..255,
 ; with entry F $00 and then $FF (512 cases); run 3 adds two passes, entry A $00 / F $00 and entry A $FF / F $FF, with

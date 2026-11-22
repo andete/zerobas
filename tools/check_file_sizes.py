@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FILESIZE (Joost, 2026-10-23: "set up 1 and 2 with a 1 MB limit") -- no file over
 1 MiB goes into the repository unless tools/large-files-allow.txt names it.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INPUTDNOHASH, part 2: an ASCII digit run left in program text (a number
 after a letter run and a space -- `AS 1` stores `41 53 20 31` on the VG-8020
 too, scratchpad/asnum_crunch.py) -- how does the EVALUATOR take it?

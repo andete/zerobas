@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TPAP1 step 2: which page-3 RAM does an MSX-DOS session WRITE? Write
 watchpoints over candidate ranges, per address the first / last write's time and
 the writing PC (an ADDRESS, never code bytes); breakpoint times at $0100 (each

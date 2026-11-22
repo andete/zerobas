@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """I2 frame characterization -- the Z80-SPEED bit-bang harness.
 
 scratchpad/i2_pinmap.py established WHICH terminal the touchpad answers on, but

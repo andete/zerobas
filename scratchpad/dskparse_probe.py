@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKREST slice 3 (2026-10-20): DSKI$ / DSKO$'s `d,s` parse moved from main's
 dsk_core into disk.rom's hk_dsk, which evaluates each argument by a CALL-BACK into
 main. What can that move break, against the CF-3300?

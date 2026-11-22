@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for AUXINX.COM (D-ENTRYTIERS): BDOS $03 AUXIN with no AUX
 device -- does it return, and with what? See probes/disk/auxinx.asm. Assembles it with

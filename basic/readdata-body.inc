@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; readdata-body.inc -- the READ/DATA value engine: read_one_value + data_seek +
 ; data_parse_int. ONE body, TWO homes (the casmatch/lineedit pattern):

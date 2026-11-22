@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """playqueue-acceptance (D-PLAYQUEUE): a PLAY while a voice is still playing APPENDS
 to its 128-byte queue, waits when the queue is full, and the voices sync at each
 PLAY's end -- with the reference's queue byte counts and BEEP's reset.

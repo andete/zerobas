@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FDCDI, MEASURE FIRST on main: are keys typed DURING long disk work kept?
 
 The program writes 4200 B (PRINT# x 200 + CLOSE) and POKEs &HD000 = 1 when it

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-PE1 re-run — the four "unexplained" rows, explained and then re-armed.
 
 TODO (filed 2026-08-09 by D-PENDERR §9.1): with `penderr_set` cut so NO deferred

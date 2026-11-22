@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D6RAND.COM -- D-DOSLADDER rung D6 (TODO.md): a random-access file the way a small
 ; database uses one. On R.DAT (FMAKE): WRRND records 0..4 (each 128 x its number);

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; cursor_tenant -- the line editor's BLOCK CURSOR (D-CURSORBLOCK, 2026-09-26).
 ;

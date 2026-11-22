@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: a DEF FN call evaluates EVERY actual before it binds any formal
 (D-FNALIAS, docs/spec-deffn-alias.md §7), no emulator.
 

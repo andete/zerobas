@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CITEHEAD — an AUDIT for citations that name the wrong block. Not a gate.
 
 🔴 THE CLASS. `tools/check_todo_citations.py` verifies that a citation's LINE

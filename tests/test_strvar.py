@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: strvar.asm — string-value layer (str_eval, print_strval) +
    the string-variable store from vars.asm (str_set_key, str_get_key).
 

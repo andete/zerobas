@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE apparatus check (2026-10-20): input-devices-acceptance phase C's `up` case
 reads MIS-ECHOED ('RUN' -> 'UN') on the build with the one-loop climber, and passes on
 a39cefcc. The echo dump is taken 0.8 s after RUN; the key goes down 0.3 s after it. How

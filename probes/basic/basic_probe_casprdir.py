@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASPRDIR (gate: casprdir-acceptance): writing to a tape channel opened FOR
 INPUT, and reading one opened FOR OUTPUT, under ON ERROR -- the VG-8020 against
 zerobas's diskless machine. One of D-LOADERRRET's sites: print.asm sent the

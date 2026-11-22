@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""Boot HIMEM and FRE(0) on the four machines, one boot each.
 
 Written down as a file by D-ENGROW0 (2026-09-30): D-FCBSHAPE S1+S2 measured the

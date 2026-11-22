@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKFULL (gate: diskfull-acceptance): a full disk is `Disk full` (ERR 66)
 on ours as on the CF-3300, in its four faces, and what a mid-write one leaves on the disk, each on a fresh disk with every
 free cluster marked used (full_disk, below):

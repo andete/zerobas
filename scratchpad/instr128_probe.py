@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INSTR128: INSTR over long strings, VG-8020 against both builds.
 
 sh_instr_search (sub/strheap.asm) computed max_start = len_a - len_b + 1 in a

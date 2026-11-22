@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/TAPION.md's EXECUTABLE RULES (docs/spec-method.md §3a): TAPION ($00E1) -- probes/bios/spec/xtap1.asm (the loader is
 xtap1_model)."""
 import os

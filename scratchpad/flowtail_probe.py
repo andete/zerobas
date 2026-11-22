@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FLOWTAIL — the tail sweep covers 20 verbs and NOT ONE of them branches.
 
 From auditing `ex_gosub`, the review-tier entry that flags its own limit:

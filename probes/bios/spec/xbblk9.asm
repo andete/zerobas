@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK9 -- the BDOS's block functions through $F37D, round 9 (2026-11-22), answering review pass 7 (scratchpad/
 ; BBLK_review7.md): +28 / +30 after WRZER below the end in a LATER cluster (the first cluster, or the one holding RR?);

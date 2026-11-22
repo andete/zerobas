@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """K4 -- falsify the NOREAD guard on SYNTHETIC screens, both directions.
 
 Run from the repo root:  python3 probes/disk/selftest_chancost_readvalue.py

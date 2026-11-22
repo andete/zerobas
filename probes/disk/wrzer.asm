@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; WRZER.COM -- D-WRZER (TODO.md): what BDOS $28 WRZER does to the records an
 ; extension adds, against $22 WRRND doing the same write.

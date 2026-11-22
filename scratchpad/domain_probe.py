@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DOMAIN — out-of-range VALUES for the screen/graphics/sound verbs.
 
 The argument-shape family (5 axes, 123 rows) and D-CHANFACE covered SHAPE, TYPE

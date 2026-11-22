@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FMTTAIL — is `CALL FORMAT`'s name-tail / argument skip sloppy-accept on the
 REFERENCE too, or only here?  (TODO.md item, filed by the review tier.)
 

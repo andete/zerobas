@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS step 3: BIOS entries whose published OUTPUT IS A FLAG, compared on that flag
 -- the VG-8020 against zerobas. biosregs-acceptance compares A / BC / DE / HL and leaves F
 out ("not a documented contract" -- true for its sprite / VRAM rows, not for these): an

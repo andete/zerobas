@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPELOAD lead (2026-10-14): where does channel #0's block sit after
 `CLEAR n,top`? A tape loader of the shape `CLEAR 0,&H83F0:BLOAD"CAS:",R:
 BLOAD"CAS:",R` loads ~24 KB from &H83F0 up and then searches the tape again

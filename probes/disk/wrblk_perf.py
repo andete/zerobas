@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """WRBLK positioning performance — characterisation + M28-vs-M29 before/after.
 
 Backs the numbers in disk/docs/tier2-m29-wrblk-position-cursor-spec.md §1 / §1.1.

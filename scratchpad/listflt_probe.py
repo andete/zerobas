@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Reported by Vampier, 2026-10-11 (a screenshot): `321 i=0.123456789` LISTs as
 `321 I=@14VxSTOP` on zerobas. The tokeniser stores a float literal as $1D
 (single, 4 value bytes) or $1F (double, 8), and basic/detok.inc has no arm for

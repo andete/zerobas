@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/WRTVRM.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRTVRM ($004D) -- the run the VRAM access calls share
 (probes/bios/spec/xvram.asm, op 1; the loader and the model are xvram_model)."""
 import os

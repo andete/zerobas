@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXM.COM -- spec-bdos-conout.md round 3 (2026-11-17): the console-output MATRIX. Every byte
 ; 0..255, from a state where the logical column ($F237) and the screen cursor DISAGREE, through

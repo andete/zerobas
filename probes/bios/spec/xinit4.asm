@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINIT4 -- docs/bios/INITXT.md / INIT32.md round 4 (2026-11-17): XINIT3's probe with two more case fields, the VRAM
 ; garbage byte (`fill`) and the label set (`lab`), after the THIRD review (see xinit4_cases.py). XINIT3's header follows:

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSND1 -- docs/bios/WRTPSG.md, RDPSG.md, CHGSND.md, LFTQ.md, PUTQ.md, GETVCP.md, GETVC2.md, GICINI.md, STRTMS.md, BEEP.md
 ; round 4 (2026-11-19; round 1 had cases 0-57, round 2 58-71, round 3 72-74): the sound region's calls. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,

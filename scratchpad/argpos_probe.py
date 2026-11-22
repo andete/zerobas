@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ARGPOS — the LATER argument positions, at the cell that separates the domains.
 
 Derived from D-NOFIND rather than from a suspicion. The raw-I/O trio was cleared

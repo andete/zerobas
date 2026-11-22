@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PLAYOP — PLAY's missing operand, and the loop the filing did not count.
 
 TODO.md:12486 (T-B10921) (D-DUPSPAN §6.3) files `PLAY` / `PLAY:PRINT 1` as ERR 24 on both

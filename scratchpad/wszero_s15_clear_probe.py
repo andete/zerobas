@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S15 (the diskless ceiling at $F380): re-measure the CLEAR edge for the docs. (Copied from wszero_s6_clear_probe.py, D-DRAWINPLACE 2b.)
 (Derived from fatfloor_clear_probe.py; same method.)
 

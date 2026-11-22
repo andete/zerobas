@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """End-to-end BDOS $05 LSTOUT probe on the **C-BIOS target** (not the CF-3300 oracle).
 

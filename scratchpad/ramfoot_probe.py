@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMFOOT: the RAM FOOTPRINT of one BASIC operation, on the VG-8020 and here.
 
 TIER 4 (RAM usage), goals (b) same addresses and (c) same economy -- Joost,

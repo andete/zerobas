@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSYNCHR -- docs/bios/SYNCHR.md round 1 (2026-11-18): SYNCHR ($0008, RST 08h) on its MATCH path, for every byte value
 ; c. Per case the text at BUF is "c" then the pass's tail, HL = BUF, and the code is `rst $08 / db c` (the expected

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DOSBASIC + D-DOSDATEBASIC (gate: dosbasic-acceptance): MSX-DOS's BASIC
 command reaches disk BASIC, and a date set in DOS reaches BASIC's file stamps --
 as on the CF-3300.

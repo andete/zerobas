@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX5B -- docs/bios/GRPPRT.md round 4 (2026-11-19): xgfx5.asm (rounds 1-3, cases 0-62) with its own cases, numbered
 ; from 63 on the page: the call that draws a character on a graphics screen. xgfx3.asm's

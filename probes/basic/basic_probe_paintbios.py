@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), PNTINI / SCANR / SCANL ($0129 / $012C / $012F), PAINT's published BIOS
 helpers, called DIRECTLY -- VG-8020 against zerobas (sub/paintbios.asm behind the page-0
 stub in basic/biosfnk.asm).

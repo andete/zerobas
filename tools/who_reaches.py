@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""who_reaches — who can reach routine X, resolving fall-through and shared tails.
 
 🔴 WHY THIS EXISTS (filed 2026-08-02 by D-MSGMIGRATE §9). That slice's

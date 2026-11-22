@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHGET.md round 2 (2026-11-17): the XCHG2 supplement, after the first review. XCHG's (GETPNT offset, codes
 waiting) pairs coincided (offset 0 only with 1 code, 10 only with 3), so CHGET's flags could be read as "codes waiting"
 or as a compare on GETPNT's new low byte; entry F followed the interrupt choice; entry A equalled the VRAM garbage;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASPRDIR knife: the cut must move EXACTLY its own row of
 probes/basic/basic_probe_casprdir.py (ctl / pin / outin).
 

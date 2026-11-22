@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RESETBOOT, step 2: WHERE does zerobas's INIT stop after a reset?
 (resetboot_probe.out: after `reset` the machine stays on C-BIOS's info screen,
 "Init ROM in slot: 0", the PC circling C-BIOS's chput_esc_m / search_roms_init.)

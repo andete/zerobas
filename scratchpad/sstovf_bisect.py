@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FNNEST — where does nested `DEF FN` give out, and is the pool the reason?
 
 `scratchpad/sstovf_probe.py` went looking for `sst_overflow` (one of the four

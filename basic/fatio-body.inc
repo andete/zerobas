@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; fatio-body.inc — the sequential FAT12 READ layer (fat_io_open + fat_io_getbyte).
 ; ===========================================================================

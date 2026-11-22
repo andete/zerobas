@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Route D for disk.rom: every `jp [z|nz|c|nc,] label` that can be a `jr`, becomes
 one (1 B each). Converts all candidates, builds, and reverts each line the
 assembler reports out of range, until the build is clean. The assembler enforces

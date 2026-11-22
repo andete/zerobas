@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PAINTRAMCLASH (Joost 2026-11-20: "why not figure what cells the reference uses for this and just use the
 same?"): WHERE does each machine keep a GRP: channel's pending CHR$(1) -- the state zerobas keeps in GRP_HDR?
 Black box: SCREEN 2, OPEN "GRP:" AS #1, then one of

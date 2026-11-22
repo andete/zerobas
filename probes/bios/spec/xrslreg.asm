@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XRSLREG -- docs/bios/RSLREG.md / WSLREG.md round 2 (2026-11-18): WSLREG ($013B) writes the primary slot register,
 ; RSLREG ($0138) reads it. The probe runs from RAM ($EA00, page 3). Per case it calls WSLREG with A = v, where v keeps

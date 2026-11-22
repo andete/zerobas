@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Clean-room audit — two checks
@@ -407,7 +407,7 @@ probe's own exit code (0 = 0-byte-diff) and `callseq` on its "ALIGNED, NO
 DIVERGENCE" verdict. **Green baseline: 6/6 gated differentials converge** (BDOSX
 mem `0x0300`/`0x0400` ×0x180, BDOSX2 `0x0340`×0x70, BDOSX3 `0x03b0`×0x125 +
 `0x04d5`×0x380, BDOSX0 callseq `0x0005`). Clean-room: stock is a black box; the
-exercisers + runner are our own 0BSD code, diffed against the oracle. Oracle-
+exercisers + runner are our own BSD-2-Clause code, diffed against the oracle. Oracle-
 dependent (needs `make machines-oracle` + CF-3300 reference ROMs), so it stays out
 of the emulator-free `make unit-test`. This is the "proven every release" backstop
 the surface-coverage scoreboard needed.
@@ -731,7 +731,7 @@ shake out the unexercised process. Phase A re-confirmed the paper-trail structur
      the private msx-preservation repo, so the public chain dead-ended in private. Both
      were confirmed clean black-box probes simply missed in the 2026-06-23 harness
      migration; they are now re-homed at `probes/tape/cas_baud_oracle.py` +
-     `probes/tape/bios_probe_winwid_idle.py` (re-rooted on `probes/lib/`, 0BSD), with the
+     `probes/tape/bios_probe_winwid_idle.py` (re-rooted on `probes/lib/`, BSD-2-Clause), with the
      citations updated. The same sweep fixed two stale disk comments (the cited
      `disk_probe_dskio`/`disk_probe_bdos` were already public) and softened a basic
      BREAKX corroboration to its public MSX2-TH primary. Both re-homed probes were

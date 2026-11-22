@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/WSLREG.md's EXECUTABLE RULES (docs/spec-method.md §3a): WSLREG ($013B) writing the primary slot register
 -- the runs docs/bios/RSLREG.md reads (probes/bios/spec/xrslreg.asm; the loader is xrslreg_rules.load)."""
 import os

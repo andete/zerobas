@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The SCREEN for the leaked-trap depth run -- what each machine actually says.
 
 `scratchpad/trapsvc_depth.py` reads counters out of $D000, and on the leaking

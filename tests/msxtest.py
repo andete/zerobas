@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host-side test harness for zerobas ROM routines — no emulator required.
 
 Loads an assembled ROM plus the pasmo symbol file into a flat 64 KB memory,

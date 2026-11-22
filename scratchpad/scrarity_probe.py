@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SCRARITY — does SCREEN's five-argument bound count COMMAS or VALUES?
 
 D-SCRSLOT measured `SCREEN 1,,,,,1` as **ERR 2** on both references and ACCEPTED

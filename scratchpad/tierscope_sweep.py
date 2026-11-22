@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TIERSCOPE — is the review tier's worklist actually scoped over all 133 handlers?
 
 `docs/review-tier-worklist.md` opens with a claim nobody had checked:

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; var_find_typed's fast walk (D-TRAPCOST, 2026-11-05). The contract is the one in
 ; basic/vars.asm's header: BC = key (name0, name1), A = type -> CF set + HL = the

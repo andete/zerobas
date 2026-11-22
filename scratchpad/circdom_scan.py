@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """circdom_scan.py -- the CIRCLE-radius / aspect DENOMINATOR, machine-produced.
 
 D-CIRCDOM. The `gfx_circ_scale` header claims a bounded domain "|v|*ASPS <= 65535

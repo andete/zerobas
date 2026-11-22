@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PASMOSAY falsification — does the hook actually SAY, and does it stay quiet?
 
 Three arms, because a hook that prints is only half the claim:

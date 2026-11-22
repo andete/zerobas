@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXT.COM -- D-DISKCONTRACT gap 11 (2026-11-17): SDATE ($2B) and STIME ($2D) with VALID
 ; and INVALID input, each followed by GDATE ($2A) and GTIME ($2C). BX2 calls STIME / GTIME

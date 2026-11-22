@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G7 sprites black-box characterization, round 3 (VG-8020).
 
 Closes the round-2 anomalies, ISOLATED (boot-per-case where VRAM carry-over

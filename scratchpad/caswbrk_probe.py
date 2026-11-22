@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASWBRK: a tape WRITE broken with Ctrl-STOP -- the VG-8020 against
 zerobas's diskless machine, under ON ERROR. The write side of D-CASBRK: the
 tape header writes in basic/files.asm (OPEN "CAS:" FOR OUTPUT) and

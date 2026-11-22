@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-STOPKEY3 (2026-11-06): after a Ctrl-STOP break, is a ^C (3) left in the
 keyboard buffer? Found by typed session S2_stopcont: INKEY$ read 3 after CONT on the
 VG-8020 and nothing here. A program `10 GOTO 10` is stopped with Ctrl-STOP held

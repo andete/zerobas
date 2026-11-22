@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHPUT3 -- docs/bios/CHPUT.md ROUND 3 (2026-11-17): the five items its second fresh review found
 ; NOT measured, plus the A after an ESC / prefix call. CHPUT called directly; SCREEN 0 width 40.

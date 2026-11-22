@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The boot banner — the one thing in this tree no other gate can see.
 
 🔴 EVERY PROBE PROGRAM IN THIS REPO OPENS WITH `CLS`, WHICH WIPES THE STARTUP

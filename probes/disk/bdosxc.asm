@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXC.COM -- D-DISKCONTRACT gap 5 (2026-11-17): what the console functions put ON THE
 ; SCREEN. strout-acceptance only checks that a text is present; BDOSX9 / BX2 compare

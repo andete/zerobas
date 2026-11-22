@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 0 -- an OFFLINE model of the zerobas ARC MASK, calibrated
 against MEASURED artifacts before it is allowed to predict anything.
 

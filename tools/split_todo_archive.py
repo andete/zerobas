@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Split TODO.md: closed work moves to docs/TODO-done.md, the pickup list stays.
 
 WHAT MOVES: a TOP-LEVEL `- [x]` block whose D-TODOSWEEP verdict is not LIVE.
@@ -49,7 +49,7 @@ VERDICTS = os.path.join(ROOT, "scratchpad", "sweep_verdicts.json")
 
 HEADER = """<!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # TODO — done, archived
 

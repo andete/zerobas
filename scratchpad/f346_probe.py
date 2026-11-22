@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-F346 (Joost, 2026-10-23: "if you boot into basic and not into dos first, if
 you do poke &hf346,1 you can do call system"): does CALL SYSTEM go by the work-area
 cell &HF346, and when is that cell set?

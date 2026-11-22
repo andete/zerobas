@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHPUT.md ROUND 5 (2026-11-17): the fourth review's unseparated pairs and cheap extensions,
 as ONE case list that both GENERATES the rung's case table (probes/bios/spec/xchput5.asm) and DECODES
 its run -- so the probe's layout and the rules' reading of it cannot drift apart.

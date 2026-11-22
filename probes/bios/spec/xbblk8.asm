@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK8 -- the BDOS's block functions through $F37D, round 8 (2026-11-22), answering review pass 6 (scratchpad/
 ; BBLK_review6.md): what H holds after WRZER / FSIZE (the file's directory entry? L.TXT is entry 2); the block

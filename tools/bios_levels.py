@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The main BIOS calls' CONTRACT LEVEL (Joost 2026-11-14: "yes add the level column").
 
 docs/tier-status.md's "exercised" only says a gate NAMES an entry; five of the seven

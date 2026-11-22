@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM usage (TIER 4): the VG-8020's trap table TRPTBL ($FC4C, 78 B) -- its
 entry order, its state bits and what its address field points at -- so that
 zerobas's ZTRAP (own layout, $E1D1, 54 B) can move INTO it in the reference's

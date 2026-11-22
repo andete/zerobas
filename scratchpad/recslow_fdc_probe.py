@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECSLOW, measure first (2026-11-05): the FDC commands one far random PUT
 issues -- `PUT #1,32767` on a fresh LEN=1 file (zerobas 1763 frames, the CF-3300
 2). A copy of fdcseq_probe.py with this workload; the same write watchpoint on

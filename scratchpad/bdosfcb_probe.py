@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BDOSFCB step 1: what the $F37D BDOS does, from a BASIC program, to ONE REAL FILE.
 
 scratchpad/bdosset_probe.py asked every function once, mostly of FCBs never opened;

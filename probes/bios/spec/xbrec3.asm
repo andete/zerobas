@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBREC3 -- the BDOS's record functions through $F37D, round 3 (2026-11-22), answering review pass 2 (scratchpad/
 ; BREC_review2.md): SETRND on an EMPTY file and on a 6-record one, over $FF at +34 .. +36 (RR := 1, the last record or

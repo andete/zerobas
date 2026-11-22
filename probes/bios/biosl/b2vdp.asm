@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; B2VDP -- D-BIOSLADDER rung B2 (TODO.md): the VDP as a ROM program drives it
 ; through the main BIOS. A 16 KB "AB" cartridge; INIT runs it.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """D-SCRERR — SCREEN's argument is a CHECKED BYTE, and it is checked BEFORE the
 mode is applied.

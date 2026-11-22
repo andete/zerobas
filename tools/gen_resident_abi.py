@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Generate the sub-ROM's resident-ABI import (subrom-mathpack arc, spec §4).
 
@@ -713,7 +713,7 @@ def generate(sym_path: str, out_path: str, write: bool = True,
 
     lines = [
         "; Copyright (c) 2026 Joost Yervante Damad",
-        "; SPDX-License-Identifier: 0BSD",
+        "; SPDX-License-Identifier: BSD-2-Clause",
         "",
         "; GENERATED FILE -- do not hand-edit. Produced by",
         "; tools/gen_resident_abi.py from build/basic-reloc.sym (Makefile rule);",

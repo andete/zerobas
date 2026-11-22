@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPELOAD (2026-10-16, Head over Heels `Out of memory in 40`): how much free
 memory is left when a GOSUB is refused, on each machine? zerobas refuses a frame
 unless CTL_FRAME_MARGIN (768 B) stays clear; Head over Heels' line 40 had 671 B.

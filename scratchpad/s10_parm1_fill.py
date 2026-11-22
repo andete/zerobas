@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S10.0: is PARM1's unattributed tail $F71C-$F74B written by anything?
 
 S10 moves zerobas's persistent diskless cells into those 48 bytes (TODO D-WSZERO).

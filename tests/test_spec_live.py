@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """tools/spec_live.py's parsing, which decides what the gate compares (docs/spec-method.md §8 step 2).
 
 A mis-read of a page's Differences table would make the gate AGREE for the wrong reason; a run file it

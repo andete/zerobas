@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROBOREG: a disk's boot on both machines as a time series -- PC, CURLIN, screen mode
 and the screen's text every N seconds, to find the first point zerobas and the CF-3300
 part. Reuses diskcorpus_run.run_one (the image is RUN, never decoded; black-box: registers,

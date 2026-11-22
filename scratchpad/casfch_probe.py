@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASFCH -- what do GET/PUT/FIELD/INPUT$ do on a `CAS:` channel? MEASURED.
 
 TODO filed this as INFERRED: D-NOTOPEN2 swept `FCH_MODES` 0-6 against the

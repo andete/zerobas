@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/READC.md's EXECUTABLE RULES (docs/spec-method.md §3a): READC ($011D) -- probes/bios/spec/xgfx3.asm, op 0
 (the loader and the VRAM model are xgfx3_model)."""
 import os

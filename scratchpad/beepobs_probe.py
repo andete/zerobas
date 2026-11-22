@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWBREADTH batch 7 — is BEEP's effect observable through the PSG?
 
 `beep`'s row prints a CONSTANT MARKER `[6]`, so it scores that the word RAN and

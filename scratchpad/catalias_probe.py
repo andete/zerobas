@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CATALIAS's safety rows (scratchpad/catalias_design.md §5): what the indirect variable
 slot must not break -- a GC during the op, aliasing, V$+V$, a new scalar shifting the
 arrays mid-expression, DEF FN with V$ as its parameter, an error inside the expression

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDITSCOUT step 2: the two questions that decide where the editor can live.
 
 Q1 RE-ENTRY (the feature): cursor UP onto an earlier line and press Enter — does

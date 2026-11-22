@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D5RENDEL.COM -- D-DOSLADDER rung D5 (TODO.md): what REN and DEL do, wildcards and
 ; the error paths. X1.TMP, X2.TMP and Y.TMP are made (FMAKE / FCLOSE); then

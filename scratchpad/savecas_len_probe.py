@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SESSIONS TIER 5 follow-up: SAVE "CAS:" of a 2-line program -- is the VG-8020's tape
 LONGER than zerobas's, or the same tape written slower? Each machine records to a blank
 tape; the WAV's length (seconds) and its decoded bytes (probes/lib/cas_decode.py) are

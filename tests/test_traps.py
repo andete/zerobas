@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the interrupt-trap dispatch state machine (basic/traps.asm), no
 emulator paging — a flat host Z80 image of the repack build (rom_base=$2812, so the
 repack-only trap code is present).

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """BEEP acceptance — per-VBLANK PSG-register trace differential vs the VG-8020
 (audio arc, close-out; docs/spec-basic-audio-beep.md).
 

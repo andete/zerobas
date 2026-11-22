@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDGEONERR measure-first (2026-10-20): which ingredient moves zerobas's DIM edge ~25 B off
 the VG-8020's (edgestr_head.out, K=136)? dimedge-acceptance's plain shape agrees (108 / 109).
 For each SHAPE, every K: does `X=INT((FRE(0)-K)/8):DIM A(X)` fit? The first fitting K is the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INIMLT.md's EXECUTABLE RULES (docs/spec-method.md §3a): INIMLT ($0075) -- probes/bios/spec/xinig.asm, op 1
 (the loader and the model are xinig_model)."""
 import os

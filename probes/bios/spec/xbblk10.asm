@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK10 -- the BDOS's block functions through $F37D, round 10 (2026-11-22), answering review pass 8 (scratchpad/
 ; BBLK_review8.md): WRZER's zero fill into NEWLY allocated clusters whose disk bytes are not zero (a deleted file's:

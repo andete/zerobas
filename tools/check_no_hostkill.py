@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PKILLGATE -- no unit the gate pool runs may kill what it did not start.
 
 🔴 WHY THIS EXISTS (2026-09-30, D-PKILL). `eofcas-acceptance` was built from a

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BD2FRAGILE, measure first (2026-10-31): why Boulder Dash II stops at line 10
 on a zerobas build whose INT / FIX are identical in value and RAM.
 

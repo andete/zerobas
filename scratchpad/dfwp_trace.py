@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKFULL regression trace: with the flush-before-store fat_io_putbyte in
 disk.rom, a tokenised SAVE on a WRITE-PROTECTED disk answers OK (wprotect-
 acceptance wp_ctl) where it raised 68. OUR disk.rom only (slot 3-1): a

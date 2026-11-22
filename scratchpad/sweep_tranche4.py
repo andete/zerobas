@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26, tranche 4 — the two rows that could not share a batch,
 plus the clause an error-scrape could not see.
 

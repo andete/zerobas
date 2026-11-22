@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bdos/RECORDS.md's EXECUTABLE RULES (docs/spec-method.md §3a): the BDOS's record functions through $F37D, from
 the XBREC1 probe (probes/bios/spec/xbrec1.asm documents the 16 cases and the 52-byte record; the DTA is filled with $40 +
 the case number before each case, so a record carries its writer's mark) on two reference rows: run 1

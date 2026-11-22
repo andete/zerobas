@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does capturing on the SENTINEL change what a TEXT readout says? Three machines.
 
 `scratchpad/sentinel_screen_diff.py` answered this for the GRAPHICS family

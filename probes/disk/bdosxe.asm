@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXE.COM -- D-DISKCONTRACT gap 2 (2026-11-17): a disk ERROR as an MSX-DOS program sees
 ; it through the BDOS. Every other exerciser runs on a writable disk; DSKIO's own error

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MERGEWIN: does main's ASCII line path write into disk's SECTOR_BUF window?
 
 🔴 THE QUESTION STEP 11 TURNS ON, AND IT IS ABOUT OUR OWN TREE, NOT THE

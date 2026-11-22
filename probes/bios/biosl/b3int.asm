@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; B3INT -- D-BIOSLADDER rung B3 (TODO.md): the interrupt as a ROM program uses it.
 ; A 16 KB "AB" cartridge; INIT runs it (page 1 stays this cartridge throughout, so

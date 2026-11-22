@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Falsification for tools/check_citation_paths.py (docs/spec-citation-paths-gate.md).
 
 Every RED arm plants a citation that must be FOUND; every GREEN arm plants text

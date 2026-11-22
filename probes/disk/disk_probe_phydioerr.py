@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKCONTRACT gaps 2 / 3 (2026-11-17): BIOS PHYDIO ($0144 -> H.PHYD -> the disk ROM's
 DSKIO) on its ERROR paths and a WRITE, called directly -- the National_CF-3300 (stock)
 against zerobas's shipped disk machine. The register path a C-BIOS program without BASIC

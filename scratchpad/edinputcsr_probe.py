@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDINPUTCSR: the cursor keys inside `INPUT` across rows -- what does the
 answer read after the cursor leaves the row it was typed on, on the VG-8020 and
 on ours?

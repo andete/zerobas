@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/disk/DSKFMT.md's EXECUTABLE RULES (docs/spec-method.md §3a): DSKFMT ($401C in the disk ROM) from the XDFMT1
 probe, run 2 (scratchpad/XDFMT1_run2.out, the CF-3300 row: the National CF-3300 against zerobas's disk build --
 zerobas's disk target is the CF-3300's interface). probes/bios/spec/xdfmt1.asm documents the cases and the 38-byte

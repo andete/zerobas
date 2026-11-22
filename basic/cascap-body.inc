@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; cascap-body.inc -- cas_capture_name, shared by main (basic/cload.asm, at its
 ; original position) and the sub-ROM BLOAD tenant (sub/bload.asm). D-CASBIN

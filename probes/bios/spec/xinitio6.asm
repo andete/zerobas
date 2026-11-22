@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO6 -- docs/bios/INITIO.md round 6 (2026-11-18), after the sixth review: QUEUES ($F3F3) and the table it points to,
 ; read BEFORE any interrupt can run. Every case: interrupts off, the VDP status read just before the call, `di` the first

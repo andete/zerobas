@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN6 -- docs/bios/PINLIN.md round 6 (2026-11-22, D-EDITKEYS): the line editor's CTRL+U / E / N / F / B. Where each
 ; leaves the cursor shows in the 'X' typed after it (overwriting the cell). XLIN5's frame and record (probes/bios/spec/

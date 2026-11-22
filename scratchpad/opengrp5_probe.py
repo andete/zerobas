@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OPENGRP, measurement round 5: the CHANNEL around a GRP: device -- what
 every FCH_MODES consumer must do with it. VG-8020 only (zerobas has no GRP:
 yet). Each case is a stored program under ON ERROR; the answer is printed in

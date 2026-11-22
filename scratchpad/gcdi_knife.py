@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knife for gcdi-acceptance (D-GCDI): remove ONE of the two `ei`s, rebuild,
 run the gate, restore, rebuild. Each cut must turn its own row red; sub.rom is
 hashed around every plant so an inert (unbuilt) knife cannot pass for a blind

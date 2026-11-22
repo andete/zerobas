@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/LPTSTT.md's EXECUTABLE RULES (docs/spec-method.md §3a): LPTSTT ($00A8) with the printer logger plugged
 -- the runs docs/bios/LPTOUT.md reads (probes/bios/spec/xlpt.asm; the loader is xlptout_rules.load); and with nothing
 plugged in -- scratchpad/XLPT2_run1.out (row N), XLPT2_run1d.out (row D) (probes/bios/spec/xlpt2.asm)."""

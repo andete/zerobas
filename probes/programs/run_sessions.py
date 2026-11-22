@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Typed sessions (D-SESSIONS, 2026-11-06): the program ladder's other half.
 
 The ladder (run_programs.py) loads a finished program from tape and RUNs it, so

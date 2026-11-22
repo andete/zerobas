@@ -4,7 +4,8 @@ the patches in this directory are pinned to (v0.31; v0.30 and v0.29-3-gb5ad9cb e
 zerobas's shipped patches (zerobas-main-eu.ips / .bps at the repo root) carry
 compiled bytes of C-BIOS source as edited by the patches here, so they
 redistribute C-BIOS in binary form; BSD-2 clause 2 asks for this notice to
-travel with them. zerobas's own work stays 0BSD (LICENSE).
+travel with them. zerobas's own work is BSD-2-Clause too, under its own copyright
+(LICENSE).
 
 -------------------------------------------------------------------------------
 

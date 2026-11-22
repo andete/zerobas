@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Disk-artifact round-trip for BDOS $26 WRBLK (M28 verification).
 
 The BDOS RAM-capture acceptance gate is BLIND to on-disk write effects. This

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LOCSEM — what does `LOC(#n)` actually DO on the reference?
 
 TODO.md defers LOC with a reason: *"CF-3300 `LOC(1)` returns 26 (file size) both

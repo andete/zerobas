@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md round 5 (2026-11-18): the XSCR5 supplement, after the second confirming pass, which found LINLEN
 never separated from the width the mode's call was given. XSCR5 is XSCR4's probe with one more case field, `lw`: when
 non-zero, LINLEN := lw AFTER the mode's call (the width cells already 77). Also ERAFNK / FNKSB with TXTNAM changed late,

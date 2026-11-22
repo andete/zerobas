@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KNIFEROM — a knife that did not reach the ROM must say so, not say "0 rows".
 
 🔴 THE FAILURE THIS EXISTS TO MAKE LOUD. A knife writes a source file and invokes

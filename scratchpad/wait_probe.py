@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-WAIT — does `WAIT port,mask[,xor]` behave like the reference?
 
 `make kwsweep` lists WAIT crunch-only, never executed, because "it can spin

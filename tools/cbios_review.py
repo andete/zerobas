@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """cbios_review -- run zerobas's machine-code BIOS suite on a C-BIOS build (a release candidate under review).
 
 The suite is everything that needs no zerobas BASIC: every BIOS spec page's rules (probes/bios/spec/*_rules.py),

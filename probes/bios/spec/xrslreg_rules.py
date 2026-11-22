@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/RSLREG.md's EXECUTABLE RULES (docs/spec-method.md §3a): RSLREG ($0138) right after WSLREG ($013B) wrote
 the primary slot register -- scratchpad/XRSLREG_run2.out (row N), XRSLREG_run2d.out (row D), XRSLREG_run2c.out (row
 C); probes/bios/spec/xrslreg.asm documents the passes and the 10-byte record. docs/bios/WSLREG.md's rules

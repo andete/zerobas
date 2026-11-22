@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 5 -- resolve the reference's angle quantiser.
 
 arcmask_rays.py established, from 34 bracketed rays on 19 measured rows:

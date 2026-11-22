@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-HFOXOOM knife: does basicint-acceptance's `rvtarr` row see lh_adopt's reset?
 
   K-HO1 lh_adopt's test `jr z,lha_kept` -> `jr c,lha_kept`: a VARTAB the ,R code

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for the BDOSX3.COM exerciser (M24: mutation +
 random + absolute-I/O block, see disk/docs/tier2-bdos-remaining-spec.md

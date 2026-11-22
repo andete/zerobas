@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INPUTDNOHASH (gate: nohash-acceptance): which file-number forms take an
 OPTIONAL `#`, and does a number the tokeniser left as ASCII still evaluate?
 

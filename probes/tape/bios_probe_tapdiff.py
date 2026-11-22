@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPEBIOS: the six cassette BIOS entries called DIRECTLY -- the VG-8020 against zerobas.
 
 TAPION $00E1, TAPIN $00E4, TAPIOF $00E7, TAPOON $00EA, TAPOUT $00ED, TAPOOF $00F0 had no

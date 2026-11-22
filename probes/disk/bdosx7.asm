@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX7.COM -- Tier-C case 5: the RENAME-COLLISION corner of Rename ($17
 ; FREN). See disk/docs/tier2-tierC-spec.md "Candidate cases" #5. The

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADTIME: what does a TOKENISED `LOAD` cost? ⛔ THIS METHOD CANNOT ANSWER IT.
 
 ✅ **ANSWERED THE SAME DAY BY `scratchpad/loadrun_probe.py` (D-LOADRUN)**, which

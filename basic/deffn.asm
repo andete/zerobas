@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; deffn.asm — DEF FN<name>[(<formals>)]=<body> (statement) and FN<name>[(<args>)]
 ; (expression function). The last MSX1 reserved word (`make kwsweep`: MISSING=1,

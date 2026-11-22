@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-RECSLOW (2026-11-05) -- a random PUT that extends the chain holds
 the FAT sector across every mark and link, and writes it once.
 

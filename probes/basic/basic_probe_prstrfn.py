@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """prstrfn-acceptance (D-PRSTRFN): every PRINT item that is a string prints as
 one, and an operator after a string FUNCTION is a Type mismatch before anything
 is printed.

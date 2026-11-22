@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G7 sprites black-box characterization, round 4 (VG-8020) -- residuals.
 
   F1  EC bit cleared again when a later PUT with an OMITTED colour uses x>=0

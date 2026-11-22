@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""needle-case-check — a capitalised needle in a CASE-FOLDED table can never match.
 
 🔴 WHY THIS EXISTS (filed 2026-08-02 by D-MSGEXACT §6b). That slice silently

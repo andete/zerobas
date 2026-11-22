@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S8 knife: does wszero-acceptance's `persist` row SEE S8's moves?
 
 K-WS12 basic/sysvars.inc: GFX_DSCALE / GFX_DANGLE back at $ED97 / $ED98 (inside the

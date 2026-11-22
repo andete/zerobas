@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ENTRYTIERS step 3: the TEXT-OUTPUT BIOS entries answer in the WORK AREA -- compared
 there, the VG-8020 against zerobas (basic_probe_biosmode.py's method). CHPUT ($00A2) with a
 printable character and the control codes CR / LF / BS / TAB / HOME / CLS, POSIT ($00C6),

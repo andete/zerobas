@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ADDR29 S1: is zerobas's FOUTBUF the SAME variable as the published FBUFFR?
 
 An equate move (spec-basic-addr29.md route E) is only legitimate when the

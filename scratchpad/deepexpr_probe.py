@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/spec-basic-deepexpr-guard.md's live-bug rows LB1-LB4 (2026-10-20, found by reading):
 near the memory edge, does a deep expression OVERWRITE the arrays on zerobas where the
 VG-8020 refuses (ERR 7) or completes cleanly? A canary element A(X)=12345 is the LAST

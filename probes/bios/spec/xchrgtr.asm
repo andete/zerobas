@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHRGTR -- docs/bios/CHRGTR.md (2026-11-18): CHRGTR ($0010, RST 10h) for every byte value c after the text pointer.
 ; Per case the probe builds, at BUF, the text "X c 31 32 33 34 35 36 37 38 39 00" ('X' = $58), points HL at the 'X' and

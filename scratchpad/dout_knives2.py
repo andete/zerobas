@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""S10.B increment 2 knives (APPEND on disk.rom's writer): each cut must move
 EXACTLY its own rows of probes/disk/disk_probe_dout.py, and no other.
 

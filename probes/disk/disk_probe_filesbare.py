@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FILESBARE (gate: filesbare-acceptance): FILES with a blank or drive-only
 pattern. Found 2026-09-05 (namspc `m.blank` / `m.drvbare`, deferred for main-ROM
 bytes) and re-filed 2026-10-09: the CF-3300 lists the whole disk for

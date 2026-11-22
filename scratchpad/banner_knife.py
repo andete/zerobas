@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """K-BANNER — cut `show_title` and require the banner gate to go RED.
 
 A gate that has never failed is not known to be able to. The cut is the exact

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWDRAWX: does `DRAW`'s `X<var>;` or `=<var>;` reach anything, on EITHER machine?
 
 `drawkw_j`/`drawkw_k` were written the way docs/spec-basic-graphics-g6.md §1 names

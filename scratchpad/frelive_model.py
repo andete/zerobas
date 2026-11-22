@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FREPLUS14 (2026-10-17): a Python prototype of the re-scan that docs/spec-basic-
 frelive.md plans for zerobas's FRE(0) -- validated against the VG-8020's measured
 depths (scratchpad/freshape_run3.out) BEFORE any Z80 is written.

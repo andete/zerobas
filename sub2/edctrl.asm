@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; sub2/edctrl.asm -- the screen editor's CTRL editing keys (D-EDCTRL part 2)
 ; CTRL-B / CTRL-E / CTRL-F / CTRL-N / CTRL-U, handled before a key goes to the
 ; sub-ROM readline tenant (basic/repl.asm rl_get). 🔁 MOVED OUT OF MAIN 2026-10-12

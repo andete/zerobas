@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk.rom's INPUT-channel reader (hk_chin, H_CHIN $FE8A) -- no emulator.
 
 🏗️ S10.C (D-ROMSIZE, 2026-10-15) moved the INPUT side of disk files into disk.rom:

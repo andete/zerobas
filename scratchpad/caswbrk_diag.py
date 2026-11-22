@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASWBRK diagnostic: does the @BREAK rig land during a tape write at all?
 
 caswbrk_probe.py read `no error` on BOTH machines for CSAVE / BSAVE / OPEN FOR

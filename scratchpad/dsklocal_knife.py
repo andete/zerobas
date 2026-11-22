@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DSKLOCAL knife: does dskio-acceptance SEE disk.rom's hk_dsk do the read?
 
 K-DL1  disk/kernel.asm: hk_dsk's `call read_sector` -> 3 B of no-ops (byte-neutral):

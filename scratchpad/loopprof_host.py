@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOOPPROF (2026-10-20): where the Z80 T-states of ONE pass of a stored-program
 loop go -- a per-instruction, per-routine profile on the HOST Z80 (tests/z80.py),
 no emulator.

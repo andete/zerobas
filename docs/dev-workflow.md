@@ -35,7 +35,7 @@ Each TODO item is largely independent — do one per session, and finish with:
    auditor can reach — an in-repo finding/probe/doc or a published source — never
    a probe, spec, or note that lives only in the private `msx-preservation`
    workbench. A public finding whose provenance dead-ends in private is a chain
-   break: re-home the probe (re-rooted, 0BSD; see `probes/`) or cite the public
+   break: re-home the probe (re-rooted, BSD-2-Clause; see `probes/`) or cite the public
    primary instead. `make audit-citations` enforces this (the PRIVATE-REF check)
    across the asm, every `PROVENANCE.md`, and the probe sources.
 3. **Quarantine own-design.** If correct MSX behaviour needs a forbidden source

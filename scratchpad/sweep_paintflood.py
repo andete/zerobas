@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26 — T131 (SCREEN-2 PAINT flood) ISOLATED.
 
 ⚠️ THIS ROW MAY NOT SHARE A BATCH. The item's own claim is that the references

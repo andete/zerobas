@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """fdclog7 (D-BLKIOPERCALL step 2 follow-up): fdccount_probe.py, but LOGGING the first
 120 phase-7 sector commands with the WD2793 track / sector registers ($7FB9 / $7FBA,
 I/O registers -- the permitted side). Original header:

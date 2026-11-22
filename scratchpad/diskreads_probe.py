@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKREAD: WHICH work-area cells does the DISK ROM read during the crossing?
 
 §6.6w measured what the registers carry at `$FE5D` -- `DE` an open mode, `HL` the

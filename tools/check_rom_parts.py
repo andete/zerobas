@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Every file a ROM INCLUDES must be a prerequisite of that ROM.
 
 🔴 WRITTEN BECAUSE IT HAPPENED (2026-09-03, D-PUDOT). `sub/punum.asm` was added

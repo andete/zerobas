@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; trapstmt.asm -- main's LOW REGION: the event-trap STATEMENTS. ON STOP / SPRITE /
 ; STRIG / KEY / INTERVAL GOSUB, INTERVAL ON|OFF|STOP, STRIG(n) ON|OFF|STOP,
 ; KEY(n) ON|OFF|STOP. The trap MACHINERY -- the per-statement poll (check_traps),

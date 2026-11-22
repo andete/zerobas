@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-OPEN2 rig — a breakpoint on fch_ctx_addr with a RAM dump at every hit.
 
 docs/spec-basic-open2.md §3c located the spurious ERR 2 of a second concurrent

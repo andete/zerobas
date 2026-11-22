@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INITXT.md round 3 (2026-11-17): the XINIT3 supplement, after the second test-writer review of DRAFT 2.
 Run 4 of XINIT (xinit_cases.py) gave every case the SAME garbage -- the register copies $A5, CRTCNT 13 -- so a rule
 that keeps a bit and a rule that writes a constant could not be told apart (docs/spec-method.md §3a: one garbage

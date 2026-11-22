@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XOUTDO -- docs/bios/OUTDO.md / ISFLIO.md round 2 (2026-11-18), with openMSX's printer logger plugged (@printer).
 ;   Section A: ISFLIO ($014A) with PTRFIL ($F864) := $0000, $0001, $0100, $8000, $FFFF (put back to 0 after); entry

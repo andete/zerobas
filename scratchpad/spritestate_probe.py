@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SPRSTATE — read SPRITE's trap STATE across a `CLEAR`, from the DEBUGGER.
 
 TODO.md's trap-coverage entry closed its conversion 4 of 4 and left exactly one

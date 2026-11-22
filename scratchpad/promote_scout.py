@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""PROMOTION — the page-1 carve route that has not been swept.
 
 Route D (jp->jr) is measured out in main page 1 and the dup-span sweep is down to

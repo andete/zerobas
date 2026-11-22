@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """CLOAD? cassette-verify probe (tape Tier-3, Item B).
 
 Spec: tape/docs/spec-cas-tier3-cload.md Item B. CLOAD? reads a tokenised tape

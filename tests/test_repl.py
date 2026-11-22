@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the keyboard line editor `read_line` (repl.asm + sub/readline.asm), no emulator.
 
 Tier-2: CHGET is trapped to feed a scripted key sequence, CHPUT is captured to

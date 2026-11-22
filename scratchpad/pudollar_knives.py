@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PUDOLLAR knives — `$$` makes THREE claims, and they must fail separately.
 
 docs/spec-basic-pudollar.md. Eight rows went green together, which is equally

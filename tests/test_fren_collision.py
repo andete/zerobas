@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM FREN ($17 rename) collision pre-check -- fren_wild since
 D-FRENWILD (2026-11-10; it was fren_body, which found one exact match) -- no
 emulator (mirrors test_fat_dir_create.py's synthetic-root-dir technique).

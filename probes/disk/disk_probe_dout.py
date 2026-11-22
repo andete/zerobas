@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B (gate: dout-acceptance): a disk file open FOR OUTPUT is an MSX-DOS FCB
 in disk.rom -- does every observable of the channel still read as on the
 CF-3300?

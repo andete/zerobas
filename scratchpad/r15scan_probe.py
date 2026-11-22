@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TRGFLGISR part 2: what each machine's key-scan interrupt does to PSG R15. Black box, I/O only.
   latch  R15 := $AC (port 1 selected, trigger pins low, bits 2 / 3 / 5 / 7 set), wait for scans, read R15:
          a plain read-modify-write (bits kept, port 1 then port 2 selected) would leave $EF. MEASURED

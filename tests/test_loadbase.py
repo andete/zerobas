@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-LOADBASE: the three tokenised loaders read a program whatever
 text base it was SAVEd from.
 

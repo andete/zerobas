@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 1 knife: does wszero-acceptance SEE the moves?
 
 K-WS1  basic/sysvars.inc: CURPTR / ENDPTR / EXECPTR back at $EC20 / $EC22 / $EC24.

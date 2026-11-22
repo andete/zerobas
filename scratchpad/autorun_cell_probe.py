@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-AUTORUN: does a disk ROM CLAIM H.READ ($FF07) or H.MAIN ($FF0C)?
 A claimed hook cell starts with $F7 (RST $30, an inter-slot call); an
 unclaimed one is a bare RET ($C9 = 201). One typed PRINT of the FIRST byte of

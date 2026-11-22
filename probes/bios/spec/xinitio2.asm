@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO2 -- docs/bios/INITIO.md round 2 (2026-11-18), after the first review: as XINITIO, plus
 ;   - a second set of entry registers (A $00, other BC / DE / HL / IX / IY) and the SHADOW registers, set before and

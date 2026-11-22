@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECAUTO (gate: recauto-acceptance): GET # / PUT # with NO record number.
 
 The CF-3300 keeps a current record per channel -- the one LOC reports -- and a

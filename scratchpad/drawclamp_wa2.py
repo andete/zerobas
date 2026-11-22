@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWCLAMP part A round 2 -- WHAT GOES IN GXPOS/GYPOS, and it is NOT raw.
 
 Round 1 settled the filed residual (GRPACX/GRPACY keep the RAW p2 on both

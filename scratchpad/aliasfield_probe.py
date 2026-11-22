@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ALIASFIELD -- do the RANDOM-file verbs damage an open SEQUENTIAL file?
 
 The verb sweep (D-ALIASWRITE) judged nine verbs and had to leave `FIELD`/`LSET`

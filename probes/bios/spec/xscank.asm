@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSCANK -- docs/bios/SCANL.md, D-SCANLPAINT (2026-11-20): WHERE does the VG-8020 keep K, the run length of the most
 ; recent SCREEN 2 SCANR that its SCANL paints on top of HL? XGFX6 re-presets the graphics work area $F92D-$F955

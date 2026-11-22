@@ -190,7 +190,7 @@ a real MSX does, since there BASIC *is* the BIOS and its KEY trap sits inside th
 
 **This is an established, audited mechanism, not a new one.** zerobas already ships
 [`cbios-repack/eu-drop-statements.patch`](../cbios-repack/eu-drop-statements.patch): a
-tracked 0BSD patch describing edits to BSD-licensed C-BIOS **source**, applied to a
+tracked BSD-2-Clause patch describing edits to BSD-licensed C-BIOS **source**, applied to a
 **pinned tag** in a throwaway worktree at build time and **sha1-verified**
 ([`tools/build_repacked_cbios.py`](../tools/build_repacked_cbios.py)); **no C-BIOS bytes
 live in the zerobas repo** (decision D1). C-BIOS source is a *build input*, not a stock

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: M29 wrblk_position_ext incremental position cursor, no emulator.
 
 tier2-m29-wrblk-position-cursor-spec.md: the pre-M29 wrblk_position_ext

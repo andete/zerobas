@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMCODE: WHERE does the RAM-resident part of the protocol live, and who put it there?
 
 §6.6y found that part of the crossing executes from RAM: eleven of the twelve

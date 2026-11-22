@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWPLAY scout: can a kwsweep row SEE an MML form? `PLAY` is 0/11 forms.
 
 `PLAY(n)` -- the instrument `make play-acceptance` uses -- answers only "is this

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWINPLACE 2b (diskless +288 B): re-measure the CLEAR edge for the docs.
 (Derived from fatfloor_clear_probe.py; same method.)
 

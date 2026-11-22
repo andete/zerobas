@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.0 (spec-diskcode-eviction §6.6bc) -- does the CF-3300's per-channel 37 B
 block behave like a BDOS FCB moved by BLOCK I/O?
 

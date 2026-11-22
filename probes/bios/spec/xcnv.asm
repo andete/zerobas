@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCNV -- docs/bios/CNVCHR.md round 1 (2026-11-17): CNVCHR ($00AB) on the VG-8020 against zerobas, exhaustively:
 ; every A (0..255) x GRPHED ($FCA6) in {0, 1, $5A} x the flags on entry in {$00, $FF} (A / F loaded by POP AF).

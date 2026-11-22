@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """flatedge_probe.py -- D-EDGEONERR / D-DEEPEXPR step 3 (2026-10-20): where does a FLAT statement right after a DIM
 at the memory edge stop fitting -- the VG-8020's margin for a flat expression (the spec's Q1 /
 X), against zerobas's STK_EVAL_RESERVE? `X=INT((FRE(0)-K)/2):DIM A%(X):A%(X)=12345` then

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-STOPRELATCH -- WHAT re-arms the reference's STOP trap under a held key?
 
 D-REARMSENS (`disk/docs/spec-diskcode-eviction.md` 6.6af/6.6ag) established that

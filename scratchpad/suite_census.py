@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SUITESWEEP, step 1: which gate suites have EVER gone red -- a census of the
 recorded runs, at zero emulator cost.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Measure disk.rom's free space — the wall readout the disk ROM never had.
 
 `make basic-reloc` prints four walls (main low region, main page 1, sub page 0,

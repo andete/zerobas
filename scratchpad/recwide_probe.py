@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECBIG widening, measure first (2026-11-04): PUT # records past 65535.
 
     python3 -u scratchpad/recwide_probe.py [CF|ZB] [ROW...]

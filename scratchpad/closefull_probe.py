@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CLOSEFULL: is a disk-full at CLOSE an error, on the CF-3300 and on ours?
 
 A disk with NO free cluster: OPEN FOR OUTPUT only creates the directory entry,

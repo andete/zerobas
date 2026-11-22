@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 1 -- WHAT DOES THE REFERENCE DO? Hypotheses, scored offline.
 
 arcmask_model.py reproduces zerobas exactly on every arc reading the tree has

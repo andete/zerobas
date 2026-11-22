@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK1 -- the BDOS's block functions through $F37D, round 1 (2026-11-22): WRBLK ($26), RDBLK ($27), WRZER ($28),
 ; RDABS ($2F), with FMAKE / FCLOSE / FOPEN / FSIZE around them, on the empty 720 KB disk (the generated image -- its

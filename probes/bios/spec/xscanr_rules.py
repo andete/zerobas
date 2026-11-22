@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/SCANR.md's EXECUTABLE RULES (docs/spec-method.md §3a): SCANR ($012C) -- probes/bios/spec/xgfx6.asm, op 1
 (the loader and the pixel model are xgfx6_model), and probes/bios/spec/xscank.asm (scratchpad/XSCANK_run3.out, the
 group XK: where SCREEN 2 keeps the run for SCANL)."""

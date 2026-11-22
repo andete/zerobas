@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: MID$ statement — MID$(A$,n[,m])=B$ (repack build only),
 docs/spec-basic-mid-statement.md.
 

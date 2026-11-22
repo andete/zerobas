@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PARTIAL — when a statement FAILS, what did it already do? Starting with my own fix.
 
 The argument surface is exhausted (8 axes, 175 rows, 5 defects). The one SERIOUS

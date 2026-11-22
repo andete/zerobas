@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KEYDEF — the EXACT 160 bytes of the references' function-key defaults.
 
 docs/spec-basic-keystr-scout.md measured the storage (base $F87F, stride 16,

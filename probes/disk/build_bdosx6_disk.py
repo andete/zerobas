@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the throwaway disk for the BDOSX6.COM exerciser (Tier-C case 4:
 past-EOF random-record I/O, see disk/docs/tier2-tierC-spec.md "Candidate

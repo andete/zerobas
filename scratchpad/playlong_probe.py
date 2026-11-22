@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """strtms-acceptance row `long` went red with D-TRGFLGISR part 2 (MUSICF 7 where the VG-8020 has 1). How long does
 the over-long PLAY take, and what are MUSICF / PLYCNT / the voice queues' GET / PUT right after it? Black box: TIME
 before and after, PEEKs of the published cells. No ROM byte is read.

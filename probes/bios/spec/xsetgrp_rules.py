@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/SETGRP.md's EXECUTABLE RULES (docs/spec-method.md §3a): SETGRP ($007E) -- the run the SETxxx calls share
 (probes/bios/spec/xset.asm, op 2; the loader, the model and the rules are xset_model)."""
 import os

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FILESNL: where does the cursor stand after FILES? Found by the DSKO$
 keyword page's example (2026-10-09): a PRINT after FILES started on a new row
 on the CF-3300 and continued the last listing row on zerobas.

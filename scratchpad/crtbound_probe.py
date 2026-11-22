@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """CRTCNT UNDER KEY ON -- the investigation (Joost 2026-11-10: "This needs further
 investigation."): how does the VG-8020's console find its bottom row?
 

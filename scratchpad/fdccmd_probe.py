@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADRUN speed: every FDC command zerobas's driver writes during a program,
 stamped in emulated time, with the sector and track registers -- so the gap from
 one sector's end to the next read command is visible. RAM-mapped FDC registers of

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWBREADTH batch 3 — what does DELETE of an EXISTING line do MID-PROGRAM?
 
 The `deletekw` row scores only the FAILURE path (`DELETE 99`, no line 99 ->

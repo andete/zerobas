@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """clone_scout.py -- find carves of the fat.asm shape: groups of label-blocks
 that are IDENTICAL except for one or two operands, i.e. N copies of one body
 saying one thing N times.  Estimates the main-ROM saving from collapsing each

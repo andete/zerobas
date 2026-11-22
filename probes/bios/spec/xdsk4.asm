@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSK4 -- the disk region's BIOS call PHYDIO ($0144) round 4 (2026-11-22): XDSK1's frame and record, new cases
 ; (38-53) answering review pass 2: which IMAGE sector a read with $F8 / $FF / $FA reaches (sector 9 written from $A400,

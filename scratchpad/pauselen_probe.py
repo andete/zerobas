@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BRKLATCH, before resuming: the STOP pause against the PRESS LENGTH -- VG-8020 against
 zerobas. A 4 s TIME loop (200 ticks at 50 Hz), then PRINT. The press lands at RUN + step
 3 + lead 0.5 = RUN+3.5 s and the capture at RUN+4.5+h, so for each hold h: no pause ->

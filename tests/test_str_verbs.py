@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: string engine S4 — the core string VERBS (repack build only).
 
 Covers the eight S4 handlers (basic/str-engine.asm) wired through the gated

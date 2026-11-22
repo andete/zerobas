@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICINT (gate: basicint-acceptance): the three undocumented BASIC-ROM entry
 points tape games jump to, at their FIXED addresses.
 

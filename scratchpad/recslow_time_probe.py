@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECSLOW (2026-11-05): how many frames one far random PUT takes on a fresh
 LEN=1 file -- `T=TIME:PUT #1,n:PRINT TIME-T`, then LOF and the record read back.
 TIME is work-area RAM. Typed BASIC in, the screen out.

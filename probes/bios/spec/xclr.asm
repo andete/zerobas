@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCLR -- docs/bios/CLRSPR.md, CHGCLR.md round 5 (2026-11-18; round 1's fill had every block sum alike; round 2 had
 ; cases 0-23 only; round 3 no status read, one interrupt read, and markers that followed entry F; round 4 cases

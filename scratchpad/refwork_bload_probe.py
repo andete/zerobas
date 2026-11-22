@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO: which published work-area cells does a TAPE `BLOAD ...,R` write, on
 the VG-8020 -- the reference's home for the state zerobas keeps in its own
 workspace ($E98A..$F37F: CURPTR / ENDPTR / EXECPTR, the tape header buffers,

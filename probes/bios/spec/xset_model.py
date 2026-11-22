@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader and model for SETTXT / SETT32 / SETGRP / SETMLT's EXECUTABLE RULES (docs/spec-method.md §3a):
 scratchpad/XSET_run4.out (rows N and D; probes/bios/spec/xset.asm documents the presets, the four table sets, the
 case table and the 112-byte record). Each page's module takes its op's cases from `load(op)` and its rules from

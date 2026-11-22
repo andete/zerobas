@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKMOUNT — a scratch probe that types a DRIVE verb must mount a disk.
 
 TODO.md, filed 2026-08-22: booting `C-BIOS_MSX1_EU_REPACK_DISK` without `diska=`

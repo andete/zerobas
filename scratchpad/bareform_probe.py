@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BAREFORM — what does every argument-taking statement do with NO argument?
 
 D-MERGEXPR found `MERGE` bare answering `Syntax error` where the CF-3300 answers

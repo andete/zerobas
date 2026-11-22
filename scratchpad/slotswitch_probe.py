@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SLOTSW: does the disk side hand control BACK to main inside the crossing?
 
 §6.6v left this open and §6.6x/§6.6y narrowed it without closing it. `$FE76` is

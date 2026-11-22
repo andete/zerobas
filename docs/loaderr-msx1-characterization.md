@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad -- SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad -- SPDX-License-Identifier: BSD-2-Clause -->
 
 # D-LOADERR — `load error` is printed, not raised, at six verbs
 

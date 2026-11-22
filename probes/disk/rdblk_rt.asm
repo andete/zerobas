@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; RDBLK.COM — clean single-shot BDOS $27 RDBLK exerciser for the M31
 ; random-record round-trip (disk/docs/tier2-m31-rdblk-randrecord-spec.md §6.2).

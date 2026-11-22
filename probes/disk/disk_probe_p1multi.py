@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROBOREG: a MULTI-sector DSKIO read that STARTS in page 1 -- does each sector after
 the first land where it should, on the CF-3300 and on zerobas?
 

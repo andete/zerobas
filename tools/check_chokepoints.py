@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """check_chokepoints — where a shared helper exists, a hand-rolled copy is a bug.
 
 Three separate items filed "and nothing checks it" and each proposed its own

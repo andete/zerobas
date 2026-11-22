@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """C5-LOW (docs/plan-main-rom-space-2026-10.md, phase C-3): ERR 9, 10, 14 and
 16's texts move from main (program.asm, str-engine.asm) into the sub-ROM's
 errmsg tenant; err_msgtab's four rows point at err_subhosted. Anchored on

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GETEJECT (gate: geteject-acceptance) -- D-LOADERRRET's GET site
 (basic/field.asm gp_fin, after fat_rand_get): what does a GET whose disk READ
 fails raise, under ON ERROR?

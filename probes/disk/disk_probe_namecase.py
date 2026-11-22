@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""OPEN twice, the exact rule (gate: namecase-acceptance; Joost 2026-10-27: "come up
 with an exact match without costing more RAM then reference"). A disk name keeps the
 TYPED case in the channel's FCB; the open check -- OPEN, KILL, NAME, COPY -- compares

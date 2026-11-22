@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSINT (2026-10-17), Loopy Laundry: what do the reference BIOS's internal
 $2010 and $18E8 do when ENTERED BY A RET? Loopy Laundry's second BLOAD loads over
 the stack and plants a return chain there -- $2010, $18E8, the hook cell $FED0,

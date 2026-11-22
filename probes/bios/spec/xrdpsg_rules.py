@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/RDPSG.md's EXECUTABLE RULES (docs/spec-method.md §3a): RDPSG ($0096) -- probes/bios/spec/xsnd1.asm, op 1
 (the loader is xsnd1_model)."""
 import os

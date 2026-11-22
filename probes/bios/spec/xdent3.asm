@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT3 -- DSKCHG ($4013) and GETDPB ($4016) round 3 (2026-11-22), answering review pass 1 (scratchpad/
 ; DENT_review1.md): does DSKCHG's B 0 path READ the disk (C $F8 against the $F9 disk); does GETDPB take B or C (B $F9,

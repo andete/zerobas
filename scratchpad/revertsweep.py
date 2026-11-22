@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-REVERTSWEEP — a filed ✅ for work the SOURCE says was undone.
 
 Found twice by hand in one afternoon:

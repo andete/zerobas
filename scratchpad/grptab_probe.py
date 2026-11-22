@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GRPTAB, measure first (2026-11-05): TAB( and SPC( in a PRINT # to GRP:.
 
 Round-5 shape (scratchpad/opengrp5_probe.py): SCREEN 2, OPEN "GRP:", the text

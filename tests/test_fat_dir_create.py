@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM fat_dir_create (root-directory slot create), no emulator.
 
 fat_dir_create scans the root directory for the first usable 32-byte slot — a

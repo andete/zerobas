@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN mb.dsk (gate: boot5e10-acceptance): a boot code that CALLs the disk
 ROM's fixed $5E10 starts BASIC and runs AUTOEXEC.BAS, with no date question, as on
 the VG-8020 + Philips NMS 1200 (Joost ruled 2026-10-27: "Start BASIC (NMS 1200)";

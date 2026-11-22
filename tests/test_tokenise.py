@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC-ROM `tokenise` (the crunch), no emulator.
 
 A pure Tier-1 routine — HL = ASCII source, DE = token destination, no BIOS and

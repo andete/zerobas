@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Joost Yervante Damad
-// SPDX-License-Identifier: 0BSD
+// SPDX-License-Identifier: BSD-2-Clause
 //
 // rigstick -- the host joystick openMSX does not have (ruling 4's rig).
 //

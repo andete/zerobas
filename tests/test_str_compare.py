@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: string-compare S2 -- the six relational operators on two string
 operands, plus the D-2 type-mismatch abort (repack build only).
 

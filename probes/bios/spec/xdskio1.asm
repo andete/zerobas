@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSKIO1 -- the disk ROM's DSKIO ($4010) called DIRECTLY, round 1 (2026-11-22): XDSK1's eleven PHYDIO cases
 ; (probes/bios/spec/xdsk1.asm, docs/bios/PHYDIO.md) with `CALL PHYDIO` replaced by CALSLT ($001C) to $4010 in the disk

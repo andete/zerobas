@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """How many times does ONE `NEXT` call each float-core routine?
 
 D-BRKFRAME's corrected profile puts an EMPTY `FOR I=1 TO n:NEXT` at 17.5% in

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-HOOKDI: does TIME keep running while each long disk verb works, as on the
 National CF-3300? (D-LOADDI found disk.rom's LOAD hook running masked from start
 to end -- every hook is entered through CALSLT, which returns DI.)

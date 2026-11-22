@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADHOOK: WHICH hook cell is `LOAD`'s?  Un-claim one and see who notices.
 
 Step 9 of `disk/docs/spec-diskcode-eviction.md` is blocked on this and on nothing

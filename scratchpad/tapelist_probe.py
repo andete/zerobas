@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TAPELOAD triage: LOAD a tape's program WITHOUT running it, then type key lines
 (LIST ranges, PRINT FRE(0)) and read the screen -- on the VG-8020 and on zerobas.
 What a user would do to see what arrived. Black box: keys in, the screen out; the

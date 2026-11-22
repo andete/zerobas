@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """PLAY live-servicer acceptance — per-VBLANK PSG-register trace differential vs the
 VG-8020 (audio arc, Slice 3; docs/audio-slice3-characterization.md).
 

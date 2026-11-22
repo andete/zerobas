@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM fat_alloc_cluster's M30 next-free scan hint, no emulator.
 
 M30 (tier2-m30-alloc-hint-spec.md) makes fat_alloc_cluster scan from a

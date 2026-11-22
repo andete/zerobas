@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the disk for the BDOSXK.COM exerciser (D-DISKCONTRACT gap 5: what CONIN's and BUFIN's echo
 put on the screen).

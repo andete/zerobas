@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTKEYS (gate: bootkeys-acceptance): SHIFT held at power-on keeps Disk
 BASIC out, as on the CF-3300. Measured 2026-10-10 (scratchpad/bootkeys_run.out):
 the CF-3300 with SHIFT has no Disk BASIC -- DSKF(0) is Illegal function call,

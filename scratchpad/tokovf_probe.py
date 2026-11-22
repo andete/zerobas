@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM-gap prep: does the crunch WRITE PAST TOKBUF before tk_end refuses it?
 
 tk_end (basic/tokenise.inc) is the ONE bound on the crunch; TOKBUF is sized

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G4 arc-hang dynamic localizer. Inject the hanging CIRCLE(...,1.57,3.14) case on
 the repack machine, then sample reg PC (spin location), log z80.acceptIRQ PC/SP
 (interrupt interaction + stack drift), and read the GFX_* octant loop state. Tells

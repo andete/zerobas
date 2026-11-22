@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM GETDPB ($4016) field-assembly, no emulator.
 
 GETDPB builds an 18-byte Drive Parameter Block from the mounted volume's BPB.

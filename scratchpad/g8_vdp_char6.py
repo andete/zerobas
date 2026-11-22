@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 characterization round 6 (Philips VG-8020): grammar edges.
 
 The value/domain semantics are pinned (rounds 1-5).  What is left is the shape

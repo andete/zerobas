@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATSCRATCH measure-first (2026-10-19): on the DISK machine, does zerobas give the user
 the CF-3300's free memory? Main's old FAT scratch span ($EE06.., FCH_STATE0) is named by
 no code since the disk engine left for disk.rom; whether it costs RAM depends on where

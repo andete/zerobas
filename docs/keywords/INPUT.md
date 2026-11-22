@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 <!-- example: reference=VG-8020 disk=no answers=JOOST|ABC|42|3,4|5,9|A,B -->
 

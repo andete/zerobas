@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-P1RDBLK (disk ROM): a BDOS block read into a DTA in PAGE 1 lands
 in the RAM under the disk ROM, and P1_BLIT is there to do it on every host.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """DEF FN / FN — the measured surface of the last missing MSX1 reserved word.
 
 `make kwsweep` reports MISSING=1 and it is `deffn`: on a charter of FAITHFUL

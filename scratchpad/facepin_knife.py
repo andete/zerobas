@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FACEPIN knives — does each new face pin actually go RED on drift?
 
 TODO.md's "A FILED *FACE* ROTS WITHOUT THE ROW CEASING TO DIVERGE" names the

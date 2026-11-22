@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """How big is the "an unnamed outcome reads as no outcome" hole, in numbers?
 
 The filed item asks a standing question: *what might the machine legitimately DO

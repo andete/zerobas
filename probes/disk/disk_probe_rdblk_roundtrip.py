@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """M31 $27 RDBLK random-record round-trip (spec tier2-m31-rdblk-randrecord-spec.md
 §6.2). LIVE-oracle positive proof that our faithful $27 positions to the FCB

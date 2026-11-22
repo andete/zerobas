@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-FIELDWRITE — the WRITE half of the FIELD alias, which corrupts the DISK.
 
 D-FIELDALIAS measured the read half: `F$` on channel 1 returns channel 2's record

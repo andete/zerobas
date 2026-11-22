@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DUPOBS2 — the eleven canonicals `make unit-test` could not observe, scored
 against the EMULATOR, cheapest suite first.
 

@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 Copyright (c) 2026 Joost Yervante Damad
 -->
 # Tier-2 kernel phase — the plan to host COMMAND.COM to `A>`

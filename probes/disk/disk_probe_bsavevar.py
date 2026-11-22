@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """bsavevar-acceptance (D-BSAVEVAR) -- BSAVE's fourth argument, the exec
 address, is an EXPRESSION: a variable (`Q`, `SX`) is its value, not an
 unknown flag.

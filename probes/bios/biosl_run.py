@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSLADDER -- run one rung (our own ROM cartridge) on the reference and on zerobas.
 
     python3 -u probes/bios/biosl_run.py RUNG|--all [--row nodisk|disk|both|cf3300]

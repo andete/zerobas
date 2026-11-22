@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 6 knife: does wszero-acceptance SEE slice 6's ceiling raise?
 
 K-WS8  basic/sysvars.inc: TXTMAX_NODISK back at $EBCD (slice 5's ceiling), the cells

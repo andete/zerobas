@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FLDOWN measure-first (2026-10-17): WHERE does the reference keep a FIELD?
 
 Joost ruled the FIELD table moves into disk.rom, and "if reference has a location

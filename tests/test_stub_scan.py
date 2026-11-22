@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """test_stub_scan -- D-BIOSRUNG: tools/stub_scan.py names both stub shapes, ignores a real
 body, and REFUSES on a degenerate image instead of reporting "0 stubs".
 

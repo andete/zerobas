@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DOSFORMAT: which of OUR disk-ROM entries MSX-DOS's `format` calls (ours only:
 our own ROM may be traced; the reference's never is). Boots the DOS disk copy,
 answers the date, types `format` at T_FMT, and logs each hit of a published entry

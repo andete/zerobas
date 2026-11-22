@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-HSTKE (basic/files.asm hstke and its sites): BASIC calls the
 published hook H.STKE ($FEDA) where the CF-3300 does, with every register kept.
 

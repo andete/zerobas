@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; detok.inc — the LIST / ASCII-SAVE detokeniser body (token stream -> source text).
 ; ===========================================================================

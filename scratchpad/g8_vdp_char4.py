@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G8 characterization round 4 (Philips VG-8020): the BASE(n)= reprogram rule.
 
 Round 3 showed `BASE(n)=` does two things -- store the word, and (sometimes)

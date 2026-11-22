@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """What CALL FORMAT (and MSX-DOS's FORMAT) SAYS, step by step, on each machine:
 types at fixed emulated times and dumps the text screen (the SCREEN 0 name table,
 read from VRAM -- screen output, readable) after each step. D-DSKFMT follow-up (a).

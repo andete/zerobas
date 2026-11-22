@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KEYSHIFT, measure first: WHICH key waits switch the key line to F6..F10
 while SHIFT is held? (keyidle_probe.out: the idle prompt does, on the
 VG-8020; keyshift_run.out, 2026-09-26: a busy FOR loop does not.)

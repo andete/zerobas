@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDITSCOUT step 4: is the re-read unit a ROW or a LOGICAL LINE?
 
 The complexity driver for any implementation. A line longer than the machine's

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASDIRECT diagnostic (D-LOADERRRET's content arms): an ASCII program on
 tape with a line that has NO line number -- the VG-8020 against zerobas's
 diskless machine. cload.asm's cas_ascii_load sends it to dpl_err, which prints

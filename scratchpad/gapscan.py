@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Which probe call sites tuned the WRONG capture knob (out of D-TWOFILE).
 
 A case's capture fires `step` past its `RUN`, or `run_gap` past it when one is

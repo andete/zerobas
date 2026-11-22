@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MISSOP3 — the THREE string rows D-MISSOPFIX left, and the denominator
 TODO.md:11744 (T-051734) says out loud is still a sample.
 

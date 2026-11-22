@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DEFFN: which half of the INT result path is answering -3392?
 
 Six rows of `make deffn-acceptance` -- and only six -- read the SAME constant

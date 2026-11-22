@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DSKIBYTES — the sector really is at $EB00, confirmed byte for byte.
 
 D-DSKIWHERE checksummed every page of $C000..$FFFF around two `DSKI$` reads and

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Carve scout, route C: main PAGE-1 code that could move into a sub PAGE-1
 tenant (which may reach main's low region, the BIOS and RAM -- never main
 page 1; tools/check_tenant_closure.py). For each page-1 label, its closure under

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """tools/gate_wt.py's knife_key (D-GATEKNIFESKIP): a gate skips the knives and the tape corpus
 when this key matches the last passing run. A skip that fires when it should not removes a
 safety net silently, so the key must move for ANY change to what the knives read:

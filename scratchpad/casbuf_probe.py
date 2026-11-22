@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM order step (1), measure first (Joost, 2026-10-13: biggest invented
 regions first; "go ahead with that order"): WHICH BUFFER does the VG-8020 use
 for cassette I/O?

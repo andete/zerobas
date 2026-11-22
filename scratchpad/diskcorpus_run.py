@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKRUN (2026-10-21, Joost: a disk test run like the earlier tape run): boot
 every image of a disk COLLECTION on the National CF-3300 (the MSX1 disk reference)
 and on zerobas's disk machine, and compare what is on screen.

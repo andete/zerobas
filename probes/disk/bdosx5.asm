@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX5.COM -- Tier-C case 3: the DIR-FULL corner of Create ($16 FMAKE).
 ; See disk/docs/tier2-tierC-spec.md "Candidate cases" #3. The happy-path FMAKE

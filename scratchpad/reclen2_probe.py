@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECLEN2 — the `LEN=` domain is 1..256, and out of range is ERR 5, not ERR 2.
 
 `oo_parse_reclen` required a POWER OF TWO in 1..256 "so records tile the

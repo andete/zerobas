@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S16 knife: the string-heap parameter block on the Z80 stack. Do the
 rows see the block's address, its result register, its slot map, the tenant's IY
 discipline and the one aliasing reorder? Main-side cuts are size-neutral (the

@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 # D-KWGAP4 — `DELETE` / `AUTO` / `RENUM` / `LLIST`, measured: the token, the arm, and what the verb DOES
 

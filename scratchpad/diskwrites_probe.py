@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKWRITE: the OUTPUT half of the crossing -- what changes, and who changed it.
 
 §6.6w measured what main HANDS the disk side at `$FE5D`; §6.6x measured what the

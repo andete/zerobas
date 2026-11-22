@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TPAP1: an MSX-DOS program's page 1, and the page-0 inter-slot entries called
 from the TPA (probes/disk/p1vec.asm, our own program, run from AUTOEXEC.BAT).
 $C000 = the last step STARTED (8 = all done), $C001.. the answers.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RAMFREE -- is a declared FREE-RAM window ACTUALLY free? Ask the machine.
 
 WHY THIS EXISTS. `make ram-claim-check` (D-RAMCLAIM) polices the NAME level: no

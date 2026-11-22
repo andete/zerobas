@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; Part of zerobas-disk, included by disk.asm (build with `pasmo -I disk`).
 ; Tier-2 MSX-DOS-1 kernel veneers + relocated bodies (Interface A: the de-facto DOS ABI)
 ; CLEAN-ROOM: every constant, address and algorithm here traces to a public source

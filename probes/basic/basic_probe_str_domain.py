@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MISS-2 -- the string functions' ARGUMENT-DOMAIN checks, characterised.
 
 WHY THIS EXISTS

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """After machine code has taken a CTRL-STOP through BREAKX, the VG-8020's BASIC does not
 also break and zerobas's does (outdlp_fail_fixed.out, breakx_loop). What happens to
 INTFLG ($FC9B)? Our own code: lp: call BREAKX / jr nc,lp -- then INTFLG -> $D100 at

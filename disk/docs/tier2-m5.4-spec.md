@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 Copyright (c) 2026 Joost Yervante Damad
 -->
 # M5.4 implementation spec — first COMMAND.COM progress (for review)

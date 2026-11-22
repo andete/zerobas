@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KNIFEROM follow-up — which recorded "reddened nothing" verdicts can still be re-run?
 
 `make knife-guard-check` polices the runners that EXIST. This asks the other

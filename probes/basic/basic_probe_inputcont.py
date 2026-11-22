@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """inputcont-acceptance (D-INPUTCONT): INPUT's `??` continuation and the redo prompt.
 
 Found by the program ladder's L2_survey: `INPUT "NAME, AGE";N$,G` answered

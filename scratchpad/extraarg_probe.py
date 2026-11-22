@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-EXTRAARG — one argument TOO MANY. The mirror of D-OMITARG.
 
 D-OMITARG swept the omission shapes and found `COLOR` accepting a trailing comma

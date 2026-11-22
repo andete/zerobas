@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The SEAM between BASIC's disk verbs and its FAT engine, measured.
 
 `disk/docs/spec-diskbasic-relocation.md` says the spec's first job is to FIND THE

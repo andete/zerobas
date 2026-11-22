@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md's EXECUTABLE RULES (docs/spec-method.md §3a): DSPFNK ($00CF), ERAFNK ($00CC) and FNKSB ($00C9),
 from the XKEY matrix -- scratchpad/XKEY_run1.out. The case list, the separating setup and the record are in
 xkey_cases.py."""

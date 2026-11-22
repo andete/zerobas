@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LINTTBWRAP: after a program PRINT that wraps on the BOTTOM row (and so
 scrolls), does LINTTB still mark the wrapped row as continuing?
 

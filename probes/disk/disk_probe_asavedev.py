@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ASAVEDOUT (gate: asavedev-acceptance): the file `SAVE"Q.BAS",A` writes,
 read back from the IMAGE, byte for byte against the CF-3300's.
 

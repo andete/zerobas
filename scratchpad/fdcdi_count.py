@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FDCDI, measure first (2026-10-10): how many FDC sector commands does the
 type-ahead workload -- 200 x PRINT#1 of 19 chars + CLOSE, 4200 B -- issue on the
 CF-3300 and on zerobas DISK? Interrupt sampling on zerobas

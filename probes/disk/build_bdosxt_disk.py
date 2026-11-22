@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the disk for the BDOSXT.COM exerciser (D-DISKCONTRACT gap 11: SDATE / STIME with
 valid and invalid input, each read back by GDATE / GTIME).

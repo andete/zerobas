@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: the span reader's `why` channel — four Nones, four reasons.
 
 🔴 `result_span` RETURNS `None` FOR FOUR DIFFERENT SITUATIONS and a caller

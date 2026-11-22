@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D7SORT.COM -- D-DOSLADDER rung D7 (TODO.md): what an editor / sort does to files.
 ; LINES.TXT: 20 records written by SEQWRITE in REVERSE order (record k holds 128 x

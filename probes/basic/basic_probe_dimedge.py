@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DIMRESERVE S3 (gate: dimedge-acceptance): how close to the end of memory a
 DIM and a line store may reach, VG-8020 vs zerobas.
 

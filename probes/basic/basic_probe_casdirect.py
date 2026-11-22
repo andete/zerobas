@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASDIRECT (D-LOADERRRET's content arms): an ASCII program with a line that
 has NO line number. Both references print `Direct statement in file` (57) with
 no line and run no handler -- LOAD and MERGE, from tape (VG-8020 vs the diskless

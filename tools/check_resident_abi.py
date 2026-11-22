@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """STRONG consistency gate for the sub-ROM resident-ABI import (subrom-mathpack
 arc, spec §4/§8 sign-off).

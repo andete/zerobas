@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND K-XR1 -- was the 32-entry attribute-x restore pinned by ANY row?
 
 The round-2 roster left `init_p31` as phase P's only never-reddened row, and

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CLIKSW -- does SCREEN's key-click parameter have a READABLE cell after all?
 
 TODO.md files `SCREEN` at 2/3 with "key-click has no cell any row here can read".

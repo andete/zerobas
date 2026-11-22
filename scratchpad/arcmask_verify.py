@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ARCMASK step 9 -- THE ORACLE, after the fix.
 
 Every row here was measured RED (zerobas != VG-8020) before the rewrite, plus

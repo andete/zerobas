@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DEEPEXPR (gate: deepexpr-acceptance, 2026-10-20). docs/spec-basic-deepexpr-guard.md's
 live-bug rows LB1-LB4 (found by reading; born as scratchpad/deepexpr_probe.py, whose
 deepexpr_run.out shows zerobas overwriting or crashing on all four before the guards):

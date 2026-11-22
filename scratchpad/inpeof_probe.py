@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S9 prep: LINE INPUT# past the end of a TAPE data file, diskless.
 
 seq_end (basic/files.asm) raises whatever DISKOP_ERR holds before it tests for

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does the BIOS maintain NEWKEY ($FBE5), the per-frame keyboard-matrix snapshot?
 
 INTFLG ($FC9B) was MEASURED dead on the zerobas target (C-BIOS writes it once, at

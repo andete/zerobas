@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CRUNCHBYTES — is the constant in `AS 5` stored the same way as the one in
 `NAME 5 AS...`?
 

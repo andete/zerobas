@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND K-Y192 -- prove the new `clip_noop_y192` row is live.
 
 A row that *ought* to see a failure is worth nothing until a cut actually

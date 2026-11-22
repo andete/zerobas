@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHGCLR.md's EXECUTABLE RULES (docs/spec-method.md §3a): CHGCLR ($0062) -- probes/bios/spec/xclr.asm, op 1
 (the loader and the VRAM model are xclr_model)."""
 import os

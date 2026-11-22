@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/disk/CHOICE.md's EXECUTABLE RULES (docs/spec-method.md §3a): the disk ROM's CHOICE ($4019) and MTOFF ($401F),
 from the XCHOICE1 probe (probes/bios/spec/xchoice1.asm documents the 6 cases and the 30-byte record: A, F, B, C, D, E,
 H, L, the interrupt state after, the buffer's first 21 bytes) on the disk row (scratchpad/XCHOICE1_run1.out, the

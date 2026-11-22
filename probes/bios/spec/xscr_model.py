@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The XSCR supplement's cases and the reference's behaviour as a MODEL (docs/spec-method.md §3a): shared by
 docs/bios/DSPFNK.md's rules (xkey_rules.py, the key-line calls) and docs/bios/CLS.md's (xcls_rules.py, CLS / POSIT).
 Each case's expected outputs are computed from its inputs alone -- the name table as an image built from the probe's

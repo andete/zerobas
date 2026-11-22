@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; play.asm — the PLAY statement's RESIDENT stub (audio arc, Slice 2a).
 ;

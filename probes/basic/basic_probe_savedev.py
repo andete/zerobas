@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """savedev-acceptance (D-SAVEDEV): SAVE to the printer, the screen and GRP:.
 
 Measured on the VG-8020 (no disk) and the CF-3300 alike: the run ends FIRST,

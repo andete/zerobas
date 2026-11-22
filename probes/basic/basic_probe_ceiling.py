@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMFLD gate: the text ceiling BOOT CHOSE, on both builds. `make ceiling-acceptance`.
 
 Since RAM lever (2) (TODO.md, the RAM-usage item) the main ROM -- one binary for

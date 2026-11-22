@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSCONTRACT2: what INITXT / INIT32 / INIGRP / INIMLT ($006C / $006F / $0072 / $0075)
 and CLS ($00C3, in each of SCREEN 0..3) leave in VRAM -- the VG-8020 against zerobas.
 

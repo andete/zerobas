@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECSLOW (2026-11-05): fat_rand_put's chain extension on the host Z80, with
 NOTHING trapped but the sector I/O -- a fresh 720 KB FAT, an empty file, one PUT
 at record N, LEN=1. Prints every sector read / written and checks the FAT chain

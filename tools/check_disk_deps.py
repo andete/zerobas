@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """check_disk_deps -- every make target that runs a probe needing the FAT12 test
 image declares `$(DISK_TEST_DSK)` as a prerequisite.

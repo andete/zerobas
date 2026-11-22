@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-MERGEXPR — is `MERGE`'s filename a string EXPRESSION, or must it be a literal?
 
 Found by READING, in the standing review tier. D-FNEXPR2/D-FILESIDE established

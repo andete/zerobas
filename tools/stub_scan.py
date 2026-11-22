@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """stub_scan -- which published MSX1 BIOS entries are still C-BIOS STUBS in OUR main ROM
 (D-BIOSRUNG, 2026-11-12).
 

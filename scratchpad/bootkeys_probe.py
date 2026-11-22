@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTKEYS, measure first (2026-10-10): what SHIFT or CTRL held from power-on
 does on the CF-3300 and on zerobas DISK.
 

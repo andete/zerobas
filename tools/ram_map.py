@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DEFFN RAM HUNT -- where is the BASIC workspace actually free?
 
 🔴 THE REASON THIS IS A TOOL AND NOT A READING. `basic/sysvars.inc` said
@@ -768,7 +768,7 @@ def write_doc(maps: dict, path: str | None = None) -> str:
     L = []
     L.append("<!--")
     L.append("Copyright (c) 2026 Joost Yervante Damad")
-    L.append("SPDX-License-Identifier: 0BSD")
+    L.append("SPDX-License-Identifier: BSD-2-Clause")
     L.append("-->")
     L.append("")
     L.append("# The RAM map — every declared address, and what it is for")

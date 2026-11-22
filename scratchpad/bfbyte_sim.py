@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BFBYTE -- simulate the byte-wise fill BEFORE writing any Z80.
 
 D-ARCMASK's rule: the sim runs ahead of the asm at every step. This models the

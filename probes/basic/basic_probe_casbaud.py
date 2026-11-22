@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CASBAUD: the cassette baud set -- what SCREEN ,,,n and CSAVE ,n make active, the
 VG-8020 against zerobas.
 

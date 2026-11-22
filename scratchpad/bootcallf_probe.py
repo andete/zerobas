@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTREGS: CALLF ($0030) to a PAGE-0 target from a boot sector's code at step 7,
 BEFORE any MSXDOS.SYS (page 0 is RAM then). frayd1.dsk's boot code does
 `RST 30h / $80 / $0141` there. Does the disk ROM's CALLF run the RAM at the target,

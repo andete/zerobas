@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KWERRSETGAP: verify the codes the T6 error sets are said to miss, on the
 VG-8020, before adding them (TODO D-KWERRSETGAP: "verify each before adding it").
 Each case is a stored line `10 <stmt>` + RUN, as kwsweep's T6 rows run, so the

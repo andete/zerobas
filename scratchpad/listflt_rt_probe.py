@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LISTFLT's other half: ASCII SAVE writes through the same detok as LIST,
 so before the fix `SAVE "X",A` of a program with a float literal wrote
 garbage. A round trip on disk -- type, SAVE ,A, NEW, LOAD, LIST, RUN -- on

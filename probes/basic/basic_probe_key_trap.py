@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """KEY interrupt-trap acceptance — slice T3 (docs/spec-traps-t3-key.md §8).
 
 Differential of `ON KEY GOSUB` / `KEY(n) ON|OFF|STOP` against the reference oracle

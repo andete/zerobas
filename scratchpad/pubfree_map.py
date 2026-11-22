@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO: which PUBLISHED work-area cells ($F380-$FFFF) are idle on zerobas.
 
 A static map, the first cut for choosing equate-only homes (a runtime write

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CASFCB knives: is the tape-buffer pointer (CAS_BUFP) seen by the gates?
 
 K-F1  basic/bload.asm: BLOAD's stub no longer sets it. Predicted: casbin's bty

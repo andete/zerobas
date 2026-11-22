@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/disk/DSKCHG.md's EXECUTABLE RULES (docs/spec-method.md §3a): DSKCHG ($4013 in the disk ROM) from the XDENT
 probes (xdent_common.py documents the cases, the record and the TIMELINE). The model: the call counts TIMER
 INTERRUPTS since the last DSKCHG that READ the disk. At the first call, or after 96 interrupts or more, it reads the

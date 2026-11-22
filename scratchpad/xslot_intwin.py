@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-XSLOTPRICE phase 0c -- what actually happens to interrupts inside a
 disk-ROM hook handler, and whether htimi_guard is even the mechanism.
 

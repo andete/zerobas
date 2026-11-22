@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S9 knife: does wszero-acceptance SEE each S9 guard?
 
 K-WS22 fld_lookup's `ret z` -> `nop`       -> `fldread` DIVERGES

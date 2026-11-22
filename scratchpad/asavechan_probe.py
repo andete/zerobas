@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B design input 3: does `SAVE"x",A` corrupt an OUTPUT channel open beside it?
 
 Main's SAVE ,A streams through the same engine globals (FWR_*) an OUTPUT

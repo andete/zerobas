@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-UNARYPLUS — unary `+`, and the rows the FIX would move without being asked.
 
 The filed entry measured six forms (`A=+1`, `PRINT +1`, `A=(+1)`, `B=1:A=+B`,

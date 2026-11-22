@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LINEENTRY — does the PROGRAM ARRIVE, or does the run fail?
 
 D-PUTCOST measured the work on the guest's own `TIME` clock and found nothing

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; subrom-boot.asm — the BOOT-TIME half of the zerobas-sub plumbing.
 ;

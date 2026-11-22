@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader and model for INIGRP / INIMLT / CHGMOD's EXECUTABLE RULES (docs/spec-method.md §3a):
 scratchpad/XINIG_run3.out (rows N and D; probes/bios/spec/xinig.asm documents the presets, the case table and the
 128-byte record). xinigrp_rules.py, xinimlt_rules.py and xchgmod_rules.py take their op's cases from `load(op)`;

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSX2.COM -- Tier-2 BDOS exerciser, Phase 2 block A+B (console tier + misc
 ; non-destructive). See disk/docs/tier2-bdos-remaining-spec.md SS5.1 for the

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XTAP1 -- the tape region's BIOS calls (2026-11-19; run 2): STMOTR, TAPIOF, TAPOOF without a tape, then a round trip
 ; TAPOON, TAPOUT x 8, TAPOOF -- the harness rewinds and plays the recording (@tape) -- TAPION, TAPIN x 8, TAPIOF; the

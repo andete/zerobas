@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROMSIZE step 1, (b) BSAVE-to-disk: which hook cells does the reference's
 `BSAVE` to a disk file ENTER, and what do the claimed ones RECEIVE?
 

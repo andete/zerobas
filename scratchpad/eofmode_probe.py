@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-EOFMODE -- EOF(n) on a channel that is not open FOR INPUT.
 
 Batch 8 (scratchpad/t6enum_b8_0930.out) measured ONE mode: `EOF(1)` on a channel

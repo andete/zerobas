@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), GRPPRT ($008D) in SCREEN 3 -- filed when MAPXYC's SCREEN 3 arm went in
 (it follows MAPXYC's CLOC). 'A' printed at GRPACX / GRPACY by a direct call in SCREEN 3;
 then GRPACX / GRPACY and a weighted checksum + the nonzero count of pattern bytes

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), STRTMS step (1): the REFERENCE's PLAY queue packet format, read from
 RAM after a PLAY -- VG-8020 against zerobas.
 

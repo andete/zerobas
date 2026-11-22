@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN5 -- docs/bios/PINLIN.md round 5 (2026-11-21, D-EDITINS): insert mode in the line editor -- the push across row
 ; ends, a full row getting a new row below, the bottom row, TAB, and which keys keep or end insert mode (seen in the

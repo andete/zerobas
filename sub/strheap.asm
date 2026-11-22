@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sub/strheap.asm — the string HEAP engine (arrays slice-4a, the sub-ROM
 ; page-0 tenant half; docs/spec-basic-arrays-slice4a-string-heap.md §4/§5/§9).

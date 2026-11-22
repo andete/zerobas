@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """STOP interrupt-trap acceptance — slice T1 (docs/spec-traps-t1-stop-reslice.md §9.2/§12).
 
 Differential of `ON STOP GOSUB` / `STOP ON|OFF|STOP` against the reference oracle

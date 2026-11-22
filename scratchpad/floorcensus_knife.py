@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FLOORCENSUS negative control: does floorcensus-acceptance NAME the D-FLOORREC writer?
 
 K-FC1  sub/fatprim.asm: device channels take BOTH record copies again (load:

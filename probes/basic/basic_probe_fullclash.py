@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """fullclash-acceptance (D-FULLCLASH): a SCREEN 2 pixel that would make its
 8-pixel byte full, in a colour other than the byte's foreground.
 

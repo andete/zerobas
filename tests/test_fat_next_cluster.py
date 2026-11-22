@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM fat_next_cluster ($4000-page) FAT12 chain walk, no emulator.
 
 fat_next_cluster follows one link of a FAT12 cluster chain: in HL = current

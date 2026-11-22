@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sv-bsvdisk.inc -- BSAVE's DISK write engine (bsv_open .. bsv_fin, disk_putword).
 ; ===========================================================================

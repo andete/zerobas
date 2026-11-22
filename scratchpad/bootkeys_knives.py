@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTKEYS knife: making init_gate always take the normal INIT must move
 EXACTLY the `shift` row of probes/disk/disk_probe_bootkeys.py, judged on the
 zerobas column against the uncut build's.

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FILESNL (gate: filesnl-acceptance): where the cursor stands after FILES.
 
 The CF-3300 ends a FULL row of the listing at once, so a PRINT straight after

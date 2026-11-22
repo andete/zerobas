@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATFLOOR: is docs/concepts/memory-map.md's example still true?
 
 The page said `CLEAR 25000` is accepted on the VG-8020 and `Out of memory` on

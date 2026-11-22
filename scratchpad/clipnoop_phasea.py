@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND -- run JUST phase A, so a knife can score the clip rows without
 paying for all 356. Imports the gate's own phase, never a copy."""
 import os

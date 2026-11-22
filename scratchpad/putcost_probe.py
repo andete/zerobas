@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PUTCOST — what a random-record `PUT` actually COSTS, on the machine's own clock.
 
 The `PUT` item says what is owed in one sentence: *"the per-`PUT` cost, measured

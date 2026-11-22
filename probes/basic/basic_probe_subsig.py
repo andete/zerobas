@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SUBSIG: zerobas's sub ROM carries its own "ZB" marker (Joost, 2026-10-11),
 not the MSX2 SUB-ROM's "CD", and boot no longer writes EXBRSA ($FAF8).
 

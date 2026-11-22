@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BASICROM knives on `make basicrom-acceptance` (basic_probe_basicrom.py).
 
 K-B1  basic/basicrom.asm brom_run returns at once (no cartridge program runs):

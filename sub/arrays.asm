@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sub/arrays.asm — BASIC numeric + string arrays engine (slice-1 SPLIT
 ; design, the sub-ROM page-0 tenant half; slice-3 extends it to string

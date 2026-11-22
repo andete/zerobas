@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Plan a disk.rom defrag that gathers free space in ONE pinned region.
 
 Every movable routine (scratchpad/movescout.py's rules, plus: no `jr` / `djnz`

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""OPEN twice, the exact rule (Joost 2026-10-27): before keeping the TYPED case in a
 channel's FCB, measure what case reaches the DISK on the CF-3300 and whether a
 lower-case name finds an upper-case file. Each case runs on a fresh copy of

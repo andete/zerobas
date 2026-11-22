@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """litref-acceptance (D-LITREF) -- a string LITERAL assigned in a program points
 at the program text, as on the references: it charges the string space nothing.
 D-READREF did it for READ; this is LET.

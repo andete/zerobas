@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md round 1 (2026-11-17): the XKEY matrix -- DSPFNK ($00CF), ERAFNK ($00CC) and FNKSB ($00C9) on
 the VG-8020 against zerobas. ONE case list that GENERATES the probe's case table (probes/bios/spec/xkey.asm) and
 DECODES its run.

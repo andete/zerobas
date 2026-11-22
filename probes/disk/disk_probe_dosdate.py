@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CLOSESTAMP + D-DOSDATE (TODO): two date questions Joost's 2026-10-01 ruling
 ("Stamp as 3300") left open, measured on our DOS machine and the CF-3300.
 

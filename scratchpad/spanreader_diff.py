@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Do the scratch probes' hand-rolled `[...]` readers actually MISREAD?
 
 The filed item says eleven sweep probes re-implement `omsx_repl`'s reader and

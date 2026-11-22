@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/PHYDIO.md's EXECUTABLE RULES (docs/spec-method.md §3a): PHYDIO ($0144) -- probes/bios/spec/xdsk1.asm
 (round 1, cases 00-10, scratchpad/XDSK1_run2.out) and xdsk2.asm (round 2, cases 11-19, scratchpad/XDSK2_run1.out),
 both rows: N (no disk interface: H.PHYD a bare RET) and D (the VG-8020 + NMS 1200 against zerobas's disk build).

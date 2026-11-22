@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SELECTOR: WHERE is the verb selector at the main->disk crossing?
 
 D-CROSSABI (§6.6v) found the crossing -- `$FE5D`, the one claimed cell every file

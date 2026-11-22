@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WRBLKSEEK (b) / Joost 2026-10-01 "Stamp as 3300": a DISK BASIC write stamps
 the directory entry exactly as the CF-3300 does (gate: savedate-acceptance).
 

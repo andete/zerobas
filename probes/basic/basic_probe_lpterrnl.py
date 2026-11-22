@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LPTERRNL (gate: lpterrnl-acceptance): an error ends a partial printer line.
 
 On the VG-8020 an error -- trapped or not, inside the LPRINT or in a later

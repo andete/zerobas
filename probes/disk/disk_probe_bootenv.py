@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTREGS: the environment a disk's boot code gets at step 7 (the "load the
 system" call to $C01E, Cy = 1), before any MSXDOS.SYS -- on the CF-3300 and on
 zerobas.

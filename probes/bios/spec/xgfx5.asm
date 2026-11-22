@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX5 -- docs/bios/GRPPRT.md round 3 (2026-11-19; round 1 had cases 0-23, round 2 24-41): the call that draws a character on a graphics screen. xgfx3.asm's
 ; frame, its case fields read anew: op, F, interrupts, SCRMOD, FORCLR, LOGOPR, ATRBYT, (unused), GRPACX, GRPACY, cell

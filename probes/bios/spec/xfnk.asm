@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XFNK -- docs/bios/INIFNK.md / INITXT.md (2026-11-17): the function-key strings FNKSTR ($F87F, 160 B:
 ; 10 keys x 16) as a cartridge finds them at INIT, and after INIFNK ($003E). XINIT showed the VG-8020's key

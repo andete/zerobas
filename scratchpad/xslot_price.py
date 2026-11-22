@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-XSLOTPRICE phase 0b -- the price of ONE inter-slot call, disk.rom -> main page 1.
 
 SIX CASES, ONE BUILD, ONE POKE APART. Every case runs the SAME 100 hook entries

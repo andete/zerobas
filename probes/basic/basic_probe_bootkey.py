@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTSCAN (gate: bootkey-acceptance): the keyboard answers as soon as the
 prompt shows. Found 2026-10-09 by Joost ("it takes a bit of time after the ZB
 prompt till I can actually start typing"): zerobas took its first key 2.5 s after

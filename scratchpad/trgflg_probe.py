@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TRGFLGISR: TRGFLG ($F3E8) as each machine's interrupt leaves it -- idle, and with the
 space bar held (matrix row 8, bit 0). Black box: a BASIC PEEK of the published cell after a
 delay loop, so several key scans have run. No ROM byte is read.

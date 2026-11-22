@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """STRIG interrupt-trap acceptance — slice T2 (docs/spec-traps-t2-strig.md).
 
 Differential of `ON STRIG GOSUB` / `STRIG(n) ON|OFF|STOP` against the reference

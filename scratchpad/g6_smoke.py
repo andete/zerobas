@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G6 first-run smoke test on the merged zerobas machine (NOT yet a differential).
 
 Purely "does it run at all": the endpoint readouts for a handful of DRAW forms

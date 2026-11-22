@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the DIR-FULL throwaway disk for the BDOSX5.COM exerciser (Tier-C case
 3: the dir-full corner of Create, see disk/docs/tier2-tierC-spec.md "Candidate

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-GETSTRADDLE — does the reference REFUSE a record that straddles EOF, or PAD it?
 
 WHY THIS IS THE DESIGN INPUT AND NOT A CURIOSITY. D-GETREC filed the EOF bound as

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Shared MML oracle for the audio Slice-2a parser (docs/spec-basic-audio-play-slice2a.md).
 
 SINGLE SOURCE OF TRUTH for the two own-design numeric mappings the parser bakes:

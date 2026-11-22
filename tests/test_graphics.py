@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: graphics pixel-math leaves, no emulator (msxtest Z80 sim).
 
 G1 (docs/spec-basic-graphics-g1.md §6): sub/graphics.asm `gfx_calc_addr` — the

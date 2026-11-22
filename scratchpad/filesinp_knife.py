@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FI1 — does `f.filesinp` actually pin `do_files`' op-selector guard?
 
 TODO (filed 2026-08-21 by D-FNEXPR2 §3.5, AGAINST ITS OWN FIX): `do_files` parks

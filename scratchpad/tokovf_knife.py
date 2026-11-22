@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TOKOVF knife on `make linemax-acceptance ONLY=corrupt-ovf`.
 
 K-T1  basic/tokenise.inc: the bound at tk_loop's head is cut (its `jp c,tk_end`

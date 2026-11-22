@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """initslot-acceptance (D-INITSLOT): the BIOS's cartridge search keeps the slot ID across
 a cartridge's INIT call, so a cartridge whose INIT RETURNS does not stop the search.
 

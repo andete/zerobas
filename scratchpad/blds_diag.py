@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BLDS diagnostic (D-LOADERRRET's last unmeasured tape arm): `BLOAD"CAS:X",S`.
 bload-body.inc refuses `,S` on tape with `load error` ("VRAM-from-tape not
 supported"); on tape BSAVE's `S` is a VARIABLE (D-TAPETAIL), so the question is

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """S10.B: emulated seconds for 4200 B of PRINT# + CLOSE, marker to marker.
 
 The program POKEs &HD000 = 1 when it starts the work and 2 when it is done;

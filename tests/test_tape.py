@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: zerobas-tape cassette BIOS routines (tape/tape.asm), no emulator.
 
 tape.asm is a self-contained C-BIOS page-0 patch: the LPTOUT jump vector at

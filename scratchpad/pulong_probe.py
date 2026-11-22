@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PULONG measurement: PRINT USING with a format longer than 32 characters.
 
 zerobas copies the format into PU_FMT (32 B, basic/sysvars.inc) and TRUNCATES a

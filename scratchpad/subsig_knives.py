@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SUBSIG knives: each cut must move EXACTLY its predicted rows of
 probes/basic/basic_probe_subsig.py (zerobas column; a process per reading, a
 clean build per cut -- D-CASWBRK's lessons).

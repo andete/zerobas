@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-NGRAM 2026-10-10: a witness for str_set_key's Out-of-memory branch, which
 array-acceptance never reaches (its OOM rows assign LITERALS, stored by
 reference -- scratchpad/carve2_knife.out). A non-literal RHS (`CHR$(65)`) takes

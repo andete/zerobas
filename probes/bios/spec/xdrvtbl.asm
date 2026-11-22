@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDRVTBL -- DRVTBL ($FB21 .. $FB2C, the published disk work area) and H.PHYD ($FFA7 .. $FFAB) as a program sees them
 ; from H.STKE (every ROM initialised), on every row: the bytes are copied to the capture, nothing is called.

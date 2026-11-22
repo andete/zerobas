@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO: bisect a diverging wszero-acceptance range on zerobas alone.
 
 The VG-8020's answer is the same for every row (`[A][G] 1  2 XY]`, measured on

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDCTRL: the screen editor's CTRL editing keys -- what does each one DO on
 the VG-8020, and on ours?
 

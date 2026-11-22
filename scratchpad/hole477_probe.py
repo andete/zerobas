@@ -4,7 +4,7 @@ PC / SP / the word at SP / C for every instruction executed in that range (our R
 registers only). Derived from probes/disk/disk_probe_p1dta.py."""
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-P1DOS: does an MSX-DOS program's BDOS $27 RDBLK into a DTA in PAGE 1 land in
 the RAM there -- on the CF-3300 and on zerobas?
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""screditor-acceptance — the screen editor's happy path (docs/spec-basic-screditor.md).
 
 Keys are TYPED (the harness sends control bytes as text: `\x1e` = cursor up,

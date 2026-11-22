@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/NSETCX.md's EXECUTABLE RULES (docs/spec-method.md §3a): NSETCX ($0123) -- probes/bios/spec/xgfx3.asm, op 2
 (the loader and the VRAM model are xgfx3_model)."""
 import os

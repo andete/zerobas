@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G6 DRAW char round 5: disambiguate V3 -- did RUN or COLOR drop DRAW's C?
 
 Round 4 ran [C6 draw] then [COLOR 11 : plain draw] in two RUNs of one boot and

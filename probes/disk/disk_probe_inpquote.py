@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-INPQUOTE / D-INPQUOTE2 (gate: inpquote-acceptance): a STRING INPUT # field --
 its blanks, its quotes, and what it leaves for the next read.
 

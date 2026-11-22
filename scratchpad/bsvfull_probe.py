@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DISKFULLRETRY, measured: a BSAVE of 16 KB onto a disk with ONE free
 cluster fills the disk mid-write. Does it answer 66, and how long does each
 machine take? The sub-ROM SAVE tenant resumes its loop after a failure, so

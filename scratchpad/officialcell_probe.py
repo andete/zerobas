@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """RAM audit step 2, the first group (Joost's rule, 2026-10-13: every invented
 RAM cell is checked against how the reference does the job): private cells
 whose job has an OFFICIAL MSX work-area cell. Does the VG-8020 keep the job in

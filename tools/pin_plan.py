@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""pin_plan -- plan (and later gate) code bytes PINNED at fixed addresses in the
 main BASIC image (D-BASICINT, Joost 2026-10-15: three undocumented BASIC-ROM
 entry points that tape games call must exist at the SAME addresses).

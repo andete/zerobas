@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S9b: DISK-ONLY / BOOT-ONLY tags on the cells S9 made disk-only in
 fact, the alias splits that would launder a diskless user through A17's alias
 rule, and `tools/ram_map.py --floor-top HEX` (S15's census). 0 ROM bytes.

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; grpdev.asm -- D-OPENGRP's main-side leaf: pchar's GRP: sink. (OPEN "GRP:"'s
 ; arm and its FOR-INPUT reject are sub2/filestmt.asm's since D-P0CB slice C1.)

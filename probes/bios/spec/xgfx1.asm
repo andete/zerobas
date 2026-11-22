@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XGFX1 -- docs/bios/FETCHC.md, STOREC.md, SETATR.md, GTASPC.md, MAPXYC.md round 5 (2026-11-18; round 1 had cases 0-31, round 2 0-42 with one CLOC / CMASK / GRPCGP / MLTCGP preset,
 ; round 3 0-58, round 4 0-65): the graphics calls

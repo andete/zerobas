@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """What error class does EVERY channel-taking verb answer to a channel number the
 channel layer REJECTS?  (D-BADFNUM, docs/spec-basic-badfnum-channel-class.md)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LAYOUTPRIZE — what can a layout pass actually WIN? Measure before moving.
 
 A layout pass is being considered. Before any code moves, two things have to be

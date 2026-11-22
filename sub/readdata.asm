@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; readdata.asm -- the READ/DATA value engine as a PAGE-0 sub-ROM tenant
 ; (SUBROM_IDX_READVAL). docs/spec-eviction-g7-space.md.

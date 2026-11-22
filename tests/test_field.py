@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BASIC-ROM LSET/RSET store (field.asm lrset_store), no emulator.
 
 FIELD/GET/PUT's *runtime* moves disk sectors (fat_rand_*), which is Tier-3 (needs

@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad — SPDX-License-Identifier: BSD-2-Clause -->
 
 # D-DISKDEP — the generated disk fixture, its 48 undeclared dependents, and the silent half that does not exist
 

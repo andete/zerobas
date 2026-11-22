@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Black-box token pin for the error-handling (S2) keywords: ERROR, RESUME,
 ERR, ERL, ON ERROR GOTO.

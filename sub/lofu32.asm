@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; lofu32.asm -- LOF's 32-bit size -> ARGA as a PAGE-0 sub-ROM tenant
 ; (SUBROM_IDX_LOFU32, D-LOFU32 2026-09-10).
 ;

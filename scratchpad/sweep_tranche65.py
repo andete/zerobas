@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """TODO sweep 2026-08-26, tranche 65 — the NAME verb, the one D-FNEXPR2 skipped.
 
 T-B42E11 closed "the face for a non-string filename" by measuring SIX verbs

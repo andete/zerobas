@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-TAILJUNK — does a COMPLETE statement reject what follows it?
 
 D-FMTTAIL (2026-09-01) found `CALL FORMAT`'s name-tail and argument skip

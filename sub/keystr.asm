@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; keystr.asm -- KEY n,"str" / KEY LIST / the function-key defaults, as a PAGE-0
 ; sub-ROM tenant (SUBROM_IDX_KEYSTR, D-KEYSTR 2026-09-10).
 ;

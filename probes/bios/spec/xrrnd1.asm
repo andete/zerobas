@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XRRND1 -- random records past 255 through $F37D (2026-11-22, D-RRND256): does a record past 255 (32 KB at 128-byte
 ; records) reach ITS bytes, or record RR mod 256? P.TXT is grown to 301 records with WRZER, then WRRND writes record

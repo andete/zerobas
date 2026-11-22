@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""copy-acceptance — COPY "src" TO "dst" against the CF-3300 (docs/spec-basic-copy.md).
 
 Every row runs on a PRIVATE copy of disk/test720.dsk (COPY writes), and the

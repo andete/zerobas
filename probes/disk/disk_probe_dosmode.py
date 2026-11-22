@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DOSMODE40 (gate: dosmode-acceptance): `MODE 40` / `MODE 32` at MSX-DOS's A>
 switch the screen as on the CF-3300. Found 2026-10-09 by D-CALLSYSTEM's probe:
 zerobas stored the width and nothing else -- its page-0 CALSLT jumped to the

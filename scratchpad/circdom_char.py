@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCDOM characterization -- what a CIRCLE with r > 255 actually draws.
 
 The `gfx_circ_scale` header (sub/graphics.asm:1362) claims a bounded domain

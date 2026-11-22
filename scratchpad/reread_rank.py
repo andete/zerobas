@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-REREAD's candidate ranking (2026-11-01): label-to-label spans of the routines
 z80flow knows (build/contracts.json -- run `make contracts` first) in
 build/basic-reloc.sym, largest first, minus every routine NAMED in

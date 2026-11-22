@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FIELDDI, measure first (2026-11-01): do FIELD / LSET / RSET come back with
 interrupts OFF on zerobas? (A D-REREAD batch 8 reviewer: chan_gate_bare's return
 has no `ei`.) Black box: TIME (the VDP interrupt's counter) across a fixed busy

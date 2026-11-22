@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; wrblk_alt.asm -- S10.A's proof (disk/docs/spec-diskcode-eviction.md §6.6bc):
 ; TWO FCBs written ALTERNATELY with BDOS $26 WRBLK, record size 1, 256 bytes a

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOOPPROF / Joost 2026-11-14 ("investigate what the references do ?"): what a `FOR I%`
 loop keeps on the reference's stack. Black box, RAM only: while `FOR I%=1 TO 32000:NEXT`
 runs, read the published STKTOP ($F674) and VARTAB ($F6C2) cells, the 64 bytes just

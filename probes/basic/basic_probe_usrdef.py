@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-USRDEF (gate: usrdef-acceptance): USR with no DEFUSR, and USRTAB at power-on.
 
 The VG-8020 holds $475A -- the published "Illegal function call" entry -- in all

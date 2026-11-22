@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; sv-tsb.inc -- the shared cassette tokenised-BASIC writer (tape_save_basic .. tsb_fin).
 ; ===========================================================================

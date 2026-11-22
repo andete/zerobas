@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Joost, 2026-10-11: "when pressing shift, the F1-F5 commands below should
 switch to the F6-F10 ones". The 2026-09-26 probe (keyshift_probe.py) measured
 only a RUNNING program -- where the VG-8020 does NOT switch -- and could not

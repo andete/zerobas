@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPELOAD class B2 (Harry Fox): which tape file-NAME forms does BLOAD match?
 
 Harry Fox's line-50 load matches its second file on the VG-8020 and, on zerobas,

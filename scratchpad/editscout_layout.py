@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EDITSCOUT step 1: LOOK AT THE SCREEN before designing any row.
 
 A screen-editor characterisation has to aim cursor-up at a specific ROW, and the

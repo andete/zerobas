@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Logical-operator characterization — semantics, PRECEDENCE and associativity
 of AND / OR / XOR / EQV / IMP (and unary NOT) on the VG-8020 reference.

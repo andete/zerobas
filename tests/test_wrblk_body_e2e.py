@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM wrblk_body ($26 WRBLK) end-to-end, no emulator.
 
 Drives the REAL canonical entry (wrblk_body, wired at $47BE per M28) against a

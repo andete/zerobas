@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Generate own-derived decimal minimax coefficients + constants for the math
 pack slice-2 transcendentals (docs/spec-basic-mathpack-slice2.md §11.3).
 
@@ -395,7 +395,7 @@ def emit_record(name, v):
             f"                db {dl}, 0   ; dig[0..13], guard=0\n"), r
 
 HEADER = ("; Copyright (c) 2026 Joost Yervante Damad\n"
-          "; SPDX-License-Identifier: 0BSD\n;\n"
+          "; SPDX-License-Identifier: BSD-2-Clause\n;\n"
           "; GENERATED FILE -- do not hand-edit. Produced by tools/gen_math_coeffs.py\n"
           "; (own decimal minimax + constants; cross-checked vs Cody & Waite METHOD,\n"
           "; NEVER the MSX ROM). docs/spec-basic-mathpack-slice2.md §11.3.\n;\n"

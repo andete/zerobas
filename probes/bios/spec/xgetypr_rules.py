@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/GETYPR.md's EXECUTABLE RULES (docs/spec-method.md §3a): GETYPR ($0028) for every VALTYP value, with entry
 F $00 / $FF and entry A $A7 / $00 / $FF -- scratchpad/XGETYPR_run3.out (probes/bios/spec/xgetypr.asm documents the order and the 4-byte record)."""
 import os

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-VDPDOM — VDP(n)= and BASE(n)= take int16 where the reference takes a byte?
 
 Picked by ranking every handler by COMMENT DENSITY -- a proxy for how much it has

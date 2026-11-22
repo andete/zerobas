@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RECLEN follow-up — what does the CF-3300 actually DO with a STRADDLING record?
 
 TODO's item (D-RECLEN, filed 2026-08-19) records that `OPEN"TS.DAT"AS #1 LEN=100`

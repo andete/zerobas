@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBREC1 -- the BDOS's record functions through $F37D, round 1 (2026-11-22): WRSEQ ($15), RDSEQ ($14), SETRND ($24),
 ; RDRND ($21), WRRND ($22), with FMAKE / FCLOSE / FOPEN / FSIZE around them, on the empty 720 KB disk. XBFILE4's frame,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Graphics G2 acceptance — the load-bearing VG-8020 DIFFERENTIAL for PSET /
 PRESET / POINT (docs/spec-basic-graphics-g2.md §8).
 

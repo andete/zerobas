@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-NODISKGAP: `LFILES` and `FIELD` on a machine with NO DISK ROM.
 
 `scratchpad/tokscout2.py` turned these up while measuring where a Disk-BASIC

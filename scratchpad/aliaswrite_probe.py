@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ALIASWRITE -- does a disk verb between two PRINT# corrupt the FILE?
 
 The read side is settled (D-ALIASBITE): `KILL`/`NAME`/`DSKF` between two reads

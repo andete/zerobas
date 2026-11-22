@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""RAM-usage (TIER 4, Joost 2026-10-12: "our own buffers, test what buffers the
 reference uses, and see if we can meet the same"): which of the reference's
 published work-area BUFFERS does each kind of operation write, on the VG-8020

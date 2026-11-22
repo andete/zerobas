@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FDCDI / the write cache, the SEQUENCE (2026-10-10): which sectors does each
 FDC command touch, on both machines? fdcdi_count.py counted them (CF-3300 16 READ
 + 16 WRITE, zerobas 28 + 36 + 64 seeks); this logs each command with the WD2793's

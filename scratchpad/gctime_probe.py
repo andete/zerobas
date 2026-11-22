@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-ROMSIZE step 2, measure first (Joost 2026-10-14: "measure first how the
 VG-8020 stores and reclaims strings"): HOW DOES THE STRING COLLECTOR'S TIME GROW?
 

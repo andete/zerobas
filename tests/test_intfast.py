@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-INTFAST (D-LOOPPROF lever 1, 2026-10-20) -- a float `+ - *` whose
 operands both hold exact int16 values runs on the int path and packs its answer as
 the BCD path would (basic/float-arith.asm: caddsub_float / cmul_float -> fx_cvt ->

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDSK2 -- the disk region's BIOS call PHYDIO ($0144) round 2 (2026-11-20): XDSK1's frame and record, new cases
 ; (11-19) that separate round 1's candidate rules -- C out a constant or derived, DE out = the entry AF, the

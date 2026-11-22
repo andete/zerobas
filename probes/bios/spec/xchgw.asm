@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHGW -- docs/bios/CHGET.md (2026-11-17): CHGET ($009F) WAITING on an empty key buffer, on the VG-8020 against
 ; zerobas. XCHG found zerobas's CHGET returning with interrupts disabled when entered so; does it then wait with them

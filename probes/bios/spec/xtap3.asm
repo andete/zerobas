@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XTAP3 -- the tape region's BIOS calls round 3 without a tape (2026-11-19): STMOTR with A $80 / $FE / $81 from a running
 ; motor (toggle or start?), A $02 / $03 / $28 from a stopped one, port C's low nibble set ($5A, $4A, $45); TAPOON with

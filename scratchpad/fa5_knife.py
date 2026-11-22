@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FA5, RE-RUN -- what does cutting the FIELD abort read now?
 
 TODO (filed 2026-08-09 by D-STMTPEND, docs/spec-basic-stmtpend.md §6.3): K-FA5's

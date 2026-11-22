@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; paintbios.asm -- PNTINI ($0129) / SCANR ($012C) / SCANL ($012F), PAINT's published
 ; BIOS helpers, as one zerobas-sub PAGE-1 tenant (SUBROM_IDX_PAINT) behind the
 ; page-0 stub bios_pntini / bios_scanl / bios_scanr (basic/biosfnk.asm). D-BIOSRUNG,

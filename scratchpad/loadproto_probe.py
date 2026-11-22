@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-LOADPROTO: how does the reference's `LOAD` actually TALK to its disk ROM?
 
 🏗️ JOOST, 2026-09-19: *"as long as we don't fully know how e.g. LOAD works on

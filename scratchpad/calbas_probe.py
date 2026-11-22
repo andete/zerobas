@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG (3), CALBAS ($0159): "call the BASIC interpreter at IX, from any slot",
 called DIRECTLY -- VG-8020 against zerobas.
 

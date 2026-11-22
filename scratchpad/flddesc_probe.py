@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FLDDESC measure-first, round 2 (2026-10-17): the rows where a FIELD TABLE and a
 FIELD DESCRIPTOR (the reference's model, scratchpad/fieldram_run.out) would read
 differently -- MID$ on a fielded variable, SWAP with one, a copy taken before LSET,

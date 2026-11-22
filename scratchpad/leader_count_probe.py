@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TAPOONDLY follow-up: how many leader cycles does TAPOON write -- long (A <> 0) and short
 (A = 0) -- on the VG-8020 and on zerobas? Our own code calls TAPOON, TAPOUT x 4 ($00) and
 TAPOOF; the recording's first signal segment is the leader: SHORT half-periods (the high

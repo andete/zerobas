@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """PLAY X self-recursion on the VG-8020: SP logged once per emulated second
 inside a program-opened window, and the ON ERROR handler's ERR/ERL read off the
 screen (run_gap, NOT cap_gap -- the capture must wait for the error). Clean room:

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; fatiocreate-body.inc -- fat_io_create (the sequential FAT12 WRITE open).
 ; ===========================================================================

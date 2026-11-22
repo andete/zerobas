@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the WRITE-PROTECTED disk for the BDOSXE.COM exerciser (D-DISKCONTRACT gap 2: a
 disk error as an MSX-DOS program sees it through the BDOS and DISKVE).

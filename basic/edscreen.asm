@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ; basic/edscreen.asm -- the screen editor's cell helpers, in MAIN's LOW region
 ; (D-EDCTRL, 2026-10-05). Moved verbatim from sub/readline.asm, where the
 ; readline tenant (sub page 1) still calls them through the resident ABI

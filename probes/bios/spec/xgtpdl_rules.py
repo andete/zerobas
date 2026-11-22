@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/GTPDL.md's EXECUTABLE RULES (docs/spec-method.md §3a): GTPDL ($00DE) -- probes/bios/spec/xinp1.asm, op 9
 (the loader is xinp1_model)."""
 import os

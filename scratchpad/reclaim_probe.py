@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-RECLAIM — the reclaimed 8 KB is really usable, not just really reported.
 
 `FRE(0)` rising from 14767 to 22959 proves an arithmetic change. It does NOT

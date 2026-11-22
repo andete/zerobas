@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """tools/spec_rules.py (docs/spec-method.md §3a): the executable-rules checker must FAIL when a page
 says more than its data, or when the page's rendered tables drift -- a checker that always passes
 would turn every page into unchecked prose again. Pinned:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md and CLS.md round 3 (2026-11-17): the XSCR3 supplement, after the SECOND reviews. XSCR's run 2
 (xscr_cases.py) left LINTTB's garbage one byte for all 24 entries, had no FNKSB-off or cursor-on-key-row CLS case,
 POSIT's limit fitted to CNSDFG 0 / 1 / $FF only, and TXTNAM always set BEFORE the mode's call. XSCR3 is XSCR's probe

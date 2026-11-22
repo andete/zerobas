@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CHANHOOK -- STEP 10's first measurement: which hook cells do the CHANNEL
 verbs enter on the reference, and does each count scale per BYTE, per SECTOR or
 per OPERATION?

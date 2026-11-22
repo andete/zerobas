@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWCLAMP -- prove each PROPOSED GATE BAND can see the fix.
 
 G3 shipped three off-screen LINE rows that were all blind, and D-SPOKELINE only

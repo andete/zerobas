@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FC1..3 — the 8.3 character check, falsified by planting.
 
 The fix has two independent halves and one shape it must NOT have, so there are

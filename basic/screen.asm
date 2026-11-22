@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; screen.asm — what main keeps of the screen-setup verbs: CLS, and the shared
 ; function-key-line helpers.

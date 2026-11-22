@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/INITXT.md round 4 (2026-11-17): the XINIT4 supplement, after the THIRD review. XINIT3's register-copy
 garbage ($A5 / $5A / $A7) changed bits 7, 5, 2 and 0 together, so the per-bit "kept" claims were not pinned; the
 whole-VRAM sum was never taken at widths 0 / 80 / 255 with the key line on or for INIT32 with moved tables; VRAM's

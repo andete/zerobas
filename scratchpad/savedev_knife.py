@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Knife for savedev-acceptance (D-SAVEDEV): disarm ONE device arm at a time
 (its `jp z` becomes three NOPs, so the name falls through to the old path) and
 check that exactly that device's two rows go red. The ROMs are hashed around

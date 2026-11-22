@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G5 PAINT black-box characterization on the Philips VG-8020, round 1.
 
 Read-only investigation (nothing asserted): DUMP reference PAINT behaviour so the

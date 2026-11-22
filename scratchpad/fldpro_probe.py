@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-DISKREST slice 4 (2026-10-20): FIELD's prologue -- `#`, the channel, its mode
 class, the record's span, the comma -- moved from main's field_prologue into
 disk.rom's hk_field, which reads the record's address from its own RANDOM row and

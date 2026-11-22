@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Error-handling acceptance — S1 foundation gate (docs/spec-basic-error-handling.md).
 
 Two families, both driven through the typing-free KEYBUF-injection REPL driver

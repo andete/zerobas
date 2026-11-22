@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PULONG / D-PUWIDE knife: does pulong-acceptance SEE each part of the fix?
 
 K-PL1  basic/printusing.asm pu_hold_fmt: NEVER SNAPSHOT (the `jr nc,phf_snap`

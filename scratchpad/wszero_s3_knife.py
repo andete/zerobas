@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 3 knife: does wszero-acceptance SEE the run-loop block's move?
 
 K-WS4  tools/ws_shift.py --move F6E8 F71C -AC2 --apply: PRGEND .. SL_CEIL back at

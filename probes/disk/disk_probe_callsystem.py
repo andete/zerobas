@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CALLSYSTEM (gate: callsystem-acceptance): CALL SYSTEM, back to MSX-DOS.
 Measured 2026-10-09 (scratchpad/callsystem_probe.py, callsystem_swap.py): on the
 CF-3300 it returns WARM to A> after a DOS boot, closing the open files first,

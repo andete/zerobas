@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-PUTSLOW: emulated seconds for N PUTs (--n=N, default 3) + CLOSE of a 128-byte record (a fresh RANDOM file),
 marker to marker, the CLOSE INSIDE the timing (a first cut ended before it
 and compared our three written PUTs with the CF-3300's buffered ones) --

@@ -1,5 +1,5 @@
 <!-- Copyright (c) 2026 Joost Yervante Damad -->
-<!-- SPDX-License-Identifier: 0BSD -->
+<!-- SPDX-License-Identifier: BSD-2-Clause -->
 
 # D-CONTR — the run loop records a `CONT` resume point at **every** run stop
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Joost, 2026-10-11: openMSX's tape AUTORUN does not work on zerobas.
 
 openMSX's autorun (its own source, visible in the binary's strings) sets a

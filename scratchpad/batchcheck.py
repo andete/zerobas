@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""batchcheck — a suite's rows must be IDENTICAL batched and boot-per-case.
 
 🔴 WHY (D-BATCH1/D-BATCH2, 2026-09-01). `run_cases` defaults to `batch=True` --

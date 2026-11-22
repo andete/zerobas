@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Tier-2 M22a — the console/misc BDOS tier's canonical page-1 entries (CPMVER divergence root-caused) — CHARACTERISATION + fix-shape spec (no asm)

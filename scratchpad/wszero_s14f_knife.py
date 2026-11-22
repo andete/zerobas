@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S14f knife: does `s14f` see the moves, and does `ovrd` catch a read
 count placed where LINE INPUT # stages its bytes?
 

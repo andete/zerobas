@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SSTOVF — can a BASIC program reach `sst_overflow` at all?
 
 D-DUPOBS2 (2026-09-10) scored all 21 D-DUPSPAN2 canonicals against the emulator

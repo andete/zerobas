@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CNVCHR.md round 2 (2026-11-17): the XCNV2 supplement, after the first review. XCNV's probe left HL pointing
 at a copy of the GRPHED value and D equal to A in every case, its GRPHED values were only 0 / 1 / $5A (bits 2, 5, 7
 never set) and its entry flags only $00 / $FF; and the natural sequence -- the header, then the character, with

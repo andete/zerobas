@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SCANRSAVE / D-NTMSXPCLASH (Joost 2026-11-20: "measure how reference does it ram-wise
 and match"): the UNION of every work-area cell the reference writes across all of kwram's
 rows -- each row's window, plus the background and interrupt controls (those are writes

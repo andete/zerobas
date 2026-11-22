@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XBBLK7 -- the BDOS's block functions through $F37D, round 7 (2026-11-22), answering review pass 5 (scratchpad/
 ; BBLK_review5.md): FOPEN's +15 for files past one 16 KB extent (the records of 128, or the CP/M record count in the

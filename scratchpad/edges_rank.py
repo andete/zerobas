@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-REREAD-EDGES, the ranking tool: what could a routine and its CALL SITES
 share? (Joost 2026-11-01: "widen the re-read to take a function and also its
 edges"; the campaign order he set the same day: EDGES first, feeding

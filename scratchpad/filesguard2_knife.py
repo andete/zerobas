@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FG2 — the faithful pre-guard cut for `do_files`, at NEGATIVE byte cost.
 
 K-FG1 imported K-FI1's cut and could not run: that cut ADDS 6 bytes (a

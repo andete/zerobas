@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CASDOT / D-TSVOVL knives: does each gate row see its own fix?
 
   K-CD1 cas_name_cut never cuts (cnc_find's `cp '.'` -> `cp $FF`, same size; a

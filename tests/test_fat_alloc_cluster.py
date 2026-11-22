@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM fat_alloc_cluster (FAT12 free-cluster scan), no emulator.
 
 fat_alloc_cluster linearly scans the FAT from cluster 2 for the first $000 (free)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CALSLT.md's EXECUTABLE RULES (docs/spec-method.md §3a): the inter-slot call CALSLT ($001C) into the
 probe's own target routine -- scratchpad/XCALSLT_run4.out (row N), XCALSLT_run4d.out (row D), XCALSLT_run4c.out (row
 C); probes/bios/spec/xcalslt.asm documents the cases (its `cases:` table, read here) and the 40-byte record. CALLF's

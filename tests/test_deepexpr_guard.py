@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-DEEPEXPR (2026-10-20) -- stack room inside an expression, per site
 (docs/spec-basic-deepexpr-guard.md §8.3).
 

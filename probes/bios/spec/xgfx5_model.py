@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The loader and drawing model for GRPPRT's EXECUTABLE RULES (docs/spec-method.md §3a): scratchpad/XGFX5_run3.out and
 XGFX5B_run1.out (rows N and D; probes/bios/spec/xgfx5.asm and xgfx5b.asm document the presets, the probe's RAM font,
 the case tables and the 128-byte record; xgfx5b's cases are numbered from 63)."""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-GOSUBOOM -- a GOSUB near the memory edge, and what a trapped overflow leaves.
 
 WHY THIS EXISTS. Head over Heels lowers HIMEM with its own CLEAR and then GOSUBs

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OFFICIAL, next cell: where does the VG-8020's DATPTR ($F6C8, the READ
 position) point, in each DATA state? Measure first, then decide how zerobas's
 DATAPTR + DATASTATE (0 unpositioned / 1 ready / 2 exhausted) maps onto it.

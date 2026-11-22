@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; time.asm — the `TIME` software-clock pseudo-variable (read and write).
 ; ===========================================================================

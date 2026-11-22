@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF -- the arc mask, on rows that are NOT vacuous.
 
 scratchpad/circovf_arc.py put four large-radius arcs at the screen centre and

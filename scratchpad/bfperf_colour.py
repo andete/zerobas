@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BFPERF prerequisite -- what does a FULLY COVERED cell's COLOUR byte hold?
 
 The timing rows say the reference fills a horizontal run BYTE-WISE (a filled

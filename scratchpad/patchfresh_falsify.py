@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Falsification for tools/check_patch_freshness.py (docs/spec-patch-freshness-gate.md).
 
 ⚠️ EVERY ARM RUNS IN A THROWAWAY `git clone --local` UNDER /tmp/zerobas, never in

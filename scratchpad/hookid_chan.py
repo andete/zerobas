@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CHANHOOKID -- WHICH claimed hook cell does a CHANNEL verb arrive through?
 
 D-CHANPRICE stopped phase 3 on a fact: this ROM claims fourteen hook cells and

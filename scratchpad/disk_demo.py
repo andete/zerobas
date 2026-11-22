@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The closing demo for 2026-08-30's SECOND half — real MSX BASIC, both machines.
 
 The first demo (scratchpad/valstr_demo.py) covered the VAL/STR$ arc. Everything

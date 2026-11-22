@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D1CON.COM -- D-DOSLADDER rung D1 (TODO.md): the console a "hello / echo" program
 ; uses. STROUT and CONOUT to the screen; the version, the current drive, the login

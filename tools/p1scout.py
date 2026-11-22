@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """PAGE-1-tenancy scout: mirror of carve_scout's page-0 legality question.
 
 A page-1 tenant runs with MAIN PAGE 1 switched OUT and main page 0 (BIOS + the

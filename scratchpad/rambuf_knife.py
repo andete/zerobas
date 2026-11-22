@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-RAMBUF knives: LINEBUF moved to the reference's BUF ($F55E), which crosses
 a page, so the page-aligned idioms had to change. Does the battery SEE each one?
 

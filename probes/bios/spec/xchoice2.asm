@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XCHOICE2 -- CHOICE ($4019) and MTOFF ($401F), round 2 (2026-11-22), answering review pass 1 (scratchpad/
 ; BCHO_review1.md): every entry register from the table (AF, BC with B not C, DE, HL), so "kept" and "set" separate;

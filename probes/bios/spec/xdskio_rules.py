@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/disk/DSKIO.md's EXECUTABLE RULES (docs/spec-method.md §3a): the disk ROM's DSKIO ($4010) called DIRECTLY
 (CALSLT into the interface's slot), from the XDSKIO1 probe -- XDSK1's eleven PHYDIO cases (probes/bios/spec/xdsk1.asm)
 with the call replaced -- on the disk row (scratchpad/XDSKIO1_run1.out, the VG-8020 + NMS 1200) and the CF-3300 row

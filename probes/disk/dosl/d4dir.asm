@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; D4DIR.COM -- D-DOSLADDER rung D4 (TODO.md): what DIR does, on what the boot disk
 ; holds: "*.COM" through SFIRST / SNEXT -- each match's name (11 B) and size (its

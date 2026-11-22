@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """prnumwrap-acceptance (D-PRNUMWRAP) -- a PRINT number item that does not fit
 the rest of the screen line moves to the next line WHOLE.
 

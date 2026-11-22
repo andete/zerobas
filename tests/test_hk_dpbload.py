@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: BLOAD from disk in disk.rom (hk_dpbload) -- no emulator.
 
 🏗️ D-ROMSIZE step 1 (2026-10-19) moved BLOAD's disk load out of the sub-ROM BLOAD

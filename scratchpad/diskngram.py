@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Repeated byte runs in build/disk.rom (our own ROM), label boundaries ignored.
 
 For every maximal sequence of MIN bytes or more that occurs at two or more

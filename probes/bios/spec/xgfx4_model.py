@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The loader for SCALXY's EXECUTABLE RULES (docs/spec-method.md §3a):
 scratchpad/XGFX4_run2.out (rows N and D; probes/bios/spec/xgfx4.asm documents the presets, the case table and the
 28-byte record). Each page's module takes its op's cases from `load(op)`."""

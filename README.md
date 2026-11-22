@@ -95,7 +95,7 @@ be taken from it*; nothing beyond that scope is sourced.
 | **Open standards** (Microsoft FAT spec, ECMA-107) | FAT12 and 3.5" disk-geometry structures. |
 | **National CF-3300 schematic** (open hardware) | FDC wiring / memory-mapped register window — hardware facts only (pin the exact document; see disk/PROVENANCE.md). |
 | **C-BIOS** (BSD 2-clause) | system-variable *addresses* and standard-interface *facts* only (it is itself a clean-room BIOS). Do not copy its code/expression without honouring BSD-2. |
-| **openMSX** (GPL) | hardware *register addresses / port maps* only — facts, never code (GPL must not enter this 0BSD tree). |
+| **openMSX** (GPL) | hardware *register addresses / port maps* only — facts, never code (GPL must not enter this BSD-licensed tree). |
 | **komkon MSX docs** (`fms.komkon.org`) | published hook / system-variable *address tables* (facts) only — not RE-derived routine-behaviour descriptions. |
 | **Nextor Driver Development Guide** | the documented DPB / disk-driver *interface contract* only — never Nextor source code. |
 | **Open-sourced third-party MSX software** (demos, homebrew — *low-tier, corroboration only*) | a non-authoritative *worked example* of how a **documented public hardware interface** is exercised, to corroborate a datasheet/oracle — never as primary documentation. Only the author's original work (nothing it lifted from a proprietary ROM); techniques, never copied code; never for BIOS/BASIC/DOS behaviour. See [`docs/allowed-sources.md`](docs/allowed-sources.md). |
@@ -134,7 +134,7 @@ an independent author.
 A few consequences worth stating plainly:
 
 - **Ownership.** The work is owned by its human author and licensed under
-  [0BSD](LICENSE) (see *License* below). AI assistance confers no third-party
+  [BSD-2-Clause](LICENSE) (see *License* below). AI assistance confers no third-party
   rights: under Anthropic's terms the output belongs to the user, and Anthropic
   claims no copyright in it.
 - **The `Co-Authored-By: Claude` trailer** on some commits is an attribution and
@@ -155,26 +155,28 @@ copied expression.
 ## License
 
 The entire project — **both the code and the documentation** — is released under the
-**[BSD Zero Clause License (0BSD)](LICENSE)**, the most permissive option: use, copy,
-modify, and redistribute for any purpose, with **no conditions and no attribution
-requirement**. This is deliberate and serves the mission ([`MISSION.md`](MISSION.md)):
-the implementations *and* the clean-provenance documentation are meant to be a
-community resource anyone can build on freely.
+**[BSD 2-Clause License](LICENSE)**, the same license as C-BIOS: use, copy, modify, and
+redistribute for any purpose, provided the copyright notice and the disclaimer travel with
+source and binary redistributions.
+
+zerobas was released under the BSD Zero Clause License (0BSD) until 2026-11-22; copies
+obtained under it keep that license. The change follows what zerobas has become: a staging
+area for C-BIOS, where BIOS fixes, the disk ROM and the BDOS are proven against the reference
+machines and then move into C-BIOS. One license on both sides lets that code move either way
+as a plain copy.
 
 - **No warranty, no liability.** The work is provided **"AS IS"**, without warranty of
   any kind; **in no event shall the author be liable** for any claim, damages, or other
-  liability arising from its use (the full disclaimer is in [`LICENSE`](LICENSE), and it
-  is the author's published term whether or not a redistributor reproduces it).
-- **Patents.** The author **asserts no patents** over this work and never will. 0BSD is
-  patent-silent by design; this pledge states the intent plainly — information here is
-  meant to be free, and patents only stifle that.
-- **Why 0BSD (not CC0) for the docs.** A single permissive license keeps the project
-  simple and avoids CC0's explicit patent reservation (the basis of its rejection from
-  Debian main); 0BSD also carries the no-warranty **and** no-liability disclaimer that
-  CC0 lacks.
+  liability arising from its use (the full disclaimer is in [`LICENSE`](LICENSE)).
+- **Patents.** The author **asserts no patents** over this work and never will. The
+  BSD 2-Clause License is patent-silent; this pledge states the intent plainly — information
+  here is meant to be free, and patents only stifle that.
+- **One license for code and docs.** A single permissive license keeps the project simple;
+  BSD-2-Clause is widely accepted (Debian main among others) and carries the no-warranty
+  **and** no-liability disclaimer.
 
 This covers only zerobas's own work. It does **not** relicense anything it merely
-interoperates with: **C-BIOS** stays BSD-2-Clause and **openMSX** stays GPL — zerobas
+interoperates with: **C-BIOS** keeps its own BSD-2-Clause notice and copyright holders, and **openMSX** stays GPL — zerobas
 combines with them at runtime only and copies no code from either (see the provenance
 firewall above).
 

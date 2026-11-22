@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSPR -- docs/bios/CALPAT.md, CALATR.md, GSPSIZ.md round 3 (2026-11-18; round 1 was cases 0-33, round 2 34-49): the sprite table calls. Per case (the table
 ; `cases` at the end: op, A, F, interrupts, RG1SAV, PATBAS, ATRBAS) the probe sets RG1SAV ($F3E0), PATBAS ($F926) and

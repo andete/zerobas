@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Split pasmo's full BASIC image into the relocated BASIC ($2781-$7FFF) and the
 ISLANDS blob ($0000-$2811) -- lever B of "MAKING ROOM IN MAIN" (TODO.md; Joost,
 2026-09-25: "B first, then A").

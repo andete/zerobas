@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the repacked C-BIOS main ROM reproducibly (cbios-repack arc, WS-3 / S4).
 
-Applies our tracked 0BSD patches (cbios-repack/*.patch, in PATCHES order) to a PINNED
+Applies our tracked BSD-2-Clause patches (cbios-repack/*.patch, in PATCHES order) to a PINNED
 C-BIOS source tag in a throwaway git worktree, rebuilds, and verifies the result's
 sha1. No C-BIOS bytes live in the zerobas repo (decision D1) -- the patch is a
 description of edits to BSD source, applied to the user's own checkout at build time.
@@ -31,7 +31,7 @@ _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
 import omsx_preflight  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Applied IN ORDER; each is a tracked 0BSD description of edits to BSD C-BIOS
+# Applied IN ORDER; each is a tracked BSD-2-Clause description of edits to BSD C-BIOS
 # source, never a copy of its bytes (decision D1). See cbios-repack/README.md.
 PATCHES = [
     # 🔁 D-CBIOS030 (2026-11-11): REBASED ON v0.30. Nine patches retired -- 0.30 has

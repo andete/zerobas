@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO slice 4 knife: does wszero-acceptance SEE FPERR's and the slot cells' moves?
 
 K-WS5  basic/sysvars.inc + sub/equates.inc: FPERR back at $F069; SUBSLOT / SUBSLOT_OK

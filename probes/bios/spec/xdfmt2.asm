@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDFMT2 -- DSKFMT ($401C) round 2 (2026-11-22), answering review pass 1 (scratchpad/DFMT_review1.md): refusals on a
 ; disk that is NOT the $F9 format (does a refusal write anything, or the $F9 format?); more invalid choices (6, 7, 8,

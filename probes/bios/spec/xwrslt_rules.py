@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/WRSLT.md's EXECUTABLE RULES (docs/spec-method.md §3a): WRSLT ($0014) on the machine's RAM slot --
 scratchpad/XRDSLT_run5.out, scratchpad/XRDSLT_run5d.out and scratchpad/XRDSLT_run5c.out, the WRSLT cases of the probe docs/bios/RDSLT.md reads
 (probes/bios/spec/xrdslt.asm; the loader is xrdslt_rules.load)."""

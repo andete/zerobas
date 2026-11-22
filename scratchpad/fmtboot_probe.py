@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DSKFMT (b): does OUR boot loader (fmt_boot, the code DSKFMT writes at $C01E) boot
 MSX-DOS once MSXDOS.SYS and COMMAND.COM are on the disk -- on BOTH machines?
 

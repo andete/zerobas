@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; =============================================================================
 ; Clean-room: own design. Where this tenant is reference-IDENTICAL it is so BY

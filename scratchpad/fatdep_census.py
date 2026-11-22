@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FATDEP: which MAIN-ROM code depends on the FAT layer, and how?
 
 🔴 WHY THIS IS A TOOL AND NOT A GREP. The count has been wrong THREE TIMES, each

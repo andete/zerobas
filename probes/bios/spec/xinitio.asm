@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO -- docs/bios/INITIO.md round 1 (2026-11-18): INITIO ($003B) from desynced states. Per case: the PSG's 16
 ; registers set to a pattern (R7's top two bits included), port $AA's high nibble set, entry F and the interrupt state

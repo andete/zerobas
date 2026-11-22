@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LONGRUN -- the question `pair_carve_scout.py` structurally cannot ask.
 
 That tool sweeps runs of 2..5 instructions and DISCARDS every run seen at fewer

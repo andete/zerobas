@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """G7 impl step 1 (spec §11.1 / D-G7-3): does OUR runtime's mode set do the
 reference's sprite-table init?
 

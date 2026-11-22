@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TOKOVF A/B, round 2: WHICH half of the change loses typed keys?
 
 tokovf_ab.out: geteject `put` red with the bound live AND with it cut, and its

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """Build the disk for the BDOSXM.COM exerciser (spec-bdos-conout.md round 3: the console-output
 matrix -- every byte 0..255 from a desynced state through CONOUT / DIRIO / STROUT / after ESC /

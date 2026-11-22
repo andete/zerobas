@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-MERGEECHO: S5_disk's `MERGE "SUBS"` is echoed TWICE on the DISK target (only
 at the session's own pacing). zerobas ONLY (our own ROM and BIOS): log every CHPUT
 ($00A2, a published BIOS entry) with its character and time, and every key

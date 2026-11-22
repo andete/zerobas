@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BOOTREGS: what does `JP 0` -- CP/M's warm boot -- do from a boot sector's code at
 step 7 (the "load the system" call, Cy = 1), BEFORE any MSXDOS.SYS? frayd1.dsk's
 program relies on it (the CF-3300's disk ROM fills $0001/$0002 just before step 7).

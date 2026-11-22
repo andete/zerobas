@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: 0BSD
+SPDX-License-Identifier: BSD-2-Clause
 -->
 
 # Scope + spec — **D-F2-2 int-argument coercion** (Overflow/illegal-fn on out-of-domain args)

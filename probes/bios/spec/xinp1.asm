@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINP1 -- the input region's BIOS calls round 3 (2026-11-19; round 1 had cases 0-62, run with the frame interrupt on, round 2 63-80): SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC,
 ; CKCNTC, GTPAD, GTPDL. At the start the probe turns the VDP's frame interrupt off (R#1 := RG1SAV AND $DF), so no timer

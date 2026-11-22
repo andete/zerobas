@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-ROBOREG: what the disk ROM's $5C11 does, as a black box. ROBOCOP's boot code CALSLTs
 it with A = $F1, BC = 0, DE = $8780, HL = $8680 on both machines (roboirq_run9.out). Our
 own code here calls it the same way from Disk BASIC (an empty data disk in the drive),

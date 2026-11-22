@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLPT2 -- docs/bios/LPTSTT.md round 2 (2026-11-18): LPTSTT ($00A8) with NOTHING plugged into the printer port (no
 ; @printer): the not-ready answer. LPTSTT twice: entry A / F $5A / $FF, then $A5 / $00; interrupts off; BC $1357,

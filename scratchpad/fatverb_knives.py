@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""K-FE1..4 — are the `*-alive` verb controls actually VERB-specific?
 
 TODO gap (1), filed by the fat-error 8-of-8 closure (spec-fat-error-verb-control

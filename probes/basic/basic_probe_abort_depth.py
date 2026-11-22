@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CUR-D untrapped-abort acceptance (docs/spec-basic-abort-depth.md).
 
 Also home to the two RUN-LOOP-EXIT slices, which are the same class and share

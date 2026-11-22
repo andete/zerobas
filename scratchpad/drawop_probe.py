@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWOP — DRAW's missing operand, and the same shared tail for the THIRD time.
 
 `SCREEN2:DRAW` is ERR 13 here and 24 on both references (D-MISSOP3) -- the last

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 
 """D-LOCARG — LOCATE's three arguments are CHECKED COERCIONS, and a DEFERRED
 expression error outranks the coercion's own overflow at every one of them.

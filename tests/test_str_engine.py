@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: string engine S3 — `+` concatenation spine (repack build only).
 
 The string engine (basic/str-engine.asm + the concat-aware str_eval wrapper in

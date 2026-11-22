@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """play_trace -- the background music player, black-box: probes/bios/play/xplay1.asm on each machine named, every
 PSG write and every frame logged, printed as one line per frame per scenario.
 

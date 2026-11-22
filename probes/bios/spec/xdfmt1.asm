@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDFMT1 -- the disk ROM's DSKFMT ($401C), round 1 (2026-11-22). XDENT1's frame (probes/bios/spec/xdent1.asm: an
 ; H.STKE cartridge, CALSLT into DRVTBL's slot $FB22); drive A a fresh copy of the generated empty 720 KB disk, so the

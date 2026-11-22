@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CALLF.md's EXECUTABLE RULES (docs/spec-method.md §3a): CALLF ($0030, RST 30h + the slot ID + the address)
 -- the runs docs/bios/CALSLT.md reads (probes/bios/spec/xcalslt.asm; the loader is xcalslt_rules.load)."""
 import os

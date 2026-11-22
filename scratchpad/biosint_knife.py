@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSINT knives: do the biosregs-acceptance `kscan` rows see the $0D12 entry
 (cbios-repack/bios-keyscan.patch)? A `+` line of the patch replaced by ONE line of the
 SAME size, so the diff still applies and nothing moves (C-BIOS still ends at

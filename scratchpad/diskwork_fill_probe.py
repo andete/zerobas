@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BOOTKEYS residual (2026-10-20): after a SHIFT boot the CF-3300 leaves $F347 at 255
 (untouched) and zerobas reads 201 ($C9). C-BIOS's init_ram fills $F300..$F37F ("Disk work")
 with $C9 on every boot. Does the VG-8020 (diskless) leave that range alone too, and what does

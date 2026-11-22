@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """GET # / PUT # record-number cases the keyword pages needed (2026-10-09):
 
   big     LEN=1, PUT #1,32768 -- accepted on both on 09-10 (putdomain_put2.out);

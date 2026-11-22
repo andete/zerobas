@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/PINLIN.md's EXECUTABLE RULES (docs/spec-method.md §3a): PINLIN ($00AE), QINLIN ($00B4) and INLIN ($00B1),
 from the keyed XLIN probe -- scratchpad/XLIN_run1.out (probes/bios/spec/xlin.asm documents the six calls, the typed
 burst and the 29-byte record)."""

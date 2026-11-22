@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINITIO5 -- docs/bios/INITIO.md round 5 (2026-11-18), after the fourth / fifth reviews: XINITIO4's clean window for
 ; every case (interrupts off on entry, the VDP status read just before the call, `di` after it), with WITNESSES: JIFFY

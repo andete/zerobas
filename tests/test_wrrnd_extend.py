@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM wrrnd_body ($22 WRRND) past-EOF size extension, no
 emulator (mirrors test_wrblk_body_e2e.py's synthetic-disk technique).
 

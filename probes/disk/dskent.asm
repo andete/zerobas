@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; DSKENT.COM -- D-ENTRYTIERS (TODO.md): the published disk-ROM entries the entry
 ; table (tools/entry_table.py --disk) found NOT MEASURED, called directly from

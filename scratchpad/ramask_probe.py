@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LOC RAM ASK — is $EA40..$EA5F unclaimed by any LIVE writer on zerobas?
 
 The map (tools/ram_map.py) shows CLR_SAVE at $EA3E (2 B) and the next

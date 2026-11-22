@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-TPAP1: what an MSX-DOS program sees in page 1, and the page-0 inter-slot
 entries ($000C RDSLT, $0014 WRSLT, $001C CALSLT, $0024 ENASLT, $0030 CALLF) and
 $F37D (D-TPAPTAIL) called from the TPA -- on the CF-3300 and on zerobas.

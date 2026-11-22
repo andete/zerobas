@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: D-TRAPCOST round 3 (2026-11-05) -- the two main-ROM answers that
 used to be sub-ROM round trips.
 

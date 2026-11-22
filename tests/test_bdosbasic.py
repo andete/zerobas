@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-BDOSBASIC slice 1: bdos_entry (the $F37D BDOS door in the
 boot code's environment) answers $09 STROUT, $11 SFIRST and $12 SNEXT, and $1A
 SETDTA also writes the work-area DTA cell $F23D.

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XDENT2 -- DSKCHG ($4013) against the idle time, and GETDPB ($4016) with the media bytes $FE / $FC / $FD, round 2
 ; (2026-11-22). XDENT1's frame and 30-byte record (probes/bios/spec/xdent1.asm documents both), plus a WAIT step that records nothing: entry $0001 waits

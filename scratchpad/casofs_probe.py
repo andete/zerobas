@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CASOFS2X measure-first (2026-10-19): does tape `BLOAD"CAS:T",R,offset` run the code
 at exec + offset (the reference?) or exec + 2 x offset (found by reading zerobas's
 bload-body.inc: load_done falls into bl_apply_ofs after the offset was applied)?

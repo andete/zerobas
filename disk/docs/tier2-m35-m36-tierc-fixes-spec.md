@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 Joost Yervante Damad; SPDX-License-Identifier: 0BSD -->
+<!-- Copyright (c) 2026 Joost Yervante Damad; SPDX-License-Identifier: BSD-2-Clause -->
 # M35 + M36 — Tier-C case 5 (FREN collision) + case 4 (WRRND past-EOF) fixes
 
 Status: **SPEC — M35 ready; M36 pending investigation.** User chose **fix to

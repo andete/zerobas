@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/DSPFNK.md round 4 (2026-11-17): the XSCR4 supplement, after the confirming pass. XSCR's records read rows 1,
 CRTCNT and 24 only, so the scroll's middle rows and its blank row CRTCNT - 1 were pinned only by sums. XSCR4 is XSCR3's
 probe recording two more rows -- 12 and CRTCNT - 1 (40 cells each, after row 24's) -- for four scroll cases.

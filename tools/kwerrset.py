@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-KWT6 — the T6 DENOMINATOR: which errors the REFERENCE raises, per keyword form.
 
 🏗️ JOOST'S RULING (2026-09-27): a keyword proves T6 ("handles the exhaustive

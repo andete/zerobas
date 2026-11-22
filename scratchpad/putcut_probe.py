@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-PUTCUT -- a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`, MEASURED.
 
 TODO (filed 2026-07-31 by D-RNDDIR, re-examined 2026-08-09 and recorded NOT

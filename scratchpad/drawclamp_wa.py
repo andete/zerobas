@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DRAWCLAMP part A -- THE WORK AREA AFTER AN OFF-SCREEN LINE, read DIRECTLY.
 
 D-SPOKELINE filed this as "unmeasured, a LINE STEP pair row would say". It does

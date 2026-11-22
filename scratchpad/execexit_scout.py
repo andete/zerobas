@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-JUMPLOOP: every path that RETURNS out of `exec`, found rather than guessed.
 
 Joost ruled cut 2 of D-SPMERGE as option (1): the run loop becomes a JUMP loop,

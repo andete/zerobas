@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 
 ; arrays.asm — BASIC numeric arrays + DIM (slice 1, SPLIT design, main-ROM
 ; glue half). docs/spec-basic-arrays.md §10. The array *engine* (ary_find/

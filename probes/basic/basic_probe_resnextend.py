@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """resnextend-acceptance (D-RESNEXTDIRECT): RESUME NEXT after an error in the
 last statement of the LAST program line, or of a DIRECT line, ends the run.
 

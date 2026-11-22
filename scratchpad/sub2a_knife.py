@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-SUB2 stage 2a knife: is the trampoline's restore of the LIVE secondary
 register load-bearing for `make subrom-inttest`?
 

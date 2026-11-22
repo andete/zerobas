@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-KOFF23 -- what ACTUALLY happens on `WIDTH 40:CLS:KEY OFF:LOCATE 5,23`.
 
 `missing-acceptance`'s `lr-key-off-23/24/255` report `<aborted>` on zerobas since

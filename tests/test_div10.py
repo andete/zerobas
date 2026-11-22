@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: div10 (basic/float-arith.asm) and its sub-ROM clone (sub/detok.asm).
 
 HL = HL / 10, A = HL mod 10 -- for EVERY dividend 0..65535, both copies.

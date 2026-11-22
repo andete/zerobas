@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Does a running program PAUSE on the STOP key (INTFLG 4) -- VG-8020 against zerobas?
 A loop runs ~3 s by TIME and prints; STOP tapped once (0.3 s) about RUN + 1 s. A machine
 that pauses until a second STOP never prints within the window; one that does not, does.

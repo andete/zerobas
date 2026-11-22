@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; BDOSXS.COM -- D-DISKCONTRACT gap 7 (2026-11-17): a DISK SWAP, as a program that asks
 ; for another disk sees it. DSKENT / DSKCHG compare DSKCHG only while the disk stays put

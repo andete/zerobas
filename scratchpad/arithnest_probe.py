@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE's typed frame (2026-10-20): a PENDING `+` holds 20 B a level on zerobas
 (the entry, FACTYP+FAC 10, the lhs, the paren's 6) against the VG-8020's 16
 (scratchpad/evalslope_after.out; docs/spec-basic-deepexpr-guard.md §5.3.1). stackcorrupt's

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-WSZERO S11 knife: do the vacated-sum rows SEE each group's move?
 
 One group back at its pre-S11 home per knife (literal old addresses -- the old

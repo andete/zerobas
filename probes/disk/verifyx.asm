@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; VERIFYX.COM -- BDOS $2E VERIFY effect characterisation (tier2-bdos-remaining
 ; §5.4 open question). Does turning VERIFY ON actually make the write path do a

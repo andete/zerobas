@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-SPEEDPROF — where do the cycles go? A PC-sampling profile of the hot loop.
 Samples `reg PC` every 5 emulated ms (openMSX `after time`) while the program
 runs, symbolises each sample against build/basic-reloc.sym (main ROM) -- a PC in

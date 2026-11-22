@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-BIOSRUNG / STRTMS: PLYCNT ($FB40) and MUSICF ($FB3F) around BASIC PLAY statements --
 the VG-8020's PLAY = "PLYCNT + 1, then STRTMS" model, checked: right after a short PLAY,
 after a second PLAY queued behind a long note, and after a PLAY longer than the ring

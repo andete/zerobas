@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-CIRCOVF knives -- falsify the slice by reinstating the defect.
 
 Descends from scratchpad/circdom_knives.py with BOTH of the defects TODO.md

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-FREPLUS14 follow-up (2026-10-17): dimedge-acceptance's coarse rows (K = 100, 108,
 120, 136, ...) no longer bracket zerobas's DIM edge once FRE(0) reads the reference's
 live-stack depth -- `X=INT((FRE(0)-K)/8)` now reads lower by its paren + LET base, so

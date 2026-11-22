@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-BASENT triage: what the disk ROM's published BASENT entry ($4022, "start BASIC")
 does with the HL it is given -- measured with OUR OWN program on each machine:
 a 14-byte stub at $D000 (`ld iy,<MASTERS>00 / ld ix,$4022 / ld hl,$D100 / jp CALSLT`,

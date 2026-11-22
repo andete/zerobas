@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """docs/bios/CHGET.md's EXECUTABLE RULES (docs/spec-method.md §3a): CHGET ($009F) and CHSNS ($009C) with the key buffer
 filled by the probe, from the XCHG matrix -- scratchpad/XCHG_run1.out (the case list, the setup and the record are in
 xchg_cases.py); and CHGET WAITING on an empty buffer for a typed key, from the keyed probe xchgw.asm --

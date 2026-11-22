@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Host test for D-BOOTDATE (disk/fat.asm boot_date .. bd_field, and the marks in
 disk/kernel.asm basent_body / basent_pending / w50a9_stub).
 

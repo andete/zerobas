@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """File D-LISTFLT (Joost's screenshot, 2026-10-11; measured the same day)
 above D-AUTORUN. Anchored on text; refuses on a missing or non-unique anchor."""
 import sys

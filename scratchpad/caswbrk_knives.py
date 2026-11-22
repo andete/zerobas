@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-CASWBRK knives: each cut must move EXACTLY its predicted rows of
 probes/basic/basic_probe_caswbrk.py, judged on the zerobas column (the VG-8020
 column does not move with our ROM, so only our side is run).

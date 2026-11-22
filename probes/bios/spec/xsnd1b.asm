@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XSND1B -- the sound calls' round 5 (2026-11-19): xsnd1.asm's frame (its cases 0-106) with cases of its own, numbered
 ; from 107 on the pages. Per case (the table `cases` at the end: op, A, F, interrupts, SET, BC, DE,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-GATEBLIND K-CN2 -- prove the REPLACEMENT clip rows are live.
 
 Replacing one blind row with two rows that *should* be able to see a failure is

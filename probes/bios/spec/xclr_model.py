@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """The shared loader and VRAM model for CLRSPR / CHGCLR's EXECUTABLE RULES (docs/spec-method.md §3a):
 scratchpad/XCLR_run5.out (rows N and D; probes/bios/spec/xclr.asm documents the presets, the case table and the
 128-byte record). xclrspr_rules.py and xchgclr_rules.py take their op's cases from `load(op)`."""

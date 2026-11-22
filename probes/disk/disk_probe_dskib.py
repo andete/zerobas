@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-DSKIB (gate: dskib-acceptance): the single drive's A:/B: swap prompt.
 
 One physical drive, two logical ones (Joost 2026-10-09: "yeah, we need to have the

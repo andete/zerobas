@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """Unit test: disk-ROM wrblk_read_or_extend_sector + wrblk_shrink, no emulator.
 
 These are the two genuinely NEW pieces M28's $26 WRBLK adds (tier2-m28-

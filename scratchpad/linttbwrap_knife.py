@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-LINTTBWRAP knife: build WITHOUT cbios-repack/linttb-scroll.patch (the
 repack's old SHA-1 and island 1 back at $1AF2) and read ours again.
 

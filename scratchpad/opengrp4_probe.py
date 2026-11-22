@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-OPENGRP, measurement round 4: is `PRINT #1` on GRP: the same as setting
 each of the glyph's 1 bits with PSET in the foreground colour? Decides the
 build -- C-BIOS's own GRPPRT (SCREEN 2 only, no wrap, no CHR$(1) header) or a

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """puneglead-acceptance (D-PUNEGLEAD): a sign with no room takes the column's
 `0`, and a leading sign makes a trailing one a literal.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""parennest-acceptance — how deep may an ORDINARY expression nest? (D-PARENNEST)
 
 The gate for the TIER 1 defect the stack item names: a LEGAL formula corrupts the

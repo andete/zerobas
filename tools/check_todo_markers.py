@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 r"""D-MARKGATE gate — every OPEN item in TODO.md carries exactly one pick-up marker.
 
 TODO.md's own header states the invariant ("EVERY OPEN ITEM CARRIES A PICK-UP

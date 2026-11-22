@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: 0BSD
+; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XINIT3 -- docs/bios/INITXT.md / INIT32.md round 3 (2026-11-17): XINIT's supplement after the second review --
 ; register copies, CRTCNT and table cells at SEVERAL values, unmeasured widths, inputs read back, whole VRAM. The

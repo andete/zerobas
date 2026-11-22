@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: 0BSD
+# SPDX-License-Identifier: BSD-2-Clause
 """D-EVALSLOPE measure (2026-10-20): deepexpr-acceptance row lb4 -- a first-touch 11x11
 double array inside 15 parens -- completes on zerobas after the climber rewrite where the
 VG-8020 refuses (ERR 7). Is that the parens (the expression's stack) or the auto-DIM's own
