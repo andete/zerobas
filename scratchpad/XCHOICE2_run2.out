@@ -1,0 +1,21 @@
+WARNING: Var buf is never used on line 40 of file probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file probes/bios/spec/xchoice2.asm
+===== probes/bios/spec/xchoice2.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=7e01 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 5ad7f800123478ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000f9000078ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004412345678c00000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50042003c0000a80000ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9004400000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e500000000000078ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  CAP ours: 5ad7f8001234557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000f90000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004412345678c00000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004400010000000100ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9004400000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000000000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  DIFF (10 unexcused byte(s)):
+  CAP A007: ref=78 ours=55
+  CAP A008: ref=AD ours=7C
+  CAP A030: ref=78 ours=55
+  CAP A031: ref=AD ours=7C
+  CAP A07D: ref=42 ours=44
+  CAP A07F: ref=3C ours=01
+  CAP A082: ref=A8 ours=00
+  CAP A083: ref=00 ours=01
+  CAP A0D4: ref=78 ours=55
+  CAP A0D5: ref=AD ours=7C
+===== biosl: DIVERGENCE =====
