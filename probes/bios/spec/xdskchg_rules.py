@@ -26,7 +26,11 @@ def cases():
 
 
 def reads(c):
-    return c.since is None or c.since >= 96
+    return (c.since is None or c.since >= 96) and not c.empty
+
+
+def notready(c):
+    return c.empty and (c.since is None or c.since >= 96)
 
 
 def recent(c):
@@ -41,18 +45,24 @@ S1 = "1. DSKCHG ($4013): was the disk changed"
 RULES = [
     Rule("R-DC-RECENT", S1, "Within 48 timer interrupts (~1 s) of the last DSKCHG that read the disk, DSKCHG answers "
          "B 1, unchanged, and reads nothing: A 0, the carry clear, C, DE and HL as entered, interrupts off, the buffer "
-         "at HL untouched. A B 1 answer does not restart the count (XE3 2 at 48 gives B 1, XE3 3 at 96 reads); nor do "
-         "GETDPB (XE3 7), MTOFF (XE3 9) or 3.5 s with interrupts OFF (XE3 10: B 1 -- interrupts are counted, not "
-         "time).", recent,
+         "at HL untouched -- C plays no part (XE4 1: C $F8, B 1). A B 1 answer does not restart the count (XE3 2 at 48 "
+         "gives B 1, XE3 3 at 96 reads); nor do GETDPB (XE3 7) or MTOFF (XE4 3-4: MTOFF at 96, then a read); 3.5 s "
+         "with interrupts OFF does not advance it (XE3 10: B 1 -- interrupts are counted, not time).", recent,
          lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.hl, c.iff) == (1, 0, 0, c.cin, 0, X.HL_IN, 0)
          and c.dpb == [0xE5] * 21),
     Rule("R-DC-READ", S1, "At the first call after start-up, and after 96 interrupts or more (~2 s; 96, 176, 200 and 504 "
-         "measured), DSKCHG reads the disk: A = the disk's media byte ($F9), the carry clear, C as entered, DE = the "
+         "measured; 304 too -- no 8-bit wrap), DSKCHG reads the disk: A = the disk's media byte ($F9), the carry clear, C as entered, DE = the "
          "entry HL + 19, interrupts off, and the DPB at HL filled as GETDPB fills it for the DISK's media byte (HL + "
-         "1 .. HL + 18) -- and B $FF, CHANGED, when that media byte differs from C (XE3 0: C $F8), else B 0, "
-         "unknown.", reads,
+         "1 .. HL + 18) -- and B $FF, CHANGED, when that media byte differs from C (XE3 0, a first call, and XE4 2, a "
+         "later one: C $F8), else B 0, unknown.", reads,
          lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.iff) == (expect_b(c), DISK_MEDIA, 0, c.cin, X.HL_IN + 19, 0)
          and c.dpb[1:19] == dpb_of(DISK_MEDIA) and c.dpb[0] == 0xE5 and c.dpb[19:] == [0xE5, 0xE5]),
+    Rule("R-DC-NOTREADY", S1, "With drive A EMPTY, a call that would read fails (XE5 1, the first call): the carry "
+         "set, A 2 (not ready), B 1, the buffer at HL untouched, interrupts off. It READS the disk -- it does not answer "
+         "from a media byte it keeps.", notready,
+         lambda c: (c.f & 1, c.a, c.b, c.iff) == (1, 2, 1, 0) and c.dpb == [0xE5] * 21),
+    Rule("R-DC-NRREGS", S1, "The rest on that failure: F $91, C 0, DE $01F9, HL $EF97 (working values).", notready,
+         lambda c: (c.f, c.c, c.de, c.hl) == (0x91, 0, 0x01F9, 0xEF97)),
     Rule("R-DC-F", S1, "F and HL when it reads: F $50 with B 0, $38 with B $FF; HL $7429 (a working value -- GETDPB "
          "returns the same HL for $F9).", reads,
          lambda c: (c.f, c.hl) == (0x50 if expect_b(c) == 0 else 0x38, 0x7429)),
