@@ -52,8 +52,11 @@ fails:
 from __future__ import annotations
 import collections
 import sys
+import os  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
-BASE = 0x2781                       # the main image's load address
+BASE = BASIC_ORG                      # the main image's load address
 
 # ---------------------------------------------------------------- Z80 decode
 

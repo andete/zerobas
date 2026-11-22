@@ -240,12 +240,10 @@ def build_main(cbios_checkout, out_dir=None):
         islands = os.path.join(build, "basic-islands.bin")
         run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), full])
         run([PY, os.path.join(TOOLS, "split_islands.py"), full, reloc, islands])
-        tape_bin = os.path.join(work, "tape.bin")
-        tape_sym = os.path.join(work, "tape.sym")
-        run([PASMO, "--bin", os.path.join(REPO, "tape", "tape.asm"), tape_bin, tape_sym])
+        # D-CBIOS032: no tape overlay -- C-BIOS d23d87b's cassette BIOS passes every tape page.
         print("merging the main ROM...")
         run([PY, os.path.join(TOOLS, "build_mainrom.py"),
-             repacked, reloc, tape_bin, tape_sym, merged, islands])
+             repacked, reloc, "-", "-", merged, islands])
     print("making patches (vs pristine stock)...")
     run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.ips")])
     run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.bps")])

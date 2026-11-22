@@ -63,7 +63,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 |---|---|---|---|
 | **R-FV-MEM** BC bytes of VRAM from HL AND $3FFF := A, the address wrapping from $3FFF to $0000; the bytes around keep theirs. With BC = 0 every byte read back holds A: at least $4000 bytes, wrapping. (HL $1234, $1200, $3FFC, $2000, and $5234 / $D234 / $9234, which fill from $1234; BC 1, 4, 8, $100, $108, 0.) | 24 | ✓ | ✓ |
 | **R-FV-BC** BC is 0 on return; A, DE, HL, IX and IY are kept. | 24 | ✓ | ✓ |
-| **R-FV-F** F is kept ($00, $FF, $A5, $5A, $01 and $04 on entry). | 24 | ✓ | ✗ 24: XM N20, XM N21, XM N22, XM N23, XM N24, XM N25 … (+18) |
+| **R-FV-F** F is kept ($00, $FF, $A5, $5A, $01 and $04 on entry). | 24 | ✓ | ✓ |
 | **R-FV-NEXT** The VDP is left writing after the filled span: a byte the probe then writes to port $98 lands at (HL + BC) AND $3FFF. | 22 | ✓ | ✓ |
 | **R-FV-EI** Interrupts are on after the call, whether they were on or off before it. | 24 | ✓ | ✓ |
 

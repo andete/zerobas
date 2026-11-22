@@ -22,9 +22,8 @@ ISCNTC / CKCNTC the flag the timer interrupt sets; KILBUF empties the key buffer
 the CAPS lamp.
 
 zerobas reads the keys the same. SNSMAT, KILBUF, CHGCAP, GTSTCK, GTTRIG, BREAKX, ISCNTC and CKCNTC
-match the VG-8020 in every measured case since 2026-11-19 (cbios-repack/input-calls.patch and
-basic/biosfnk.asm); what is left is GTPDL's
-port bits (D-GTPDLPORT).
+match the VG-8020 in every measured case since 2026-11-19, and GTPDL's port bits too since the rebase on C-BIOS d23d87b, 2026-11-22
+(D-GTPDLPORT): all of these are C-BIOS's own bodies now.
 
 ## How it works
 

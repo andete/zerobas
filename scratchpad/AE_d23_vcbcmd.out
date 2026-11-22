@@ -1,0 +1,19 @@
+Philips_VG_8 V10        RINT "|" RUN 0 0 4 4 78 8A FF |
+Philips_VG_8 V0         RINT "|" RUN 0 0 4 4 78 80 FF |
+Philips_VG_8 S8         RINT "|" RUN 0 0 4 4 78 98 FF |
+Philips_VG_8 S0         RINT "|" RUN 0 0 4 4 78 90 FF |
+Philips_VG_8 M500       RINT "|" RUN 0 0 4 4 78 C8 F4 |
+Philips_VG_8 S8V5       RINT "|" RUN 0 0 4 4 78 85 FF |
+Philips_VG_8 V15S1      RINT "|" RUN 0 0 4 4 78 91 FF |
+Philips_VG_8 S2M300V7   RINT "|" RUN 0 0 4 4 78 C7 2C |
+Philips_VG_8            RINT "|" RUN 0 0 4 4 78 88 FF |
+C-BIOS_MSX1_ V10        PRINT "|" RUN 0 0 4 4 78 A 7F |
+C-BIOS_MSX1_ V0         PRINT "|" RUN 0 0 4 4 78 0 7F |
+C-BIOS_MSX1_ S8         RINT "|" RUN 0 0 4 4 78 88 88 |
+C-BIOS_MSX1_ S0         RINT "|" RUN 0 0 4 4 78 88 80 |
+C-BIOS_MSX1_ M500       INT "|" RUN F4 1 4 4 78 88 FF |
+C-BIOS_MSX1_ S8V5       :PRINT "|" RUN 0 0 4 4 78 5 8 |
+C-BIOS_MSX1_ V15S1      PRINT "|" RUN 0 0 4 4 78 F 81 |
+C-BIOS_MSX1_ S2M300V7   PRINT "|" RUN 2C 1 4 4 78 7 2 |
+C-BIOS_MSX1_            RINT "|" RUN 0 0 4 4 78 88 FF |
+refcache: 0 hit, 18 miss, 18 stored

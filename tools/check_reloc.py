@@ -51,6 +51,9 @@ from __future__ import annotations
 
 import re
 import sys
+import os  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
 
 def load_syms(path):
@@ -63,7 +66,7 @@ def load_syms(path):
                 syms[m.group(1)] = int(m.group(2), 16)
     return syms
 
-LOW = 0x2781
+LOW = BASIC_ORG
 HDR = 0x4000
 TOP = 0x8000
 SIZE = TOP - LOW  # 22655
@@ -103,7 +106,7 @@ def main() -> int:
     low_end = syms["__MEAS_LOW_END"]
     p1_end = syms["__MEAS_PAGE1_END"]
     print(f"    measure: page-0 low region free = {HDR - low_end} B "
-          f"($2781-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
+          f"(${LOW:04X}-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
     print(f"    measure: page-1 free            = {TOP - p1_end} B "
           f"($4000-$7FFF, __MEAS_PAGE1_END @ {p1_end:#06x}) "
           f"<- subrom wave-2 tokeniser-eviction relief")

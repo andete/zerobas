@@ -410,7 +410,7 @@ st_go:
 ; reached only through its page-0 vector; it calls sc_cell / sc_wpat in the low region and
 ; WRTVRM. Page 0 is C-BIOS's slot, as the low region is, so nothing pages between them.
 
-                org     $0794
+                org     $0B18               ; D-CBIOS032: d23d87b's gap before the $0D01 pin
 bios_setc:
                 push    hl
                 push    bc
@@ -524,223 +524,14 @@ bsc_out:
 BGP_RIGHTC      equ     $00FC
 BGP_TDOWNC      equ     $010B
 BGP_MAPXYC      equ     $0111
-bios_grpprt:
-                push    hl
-                push    de
-                push    bc
-                push    af
-                cp      $20
-                jr      nc,bgp_chr
-                cp      $0D
-                jr      nz,bgp_out          ; other control codes: nothing
-                xor     a
-                ld      (GRPACX),a          ; CR: GRPACX's LOW byte := 0 (X 300 gives 256)
-                call    bgp_step
-                ld      hl,GRPACY
-                add     a,(hl)              ; GRPACY's low byte + the step, no carry out
-                ld      (hl),a              ;   (Y $FFFF gives $FF07)
-                cp      192
-                jr      c,bgp_out
-                xor     a                   ; past 191: GRPACY := 0
-                ld      (hl),a
-                inc     hl
-                ld      (hl),a
-bgp_out:
-                pop     af
-                pop     bc
-                pop     de
-                pop     hl
-                ret
-bgp_step:                                   ; A := the step: 8 in SCREEN 2, 32 otherwise
-                ld      a,(SCRMOD)
-                cp      2
-                ld      a,8
-                ret     z
-                ld      a,32
-                ret
-bgp_chr:
-                push    ix
-                ld      e,a                 ; E = the code
-                ld      a,(FORCLR)
-                ld      (ATRBYT),a
-                ld      hl,(GRPACX)
-                ld      a,h
-                or      a
-                jr      nz,bgp_done         ; X past 255: outside, nothing drawn or moved
-                ld      bc,(GRPACY)
-                ld      a,b
-                or      a
-                jr      nz,bgp_done
-                ld      a,c
-                cp      192
-                jr      nc,bgp_done         ; Y past 191
-                ld      b,l                 ; B = X, C = Y
-                ld      l,e
-                ld      h,0
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl
-                ld      de,(CGPNT+1)
-                add     hl,de
-                push    hl
-                pop     ix                  ; IX = the glyph's first line
-                ld      e,c                 ; E = Y
-                ld      c,b                 ; C = X
-                call    bgp_step
-                cp      8
-                jr      z,bgp_map
-                srl     c                   ; SCREEN 3: the block numbers
-                srl     c
-                srl     e
-                srl     e
-bgp_map:
-                push    bc
-                call    BGP_MAPXYC
-                pop     bc
-                ld      b,8                 ; B = the lines, C = the first column
-bgp_row:
-                push    bc
-                ld      a,(CGPNT)
-                push    ix
-                pop     hl
-                call    RDSLT               ; A = the glyph line (CGPNT's slot)
-                ld      d,a
-                pop     bc                  ; RDSLT changes BC: C = the first column again
-                push    bc
-                ld      hl,(CLOC)
-                push    hl                  ; the line's first column
-                ld      a,(CMASK)
-                push    af
-                call    bgp_line
-                pop     af
-                ld      (CMASK),a
-                pop     hl
-                ld      (CLOC),hl
-                inc     ix
-                call    BGP_TDOWNC
-                pop     bc
-                jr      c,bgp_adv           ; TDOWNC stopped: the glyph ends here
-                djnz    bgp_row
-bgp_adv:
-                call    bgp_step
-                ld      hl,GRPACX
-                add     a,(hl)
-                ld      (hl),a
-                jr      nc,bgp_done         ; still on the line
-                xor     a
-                ld      (hl),a              ; past 255: X := 0, Y on by the step
-                call    bgp_step
-                ld      hl,GRPACY
-                add     a,(hl)
-                ld      (hl),a
-                cp      192
-                jr      c,bgp_done
-                xor     a
-                ld      (hl),a              ; past 191: Y := 0
-bgp_done:
-                pop     ix
-                ei                          ; a printable code: interrupts on after
-                jp      bgp_out
 ; bgp_line: one glyph line, D = its bits (bit 7 leftmost), C = the first column (SCREEN 2:
 ; X; else the block column), the cursor on its first pixel / block.
-bgp_line:
-                ld      a,(SCRMOD)
-                cp      2
-                jr      nz,bgp_l3
-                ld      a,c
-                and     7
-                ld      b,a                 ; B = X AND 7
-                ld      e,d
-                ld      d,0                 ; E = the first byte's bits, D = the spill
-                jr      z,bgp_l2
-bgp_sh:
-                srl     e
-                rr      d
-                djnz    bgp_sh
-bgp_l2:
-                ld      hl,(CLOC)
-                call    gp_wb
-                ld      a,d
-                or      a
-                ret     z                   ; nothing for the next cell
-                ld      a,c
-                and     $F8
-                cp      $F8
-                ret     z                   ; X 248..255: none past X 255, no wrap
-                ld      a,8
-                add     a,l
-                ld      l,a
-                adc     a,h
-                sub     l
-                ld      h,a                 ; HL += 8: the next cell's pattern byte
-                ld      e,d
                 ; falls into gp_wb
 ; gp_wb: E's bits into the pattern byte at HL, as the VG-8020's GRPPRT writes it: FORCLR
 ; (whole) the background -- cleared; FORCLR's low nibble the foreground -- set; else set
 ; and (FORCLR x 16) AND $F0 into the foreground nibble. No step for a full byte. Keeps
 ; BC, DE, HL.
-gp_wb:
-                ld      a,e
-                or      a
-                ret     z
-                push    hl
-                push    bc
-                push    de
-                call    sc_cellhl           ; B = the pattern, C = the colour, HL = its address
-                ld      a,(FORCLR)
-                ld      d,a
-                ld      a,c
-                and     $0F
-                cp      d
-                jr      nz,gw_nbg
-                ld      a,e
-                cpl
-                and     b
-                jr      gw_pat
-gw_nbg:
-                ld      a,c
-                rrca
-                rrca
-                rrca
-                rrca
-                xor     d
-                and     $0F
-                jr      z,gw_set
-                ld      a,d
-                rlca
-                rlca
-                rlca
-                rlca
-                and     $F0
-                ld      d,a
-                ld      a,c
-                and     $0F
-                or      d
-                call    WRTVRM              ; the colour byte
-gw_set:
-                ld      a,e
-                or      b
-gw_pat:
-                call    sc_wpat             ; the pattern byte (at HL XOR $2000)
-                pop     de
-                pop     bc
-                pop     hl
-                ret
 ; SCREEN 3 (and every SCRMOD but 2, as MAPXYC): each lit pixel one block, by SETC.
-bgp_l3:
-                ld      b,8
-bgp_l3b:
-                sla     d
-                jr      nc,bgp_l3n
-                call    BIOS_SETC           ; the block's nibble := ATRBYT (= FORCLR)
-bgp_l3n:
-                ld      a,c
-                cp      63
-                ret     z                   ; block column 63: none past it
-                inc     c
-                call    BGP_RIGHTC
-                djnz    bgp_l3b
-                ret
 
 ; sub_isr_main -- the sub ROM's page-0 interrupt target (sub/sub.asm sub_isr, D-SCANRSAVE
 ; 2026-11-20), reached through CLPRIM with main's page 0 mapped: the real ISR, then DI, so
@@ -751,102 +542,48 @@ sub_isr_main:
                 ret
 
 
+; D-CBIOS032 (2026-11-22): the rebase on C-BIOS d23d87b started BASIC at $2BAF, 1070 B higher, and
+; GRPPRT's body left this island; two self-contained page-0 files moved here from the low region (each is
+; entered by `call` only and ends in a transfer, so nothing falls into or out of it).
+                include "basic/edscreen.asm"
+                include "basic/varfind.asm"
+    IF $ > $0D01
+                db      ISLAND3_OVERRAN_0D01__IT_WOULD_OVERWRITE_CBIOS
+    ENDIF
+
+; --- the BIOS vectors zerobas still owns (D-CBIOS032, rebased on C-BIOS d23d87b) ---------
+; The RSTs are BASIC's own text contracts; ISCNTC / CKCNTC, ISFLIO and CALBAS need BASIC; SETC
+; keeps the VG-8020's F (C-BIOS declined R-SC-AF). C-BIOS's bodies for all but SETC are cut
+; (cbios-repack/dead-bodies-main.patch, the slot a `ret`); PATCH_RANGES refuses unless the
+; base still holds exactly that. Every other entry is C-BIOS's own since the rebase: d23d87b
+; passes its spec page (scratchpad/AE_cbiosd23_vs_zerobas.out).
                 org     $0008
-                jp      synchr              ; D-SYNCHR (was C-BIOS's `jp $10ED` debug stub)
+                jp      synchr              ; D-SYNCHR
 
                 org     $0010
                 jp      chrgtr
 
-; --- the RST 18h vector: $0018 `jp outdo` (was C-BIOS's `jp $111B`) ---------
                 org     $0018
                 jp      outdo
 
                 org     $0028
-                jp      getypr              ; D-SYNCHR follow-up (was C-BIOS's `jp $1127`)
+                jp      getypr              ; D-SYNCHR follow-up
 
-; --- ERAFNK / DSPFNK: C-BIOS's are print_debug stubs (D-BIOSCONTRACT, 2026-11-09) --
-; The jump-table slots point at basic/biosfnk.asm instead; PATCH_RANGES refuses
-; unless they still read C-BIOS's `jp erafnk` / `jp dspfnk`.
-                org     $003E
-                jp      bios_inifnk         ; INIFNK: C-BIOS's was a stub too
-                org     $00AE
-                jp      bios_pinlin         ; PINLIN: C-BIOS's INLIN never returned
-                jp      bios_inlin          ; INLIN
-                jp      bios_qinlin         ; QINLIN
-                org     $00B7
-                jp      bios_breakx         ; BREAKX: a press it sees is consumed (D-BRKLATCH)
-                jp      bios_iscntc         ; ISCNTC: C-BIOS's was a stub (D-BIOSRUNG)
+                org     $00BA
+                jp      bios_iscntc         ; ISCNTC: BASROM / INTFLG, `Break in` (D-BIOSRUNG)
                 jp      bios_iscntc         ; CKCNTC: the same entry on the VG-8020
-                org     $00C0
-                jp      bios_beep           ; BEEP: C-BIOS's was a stub too
-                jp      bios_cls            ; CLS: + the key line in a text mode (D-INITKEYS)
-                org     $00C9
-                jp      bios_fnksb          ; FNKSB: C-BIOS's was a stub (D-BIOSRUNG)
-                org     $0069
-                jp      bios_clrspr         ; CLRSPR: as the VG-8020 (D-CLRSPR*)
-                org     $0105
-                jp      bios_tupc           ; TUPC: GRPCGP's top edge (D-TEDGE)
-                org     $010B
-                jp      bios_tdownc         ; TDOWNC: GRPCGP's bottom edge (D-TEDGE)
-                org     $010E
-                jp      bios_scalxy         ; SCALXY: as the VG-8020 (D-SCALXY*)
-                org     $0123
-                jp      bios_nsetcx         ; NSETCX: HL 0 / L alone (D-NSETCX0 / D-NSETCXL)
-                org     $011D
-                jp      bios_readc          ; READC: the colour byte at CLOC XOR $2000 (D-SETCCOL)
                 org     $0120
                 jp      bios_setc           ; SETC: as the VG-8020 (D-SETCCOL / D-SETCATR / D-SETCF)
-                org     $0111
-                jp      bios_mapxyc         ; MAPXYC: as the VG-8020 (D-MAPXYC*)
                 org     $014A
                 jp      bios_isflio         ; ISFLIO: both bytes of PTRFIL (D-ISFLIO)
-                org     $014D
-                jp      bios_outdlp         ; OUTDLP: C-BIOS's was a stub (D-BIOSRUNG)
+                jp      bios_outdlp         ; OUTDLP ($014D): BASIC's own (a failed print is Device I/O error, D-LPTSTOP)
                 org     $0159
-                jp      bios_calbas         ; CALBAS: C-BIOS's printed an error (D-BIOSRUNG)
-                org     $0090
-                jp      bios_gicini         ; GICINI: C-BIOS's wrote the PSG only (D-GICINIQ)
-                org     $0099
-                jp      bios_strtms         ; STRTMS: C-BIOS's was a stub (D-BIOSRUNG)
-                org     $00F9
-                jp      bios_putq           ; PUTQ: pre-incrementing, as the VG-8020 (D-BIOSRUNG)
-                org     $008D
-                jp      bios_grpprt         ; GRPPRT: island 3, as the VG-8020 (D-GRPPRTPOS and kin)
-                org     $0129
-                jp      bios_pntini         ; PNTINI / SCANR / SCANL: C-BIOS's were bare
-                jp      bios_scanr          ;   `ret`s (D-BIOSRUNG; the sub-ROM's paint
-                jp      bios_scanl          ;   tenant, sub/paintbios.asm)
-                org     $00CC
-                jp      bios_erafnk
-                jp      bios_dspfnk
+                jp      bios_calbas         ; CALBAS: into zerobas's BASIC (D-BIOSRUNG)
 
 ; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
-; $1110 is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
-; "CSRX -> TTYPOS"; chput+27: $116E until D-CBIOSDEAD part 2, $1162 on 0.30, $11CF before;
-; D-CBIOS030 / D-CBIOS031). PATCH_RANGES refuses unless it reads 3A DD F3.
-                org     $1110
+; chput+27 is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
+; "CSRX -> TTYPOS"); the address comes from C-BIOS's own symbol table (basic/cbios-abi.inc).
+; PATCH_RANGES refuses unless it reads 3A DD F3.
+                org     CBIOS_CHPUT+27
 cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
                 call    ttypos_col
-
-; --- C-BIOS's timer interrupt plays the background music --------------------------------
-; $170F is the `ld (JIFFY),hl` in C-BIOS's $0038 handler, right after its H.TIMI call
-; (src/main.asm keyint, at its "TODO: MUSICF"); isr_music (basic/subromcall.asm) does
-; that store and then the music. PATCH_RANGES refuses unless it reads 22 9E FC.
-                org     $170F
-cbios_isr_music:                            ; a root: C-BIOS enters it (PATCH_ROOTS)
-                call    isr_music
-
-; --- C-BIOS's NSETCX: a run's pixels in a byte, decided whole (D-SETCLAST part 2) --------
-; $06AD is nsetcx_lp's per-pixel `call $0120` (SETC) in our repacked NSETCX ($07FB until
-; D-CBIOSDEAD's cut, $069A until repack #50, $069E until #51); nsx_px (basic/biosfnk.asm) does the run's pixels in that byte at
-; once. PATCH_RANGES refuses unless it reads CD 20 01.
-                org     $06AD
-cbios_nsx_px:                               ; a root: C-BIOS enters it (PATCH_ROOTS)
-                call    nsx_px
-
-; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
-; $0FD6 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
-; hook"; $0FCA on 0.30, $1037 before; D-CBIOS030 / D-CBIOS031); only its operand byte changes.
-; PATCH_RANGES refuses unless it is $C3.
-                org     $0FD7
-                db      $C9

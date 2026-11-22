@@ -58,9 +58,9 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IS-AF** With INTFLG ($FC9B) 0 (no break pending): A := 0, F := $54 -- whatever they were. | 6 | ✓ | ✗ 6: XI N50, XI N51, XI N86, XI D50, XI D51, XI D86 |
+| **R-IS-AF** With INTFLG ($FC9B) 0 (no break pending): A := 0, F := $54 -- whatever they were. | 6 | ✓ | ✓ |
 | **R-IS-KEEP** BC, DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept. | 6 | ✓ | ✓ |
-| **R-IS-EI** Interrupts are on after the call, whether they were on or off before it. | 6 | ✓ | ✗ 4: XI N50, XI N86, XI D50, XI D86 |
+| **R-IS-EI** Interrupts are on after the call, whether they were on or off before it. | 6 | ✓ | ✓ |
 
 <!-- RULES END -->
 

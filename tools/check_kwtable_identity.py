@@ -59,8 +59,11 @@ from __future__ import annotations
 import hashlib
 import re
 import sys
+import os  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
-RELOC_BASE = 0x2781
+RELOC_BASE = BASIC_ORG
 SUB_BASE = 0x0000
 
 # Measured from `rm -rf build && make basic-reloc`. Bump BOTH when

@@ -653,13 +653,10 @@ def disk_abi_seeds(spans):
 
 
 # fix (14): labels on the stubs basic/islands.asm patches INTO C-BIOS's code
-PATCH_ROOTS = ('cbios_chput_ttypos',
-               'cbios_nsx_px',        # D-SETCLAST part 2: C-BIOS's NSETCX calls it ($06AD)
-               'cbios_isr_music',     # C-BIOS's $0038 handler calls it ($170F): the music player
-               # CRTCNT UNDER KEY ON (2026-11-10): C-BIOS's CHPUT (cbios-repack/
-               # crtcnt-bound.patch) and the sub-ROM's line editor call it at its
-               # fixed $328D; no main label does
-               'crt_cp')
+PATCH_ROOTS = ('cbios_chput_ttypos',)
+# (D-CBIOS032, 2026-11-22: cbios_nsx_px, cbios_isr_music and the pinned crt_cp went with the rebase on
+# d23d87b -- C-BIOS's own NSETCX and music player, and the sub ROM reaches crt_rows / crt_cp through the
+# resident ABI.)
 # (15) PINNED ENTRIES (D-DISKREST slice 1, 2026-10-20): the labels at
 # tools/pin_plan.py's fixed addresses are entered by OTHER PEOPLE'S code -- a
 # program that CALLs $73E5 or jumps to $3297 because the reference has an entry

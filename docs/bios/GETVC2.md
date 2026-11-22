@@ -72,7 +72,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-G2-HL** HL := VCBA ($FB41) + 37 x VOICEN ($FB38) + L (VOICEN 0-3; L 0, 5, 7, 36, $C0 measured); H on entry is not used. | 28 | ✓ | ✓ |
-| **R-G2-AF** A := 0; F := $44 for voice 0, $42 for the others. | 28 | ✓ | ✗ 14: XS N54, XS N55, XS N56, XS N57, XS N101, XS N102 … (+8) |
+| **R-G2-AF** A := 0; F := $44 for voice 0, $42 for the others. | 28 | ✓ | ✓ |
 | **R-G2-KEEP** BC, DE, IX, IY and the interrupt state are kept; the queue cells are kept. | 28 | ✓ | ✓ |
 
 <!-- RULES END -->

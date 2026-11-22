@@ -75,9 +75,11 @@ import os
 import re
 import sys
 import glob
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
 PAGE1 = 0x4000
-LOWREGION = 0x2781   # main page-0 low region starts here; below it is BIOS
+LOWREGION = BASIC_ORG  # main page-0 low region starts here; below it is BIOS
 
 _SYM = re.compile(r'^(\S+)\s+EQU\s+([0-9A-Fa-f]+)H', re.IGNORECASE)
 _LBL = re.compile(r'^([A-Za-z_]\w*):')

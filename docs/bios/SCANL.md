@@ -69,8 +69,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-SL-SCAN** From the pixel left of CLOC / CMASK (SCREEN 3: the block), count the pixels that are not BDRATR's colour, leftwards, to the first that is or to X 0. HL := that count; CLOC / CMASK := the leftmost counted pixel (the start itself when the count is 0). B, DE, A and HL on entry are not used. | 92 | ✓ | ✗ 4: XQ N43, XQ N75, XQ D43, XQ D75 |
-| **R-SL-PAINT** It paints, whatever B is, in ATRBYT from the new CLOC rightwards: in SCREEN 2 HL + K pixels, K the run length (HL) of the most recent SCREEN 2 SCANR -- 8 and 2 measured -- on into the next character row's cells past X 255, as NSETCX sets them; in SCREEN 3 HL blocks, the start block not included. Nothing else in VRAM changes. | 92 | ✓ | ✗ 78: XQ N20, XQ N21, XQ N22, XQ N23, XQ N24, XQ N25 … (+72) |
+| **R-SL-SCAN** From the pixel left of CLOC / CMASK (SCREEN 3: the block), count the pixels that are not BDRATR's colour, leftwards, to the first that is or to X 0. HL := that count; CLOC / CMASK := the leftmost counted pixel (the start itself when the count is 0). B, DE, A and HL on entry are not used. | 92 | ✓ | ✓ |
+| **R-SL-PAINT** It paints, whatever B is, in ATRBYT from the new CLOC rightwards: in SCREEN 2 HL + K pixels, K the run length (HL) of the most recent SCREEN 2 SCANR -- 8 and 2 measured -- on into the next character row's cells past X 255, as NSETCX sets them; in SCREEN 3 HL blocks, the start block not included. Nothing else in VRAM changes. | 92 | ✓ | ✓ |
 | **R-SL-KEEP** IX and IY are kept; the work area recorded ($F92D-$F933, $F942-$F954), ATRBYT, BDRATR, RG0SAV-RG7SAV, SCRMOD and the VDP registers are kept; interrupts are on after. (A, F, BC and DE are left holding working values: not compared, the group `XL`.) | 92 | ✓ | ✓ |
 
 <!-- RULES END -->

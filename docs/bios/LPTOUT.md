@@ -52,8 +52,8 @@ row 6 bit 1, row 7 bit 4) for 0.3 s while it waits.
 | **R-LO-OUT** The printer receives every byte as sent, 0 to 255 in order, nothing added or converted. | 2 | ✓ | ✓ |
 | **R-LO-KEEP** A is kept, and so are BC, DE, HL, IX and IY. | 512 | ✓ | ✓ |
 | **R-LO-ABORT** With no printer ready, LPTOUT waits; CTRL + STOP held ends the wait: it returns with the carry set (aborted), A kept ($41) and BC, DE, HL, IX, IY kept. | 2 | ✓ | ✓ |
-| **R-LO-ABORTF** The rest of F after the abort is clear: F is $01. | 2 | ✓ | ✗ 2: XA N, XA D |
-| **R-LO-F** F is an AND's on A: S, Z, bits 5 / 3 from A, H set, P/V A's parity, N clear, and the carry clear (the byte went out, not aborted) -- whatever F was on entry ($00 / $FF). | 512 | ✓ | ✗ 512: XL N00, XL N01, XL N02, XL N03, XL N04, XL N05 … (+506) |
+| **R-LO-ABORTF** The rest of F after the abort is clear: F is $01. | 2 | ✓ | ✓ |
+| **R-LO-F** F is an AND's on A: S, Z, bits 5 / 3 from A, H set, P/V A's parity, N clear, and the carry clear (the byte went out, not aborted) -- whatever F was on entry ($00 / $FF). | 512 | ✓ | ✓ |
 
 <!-- RULES END -->
 
@@ -61,7 +61,6 @@ row 6 bit 1, row 7 bit 4) for 0.3 s while it waits.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-LPTOUTF** (aborted by CTRL + STOP, zerobas returns F $A9 where the VG-8020's is $01 -- the carry agrees; the sent byte's F is the same since 2026-11-19) | R-LO-ABORTF |
 
 ## Open (not measured)
 

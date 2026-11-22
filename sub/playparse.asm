@@ -46,9 +46,19 @@
 
 ; --- play_parse_tenant: the SUBROM_IDX_PLAY_PARSE entry --------------------
 play_parse_tenant:
+                ; D-CBIOS032 (2026-11-22): C-BIOS's GICINI / INITIO (since the rebase on d23d87b) write the
+                ; REFERENCE's voice-block defaults -- offset 18 $88, offset 19 $FF, tempo $78 (the VG-8020's, the
+                ; same bytes: scratchpad/AE_d23_vcb.out) -- where zerobas's parser keeps its own layout (VCX_*:
+                ; 18 = volume 0..15, 19 = $80 | shape). $FF at VCX_ENVSH never occurs in that layout, so it marks
+                ; "GICINI ran since": re-seed, as the VG-8020 resets PLAY's state there. Tempo 0 stays the
+                ; cold-boot / abort mark. (The layout itself is own-design: D-VCBLAYOUT.)
+                ld      a,(VCBA + VCX_ENVSH)
+                inc     a
+                jr      z,ppt_seed
                 ld      a,(VCBA + VCX_TEMPO)
                 or      a
-                call    z,pt_init           ; cold-boot seed of the PLAY work area (once)
+ppt_seed:
+                call    z,pt_init           ; seed the PLAY work area
                 ; 🔴 D-PLAYQUEUE (2026-10-31): PLAY APPENDS. This tenant used to
                 ; reset each mentioned voice's buffer and PAUSE it while parsing
                 ; (D-GCDI5); a PLAY while a voice played threw its queue away -- a

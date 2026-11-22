@@ -1454,7 +1454,7 @@ ZTRAP           equ     $FC4C   ; 18 entries * 3 B = 54 B ($FC4C..$FC81; was $ED
                                 ; REFERENCE'S TRPTBL (D-KEYTRAPREF 2026-11-22, measured:
                                 ; KEY(1)..(5) at entries 0..4, status ON 1 / STOP 2 /
                                 ; handler running 3, the event bit 2 -- the BIOS scan sets
-                                ; it, cbios-repack/key-trap-bios.patch):
+                                ; it, C-BIOS fff98e8's keyboard scan):
                                 ;   0..9   KEY 1..10   10     STOP       11     SPRITE
                                 ;   12..16 STRIG 0..4  17     INTERVAL
 ZTRAP_ENTSZ     equ     3       ; bytes per entry

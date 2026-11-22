@@ -269,5 +269,5 @@ GFX_UNGUARDED           equ     0
 ; CRT_ROWS -- main ROM page 0 (basic/float-arith.asm, a FIXED pin): A := CRTCNT +
 ; CNSDFG, the console's bottom row as the VG-8020 bounds it. Mapped while a page-1
 ; tenant (readline) runs. CRTCNT UNDER KEY ON, 2026-11-10.
-CRT_ROWS        equ     $3283
-CRT_CP          equ     $328D   ; flags := A - (CRTCNT + CNSDFG); A, BC kept
+CRT_ROWS        equ     crt_rows        ; D-CBIOS032: from the resident ABI (basic-resident-abi.inc), no longer pinned
+CRT_CP          equ     crt_cp          ; flags := A - (CRTCNT + CNSDFG); A, BC kept

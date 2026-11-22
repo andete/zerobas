@@ -72,7 +72,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-GV-HL** HL := VCBA ($FB41) + 37 x A + 2, 16-bit ($FB43, $FB68, $FB8D; A 3 gives $FBB2, past the third buffer; A 6 $FC21; A $21 wraps to $0008). | 22 | ✓ | ✓ |
-| **R-GV-AF** A := 0; F := $44 for voice 0, $42 for the others -- $43 when the last addition of 37 carries out of 16 bits (A $21). | 22 | ✓ | ✗ 16: XS N48, XS N49, XS N50, XS N78, XS N94, XS N95 … (+10) |
+| **R-GV-AF** A := 0; F := $44 for voice 0, $42 for the others -- $43 when the last addition of 37 carries out of 16 bits (A $21). | 22 | ✓ | ✓ |
 | **R-GV-KEEP** BC, DE, IX, IY and the interrupt state are kept; the queue cells are kept. | 22 | ✓ | ✓ |
 
 <!-- RULES END -->

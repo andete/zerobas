@@ -77,7 +77,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-RD-A** A := the current pixel's colour: in SCREEN 2 the foreground nibble of its colour byte (CLOC XOR $2000; GRPCOL and GRPCGP are not used) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in SCREEN 3 the nibble CMASK selects ($0F the low one, $F0 the high one). | 40 | ✓ | ✗ 4: XP N29, XP N60, XP D29, XP D60 |
+| **R-RD-A** A := the current pixel's colour: in SCREEN 2 the foreground nibble of its colour byte (CLOC XOR $2000; GRPCOL and GRPCGP are not used) when its pattern bit (CLOC, CMASK) is set, the background nibble when not; in SCREEN 3 the nibble CMASK selects ($0F the low one, $F0 the high one). | 40 | ✓ | ✓ |
 | **R-RD-F** F is A's flags as an AND leaves them (H set; S, Z, bits 5 / 3 and P/V from A) -- whatever F was on entry. | 40 | ✓ | ✓ |
 | **R-RD-KEEP** BC, DE, HL, IX and IY are kept; CLOC, CMASK and ATRBYT are kept; VRAM is not changed. | 40 | ✓ | ✓ |
 | **R-RD-REGS** RG0SAV-RG7SAV ($A5 preset), SCRMOD and the VDP registers R#0-R#7 are kept: the call writes no VDP register. (FORCLR / BAKCLR / BDRCLR, recorded too, are not preset by the probe: not compared.) | 40 | ✓ | ✓ |

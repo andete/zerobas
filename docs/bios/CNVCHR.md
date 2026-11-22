@@ -64,14 +64,14 @@ records them all, and compares the whole work area.
 | **R-V-HEAD** With GRPHED 0, A = $01 (the graphic header) sets GRPHED to 1 and returns A as it was with the carry CLEAR (and Z set). | 2 | ✓ | ✓ |
 | **R-V-CONV** With GRPHED set -- 1 or any non-zero value ($5A) -- A from $40 to $5F becomes A − $40 (the graphic character) with the carry SET and Z CLEAR, and GRPHED becomes 0. | 128 | ✓ | ✓ |
 | **R-V-PASS** Every other A comes back unchanged with the carry SET and Z SET, and GRPHED becomes 0: the rest of the 256 values after the header, a second $01 after the header included, and every value but $01 with GRPHED 0. | 1406 | ✓ | ✓ |
-| **R-V-F** The whole F on return (only C and Z published): 42 after the header, A3 after a conversion, 41 OR (A AND $28) -- A's bits 5 and 3 copied -- otherwise; the flags on entry ($00 / $FF) never matter. | 1536 | ✓ | ✗ 128: XV 0320, XV 0321, XV 0322, XV 0323, XV 0324, XV 0325 … (+122) |
+| **R-V-F** The whole F on return (only C and Z published): 42 after the header, A3 after a conversion, 41 OR (A AND $28) -- A's bits 5 and 3 copied -- otherwise; the flags on entry ($00 / $FF) never matter. | 1536 | ✓ | ✓ |
 
 #### 2. Round 2: every register garbage, more GRPHED and entry-flag values, the natural sequence (XCNV2)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-V-ANYG** GRPHED counts as set for ANY non-zero value -- $80, $FF, $20, $04 (bits 7, 5, 2 alone) as well as 1 and $5A -- and every call but the header leaves it 0. A, GRPHED and the whole F follow R-V-HEAD / R-V-CONV / R-V-PASS / R-V-F whatever the flags on entry ($01, $40, $41, $80, $04, $10, $55, $AA too). | 50 | ✓ | ✗ 16: XV2 01, XV2 02, XV2 06, XV2 07, XV2 11, XV2 12 … (+10) |
-| **R-V-SEQ** The natural sequence works with GRPHED left by the routine itself: CNVCHR($01) from GRPHED 0 arms it, then CNVCHR($40) gives 00, ($5F) 1F; ($3F), ($60) and a second ($01) pass unchanged with C and Z set -- and leave GRPHED 0. | 5 | ✓ | ✗ 2: XV2 45, XV2 46 |
+| **R-V-ANYG** GRPHED counts as set for ANY non-zero value -- $80, $FF, $20, $04 (bits 7, 5, 2 alone) as well as 1 and $5A -- and every call but the header leaves it 0. A, GRPHED and the whole F follow R-V-HEAD / R-V-CONV / R-V-PASS / R-V-F whatever the flags on entry ($01, $40, $41, $80, $04, $10, $55, $AA too). | 50 | ✓ | ✓ |
+| **R-V-SEQ** The natural sequence works with GRPHED left by the routine itself: CNVCHR($01) from GRPHED 0 arms it, then CNVCHR($40) gives 00, ($5F) 1F; ($3F), ($60) and a second ($01) pass unchanged with C and Z set -- and leave GRPHED 0. | 5 | ✓ | ✓ |
 | **R-V-REGS** It tests GRPHED itself: HL pointed at a byte holding the OPPOSITE of GRPHED's zero-ness and D never equalled A, and the results follow GRPHED and A; that byte is not written. BC, DE, HL, IX and IY are kept, interrupts stay disabled, and no other cell of the work area $F380-$FFFF changes. | 55 | ✓ | ✓ |
 
 <!-- RULES END -->
@@ -80,7 +80,6 @@ records them all, and compares the whole work area.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-TEXTAF** (the unpublished bits of F after a conversion: A3 against zerobas's 3B, or 2B for a $0F / $1F result) | R-V-F, R-V-ANYG, R-V-SEQ |
 
 ## Open (not measured)
 

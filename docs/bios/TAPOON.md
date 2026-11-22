@@ -71,8 +71,8 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 |---|---|---|---|
 | **R-TN-OK** With a recorder ready, the carry is clear -- set on entry too (no CTRL+STOP): the leader is written (A $FF and $00). (A, BC and HL are left holding working values: not compared, the group `XTW`.) | 12 | ✓ | ✓ |
 | **R-TN-MOTOR** The motor runs (port C bit 4 := 0, from stopped or running); interrupts are off after the call, whether they were on or off before it. | 12 | ✓ | ✓ |
-| **R-TN-PORT** Port C: bits 6 and 7 kept, bits 4 and 5 := 0 (motor on, cassette output low), the low nibble (the keyboard row select) := 7 -- $40, $45, $4A, $50 give $47; $E0 $C7; $A5 $87. | 12 | ✓ | ✗ 12: XT N13, XT D13, XV N09, XV N11, XV D09, XV D11 … (+6) |
-| **R-TN-DE** DE is kept ($1234, $5678 measured). | 12 | ✓ | ✗ 12: XT N13, XT D13, XV N09, XV N11, XV D09, XV D11 … (+6) |
+| **R-TN-PORT** Port C: bits 6 and 7 kept, bits 4 and 5 := 0 (motor on, cassette output low), the low nibble (the keyboard row select) := 7 -- $40, $45, $4A, $50 give $47; $E0 $C7; $A5 $87. | 12 | ✓ | ✓ |
+| **R-TN-DE** DE is kept ($1234, $5678 measured). | 12 | ✓ | ✓ |
 
 <!-- RULES END -->
 

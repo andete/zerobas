@@ -38,7 +38,7 @@
 ; Defined BEFORE sysvars.inc, which sites the string-engine RAM layout (STRMAX /
 ; STRSCR / the temp ring — see sysvars.inc "string-variable store" and
 ; docs/spec-basic-string-engine.md §5).
-BASIC_ORG:      equ     $2781
+BASIC_ORG:      equ     $2BB1   ; D-CBIOS032: the end of C-BIOS fff98e8's page 0 + the 5 repack patches
 
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).
@@ -82,7 +82,7 @@ DISK_BUILD      equ     0
                 include "basic/subromcall.asm"
 ; The screen editor's cell helpers (D-EDCTRL): low, because the sub-ROM readline
 ; tenant calls them from page 1 and main's own editing keys call them too.
-                include "basic/edscreen.asm"
+; (basic/edscreen.asm lives in island 3 since D-CBIOS032: basic/islands.asm.)
 ; Interrupt-traps T3: the KEY event source. Low-region (not page 1) because it
 ; fires from inside C-BIOS's keyboard scan, i.e. the $0038 ISR, which can land
 ; while a sub-ROM page-1 tenant owns page 1 — and a skipped frame would LEAK an
@@ -347,20 +347,13 @@ ndd_tape:
 ; BIOS bodies, which must be page 0.
 ; var_find_typed's no-FN-call walk (D-TRAPCOST): after trapstmt for the same
 ; reason -- every low-region pin is already behind it.
-                include "basic/varfind.asm"
+; (basic/varfind.asm lives in island 3 since D-CBIOS032: basic/islands.asm.)
 
 ; bios_cls -- CLS ($00C3). D-INITKEYS (2026-11-16): the VG-8020's CLS in a TEXT mode also
 ; redraws the function-key line (KEY ON), as its INITXT / INIT32 do; in SCREEN 2 / 3 it does
 ; not (scratchpad/CL_run3.out: the whole 16 KB compared, the font aside). C-BIOS's CLS
 ; body clears, then FNKSB (bios_fnksb: CNSDFG != 0 -> DSPFNK) for SCRMOD 0 / 1. `ret nz`
 ; first: CLS does nothing unless entered with Z set (C-BIOS's cls_z, the published input).
-bios_cls:
-                ret     nz
-                call    CBIOS_CLS
-                ld      a,(SCRMOD)
-                cp      2
-                ret     nc
-                jp      bios_fnksb
 
 ; bios_gicini -- GICINI ($0090). D-GICINIQ (2026-11-14), D-BIOSCONTRACT2 gap 9: the
 ; VG-8020's GICINI, called directly over a work area dirtied with $55
@@ -374,44 +367,6 @@ bios_cls:
 ; (psv_flush, basic/playsvc.asm): the next PLAY starts from the defaults, as the
 ; VG-8020's reset voice blocks do -- whose BYTES differ from zerobas's encoding (filed).
 ; C-BIOS's body then writes the PSG. Page 0: a caller's page 1 may be RAM.
-bios_gicini:
-                push    af
-                push    bc
-                push    de
-                push    hl
-                xor     a
-                ld      (MUSICF),a
-                ld      (PLYCNT),a
-                ld      (VCBA+VCX_TEMPO),a
-                ld      hl,(QUEUES)         ; D-INITIOQUEUES: where QUEUES points, as the VG-8020
-                ld      de,VOICAQ
-                ld      b,3
-bgi_lp:
-                ld      (hl),a              ; QD_PUT
-                inc     hl
-                ld      (hl),a              ; QD_GET
-                inc     hl
-                ld      (hl),a              ; QD_PUTBAK
-                inc     hl
-                ld      (hl),127            ; QD_SIZE (a mask), as PLAY's seed
-                inc     hl
-                ld      (hl),e              ; QD_ADDR: VOICAQ / VOICBQ / VOICCQ
-                inc     hl
-                ld      (hl),d
-                inc     hl
-                ld      a,e
-                add     a,128               ; DE += 128, the next voice's buffer
-                ld      e,a
-                jr      nc,bgi_nc
-                inc     d
-bgi_nc:         xor     a
-                djnz    bgi_lp
-                call    CBIOS_GICINI
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af
-                ret
 
 ; outdo_dest -- OUTDO's ($0018) destination, after its hook. D-OUTDOPRT (2026-11-14):
 ; with PRTFLG ($F416) non-zero the VG-8020's OUTDO prints -- `A TAB B CR LF` reaches
@@ -438,36 +393,6 @@ scan_isbd:
 ; paints HL + K pixels from the leftmost counted one (docs/bios/SCANL.md R-SL-PAINT). The tenant has painted HL;
 ; here the HL + K run is painted again from the new CLOC (the same bytes over the first HL), CLOC / CMASK, HL and DE
 ; kept; interrupts on after, as the tenant leaves them. Not SCREEN 2: nothing.
-scan_k:
-                ld      a,(SCRMOD)
-                cp      2
-                ret     nz
-                dec     c
-                jr      z,scan_kl
-                ld      (SCAN_K),hl         ; SCANR: the next SCANL's K
-                ret
-scan_kl:
-                push    hl
-                push    de
-                ld      de,(SCAN_K)
-                ld      a,d
-                or      e
-                jr      z,scan_kx           ; K 0: the tenant's paint is the whole of it
-                add     hl,de
-                ld      de,(CLOC)
-                ld      a,(CMASK)
-                push    de
-                push    af
-                call    $0123               ; NSETCX: HL + K pixels in ATRBYT from CLOC
-                pop     af
-                pop     de
-                ld      (CLOC),de
-                ld      (CMASK),a
-                ei
-scan_kx:
-                pop     de
-                pop     hl
-                ret
 
 outdo_dest:
                 push    af
@@ -497,36 +422,12 @@ odd_chan:
 ; (docs/bios/DSPFNK.md R-K-SCROLL). Here: the cursor up to the last text row, then the console's
 ; own LF scroll (CNSDFG is $FF already: 23 text rows). BC kept (bios_fnk reads C after); HL spent
 ; (bios_fnk saved it).
-bf_scroll:
-                ld      a,c
-                or      a
-                jr      z,bf_eramark        ; ERAFNK: no scroll, but the row's LINTTB mark
-                ld      a,(CSRY)
-                cp      CON_ROWS            ; the key line's row (bios_fnk set CRTCNT := 24)
-                ret     nz
-                ld      hl,CSRY
-                dec     (hl)
-                push    bc
-                ld      a,10
-                call    CHPUT
-                pop     bc
-                ret
 ; ERAFNK marks the key line's row in LINTTB: entry CRTCNT := 175, in SCREEN 0 / 1, as the
 ; VG-8020 (D-LINTTBVAL, docs/bios/DSPFNK.md R-K-ERALT). LINTTB ($FBB2) + 78 stays in its page.
-bf_eramark:
-                ld      hl,LINTTB-1
-                ld      a,(CRTCNT)
-                add     a,l
-                ld      l,a
-                ld      (hl),$AF
-                ret
 
 ; bios_pinlin -- PINLIN ($00AE) reads the line from column 1, as the VG-8020 (D-PINLINSTART,
 ; docs/bios/PINLIN.md R-L-PIN): bios_inlin's shared tail (basic/biosfnk.asm) with
 ; read_line_col1. Here, not beside bios_inlin: that file's pad in front of the $3283 pin is full.
-bios_pinlin:
-                ld      hl,rl_pin_bios      ; read_line_col1 + D-EDITDELBS's Enter mark (files.asm)
-                jp      bil_go
 
 ; bil_stop -- D-EDITSTOP (2026-11-21): PINLIN / INLIN / QINLIN ended by CTRL+STOP or CTRL+C leave,
 ; as the VG-8020's (docs/bios/PINLIN.md R-L-STOP*, scratchpad/XLIN3_run3.out): BUF's first byte 0
@@ -534,55 +435,6 @@ bios_pinlin:
 ; it -- the bottom row scrolls, and both bottom entries read $AF after. A 0, F $45 (D-INLINSTOPF).
 ; Only the BIOS entries: BASIC's prompt / INPUT / AUTO take read_line's carry themselves (repl_abort
 ; prints its own newline). Page 0, with the caller's page 1 back: CRTCNT + CNSDFG inline.
-bil_stop:
-                xor     a
-                ld      (LINEBUF),a
-                ld      (INSFLG),a          ; insert mode ends (R-L-STOP): whichever way our editor
-                                            ; saw the key -- its ^C or BREAKX -- by timing
-                ld      a,(CNSDFG)
-                ld      hl,CRTCNT
-                add     a,(hl)
-                ld      c,a                 ; C = the console's bottom row
-                ld      a,(CSRY)
-                ld      b,a
-                ld      e,a
-                ld      d,0
-                ld      hl,LINTTB-1
-                add     hl,de               ; HL -> LINTTB[row]
-bst_lp:
-                ld      a,b
-                cp      c
-                jr      nc,bst_end          ; the bottom row ends every line
-                ld      a,(hl)
-                or      a
-                jr      nz,bst_end          ; not 0: the line ends on this row
-                inc     hl
-                inc     b
-                jr      bst_lp
-bst_end:
-                ld      (hl),$AF
-                ld      a,b
-                ld      (CSRY),a
-                ld      a,1
-                ld      (CSRX),a
-                ld      a,b
-                cp      c
-                push    af                  ; Z: on the bottom row (the LF scrolls)
-                ld      a,10
-                call    CHPUT
-                pop     af
-                jr      nz,bst_ret
-                ld      hl,LINTTB-2
-                ld      b,0
-                add     hl,bc
-                ld      (hl),$AF            ; the scrolled line's row
-                inc     hl
-                ld      (hl),$AF            ; and the fresh bottom row
-bst_ret:
-                ld      hl,LINEBUF - 1      ; the published HL (the walk above used it)
-                xor     a
-                scf
-                ret
 
 ; bios_readc / bios_setc -- READC ($011D) / SETC ($0120) as the VG-8020 (D-SETCCOL / D-SETCATR /
 ; D-SETCF / D-SETCLAST, 2026-11-19; docs/bios/READC.md, SETC.md). SCREEN 2: the pattern byte at
@@ -595,31 +447,6 @@ bst_ret:
 ; the nibble CMASK selects at CLOC -- the low one ORed in whole ($1A over $A4: $BA), the high
 ; one (ATRBYT x 16) AND $F0; F its OR flags. BC / DE / HL kept; interrupts on after (the last
 ; RDVRM / WRTVRM). NSETCX's pixels come here too (nsx_px / bios_nsetcx call BIOS_SETC). Page 0.
-bios_readc:
-                push    hl
-                push    bc
-                call    sc_cell
-                ld      a,(SCRMOD)
-                cp      3
-                ld      a,(CMASK)
-                jr      nz,brc_s2
-                ld      c,b                 ; SCREEN 3: the pattern byte's nibble under CMASK
-                and     $F0                 ; Z: the low nibble
-                jr      brc_tst
-brc_s2:
-                and     b
-brc_tst:
-                ld      a,c
-                jr      z,brc_bg
-                rrca
-                rrca
-                rrca
-                rrca
-brc_bg:
-                and     $0F                 ; F: the AND flags (R-RD-F)
-                pop     bc
-                pop     hl
-                ret
 
 ; bios_setc lives in C-BIOS gap 1's island 3 (basic/islands.asm), in the room D-SETCCUT's
 ; repack cut of C-BIOS's own readc / gcell / setc opened.

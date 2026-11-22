@@ -255,19 +255,6 @@ sc_call:
 ; scenario 12). Else main page 1 (primary slot 0, the merged-machine invariant below)
 ; is mapped for play_service (basic/playsvc.asm) and the caller's page 1 put back.
 ; The handler has saved every register and reads none after this.
-isr_music:
-                ld      (JIFFY),hl          ; the instruction the call replaced
-                ld      a,(MUSICF)
-                or      a
-                ret     z
-                in      a,(PSLTREG)
-                push    af                  ; the caller's slot layout
-                and     %11110011           ; page 1 -> primary slot 0: main ROM
-                out     (PSLTREG),a
-                call    play_service
-                pop     af
-                out     (PSLTREG),a         ; page 1 back
-                ret
 
 ; st_play: PLAY's start, after a window has published every voice (sub/playparse.asm,
 ; through st_go): music playing, or every ring empty -> nothing; else st_start (basic/biosfnk.asm). B, DE, HL

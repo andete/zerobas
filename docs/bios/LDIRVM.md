@@ -61,7 +61,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-VM-MEM** BC bytes are copied from RAM at HL to VRAM at DE AND $3FFF (wrapping from $3FFF to $0000); the VRAM bytes around keep theirs. (HL $E9A0; DE $1234, $3FFC, $1200, and $5234 / $D234 / $9234, which write from $1234; BC 1, 4, 8, $100, $108.) The source RAM is not changed. | 16 | ✓ | ✓ |
-| **R-VM-REGS** On return A = 0, F = $44 (Z and P/V) and BC = 0; HL holds the entry DE and DE the entry HL + BC (the two exchanged); IX and IY are kept -- whatever A and F were on entry (A $A7, $5A, $00; F $00, $FF, $A5, $5A). | 16 | ✓ | ✗ 16: XM N30, XM N31, XM N32, XM N33, XM N52, XM N53 … (+10) |
+| **R-VM-REGS** On return A = 0, F = $44 (Z and P/V) and BC = 0; HL holds the entry DE and DE the entry HL + BC (the two exchanged); IX and IY are kept -- whatever A and F were on entry (A $A7, $5A, $00; F $00, $FF, $A5, $5A). | 16 | ✓ | ✓ |
 | **R-VM-NEXT** The VDP is left writing after the copied span: a byte the probe then writes to port $98 lands at (DE + BC) AND $3FFF. | 16 | ✓ | ✓ |
 | **R-VM-EI** Interrupts are on after the call, whether they were on or off before it. | 16 | ✓ | ✓ |
 

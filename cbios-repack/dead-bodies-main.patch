@@ -1,48 +1,56 @@
-diff --git a/src/inlin.asm b/src/inlin.asm
-index 782b633..034da09 100644
---- a/src/inlin.asm
-+++ b/src/inlin.asm
-@@ -22,36 +22,8 @@
- ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- ; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ;
+diff --git a/src/debug.asm b/src/debug.asm
+index 076fb04..57e0937 100644
+--- a/src/debug.asm
++++ b/src/debug.asm
+@@ -49,44 +49,5 @@ print_debug_asciiz:
+                 out     (DBG_DATA),a
+                 jr      print_debug_asciiz
+ 
 -;--------------------------------
--; $00AE PINLIN
--; Function : Stores in the specified buffer the character codes input
--;           until the return key or STOP key is pressed
--; Output   : HL - for the starting address of the buffer -1
--;            C-flag set when it ends with the STOP key
--; Registers: All
--; TODO: call H_PINL
--pinlin:
--                call    H_PINL
--                ld      a,(AUTFLG)              ; If AUTO is active
--                and     a
--                jp      z,inlin                 ; then start line input
--                ld      a,1                     ; else set cursor
--                ld      (CSRX),a                ;    to left border first
--                jp      inlin                   ;    and then start line input
+-; Print nibble in hexidecimal format as part of an existing line.
+-; Input:   A = nibble to print (bit 7-4 are ignored)
+-; Changes: AF
+-print_debug_hexnibble:
+-                and     $0F
+-                cp      10
+-                jr      nc,print_debug_hexnibble_letter
+-                add     a,'0'
+-                out     (DBG_DATA),a
+-                ret
+-print_debug_hexnibble_letter:
+-                add     a,'A' - 10
+-                out     (DBG_DATA),a
+-                ret
 -
 -;--------------------------------
--; $00B4 QINLIN
--; Function : Prints a questionmark and one space and continues with INLIN
--; Output   : HL - for the starting address of the buffer -1
--;            C-flag set when it ends with the STOP key
--; Registers: All
--qinlin_prompt:
--                db      "? ",0
--qinlin:
--                call    H_QINL
--                ld      hl,qinlin_prompt
--                call    prn_text
--                ; continue with inlin
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): PINLIN / QINLIN (INLIN, below, stays: CNVCHR's exit enters it) -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
- 
- ;--------------------------------
- ; $00B1 INLIN
+-; Print byte in hexidecimal format as part of an existing line.
+-; Input:   A = byte to print
+-; Changes: AF
+-print_debug_hexbyte:
+-                push    af
+-                rrca
+-                rrca
+-                rrca
+-                rrca
+-                call    print_debug_hexnibble
+-                pop     af
+-                call    print_debug_hexnibble
+-                ret
+-
+-;--------------------------------
+-; Print word in hexidecimal format as part of an existing line.
+-; Input:   HL = word to print
+-; Changes: HL, AF
+-print_debug_hexword:
+-                ld      a,h
+-                call    print_debug_hexbyte
+-                ld      a,l
+-                call    print_debug_hexbyte
+-                ret
++; zerobas cbios-repack (D-CBIOS032): print_debug_hexnibble / _hexbyte / _hexword are cut --
++; only the disk ROM's debug paths call them, and the main ROM reaches none (scratchpad/cbios_reach.py).
 diff --git a/src/main.asm b/src/main.asm
-index e4ec632..b5e48be 100644
+index 257d84d..86d9788 100644
 --- a/src/main.asm
 +++ b/src/main.asm
 @@ -66,7 +66,7 @@ vdp_dw:         db      VDP_DATA        ; VDP write port
@@ -50,7 +58,7 @@ index e4ec632..b5e48be 100644
  ; $0008 SYNCHR
                  ds      $0008 - $
 -                jp      synchr
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $000C RDSLT   Read memory from an optional slot
                  ds      $000C - $
@@ -59,7 +67,7 @@ index e4ec632..b5e48be 100644
  ; $0010 CHRGTR
                  ds      $0010 - $
 -                jp      chrgtr
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $0014 WRSLT   Write memory to an optional slot
                  ds      $0014 - $
@@ -68,7 +76,7 @@ index e4ec632..b5e48be 100644
  ; $0018 OUTDO
                  ds      $0018 - $
 -                jp      outdo
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $001C CALSLT   inter slot call routine
                  ds      $001C - $
@@ -77,561 +85,230 @@ index e4ec632..b5e48be 100644
  ; $0028 GETYPR
                  ds      $0028 - $
 -                jp      getypr
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $002B IDBYT1
                  ds      $002B - $
-@@ -156,7 +156,7 @@ romid:
- 
- ; $003E INIFNK
-                 ds      $003E - $
--                jp      inifnk
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
- 
- ; $0041 DISSCR  Disable screen display
-                 ds      $0041 - $
-@@ -278,7 +278,7 @@ romid:
- 
- ; $0099 STRTMS
-                 ds      $0099 - $
--                jp      strtms
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
- 
- ; $009C CHSNS  .. check key buffer
-                 ds      $009C - $
-@@ -294,7 +294,8 @@ romid:
- 
- ; $00A5 LPTOUT
-                 ds      $00A5 - $
--                jp      lptout
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00A8 LPTSTT
-                 ds      $00A8 - $
-@@ -306,7 +307,7 @@ romid:
- 
- ; $00AE PINLIN
-                 ds      $00AE - $
--                jp      pinlin
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
- 
- ; $00B1 INLIN
-                 ds      $00B1 - $
-@@ -314,7 +315,7 @@ romid:
- 
- ; $00B4 QINLIN
-                 ds      $00B4 - $
--                jp      qinlin
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
- 
- ; $00B7 BREAKX
-                 ds      $00B7 - $
-@@ -322,11 +323,11 @@ romid:
+@@ -322,11 +322,11 @@ romid:
  
  ; $00BA ISCNTC
                  ds      $00BA - $
 -                jp      iscntc
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $00BD CKCNTC
                  ds      $00BD - $
--                jp      ckcntc
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
+-                jp      iscntc
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $00C0 BEEP
                  ds      $00C0 - $
-@@ -374,31 +375,38 @@ romid:
- 
- ; $00E1 TAPION
-                 ds      $00E1 - $
--                jp      tapion
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00E4 TAPIN
-                 ds      $00E4 - $
--                jp      tapin
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00E7 TAPIOF
-                 ds      $00E7 - $
--                jp      tapiof
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00EA TAPOON
-                 ds      $00EA - $
--                jp      tapoon
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00ED TAPOUT
-                 ds      $00ED - $
--                jp      tapout
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00F0 TAPOOF
-                 ds      $00F0 - $
--                jp      tapoof
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00F3 STMOTR
-                 ds      $00F3 - $
--                jp      stmotr
-+                jp      pntini          ; zerobas cbios-repack: body cut (D-CBIOSDEAD); zerobas's tape
-+                                        ; module repoints it and needs this C3 (tools/build_patches.py)
- 
- ; $00F6 LFTQ
-                 ds      $00F6 - $
-@@ -406,7 +414,7 @@ romid:
- 
- ; $00F9 PUTQ
-                 ds      $00F9 - $
--                jp      putq
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
- 
- ; $00FC RIGHTC
-                 ds      $00FC - $
-@@ -514,7 +522,7 @@ romid:
+@@ -514,7 +514,7 @@ romid:
  
  ; $014A ISFLIO
                  ds      $014A - $
 -                jp      isflio
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  ; $014D OUTDLP
                  ds      $014D - $
-@@ -534,7 +542,7 @@ romid:
+@@ -534,7 +534,7 @@ romid:
  
  ; $0159 CALBAS  Call BASIC interpreter
                  ds      $0159 - $
 -                jp      calbas
-+                ret                     ; zerobas cbios-repack: zerobas's (body cut, D-CBIOSDEAD)
++                ret                     ; zerobas cbios-repack (D-CBIOS032): zerobas's (body cut, D-CBIOSDEAD)
  
  
          IF VDP = TMS99X8
-@@ -1415,73 +1423,8 @@ curs2hl_mult_skip:
- 
- ; the extensive descriptions were taken with permission from http://map.tni.nl/
- 
--;-------------------------------------
--;0008h SYNCHR
--;Function:  tests whether the character of [HL] is the specified character
--;           if not, it generates SYNTAX ERROR, otherwise it goes to CHRGTR
--;           (#0010)
--;Input:     set the character to be tested in [HL] and the character to be
--;           compared next to RST instruction which calls this routine (inline
--;           parameter)
--;Output:    HL is increased by one and A receives [HL], When the tested character
--;           is numerical, the CY flag is set the end of the statement (00h or
--;           3Ah) causes the Z flag to be set
--;Registers: AF, HL
--;NOTE: this implementation is still a stub!
+@@ -1725,51 +1725,8 @@ curs2hl_mult_skip:
+ ; Remark   : On a mismatch it is a Syntax error: H.ERRO is called with
+ ;            E = 2, as BASIC does; without BASIC to go back to, C-BIOS then
+ ;            stops with an error screen.
 -synchr:
--                push    hl
--                push    af
--                ld      hl,synchr_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ret
--synchr_text:    db      "SYNCHR",0
--
+-                ld      a,(hl)
+-                ex      (sp),hl
+-                cp      (hl)            ; the inline byte
+-                inc     hl              ; return past it
+-                ex      (sp),hl
+-                jr      nz,synchr_error
+-                                        ; on into CHRGTR
 -;-------------------------------------
 -; $0010 CHRGTR
--; Read the next program character.
--; In:      HL = pointer to the program text
--; Out:     A  = the next program character
--;          HL = pointer to the next program character
--;          ZF = set if it's the end of statement
--;          CF = set if it's a number
--; Changes: AF, HL
+-; Function : Steps to the next character of a program text and returns it,
+-;            skipping spaces, TABs and LFs
+-; Input    : HL - the current character
+-; Output   : HL - the next character (spaces, TABs and LFs skipped)
+-;            A  - that character
+-;            F  - Z at the end of a statement (00 or ':'), C on a digit;
+-;                 from ':' up a compare's flags with ':', 00 an OR's, else
+-;                 a decrement's flags
+-; Registers: AF, HL
+-; Remark   : The numeric-constant tokens ($0B-$1F) of BASIC's text are
+-;            returned as plain characters: C-BIOS has no BASIC.
 -chrgtr:
 -                call    H_CHRG
 -chrgtr_lp:
--                ld      a,(hl)
 -                inc     hl
--                ; Check for the end of statement.
--                cp      $00             ; end of line
--                ret     z
--                cp      $3A             ; statement separator
--                ret     z
--                ; Check for digits.
--                cp      '0'
--                jr      c,chrgtr_no_digit
--                cp      '9'+1
--                ret     c
--chrgtr_no_digit:
--                ; Skip whitespace.
--                cp      $20             ; space
+-                ld      a,(hl)
+-                cp      ':'
+-                ret     nc              ; ':' and up
+-                or      a
+-                ret     z               ; 00: the end of the line
+-                cp      ' '
 -                jr      z,chrgtr_lp
--                cp      $09             ; tab
--                jr      z,chrgtr_lp
--                ; Otherwise it's a normal program character.
--                or      a               ; Clear CF and ZF.
+-                sub     9
+-                cp      2
+-                jr      c,chrgtr_lp     ; TAB and LF
+-                sub     '0'-9           ; A = the character - '0'
+-                sub     $CF             ; A = the character + 1, C: a digit
+-                dec     a
 -                ret
 -
--;-------------------------------------
--; $0018 OUTDO
--; Function : Output to current outputchannel (printer, diskfile, etc.)
--; Input    : A  - PRTFIL, PRTFLG
--; Remark   : Used in basic, in ML it's pretty difficult.
--outdo:
--                push    af
--                call    H_OUTD      ; H_OUTD does the real outputting
--                pop     af
--                ret
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): SYNCHR / CHRGTR / OUTDO -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
+-synchr_error:
+-                ld      e,2             ; Syntax error
+-                call    H_ERRO
+-                ld      de,str_syntax_error
+-                jp      print_error
++; zerobas cbios-repack (D-CBIOS032): SYNCHR / CHRGTR -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
  ;--------------------------------
  ; $0020 DCOMPR
-@@ -1497,27 +1440,8 @@ dcompr:
-                 sub     e
-                 ret
- 
--;--------------------------------
--; $0028 GETYPR
--; Function : Returns Type of DAC
--; Input    : VALTYP(F663)
--; Output   : C, Z, S
--;       C       Z       S       Type    VALTYP
--;       low     -       -       double  8
--;       high    high    low     string  3
--;       high    low     high    integer 2
--;       high    low     low     float   4
--; Registers: AF
--;NOTE: this implementation is still a stub!
+@@ -1797,18 +1754,8 @@ dcompr:
+ ;       high    low     low     float   4
+ ; Output   : A  - VALTYP - 3; F as OR A on it, with C when VALTYP < 8
+ ; Registers: AF
 -getypr:
--                push    hl
--                push    af
--                ld      hl,getypr_text
--                call    print_debug
--                pop     af
--                pop     hl
+-                ld      a,(VALTYP)
+-                cp      8
+-                jr      nc,getypr_dbl
+-                sub     3
+-                or      a
+-                scf
 -                ret
--getypr_text:    db      "GETYPR",0
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): GETYPR -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
+-getypr_dbl:
+-                sub     3
+-                or      a
+-                ret
++; zerobas cbios-repack (D-CBIOS032): GETYPR -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
  ;--------------------------------
  ; $0030 CALLF
-@@ -1567,33 +1491,8 @@ initio:
-                 ld      a,$FF
-                 ret
- 
--;--------------------------------
--; $003E INIFNK
--; Function : Initialises the contents of the function keys
--; Registers: All
--;NOTE: this implementation is still a stub!
--; zerobas: $003E is zerobas's own INIFNK (its islands overlay), so this stub never
--; runs; it gives INITIO's 7 new bytes above back (18 -> 11), so nothing after it moves.
--inifnk:
--                ret
--                ds      5, 0            ; D-GICINIQ took 5 of the 10 (INITIO's tail)
--
--;--------------------------------
--; $0099 STRTMS
--; Function : Tests whether the PLAY statement is being executed as a background
--;            task. If not, begins to execute the PLAY statement
--; Registers: All
--;NOTE: this implementation is still a stub!
--strtms:
--                push    hl
+@@ -1960,17 +1907,8 @@ chget_nowrap:
+ ; Remark   : H_OUTD comes first (disk BASIC's file output hooks in there)
+ ; Registers: F; A too for a graphic character to a printer that is not
+ ;            an MSX printer (see OUTDLP)
+-outdo:
 -                push    af
--                ld      hl,strtms_text
--                call    print_debug
+-                call    H_OUTD
+-                ld      a,(PRTFLG)
+-                or      a
+-                jr      nz,outdo_lpt
 -                pop     af
--                pop     hl
--                ret
--strtms_text:    db      "STRTMS",0
--
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): INIFNK / STRTMS -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
+-                jp      chput
+-outdo_lpt:
+-                pop     af
+-                ; on to OUTDLP
++; zerobas cbios-repack (D-CBIOS032): OUTDO -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
  ;--------------------------------
- ; $009C CHSNS
-@@ -1665,43 +1564,8 @@ chget_nowrap:
- 
-                 include "chput.asm"
- 
--;--------------------------------
--; $00A5 LPTOUT
--; Function : Sends one character to printer
--; Input    : A  - ASCII-code of character to send
--; Output   : C-flag set if failed
--; Registers: F
--
--lptout:
--                call    H_LPTO
--                push    af
--lptout_wait:
--                call    breakx
--                jr      c,lptout_abort
--                call    lptstt
--                jr      z,lptout_wait
--                pop     af
--                jr      lptout_write
--
--lptout_abort:
--                ld      a,13
--                call    lptout_write
--                xor     a
--                ld      (LPTPOS),a
--                pop     af
--                scf
--                ret
--
--lptout_write:
--                push    af
--                out     (PRN_DATA),a
--                ld      a,0
--                out     (PRN_STAT),a
--                cpl
--                out     (PRN_STAT),a
--                pop     af
--                and     a
--                ret
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): LPTOUT (zerobas's tape module answers $00A5) -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
- 
- ;--------------------------------
- ; $00A8 LPTSTT
-@@ -1805,31 +1669,8 @@ breakx:
-                 scf
-                 ret
- 
--;--------------------------------
--; $00BA ISCNTC
--; Function: Test status of STOP or CTRL-STOP; if BASIC is in a ROM (see BASROM),
--;           then check for STOP or CTRL-STOP is not done. Otherways:
--;       INTLFLG: 0 => no action
--;       INTLFLG: 3 => CTRL-STOP pressed => break program, if "STOP-interrupts not on"??
--;       INTLFLG: 4 => STOP pressed => wait in ISCNTC till stop pressed again
--; Input: INTFLG, BASROM
--; Registers: AF
--; NOTE: this implementation is still a stub!
+ ; $014D OUTDLP
+@@ -2156,10 +2094,8 @@ breakx:
+ ;           the answer with no break pending: A = 0, Z, H and P/V set, and
+ ;           interrupts on.
+ ; Registers: AF
 -iscntc:
--                push    hl
--                push    af
--                ld      hl,iscntc_text
--                call    print_debug
--                pop     af
--                pop     hl
+-                and     0
+-                ei
 -                ret
--iscntc_text:    db      "ISCNTC",0
--
--;--------------------------------
--; $00BD CKCNTC
--; Function : Same as ISCNTC. used in Basic
--ckcntc:
--                jp      iscntc
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): ISCNTC / CKCNTC -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
++; zerobas cbios-repack (D-CBIOS032): ISCNTC / CKCNTC -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
  ;--------------------------------
- ; $00C0 BEEP
-@@ -1928,133 +1769,8 @@ totext_map:                             ; CHGMOD enters here for A above 3 (D-CH
- totext_go:
-                 jp      chgmod
- 
--;--------------------------------
--; $00E1 TAPION
--; Reads the header block after turning the cassette motor on.
--; Output:  CF = set if failed
--; Changes: all
--; NOTE: This implementation is still a stub!
--tapion:
--                push    hl
--                push    af
--                ld      hl,tapion_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ; TODO: not implemented -> always fail
--                scf
--                ret
--tapion_text:    db      "TAPION",0
--
--;--------------------------------
--; $00E4 TAPIN
--; Read data from the tape.
--; Output:  A = data read
--; Changes: all
--; NOTE: This implementation is still a stub!
--tapin:
--                push    hl
--                push    af
--                ld      hl,tapin_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ; TODO: not implemented -> always fail
--                scf
--                ret
--tapin_text:     db      "TAPIN",0
--
--;--------------------------------
--; $00E7 TAPIOF
--; Stops reading from the tape.
--; NOTE: This implementation is still a stub!
--tapiof:
--                push    hl
--                push    af
--                ld      hl,tapiof_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ret
--tapiof_text:    db      "TAPIOF",0
--
--;--------------------------------
--; $00EA TAPOON
--; Turns on the cassette motor and writes the header.
--; Input:   A  = zero for short header, non-zero for long header
--; Output:  CF = set if failed
--; Changes: all
--; NOTE: This implementation is still a stub!
--tapoon:
--                push    hl
--                push    af
--                ld      hl,tapoon_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ; TODO: not implemented -> always fail
--                scf
--                ret
--tapoon_text:    db      "TAPOON",0
--
--;--------------------------------
--; $00ED TAPOUT
--; Writes data to the tape.
--; Input:   A  = data to write
--; Output:  CF = set if failed
--; Changes: all
--; NOTE: This implementation is still a stub!
--tapout:
--                push    hl
--                push    af
--                ld      hl,tapout_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ; TODO: not implemented -> always fail
--                scf
--                ret
--tapout_text:    db      "TAPOUT",0
--
--;--------------------------------
--; $00F0 TAPOOF
--; Stops writing on the tape.
--; NOTE: This implementation is still a stub!
--tapoof:
--                push    hl
--                push    af
--                ld      hl,tapoof_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ret
--tapoof_text:    db      "TAPOOF",0
--
--;--------------------------------
--; $00F3 STMOTR
--; Changes the cassette motor state.
--; Input:   A = action: #00 stops motor, #01 starts motor,
--;                      #FF inverts current state
--; Changes: AF
--stmotr:
--                push    bc
--                ld      b,a
--                in      a,(GIO_REGS)
--                inc     b
--                jr      z,stmotr_inv
--                set     4,a
--                dec     b
--                jr      z,stmotr_set
--                res     4,a
--                dec     b
--                jr      z,stmotr_set
--                pop     bc
--                ret
--
--stmotr_inv:     xor     16
--stmotr_set:     out     (GIO_REGS),a
--                pop     bc
--                ret
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): the cassette stubs TAPION .. STMOTR (zerobas's tape module answers $00E1-$00F3) -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
- 
- ;--------------------------------
- ; $0090 GICINI  Initialize Sound IC
-@@ -2195,18 +1911,8 @@ format:
-                 call    H_FORM
-                 ret
- 
--;--------------------------------
--; $014A ISFLIO
--; Function : Tests if I/O to device is taking place
--; Output   : A  - #00 if not taking place
--;             not #00 if taking place
--; Registers: AF
--; TODO: call H_ISFL
+ ; $00C6 POSIT
+@@ -2581,14 +2517,8 @@ format:
+ ;            F  - Z set if not taking place
+ ; Registers: AF
+ ; TODO: call H_ISFL
 -isflio:
 -;                call    H_ISFL
--                ld      a,(PTRFIL)
--                and     a               ; adjust flags
+-                push    hl
+-                ld      hl,(PTRFIL)
+-                ld      a,h
+-                or      l               ; both bytes of the pointer
+-                pop     hl
 -                ret
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): ISFLIO -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
++; zerobas cbios-repack (D-CBIOS032): ISFLIO -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
  ;--------------------------------
  ; $00D5 GTSTCK
-@@ -2402,14 +2108,8 @@ lftq:
-                 ld      h,$00           ; Queues are smaller than 256 bytes.
-                 ret
- 
--;--------------------------------
--; $00F9 PUTQ
--; zerobas: the $00F9 vector is repointed to zerobas's own PUTQ (basic/biosfnk.asm
--; bios_putq, D-BIOSRUNG), so this body is never entered; it is a `ret` and a pad that
--; keeps calc_queue_address where it was, its first 3 bytes spent by LFTQ above.
--putq:
--                ret
--                ds      29
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): PUTQ's `ret` and its 29 B pad -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
- 
-                 ; Calculate the address to the start of queue control block.
-                 ; A = queue number
-@@ -2970,22 +2670,8 @@ stack_error:
-                 ld      de,str_stack_error
-                 jp      print_error
- 
--;------------------------------------
--; $0159 CALBAS
--; Function : Executes inter-slot call to the routine in BASIC interpreter
--; Input    : IX - for the calling address
--; Output   : Depends on the called routine
--; Registers: Depends on the called routine
+@@ -3348,9 +3278,8 @@ hang_up_mode:
+ ; Input    : IX - the address to call
+ ; Output   : Depends on the called routine
+ ; Registers: Depends on the called routine, and IY
 -calbas:
--                push    hl
--                push    af
--                ld      hl,calbas_text
--                call    print_debug
--                pop     af
--                pop     hl
--                ld      de,str_no_basic_intr
--                jp      print_error
--calbas_text:    db      "CALBAS",0
-+; zerobas cbios-repack (D-CBIOSDEAD part 2): CALBAS -- zerobas overlays the vector(s) with its own
-+; body and nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
+-                ld      iy,(EXPTBL-1)   ; IYH: the main ROM's slot
+-                jp      calslt
++; zerobas cbios-repack (D-CBIOS032): CALBAS -- zerobas overlays the vector with its own body and
++; nothing in the merged ROM reaches C-BIOS's (zerobas scratchpad/cbios_reach.py), so it is cut.
  
          IF MODEL_MSX != MODEL_MSX1
  ;--------------------------------
+@@ -3504,8 +3433,6 @@ str_error_prompt:
+ str_memory_err:
+                 db      "MEMORY NOT FOUND.",$00
+ 
+-str_syntax_error:
+-                db      "SYNTAX.",$00
+ 
+ ; zerobas repack (C3-CBIOS-TAIL-STRINGS): str_basic ("Cannot execute a BASIC
+ ; ROM.", 30 B) and str_nocart ("No cartridge found. ...", 143 B) are reclaimed.
+diff --git a/src/scancodes_us.asm b/src/scancodes_us.asm
+index 718e275..68fb8a5 100644
+--- a/src/scancodes_us.asm
++++ b/src/scancodes_us.asm
+@@ -40,36 +40,8 @@ scode_tbl_shift:
+                 db      "KLMNOPQR"                      ;04
+                 db      "STUVWXYZ"                      ;05
+ 
+-scode_tbl_graph:
+-                db      $09,$AC,$AB,$BA,$EF,$BD,$F4,$FB ;00
+-                db      $EC,$07,$17,$F1,$1E,$01,$0D,$06 ;01
+-                db      $05,$BB,$F3,$F2,$1D,$00,$C4,$11 ;02
+-                db      $BC,$C7,$CD,$14,$15,$13,$DC,$C6 ;03
+-                db      $DD,$C8,$0B,$1B,$C2,$DB,$CC,$18 ;04
+-                db      $D2,$12,$C0,$1A,$CF,$1C,$19,$0F ;05
+-
+-scode_tbl_shift_graph:
+-                db      $0A,$00,$FD,$FC,$00,$00,$F5,$00 ;00
+-                db      $00,$08,$1F,$F0,$16,$02,$0E,$04 ;01
+-                db      $03,$F7,$AE,$AF,$F6,$00,$FE,$00 ;02
+-                db      $FA,$C1,$CE,$D4,$10,$D6,$DF,$CA ;03
+-                db      $DE,$C9,$0C,$D3,$C3,$D7,$CB,$A9 ;04
+-                db      $D1,$00,$C5,$D5,$D0,$F9,$AA,$F8 ;05
+-
+-scode_tbl_code:
+-                db      $EB,$9F,$D9,$BF,$9B,$98,$E0,$E1 ;00
+-                db		$E7,$87,$EE,$E9,$00,$ED,$DA,$B7 ;01
+-                db		$B9,$E5,$86,$A6,$A7,$00,$84,$97 ;02
+-                db		$8D,$8B,$8C,$94,$81,$B1,$A1,$91 ;03
+-                db		$B3,$B5,$E6,$A4,$A2,$A3,$83,$93 ;04
+-                db		$89,$96,$82,$95,$88,$8A,$A0,$85 ;05
+-                
+-scode_tbl_shift_code:
+-                db      $D8,$AD,$9E,$BE,$9C,$9D,$00,$00 ;00
+-                db		$E2,$80,$00,$00,$00,$E8,$EA,$B6 ;01
+-                db		$B8,$E4,$8F,$00,$A8,$00,$8E,$00 ;02
+-                db		$00,$00,$00,$99,$9A,$B0,$00,$92 ;03
+-                db		$B2,$B4,$00,$A5,$00,$E3,$00,$00 ;04
+-                db		$00,$00,$90,$00,$00,$00,$00,$00 ;05
++; zerobas cbios-repack (D-CBIOS032): scode_tbl_graph / _shift_graph / _code / _shift_code
++; (192 B) are cut -- nothing in C-BIOS reads them (zerobas scratchpad/cbios_reach.py; GRAPH
++; and CODE characters are not decoded), so the US build carries them as dead data.
+ 
+ ; vim:ts=8:expandtab:filetype=z8a:syntax=z8a:
+\ No newline at end of file

@@ -4,7 +4,7 @@ WARNING: Var buf is never used on line 31 of file probes/bios/spec/xdent7.asm
   ref : jiffy=bd00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
   ours: jiffy=8500 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
   CAP ref : 0000000000000000000000000000000000000000000000000000000000000000
-  CAP ours: c9540001a10040520000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  CAP ours: 0000000000000000000000000000000000000000000000000000000000000000
   DIFF (251 unexcused byte(s)):
   CAP A001: ref=00 ours=C9
   CAP A002: ref=00 ours=54

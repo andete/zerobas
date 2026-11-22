@@ -73,7 +73,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-CS-BIT** The PPI's port C bit 7 (the 1-bit sound) := 0 when A is 0, 1 for any other A ($01, $02, $80, $FF measured); its other bits are kept ($50 / $2F preset; with interrupts on only the high nibble is compared: the timer interrupt sets the keyboard row). | 22 | ✓ | ✓ |
-| **R-CS-AF** A := $0E when A was 0, $0F otherwise (the PPI bit set / reset command for bit 7); F := $54 / $08 -- whatever F was on entry. | 22 | ✓ | ✗ 8: XS N18, XS N20, XS D18, XS D20, XS N123, XS N124 … (+2) |
+| **R-CS-AF** A := $0E when A was 0, $0F otherwise (the PPI bit set / reset command for bit 7); F := $54 / $08 -- whatever F was on entry. | 22 | ✓ | ✓ |
 | **R-CS-KEEP** BC, DE, HL, IX, IY and the interrupt state are kept; the PSG registers and the queue cells are kept. | 22 | ✓ | ✓ |
 
 <!-- RULES END -->

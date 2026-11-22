@@ -40965,3 +40965,86 @@ the section headings they were written beneath.
       LEFT: zerobas's INTERVAL counters / bookkeeping sit in TRPTBL's unused tail (entries 18-25 read non-zero
       where the reference has 0) -- own layout, no program known to read them; the order BETWEEN families firing
       in one frame is unmeasured (descending now: INTERVAL, STRIG 4..0, SPRITE, STOP, KEY 10..1).
+
+---
+
+## Appended by a later split pass
+
+Blocks that moved out of `TODO.md` in a subsequent run, under
+the section headings they were written beneath.
+
+## From `TODO.md` § Phase 3+ — full MSX1 BASIC (active charter)
+
+- [x] **D-KEYGRAPH — A FUNCTION-KEY LABEL'S $01 GRAPHIC PREFIX: THE VG-8020 SHOWS THE GRAPHIC CELL, ZEROBAS A SPACE AND THE LETTER**
+      🎚️ TIER 6 — every edge (a program putting a graphic character into a KEY string; filed 2026-11-18).
+      🏗️ **RULED (Joost, 2026-11-18): PARKED** -- no sub-ROM page-0 carve for it now.
+      🤖 **AUTONOMOUS** — it was hidden behind D-KEYLINESHIFT. docs/bios/DSPFNK.md R-K-LABELS / R-K-LABELS2 on the fixed
+      build ([`XKEY_fix2.out`](scratchpad/XKEY_fix2.out), [`XSCR_fix1.out`](scratchpad/XSCR_fix1.out)): with `$01 'A'`
+      the VG-8020 shows cell 01 in ONE cell (code − $40, for $40..$5F only). A $01 before anything else shows nothing
+      and the next byte as itself, and a $01 at a label's end shows nothing. zerobas's label loop (sub/keystr.asm
+      `ksp_char`: `cp ' '` -> blank) shows a space and then the letter. ⛔ **BLOCKED ON SPACE:** the prefix test needs
+      ~12 B in the sub ROM's page 0, which has 3 B free (`make basic-reloc`, 2026-11-18). Same decision as
+      D-DSPFNKSCROLL (a carve / promote is Joost's).
+
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).
+- [x] **D-INITIOVCB — INITIO / GICINI DO NOT REWRITE THE VOICE CONTROL BLOCKS; THE VG-8020'S RESET THEM TO PLAY'S DEFAULTS**
+      🎚️ TIER 6 — every edge (a program that PEEKs the voice control blocks after INITIO / GICINI; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-VCB / R-IO-SEED ([`XINITIO2_run2.out`](scratchpad/XINITIO2_run2.out)): the
+      VG-8020 rewrites all three 37-byte blocks ($FB41, $FB66, $FB8B) to offsets 15-19 = 04 04 78 88 FF (octave 4, length
+      4, tempo 120, volume 8, envelope $FF) and every other byte 0, from garbage, in every case. That includes interrupts
+      on with MUSICF 0, and the blocks seeded alone (round 3, [`XINITIO3_run1.out`](scratchpad/XINITIO3_run1.out)). Its boot
+      already leaves them so. zerobas leaves them, apart from writing 0 into voice 0's tempo byte ($FB52), and they hold 0
+      after its boot. Its psv_flush zeroes the tempo as the "seed the defaults at the next PLAY" sign (basic/playsvc.asm,
+      pt_init in sub/playparse.asm). 🔴 THE TIER RESTS ON AN UNMEASURED INFERENCE: by that code a PLAY after INITIO should
+      sound the same, so only the RAM a program PEEKs differs (TIER 6). The page does not claim it. A PLAY with other O / L
+      / T / V / M, then INITIO, then PLAY "C", compared on both machines, would settle it (TIER 3 if it differs). Priced
+      2026-11-18: ~30 B of loop + a 5 B default table in bios_gicini's low region (43 B free, the switch-off floor 36 B)
+      -- not cheap; match only if a real program reads the blocks.      🏗️ **RULED (Joost, 2026-11-20): LEAVE FILED** (with D-GICINIVCB).
+
+
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).
+- [x] **D-LPTOUTF — LPTOUT RETURNS AN OR'S FLAGS ON A; THE VG-8020'S AN AND'S (H SET)**
+      🎚️ TIER 6 — every edge (a program testing H after LPTOUT; filed 2026-11-18).
+      🤖 **AUTONOMOUS** — docs/bios/LPTOUT.md R-LO-F ([`XLPT_run2.out`](scratchpad/XLPT_run2.out),
+      [`XLPT_run2d.out`](scratchpad/XLPT_run2d.out)): for every byte value the VG-8020's F after LPTOUT is a logical
+      result's on A with H set, the carry clear; zerobas's the same with H clear. The printer receives the same 256
+      bytes on both, and A and the registers are kept on both. Aborted by CTRL + STOP (R-LO-ABORTF,
+      [`XLPT3_run1.out`](scratchpad/XLPT3_run1.out)) both set the carry, but the VG-8020's F is $01 and zerobas's $A9.
+      Only the carry (aborted) is published. Priced when picked up.
+      🟡 **PART 1 LANDED 2026-11-19: the sent byte's F.** tape/tape.asm lptout's success exit `or a` -> `and a`
+      (0 B): R-LO-F holds on zerobas (spec-live, 512 cases). **STILL OPEN: the abort's F** ($01 against $A9, R-LO-ABORTF):
+      `ld a,b / pop bc / scf` leaves BREAKX's flags; F := $01 with A kept costs bytes in the tape body. Priced when
+      picked up.
+
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).
+- [x] **D-GTPDLPORT — GTPDL LEAVES OTHER BITS IN PSG R15 ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XINP1_run3.out`](scratchpad/XINP1_run3.out)): the VG-8020 changes only the port select (bit 6). docs/bios/GTPDL.md
+      R-PD-PORT. Priced when picked up.      ⚠️ ROOM (2026-11-19): GTPDL is in the tape module (tape/tape.asm), whose region ends at C-BIOS's pinned $0D01
+      and is EXACTLY FULL since the cassette fixes. Find bytes in the module first (or move GTPAD / GTPDL out of it --
+      it is also the standalone tape patch's code, so that is a deliverable change: ask).
+
+
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).
+- [x] **D-GICINIVCB — GICINI LEAVES THE VOICE BUFFERS UNINITIALISED ON ZEROBAS**
+      🎚️ TIER 6 — every edge (filed 2026-11-19).
+      🤖 **AUTONOMOUS** — ([`XSND1_run4.out`](scratchpad/XSND1_run4.out) / [`XSND1B_run1.out`](scratchpad/XSND1B_run1.out)): the VG-8020 clears them and sets bytes 15-19 of each to $04
+      $04 $78 $88 $FF. docs/bios/GICINI.md R-GI-VCB. Priced when picked up.      ⚠️ PRICED 2026-11-19 (picked up with D-STRTMS / D-BEEPRESET, left open): the reset itself is a loop, but the
+      VG-8020's bytes ($88 volume, $FF envelope at offsets 18-19) are NOT zerobas PLAY's encoding (VCX_VOLUME 0..15,
+      VCX_ENVSH 0..15 + the $10 env bit; tempo 0 is its reseed sign). Matching them means PLAY adopts the VG-8020's
+      encoding -- BASIC's PLAY engine, outside the current focus -- so it waits for Joost (with D-INITIOVCB). BEEP's
+      R-BP-RESET is listed here too.      🏗️ **RULED (Joost, 2026-11-20): LEAVE FILED.** (Matching the bytes means PLAY adopting the VG-8020's encoding.)
+
+
+
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).
+- [x] **D-EDITSTOPHELD — CTRL+STOP ENDS OUR LINE EDITOR ONLY ONCE THE KEYS ARE UP; THE VG-8020'S RETURNS AT THE PRESS**
+      🎚️ TIER 6 — every edge (filed 2026-11-21).
+      🤖 **AUTONOMOUS** — docs/bios/PINLIN.md R-L-STOPHELD (scratchpad/XLIN3_run4.out): right after PINLIN / INLIN /
+      QINLIN return from a CTRL+STOP, SNSMAT reads rows 6 / 7 $FD / $EF on the VG-8020 (still held) and $FF / $FF on
+      zerobas: basic/repl.asm rl_break waits for the release (rl_release, D-STOPINPUT / D-STOPKEY3) before it returns.
+      For a person the difference is the length of the press. A fix must keep BASIC's prompt safe from the SAME press
+      (rl_release_kil at the next read already waits a held key out, so rl_break's own wait may be the redundant one --
+      measure with the typed sessions S2_stopcont / S8_input before moving it). Case 1 returned with the keys held on
+      zerobas too, once (BREAKX's torn read, D-STOPTEAR): the rule's zerobas failures can vary by a case.
+      ✅ **DONE 2026-11-22 BY THE REBASE (D-CBIOS032):** zerobas runs C-BIOS d23d87b's own body for this entry now, and its spec page holds on zerobas (tools/spec_live.py, every run file refreshed: scratchpad/AE_d23_refresh.out).

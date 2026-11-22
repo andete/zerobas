@@ -79,9 +79,10 @@ from collections import deque
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E402
                                   data_targets, load_syms)
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
 PAGE1 = 0x4000
-LOWREGION = 0x2781
+LOWREGION = BASIC_ORG
 DEFAULT_PLUMBING = ("subrom_call", "subrom_absent_error", "vars_reset")
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
 

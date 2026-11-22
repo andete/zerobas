@@ -39,14 +39,18 @@ CODE = ([0x3E, 15, 0x1E, 0x5A, *call(WRTPSG),
          0x11, 0xA5, 0x00, 0xD5, 0xF1,
          0x01, 0x34, 0x12, 0x11, 0x78, 0x56, 0x21, 0xBC, 0x9A,
          *call(INITIO),
+         0xF3,                                         # di: D-CBIOS032 -- the capture is the CALL's
+                                                       # effect, not the next interrupt's (both BIOSes'
+                                                       # key scans rewrite R15; C-BIOS 0.32 reads the
+                                                       # triggers there): the PSG is read with DI
          0x22, 0x06, 0xD1,                             # HL -> $D106
          0xF5, 0xE1, 0x22, 0x00, 0xD1,                 # AF -> $D100
          0xED, 0x43, 0x02, 0xD1, 0xED, 0x53, 0x04, 0xD1,   # BC -> $D102, DE -> $D104
          0x06, 0x00, 0x21, 0x10, 0xD1,
          0x78, 0xC5, 0xE5, *call(RDPSG), 0xE1, 0xC1, 0x77, 0x23, 0x04, 0x78, 0xFE, 16,
          0x20, 0xF0,                                   # jr nz,<the ld a,b>
-         0xDB, 0xAA, 0x32, 0x20, 0xD1, 0xC9])
-_loop = len(CODE) - 6 - 16                             # the `ld a,b` the loop returns to
+         0xDB, 0xAA, 0x32, 0x20, 0xD1, 0xFB, 0xC9])     # ei / ret: BASIC's interrupt back on
+_loop = len(CODE) - 7 - 16                             # the `ld a,b` the loop returns to
 assert CODE[_loop] == 0x78 and CODE[_loop + 14] == 0x20
 assert _loop + 16 + (CODE[_loop + 15] - 256) == _loop
 

@@ -88,8 +88,9 @@ CHSNS_ENTRY = 0x009C                 # D-KEYSHIFT: where the REPL now waits
 # sub (hl)` -- PUTPNT read first, GETPNT through HL second -- not chget's SIG.
 SNS_OFF = 2
 SNS_SIG = "21faf33af8f396"
-# chget = call H_CHGE (3) + push hl (1) + push de (1) -> chget_wait
-WAIT_OFF = 5
+# chget = call H_CHGE (3) + push hl (1) + push de (1) + the STOP-pause test (ld hl,INTFLG / ld a,(hl) / sub 4 /
+# jr nz / ld (hl),a: 9, C-BIOS 0.32's) -> chget_wait. D-CBIOS032 (2026-11-22, rebased on fff98e8): 5 -> 14.
+WAIT_OFF = 14
 # ld hl,(GETPNT) = 2A FA F3 ; ld de,(PUTPNT) = ED 5B F8 F3
 SIG = "2afaf3ed5bf8f3"
 TARGET = '10 PRINT"ABCDEFG"'         # stored line 10; a mangle rejects it outright
@@ -104,7 +105,7 @@ TARGET = '10 PRINT"ABCDEFG"'         # stored line 10; a mangle rejects it outri
 # 1 / 8 / 11 / 14; docs/spec-probe-latch2.md quotes that era's bytes.)
 # The signature spans the whole window and embeds KEYBUF ($FBF0) and GETPNT
 # ($F3FA), so it vouches for the sysvar contract as well as the addresses.
-CHAR_OFF = 19                        # chget -> chget_char
+CHAR_OFF = 28                        # chget -> chget_char (19 before D-CBIOS032's 9-byte STOP-pause test)
 SIG2 = "56237dfe18200321f0fb22faf37ad1e1fbc9"
 # Offsets from chget_char to the boundaries this scores.
 B_READ = 1                           # inc hl, just after the read -- first FATAL boundary

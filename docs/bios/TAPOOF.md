@@ -67,8 +67,8 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-TO-MOTOR** The motor stops (port C bit 4 := 1); bits 5-7 are kept. | 24 | ✓ | ✗ 6: XU N15, XU N16, XU N18, XU D15, XU D16, XU D18 |
-| **R-TO-KEEP** A, F, BC, DE and HL are kept, whatever they were. | 24 | ✓ | ✗ 24: XT N11, XT N12, XT N22, XT D11, XT D12, XT D22 … (+18) |
+| **R-TO-MOTOR** The motor stops (port C bit 4 := 1); bits 5-7 are kept. | 24 | ✓ | ✓ |
+| **R-TO-KEEP** A, F, BC, DE and HL are kept, whatever they were. | 24 | ✓ | ✓ |
 | **R-TO-EI** Interrupts are on after the call, whether they were on or off before it. | 24 | ✓ | ✓ |
 
 <!-- RULES END -->

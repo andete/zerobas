@@ -16,6 +16,11 @@ For each page's rules module:
      reference" table names. A rule failing that the page does not list is a REGRESSION; a listed rule
      that now holds is a STALE PAGE (a fix whose page was not updated). Both exit 1.
 
+    python3 -u tools/spec_live.py --refresh [...]   -- also WRITE each live copy back over its committed run
+       file (only zerobas's `CAP ours` / `PRN ours` lines change; the reference's are never touched): after a
+       change that moves zerobas's answers on purpose, e.g. D-CBIOS032's rebase on a new C-BIOS. Then
+       `tools/spec_rules.py M --write` regenerates the page's tables, and its Differences list is edited.
+
 Exit 0: every page agrees; 1: a disagreement; 2: a probe gave no reading or a run file could not be used.
 CLEAN-ROOM: only our probes' capture blocks are read back (probes/bios/biosl_run.py's harness).
 """
@@ -137,6 +142,8 @@ def live_run(run_file, td):
 
 
 def main(argv):
+    refresh = "--refresh" in argv
+    argv = [a for a in argv if a != "--refresh"]
     mods = argv or sorted(os.path.join(ROOT, "probes", "bios", "spec", f)
                           for f in os.listdir(os.path.join(ROOT, "probes", "bios", "spec"))
                           if f.endswith("_rules.py"))
@@ -166,6 +173,9 @@ def main(argv):
                 rc = 2
             else:
                 redirect[f] = live
+                if refresh and open(live).read() != open(f).read():
+                    shutil.copyfile(live, f)
+                    sys.stdout.write(f"  REFRESHED {os.path.relpath(f, ROOT)}\n")
         for path in mods:
             files = files_of[path]
             mod, fails, _ = evaluate(path, redirect)

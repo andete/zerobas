@@ -1,0 +1,14 @@
+overlaid vectors: 9; seeds 132; back-references []
+  $0007-$0007    1 B  systemvars.asm QLENGX vdp_dw
+  $002C-$002C    1 B  main.asm     idbyt2 romid
+  $09DB-$0A00   38 B  debug.asm    print_debug_hexnibble print_debug_hexnibble_letter print_debug_hexbyte print_debug_hexword
+  $107C-$10A7   44 B  main.asm     synchr chrgtr chrgtr_lp synchr_error
+  $10AE-$10BD   16 B  main.asm     getypr getypr_dbl
+  $14A4-$14B2   15 B  main.asm     outdo outdo_lpt
+  $155E-$1561    4 B  main.asm     iscntc
+  $16E7-$16EE    8 B  main.asm     isflio
+  $173D-$1741    5 B  main.asm     joy_end
+  $19DD-$19E3    7 B  main.asm     calbas
+  $2B1B-$2B21    7 B  main.asm     str_syntax_error
+  $2B83-$2C3D  187 B  scancodes_jp.asm scode_tbl_graph scode_tbl_shift_graph scode_tbl_code scode_tbl_shift_code
+TOTAL dead below $2C77: 333 B

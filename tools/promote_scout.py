@@ -56,9 +56,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E402
                                   data_targets, load_syms)
 from carve_scout import reachable, shortest_path, sizes_by_symbol  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
 PAGE1 = 0x4000
-LOWREGION = 0x2781
+LOWREGION = BASIC_ORG
 # The ISR-side pins. htimi_guard is the frame-skip decision itself; a trap hook
 # that must NOT skip a frame (zkey_isr -- a missed frame leaks an undiverted
 # keystroke, docs/spec-traps-t3-key.md §5) is pinned with its whole closure.

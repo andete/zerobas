@@ -60,9 +60,9 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GS-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 48 | ✓ | ✗ 4: XI N35, XI N83, XI D35, XI D83 |
+| **R-GS-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 48 | ✓ | ✓ |
 | **R-GS-A** A 0: the cursor keys (row 8: bit 4 left, 5 up, 6 down, 7 right) give A := 1 up, 2 up-right, 3 right, 4 down-right, 5 down, 6 down-left, 7 left, 8 up-left, 0 none; opposite keys cancel (up + down, left + right, all four: 0; left + up + down: 7). A 1 / 2 (the joystick ports, nothing plugged) and 3: 0. | 48 | ✓ | ✓ |
-| **R-GS-KEEP** IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F, BC, DE and HL are left holding working values: not compared, the group `XIW`.) | 48 | ✓ | ✗ 4: XI N35, XI N83, XI D35, XI D83 |
+| **R-GS-KEEP** IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F, BC, DE and HL are left holding working values: not compared, the group `XIW`.) | 48 | ✓ | ✓ |
 | **R-GS-EI** Interrupts are on after the call, whether they were on or off before it. | 48 | ✓ | ✓ |
 
 <!-- RULES END -->

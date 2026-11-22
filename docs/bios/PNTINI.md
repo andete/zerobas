@@ -52,9 +52,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-PI-BDR** BDRATR ($FCB2) := ATRBYT in SCREEN 2, whatever A is ($05, $0F, $10, $FF measured); := A in any other mode (SCREEN 3: $05, $09, $10, $80, $FF; SCRMOD 0 and 1: $05 measured; none refused). ATRBYT whole: $1A gives $1A. | 30 | ✓ | ✗ 4: XQ N72, XQ N73, XQ D72, XQ D73 |
-| **R-PI-AF** SCREEN 2: A := ATRBYT, F its flags as an AND leaves them (H set: $10 for $07, $54 for $00, $1C for $0A). Other modes: A kept, F as CP $10 then CCF leave it (as SETATR: the carry set when A is $10 or more) -- whatever F was. | 30 | ✓ | ✗ 30: XQ N00, XQ N01, XQ N02, XQ N03, XQ N04, XQ N05 … (+24) |
-| **R-PI-KEEP** BC, DE, HL, IX, IY and the interrupt state are kept; CLOC, CMASK, ATRBYT, the work area $F92D-$F933 / $F942-$F954, VRAM, RG0SAV-RG7SAV, SCRMOD and the VDP registers are kept. | 30 | ✓ | ✗ 30: XQ N00, XQ N01, XQ N02, XQ N03, XQ N04, XQ N05 … (+24) |
+| **R-PI-BDR** BDRATR ($FCB2) := ATRBYT in SCREEN 2, whatever A is ($05, $0F, $10, $FF measured); := A in any other mode (SCREEN 3: $05, $09, $10, $80, $FF; SCRMOD 0 and 1: $05 measured; none refused). ATRBYT whole: $1A gives $1A. | 30 | ✓ | ✓ |
+| **R-PI-AF** SCREEN 2: A := ATRBYT, F its flags as an AND leaves them (H set: $10 for $07, $54 for $00, $1C for $0A). Other modes: A kept, F as CP $10 then CCF leave it (as SETATR: the carry set when A is $10 or more) -- whatever F was. | 30 | ✓ | ✓ |
+| **R-PI-KEEP** BC, DE, HL, IX, IY and the interrupt state are kept; CLOC, CMASK, ATRBYT, the work area $F92D-$F933 / $F942-$F954, VRAM, RG0SAV-RG7SAV, SCRMOD and the VDP registers are kept. | 30 | ✓ | ✓ |
 
 <!-- RULES END -->
 

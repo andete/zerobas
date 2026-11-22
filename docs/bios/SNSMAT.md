@@ -61,8 +61,8 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-SM-A** A := key-matrix row A as the PPI reads it (bit 0 = pressed; rows 0-10 measured, one key or none or four; rows 3 and 4 too); the row is A AND $0F (A $12 reads row 2), and rows 11-15 give $FF. | 40 | ✓ | ✓ |
-| **R-SM-C** C := the row number (A on entry). | 40 | ✓ | ✗ 40: XI N00, XI N01, XI N02, XI N03, XI N04, XI N05 … (+34) |
-| **R-SM-PORT** The PPI's port C := (port C AND $F0) + A, an 8-bit ADD of the whole A: $50 + 8 is $58, $5A + 8 is $58 too, $D0 + 2 is $D2, $50 + $12 is $62, $50 + $FF is $4F. | 40 | ✓ | ✗ 4: XI N12, XI N71, XI D12, XI D71 |
+| **R-SM-C** C := the row number (A on entry). | 40 | ✓ | ✓ |
+| **R-SM-PORT** The PPI's port C := (port C AND $F0) + A, an 8-bit ADD of the whole A: $50 + 8 is $58, $5A + 8 is $58 too, $D0 + 2 is $D2, $50 + $12 is $62, $50 + $FF is $4F. | 40 | ✓ | ✓ |
 | **R-SM-KEEP** B, DE, HL, IX, IY, INTFLG, CAPST and R14 are kept. (F is left holding a working value: not compared, the group `XIF`.) | 40 | ✓ | ✓ |
 | **R-SM-EI** Interrupts are on after the call, whether they were on or off before it. | 40 | ✓ | ✓ |
 

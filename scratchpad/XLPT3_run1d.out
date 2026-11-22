@@ -3,7 +3,7 @@
   ref : jiffy=e500 typed=1 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
   ours: jiffy=8200 typed=1 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
   CAP ref : a5410100c3000000000000000000000000000000000000000000000000000000
-  CAP ours: a541a900c3000000000000000000000000000000000000000000000000000000
+  CAP ours: a5410100c3000000000000000000000000000000000000000000000000000000
   DIFF (1 unexcused byte(s)):
   CAP C003: ref=01 ours=A9
 ===== biosl: DIVERGENCE =====

@@ -205,6 +205,16 @@ flo_fx_b_zloop:
                 inc     hl
                 djnz    flo_fx_b_zloop
                 ret
+; 📌 $3297 = `pop hl / ret` (D-BASICINT; Punch & Judy, Harry Fox call it -- docs/
+; game-internal-addresses.md). FIXED ADDRESS: since the D-CBIOS032 rebase (BASIC from
+; $2BAF) $3297 falls inside this file, so the pin sits here, after an unconditional
+; `ret` (tools/pin_plan.py); the `ds` is its pad.
+    IF BASICINT_PINS
+                ds      $3297 - $, $00
+basicint_3297:
+                pop     hl
+                ret
+    ENDIF
 flo_fx_a:                                   ; A = 1 (dec_exp 0) / 0 (-1); B = s
                 ld      (hl),'.'
                 inc     hl

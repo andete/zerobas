@@ -63,9 +63,9 @@ already held the defaults, so it is evidence only for the boot state.
 |---|---|---|---|
 | **R-F-ALL** From ANY start -- all $00, all $5A, or per key $00 / $5A / 16 letters with no 0 / the default 'list ' with $5A padding -- all 160 bytes end as R-F-DEFAULTS states: whole 16-byte slots are written, the padding zeros included. On the diskless and the disk machine alike. | 6 | ✓ | ✓ |
 | **R-F-REGS** A is kept ($A5, $00, $5A in); IX / IY are kept; BC returns 0000, DE $F91F (just past FNKSTR) and HL $1449; of F, S / Z / C come through from entry and H / P/V / N are cleared (measured 00 from $00, C1 and E9 from $FF). | 6 | ✓ | ✗ 6: XF3 nodisk 1, XF3 nodisk 2, XF3 nodisk 3, XF3 disk 1, XF3 disk 2, XF3 disk 3 |
-| **R-F-DI** Entered with interrupts disabled, it returns with them disabled. | 6 | ✓ | ✗ 6: XF3 nodisk 1, XF3 nodisk 2, XF3 nodisk 3, XF3 disk 1, XF3 disk 2, XF3 disk 3 |
+| **R-F-DI** Entered with interrupts disabled, it returns with them disabled. | 6 | ✓ | ✓ |
 | **R-F-NOREDRAW** It does not redraw the key line, also with CNSDFG $FF: row 24 keeps its $5A. | 6 | ✓ | ✓ |
-| **R-F-WAREA** Outside FNKSTR NOTHING in the whole work area $F380-$FFFF changes: compared right after the call, before any other BIOS call (run 2; run 1's timer cells were the probe's own interrupt, let in by its VRAM reads). | 6 | ✓ | ✗ 6: XF3 nodisk 1, XF3 nodisk 2, XF3 nodisk 3, XF3 disk 1, XF3 disk 2, XF3 disk 3 |
+| **R-F-WAREA** Outside FNKSTR NOTHING in the whole work area $F380-$FFFF changes: compared right after the call, before any other BIOS call (run 2; run 1's timer cells were the probe's own interrupt, let in by its VRAM reads). | 6 | ✓ | ✓ |
 
 #### 3. At cartridge INIT
 
@@ -79,7 +79,7 @@ already held the defaults, so it is evidence only for the boot state.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-TEXTAF** (registers on return; interrupts enabled on return; work-area cells it changes: the interrupt's $F3F6 / $F3F7 / $FC9E, and $F5F5 / $F856, whose source is not shown) | R-F-AF, R-F-REGS, R-F-DI, R-F-WAREA |
+| **D-TEXTAF** (registers on return; interrupts enabled on return; work-area cells it changes: the interrupt's $F3F6 / $F3F7 / $FC9E, and $F5F5 / $F856, whose source is not shown) | R-F-AF, R-F-REGS |
 
 ## Open (not measured)
 

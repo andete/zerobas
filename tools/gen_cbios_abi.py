@@ -33,6 +33,7 @@ ABI = [
     ("CBIOS_TUPC", "tupc", "C-BIOS's TUPC body (basic/biosfnk.asm bios_tupc, every case but the edge)"),
     ("CBIOS_TDOWNC", "tdownc", "C-BIOS's TDOWNC body (basic/biosfnk.asm bios_tdownc, every case but the edge)"),
     ("CBIOS_NSETCX", "nsetcx", "C-BIOS's NSETCX body (basic/biosfnk.asm bios_nsetcx)"),
+    ("CBIOS_CHPUT", "chput", "C-BIOS's CHPUT: the TTYPOS store at +27 is patched (basic/islands.asm)"),
 ]
 
 

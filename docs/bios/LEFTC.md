@@ -69,8 +69,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-LC-POS** SCREEN 2: CMASK rotates left one bit -- the bit rotated out comes back in at bit 0 ($C0 gives $81, $81 gives $03) -- and when that bit was set CLOC := CLOC - 8 ($03 gives $06, CLOC kept). SCREEN 3: with CMASK's bit 7 set ($F0, $80, $F1, $8F, $FF) CMASK := $0F and CLOC := CLOC - 8; with it clear ($0F, $1F, $4F, $70) CMASK := $F0, CLOC kept. No edge is checked: from $0000 CLOC wraps to $FFF8. | 66 | ✓ | ✗ 14: XM N276, XM N288, XM N289, XM N312, XM N313, XM N330 … (+8) |
-| **R-LC-AF** A and F: A := the new CMASK, and F that value's flags as an AND leaves them (H set; S, Z, bits 5 / 3, P/V from A; N and C clear) -- whatever A and F were on entry. | 66 | ✓ | ✗ 14: XM N276, XM N288, XM N289, XM N312, XM N313, XM N330 … (+8) |
+| **R-LC-POS** SCREEN 2: CMASK rotates left one bit -- the bit rotated out comes back in at bit 0 ($C0 gives $81, $81 gives $03) -- and when that bit was set CLOC := CLOC - 8 ($03 gives $06, CLOC kept). SCREEN 3: with CMASK's bit 7 set ($F0, $80, $F1, $8F, $FF) CMASK := $0F and CLOC := CLOC - 8; with it clear ($0F, $1F, $4F, $70) CMASK := $F0, CLOC kept. No edge is checked: from $0000 CLOC wraps to $FFF8. | 66 | ✓ | ✓ |
+| **R-LC-AF** A and F: A := the new CMASK, and F that value's flags as an AND leaves them (H set; S, Z, bits 5 / 3, P/V from A; N and C clear) -- whatever A and F were on entry. | 66 | ✓ | ✓ |
 | **R-LC-KEEP** BC, DE, HL, IX, IY, the interrupt state and the rest of the work area recorded (ATRBYT, ASPCT1 / ASPCT2, SCRMOD, GRPCGP / MLTCGP) are kept. | 66 | ✓ | ✓ |
 
 <!-- RULES END -->

@@ -9,4 +9,4 @@ SPDX-License-Identifier: BSD-2-Clause
 
 ## Differences from the reference
 
-As PINLIN's page states for INLIN: **D-TEXTAF** and **D-EDITSTOPHELD**.
+As PINLIN's page states for INLIN: **D-TEXTAF** (D-EDITSTOPHELD closed with the rebase on C-BIOS d23d87b, 2026-11-22).

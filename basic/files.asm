@@ -868,8 +868,6 @@ rl_inl_bios:
                 call    nz,rlb_mark         ; LINTTB[row - 1] := $AF
                 call    read_line
                 jr      rlb_enter
-rl_pin_bios:
-                call    read_line_col1
 rlb_enter:
                 ret     c                   ; CTRL+STOP / CTRL+C: bil_stop marks its own
                 push    af

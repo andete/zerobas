@@ -61,7 +61,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-MV-MEM** BC bytes are copied from VRAM at HL AND $3FFF (wrapping from $3FFF to $0000) to RAM at DE; the RAM bytes around keep theirs. (HL $1234, $3FFC, $1200, and $5234 / $D234 / $9234, which read from $1234; DE $E980; BC 1, 4, 8, $100, $108.) The source VRAM is not changed. | 16 | ✓ | ✓ |
-| **R-MV-REGS** On return A = 0, F = $44 (Z and P/V), BC = 0 and DE = DE + BC; HL, IX and IY are kept -- whatever A and F were on entry (A $A7, $00, $5A; F $00, $FF, $A5, $5A). | 16 | ✓ | ✗ 16: XM N26, XM N27, XM N28, XM N29, XM N49, XM N50 … (+10) |
+| **R-MV-REGS** On return A = 0, F = $44 (Z and P/V), BC = 0 and DE = DE + BC; HL, IX and IY are kept -- whatever A and F were on entry (A $A7, $00, $5A; F $00, $FF, $A5, $5A). | 16 | ✓ | ✓ |
 | **R-MV-PORT** The VDP is left reading the byte after the last one copied: the next read of port $98 returns the VRAM byte at (HL + BC) AND $3FFF. | 16 | ✓ | ✓ |
 | **R-MV-EI** Interrupts are on after the call, whether they were on or off before it. | 16 | ✓ | ✓ |
 

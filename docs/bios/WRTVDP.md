@@ -62,8 +62,8 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-WV-REG** VDP register C AND 7 := B, as the VDP holds it (its unused bits read 0: R#0 keeps bits 1-0, R#1 all but bit 2, R#2 bits 3-0, R#4 and R#6 bits 2-0, R#5 bits 6-0); the other seven registers keep their values. C 0-7, each with B $00, $FF, $5A and $A5; C 8-15 with $5A and $A5; C $10, $28, $80, $FF. | 104 | ✓ | ✓ |
-| **R-WV-SAV** The byte at RG0SAV + C ($F3DF + C, for every C) := B: for C 0-7 the register's own shadow RG0SAV-RG7SAV; for C 8-15 a cell past RG7SAV ($F3E7-$F3EE); for C $10, $28, $80, $FF further on ($F3EF, $F407, $F45F, $F4DE). Every other byte of $F3DF-$F3EE keeps its value. | 104 | ✓ | ✗ 4: XV N74, XV N75, XV D74, XV D75 |
-| **R-WV-ABC** A = B on return, B = 0, and C is kept. | 104 | ✓ | ✗ 4: XV N74, XV N75, XV D74, XV D75 |
+| **R-WV-SAV** The byte at RG0SAV + C ($F3DF + C, for every C) := B: for C 0-7 the register's own shadow RG0SAV-RG7SAV; for C 8-15 a cell past RG7SAV ($F3E7-$F3EE); for C $10, $28, $80, $FF further on ($F3EF, $F407, $F45F, $F4DE). Every other byte of $F3DF-$F3EE keeps its value. | 104 | ✓ | ✓ |
+| **R-WV-ABC** A = B on return, B = 0, and C is kept. | 104 | ✓ | ✓ |
 | **R-WV-F** F is $A0 (S and bit 5 set), with P/V set when C OR $80 has an even number of 1 bits ($A4) -- whatever F was on entry ($00 or $FF). | 104 | ✓ | ✓ |
 | **R-WV-EI** Interrupts are on after the call, whether they were on or off before it. | 104 | ✓ | ✓ |
 | **R-WV-KEEP** DE, HL, IX and IY are kept (two sets of values). | 104 | ✓ | ✓ |

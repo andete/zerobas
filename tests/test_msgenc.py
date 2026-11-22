@@ -25,6 +25,7 @@ by doing it, 2026-07-29 (phrase form) and 2026-10-03 (plain form).
 """
 
 import os
+import re
 from _tmp import tp
 import subprocess
 import sys
@@ -34,7 +35,9 @@ ROOT = os.path.dirname(HERE)
 
 ROM = tp("zb_msgenc_reloc.rom")
 SYM = tp("zb_msgenc_reloc.sym")
-LOW = 0x2781                    # basic/main-reloc.asm ROM_BASE: image offset origin
+# basic/main.asm's BASIC_ORG, the image offset origin, read from the source ($2781 until the D-CBIOS032 rebase)
+LOW = int(re.search(r"^BASIC_ORG:\s+equ\s+\$([0-9A-Fa-f]+)",
+                    open(os.path.join(ROOT, "basic", "main.asm")).read(), re.M).group(1), 16)
 
 # The text every message MUST still produce, typed independently of the `db`
 # lines that encode them. Capitalisation is load-bearing: the arrays arc's

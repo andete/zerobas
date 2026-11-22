@@ -74,6 +74,8 @@ from dataclasses import dataclass, field
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import probe_tmp                       # noqa: E402,F401 -- sets tempfile.tempdir [[one-temp-root]]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from basic_org import BASIC_ORG  # noqa: E402  (D-CBIOS032: one definition)
 
 # ---------------------------------------------------------------------------
 # THE PIN LIST. expect = exact bytes, or "jp" (C3 + a target inside the main
@@ -92,9 +94,8 @@ PINS = [
     # D-ESIDXAL (2026-11-14): $3283 and $475A stood in the source as `ds` pins but not
     # here, so neither was CHECKED and the wall readout never counted the pad in front
     # of them (180 B appeared in front of $475A when stmt_table moved out -- unseen).
-    # $3283: crt_rows (C-BIOS's CHPUT calls it, cbios-repack/crtcnt-bound.patch) --
-    # push hl / ld hl,CNSDFG ($F3DE) / ld a,(CRTCNT ($F3B1)); the rest follows.
-    Pin(0x3283, 6, bytes.fromhex("E521DEF33AB1"), None, "D-CRTBOUND crt_rows: CRTCNT + CNSDFG"),
+    # ($3283 crt_rows is no longer pinned (D-CBIOS032, 2026-11-22): only the retired
+    # crtcnt-bound.patch called it by address; the sub ROM takes it from the resident ABI.)
     Pin(0x3297, 2, bytes([0xE1, 0xC9]), None, "D-BASICINT pop hl / ret"),
     # $475A: the published Illegal function call entry (D-USRDEF, every USRTAB vector
     # at power-on): ld a,5; the `jp raise_error` after it moves.
@@ -116,8 +117,8 @@ PINS = [
 ]
 
 SRC = "basic/main.asm"
-BASE, TOP = 0x2781, 0x8000
-REGIONS = (("low", 0x2781, 0x4000, "__MEAS_LOW_END"),
+BASE, TOP = BASIC_ORG, 0x8000
+REGIONS = (("low", BASIC_ORG, 0x4000, "__MEAS_LOW_END"),
            ("page1", 0x4000, 0x8000, "__MEAS_PAGE1_END"))
 SHARING_TREES = ("sub", "sub2", "disk")
 

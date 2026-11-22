@@ -62,7 +62,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-RV-A** A := the VRAM byte at HL AND $3FFF (HL $1234, $3FFF, $0000, $0812, $2034, and $4123 / $C123 / $FFFF, which read $0123 / $0123 / $3FFF). | 16 | ✓ | ✓ |
-| **R-RV-F** F is the flags of (H AND $3F) as an AND leaves them: S, Z, bits 5 / 3 from that value, H set, P/V the even parity, N and C clear -- whatever A and F were on entry (A $A7, $00, $5A; F $00, $FF, $A5, $5A). | 16 | ✓ | ✗ 16: XM N00, XM N01, XM N02, XM N03, XM N04, XM N05 … (+10) |
+| **R-RV-F** F is the flags of (H AND $3F) as an AND leaves them: S, Z, bits 5 / 3 from that value, H set, P/V the even parity, N and C clear -- whatever A and F were on entry (A $A7, $00, $5A; F $00, $FF, $A5, $5A). | 16 | ✓ | ✓ |
 | **R-RV-KEEP** BC, DE, HL, IX and IY are kept. | 16 | ✓ | ✓ |
 | **R-RV-MEM** VRAM is not changed: the probe's VRAM windows read back as it set them. | 16 | ✓ | ✓ |
 | **R-RV-PORT** The VDP is left reading the byte after HL: the next read of port $98 returns the VRAM byte at (HL + 1) AND $3FFF. | 16 | ✓ | ✓ |

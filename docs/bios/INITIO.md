@@ -39,10 +39,8 @@ The fourth (RS-232) queue, QUEUES itself, PLAY's parse cells and the PPI's port 
 the click, the cassette motor, the keyboard row) are not touched. It returns A = $FF, F = $54, E = $0B and
 interrupts enabled; BC, HL, IX, IY, D, I and the shadow registers are kept.
 
-zerobas does all of it the same (the descriptors where QUEUES points since D-INITIOQUEUES, 2026-11-19),
-apart from the voice control blocks, which it does not rewrite (D-INITIOVCB). It writes only 0 into
-voice 0's tempo byte ($FB52). Already at a cartridge's INIT, during boot, its blocks hold 0 and the
-VG-8020's the defaults.
+zerobas does all of it the same (the descriptors where QUEUES points since D-INITIOQUEUES, 2026-11-19;
+the voice control blocks since the rebase on C-BIOS d23d87b, 2026-11-22, which closed D-INITIOVCB).
 
 Whether a PLAY after INITIO sounds the same on both is not measured here.
 
@@ -159,15 +157,15 @@ five cases and the 105-byte record:
 | **R-IO-REGS2** Whatever A was on entry ($A7 or $00), A = $FF and F = $54 on return; D is kept ($9B and $64 measured) and E is $0B; BC, HL, IX, IY and the shadow registers AF' / BC' / DE' / HL' are kept -- two full sets of entry values. | 5 | ✓ | ✓ |
 | **R-IO-PSG2** R-IO-PSG and R-IO-AA hold here too, with interrupts on and off and both register sets. | 5 | ✓ | ✓ |
 | **R-IO-PLAYEI** Entered with interrupts ON (MUSICF 0, so the interrupt plays nothing), INITIO resets the three voice descriptors (QUEUES at $F959) the same way, from garbage; the RS-232 descriptor and QUEBAK stay. | 2 | ✓ | ✓ |
-| **R-IO-VCB** The three voice control blocks (37 B each at $FB41, $FB66, $FB8B) are rewritten: offsets 15-19 = 04 04 78 88 FF, every other byte 0 -- from garbage in XI2 1 / 4; in the other cases the blocks already held these values. | 5 | ✓ | ✗ 5: XI2 1, XI2 2, XI2 3, XI2 4, XI2 5 |
-| **R-IO-SEED** With PLAY's state, QUEBAK and the voice control blocks all garbage, exactly the cells R-IO-PLAY and R-IO-VCB name change, no other; with nothing seeded, nothing changes. | 3 | ✓ | ✗ 2: XI2 1, XI2 4 |
+| **R-IO-VCB** The three voice control blocks (37 B each at $FB41, $FB66, $FB8B) are rewritten: offsets 15-19 = 04 04 78 88 FF, every other byte 0 -- from garbage in XI2 1 / 4; in the other cases the blocks already held these values. | 5 | ✓ | ✓ |
+| **R-IO-SEED** With PLAY's state, QUEBAK and the voice control blocks all garbage, exactly the cells R-IO-PLAY and R-IO-VCB name change, no other; with nothing seeded, nothing changes. | 3 | ✓ | ✓ |
 
 #### 3. Round 3: each seed independent, MUSICF / PLYCNT values, the first call after boot (XINITIO3)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IO-VCB3** The voice control blocks are rewritten to R-IO-VCB's values whatever else holds: with interrupts ON and MUSICF 0 (XI3 3), with the blocks seeded and only PLYCNT besides (XI3 6), and already at a cartridge's INIT during boot (XI3 1, the first call: nothing to change). | 6 | ✓ | ✗ 6: XI3 1, XI3 2, XI3 3, XI3 4, XI3 5, XI3 6 |
-| **R-IO-MP** MUSICF and PLYCNT become 0 whatever they held -- 0 / $5A, $FF / 0 (MUSICF alone), $5A / $FF, 0 / $33 (XI3 2 / 4 / 5 / 6; XI3 3 seeds 0 / 0) -- and exactly the seeded cells the reset gives another value change, no other. | 5 | ✓ | ✗ 4: XI3 2, XI3 3, XI3 5, XI3 6 |
+| **R-IO-VCB3** The voice control blocks are rewritten to R-IO-VCB's values whatever else holds: with interrupts ON and MUSICF 0 (XI3 3), with the blocks seeded and only PLYCNT besides (XI3 6), and already at a cartridge's INIT during boot (XI3 1, the first call: nothing to change). | 6 | ✓ | ✓ |
+| **R-IO-MP** MUSICF and PLYCNT become 0 whatever they held -- 0 / $5A, $FF / 0 (MUSICF alone), $5A / $FF, 0 / $33 (XI3 2 / 4 / 5 / 6; XI3 3 seeds 0 / 0) -- and exactly the seeded cells the reset gives another value change, no other. | 5 | ✓ | ✓ |
 | **R-IO-BOOT** The first call after boot, nothing seeded, changes no cell of the work area. (That the boot already left the voice control blocks at INITIO's values is R-IO-VCB3's read of XI3 1.) | 1 | ✓ | ✓ |
 | **R-IO-REGS3** R-IO-REGS2 and R-IO-PSG2 hold here too: A $FF, F $54, E $0B, the rest and the shadow registers kept; the PSG; port $AA's high nibble (CAPS, click, motor, cassette out) as found; interrupts on. | 6 | ✓ | ✓ |
 
@@ -176,18 +174,18 @@ five cases and the 105-byte record:
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IO-I** The I register is kept ($5A, $A5, $00). | 3 | ✓ | ✓ |
-| **R-IO-PARSE** PLAY's parse cells $FB35-$FB3E (VOICEN, MCLPTR, QUEUEN ...) are left, from garbage: the changed cells are exactly R-IO-PLAY's / R-IO-VCB's / R-IO-MP's. | 3 | ✓ | ✗ 1: XI4 3 |
+| **R-IO-PARSE** PLAY's parse cells $FB35-$FB3E (VOICEN, MCLPTR, QUEUEN ...) are left, from garbage: the changed cells are exactly R-IO-PLAY's / R-IO-VCB's / R-IO-MP's. | 3 | ✓ | ✓ |
 | **R-IO-AA4** With interrupts off on entry and no interrupt after the return, port $AA is left WHOLE, the keyboard-row nibble included ($35, $96); R15 still reads $CF, so INITIO wrote it, not an interrupt. | 2 | ✓ | ✓ |
 | **R-IO-REGS4** R-IO-REGS3's registers, the PSG and port $AA's high nibble hold here too. | 3 | ✓ | ✓ |
-| **R-IO-VCB4** R-IO-VCB holds here too. | 3 | ✓ | ✗ 3: XI4 1, XI4 2, XI4 3 |
+| **R-IO-VCB4** R-IO-VCB holds here too. | 3 | ✓ | ✓ |
 
 #### 5. Round 5: under the clean window, with JIFFY as the witness; QUEUES moved (XINITIO5: QUEUES ($F3F3) := $9EB7 in XI5 1 / 2, left so for XI5 3)
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IO-CLEAN** In XI5 2 and 3, where the witness shows no interrupt in the window (the evidence note), R7 / R8-R10 / R11 / R15 are as R-IO-PSG says with the PSG all $FF and a pattern: INITIO wrote them. | 2 | ✓ | ✓ |
-| **R-IO-QUEUES** With QUEUES = $9EB7, the 18 bytes there hold R-IO-PLAY's descriptors (0, 0, 0, $7F, $F975 / $F9F5 / $FA75) after the call and one more interrupt, and the $F959.. table keeps its garbage, its bytes +18..+27 (QUEBAK, the RS-232 descriptor) included. $9EB7 was not seeded here, so this round does not show the WRITE: R-IO-QUEUES6 does. QUEUES itself is left (it is in no case's changed cells). As the boot leaves QUEUES ($F959), rounds 1-4 saw the reset at $F959. | 3 | ✓ | ✗ 3: XI5 1, XI5 2, XI5 3 |
-| **R-IO-MP5** MUSICF / PLYCNT become 0 ($FF / 0, 0 / $5A, $5A / $FF), the voice control blocks R-IO-VCB's values, and exactly those seeded cells change. (XI5 1 took an interrupt in the window; the witnessed cases are XI5 2 / 3, and MUSICF $FF with no interrupt is R-IO-MPFF.) | 3 | ✓ | ✗ 3: XI5 1, XI5 2, XI5 3 |
+| **R-IO-QUEUES** With QUEUES = $9EB7, the 18 bytes there hold R-IO-PLAY's descriptors (0, 0, 0, $7F, $F975 / $F9F5 / $FA75) after the call and one more interrupt, and the $F959.. table keeps its garbage, its bytes +18..+27 (QUEBAK, the RS-232 descriptor) included. $9EB7 was not seeded here, so this round does not show the WRITE: R-IO-QUEUES6 does. QUEUES itself is left (it is in no case's changed cells). As the boot leaves QUEUES ($F959), rounds 1-4 saw the reset at $F959. | 3 | ✓ | ✓ |
+| **R-IO-MP5** MUSICF / PLYCNT become 0 ($FF / 0, 0 / $5A, $5A / $FF), the voice control blocks R-IO-VCB's values, and exactly those seeded cells change. (XI5 1 took an interrupt in the window; the witnessed cases are XI5 2 / 3, and MUSICF $FF with no interrupt is R-IO-MPFF.) | 3 | ✓ | ✓ |
 | **R-IO-REGS5** The registers, I and the PSG (all $00, all $FF and a pattern) as R-IO-REGS3 / R-IO-I / R-IO-PSG say; port $AA WHOLE in the clean cases ($96, $C3), its high nibble in XI5 1, where the interrupt that slipped in scanned the keyboard ($35 read as $3A). | 3 | ✓ | ✓ |
 
 #### 6. Round 6: QUEUES and its table read BEFORE any interrupt can run (XINITIO6: the clean window, JIFFY as the witness, the reads before any `ei`)
@@ -195,7 +193,7 @@ five cases and the 105-byte record:
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IO-QBOOT** At the first call after boot QUEUES is $F959 and its table already holds R-IO-PLAY's descriptors, the RS-232 descriptor and QUEBAK 0; the call changes none of it. | 1 | ✓ | ✓ |
-| **R-IO-QUEUES6** INITIO ITSELF writes the descriptors where QUEUES points: with QUEUES $9EB7 or $A123 and its 28-byte table garbage, the table's first 18 bytes become R-IO-PLAY's descriptors (the buffer addresses $F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 keep their garbage, $F959.. ($F96B-$F974 included) keeps its own, and QUEUES is kept -- in a witnessed window (the evidence note). | 2 | ✓ | ✗ 2: XI6 2, XI6 3 |
+| **R-IO-QUEUES6** INITIO ITSELF writes the descriptors where QUEUES points: with QUEUES $9EB7 or $A123 and its 28-byte table garbage, the table's first 18 bytes become R-IO-PLAY's descriptors (the buffer addresses $F975 / $F9F5 / $FA75 whatever QUEUES is), its bytes +18..+27 keep their garbage, $F959.. ($F96B-$F974 included) keeps its own, and QUEUES is kept -- in a witnessed window (the evidence note). | 2 | ✓ | ✓ |
 | **R-IO-QF959** With QUEUES at the boot's $F959 and that table garbage, the descriptors are written there: the first 18 bytes become R-IO-PLAY's, bytes +18..+27 keep their garbage. | 1 | ✓ | ✓ |
 | **R-IO-MPFF** With MUSICF $FF (every bit), in a witnessed window, INITIO itself clears MUSICF -- and writes the descriptors at $F959 as R-IO-QF959. | 1 | ✓ | ✓ |
 | **R-IO-PSG0** With the PSG all $00 before the call and a witnessed window (run 4), R7 = $B8, R11 = $0B and R15 = $CF after it. From $00 this rules out an AND of the old value; R-IO-PSG7 (from $FF) rules out an OR. | 5 | ✓ | ✓ |
@@ -205,9 +203,9 @@ five cases and the 105-byte record:
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-IO-PSG7** R7 = $B8, R11 = $0B and R15 = $CF from the PSG all $FF (XI7 1 / 3 / 4) and all $00 (XI7 2): with R-IO-PSG0 neither an AND nor an OR of the old value fits -- they are written whole. | 4 | ✓ | ✓ |
-| **R-IO-VCB7** The voice control blocks become R-IO-VCB's values from all $FF (XI7 2 / 3) and from $CC - k (XI7 1 / 4, the complement of rounds 2-3's pattern): every bit of every byte was seen both ways. | 4 | ✓ | ✗ 4: XI7 1, XI7 2, XI7 3, XI7 4 |
-| **R-IO-EI7** Entered with interrupts ON (XI7 1 / 2), in the clean window, INITIO itself does the same: MUSICF ($FF, $5A) becomes 0, and the descriptors are written where QUEUES points ($F959, $9EB7). | 2 | ✓ | ✗ 1: XI7 2 |
-| **R-IO-Q7** Entered with interrupts off (XI7 3 / 4): the descriptors are written where QUEUES points ($F959, $A123), as R-IO-QUEUES6 / R-IO-QF959; MUSICF is 0 after (cleared from $FF in XI7 3; XI7 4 seeds 0). | 2 | ✓ | ✗ 1: XI7 4 |
+| **R-IO-VCB7** The voice control blocks become R-IO-VCB's values from all $FF (XI7 2 / 3) and from $CC - k (XI7 1 / 4, the complement of rounds 2-3's pattern): every bit of every byte was seen both ways. | 4 | ✓ | ✓ |
+| **R-IO-EI7** Entered with interrupts ON (XI7 1 / 2), in the clean window, INITIO itself does the same: MUSICF ($FF, $5A) becomes 0, and the descriptors are written where QUEUES points ($F959, $9EB7). | 2 | ✓ | ✓ |
+| **R-IO-Q7** Entered with interrupts off (XI7 3 / 4): the descriptors are written where QUEUES points ($F959, $A123), as R-IO-QUEUES6 / R-IO-QF959; MUSICF is 0 after (cleared from $FF in XI7 3; XI7 4 seeds 0). | 2 | ✓ | ✓ |
 
 Declared NOT evidence (16 cases: XI 1, XI 2, XI 3, XI 4 … (+12)): r14 — R14 is the PSG's INPUT port A: it reads the joystick lines, not anything INITIO writes
 
@@ -227,7 +225,6 @@ Declared UNSTABLE on the reference itself (4 cases: XI7 1, XI7 2, XI7 3, XI7 4):
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-INITIOVCB** (the voice control blocks are not rewritten; they hold 0 after boot) | R-IO-VCB, R-IO-SEED, R-IO-VCB3, R-IO-VCB4, R-IO-VCB7, R-IO-MP / R-IO-PARSE / R-IO-MP5 (through the blocks' cells) |
 
 ## Open (not measured)
 

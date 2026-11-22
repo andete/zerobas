@@ -10,4 +10,4 @@ SPDX-License-Identifier: BSD-2-Clause
 
 ## Differences from the reference
 
-As DSPFNK's (its page's Differences): **D-KEYGRAPH**, **D-INITEDGES**.
+As DSPFNK's (its page's Differences): **D-TEXTAF** (D-KEYGRAPH and D-INITEDGES closed with the rebase on C-BIOS d23d87b, 2026-11-22).

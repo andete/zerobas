@@ -85,6 +85,10 @@ REQUIRED_SUB = [
     "sub_isr_main",
     # D-SCANRSAVE: the paint tenant's border test, moved to main's low region for room.
     "scan_isbd",
+    # D-CBIOS032 (2026-11-22): the console's bottom row (CRTCNT + CNSDFG) -- the line editor's readers. Pinned at
+    # $3283 / $328D until the rebase only because the retired cbios-repack/crtcnt-bound.patch called them by address.
+    "crt_rows",
+    "crt_cp",
 ]
 
 # --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------

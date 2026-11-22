@@ -320,7 +320,9 @@ dig15_shr:
 ; calls them (cbios-repack/crtcnt-bound.patch) -- page 0, mapped whenever CHPUT
 ; runs -- and so do BASIC's and the sub-ROM's readers (`call` in place of each
 ; `ld a,(CRTCNT)` / `ld hl,CRTCNT : cp (hl)`, the same bytes).
-                ds      $3283 - $, $00
+; (D-CBIOS032, 2026-11-22: crt_rows / crt_cp are no longer pinned at $3283 / $328D -- only
+; the retired cbios-repack/crtcnt-bound.patch called them by address; BASIC and the sub ROM
+; reach them through the generated resident ABI.)
 crt_rows:                                   ; A := CRTCNT + CNSDFG; flags; HL kept
                 push    hl
                 ld      hl,CNSDFG
@@ -337,13 +339,7 @@ crt_cp:                                     ; flags := A - (CRTCNT + CNSDFG); A,
                 cp      c
                 pop     bc
                 ret
-    IF BASICINT_PINS                        ; (crt_rows / crt_cp above are NOT under it:
-                                            ; every build calls them -- switch-build-check)
-                ds      $3297 - $, $00
-basicint_3297:
-                pop     hl
-                ret
-    ENDIF
+; (basicint_3297, the $3297 pin, moved to basic/float.asm with the D-CBIOS032 rebase.)
 dshr_allzero:
                 jp      dig15_zero15
 

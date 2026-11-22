@@ -8,7 +8,7 @@
 ; program running -> not typed; its TRPTBL entry ON -> the event bit (bit 2), and not
 ; STOPped -> ONGSBF := 1 (measured on the VG-8020: scratchpad/keytrapref_vg2.out ..
 ; keytrapref_vg5.out). The repack's C-BIOS does exactly that (cbios-repack/
-; key-trap-bios.patch), so BASIC keeps only its own half: KEY(n) writes FNKFLG
+; fff98e8, C-BIOS's own since 2026-11-22), so BASIC keeps only its own half: KEY(n) writes FNKFLG
 ; (basic/trapstmt.asm), the table is the reference's TRPTBL layout (ZTRAP, basic/
 ; sysvars.inc), TRAPPEND is ONGSBF, and check_traps scans it descending. The old
 ; zkey_hook (a RAM vector at $FFCF, H_ZKEY, installed at boot) is gone with

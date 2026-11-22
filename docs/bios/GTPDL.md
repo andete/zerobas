@@ -59,9 +59,9 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-PD-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 8 | ✓ | ✗ 8: XI N60, XI N61, XI N62, XI N63, XI D60, XI D61 … (+2) |
+| **R-PD-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 8 | ✓ | ✓ |
 | **R-PD-A** Nothing plugged: A := $FF (A 1, 2, 12 measured). | 8 | ✓ | ✓ |
-| **R-PD-KEEP** IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept. (F, BC, DE and HL are left holding working values.) | 8 | ✓ | ✗ 8: XI N60, XI N61, XI N62, XI N63, XI D60, XI D61 … (+2) |
+| **R-PD-KEEP** IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept. (F, BC, DE and HL are left holding working values.) | 8 | ✓ | ✓ |
 | **R-PD-EI** Interrupts are on after the call, whether they were on or off before it. | 8 | ✓ | ✓ |
 
 <!-- RULES END -->
@@ -70,7 +70,6 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-GTPDLPORT** (zerobas leaves R15 $AF / $DF -- the paddle pulse bits changed -- where the VG-8020 leaves $8F / $CF) | R-PD-PORT, R-PD-KEEP |
 
 ## Open (not measured)
 

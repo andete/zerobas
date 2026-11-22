@@ -58,8 +58,8 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-KB-BUF** GETPNT ($F3FA) := PUTPNT ($F3F8): the buffer is empty, the put pointer kept. HL := that pointer. | 4 | ✓ | ✗ 4: XI N13, XI N14, XI D13, XI D14 |
-| **R-KB-KEEP** A, F, BC, DE, IX, IY, the PPI port C, INTFLG, CAPST, R14 and the key scan's cells are kept. | 4 | ✓ | ✗ 4: XI N13, XI N14, XI D13, XI D14 |
+| **R-KB-BUF** GETPNT ($F3FA) := PUTPNT ($F3F8): the buffer is empty, the put pointer kept. HL := that pointer. | 4 | ✓ | ✓ |
+| **R-KB-KEEP** A, F, BC, DE, IX, IY, the PPI port C, INTFLG, CAPST, R14 and the key scan's cells are kept. | 4 | ✓ | ✓ |
 | **R-KB-EI** The interrupt state is kept. | 4 | ✓ | ✓ |
 
 <!-- RULES END -->

@@ -162,10 +162,6 @@ print_string:
 ; read_line_col1 -- PINLIN's entry (D-PINLINSTART, 2026-11-18): the line is read from column 1,
 ; as the VG-8020's PINLIN does (docs/bios/PINLIN.md R-L-PIN). Carry rides the stack to the
 ; column choice below: set here, clear from read_line / rl_loop.
-read_line_col1:
-                ld      hl,LINEBUF
-                scf
-                jr      rl_entry
 read_line:
                 ld      hl,LINEBUF
 rl_loop:

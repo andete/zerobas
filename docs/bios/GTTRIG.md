@@ -60,9 +60,9 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GT-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 22 | ✓ | ✗ 2: XI N43, XI D43 |
-| **R-GT-A** A 0: A := $FF when the space bar (row 8 bit 0) is pressed, 0 when not. A 1-4 (the joystick triggers, nothing plugged) and 5: 0. | 22 | ✓ | ✗ 2: XI N43, XI D43 |
-| **R-GT-KEEP** DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F and BC are left holding working values: not compared, the group `XIT`.) | 22 | ✓ | ✗ 2: XI N43, XI D43 |
+| **R-GT-PORT** PSG R15 bit 6 (which joystick port the PSG's port A reads) := 0 for an odd A, 1 for an even one but 0 (A 0, the keyboard, leaves it); its other bits are kept ($CF preset: $8F / $CF). | 22 | ✓ | ✓ |
+| **R-GT-A** A 0: A := $FF when the space bar (row 8 bit 0) is pressed, 0 when not. A 1-4 (the joystick triggers, nothing plugged) and 5: 0. | 22 | ✓ | ✓ |
+| **R-GT-KEEP** DE, HL, IX, IY, INTFLG, CAPST and R14 are kept; the PPI port C is kept -- its low nibble 8 (row 8 selected) for A 0. (F and BC are left holding working values: not compared, the group `XIT`.) | 22 | ✓ | ✓ |
 | **R-GT-EI** Interrupts are on after the call, whether they were on or off before it. | 22 | ✓ | ✓ |
 
 <!-- RULES END -->

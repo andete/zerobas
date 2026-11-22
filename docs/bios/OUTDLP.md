@@ -50,10 +50,10 @@ pass `P`; **[XP r]** what the printer received on row `r`.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-OD-PRN** The printer receives the bytes as sent (letters, $20, $78, $85, $FF, CR, LF), except: a TAB becomes spaces up to the next column that is a multiple of 8 (from columns 2, 0, 7 and 8, and right after a graphic character); and, on a printer that is not an MSX one (NTMSXP $F417 $FF or $01), a graphic character's $01 is dropped and its code $41 or $5F becomes one space ($7E goes out as it is). On an MSX printer (NTMSXP 0) $01 and the code go out as they are. | 2 | ✓ | ✗ 2: XP N, XP D |
-| **R-OD-POS** LPTPOS ($F415) follows the printer's column: +1 per character printed, to the next multiple of 8 for a TAB, 0 after CR, unchanged by LF and by the $01 of a graphic character -- on any printer, so a TAB after a graphic character goes to the column the visible characters reach. | 128 | ✓ | ✗ 36: XO N0.16, XO N0.17, XO N0.18, XO N0.19, XO N0.20, XO N1.16 … (+30) |
-| **R-OD-A** A is kept -- except that a graphic code sent as a space returns A $20 -- and BC, DE, HL, IX and IY are kept. | 128 | ✓ | ✗ 4: XO N1.17, XO N2.02, XO D1.17, XO D2.02 |
-| **R-OD-F** F is LPTOUT's on the byte sent (an AND's flags on it: H set, the carry clear); after a TAB it is F as on entry ($00 / $FF / $5A); after the $01 held back for a printer that is not an MSX one, $42. | 128 | ✓ | ✗ 128: XO N0.00, XO N0.01, XO N0.02, XO N0.03, XO N0.04, XO N0.05 … (+122) |
+| **R-OD-PRN** The printer receives the bytes as sent (letters, $20, $78, $85, $FF, CR, LF), except: a TAB becomes spaces up to the next column that is a multiple of 8 (from columns 2, 0, 7 and 8, and right after a graphic character); and, on a printer that is not an MSX one (NTMSXP $F417 $FF or $01), a graphic character's $01 is dropped and its code $41 or $5F becomes one space ($7E goes out as it is). On an MSX printer (NTMSXP 0) $01 and the code go out as they are. | 2 | ✓ | ✓ |
+| **R-OD-POS** LPTPOS ($F415) follows the printer's column: +1 per character printed, to the next multiple of 8 for a TAB, 0 after CR, unchanged by LF and by the $01 of a graphic character -- on any printer, so a TAB after a graphic character goes to the column the visible characters reach. | 128 | ✓ | ✓ |
+| **R-OD-A** A is kept -- except that a graphic code sent as a space returns A $20 -- and BC, DE, HL, IX and IY are kept. | 128 | ✓ | ✓ |
+| **R-OD-F** F is LPTOUT's on the byte sent (an AND's flags on it: H set, the carry clear); after a TAB it is F as on entry ($00 / $FF / $5A); after the $01 held back for a printer that is not an MSX one, $42. | 128 | ✓ | ✓ |
 
 <!-- RULES END -->
 

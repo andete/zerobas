@@ -67,7 +67,7 @@ the run.
 |---|---|---|---|
 | **R-T-SCRMOD** SCRMOD decides, not the register copies: INITXT's copies with SCRMOD 2 are acted on (INITXT); INIGRP's copies with SCRMOD 0 are left alone (nothing at all, LINLEN's 50 kept). | 2 | ✓ | ✓ |
 | **R-T-DISPATCH** OLDSCR is a dispatch, not a text choice: 0, $81 and $FF set up SCREEN 0 (and OLDSCR becomes 0); 1 SCREEN 1; 2 SCREEN 2 -- back to the graphics screen; 3, $5A, $7F and $80 SCREEN 3. The graphics outcomes leave LINLEN (50), the cursor and CNSDFG as found. | 7 | ✓ | ✓ |
-| **R-T-THRU** TOTEXT's INITXT / INIT32 follow INITXT's page with the inputs as found: CRTCNT 13 kept and the key line on row 13 (the boot's labels: '  color  aut' / '  color auto'); CNSDFG $80 / $FF become 255; R7 from the colours (3A, 09); RG0SAV $03 / RG1SAV $E3 give R0 01 and R1 F3 / E3 -- the register copies as INITXT.md's R0 and register rules compute them (whole where the case set the entry copies; where the mode's call left them, from bits of the previous case's, only the bits TOTEXT forces and R2-R7). | 8 | ✓ | ✗ 2: XT2 02, XT2 03 |
+| **R-T-THRU** TOTEXT's INITXT / INIT32 follow INITXT's page with the inputs as found: CRTCNT 13 kept and the key line on row 13 (the boot's labels: '  color  aut' / '  color auto'); CNSDFG $80 / $FF become 255; R7 from the colours (3A, 09); RG0SAV $03 / RG1SAV $E3 give R0 01 and R1 F3 / E3 -- the register copies as INITXT.md's R0 and register rules compute them (whole where the case set the entry copies; where the mode's call left them, from bits of the previous case's, only the bits TOTEXT forces and R2-R7). | 8 | ✓ | ✓ |
 | **R-T-VRAM2** The whole VRAM's sum is the reference's, per case (the font included: ruled; INIT32's sum also follows the colours and the sprite size; INITXT's does not: the colours 3, 10, 9 give the same sum). | 17 | ✓ | ✗ 11: XT2 00, XT2 02, XT2 03, XT2 04, XT2 05, XT2 06 … (+5) |
 | **R-T-REGS2** The register copies after the graphics outcomes are the reference's (INIGRP's / INIMLT's, the entry bits kept: 03 E3 06 FF 03 36 07 04 for SCREEN 2, 01 EB 02 00 00 36 07 04 for SCREEN 3); with nothing done they stay as found. | 6 | ✓ | ✓ |
 
@@ -80,7 +80,7 @@ Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-
 | TODO item | rules zerobas fails |
 |---|---|
 | ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1, R-T-VRAM2 |
-| **D-INITEDGES** (CRTCNT 13: zerobas's key line on row 24 and CRTCNT := 24) | R-T-THRU, R-T-VRAM2 (its two CRTCNT 13 cases) |
+| **D-INITEDGES** (CRTCNT 13: zerobas's key line on row 24 and CRTCNT := 24) | R-T-VRAM2 (its two CRTCNT 13 cases) |
 
 ## Open (not measured)
 

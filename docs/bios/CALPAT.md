@@ -55,7 +55,7 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 |---|---|---|---|
 | **R-CP-HL** HL := PATBAS ($F926) + A x the pattern size: 8 bytes when RG1SAV's bit 1 is 0 (8 x 8 sprites), 32 when it is 1 (16 x 16); the sum wraps at 16 bits. RG1SAV's other bits play no part (RG1SAV $E0-$E3, $00, $02, $FD, $FF, $1E, $82, $22). A 0-$FF; PATBAS $3800, $1234, $FFF8, $FFF0, $8000, $7FF8, $F000. | 62 | ✓ | ✓ |
 | **R-CP-ADE** A := the pattern size (8 or 32) and DE := A x that size, the offset added. | 62 | ✓ | ✓ |
-| **R-CP-F** F: H, C and bits 5 / 3 as ADD HL,DE leaves them (H the carry out of bit 11, C out of bit 15, bits 5 / 3 from the sum's high byte), N clear; Z set exactly when the sprites are 8 x 8; S and P/V clear, also for a sum with bit 15 set or a signed overflow; Z clear for a 16 x 16 sum that wraps to $0000 -- whatever F was on entry ($00, $FF, $80, $40). | 62 | ✓ | ✗ 46: XP N00, XP N01, XP N02, XP N03, XP N04, XP N05 … (+40) |
+| **R-CP-F** F: H, C and bits 5 / 3 as ADD HL,DE leaves them (H the carry out of bit 11, C out of bit 15, bits 5 / 3 from the sum's high byte), N clear; Z set exactly when the sprites are 8 x 8; S and P/V clear, also for a sum with bit 15 set or a signed overflow; Z clear for a 16 x 16 sum that wraps to $0000 -- whatever F was on entry ($00, $FF, $80, $40). | 62 | ✓ | ✓ |
 | **R-CP-KEEP** BC, IX and IY are kept (two sets of values). | 62 | ✓ | ✓ |
 | **R-CP-CELLS** RG1SAV, PATBAS and ATRBAS are not changed, and the interrupt state is kept (off, or on). | 62 | ✓ | ✓ |
 

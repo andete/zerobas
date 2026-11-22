@@ -61,7 +61,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-BX-C** The carry := CTRL (row 6 bit 1) and STOP (row 7 bit 4) both pressed, read from the key matrix directly (CTRL alone, STOP alone, none: clear). (Only the carry of F is compared; A is left holding a working value, the group `XIA`.) | 18 | ✓ | ✓ |
-| **R-BX-BUF** With CTRL+STOP: the key buffer is emptied (GETPNT := PUTPNT) and OLDKEY's row 7 := $EF (STOP pressed). Otherwise both are kept. | 18 | ✓ | ✗ 4: XI N46, XI N49, XI D46, XI D49 |
+| **R-BX-BUF** With CTRL+STOP: the key buffer is emptied (GETPNT := PUTPNT) and OLDKEY's row 7 := $EF (STOP pressed). Otherwise both are kept. | 18 | ✓ | ✓ |
 | **R-BX-KEEP** BC, DE, HL, IX, IY, INTFLG, CAPST, R14, NEWKEY, the other OLDKEY rows and TRGFLG are kept; the PPI port C's high nibble is kept, its low nibble left at the last row read: 7, or 6 when STOP is pressed. | 18 | ✓ | ✓ |
 | **R-BX-EI** The interrupt state is kept. | 18 | ✓ | ✓ |
 

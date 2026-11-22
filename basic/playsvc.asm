@@ -50,114 +50,15 @@ play_install:
 
 ; play_service: one frame of the music (the model above). IN: MUSICF not 0 (isr_music
 ; tests it), main page 1 mapped, DI. Clobbers every register.
-play_service:
-                ld      ix,VCBA             ; voice A's block
-                ld      iy,QUETAB           ; queue 0's descriptor
-                ld      bc,$0001            ; B = the voice, C = its MUSICF bit
-psv_loop:
-                ld      a,(MUSICF)
-                and     c
-                call    nz,psv_voice
-                ld      de,VCB_STRIDE
-                add     ix,de
-                ld      de,QD_STRIDE
-                add     iy,de
-                inc     b
-                sla     c
-                bit     3,c
-                jr      z,psv_loop          ; voices A, B, C
-                ld      a,(MUSICF)
-                or      a
-                ret     nz
-                jp      bios_strtms         ; every voice at its end: the next round
 
 ; psv_voice: IX = the voice's block, IY = its queue's descriptor, B = the voice, C = its
 ; bit. Count the block's first word down; at 0 read a packet.
-psv_voice:
-                ld      l,(ix+0)
-                ld      h,(ix+1)
-                dec     hl
-                ld      (ix+0),l
-                ld      (ix+1),h
-                ld      a,h
-                or      l
-                ret     nz                  ; the note goes on
-                ld      a,(iy+QD_GET)
-                cp      (iy+QD_PUT)
-                ret     z                   ; the queue is empty: nothing (the word wraps)
-                call    psv_get
-                inc     a
-                jr      z,psv_end           ; $FF: the end
-                dec     a
-                ld      d,a                 ; D = byte 0
-                and     $1F
-                ld      (ix+1),a            ; the duration, high ...
-                call    psv_get
-                ld      (ix+0),a            ; ... and low
-                call    psv_get
-                ld      e,a                 ; E = the vol byte
-                ld      a,b
-                add     a,8
-                call    psg_out             ; R(8+v) := vol, first
-                ld      a,d
-                cp      $40
-                ret     c                   ; n = 1: a rest, nothing more
-                bit     4,e
-                ld      a,13
-                call    nz,psg_out          ; the envelope: R13 := vol (it restarts)
-                bit     6,e
-                ld      a,11
-                call    nz,psv_pair         ; M: R11 := low, R12 := high
-                ld      a,b
-                add     a,a                 ; the tone: R(2v) := low, R(2v+1) := high
 ; psv_pair: A = a register; reads high then low from the queue, writes R(A) := low,
 ; then R(A+1) := high.
-psv_pair:
-                push    af
-                call    psv_get
-                ld      d,a                 ; high
-                call    psv_get
-                ld      e,a                 ; low
-                pop     af
-                call    psg_out
-                inc     a
-                ld      e,d
 ; psg_out: PSG register A := E; A and E kept.
-psg_out:
-                out     ($A0),a
-                push    af
-                ld      a,e
-                out     ($A1),a
-                pop     af
-                ret
 ; psv_end: the voice's end marker -- R(8+v) := 0, its MUSICF bit cleared.
-psv_end:
-                ld      a,b
-                add     a,8
-                ld      e,0
-                call    psg_out
-                ld      a,c
-                cpl
-                ld      hl,MUSICF
-                and     (hl)
-                ld      (hl),a
-                ret
 ; psv_get: A = the queue's next byte. The get index is stepped FIRST (the VG-8020's
 ; rings: GET = the last byte read) and masked with the descriptor's size byte.
-psv_get:
-                ld      a,(iy+QD_GET)
-                inc     a
-                and     (iy+QD_SIZE)
-                ld      (iy+QD_GET),a
-                ld      l,(iy+QD_ADDR)
-                ld      h,(iy+QD_ADDR+1)
-                add     a,l
-                ld      l,a
-                jr      nc,psv_g1
-                inc     h
-psv_g1:
-                ld      a,(hl)
-                ret
 ; psv_flush: BEEP, a break, an abort (psg_silence, basic/sound.asm, under its DI)
 ; reset PLAY as the VG-8020 does: the queues EMPTY -- they are rings kept across
 ; PLAYs now (D-PLAYQUEUE), so stopped music must not resume -- and the PLAY

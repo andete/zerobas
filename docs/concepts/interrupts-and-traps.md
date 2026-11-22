@@ -122,7 +122,7 @@ used and the cell cleared afterwards by `POKE`. A program can also set
 `FNKFLG(n)` with `POKE`: the key is then swallowed while the program runs,
 with nothing recorded.
 
-zerobas does the same: the scan is C-BIOS's, patched with exactly this rule,
+zerobas does the same: the scan is C-BIOS's, which has this rule since its commit fff98e8 (zerobas's proposal),
 and BASIC writes `FNKFLG` and keeps its trap table in the reference's `TRPTBL`
 order ([`keytrapref_zb3.out`](../../scratchpad/keytrapref_zb3.out)).
 
@@ -318,7 +318,7 @@ of music. When a sub-ROM routine holds that part of memory, both are skipped
 for the frame; the sprite sample is not. The `KEY` trap's event comes from
 the keyboard scan itself, as on the reference: the repacked C-BIOS checks
 `FNKFLG`, `CURLIN` and the key's `TRPTBL` entry before typing a function key
-([cbios-repack/key-trap-bios.patch](../../cbios-repack/key-trap-bios.patch);
+(C-BIOS took zerobas's proposal as its commit fff98e8, the repack's base since 2026-11-22;
 until 2026-11-22 it called a zerobas routine through a RAM hook at `&HFFCF`
 instead).
 Ctrl-STOP is read with the BIOS `BREAKX` by the run loop (`rp_exec` and

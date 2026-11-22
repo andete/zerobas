@@ -73,9 +73,9 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-BP-PSG** After the beep: PSG R0 / R1 := $55 / $00 (channel A's tone), R7 := $B8, R8-R10 := 0; the other registers kept. | 12 | ✓ | ✗ 12: XS N73, XS N74, XS D73, XS D74, XS N118, XS N119 … (+6) |
-| **R-BP-RESET** It ends with GICINI's reset: queues 0-2, MUSICF / PLYCNT and the voice buffers as docs/bios/GICINI.md gives them. | 12 | ✓ | ✗ 12: XS N73, XS N74, XS D73, XS D74, XS N118, XS N119 … (+6) |
-| **R-BP-REGS** A := 0, F := $44, BC := 0, E := 7 -- whatever they were; D, HL, IX and IY are kept. | 12 | ✓ | ✗ 12: XS N73, XS N74, XS D73, XS D74, XS N118, XS N119 … (+6) |
+| **R-BP-PSG** After the beep: PSG R0 / R1 := $55 / $00 (channel A's tone), R7 := $B8, R8-R10 := 0; the other registers kept. | 12 | ✓ | ✓ |
+| **R-BP-RESET** It ends with GICINI's reset: queues 0-2, MUSICF / PLYCNT and the voice buffers as docs/bios/GICINI.md gives them. | 12 | ✓ | ✓ |
+| **R-BP-REGS** A := 0, F := $44, BC := 0, E := 7 -- whatever they were; D, HL, IX and IY are kept. | 12 | ✓ | ✓ |
 | **R-BP-KEEP** The PPI port C's high nibble is kept (its low nibble is the timer interrupt's). | 12 | ✓ | ✓ |
 | **R-BP-EI** Interrupts are on after the call, whether they were on or off before it. | 12 | ✓ | ✓ |
 
@@ -85,7 +85,6 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-GICINIVCB** (BEEP ends with GICINI's reset, and zerobas's GICINI leaves the voice buffers as they were, all but one byte -- docs/bios/GICINI.md) | R-BP-RESET |
 
 ## Open (not measured)
 

@@ -24,7 +24,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0028 | GETYPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](GETYPR.md) | 5 | — |
 | $0030 | CALLF | [slots](../concepts/slots.md) | L3 | [FINAL](CALLF.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0038 | KEYINT | [system](../concepts/interrupts-and-traps.md) | — · ruled indirect | — | — | — |
-| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 26 | D-INITIOVCB |
+| $003B | INITIO | [system](../concepts/interrupts-and-traps.md) | L3 | [FINAL](INITIO.md) | 26 | — |
 | $003E | INIFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIFNK.md) | 4 | D-TEXTAF |
 | $0041 | DISSCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](DISSCR.md) | 6 | — |
 | $0044 | ENASCR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](ENASCR.md) | 6 | — |
@@ -44,41 +44,41 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $006F | INIT32 | [text](../concepts/screen-editor.md) | L3 | [FINAL](INIT32.md) | 0 | D-INITEDGES |
 | $0072 | INIGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIGRP.md) | 7 | D-INIREGS |
 | $0075 | INIMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](INIMLT.md) | 8 | D-INIREGS |
-| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | — |
-| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | — |
-| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | — |
-| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | — |
+| $0078 | SETTXT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETTXT.md) | 11 | D-SETREGSCBIOS |
+| $007B | SETT32 | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETT32.md) | 11 | D-SETREGSCBIOS |
+| $007E | SETGRP | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETGRP.md) | 11 | D-SETREGSCBIOS |
+| $0081 | SETMLT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](SETMLT.md) | 11 | D-SETREGSCBIOS |
 | $0084 | CALPAT | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALPAT.md) | 9 | — |
 | $0087 | CALATR | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](CALATR.md) | 9 | — |
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
 | $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | — |
-| $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | D-GICINIVCB |
+| $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | — |
 | $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 4 | — |
 | $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](RDPSG.md) | 3 | — |
 | $0099 | STRTMS | [sound](../concepts/sound-calls.md) | L3 | [FINAL](STRTMS.md) | 4 | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHGET.md) | 8 | — |
 | $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | — |
-| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | D-LPTOUTF |
+| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 4 | — |
-| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | D-TEXTAF |
-| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF, D-EDITSTOPHELD |
+| $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | — |
+| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
 | $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
 | $00B7 | BREAKX | [input](../concepts/input-calls.md) | L3 | [FINAL](BREAKX.md) | 4 | — |
 | $00BA | ISCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](ISCNTC.md) | 5 | — |
 | $00BD | CKCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](CKCNTC.md) | 5 | — |
-| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 4 | D-GICINIVCB |
-| $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-INITEDGES, D-TEXTAF |
+| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 4 | — |
+| $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
-| $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-KEYGRAPH, D-INITEDGES |
+| $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-TEXTAF, D-KEYGRAPH, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-TEXTAF |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-KEYGRAPH, D-INITEDGES, D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | [input](../concepts/input-calls.md) | L3 | [FINAL](GTSTCK.md) | 6 | — |
 | $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | — |
 | $00DB | GTPAD | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPAD.md) | 5 | — |
-| $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | D-GTPDLPORT |
+| $00DE | GTPDL | [input](../concepts/input-calls.md) | L3 | [FINAL](GTPDL.md) | 6 | — |
 | $00E1 | TAPION | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPION.md) | 13 | — |
 | $00E4 | TAPIN | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIN.md) | 10 | — |
 | $00E7 | TAPIOF | [tape](../concepts/cassette.md) | L3 | [FINAL](TAPIOF.md) | 7 | — |

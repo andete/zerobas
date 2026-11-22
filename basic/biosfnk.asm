@@ -19,12 +19,6 @@
 ; INIFNK ($003E): C-BIOS's was a stub; the VG-8020 rewrites the ten defaults into
 ; FNKSTR (scratchpad/biossweep_b5.out). The keystr tenant's op 0 -- what the cold
 ; boot runs (basic/interp.asm) -- through bios_fnk's call.
-bios_inifnk:
-                push    hl
-                push    bc
-                push    ix
-                xor     a                   ; op 0: the defaults
-                jp      bios_fnk_key        ; (out of jr range since D-OUTDLPGRAPH)
 
 ; FNKSB ($00C9) -- D-BIOSRUNG (2026-11-12). C-BIOS's was a print_debug stub. Measured on
 ; the VG-8020 with CNSDFG changed BEHIND BASIC's back (scratchpad/fnksb_probe.py,
@@ -32,11 +26,6 @@ bios_inifnk:
 ; place leaves it blank: FNKSB did it), with DSPFNK's registers exactly (HL kept, DE
 ; $FC40, BC 0, A 0 -- biosregs' dsp0 row); KEY ON + CNSDFG := 0 -> nothing, A = 0
 ; (CNSDFG's value, not the caller's). So: CNSDFG != 0 -> DSPFNK.
-bios_fnksb:
-                ld      a,(CNSDFG)
-                or      a
-                ret     z
-                jp      bios_dspfnk
 
 ; CALBAS ($0159) -- D-BIOSRUNG (2026-11-12). C-BIOS's printed "ERROR:CALLED NON EXISTING
 ; BASIC." and never returned (scratchpad/calbas_run.out). The published contract: call
@@ -146,47 +135,7 @@ odl_tlp:
 ; C-BIOS latches INTFLG only for a key the scan sees as NEWLY down against OLDKEY (or a
 ; repeat), so marking STOP down in OLDKEY consumes the press the same way. CF / A as
 ; C-BIOS's body leaves them.
-bios_breakx:
-                call    CBIOS_BREAKX
-                ret     nc
-                push    hl                  ; D-BREAKXBUF (2026-11-19): the key buffer emptied,
-                ld      hl,(PUTPNT)         ;   GETPNT := PUTPNT, and OLDKEY row 7 := $EF, as the
-                ld      (GETPNT),hl         ;   VG-8020 (docs/bios/BREAKX.md R-BX-BUF); HL kept
-                pop     hl
-                ld      a,$EF               ; STOP (row 7 bit 4) already down
-                ld      (OLDKEY+7),a
-                scf
-                ret
 
-bios_erafnk:
-                xor     a                   ; the line hidden
-                jr      bios_fnk
-bios_dspfnk:
-                ld      a,$FF               ; the line shown
-bios_fnk:
-                push    hl
-                push    bc
-                push    ix
-                ld      c,a                 ; C = 0 / $FF (= -1)
-                ld      a,CON_ROWS          ; 24 either way: the console's bound is
-                ld      (CRTCNT),a          ; CRTCNT + CNSDFG (crt_rows), as the VG-8020
-                ld      a,c
-                ld      (CNSDFG),a
-                ld      a,(SCRMOD)
-                cp      2
-                jr      nc,bios_fnk_out     ; graphics: the cells only
-                call    bf_scroll           ; D-DSPFNKSCROLL (basic/main.asm, the low region's end)
-                ld      a,KEYOP_FNKBLANK
-                sub     c                   ; BLANK / PAINT (= BLANK + 1)
-bios_fnk_key:                               ; A = the keystr op
-                ld      (KEYARG),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
-                call    subrom_call         ; CF = no sub-ROM: nothing painted
-bios_fnk_out:
-                pop     ix
-                pop     bc
-                pop     hl
-                ret
 
 ; BEEP ($00C0): C-BIOS's was a print_debug stub -- no tone. The sub-ROM's BEEP tenant
 ; (sub/beep.asm, the body BASIC's BEEP runs) through subrom_call; the VG-8020's tone
@@ -218,34 +167,6 @@ bios_iscntc:
 ; ATRBYT in SCREEN 2 -- A := ATRBYT, F an AND's flags -- else := A, A kept, F as CP $10 + CCF
 ; leave it; BC, DE, HL and the interrupt state kept (docs/bios/PNTINI.md R-PI-BDR / R-PI-AF /
 ; R-PI-KEEP). The tenant set BC and HL, enabled interrupts, and took ATRBYT in SCREEN 0 / 1 too.
-bios_pntini:
-                push    af
-                ld      a,(SCRMOD)
-                cp      2
-                jr      z,bpi_s2
-                pop     af
-                ld      (GFX_B),a
-                cp      $10
-                ccf
-                ret
-bpi_s2:
-                pop     af
-                ld      a,(ATRBYT)
-                ld      (GFX_B),a
-                and     a
-                ret
-bios_scanl:
-                ld      c,1
-                db      $21                 ; skips bios_scanr's `ld c,0`
-bios_scanr:
-                ld      c,0
-                push    ix
-                push    bc                  ; C: the op, for scan_k (D-SCANLPAINT)
-                call    sr_inl1
-                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PAINT)
-                pop     bc
-                pop     ix
-                jp      scan_k              ; basic/main.asm: SCREEN 2's K
 
 ; GRPPRT ($008D): basic/islands.asm bios_grpprt (island 3; D-GRPPRTPOS and kin, 2026-11-19).
 
@@ -261,13 +182,6 @@ bios_scanr:
 ; F its OR flags, HL kept; nothing waiting -- A 0, F $44, HL = PLYCNT ($FB40); started -- A 7,
 ; F the flags DEC leaves on PLYCNT (st_go's), HL 1, and each voice's first word ($FB41, $FB66,
 ; $FB8B) := 1 (R-ST-PLAY; zerobas's PLAY keeps nothing in a VCB's bytes 0-1).
-bios_strtms:
-                ld      a,(MUSICF)
-                or      a
-                ret     nz                  ; playing: nothing
-                ld      hl,PLYCNT
-                or      (hl)
-                ret     z                   ; no statement waiting
 ; st_start: the start itself -- also PLAY's (the parser's st_go, basic/islands.asm, jumps
 ; here) and the player's next round. PLYCNT - 1 (F as DEC leaves it), MUSICF := 7, A = 7,
 ; and each voice's first word := 1: the player's counter, so every voice reads its
@@ -288,65 +202,10 @@ st_start:
 ; rings are read (scratchpad/strtms_run4.out). A full queue: Z, nothing written, B / C
 ; the old / new PUT, HL the entry + 3. Stored: HL = the descriptor, BC = the new PUT,
 ; A = the buffer's low byte, Z / C clear, DE kept -- as the VG-8020.
-bios_putq:
-                ld      c,a
-                add     a,a
-                add     a,c
-                add     a,a
-                add     a,low QUETAB
-                ld      l,a
-                ld      h,high QUETAB       ; HL = the descriptor (no carry: QUETAB is
-                ld      a,(hl)              ;   $F959, queue 2 at $F965)
-                ld      b,a                 ; B = the old PUT
-                inc     a                   ; PUT + 1 ...
-                inc     hl
-                inc     hl
-                inc     hl
-                and     (hl)                ; ... AND the size
-                ld      c,a                 ; C = the new PUT
-                dec     hl
-                dec     hl
-                cp      (hl)                ; = GET: full -- D-PUTQREGS (2026-11-19): B the old
-                inc     hl                  ;   PUT, C the new, HL the entry + 3, as the VG-8020
-                inc     hl                  ;   (docs/bios/PUTQ.md R-PQ-REGS)
-                ret     z
-                dec     hl
-                dec     hl
-                dec     hl
-                ld      (hl),a              ; PUT := it
-                ld      b,0
-                push    hl
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a                 ; HL = the buffer (A = its low byte)
-                add     hl,bc
-                ld      (hl),e
-                pop     hl
-                ret                         ; Z clear from the `cp`, C clear from `add hl,bc`
 
 ; D-BEEPRESET (2026-11-19): the VG-8020's BEEP ends with GICINI's reset -- R7 $B8, the volumes
 ; 0, the queues and MUSICF / PLYCNT -- and returns A 0, F $44, BC 0, E 7, D and HL kept
 ; (docs/bios/BEEP.md R-BP-PSG / R-BP-REGS; the voice buffers' bytes are D-GICINIVCB's).
-bios_beep:
-                push    hl
-                push    de
-                push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BEEP
-                call    subrom_call
-                pop     ix
-                call    bios_gicini         ; keeps every register; interrupts on after
-                pop     de
-                pop     hl
-                xor     a                   ; A 0, F $44
-                ld      b,a
-                ld      c,a
-                ld      e,7
-                ret
 
 ; PINLIN ($00AE) / INLIN ($00B1) / QINLIN ($00B4): C-BIOS's INLIN is a skeleton --
 ; its Return handler is a bare `ret` back into the key loop, so a program calling
@@ -357,46 +216,12 @@ bios_beep:
 ; work; it is MAIN PAGE 1, so page 1 is mapped to primary slot 0 for the call and
 ; the caller's layout put back after (htimi_guard's way). CF = Ctrl-STOP as
 ; read_line reports it. PINLIN's AUTO handling is BASIC's own (repl), not here.
-bios_qinlin:
-                ld      a,'?'
-                call    CHPUT
-                ld      a,' '
-                call    CHPUT
 ; INLIN / QINLIN hand read_line to the shared tail; PINLIN's entry (bios_pinlin, basic/main.asm
 ; at the low region's end: this file's pad in front of the $3283 pin is full) hands
 ; read_line_col1 (D-PINLINSTART, docs/bios/PINLIN.md R-L-PIN).
-bios_inlin:
-                ld      hl,rl_inl_bios      ; read_line + D-EDITDELBS's two marks (basic/files.asm)
-bil_go:
-                in      a,(PSLTREG)
-                push    af                  ; the caller's slot layout
-                and     %11110011           ; page 1 -> primary slot 0: main ROM
-                out     (PSLTREG),a
-                call    cl_jphl             ; read_line(_col1): LINEBUF (= BUF) <- the line; CF = STOP
-                pop     hl                  ; H = the caller's layout (flags kept)
-                ld      a,h
-                out     (PSLTREG),a
-                ld      hl,LINEBUF - 1      ; the published HL
-                ld      a,$0D               ; A as the VG-8020 leaves it
-                ret     nc
-                ; D-INLINSTOPF (2026-11-14): on CTRL-STOP the VG-8020 returns A = 0 and
-                ; F = $45 (Z, P/V, Cy) from all three entries -- `xor a / scf`'s flags
-                ; exactly (scratchpad/IN_run2.out). D-EDITSTOP: and BUF, the cursor and
-                ; LINTTB as it leaves them -- bil_stop (basic/main.asm: this file's pad is full).
-                jp      bil_stop
-
-; nsx_px -- D-SETCLAST part 2 + D-NSETCXFULL (2026-11-19): NSETCX ($0123) decides each pattern
-; byte WHOLE on the VG-8020 (docs/bios/NSETCX.md R-NX-VRAM): the run's pixels in a byte are one
-; mask M, and SETC's rule applies with M for CMASK -- ATRBYT the background: M's bits cleared; the
-; foreground: set; pattern OR M = $FF: cleared, ATRBYT ORed into (colour AND $F0); else set,
-; ATRBYT the foreground. All 8 pixels (M = $FF): pattern $00 and colour byte := ATRBYT, at CLOC
-; XOR $2000 (cases 12, 13). zerobas's SETC takes a multi-bit CMASK as it is (bios_setc,
-; basic/main.asm). Entered from our repacked NSETCX's per-pixel SETC call at $06AD
-; (basic/islands.asm `cbios_nsx_px`) with HL = the pixels left, this one included, and CLOC /
-; CMASK on this pixel; it does the run's pixels in this byte and leaves HL / CMASK on their last,
-; so nsetcx's own `call rightc / dec hl` steps past them. SCREEN 3 (nibbles): SETC per pixel, as
-; before. BC / DE are free here (nsetcx keeps neither). Page 0: a caller's page 1 may be RAM.
 BIOS_SETC       equ     $0120
+BIOS_UPC        equ     $0102
+BIOS_DOWNC      equ     $0108
 nsx_px:
                 ld      a,(SCRMOD)
                 cp      2
@@ -463,51 +288,6 @@ bios_isflio:
 ; FORCLR as it is. On return A = E = FORCLR, D kept, BC = $0020 / $0080, HL = ATRBAS + $80,
 ; F as the loop's last GSPSIZ / `inc c` leaves it, interrupts on. C-BIOS's returned at once in
 ; SCREEN 0, wrote Y $D9 above SCREEN 3, cleared the patterns last and left R#1 alone. Page 0.
-bios_clrspr:
-                ld      a,(RG1SAV)
-                ld      b,a
-                ld      c,1
-                call    WRTVDP              ; R#1 := RG1SAV
-                ld      hl,(PATBAS)
-                ld      bc,2048
-                xor     a
-                call    FILVRM              ; the patterns first
-                ld      hl,(ATRBAS)
-                call    SETWRT
-                ld      a,(FORCLR)
-                ld      e,a
-                ld      bc,$2000            ; B = 32 entries, C = the pattern number
-                di
-bcs_lp:
-                ld      a,$D1
-                out     ($98),a             ; Y
-                nop                         ; >= 29 T between VRAM accesses (MSX1)
-                nop
-                nop
-                nop
-                in      a,($98)             ; X: kept
-                ld      a,c
-                nop
-                nop
-                nop
-                out     ($98),a             ; the pattern number
-                inc     c
-                call    GSPSIZ              ; C set: 16 x 16, 4 numbers a sprite
-                jr      nc,bcs_8
-                inc     c
-                inc     c
-                inc     c
-bcs_8:
-                ld      a,e
-                out     ($98),a             ; the colour: FORCLR
-                inc     hl                  ; HL steps with the entry (flags kept)
-                inc     hl
-                inc     hl
-                inc     hl
-                djnz    bcs_lp
-                ld      a,e
-                ei
-                ret
 
 ; bios_mapxyc -- MAPXYC ($0111). D-MAPXYCBASE / D-MAPXYCWRAP / D-MAPXYCMODE / D-MAPXYCF
 ; (2026-11-19), as the VG-8020 (docs/bios/MAPXYC.md), X in C and Y in E (B and D play no part):
@@ -519,70 +299,6 @@ bcs_8:
 ; 15, bits 5 / 3 from CLOC's high byte, N clear -- exactly the reference's. HL := CLOC, BC kept, DE
 ; kept (but D), the interrupt state kept. C-BIOS's left the base out, did not wrap Y in SCREEN 3,
 ; took the SCREEN 2 way for SCRMOD 0 / 1 and left other flags. Page 0.
-bios_mapxyc:
-                push    de
-                ld      a,(SCRMOD)
-                cp      2
-                jr      nz,bmx_mlt
-                ld      a,c
-                and     7
-                ld      h,a                 ; H: the shift count
-                inc     h
-                ld      a,$80
-bmx_sh:
-                dec     h
-                jr      z,bmx_shd
-                rrca
-                jr      bmx_sh
-bmx_shd:
-                ld      (CMASK),a
-                ld      a,e
-                rrca
-                rrca
-                rrca
-                and     $1F
-                ld      h,a                 ; (Y AND $F8) x 32: the high byte
-                ld      a,e
-                and     7
-                ld      l,a
-                ld      a,c
-                and     $F8
-                or      l                   ; A = the offset's low byte; S / Z / P/V
-                ld      l,a
-                ld      de,(GRPCGP)
-                add     hl,de               ; H / C / bits 5, 3: the base addition's
-                ld      (CLOC),hl
-                pop     de
-                ld      d,c                 ; D := X
-                ret
-bmx_mlt:
-                ld      a,c
-                and     1
-                ld      a,$F0
-                jr      z,bmx_even
-                ld      a,$0F
-bmx_even:
-                ld      (CMASK),a
-                ld      a,c
-                and     $3E
-                add     a,a
-                add     a,a                 ; ((X >> 1) AND 31) x 8
-                ld      l,a
-                ld      a,e
-                and     7
-                or      l
-                ld      l,a
-                ld      a,e
-                rrca
-                rrca
-                rrca
-                and     7                   ; A = (Y >> 3) AND 7; S / Z / P/V
-                ld      h,a
-                ld      de,(MLTCGP)
-                add     hl,de
-                ld      (CLOC),hl
-                pop     de
-                ret
 
 ; bios_scalxy -- SCALXY ($010E). D-SCALXYMODE / D-SCALXYF (2026-11-19), as the VG-8020
 ; (docs/bios/SCALXY.md): BC (X) and DE (Y) clipped as signed 16-bit numbers to 0..255 / 0..191,
@@ -591,118 +307,6 @@ bmx_even:
 ; from the new E, the rest clear. A / F are built in HL and popped, which also restores HL; IX,
 ; IY and the interrupt state are kept. C-BIOS's divided only in SCREEN 3 and left SCREEN 2's
 ; flags there. Page 0.
-bios_scalxy:
-                push    hl
-                ld      h,0                 ; H: the coordinates clipped
-                bit     7,b
-                jr      z,bsx_xpos
-                ld      bc,0
-                inc     h
-                jr      bsx_y
-bsx_xpos:
-                ld      a,b
-                or      a
-                jr      z,bsx_y
-                ld      bc,255
-                inc     h
-bsx_y:
-                bit     7,d
-                jr      z,bsx_ypos
-                ld      de,0
-                inc     h
-                jr      bsx_mode
-bsx_ypos:
-                ld      a,d
-                or      a
-                jr      nz,bsx_yclip
-                ld      a,e
-                cp      192
-                jr      c,bsx_mode
-bsx_yclip:
-                ld      de,191
-                inc     h
-bsx_mode:
-                ld      l,$40               ; SCREEN 2: Z alone
-                ld      a,(SCRMOD)
-                cp      2
-                jr      z,bsx_af
-                srl     c
-                srl     c
-                srl     e
-                srl     e                   ; block numbers
-                ld      l,0
-                ld      a,e
-                or      a
-                jr      nz,bsx_nz
-                set     6,l                 ; Z
-bsx_nz:
-                jp      po,bsx_af
-                set     2,l                 ; P/V: E's parity
-bsx_af:
-                xor     a
-                cp      h
-                jr      nz,bsx_out          ; clipped: A $00, carry clear
-                ld      a,$80
-                set     0,l
-bsx_out:
-                ld      h,a
-                ex      (sp),hl             ; HL restored, (A, F) on the stack
-                pop     af
-                ret
-
-; bios_tupc / bios_tdownc -- TUPC ($0105) / TDOWNC ($010B). D-TEDGE (2026-11-19): in SCREEN 2 the
-; VG-8020 stops at the pattern table's own edge -- TUPC when CLOC AND 7 is 0 and CLOC is below
-; GRPCGP + $100, TDOWNC when CLOC AND 7 is 7 and CLOC is GRPCGP + $1700 or more, both unsigned --
-; with CLOC / CMASK kept, A = 0, F $45 (docs/bios/TUPC.md / TDOWNC.md R-TU-EDGE / R-TD-EDGE).
-; C-BIOS's ignored GRPCGP. Here only that test: a SCREEN 2 move is UPC's / DOWNC's (the rules'
-; "as UPC / DOWNC"), every other case C-BIOS's own body (CBIOS_TUPC / CBIOS_TDOWNC, from C-BIOS's
-; symbol table: basic/cbios-abi.inc). BC / DE / HL kept. Page 0.
-BIOS_UPC        equ     $0102
-BIOS_DOWNC      equ     $0108
-bios_tupc:
-                ld      a,(SCRMOD)
-                cp      2
-                jp      nz,CBIOS_TUPC
-                ld      a,(CLOC)
-                and     7
-                jp      nz,CBIOS_TUPC       ; not a cell's top line: it moves
-                push    hl
-                push    de
-                ld      hl,(GRPCGP)
-                inc     h                   ; GRPCGP + $100
-                ld      de,(CLOC)
-                ex      de,hl
-                or      a
-                sbc     hl,de               ; C: CLOC below it -- the top
-                pop     de
-                pop     hl
-                jp      nc,BIOS_UPC
-btu_stop:
-                xor     a
-                scf                         ; A 0, F $45
-                ret
-bios_tdownc:
-                ld      a,(SCRMOD)
-                cp      2
-                jp      nz,CBIOS_TDOWNC
-                ld      a,(CLOC)
-                and     7
-                cp      7
-                jp      nz,CBIOS_TDOWNC     ; not a cell's bottom line: it moves
-                push    hl
-                push    de
-                ld      hl,(GRPCGP)
-                ld      a,h
-                add     a,$17
-                ld      d,a
-                ld      e,l                 ; DE = GRPCGP + $1700
-                ld      hl,(CLOC)
-                or      a
-                sbc     hl,de               ; NC: CLOC at or past it -- the bottom
-                pop     de
-                pop     hl
-                jr      nc,btu_stop
-                jp      BIOS_DOWNC
 
 ; bios_nsetcx -- NSETCX ($0123). D-NSETCX0 / D-NSETCXL (2026-11-19), as the VG-8020
 ; (docs/bios/NSETCX.md): outside SCREEN 2 the count is L alone, L = 0 giving 256 (HL $0102 sets 2);
@@ -711,26 +315,3 @@ bios_tdownc:
 ; unless ATRBYT is one already there), CLOC / CMASK kept, interrupts on after. Every other case
 ; C-BIOS's own body (CBIOS_NSETCX, from C-BIOS's symbol table: basic/cbios-abi.inc), whose per-pixel
 ; `call setc` is nsx_px (above). C-BIOS's returned at once for HL = 0 and counted all of HL. Page 0.
-bios_nsetcx:
-                ld      a,(SCRMOD)
-                cp      2
-                jr      z,bnx_s2
-                ld      h,0                 ; L alone ...
-                ld      a,l
-                or      a
-                jp      nz,CBIOS_NSETCX
-                inc     h                   ; ... and 0 is 256
-                jp      CBIOS_NSETCX
-bnx_s2:
-                ld      a,h
-                or      l
-                jp      nz,CBIOS_NSETCX
-                ld      a,(CMASK)
-                push    af
-                xor     a
-                ld      (CMASK),a
-                call    BIOS_SETC           ; no bit: the colour byte alone
-                pop     af
-                ld      (CMASK),a
-                ei
-                ret

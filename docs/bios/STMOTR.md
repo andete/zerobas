@@ -70,8 +70,8 @@ port C's low nibble after a call that turns interrupts on (the timer interrupt's
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-SM-MOTOR** The motor relay (port C bit 4, 0 = running): A 0 stops it; an A with bit 7 set toggles it ($80, $81, $FE, $FF measured, from both states); any other A ($01, $02, $03, $28, $40, $7F, from both states) starts it. Port C's other bits are kept (bits 5-7 and the low nibble varied; the low nibble is not compared where interrupts are on after the call: the timer interrupt selects its key row). | 74 | ✓ | ✗ 6: XV N00, XV N01, XV N02, XV D00, XV D01, XV D02 |
-| **R-SM-AF** A := the PPI bit command left behind: $09 (bit 4 set: stopped) or $08 (reset: running). F, whatever it was: $54 when the motor ends stopped; when it ends running, $10 for an A with bit 7 set, otherwise the flags AND A gives on A ($10 for $01 / $02 / $40, $14 for $03, $3C for $28, $38 for $7F). | 74 | ✓ | ✗ 64: XT N00, XT N01, XT N02, XT N03, XT N06, XT N07 … (+58) |
+| **R-SM-MOTOR** The motor relay (port C bit 4, 0 = running): A 0 stops it; an A with bit 7 set toggles it ($80, $81, $FE, $FF measured, from both states); any other A ($01, $02, $03, $28, $40, $7F, from both states) starts it. Port C's other bits are kept (bits 5-7 and the low nibble varied; the low nibble is not compared where interrupts are on after the call: the timer interrupt selects its key row). | 74 | ✓ | ✓ |
+| **R-SM-AF** A := the PPI bit command left behind: $09 (bit 4 set: stopped) or $08 (reset: running). F, whatever it was: $54 when the motor ends stopped; when it ends running, $10 for an A with bit 7 set, otherwise the flags AND A gives on A ($10 for $01 / $02 / $40, $14 for $03, $3C for $28, $38 for $7F). | 74 | ✓ | ✓ |
 | **R-SM-KEEP** BC, DE, HL and the interrupt state are kept. | 74 | ✓ | ✓ |
 
 <!-- RULES END -->

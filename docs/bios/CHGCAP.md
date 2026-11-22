@@ -60,7 +60,7 @@ scans the keys behind a call, whatever the call does with the interrupt flag.
 | rule | cases | reference | zerobas |
 |---|---|---|---|
 | **R-CC-BIT** The PPI's port C bit 6 (the CAPS lamp, lit at 0) := 0 when A is 0, 1 for any other A ($01, $80, $FF measured); its other bits are kept ($50 and $A0 preset). | 20 | ✓ | ✓ |
-| **R-CC-AF** A := $0C when A was 0, $0D otherwise (the PPI bit reset / set command for bit 6); F := $54 / $08 -- whatever F was on entry. | 20 | ✓ | ✗ 20: XI N15, XI N16, XI N17, XI N18, XI N19, XI N66 … (+14) |
+| **R-CC-AF** A := $0C when A was 0, $0D otherwise (the PPI bit reset / set command for bit 6); F := $54 / $08 -- whatever F was on entry. | 20 | ✓ | ✓ |
 | **R-CC-KEEP** BC, DE, HL, IX, IY, INTFLG, CAPST (not changed: only the lamp) and R14 are kept.  | 20 | ✓ | ✓ |
 | **R-CC-EI** The interrupt state is kept. | 20 | ✓ | ✓ |
 

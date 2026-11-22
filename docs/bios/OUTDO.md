@@ -47,13 +47,13 @@ before BASIC, with the emulator's printer logger plugged into the printer port.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-OU-SCR** With PRTFLG ($F416) 0 the character goes to the screen and the cursor moves on: from a cursor set by hand (CSRY 5 / CSRX 3, then 12 / 10) CSRX is one more after the call, CSRY the same. | 4 | ✓ | ✗ 4: XS N0, XS N1, XS D0, XS D1 |
-| **R-OU-CELL** Each character is on the screen once, in the name table (at RG2SAV * $400: $1800, SCREEN 1) cell (CSRY - 1) * 32 + (CSRX - 1) + 2 of the cursor it was printed at -- $0084 for '~' at 5 / 3, $016B for '|' at 12 / 10 (read through the VDP's ports; the + 2 is SCREEN 1's left margin as boot left it). | 2 | ✓ | ✗ 2: XV N, XV D |
-| **R-OU-KEEP** A is kept, and BC, DE, HL, IX and IY are kept, to the screen and to the printer. | 20 | ✓ | ✗ 2: XS N1, XS D1 |
-| **R-OU-SF** To the screen F is kept ($00, then $FF on entry). | 4 | ✓ | ✗ 2: XS N1, XS D1 |
+| **R-OU-SCR** With PRTFLG ($F416) 0 the character goes to the screen and the cursor moves on: from a cursor set by hand (CSRY 5 / CSRX 3, then 12 / 10) CSRX is one more after the call, CSRY the same. | 4 | ✓ | ✓ |
+| **R-OU-CELL** Each character is on the screen once, in the name table (at RG2SAV * $400: $1800, SCREEN 1) cell (CSRY - 1) * 32 + (CSRX - 1) + 2 of the cursor it was printed at -- $0084 for '~' at 5 / 3, $016B for '|' at 12 / 10 (read through the VDP's ports; the + 2 is SCREEN 1's left margin as boot left it). | 2 | ✓ | ✓ |
+| **R-OU-KEEP** A is kept, and BC, DE, HL, IX and IY are kept, to the screen and to the printer. | 20 | ✓ | ✓ |
+| **R-OU-SF** To the screen F is kept ($00, then $FF on entry). | 4 | ✓ | ✓ |
 | **R-OU-PRN** With PRTFLG 1 the character goes to the printer as OUTDLP sends it: the printer receives 'P', the TAB as spaces up to column 8, 'Z', $01 $41 (NTMSXP 0), CR, LF; with PRTFLG $FF, 'K'. | 2 | ✓ | ✓ |
-| **R-OU-POS** LPTPOS follows the printer's column as OUTDLP keeps it (the graphic character's $01 not counted). | 16 | ✓ | ✗ 4: XO N3, XO N4, XO D3, XO D4 |
-| **R-OU-PF** To the printer F is OUTDLP's: LPTOUT's on the byte sent (an AND's flags), F as on entry after a TAB ($00 there). | 16 | ✓ | ✗ 16: XO N0, XO N1, XO N2, XO N3, XO N4, XO N5 … (+10) |
+| **R-OU-POS** LPTPOS follows the printer's column as OUTDLP keeps it (the graphic character's $01 not counted). | 16 | ✓ | ✓ |
+| **R-OU-PF** To the printer F is OUTDLP's: LPTOUT's on the byte sent (an AND's flags), F as on entry after a TAB ($00 there). | 16 | ✓ | ✓ |
 
 <!-- RULES END -->
 

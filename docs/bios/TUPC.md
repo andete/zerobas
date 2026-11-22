@@ -69,9 +69,9 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-TU-POS** Where it does not stop, as UPC: CLOC := CLOC - 1, or CLOC - $F9 when CLOC AND 7 is 0; CMASK is kept. | 220 | ✓ | ✗ 30: XM N063, XM N064, XM N065, XM N066, XM N067, XM N135 … (+24) |
-| **R-TU-EDGE** It stops -- CLOC and CMASK kept, A = 0, the carry set -- at the top: in SCREEN 2 when CLOC AND 7 is 0 and CLOC is below GRPCGP ($F3CB) + $100, both unsigned 16-bit (GRPCGP $0000-$2100 measured; with $2001-$2004, CLOC $2100 stops; a CLOC below GRPCGP stops -- $0008 with $2000 -- and $8000 / $8100 with $0000 move on); in SCREEN 3 when CLOC AND $FF07 is 0, whatever MLTCGP is ($0000, $0800, $1000 measured; $00F8 stops, $2020 and $8020 move on). Otherwise the carry is clear. | 220 | ✓ | ✗ 30: XM N063, XM N064, XM N065, XM N066, XM N067, XM N135 … (+24) |
-| **R-TU-AF** A and F: on a stop A = 0 and F = $45 (Z, P/V and the carry); otherwise A := the old CLOC AND 7, and F that value's flags as an AND leaves them (H set; S, Z, bits 5 / 3, P/V from A; N and C clear) -- whatever A and F were on entry. | 220 | ✓ | ✗ 30: XM N063, XM N064, XM N065, XM N066, XM N067, XM N135 … (+24) |
+| **R-TU-POS** Where it does not stop, as UPC: CLOC := CLOC - 1, or CLOC - $F9 when CLOC AND 7 is 0; CMASK is kept. | 220 | ✓ | ✓ |
+| **R-TU-EDGE** It stops -- CLOC and CMASK kept, A = 0, the carry set -- at the top: in SCREEN 2 when CLOC AND 7 is 0 and CLOC is below GRPCGP ($F3CB) + $100, both unsigned 16-bit (GRPCGP $0000-$2100 measured; with $2001-$2004, CLOC $2100 stops; a CLOC below GRPCGP stops -- $0008 with $2000 -- and $8000 / $8100 with $0000 move on); in SCREEN 3 when CLOC AND $FF07 is 0, whatever MLTCGP is ($0000, $0800, $1000 measured; $00F8 stops, $2020 and $8020 move on). Otherwise the carry is clear. | 220 | ✓ | ✓ |
+| **R-TU-AF** A and F: on a stop A = 0 and F = $45 (Z, P/V and the carry); otherwise A := the old CLOC AND 7, and F that value's flags as an AND leaves them (H set; S, Z, bits 5 / 3, P/V from A; N and C clear) -- whatever A and F were on entry. | 220 | ✓ | ✓ |
 | **R-TU-KEEP** BC, DE, HL, IX, IY, the interrupt state and the rest of the work area recorded (ATRBYT, ASPCT1 / ASPCT2, SCRMOD, GRPCGP / MLTCGP) are kept. | 220 | ✓ | ✓ |
 
 <!-- RULES END -->

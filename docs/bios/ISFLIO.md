@@ -45,8 +45,8 @@ before BASIC, with the emulator's printer logger plugged into the printer port.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-IF-A** A is PTRFIL ($F864)'s two bytes ORed: non-zero exactly when PTRFIL is (PTRFIL $0000, $0001, $0100, $8000, $FFFF give $00, $01, $01, $80, $FF), whatever F was on entry ($00 / $FF). | 10 | ✓ | ✗ 4: XI N2, XI N3, XI D2, XI D3 |
-| **R-IF-F** F is that OR's: Z set exactly when PTRFIL is 0, S, bits 5 / 3 from A, P/V its parity, H, N and the carry clear. | 10 | ✓ | ✗ 10: XI N0, XI N1, XI N2, XI N3, XI N4, XI D0 … (+4) |
+| **R-IF-A** A is PTRFIL ($F864)'s two bytes ORed: non-zero exactly when PTRFIL is (PTRFIL $0000, $0001, $0100, $8000, $FFFF give $00, $01, $01, $80, $FF), whatever F was on entry ($00 / $FF). | 10 | ✓ | ✓ |
+| **R-IF-F** F is that OR's: Z set exactly when PTRFIL is 0, S, bits 5 / 3 from A, P/V its parity, H, N and the carry clear. | 10 | ✓ | ✓ |
 | **R-IF-KEEP** BC, DE, HL, IX and IY are kept. | 10 | ✓ | ✓ |
 
 <!-- RULES END -->

@@ -68,8 +68,8 @@ record:
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-GR-SHADOW** RG2SAV-RG6SAV := GRPNAM / $400, GRPCOL / $40, GRPCGP / $800, GRPATR / $80, GRPPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F), with RG3SAV OR $7F and RG4SAV OR $03. Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20). | 38 | ✓ | ✗ 12: XS N30, XS N31, XS N32, XS N33, XS N34, XS N35 … (+6) |
-| **R-GR-R01** RG0SAV := RG0SAV OR $02 (M3 set, the other bits kept); RG1SAV := RG1SAV AND $E7 (bits 4 and 3 cleared) (RG0SAV / RG1SAV $00 / $00, $FF / $FF, $5A / $A5, and apart: $01 / $00, $FE / $FF). | 38 | ✓ | ✗ 22: XS N25, XS N26, XS N28, XS N29, XS N31, XS N32 … (+16) |
+| **R-GR-SHADOW** RG2SAV-RG6SAV := GRPNAM / $400, GRPCOL / $40, GRPCGP / $800, GRPATR / $80, GRPPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F), with RG3SAV OR $7F and RG4SAV OR $03. Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20). | 38 | ✓ | ✓ |
+| **R-GR-R01** RG0SAV := RG0SAV OR $02 (M3 set, the other bits kept); RG1SAV := RG1SAV AND $E7 (bits 4 and 3 cleared) (RG0SAV / RG1SAV $00 / $00, $FF / $FF, $5A / $A5, and apart: $01 / $00, $FE / $FF). | 38 | ✓ | ✓ |
 | **R-GR-VDP** The VDP registers R#0-R#6 := those values, as the VDP holds them (R#0 bits 1-0, R#1 all but bit 2, R#2 bits 3-0, R#4 / R#6 bits 2-0, R#5 bits 6-0); R#7 is not written. | 38 | ✓ | ✓ |
 | **R-GR-REGS** On return A = the new RG6SAV, F = $00, BC = $0007, DE = $7F03 and HL = $F3D1 (just past GRPPAT); IX and IY are kept -- whatever F was on entry ($00, $FF). | 38 | ✓ | ✗ 38: XS N24, XS N25, XS N26, XS N27, XS N28, XS N29 … (+32) |
 | **R-GR-EI** Interrupts are on after the call, whether they were on or off before it. | 38 | ✓ | ✓ |
@@ -79,7 +79,9 @@ record:
 
 ## Differences from the reference
 
-None measured: every rule holds on zerobas.
+| TODO item | rules zerobas fails |
+|---|---|
+| **D-SETREGSCBIOS** (the leftover registers: since the rebase on C-BIOS d23d87b (2026-11-22) zerobas runs C-BIOS's SETGRP, which returns DE / HL the other way round and a different F; C-BIOS declined the fix -- Joost: "skip", no program reads them -- and zerobas no longer carries setregs-order.patch) | R-GR-REGS |
 
 
 ## Open (not measured)

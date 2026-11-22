@@ -183,7 +183,7 @@ ex_key_stmt:
                 call    set_state           ; C = the new state; HL, DE kept
                 ; D-KEYTRAPREF (2026-11-22): FNKFLG(n) := 1 for ON, 0 for OFF and STOP, as the
                 ; VG-8020 (scratchpad/keytrapref_vg2.out `static`). The BIOS scan diverts the
-                ; key on this cell alone (cbios-repack/key-trap-bios.patch), so a key pressed
+                ; key on this cell alone (C-BIOS fff98e8's keyboard scan), so a key pressed
                 ; under STOP is typed as an ordinary key, as on the reference.
                 ld      hl,FNKFLG
                 ld      a,l

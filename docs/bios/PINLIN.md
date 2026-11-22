@@ -51,8 +51,8 @@ screen.
 zerobas reads the same keys, echoes the same screen and returns the same line, and ends on CTRL+STOP
 and CTRL+C the same way (since D-EDITSTOP, 2026-11-21), and edits with DEL and BS the same way (since
 D-EDITDELBS, same date), in insert mode (since D-EDITINS, same date) and with the CTRL editing keys (since D-EDITKEYS,
-2026-11-22). It differs in the unpublished bits of F (D-TEXTAF), and it returns from
-CTRL+STOP only once the keys are up again (D-EDITSTOPHELD).
+2026-11-22). It differs in the unpublished bits of F (D-TEXTAF). (It returned from CTRL+STOP only
+once the keys were up again until zerobas took C-BIOS's own INLIN, since the rebase on C-BIOS d23d87b, 2026-11-22: D-EDITSTOPHELD.)
 
 ## The specification
 
@@ -151,7 +151,7 @@ documents it.
 | **R-L-STOPLT** The line's last row gets LINTTB $AF (after the scroll: rows 23 and 24); the line's inner rows stay 0 (continued) and the other rows keep an ending entry. | 8 | ✓ | ✓ |
 | **R-L-ABOVE** INLIN and QINLIN also leave the row ABOVE their start row LINTTB $AF (PINLIN does not): the line they read starts on their own row. | 3 | ✓ | ✓ |
 | **R-L-STOPINT** INTFLG is 3 after CTRL+STOP (the interrupt's latch, left set) and 0 after CTRL+C (a key like any other). | 8 | ✓ | ✓ |
-| **R-L-STOPHELD** CTRL+STOP ends the call while the keys are still DOWN (rows 6 / 7 read $FD / $EF right after it): the editor does not wait for the release. (CTRL+C: nothing held, $FF / $FF.) | 8 | ✓ | ✗ 4: XL3 3, XL3 4, XL3 5, XL3 6 |
+| **R-L-STOPHELD** CTRL+STOP ends the call while the keys are still DOWN (rows 6 / 7 read $FD / $EF right after it): the editor does not wait for the release. (CTRL+C: nothing held, $FF / $FF.) | 8 | ✓ | ✓ |
 | **R-L-PAUSE** With a STOP pause pending (INTFLG 4) the editor reads on: 'C' and Enter after 'AB' give 'ABC' with the carry clear, HL = BUF − 1, INTFLG 0 after, the key buffer empty, the cursor at column 1 of the next row, nothing held. | 1 | ✓ | ✓ |
 | **R-L-ENTERLT** Enter leaves the line's last row LINTTB $AF; the other rows keep an ending entry. | 1 | ✓ | ✓ |
 | **R-L-F3** The whole F after Enter is 18 here too. | 1 | ✓ | ✗ 1: XL3 9 |
@@ -205,7 +205,6 @@ documents it.
 | TODO item | rules zerobas fails |
 |---|---|
 | **D-TEXTAF** (the unpublished bits of F: 18 against 00) | R-L-F, R-L-F2, R-L-F3, R-L-F4, R-L-F5, R-L-F6 |
-| **D-EDITSTOPHELD** (CTRL+STOP returns only once the keys are up again: our editor waits for the release) | R-L-STOPHELD |
 
 ## Open (not measured)
 

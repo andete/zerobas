@@ -46,7 +46,10 @@ def sym_value(sym_path: str, label: str) -> int:
             return int(parts[-1].rstrip("Hh"), 16)
     raise SystemExit(f"label {label!r} not found in {sym_path}")
 
-BASIC_BASE = 0x2781   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
+# relocated BASIC low boundary: basic/main.asm's BASIC_ORG, read from the source (D-CBIOS032: $2781 -> $2BAF
+# with the rebase on C-BIOS d23d87b; tools/split_islands.py reads it the same way).
+BASIC_BASE = int(re.search(r"^BASIC_ORG:\s+equ\s+\$([0-9A-Fa-f]+)", open(os.path.join(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))), "basic", "main.asm")).read(), re.M).group(1), 16)
 TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body
@@ -69,7 +72,7 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # $0CCF, and gone when its residual's cycle verify took the rest -- err_msgtab is
 # back in main page 1. ISLAND4_LO stays as the tape's CAP: C-BIOS's compat tail.
 ISLAND4_LO = 0x0D01
-ISLAND_RANGES = ((0x0160, 0x0200), (0x19CC, 0x1BBF), (0x0794, 0x09EE))   # island 2: $19CC since key-trap-bios.patch (+48 B, D-KEYTRAPREF); island 3: $0794 since repack #51
+ISLAND_RANGES = ((0x0160, 0x0200), (0x19CA, 0x1BBF), (0x0B18, 0x0D01))   # D-CBIOS032 (d23d87b): island 2 the font pad, island 3 the gap before the $0D01 pin
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).
@@ -91,43 +94,21 @@ def CODE(label, off, old):
     return ("code", label, off, bytes(old))
 
 
-PATCH_SPEC = {0x0008: [RET3],                   # RST 08h -> synchr (D-SYNCHR)
+PATCH_SPEC = {0x0008: [RET3],                   # RST 08h -> synchr (D-SYNCHR; C-BIOS's body cut)
               0x0010: [RET3],                   # RST 10h -> chrgtr
               0x0018: [RET3],                   # RST 18h -> outdo
               0x0028: [RET3],                   # RST 28h -> getypr
-              0x003E: [RET3],                   # INIFNK -> basic/biosfnk.asm
-              0x00AE: [RET3, JP("inlin"), RET3],  # PINLIN / INLIN / QINLIN -> basic/biosfnk.asm
-              0x00B7: [JP("breakx")],           # BREAKX -> basic/biosfnk.asm (D-BRKLATCH)
               0x00BA: [RET3, RET3],             # ISCNTC / CKCNTC -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x00C0: [JP("beep")],             # BEEP -> basic/biosfnk.asm
-              0x00C3: [JP("cls_z")],            # CLS -> basic/main.asm bios_cls (D-INITKEYS)
-              0x00C9: [JP("fnksb")],            # FNKSB -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x0069: [RET3],                   # CLRSPR -> basic/biosfnk.asm (D-CLRSPR*; C-BIOS's body cut)
-              0x0105: [JP("tupc")],             # TUPC -> basic/biosfnk.asm (D-TEDGE)
-              0x010B: [JP("tdownc")],           # TDOWNC -> basic/biosfnk.asm (D-TEDGE)
-              0x010E: [RET3],                   # SCALXY -> basic/biosfnk.asm (D-SCALXY*)
-              0x0123: [JP("nsetcx")],           # NSETCX -> basic/biosfnk.asm (D-NSETCX0)
-              0x011D: [RET3],                   # READC -> basic/main.asm (D-SETCCOL; C-BIOS's body cut)
-              0x0120: [RET3],                   # SETC -> island 3 (D-SETCCOL / D-SETCATR / D-SETCF; body cut)
-              0x0111: [RET3],                   # MAPXYC -> basic/biosfnk.asm (D-MAPXYC*)
+              0x0120: [JP("setc")],             # SETC -> island 3 (C-BIOS declined R-SC-AF; its body stays:
+                                                #  its own NSETCX calls it)
               0x014A: [RET3],                   # ISFLIO -> basic/biosfnk.asm (D-ISFLIO)
-              0x014D: [JP("outdlp")],           # OUTDLP -> basic/biosfnk.asm (D-BIOSRUNG)
+              0x014D: [JP("outdlp")],           # OUTDLP -> basic/biosfnk.asm (BASIC-coupled: a failed print is
+                                                #  Device I/O error, D-LPTSTOP; the gate's outdlp_noprn row)
               0x0159: [RET3],                   # CALBAS -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x008D: [RET3],                   # GRPPRT -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x0099: [RET3],                   # STRTMS -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x0090: [JP("gicini")],           # GICINI -> basic/main.asm bios_gicini (D-GICINIQ)
-              0x00F9: [RET3],                   # PUTQ -> basic/biosfnk.asm (D-BIOSRUNG)
-              0x0129: [JP("pntini")] * 3,       # PNTINI / SCANR / SCANL -> basic/biosfnk.asm (D-BIOSRUNG;
-                                                #  C-BIOS's three `ret`s share one label)
-              0x00CC: [JP("erafnk"), JP("dspfnk")],  # ERAFNK / DSPFNK -> basic/biosfnk.asm (D-BIOSCONTRACT;
-                                                #  both stubs are POSIT's ret since D-POSITCLAMP)
-              # the in-code patches: <C-BIOS label> + offset, and the bytes that must be there
-              "boot_houtd": CODE("init_ram", 285, [0xC3]),             # boot: H.OUTD = RET, not jp chput
-              "chput_ttypos": CODE("chput", 27, [0x3A, 0xDD, 0xF3]),   # CHPUT: TTYPOS = CSRX-1 (0-based)
-              "nsetcx_px": CODE("nsetcx_lp", 0, [0xCD, 0x20, 0x01]),   # NSETCX: call SETC ($0120) -> nsx_px
-                                                                       #  (D-SETCLAST part 2, D-NSETCXFULL)
-              "isr_music": CODE("keyint", 33, [0x22, 0x9E, 0xFC])}     # the $0038 handler's `ld (JIFFY),hl`
-                                                                       #  -> isr_music (the background music)
+              # the in-code patch: <C-BIOS label> + offset, and the bytes that must be there
+              "chput_ttypos": CODE("chput", 27, [0x3A, 0xDD, 0xF3])}   # CHPUT: TTYPOS = CSRX-1 (0-based)
+              # D-CBIOS032: boot_houtd (d23d87b's boot leaves H.OUTD alone), nsetcx_px (NSETCX is C-BIOS's)
+              # and isr_music (C-BIOS's own player plays the queues) are gone with the rebase.
 
 
 def load_cbios_sym(path):
@@ -236,7 +217,15 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int,
                  "CALL/JP -- relocate it before BASIC can take this region.")
     merged[BASIC_BASE:TOP] = basic
 
-    # 2) overlay tape. Assert the body region is free in the repacked base first.
+    # 2) overlay tape -- NONE since D-CBIOS032: C-BIOS d23d87b has its own cassette BIOS, which passes every
+    # tape page; `tape` is None then.
+    if tape is None:
+        if islands is not None:
+            n = overlay_islands(merged, islands)
+            print(f"islands: {n} B placed in C-BIOS padding")
+        print(f"OK: merged main ROM -- repacked C-BIOS + BASIC(${BASIC_BASE:04X}-$7FFF)")
+        return bytes(merged)
+    # (the v0.31 tape overlay, kept for a build that passes one) Assert the body region is free in the repacked base first.
     # Space plan A3: and that it ends before island 4. The island overlay skips
     # $00 bytes and refuses only a non-zero island byte on a non-zero base byte,
     # so a tape grown into island 4 would silently replace a table's $00 entries.
@@ -266,8 +255,8 @@ def main() -> int:
     global PATCH_RANGES
     PATCH_RANGES = resolve_patch_ranges(load_cbios_sym(os.path.splitext(sys.argv[1])[0] + ".sym"))
     basic = open(sys.argv[2], "rb").read()
-    tape = open(sys.argv[3], "rb").read()
-    tape_end = sym_value(sys.argv[4], "tape_end")
+    tape = None if sys.argv[3] == "-" else open(sys.argv[3], "rb").read()
+    tape_end = None if sys.argv[4] == "-" else sym_value(sys.argv[4], "tape_end")
     out = sys.argv[5]
     islands = open(sys.argv[6], "rb").read() if len(sys.argv) == 7 else None
     merged = build(repacked, basic, tape, tape_end, islands)

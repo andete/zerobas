@@ -67,7 +67,7 @@ record:
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-TX-SHADOW** RG2SAV-RG6SAV := TXTNAM / $400, TXTCOL / $40, TXTCGP / $800, TXTATR / $80, TXTPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F). Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20). | 38 | ✓ | ✗ 12: XS N06, XS N07, XS N08, XS N09, XS N10, XS N11 … (+6) |
+| **R-TX-SHADOW** RG2SAV-RG6SAV := TXTNAM / $400, TXTCOL / $40, TXTCGP / $800, TXTATR / $80, TXTPAT / $800 -- each cell shifted right, its low byte (so a cell's low bits are dropped and $FFFF gives $3F, $FF, $1F, $FF, $1F). Whatever they held ($A5, or $5A), RG2SAV-RG6SAV are wholly replaced; RG7SAV is kept ($A5, $00, $FF, $5A). Six sets of cells: the published defaults, moved, others with low bits set, every cell $FFFF, and two with $4000 / $8000 / $C000 -- bits 14 and 15 apart (a plain shift: NAM $4000 gives $10, $8000 $20). | 38 | ✓ | ✓ |
 | **R-TX-R01** RG0SAV := RG0SAV AND $01 (only bit 0 kept); RG1SAV := (RG1SAV AND $E7) OR $10 (bits 4 and 3 the mode: M1 set) (RG0SAV / RG1SAV $00 / $00, $FF / $FF, $5A / $A5, and apart: $01 / $00, $FE / $FF). | 38 | ✓ | ✓ |
 | **R-TX-VDP** The VDP registers R#0-R#6 := those values, as the VDP holds them (R#0 bits 1-0, R#1 all but bit 2, R#2 bits 3-0, R#4 / R#6 bits 2-0, R#5 bits 6-0); R#7 is not written. | 38 | ✓ | ✓ |
 | **R-TX-REGS** On return A = the new RG6SAV, F = $00, BC = $0007, DE = $0000 and HL = $F3BD (just past TXTPAT); IX and IY are kept -- whatever F was on entry ($00, $FF). | 38 | ✓ | ✗ 38: XS N00, XS N01, XS N02, XS N03, XS N04, XS N05 … (+32) |
@@ -78,7 +78,9 @@ record:
 
 ## Differences from the reference
 
-None measured: every rule holds on zerobas.
+| TODO item | rules zerobas fails |
+|---|---|
+| **D-SETREGSCBIOS** (the leftover registers: since the rebase on C-BIOS d23d87b (2026-11-22) zerobas runs C-BIOS's SETTXT, which returns DE / HL the other way round and a different F; C-BIOS declined the fix -- Joost: "skip", no program reads them -- and zerobas no longer carries setregs-order.patch) | R-TX-REGS |
 
 
 ## Open (not measured)

@@ -91,12 +91,12 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-C-TEXT** CLS with the Z flag set, in SCREEN 0 / 1: the whole name table (960 / 768 cells) becomes spaces -- at any width, CRTCNT 13 included -- and nothing else in VRAM changes (the whole 16 KB's sum read). With CNSDFG non-zero the key line is redrawn on row CRTCNT as DSPFNK draws it (the first five labels; docs/bios/DSPFNK.md) and CNSDFG becomes 255. | 11 | ✓ | ✗ 1: XC 08 |
+| **R-C-TEXT** CLS with the Z flag set, in SCREEN 0 / 1: the whole name table (960 / 768 cells) becomes spaces -- at any width, CRTCNT 13 included -- and nothing else in VRAM changes (the whole 16 KB's sum read). With CNSDFG non-zero the key line is redrawn on row CRTCNT as DSPFNK draws it (the first five labels; docs/bios/DSPFNK.md) and CNSDFG becomes 255. | 11 | ✓ | ✓ |
 | **R-C-HOME** It homes the cursor (CSRX 1, CSRY 1) and sets LINTTB to 24, 23, …, 1 down the rows. | 11 | ✓ | ✓ |
 | **R-C-ZCLEAR** CLS with the Z flag CLEAR does nothing at all: VRAM, the cursor, LINTTB and CNSDFG as found, in every mode. | 4 | ✓ | ✓ |
 | **R-C-GRP** CLS with the Z flag set in SCREEN 2: the pattern table ($0000, 6 KB) becomes 0 and the colour table ($2000, 6 KB) BAKCLR AS IT IS (FORCLR is not used): read here only as sums, which for 2048 equal bytes keep the byte mod 32 -- XSCR's byte reads pin it ($16, $C5: R-C-SEVERAL); the name and sprite tables are left as found, and so are the cursor, LINTTB and CNSDFG. | 3 | ✓ | ✓ |
 | **R-C-GATE** CLS acts exactly when the Z flag is set: A = 0 with Z set and A = 1 with Z and carry set clear the screen; A = 1 and A = 0 with Z clear do nothing -- A and the carry do not matter. | 5 | ✓ | ✓ |
-| **R-C-SEVERAL** And with the inputs at several values (XSCR): CNSDFG 2 / $80 / $FF all redraw the key line (CNSDFG becomes 255); a second garbage set; H / L 3 / 9 ignored; the name table moved (TXTNAM $1000, T32NAM $1C00 -- cleared there); CRTCNT 13 in SCREEN 1; 15-character labels cut to slot − 1; in SCREEN 2 the colour table's BYTES read BAKCLR as it is ($16, $C5) and the pattern table's 0 -- every cell, the cursor, LINTTB and the whole VRAM's sum as the model says. With the cursor ON the key line's row (24, or 13 at CRTCNT 13) CLS does not scroll: it clears, homes, and draws the line. With TXTNAM / T32NAM changed AFTER INITXT / INIT32 it clears the table the mode's call set up, not the one TXTNAM now names. | 15 | ✓ | ✗ 2: XS 41, XS3 08 |
+| **R-C-SEVERAL** And with the inputs at several values (XSCR): CNSDFG 2 / $80 / $FF all redraw the key line (CNSDFG becomes 255); a second garbage set; H / L 3 / 9 ignored; the name table moved (TXTNAM $1000, T32NAM $1C00 -- cleared there); CRTCNT 13 in SCREEN 1; 15-character labels cut to slot − 1; in SCREEN 2 the colour table's BYTES read BAKCLR as it is ($16, $C5) and the pattern table's 0 -- every cell, the cursor, LINTTB and the whole VRAM's sum as the model says. With the cursor ON the key line's row (24, or 13 at CRTCNT 13) CLS does not scroll: it clears, homes, and draws the line. With TXTNAM / T32NAM changed AFTER INITXT / INIT32 it clears the table the mode's call set up, not the one TXTNAM now names. | 15 | ✓ | ✓ |
 | **R-C-MLT** CLS in SCREEN 3 (Z set): the multicolour pattern table ($0000, 1.5 KB) becomes $66 -- BAKCLR 6 in both nibbles, one BAKCLR measured -- and nothing else changes: the name table, the cursor, LINTTB. | 1 | ✓ | ✓ |
 
 #### 2. POSIT ($00C6): place the cursor
@@ -112,7 +112,7 @@ the run.
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-CP-STATE** Neither changes CRTCNT, LINLEN or SCRMOD. | 39 | ✓ | ✗ 1: XC 08 |
+| **R-CP-STATE** Neither changes CRTCNT, LINLEN or SCRMOD. | 39 | ✓ | ✓ |
 | **R-CP-AF** A / F on return (not published): the reference's values -- CLS 00 / 54 in SCREEN 0 / 1 without the key line, 00 / 44 with it and in SCREEN 2, 66 / 24 in SCREEN 3, A / F unchanged when Z was clear; POSIT 24 / 30 in SCREEN 0 / 1, 22 / 30 in SCREEN 2 / 3, 48 / 18 with A / F 00 / 00 on entry. | 38 | ✓ | ✗ 35: XS 27, XS 29, XS 31, XS 32, XS 33, XS 34 … (+29) |
 
 Declared NOT evidence (7 cases: XC 12, XC 13, XC 14, XC 25 … (+3)): linlen — SCREEN 2 cases: the setup does not set LINLEN there (INIGRP does not), so its value is the previous case's
@@ -125,7 +125,6 @@ Declared NOT evidence (5 cases: XS 36, XS 37, XS 43, XS 47 … (+1)): linlen —
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-INITEDGES** (the key line's row: zerobas row 24 and CRTCNT := 24) | R-C-TEXT, R-CP-STATE, R-C-SEVERAL |
 | **D-TEXTAF** (A / F on return) | R-CP-AF |
 
 ## Open (not measured)

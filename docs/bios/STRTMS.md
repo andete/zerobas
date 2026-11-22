@@ -73,8 +73,8 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-ST-PLAY** MUSICF ($FB3F) not 0 (music playing): nothing changes. MUSICF 0 and PLYCNT ($FB40) 0: nothing changes. MUSICF 0 and PLYCNT not 0: PLYCNT := PLYCNT - 1 (3, 1 measured), MUSICF := 7 (all three voices) and each voice's first word ($FB41, $FB66, $FB8B) := 1. Queues, QUEUEN and VOICEN are kept. | 20 | ✓ | ✗ 8: XS N70, XS D70, XS N115, XS N116, XS N117, XS D115 … (+2) |
-| **R-ST-REGS** Playing: A := MUSICF, F its OR flags, HL kept. Nothing to play: A := 0, F := $44, HL := $FB40. Started: A := 7, F := the flags DEC leaves on PLYCNT ($02 for 3, $42 for 1), HL := 1. | 20 | ✓ | ✗ 14: XS N67, XS N69, XS N70, XS D67, XS D69, XS D70 … (+8) |
+| **R-ST-PLAY** MUSICF ($FB3F) not 0 (music playing): nothing changes. MUSICF 0 and PLYCNT ($FB40) 0: nothing changes. MUSICF 0 and PLYCNT not 0: PLYCNT := PLYCNT - 1 (3, 1 measured), MUSICF := 7 (all three voices) and each voice's first word ($FB41, $FB66, $FB8B) := 1. Queues, QUEUEN and VOICEN are kept. | 20 | ✓ | ✓ |
+| **R-ST-REGS** Playing: A := MUSICF, F its OR flags, HL kept. Nothing to play: A := 0, F := $44, HL := $FB40. Started: A := 7, F := the flags DEC leaves on PLYCNT ($02 for 3, $42 for 1), HL := 1. | 20 | ✓ | ✓ |
 | **R-ST-KEEP** BC, DE, IX, IY and the interrupt state are kept; the PSG and the PPI port C are kept. | 20 | ✓ | ✓ |
 
 <!-- RULES END -->

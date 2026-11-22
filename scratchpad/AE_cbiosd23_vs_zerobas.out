@@ -1,0 +1,113 @@
+D-CBIOS032 rebase measurement (2026-11-22): tools/cbios_review.py all --tag d23 on C-BIOS d23d87b (prepare-0.33, stock),
+against zerobas HEAD (368fc19db); full log scratchpad/AE_cbios_review_d23.out. Per rules module: d23 only / zerobas only / both.
+
+chput_rules.py           67 rules | d23 only: - | zerobas only: - | both: 0
+xbabs_rules.py            6 rules | d23 only: R-BA-BACK R-BA-MEDIUM R-BA-ONLY R-BA-WRABS R-BA-WRABS2 | zerobas only: - | both: 1
+xbblk_rules.py           18 rules | d23 only: R-BK-FOPENRS R-BK-PAST255 R-BK-RDBLK R-BK-ROUND2 R-BK-WRBLK R-BK-WRZER | zerobas only: - | both: 12
+xbcon_rules.py            9 rules | d23 only: R-BC-BUFIN R-BC-CTRL | zerobas only: - | both: 7
+xbeep_rules.py            5 rules | d23 only: - | zerobas only: R-BP-RESET | both: 0
+xbfile_rules.py          18 rules | d23 only: R-BF-INDEX R-BF-MAKE R-BF-REN R-BF-RENEX R-BF-SEARCH R-BF-SEARCH2 | zerobas only: R-BF-CARRY | both: 10
+xbreakx_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xbrec_rules.py           11 rules | d23 only: R-BR-RND R-BR-RND2 R-BR-RSEQ R-BR-SEQ2 R-BR-SETRND R-BR-SETRND2 R-BR-SIZE R-BR-WSEQ | zerobas only: - | both: 3
+xbsys_rules.py           15 rules | d23 only: R-BS-DATE R-BS-DATE2 R-BS-DATE3 R-BS-DRIVES R-BS-DSKRST2 R-BS-DSKRST3 R-BS-TIME R-BS-TIME2 R-BS-VERSION | zerobas only: - | both: 6
+xcalatr_rules.py          5 rules | d23 only: - | zerobas only: - | both: 0
+xcalbas_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xcallf_rules.py           8 rules | d23 only: - | zerobas only: - | both: 2
+xcalpat_rules.py          5 rules | d23 only: - | zerobas only: - | both: 0
+xcalslt_rules.py          9 rules | d23 only: - | zerobas only: - | both: 2
+xchg_rules.py            15 rules | d23 only: - | zerobas only: - | both: 0
+xchgcap_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xchgclr_rules.py          4 rules | d23 only: - | zerobas only: - | both: 1
+xchgmod_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+xchgsnd_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xchoice_rules.py          4 rules | d23 only: R-CH-CHOICE R-CH-MTOFF R-CH-MTOFFCF | zerobas only: - | both: 1
+xchrgtr_rules.py         12 rules | d23 only: - | zerobas only: R-C-END R-C-SKIP | both: 5
+xckcntc_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xclrspr_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xcls_rules.py            13 rules | d23 only: - | zerobas only: R-C-SEVERAL R-C-TEXT R-CP-STATE | both: 1
+xcnv_rules.py             7 rules | d23 only: - | zerobas only: R-V-ANYG R-V-F R-V-SEQ | both: 0
+xdcompr_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xdisscr_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xdownc_rules.py           3 rules | d23 only: - | zerobas only: - | both: 0
+xdskchg_rules.py          5 rules | d23 only: - | zerobas only: - | both: 5
+xdskfmt_rules.py          5 rules | d23 only: R-DF-FORMAT | zerobas only: - | both: 4
+xdskio_rules.py           4 rules | d23 only: - | zerobas only: - | both: 3
+xenascr_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xenaslt_rules.py          8 rules | d23 only: - | zerobas only: - | both: 0
+xfetchc_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+xfilvrm_rules.py          5 rules | d23 only: - | zerobas only: - | both: 0
+xfnk2_rules.py            9 rules | d23 only: - | zerobas only: R-F-DI R-F-WAREA | both: 2
+xgetdpb_rules.py          3 rules | d23 only: - | zerobas only: - | both: 2
+xgetvc2_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xgetvcp_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xgetypr_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xgicini_rules.py          5 rules | d23 only: - | zerobas only: R-GI-VCB | both: 0
+xgrpprt_rules.py          6 rules | d23 only: - | zerobas only: - | both: 0
+xgspsiz_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xgtaspc_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+xgtpad_rules.py           3 rules | d23 only: - | zerobas only: - | both: 0
+xgtpdl_rules.py           4 rules | d23 only: - | zerobas only: R-PD-KEEP R-PD-PORT | both: 0
+xgtstck_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xgttrig_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xinigrp_rules.py          5 rules | d23 only: - | zerobas only: - | both: 1
+xinimlt_rules.py          5 rules | d23 only: - | zerobas only: - | both: 1
+xinit_rules.py           24 rules | d23 only: - | zerobas only: R-I-CRTCNT R-I-KEYOUT R-I-KEYPLACE R-I-SPR32 R-I-VRAM | both: 5
+xinitio_rules.py         33 rules | d23 only: - | zerobas only: R-IO-MP R-IO-MP5 R-IO-PARSE R-IO-SEED R-IO-VCB R-IO-VCB3 R-IO-VCB4 R-IO-VCB7 | both: 0
+xiscntc_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xisflio_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xkey_rules.py            17 rules | d23 only: - | zerobas only: R-K-DSP R-K-ERA R-K-ERA-A R-K-ERALT R-K-LABELS R-K-LABELS2 R-K-LINLEN R-K-SB-ON R-K-SCROLL R-K-SEVERAL R-K-STATE | both: 1
+xkilbuf_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xldirmv_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xldirvm_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xleftc_rules.py           3 rules | d23 only: - | zerobas only: - | both: 0
+xlftq_rules.py            3 rules | d23 only: - | zerobas only: - | both: 0
+xlin_rules.py            49 rules | d23 only: - | zerobas only: R-L-STOPHELD | both: 6
+xlptout_rules.py          5 rules | d23 only: - | zerobas only: R-LO-ABORTF | both: 0
+xlptstt_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xmapxyc_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xnsetcx_rules.py          5 rules | d23 only: - | zerobas only: - | both: 0
+xoutdlp_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xoutdo_rules.py           7 rules | d23 only: - | zerobas only: - | both: 0
+xphydio_rules.py          9 rules | d23 only: R-PD-DI | zerobas only: - | both: 6
+xpntini_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xputq_rules.py            4 rules | d23 only: - | zerobas only: - | both: 0
+xrdpsg_rules.py           2 rules | d23 only: - | zerobas only: - | both: 0
+xrdslt_rules.py          14 rules | d23 only: - | zerobas only: - | both: 0
+xrdvdp_rules.py           4 rules | d23 only: - | zerobas only: - | both: 0
+xrdvrm_rules.py           6 rules | d23 only: - | zerobas only: - | both: 0
+xreadc_rules.py           5 rules | d23 only: - | zerobas only: - | both: 0
+xrightc_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xrslreg_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+xscalxy_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xscanl_rules.py           3 rules | d23 only: - | zerobas only: - | both: 0
+xscanr_rules.py           5 rules | d23 only: - | zerobas only: - | both: 0
+xsetatr_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xsetc_rules.py            5 rules | d23 only: R-SC-AF | zerobas only: - | both: 0
+xsetgrp_rules.py          6 rules | d23 only: R-GR-REGS | zerobas only: - | both: 0
+xsetmlt_rules.py          6 rules | d23 only: R-MT-REGS | zerobas only: - | both: 0
+xsetrd_rules.py           5 rules | d23 only: - | zerobas only: - | both: 0
+xsett32_rules.py          6 rules | d23 only: R-T3-REGS | zerobas only: - | both: 0
+xsettxt_rules.py          6 rules | d23 only: R-TX-REGS | zerobas only: - | both: 0
+xsetwrt_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xsnsmat_rules.py          5 rules | d23 only: - | zerobas only: - | both: 0
+xstmotr_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xstorec_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+xstrtms_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xsynchr_rules.py          6 rules | d23 only: - | zerobas only: - | both: 0
+xtapin_rules.py           1 rules | d23 only: - | zerobas only: - | both: 0
+xtapiof_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xtapion_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xtapoof_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xtapoon_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xtapout_rules.py          1 rules | d23 only: - | zerobas only: - | both: 0
+xtdownc_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xtot_rules.py            10 rules | d23 only: - | zerobas only: R-T-THRU | both: 3
+xtupc_rules.py            4 rules | d23 only: - | zerobas only: - | both: 0
+xupc_rules.py             3 rules | d23 only: - | zerobas only: - | both: 0
+xwrslt_rules.py           9 rules | d23 only: - | zerobas only: - | both: 0
+xwrtpsg_rules.py          3 rules | d23 only: - | zerobas only: - | both: 0
+xwrtvdp_rules.py          6 rules | d23 only: - | zerobas only: - | both: 0
+xwrtvrm_rules.py          4 rules | d23 only: - | zerobas only: - | both: 0
+xwslreg_rules.py          2 rules | d23 only: - | zerobas only: - | both: 0
+
+TOTAL: d23 fails 46 rules zerobas passes; zerobas fails 42 rules d23 passes; both fail 90

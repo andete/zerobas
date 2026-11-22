@@ -104,9 +104,17 @@ def zb_syms() -> set[int]:
     return vals
 
 
+# D-CBIOS032 (2026-11-22): a candidate base before it is merged -- CBR_REPACKED / CBR_MERGED name the two
+# ROMs (the merged one may be a stand-in with only the overlaid vectors changed), CBR_CUTOFF the end of C-BIOS's
+# page-0 code, CBR_NOBACK=1 drops the back-references read from the CURRENT zerobas build (another base's addresses).
+REPACKED = os.environ.get("CBR_REPACKED") or os.path.join(ROOT, "build/cbios_main_msx1_eu-repacked.rom")
+MERGED = os.environ.get("CBR_MERGED") or os.path.join(ROOT, "build/zerobas-main-eu.rom")
+CUTOFF = int(os.environ.get("CBR_CUTOFF", "0x2781"), 16)
+
+
 def overlaid_vectors() -> set[int]:
-    c = open(os.path.join(ROOT, "build/cbios_main_msx1_eu-repacked.rom"), "rb").read()
-    m = open(os.path.join(ROOT, "build/zerobas-main-eu.rom"), "rb").read()
+    c = open(REPACKED, "rb").read()
+    m = open(MERGED, "rb").read()
     return {a for a in range(0, 0x160, 1) if m[a] == 0xC3 and c[a:a + 3] != m[a:a + 3]}
 
 
@@ -176,7 +184,8 @@ def main(argv):
         order.append((f, labs))
     seeds |= prologue_mentions
     zb = zb_syms()
-    back = {n for n, a in syms.items() if n in spans and 0x0200 <= a < 0x2781 and a in zb}
+    back = set() if os.environ.get("CBR_NOBACK") else \
+        {n for n, a in syms.items() if n in spans and 0x0200 <= a < CUTOFF and a in zb}
     seeds |= back
 
     live = set(s for s in seeds if s in spans)
@@ -240,7 +249,7 @@ def main(argv):
     if run:
         runs.append(run)
     global ROMBYTES
-    ROMBYTES = open(os.path.join(ROOT, "build/cbios_main_msx1_eu-repacked.rom"), "rb").read()
+    ROMBYTES = open(REPACKED, "rb").read()
     tot = 0
     print(f"overlaid vectors: {len(over)}; seeds {len(seeds)}; back-references {sorted(back)}")
     for r in runs:
@@ -252,11 +261,11 @@ def main(argv):
         while end > a0 and rom[end - 1] == 0:     # stop at the last code byte, not the pad
             end -= 1
         size = end - a0
-        if a0 >= 0x2781 or size <= 0 or size > 0x400:
+        if a0 >= CUTOFF or size <= 0 or size > 0x400:
             continue
         tot += size
         print(f"  ${a0:04X}-${end - 1:04X} {size:4} B  {r[0][2]:12} {' '.join(x[1] for x in r)[:110]}")
-    print(f"TOTAL dead below $2781: {tot} B")
+    print(f"TOTAL dead below ${CUTOFF:04X}: {tot} B")
 
 
 if __name__ == "__main__":

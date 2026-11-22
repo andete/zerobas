@@ -19,9 +19,15 @@ usage: split_islands.py <full.bin> <out basic-reloc.rom> <out islands.bin>
   is; build_mainrom.py overlays its NON-ZERO bytes, refusing any outside the
   approved ranges or onto a non-zero C-BIOS byte.
 """
+import os
+import re
 import sys
 
-BASIC_BASE, TOP = 0x2781, 0x8000
+# BASIC_BASE is basic/main.asm's BASIC_ORG, read from the source (D-CBIOS032: it moved with the C-BIOS rebase,
+# $2781 -> $2BAF; one definition, so this split and tools/build_mainrom.py cannot disagree with the assembly).
+_ORG = re.search(r"^BASIC_ORG:\s+equ\s+\$([0-9A-Fa-f]+)", open(os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "basic", "main.asm")).read(), re.M)
+BASIC_BASE, TOP = int(_ORG.group(1), 16), 0x8000
 
 
 def split(full: bytes):

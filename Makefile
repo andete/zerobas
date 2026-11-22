@@ -1682,7 +1682,7 @@ strig-trap-acceptance: $(DISK_ROM) repack-machine
 # pressed straight through the matrix (row 6 bits 5/6/7 = F1..F3, row 7 bits 0/1 =
 # F4/F5, + row 6 bit 0 SHIFT for F6..F10). Needs the repack machine because the
 # event source is the repacked C-BIOS's keyboard scan (FNKFLG / TRPTBL / ONGSBF,
-# cbios-repack/key-trap-bios.patch, D-KEYTRAPREF), which stock C-BIOS lacks. Scope with `make key-trap-acceptance ONLY=A_`.
+# D-KEYTRAPREF: C-BIOS fff98e8 does it, the base since D-CBIOS032). Scope with `make key-trap-acceptance ONLY=A_`.
 # `make key-trap-acceptance CALIBRATE=1` re-measures the two machines' loop rates,
 # which is what the iteration-count observation windows are sized from -- the spec
 # requires calibrating them rather than assuming (§1.0).

@@ -76,7 +76,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 |---|---|---|---|
 | **R-GI-PSG** PSG R7 := $B8 (tones on, noise off, port A in, port B out: from $BF too), R8-R10 (the volumes) := 0; R0-R6 and R11-R13 are kept. | 34 | ✓ | ✓ |
 | **R-GI-QUE** Queues 0-2 in QUETAB: put, get and the back flag := 0, size := $7F, the address := VOICAQ / VOICBQ / VOICCQ ($F975 / $F9F5 / $FA75; from $F9F0 and size $7E too); queue 3 and QUEBAK are kept. MUSICF ($FB3F) and PLYCNT ($FB40) := 0; QUEUEN and VOICEN are kept. | 34 | ✓ | ✓ |
-| **R-GI-VCB** The three 37-byte voice buffers from VCBA ($FB41) := 0, except bytes 15-19 of each := $04 $04 $78 $88 $FF. The queue buffers are not cleared; $FB35-$FB37 and $FB39-$FB3D (PRSCNT, SAVSP, SAVVOL, MCLLEN, MCLPTR) are kept (XSND1B presets them). | 34 | ✓ | ✗ 18: XS N58, XS N59, XS N60, XS N61, XS N62, XS N63 … (+12) |
+| **R-GI-VCB** The three 37-byte voice buffers from VCBA ($FB41) := 0, except bytes 15-19 of each := $04 $04 $78 $88 $FF. The queue buffers are not cleared; $FB35-$FB37 and $FB39-$FB3D (PRSCNT, SAVSP, SAVVOL, MCLLEN, MCLPTR) are kept (XSND1B presets them). | 34 | ✓ | ✓ |
 | **R-GI-KEEP** A, F, BC, DE, HL, IX and IY are kept; the PPI port C's high nibble is kept (its low nibble is the timer interrupt's). | 34 | ✓ | ✓ |
 | **R-GI-EI** Interrupts are on after the call, whether they were on or off before it. | 34 | ✓ | ✓ |
 
@@ -86,7 +86,6 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-GICINIVCB** (zerobas leaves the voice buffers as they were, all but one byte) | R-GI-VCB |
 
 ## Open (not measured)
 

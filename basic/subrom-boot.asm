@@ -69,5 +69,5 @@ try_sub_slot:
 ; basic/missing.asm: the stretch here, in front of the $475A pin, is full.)
 
 ; (zkey_install went with the H_ZKEY hook: D-KEYTRAPREF, 2026-11-22 -- the BIOS scan diverts
-; a trapped function key itself, cbios-repack/key-trap-bios.patch.)
+; a trapped function key itself -- C-BIOS fff98e8, the base since D-CBIOS032.)
 

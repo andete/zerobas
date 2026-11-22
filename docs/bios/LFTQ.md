@@ -73,8 +73,8 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 | rule | cases | reference | zerobas |
 |---|---|---|---|
-| **R-LQ-HL** For queue A (0-3; QUETAB $F959, 6 bytes each: put, get, back flag, size, address): HL := (get - ((put + 1) AND size)) AND size, the bytes free -- with a size of 2^n - 1 that is (get - put - 1) mod 2^n; with $7E, put 2 and get $50 it gives $4E; the back flag is not used. A := L, F its flags as an AND leaves them (H set). | 42 | ✓ | ✗ 4: XS N133, XS N134, XS D133, XS D134 |
-| **R-LQ-BC** B := (put + 1) AND size, C := get. | 42 | ✓ | ✗ 38: XS N26, XS N27, XS N28, XS N29, XS N30, XS N31 … (+32) |
+| **R-LQ-HL** For queue A (0-3; QUETAB $F959, 6 bytes each: put, get, back flag, size, address): HL := (get - ((put + 1) AND size)) AND size, the bytes free -- with a size of 2^n - 1 that is (get - put - 1) mod 2^n; with $7E, put 2 and get $50 it gives $4E; the back flag is not used. A := L, F its flags as an AND leaves them (H set). | 42 | ✓ | ✓ |
+| **R-LQ-BC** B := (put + 1) AND size, C := get. | 42 | ✓ | ✓ |
 | **R-LQ-KEEP** DE, IX, IY and the interrupt state are kept; QUETAB, the queue cells and the buffers are kept (the window recorded: queue 0, 1, 2 or 3's first 16 bytes); the PSG registers R0-R13 and the PPI port C are kept. | 42 | ✓ | ✓ |
 
 <!-- RULES END -->

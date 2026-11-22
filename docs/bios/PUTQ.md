@@ -75,7 +75,7 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 |---|---|---|---|
 | **R-PQ-PUT** Queue A's put pointer goes to (put + 1) AND size (with size $7E, put 2 stays 2); if that equals get the queue is full: nothing is written and put is kept. Otherwise put := it and E is stored at the queue's address + the new put (the first byte stored goes at address + 1; a put of 0 at the address itself; the 16-bit sum carries: $F9F0 + $10 is $FA00). Nothing else in QUETAB, nor QUEUEN / VOICEN / MUSICF / PLYCNT, changes. | 42 | ✓ | ✓ |
 | **R-PQ-AF** Full: A := the new put, F := $42 OR (A AND $28) (Z set). Stored: A := the queue address's low byte, F := S from (new put - get) -- bit 7 of the difference -- and bits 5 / 3 from the high byte of the address stored to, the rest clear ($28 for $F9xx with new put above get, $A8 below, $80 for $C0xx). | 42 | ✓ | ✓ |
-| **R-PQ-REGS** Full: B := the old put, C := the new put, HL := the queue's QUETAB entry + 3. Stored: B := 0, C := the new put, HL := the entry. | 42 | ✓ | ✗ 20: XS N39, XS N40, XS N42, XS N43, XS N44, XS N46 … (+14) |
+| **R-PQ-REGS** Full: B := the old put, C := the new put, HL := the queue's QUETAB entry + 3. Stored: B := 0, C := the new put, HL := the entry. | 42 | ✓ | ✓ |
 | **R-PQ-KEEP** DE, IX, IY and the interrupt state are kept; the PSG registers and the PPI port C are kept. | 42 | ✓ | ✓ |
 
 <!-- RULES END -->
