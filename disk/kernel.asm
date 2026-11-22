@@ -7902,8 +7902,8 @@ frg_eofchk:
 ; it reads record 6 and leaves CR 7 (scratchpad/bdosfcb_run4.out, row 23). Ours read
 ; on from its own iterator. BDOS_SEQREC is where that iterator stands ($FFFF after a
 ; random call: seq_dirty); a different record is re-positioned by rrnd_position's
-; path. SCOPE: rrnd_position's, records 0..255; past that BDOS_SEQREC is synced and
-; the read goes on from the iterator. Also seeds BDOS_DTA, as wrseq_rd did inline.
+; path, for every record (D-RRND256: it stopped at 255). Also seeds BDOS_DTA, as
+; wrseq_rd did inline.
 srd_pos:
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
@@ -7917,11 +7917,7 @@ srd_pos:
                 call    srd_same            ; D-SEQMIX3 (disk/pageenv.asm, for room)
                 ret     z                   ; this file's iterator, there already
                 ld      (BDOS_SEQREC), hl
-                inc     h
-                dec     h
-                ret     nz                  ; past rrnd_position's scope
-                ld      a, l
-                jp      rrnd_pos_a
+                jp      rrnd_pos_hl         ; the whole record (D-RRND256: past 255 too)
 ; (moved here from kernel.asm by the D-DSKFMT defrag)
 ; mulacc_cmp -- WRBLK_MULACC vs FAT_FILESIZE, 32-bit unsigned, MSB first: Z = equal,
 ; Cy = MULACC below. Shared by wrblk_zero_path and wrblk_size_max (the chain stood
@@ -8930,12 +8926,9 @@ fcb_fatst:
 ; tier2-m26-spec.md §2.3). CLEAN-ROOM. Entry is the same kernel FCB-copy
 ; convention as fdel_body/rdabs_body/wrabs_body: DE -> a 37-byte scratch copy
 ; of the FCB at $DA40; copy+33 = the FCB random-record field r0 (BDOS $18 SETRND
-; / direct FCB poke). SCOPE (signed off at implementation time, same class of
-; narrowing as FREN's/FDEL's single-exact-match precedent): only r0 (0..255,
-; up to a 32640-byte file) positions the record; r1/r2 (copy+34/+35) are NOT
-; read -- BDOSX3 only exercises r0 in {1,2} and no on-disk MSX-DOS-1 floppy
-; file needs more than r0 to stay within this milestone's verified acceptance
-; bar. PLACEMENT: kernel.asm's free tail (not disk/fat.asm's own end), per the
+; / direct FCB poke). SCOPE: r0 and r1 (copy+33 / +34: records 0..65535, more
+; than a 720 KB disk holds) position the record since D-RRND256 (2026-11-22); it
+; was r0 alone at implementation time, so records past 255 went to RR mod 256. PLACEMENT: kernel.asm's free tail (not disk/fat.asm's own end), per the
 ; FDEL slice's placement lesson (fat.asm's tail starves kernel.asm's own
 ; pinned-address corridor of slack for a body this size).
 ;
@@ -8977,9 +8970,16 @@ fcb_fatst:
 rrnd_position:
                 call    seq_dirty           ; B2 / D-BDOSSEQ: SEQREAD re-positions; a
                                             ; write-open file's buffered records go out
-                ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
-rrnd_pos_a:                                 ; srd_pos: A = the record
-                ld      (RRND_RECSEC), a    ; held across mount / find (all clobber A)
+                ld      l, (ix+33)
+                ld      h, (ix+34)          ; HL = the record (r0 / r1 -- D-RRND256)
+rrnd_pos_hl:                                ; srd_pos: HL = the record
+                ; 🔴 D-RRND256 (2026-11-22): the WHOLE record positions it. It was r0 alone
+                ; ("0..255, up to a 32640-byte file"), so past record 255 every RDRND /
+                ; WRRND / WRZER / RDBLK went to record RR mod 256 -- record 300's write
+                ; landed on 44 (probes/bios/spec/xrrnd1.asm, scratchpad/XRRND1_run1.out);
+                ; the size and clusters, from the whole RR, looked right. Held on the stack
+                ; across mount / find / open (all clobber the registers).
+                push    hl                  ; [rec]
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl      ; reseed our own DTA cell (M19 lesson:
                                             ; the kernel's real SETDTA only ever
@@ -8990,12 +8990,12 @@ rrnd_pos_a:                                 ; srd_pos: A = the record
                 ; read the last-found file (disk_probe_wrblk_alt.py --rnd: OUT2.BIN
                 ; 12h x 8 where the CF-3300 gives 11h..18h). D-RDBLKMULTI's fix.
                 call    fat_mount
-                ret     c                   ; unreadable disk -> both callers' Cy path
+                jr      c, rrnd_pos_drop    ; unreadable disk -> both callers' Cy path
                 push    ix
                 pop     hl
                 inc     hl                  ; HL -> copy+1, the 8.3 name (fat_find's contract)
                 call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
-                ret     c                   ; no such file -> both callers' Cy path
+                jr      c, rrnd_pos_drop    ; no such file -> both callers' Cy path
                 ; 🔴 D-RNDLIVE (2026-11-10): the chain and the size come from the FCB, not
                 ; the directory. The entry is only rewritten at FCLOSE, so after WRRND /
                 ; WRBLK / WRZER grew an open file the directory still said its old size
@@ -9004,51 +9004,51 @@ rrnd_pos_a:                                 ; srd_pos: A = the record
                 ; scratchpad/dosl_d6_2.out). The FCB's +26 and +16..19 are kept current
                 ; by every write (wrblk_fcb_keep, wrrnd_extend) and filled by FOPEN.
                 call    fcb_fatst
-                ld      a, (RRND_RECSEC)    ; A = the target record
-                push    af
                 call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)
-                pop     af
-                ld      c, a                ; C = r0 (preserved across fat_open)
-                and     3
-                ld      (RRND_RECSEC), a    ; stash record-in-sector for after the seek loop
-                                            ; (RAM: a ROM cell here silently no-op'd -> wrong record)
-                ld      a, c
-                srl     a
-                srl     a                   ; A = target sector-in-file (r0 >> 2)
-                inc     a                   ; A = seek-loop count (>= 1)
-                ld      b, a
-                ; BDOS_BYTESLEFT := FAT_FILESIZE - r0*RECSIZE (r0*128 <= 32640, always
-                ; fits 16 bits, so only the filesize low word can matter here)
-                ld      h, 0
-                ld      l, c                ; HL = r0
-                call    hl_x128            ; HL = r0 * 128
+                pop     hl                  ; HL = rec
+                ld      a, l
+                and     3                   ; A = record-in-sector, kept on the stack across
+                push    af                  ; the seek loop (fat_read_file_sector clobbers all)
+                push    hl                  ; [recsec][rec]
+                ; BDOS_BYTESLEFT := FAT_FILESIZE - rec * 128, 24 bits (rec * 128 = C:HL)
+                ld      c, h
+                srl     c                   ; C = rec >> 9, the product's top byte
+                ld      b, 0
+                call    hl_x128             ; HL = (rec * 128) AND $FFFF
                 ld      de, (FAT_FILESIZE)
-                ex      de, hl              ; HL = filesize_lo16, DE = r0*128
+                ex      de, hl
                 or      a
-                sbc     hl, de              ; HL = filesize_lo16 - r0*128; Cy=1 if r0 is past EOF
-                jr      c, rrnd_pos_beyond
+                sbc     hl, de
                 ld      (BDOS_BYTESLEFT), hl
                 ld      hl, (FAT_FILESIZE + 2)
-                ld      (BDOS_BYTESLEFT + 2), hl
-                jr      rrnd_pos_seek
-rrnd_pos_beyond:
+                sbc     hl, bc              ; the borrow carried; Cy: rec is past EOF
+                jr      nc, rrnd_pos_left
                 ld      hl, 0
                 ld      (BDOS_BYTESLEFT), hl
+rrnd_pos_left:
                 ld      (BDOS_BYTESLEFT + 2), hl
-rrnd_pos_seek:
+                pop     bc
+                srl     b
+                rr      c
+                srl     b
+                rr      c
+                inc     bc                  ; BC = rec >> 2, the sector in the file, + 1
 rrnd_pos_loop:
                 push    bc
                 call    fat_read_file_sector
                 pop     bc
-                jr      c, rrnd_pos_err     ; seek ran off the end of the chain
-                djnz    rrnd_pos_loop
-                ld      a, (RRND_RECSEC)
+                jr      c, rrnd_pos_drop    ; seek ran off the end of the chain
+                dec     bc
+                ld      a, b
+                or      c
+                jr      nz, rrnd_pos_loop
+                pop     af                  ; A = record-in-sector
                 ld      (BDOS_RECIDX), a
                 or      a                   ; Cy = 0 ok
                 ret
-rrnd_pos_err:
-                scf
-                ret
+rrnd_pos_drop:
+                pop     hl
+                ret                         ; Cy kept
 
                                             ; arithmetic, which stood here inline (D-DSKFMT
                                             ; defrag, 2026-11-09; both callers reload HL

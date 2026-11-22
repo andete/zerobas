@@ -16953,7 +16953,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
       size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
       disk/ (WRZER's record count / record size).
-- [ ] **D-RRND256 — RANDOM ACCESS PAST RECORD 255 (32 KB) ADDRESSES RECORD RR MOD 256: RDRND / WRRND / WRZER READ AND OVERWRITE THE WRONG RECORD**
+- [x] **D-RRND256 — RANDOM ACCESS PAST RECORD 255 (32 KB) ADDRESSES RECORD RR MOD 256: RDRND / WRRND / WRZER READ AND OVERWRITE THE WRONG RECORD**
       🎚️ TIER 3 — silent data corruption on files over 32 KB (filed 2026-11-22; the root of D-WRZER64K).
       🤖 **AUTONOMOUS** — disk/kernel.asm rrnd_position reads the target record from +33 ALONE ("only r0 (0..255, up
       to a 32640-byte file) positions the record; r1 / r2 are NOT read" -- a scope narrowing signed off when it was
@@ -16969,7 +16969,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       touches rrnd_position (the record in HL, a 16-bit sector count, a 24-bit bytes-left) and its other caller
       srd_pos (SEQREAD after a random move past 255 is the same bug); price it, then a D-DISKCARVE round (the
       exact-fit pads STEP 3 lists -- read build/disk.rom, never the list).
-- [ ] **D-WRZER64K — WRZER GROWING A FILE PAST 64 KB WRITES THE SIZE ONE RECORD SHORT AND $0FFF INTO +28**
+      ✅ **FIXED 2026-11-22.** rrnd_position takes the whole record (+33 / +34, or srd_pos's EX x 128 + CR, in HL:
+      rrnd_pos_hl): record-in-sector = rec AND 3, a 16-bit seek count (rec >> 2) + 1, BDOS_BYTESLEFT = the size -
+      rec x 128 over 24 bits; srd_pos lost its "past 255: don't re-position" bail-out. It came to 4 B over the
+      $782B .. $7F7C span: paid inside the routine (record-in-sector on the stack, not in RRND_RECSEC; the product's
+      top byte built in BC). XRRND1 re-run: zerobas reads record 44 and 300 back as written, as both references.
+      Pinned by docs/bdos/BLOCKS.md R-BK-PAST255 (its FCB rule R-BK-PAST255FCB fails on the extent / cluster fields:
+      D-WRZEREXT, widened to WRRND).
+- [x] **D-WRZER64K — WRZER GROWING A FILE PAST 64 KB WRITES THE SIZE ONE RECORD SHORT AND $0FFF INTO +28**
+      ✅ FIXED 2026-11-22 BY D-RRND256 (the root): XK9 10 re-run (scratchpad/XBBLK9_run1.out, the ref line
+      unchanged) -- the size 76928 (601 records), the DTA kept and FSIZE 601, as both references; +28 $0073 / +30
+      $4B is now RR's own cluster where the references point at the one before (where the zero fill ended):
+      D-WRZEREXT's round-10 class, added there.
       🎚️ TIER 3 — a program writing a large random file loses its last record (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND9 (scratchpad/XBBLK9_run1.out, run2.out XK9 10 / 12): WRZER
       ($28) through $F37D at RR 600 on N.TXT (256 records): the VG-8020 + NMS 1200 and the CF-3300 make the size
@@ -16979,6 +16990,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       agrees, so the break is between 32 KB and 76 KB, likely at 64 KB (the size's third byte). Check WRBLK /
       WRRND / WRSEQ past 64 KB too. disk/ (the size update and the FAT walk past 64 KB).
 - [ ] **D-WRZEREXT — WRZER PAST 16 KB LEAVES +12 0 AND RR'S LOW BYTE IN +32; THE REFERENCES SPLIT RR INTO EXTENT AND RECORD**
+      ➕ 2026-11-22: WRRND too (docs/bdos/BLOCKS.md R-BK-PAST255FCB, scratchpad/XRRND1_run1.out XRR 3 / 4): after
+      WRRND 300 the references hold +12 2, zerobas 0; after WRRND 44 they point +28 / +30 at its cluster, zerobas not.
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND7 (scratchpad/XBBLK7_run1.out, run2.out XK7 2 / 7): WRZER
       ($28) through $F37D at RR 156 and RR 300: the VG-8020 + NMS 1200 and the CF-3300 leave +12 1 / 2 (RR / 128)
@@ -16987,7 +17000,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       below the end points +28 / +30 at the cluster holding RR on the references (round 9, XK9 3: $1B / $19 at RR
       200; zerobas keeps the last). Round 10 (R-BK-ROUND10, scratchpad/XBBLK10_run1.out, run2.out XKA 15): after a
       growing WRZER with a gap the references point +28 / +30 at the cluster the zero fill ended in (before RR's);
-      zerobas at RR's own; round 11 (XKB 7, scratchpad/XBBLK11_run1.out) the same. WRBLK and
+      zerobas at RR's own; round 11 (XKB 7, scratchpad/XBBLK11_run1.out) the same, and round 9 (XK9 10, growing to
+      RR 600: $72 / $4A on the references, $73 / $4B on zerobas -- D-WRZER64K's remainder). WRBLK and
       RDBLK ignore +12 / +32 on all three. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
       place. Check WRRND / RDRND / SETRND past 16 KB too (RECORDS.md measured only below it). disk/ (WRZER's
       FCB update: the extent / record split).

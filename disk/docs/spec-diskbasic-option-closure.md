@@ -303,3 +303,6 @@ emulator-free `unit-test` — except the host position twin).
   [diskbasic-option-surface.md §1.3](diskbasic-option-surface.md), PINNED by the
   negative-bound gate [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py)
   (proves r1/r2 + `+14/15` fully ignored — silent-drift guard). `make unit-test` 36/36.
+  **SUPERSEDED 2026-11-22 (D-RRND256):** both references read record 300 back as written, so r1 now
+  positions the record too; the same test pins the narrower boundary (r2 and `+14/15` ignored) --
+  [diskbasic-option-surface.md §1.2](diskbasic-option-surface.md).

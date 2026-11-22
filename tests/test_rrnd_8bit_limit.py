@@ -1,8 +1,12 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: RDRND/WRRND ($21/$22) DOCUMENTED 8-bit-record / fixed-128-byte
-boundary (option-closure Item 5, sibling; Q5.2 decided: document-and-gate, do
-NOT widen), no emulator.
+"""Unit test: RDRND/WRRND ($21/$22) DOCUMENTED 16-bit-record / fixed-128-byte
+boundary, no emulator. (The file name is historical: until D-RRND256, 2026-11-22,
+the boundary was r0 alone -- 8 bits, signed off as option-closure Item 5 / Q5.2,
+"document-and-gate, do NOT widen". Both references read record 300 back as
+written (probes/bios/spec/xrrnd1.asm), so the faithful-behaviour charter widened
+it to r0/r1; the analysis below is the 8-bit era's, kept, with its conclusion
+inverted for r1.)
 
 diskbasic-option-surface.md §1.3: rrnd_position (kernel.asm) reads only the FCB
 random-record low byte r0 (+33), ignoring r1/r2 (+34/+35), and hardwires a
@@ -55,12 +59,24 @@ def run():
     # (0x10 + record index), one 1024-byte file.
     data = b"".join(bytes([0x10 + i]) * RECSIZE for i in range(8))
 
-    # --- negative bound: r1/r2 nonzero + record size != 128 are all IGNORED ----
-    # If r1/r2 were honoured, the target would be record 5 + 7*256 + 9*65536 --
-    # far past EOF (would return A=$01, no data). If +14/15 (=200) were honoured,
-    # the seek stride would be wrong and a different record would come back. So a
-    # correctly-bounded read delivers exactly record 5 (marker 0x15) at a 128-byte
-    # stride, and CR (+32) := r0 = 5.
+    # --- r1 IS honoured (D-RRND256): r0=5, r1=7 is record 1797, past EOF ------
+    m0 = new_machine()
+    make_file(m0, "REC8.DAT", data)
+    m0.poke(FCB, bytes(37))
+    m0.poke(FCB + 1, n83("REC8.DAT"))
+    m0.poke_w(FCB + 26, _OPEN["first"])
+    m0.poke(FCB + 16, _OPEN["size"].to_bytes(4, "little"))
+    m0.poke(FCB + 33, bytes([5, 7, 0]))
+    m0.poke_w(m0.addr("DOS_DTAPTR"), DTA)
+    m0.poke(DTA, bytes([0xEE] * 256))
+    cpu0 = m0.call("rdrnd_body", de=FCB)
+    check(cpu0.a == 1, f"r0=5,r1=7: A={cpu0.a} (want 1 -- record 1797 is past EOF; r1 honoured)")
+
+    # --- negative bound: r2 nonzero + record size != 128 are still IGNORED ------
+    # If r2 were honoured, the target would be record 5 + 9*65536 -- far past EOF
+    # (A=$01, no data). If +14/15 (=200) were honoured, the seek stride would be
+    # wrong and a different record would come back. So a correctly-bounded read
+    # delivers exactly record 5 (marker 0x15) at a 128-byte stride, CR (+32) = 5.
     m = new_machine()
     make_file(m, "REC8.DAT", data)
     m.poke(FCB, bytes(37))
@@ -70,16 +86,16 @@ def run():
     m.poke_w(FCB + 26, _OPEN["first"])
     m.poke(FCB + 16, _OPEN["size"].to_bytes(4, "little"))
     m.poke_w(FCB + 14, 200)                       # record size 200 -- must be IGNORED
-    m.poke(FCB + 33, bytes([5, 7, 9]))            # r0=5, r1=7, r2=9 -- r1/r2 must be IGNORED
+    m.poke(FCB + 33, bytes([5, 0, 9]))            # r0=5, r1=0, r2=9 -- r2 must be IGNORED
     m.poke_w(m.addr("DOS_DTAPTR"), DTA)
     m.poke(DTA, bytes([0xEE] * 256))              # canary
 
     cpu = m.call("rdrnd_body", de=FCB)
     delivered = m.peek(DTA, RECSIZE)
     cr = m.peek(FCB + 32)[0]
-    check(cpu.a == 0, f"r0=5,r1=7,r2=9,rs=200: A={cpu.a} (want 0 -- record 5 IS within EOF)")
+    check(cpu.a == 0, f"r0=5,r2=9,rs=200: A={cpu.a} (want 0 -- record 5 IS within EOF)")
     check(delivered == bytes([0x15]) * RECSIZE,
-          f"delivered record marker = {delivered[0]:#04x} (want 0x15 = record 5; r1/r2 + rs IGNORED)")
+          f"delivered record marker = {delivered[0]:#04x} (want 0x15 = record 5; r2 + rs IGNORED)")
     check(m.peek(DTA + RECSIZE, 1)[0] == 0xEE, "stride = 128 (byte 128 still the 0xEE canary, not a 200-byte read)")
     check(cr == 5, f"CR (+32) := r0 = {cr} (want 5)")
 

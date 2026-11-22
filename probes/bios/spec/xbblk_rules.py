@@ -55,6 +55,8 @@ RUNS10 = [("XBBLK10_run1.out", "D"), ("XBBLK10_run2.out", "C")]
 FN11 = ["SETDTA11", "FMAKEU", "WRBLKU0", "WRBLKU1", "FCLOSE11A", "FDELU", "FMAKEV", "WRZERV8", "WRBLK0V16",
         "FCLOSE11B", "FOPENV", "RDBLKV8", "FCLOSE11C", "FOPENV2", "RDBLKV15", "FCLOSE11D"]
 RUNS11 = [("XBBLK11_run1.out", "D"), ("XBBLK11_run2.out", "C")]
+FNR = ["SETDTAR", "FMAKEP", "WRZERP", "WRRND44", "WRRND300", "RDRND44", "RDRND300", "RDBLK300", "RDBLK44", "FCLOSEP"]
+RUNSR = [("XRRND1_run1.out", "D"), ("XRRND1_run2.out", "C")]
 BOOT512 = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:512])
 OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"], "XK2": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK20": ["a", "f", "dta", "hl", "spots"], "XK3": ["a", "f", "fcb", "dta", "hl", "spots"],
@@ -66,7 +68,8 @@ OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"],
            "XK80": ["a", "f", "dta", "hl", "spots"], "XK9": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK90": ["a", "f", "dta", "hl", "spots"], "XKA": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XKA0": ["a", "f", "dta", "hl", "spots"], "XKB": ["a", "f", "fcb", "dta", "hl", "spots"],
-           "XKB0": ["a", "f", "dta", "hl", "spots"]}
+           "XKB0": ["a", "f", "dta", "hl", "spots"], "XRR": ["a", "f", "fcb", "dta", "hl", "spots"],
+           "XRR0": ["a", "f", "dta", "hl", "spots"]}
 B = list(b"B       TXT")
 BOOT = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:13])   # our own generated image's sector 0
 # bytes 128 .. 199 of the file came from RAM past the probe's 128-byte DTA fill (WRBLK wrote 200 bytes): reads of them
@@ -228,6 +231,18 @@ def cases():
                 r = b[66 * i: 66 * (i + 1)]
                 c = NS(src="XKB0" if i == 0 else "XKB", id=f"XKB {row}{i:02}", row=row, num=1000 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNSR:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 66 * len(FNR) - len(b)))
+            for i, fn in enumerate(FNR):
+                r = b[66 * i: 66 * (i + 1)]
+                c = NS(src="XRR0" if i == 0 else "XRR", id=f"XRR {row}{i:02}", row=row, num=1100 + i, fn=fn,
+                       a=r[0], f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
                 if i:
                     c.fcb = list(r[2:39])
                 d[who].append(c)
@@ -405,6 +420,16 @@ def expectA(c):
 
 
 UB, VB = list(b"U       TXT"), list(b"V       TXT")
+
+
+RREAD = {"RDRND44": 3, "RDRND300": 4, "RDBLK300": 4, "RDBLK44": 3}     # the case whose fill the record holds
+
+
+def expectR(c):
+    n = c.num - 1100
+    src = RREAD.get(c.fn)
+    at = (lambda o: m6(src, o) if o < 128 else m6(n, o)) if src else (lambda o: m6(n, o))
+    return [at(i) for i in range(13)], [at(o) for o in SPOTS6]
 
 
 def expect2(c):
@@ -694,10 +719,27 @@ RULES = [
              "FCLOSE11B": rs(fcb(VB, size=2048, b24=0, c1=2, c2=2, cr=8, rr=16), 128),
              "FOPENV": fcb(VB, rc=0x10, size=2048, c1=2, c2=2), "FOPENV2": fcb(VB, rc=0x10, size=2048, c1=2, c2=2)}[
              c.fn])),
+    Rule("R-BK-PAST255", S1, "A record past 255 (32 KB of 128-byte records) is ITS record: P.TXT grown to 301 records "
+         "by WRZER, WRRND writes record 44 and record 300 with different DTA bytes, and RDRND and RDBLK read each "
+         "back as written -- record 300 does not land on record 44 (RR mod 256). A 0 throughout; the size 38528 "
+         "(301 records) from WRZER on; RR after each call as RDRND / WRRND keep it and RDBLK advances it. (The "
+         "record functions' page, docs/bdos/RECORDS.md, covers RDRND / WRRND below 256.)",
+         lambda c: c.src == "XRR",
+         lambda c: c.a == 0 and (c.dta, c.spots) == expectR(c)
+         and (c.fn == "FMAKEP" or int.from_bytes(bytes(c.fcb[16:20]), "little") == 38528)
+         and int.from_bytes(bytes(c.fcb[33:36]), "little") == {"FMAKEP": 0, "WRZERP": 300, "WRRND44": 44,
+                                                                 "WRRND300": 300, "RDRND44": 44, "RDRND300": 300,
+                                                                 "RDBLK300": 301, "RDBLK44": 45, "FCLOSEP": 45}[c.fn]),
+    Rule("R-BK-PAST255FCB", S1, "The FCB after each of those calls is the other reference's, byte for byte -- the "
+         "extent (+12), the record in it (+32) and the cluster fields (+28 / +30) as RR names them, past 255 too.",
+         lambda c: c.src == "XRR",
+         lambda c: c.fcb == next(o for o in cases()["ref"] if o.src == "XRR" and o.num == c.num and o.row != c.row
+                                 ).fcb),
     Rule("R-BK-WORK", S1, "A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE "
          "below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA.",
          lambda c: True,
          lambda c: (c.fn in ("FCLOSE2B", "FCLOSE4A", "FCLOSE4B", "FCLOSE11B") or (lambda o: (c.a, c.f, c.hl) == (o.a, o.f, o.hl))(other_ref(c)))
+         and (c.fn != "SETDTAR" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA11" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA10" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA9" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))

@@ -73,7 +73,7 @@ lpe_loop:
 ; cluster, +26, = FAT_FIRSTCLUS; two files never share one). The iterator is one: with A
 ; and B open, SEQREAD A after FOPEN B saw CR 0 = BDOS_SEQREC 0 and read on from B's --
 ; $AA / $BB where the CF-3300 gives A's $11 / $22 (scratchpad/seqmix_inter1.out); the
-; re-position (rrnd_pos_a) finds this FCB's file (D-RDRNDMULTI). In: HL = the record,
+; re-position (rrnd_pos_hl) finds this FCB's file (D-RDRNDMULTI). In: HL = the record,
 ; IX = the FCB. Out: Z / NZ, HL kept; DE clobbered. The second `sbc` needs no `or a`:
 ; the `add hl,de` before it ran on HL = 0, so it cannot carry.
 srd_same:

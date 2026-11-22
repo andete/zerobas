@@ -94,6 +94,12 @@ is only as wide as the exercisers, and the gap below sits on a path none of them
   proves r1/r2 and `+14/15` are FULLY ignored (a read with them set nonzero still delivers
   record r0 at a 128-byte stride), so a future *half*-widening that silently drifts the
   boundary fails the gate.
+  **SUPERSEDED 2026-11-22 (D-RRND256):** the sign-off's premise -- that widening was
+  unverified surface -- fell when both reference machines read records 44 and 300 back as
+  written (probes/bios/spec/xrrnd1.asm; [BLOCKS.md](../../docs/bdos/BLOCKS.md) rule
+  R-BK-PAST255) while ours read record RR mod 256. r0 **and r1** now position the record;
+  r2 and `+14/15` are still ignored, and the same test now pins that narrower boundary
+  (r1=7 reads past EOF; r2=9 is still ignored).
 
 ### 1.3 Documented / intentional simplifications (correct as-is)
 
@@ -107,7 +113,7 @@ is only as wide as the exercisers, and the gap below sits on a path none of them
 | GTIME/GDATE | return constants; STIME/SDATE don't round-trip | clockless target |
 | FOPEN/FMAKE/FCLOSE | dirent date not stamped (`+25` dirloc not written) | allowlisted cosmetic |
 | `$05` LSTOUT | printer no-op on C-BIOS (delegates to `$00A5` LPTOUT stub) | two-interface delegation; real when C-BIOS grows LPTOUT |
-| `$21`/`$22` RDRND/WRRND | 8-bit random record (r0 only, `+34/35` ignored) + fixed 128-byte record (`+14/15` ignored) | signed-off boundary (Q5.2) — 128-B records / 32640-B files are the floppy norm; **gated** against silent drift by [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py) |
+| `$21`/`$22` RDRND/WRRND | 16-bit random record (r0/r1 since D-RRND256, 2026-11-22; it was r0 only; `+35` ignored) + fixed 128-byte record (`+14/15` ignored) | signed-off boundary (Q5.2) — 128-B records / 32640-B files are the floppy norm; **gated** against silent drift by [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py) |
 
 ### 1.4 Stale scoreboard/spec rows (code is MORE complete than the doc — corrected this pass)
 
