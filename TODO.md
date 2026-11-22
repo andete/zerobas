@@ -16922,12 +16922,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       A 0, HL 1, RR 2; zerobas answers A 1 (HL 1, RR 2 the same). A program reading whole 128-byte records and
       testing A for the end gives up on the last, partial one. Round 2 (R-BK-ROUND2, scratchpad/XBBLK2_run1.out,
       run2.out XK2 5 / 7) shows it twice more: RDBLK HL 1 straight after FOPEN (a 512-byte record over the 200-byte
-      file) and the partial record again -- the bytes and the zero tail are RIGHT on zerobas, only A is 1. Check the
+      file) and the partial record again -- the bytes and the zero tail are RIGHT on zerobas, only A is 1. Round 3
+      (R-BK-FOPENRS, scratchpad/XBBLK3_run1.out, run2.out XK3 5 / 10): the same after FOPEN of a 512- and a 300-byte
+      file (a 1024- / 768-byte record, +15 x 256): A 1 on zerobas, A 0 on both references. Round 4 (XK4 9) names
+      the references' rule: RDBLK 3 x 128 over a 50-byte file answers A 1, HL 1 on all three -- A is 1 when HL
+      comes back SHORT of what was asked, a partial record counting as one. Check the
       MSX-DOS ($0005) path too. disk/ (k47b2_body: the end-of-file test after a partial record).
-- [ ] **D-FSIZERS — FSIZE LEAVES THE FCB'S RECORD SIZE; BOTH REFERENCES CLEAR +14 / +15**
+- [ ] **D-FSIZERS — FSIZE LEAVES THE FCB'S +14; BOTH REFERENCES CLEAR IT (AND KEEP +15)**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-FSIZE (XK 9, 11): FSIZE over a record size 1 / 128 answers the
-      records of 128 on all three machines; the references then read +14 / +15 0, zerobas keeps the record size.
+      records of 128 on all three machines; the references then read +14 0, zerobas keeps the record size.
+      Round 4 (R-BK-ROUND4, scratchpad/XBBLK4_run1.out, run2.out XK4 3 / 5 / 7 / 15): with $0180 going in the
+      references leave $0100 -- they clear +14 only, +15 stays; zerobas leaves $0180. WRZER does the same on the
+      references (XK4 12: $0180 -> $0100).
+- [ ] **D-WRZERHL — WRZER WITH HL 2 AND RECORD SIZE $0180 WRITES ANOTHER SIZE, CLUSTERS AND DTA THAN THE REFERENCES**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND4 (scratchpad/XBBLK4_run1.out, run2.out XK4 12 .. 17): WRZER
+      ($28) through $F37D at RR 5 with HL 2 and +14 / +15 $0180 on a 384-byte file: the VG-8020 + NMS 1200 and the
+      CF-3300 write the DTA's 128-byte record 5 (size 768, one cluster, the DTA left); zerobas makes the size 1280,
+      links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
+      size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
+      disk/ (WRZER's record count / record size).
 - [ ] **D-SETRNDR36 — SETRND CLEARS THE FCB'S +36; BOTH REFERENCES LEAVE IT**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/RECORDS.md R-BR-SETRND3 (scratchpad/XBREC3_run1.out, run2.out XR3 2 / 6): over $FF
