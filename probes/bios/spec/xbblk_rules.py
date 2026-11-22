@@ -36,12 +36,17 @@ FN5 = ["SETDTA5", "FMAKEF", "WRBLKF1024", "FCLOSE5A", "FOPENF80", "RDBLK180", "W
        "WRBLKRR2", "WRBLKGAP", "FCLOSE5B", "FSIZE5", "FOPEN5", "RDBLK8A", "RDBLK8B"]
 RUNS5 = [("XBBLK5_run1.out", "D"), ("XBBLK5_run2.out", "C")]
 SPOTS5 = (127, 128, 383, 384, 511, 512, 520, 700, 767, 768, 1023, 1024)
+FN6 = ["SETDTA6", "FMAKEH", "WRBLKH1", "WRBLKH2", "FCLOSE6A", "FDELH", "FMAKEG", "WRBLKG", "WRBLK180", "WRBLK0180",
+       "WRBLKRR5", "WRBLK1800", "FCLOSE6B", "FOPEN6", "RDBLK6A", "RDBLK6B"]
+RUNS6 = [("XBBLK6_run1.out", "D"), ("XBBLK6_run2.out", "C")]
+SPOTS6 = (383, 384, 476, 511, 512, 639, 640, 767, 768, 776, 1023, 1024)
 BOOT512 = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:512])
 OUTPUTS = {"XK": ["a", "f", "fcb", "dta", "hl"], "XK0": ["a", "f", "dta", "hl"], "XK2": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK20": ["a", "f", "dta", "hl", "spots"], "XK3": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK30": ["a", "f", "dta", "hl", "spots"], "XK4": ["a", "f", "fcb", "dta", "hl", "spots"],
            "XK40": ["a", "f", "dta", "hl", "spots"], "XK5": ["a", "f", "fcb", "dta", "hl", "spots"],
-           "XK50": ["a", "f", "dta", "hl", "spots"]}
+           "XK50": ["a", "f", "dta", "hl", "spots"], "XK6": ["a", "f", "fcb", "dta", "hl", "spots"],
+           "XK60": ["a", "f", "dta", "hl", "spots"]}
 B = list(b"B       TXT")
 BOOT = list(open(os.path.join(ROOT, "disk", "empty720.dsk"), "rb").read()[:13])   # our own generated image's sector 0
 # bytes 128 .. 199 of the file came from RAM past the probe's 128-byte DTA fill (WRBLK wrote 200 bytes): reads of them
@@ -121,6 +126,18 @@ def cases():
             for i, fn in enumerate(FN5):
                 r = b[66 * i: 66 * (i + 1)]
                 c = NS(src="XK50" if i == 0 else "XK5", id=f"XK5 {row}{i:02}", row=row, num=400 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS6:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 66 * len(FN6) - len(b)))
+            for i, fn in enumerate(FN6):
+                r = b[66 * i: 66 * (i + 1)]
+                c = NS(src="XK60" if i == 0 else "XK6", id=f"XK6 {row}{i:02}", row=row, num=500 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]), hl=(r[52] << 8) | r[53], spots=list(r[54:66]))
                 if i:
                     c.fcb = list(r[2:39])
@@ -233,6 +250,38 @@ def expect5(c):
     return [at(i) for i in range(13)], [at(o) for o in SPOTS5]
 
 
+H6, G6 = list(b"H       TXT"), list(b"G       TXT")
+
+
+def m6(n, i):
+    """XBBLK6's DTA byte i as case n filled it: no two sectors alike"""
+    return (0x40 + n + (i & 0xFF) + (i >> 8) * 16) & 0xFF
+
+
+def g6(j):
+    """byte j of G.TXT as XBBLK6 leaves it"""
+    if j >= 1801:
+        return 0                               # past the end: the read zero-fills
+    if j == 1800:
+        return m6(11, 0)                       # the byte WRBLK RR 1800 wrote
+    if j >= 1536:
+        return g6(512 + j - 1536)              # the DOS's buffer: the LAST sector transferred, G's sector 1
+    if j >= 1024:
+        return m6(3, j - 1024)                 # the new cluster's skipped sector: the deleted H.TXT's bytes
+    if j < 384 or j >= 768:
+        return m6(7, j)                        # case 7's bytes (768 .. 1023: older bytes past every later end)
+    if j >= 640:
+        return m6(10, j - 640)                 # WRBLK 1 x 128 at RR 5
+    return m6(8, j - 384)                      # WRBLK 1 x $0180 at RR 1, kept past the shrink to 384
+
+
+def expect6(c):
+    n = c.num - 500
+    span, base = {"RDBLK6A": (1024, 0), "RDBLK6B": (896, 1024)}.get(c.fn, (0, 0))
+    at = lambda o: g6(base + o) if o < span else m6(n, o)
+    return [at(i) for i in range(13)], [at(o) for o in SPOTS6]
+
+
 def expect2(c):
     """(DTA's first 13, spots +72 / +128 / +511) after case c of XBBLK2; +512 is checked against the residue"""
     n = c.num - 100
@@ -301,7 +350,7 @@ RULES = [
          "FOPEN reads a record of +15 x 256 bytes: 1024 from the 512-byte file (its bytes, then zeros to +1023), 768 "
          "from the 300-byte one (zeros to +767), nothing past it; A 0, HL 1, RR 1. Not \"the record size is "
          "$0200\" (round 2's file could not tell). WRZER (RS 128, RR 3) on a freshly made FCB writes record 3 and "
-         "zero-fills records 0 .. 2 (size 512, CR 3, RR 3, +14 / +15 cleared); WRBLK 300 x 1 keeps RS 1; FSIZE of a "
+         "zero-fills records 0 .. 2 (size 512, CR 3, RR 3, +14 cleared; +15 was 0 going in); WRBLK 300 x 1 keeps RS 1; FSIZE of a "
          "missing file answers A $FF and leaves the FCB and the DTA.",
          lambda c: c.src == "XK3",
          lambda c: (c.dta, c.spots) == expect3(c)
@@ -372,10 +421,37 @@ RULES = [
              "FSIZE5": rs(fcb(FT, date=0, b24=0, rr=16), 0xFF00), "FOPEN5": fcb(FT, rc=16, size=2001, **O),
              "RDBLK8A": rs(fcb(FT, size=2001, rr=8, **O), 128),
              "RDBLK8B": rs(fcb(FT, size=2001, c1=2, c2=3, c3=1, rr=16), 128)}[c.fn]),
+    Rule("R-BK-ROUND6", S1, "Round 6 (the fill differs in every sector). WRBLK and WRBLK HL 0 read +14 / +15 as one "
+         "word too: 1 x $0180 at RR 1 writes bytes 384 .. 767 (RR 2, HL 1), and HL 0 at RR 1 sets the size 384. "
+         "Past the end, nothing is zeroed: after the shrink to 384, bytes 384 .. 639 keep what case 8 wrote and "
+         "768 .. 1023 what case 7 did; WRBLK 1 x 1 at RR 1800 links a new cluster whose first sector keeps the "
+         "deleted H.TXT's bytes (the DISK's, not zeros) and builds the sector it writes into from the DOS's buffer "
+         "-- the LAST sector transferred (G's sector 1, as case 10 left it), not the file's first -- with byte 1800 "
+         "in it. RDBLK 8 x 128 from RR 8 over 1801 bytes: A 1, HL 7, RR 15 (record 14, partial, counts; record 15 "
+         "is past the end). FDEL leaves the FCB; G takes H's directory entry 0 and cluster 2 again.",
+         lambda c: c.src == "XK6",
+         lambda c: (c.dta, c.spots) == expect6(c)
+         and (c.fn.startswith("FCLOSE") or c.a == (1 if c.fn == "RDBLK6B" else 0))
+         and (c.hl == {"WRBLKH1": 1024, "WRBLKH2": 1024, "WRBLKG": 1024, "WRBLK180": 1, "WRBLK0180": 0,
+                       "WRBLKRR5": 1, "WRBLK1800": 1, "RDBLK6A": 8, "RDBLK6B": 7}.get(c.fn, c.hl))
+         and c.fcb == {
+             "FMAKEH": fcb(H6), "WRBLKH1": rs(fcb(H6, size=1024, b24=0, rr=1024, **O), 1),
+             "WRBLKH2": rs(fcb(H6, size=2048, b24=0, c1=2, c2=3, c3=1, rr=2048), 1),
+             "FCLOSE6A": rs(fcb(H6, size=2048, b24=0, c1=2, c2=3, c3=1, rr=2048), 1),
+             "FDELH": fcb(H6, b24=0, date=0), "FMAKEG": fcb(G6),
+             "WRBLKG": rs(fcb(G6, size=1024, b24=0, rr=1024, **O), 1),
+             "WRBLK180": rs(fcb(G6, size=1024, b24=0, rr=2, **O), 0x0180),
+             "WRBLK0180": rs(fcb(G6, size=384, b24=0, rr=1, **O), 0x0180),
+             "WRBLKRR5": rs(fcb(G6, size=768, b24=0, rr=6, **O), 128),
+             "WRBLK1800": rs(fcb(G6, size=1801, b24=0, c1=2, c2=3, c3=1, rr=1801), 1),
+             "FCLOSE6B": rs(fcb(G6, size=1801, b24=0, c1=2, c2=3, c3=1, rr=1801), 1),
+             "FOPEN6": fcb(G6, rc=15, size=1801, **O), "RDBLK6A": rs(fcb(G6, size=1801, rr=8, **O), 128),
+             "RDBLK6B": rs(fcb(G6, size=1801, c1=2, c2=3, c3=1, rr=15), 128)}[c.fn]),
     Rule("R-BK-WORK", S1, "A, F and HL are the same on both references in every case but the FCLOSEs declared UNSTABLE "
          "below (HL is a working value after the non-block functions); SETDTA answers A $08 and leaves the DTA.",
          lambda c: True,
          lambda c: (c.fn in ("FCLOSE2B", "FCLOSE4A", "FCLOSE4B") or (lambda o: (c.a, c.f, c.hl) == (o.a, o.f, o.hl))(other_ref(c)))
+         and (c.fn != "SETDTA6" or (c.dta, c.spots) == ([m6(0, i) for i in range(13)], [m6(0, o) for o in SPOTS6]))
          and (c.fn != "SETDTA5" or (c.dta, c.spots) == ([m2(0, i) for i in range(13)], [m2(0, o) for o in SPOTS5]))
          and (c.fn != "SETDTA4" or (c.dta, c.spots) == ([m2(0, i) for i in range(13)], [m2(0, o) for o in SPOTS4]))
          and (c.fn not in ("SETDTA", "SETDTA2", "SETDTA3") or c.dta == (mark(0) if c.fn == "SETDTA" else
