@@ -16817,6 +16817,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           ours against theirs, byte for byte.
       (5) re-pin REPACKED_SHA1 / PRISTINE_SHA1, full battery + the excluded five, the tape corpus, HANDOFF gate.
       The biosregs audit (D-TESTAUDIT, scratchpad/biosregs_audit.py) is re-run on the rebased patch set after this.
+      📏 STAGE 0 (2) 2026-11-22 -- every BIOS spec page on STOCK v0.32 (tools/cbios_review.py all --tag v032,
+      scratchpad/AE_cbios032_vs_zerobas.out): on the BIOS pages 0.32 fails 15 rules zerobas passes (TUPC / TDOWNC
+      edge + position -- our tdownc-ge; GRPPRT position + VRAM; the SET* / CLRSPR / PUTQ / SETC registers or AF),
+      and PASSES 40 that zerobas fails, on 12 pages where zerobas runs its OWN body (CHRGTR, CLS, CNVCHR, the
+      function-key pages, GICINI, GTPDL, INIT, INITIO, the key line, INLIN, LPTOUT, TOTEXT); 30 fail on both.
+      PLAY trace SAME, initslot PASS. The disk / BDOS pages fail 41 more there -- zerobas's disk.rom on a machine
+      WITHOUT zerobas BASIC (probably its private ABI with BASIC; not yet separated).
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the

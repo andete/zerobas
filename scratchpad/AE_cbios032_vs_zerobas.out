@@ -1,0 +1,45 @@
+D-CBIOS032 Stage 0 measurement 2 (2026-11-22): tools/cbios_review.py all --tag v032 on stock C-BIOS v0.32 (MSX1 EU main ROM, built
+from the tag in a worktree), against zerobas HEAD; full log scratchpad/AE_cbios_review_v032.out. Per rules module:
+rules 0.32 fails that zerobas passes / zerobas fails that 0.32 passes / both fail. Disk / BDOS pages run zerobas's disk.rom
+on the 0.32 machine WITHOUT zerobas BASIC (the review machine's layout).
+
+xbabs_rules.py           6 rules | 0.32 only: R-BA-BACK R-BA-MEDIUM R-BA-ONLY R-BA-WRABS R-BA-WRABS2 | zerobas only: - | both: 1
+xbblk_rules.py          18 rules | 0.32 only: R-BK-FOPENRS R-BK-PAST255 R-BK-RDBLK R-BK-ROUND2 R-BK-WRBLK R-BK-WRZER | zerobas only: - | both: 12
+xbcon_rules.py           9 rules | 0.32 only: R-BC-BUFIN R-BC-CTRL | zerobas only: - | both: 7
+xbeep_rules.py           5 rules | 0.32 only: - | zerobas only: R-BP-RESET | both: 0
+xbfile_rules.py         18 rules | 0.32 only: R-BF-INDEX R-BF-MAKE R-BF-REN R-BF-RENEX R-BF-SEARCH R-BF-SEARCH2 | zerobas only: R-BF-CARRY | both: 10
+xbrec_rules.py          11 rules | 0.32 only: R-BR-RND R-BR-RND2 R-BR-RSEQ R-BR-SEQ2 R-BR-SETRND R-BR-SETRND2 R-BR-SIZE R-BR-WSEQ | zerobas only: - | both: 3
+xbsys_rules.py          15 rules | 0.32 only: R-BS-DATE R-BS-DATE2 R-BS-DATE3 R-BS-DRIVES R-BS-DSKRST2 R-BS-DSKRST3 R-BS-TIME R-BS-TIME2 R-BS-VERSION | zerobas only: - | both: 6
+xcallf_rules.py          8 rules | 0.32 only: - | zerobas only: - | both: 2
+xcalslt_rules.py         9 rules | 0.32 only: - | zerobas only: - | both: 2
+xchgclr_rules.py         4 rules | 0.32 only: - | zerobas only: - | both: 1
+xchoice_rules.py         4 rules | 0.32 only: R-CH-CHOICE R-CH-MTOFF R-CH-MTOFFCF | zerobas only: - | both: 1
+xchrgtr_rules.py        12 rules | 0.32 only: - | zerobas only: R-C-END R-C-SKIP | both: 5
+xclrspr_rules.py         4 rules | 0.32 only: R-CS-REGS | zerobas only: - | both: 0
+xcls_rules.py           13 rules | 0.32 only: - | zerobas only: R-C-SEVERAL R-C-TEXT R-CP-STATE | both: 1
+xcnv_rules.py            7 rules | 0.32 only: - | zerobas only: R-V-ANYG R-V-F R-V-SEQ | both: 0
+xdskchg_rules.py         5 rules | 0.32 only: - | zerobas only: - | both: 5
+xdskfmt_rules.py         5 rules | 0.32 only: R-DF-FORMAT | zerobas only: - | both: 4
+xdskio_rules.py          4 rules | 0.32 only: - | zerobas only: - | both: 3
+xfnk2_rules.py           9 rules | 0.32 only: - | zerobas only: R-F-DI R-F-WAREA | both: 2
+xgetdpb_rules.py         3 rules | 0.32 only: - | zerobas only: - | both: 2
+xgicini_rules.py         5 rules | 0.32 only: - | zerobas only: R-GI-VCB | both: 0
+xgrpprt_rules.py         6 rules | 0.32 only: R-GP-POS R-GP-VRAM | zerobas only: - | both: 0
+xgtpdl_rules.py          4 rules | 0.32 only: - | zerobas only: R-PD-KEEP R-PD-PORT | both: 0
+xinigrp_rules.py         5 rules | 0.32 only: - | zerobas only: - | both: 1
+xinimlt_rules.py         5 rules | 0.32 only: - | zerobas only: - | both: 1
+xinit_rules.py          24 rules | 0.32 only: - | zerobas only: R-I-CRTCNT R-I-KEYOUT R-I-KEYPLACE R-I-SPR32 R-I-VRAM | both: 5
+xinitio_rules.py        33 rules | 0.32 only: - | zerobas only: R-IO-MP R-IO-MP5 R-IO-PARSE R-IO-SEED R-IO-VCB R-IO-VCB3 R-IO-VCB4 R-IO-VCB7 | both: 0
+xkey_rules.py           17 rules | 0.32 only: - | zerobas only: R-K-DSP R-K-ERA R-K-ERA-A R-K-ERALT R-K-LABELS R-K-LABELS2 R-K-LINLEN R-K-SB-ON R-K-SCROLL R-K-SEVERAL R-K-STATE | both: 1
+xlin_rules.py           49 rules | 0.32 only: - | zerobas only: R-L-STOPHELD | both: 6
+xlptout_rules.py         5 rules | 0.32 only: - | zerobas only: R-LO-ABORTF | both: 0
+xphydio_rules.py         9 rules | 0.32 only: R-PD-DI | zerobas only: - | both: 6
+xputq_rules.py           4 rules | 0.32 only: R-PQ-REGS | zerobas only: - | both: 0
+xsetc_rules.py           5 rules | 0.32 only: R-SC-AF | zerobas only: - | both: 0
+xsetgrp_rules.py         6 rules | 0.32 only: R-GR-REGS | zerobas only: - | both: 0
+xsetmlt_rules.py         6 rules | 0.32 only: R-MT-REGS | zerobas only: - | both: 0
+xsett32_rules.py         6 rules | 0.32 only: R-T3-REGS | zerobas only: - | both: 0
+xsettxt_rules.py         6 rules | 0.32 only: R-TX-REGS | zerobas only: - | both: 0
+xtdownc_rules.py         4 rules | 0.32 only: R-TD-AF R-TD-EDGE R-TD-POS | zerobas only: - | both: 0
+xtot_rules.py           10 rules | 0.32 only: - | zerobas only: R-T-THRU | both: 3
+xtupc_rules.py           4 rules | 0.32 only: R-TU-AF R-TU-EDGE R-TU-POS | zerobas only: - | both: 0
