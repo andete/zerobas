@@ -5009,7 +5009,7 @@ k47b2_xfer_byteloop:
 k47b2_xfer_eofcheck:
                 ; EOF (or chain-end, treated the same). Partial record (RDBLK_CNT <
                 ; RDBLK_RECSIZE, i.e. a byte already copied this record) -> zero-pad
-                ; the remainder and COUNT it; clean boundary (CNT == RECSIZE, no bytes
+                ; the remainder and COUNT it as any record; clean boundary (CNT == RECSIZE, no bytes
                 ; copied) -> EOF without counting this record.
                 ld      hl, (RDBLK_CNT)
                 ld      de, (RDBLK_RECSIZE)
@@ -5020,18 +5020,19 @@ k47b2_xfer_padloop:
                 ld      hl, (RDBLK_CNT)
                 ld      a, h
                 or      l
-                jr      z, k47b2_xfer_padded
+                ; 🔴 D-RDBLKPART (2026-11-22): the padded record counts as an ordinary
+                ; one -- back to k47b2_xfer_rec, which answers A 0 when it was the last
+                ; asked for and A 1 when the next one meets the clean end. It went
+                ; straight to k47b2_eof (A 1 always); the VG-8020 + NMS 1200 and the
+                ; CF-3300 answer A 1 only when HL comes back SHORT (docs/bdos/BLOCKS.md
+                ; R-BK-RDBLK, R-BK-ROUND2, R-BK-FOPENRS; XK4 9: 3 asked over 50 bytes, HL 1, A 1).
+                jr      z, k47b2_xfer_recdone
                 xor     a
                 call    dta_put             ; D-P1DOS: the zero pad goes the same way
                 ld      hl, (RDBLK_CNT)
                 dec     hl
                 ld      (RDBLK_CNT), hl
                 jr      k47b2_xfer_padloop
-k47b2_xfer_padded:
-                ld      hl, (RDBLK_DONE)
-                inc     hl
-                ld      (RDBLK_DONE), hl    ; the zero-padded final record counts
-                jr      k47b2_eof
 k47b2_xfer_recdone:
                 ld      hl, (RDBLK_DONE)
                 inc     hl

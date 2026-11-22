@@ -16925,7 +16925,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- and FOPEN refuses an extent the file lacks (+12 1 on a 0-record file); zerobas writes record 0 every time and
       opens any extent. A program that positions by CR (or by extent) writes at the wrong place on zerobas: tier 6
       as filed, but read it again when a corpus program writes files.
-- [ ] **D-RDBLKPART — RDBLK OF A PARTIAL LAST RECORD ANSWERS A 1; BOTH REFERENCES COUNT IT AS READ (A 0)**
+- [x] **D-RDBLKPART — RDBLK OF A PARTIAL LAST RECORD ANSWERS A 1; BOTH REFERENCES COUNT IT AS READ (A 0)**
+      ✅ FIXED 2026-11-22: k47b2_body (disk/kernel.asm) counts the zero-padded record as any record and goes
+      back to the count test -- A 0 when it was the last asked, A 1 when the next meets the clean end (it
+      jumped straight to the EOF exit); 9 B freed. spec_live: R-BK-RDBLK, R-BK-ROUND2 and R-BK-FOPENRS now
+      hold on zerobas (scratchpad/AE_speclive_rdblkpart.out); tests/test_rdblk_randrecord.py case (b'').
+      One body serves $F37D and MSX-DOS's $0005 (k_47B2's veneer).
       🎚️ TIER 3 — a loader that checks A stops one record early (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-RDBLK (scratchpad/XBBLK1_run1.out, run2.out XK 8): RDBLK ($27) through
       $F37D, record size 128, RR 1 of a 200-byte file (bytes 128 .. 199): the VG-8020 + NMS 1200 and the CF-3300 answer

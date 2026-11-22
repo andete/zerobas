@@ -25,6 +25,7 @@ Cases mirror the spec's §1-Q3 table:
   (a) mid-file             RR=1 cnt=1  -> A=0 HL=1 RR=2,   record 1 delivered
   (b) EOF mid-transfer     RR=1 cnt=4  -> A=1 HL=2 RR=3,   records 1,2
   (b') partial tail        RR=1 cnt=4, file ends mid-record -> zero-padded final record
+  (b'') partial tail asked RR=2 cnt=1, the same file -> A=0 HL=1 (D-RDBLKPART)
   (c) at EOF               RR=3 cnt=1  -> A=1 HL=0 RR=3 (unchanged), DTA untouched
   (c') past EOF            RR=10 cnt=1 -> A=1 HL=0 RR=10 (unchanged)
 Plus RS != 128 (including RS=1, the boot loaders' record size) and the
@@ -162,6 +163,19 @@ def run():
     want_rec2 = file_300[256:300] + bytes(RS - 44)
     check(rec2 == want_rec2, "  record 2 (partial, 44 real bytes) zero-padded to RS=128")
     check(rr_of(m) == 3, f"  RR advanced to {rr_of(m)} (want 3 = entry-RR 1 + HL 2)")
+
+    # === (b'') the partial tail IS the last record asked: RR=2, cnt=1, 300B -> A=0 ==
+    # D-RDBLKPART (2026-11-22): A is 1 only when HL comes back SHORT of the count; a
+    # partial record counts as one (the VG-8020 + NMS 1200 and the CF-3300, docs/bdos/
+    # BLOCKS.md R-BK-RDBLK: RR 1 of a 200-byte file, A 0 HL 1). It answered A 1 here.
+    m = new_machine()
+    make_file(m, "DATA.BIN", file_300)
+    setup_fcb(m, "DATA.BIN", rs=RS, rr=2)
+    cpu = call_rdblk(m, 1)
+    check(cpu.a == 0, f"(b'') partial last record, all asked: A={cpu.a} (want 0)")
+    check((cpu.hl & 0xFFFF) == 1, f"  HL={cpu.hl & 0xFFFF} (want 1)")
+    check(m.peek(DTA, RS) == file_300[256:300] + bytes(RS - 44), "  the 44 bytes, zero-padded to 128")
+    check(rr_of(m) == 3, f"  RR advanced to {rr_of(m)} (want 3)")
 
     # === (c) at EOF: RR=3, cnt=1, 384B file (exactly 3 records) -> A=1 HL=0 =====
     m = new_machine()

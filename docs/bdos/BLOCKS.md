@@ -58,8 +58,8 @@ Through the disk ROM's BDOS entry at $F37D (C the function, DE the FCB, HL the r
   the cluster last reached and its index in the file (2 / 0 inside the first cluster, 3 / 1 in the
   second).
 
-zerobas transfers the same bytes and records; it answers A 1 for a partial last record even when HL is
-what was asked (D-RDBLKPART), leaves +14 in FSIZE (D-FSIZERS), writes a different size and clusters for
+zerobas transfers the same bytes and records and answers the same A (a partial last record counts as read
+since D-RDBLKPART, 2026-11-22); it leaves +14 in FSIZE (D-FSIZERS), writes a different size and clusters for
 WRZER with HL 2 and +15 nonzero, and zeroes the DTA there (D-WRZERHL), keeps the disk's bytes in the new-cluster sector WRBLK
 writes into past the end (D-WRBLKGAP), leaves +12 0 and the low byte of RR in +32 past 16 KB
 (D-WRZEREXT), and its flags and working HL differ (D-F37DREGS).
@@ -206,7 +206,6 @@ Declared UNSTABLE on the reference itself (2 cases: XKB D14, XKB C14): fcb, dta 
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-RDBLKPART** (RDBLK of a partial last record answers A 1; the references count it as read, A 0) | R-BK-RDBLK, R-BK-ROUND2, R-BK-FOPENRS, R-BK-ROUND5, R-BK-WORK |
 | **D-WRZERHL** (WRZER with HL 2 and record size $0180: another size, clusters and DTA) | R-BK-ROUND4, R-BK-WORK |
 | **D-WRZEREXT** (WRZER past 16 KB leaves +12 0 and puts RR's low byte in +32; the references split RR into extent and record; below the end it keeps +28 / +30; growing with a gap it points them at RR's cluster, the references at the one the zero fill ended in) | R-BK-ROUND7, R-BK-ROUND8, R-BK-ROUND9, R-BK-ROUND10, R-BK-ROUND11, R-BK-PAST255FCB |
 | **D-WRBLKGAP** (the new-cluster sector WRBLK writes into past the end keeps the disk's bytes; the references build it from the DOS's sector buffer) | R-BK-ROUND5, R-BK-ROUND6 |
