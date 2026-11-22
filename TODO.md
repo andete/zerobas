@@ -16886,9 +16886,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 6 — every error (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md R-PD-PAST (scratchpad/XDSK4_run1.out D49): PHYDIO with media $FF,
       sector 700 (track 43 of a 2-side x 8-sector disk): the VG-8020 + NMS 1200 refuses it as past (A 2), zerobas's
-      DSKIO reads it. Both place sectors by the media byte's geometry and take the track modulo 128; only the track
+      DSKIO reads it. Both place sectors by the media byte's geometry and wrap the same 8-bit side-and-track count; only the track
       count differs ($FF: 40 tracks on the reference, the standard 2DD-40 format). The fix is DSKIO's (disk/), with
       D-PHYDIOMEDIA's; disk.rom's room: read `make basic-reloc` first.
+- [ ] **D-PHYDIOWRAP16 — PHYDIO PAST SECTOR $FFFF GOES ON AT SECTOR 0; THE REFERENCE REFUSES THE CALL UP FRONT**
+      🎚️ TIER 6 — every error (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md R-PD-PAST (scratchpad/XDSK6_run1.out D73): a 2-sector read from $FFFF.
+      The VG-8020 + NMS 1200 refuses it before any sector (A 2, F $41, B 2, the buffer untouched) -- the last sector
+      DE + B - 1 must fit 16 bits; a 1-sector read of $FFFF works. zerobas's DSKIO reads $FFFF and then sector 0 (the
+      boot sector). The fix is DSKIO's (disk/), with D-PHYDIOMEDIA's and D-PHYDIOGEOM's.
 - [ ] **D-PHYDIOMEDIA — ZEROBAS TAKES MEDIA BYTES THE REFERENCE REFUSES ($00, $32: ERROR 12)**
       🎚️ TIER 6 — every error (filed 2026-11-20).
       🤖 **AUTONOMOUS** — docs/bios/PHYDIO.md (XDSK1_run2.out, XDSK2_run1.out, row D: the VG-8020 + NMS 1200 against

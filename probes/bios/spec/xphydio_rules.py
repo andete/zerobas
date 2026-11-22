@@ -21,13 +21,16 @@ from spec_rules import Rule  # noqa: E402
 
 PAGE = "docs/bios/PHYDIO.md"
 RUNS = [("xdsk1.asm", "XDSK1_run2.out"), ("xdsk2.asm", "XDSK2_run1.out"), ("xdsk3.asm", "XDSK3_run2.out"),
-        ("xdsk4.asm", "XDSK4_run1.out"), ("xdsk5.asm", "XDSK5_run2.out")]
+        ("xdsk4.asm", "XDSK4_run1.out"), ("xdsk5.asm", "XDSK5_run2.out"), ("xdsk6.asm", "XDSK6_run1.out")]
 REC = 14
 SECTORS = 1440
 # THE GEOMETRY the media byte names (sides, sectors per track, tracks) -- the standard 3.5" formats; round 4 (XDSK4)
 # pinned it: a sector number maps to TRACK = sector / (sides x sectors per track), side, sector; the call refuses ("past")
-# when the track number, taken MODULO 128 (round 5: track 128 reads the boot sector, track 210 is past -- not modulo
-# 256, not a signed compare), reaches the media's track count -- $F9 sector $1200 (track 256) reads the boot sector,
+# when the track number reaches the media's track count. What wraps is the SIDE-AND-TRACK count, sector / (sectors
+# per track), kept in 8 bits (round 6: $F8 sector 1152, track 128 of a one-sided disk, is past; on two-sided $F9 the
+# same 8 bits make the track modulo 128 -- round 5: track 128 reads the boot sector, track 210 is past). A transfer
+# whose last sector DE + B - 1 does not fit 16 bits is refused before any sector (round 6: 2 from $FFFF, A 2, B 2).
+# Before round 6 the model said "the track modulo 128"; before round 5, "modulo 256" -- $F9 sector $1200 (track 256) reads the boot sector,
 # $FFFE / $FFFF (track 56) read, $F000 (track 85) and $FF sector 700 (track 43 of 40) are past. The image
 # is the 720 KB disk (2 sides x 9 x 80): a read reaches image sector (track x 2 + side) x 9 + sector.
 GEOM = {0xF8: (1, 9, 80), 0xF9: (2, 9, 80), 0xFA: (1, 8, 80), 0xFF: (2, 8, 40)}
@@ -94,10 +97,11 @@ def media_ok(c):
 
 
 def place(c, n):
-    """sector n under case c's media byte: (track modulo 128, side, sector)"""
+    """sector n under case c's media byte: (track, side, sector), from the side-and-track count kept in 8 bits"""
     sides, spt, _ = GEOM[c.cin]
     n &= 0xFFFF
-    return ((n // (sides * spt)) & 0x7F, (n // spt) % sides, n % spt)
+    q = (n // spt) & 0xFF
+    return (q // sides, q % sides, n % spt)
 
 
 def sec_ok(c, n):
@@ -111,6 +115,8 @@ def image_index(c, n):
 
 def nok(c):
     """the sectors transferred before the first one past the disk"""
+    if c.dein + count(c) - 1 > 0xFFFF:              # the last sector does not fit 16 bits: refused up front
+        return 0
     k = 0
     while k < count(c) and sec_ok(c, c.dein + k):
         k += 1
@@ -135,13 +141,13 @@ def disk_sector(c, n):
     round 4: image 9 holds case 38's (the pattern), image 8 case 39's (the pattern's bytes 256-767)"""
     if n == SECTORS - 1 and (7 <= c.num <= 10 or 24 <= c.num <= 36):
         return bytes(fill("PAT")[:512])
-    if n == 9 and (39 <= c.num <= 53 or c.num >= 55):        # case 38 / 54: from $A400
+    if n == 9 and (39 <= c.num <= 53 or 55 <= c.num <= 68):  # case 38 / 54: from $A400
         return bytes(fill("PAT")[:512])
-    if n == 8 and (40 <= c.num <= 53 or c.num >= 56):        # case 39 / 55: from $A500
+    if n == 8 and (40 <= c.num <= 53 or 56 <= c.num <= 68):  # case 39 / 55: from $A500
         return bytes(fill("PAT")[256:768])
-    if n == 18 and c.num >= 57:                              # case 56: from $A480
+    if n == 18 and (57 <= c.num <= 68 or c.num >= 70):       # case 56 / 69: from $A480
         return bytes(fill("PAT")[128:640])
-    if n == 1430 and c.num >= 67:                            # case 66
+    if n == 1430 and 67 <= c.num <= 68:                      # case 66
         return bytes(fill("PAT")[:512])
     return sector(n)
 
@@ -189,11 +195,14 @@ RULES = [
          lambda c: D(c) and write(c) and media_ok(c) and in_range(c),
          lambda c: (c.a, c.f, c.b, c.c, c.de, c.hl) == (0, 0x42, 0, 0x32, (c.ain << 8) | c.fin, c.hlin)
          and got(c) == summ(fill(c.kind))),
-    Rule("R-PD-PAST", S1, "A read that reaches a sector whose TRACK -- sector / (sides x sectors per track), taken "
-         "modulo 128 -- is at or past the media's track count (sector 1440 with $F9, 720 with $F8, 700 and 1439 with "
-         "$FF; $F000: track 3413 = 85; sector 3780: track 210 = 82) reads the sectors before it, then stops: A 2, F $41, B = the sectors not read, C 0, D / "
+    Rule("R-PD-PAST", S1, "A read that reaches a sector whose TRACK is at or past the media's track count -- the track "
+         "from the side-and-track count sector / (sectors per track) kept in 8 BITS (sector 1440 with $F9, 720 with "
+         "$F8, 700 and 1439 with $FF; $F000: 6826 = 170, track 85; $F9 3780: 420 = 164, track 82; $F8 1152: 128, "
+         "track 128) -- reads the sectors before it, then stops: A 2, F $41, B = the sectors not read, C 0, D / "
          "E the entry A / F (E $5A in case 27), HL as entered ($A400, $8000). B 0 counts as 256 (case 04: one sector "
-         "read from 1439, B $FF left).", lambda c: D(c) and not write(c) and media_ok(c) and not in_range(c)
+         "read from 1439, B $FF left: the count runs down from 0 in 8 bits -- how far it can run is not "
+         "measured). A transfer whose last sector does not fit 16 bits is refused before any sector: 2 from $FFFF "
+         "gives A 2 with B 2 (case 73), where 1 from $FFFF reads.", lambda c: D(c) and not write(c) and media_ok(c) and not in_range(c)
          and not far(c),
          lambda c: (c.a, c.f, c.b, c.c, c.de, c.hl) == (2, 0x41, (count(c) - nok(c)) & 0xFF, 0,
                                                          (c.ain << 8) | c.fin, c.hlin)
@@ -205,14 +214,15 @@ RULES = [
          lambda c: (c.a, c.f, c.b, c.c, c.de, c.hl) == (8, 0x11, count(c) - nok(c), 0,
                                                          (c.ain << 8) | c.fin, c.hlin)
          and got(c) == summ(fill(c.kind))),
-    Rule("R-PD-FFFF", S1, "A sector number past the disk whose track WRAPS (modulo 128) into it is NOT refused: it "
-         "returns as a good read (A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered). $F9 sector $1200 "
-         "(track 256) and $0900 (track 128) read the BOOT sector (track 0); $FFFE / $FFFF (track 3640 = 56) read a "
-         "zero sector (which one is not separated).", lambda c: OK_READ(c) and far(c),
+    Rule("R-PD-FFFF", S1, "A sector number past the disk whose side-and-track count WRAPS (8 bits) back onto it is NOT "
+         "refused: it returns as a good read (A 0, F $42, B 0, C $32, D / E the entry A / F, HL as entered). $F9 "
+         "sector $1200 (count 512 = 0) and $0900 (256 = 0) read the BOOT sector; $FFFE / $FFFF (7281 = 113: track 56, "
+         "side 1) read a zero sector (which one is not separated).", lambda c: OK_READ(c) and far(c),
          lambda c: (c.a, c.f, c.b, c.c, c.de, c.hl) == (0, 0x42, 0, 0x32, (c.ain << 8) | c.fin, c.hlin)
          and got(c) == summ(buffer_after(c, 1))),
     Rule("R-PD-MEDIA", S1, "A media byte the interface does not take ($00, $32, $80, $F0, $F7 measured) refuses the "
-         "call before any transfer -- before the sector check too (case 36: $00 and sector 1440 give 12), entered "
+         "call before any transfer -- before the sector check too (case 36 reading, 72 writing: $00 and sector 1440 "
+         "give 12), entered "
          "with interrupts on (case 25), and for a WRITE (case 44: nothing written, case 45 reads the sector unchanged): A 12, F $89, "
          "B as entered (1, 2, 0), C 0, D / E the entry A / F (E $A4 in case 28), HL as entered; the "
          "buffer is not touched.",
