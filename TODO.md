@@ -16778,6 +16778,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       skip the re-measure when no ROM source changed. (3) spec-live sits in STATIC but boots zerobas per run file
       (~145 s, and it grows with every page): an emulator unit by run_gates' own rule ("split by what a unit reads").
       (4) unit-test runs its 100 files serially: a worker pool.
+      ✅ (4) DONE 2026-11-22: tests/run.py runs GROUPS on a worker pool (ZB_UNIT_JOBS, default the CPU count; 1 =
+      serial) -- files sharing a tp() artifact name or taking another test's build are one group, run in order in
+      one worker (88 groups of 100). 379 serial s -> 91 s (scratchpad/AE_unit_times.out, AE_unit_par.out); a planted
+      failing file still reports FAIL and exit 1. ae56cc33's gate: 1022 -> 534 s before this.
 - [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
