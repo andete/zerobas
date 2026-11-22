@@ -16904,17 +16904,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pre-filled with $FF, FMAKE through $F37D writes +14 .. +31 on both references (record size and size 0, date,
       time, $40, the entry index) and leaves +12 / +13 and +32 .. +36; zerobas leaves +14 .. +17 at $FF. A caller that
       reuses an FCB gets a stale record size. disk/ (bdos_create_body).
-- [ ] **D-FCBEXTENT — THE FCB'S EXTENT BYTE IS IGNORED: WRSEQ WRITES AND FOPEN OPENS WITH EXTENT $FF; THE REFERENCES DO NOT**
+- [ ] **D-FCBEXTENT — SEQUENTIAL WRITES IGNORE THE FCB'S EXTENT AND CURRENT RECORD (THEY WRITE AT ZEROBAS'S OWN POSITION); FOPEN OPENS ANY EXTENT**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-EXTENT (XB2 4-9): with +12 = $FF (left by FMAKE over a pre-filled
       FCB) the references' WRSEQ answers A 1 and writes nothing, FOPEN answers A $FF (no extent 255); zerobas's write
       and open succeed, so FSIZE reads 1 record against 0. disk/ (wrseq_body, bdos_open: the extent).
+      Round 3 (XBFILE3, R-BF-SEQ3 / R-BF-OPEN3) WIDENED it: the references' WRSEQ writes at the FCB's current record
+      (+32 AND $7F) -- CR $85 writes record 5 (a 768-byte file), CR $FF record 127 (16384 bytes, then extent 1, CR 0)
+      -- and FOPEN refuses an extent the file lacks (+12 1 on a 0-record file); zerobas writes record 0 every time and
+      opens any extent. A program that positions by CR (or by extent) writes at the wrong place on zerobas: tier 6
+      as filed, but read it again when a corpus program writes files.
 - [ ] **D-BDOSCARRY — SNEXT / SFIRST ANSWER "NOT FOUND" (A $FF) WITH THE CARRY CLEAR; BOTH REFERENCES SET IT**
       🎚️ TIER 6 — every error (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/FILES.md R-BF-CARRY (scratchpad/XBFILE1_run1.out, run2.out, cases 4 and 10): through
       $F37D every A $FF answer carries the carry SET on the VG-8020 + NMS 1200 and the CF-3300 (F $45); zerobas's
       FOPEN does too, its SNEXT and SFIRST do not (F $44). A caller testing `jr c` after a search misses the end on
       zerobas. disk/ (snext_body / sfirst_body's exit).
+      Round 3 (XBFILE3 XB3 13): FDEL of a missing file -- A $FF, carry SET on both references -- carry clear on
+      zerobas too; FREN / FSIZE of a missing file agree.
 - [ ] **D-F37DEI — THE $F37D BDOS LEAVES INTERRUPTS ON; BOTH REFERENCES LEAVE THEM OFF**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DI: after each of the 15 calls (entered with interrupts off) the
