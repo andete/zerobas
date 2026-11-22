@@ -16948,7 +16948,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND7 (scratchpad/XBBLK7_run1.out, run2.out XK7 2 / 7): WRZER
       ($28) through $F37D at RR 156 and RR 300: the VG-8020 + NMS 1200 and the CF-3300 leave +12 1 / 2 (RR / 128)
       and +32 28 / 44 (RR mod 128); zerobas leaves +12 0 and +32 156 / 44 (RR AND $FF). Size, clusters and +33 ..
-      agree. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
+      agree. Round 8 (R-BK-ROUND8, scratchpad/XBBLK8_run1.out, run2.out XK8 4 .. 9): the same on L.TXT, and WRZER
+      below the end resets +28 / +30 to the first cluster on the references (zerobas keeps the last). WRBLK and
+      RDBLK ignore +12 / +32 on all three. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
       place. Check WRRND / RDRND / SETRND past 16 KB too (RECORDS.md measured only below it). disk/ (WRZER's
       FCB update: the extent / record split).
 - [ ] **D-WRBLKGAP — WRBLK PAST THE END: THE NEW-CLUSTER SECTOR IT WRITES INTO KEEPS THE DISK'S BYTES; BOTH REFERENCES BUILD IT FROM THE DOS'S SECTOR BUFFER**
