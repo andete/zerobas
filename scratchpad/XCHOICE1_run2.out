@@ -1,0 +1,15 @@
+WARNING: Var buf is never used on line 39 of file probes/bios/spec/xchoice1.asm
+===== probes/bios/spec/xchoice1.asm cf3300: National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 224, ours 240
+  ref : jiffy=2b01 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7872b78c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 00000000000078ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000f9f9000078ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000ffff000078ad00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004400000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50044ffff0000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004412340000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  CAP ours: 000000000000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000f9f90000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50000ffff0000557c00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004400000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50044ffff0000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004412340000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+  DIFF (6 unexcused byte(s)):
+  CAP A007: ref=78 ours=55
+  CAP A008: ref=AD ours=7C
+  CAP A025: ref=78 ours=55
+  CAP A026: ref=AD ours=7C
+  CAP A043: ref=78 ours=55
+  CAP A044: ref=AD ours=7C
+===== biosl: DIVERGENCE =====
