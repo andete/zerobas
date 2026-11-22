@@ -1,0 +1,92 @@
+WARNING: Var CALSLT is never used on line 36 of file probes/bios/spec/xbsys1.asm
+WARNING: Var buf is never used on line 53 of file probes/bios/spec/xbsys1.asm
+WARNING: Var cb is never used on line 44 of file probes/bios/spec/xbsys1.asm
+WARNING: Var entry is never used on line 43 of file probes/bios/spec/xbsys1.asm
+===== probes/bios/spec/xbsys1.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=3401 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=f203 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3ca3ac9c9
+  CAP ref : 2280000c000000220056d3011000000000c4190000c4000056d3011000000202d50e0000d5020056d30110000003440018000000030056d3011000000800581aa80058080056d30110a8000200020002c902c900f197e597a80000440000010107c00056d30110a8000044098f000709000056d30110a800004000000b1607ea0056d30110a80000440000000000000056d30110a80000440c2238000c000056d30110a80000440000000000000056d30110a80000429f0df1ac9f0000f1ac01100080ff4af8440d01f8ff0056d301100080ff0a1900000019ff0056d301100080
+  CAP ours: 224a000c0000002201111122220080004a1919000000000111112222008002020e0e0000000001111122220080030000180000000301111122220080e14a1a1aa80000000111112222a8000200020002c902c90111112222a80000440000010107c00111112222a800ff43002b0b1607ea0111112222a80000440000010107c00111112222a80000440000000000000111112222a800ff43002d38000c220111112222a80000440000000000000111112222a80000440d0d000000000111112222a800ff43002b0d0107ea0111112222a800ff43002d000019000111112222a8
+  DIFF (129 unexcused byte(s)):
+  CAP A002: ref=80 ours=4A
+  CAP A009: ref=00 ours=01
+  CAP A00A: ref=56 ours=11
+  CAP A00B: ref=D3 ours=11
+  CAP A00C: ref=01 ours=22
+  CAP A00D: ref=10 ours=22
+  CAP A00F: ref=00 ours=80
+  CAP A011: ref=00 ours=4A
+  CAP A012: ref=C4 ours=19
+  CAP A016: ref=C4 ours=00
+  CAP A018: ref=00 ours=01
+  CAP A019: ref=56 ours=11
+  CAP A01A: ref=D3 ours=11
+  CAP A01B: ref=01 ours=22
+  CAP A01C: ref=10 ours=22
+  CAP A01E: ref=00 ours=80
+  CAP A021: ref=D5 ours=0E
+  CAP A025: ref=D5 ours=00
+  CAP A026: ref=02 ours=00
+  CAP A027: ref=00 ours=01
+  CAP A028: ref=56 ours=11
+  CAP A029: ref=D3 ours=11
+  CAP A02A: ref=01 ours=22
+  CAP A02B: ref=10 ours=22
+  CAP A02D: ref=00 ours=80
+  CAP A02F: ref=44 ours=00
+  CAP A036: ref=00 ours=01
+  CAP A037: ref=56 ours=11
+  CAP A038: ref=D3 ours=11
+  CAP A039: ref=01 ours=22
+  CAP A03A: ref=10 ours=22
+  CAP A03C: ref=00 ours=80
+  CAP A03D: ref=08 ours=E1
+  CAP A03E: ref=00 ours=4A
+  CAP A03F: ref=58 ours=1A
+  CAP A043: ref=58 ours=00
+  CAP A044: ref=08 ours=00
+  CAP A045: ref=00 ours=01
+  CAP A046: ref=56 ours=11
+  CAP A047: ref=D3 ours=11
+  CAP A048: ref=01 ours=22
+  CAP A049: ref=10 ours=22
+  CAP A054: ref=00 ours=01
+  CAP A055: ref=F1 ours=11
+  CAP A056: ref=97 ours=11
+  CAP A057: ref=E5 ours=22
+  CAP A058: ref=97 ours=22
+  CAP A063: ref=00 ours=01
+  CAP A064: ref=56 ours=11
+  CAP A065: ref=D3 ours=11
+  CAP A066: ref=01 ours=22
+  CAP A067: ref=10 ours=22
+  CAP A06A: ref=00 ours=FF
+  CAP A06B: ref=44 ours=43
+  CAP A06C: ref=09 ours=00
+  CAP A06D: ref=8F ours=2B
+  CAP A06E: ref=00 ours=0B
+  CAP A06F: ref=07 ours=16
+  CAP A070: ref=09 ours=07
+  CAP A071: ref=00 ours=EA
+  CAP A072: ref=00 ours=01
+  CAP A073: ref=56 ours=11
+  CAP A074: ref=D3 ours=11
+  CAP A075: ref=01 ours=22
+  CAP A076: ref=10 ours=22
+  CAP A07A: ref=40 ours=44
+  CAP A07D: ref=0B ours=01
+  CAP A07E: ref=16 ours=01
+  CAP A080: ref=EA ours=C0
+  CAP A081: ref=00 ours=01
+  CAP A082: ref=56 ours=11
+  CAP A083: ref=D3 ours=11
+  CAP A084: ref=01 ours=22
+  CAP A085: ref=10 ours=22
+  CAP A090: ref=00 ours=01
+  CAP A091: ref=56 ours=11
+  CAP A092: ref=D3 ours=11
+  CAP A093: ref=01 ours=22
+  CAP A094: ref=10 ours=22
+  CAP A097: ref=00 ours=FF
+===== biosl: DIVERGENCE =====

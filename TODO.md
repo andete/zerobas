@@ -16890,6 +16890,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
       HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
       table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
+- [ ] **D-F37DSETDATE — SDATE AND STIME THROUGH $F37D REFUSE A VALID DATE / TIME (A $FF): BDOS_TAB HAS NO ROWS FOR THEM**
+      🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DATE / R-BS-TIME (scratchpad/XBSYS1_run1.out, run2.out): through
+      $F37D, SDATE ($2B) of 2026-11-22 and STIME ($2D) of 12:34:56 answer A 0 on the VG-8020 + NMS 1200 and the
+      CF-3300 (GDATE then reads the new date); zerobas answers A $FF and keeps 1984-01-01 -- disk/kernel.asm
+      `bdos_tab` (the $F37D dispatch) has no $2B / $2D rows, so they fall to "not in the table". sdate_body /
+      stime_body serve MSX-DOS already (k_5552, k_55E6). The fix is 2 rows (6 B) -- disk.rom reads 0 B free
+      (`make basic-reloc`): a carve first (the exact-fit pads of D-DISKCARVE6's list).
+- [ ] **D-F37DEI — THE $F37D BDOS LEAVES INTERRUPTS ON; BOTH REFERENCES LEAVE THEM OFF**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DI: after each of the 15 calls (entered with interrupts off) the
+      references' interrupts are off, zerobas's on. Where it enables them is disk/ (the $F37D path's exit).
+- [ ] **D-ALLOCIXIY — ALLOC THROUGH $F37D LEAVES IX / IY; THE REFERENCES RETURN THE DPB AND FAT-BUFFER ADDRESSES**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-ALLOC: ALLOC ($1B, E 0) returns IX / IY = $F197 / $E597 (VG-8020 +
+      NMS 1200) and $F195 / $E595 (CF-3300), the DPB and the FAT buffer in the disk work area; zerobas leaves IX /
+      IY as entered. A, BC, DE, HL agree. A program that reads the DPB through IX gets garbage on zerobas.
+- [ ] **D-F37DDTA — THE DTA CELL STARTS AT $0080 AND DSKRST DOES NOT RESET IT; THE REFERENCES: $0000, AND DSKRST -> $0080**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-DTA: before any SETDTA the references' DTA cell ($F23D) reads
+      $0000 (zerobas $0080, dta_init, disk/driver.asm); after SETDTA $A800 both read $A800; DSKRST then resets it
+      to $0080 on the references, zerobas keeps $A800.
+- [ ] **D-F37DREGS — THE $F37D BDOS RETURNS OTHER WORKING REGISTERS THAN BOTH REFERENCES**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/SYSTEM.md R-BS-WORK / R-BS-SLOT: the two references agree on F and the open
+      parts of BC / DE / HL / IX for every case, and leave IY = the inter-slot call's value ($0110 / $0314); zerobas
+      differs (F, HL / BC working values, IX / IY as entered). Working values; fix only if a caller is found.
 - [ ] **D-DSKFMTHIGH — DSKFMT TAKES CHOICE $81 AS A SUCCESS AND FORMATS NOTHING; THE REFERENCE REFUSES IT**
       🎚️ TIER 6 — every error (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/disk/DSKFMT.md R-DF-BAD (scratchpad/XDFMT3_run1.out XF3 0): DSKFMT ($401C) with A = $81
