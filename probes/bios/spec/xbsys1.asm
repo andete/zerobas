@@ -25,7 +25,7 @@
 ;   13: SDATE, month 13: C $2B, DE $0D01, HL $07EA
 ;   14: STIME, hour 25: C $2D, DE $0000, HL $1900
 ;
-; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xbsys1.asm --row both   (and --row cf3300)
+; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xbsys1.asm --row disk   (run 1; --row cf3300: run 2)
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells.
 ;
 ; @disk empty
