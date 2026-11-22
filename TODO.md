@@ -16780,6 +16780,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       payoff, every rule pinned by a separating case, landed with spec-live. Re-open for a region whose old suites are
       expensive.
 
+- [ ] **D-INITIORACE — A FRAME INTERRUPT PENDING AT INITIO'S ENTRY PLAYS A STALE QUEUED NOTE ON THE REFERENCES; ZEROBAS'S GICINI-FIRST DOES NOT**
+      🎚️ TIER 6 — every edge (filed 2026-11-22, from a C-BIOS 0.32 port measurement).
+      🤖 **AUTONOMOUS** — reported, not yet measured here: with interrupts off, a frame interrupt pending (a ~30 ms DI
+      loop before JP $003B), MUSICF $01, voice A's word 1 and a note packet (vol $8F, tone $0123) in queue A, the
+      VG-8020 and the NMS 8250 end INITIO with PSG R0 / R1 = $23 / $01 -- the frame lands inside INITIO (WRTPSG enables
+      interrupts) and the player sounds the stale note before GICINI clears MUSICF; GICINI resets volumes, MUSICF,
+      words and queues but not the tone registers, which is where it shows. With no interrupt pending they leave R0 /
+      R1 0. zerobas's INITIO calls GICINI FIRST (cbios-repack/initio-gicini.patch, for R-IO-PLAY), so it never plays it.
+      FIRST: a row on docs/bios/INITIO.md measuring exactly this (a pending IRQ at entry + a stale packet), then
+      decide: undo GICINI-first (R-IO-PLAY's case must then still hold) or keep it as a listed difference.
 - [ ] **D-INITIOVCB — INITIO / GICINI DO NOT REWRITE THE VOICE CONTROL BLOCKS; THE VG-8020'S RESET THEM TO PLAY'S DEFAULTS**
       🎚️ TIER 6 — every edge (a program that PEEKs the voice control blocks after INITIO / GICINI; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/bios/INITIO.md R-IO-VCB / R-IO-SEED ([`XINITIO2_run2.out`](scratchpad/XINITIO2_run2.out)): the
@@ -17156,6 +17166,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       PSG R15 after GTSTCK with A 3-6: the VG-8020 selects port 1 for A 3, 4 and 6, and A 5 flips the port; the NMS 8250
       port 1 for 3-5, and 6 leaves it. zerobas's patch selects port 1 for an odd A: wrong at 4 (and 5 / 6). Match the
       VG-8020 (Joost's split rule: the VG-8020 is the reference).
+      ⚠️ CORRECTED by the C-BIOS 0.32 round-2 note (2026-11-22): the 4-6 split was a RACE -- the interrupt's trigger
+      scan rewrites R15, so a reading taken after interrupts are back on can catch either. Read R15 from a stub that
+      does DI right after the call: then the VG-8020 and the NMS 8250 agree for EVERY A. FIRST re-measure
+      docs/bios/GTSTCK.md / GTTRIG.md's R15 cases that way (their probes read R15 later; check whether they race),
+      then fix the patch to the race-free rule.
 - [ ] **D-CNVCHRCP20 — CNVCHR'S UNDOCUMENTED F: `cp $20` MATCHES THE VG-8020 EXACTLY**
       🎚️ TIER 6 — every edge (filed 2026-11-21).
       🤖 **AUTONOMOUS** — From the C-BIOS 0.32 port's measurements (Joost, 2026-11-21; headless openMSX, BIOS calls made directly, VG-8020 = NMS 8250 unless noted). Check zerobas against them first.
