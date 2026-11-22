@@ -20,7 +20,12 @@ from xgetdpb_rules import FMT  # noqa: E402
 
 PAGE = "docs/disk/DSKFMT.md"
 OUTPUTS = {"XF": ["a", "f", "b", "c", "de", "hl", "iff", "pa", "pf", "bpb", "fat"]}
-CHOICES = [0, 5, 1, 2, 3, 4]
+OUTPUTS["XF2"] = OUTPUTS["XF"]
+# per run: the cases in order -- (choice, BC, HL)
+RUNS = {"XDFMT1_run2.out": ("XF", [(c, 0x2000, 0x8000) for c in (0, 5, 1, 2, 3, 4)]),
+        "XDFMT2_run1.out": ("XF2", [(1, 0x2000, 0x8000), (0, 0x2000, 0x8000), (6, 0x2000, 0x8000), (7, 0x2000, 0x8000),
+                                    (8, 0x2000, 0x8000), (0x80, 0x2000, 0x8000), (0xFF, 0x2000, 0x8000),
+                                    (5, 0x1234, 0x8800), (4, 0x3000, 0x8400)])}
 MEDIA = {1: 0xFC, 2: 0xFD, 3: 0xF8, 4: 0xF9}       # the CF-3300's choices, measured
 EMPTY_MEDIA = 0xF9                                  # disk/empty720.dsk, before any format
 
@@ -35,19 +40,20 @@ def bpb_of(media):
 
 
 def cases():
-    t = open(os.path.join(ROOT, "scratchpad", "XDFMT1_run2.out")).read()
     d = {"ref": [], "zb": []}
-    for who, key in (("ref", "ref"), ("zb", "ours")):
-        b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
-        b += bytes(max(0, 38 * len(CHOICES) - len(b)))
-        last = EMPTY_MEDIA
-        for i, ch in enumerate(CHOICES):
-            r = b[38 * i: 38 * (i + 1)]
-            d[who].append(NS(src="XF", id=f"XF {i}", choice=ch, before=last,
-                             a=r[0], f=r[1], b=r[2], c=r[3], de=(r[4] << 8) | r[5], hl=(r[6] << 8) | r[7], iff=r[8],
-                             pa=r[9], pf=r[10], bpb=list(r[11:30]), fat=list(r[30:34])))
-            if ch in MEDIA:
-                last = MEDIA[ch]
+    for run, (src, cs) in RUNS.items():
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 38 * len(cs) - len(b)))
+            last = EMPTY_MEDIA                      # each run starts from a fresh copy of the empty $F9 disk
+            for i, (ch, bc, hl) in enumerate(cs):
+                r = b[38 * i: 38 * (i + 1)]
+                d[who].append(NS(src=src, id=f"{src} {i}", choice=ch, bcin=bc, hlin=hl, before=last,
+                                 a=r[0], f=r[1], b=r[2], c=r[3], de=(r[4] << 8) | r[5], hl=(r[6] << 8) | r[7],
+                                 iff=r[8], pa=r[9], pf=r[10], bpb=list(r[11:30]), fat=list(r[30:34])))
+                if ch in MEDIA:
+                    last = MEDIA[ch]
     return d
 
 
@@ -60,16 +66,21 @@ RULES = [
          "and total sectors, the media byte, its FAT sectors, 9 sectors per track, its sides, 0 hidden; the FAT starts "
          "media, $FF, $FF, $00.", OK,
          lambda c: c.bpb == bpb_of(MEDIA[c.choice]) and c.fat == [MEDIA[c.choice], 0xFF, 0xFF, 0x00]),
-    Rule("R-DF-OKREGS", S1, "A format returns A 0, the carry clear, B 0, interrupts off; F $42, C $3C, DE $0049, HL "
-         "$9020 (working values, the same for every choice).", OK,
-         lambda c: (c.a, c.f & 1, c.b, c.iff) == (0, 0, 0, 0) and (c.f, c.c, c.de, c.hl) == (0x42, 0x3C, 0x0049, 0x9020)),
-    Rule("R-DF-BAD", S1, "A choice the interface does not offer (0, 5) refuses before anything is written: A 12, the "
-         "carry set, B $20, C 0, E = the choice - 1 (8 bits: $FF for 0), D 0, HL as entered ($8000), interrupts off; "
-         "the disk keeps its format (BPB and FAT unchanged).", lambda c: not OK(c),
-         lambda c: (c.a, c.f & 1, c.b, c.c, c.de, c.hl, c.iff) == (12, 1, 0x20, 0, (c.choice - 1) & 0xFF, 0x8000, 0)
+    Rule("R-DF-OKREGS", S1, "A format returns A 0, the carry clear, B 0, interrupts off, and HL = the entry HL + $1020 "
+         "($9020 for $8000, $9420 for $8400: it follows the work area); F $42, C $3C, D 0 and E a working value that "
+         "follows the work area's size ($49 for BC $2000, $41 for $3000).", OK,
+         lambda c: (c.a, c.f & 1, c.b, c.iff, c.hl) == (0, 0, 0, 0, c.hlin + 0x1020)
+         and (c.f, c.c, c.de) == (0x42, 0x3C, {0x2000: 0x49, 0x3000: 0x41}[c.bcin])),
+    Rule("R-DF-BAD", S1, "Every choice the interface does not offer (0, 5, 6, 7, 8, $80, $FF measured) is refused and "
+         "nothing is written: A 12, the carry set, BC and HL as entered ($2000 / $8000, $1234 / $8800), D 0, E = the "
+         "choice - 1 (8 bits: $FF for 0), interrupts off; the disk keeps the format it had -- the empty disk's $F9, "
+         "or the $FC an earlier format wrote (XF2 1-7).", lambda c: not OK(c),
+         lambda c: (c.a, c.f & 1, c.b, c.c, c.de, c.hl, c.iff)
+         == (12, 1, c.bcin >> 8, c.bcin & 0xFF, (c.choice - 1) & 0xFF, c.hlin, 0)
          and c.bpb == bpb_of(c.before) and c.fat == [c.before, 0xFF, 0xFF, 0x00]),
-    Rule("R-DF-BADF", S1, "The rest of F on a refusal: $3B for choice 0, $93 for choice 5.", lambda c: not OK(c),
-         lambda c: c.f == {0: 0x3B, 5: 0x93}[c.choice]),
+    Rule("R-DF-BADF", S1, "The rest of F on a refusal (working flags of the choice's range test): $3B for choices 0 and "
+         "$FF, $93 for 5-8, $BB for $80.", lambda c: not OK(c),
+         lambda c: c.f == (0x3B if c.choice in (0, 0xFF) else 0xBB if c.choice == 0x80 else 0x93)),
     Rule("R-DF-READBACK", S1, "The probe's PHYDIO read of sectors 0-1 after each call succeeds: A 0, F $42 (PHYDIO.md's "
          "good read).", lambda c: True, lambda c: (c.pa, c.pf) == (0, 0x42)),
 ]
