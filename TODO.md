@@ -16915,6 +16915,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       -- and FOPEN refuses an extent the file lacks (+12 1 on a 0-record file); zerobas writes record 0 every time and
       opens any extent. A program that positions by CR (or by extent) writes at the wrong place on zerobas: tier 6
       as filed, but read it again when a corpus program writes files.
+- [ ] **D-RDBLKPART — RDBLK OF A PARTIAL LAST RECORD ANSWERS A 1; BOTH REFERENCES COUNT IT AS READ (A 0)**
+      🎚️ TIER 3 — a loader that checks A stops one record early (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-RDBLK (scratchpad/XBBLK1_run1.out, run2.out XK 8): RDBLK ($27) through
+      $F37D, record size 128, RR 1 of a 200-byte file (bytes 128 .. 199): the VG-8020 + NMS 1200 and the CF-3300 answer
+      A 0, HL 1, RR 2; zerobas answers A 1 (HL 1, RR 2 the same). A program reading whole 128-byte records and
+      testing A for the end gives up on the last, partial one. Check the MSX-DOS ($0005) path too. disk/ (k47b2_body:
+      the end-of-file test after a partial record).
+- [ ] **D-FSIZERS — FSIZE LEAVES THE FCB'S RECORD SIZE; BOTH REFERENCES CLEAR +14 / +15**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-FSIZE (XK 9, 11): FSIZE over a record size 1 / 128 answers the
+      records of 128 on all three machines; the references then read +14 / +15 0, zerobas keeps the record size.
 - [ ] **D-SETRNDR36 — SETRND CLEARS THE FCB'S +36; BOTH REFERENCES LEAVE IT**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/RECORDS.md R-BR-SETRND3 (scratchpad/XBREC3_run1.out, run2.out XR3 2 / 6): over $FF
