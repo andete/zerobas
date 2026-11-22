@@ -372,7 +372,14 @@ skip_sp:
                 jr      skip_sp
                 ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
-                ds      $47B9 - $, $00      ; pad remainder (net-zero: anchors the 3b relocation below)
+; bb_dirio -- $F37D's DIRIO ($06): E = $FF reads a key (or 0), else it writes E as CONOUT
+; does. (Moved here from in front of $543C by D-F37DCONIN, with a `jp` to bb_conout: the
+; two were one fall-through. This pad held $47B9's old `ds`; $47BE's below anchors it.)
+bb_dirio:
+                ld      a, e
+                inc     a
+                jp      z, dirio_in_body    ; E = $FF: a key, or 0
+                jp      bb_conout
 ; --- M28: $26 WRBLK canonical entry $47BE -- 3b relocation (tier2-m28-blockrandom-
 ; spec.md §3.1/§4). $47BE used to be 5 bytes INSIDE ff_secloop (the old `jr z,
 ; ff_notfound` at old-$47BE, [LANDED-B]) -- a latent accidental target, harmless only

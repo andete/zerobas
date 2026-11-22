@@ -80,11 +80,19 @@ conin_body:
                 push    de
                 push    hl
                 call    innoe_body          ; A := char, BIOS paged back out
-                ld      e, a                ; echo via conout_body (E = char, its ABI)
-                call    conout_body
+                ld      e, a                ; echo via conout_body (E = char, its ABI) --
+                call    bb_conout           ; through bb_conout: A := E after it. conout_body's
+                                            ; TAB answers A 0 (the DOS CONOUT's, measured); CONIN
+                                            ; returns the key, $09 too (D-F37DCONIN, CONIN.md R-BC-CTRL)
                 pop     hl
                 pop     de
                 pop     bc
+                ret
+; bb_conout -- $F37D's CONOUT ($02; bb_dirio's output half): the references leave the
+; character in A. (Moved here from in front of $543C by D-F37DCONIN.)
+bb_conout:
+                call    conout_body         ; E = the character (AF kept)
+                ld      a, e                ; the references leave it in A
                 ret
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
@@ -1274,6 +1282,14 @@ bdos_tab:
                 dw      snext_body
                 db      BDOS_F_STROUT
                 dw      RES_PRINT           ; '$'-terminated string at DE
+                db      $01                 ; D-F37DCONIN (2026-11-22): the console input
+                dw      conin_body          ; functions answered $FF from $F37D; both
+                db      $07                 ; references take the key (CONIN.md R-BC-RAW,
+                dw      innoe_body          ; R-BC-ECHO, R-BC-BUFIN) -- MSX-DOS's bodies
+                db      $08
+                dw      innoe_body
+                db      $0A
+                dw      conin_line_body
                 db      $02
                 dw      bb_conout
                 db      $06
@@ -1349,21 +1365,13 @@ bm_none:
                 pop     hl                  ; the caller's HL back
                 ld      a, $FF              ; still unanswered here
                 ret
-bb_dirio:
-                ld      a, e
-                inc     a
-                jp      z, dirio_in_body    ; E = $FF: a key, or 0
-bb_conout:
-                call    conout_body         ; E = the character (AF kept)
-                ld      a, e                ; the references leave it in A
-                ret
-bb_dskrst:
-                xor     a
-                ld      (CURDRV_CELL), a    ; drive A
-                ret
+; (bb_dirio, bb_conout and bb_dskrst moved to the pads in front of $47BE, $4E4B and
+; $461D by D-F37DCONIN: bdos_tab's $01 / $07 / $08 / $0A rows needed these bytes)
 ; (moved here from init.asm by the D-DSKFMT defrag)
 ; (moved here from kernel.asm by the D-DSKFMT defrag, 2026-11-09)
 ; (rh_init moved to the hole in front of $75A5 by D-F37DSETDATE: bdos_tab's $2B / $2D rows)
+cinl_bs:        db      8, " ", 8, 0        ; D-BUFINECHO: BackSpace's un-echo (conin_line_body,
+                                            ; disk/runtime.asm; moved here by D-F37DCONIN)
                 ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
 k_543C:
                 jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)

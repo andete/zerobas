@@ -921,6 +921,12 @@ seq_load:
                 call    to_wrbytes          ; BDOS_WRBYTES := FCB +16..19
                 pop     de
                 ret
+; bb_dskrst -- $F37D's DSKRST ($0D): drive A, nothing else (the MSX-DOS one marks
+; MSX-DOS booted, D-BOOTDATE). (Moved here from in front of $543C by D-F37DCONIN.)
+bb_dskrst:
+                xor     a
+                ld      (CURDRV_CELL), a    ; drive A
+                ret
                 ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
 k_461D:
                 jp      bdos_create_body         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)

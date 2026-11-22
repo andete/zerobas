@@ -16985,7 +16985,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       interface's internal entries (INIHRD, DRIVES, INIENV, DEFDPB, MYSIZE / SECLEN, OEMSTA, DSKSTP) are not
       published entries a program calls -- say so in disk.md, measure only what a black box can see; (e) the
       MSX-DOS 1 boot test is 2-Tier2-a (blocked): C-BIOS would like the same disk image when it lands.
-- [ ] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
+- [x] **D-F37DCONIN — CONIN, $07, $08 AND BUFIN THROUGH $F37D ANSWER A $FF AND TAKE NO KEY: BDOS_TAB HAS NO ROWS FOR THEM**
+      ✅ FIXED 2026-11-22: bdos_tab rows $01 -> conin_body, $07 / $08 -> innoe_body, $0A -> conin_line_body
+      (disk/kernel.asm); the 12 B from moving bb_dskrst / bb_dirio / bb_conout into the pads in front of $461D /
+      $47BE / $4E4B (the $4775 / $477D pads left EMPTY: D-LOADFAT). Two answers fixed with them: BUFIN's A is
+      $0D (it was the count; 1 B, paid by moving cinl_bs's 4 data bytes in front of $543C) and CONIN of TAB
+      returns $09 (conout_body's TAB answers A 0, the DOS CONOUT's; conin_body echoes through bb_conout,
+      A := E). spec_live: R-BC-BUFIN and R-BC-CTRL hold (scratchpad/AE_speclive_conin.out); R-BC-RAW /
+      R-BC-ECHO now differ only in the screen the missing hold leaves (XN 02: the references echo the held
+      'X', zerobas the waiting 'A') -- moved under D-F37DCONHOLD.
       🎚️ TIER 3 — a valid call refused (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-HOLD / RAW / ECHO / BUFIN (scratchpad/XBCON1_run1.out, run2.out XN 2,
       5 .. 10): through $F37D with the key in the BIOS buffer, the VG-8020 + NMS 1200 and the CF-3300 return it (CONIN
@@ -16995,6 +17003,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       for them (check); the fix is rows (+ any glue), and disk.rom reads 0 B free (`make basic-reloc`): a carve
       first, as D-F37DSETDATE. The hold (D-F37DCONHOLD) comes with it.
 - [ ] **D-F37DCONHOLD — CONST THROUGH $F37D LEAVES THE KEY IN THE BIOS BUFFER; THE REFERENCES MOVE IT INTO THE DOS'S ONE-KEY HOLD**
+      ➕ 2026-11-22: since D-F37DCONIN, R-BC-RAW and R-BC-ECHO fail through this alone (the screen shows CONIN's
+      echo of the waiting 'A' where the references echoed the held 'X'; scratchpad/AE_speclive_conin.out).
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/CONIN.md R-BC-CONST / R-BC-HOLD (scratchpad/XBCON1_run1.out, run2.out XN 1 .. 3):
       on both references CONST answers $FF and takes the waiting key out of the BIOS buffer into a hold that the next

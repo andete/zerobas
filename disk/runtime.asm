@@ -304,10 +304,12 @@ cinl_done:
                                              ; COMMAND.COM's date-reply parser scans from
                                              ; buf[2] for this rather than trusting count
                                              ; alone (tier2-conin-spec.md §6)
+                ld      a, (hl)             ; D-F37DCONIN: A = $0D, as both references answer
+                                            ; BUFIN from $F37D (CONIN.md R-BC-BUFIN); was the count
                 pop     hl
                 pop     bc
                 ret
-cinl_bs:        db      8, " ", 8, 0        ; D-BUFINECHO: BackSpace's un-echo
+; (cinl_bs -- BackSpace's un-echo -- moved in front of $543C by D-F37DCONIN, for the A = $0D above)
 
 ; --- int_h_body - REMOVED 2026-09-09 (D-INTHDEAD) ---------------------------------
 ; The OLD page-1 $0038 handler (A-2/A-2b), superseded by A-3 and kept "pending

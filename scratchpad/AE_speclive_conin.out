@@ -1,0 +1,16 @@
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run1.out disk: xbcon1.asm 0.3 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 33 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon1.asm
+  live XBCON1_run2.out cf3300: xbcon1.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run1.out disk: xbcon2.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 41 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon2.asm
+  live XBCON2_run2.out cf3300: xbcon2.asm 0.2 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run1.out disk: xbcon3.asm 0.1 s, zerobas CHANGED since the committed run
+WARNING: Var CALSLT is never used on line 32 of file /Users/joost/projects/zerobas/probes/bios/spec/xbcon3.asm
+  live XBCON3_run2.out cf3300: xbcon3.asm 0.2 s, zerobas CHANGED since the committed run
+FAIL docs/bdos/CONIN.md: 9 rules, 7 failing on zerobas (live, 6 run file(s))
+     STALE PAGE R-BC-BUFIN: the page lists it as a difference, but it holds on zerobas
+     STALE PAGE R-BC-CTRL: the page lists it as a difference, but it holds on zerobas
+===== spec-live: DISAGREEMENT =====

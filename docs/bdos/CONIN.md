@@ -30,9 +30,10 @@ Through the disk ROM's BDOS entry at $F37D (C the function), with the keys alrea
 - **BUFIN** fills the buffer at DE (+0 the maximum, +1 the count, +2 the text, then the $0D STORED after
   it), echoes the text and ends with a carriage return alone -- no line feed.
 
-zerobas answers A $FF to CONIN, $07, $08 and BUFIN through $F37D and takes no key -- they are not in its
-dispatch table (D-F37DCONIN); its CONST and DIRIO work but keep no hold (D-F37DCONHOLD), and its working F
-and HL differ (D-F37DREGS).
+zerobas answers CONIN, $07, $08 and BUFIN through $F37D as the references do (since D-F37DCONIN,
+2026-11-22: they answered A $FF and took no key), but keeps no hold (D-F37DCONHOLD) -- so where a
+reference serves its held key first, zerobas serves the waiting one, and the echo on the screen differs
+from then on -- and its working F and HL differ (D-F37DREGS).
 
 ## The specification
 
@@ -91,8 +92,7 @@ every byte of every record.
 
 | TODO item | rules zerobas fails |
 |---|---|
-| **D-F37DCONIN** (CONIN, $07, $08 and BUFIN through $F37D answer A $FF and take no key: no `bdos_tab` rows; R-BC-RAW's XN 04 fails only on the cursor the missing echoes left) | R-BC-HOLD, R-BC-RAW, R-BC-ECHO, R-BC-BUFIN, R-BC-HOLD2, R-BC-CTRL, R-BC-HOLD3, R-BC-WORK |
-| **D-F37DCONHOLD** (no hold: CONST leaves the key in the BIOS buffer, CONOUT takes none, DIRIO has no held key to return) | R-BC-CONST, R-BC-HOLD, R-BC-HOLD2, R-BC-HOLD3 |
+| **D-F37DCONHOLD** (no hold: CONST leaves the key in the BIOS buffer, CONOUT takes none, DIRIO has no held key to return; R-BC-RAW's and R-BC-ECHO's cases differ only in the screen, which shows CONIN's echo of the waiting 'A' where the references echoed the held 'X') | R-BC-CONST, R-BC-HOLD, R-BC-RAW, R-BC-ECHO, R-BC-HOLD2, R-BC-HOLD3 |
 | **D-F37DREGS** (other working F and HL) | R-BC-WORK |
 
 ## Open (not measured)
