@@ -16953,6 +16953,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
       size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
       disk/ (WRZER's record count / record size).
+- [ ] **D-RRND256 — RANDOM ACCESS PAST RECORD 255 (32 KB) ADDRESSES RECORD RR MOD 256: RDRND / WRRND / WRZER READ AND OVERWRITE THE WRONG RECORD**
+      🎚️ TIER 3 — silent data corruption on files over 32 KB (filed 2026-11-22; the root of D-WRZER64K).
+      🤖 **AUTONOMOUS** — disk/kernel.asm rrnd_position reads the target record from +33 ALONE ("only r0 (0..255, up
+      to a 32640-byte file) positions the record; r1 / r2 are NOT read" -- a scope narrowing signed off when it was
+      written, never filed). The size and cluster bookkeeping use the whole RR (wrrnd_extend), so the FCB looks right
+      (docs/bdos/BLOCKS.md round 7: RR 300's size and clusters agree) while the BYTES go to record RR mod 256: RR 600
+      lands on 88, RR 300 on 44. FIRST measure it (a probe writing distinct records at RR 44 and 300, reading both
+      back, both references and zerobas), then let rrnd_position seek by the whole record (sector = RR >> 2 over 16
+      bits; the seek loop's count is 8-bit today). disk.rom reads 0 B free: a carve first. Check BASIC's GET / PUT and
+      MSX-DOS's $0005 path, which reach the same body.
+      ✅ **MEASURED 2026-11-22** (probes/bios/spec/xrrnd1.asm, scratchpad/XRRND1_run1.out / run2.out): P.TXT grown to
+      301 records, WRRND record 44 (fill 3) then record 300 (fill 4): on the VG-8020 + NMS 1200 and the CF-3300
+      RDRND 44 and RDBLK 44 read fill 3 back; on zerobas fill 4 -- record 300's write landed on 44. 🔮 HIT. The fix
+      touches rrnd_position (the record in HL, a 16-bit sector count, a 24-bit bytes-left) and its other caller
+      srd_pos (SEQREAD after a random move past 255 is the same bug); price it, then a D-DISKCARVE round (the
+      exact-fit pads STEP 3 lists -- read build/disk.rom, never the list).
 - [ ] **D-WRZER64K — WRZER GROWING A FILE PAST 64 KB WRITES THE SIZE ONE RECORD SHORT AND $0FFF INTO +28**
       🎚️ TIER 3 — a program writing a large random file loses its last record (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND9 (scratchpad/XBBLK9_run1.out, run2.out XK9 10 / 12): WRZER
