@@ -16943,6 +16943,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       links clusters 3 and 1 at +28 / +30 and leaves the DTA's first bytes 0. Round 2 (WRZER with HL 1 and record
       size 1) agrees on all three, so HL 2 or +15 nonzero moves it -- which one is the first thing to measure.
       disk/ (WRZER's record count / record size).
+- [ ] **D-WRZEREXT — WRZER PAST 16 KB LEAVES +12 0 AND RR'S LOW BYTE IN +32; THE REFERENCES SPLIT RR INTO EXTENT AND RECORD**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND7 (scratchpad/XBBLK7_run1.out, run2.out XK7 2 / 7): WRZER
+      ($28) through $F37D at RR 156 and RR 300: the VG-8020 + NMS 1200 and the CF-3300 leave +12 1 / 2 (RR / 128)
+      and +32 28 / 44 (RR mod 128); zerobas leaves +12 0 and +32 156 / 44 (RR AND $FF). Size, clusters and +33 ..
+      agree. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
+      place. Check WRRND / RDRND / SETRND past 16 KB too (RECORDS.md measured only below it). disk/ (WRZER's
+      FCB update: the extent / record split).
 - [ ] **D-WRBLKGAP — WRBLK PAST THE END: THE NEW-CLUSTER SECTOR IT WRITES INTO KEEPS THE DISK'S BYTES; BOTH REFERENCES BUILD IT FROM THE DOS'S SECTOR BUFFER**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/bdos/BLOCKS.md R-BK-ROUND5 (scratchpad/XBBLK5_run1.out, run2.out XK5 10 / 15): WRBLK
