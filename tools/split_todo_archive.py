@@ -91,6 +91,7 @@ WHOLE_SECTIONS = {
         "a prose done-record of disk and tape; no items at all",
 }
 
+STUB_MARK = "➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md)"
 STUB = """{heading}
 
 ➡️ **Moved to [`docs/TODO-done.md`](docs/TODO-done.md) on 2026-08-26** — {why}.
@@ -142,11 +143,20 @@ def build(lines, blocks, plan):
     section = None            # current `## ` heading text in the source
     emitted_sections = set()
     stubbed = set()
+    # D-SPLITSTUB: a WHOLE section already moved is left as its STUB; moving it
+    # again re-archived the stub and wrote a fresh one on every pass.
+    already = set()
+    sec = None
+    for line in lines:
+        if line.startswith("## "):
+            sec = line
+        elif sec in WHOLE_SECTIONS and line.startswith(STUB_MARK):
+            already.add(sec)
     for i, line in enumerate(lines, 1):
         b = span.get(i)
         if line.startswith("## "):
             section = line
-        whole = section in WHOLE_SECTIONS
+        whole = section in WHOLE_SECTIONS and section not in already
         move = whole or (b is not None and plan[b["id"]][0] == "move")
         if move:
             if whole:
@@ -312,6 +322,9 @@ def main():
         sys.exit("REFUSED: the split is not lossless -- reconstruction differs.")
     print("  lossless: reconstruction is byte-identical to the source ✅")
 
+    if not any(w == "dst" for w, _ in mapping.values()):
+        print("\nnothing to move -- no file written (D-SPLITSTUB)")
+        return 0
     if not a.apply:
         print("\n(dry run; pass --apply to write)")
         return 0
@@ -415,6 +428,17 @@ def selftest() -> int:
     empty = os.path.join(d, "empty.md")
     arm("S7 a FIRST pass (no archive yet) still writes the header",
         _append_or_write(empty, fresh).startswith("# generated header"))
+
+    # --- D-SPLITSTUB: a whole section already stubbed does not move again ----
+    h = next(iter(WHOLE_SECTIONS))
+    stubbed_src = ["# TODO", ""] + STUB.format(heading=h, why="x").splitlines() + ["## Open", ""]
+    so, do, mp = build(stubbed_src, [], {})
+    arm("S12 an already-stubbed whole section stays put: nothing moves",
+        so == stubbed_src and not any(w == "dst" for w, _ in mp.values()))
+    raw_src = ["# TODO", "", h, "", "some done prose", "## Open", ""]
+    so, do, mp = build(raw_src, [], {})
+    arm("S13 ...and an un-stubbed one still moves, leaving the stub (the control)",
+        "some done prose" in do and any(l.startswith(STUB_MARK) for l in so))
 
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
