@@ -24,9 +24,13 @@ RUNS2 = [("XBFILE2_run1.out", "D"), ("XBFILE2_run2.out", "C")]
 FN3 = ["FMAKE3A", "WRSEQEX", "FCLOSEEX", "FMAKE3B", "WRSEQCR", "FCLOSECR", "FMAKE3C", "WRSEQ85", "FCLOSE85",
        "FOPENEXFF", "FOPENEX1", "FOPEN6", "FSIZE6", "FDELMISS", "FRENMISS", "FSIZEMISS"]
 RUNS3 = [("XBFILE3_run1.out", "D"), ("XBFILE3_run2.out", "C")]
+FN4 = ["SETDTA4", "FMAKEA", "FCLOSEA", "FMAKEB", "WRSEQB", "FCLOSEB", "FOPENB0", "FOPENB1", "FDELA", "FMAKEC",
+       "FMAKEBEX", "FMAKED", "FCLOSEFF"]
+RUNS4 = [("XBFILE4_run1.out", "D"), ("XBFILE4_run2.out", "C")]
 # case 0 (SETDTA) runs on the FCB as start-up left it -- not set up, not evidence: its group records no FCB
 OUTPUTS = {"XB": ["a", "f", "fcb", "dta"], "XB0": ["a", "f", "dta"], "XB2": ["a", "f", "fcb", "dta"],
-           "XB20": ["a", "f", "dta"], "XB3": ["a", "f", "fcb", "dta"]}
+           "XB20": ["a", "f", "dta"], "XB3": ["a", "f", "fcb", "dta"], "XB4": ["a", "f", "fcb", "dta"],
+           "XB40": ["a", "f", "dta"]}
 TEST, NEW, ALLQ = list(b"TEST    TXT"), list(b"NEW     TXT"), list(b"????????TXT")
 _cache = {}
 
@@ -68,6 +72,18 @@ def cases():
                 r = b[52 * i: 52 * (i + 1)]
                 d[who].append(NS(src="XB3", id=f"XB3 {row}{i:02}", row=row, num=200 + i, fn=fn, a=r[0], f=r[1],
                                  fcb=list(r[2:39]), dta=list(r[39:52])))
+    for run, row in RUNS4:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 52 * len(FN4) - len(b)))
+            for i, fn in enumerate(FN4):
+                r = b[52 * i: 52 * (i + 1)]
+                c = NS(src="XB40" if i == 0 else "XB4", id=f"XB4 {row}{i:02}", row=row, num=300 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
     _cache["d"] = d
     return d
 
@@ -107,6 +123,7 @@ def fcb(name, ext=0, rc=0, size=0, date=0x0821, b24=0x40, idx=0, c1=0, c2=0, c3=
 
 
 TWO, THREE, MISSING = list(b"TWO     TXT"), list(b"THREE   TXT"), list(b"MISSING TXT")
+AAA, BBB, CCC, DDD = (list(x.encode() + b"     TXT") for x in ("AAA", "BBB", "CCC", "DDD"))
 TEST2, SECOND = TEST, list(b"SECOND  TXT")
 
 
@@ -201,6 +218,30 @@ RULES = [
          "leave the FCB.", F("FDELMISS", "FRENMISS", "FSIZEMISS"),
          lambda c: (c.a, c.f & 1) == (0xFF, 1) and c.dta == E5
          and c.fcb == fcb(MISSING, b24=0, date=0, new=NEW if c.fn == "FRENMISS" else None)),
+    Rule("R-BF-OPEN4", S1, "FOPEN opens extent e when e x 16384 does not pass the size (a 16384-byte file opens at extent "
+         "0 AND 1; a 0-byte file refuses 1, R-BF-OPEN3), and +15 is the records left in that extent, at most 128 ($80 at "
+         "extent 0, 0 at extent 1); +26 and +28 both the file's FIRST cluster (2) -- +28 the current cluster, not the "
+         "last -- +30 0.", F("FOPENB0", "FOPENB1"),
+         lambda c: c.a == 0 and c.dta == E5 and c.fcb == fcb(BBB, ext=0 if c.fn == "FOPENB0" else 1,
+                                                             rc=0x80 if c.fn == "FOPENB0" else 0, size=0x4000, idx=1,
+                                                             c1=2, c2=2)),
+    Rule("R-BF-INDEX", S1, "FMAKE takes the FIRST free directory entry: after FDEL of entry 0 a new name gets index 0, the "
+         "next new one 2; making the existing BBB.TXT again keeps its 1. FDEL answers A 0 and leaves the FCB.",
+         F("FMAKEA", "FMAKEB", "FDELA", "FMAKEC", "FMAKEBEX", "FMAKED"),
+         lambda c: c.a == 0 and c.dta == E5 and c.fcb == {"FMAKEA": fcb(AAA), "FMAKEB": fcb(BBB, idx=1),
+                                                          "FDELA": fcb(AAA, b24=0, date=0), "FMAKEC": fcb(CCC),
+                                                          "FMAKEBEX": fcb(BBB, idx=1), "FMAKED": fcb(DDD, idx=2)}[c.fn]),
+    Rule("R-BF-CLOSE4", S1, "FCLOSE answers A 0 and leaves the FCB; its F is $10 after FMAKE with no write -- also with "
+         "+12 poked to $FF (so round 2-3's $93 belongs to the FAILED write, not the extent) -- and $42 after a write. "
+         "The WRSEQ between them (the setup that gives BBB.TXT its 16384 bytes) writes as R-BF-SEQ3 states.",
+         F("FCLOSEA", "FCLOSEB", "FCLOSEFF", "WRSEQB"),
+         lambda c: c.a == 0 and c.dta == E5 and {"FCLOSEA": c.f == 0x10 and c.fcb == fcb(AAA),
+                                                  "FCLOSEFF": c.f == 0x10 and c.fcb == fcb(DDD, ext=0xFF, idx=2),
+                                                  "FCLOSEB": c.f == 0x42, "WRSEQB": True}[c.fn]
+         and (c.fn not in ("FCLOSEB", "WRSEQB") or c.fcb == fcb(BBB, ext=1, size=0x4000, b24=0, idx=1, c1=2, c2=17,
+                                                                c3=15))),
+    Rule("R-BF-SETDTA4", S1, "SETDTA $A800 again answers A $08, F 0 (XBFILE4 sets it, so its DTA checks are real).",
+         lambda c: c.src == "XB40", lambda c: (c.a, c.f, c.dta) == (0x08, 0, E5)),
     Rule("R-BF-WORK", S1, "F, and SETDTA's A, are the same on both references in every case (mostly $44 on A 0, $45 on "
          "a not-found; but $10 / $42 / $93 after FCLOSE, $42 after FDEL, $44 on FREN's refusal, $82 / $42 on FOPEN's "
          "extent refusals; SETDTA A $08, F 0); SETDTA leaves the DTA alone.", lambda c: True,
