@@ -16890,6 +16890,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       HL + 19. zerobas's (disk/) fills the $F9 block -- the disk's -- for every B, with A $03, F $04, B 2, DE $0007,
       HL $A412; reading the disk also restarts DSKCHG's idle clock (DSKCHG.md R-DC-UNKNOWN, XE1 6). A media-byte
       table of 7 x 18 B in disk.rom: read `make basic-reloc` (disk free) first.
+- [ ] **D-DSKCHGFF — DSKCHG NEVER ANSWERS B $FF ("CHANGED"); THE REFERENCE DOES WHEN THE DISK'S MEDIA BYTE IS NOT C**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKCHG.md R-DC-READ (scratchpad/XDENT3_run1.out XE3 0): DSKCHG ($4013) with C $F8
+      on the $F9 disk, at a call that reads: the VG-8020 + NMS 1200 answers B $FF (A $F9, the $F9 DPB, F $38);
+      zerobas B 0. A DOS that trusts B 0 keeps its old FAT for a disk of another format. Fix in disk/ with
+      D-DSKCHGREGS (compare the disk's media byte with C).
+- [ ] **D-DSKCHGTIME — DSKCHG'S "UNCHANGED" WINDOW IS ~3 S IN ZEROBAS, LESS THAN 2 S (96 INTERRUPTS) ON THE REFERENCE**
+      🎚️ TIER 6 — every edge (filed 2026-11-22).
+      🤖 **AUTONOMOUS** — docs/disk/DSKCHG.md R-DC-RECENT / R-DC-READ (scratchpad/XDENT3_run1.out XE3 3-5): the
+      reference reads again 96 timer interrupts after its last read (B 1 at 48), zerobas answers B 1 at 96 and reads
+      only later (XE3 4 at 144). Both count from a READ (a B 1 answer restarts neither). Measure zerobas's limit, then
+      match the reference's (between 48 and 96: one more probe narrows it).
 - [ ] **D-DSKCHGREGS — DSKCHG'S "UNKNOWN" ANSWER RETURNS WORKING VALUES WHERE THE REFERENCE RETURNS THE MEDIA BYTE**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — docs/disk/DSKCHG.md R-DC-UNKNOWN / R-DC-F (scratchpad/XDENT2_run1.out): when DSKCHG ($4013)

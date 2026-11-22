@@ -45,11 +45,13 @@ RULES = [
          "the cluster mask / shift, first FAT sector 1, 2 FATs, the root entries, the first data sector, the clusters "
          "+ 1, the FAT sectors and the first root sector of that standard format ($F8 $F9 $FA $FC $FD $FE $FF "
          "measured; $FA is 1 side x 8 x 80). HL + 0 (the drive byte) and HL + 19 on are not written. C plays no part "
-         "(case XE1 5: C $00, the $F9 block).", lambda c: True,
+         "(XE1 5: C $00, and XE3 1: C $F8 -- a valid media byte -- both give B's $F9 block).", lambda c: True,
          lambda c: c.dpb[1:19] == dpb_of(c.bin) and c.dpb[0] == 0xE5 and c.dpb[19:21] == [0xE5, 0xE5]),
-    Rule("R-GD-REGS", S1, "It returns the carry clear, BC 0, DE = the entry HL + 19 (the end of the 18-byte copy) "
-         "and interrupts off; A, the rest of F and HL are working values that depend on the media byte alone (the "
-         "two $F9 cases agree).", lambda c: True,
-         lambda c: (c.f & 1, c.b, c.c, c.de, c.iff) == (0, 0, 0, X.HL_IN + 19, 0)
-         and all((o.a, o.f, o.hl) == (c.a, c.f, c.hl) for o in cases()["ref"] if o.bin == c.bin)),
+    Rule("R-GD-REGS", S1, "It returns the carry clear, BC 0, DE = the entry HL + 19 (the end of the 18-byte copy), "
+         "interrupts off, and A = 2 x (B - $F8) ($F8 0 .. $FF 14: the format's index); the rest of F and HL are "
+         "working values that follow the media byte alone (HL $7405 + 18 x (B - $F7) in every case: the end of an "
+         "18-byte block per format).", lambda c: True,
+         lambda c: (c.f & 1, c.b, c.c, c.de, c.iff, c.a) == (0, 0, 0, X.HL_IN + 19, 0, 2 * (c.bin - 0xF8))
+         and c.hl == 0x7405 + 18 * (c.bin - 0xF7)
+         and all(o.f == c.f for o in cases()["ref"] if o.bin == c.bin)),
 ]

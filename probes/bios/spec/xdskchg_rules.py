@@ -2,9 +2,10 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """docs/disk/DSKCHG.md's EXECUTABLE RULES (docs/spec-method.md §3a): DSKCHG ($4013 in the disk ROM) from the XDENT
-probes (xdent_common.py documents the cases and the record). The model: a DSKCHG within about a second of the last
-disk access answers "unchanged" (B 1); the first one after the probe starts, and one after 3 s or more idle, answers
-"unknown" (B 0) and reads the disk's media byte -- GETDPB does not touch the disk, so it does not count."""
+probes (xdent_common.py documents the cases, the record and the TIMELINE). The model: the call counts TIMER
+INTERRUPTS since the last DSKCHG that READ the disk. At the first call, or after 96 interrupts or more, it reads the
+disk: B $FF (changed) when the disk's media byte differs from C, else B 0 (unknown). Within 48 it answers B 1
+(unchanged) and reads nothing. B 1 answers, GETDPB, MTOFF and time with interrupts off do not move the clock."""
 import os
 import sys
 
@@ -24,24 +25,35 @@ def cases():
     return X.cases("DSKCHG")
 
 
-def unknown(c):
-    """B 0 expected: the probe's first DSKCHG, or one after ~3 s / ~10 s idle"""
-    return c.what.startswith("first") or c.what in ("after ~3 s idle", "after ~10 s idle")
+def reads(c):
+    return c.since is None or c.since >= 96
+
+
+def recent(c):
+    return c.since is not None and c.since <= 48
+
+
+def expect_b(c):
+    return (0xFF if DISK_MEDIA != c.cin else 0x00) if reads(c) else 0x01
 
 
 S1 = "1. DSKCHG ($4013): was the disk changed"
 RULES = [
-    Rule("R-DC-RECENT", S1, "Within about a second of the last disk access (the call just before, or ~1 s idle) "
-         "DSKCHG answers B 1, unchanged: A 0, the carry clear, C, DE and HL as entered, interrupts off, the buffer at "
-         "HL untouched.", lambda c: not unknown(c),
+    Rule("R-DC-RECENT", S1, "Within 48 timer interrupts (~1 s) of the last DSKCHG that read the disk, DSKCHG answers "
+         "B 1, unchanged, and reads nothing: A 0, the carry clear, C, DE and HL as entered, interrupts off, the buffer "
+         "at HL untouched. A B 1 answer does not restart the count (XE3 2 at 48 gives B 1, XE3 3 at 96 reads); nor do "
+         "GETDPB (XE3 7), MTOFF (XE3 9) or 3.5 s with interrupts OFF (XE3 10: B 1 -- interrupts are counted, not "
+         "time).", recent,
          lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.hl, c.iff) == (1, 0, 0, c.cin, 0, X.HL_IN, 0)
          and c.dpb == [0xE5] * 21),
-    Rule("R-DC-UNKNOWN", S1, "The first call after start-up, and a call after 3 s or more idle (~3 s and ~10 s "
-         "measured), answer B 0, unknown, and read the disk: A = the disk's media byte ($F9), the carry clear, C as "
-         "entered, DE = the entry HL + 19, interrupts off, and the DPB at HL filled as GETDPB fills it for that "
-         "media byte (HL + 1 .. HL + 18). GETDPB calls before it do not count as an access (XE1 6).", unknown,
-         lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.iff) == (0, DISK_MEDIA, 0, c.cin, X.HL_IN + 19, 0)
+    Rule("R-DC-READ", S1, "At the first call after start-up, and after 96 interrupts or more (~2 s; 96, 176, 200 and 504 "
+         "measured), DSKCHG reads the disk: A = the disk's media byte ($F9), the carry clear, C as entered, DE = the "
+         "entry HL + 19, interrupts off, and the DPB at HL filled as GETDPB fills it for the DISK's media byte (HL + "
+         "1 .. HL + 18) -- and B $FF, CHANGED, when that media byte differs from C (XE3 0: C $F8), else B 0, "
+         "unknown.", reads,
+         lambda c: (c.b, c.a, c.f & 1, c.c, c.de, c.iff) == (expect_b(c), DISK_MEDIA, 0, c.cin, X.HL_IN + 19, 0)
          and c.dpb[1:19] == dpb_of(DISK_MEDIA) and c.dpb[0] == 0xE5 and c.dpb[19:] == [0xE5, 0xE5]),
-    Rule("R-DC-F", S1, "F and HL on the B 0 path: F $50, HL a working value ($7429 in every case).", unknown,
-         lambda c: (c.f, c.hl) == (0x50, 0x7429)),
+    Rule("R-DC-F", S1, "F and HL when it reads: F $50 with B 0, $38 with B $FF; HL $7429 (a working value -- GETDPB "
+         "returns the same HL for $F9).", reads,
+         lambda c: (c.f, c.hl) == (0x50 if expect_b(c) == 0 else 0x38, 0x7429)),
 ]
