@@ -24,8 +24,10 @@ RUNS = [("XBREC1_run1.out", "D"), ("XBREC1_run2.out", "C")]
 FN2 = ["SETDTA2", "FMAKE2", "W0", "W1", "SETRNDW", "FCLOSEW", "FOPEN2", "SETRND0", "RDSEQ0B", "SETRND1", "WRRND5B",
        "RDSEQCR3", "RDRND6", "RDRND20", "WRRND1", "RDRND1", "FCLOSER", "FOPEN6", "FSIZEPF"]
 RUNS2 = [("XBREC2_run1.out", "D"), ("XBREC2_run2.out", "C")]
+FN3 = ["SETDTA3", "FMAKE3", "SETRNDE", "W30", "W31", "WRRND53", "SETRND6", "RDSEQ10", "FCLOSE3", "FOPEN3", "FSIZEK"]
+RUNS3 = [("XBREC3_run1.out", "D"), ("XBREC3_run2.out", "C")]
 OUTPUTS = {"XR": ["a", "f", "fcb", "dta"], "XR0": ["a", "f", "dta"], "XR2": ["a", "f", "fcb", "dta"],
-           "XR20": ["a", "f", "dta"]}
+           "XR20": ["a", "f", "dta"], "XR3": ["a", "f", "fcb", "dta"], "XR30": ["a", "f", "dta"]}
 R = list(b"R       TXT")
 # the never-written record 3: its bytes are what the sector buffer held -- the two references read different bytes
 UNSTABLE = {f"XR {row}13": (["dta"], "the never-written record 3's bytes: XBREC1 run 1 (the VG-8020 + NMS 1200) and run 2 "
@@ -60,6 +62,18 @@ def cases():
             for i, fn in enumerate(FN2):
                 r = b[52 * i: 52 * (i + 1)]
                 c = NS(src="XR20" if i == 0 else "XR2", id=f"XR2 {row}{i:02}", row=row, num=100 + i, fn=fn, a=r[0],
+                       f=r[1], dta=list(r[39:52]))
+                if i:
+                    c.fcb = list(r[2:39])
+                d[who].append(c)
+    for run, row in RUNS3:
+        t = open(os.path.join(ROOT, "scratchpad", run)).read()
+        for who, key in (("ref", "ref"), ("zb", "ours")):
+            b = bytes.fromhex(re.search(rf"CAP {key}\s*:\s*([0-9a-fA-F]+)", t).group(1))
+            b += bytes(max(0, 52 * len(FN3) - len(b)))
+            for i, fn in enumerate(FN3):
+                r = b[52 * i: 52 * (i + 1)]
+                c = NS(src="XR30" if i == 0 else "XR3", id=f"XR3 {row}{i:02}", row=row, num=200 + i, fn=fn, a=r[0],
                        f=r[1], dta=list(r[39:52]))
                 if i:
                     c.fcb = list(r[2:39])
@@ -144,8 +158,22 @@ RULES = [
          lambda c: c.fn in ("FSIZEPF", "SETDTA2"),
          lambda c: (c.a, c.dta) == ((0x08, mark2(0)) if c.fn == "SETDTA2" else (0, mark2(18)))
          and (c.fn == "SETDTA2" or c.fcb == fcb(R, b24=0, date=0, rr=6, r36=0xFF))),
-    Rule("R-BR-WORK", S1, "A and F are the same on both references in every case (F $44 on most; FCLOSE $42 after the "
-         "sequential writes, $93 after the random ones; RDSEQ's EOF $44; SETRND $00; SETDTA A $08, F 0).",
+    Rule("R-BR-SETRND3", S1, "Round 3: SETRND sets RR to 1 on an EMPTY file and on a 6-record one too -- not the last "
+         "record (5), not the size's high byte (3); it writes +34 / +35 0 and LEAVES +36 (poked $FF before). WRSEQ "
+         "leaves RR (1 after it); RDSEQ at CR 10, past the end, answers A 1 and leaves CR 10; FSIZE on the FCB as FOPEN "
+         "left it writes only +33 .. +35 (6), leaving +12 .. +32. SETDTA A $08.", lambda c: c.src in ("XR3", "XR30"),
+         lambda c: c.a == {"SETRNDE": 0x12, "SETRND6": 0x12, "RDSEQ10": 1, "SETDTA3": 0x08}.get(c.fn, 0)
+         and c.dta == mark2(c.num - 200) and (c.fn == "SETDTA3" or c.fcb == {
+             "FMAKE3": fcb(R), "SETRNDE": fcb(R, rr=1, r36=0xFF),
+             "W30": fcb(R, size=128, b24=0, cr=1, rr=1, r36=0xFF, **W),
+             "W31": fcb(R, size=256, b24=0, cr=2, rr=1, r36=0xFF, **W),
+             "WRRND53": fcb(R, size=768, b24=0, cr=5, rr=5, **W),
+             "SETRND6": fcb(R, size=768, b24=0, cr=5, rr=1, r36=0xFF, **W),
+             "RDSEQ10": fcb(R, size=768, b24=0, cr=10, rr=1, r36=0xFF, **W),
+             "FCLOSE3": fcb(R, size=768, b24=0, cr=10, rr=1, r36=0xFF, **W),
+             "FOPEN3": fcb(R, rc=6, size=768, **W), "FSIZEK": fcb(R, rc=6, size=768, rr=6, **W)}[c.fn])),
+    Rule("R-BR-WORK", S1, "A and F are the same on both references in every case (F $44 on most; FCLOSE $42 or $93 -- "
+         "what decides it is not separated; SETRND $00, $44 or $04; SETDTA A $08, F 0).",
          lambda c: True, lambda c: (lambda o: (c.a, c.f) == (o.a, o.f))(other_ref(c))
          and (c.fn != "SETDTA" or c.dta == mark(0))),
 ]
