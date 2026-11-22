@@ -16961,7 +16961,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       below the end points +28 / +30 at the cluster holding RR on the references (round 9, XK9 3: $1B / $19 at RR
       200; zerobas keeps the last). Round 10 (R-BK-ROUND10, scratchpad/XBBLK10_run1.out, run2.out XKA 15): after a
       growing WRZER with a gap the references point +28 / +30 at the cluster the zero fill ended in (before RR's);
-      zerobas at RR's own. WRBLK and
+      zerobas at RR's own; round 11 (XKB 7, scratchpad/XBBLK11_run1.out) the same. WRBLK and
       RDBLK ignore +12 / +32 on all three. A program mixing random and sequential access past 16 KB (RDSEQ after WRZER) reads from another
       place. Check WRRND / RDRND / SETRND past 16 KB too (RECORDS.md measured only below it). disk/ (WRZER's
       FCB update: the extent / record split).
