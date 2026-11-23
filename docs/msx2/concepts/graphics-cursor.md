@@ -5,9 +5,13 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The MSX2 sub-ROM's graphics cursor and drawing entries — shared facts
 
-> **Status:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet.
-> References to measure: Sony HB-F900 (MSX2, JP), Philips NMS 8250 (MSX2, EU), Panasonic FS-A1WSX
+> **Status:** DRAFT 0 (2026-11-23), from the published interface; the cursor model and the baseline state are now
+> MEASURED on the call pages ([MAPXYC](../sub/MAPXYC.md), [SETC](../sub/SETC.md), [READC](../sub/READC.md),
+> [SETATR](../sub/SETATR.md), [SCALXY](../sub/SCALXY.md)) and summarised below, cited to them.
+> References: Sony HB-F900 (MSX2, JP), Philips NMS 8250 (MSX2, EU), Panasonic FS-A1WSX
 > (MSX2+). Subject: C-BIOS's MSX2 / MSX2+ builds. Each call's state is on its own page, never here.
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 3 findings, 1 measured (the baseline state), 0 moved to open, 2 corrected (the stale "nothing measured" / "model unpublished" text).
 
 ## Summary
 
@@ -95,8 +99,13 @@ From [P TH 4 §3.6-§3.9] and the VDP command coordinate system [P TH 4 §6.1]:
 
 ## The cursor model — rival rules to separate
 
-The bitmap cursor is unpublished. These candidate models all fit "CLOC / CMASK name the current
-pixel"; each call page's matrix is built so they disagree [A]:
+The bitmap cursor is unpublished. **Measured: model C, identical on all three references** -- in SCREEN 5-8 MAPXYC
+stores CLOC := X verbatim (0-511, never clipped) and CMASK := Y's low byte; SETC / READC address the pixel from them,
+replace its field (LOGOPR applied) and read it back ([MAPXYC](../sub/MAPXYC.md), [SETC](../sub/SETC.md),
+[READC](../sub/READC.md), [M]). In SCREEN 2, 3 and 4 the sub-ROM calls use the MULTICOLOUR form (CLOC := MLTCGP +
+the cell's byte, CMASK $F0 / $0F; SCALXY divides by 4), not the MSX1 SCREEN 2 bit form ([MAPXYC](../sub/MAPXYC.md),
+[SCALXY](../sub/SCALXY.md), [M]). Whether ACPAGE takes part is still open (MX-07, SC-08, RD-06). The candidate
+models, as they were set up to be separated [A]:
 
 | model | CLOC | CMASK | pages |
 |---|---|---|---|
@@ -123,6 +132,11 @@ The pages cite these sets by name.
   it. Where the V9958 could change a rule (R#25's command bit outside the bitmap modes, the R#26 /
   R#27 scroll, SCREEN 10-12), the page has a row whose answer is open per machine.
 
+- **The baseline the measured cases ran at** [M, [xsubgc2.asm](../../../probes/bios/spec/xsubgc2.asm) STATE,
+  [decoded](../../../scratchpad/AE_xsubgc2_msx2_decoded.out)]: CHGMOD leaves LOGOPR 0 (IMP), ACPAGE 0, DPPAGE 0,
+  GRPCGP = MLTCGP = $0000, R#9 LN 1 in SCREEN 5-8 and LN 0 in 2-4 (bit 1, PAL, set on the NMS 8250 only), S#2 CE 0
+  (no command running), R#45 / R#46 0, on all three references. A page's [M] line holds at that state unless it says
+  otherwise; the [PG], [LG], [LN] sets below are what moves away from it.
 - **Desynced cells:** GRPACX / GRPACY, GXPOS / GYPOS, CLOC / CMASK and BC / DE each name a
   DIFFERENT point, so "the call used this pair" is visible. FORCLR ≠ ATRBYT ≠ BAKCLR; the byte at
   $F3F3 ≠ ATRBYT.

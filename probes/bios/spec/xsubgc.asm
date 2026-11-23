@@ -9,7 +9,10 @@
 ; read back. SCALXY (the table `scal`: SCRMOD, X, Y): BC / DE / F after.
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the point count, +2 the SCALXY count; per point a 16-byte record
 ; from +3: +0 SCRMOD, +1/+2 X, +3/+4 Y, +5/+6 CLOC ($F92A), +7 CMASK ($F92C), +8 READC's A, +9 the byte, +10 ATRBYT
-; ($F3F2) after SETATR, +11 F after MAPXYC, +12..+15 0; then per SCALXY case 8 bytes: SCRMOD, BC (2), DE (2), F, 0, 0.
+; ($F3F2) at the end of the point (read after SETATR, MAPXYC, SETC and READC -- not SETATR's output alone; xsubgc2.asm
+; reads it right after SETATR), +11 F after MAPXYC, +12..+15 0; then per SCALXY case 8 bytes: SCRMOD, BC (2), DE (2),
+; F, 0, 0. LOGOPR, ACPAGE and R#9 are CHGMOD's (recorded by xsubgc2.asm's STATE section: LOGOPR 0, ACPAGE 0, LN 1 in
+; SCREEN 5-8).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubgc.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports.
