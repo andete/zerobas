@@ -143,6 +143,8 @@ Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen —
 
 ## Open (not measured)
 
+- **[A]** HL on return in SCREEN 2: the cases do not capture it. The VG-8020's ERAFNK keeps it (biosregs-acceptance row era2, which caught C-BIOS's HL = a return address during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.
+
 - **[A]** The key line with a key HELD (SHIFT: the VG-8020 should then show keys 6–10).
 - **[A]** Widths below 28 or above 40, CRTCNT other than 13 and 24.
 - **[A]** The scroll at a width below the screen's (is the blank row the whole row or the span?), and

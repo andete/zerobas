@@ -208,6 +208,8 @@ documents it.
 
 ## Open (not measured)
 
+- **[A]** A on return after Enter: the cases do not capture it. The VG-8020 returns A = $0D (biosregs-acceptance rows pinlin / inlin / qinlin, which caught C-BIOS's A = 0 during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.
+
 - **[A]** CTRL+STOP pressed at the very start of the call (round 3 presses it 10 frames into the wait); STOP
   pressed between typed keys (round 3 sets INTFLG 4 by hand); a line of three rows or more; CTRL+STOP in
   INLIN / QINLIN on a line that continues from the row above.

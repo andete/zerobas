@@ -62,7 +62,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | — |
 | $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 4 | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | — |
-| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 9 | D-TEXTAF |
+| $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 10 | D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
 | $00B4 | QINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](QINLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
 | $00B7 | BREAKX | [input](../concepts/input-calls.md) | L3 | [FINAL](BREAKX.md) | 4 | — |
@@ -73,7 +73,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-TEXTAF, D-KEYGRAPH, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-TEXTAF |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 14 | D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 15 | D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | [input](../concepts/input-calls.md) | L3 | [FINAL](GTSTCK.md) | 6 | — |
 | $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | — |

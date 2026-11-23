@@ -16840,7 +16840,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-GICINIVCB, D-GTPDLPORT, D-INITIOVCB, D-LPTOUTF, D-KEYGRAPH, D-EDITSTOPHELD); SETTXT / SETT32 / SETGRP /
       SETMLT's leftover registers listed (D-SETREGSCBIOS). LEFT: the disk ROM without zerobas BASIC; the test
       cleanup (D-TESTAUDIT); stale prose naming retired patches in older docs.
-- [ ] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
+- [x] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
       fast tier, ~8 s, [`SPECLIVE_all.out`](scratchpad/SPECLIVE_all.out)) pins every rule of the 16 text-region pages with
@@ -16867,6 +16867,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       barely watches what our patches carry; its rows guard behaviour already in C-BIOS. Row retirement waits for
       D-CBIOS032: the per-rule comparison of the pages and the suite against stock 0.32 decides redundancy there.
 
+      ✅ **CLOSED 2026-11-23 for the BIOS suites -- Joost: "Keep biosregs".** After the rebase on C-BIOS fff98e8
+      biosregs-acceptance (143 rows; ~38 s per FULL gate since D-SUITEWIN's pooling) caught TWO real register
+      leftovers no spec page covers -- INLIN / PINLIN / QINLIN's A after Enter and ERAFNK's HL in SCREEN 2
+      (cbios-repack/regs-leftovers.patch) -- because the pages' cases do not capture those registers on those paths.
+      A generic mutation cannot prove a row redundant (redundancy is per input path), and folding the suite into the
+      pages means extending each probe and re-measuring the VG-8020, for ~38 s of gate time. So biosregs stays as the
+      register-leftover net; the two gaps are [A] items on docs/bios/PINLIN.md and docs/bios/DSPFNK.md.
 - [ ] **D-INITIORACE — A FRAME INTERRUPT PENDING AT INITIO'S ENTRY PLAYS A STALE QUEUED NOTE ON THE REFERENCES; ZEROBAS'S GICINI-FIRST DOES NOT**
       🎚️ TIER 6 — every edge (filed 2026-11-22, from a C-BIOS 0.32 port measurement).
       🤖 **AUTONOMOUS** — reported, not yet measured here: with interrupts off, a frame interrupt pending (a ~30 ms DI
