@@ -8,6 +8,8 @@ SPDX-License-Identifier: BSD-2-Clause
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (identical on all three;
 > [xchknew.asm](../../../probes/bios/spec/xchknew.asm), [scratchpad/AE_xchknew_msx2.out](../../../scratchpad/AE_xchknew_msx2.out),
 > decoded by `scratchpad/xchknew_decode.py`).
+> Goldfish pass 1 (test writer) 2026-11-23: 3 findings, 2 measured (SCRMOD $FF, entry A varied: cases 33-36), 1
+> citation corrected.
 
 ## Summary
 
@@ -20,23 +22,26 @@ It reads SCRMOD only, not the VDP or its register save cells.
 
 **Interface.** None published (absent from App. 1's MSX2 entries) [A].
 
-**Measured** [M] (case numbers are the decoder's; entry A $A7, F $00 and $FF, every other register loaded with
-distinct values; identical on all three references):
+**Measured** [M] (case numbers are the decoder's; entry A $A7 in cases 0-33, $00 / $05 / $FF in 34-36, F $00 and $FF,
+every other register loaded with distinct values; identical on all three references):
 - **F = the flags of SCRMOD - 5** (the flags `CP 5` leaves, undocumented bits 5 and 3 included): SCREEN 0 (width 40
   and 80), 1, 2, 3, 4 give F $93 -- **carry set**, Z clear, S set; SCREEN 5 gives $42 -- carry clear, **Z set**; SCREEN
   6, 7, 8 give $02 -- carry and Z clear [M 0-18]. Out-of-range SCRMOD values follow the same subtraction: 9, 10, 11, 12
-  give $02, $10 gives $12, $80 gives $16 (P/V set: the signed overflow of $80 - 5) [M 23-28, 32].
+  give $02, $10 gives $12, $80 gives $16 (P/V set: the signed overflow of $80 - 5), $FF gives $82 (S set, carry
+clear: an unsigned compare, $FF is not "below 5") [M 23, 24, 26-28, 32, 33].
 - **The entry F is not used:** F $00 and $FF give the same result in every mode [M 0-17].
-- **A is kept** ($A7 in every case), and so are BC, DE, HL, IX, IY and the alternate set [M 0-32].
+- **A is kept** -- $A7, $00, $05, $FF all come back unchanged -- and the result does not depend on it (A $00 / $FF over
+SCREEN 1 give $93, A $05 over SCREEN 5 gives $42, as A $A7 does); BC, DE, HL, IX, IY and the alternate set kept
+[M 0-36].
 - **It reads SCRMOD ($FCAF), nothing else:** the VDP in SCREEN 1 with SCRMOD 5 answers $42 (case 19), the VDP in
   SCREEN 5 with SCRMOD 1 answers $93 (case 20), SCRMOD 4 over a SCREEN 1 VDP answers $93 (case 31); RG0SAV / RG1SAV
   set to the other mode's values change nothing (cases 21, 22) [M 19-22, 31].
-- SCRMOD is not written [M 0-32]. The interrupt state is kept: off stays off, on stays on (cases 29, 30) [M 0-32].
+- SCRMOD is not written [M 0-36]. The interrupt state is kept: off stays off, on stays on (cases 29, 30) [M 0-36].
 
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) give the same F in every case, but **return A = SCRMOD** where the
-references keep A [M 0-32]. A caller that relies on A surviving the call gets a different A on C-BIOS.
+references keep A [M 0-36] (with entry A $05 over SCREEN 5 the two coincide, case 35). A caller that relies on A surviving the call gets a different A on C-BIOS.
 
 ## Open (not measured)
 

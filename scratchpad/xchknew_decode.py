@@ -18,7 +18,9 @@ CASES = ["SCREEN 0 w40", "SCREEN 1", "SCREEN 2", "SCREEN 3", "SCREEN 4", "SCREEN
 CASES = [c + ", F 00" for c in CASES] + [c + ", F FF" for c in CASES] + [
     "SCREEN 0 w80, F 00", "VDP S1, SCRMOD 5", "VDP S5, SCRMOD 1", "S1, save cells S5's", "S5, save cells S1's",
     "S1, SCRMOD 9", "S1, SCRMOD $10", "S1 again", "S1, SCRMOD 10", "S1, SCRMOD 11", "S1, SCRMOD 12", "S5, EI",
-    "S1, EI", "VDP S1, SCRMOD 4", "S1, SCRMOD $80"]
+    "S1, EI", "VDP S1, SCRMOD 4", "S1, SCRMOD $80",
+    "S1, SCRMOD $FF", "S1, entry A $00", "S5, entry A $05", "S1, entry A $FF, F FF"]
+ENTRY_A = [0xA7] * 34 + [0x00, 0x05, 0xFF]
 
 
 def caps(path):
@@ -53,7 +55,7 @@ def main():
         for k in ORDER:
             r = cs[k][16 + 32 * i: 16 + 32 * i + 32]
             sigs.append(sig(r) if r[31] == 0x5A and r[0] == i else "missing")
-        print(f"\n== case {i}: {name} (entry A A7)")
+        print(f"\n== case {i}: {name} (entry A {ENTRY_A[i]:02X})")
         if len(set(sigs)) == 1:
             print(f"  all six: {sigs[0]}")
         else:
