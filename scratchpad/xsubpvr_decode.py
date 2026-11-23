@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""Decode scratchpad/AE_xsubpvr_msx2.out / AE_xsubpvr2_msx2.out (probes/bios/spec/xsubpvr.asm / xsubpvr2.asm, sub-ROM
+"""Decode scratchpad/AE_xsubpvr{,2,3}_msx2.out (probes/bios/spec/xsubpvr{,2,3}.asm, sub-ROM
 PUTVRM $0129), per machine and case. The inputs are read from the probe's own `cases:` table.
 
     python3 scratchpad/xsubpvr_decode.py scratchpad/AE_xsubpvr_msx2.out
@@ -11,6 +11,7 @@ import sys
 
 REC = 0x230
 CASES = []
+ROUND3 = False  # xsubpvr3.asm records LINLEN .. RG1SAV at +532
 
 
 def load_cases(asm):
@@ -68,6 +69,11 @@ def decode(name, cap):
         wc = r[26]
         we = [(r[176 + 4 * i] | r[177 + 4 * i] << 8, r[178 + 4 * i], r[179 + 4 * i]) for i in range(min(wc, 32))]
         print(f"   work area changed: {wc}: " + " ".join(f"{ad:04X}:{o:02X}->{nv:02X}" for ad, o, nv in we))
+        if ROUND3:
+            q = r[532:545]
+            w = lambda o: q[o] | q[o + 1] << 8
+            print(f"   before the call: LINLEN={q[0]} LINL40={q[1]} LINL32={q[2]} NAMBAS={w(3):04X} TXTNAM={w(5):04X}"
+                  f" T32NAM={w(7):04X} SCRMOD={q[9]} RG0SAV={q[10]:02X} RG1SAV={q[11]:02X}")
         vb, va = r[304:418], r[418:532]
         print("   VDP changed: " + (" ".join(f"{VDPN[i]}:{vb[i]:02X}->{va[i]:02X}" for i in range(114)
                                          if vb[i] != va[i] and not VDPN[i].startswith("S#")) or "none")
@@ -76,7 +82,10 @@ def decode(name, cap):
 
 def main():
     txt = open(sys.argv[1]).read()
-    CASES[:] = load_cases(re.search(r"^===== (\S+)", txt, re.M).group(1))
+    global ROUND3
+    asm = re.search(r"^===== (\S+)", txt, re.M).group(1)
+    ROUND3 = asm.endswith("xsubpvr3.asm")
+    CASES[:] = load_cases(asm)
     for blk in re.split(r"^===== ", txt, flags=re.M)[1:]:
         m = re.match(r"\S+ (\S+): (\S+) vs (\S+)", blk)
         if not m:
