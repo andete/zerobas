@@ -32,7 +32,7 @@ xbrec3      msx2eu: gen=67 cbios=NOREAD  msx2jp: gen=66 cbios=NOREAD  msx2p: gen
 xbsys1      msx2eu: gen=63+LEN cbios=NOREAD  msx2jp: gen=67+LEN cbios=NOREAD  msx2p: gen=67+LEN cbios=NOREAD
 xbsys2      msx2eu: gen=53+LEN cbios=NOREAD  msx2jp: gen=59+LEN cbios=NOREAD  msx2p: gen=59+LEN cbios=NOREAD
 xbsys3      msx2eu: gen=61+LEN cbios=NOREAD  msx2jp: gen=63+LEN cbios=NOREAD  msx2p: gen=63+LEN cbios=NOREAD
-xcalslt     msx2eu: gen=68 cbios=115  msx2jp: gen=68 cbios=151  msx2p: gen=30 cbios=154
+xcalslt     msx2eu: gen=58 cbios=39  msx2jp: gen=58 cbios=78  msx2p: gen=30 cbios=80
 xchg        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xchg2       msx2eu: gen=23 cbios=9  msx2jp: gen=9 cbios=27  msx2p: gen=20 cbios=26
 xchgw       msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
@@ -120,7 +120,7 @@ xscr3       msx2eu: gen=5 cbios=31  msx2jp: gen=5 cbios=31  msx2p: gen=5 cbios=3
 xscr4       msx2eu: gen=4 cbios=8  msx2jp: gen=4 cbios=8  msx2p: gen=4 cbios=8
 xscr5       msx2eu: gen=8 cbios=17  msx2jp: gen=8 cbios=17  msx2p: gen=8 cbios=17
 xset        msx2eu: gen=889 cbios=8409+LEN  msx2jp: gen=889 cbios=8431+LEN  msx2p: gen=889 cbios=8431+LEN
-xsetw       msx2eu: gen=0+LEN cbios=1  msx2jp: gen=0+LEN cbios=1  msx2p: gen=0+LEN cbios=1
+xsetw       msx2eu: gen=0 cbios=1  msx2jp: gen=0 cbios=1  msx2p: gen=0 cbios=1
 xsnd1       msx2eu: gen=27 cbios=18  msx2jp: gen=24 cbios=14  msx2p: gen=133 cbios=135
 xsnd1b      msx2eu: gen=23 cbios=18  msx2jp: gen=24 cbios=20  msx2p: gen=58 cbios=62
 xspr        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0

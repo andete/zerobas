@@ -1,0 +1,7 @@
+  live XCALSLT_run4c.out cf3300: xcalslt.asm 0.9 s, zerobas as committed
+  live XCALSLT_run4d.out disk: xcalslt.asm 0.9 s, zerobas as committed
+  live XCALSLT_run4.out nodisk: xcalslt.asm 0.9 s, zerobas as committed
+OK   docs/bios/CALBAS.md: 3 rules, 0 failing on zerobas (live, 3 run file(s))
+OK   docs/bios/CALSLT.md: 9 rules, 2 failing on zerobas (live, 3 run file(s))
+OK   docs/bios/CALLF.md: 8 rules, 2 failing on zerobas (live, 3 run file(s))
+===== spec-live: ALL PAGES AGREE =====

@@ -52,6 +52,7 @@ ciy     equ     $E90F                   ; CALSLT's IY low byte
 ra      equ     $E910                   ; after: AF, BC, DE, HL, IX, IY
 TREC    equ     $E920                   ; the target's 17 bytes + the ran flag
 secb    equ     $E91C                   ; slot 3's secondary selection at boot (where expanded)
+secb2   equ     $E91E                   ; D-MSX1ON2: the selection around the copy into RAM page 1
 TBUF    equ     $E980                   ; tgt's bytes on their way into the RAM slot                   ; the target's 17 bytes + the ran flag (written by tgt)
 RAMB    equ     $EA00
 
@@ -160,11 +161,32 @@ h_rid:
                 ld      (cartid), a
                 call    RAMB + emit - blk
                 ; a copy of tgt into the RAM slot's page 1, by hand: first into a page-3 buffer (page 1 is the
-                ; cartridge now), then page 1 := page 3's slot (3-0 selected where expanded) and into place
+                ; cartridge now), then page 1 := page 3's slot and into place. D-MSX1ON2: where slot 3 is expanded,
+                ; page 1's secondary field := page 3's (RAM's) for the copy, and back after -- round 4 left it as
+                ; found, which is RAM only where RAM is 3-0 (CF-3300, FS-A1WSX), not on the HB-F900 / NMS 8250
                 ld      hl, tgt
                 ld      de, TBUF
                 ld      bc, tgt_end - tgt
                 ldir
+                ld      a, ($FFFF)
+                cpl
+                ld      (secb2), a
+                ld      a, ($FCC4)
+                rla
+                jr      nc, cp_nosec
+                ld      a, (secb2)
+                ld      b, a
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0C                     ; page 3's field (bits 7-6) into page 1's (bits 3-2)
+                ld      c, a
+                ld      a, b
+                and     $F3
+                or      c
+                ld      ($FFFF), a
+cp_nosec:
                 ld      a, (a8b)
                 or      $0C
                 out     ($A8), a
@@ -174,6 +196,12 @@ h_rid:
                 ldir
                 ld      a, (a8b)
                 out     ($A8), a
+                ld      a, ($FCC4)
+                rla
+                jr      nc, cp_nosec2
+                ld      a, (secb2)
+                ld      ($FFFF), a
+cp_nosec2:
                 ld      hl, TBUF                ; and at $8010 in page 2 (the RAM slot there at boot)
                 ld      de, tgt + $4000
                 ld      bc, tgt_end - tgt
@@ -227,11 +255,31 @@ pre_set:
                 ld      a, ($FCC4)
                 rla
                 jr      nc, pre_done
-                ld      bc, $F304               ; page 1: keep the other fields, set 01
+                ; D-MSX1ON2: the preset sub-slot is RAM's + 1 (mod 4), not a fixed 3-1 -- 3-1 IS the RAM on the
+                ; HB-F900, so a call there had nothing to switch; on the CF-3300 (RAM 3-0) it is 3-1 as before
+                ld      a, (ramid)
+                rrca
+                rrca
+                inc     a
+                and     3
+                ld      c, a                    ; the preset sub-slot, 0-3
                 ld      a, (cps)
                 cp      1
-                jr      z, pre_sec
-                ld      bc, $CF10               ; page 2
+                jr      nz, pre_q2
+                ld      a, c
+                add     a, a
+                add     a, a
+                ld      c, a                    ; into page 1's field (bits 3-2)
+                ld      b, $F3
+                jr      pre_sec
+pre_q2:
+                ld      a, c
+                rlca
+                rlca
+                rlca
+                rlca
+                ld      c, a                    ; into page 2's field (bits 5-4)
+                ld      b, $CF
 pre_sec:
                 ld      a, ($FFFF)
                 cpl
