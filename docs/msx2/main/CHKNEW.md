@@ -5,43 +5,44 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHKNEW` ($0165) — is the screen in one of the MSX2's new modes?
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (identical on all three;
+> [xchknew.asm](../../probes/bios/spec/xchknew.asm), [scratchpad/AE_xchknew_msx2.out](../../scratchpad/AE_xchknew_msx2.out),
+> decoded by `scratchpad/xchknew_decode.py`).
 
 ## Summary
 
-`CHKNEW` is an MSX2 jump-table entry the handbook does not list. C-BIOS describes it as "is the
-current screen mode a bitmap mode?". Which modes count, what it reads to decide, and how it
-answers (a flag, A) are all assumed until measured.
+`CHKNEW` is an MSX2 jump-table entry the handbook does not list. It answers "is the screen mode 5 or
+higher?" in the carry flag: it compares SCRMOD with 5, exactly as `CP 5` would with SCRMOD in A, and
+leaves A and every other register as they were. Carry set = SCREEN 0-4, carry clear = SCREEN 5 and up.
+It reads SCRMOD only, not the VDP or its register save cells.
 
 ## The specification
 
 **Interface.** None published (absent from App. 1's MSX2 entries) [A].
-- It answers in a flag whether the current screen mode is a bitmap mode (SCREEN 5-8) [A]; the
-  flag (carry or zero), its sense, and which modes count are [A].
-- It reads SCRMOD ($FCAF) [A], rather than the VDP's mode bits or their save cells.
-- Registers other than AF kept; interrupt state unchanged [A].
+
+**Measured** [M] (case numbers are the decoder's; entry A $A7, F $00 and $FF, every other register loaded with
+distinct values; identical on all three references):
+- **F = the flags of SCRMOD - 5** (the flags `CP 5` leaves, undocumented bits 5 and 3 included): SCREEN 0 (width 40
+  and 80), 1, 2, 3, 4 give F $93 -- **carry set**, Z clear, S set; SCREEN 5 gives $42 -- carry clear, **Z set**; SCREEN
+  6, 7, 8 give $02 -- carry and Z clear [M 0-18]. Out-of-range SCRMOD values follow the same subtraction: 9, 10, 11, 12
+  give $02, $10 gives $12, $80 gives $16 (P/V set: the signed overflow of $80 - 5) [M 23-28, 32].
+- **The entry F is not used:** F $00 and $FF give the same result in every mode [M 0-17].
+- **A is kept** ($A7 in every case), and so are BC, DE, HL, IX, IY and the alternate set [M 0-32].
+- **It reads SCRMOD ($FCAF), nothing else:** the VDP in SCREEN 1 with SCRMOD 5 answers $42 (case 19), the VDP in
+  SCREEN 5 with SCRMOD 1 answers $93 (case 20), SCRMOD 4 over a SCREEN 1 VDP answers $93 (case 31); RG0SAV / RG1SAV
+  set to the other mode's values change nothing (cases 21, 22) [M 19-22, 31].
+- SCRMOD is not written [M 0-32]. The interrupt state is kept: off stays off, on stays on (cases 29, 30) [M 0-32].
 
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) give the same F in every case, but **return A = SCRMOD** where the
+references keep A [M 0-32]. A caller that relies on A surviving the call gets a different A on C-BIOS.
 
 ## Open (not measured)
 
-Records: A, F (C, Z, S, P/V separately), every other register, the interrupt state (twice),
-the work area $F380-$FFFF diff, the VDP registers. Entry A and F loaded separately ($A7 / $00; F
-$00 / $FF), so "kept", "constant" and "computed" differ.
-
-| case | inputs | state | separates | F900 | 8250 | WSX |
-|---|---|---|---|---|---|---|
-| CN-1..9 | — | SCRMOD 0, 1, 2, 3, 4, 5, 6, 7, 8 (each set up with its real VDP mode) | which modes count: 4+ vs 5+; which flag and its sense | ? | ? | ? |
-| CN-10 | — | SCRMOD 0 with LINLEN / LINL40 80 (TEXT2) vs 40 | width 80 counted as new or not | ? | ? | ? |
-| CN-11 | — | SCRMOD 5 written, VDP and RG0SAV / RG1SAV left in SCREEN 1's mode | SCRMOD vs the register save cells vs the VDP | ? | ? | ? |
-| CN-12 | — | SCRMOD 1, VDP and RG0SAV / RG1SAV in SCREEN 5's mode bits | the same, the other way round | ? | ? | ? |
-| CN-13 | — | RG0SAV / RG1SAV in SCREEN 5's bits, the VDP's own R#0 / R#1 in SCREEN 1's | save cells vs the VDP (if CN-11/12 show the registers decide) | ? | ? | ? |
-| CN-14 | — | SCRMOD 9, $10, $FF | an out-of-range SCRMOD: a compare (>= 5) vs a table | ? | ? | ? |
-| CN-15 | — | SCRMOD 10, 11, 12 (the MSX2+ modes, set up for real on the WSX; on the MSX2s the SCRMOD value alone, VDP left in SCREEN 1) | MSX2+ modes counted as new; on an MSX2, the bare value's answer (the CN-14 question) | ? | ? | ? |
-| CN-16 | — | S-REGS, interrupts on / off | A kept or set; other registers; the interrupt state | ? | ? | ? |
-| CN-17 | — | — | stack depth and time ([README](README.md#the-shared-vram-address-matrix) methods) | ? | ? | ? |
+- SCRMOD 10-12 set up for real on the FS-A1WSX (SCREEN 10-12 with the V9958's YJK bits): only the bare SCRMOD values
+  were measured, over a SCREEN 1 VDP (cases 26-28, $02); that a real SCREEN 10-12 answers the same [A].
+- Stack depth and time.
 
 ## Related pages
 
