@@ -255,6 +255,23 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-11-23 — turbor (D-TRSPEC, PCMPLY), INCIDENT (self-caught) — reference ROM bytes seen in a probe's port log — CONTAINED, nothing committed
+
+An isolated agent measuring the turbo R `PCMPLY` ($0186) on the FS-A1GT / FS-A1ST pointed the call at a source in
+PAGE 1 (the probe cartridge's `$6000`, a span across `$7FFF` / `$8000`, and a length-0 case at `$4000`), expecting
+its own cartridge bytes. During the call page 1 is switched away from the caller's slot -- almost certainly to a
+ROM -- so the `OUT $A4` log carried ~30 bytes of what is most likely reference ROM, which the agent saw in tool output
+before it recognised them; the length-0 case was re-run once by a script error. The agent deleted both run files and
+the decoded file at once.
+
+- **Containment:** no run file, decoded file or page committed with those bytes (checked against the branch before
+  landing: the committed `probes/bios/spec/xpcmply.asm` has no page-0 / page-1 source -- its `$4000` uses are VRAM
+  addresses, `$7FE0` its own table read by its own code). The page and the probe header keep only the conclusion
+  "page 1 is not the caller's slot during the call". No ROM, doc rule or later measurement rests on the bytes.
+- **Class:** a black-box call that plays / copies "from an address" reads whatever is mapped THERE DURING THE CALL,
+  which need not be what the caller sees. A source in a page the call may remap is a ROM-read by proxy.
+- **Rule for later probes:** sources for PCMPLY / BLT-style calls only in page 2 / 3 RAM or VRAM, never page 0 / 1.
+
 ### 2026-08-06 — whole-repo, MECHANICAL (check 5 built + its first catch) — ⚠→✅ one unremediated site of the 2026-07-07 class found and remediated; the 2026-07-07 "fully remediated" verdict was INCOMPLETE (at `da93f0c`, fix rides this commit)
 
 Not a paper trail — a **mechanical** pass, logged here because it corrects a

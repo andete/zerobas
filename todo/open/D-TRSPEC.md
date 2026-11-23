@@ -12,3 +12,9 @@
       else ignored without trace; S1990 R#6 is the truth GETCPU reads, not $FCB1; CHGCPU returns with interrupts ON
       even entered DI; both models agree except boot timing. PCMPLY / PCMREC DRAFT 0. NEXT: PCMPLY / PCMREC (and the
       DRAM-mode memory side), then the MSX1 / MSX2 / MSX2+ calls re-measured on turbo R, then a goldfish pass.
+      2026-11-23 (tr2): PCMPLY / PCMREC DRAFT 1 (xpcm*.asm: one OUT $A4 per sample, rates 63.6 / 127.4 / 191.1 / 254.8
+      us; an undocumented `$00 n` run code; VRAM source E:HL, length D:BC; from the Z80 it switches to R800 ROM and
+      back; PCMREC's successive approximation, rate 0 refused outside DRAM mode; compression / threshold without a key
+      never return); R800 DRAM mode: the top 64 KB of the mapper refuse writes ONLY in DRAM mode (A1GT 512 KB, A1ST
+      256 KB). A clean-room INCIDENT (page-1 source) was self-caught and contained: docs/clean-room-audit.md.
+      Open: PCMREC with a real input needs a harness directive to feed openMSX's wavinput a file.
