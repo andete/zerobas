@@ -121,7 +121,7 @@ entry (4).
 
 | case | inputs | state | what it separates | HB-F900 | NMS 8250 | FS-A1WSX |
 |---|---|---|---|---|---|---|
-| IE | — | SCREEN 1 / width 37 / width 80, DI and EI | interrupt state on return | kept (S1, 40 col), on (80 col) | same | same |
+| IE | — | SCREEN 1 / width 37 / width 80, DI and EI; entered in TEXT 2 | interrupt state on return | kept (S1, 40 col, TEXT 2 → TEXT 2), on (switched into 80 col) | same | same |
 | SD-EX | — | all three machines, SCREEN 0 | an entry at all | yes | yes | yes |
 | SD-BLK2 | — | block 2: mode 1, width 30, colours 6 / 7 / 8, key off, adjust (+3, −2), interlace 1 | which settings it applies | mode, width, colours, IL, click; not adjust | same | same |
 | SD-CY | A $00 / $FF, F $00 / $01 / $40 | width 80, key on | a flag selects the key line / a mode change | ignored | ignored | ignored |
