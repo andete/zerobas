@@ -242,6 +242,14 @@ def main() -> int:
         print(cfg)
         return 0
 
+    # A LINKED WORKTREE (a gate's ../zerobas-gate, an agent's ../zerobas-iso-NAME) must install into its OWN share
+    # ($OPENMSX_USER_DATA, set by tools/gate_wt.py and tools/agent_wt.py). Without it this would rewrite the user's
+    # ~/.openMSX machine to point at the worktree's build/ -- which happened 2026-11-23 (an agent ran
+    # `make repack-machine` in its instance outside agent_wt). Refuse instead.
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not os.environ.get("OPENMSX_USER_DATA") and os.path.isfile(os.path.join(here, ".git")):
+        sys.exit(f"install-repack-machine: {here} is a linked worktree and OPENMSX_USER_DATA is not set -- run it "
+                 "through tools/agent_wt.py NAME -- make repack-machine (or gate_wt), never into ~/.openMSX")
     mdir = os.path.join(openmsx_paths.find_user_share(), "machines")
     os.makedirs(mdir, exist_ok=True)
     name = MACHINE_NODISK if args.no_disk else MACHINE
