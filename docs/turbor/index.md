@@ -23,17 +23,20 @@ been read for these pages: every interface line below is MAP's, to be corroborat
 |---|---|---|---|---|---|---|
 | $0180 | CHGCPU | main | turbo R | MAP only | [main/CHGCPU.md](main/CHGCPU.md) | DRAFT 1 |
 | $0183 | GETCPU | main | turbo R | MAP only | [main/GETCPU.md](main/GETCPU.md) | DRAFT 1 |
-| $0186 | PCMPLY | main | turbo R | MAP only | [main/PCMPLY.md](main/PCMPLY.md) | DRAFT 0 |
-| $0189 | PCMREC | main | turbo R | MAP only | [main/PCMREC.md](main/PCMREC.md) | DRAFT 0 |
+| $0186 | PCMPLY | main | turbo R | MAP only | [main/PCMPLY.md](main/PCMPLY.md) | DRAFT 1 |
+| $0189 | PCMREC | main | turbo R | MAP only | [main/PCMREC.md](main/PCMREC.md) | DRAFT 1 |
 
 Nothing else, per the public sources read on 2026-11-23:
 - **Sub-ROM:** MAP's sub-ROM list says no new sub-ROM calls came with the MSX2+ or the turbo R.
 - **Work area:** MAP's system-variable list names one turbo R RAM cell, **$FFFD** (2 bytes), "temporary stack pointer
-  for CHGCPU" — measured on [CHGCPU](main/CHGCPU.md). It lists two main-ROM bytes with turbo R values ($002D, the MSX
+  for CHGCPU" — measured on [CHGCPU](main/CHGCPU.md) (the caller's SP − $18; PCMPLY's internal switch from the
+  Z80 leaves $E7D8, on [PCMPLY](main/PCMPLY.md)). It lists two main-ROM bytes with turbo R values ($002D, the MSX
   version, 3 = turbo R; $002E bit 0, internal MSX-MIDI): ROM bytes, which the clean room does not read, so they are
   listed here and not measured.
 - **Found by measurement, not listed by MAP:** $FCB1 holds the byte CHGCPU last wrote to port $A7 (the LED bits);
-  see [CHGCPU](main/CHGCPU.md). MAP's list has no entry for $FCB1.
+  see [CHGCPU](main/CHGCPU.md). MAP's list has no entry for $FCB1. Not RAM but CPU-private state: each CPU keeps its
+  own registers, and the R800 resumed by a direct R#6 write reads its own I = $02 ([GETCPU](main/GETCPU.md));
+  CHGCPU carries I across.
 
 ## The calls of earlier generations — pending
 
