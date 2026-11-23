@@ -131,10 +131,19 @@ before "Open"), [M], citing the AE_trall run file and, for the MSX1 pages, the r
 [SYSTEM](../bdos/SYSTEM.md), [RDRES](../msx2/main/RDRES.md), [WRRES](../msx2/main/WRRES.md),
 [CHKSLZ](../msx2/main/CHKSLZ.md), [NEWPAD](../msx2/sub/NEWPAD.md).
 
+Done 2026-11-23 (tr5), from the run files and the triage files above, nothing re-run: **every other verdict is now on
+its call's page** — one "On the turbo R" line, [M], citing the AE_trall files (MSX1 / disk / BDOS pages: a paragraph
+at the end of "On later generations"; MSX2 / MSX2+ pages: an "On the turbo R" section before "Open"), with the
+verdict's caveat where one applies (the machine's cells, timing, the clock's time of day, power-on RAM). 171 pages:
+96 under docs/bios, docs/bdos and docs/disk, 75 under docs/msx2. That includes the pages served by xinp1 (BREAKX,
+CHGCAP, CKCNTC, GTSTCK, GTTRIG, ISCNTC, KILBUF, SNSMAT) and xsnd1 (CHGSND, GETVC2, GETVCP, GICINI, LFTQ, PUTQ, RDPSG,
+STRTMS, WRTPSG): those probes are NEW-TR for GTPAD / GTPDL and for BEEP's C only, and the other calls they serve read as
+on the A1WSX apart from the machine's R14 bit 7 and the key-row timing. Not given a line: the overview pages
+([bios/shared-state.md](../bios/shared-state.md): b2vdp, b3int, b5sound, b6slots; [msx2/main/README.md](../msx2/main/README.md):
+xva; the docs/msx2/concepts pages); b4input and b8save, which no page cites; INITXT (b1text, xinit3), SYSTEM and
+NEWPAD (xsubpadg), whose pages already carry a turbo R section; xva13 (APPARATUS).
+
 Still to do:
-- **MSX1 pages with an "On later generations (MSX2, MSX2+)" section** whose probes are SAME / AS-MSX2+: a turbo R
-  column stating the MSX2+ column holds on both models (cite the AE_trall file). That is every page served by the
-  SAME / AS-MSX2+ rows of the table below.
 - **SYSTEM (DSKRST):** the A1GT-only interrupt state, once explained.
 - **xf4reset:** a probe that logs to VRAM, to say what the turbo R does after JP $0000.
 - **Machine facts** for the pages that print them (CONFIG rows): PSG R14 bit 7 = 0, slot 0 expanded with secondary
