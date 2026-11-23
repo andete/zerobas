@@ -1,0 +1,116 @@
+===== probes/bios/spec/xf4reset.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  NO READING: DONE never set on ours (ref 165, ours 0)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=5f00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 03ff8700ff8700ff87005a00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00
+  CAP ours: 0027031701000011013303550577077406630573057205720672077004700200
+  DIFF (30 unexcused byte(s)):
+  CAP C001: ref=03 ours=00
+  CAP C002: ref=FF ours=27
+  CAP C003: ref=87 ours=03
+  CAP C004: ref=00 ours=17
+  CAP C005: ref=FF ours=01
+  CAP C006: ref=87 ours=00
+  CAP C008: ref=FF ours=11
+  CAP C009: ref=87 ours=01
+  CAP C00A: ref=00 ours=33
+  CAP C00B: ref=5A ours=03
+  CAP C00C: ref=00 ours=55
+  CAP C00D: ref=FF ours=05
+  CAP C00E: ref=00 ours=77
+  CAP C00F: ref=FF ours=07
+  CAP C010: ref=00 ours=74
+  CAP C011: ref=FF ours=06
+  CAP C012: ref=00 ours=63
+  CAP C013: ref=FF ours=05
+  CAP C014: ref=00 ours=73
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=00 ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=00 ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=00 ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=00 ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=00 ours=70
+  CAP C01F: ref=FF ours=02
+===== probes/bios/spec/xf4reset.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  NO READING: DONE never set on ours (ref 165, ours 0)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8b00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=aa00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 03ff8a00ff8b00ff8b005affffffffffffffffffffffffffffffffffffffffff
+  CAP ours: 0027031701000011013303550577077406630573057205720672077004700200
+  DIFF (31 unexcused byte(s)):
+  CAP C001: ref=03 ours=00
+  CAP C002: ref=FF ours=27
+  CAP C003: ref=8A ours=03
+  CAP C004: ref=00 ours=17
+  CAP C005: ref=FF ours=01
+  CAP C006: ref=8B ours=00
+  CAP C008: ref=FF ours=11
+  CAP C009: ref=8B ours=01
+  CAP C00A: ref=00 ours=33
+  CAP C00B: ref=5A ours=03
+  CAP C00C: ref=FF ours=55
+  CAP C00D: ref=FF ours=05
+  CAP C00E: ref=FF ours=77
+  CAP C00F: ref=FF ours=07
+  CAP C010: ref=FF ours=74
+  CAP C011: ref=FF ours=06
+  CAP C012: ref=FF ours=63
+  CAP C013: ref=FF ours=05
+  CAP C014: ref=FF ours=73
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=FF ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=FF ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=FF ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=FF ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=FF ours=70
+  CAP C01F: ref=FF ours=02
+  CAP C020: ref=FF ours=00
+===== probes/bios/spec/xf4reset.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  NO READING: DONE never set on ours (ref 165, ours 240)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3900 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=3100 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 037f37007f34007f39005a00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00
+  CAP ours: 0027031701000011013303550577077406630573057205720672077004700200
+  DIFF (30 unexcused byte(s)):
+  CAP C001: ref=03 ours=00
+  CAP C002: ref=7F ours=27
+  CAP C003: ref=37 ours=03
+  CAP C004: ref=00 ours=17
+  CAP C005: ref=7F ours=01
+  CAP C006: ref=34 ours=00
+  CAP C008: ref=7F ours=11
+  CAP C009: ref=39 ours=01
+  CAP C00A: ref=00 ours=33
+  CAP C00B: ref=5A ours=03
+  CAP C00C: ref=00 ours=55
+  CAP C00D: ref=FF ours=05
+  CAP C00E: ref=00 ours=77
+  CAP C00F: ref=FF ours=07
+  CAP C010: ref=00 ours=74
+  CAP C011: ref=FF ours=06
+  CAP C012: ref=00 ours=63
+  CAP C013: ref=FF ours=05
+  CAP C014: ref=00 ours=73
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=00 ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=00 ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=00 ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=00 ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=00 ours=70
+  CAP C01F: ref=FF ours=02
+===== biosl: NO READING =====

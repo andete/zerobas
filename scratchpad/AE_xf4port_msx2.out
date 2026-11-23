@@ -1,0 +1,128 @@
+===== probes/bios/spec/xf4port.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : ff00ffffffa5ff5aff80ff7fff01fffeff00ff5aff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff
+  CAP ours: ff00ffffffa5ff5aff80ff7fff01fffeff00ff5a057205720672077004700200000433333333333340
+  DIFF (31 unexcused byte(s)):
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=00 ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=00 ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=00 ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=00 ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=00 ours=70
+  CAP C01F: ref=FF ours=02
+  CAP C021: ref=FF ours=00
+  CAP C022: ref=00 ours=04
+  CAP C023: ref=FF ours=33
+  CAP C024: ref=00 ours=33
+  CAP C025: ref=FF ours=33
+  CAP C026: ref=00 ours=33
+  CAP C027: ref=FF ours=33
+  CAP C028: ref=00 ours=33
+  CAP C029: ref=FF ours=40
+  CAP C02B: ref=FF ours=00
+  CAP C02D: ref=FF ours=00
+  CAP C02F: ref=FF ours=00
+  CAP C031: ref=FF ours=00
+  CAP C033: ref=FF ours=00
+  CAP C035: ref=FF ours=00
+  CAP C037: ref=FF ours=00
+  CAP C039: ref=FF ours=00
+  CAP C03B: ref=FF ours=00
+  CAP C03D: ref=FF ours=00
+  CAP C03F: ref=FF ours=00
+===== probes/bios/spec/xf4port.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : ff00ffffffa5ff5aff80ff7fff01fffeff00ff5affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  CAP ours: ff00ffffffa5ff5aff80ff7fff01fffeff00ff5a057205720672077004700200000433333333333340
+  DIFF (44 unexcused byte(s)):
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=FF ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=FF ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=FF ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=FF ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=FF ours=70
+  CAP C01F: ref=FF ours=02
+  CAP C020: ref=FF ours=00
+  CAP C021: ref=FF ours=00
+  CAP C022: ref=FF ours=04
+  CAP C023: ref=FF ours=33
+  CAP C024: ref=FF ours=33
+  CAP C025: ref=FF ours=33
+  CAP C026: ref=FF ours=33
+  CAP C027: ref=FF ours=33
+  CAP C028: ref=FF ours=33
+  CAP C029: ref=FF ours=40
+  CAP C02A: ref=FF ours=00
+  CAP C02B: ref=FF ours=00
+  CAP C02C: ref=FF ours=00
+  CAP C02D: ref=FF ours=00
+  CAP C02E: ref=FF ours=00
+  CAP C02F: ref=FF ours=00
+  CAP C030: ref=FF ours=00
+  CAP C031: ref=FF ours=00
+  CAP C032: ref=FF ours=00
+  CAP C033: ref=FF ours=00
+  CAP C034: ref=FF ours=00
+  CAP C035: ref=FF ours=00
+  CAP C036: ref=FF ours=00
+  CAP C037: ref=FF ours=00
+  CAP C038: ref=FF ours=00
+  CAP C039: ref=FF ours=00
+  CAP C03A: ref=FF ours=00
+  CAP C03B: ref=FF ours=00
+  CAP C03C: ref=FF ours=00
+  CAP C03D: ref=FF ours=00
+  CAP C03E: ref=FF ours=00
+  CAP C03F: ref=FF ours=00
+  CAP C040: ref=FF ours=00
+===== probes/bios/spec/xf4port.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 7f007fffffa5ff5a7f80ff7f7f017ffeff007f5aff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff
+  CAP ours: 7f007fffffa5ff5a7f80ff7f7f017ffeff007f5a057205720672077004700200000433333333333340
+  DIFF (31 unexcused byte(s)):
+  CAP C015: ref=FF ours=05
+  CAP C016: ref=00 ours=72
+  CAP C017: ref=FF ours=05
+  CAP C018: ref=00 ours=72
+  CAP C019: ref=FF ours=06
+  CAP C01A: ref=00 ours=72
+  CAP C01B: ref=FF ours=07
+  CAP C01C: ref=00 ours=70
+  CAP C01D: ref=FF ours=04
+  CAP C01E: ref=00 ours=70
+  CAP C01F: ref=FF ours=02
+  CAP C021: ref=FF ours=00
+  CAP C022: ref=00 ours=04
+  CAP C023: ref=FF ours=33
+  CAP C024: ref=00 ours=33
+  CAP C025: ref=FF ours=33
+  CAP C026: ref=00 ours=33
+  CAP C027: ref=FF ours=33
+  CAP C028: ref=00 ours=33
+  CAP C029: ref=FF ours=40
+  CAP C02B: ref=FF ours=00
+  CAP C02D: ref=FF ours=00
+  CAP C02F: ref=FF ours=00
+  CAP C031: ref=FF ours=00
+  CAP C033: ref=FF ours=00
+  CAP C035: ref=FF ours=00
+  CAP C037: ref=FF ours=00
+  CAP C039: ref=FF ours=00
+  CAP C03B: ref=FF ours=00
+  CAP C03D: ref=FF ours=00
+  CAP C03F: ref=FF ours=00
+===== biosl: DIVERGENCE =====
