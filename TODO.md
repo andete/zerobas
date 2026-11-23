@@ -16773,7 +16773,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       parser keeps volume 0..15 at 18, $80 | shape at 19 and M at 13 (sub/playparse.asm VCX_*). Only PEEK sees it;
       since the rebase C-BIOS's GICINI writes the reference's defaults, which the parser detects ($FF at 19) and
       re-seeds. Move the parser to the reference layout when sub page 1 has the room.
-- [ ] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
+- [x] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
       🎚️ TIER 1 — the base every C-BIOS-side fix builds on (filed 2026-11-22, Joost: "cbios 0.32 was released and it
       shipped with tape, so our tape patch is obsolete"; "have a look at each of c-bios 0.32's fixes to see if we can
       learn something from it (e.g. space fixes)").
@@ -16840,6 +16840,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-GICINIVCB, D-GTPDLPORT, D-INITIOVCB, D-LPTOUTF, D-KEYGRAPH, D-EDITSTOPHELD); SETTXT / SETT32 / SETGRP /
       SETMLT's leftover registers listed (D-SETREGSCBIOS). LEFT: the disk ROM without zerobas BASIC; the test
       cleanup (D-TESTAUDIT); stale prose naming retired patches in older docs.
+      ✅ **CLOSED 2026-11-23.** All three of Joost's steps are done: the rebase (cac1876a3, on C-BIOS fff98e8 with six
+      small patches), the disk ROM working without zerobas BASIC (D-DISKNOBASIC, 8b5b1e6cd: init-slot-a.patch), and
+      the test cleanup (D-TESTAUDIT, closed for the BIOS suites: biosregs kept). The offers to C-BIOS (grphed-keyline,
+      regs-leftovers, init-slot-a) are in the inbox; each retires its patch when C-BIOS takes it. Older docs that name
+      the retired v0.31 patches keep them as history.
 - [x] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
       🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
       🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
