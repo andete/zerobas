@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""Decode scratchpad/AE_xsubkyk{,2,3}_msx2.out (probes/bios/spec/xsubkyk{,2,3}.asm, sub-ROM
+"""Decode scratchpad/AE_xsubkyk{,2,3,4}_msx2.out (probes/bios/spec/xsubkyk{,2,3,4}.asm, sub-ROM
 KYKLOK $0135), per machine and case.
 The inputs are read from the probe's own `cases:` table.
 
     python3 scratchpad/xsubkyk_decode.py scratchpad/AE_xsubkyk_msx2.out
+    (round 4, xsubkyk4.asm: BC / DE / HL from the table's columns 9-14)
 """
 import re
 import sys
@@ -39,7 +40,9 @@ def decode(name, cap, cases):
         extra = ""
         if len(cases[k]) > 7:
             extra = f" R15-preset={cases[k][7]:02X} MODE-xor={cases[k][8]:02X} (MODE as booted {r[26]:02X}, after the call {r[27]:02X})"
-        print(f" case {k} in: A={a:02X} F={f:02X} BC=B1C1 DE=D1E1 HL=4171 KANAST={kanast:02X} CAPST={capst:02X}"
+        regs = cases[k][9:15] if len(cases[k]) > 9 else [0xC1, 0xB1, 0xE1, 0xD1, 0x71, 0x41]
+        bc, de, hl = (regs[i] | regs[i + 1] << 8 for i in (0, 2, 4))
+        print(f" case {k} in: A={a:02X} F={f:02X} BC={bc:04X} DE={de:04X} HL={hl:04X} KANAST={kanast:02X} CAPST={capst:02X}"
               f" NEWKEY6={nk6:02X} OLDKEY6={ok6:02X} matrix6-pressed={mx6:02X}" + extra)
         print(f"   out: A={r[1]:02X} F={r[2]:02X} BC={r[3]:02X}{r[4]:02X} DE={r[5]:02X}{r[6]:02X} HL={r[7]:02X}{r[8]:02X}"
               f" IX={r[9]:02X}{r[10]:02X} IY={r[11]:02X}{r[12]:02X} IFF={r[13]} SP {r[22] | r[23] << 8:04X}->"
