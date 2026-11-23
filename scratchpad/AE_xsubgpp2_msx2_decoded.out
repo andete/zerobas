@@ -1,0 +1,411 @@
+# msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU ref
+  0 'A' S8 at (250,10): A=41 F=28 IFF=1 GRPACX=0 GRPACY=18 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r 10 ++++++++++335333
+     r 11 ++++++++++333535
+     r 12 ++++++++++333353
+     r 13 ++++++++++335333
+     r 14 ++++++++++533353
+     r 15 ++++++++++335555
+     r 16 ++++++++++533353
+     r 17 ++++++++++335333
+    window X0-15:
+  1 'A' S8 at (250,207): A=41 F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r207 ++++++++++335333
+     r208 ++++++++++333535
+     r209 ++++++++++333353
+     r210 ++++++++++335333
+     r211 ++++++++++533353
+    window X0-15:
+  2 CR S8 at (10,207): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  3 CR S8 at (10,203): A=0D F=28 IFF=1 GRPACX=0 GRPACY=211 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  4 CR S8 at (10,204): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  5 'A' S8 at (2,204): A=41 F=28 IFF=1 GRPACX=10 GRPACY=204 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X0-15:
+     r204 ++33533333++++++
+     r205 ++35353333++++++
+     r206 ++53335333++++++
+     r207 ++53335333++++++
+     r208 ++55555333++++++
+     r209 ++53335333++++++
+     r210 ++53335333++++++
+     r211 ++33333333++++++
+    window X0-15:
+  6 'A' S2 at (10,10): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window pattern $0100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+    window colour $2100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+  7 'A' S5 at (11,10): A=41 F=28 IFF=1 GRPACX=19 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-39:
+     r 10 .+.33533333+.+.+.+.+.+.+.+.+.+.+
+     r 11 .+.35353333+.+.+.+.+.+.+.+.+.+.+
+     r 12 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 13 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 14 .+.55555333+.+.+.+.+.+.+.+.+.+.+
+     r 15 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 16 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 17 .+.33333333+.+.+.+.+.+.+.+.+.+.+
+    window X40-71:
+  8 'A' S8 XOR (FORCLR 5 BAKCLR 3): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++CCACCCCC++++++
+     r 11 ++CACACCCC++++++
+     r 12 ++ACCCACCC++++++
+     r 13 ++ACCCACCC++++++
+     r 14 ++AAAAACCC++++++
+     r 15 ++ACCCACCC++++++
+     r 16 ++ACCCACCC++++++
+     r 17 ++CCCCCCCC++++++
+    window X24-39:
+  9 'A' S8 TIMP BAKCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=00 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++++5+++++++++++
+     r 11 +++5+5++++++++++
+     r 12 ++5+++5+++++++++
+     r 13 ++5+++5+++++++++
+     r 14 ++55555+++++++++
+     r 15 ++5+++5+++++++++
+     r 16 ++5+++5+++++++++
+    window X24-39:
+  10 'A' S8 PSET: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33533333++++++
+     r 11 ++35353333++++++
+     r 12 ++53335333++++++
+     r 13 ++53335333++++++
+     r 14 ++55555333++++++
+     r 15 ++53335333++++++
+     r 16 ++53335333++++++
+     r 17 ++33333333++++++
+    window X24-39:
+  11 'A' S8 TIMP FORCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=00 FORCLR=00 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33+33333++++++
+     r 11 ++3+3+3333++++++
+     r 12 +++333+333++++++
+     r 13 +++333+333++++++
+     r 14 +++++++333++++++
+     r 15 +++333+333++++++
+     r 16 +++333+333++++++
+     r 17 ++33333333++++++
+    window X24-39:
+# msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP ref
+  0 'A' S8 at (250,10): A=41 F=28 IFF=1 GRPACX=0 GRPACY=18 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r 10 ++++++++++335333
+     r 11 ++++++++++333535
+     r 12 ++++++++++333353
+     r 13 ++++++++++335333
+     r 14 ++++++++++533353
+     r 15 ++++++++++335555
+     r 16 ++++++++++533353
+     r 17 ++++++++++335333
+    window X0-15:
+  1 'A' S8 at (250,207): A=41 F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r207 ++++++++++335333
+     r208 ++++++++++333535
+     r209 ++++++++++333353
+     r210 ++++++++++335333
+     r211 ++++++++++533353
+    window X0-15:
+  2 CR S8 at (10,207): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  3 CR S8 at (10,203): A=0D F=28 IFF=1 GRPACX=0 GRPACY=211 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  4 CR S8 at (10,204): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  5 'A' S8 at (2,204): A=41 F=28 IFF=1 GRPACX=10 GRPACY=204 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X0-15:
+     r204 ++33533333++++++
+     r205 ++35353333++++++
+     r206 ++53335333++++++
+     r207 ++53335333++++++
+     r208 ++55555333++++++
+     r209 ++53335333++++++
+     r210 ++53335333++++++
+     r211 ++33333333++++++
+    window X0-15:
+  6 'A' S2 at (10,10): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window pattern $0100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+    window colour $2100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+  7 'A' S5 at (11,10): A=41 F=28 IFF=1 GRPACX=19 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-39:
+     r 10 .+.33533333+.+.+.+.+.+.+.+.+.+.+
+     r 11 .+.35353333+.+.+.+.+.+.+.+.+.+.+
+     r 12 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 13 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 14 .+.55555333+.+.+.+.+.+.+.+.+.+.+
+     r 15 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 16 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 17 .+.33333333+.+.+.+.+.+.+.+.+.+.+
+    window X40-71:
+  8 'A' S8 XOR (FORCLR 5 BAKCLR 3): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++CCACCCCC++++++
+     r 11 ++CACACCCC++++++
+     r 12 ++ACCCACCC++++++
+     r 13 ++ACCCACCC++++++
+     r 14 ++AAAAACCC++++++
+     r 15 ++ACCCACCC++++++
+     r 16 ++ACCCACCC++++++
+     r 17 ++CCCCCCCC++++++
+    window X24-39:
+  9 'A' S8 TIMP BAKCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=00 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++++5+++++++++++
+     r 11 +++5+5++++++++++
+     r 12 ++5+++5+++++++++
+     r 13 ++5+++5+++++++++
+     r 14 ++55555+++++++++
+     r 15 ++5+++5+++++++++
+     r 16 ++5+++5+++++++++
+    window X24-39:
+  10 'A' S8 PSET: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33533333++++++
+     r 11 ++35353333++++++
+     r 12 ++53335333++++++
+     r 13 ++53335333++++++
+     r 14 ++55555333++++++
+     r 15 ++53335333++++++
+     r 16 ++53335333++++++
+     r 17 ++33333333++++++
+    window X24-39:
+  11 'A' S8 TIMP FORCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=00 FORCLR=00 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33+33333++++++
+     r 11 ++3+3+3333++++++
+     r 12 +++333+333++++++
+     r 13 +++333+333++++++
+     r 14 +++++++333++++++
+     r 15 +++333+333++++++
+     r 16 +++333+333++++++
+     r 17 ++33333333++++++
+    window X24-39:
+# msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP ref
+  0 'A' S8 at (250,10): A=41 F=28 IFF=1 GRPACX=0 GRPACY=18 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r 10 ++++++++++335333
+     r 11 ++++++++++333535
+     r 12 ++++++++++333353
+     r 13 ++++++++++335333
+     r 14 ++++++++++533353
+     r 15 ++++++++++335555
+     r 16 ++++++++++533353
+     r 17 ++++++++++335333
+    window X0-15:
+  1 'A' S8 at (250,207): A=41 F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X240-255:
+     r207 ++++++++++335333
+     r208 ++++++++++333535
+     r209 ++++++++++333353
+     r210 ++++++++++335333
+     r211 ++++++++++533353
+    window X0-15:
+  2 CR S8 at (10,207): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  3 CR S8 at (10,203): A=0D F=28 IFF=1 GRPACX=0 GRPACY=211 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  4 CR S8 at (10,204): A=0D F=28 IFF=1 GRPACX=0 GRPACY=0 ATRBYT=0A FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=0089 IY=9786
+    window X0-15:
+    window X0-15:
+  5 'A' S8 at (2,204): A=41 F=28 IFF=1 GRPACX=10 GRPACY=204 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X0-15:
+     r204 ++33533333++++++
+     r205 ++35353333++++++
+     r206 ++53335333++++++
+     r207 ++53335333++++++
+     r208 ++55555333++++++
+     r209 ++53335333++++++
+     r210 ++53335333++++++
+     r211 ++33333333++++++
+    window X0-15:
+  6 'A' S2 at (10,10): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window pattern $0100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+    window colour $2100+16r:
+     r  0 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  1 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  2 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  3 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  4 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  5 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  6 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  7 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  8 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r  9 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 10 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 11 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 12 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 13 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 14 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 15 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 16 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 17 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 18 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+     r 19 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F
+  7 'A' S5 at (11,10): A=41 F=28 IFF=1 GRPACX=19 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-39:
+     r 10 .+.33533333+.+.+.+.+.+.+.+.+.+.+
+     r 11 .+.35353333+.+.+.+.+.+.+.+.+.+.+
+     r 12 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 13 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 14 .+.55555333+.+.+.+.+.+.+.+.+.+.+
+     r 15 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 16 .+.53335333+.+.+.+.+.+.+.+.+.+.+
+     r 17 .+.33333333+.+.+.+.+.+.+.+.+.+.+
+    window X40-71:
+  8 'A' S8 XOR (FORCLR 5 BAKCLR 3): A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++CCACCCCC++++++
+     r 11 ++CACACCCC++++++
+     r 12 ++ACCCACCC++++++
+     r 13 ++ACCCACCC++++++
+     r 14 ++AAAAACCC++++++
+     r 15 ++ACCCACCC++++++
+     r 16 ++ACCCACCC++++++
+     r 17 ++CCCCCCCC++++++
+    window X24-39:
+  9 'A' S8 TIMP BAKCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=00 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++++5+++++++++++
+     r 11 +++5+5++++++++++
+     r 12 ++5+++5+++++++++
+     r 13 ++5+++5+++++++++
+     r 14 ++55555+++++++++
+     r 15 ++5+++5+++++++++
+     r 16 ++5+++5+++++++++
+    window X24-39:
+  10 'A' S8 PSET: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=05 FORCLR=05 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33533333++++++
+     r 11 ++35353333++++++
+     r 12 ++53335333++++++
+     r 13 ++53335333++++++
+     r 14 ++55555333++++++
+     r 15 ++53335333++++++
+     r 16 ++53335333++++++
+     r 17 ++33333333++++++
+    window X24-39:
+  11 'A' S8 TIMP FORCLR 0: A=41 F=28 IFF=1 GRPACX=18 GRPACY=10 ATRBYT=00 FORCLR=00 BAKCLR=03 BC=B1C2 DE=D3E4 HL=A5F6 IX=000C IY=9786
+    window X8-23:
+     r 10 ++33+33333++++++
+     r 11 ++3+3+3333++++++
+     r 12 +++333+333++++++
+     r 13 +++333+333++++++
+     r 14 +++++++333++++++
+     r 15 +++333+333++++++
+     r 16 +++333+333++++++
+     r 17 ++33333333++++++
+    window X24-39:
