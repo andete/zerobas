@@ -17344,7 +17344,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-DISKVE in bdos-acceptance's BDOSXE allowlist (RDABS 1440's C, ours 8). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
-- [ ] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
+- [x] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
       TIER SHEET (asked by Joost 2026-11-08)**
       🎚️ TIER 1 — ⬆️ RE-TAGGED THE SAME DAY: Joost, *"having the bios and such stable and on par is
       of higher priority then having basic stable"* -- the entry-point surface outranks BASIC
@@ -17473,12 +17473,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       left it ($44 / $42, the entry state, [`wslreg_run3.out`](scratchpad/wslreg_run3.out)) -- now loaded as $A5; and a
       `P\64` that stopped the CF-3300 run with Tcl's "missing close-brace" (two runs). The table:
       **105 of 108 witnessed, 2 ruled, 1 NOT MEASURED (INITIO)**. ➡️ INITIO: measure first.
-      - [ ] **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -- 🎚️ APPARATUS —
-            `slot()` braces each chunk (`{text}`), and a chunk ending on a backslash escapes its own
-            closing brace: the run dies at boot with "missing close-brace" and reads as MISSING.
-            Whether a line hits it depends only on where MAX_DIRECT cuts; slotregs' SLOTCALC
-            (`P\16`, `P\64`) is safe by its lengths today. Fix: split so no chunk ends on `\`
-            (Tcl byte-identical for every line that does not).
+      (lifted to a top-level item on 2026-11-23: **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -- 🎚️ APPARATUS — ...)
       ✅ **D-INITIO -- THE LAST ROW (2026-11-13; Joost: *"INITIO is a strange one"*):**
       measured before deciding ([`basic_probe_initio.py`](probes/basic/basic_probe_initio.py): SOUND sets every PSG register to our
       own values, then INITIO from our code; the 16 registers via RDPSG and port $AA after).
@@ -17759,10 +17754,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             VG-8020 always has one. The old per-voice start hid it (B / C never got a bit).
             gicini's MUSICF rows now read only the voices they name (`AND 1` / `AND 3` / all):
             36 / 36 on zerobas and on the VG-8020 (the WANT values unchanged).
-            - [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** --
-                  🎚️ TIER 6 — `V5S3C` on voice A: the VG-8020 writes R9 = R10 = 0 with the note
-                  ([`psgenv_run3.out`](scratchpad/psgenv_run3.out)); zerobas leaves them. Heard only after a SOUND 9 / 10 set
-                  them; unchanged by the format switch.
+            (lifted to a top-level item on 2026-11-23: **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** -- ...)
       - [x] OUTDLP ($014D): LPTOUT with TAB expansion and device I/O error.
             ✅ **THE HAPPY PATH FIXED 2026-11-12.** Measured with openMSX's printer logger
             ([`outdlp_probe.py`](scratchpad/outdlp_probe.py) -> [`outdlp_run.out`](scratchpad/outdlp_run.out)): `A TAB B TAB C CR LF` -> `A` + 7 spaces + `B` + 7
@@ -18067,12 +18059,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                               masked ([`FM_run1.out`](scratchpad/FM_run1.out); 🔮 HIT). A program with no entry is
                               REFUSED, not passed. KNIFED: hk_ochk's and hk_srcfind's `ei` made
                               `nop` -> L5_files 9 masked, FAIL ([`FM_knife.out`](scratchpad/FM_knife.out)) -- the 9 FW5 found.
-                  - [ ] lptout_upframes: two VG-8020 readings of the same bytes disagree (the
-                        gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
-                        auto-repeat racing the return? Read it with the key logged before
-                        building on either.
-            - [ ] OUTDLP on a non-MSX printer (NTMSXP $F417 != 0): the published hiragana ->
-                  katakana and graphic -> 1-byte transform, measured on the VG-8020.
+                  (lifted to a top-level item on 2026-11-23: **lptout_upframes: two VG-8020 readings of the same bytes disagree** -- two VG-8020 ...)
+            (lifted to a top-level item on 2026-11-23: **OUTDLP on a non-MSX printer: the hiragana -> katakana transform** (NTMSXP $F417 != ...)
       - [x] CALBAS ($0159): call a BASIC-interpreter address from any slot.
             ✅ **FIXED 2026-11-12.** 🔴 Worse than a stub: C-BIOS's printed `ERROR:CALLED NON
             EXISTING BASIC.` and never returned ([`calbas_run.out`](scratchpad/calbas_run.out) -- zerobas gave NO capture). The
@@ -18101,10 +18089,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
             Makefile's sub.rom prerequisite list did not name the new file -- added; only the
             hash around the plant caught it (an inert knife reads like a blind gate).
             stub_scan: 4 -> **1** (STRTMS). ➡️ Step (3), PAINT onto the tenant, stays open below.
-            - [ ] **SCREEN 3 leaves unused VRAM unlike the VG-8020** -- 🎚️ TIER 6 — SCREEN 3's
-                  $2000.. reads $00 on the VG-8020, $F1 on zerobas; the pattern area past
-                  $0600 differs too (paintbios_run11.out's off-grid s3_* rows found a border
-                  there on the VG-8020 only). Only a VPEEK of VRAM the mode does not use sees it.
+            (lifted to a top-level item on 2026-11-23: **SCREEN 3 leaves unused VRAM unlike the VG-8020** -- 🎚️ TIER 6 — SCREEN 3's ...)
             - [x] **The low-region wall readout does not count the pad before crt_rows** --
                   🎚️ TIER 6 — an instrument: `make basic-reloc` says "low region pin pads 0 B"
                   while 53 B (2026-11-12, after GRPPRT's stub) sit before the hand pin at $3283 (basic/float-arith.asm); D-
@@ -18261,13 +18246,60 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
                         four RED ([`grpprt_knife1.out`](scratchpad/grpprt_knife1.out)). SCREEN 2's biossweep rows unchanged ([`biossweep_grpprt.out`](scratchpad/biossweep_grpprt.out),
                         the font only).
 
-      - [ ] **A BASIC output file and $F37D RDRND / WRRND in one program** -- 🎚️ TIER 6 —
-            the seq_flush note above: unmeasured, a program would have to mix the two.
+      (lifted to a top-level item on 2026-11-23: **A BASIC output file and $F37D RDRND / WRRND in one program** -- 🎚️ TIER 6 — ...)
 
-      - [ ] **The NMS 1200 disk ROM beeps at boot (R0 = $55 at a cartridge's INIT); zerobas's
-            disk ROM does not** -- 🎚️ TIER 6 — a boot-state register only a cartridge's INIT
-            can read before anything else writes the PSG; pinned in biosl_run.py's ALLOW.
+      (lifted to a top-level item on 2026-11-23: **The NMS 1200 disk ROM beeps at boot (R0 = $55 at a cartridge's INIT); zerobas's ...)
 
+      ✅ **CLOSED 2026-11-23.** docs/tier-status.md: 42 of 42 MSX-DOS 1 functions exercised by a gate, 0 NOT
+      MEASURED; 104 of 108 BIOS calls with a direct witness, 4 RULED, 0 stubs; the disk-ROM table complete;
+      tiers-md-check keeps them from drifting. The seven findings still open inside this block were lifted to
+      top-level items (below), where the tier scans see them.
+- [ ] **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl**
+      🎚️ APPARATUS —
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      `slot()` braces each chunk (`{text}`), and a chunk ending on a backslash escapes its own
+      closing brace: the run dies at boot with "missing close-brace" and reads as MISSING.
+      Whether a line hits it depends only on where MAX_DIRECT cuts; slotregs' SLOTCALC
+      (`P\16`, `P\64`) is safe by its lengths today. Fix: split so no chunk ends on `\`
+      (Tcl byte-identical for every line that does not).
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **A PLAY zeroes the OTHER voices' amplitudes on the VG-8020, not here** --
+      🎚️ TIER 6 — `V5S3C` on voice A: the VG-8020 writes R9 = R10 = 0 with the note
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      ([`psgenv_run3.out`](scratchpad/psgenv_run3.out)); zerobas leaves them. Heard only after a SOUND 9 / 10 set
+      them; unchanged by the format switch.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **lptout_upframes: two VG-8020 readings of the same bytes disagree** -- two VG-8020 readings of the same bytes disagree (the
+      🎚️ APPARATUS — a measurement to settle before building on either reading.
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      gate's form `Break in 20`, the scratch form `[C-1 0]`) -- the
+      auto-repeat racing the return? Read it with the key logged before
+      building on either.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **OUTDLP on a non-MSX printer: the hiragana -> katakana transform** (NTMSXP $F417 != 0): the published hiragana ->
+      🎚️ TIER 6 — every edge (docs/bios/OUTDLP.md measures the graphic characters and NTMSXP's held $01;
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      the kana transform is not measured).
+      katakana and graphic -> 1-byte transform, measured on the VG-8020.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **SCREEN 3 leaves unused VRAM unlike the VG-8020**
+      🎚️ TIER 6 — SCREEN 3's
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      $2000.. reads $00 on the VG-8020, $F1 on zerobas; the pattern area past
+      $0600 differs too (paintbios_run11.out's off-grid s3_* rows found a border
+      there on the VG-8020 only). Only a VPEEK of VRAM the mode does not use sees it.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **A BASIC output file and $F37D RDRND / WRRND in one program**
+      🎚️ TIER 6 —
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      the seq_flush note above: unmeasured, a program would have to mix the two.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
+- [ ] **The NMS 1200 disk ROM beeps at boot (R0 = $55 at a cartridge's INIT); zerobas's
+      disk ROM does not**
+      🎚️ TIER 6 — a boot-state register only a cartridge's INIT
+      🤖 **AUTONOMOUS** — lifted from D-ENTRYTIERS; picked up by tier.
+      can read before anything else writes the PSG; pinned in biosl_run.py's ALLOW.
+      (Lifted out of D-ENTRYTIERS on 2026-11-23 when that umbrella closed.)
 - [ ] **D-FMTERR — FORMAT'S DIALOGUE OFF THE HAPPY PATH IS UNMEASURED (filed 2026-11-11 by
       D-DSKFMT's close)**
       🎚️ TIER 6 — every error: a key outside A / B or 1..4, a write-protected disk, Ctrl-STOP
