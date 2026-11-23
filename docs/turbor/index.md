@@ -43,7 +43,7 @@ in later units, each with its own reading:
 
 | generation | calls | inventory | turbo R status |
 |---|---|---|---|
-| MSX1 main BIOS | every entry | [docs/bios/index.md](../bios/index.md) | first pass 2026-11-23: every existing probe run, [remeasured.md](remeasured.md); the pages not yet updated |
+| MSX1 main BIOS | every entry | [docs/bios/index.md](../bios/index.md) | first pass 2026-11-23: every existing probe run, [remeasured.md](remeasured.md); the NEW findings are on their pages, the SAME / AS-MSX2+ ones not yet |
 | disk ROM / BDOS | every entry | [docs/bios/index.md](../bios/index.md), [docs/bdos/](../bdos/CONOUT.md) | first pass 2026-11-23 (the turbo R has MSX-DOS 2 built in): as the FS-A1WSX in every call result, [remeasured.md](remeasured.md) |
 | MSX2 / MSX2+ main ROM | $015C-$017D | [docs/msx2/index.md](../msx2/index.md) | first pass 2026-11-23, [remeasured.md](remeasured.md) |
 | MSX2 sub-ROM | every entry | [docs/msx2/index.md](../msx2/index.md) | first pass 2026-11-23, [remeasured.md](remeasured.md) |
@@ -51,10 +51,14 @@ in later units, each with its own reading:
 **First pass (2026-11-23): [remeasured.md](remeasured.md)** — all 206 existing BIOS probes on both turbo Rs, each set
 against the reading its page is based on (VG-8020 for MSX1, FS-A1WSX for MSX2 / MSX2+). 53 SAME, 74 differ from the
 VG-8020 only as the MSX2+ already does (30 of them with non-behaviour bytes besides), 54 machine / timing / power-on
-only, **18 NEW on the turbo R** (port $F4 / RDRES / WRRES inverted, CHKSLZ hangs on the A1GT, NEWPAD / GTPAD 0-11 and
-GTPDL do nothing, the cassette entries are stubs, the key line at out-of-range widths, BEEP's C, a soft reset that never
-returns), 7 not run or not comparable. The MSX1 / MSX2 pages themselves are not updated yet; remeasured.md lists what
-each needs.
+only, **21 NEW on the turbo R** (port $F4 / RDRES / WRRES inverted, CHKSLZ hangs on the A1GT, NEWPAD / GTPAD 0-11 and
+GTPDL do nothing, the cassette entries -- TAPION / TAPIN / TAPOUT included -- are stubs that return with the carry set,
+the key line at out-of-range widths, BEEP's C, a soft reset that never returns), 4 not comparable (xva13, needing a
+64 KB-VRAM machine, and the 3 turbo R probes). The 3 `@tape` probes run since `biosl_run.py`'s `@tape` records "no
+cassette port" instead of hanging on a machine without one. Every NEW finding was re-checked against its run file (the
+MSX1 ones with the page's own rules, scratchpad/trnew_recheck.py) and is on its call's page as an "On the turbo R"
+bullet or section; the SAME / AS-MSX2+ pages do not carry a turbo R column yet (remeasured.md, "Where each finding is
+on its call's page").
 
 Machine facts a later unit must keep apart from call behaviour (spec method §2 item 6): the turbo R boots in the
 Z80 and finishes its boot in the R800 (measured on [CHGCPU](main/CHGCPU.md)), so a call is measured in each CPU mode a

@@ -31,10 +31,27 @@ Clean room: only captures (RAM the probes write, VRAM, I/O through the probes' o
 | CONFIG | 17 | the machine, not the call: PSG R14 bit 7 (no cassette input) reads 0, slot 0's secondary register $00, TRGFLG's boot value $89, $FFF8 / $FFFD-$FFFE, R#36, the BASIC banner |
 | TIMING / CLOCK | 21 | VDP S#2 read at a random moment, JIFFY / INTCNT / SCNCNT, a key scan inside the case or not, PSG-log timestamps, the RTC's time of day, a calibrated loop |
 | POWER-ON | 16 | only cells no case writes (the capture's last byte, unused log slots): the turbo R's power-on RAM pattern |
-| **NEW-TR** | 18 | the turbo R's BIOS / I/O behaves differently — listed below |
+| **NEW-TR** | 21 | the turbo R's BIOS / I/O behaves differently — listed below (18 in the first pass; xtap1, xtap5 and b7tape since `@tape` runs without a cassette port, below) |
 | APPARATUS | 1 | xva13 needs a 64 KB-VRAM machine config ([scratchpad/xva13_run.py](../../scratchpad/xva13_run.py)); run on the stock 128 KB turbo Rs it says nothing |
-| NOT RUN | 3 | xtap1 / xtap5 / b7tape declare `@tape`: the harness starts the machine with `cassetteplayer new`, the turbo R has no cassette player, the Tcl script stops there and openMSX runs into biosl_run.py's 600 s timeout ([xtap1.out](../../scratchpad/AE_trall/xtap1.out)). **Missing capability:** `@tape` on a machine without a cassette port |
 | turbo R probe | 3 | xchgcpu / xgetcpu / xtrboot are this generation's own ([CHGCPU](main/CHGCPU.md), [GETCPU](main/GETCPU.md)) |
+
+**`@tape` without a cassette port** (2026-11-23, tr4): in the first pass xtap1 / xtap5 / b7tape gave no reading — the
+harness started the machine with `cassetteplayer new`, the turbo R has no cassette player, the Tcl script stopped there
+and openMSX ran into biosl_run.py's 600 s timeout. [biosl_run.py](../../probes/bios/biosl_run.py)'s `@tape` now catches
+that: nothing is recorded or played, TAPEREADY is acknowledged with 2 (the probes wait for non-zero), and the output
+says `TAPE ref/ours: no cassette port (There is no cassetteplayer available.)`. On a machine with a port nothing
+changes: xtap1 on the `nodisk` row gives a byte-identical output with the old and the new harness
+([AE_xtap1_tapefix_nodisk.out](../../scratchpad/AE_xtap1_tapefix_nodisk.out); its VG-8020 capture equals
+XTAP1_run2.out's). The three probes were then re-run on the turbo R row (item 6).
+
+**Re-checked with the pages' own rules** (2026-11-23, tr4): every MSX1 finding below was re-decoded by running the
+page's executable rules (`probes/bios/spec/*_rules.py`) on the turbo R capture in the reference's place, and on the
+FS-A1WSX's capture of the same probe source, by [scratchpad/trnew_recheck.py](../../scratchpad/trnew_recheck.py)
+([AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out): per rule, the cases that fail on the A1GT, the A1ST and
+the A1WSX, then every decoded field that differs); the MSX2 findings were re-decoded from the run files by the probes'
+record layouts (xf4port, xrdres's 32-byte records, xsubpad_body.inc's 16-byte records, the CHKSLZ VRAM log). All 18
+are confirmed; two first-pass details were corrected (items 5 and 7). Each finding is now on its call's page, in an
+"On the turbo R" bullet or section.
 
 **A1GT vs A1ST:** they agree on every behavioural byte except two: CHKSLZ (below) and one DSKRST case (below). Every
 other disagreement between the two is power-on RAM, timing, the clock's seconds, a boot leftover (BUF holds "512" on the
@@ -61,44 +78,65 @@ version 4.1" on the A1GT, "4.0" on the A1ST).
    [GTPAD](../bios/GTPAD.md); [xsubpad.out](../../scratchpad/AE_trall/xsubpad.out), xsubpadb / xsubpadm / xsubpadx /
    xsubpads): A = $00, F = $44, BC / DE / HL as entered, on both models; the A1WSX computes values. Functions 12 and up
    (mouse, track ball) are as on the A1WSX. Through GTPAD with A = 1 / 2 entered under DI, the turbo R returns with
-   interrupts ON (the A1WSX keeps them off) ([xinp1.out](../../scratchpad/AE_trall/xinp1.out)).
+   interrupts ON (the A1WSX keeps them off), and DE / HL hold other working values (E $00 not $68, HL $2400)
+   ([xinp1.out](../../scratchpad/AE_trall/xinp1.out)).
 5. **GTPDL does nothing** ([GTPDL](../bios/GTPDL.md); [xinp1.out](../../scratchpad/AE_trall/xinp1.out) cases 60-63):
    A $00, F $44, every register kept, PSG R15 not written, DI kept. The VG-8020 and the A1WSX return A $FF, write R15's
-   port bit and enable interrupts: R-PD-A, R-PD-PORT and R-PD-EI fail on the turbo R, R-PD-KEEP holds.
+   port bit and enable interrupts: R-PD-A, R-PD-PORT and R-PD-EI fail on the turbo R; R-PD-KEEP holds except for
+   R14 ($7F: no cassette input — the machine; the A1WSX's $FF fails it the same way). (First pass: "R-PD-KEEP holds".)
 6. **The cassette entries are stubs** ([STMOTR](../bios/STMOTR.md), [TAPOON](../bios/TAPOON.md),
-   [TAPOOF](../bios/TAPOOF.md), [TAPIOF](../bios/TAPIOF.md); [xtap2.out](../../scratchpad/AE_trall/xtap2.out),
-   [xtap3.out](../../scratchpad/AE_trall/xtap3.out), [xtap4.out](../../scratchpad/AE_trall/xtap4.out)): STMOTR returns
-   A / F as entered and never moves port C's motor bit; TAPOON / TAPOOF / TAPIOF return at once with carry set, BC /
-   DE / HL and port C kept, interrupts not enabled (the A1WSX enables them); TAPOON writes no leader. TAPION / TAPIN /
-   TAPOUT: not run (above).
+   [TAPOOF](../bios/TAPOOF.md), [TAPIOF](../bios/TAPIOF.md), [TAPION](../bios/TAPION.md), [TAPIN](../bios/TAPIN.md),
+   [TAPOUT](../bios/TAPOUT.md); [xtap1.out](../../scratchpad/AE_trall/xtap1.out),
+   [xtap2.out](../../scratchpad/AE_trall/xtap2.out), [xtap3.out](../../scratchpad/AE_trall/xtap3.out),
+   [xtap4.out](../../scratchpad/AE_trall/xtap4.out), [xtap5.out](../../scratchpad/AE_trall/xtap5.out),
+   [b7tape.out](../../scratchpad/AE_trall/b7tape.out); step by step beside the VG-8020 and the A1WSX:
+   [AE_trtap_decoded.out](../../scratchpad/AE_trtap_decoded.out) by
+   [trtap_decode.py](../../scratchpad/trtap_decode.py)): STMOTR returns A / F as entered and never moves port C's
+   motor bit; TAPOON / TAPOOF / TAPIOF return with the carry set, A / BC / DE / HL and port C kept, the interrupt state
+   kept (the A1WSX enables them after TAPOOF / TAPIOF, disables them in TAPOON). The `@tape` probes (no cassette port,
+   nothing played) add: **TAPION** returns with the carry set, A / BC / DE / HL as entered, port C as found (no motor,
+   the key-row nibble not set to 7), the interrupt state kept; **TAPOUT** and **TAPIN** return with the carry set and A
+   as entered on every call — no byte written or read; F is the entry F with the carry set ($00 → $01, $FF → $ED, $09
+   kept); b7tape's round trip gets the carry on all four kinds of call and no byte back. Both models alike. The rules
+   that fail: R-SM-MOTOR / R-SM-AF, R-TN-OK / MOTOR / PORT, R-TO-*, R-TI-*, R-TA-OK / MOTOR / PORT, R-TP-A, R-TU-OK;
+   R-SM-KEEP and R-TN-DE hold. Whether TAPOON writes a leader cannot be measured: there is no port to hear it.
 7. **The function-key line at out-of-range widths** ([INITXT](../bios/INITXT.md) R-I-W0 / R-I-KEYEDGE / R-I-EDGE4,
    [INIT32](../bios/INIT32.md); [xinit.out](../../scratchpad/AE_trall/xinit.out),
    [xinit4.out](../../scratchpad/AE_trall/xinit4.out)): INIT32 at width 255 with the key line on draws "key0" only —
-   every earlier machine also draws "key1" at column 34; at width 0 with the key line on the name / pattern sums differ
-   from the A1WSX's. In-range widths are identical.
+   every earlier machine also draws "key1" at column 34 (name-table sum $5849, A1WSX $6AD1); INITXT at width 255 keeps
+   the cells read but its whole-VRAM sum is $1288 lower, the same deficit (XJ4 18; cause not separated); at width 0 with
+   the key line on the **name-table** sum differs from the A1WSX's (INITXT $6595 / $6683, INIT32 $5290 / $59BC). The
+   pattern sums agree (first pass: "name / pattern sums differ" — a misread offset; the decoder reads patsum equal).
+   In-range widths are identical.
 8. **BEEP leaves C = $29** instead of $D0 ([BEEP](../bios/BEEP.md); [xsnd1.out](../../scratchpad/AE_trall/xsnd1.out),
    [xsnd1b.out](../../scratchpad/AE_trall/xsnd1b.out)). An unpublished register.
 9. **DSKRST after SELDSK 1 returns with interrupts OFF on the FS-A1GT**, ON on the FS-A1ST and the A1WSX
    ([SYSTEM](../bdos/SYSTEM.md); [xbsys2.out](../../scratchpad/AE_trall/xbsys2.out) case 14, reproduced in
-   [rerun/xbsys2.out](../../scratchpad/AE_trall/rerun/xbsys2.out)); with drive A current (xbsys1 case 12) all three
-   return with interrupts on. One case, model-dependent; not yet explained.
+   [rerun/xbsys2.out](../../scratchpad/AE_trall/rerun/xbsys2.out) and a third time in
+   [rerun/xbsys2_tr4.out](../../scratchpad/AE_trall/rerun/xbsys2_tr4.out)); with drive A current (xbsys1 case 12) all
+   three return with interrupts on. One case, model-dependent; not yet explained — and openMSX from an empty persistent
+   state is deterministic, so the repeats confirm the reading, not a cause.
 
 The turbo R's disk ROM matches the FS-A1WSX in every measured disk-ROM entry
 and BDOS call result, on both models — interrupts left on, IY $0314 after BDOS, MTOFF's A = 4, past-the-end answers
 $0C / F $55, FMAKE's date stamp — see [trall-triage-disk.md](../../scratchpad/trall-triage-disk.md).
 
-## What each earlier page would need (not edited here)
+## Where each finding is on its call's page
 
+Done 2026-11-23 (tr4): an "On the turbo R" bullet (MSX1 pages: under "On later generations"; MSX2 pages: a section
+before "Open"), [M], citing the AE_trall run file and, for the MSX1 pages, the rules re-check:
+[GTPDL](../bios/GTPDL.md), [GTPAD](../bios/GTPAD.md), [STMOTR](../bios/STMOTR.md), [TAPOON](../bios/TAPOON.md),
+[TAPOOF](../bios/TAPOOF.md), [TAPIOF](../bios/TAPIOF.md), [TAPION](../bios/TAPION.md), [TAPIN](../bios/TAPIN.md),
+[TAPOUT](../bios/TAPOUT.md), [INITXT](../bios/INITXT.md), [INIT32](../bios/INIT32.md), [BEEP](../bios/BEEP.md),
+[SYSTEM](../bdos/SYSTEM.md), [RDRES](../msx2/main/RDRES.md), [WRRES](../msx2/main/WRRES.md),
+[CHKSLZ](../msx2/main/CHKSLZ.md), [NEWPAD](../msx2/sub/NEWPAD.md).
+
+Still to do:
 - **MSX1 pages with an "On later generations (MSX2, MSX2+)" section** whose probes are SAME / AS-MSX2+: a turbo R
   column stating the MSX2+ column holds on both models (cite the AE_trall file). That is every page served by the
   SAME / AS-MSX2+ rows of the table below.
-- **GTPDL, GTPAD, STMOTR, TAPOON, TAPOOF, TAPIOF, INITXT, INIT32, BEEP:** a turbo R row naming the rule that fails and
-  what the turbo R does instead (items 4-8); TAPION / TAPIN / TAPOUT / TAPOON's leader: "not measured" until `@tape`
-  works on a machine without a cassette port.
-- **RDRES, WRRES:** a turbo R row per RR / WR rule (the inverted sense; RR-7 / WR-3 have no reading).
-- **CHKSLZ:** a per-model turbo R row (A1GT hangs, A1ST re-boots).
-- **NEWPAD:** functions 0-11 on the turbo R.
 - **SYSTEM (DSKRST):** the A1GT-only interrupt state, once explained.
+- **xf4reset:** a probe that logs to VRAM, to say what the turbo R does after JP $0000.
 - **Machine facts** for the pages that print them (CONFIG rows): PSG R14 bit 7 = 0, slot 0 expanded with secondary
   register $00, TRGFLG $89 at boot, $FFFD-$FFFE = $F054 (CHGCPU's temporary SP), BUF's boot leftover.
 
@@ -119,7 +157,7 @@ against GTIME.
 | b4input | MSX1 | AE_cbios_review_d23.out | SAME | 0 | 0 | SAME | [b4input.out](../../scratchpad/AE_trall/b4input.out) |
 | b5sound | MSX1 | AE_cbios_review_d23.out | DIFFERS (2) | 1 | 0 | CONFIG | [b5sound.out](../../scratchpad/AE_trall/b5sound.out) |
 | b6slots | MSX1 | AE_cbios_review_d23.out | DIFFERS (2) | 0 | 0 | AS-MSX2+ | [b6slots.out](../../scratchpad/AE_trall/b6slots.out) |
-| b7tape | MSX1 | AE_cbios_review_d23.out | NO READING (no turbo R CAP) | - | - | NOT RUN (@tape) | [b7tape.out](../../scratchpad/AE_trall/b7tape.out) |
+| b7tape | MSX1 | AE_cbios_review_d23.out | DIFFERS (20) | 20 | 0 | **NEW-TR** (@tape, no cassette port) | [b7tape.out](../../scratchpad/AE_trall/b7tape.out) |
 | b8save | MSX1 | AE_cbios_review_d23.out | SAME | 0 | 0 | SAME | [b8save.out](../../scratchpad/AE_trall/b8save.out) |
 | xbabs1 | MSX1 | XBABS1_run0_past.out | DIFFERS (152) | 160 | 152 | AS-MSX2+ + POWER-ON / CLOCK | [xbabs1.out](../../scratchpad/AE_trall/xbabs1.out) |
 | xbabs2 | MSX1 | XBABS2_run1.out | DIFFERS (228) | 240 | 228 | AS-MSX2+ + POWER-ON / CLOCK | [xbabs2.out](../../scratchpad/AE_trall/xbabs2.out) |
@@ -302,11 +340,11 @@ against GTIME.
 | xsubset | MSX2 | AE_xsubset_msx2.out | DIFFERS (83) | - | 42 | CONFIG | [xsubset.out](../../scratchpad/AE_trall/xsubset.out) |
 | xsynchr | MSX1 | XSYNCHR_run1.out | SAME | 0 | 0 | SAME | [xsynchr.out](../../scratchpad/AE_trall/xsynchr.out) |
 | xsynchr2 | MSX1 | XSYNCHR2_run1.out | SAME | 0 | 0 | SAME | [xsynchr2.out](../../scratchpad/AE_trall/xsynchr2.out) |
-| xtap1 | MSX1 | XTAP1_run2.out | NO READING (no turbo R CAP) | - | - | NOT RUN (@tape) | [xtap1.out](../../scratchpad/AE_trall/xtap1.out) |
+| xtap1 | MSX1 | XTAP1_run2.out | DIFFERS (91) | 92 | 0 | **NEW-TR** (@tape, no cassette port) | [xtap1.out](../../scratchpad/AE_trall/xtap1.out) |
 | xtap2 | MSX1 | XTAP2_run1.out | DIFFERS (52) | 52 | 0 | **NEW-TR** | [xtap2.out](../../scratchpad/AE_trall/xtap2.out) |
 | xtap3 | MSX1 | XTAP3_run1.out | DIFFERS (47) | 47 | 0 | **NEW-TR** | [xtap3.out](../../scratchpad/AE_trall/xtap3.out) |
 | xtap4 | MSX1 | XTAP4_run1.out | DIFFERS (31) | 31 | 0 | **NEW-TR** | [xtap4.out](../../scratchpad/AE_trall/xtap4.out) |
-| xtap5 | MSX1 | XTAP5_run1.out | NO READING (no turbo R CAP) | - | - | NOT RUN (@tape) | [xtap5.out](../../scratchpad/AE_trall/xtap5.out) |
+| xtap5 | MSX1 | XTAP5_run1.out | DIFFERS (49) | 49 | 0 | **NEW-TR** (@tape, no cassette port) | [xtap5.out](../../scratchpad/AE_trall/xtap5.out) |
 | xtot | MSX1 | XTOT_fix1.out | DIFFERS (120) | 0 | 0 | AS-MSX2+ | [xtot.out](../../scratchpad/AE_trall/xtot.out) |
 | xtot2 | MSX1 | XTOT2_fix1.out | DIFFERS (167) | 0 | 0 | AS-MSX2+ | [xtot2.out](../../scratchpad/AE_trall/xtot2.out) |
 | xtrboot | TR | - | TR PROBE | - | 124 | turbo R probe | [xtrboot.out](../../scratchpad/AE_trall/xtrboot.out) |
