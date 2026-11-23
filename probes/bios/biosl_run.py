@@ -49,6 +49,11 @@ Its header comment may carry the harness settings, one per line:
                         printer received are reported as `PRN ref:` / `PRN ours:` (hex) and compared
     ; @disk empty       the disk row gets drive A = a fresh copy of disk/empty720.dsk
                         (`make test-dsk`); the NODISK row has no drive
+    ; @disk PATH        (D-MSX2SPEC, the BLT disk calls) drive A = a fresh copy of the image PATH ($VARS
+                        expanded, e.g. $ZEROBAS_TMP/x.dsk; relative = to the repo) -- media are never
+                        committed: the probe's own script builds the image
+    BIOSL_KEEP_DSK=DIR  (env) after each run, the machine's drive-A image as the run left it is copied to
+                        DIR/<machine>.dsk, so the files a call wrote can be read back from the host side
 Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
     nodisk  Philips_VG_8020         vs  C-BIOS_MSX1_EU_REPACK_NODISK
     disk    Philips_VG_8020_NMS1200 vs  C-BIOS_MSX1_EU_REPACK_DISK
@@ -306,6 +311,10 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     media = []
     if disk and st["disk"]:
         src = os.path.join(REPO, "disk", "empty720.dsk")
+        if st["disk"] != "empty":           # @disk PATH: an image the probe's own script built
+            src = os.path.join(REPO, os.path.expandvars(st["disk"]))
+            if not os.path.isfile(src):
+                sys.exit(f"@disk {st['disk']}: {src} is missing")
         if not os.path.isfile(src):
             sys.exit("@disk empty: disk/empty720.dsk is missing -- `make test-dsk`")
         dsk = os.path.join(td, machine + ".dsk")
@@ -321,6 +330,9 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
         [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
         ["-command", "set renderer none; set sound_driver null" + plug, "-script", script]),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
+    if media and os.environ.get("BIOSL_KEEP_DSK"):
+        os.makedirs(os.environ["BIOSL_KEEP_DSK"], exist_ok=True)
+        shutil.copyfile(media[1], os.path.join(os.environ["BIOSL_KEEP_DSK"], machine + ".dsk"))
     if not os.path.exists(out):
         return None
     got = {}
@@ -374,7 +386,9 @@ def one(rung: str, rows: str) -> int:
         for row in ({"both": ("nodisk", "disk"), "msx2all": ("msx2eu", "msx2jp", "msx2p")}.get(a.row) or (a.row,)):
             ref_m, zb_m = ROWS[row]
             ref = run(ref_m, rom, st, td, disk=(row != "nodisk"))
-            zb = run(zb_m, rom, st, td, disk=(row != "nodisk"))
+            # C-BIOS's MSX2 / MSX2+ machines have no disk drive (Joost: "c-bios in any form doesn't have disk yet");
+            # openMSX refuses -diska there, which left the side with NO READING (D-MSX2SPEC, the BLT disk calls)
+            zb = run(zb_m, rom, st, td, disk=(row != "nodisk" and not row.startswith("msx2")))
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
             bad = [n for n, g in (("ref", ref), ("ours", zb))
                    if not g or g.get("DONE") != "165"]
