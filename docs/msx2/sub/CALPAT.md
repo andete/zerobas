@@ -48,6 +48,10 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
 
 C-BIOS's MSX2 / MSX2+ builds give the same HL, A, F, BC, DE, IX and IY in every case ([AE_xspr2](../../../scratchpad/AE_xspr2_msx2.out), [AE_xspr3](../../../scratchpad/AE_xspr3_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xspr2.out](../../../scratchpad/AE_trall/xspr2.out), [AE_trall/xspr3.out](../../../scratchpad/AE_trall/xspr3.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded)

@@ -79,6 +79,10 @@ it measures the stack.
 (Seen on the way, not EXTROM's: the references' sub-ROM GETPLT returns D = the palette number, C-BIOS's leaves DE
 alone [M 13] -- [GETPLT](../sub/GETPLT.md)'s page.)
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte, which no case writes (power-on RAM) [M] ([AE_trall/xextrom.out](../../../scratchpad/AE_trall/xextrom.out), [AE_trall/xextrom0.out](../../../scratchpad/AE_trall/xextrom0.out), [AE_trall/xextromnx.out](../../../scratchpad/AE_trall/xextromnx.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - The time it takes (EX-13): the harness has no T-state counter.

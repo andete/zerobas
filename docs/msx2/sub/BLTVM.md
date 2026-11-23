@@ -46,6 +46,10 @@ return, entered with DI [M B 4, 9].
 C-BIOS's MSX2 / MSX2+ builds draw the same dots and fill NX / NY the same, but also write CDUMMY ($F56E) := $A1 (the
 first dot) and return other A / F ([scratchpad/AE_xsubblt_msx2.out](../../../scratchpad/AE_xsubblt_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except VDP S#2, which the probe reads at a random moment (timing) [M] ([AE_trall/xsubblt.out](../../../scratchpad/AE_trall/xsubblt.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [block-transfer.md](../concepts/block-transfer.md#how-every-blt-case-is-recorded),

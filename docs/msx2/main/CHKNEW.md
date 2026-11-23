@@ -43,6 +43,10 @@ SCREEN 1 give $93, A $05 over SCREEN 5 gives $42, as A $A7 does); BC, DE, HL, IX
 C-BIOS's MSX2 / MSX2+ builds (the subject) give the same F in every case, but **return A = SCRMOD** where the
 references keep A [M 0-36] (with entry A $05 over SCREEN 5 the two coincide, case 35). A caller that relies on A surviving the call gets a different A on C-BIOS.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte, which no case writes (power-on RAM) [M] ([AE_trall/xchknew.out](../../../scratchpad/AE_trall/xchknew.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - SCRMOD 10-12 set up for real on the FS-A1WSX (SCREEN 10-12 with the V9958's YJK bits): only the bare SCRMOD values

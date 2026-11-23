@@ -64,6 +64,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject) write every register directly with it
 the MSX2+ build keeps no copy for R#25-R#27; out A = B, F $A0 / $A8, B $00 (the references: A $00, F $44, B kept)
 ([scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: WRTVDP's results are the FS-A1WSX's, on both models. What differs is the machine and the timing: $FFF8 = $FF, $FFFD-$FFFE = $F054 (CHGCPU's stack cell), VDP R#16 = $0F as the boot leaves it (so phase 3's case C $10 computes B = $00 and changes $FFEF), JIFFY / INTCNT / SCNCNT and power-on cells [M] ([AE_trall/xwv.out](../../../scratchpad/AE_trall/xwv.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded):

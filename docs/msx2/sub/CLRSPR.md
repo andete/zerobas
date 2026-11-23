@@ -65,6 +65,10 @@ FORCLR $0F / $0A, and return the same BC, DE, HL, IX, IY ([AE_xspr2](../../../sc
   attribute's byte 3 is $FF on both) (AE_xspr3) -- a wrong result;
 - A / F on return: A $01, F $93 in mode 1; A = FORCLR AND $0F, F $42 in mode 2 (the references: A $40, F $00).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xspr2.out](../../../scratchpad/AE_trall/xspr2.out), [AE_trall/xspr3.out](../../../scratchpad/AE_trall/xspr3.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded).

@@ -83,6 +83,10 @@ unchanged** for every code and mode. (A, BC, DE, HL kept, F $00 and interrupts o
 machines have no kanji ROM; the NMS 8250, also without one, still draws its solid block and moves GRPACX, so the
 comparison with no ROM on either side still differs.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except VDP S#2, which the probe reads at a random moment (timing) [M] ([AE_trall/xsubknj.out](../../../scratchpad/AE_trall/xsubknj.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Measured: KJ-1 (SCREEN 5 only; three codes; modes 0-2), KJ-2 (as rows; the display not changed to interlace),

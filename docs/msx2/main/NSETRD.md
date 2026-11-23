@@ -53,6 +53,10 @@ ACPAGE above 3 in SCREEN 5 / 6 or above 1 in SCREEN 7 / 8 they mask ACPAGE where
 SCREEN 5's 32 KB page ($09234; [xva14.asm](../../../probes/bios/spec/xva14.asm), [scratchpad/AE_xva14_msx2.out](../../../scratchpad/AE_xva14_msx2.out)). VA-16 (an interrupt during the
 call): the same as the references.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: xva14 gives the same bytes as on the FS-A1WSX, on both models, and xva3 differs only in case 0's port-log slots that the call does not use (power-on RAM). xva16 is timing: the FS-A1GT's calibration counts one more loop per frame than the A1ST and the A1WSX ($2A, not $29), so each step's interrupt lands one NOP elsewhere and the marks, logged writes and SP depths move -- the same SP depths ($1C-$26) as on the MSX2s, no new outcome [M] ([AE_trall/xva14.out](../../../scratchpad/AE_trall/xva14.out), [AE_trall/xva3.out](../../../scratchpad/AE_trall/xva3.out), [AE_trall/xva16.out](../../../scratchpad/AE_trall/xva16.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Every sentence above is [P] or [A]. The matrix: the [shared VA cases](README.md#the-shared-vram-address-matrix)

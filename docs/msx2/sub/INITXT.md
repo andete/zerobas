@@ -65,6 +65,10 @@ C-BIOS's MSX2 / MSX2+ builds ([scratchpad/AE_xmode2_msx2_decoded.out](../../../s
   call (with LINL40 set, both give LINL40) [M xmode2 18, 19; xmode 11].
 - Other A / F / IX on return (A $70 / $77 = R#1, F $A0, IX $005C): not part of the contract (all registers may change).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every register, VRAM sum and work-area byte is the FS-A1WSX's, on both models. What differs is the machine and the timing, not the call: $FFF8 = $FF as the boot leaves it (the A1WSX $00; no screen-mode call touches it), VDP S#2 read at a random moment, R#36 = $80 before case 0 (the boot's last VDP command), power-on cells, and one JIFFY count in xmode2 case 27 [M] ([AE_trall/xmode.out](../../../scratchpad/AE_trall/xmode.out), [AE_trall/xmode2.out](../../../scratchpad/AE_trall/xmode2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: as [CHGMOD](CHGMOD.md#open-not-measured); still to record: LINTTB, the key line's row, the blink

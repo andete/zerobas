@@ -69,6 +69,10 @@ Case numbers `[M xsubset n]` are the probe's case table.
 C-BIOS's MSX2 / MSX2+ builds (the subject): **SETSCR is a no-op** — no settings applied, no banner, no key line;
 registers returned as entered, interrupts on ([scratchpad/AE_xsubset_msx2.out](../../../scratchpad/AE_xsubset_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: SETSCR's results are the FS-A1WSX's, on both models, except the banner it prints: "MSX BASIC version 4.1" on the FS-A1GT, "4.0" on the FS-A1ST (the A1WSX "3.0"); also R#36 = $80 before case 0 (the boot's last VDP command), JIFFY / INTCNT in case 7's work-area list, and S#2 (timing) [M] ([AE_trall/xsubset.out](../../../scratchpad/AE_trall/xsubset.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: as [SDFSCR](SDFSCR.md#open-not-measured), plus every byte written to port $98 during the call

@@ -50,6 +50,10 @@ $0F00 and leave $0400, RSTPLT and GETPLT read $0F00 [XP 11, 24-26] (the first DR
 the registers on return": step 11 already showed $0400 unwritten). Registers on return: the same as the references.
 ([scratchpad/AE_xplt_msx2.out](../../../scratchpad/AE_xplt_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xplt.out](../../../scratchpad/AE_trall/xplt.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded)

@@ -52,6 +52,10 @@ first. IFF = 0 on return in all three.
 C-BIOS's MSX2 / MSX2+ builds return the same status registers, with the same R#15 port sequence and STATFL left
 alone, but return with interrupts ON (IFF = 1; the references 0) ([scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: VDPSTA's results are the FS-A1WSX's, on both models, except S#2, which is read at a random moment (timing); the probe's other differences are WRTVDP's machine cells ([WRTVDP](WRTVDP.md)) [M] ([AE_trall/xwv.out](../../../scratchpad/AE_trall/xwv.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded);

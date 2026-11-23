@@ -74,6 +74,10 @@ FORCLR / BAKCLR, LOGOPR honoured, per pixel in SCREEN 5, nothing in SCREEN 2, AT
 - a character at Y 207 is drawn into rows 212-214 instead of being clipped at 211 [[scratchpad/AE_xsubgpp2_msx2.out](../../../scratchpad/AE_xsubgpp2_msx2.out) case 1];
 - A out $03 ($00 under TIMP with BAKCLR 0) instead of A kept; IX kept ($0089) [[scratchpad/AE_xsubgpp_msx2.out](../../../scratchpad/AE_xsubgpp_msx2.out); [scratchpad/AE_xsubgpp2_msx2.out](../../../scratchpad/AE_xsubgpp2_msx2.out)].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubgpp.out](../../../scratchpad/AE_trall/xsubgpp.out), [AE_trall/xsubgpp2.out](../../../scratchpad/AE_trall/xsubgpp2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LG], [LN], [MD], [SN] and [R9] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

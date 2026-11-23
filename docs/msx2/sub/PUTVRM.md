@@ -99,6 +99,10 @@ the references give C and the offset), interrupts left off ([scratchpad/AE_xsubp
 [scratchpad/AE_xsubpvr2_msx2.out](../../../scratchpad/AE_xsubpvr2_msx2.out),
 [scratchpad/AE_xsubpvr3_msx2.out](../../../scratchpad/AE_xsubpvr3_msx2.out), every case on all three rows).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except the VRAM-sum / counter pairs that move with JIFFY (one count apart), R#36 = $80 (the boot's last VDP command) and VDP S#2 (read at a random moment) -- timing [M] ([AE_trall/xsubpvr.out](../../../scratchpad/AE_trall/xsubpvr.out), [AE_trall/xsubpvr2.out](../../../scratchpad/AE_trall/xsubpvr2.out), [AE_trall/xsubpvr3.out](../../../scratchpad/AE_trall/xsubpvr3.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - SCREEN 2, 3, 4 and 6, 7, 8; MODE's address-mask bit ($FAFC bit 3) and ACPAGE ≠ 0 (both change the

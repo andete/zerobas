@@ -64,6 +64,10 @@ moved), registers returned as entered, the clock chip's MODE left as it was ($8 
 block 3 reads $F in every register
 ([scratchpad/AE_xsubpmt_msx2.out](../../../scratchpad/AE_xsubpmt_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the H.CHPU log's unused slots, which no case writes (power-on RAM) [M] ([AE_trall/xsubpmt.out](../../../scratchpad/AE_trall/xsubpmt.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: A F BC DE HL IX IY, IFF (read twice), CSRY CSRX CNSDFG SCRMOD LINLEN CRTCNT, every character

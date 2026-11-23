@@ -49,6 +49,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: no labels, no VRAM b
 (0, or $FF in F 11), interrupts left off when entered with DI ([scratchpad/AE_xsubfnk_msx2.out](../../../scratchpad/AE_xsubfnk_msx2.out), `--side ours`). Its F 12 row shows labels, but its CHGMOD drew them (CNSDFG was $FF from F 11
 when CHGMOD ran; the probe set CNSDFG := 0 after it): not the call.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubfnk.out](../../../scratchpad/AE_trall/xsubfnk.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Measured above: IE (in part), DF-40, DF-80, DF-1, DF-GR, DF-BM, DF-ROW (CRTCNT 13), DF-STR, DF-ON. Cases F 0-3

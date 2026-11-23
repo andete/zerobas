@@ -50,6 +50,10 @@ case** -- the cases are named by the SCREEN CHGMOD set, not by A):
 C-BIOS's MSX2 / MSX2+ builds (the subject) take the mode from SCRMOD too but do not mask FORCLR / BAKCLR in any mode:
 R#7 in SCREEN 0 and SCREEN 1's colour table read $E5 where the references give $A5; other A / F ([scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubcls.out](../../../scratchpad/AE_trall/xsubcls.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: registers (incl. A, F, BC, DE, HL), interrupt state, R#7, R#12, R#13, all copies,

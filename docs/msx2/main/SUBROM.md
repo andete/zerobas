@@ -46,6 +46,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject) match every rule above. The only meas
 C-BIOS's routine runs 24 bytes below the SP at the `JP SUBROM` (the references' 28), and GETPLT through it went 32
 deep (the references' 40) [M 7-11, 15].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte, which no case writes (power-on RAM) [M] ([AE_trall/xextrom.out](../../../scratchpad/AE_trall/xextrom.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - SB-2: SUBROM entered without the pushed word (a CALL SUBROM, or JP with nothing pushed) -- documents misuse only.

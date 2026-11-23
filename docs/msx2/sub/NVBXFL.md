@@ -55,6 +55,10 @@ min Y) with ARG $00, so after the reversed case R#36 / R#38 hold (10, 16) where 
 $00 where the FS-A1WSX holds $0C; no second (SRCH) command, so R#44 / R#45 differ from the MSX2s' $80 / $04 too; A
 out the command byte ($80 / $83), F $80 [[scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out) cases 2, 3; [scratchpad/AE_xsubbox2_msx2.out](../../../scratchpad/AE_xsubbox2_msx2.out) cases 7, 8, 13].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except A and F in xsubbox cases 3 and 6 and xsubbox2 cases 7-9: A is a VDP S#2 read there, as on the A1WSX, and its value depends on the moment (timing; the A1GT and A1ST differ the same way) [M] ([AE_trall/xsubbox.out](../../../scratchpad/AE_trall/xsubbox.out), [AE_trall/xsubbox2.out](../../../scratchpad/AE_trall/xsubbox2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LG], [LN], [MD] and [SN] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

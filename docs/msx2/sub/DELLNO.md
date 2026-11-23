@@ -103,6 +103,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject) have no routine at $0121: the address
 register comes back as it went in (IX $0121), and the interrupt state is kept (off when entered with DI) [M xsubdln
 0-16; xsubdln2 0-9; xsubdln3 0-5; xsubdln4 0-15].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte (xsubdln, xsubdln4) or the RAM past the last record (xsubdln2, xsubdln3), which no case writes (power-on RAM) [M] ([AE_trall/xsubdln.out](../../../scratchpad/AE_trall/xsubdln.out), [AE_trall/xsubdln2.out](../../../scratchpad/AE_trall/xsubdln2.out), [AE_trall/xsubdln3.out](../../../scratchpad/AE_trall/xsubdln3.out), [AE_trall/xsubdln4.out](../../../scratchpad/AE_trall/xsubdln4.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - The graphic and bitmap modes (SCREEN 2-8): EOL and CLRTXT write text-mode cells there; DELLNO is not measured.

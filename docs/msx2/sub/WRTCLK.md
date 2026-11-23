@@ -49,6 +49,10 @@ block 3, C = $21 (block 2) wrote block 3's register 1 and left block 2's alone, 
 cases (banks 0, 1, 2 OR'd with MM = 2, 3, 3) and all of W1 land on the named block. A and F agree with the
 reference ([scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out), `--side ours`).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: the MODE register, every block 1-3 register and WRTCLK's results are the FS-A1WSX's, on both models; REDCLK's block-0 time registers (seconds, minutes, hours), with the A and F that carry them, read the time of day of the run (the clock chip follows the host clock; the A1GT and A1ST ran seconds apart) [M] ([AE_trall/xclk.out](../../../scratchpad/AE_trall/xclk.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The measurement matrix. Fixtures as on the

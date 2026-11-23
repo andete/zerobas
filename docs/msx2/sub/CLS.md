@@ -58,6 +58,10 @@ with BAKCLR $C5 fill $55 (the references $DD), SCREEN 6 fills $A2 / $51 for $06 
 $02 / $03 (the references $FF / $FF and $55 / $AA / $FF); in SCREEN 0 / 1 they return with interrupts ON; other
 A / F ([scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubcls.out](../../../scratchpad/AE_trall/xsubcls.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: registers, F set apart from A (§3a), interrupt state, CSRX / CSRY, LINTTB,

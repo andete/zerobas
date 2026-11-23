@@ -68,6 +68,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject), measured on the same cases:
   edge continues past max X -- C-BIOS writes a negative NX ($FFF6) instead of sorting [[scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out) case 1; [scratchpad/AE_xsubbox2_msx2.out](../../../scratchpad/AE_xsubbox2_msx2.out) cases 0, 1, 3].
 - GXPOS / GYPOS are left at the end point, not (min X, max Y - 1) [[scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out); [scratchpad/AE_xsubbox2_msx2.out](../../../scratchpad/AE_xsubbox2_msx2.out)].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except A and F in xsubbox cases 3 and 6 and xsubbox2 cases 7-9: A is a VDP S#2 read there, as on the A1WSX, and its value depends on the moment (timing; the A1GT and A1ST differ the same way) [M] ([AE_trall/xsubbox.out](../../../scratchpad/AE_trall/xsubbox.out), [AE_trall/xsubbox2.out](../../../scratchpad/AE_trall/xsubbox2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LG], [LN], [MD] and [SN] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

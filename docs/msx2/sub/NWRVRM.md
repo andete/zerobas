@@ -73,6 +73,10 @@ coincidence [VA-11, 11g, 11h, X 25; VD 2]; elsewhere it misses: SCREEN 0 ACPAGE 
 $0E123 [VD 3]. Every other measured case agrees with the reference, data included [VD 0, 1, 4]
 ([scratchpad/AE_xva2_msx2.out](../../../scratchpad/AE_xva2_msx2.out), `--side ours`).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models (the A1GT and A1ST differ only in case 0's unused fifth port-$99 log slot: power-on RAM) [M] ([AE_trall/xva2.out](../../../scratchpad/AE_trall/xva2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recording as in [vdp-and-palette.md](../concepts/vdp-and-palette.md#how-every-case-is-recorded),

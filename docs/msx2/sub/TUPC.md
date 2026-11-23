@@ -76,6 +76,10 @@ in SCREEN 5-8 it steps CMASK (the Y) by - 1 and stops at Y 0; in SCREEN 2 it is 
 C-BIOS's MSX2 / MSX2+ builds give the same CLOC / CMASK / A / F in every case, the b records included
 ([AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out), [AE_xsubmv2_msx2.out](../../../scratchpad/AE_xsubmv2_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubmv.out](../../../scratchpad/AE_trall/xsubmv.out), [AE_trall/xsubmv2.out](../../../scratchpad/AE_trall/xsubmv2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LN], [MD], [SN] and [R9] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

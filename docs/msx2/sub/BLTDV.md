@@ -94,6 +94,10 @@ These are "no disk BASIC at all" readings, not a C-BIOS implementation to fix pi
 missing. Whether a C-BIOS without a disk should raise an error (as a diskless reference would) is open: no
 diskless MSX2 reference was run.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: A, F, the block and the files are the FS-A1WSX's, on both models; what differs is IX's low byte after the call (ROM-internal: it differs between every machine, the A1GT and A1ST included), VDP S#2 (read at a random moment) and case 16's unwritten window (power-on RAM) [M] ([AE_trall/xsubbltd.out](../../../scratchpad/AE_trall/xsubbltd.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 | case | inputs | state | what it separates |

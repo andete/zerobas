@@ -73,6 +73,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject) have no routine at $0139: the address
 does not reach the key buffer, and interrupts stay off when the call is made with DI. Against the NMS 8250 it is
 the same.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte, which no case writes (power-on RAM) [M] ([AE_trall/xsubpch.out](../../../scratchpad/AE_trall/xsubpch.out), [AE_trall/xsubpch2.out](../../../scratchpad/AE_trall/xsubpch2.out), [AE_trall/xsubpch3.out](../../../scratchpad/AE_trall/xsubpch3.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - Why the NMS 8250 differs (a different sub-ROM revision, or a condition its routine tests) — every input measured

@@ -103,6 +103,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject), all three rows [M XB]:
 - Interrupts: on on return in every case (as the HB-F900 / NMS 8250; the FS-A1WSX keeps DI).
 - A preset R7 is left as found ($47 in cases 18-21); the references write $B8 [M XB 18-21].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case writes the same PSG sequence as on the FS-A1WSX, with the same lengths, on both models; what differs is the microsecond timestamps (the turbo R reaches each case earlier), PSG R14 bit 7 (0: no cassette input), unwritten record bytes (power-on RAM), and C after the call: $29, not $D0 (an unpublished register, as the main ROM's [BEEP](../../bios/BEEP.md) leaves it) [M] ([AE_trall/xsubbeep.out](../../../scratchpad/AE_trall/xsubbeep.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Measured so far: BP-1 (through the ports, without a reset: BP-3's question answered by it), BP-4 (MODE $0B and

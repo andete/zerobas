@@ -54,6 +54,10 @@ every OUT to $99 / $9B logged in xsubscan2):
 C-BIOS's MSX2 / MSX2+ builds (the subject) do nothing here: no VDP command, HL garbage ($D800), DE, CLOC and CSAVEA /
 CSAVEM unchanged, no paint [[scratchpad/AE_xsubscan_msx2.out](../../../scratchpad/AE_xsubscan_msx2.out); [scratchpad/AE_xsubscan2_msx2.out](../../../scratchpad/AE_xsubscan2_msx2.out) every case].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models [M] ([AE_trall/xsubscan.out](../../../scratchpad/AE_trall/xsubscan.out), [AE_trall/xsubscan2.out](../../../scratchpad/AE_trall/xsubscan2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LG], [LN], [MD] and [SN] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

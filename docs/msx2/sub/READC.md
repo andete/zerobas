@@ -47,6 +47,10 @@ their own SETC -- their SCREEN 2 / 4 READC does not read the multicolour nibble
 ([scratchpad/AE_xsubgc_msx2.out](../../../scratchpad/AE_xsubgc_msx2.out),
 [scratchpad/AE_xsubgc2_msx2_decoded.out](../../../scratchpad/AE_xsubgc2_msx2_decoded.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: xsubgc gives the same bytes as on the FS-A1WSX, on both models; xsubgc2 too, except R#36 = $80 (the boot's last VDP command) and VDP S#2 (read at a random moment) in its state records [M] ([AE_trall/xsubgc.out](../../../scratchpad/AE_trall/xsubgc.out), [AE_trall/xsubgc2.out](../../../scratchpad/AE_trall/xsubgc2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 The sets [PG], [LG], [LN], [MD], [SN] and [R9] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).

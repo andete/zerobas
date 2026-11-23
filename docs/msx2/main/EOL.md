@@ -71,6 +71,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject):
 - Everything else above matches, including the graphic-mode offsets, the odd margins and the $FBB1 / $FBCA writes for
   L 0 / L 25 [M 0-30].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the capture's last byte, which no case writes (power-on RAM) [M] ([AE_trall/xeol.out](../../../scratchpad/AE_trall/xeol.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - SCREEN 3, 4, 6, 7 (W = 32 and the base there are [A] from SCREEN 2 / 5 / 8); other H / L in graphic modes (one H, L

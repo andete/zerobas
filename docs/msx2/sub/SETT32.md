@@ -51,6 +51,10 @@ $FF read back) [M xmode2 29]; the copies keep all 8.
 C-BIOS's MSX2 / MSX2+ builds set R#0-R#6 the same, but [M xmode2 25; xmode 16]: **R#7 is left as the VDP had it**
 ($04; the references write RG7SAV); **R#9 bit 7 is left set** ($82); A $07, F $42 on return.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every register, VRAM sum and work-area byte is the FS-A1WSX's, on both models. What differs is the machine and the timing, not the call: $FFF8 = $FF as the boot leaves it (the A1WSX $00; no screen-mode call touches it), VDP S#2 read at a random moment, R#36 = $80 before case 0 (the boot's last VDP command), power-on cells, and one JIFFY count in xmode2 case 27 [M] ([AE_trall/xmode.out](../../../scratchpad/AE_trall/xmode.out), [AE_trall/xmode2.out](../../../scratchpad/AE_trall/xmode2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: as [CHGMOD](CHGMOD.md#open-not-measured); the -ONLY cases add a whole work-area diff

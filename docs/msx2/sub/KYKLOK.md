@@ -91,6 +91,10 @@ kept, interrupts stay off ([scratchpad/AE_xsubkyk_msx2.out](../../../scratchpad/
   and PSG R15 bit 7 are left as they were; A, F, B and HL are not set; interrupts are not turned on.
 - **MSX2 EU build** (against the NMS 8250): no difference in any measured case.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: KANAST, CAPST, port $AA and the PSG writes are the FS-A1WSX's, on both models; what differs is timing and one ROM-internal value: JIFFY / INTCNT in the work-area change list, STATFL changed by an interrupt in case 0, the PSG log's timestamps, and IY's low byte after case 1 ($37, the A1WSX $33) [M] ([AE_trall/xsubkyk.out](../../../scratchpad/AE_trall/xsubkyk.out), [AE_trall/xsubkyk2.out](../../../scratchpad/AE_trall/xsubkyk2.out), [AE_trall/xsubkyk3.out](../../../scratchpad/AE_trall/xsubkyk3.out), [AE_trall/xsubkyk4.out](../../../scratchpad/AE_trall/xsubkyk4.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - Entry with interrupts on.

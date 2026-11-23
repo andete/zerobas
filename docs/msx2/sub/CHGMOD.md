@@ -99,6 +99,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject; [scratchpad/AE_xmode2_msx2_decoded.ou
 - LINLEN after A 0 on the HB-F900 / FS-A1WSX: 37 where the references have 39. This is C-BIOS's default LINL40
   (37), not the call: with LINL40 set, both give LINL40 [M xmode2 4, 33].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every register, VRAM sum and work-area byte is the FS-A1WSX's, on both models. What differs is the machine and the timing, not the call: $FFF8 = $FF as the boot leaves it (the A1WSX $00; no screen-mode call touches it), VDP S#2 read at a random moment, R#36 = $80 before case 0 (the boot's last VDP command), power-on cells, and one JIFFY count in xmode2 case 27 [M] ([AE_trall/xmode.out](../../../scratchpad/AE_trall/xmode.out), [AE_trall/xmode2.out](../../../scratchpad/AE_trall/xmode2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded by round 2: A, F, both interrupt reads, BC, DE, HL, IX, IY and the alternates; the whole VDP (R#0-R#63,

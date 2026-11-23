@@ -110,6 +110,10 @@ CNSDFG, cursor, the printer and cassette cells all left as the probe set them), 
 interrupts on in every case. Their start-up also leaves clock-chip block 2 unwritten ($F in every register, no ID)
 ([scratchpad/AE_xsubscr_msx2.out](../../../scratchpad/AE_xsubscr_msx2.out)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every case gives the same bytes as on the FS-A1WSX, on both models except VDP S#2 (read at a random moment), R#36 = $80 before case 0 (the boot's last VDP command) and JIFFY / INTCNT one count apart in xsubsc2 case 1 (timing) [M] ([AE_trall/xsubscr.out](../../../scratchpad/AE_trall/xsubscr.out), [AE_trall/xsubsc2.out](../../../scratchpad/AE_trall/xsubsc2.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: A F BC DE HL IX IY, IFF (read twice), SCRMOD OLDSCR LINL40 LINL32 LINLEN CRTCNT CLMLST CNSDFG

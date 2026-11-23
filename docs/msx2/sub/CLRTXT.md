@@ -69,6 +69,10 @@ C-BIOS's MSX2 / MSX2+ builds (the subject), [scratchpad/AE_xsubctx_msx2.out](../
   SCREEN 5: the bitmap := $44), with the cursor and LINTTB left as they were, also with the key line on
   [M xsubctx 10, 11, 12, 15].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT / FS-A1ST: every byte a case writes is as on the FS-A1WSX, on both models; the only difference is the RAM past the last record, which no case writes (power-on RAM) [M] ([AE_trall/xsubctx.out](../../../scratchpad/AE_trall/xsubctx.out); overview: [turbor/remeasured.md](../../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 Recorded per case: A F BC DE HL IX IY, IFF (read twice), CSRY CSRX CNSDFG SCRMOD LINLEN CRTCNT LINL40 LINL32, LINTTB,
