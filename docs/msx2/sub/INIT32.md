@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `INIT32` (sub-ROM $00D9) — set up the 32-column text screen (SCREEN 1)
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -30,9 +30,13 @@ SCREEN 1 table cells. It does not touch the palette. Shared facts:
   parks them at all on an MSX2, [A].
 - R#7 := BDRCLR [A]; R#8 / R#9: [A].
 
+**Measured** [M] (the same on all three references, entered with interrupts off and RG0SAV-RG7SAV := $A5): the
+same VDP registers and table cells as [CHGMOD](CHGMOD.md) with A 1 -- see its table -- interrupts as entered
+(off), A $00, F $40.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds set the same, but return with interrupts ON ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

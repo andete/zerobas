@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETTXT` (sub-ROM $00E5) — set the VDP to the text mode, only
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -26,9 +26,15 @@ without the rest of INITXT's work (no clear, no cursor, no width). Shared facts:
 - Writes R#0-R#7 (and TEXT 2's R#3 / R#10 / R#12 / R#13?) and their copies; no VRAM, no work area
   besides the copies [A].
 
+**Measured** [M] (the same on all three references, RG0SAV-RG7SAV := $A5, from SCREEN 0): the VDP is set to
+text 1 -- R#0 / R#2 / R#4 as CHGMOD's mode -- but **R#1's display bit is left clear** (R#1 $35 / $25: the $A5 copy's
+bits, not a rebuilt value), the copies are not normalised, SCRMOD is NOT changed (stays 0), and the call returns with
+interrupts ON; A $00, F $44.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds set the mode bits the same but write R#3 / R#5 / R#6 / R#7 their own way (R#7 := $F4,
+the border) and return other A / F ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

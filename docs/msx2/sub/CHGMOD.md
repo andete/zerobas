@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGMOD` (sub-ROM $00D1) — change the screen mode
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -35,9 +35,30 @@ main ROM's CHGMOD ($005F) always goes through this entry. Mode table, registers 
 - Work-area cells and VDP registers it reads / writes: RG0SAV-RG7SAV, the R#8-R#23 copies, R#0-R#23
   [A]; the screen-table cells of modes 0-3 [P App. 1, INITXT .. INIMLT inputs].
 
+**Measured** [M] (the same on all three references, entered with interrupts off and RG0SAV-RG7SAV := $A5):
+A 0-8 set the mode -- the VDP registers and table cells below, SCRMOD := A, LINLEN 37 / 39 (EU / JP), CRTCNT 24 --
+and return **with interrupts as entered (off)**, A $00, F $40. **A 9, $FF -- and 10, 11, 12, also on the FS-A1WSX
+(MSX2+) -- change nothing** (SCRMOD stays, A kept) and return with interrupts ON: SCREEN 10-12 are not CHGMOD's.
+
+| A | R#0 | R#1 | R#2 | R#3 | R#4 | R#5 | R#6 | NAMBAS CGPBAS PATBAS ATRBAS |
+|---|---|---|---|---|---|---|---|---|
+| 0 | $20 | $75 | $00 | (kept) | $01 | (kept) | (kept) | $0000 $0800 (kept) (kept) |
+| 1 | $20 | $65 | $06 | $80 | $00 | $36 | $07 | $1800 $0000 $3800 $1B00 |
+| 2 | $22 | $65 | $06 | $FF | $03 | $36 | $07 | $1800 $0000 $3800 $1B00 |
+| 3 | $20 | $6D | $02 | (kept) | $00 | $36 | $07 | $0800 $0000 $3800 $1B00 |
+| 4 | $24 | $65 | $06 | $FF | $03 | $3F | $07 | $1800 $0000 $3800 $1E00 |
+| 5 / 6 | $26 / $28 | $65 | $1F | (kept) | $25 | $EF | $0F | $0000 $0800 $7800 $7600 |
+| 7 / 8 | $2A / $2E | $65 | $1F | (kept) | $25 | $F7 | $1E | $0000 $0800 $F000 $FA00 |
+
+("kept": the call left the register as it found it -- the probe's $A5 copy or the previous mode's value.)
+
+Machine values, not the call's: R#7 (the border: JP $07, EU $04), R#9 (PAL $02 on the NMS 8250, NTSC $00).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) set the same registers and cells, but return with interrupts ON for A 0-8
+(the references keep them off), A = R#1's value and F $A0; for A 3 they write R#3 := $00 where the references leave
+it ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGMDP` (sub-ROM $01B5) — change the screen mode and reset the palette
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -25,9 +25,12 @@ the 16 palette entries. Shared facts: [the screen-modes page](../concepts/screen
   NEW mode's palette-table address [A] ([P App. 5] gives one per mode).
 - The initial palette's values [A].
 
+**Measured** [M] (the same on all three references, A 5): the mode as CHGMOD 5, plus R#16 (the palette
+pointer) moved -- the palette is written; out A $07, F $10, interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds set the same mode; their R#16 and F on return differ ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

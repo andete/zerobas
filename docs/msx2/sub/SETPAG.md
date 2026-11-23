@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETPAG` (sub-ROM $013D) — switch the display and active pages
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,15 @@ SPDX-License-Identifier: BSD-2-Clause
 - ACPAGE: only stored for the drawing calls, or also applied (R#45, NAMBAS?) [A].
 - In SCREEN 0-4: [A].
 
+**Measured** [M] (the same on all three references, SCREEN 5): DPPAGE 0 / 1 / 3 set **R#2 := $1F / $3F / $7F and R#6
+:= $0F / $1F / $3F** -- the sprite pattern base follows the display page; ACPAGE writes no VDP register. The call
+also rewrites R#1, R#3 and R#7 from their copies (the probe's $A5 showed up in the VDP). Out: A = SCRMOD, F $40,
+interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds set R#2 the same but leave R#6 at $0F and do not rewrite R#1 / R#3 / R#7 from the
+copies; other A / F ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

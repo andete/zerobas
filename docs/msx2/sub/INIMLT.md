@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `INIMLT` (sub-ROM $00E1) — set up the multicolour screen (SCREEN 3)
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -27,9 +27,13 @@ table cells. It does not touch the palette. Shared facts:
 - Writes the name-table pattern, clears, parks sprites, R#7 := BDRCLR, SCRMOD := 3 [A]
   (as MSX1 [INIMLT](../../bios/INIMLT.md)).
 
+**Measured** [M] (the same on all three references, entered with interrupts off and RG0SAV-RG7SAV := $A5): the
+same VDP registers and table cells as [CHGMOD](CHGMOD.md) with A 3 -- see its table -- interrupts as entered
+(off), A $00, F $40.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds set the same, but return with interrupts ON, and write R#3 := $00 where the references leave it ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 
