@@ -5,7 +5,7 @@ b4input     msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 b5sound     msx2eu: gen=1 cbios=0  msx2jp: gen=1 cbios=0  msx2p: gen=2 cbios=1
 b6slots     msx2eu: gen=1 cbios=0  msx2jp: gen=1 cbios=0  msx2p: gen=2 cbios=1
 b7tape      msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
-b8save      msx2eu: gen=7+LEN cbios=NOREAD  msx2jp: gen=7+LEN cbios=NOREAD  msx2p: gen=7+LEN cbios=NOREAD
+b8save      msx2eu: gen=0+LEN cbios=NOREAD  msx2jp: gen=0+LEN cbios=NOREAD  msx2p: gen=0+LEN cbios=NOREAD
 xbabs1      msx2eu: gen=169+LEN cbios=NOREAD  msx2jp: gen=144+LEN cbios=NOREAD  msx2p: gen=152+LEN cbios=NOREAD
 xbabs2      msx2eu: gen=266+LEN cbios=NOREAD  msx2jp: gen=216+LEN cbios=NOREAD  msx2p: gen=228+LEN cbios=NOREAD
 xbblk1      msx2eu: gen=69 cbios=NOREAD  msx2jp: gen=67 cbios=NOREAD  msx2p: gen=69 cbios=NOREAD
@@ -36,8 +36,8 @@ xcalslt     msx2eu: gen=68 cbios=115  msx2jp: gen=68 cbios=151  msx2p: gen=30 cb
 xchg        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xchg2       msx2eu: gen=23 cbios=9  msx2jp: gen=9 cbios=27  msx2p: gen=20 cbios=26
 xchgw       msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
-xchoice1    msx2eu: gen=23+LEN cbios=NOREAD  msx2jp: gen=27+LEN cbios=NOREAD  msx2p: gen=23+LEN cbios=NOREAD
-xchoice2    msx2eu: gen=30+LEN cbios=NOREAD  msx2jp: gen=30+LEN cbios=NOREAD  msx2p: gen=30+LEN cbios=NOREAD
+xchoice1    msx2eu: gen=17+LEN cbios=NOREAD  msx2jp: gen=23+LEN cbios=NOREAD  msx2p: gen=23+LEN cbios=NOREAD
+xchoice2    msx2eu: gen=16+LEN cbios=NOREAD  msx2jp: gen=20+LEN cbios=NOREAD  msx2p: gen=19+LEN cbios=NOREAD
 xchput      msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xchput2     msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xchput3     msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
@@ -50,26 +50,26 @@ xcls        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xcnv        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xcnv2       msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
 xdcompr     msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
-xdent1      msx2eu: gen=25+LEN cbios=NOREAD  msx2jp: gen=24+LEN cbios=NOREAD  msx2p: gen=24+LEN cbios=NOREAD
-xdent2      msx2eu: gen=26+LEN cbios=NOREAD  msx2jp: gen=27+LEN cbios=NOREAD  msx2p: gen=26+LEN cbios=NOREAD
-xdent3      msx2eu: gen=28+LEN cbios=NOREAD  msx2jp: gen=27+LEN cbios=NOREAD  msx2p: gen=27+LEN cbios=NOREAD
-xdent4      msx2eu: gen=26+LEN cbios=NOREAD  msx2jp: gen=27+LEN cbios=NOREAD  msx2p: gen=26+LEN cbios=NOREAD
+xdent1      msx2eu: gen=45+LEN cbios=NOREAD  msx2jp: gen=65+LEN cbios=NOREAD  msx2p: gen=21+LEN cbios=NOREAD
+xdent2      msx2eu: gen=85+LEN cbios=NOREAD  msx2jp: gen=121+LEN cbios=NOREAD  msx2p: gen=16+LEN cbios=NOREAD
+xdent3      msx2eu: gen=26+LEN cbios=NOREAD  msx2jp: gen=122+LEN cbios=NOREAD  msx2p: gen=23+LEN cbios=NOREAD
+xdent4      msx2eu: gen=14+LEN cbios=NOREAD  msx2jp: gen=38+LEN cbios=NOREAD  msx2p: gen=11+LEN cbios=NOREAD
 xdent5      msx2eu: gen=25+LEN cbios=25+LEN  msx2jp: gen=24+LEN cbios=24+LEN  msx2p: gen=25+LEN cbios=25+LEN
 xdent6      msx2eu: gen=31+LEN cbios=31+LEN  msx2jp: gen=31+LEN cbios=31+LEN  msx2p: gen=31+LEN cbios=31+LEN
-xdent7      msx2eu: gen=26+LEN cbios=NOREAD  msx2jp: gen=26+LEN cbios=NOREAD  msx2p: gen=26+LEN cbios=NOREAD
-xdfmt1      msx2eu: gen=20+LEN cbios=NOREAD  msx2jp: gen=21+LEN cbios=NOREAD  msx2p: gen=19+LEN cbios=NOREAD
-xdfmt2      VG-8020: no committed nodisk / disk run  msx2eu: gen=NOREF cbios=NOREAD  msx2jp: gen=NOREF cbios=NOREAD  msx2p: gen=NOREF cbios=NOREAD
-xdfmt3      VG-8020: no committed nodisk / disk run  msx2eu: gen=NOREF cbios=NOREAD  msx2jp: gen=NOREF cbios=NOREAD  msx2p: gen=NOREF cbios=NOREAD
-xdrvtbl     msx2eu: gen=6+LEN cbios=NOREAD  msx2jp: gen=6+LEN cbios=NOREAD  msx2p: gen=6+LEN cbios=NOREAD
-xdsk1       msx2eu: gen=90+LEN cbios=NOREAD  msx2jp: gen=83+LEN cbios=NOREAD  msx2p: gen=83+LEN cbios=NOREAD
-xdsk2       msx2eu: gen=57+LEN cbios=NOREAD  msx2jp: gen=59+LEN cbios=NOREAD  msx2p: gen=59+LEN cbios=NOREAD
-xdsk3       msx2eu: gen=NOREF cbios=NOREAD  msx2jp: gen=NOREF cbios=NOREAD  msx2p: gen=102+LEN cbios=NOREAD
-xdsk4       msx2eu: gen=94+LEN cbios=NOREAD  msx2jp: gen=97+LEN cbios=NOREAD  msx2p: gen=97+LEN cbios=NOREAD
-xdsk5       msx2eu: gen=111+LEN cbios=NOREAD  msx2jp: gen=106+LEN cbios=NOREAD  msx2p: gen=105+LEN cbios=NOREAD
-xdsk6       msx2eu: gen=25+LEN cbios=NOREAD  msx2jp: gen=30+LEN cbios=NOREAD  msx2p: gen=33+LEN cbios=NOREAD
-xdskio1     msx2eu: gen=93+LEN cbios=NOREAD  msx2jp: gen=83+LEN cbios=NOREAD  msx2p: gen=86+LEN cbios=NOREAD
-xdskio2     msx2eu: gen=64+LEN cbios=NOREAD  msx2jp: gen=51+LEN cbios=NOREAD  msx2p: gen=53+LEN cbios=NOREAD
-xdskio2p    msx2eu: gen=59+LEN cbios=NOREAD  msx2jp: gen=49+LEN cbios=NOREAD  msx2p: gen=49+LEN cbios=NOREAD
+xdent7      msx2eu: gen=2+LEN cbios=NOREAD  msx2jp: gen=2+LEN cbios=NOREAD  msx2p: gen=1+LEN cbios=NOREAD
+xdfmt1      msx2eu: gen=20+LEN cbios=NOREAD  msx2jp: gen=36+LEN cbios=NOREAD  msx2p: gen=19+LEN cbios=NOREAD
+xdfmt2      msx2eu: gen=26+LEN cbios=NOREAD  msx2jp: gen=33+LEN cbios=NOREAD  msx2p: gen=37+LEN cbios=NOREAD
+xdfmt3      msx2eu: gen=16+LEN cbios=NOREAD  msx2jp: gen=17+LEN cbios=NOREAD  msx2p: gen=16+LEN cbios=NOREAD
+xdrvtbl     msx2eu: gen=2+LEN cbios=NOREAD  msx2jp: gen=2+LEN cbios=NOREAD  msx2p: gen=2+LEN cbios=NOREAD
+xdsk1       msx2eu: gen=40+LEN cbios=NOREAD  msx2jp: gen=19+LEN cbios=NOREAD  msx2p: gen=25+LEN cbios=NOREAD
+xdsk2       msx2eu: gen=32+LEN cbios=NOREAD  msx2jp: gen=13+LEN cbios=NOREAD  msx2p: gen=19+LEN cbios=NOREAD
+xdsk3       msx2eu: gen=NOREF cbios=NOREAD  msx2jp: gen=NOREF cbios=NOREAD  msx2p: gen=36+LEN cbios=NOREAD
+xdsk4       msx2eu: gen=55+LEN cbios=NOREAD  msx2jp: gen=31+LEN cbios=NOREAD  msx2p: gen=35+LEN cbios=NOREAD
+xdsk5       msx2eu: gen=62+LEN cbios=NOREAD  msx2jp: gen=28+LEN cbios=NOREAD  msx2p: gen=33+LEN cbios=NOREAD
+xdsk6       msx2eu: gen=21+LEN cbios=NOREAD  msx2jp: gen=7+LEN cbios=NOREAD  msx2p: gen=16+LEN cbios=NOREAD
+xdskio1     msx2eu: gen=40+LEN cbios=NOREAD  msx2jp: gen=16+LEN cbios=NOREAD  msx2p: gen=25+LEN cbios=NOREAD
+xdskio2     msx2eu: gen=31+LEN cbios=NOREAD  msx2jp: gen=8+LEN cbios=NOREAD  msx2p: gen=14+LEN cbios=NOREAD
+xdskio2p    msx2eu: gen=30+LEN cbios=NOREAD  msx2jp: gen=10+LEN cbios=NOREAD  msx2p: gen=14+LEN cbios=NOREAD
 xenaslt     msx2eu: gen=22 cbios=0  msx2jp: gen=22 cbios=21  msx2p: gen=23 cbios=32
 xenaslt2    VG-8020: no committed nodisk / disk run  msx2eu: gen=- cbios=6  msx2jp: gen=- cbios=20  msx2p: gen=- cbios=26
 xfnk        msx2eu: gen=0 cbios=0  msx2jp: gen=2 cbios=2  msx2p: gen=14 cbios=14

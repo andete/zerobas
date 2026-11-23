@@ -1,0 +1,131 @@
+WARNING: Var buf is never used on line 46 of file probes/bios/spec/xdfmt2.asm
+WARNING: Var cc is never used on line 38 of file probes/bios/spec/xdfmt2.asm
+WARNING: Var entry is never used on line 36 of file probes/bios/spec/xdfmt2.asm
+===== probes/bios/spec/xdfmt2.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=5c01 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3903cc9c9
+  CAP ref : 007c00f8000900920000420002020100027000d002f80200090001000000f8ffff00000000000c450022000080000000420002020100027000d002f80200090001000000f8ffff00000000000c010022000080000000420002020100027000d002f80200090001000000f8ffff00000000000c010022000080000000420002020100027000d002f80200090001000000f8ffff00000000000c090022000080000000420002020100027000d002f80200090001000000f8ffff00000000000c050022000080000000420002020100027000d002f80200090001000000f8ffff00000000000ca90022000080000000420002020100027000d002f80200090001000000f8ffff00000000000ea51234000088000000420002020100027000d002f80200090001000000f8ffff00000000000c010022000084000000420002020100027000d002f80200090001000000f8ffff
+  CAP ours: 000000000000000e00004400020101000240006801fc0200090001000000fcffff00000000000c89200000ff800000004400020101000240006801fc0200090001000000fcffff00000000000c0920000005800000004400020101000240006801fc0200090001000000fcffff00000000000c0920000006800000004400020101000240006801fc0200090001000000fcffff00000000000c0920000007800000004400020101000240006801fc0200090001000000fcffff00000000000c092000007f800000004400020101000240006801fc0200090001000000fcffff00000000000c89200000fe800000004400020101000240006801fc0200090001000000fcffff00000000000c4912340004880000004400020101000240006801fc0200090001000000fcffff0000000000004400050000000e0000440002020100027000a005f90300090002000000f9ffff
+  DIFF (98 unexcused byte(s)):
+  CAP A002: ref=7C ours=00
+  CAP A004: ref=F8 ours=00
+  CAP A006: ref=09 ours=00
+  CAP A008: ref=92 ours=0E
+  CAP A00B: ref=42 ours=44
+  CAP A00E: ref=02 ours=01
+  CAP A012: ref=70 ours=40
+  CAP A014: ref=D0 ours=68
+  CAP A015: ref=02 ours=01
+  CAP A016: ref=F8 ours=FC
+  CAP A01F: ref=F8 ours=FC
+  CAP A028: ref=45 ours=89
+  CAP A029: ref=00 ours=20
+  CAP A02A: ref=22 ours=00
+  CAP A02C: ref=00 ours=FF
+  CAP A031: ref=42 ours=44
+  CAP A034: ref=02 ours=01
+  CAP A038: ref=70 ours=40
+  CAP A03A: ref=D0 ours=68
+  CAP A03B: ref=02 ours=01
+  CAP A03C: ref=F8 ours=FC
+  CAP A045: ref=F8 ours=FC
+  CAP A04E: ref=01 ours=09
+  CAP A04F: ref=00 ours=20
+  CAP A050: ref=22 ours=00
+  CAP A052: ref=00 ours=05
+  CAP A057: ref=42 ours=44
+  CAP A05A: ref=02 ours=01
+  CAP A05E: ref=70 ours=40
+  CAP A060: ref=D0 ours=68
+  CAP A061: ref=02 ours=01
+  CAP A062: ref=F8 ours=FC
+  CAP A06B: ref=F8 ours=FC
+  CAP A074: ref=01 ours=09
+  CAP A075: ref=00 ours=20
+  CAP A076: ref=22 ours=00
+  CAP A078: ref=00 ours=06
+  CAP A07D: ref=42 ours=44
+  CAP A080: ref=02 ours=01
+  CAP A084: ref=70 ours=40
+  CAP A086: ref=D0 ours=68
+  CAP A087: ref=02 ours=01
+  CAP A088: ref=F8 ours=FC
+  CAP A091: ref=F8 ours=FC
+  CAP A09B: ref=00 ours=20
+  CAP A09C: ref=22 ours=00
+  CAP A09E: ref=00 ours=07
+  CAP A0A3: ref=42 ours=44
+  CAP A0A6: ref=02 ours=01
+  CAP A0AA: ref=70 ours=40
+  CAP A0AC: ref=D0 ours=68
+  CAP A0AD: ref=02 ours=01
+  CAP A0AE: ref=F8 ours=FC
+  CAP A0B7: ref=F8 ours=FC
+  CAP A0C0: ref=05 ours=09
+  CAP A0C1: ref=00 ours=20
+  CAP A0C2: ref=22 ours=00
+  CAP A0C4: ref=00 ours=7F
+  CAP A0C9: ref=42 ours=44
+  CAP A0CC: ref=02 ours=01
+  CAP A0D0: ref=70 ours=40
+  CAP A0D2: ref=D0 ours=68
+  CAP A0D3: ref=02 ours=01
+  CAP A0D4: ref=F8 ours=FC
+  CAP A0DD: ref=F8 ours=FC
+  CAP A0E6: ref=A9 ours=89
+  CAP A0E7: ref=00 ours=20
+  CAP A0E8: ref=22 ours=00
+  CAP A0EA: ref=00 ours=FE
+  CAP A0EF: ref=42 ours=44
+  CAP A0F2: ref=02 ours=01
+  CAP A0F6: ref=70 ours=40
+  CAP A0F8: ref=D0 ours=68
+  CAP A0F9: ref=02 ours=01
+  CAP A0FA: ref=F8 ours=FC
+  CAP A103: ref=F8 ours=FC
+  CAP A10B: ref=0E ours=0C
+  CAP A10C: ref=A5 ours=49
+  CAP A110: ref=00 ours=04
+  CAP A115: ref=42 ours=44
+===== biosl: DIVERGENCE =====
+WARNING: Var buf is never used on line 38 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file probes/bios/spec/xdfmt3.asm
+===== probes/bios/spec/xdfmt3.asm disk: Philips_VG_8020_NMS1200 vs C-BIOS_MSX1_EU_REPACK_DISK =====
+  VDP R#1 at the dump: ref 240, ours 240
+  ref : jiffy=7f01 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f7811879c9
+  ours: jiffy=f003 typed=0 scncnt=03 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c3903cc9c9
+  CAP ref : 0c050022000080000000420002020100027000a005f90300090002000000f9ffff0000000000007c00f8000900920000420002020100027000d002f80200090001000000f8ffff0000000000007c00f8000900920000420002020100027000d002f80200090001000000f8ffff
+  CAP ours: 00000000000000000000440002020100027000a005f90300090002000000f9ffff0000000000004400050100000e00004400020101000240006801fc0200090001000000fcffff0000000000004400050100000e00004400020101000240006801fc0200090001000000fcffff
+  DIFF (29 unexcused byte(s)):
+  CAP A001: ref=0C ours=00
+  CAP A002: ref=05 ours=00
+  CAP A004: ref=22 ours=00
+  CAP A007: ref=80 ours=00
+  CAP A00B: ref=42 ours=44
+  CAP A028: ref=7C ours=44
+  CAP A02A: ref=F8 ours=05
+  CAP A02B: ref=00 ours=01
+  CAP A02C: ref=09 ours=00
+  CAP A02E: ref=92 ours=0E
+  CAP A031: ref=42 ours=44
+  CAP A034: ref=02 ours=01
+  CAP A038: ref=70 ours=40
+  CAP A03A: ref=D0 ours=68
+  CAP A03B: ref=02 ours=01
+  CAP A03C: ref=F8 ours=FC
+  CAP A045: ref=F8 ours=FC
+  CAP A04E: ref=7C ours=44
+  CAP A050: ref=F8 ours=05
+  CAP A051: ref=00 ours=01
+  CAP A052: ref=09 ours=00
+  CAP A054: ref=92 ours=0E
+  CAP A057: ref=42 ours=44
+  CAP A05A: ref=02 ours=01
+  CAP A05E: ref=70 ours=40
+  CAP A060: ref=D0 ours=68
+  CAP A061: ref=02 ours=01
+  CAP A062: ref=F8 ours=FC
+  CAP A06B: ref=F8 ours=FC
+===== biosl: DIVERGENCE =====

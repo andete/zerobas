@@ -58,7 +58,14 @@ def vg8020():
                                               capture_output=True, text=True).stdout.strip() or 0)
                 refs.setdefault(name, []).append((row == "nodisk", when, caps["ref"], f))
     # the NEWEST committed reading (a probe's cases grow over time), nodisk before disk (both are the VG-8020)
-    return {n: {max(v)[2]} for n, v in refs.items()}
+    # a probe that asks for a drive (`; @disk`) is compared with the VG-8020 + NMS 1200 `disk` row, never the
+    # diskless one (the D-MSX1ON2 disk triage found 18 probes set against the wrong row)
+    def pick(n, v):
+        srcs = [os.path.join(ROOT, "probes", "bios", d, n + ".asm") for d in ("spec", "biosl")]
+        wants_disk = any(os.path.exists(x) and "; @disk" in open(x).read() for x in srcs)
+        pref = [x for x in v if x[0] != wants_disk] or v      # x[0] is True for the nodisk row
+        return {max(pref)[2]}
+    return {n: pick(n, v) for n, v in refs.items()}
 
 
 def diff(a, b):

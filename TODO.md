@@ -16788,6 +16788,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       three. The BDOS / disk-ROM probes (xb*, xd*, xchoice*) give no reading on C-BIOS's MSX2 builds
       -- expected: no C-BIOS build has a disk ROM yet (Joost 2026-11-23); for those only the reference-vs-VG-8020
       comparison applies.
+      FIRST PASS DONE (2026-11-23): 137 probes run, triaged per byte into GEN / CONFIG / TIMING / APPARATUS /
+      UNKNOWN -- scratchpad/m1on2-triage-{vdp,gfx,slots,disk}.md (their summaries are the index). NEXT, in order:
+      (a) APPARATUS, so every probe gives a reading on all three: xlin / xlin2a-c (`@type-at 4` fires before the
+          NMS 8250 / FS-A1WSX are ready -> a KEYREADY handshake); xinit3 / xinit4 (a garbage RG0SAV turns the line
+          interrupt on, the MSX2 never acknowledges it, the stack overruns RAM); xvdpreg (R#14 / R#15 left at $A5);
+          xsetw (no @caplen); xcalslt (copies its target into sub-slot 3-0, not the RAM slot); xenaslt2 / xrdslt2
+          (assume RAM in 3-0); xdsk3 (no reading on two machines: dump CAP + a progress cell on timeout); disk
+          R-BS-SLOT's per-row IY constant. A probe edit changes the MSX1 runs too: re-measure the VG-8020 rows.
+      (b) the GEN findings onto the MSX1 pages: a rule that names its generation, [M] on the three machines,
+          MSX2 and MSX2+ separately (e.g. INIT* clear RG1SAV bit 7; SETTXT no longer computes RG3/5/6SAV; WRTPSG
+          forces R7 bit 7; the BDOS / disk entries return with interrupts ON on all three MSX2s).
+      (c) the C-BIOS MSX2 findings (where it keeps MSX1 behaviour the MSX2 changed, or matches neither) to the
+          C-BIOS session -- after (a), so no finding rests on a probe that cannot run there.
+      (d) the UNKNOWNs listed in each triage file.
 - [ ] **D-TRSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE MSX TURBO R BIOS CALLS**
       🎚️ TIER 1 — Joost 2026-11-23: "if we're finished with the msx2 and msx2+ specs we could also spec the turbor
       bios calls" -- AFTER D-MSX2SPEC / D-MSX1ON2, before D-KWSPEC unless Joost reorders.
