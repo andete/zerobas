@@ -76,6 +76,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): this call's cases give the same results as on the FS-A1WSX, on both models; the only other field in its records is PSG R14 bit 7, which reads 0 (no cassette input: the machine). The probe's new turbo R findings are [GTPAD](GTPAD.md)'s and [GTPDL](GTPDL.md)'s [M] ([AE_trall/xinp1.out](../../scratchpad/AE_trall/xinp1.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A break pending (INTFLG 3 / 4): the call then leaves for BASIC's break handling or waits for STOP

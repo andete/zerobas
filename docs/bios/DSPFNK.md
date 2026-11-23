@@ -152,6 +152,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 **[A]** The probes read name-table codes and cursor cells, not glyph patterns: the JP / EU character sets, which differ between these machines, are out of their view.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds (xfsw and xkey also as on the VG-8020) [M] ([AE_trall/xfsw.out](../../scratchpad/AE_trall/xfsw.out), [AE_trall/xkey.out](../../scratchpad/AE_trall/xkey.out), [AE_trall/xscr.out](../../scratchpad/AE_trall/xscr.out), [AE_trall/xscr3.out](../../scratchpad/AE_trall/xscr3.out), [AE_trall/xscr4.out](../../scratchpad/AE_trall/xscr4.out), [AE_trall/xscr5.out](../../scratchpad/AE_trall/xscr5.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** HL on return in SCREEN 2: the cases do not capture it. The VG-8020's ERAFNK keeps it (biosregs-acceptance row era2, which caught C-BIOS's HL = a return address during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.

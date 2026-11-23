@@ -83,6 +83,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | **R-FV-F** | F is not kept: $43 on return, whatever went in ($42 in one case, HL $5234) [M] | the same [M] |
 | every other rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xvram.out](../../scratchpad/AE_trall/xvram.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A read of port $98 after the call (the probe writes); more HL values. Case 22's next write

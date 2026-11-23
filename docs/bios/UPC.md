@@ -87,6 +87,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | R-UC-KEEP | In SCREEN 3, a call entered with interrupts off returns with them ON (every such case) [M]; the registers and the work area are kept as the rule says [M]. | as MSX2 [M] |
 | every other rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xgfx2.out](../../scratchpad/AE_trall/xgfx2.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** SCRMOD other than 2 and 3; CMASK values other than the pixel masks and those listed.

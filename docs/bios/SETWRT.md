@@ -77,6 +77,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds; xsetw's one other byte (+00) is a cell the probe never writes (power-on RAM: $00 on the turbo R, $FF on the A1WSX) [M] ([AE_trall/xvram.out](../../scratchpad/AE_trall/xvram.out), [AE_trall/xsetw.out](../../scratchpad/AE_trall/xsetw.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** HL values other than the seven measured; more than two writes after it.

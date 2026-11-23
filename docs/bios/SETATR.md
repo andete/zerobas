@@ -74,6 +74,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | R-SA-F | holds [M] | F bit 5 is clear even when A's bit 5 is set: A $FF gives $89 (case 9), A $20 gives $01 (case 45) [M]; the rest of F as the rule says [M]. |
 | every other rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xgfx1.out](../../scratchpad/AE_trall/xgfx1.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** ATRBYT other than $77 before a refused colour.

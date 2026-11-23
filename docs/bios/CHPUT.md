@@ -226,6 +226,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 **[A]** The probes read name-table codes and cursor cells, not glyph patterns: the JP / EU character sets, which differ between these machines, are out of their view.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the VG-8020 and the FS-A1WSX, on both models: every rule holds as above [M] ([AE_trall/xchput.out](../../scratchpad/AE_trall/xchput.out), [AE_trall/xchput2.out](../../scratchpad/AE_trall/xchput2.out), [AE_trall/xchput3.out](../../scratchpad/AE_trall/xchput3.out), [AE_trall/xchput4.out](../../scratchpad/AE_trall/xchput4.out), [AE_trall/xchput5.out](../../scratchpad/AE_trall/xchput5.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** CSRX / CSRY out of range ON ENTRY (0, past LINLEN, past row 24): a program can poke them;

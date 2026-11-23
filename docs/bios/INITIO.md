@@ -237,6 +237,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the HB-F900's and FS-A1WSX's PSG reads R1, R3, R5 and R13 back in 4 bits and R6 in 5 (the registers left as found read masked); the FS-A1WSX's port A (R14) reads $FF, not $BF.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): INITIO's PSG R0-R13 and R15, port $AA and queue cells are the FS-A1WSX's, on both models. What differs is the machine and the timing, not the call: PSG R14 bit 7 reads 0 (no cassette input; R14 $7F, the A1WSX $FF), JIFFY's value at the witnesses, port $AA's key-row nibble (where the last key scan left it), one more work-area cell in xinitio case 0 (STATFL, written by an interrupt), and in xinitio7 cases 0 and 3 one try where the A1WSX needed two [M] ([AE_trall/xinitio.out](../../scratchpad/AE_trall/xinitio.out), [AE_trall/xinitio2.out](../../scratchpad/AE_trall/xinitio2.out), [AE_trall/xinitio3.out](../../scratchpad/AE_trall/xinitio3.out), [AE_trall/xinitio4.out](../../scratchpad/AE_trall/xinitio4.out), [AE_trall/xinitio5.out](../../scratchpad/AE_trall/xinitio5.out), [AE_trall/xinitio6.out](../../scratchpad/AE_trall/xinitio6.out), [AE_trall/xinitio7.out](../../scratchpad/AE_trall/xinitio7.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** INITIO's duration: it decides how often an interrupt lands in a probe's window. The rules

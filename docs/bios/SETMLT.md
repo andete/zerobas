@@ -96,6 +96,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the V9938 / V9958 holds more bits of R#2-R#6 than the MSX1's VDP (read back: R#2 $3F, R#4 $1F, R#5 $A5 / $FF whole, R#6 $25 from $A5), and drops R#0's bits 7 and 0 and R#1's bit 7.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xset.out](../../scratchpad/AE_trall/xset.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Cells and RG0SAV / RG1SAV values other than the measured sets: cell bits that always move

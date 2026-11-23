@@ -96,6 +96,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the V9938 / V9958 has no R#1 bit 7, so the probe's R#1 preset $80 reads back $00 after every case [M]; the rule's "VDP registers kept" holds for the bits the VDP has.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): xgfx6 gives the same bytes as on the FS-A1WSX, on both models, and SCANR's HL in xscank is the A1WSX's in all 3 cases; xscank's work-area dump differs only in machine cells -- BUF's boot leftover ("512" on the A1GT, "256" on the A1ST), JIFFY / SCNCNT, $FCB1, SLTTBL's slot-0 entry, $FFF8 and CHGCPU's stack cell $FFFD-$FFFE [M] ([AE_trall/xgfx6.out](../../scratchpad/AE_trall/xgfx6.out), [AE_trall/xscank.out](../../scratchpad/AE_trall/xscank.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A skip running to the row's end (every pixel the border's); DE's high byte only $00 / $01; B

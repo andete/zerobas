@@ -66,6 +66,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the VG-8020 and the FS-A1WSX, on both models: every rule holds as above [M] ([AE_trall/xrslreg.out](../../scratchpad/AE_trall/xrslreg.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Bits 0-1 and 6-7 with other values, so "the whole byte" against "bits 2-5": page 0 holds

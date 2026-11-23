@@ -214,6 +214,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the VG-8020 and the FS-A1WSX, on both models: every rule holds as above [M] ([AE_trall/xlin.out](../../scratchpad/AE_trall/xlin.out), [AE_trall/xlin2a.out](../../scratchpad/AE_trall/xlin2a.out), [AE_trall/xlin2b.out](../../scratchpad/AE_trall/xlin2b.out), [AE_trall/xlin2c.out](../../scratchpad/AE_trall/xlin2c.out), [AE_trall/xlin3.out](../../scratchpad/AE_trall/xlin3.out), [AE_trall/xlin4.out](../../scratchpad/AE_trall/xlin4.out), [AE_trall/xlin5.out](../../scratchpad/AE_trall/xlin5.out), [AE_trall/xlin6.out](../../scratchpad/AE_trall/xlin6.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A on return after Enter: the cases do not capture it. The VG-8020 returns A = $0D (biosregs-acceptance rows pinlin / inlin / qinlin, which caught C-BIOS's A = 0 during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.

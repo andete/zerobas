@@ -93,6 +93,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: key 6 is 'color 15,4,7' on the HB-F900 and FS-A1WSX (their BDRCLR 7); key 7 is 'load"' on the FS-A1WSX, the others 'cload"' -- MSX2+ or that machine, not separated (one MSX2+ reference).
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xfnk.out](../../scratchpad/AE_trall/xfnk.out), [AE_trall/xfnk2.out](../../scratchpad/AE_trall/xfnk2.out), [AE_trall/xfnk3.out](../../scratchpad/AE_trall/xfnk3.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** The alternate registers on return; F's bits 5 / 3 for other entry values.

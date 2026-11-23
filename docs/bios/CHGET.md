@@ -111,6 +111,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): xchg and xchgw give the same bytes as on the VG-8020 and the FS-A1WSX, on both models; in xchg2 CHGET's and CHSNS's own outputs are the A1WSX's, and what differs is NEWKEY's row 10 ($FBEF) and the work-area change count that follows it -- whether a key scan ran inside the case (timing) [M] ([AE_trall/xchg.out](../../scratchpad/AE_trall/xchg.out), [AE_trall/xchgw.out](../../scratchpad/AE_trall/xchgw.out), [AE_trall/xchg2.out](../../scratchpad/AE_trall/xchg2.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** What CHGET shows WHILE it waits (the cursor drawn with CSRSW 1 or 0), and the cursor's

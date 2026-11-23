@@ -102,6 +102,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the V9938 / V9958 has no R#1 bit 7, so the probe's R#1 preset $80 reads back $00 after every case [M]; the rule's "VDP registers kept" holds for the bits the VDP has.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xgfx5.out](../../scratchpad/AE_trall/xgfx5.out), [AE_trall/xgfx5b.out](../../scratchpad/AE_trall/xgfx5b.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** SCRMOD other than 2 and 3 (SCREEN 0 / 1); FORCLR over 15 only as $1A, $13, $1E (in SCREEN 3

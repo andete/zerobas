@@ -94,6 +94,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xcalslt.out](../../scratchpad/AE_trall/xcalslt.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A target that is not the probe's own: another ROM's routine (clean room), and, for

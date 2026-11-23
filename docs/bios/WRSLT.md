@@ -111,6 +111,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): RDSLT's and WRSLT's results are the FS-A1WSX's, on both models, and xrdslt2 reads byte for byte as on the A1WSX; what differs is SLTTBL's slot-0 entry ($00, the A1WSX $F0: the machine's slot-0 secondary register) and the RAM byte read before WRSLT writes it (power-on RAM) [M] ([AE_trall/xrdslt.out](../../scratchpad/AE_trall/xrdslt.out), [AE_trall/xrdslt2.out](../../scratchpad/AE_trall/xrdslt2.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Sub-slots 3-2 and 3-3 as the target; a target sub-slot in pages 0, 2 and 3 (round 6 reads

@@ -91,6 +91,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): this call's cases give the same results as on the FS-A1WSX, on both models; what differs is PSG R14 bit 7 (0: no cassette input), port $AA's key-row nibble (where the last key scan left it). The probe's one new turbo R finding is [BEEP](BEEP.md)'s C [M] ([AE_trall/xsnd1.out](../../scratchpad/AE_trall/xsnd1.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Queue numbers above 4 (4 reads QUEBAK and the first buffer bytes as an entry: case 93).

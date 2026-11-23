@@ -93,6 +93,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the MSX2s' PSG reads R7's bits 7 / 6 back as 1 / 0 whatever was written -- E $3E reads $BE (b5sound), $3F reads $BF (xsnd1 case 104) -- and it is the PSG, not WRTPSG: R7 := $3F / $7F / $BF / $FF written straight through ports $A0 / $A1 reads back $BF through port $A2 on all three, as it does through WRTPSG and RDPSG; the VG-8020 reads back each value as written [M] ([scratchpad/AE_xpsgr7.out](../../scratchpad/AE_xpsgr7.out), [scratchpad/AE_xpsgr7_msx2.out](../../scratchpad/AE_xpsgr7_msx2.out); probe [xpsgr7.asm](../../probes/bios/spec/xpsgr7.asm)). So R-WP-REG holds: WRTPSG writes R7 whole; the chip keeps those two bits.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): xpsgr7 gives the same bytes as on the FS-A1WSX (R7 reads back $BF), on both models; in b5sound and xsnd1 WRTPSG's results are the A1WSX's, and what differs is PSG R14 bit 7 (0: no cassette input), port $AA's key-row nibble, and R15 after WRTPSG R15 := $80 / $C0, which differs between the two models (the timer interrupt's, as above) [M] ([AE_trall/xpsgr7.out](../../scratchpad/AE_trall/xpsgr7.out), [AE_trall/b5sound.out](../../scratchpad/AE_trall/b5sound.out), [AE_trall/xsnd1.out](../../scratchpad/AE_trall/xsnd1.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** What R14 / R15 hold after the call: interrupts are on, and the timer interrupt writes R15

@@ -87,6 +87,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Not a rule: in SCREEN 2 with X above 255 (cases 20 22 79 80) CMASK reads $FB / $4B on all three, $D5 / $C5 on the VG-8020 [M]; how it is formed is [A] -- a sweep of X $0100-$0107 under two CMASK presets would tell.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds [M] ([AE_trall/xgfx1.out](../../scratchpad/AE_trall/xgfx1.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** In SCREEN 2 with X above 255 the reference's CMASK is not $80 >> (X AND 7) ($D5 for X

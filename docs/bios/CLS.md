@@ -137,6 +137,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | **R-CP-AF** | CLS that draws the key line returns A = the last label character drawn ($41, $43, $59 measured), not 00; F $42 in SCREEN 2 and 3 [M] | the same [M] |
 | every other rule | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds (xcls also as on the VG-8020) [M] ([AE_trall/xcls.out](../../scratchpad/AE_trall/xcls.out), [AE_trall/xscr.out](../../scratchpad/AE_trall/xscr.out), [AE_trall/xscr3.out](../../scratchpad/AE_trall/xscr3.out), [AE_trall/xscr4.out](../../scratchpad/AE_trall/xscr4.out), [AE_trall/xscr5.out](../../scratchpad/AE_trall/xscr5.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** CLS with the cursor display on (CSRSW); POSIT with it on (is the cursor redrawn?).

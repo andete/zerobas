@@ -127,6 +127,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 
 R-PD-FIRSTE reproduces on the NMS 8250 (xdsk3 case 20 reads the boot sector again; its 17 records are byte for byte XDSK3_nms8250.out's); the HB-F900 and FS-A1WSX read track 1 there [M].
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds -- interrupts on after every case, C $3C after a read, $0C / F $55 past the end of the disk; xdsk3 completes on both (it hung on the HB-F900 / NMS 8250) [M] ([AE_trall/xdsk1.out](../../scratchpad/AE_trall/xdsk1.out), [AE_trall/xdsk2.out](../../scratchpad/AE_trall/xdsk2.out), [AE_trall/xdsk3.out](../../scratchpad/AE_trall/xdsk3.out), [AE_trall/xdsk4.out](../../scratchpad/AE_trall/xdsk4.out), [AE_trall/xdsk5.out](../../scratchpad/AE_trall/xdsk5.out), [AE_trall/xdsk6.out](../../scratchpad/AE_trall/xdsk6.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Drives other than A (not tried: the probe's interface has one drive, and drive B would be the

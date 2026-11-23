@@ -72,6 +72,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 **[A]** xlpt3's reading is a few bytes -- the not-ready answer and the CTRL+STOP abort, no printer attached: a printer-port difference beyond those is out of its view.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the VG-8020 and the FS-A1WSX, on both models: every rule holds as above [M] ([AE_trall/xlpt.out](../../scratchpad/AE_trall/xlpt.out), [AE_trall/xlpt3.out](../../scratchpad/AE_trall/xlpt3.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A printer plugged in but busy; STOP without CTRL; whether a byte aborted is sent later.
