@@ -11,12 +11,19 @@
 ; waited for; then A / F / IFF, the block after, and the window (or $D200-$D22B).
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the case count; per case a 128-byte record from +2:
 ;   +0 the case, +1 A, +2 F, +3 IFF, +4..+18 the block after, +19..+31 0, +32..+127 the window (6 x 16) or the RAM.
+; Goldfish pass 1 (2026-11-23): cases 6-13 appended (0-5 unchanged). Every case now also records +19 = S#2 as the
+; debugger reads it right after the call returns (before the probe's own wait: bit 0 = CE; a port read there made the
+; next BLTMV write garbage on the references, so the debugger reads it), and $D200-$D25F is preset $EE (was
+; -$D22B). The case's last byte is now flags: bit 0 the destination is RAM, bit 1 the call goes through SUBROM
+; ($015C) instead of EXTROM, bit 2 the window is NOT preset (it holds the source / the cleared screen), bit 3 the
+; RAM record is 96 bytes ($D200-$D25F) instead of 44. Decoder: scratchpad/xsubblt_decode.py.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubblt.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports.
 ;
 ; @cap C000
-; @caplen 0400
+; @caplen 0800
+; @vdpfull E8F0 E900
 ; @timeout 120
 
 CHGMOD  equ     $005F
@@ -28,6 +35,9 @@ ptr     equ     $E904
 tp      equ     $E906
 cidx    equ     $E908
 rsave   equ     $E910
+SNAPFN  equ     $E8F0                   ; a `ret`: the debugger's snapshot point (@vdpfull)
+SNAPP   equ     $E900                   ; @vdpfull's pointer word
+SNAPB   equ     $E000                   ; 114 bytes: R#0-63, S#0-15, pointer (2), palette (32)
 cur     equ     $E920                   ; entry (2), SCRMOD, block (15), preset, wx (2), wy, ram = 23
 
                 org     $4000
@@ -37,9 +47,11 @@ cur     equ     $E920                   ; entry (2), SCRMOD, block (15), preset,
 
 init:
                 di
+                ld      a, $C9
+                ld      (SNAPFN), a
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $03FF
+                ld      bc, $07FF
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+2
@@ -63,15 +75,17 @@ c_next:
                 call    CHGMOD
                 di
                 call    src_set
+                ld      a, (cur+22)
+                and     4
                 ld      c, $40
-                call    win
+                call    z, win
                 ld      hl, arr
                 ld      de, $D100
                 ld      bc, 12
                 ldir
                 ld      hl, $D200
                 ld      de, $D201
-                ld      bc, 43
+                ld      bc, 95
                 ld      (hl), $EE
                 ldir
                 ld      hl, cur+3
@@ -80,7 +94,14 @@ c_next:
                 ldir
                 ld      ix, (cur)
                 ld      hl, BLK
+                ld      a, (cur+22)
+                and     2
+                jr      nz, c_sub
                 call    EXTROM
+                jr      c_ret
+c_sub:
+                call    subpath
+c_ret:
                 push    af
                 ld      a, i
                 di
@@ -93,6 +114,11 @@ c_next:
                 ld      (rsave+2), a
                 pop     hl
                 ld      (rsave), hl
+                ld      hl, SNAPB               ; S#2 as the call left it, read by the debugger (@vdpfull):
+                ld      (SNAPP), hl             ; a port read of S#2 here broke the next BLTMV on the references
+                call    SNAPFN
+                ld      a, (SNAPB+66)
+                ld      (rsave+3), a
                 call    cewait
                 ld      de, (ptr)
                 ld      a, (cidx)
@@ -110,16 +136,23 @@ c_next:
                 ld      hl, BLK
                 ld      bc, 15
                 ldir
+                ld      a, (rsave+3)
+                ld      (de), a                 ; +19 S#2 on return
                 ld      hl, (ptr)
                 ld      bc, 32
                 add     hl, bc
                 ld      (ptr), hl
                 ld      a, (cur+22)
-                or      a
+                and     1
                 jr      z, c_vr
                 ld      hl, $D200
                 ld      de, (ptr)
                 ld      bc, 44
+                ld      a, (cur+22)
+                and     8
+                jr      z, c_r44
+                ld      bc, 96
+c_r44:
                 ldir
                 jr      c_rec
 c_vr:
@@ -144,6 +177,11 @@ finish:
                 ei
 fin:
                 jr      fin
+
+; SUBROM the handbook's way: PUSH IX (comes back in IX), IX = the routine, JP SUBROM; returns to our caller
+subpath:
+                push    ix
+                jp      $015C
 
 cewait:
                 ld      a, 2
@@ -248,7 +286,7 @@ s5row:          db      $12, $34, $56, $78
 ; the window: 6 lines from wy x 16 bytes from wx; write (C $40) the preset or read (C $00) into (ptr)
 win:
                 ld      a, (cur+22)
-                or      a
+                and     1
                 ret     nz
                 ld      a, (cur+21)
                 ld      b, 6
@@ -309,6 +347,39 @@ cases:
                 db      5, $09, $00, $08, $00, $28, $00, $08, $00, $04, $00, $04, $00, $00, $00, $00, $00
                 dw      36
                 db      7, 0   ; 5 BLTVV SCREEN 5 SX 9
+                ; goldfish pass 1 (2026-11-23)
+                dw      $0191
+                db      5, $09, $00, $08, $00, $29, $00, $08, $00, $05, $00, $04, $00, $00, $00, $00, $BC
+                dw      32
+                db      7, 0   ; 6 BLTVV SCREEN 5 SX 9 -> DX 41, NX 5, over $BC
+                dw      $0191
+                db      8, $0F, $00, $08, $00, $13, $00, $08, $00, $08, $00, $04, $00, $00, $04, $00, $00
+                dw      8
+                db      7, 4   ; 7 BLTVV DIX overlapping: SX 15 -> DX 19, NX 8 (window not preset)
+                dw      $0191
+                db      8, $08, $00, $0B, $00, $08, $00, $0D, $00, $08, $00, $04, $00, $00, $08, $00, $00
+                dw      8
+                db      8, 4   ; 8 BLTVV DIY overlapping: SY 11 -> DY 13, NY 4 (window not preset)
+                dw      $0195
+                db      8, $00, $D1, $00, $00, $28, $00, $14, $00, $33, $00, $11, $00, $00, $00, $00, $00
+                dw      36
+                db      19, 0   ; 9 BLTVM, the block's NX / NY = $33 / $11 (garbage)
+                dw      $0199
+                db      8, $08, $00, $08, $00, $00, $D2, $00, $00, $08, $00, $04, $00, $00, $00, $00, $00
+                dw      0
+                db      0, 9   ; 10 BLTMV to $D200, 96 bytes recorded
+                dw      $0199
+                db      8, $08, $00, $08, $00, $00, $D2, $00, $00, $08, $00, $04, $00, $00, $00, $00, $00
+                dw      4
+                db      7, 4   ; 11 BLTMV, the VRAM window round the source read (not preset)
+                dw      $0191
+                db      8, $08, $00, $08, $00, $28, $00, $08, $00, $08, $00, $04, $00, $00, $00, $00, $00
+                dw      36
+                db      7, 2   ; 12 case 0 through SUBROM
+                dw      $0199
+                db      8, $08, $00, $08, $00, $00, $D2, $00, $00, $08, $00, $04, $00, $00, $00, $00, $00
+                dw      0
+                db      0, 3   ; 13 case 3 (BLTMV) through SUBROM
                 dw      0
 
                 ds      $8000 - $, $FF

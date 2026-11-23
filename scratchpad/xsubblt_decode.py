@@ -8,8 +8,13 @@ import struct
 import sys
 
 NAMES = ["BLTVV (8,8) 8x4 -> (40,8)", "BLTVV XOR over $FF", "BLTVV ARG DIX", "BLTMV -> $D200", "BLTVM $D100 -> (40,20)",
-         "BLTVV SCREEN 5 SX 9 -> 40"]
-PRE = [0x00, 0xFF, 0x00, 0xEE, 0x00, 0x00]
+         "BLTVV SCREEN 5 SX 9 -> 40",
+         # goldfish pass 1 (2026-11-23)
+         "BLTVV S5 SX 9 -> DX 41 NX 5 over $BC", "BLTVV DIX overlap SX 15 -> DX 19", "BLTVV DIY overlap SY 11 -> DY 13",
+         "BLTVM block NX/NY garbage", "BLTMV -> $D200 (96 B)", "BLTMV, VRAM window", "BLTVV case 0 via SUBROM",
+         "BLTMV case 3 via SUBROM"]
+PRE = [0x00, 0xFF, 0x00, 0xEE, 0x00, 0x00, 0xBC, None, None, 0x00, 0xEE, None, 0x00, 0xEE]
+RAM = {3: 44, 10: 96, 13: 44}
 
 
 def main():
@@ -24,10 +29,10 @@ def main():
             r = b[2 + 128 * k: 130 + 128 * k]
             f = struct.unpack("<6H", r[4:16]) + tuple(r[16:19])
             print(f"  {NAMES[r[0]]}: A={r[1]:02X} F={r[2]:02X} IFF={r[3]} block after SX={f[0]} SY={f[1]} DX={f[2]:X} DY={f[3]}"
-                  f" NX={f[4]} NY={f[5]} CD={f[6]:02X} ARG={f[7]:02X} LOG={f[8]:02X}")
+                  f" NX={f[4]} NY={f[5]} CD={f[6]:02X} ARG={f[7]:02X} LOG={f[8]:02X} S#2-on-return={r[19]:02X}")
             w = r[32:128]
-            if r[0] == 3:
-                print("     RAM " + w[:44].hex())
+            if r[0] in RAM:
+                print("     RAM " + w[:RAM[r[0]]].hex())
             else:
                 for y in range(6):
                     print("     " + " ".join(".." if v == PRE[r[0]] else f"{v:02X}" for v in w[16 * y: 16 * y + 16]))
