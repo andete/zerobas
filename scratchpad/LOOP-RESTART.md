@@ -12,6 +12,18 @@ the prose and one GENERATED stub line per item. Edit an item in its file; file o
 the stubs and refuses a stub / file mismatch. Tools read the rebuilt text through `tools/todo_items.py` (full_text()).
 `TODO.md:<n>` citations are line numbers of that rebuilt text; new citations name the item file.
 
+## 🌙 STATE AT THE END OF 2026-11-23 (pushed: 8fd573448)
+
+- D-MSX2SPEC: every MSX2 / MSX2+ page DRAFT 1 + goldfish pass 1 acted on (84 pages). D-TRSPEC: docs/turbor/ (CHGCPU,
+  GETCPU, PCMPLY, PCMREC) DRAFT 1 + pass 1; every existing probe re-run on both turbo Rs, every verdict on its page;
+  small OPEN rows only (todo/open/D-TRSPEC.md). D-KWSPEC: plan + generated index + pilot (LEFT$ / RIGHT$ / MID$ DRAFT 1).
+- NEXT: D-KWSPEC's strings region, then the plan's order (docs/keywords/spec-plan.md); two questions for Joost are in
+  that plan (the history section at FINAL; whether the cassette statements are in scope).
+- HOW tonight worked: parallel agents, each in an ISOLATED instance (tools/agent_wt.py NAME --fresh; briefs
+  scratchpad/ISO-AGENT-BRIEF.md, REVIEWER-PROMPT.md, FIXER-PROMPT.md), cherry-picked serially into main, one gate per
+  unit. Never `make` in an instance outside agent_wt (tools/install-repack-machine.py now refuses). Sources for
+  play / copy calls in page 2 / 3 only (clean-room incident, docs/clean-room-audit.md).
+
 ## 🧭 THE SPEC LOOP — 2026-11-17 — READ FIRST (overrides every focus / tier row below)
 
 | ruling | Joost's words | consequence |
