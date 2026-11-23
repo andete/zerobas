@@ -1,0 +1,65 @@
+<!--
+Copyright (c) 2026 Joost Yervante Damad
+SPDX-License-Identifier: BSD-2-Clause
+-->
+
+# `SCANL` (sub-ROM $00C5) — scan left for the PAINT border, and paint
+
+> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+
+## Summary
+
+`SCANL` is assumed to be the sub-ROM's counterpart of the main ROM's [SCANL](../../bios/SCANL.md)
+($012F), PAINT's left-hand scan: from the pixel left of the current position it counts the
+non-border pixels leftwards to the border or X 0, then paints from there rightwards -- on MSX1, in
+SCREEN 2, joined to the run the last [SCANR](SCANR.md) found. How that join is carried in the bitmap
+modes, and whether SRCH and LOGOPR take part, is unpublished.
+
+## The specification
+
+**Interface.**
+- No published entry at $00C5 [P TH A1 SUB-ROM, by absence]; a callable entry is [A] (case SL-00).
+- In [A, as MSX1]: CLOC / CMASK, BRDATR ($FCB2, [P TH A4]), ATRBYT. Out [A, as MSX1]: HL the count,
+  CLOC / CMASK the leftmost counted pixel; the run painted in ATRBYT.
+- The join with SCANR's run: MSX1 SCREEN 2 keeps SCANR's length in RAM (measured on the MSX1 page);
+  in SCREEN 5-8, the same cell, another, or none [A].
+- The scan by SRCH with DIX 1 or by the CPU; the paint by LMMV / LINE / CPU; LOGOPR's part [A; the
+  commands P TH 4 §6.5.8-§6.5.10].
+
+## Differences from the reference
+
+Not measured yet.
+
+## Open (not measured)
+
+The sets [PG], [LG], [LN], [MD] and [SN] are defined on [the concept page](../concepts/graphics-cursor.md#shared-measurement-setup-every-pages-matrix-assumes-it).
+
+Every case runs on all three references; each machine's result is recorded on its own, and a rule that holds on one generation only names it ([the concept page](../concepts/graphics-cursor.md)). `—` = not measured yet; `n/a` = the mode does not exist on that machine.
+
+| case | inputs | state | what it separates | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|---|---|---|
+| SL-00 | — | SCREEN 5, MAPXYC (30, 10) | a callable entry vs not | — | — | — |
+| SL-01 | — | a border at X 12, the run 13-29 | HL, CLOC / CMASK, the painted span (start pixel included?) | — | — | — |
+| SL-02 | — | no border to the left | the run to X 0 | — | — | — |
+| SL-03 | SCANR first (run length K), then SCANL | SCREEN 5 | painted HL + K (joined) vs HL only | — | — | — |
+| SL-04 | SCANR first, then the cell SR-15 found holding the run length overwritten with another K | SCREEN 5 | where the join's K is read from (located by the RAM diff, not assumed) | — | — | — |
+| SL-05 | B 0 vs 1, DE garbage | the same | B and DE unused (MSX1) | — | — | — |
+| SL-06 | — | BRDATR vs ATRBYT vs $F3F3 as the border | the border cell | — | — | — |
+| SL-07 | — | [LG] | LOGOPR applied | — | — | — |
+| SL-08 | — | odd / even X at both run ends | per-pixel vs byte-wise paint | — | — | — |
+| SL-09 | — | S#8 / S#9, R#44 garbage | SRCH used vs CPU scan | — | — | — |
+| SL-10 | — | [PG] | the page scanned and painted | — | — | — |
+| SL-11 | garbage in all registers; DI / EI | SCREEN 5 | registers left; interrupts after | — | — | — |
+| SL-12 | — | SCRMOD 2, 3, 4 with [MD]; 6, 7, 8; 10-12 (FS-A1WSX only) | per-mode colour width; the MSX1 rules; the YJK modes | — | — | — |
+| SL-13 | — | SCREEN 2 with R#25 CMD set and clear | SRCH outside 5-8 on the V9958 -- per machine (on the V9938 there is no R#25: the MSX2 rows are the baseline) | — | — | — |
+| SL-14 | — | a long LMMV running at entry; [SN] | waits for CE; S#2 on return; command residue and count | — | — | — |
+| SL-15 | the SL-01 inputs | SCREEN 5, called at the main-ROM SCANL ($012F) | the main entry forwards in SCREEN 5-8 | — | — | — |
+
+## Related pages
+
+[The concept page](../concepts/graphics-cursor.md); the MSX1 [SCANL](../../bios/SCANL.md);
+[SCANR](SCANR.md), [SETC](SETC.md).
+
+## Tests that cover it
+
+None yet.

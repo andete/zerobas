@@ -16774,6 +16774,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — References: Sony HB-F900 (msx2, JP), Philips NMS 8250 (msx2_eu), Panasonic FS-A1WSX (msx2plus)
       -- openMSX's generic machines, Joost's ruling 2026-11-23. The HB-F900 needs its Kanji ROM (Joost is getting it).
       The subject is C-BIOS's MSX2 / MSX2+ builds (zerobas is MSX1): pages per call, docs/spec-method.md's cycle.
+- [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
+      🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --
+      MSX1 on MSX2 / MSX2+ / turbo R, MSX2 on MSX2+ / turbo R, MSX2+ on turbo R. An MSX2 page's MSX2+ row is a
+      separate reading (the FS-A1WSX), never inherited from the NMS 8250 / HB-F900 rows.
+      🎚️ TIER 1 — Joost 2026-11-23: "we cannot assume that e.g. msx1 bios calls behave exactly the same on an msx2";
+      part of D-MSX2SPEC.
+      🤖 **AUTONOMOUS** — scratchpad/m1on2_run.py runs every MSX1 spec probe and biosl rung with biosl_run.py
+      `--row msx2all` (NMS 8250 / HB-F900 / FS-A1WSX vs C-BIOS's MSX2 builds), one file per probe in
+      scratchpad/AE_m1on2/. Then: set each MSX2 `CAP ref` against the VG-8020's committed one; where they differ, the
+      MSX1 page grows a per-generation row (a rule that names its generation), and where C-BIOS MSX2 differs from its
+      MSX2 reference, that is a C-BIOS finding. First reading (smoke): b2vdp's CAP E037 ref $FF / C-BIOS $00 on all
+      three. The BDOS / disk-ROM probes (xb*, xd*, xchoice*) give no reading on C-BIOS's MSX2 builds
+      -- expected: no C-BIOS build has a disk ROM yet (Joost 2026-11-23); for those only the reference-vs-VG-8020
+      comparison applies.
+- [ ] **D-TRSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE MSX TURBO R BIOS CALLS**
+      🎚️ TIER 1 — Joost 2026-11-23: "if we're finished with the msx2 and msx2+ specs we could also spec the turbor
+      bios calls" -- AFTER D-MSX2SPEC / D-MSX1ON2, before D-KWSPEC unless Joost reorders.
+      🤖 **AUTONOMOUS** — turbo R additions (CHGCPU / GETCPU, PCM PCMPLY / PCMREC, the R800 and its own slot / timing
+      behaviour), plus the MSX1 / MSX2 / MSX2+ calls re-measured on it (D-MSX1ON2's rule). Reference machine: openMSX's
+      generic `turbor` links to the Panasonic FS-A1GT (checked 2026-11-23; Joost installed its ROMs the same day -- boot
+      check pending, after D-MSX1ON2's run, never two emulators at once) -- the same rule Joost set for MSX2.
+      C-BIOS has no turbo R build: the subject is TBD (pages first, as the MSX2 ones were).
 - [ ] **D-KWSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE BASIC KEYWORDS**
       🎚️ TIER 1 — Joost 2026-11-23, third of "3, 2, 1".
       🤖 **AUTONOMOUS** — docs/keywords/*.md exist as user pages; make them specs with executable rules, region by
