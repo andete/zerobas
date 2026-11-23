@@ -44,4 +44,12 @@
       banner, WRRES's port write was never shown (now is), BLTVD drops the dots past the right edge itself, all four
       disk BLTs write $F571-$F572. One DECISION is open on CHKSLZ: what the subject's acceptance test checks, since
       the references disagree and none returns cleanly.
-      NEXT: goldfish pass 1 for the pages measured before 11-23 that never had one, then D-TRSPEC.
+      GOLDFISH PASS 1 over the 61 OLDER pages (9 fresh reviewers, scratchpad/REVIEW-m2-g*.md; 8 isolated fixers) done
+      11-23 the same evening: every page now carries a "Goldfish pass 1" status line; no finding rejected outright;
+      most separating cases MEASURED (new probes xspr3, xsubgc2, xsubmv2, xsubbox2, xsubgpp2, xsubscan2, xva3, xmode2,
+      extended xwv / xsubcls / xplt / xclk / xsubfnk / xsubblt / xva2), the rest open rows. Corrections of note: the
+      VRAM address rule for ACPAGE > 3 (and 2-3 in SCREEN 7 / 8) -- ACPAGE's high bits are ADDED into H, carry lost;
+      SCANL paints RIGHTwards; DSPFNK's width is (LINLEN + 1) / 5 - 1; BLTVV returns with the command running; GETPLT
+      sets D := A; SETMLT's R#1 is $2D; CHGMOD rebuilds R#0-R#6 from the copies; TRIGHT stops on CLOC low >= $F8.
+      Every MSX2 / MSX2+ page has now had one test-writer pass.
+      NEXT: D-TRSPEC (turbo R; generic = FS-A1GT).
