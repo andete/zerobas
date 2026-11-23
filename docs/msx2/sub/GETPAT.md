@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GETPAT` (sub-ROM $0105) — fetch a character's pattern
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -28,9 +28,14 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
 - Whether it depends on SCRMOD (SCREEN 5-8 have no pattern generator table [P A5]) is [A].
 - Anything written besides PATWRK's 8 bytes is [A].
 
+**Measured** [M] (the same on all three references, the Japanese machines included): the character's 8
+pattern bytes land in PATWRK ($FC40-$FC47) -- 'A' $20 50 88 88 F8 88 88 00; codes $00 and $FF all zero. Out: A
+$00.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds copy their own font's bytes (C-BIOS's own font, ruled -- D-BIOSINT) and return other
+flags ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

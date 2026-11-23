@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CLRSPR` (sub-ROM $00F5) — clear all sprites
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -41,9 +41,14 @@ the recording: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
   (the MSX1 call writes 209) is [A]. X is not mentioned [A: left].
 - VDP registers written (R#1, R#8 bit 1), and the interrupt state on return, are [A].
 
+**Measured** [M] (the same on all three references; SCREEN 1 = sprite mode 1, SCREEN 5 = mode 2): every
+attribute entry gets Y := $D1 (mode 1) / $D9 (mode 2), X LEFT as it was, the pattern number n (8 x 8) or 4n (16 x
+16, from RG1SAV bit 1), and byte 3 := $0F. Out: A $40, F $00, HL = the attribute table's base + $80 / - $200 (SCREEN
+1 $1B80, SCREEN 5 $7400).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds write the same attribute bytes; their A / F on return differ ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

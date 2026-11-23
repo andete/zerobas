@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CALPAT` (sub-ROM $00F9) — the address of a sprite pattern
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,13 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
 - Whether the result is a 16-bit sum (wrapping at $FFFF) in SCREEN 7 / 8, whose pattern table is
   at $F000 [P A5 SCREEN 7, 8], and whether ACPAGE enters it, are [A].
 
+**Measured** [M] (the same on all three references; SCREEN 1 and 5, the size from RG1SAV bit 1): HL = PATBAS +
+A x 8 (8 x 8) or A x 32 (16 x 16) -- a plain 16-bit sum, no wrap and no mask: A $FF at 16 x 16 gives $57E0 in
+SCREEN 1 ($3800 + $1FE0), $97E0 in SCREEN 5. Out: A = the pattern's size in bytes ($08 / $20).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds give the same HL and A ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

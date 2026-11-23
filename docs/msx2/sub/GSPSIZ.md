@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GSPSIZ` (sub-ROM $0101) — the current sprite size
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,12 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
 - A = 8 or 32 (pattern bytes, as the MSX1 call) rather than 8 / 16 (dots) is [A].
 - The other flags are [A].
 
+**Measured** [M] (the same on all three references, SCREEN 1 and 5): A = the pattern's size in BYTES, $08 for
+8 x 8 and $20 for 16 x 16 (not the pixel size), carry set for 16 x 16 -- read from RG1SAV bit 1.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds give the same ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

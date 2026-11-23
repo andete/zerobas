@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CALATR` (sub-ROM $00FD) — the address of a sprite's attributes
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,12 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
   returns the attribute address there too, not the colour one, is [A].
 - A above 31 (no such plane [P 4§5.1]) is [A].
 
+**Measured** [M] (the same on all three references): HL = ATRBAS + A x 4, a plain 16-bit sum: SCREEN 1 $1B00,
+$1B04, $1B7C, $1EFC for A 0, 1, 31, 255; SCREEN 5 $7600 ... $79FC. A kept.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds give the same ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 
