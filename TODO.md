@@ -16782,7 +16782,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (xbf.asm: the same rule; BC 0 = 64 KB; returns BC 0 and interrupts ON); the PALETTE calls too (xplt.asm: the table is 16 x 2
       bytes in the VDP's layout, GETPLT reads it, INIPLT and SETPLT write it; same power-on palette on all three); the sub-ROM NRDVRM / NWRVRM (xva2.asm: the main rule
       in SCREEN 5-8, but (HL + ACPAGE x $4000 / $1000) AND $FFFF in SCREEN 0-4); WRTVDP / VDPSTA (xwv.asm: direct writes, copies
-      $F3DF / $FFE7 / $FFFA, R#0 also writes R#9); the sprite calls (xspr2.asm). NEXT: VA-13
+      $F3DF / $FFE7 / $FFFA, R#0 also writes R#9); the sprite calls (xspr2.asm); REDCLK / WRTCLK (xclk.asm: C-BIOS's REDCLK does not
+      select the block reliably). NEXT: VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --

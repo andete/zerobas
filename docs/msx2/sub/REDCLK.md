@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `REDCLK` (sub-ROM $01F5) — read a clock-IC register
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xclk.asm](../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out), decoded by `scratchpad/xclk_decode.py`).
 
 ## Summary
 
@@ -35,9 +35,16 @@ Tags as on the [concept page](../concepts/clock-and-misc.md#references-subject-c
 - What a read of registers 13 (MODE), 14 and 15 (write-only) returns [A].
 - The interrupt state after the call [A].
 
+**Measured** [M] (the same on all three references, $01F5 through EXTROM): for every block 0-3 and register 0-15,
+with MODE's block bits set by hand to ANOTHER block first, A's low nibble equals the register read through the
+clock IC's ports -- the call selects the block itself -- and A's high nibble is 0. **MODE is left at the case's
+block** (its bits 3-2 kept), not put back.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) do not select the block reliably: 25 of the 64 reads differ from the
+port -- nearly all of blocks 0 and 1 (the time) -- and MODE after shows a wrong block (entered with block 1 for a
+block-0 read it stays at 1; entered with 2 for a block-1 read it ends at 3) ([scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out)).
 
 ## Open (not measured)
 
