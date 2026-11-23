@@ -37,6 +37,12 @@ Its header comment may carry the harness settings, one per line:
     ; @keyset ADDR LIST when the CPU reaches ADDR (hex, the probe's own RAM code, e.g. a `ret`), the debugger
     ;                   sets the keyboard matrix from the 11 bytes at LIST (hex): row r's byte, bit set = key
     ;                   pressed (keymatrixup / keymatrixdown) -- one matrix per case, set by the probe
+    ; @cpusnap ADDR PTR (D-TRSPEC) when the CPU reaches ADDR (hex, the probe's own code), the debugger writes
+    ;                   5 bytes at the address held in the word at PTR, PTR += 5: the active CPU (0 = Z80, 1 = R800;
+    ;                   openMSX's get_active_cpu, i.e. the S1990's CPU-select bit -- hardware state, no ROM byte; 0 on
+    ;                   a machine without an S1990) and the emulated time in microseconds (32-bit, little-endian,
+    ;                   wraps at ~71 min). Repeatable (one breakpoint each, PTRs may be shared): two snapshots
+    ;                   around a fixed loop time it
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
     ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
     ; @caplen LEN       the capture block's length (hex, default FF). D-SPECMETHOD (2026-11-17):
@@ -68,6 +74,13 @@ Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
     cf3300  National_CF-3300        vs  C-BIOS_MSX1_EU_REPACK_DISK   (only on request: --row cf3300)
     msx2eu / msx2jp / msx2p   Philips NMS 8250 / Sony HB-F900 / Panasonic FS-A1WSX vs C-BIOS's own MSX2 EU / MSX2
             JP / MSX2+ JP builds (tools/install_cbios_msx2.py); --row msx2all runs the three (D-MSX2SPEC)
+    turbor  Panasonic FS-A1GT vs Panasonic FS-A1ST (D-TRSPEC, only on request). C-BIOS has no turbo R build, so
+            this row sets the two turbo R references against each other: "ref" = the FS-A1GT (openMSX's generic
+            `turbor`), "ours" = the FS-A1ST, and a DIFF is where the two references disagree. Both boot with their
+            built-in drive (drive A only with @disk). The SYS lines add `cpu=` (z80 / r800: the active CPU at the
+            dump, as @cpusnap reads it), `t=` (emulated seconds), `fcb1=` (the cell $FCB1, decimal) and
+            `s1990r6=` (every change of the S1990's register 6, polled each 0.1 s from 0.1 s on, as TIME:HEX);
+            the @vram spans are printed whole (`VRAMn ref:` / `VRAMn ours:`), not only their differences
 The reference is the VG-8020 on both default rows (presentational splits go to it, 2026-09-04;
 the CF-3300 is a Japanese MSX1, whose BIOS differs from both for reasons of its own). The
 cf3300 row (Joost 2026-11-18) is for the SLOT calls: its RAM is the expanded slot 3-0, as on
@@ -133,6 +146,9 @@ ROWS = {
     "msx2eu": ("Philips_NMS_8250", "CBIOS2_CUR_MSX2_EU"),
     "msx2jp": ("Sony_HB-F900", "CBIOS2_CUR_MSX2_JP"),
     "msx2p": ("Panasonic_FS-A1WSX", "CBIOS2_CUR_MSX2P_JP"),
+    # D-TRSPEC (2026-11-23): the turbo R. C-BIOS has no turbo R build, so the second machine is the OTHER turbo R
+    # reference: the row's diff is a reference-vs-reference comparison (FS-A1GT = "ref", FS-A1ST = "ours").
+    "turbor": ("Panasonic_FS-A1GT", "Panasonic_FS-A1ST"),
 }
 
 
@@ -140,7 +156,7 @@ def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
          "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": [],
-         "psglog": None, "plug": []}
+         "psglog": None, "plug": [], "cpusnap": []}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -189,6 +205,11 @@ def settings(asm_text: str) -> dict:
             if len(f) != 2:
                 sys.exit(f"FAIL: @plug wants CONN DEVICE, got {v!r}")
             s["plug"].append((f[0], f[1]))
+        elif k == "cpusnap":                # ADDR PTR (hex): active CPU + emulated time, 5 bytes (D-TRSPEC)
+            f = v.split()
+            if len(f) != 2:
+                sys.exit(f"FAIL: @cpusnap wants ADDR PTR, got {v!r}")
+            s["cpusnap"].append((int(f[0], 16), int(f[1], 16)))
         elif k == "vdpsnap":                # ADDR PTR (hex)
             f = v.split()
             if len(f) != 2:
@@ -225,7 +246,7 @@ def build(rung: str, td: str) -> str:
     return rom
 
 
-def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
+def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: bool = False):
     out = os.path.join(td, machine + ".txt")
     DONE, CAP, KEYREADY = st["cap"], st["cap"] + 1, st["cap"] + 0x100
     keys = ""
@@ -322,6 +343,20 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
                  "  debug watchpoint create -type write_io -address 0xa0 -command biosl_psgsel\n"
                  "  debug watchpoint create -type write_io -address 0xa1 -command biosl_psglog\n}\n"
                  f"debug set_bp {arm} {{}} biosl_psgarm\n")
+    for ci, (ca, cp) in enumerate(st["cpusnap"]):
+        # get_active_cpu (openMSX's own script) reads the S1990's CPU-select bit; "z80" where there is no S1990
+        snap += (f"proc biosl_cpusnap{ci} {{}} {{\n"
+                 f"  set p [expr {{[debug read memory {cp}] | ([debug read memory {cp + 1}] << 8)}}]\n"
+                 "  set c [expr {[get_active_cpu] eq \"r800\" ? 1 : 0}]\n"
+                 "  set t [expr {wide([machine_info time] * 1000000) & 0xFFFFFFFF}]\n"
+                 "  set k 0\n"
+                 "  foreach b [list $c [expr {$t & 255}] [expr {($t >> 8) & 255}] [expr {($t >> 16) & 255}] "
+                 "[expr {$t >> 24}]] {\n"
+                 "    debug write memory [expr {($p + $k) & 0xFFFF}] $b; incr k\n  }\n"
+                 "  set p [expr {($p + 5) & 0xFFFF}]\n"
+                 f"  debug write memory {cp} [expr {{$p & 255}}]\n"
+                 f"  debug write memory {cp + 1} [expr {{$p >> 8}}]\n}}\n"
+                 f"debug set_bp {ca} {{}} biosl_cpusnap{ci}\n")
     if st["keyset"]:
         ka, kl = st["keyset"]
         snap += ("proc biosl_keyset {} {\n"
@@ -330,7 +365,13 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
                  f"    set m [debug read memory [expr {{{kl} + $r}}]]\n"
                  "    if {$m != 0} { keymatrixdown $r $m }\n  }\n}\n"
                  f"debug set_bp {ka} {{}} biosl_keyset\n")
-    tcl = ("set throttle off\nset ::typed 0\n" + tape + at + snap +
+    if cpuinfo:
+        # D-TRSPEC: the S1990's register 6 (bit 5: 1 = Z80, bit 6: 1 = ROM mode -- as openMSX models it) sampled at
+        # every poll (0.1 s of emulated time); each change is appended as TIME:VALUE. A debugger read of the device's
+        # register, as for the VDP: no ROM byte, no side effect
+        keys += ("  if {![catch {debug read {S1990 regs} 6} r6] && $r6 != $::r6last} {\n"
+                 "    set ::r6last $r6; append ::r6hist [format { %.1f:%02X} [machine_info time] $r6]\n  }\n")
+    tcl = ("set throttle off\nset ::typed 0\nset ::r6last -1\nset ::r6hist {}\n" + tape + at + snap +
            "proc biosl_poll {} {\n" + keys +
            f"  if {{[debug read memory {DONE}] == 0xA5 || [machine_info time] > {st['timeout']}}} {{\n"
            f"    set f [open {{{out}}} w]\n"
@@ -342,10 +383,12 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
            '    binary scan [debug read_block memory 0xF3F6 1] H* sc\n'
            '    binary scan [debug read_block memory 0xFBE5 11] H* nk\n'
            '    binary scan [debug read_block memory 0xFD9A 10] H* hk\n'
-           '    puts $f "SYS jiffy=$j typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk"\n' + vram +
+           '    puts $f "SYS jiffy=$j typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk' +
+           (' cpu=[get_active_cpu] t=[format %.3f [machine_info time]] fcb1=[debug read memory 0xFCB1]'
+            ' s1990r6=[string trim $::r6hist]' if cpuinfo else '') + '"\n' + vram +
            "    close $f\n    exit\n  }\n"
            "  after time 0.1 biosl_poll\n}\n"
-           "after time 1 biosl_poll\n")
+           + ("after time 0.1 biosl_poll\n" if cpuinfo else "after time 1 biosl_poll\n"))
     script = os.path.join(td, machine + ".tcl")
     open(script, "w").write(tcl)
     media = []
@@ -398,7 +441,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rung", nargs="?")
     ap.add_argument("--all", action="store_true", help="every rung in probes/bios/biosl")
-    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300", "nms8250", "msx2eu", "msx2jp", "msx2p", "msx2all"),
+    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300", "nms8250", "msx2eu", "msx2jp", "msx2p", "msx2all",
+                                      "turbor"),
                     default="both")
     a = ap.parse_args()
     if a.all:
@@ -427,11 +471,14 @@ def one(rung: str, rows: str) -> int:
         rom = build(a.rung, td)
         for row in ({"both": ("nodisk", "disk"), "msx2all": ("msx2eu", "msx2jp", "msx2p")}.get(a.row) or (a.row,)):
             ref_m, zb_m = ROWS[row]
-            ref = run(ref_m, rom, st, td, disk=(row != "nodisk"))
+            tr = row == "turbor"
+            ref = run(ref_m, rom, st, td, disk=(row != "nodisk"), cpuinfo=tr)
             # C-BIOS's MSX2 / MSX2+ machines have no disk drive (Joost: "c-bios in any form doesn't have disk yet");
             # openMSX refuses -diska there, which left the side with NO READING (D-MSX2SPEC, the BLT disk calls)
-            zb = run(zb_m, rom, st, td, disk=(row != "nodisk" and not row.startswith("msx2")))
+            zb = run(zb_m, rom, st, td, disk=(row != "nodisk" and not row.startswith("msx2")), cpuinfo=tr)
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
+            if tr:
+                print("  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)")
             bad = [n for n, g in (("ref", ref), ("ours", zb))
                    if not g or g.get("DONE") != "165"]
             if bad:
@@ -455,6 +502,9 @@ def one(rung: str, rows: str) -> int:
                 b = bytes.fromhex(h)
                 end = max(32, len(b.rstrip(b"\0")))
                 return b[:end].hex()
+            if tr:
+                for i in range(len(st["vram"])):
+                    print(f"  VRAM{i} ref : {ref[f'VRAM{i}']}\n  VRAM{i} ours: {zb[f'VRAM{i}']}")
             print(f"  CAP ref : {trimmed(ref['CAP'])}")
             print(f"  CAP ours: {trimmed(zb['CAP'])}")
             if st["printer"]:
