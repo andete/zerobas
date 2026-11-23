@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SCANL` (sub-ROM $00C5) — scan left for the PAINT border, and paint
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscan.asm](../../probes/bios/spec/xsubscan.asm), [scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Summary
 
@@ -26,9 +26,14 @@ modes, and whether SRCH and LOGOPR take part, is unpublished.
 - The scan by SRCH with DIX 1 or by the CPU; the paint by LMMV / LINE / CPU; LOGOPR's part [A; the
   commands P TH 4 §6.5.8-§6.5.10].
 
+**Measured** [M] (the same on all three references; the same line, the start (60, 50)): the entry $00C5 IS callable.
+It paints LEFTWARDS from the pixel left of the start -- X 59 down to 31, the start pixel NOT included -- stops at the
+border (30), and returns HL 29 (the run), CLOC 31 (the leftmost painted pixel) / CMASK 50, DE 31; CSAVEA / CSAVEM
+untouched. Interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds do nothing here (HL garbage, no paint) ([scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Open (not measured)
 

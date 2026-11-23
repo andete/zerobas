@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SCANR` (sub-ROM $00C1) — scan right for the PAINT border
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscan.asm](../../probes/bios/spec/xsubscan.asm), [scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Summary
 
@@ -28,9 +28,15 @@ may use; the border cell, the paint method and LOGOPR's part are unpublished.
   per-pixel writes; with or without LOGOPR.
 - The right edge: X 255 (SCREEN 5 / 8) or 511 (6 / 7) [A]; MSX1: interrupts on after [A here].
 
+**Measured** [M] (the same on all three references; SCREEN 8, line 50 $00 with the border $0F at X 30 and 100, the
+start (60, 50) set by MAPXYC, ATRBYT $05): the entry $00C1 IS callable. With B 1 and **DE 1** it paints X 60-99 --
+the start pixel included, up to the border -- and returns HL 40 (the run), CLOC 100 / CMASK 50 (the border pixel), DE
+1, CSAVEA / CSAVEM := 60 / 50 (the start). With **DE 0** it returns at once (HL 0, nothing painted); with DE $FFFF
+likewise, DE coming back 0. Interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) do nothing here (HL garbage, no paint, CLOC unchanged) ([scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Open (not measured)
 

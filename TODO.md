@@ -16790,7 +16790,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       use multicolour cell steps even in SCREEN 5-8; C-BIOS's TRIGHT / TLEFTC do nothing); the boxes and the line (xsubbox.asm: ATRBYT is $F3F2;
       C-BIOS's NVBXLN draws a wrong figure and its DOGRPH nothing); GRPPRT (xsubgpp.asm: FORCLR / BAKCLR
       cell, CR and the X wrap; C-BIOS has neither); BLTVV / BLTVM / BLTMV (xsubblt.asm: C-BIOS's BLTMV
-      drops the last dot); DSPFNK (xsubfnk.asm: label width / 5 - 1; C-BIOS's is a no-op). C-BIOS findings
+      drops the last dot); DSPFNK (xsubfnk.asm: label width / 5 - 1; C-BIOS's is a no-op); SCANR / SCANL (xsubscan.asm: callable, SCANR needs DE 1; C-BIOS's are no-ops).
+      C-BIOS findings
       sent (inbox 2026-11-23-zerobas-msx2-subrom-findings.md). NEXT: the disk BLT calls, VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
