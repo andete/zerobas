@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `DSPFNK` (sub-ROM $011D) — show the function-key line
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubfnk.asm](../../probes/bios/spec/xsubfnk.asm), [scratchpad/AE_xsubfnk_msx2.out](../../scratchpad/AE_xsubfnk_msx2.out)).
 
 ## Summary
 
@@ -25,9 +25,14 @@ mode is the open question. Shared facts: [the screen-modes page](../concepts/scr
   MSX1 [DSPFNK](../../bios/DSPFNK.md)); at 80 columns, the label width and placement [A].
 - In SCREEN 5-8: sets CNSDFG only, or draws on the bitmap, [A].
 
+**Measured** [M] (the same on all three references; FNKSTR key k = 15 x ('A' + k), CRTCNT 24): CNSDFG := $FF; in the
+text modes the first five keys' labels are drawn on row 23, each label (width / 5 - 1) characters then a space --
+**7 at width 40, 15 at width 80, 5 in SCREEN 1** ("AAAAAAA BBBBBBB ..."); in SCREEN 5 CNSDFG is set and nothing is
+drawn on the bitmap (line 204 unchanged). Interrupts ON on return.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: no labels, CNSDFG left 0, interrupts left off ([scratchpad/AE_xsubfnk_msx2.out](../../scratchpad/AE_xsubfnk_msx2.out)).
 
 ## Open (not measured)
 
