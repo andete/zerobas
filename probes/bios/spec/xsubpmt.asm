@@ -14,15 +14,15 @@
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the case count; per case a 512-byte record from +2:
 ;   +0 case, +1 A, +2 F, +3 IFF, +4..+13 C B E D L H IXl IXh IYl IYh, +14 IFF first read,
 ;   +16 CSRY CSRX CNSDFG SCRMOD LINLEN CRTCNT, +24 H.CHPU count, +25..+72 the H.CHPU log (48),
-;   +74 port-$98 byte count (2), +76 block 3 regs 0-12 after (13), +90 row length, +91 first row,
-;   +96 four name-table rows (4 x 80), +511 $5E (sentinel).
+;   +74 port-$98 byte count (2), +76 block 3 regs 0-12 after (13), +89 MODE (reg 13) after, +90 row length,
+;   +91 first row, +92 MODE before the call, +96 four name-table rows (4 x 80), +511 $5E (sentinel).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubpmt.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries, hooks and work-area cells, the VDP's and the clock chip's
 ; published ports.
 ;
 ; @cap C000
-; @caplen 2100
+; @caplen 2910
 ; @portlog 98 E948 E8F1
 ; @timeout 240
 
@@ -43,6 +43,7 @@ rlen    equ     $E944
 LOGP    equ     $E948
 hp      equ     $E94C
 hcnt    equ     $E94E
+mbef    equ     $E94F                   ; MODE before the call
 HLOG    equ     $E9A0                   ; 48 bytes
 HOOK    equ     $E960
 LOGB    equ     $8000
@@ -56,7 +57,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $20FF
+                ld      bc, $2900
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -131,6 +132,14 @@ c_nofill:
                 ld      ($FDA4), a
                 ld      hl, HOOK
                 ld      ($FDA5), hl
+                ld      a, (cur+6)
+                bit     1, a
+                jr      z, c_m0
+                ld      a, $08                  ; flags b1: MODE := $8 (timer on, block 0) before the call
+                call    mode_wr
+c_m0:
+                call    mode_rd
+                ld      (mbef), a
                 ld      hl, LOGB
                 ld      (LOGP), hl
                 ; the call
@@ -251,6 +260,8 @@ c_cell:
                 ex      de, hl                  ; +76
                 ld      c, $30
                 call    rdblk                   ; +89
+                call    mode_rd
+                ld      (de), a                 ; +89 MODE after
                 inc     de
                 call    nsetup
                 ld      a, (rlen)
@@ -258,6 +269,9 @@ c_cell:
                 inc     de
                 ld      a, (cur+7)
                 ld      (de), a                 ; +91
+                inc     de
+                ld      a, (mbef)
+                ld      (de), a                 ; +92 MODE before
                 ; four rows from the first row
                 ld      hl, (ptr)
                 ld      bc, 96
@@ -494,8 +508,11 @@ sets3:
                 db      1, 8,5, 9,5, $A,5, 0,0, 0,0, 0,0                    ; 5 ID 1 (password) "XYZ"
                 db      3, 8,5, 9,5, $A,5, 0,0, 0,0, 0,0                    ; 6 ID 3 "XYZ"
                 db      2, 1,4, 2,4, 3,4, 0,0, 0,0, 0,0                     ; 7 ID 2 "ABC" then zeros
+                db      6, 1,4, 2,4, 3,4, 4,4, 5,4, 6,4                     ; 8 ID 6 "ABCDEF" (ID = 2 vs ID AND 3 = 2)
+                db      $A, 1,4, 2,4, 3,4, 4,4, 5,4, 6,4                    ; 9 ID $A "ABCDEF"
+                db      $F, 1,4, 2,4, 3,4, 4,4, 5,4, 6,4                    ; 10 ID $F "ABCDEF" (C-BIOS's fresh ID)
 
-; mode, width, block-3 set, CSRY, CSRX, CNSDFG, flags (b0 EI), first row read (0-based)
+; mode, width, block-3 set, CSRY, CSRX, CNSDFG, flags (b0 EI, b1 MODE := $8), first row read (0-based)
 cases:
                 db      0, 40, 0,  6, 1, $00, 0, 4  ;  0 SCREEN 0 w40, as found, cursor (1, 6)
                 db      0, 40, 0,  6, 1, $00, 1, 4  ;  1 the same, EI
@@ -513,6 +530,10 @@ cases:
                 db      5, 40, 2,  6, 1, $00, 0, 4  ; 13 "ABCDEF", SCREEN 5
                 db      0, 40, 2, 23, 1, $FF, 0, 20 ; 14 "ABCDEF", cursor on row 23, CNSDFG $FF
                 db      0, 40, 4, 23, 1, $FF, 0, 20 ; 15 title (Ok), cursor on row 23, CNSDFG $FF
+                db      0, 40, 8,  6, 1, $00, 0, 4  ; 16 ID 6 "ABCDEF"
+                db      0, 40, 9,  6, 1, $00, 0, 4  ; 17 ID $A "ABCDEF"
+                db      0, 40, 10, 6, 1, $00, 0, 4  ; 18 ID $F "ABCDEF"
+                db      0, 40, 2,  6, 1, $00, 2, 4  ; 19 "ABCDEF", MODE $8 (block 0) before the call
                 db      $EE
 
                 ds      $8000 - $, $FF
