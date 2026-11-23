@@ -1,7 +1,7 @@
 - [ ] **D-DOCLINKS — ~3,400 RELATIVE LINKS IN TOP-LEVEL docs/*.md AND ~900 IN scratchpad/*.md DO NOT RESOLVE FROM THEIR OWN FILE; NO GATE CHECKS LINKS**
       🎚️ TIER 6 — doc debt, no behaviour. Measured 2026-11-23 with `python3 scratchpad/linkscan.py` (strips `:line`
       suffixes, skips code spans): of 5,906 broken links in tracked markdown, almost all in top-level docs/*.md (3,432)
-      and scratchpad/*.md (893) are written FROM THE REPO ROOT (`scratchpad/x.out` in docs/spec-*.md), which a renderer
+      and scratchpad/*.md (893) are written FROM THE REPO ROOT (a docs/spec-*.md page naming a run file as scratchpad-slash-name), which a renderer
       resolves from the file's own directory -- 3,413 of the docs/ ones resolve from the root. The spec pages under
       docs/<area>/ (bios, keywords, concepts, msx2) already link relative to the file and resolve.
       Found while fixing two breakages of my own the same day (both fixed in the same commit as this item): the TODO
