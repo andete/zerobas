@@ -23,7 +23,14 @@ CASES = [("SCREEN 1 w32, H5 L3", 0x1800, 32), ("SCREEN 0 w40, H1 L1", 0, 40), ("
          ("w40 H5 L24, CNSDFG 0", 0, 40), ("w40 H5 L24, CNSDFG FF", 0, 40), ("w40 H5 L0", 0, 40),
          ("w40 H5 L25", 0, 40), ("SCREEN 5 H5 L3", None, None), ("SCREEN 2 H5 L3", None, None),
          ("SCREEN 8 H5 L3", None, None), ("w40 H5 L3, EI", 0, 40), ("SCREEN 1 H32 L3", 0x1800, 32),
-         ("w40 H5 L4, LINTTB[3]=0", 0, 40), ("w40 H5 L3 (baseline)", 0, 40)]
+         ("w40 H5 L4, LINTTB[3]=0", 0, 40), ("w40 H5 L3 (baseline)", 0, 40),
+         ("LINL40 30 H5 L3 (sets LINLEN 30)", 0, 40), ("SCREEN 2 after LINLEN 30, H5 L3", None, None),
+         ("LINL40 30 H5 L3 (sets LINLEN 30)", 0, 40), ("SCREEN 5 after LINLEN 30, H5 L3", None, None),
+         ("LINL40 39 H1 L3", 0, 40), ("LINL40 29 H1 L3", 0, 40), ("LINL40 75 (80 col) H1 L3", 0, 80),
+         ("SCREEN 1 LINL32 29 H1 L3", 0x1800, 32), ("w40 H42 L3", 0, 40), ("w40 H255 L3", 0, 40)]
+
+
+RL = 168  # record stride (160 before goldfish pass 1)
 
 
 def caps(path):
@@ -34,7 +41,7 @@ def caps(path):
             row = m.group(1)
         m = re.match(r"\s+CAP (ref |ours): ([0-9a-f]+)", line)
         if m and row:
-            out[(row, m.group(1).strip())] = bytes.fromhex(m.group(2)) + bytes(0xD40)
+            out[(row, m.group(1).strip())] = bytes.fromhex(m.group(2)) + bytes(0x1480)
     return out
 
 
@@ -53,7 +60,7 @@ def sig(r, base, stride):
         cell = f"(r{(s - base) // stride} c{(s - base) % stride})" if stride else ""
         runs.append(f"{s:04X}{cell}+{ln}={v:02X}")
     return (f"CSRX {r[27]} CSRY {r[28]} CNSDFG {r[29]:02X} LINTTB changed [{' '.join(ltd)}] | changed {n} in {nr} "
-            f"runs: {' '.join(runs)} | {regs}")
+            f"runs: {' '.join(runs)} | {regs} | FBB1 {r[160]:02X} FCB1 {r[157]:02X} FBCA {r[158]:02X}")
 
 
 def main():
@@ -63,7 +70,7 @@ def main():
     for i, (name, base, stride) in enumerate(CASES):
         sigs = []
         for k in ORDER:
-            r = cs[k][16 + 160 * i: 16 + 160 * i + 160]
+            r = cs[k][16 + RL * i: 16 + RL * i + RL]
             sigs.append(sig(r, base, stride) if r[159] == 0x5A and r[0] == i else "missing")
         print(f"\n== case {i}: {name} (entry: cursor (20, 10), LINTTB[i] = C0+i)")
         if len(set(sigs)) == 1:

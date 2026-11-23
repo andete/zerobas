@@ -11,14 +11,19 @@
 ; The capture (CAP = C001): +0 case count, +1 $5A; records of 160 bytes from +16: +0 case, +1..+26 the dump (as
 ; xextrom.asm: [($FFFF) cpl, $A8], IFF 2nd, IFF 1st, HL', DE', BC', AF', IY, IX, HL, DE, BC, AF), +27 CSRX, +28 CSRY,
 ; +29 CNSDFG, +30..+53 LINTTB, +54/55 changed bytes, +56 runs, +57.. 20 x (start lo, hi, length lo, hi, first value),
-; +159 $5A.
+; +157 ($FCB1) and +158 ($FBCA) after the call (both preset $3C: LINTTB + 255 / + 24, what L 0 / L 25 would index),
+; +159 $5A, +160 ($FBB1) after the call (preset $3C: LINTTB - 1, what (LINTTB - 1) + L gives for L 0); records are
+; 168 bytes apart.
+; Cases 21-30 (goldfish pass 1, 2026-11-23): the graphic-mode count with LINLEN 30 (each graphic case preceded by a
+; SCREEN 0 width-30 case, which sets LINLEN), the centring margin at an odd difference (width 39, 29, 75, SCREEN 1 29),
+; H 42 / 255 at width 40.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xeol.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports. No ROM byte read.
 ;
 ; @cap C000
-; @caplen 0D40
-; @timeout 200
+; @caplen 1480
+; @timeout 300
 
 CHGMOD  equ     $005F
 EOL     equ     $0168
@@ -34,7 +39,7 @@ LINTTB  equ     $FBB2
 DONE    equ     $C000
 CAP     equ     $C001
 REC     equ     CAP+16
-RECLEN  equ     160
+RECLEN  equ     168
 
 E_SP    equ     $E900
 R_SP    equ     $E902
@@ -52,6 +57,7 @@ INRUN   equ     $E987
 RUNP    equ     $E988
 RSTART  equ     $E98A
 CUR     equ     $E9E0
+SVBR    equ     $E98C                   ; ($FBB1) as booted
 
                 org     $4000
                 db      "AB"
@@ -63,7 +69,7 @@ init:
                 ld      sp, $E800
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $0D3E
+                ld      bc, $147E
                 ld      (hl), 0
                 ldir
                 ld      a, $5A
@@ -74,6 +80,8 @@ init:
                 ld      (TP), hl
                 xor     a
                 ld      (CIDX), a
+                ld      a, ($FBB1)
+                ld      (SVBR), a
 c_next:
                 ld      hl, (TP)
                 ld      a, (hl)
@@ -148,6 +156,10 @@ c_lt:
                 add     hl, de
                 ld      (hl), 0
 c_nlt:
+                ld      a, $3C
+                ld      ($FCB1), a
+                ld      ($FBCA), a
+                ld      ($FBB1), a
                 ld      hl, ent_src
                 ld      de, ENTBL
                 ld      bc, 20
@@ -302,9 +314,20 @@ d_nb:
                 ld      a, (NRUNS)
                 ld      (hl), a
                 ld      hl, (PTR)
-                ld      bc, 159
+                ld      bc, 157
                 add     hl, bc
+                ld      a, ($FCB1)
+                ld      (hl), a
+                inc     hl
+                ld      a, ($FBCA)
+                ld      (hl), a
+                inc     hl
                 ld      (hl), $5A
+                inc     hl
+                ld      a, ($FBB1)
+                ld      (hl), a
+                ld      a, (SVBR)
+                ld      ($FBB1), a
                 ld      hl, (PTR)
                 ld      bc, RECLEN
                 add     hl, bc
@@ -434,6 +457,26 @@ cases:
                 db      19, 0, 40, 5, 4, 0, 3, 0
                 dw      $0000, 1080
                 db      20, 0, 40, 5, 3, 0, $FF, 0
+                dw      $0000, 1080
+                db      21, 0, 30, 5, 3, 0, $FF, 0      ; LINLEN := 30 for case 22
+                dw      $0000, 1080
+                db      22, 2, 30, 5, 3, 0, $FF, 0      ; SCREEN 2 after LINLEN 30
+                dw      $1800, $0400
+                db      23, 0, 30, 5, 3, 0, $FF, 0      ; LINLEN := 30 for case 24
+                dw      $0000, 1080
+                db      24, 5, 30, 5, 3, 0, $FF, 0      ; SCREEN 5 after LINLEN 30
+                dw      $0000, $0800
+                db      25, 0, 39, 1, 3, 0, $FF, 0      ; margin, odd difference 1
+                dw      $0000, 1080
+                db      26, 0, 29, 1, 3, 0, $FF, 0      ; margin, odd difference 11
+                dw      $0000, 1080
+                db      27, 0, 75, 1, 3, 0, $FF, 0      ; 80 columns, LINLEN 75
+                dw      $0000, 2160
+                db      28, 1, 29, 1, 3, 0, $FF, 0      ; SCREEN 1, LINLEN 29
+                dw      $1800, 768
+                db      29, 0, 40, 42, 3, 0, $FF, 0     ; H 42
+                dw      $0000, 1080
+                db      30, 0, 40, 255, 3, 0, $FF, 0    ; H 255
                 dw      $0000, 1080
                 db      $EE
 
