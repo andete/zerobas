@@ -5,7 +5,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The clock, the settings memory and the other sub-ROM calls — shared facts
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 0 (2026-11-23), from the published interface; the clock facts the call pages measured ([REDCLK](../sub/REDCLK.md), [WRTCLK](../sub/WRTCLK.md): [xclk.asm](../../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out)) are cited here where they bear on a shared fact, as [M xclk]. References: HB-F900, NMS 8250, FS-A1WSX.
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 2 findings, 1 measured, 0 moved to open.
 
 The concept page for the sub-ROM calls outside the screen, graphics and VRAM regions:
 [REDCLK](../sub/REDCLK.md) and [WRTCLK](../sub/WRTCLK.md) (the clock IC),
@@ -81,7 +83,10 @@ entries is the [inventory](../index.md).
 
 ### Block 3 — title, password or prompt
 
-- Block 2's ID chooses what block 3 holds; register 0 of block 3 repeats it [P 5§6.7]:
+- Block 2's ID chooses what block 3 holds; register 0 of block 3 repeats it [P 5§6.7]. On the references as
+  openMSX starts them with empty persistent state (the probe's `--fresh`), block 2's register 0 reads **$A** and
+  block 3's register 0 reads 0, on all three [M xclk] — neither an ID the handbook lists (0-2) nor repeated in block 3. Whether
+  a reference's boot code reads the ID, and what it does with $A, is CK-1 / CK-2's question:
   - **ID 0, title:** registers 1-12 hold six characters, two nibbles each, low nibble first [P 5§6.7];
   - **ID 1, password:** usage IDs (1-3), a compressed password (4-7), a key-cartridge flag (8) and
     value (9-12) [P 5§6.7];
@@ -97,7 +102,9 @@ entries is the [inventory](../index.md).
   does not set the MODE register itself [P 5§6.8, A1]. What the calls leave in MODE afterwards is the
   central open question of both pages.
 - The handbook's Chapter 5 heads REDCLK with address $015F (EXTROM's); Appendix 1 gives $01F5 [P A1,
-  5§6.8]. $01F5 is taken as the entry [A]; REDCLK's case RC-0 settles it.
+  5§6.8]. $01F5 is the entry: through EXTROM it returned the named register on every read [M xclk].
+- Both calls select the block themselves and leave MODE's bank at MM, TE / AE kept; the details, and the subject's
+  fault, are on their pages.
 
 ### MSX2+
 
@@ -139,6 +146,9 @@ entries is the [inventory](../index.md).
   MODE's bank bits name a block other than the case's, TE / AE are a chosen pair. Everything is read
   back after the call, through the ports and the debugger. Block 0 cases stop the clock (TE = 0) so
   the seconds cannot roll over [A: that TE = 0 freezes all digits the call can read].
+  The xclk run used a cheaper form of this preset: blocks 2 / 3 := the complement of blocks 0 / 1 by address,
+  MODE's bank := the case's block XOR 2, TE / AE := each pair by register (so block 0 was read with TE = 0 on
+  half its registers only), and no register frame; the call pages say which of their rules rest on it.
 - **Register frame:** A, F, B, C, D, E, H, L, IX, IY, the alternate set set to distinct values (A's
   high nibble never 0, $F or equal to C's); all recorded after the call, with SP and the interrupt
   state, on entry with DI and with EI.
