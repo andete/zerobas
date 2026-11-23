@@ -3,9 +3,11 @@
 ;
 ; XSUBBEEP -- D-MSX2SPEC, docs/msx2/sub/BEEP.md: the sub-ROM's BEEP ($017D) through EXTROM, and the main ROM's BEEP
 ; ($00C0) for comparison, on the MSX2 / MSX2+ references. Per case (the table `cases`: KIND 0 sub-ROM entered with
-; DI, 1 main ROM ($00C0) with DI, 2 sub-ROM entered with EI; V = the value written to the clock IC's block 2
+; DI, 1 main ROM ($00C0) with DI, 2 sub-ROM entered with EI, 3 sub-ROM with DI and the VDP's 50 / 60 Hz bit (R#9 bit 1)
+; flipped in the VDP only, 4 the same with RG9SAV ($FFE8) flipped too -- both restored after the call; V = the value written to the clock IC's block 2
 ; register 10 through its ports before the call, $FF = none; M = MODE (clock register 13) written just before the
-; call, $FF = left as the register write restored it):
+; call, $FF = left as the register write restored it; R7 = PSG R7's preset, $FF = psgset's $B8; PC = 1: PPI port C bit 7
+; := 1 before the call, 0: := 0; the last three fields and cases 18-26 and kinds 3 / 4 added 2026-11-23, goldfish pass 1):
 ;   PSG R0-R13 := $A1 $02 $B3 $04 $C5 $06 $17 $B8 $09 $0A $0B $5C $1D $0E through the ports (garbage, so a reset
 ;   shows), the clock register written (MODE's bank bits := 2, TE / AE kept, MODE restored), the PSG trace armed
 ;   (@psglog), a marker OUT R14 := $5A, BC $1357 DE $2468 HL $369C IY $8765 A $C3, the call; the registers, the
@@ -17,7 +19,8 @@
 ; +$FF (8100): +0 KIND, +1 V, +2 A, +3 F, +4 C, +5 B, +6 E, +7 D, +8 L, +9 H,
 ; +10/11 IX, +12/13 IY, +14 / +15 IFF (P/V of LD A,I, read twice), +16 MODE after, +17 block 2 reg 10 after,
 ; +18 port C after, +19..+34 PSG R0-R15 at return, +35..+50 PSG R0-R15 after the tail, +51 $EE (sentinel),
-; +52/53 the trace's end pointer, +54/55 SP after, +56 M, +57 MODE just before the call; the trace from +64: 5 bytes
+; +52/53 the trace's end pointer, +54/55 SP after, +56 M, +57 MODE just before the call, +58 R7 preset (the table's),
+; +59 port C just before the call, +60 PC, +61 port C at return (before the tail); the trace from +64: 5 bytes
 ; per OUT $A1 except R15's (register, byte, microseconds 24-bit LE). R15 is skipped: the timer interrupt writes it
 ; ($8F / $CF) every frame; an unskipped run (the first, 2026-11-23) showed only those pairs.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubbeep.asm --row msx2all
@@ -25,7 +28,7 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries, the PSG's, PPI's and clock IC's published ports.
 ;
 ; @cap 8000
-; @caplen 3F00
+; @caplen 5F80
 ; @timeout 200
 ; @psglog EE00 4017 8000
 
@@ -40,6 +43,10 @@ cidx    equ     $EE06
 kind    equ     $EE07
 val     equ     $EE08
 mpre    equ     $EE09
+r7pre   equ     $EE0A
+pcpre   equ     $EE0B
+rg9org  equ     $EE0C
+RG9SAV  equ     $FFE8
 sv_sp   equ     $EE10
 sv_af   equ     $EE12
 sv_bc   equ     $EE14
@@ -96,6 +103,12 @@ c_next:
                 ld      a, (hl)
                 ld      (mpre), a
                 inc     hl
+                ld      a, (hl)
+                ld      (r7pre), a
+                inc     hl
+                ld      a, (hl)
+                ld      (pcpre), a
+                inc     hl
                 ld      (tp), hl
                 ld      hl, (ptr)
                 ld      a, (kind)
@@ -116,6 +129,15 @@ pg:
                 ld      a, c
                 cp      14
                 jr      nz, pg
+                ld      a, (r7pre)
+                cp      $FF
+                jr      z, r7def
+                ld      b, a
+                ld      a, 7
+                out     ($A0), a
+                ld      a, b
+                out     ($A1), a
+r7def:
                 ; the clock register
                 ld      a, (val)
                 cp      $FF
@@ -146,6 +168,43 @@ nomode:
                 dec     hl
                 ld      a, (mpre)
                 ld      (hl), a
+                ; PPI port C bit 7 := PC; +58 R7 preset, +59 port C, +60 PC
+                in      a, ($AA)
+                and     $7F
+                ld      b, a
+                ld      a, (pcpre)
+                rrca
+                and     $80
+                or      b
+                out     ($AA), a
+                ld      hl, (ptr)
+                ld      de, 58
+                add     hl, de
+                ld      a, (r7pre)
+                ld      (hl), a
+                inc     hl
+                in      a, ($AA)
+                ld      (hl), a
+                inc     hl
+                ld      a, (pcpre)
+                ld      (hl), a
+                ld      a, (RG9SAV)
+                ld      (rg9org), a
+                ld      a, (kind)
+                cp      3
+                jr      c, nohz
+                ld      a, (rg9org)
+                xor     2
+                out     ($99), a
+                ld      b, a
+                ld      a, $89
+                out     ($99), a
+                ld      a, (kind)
+                cp      4
+                jr      nz, nohz
+                ld      a, b
+                ld      (RG9SAV), a
+nohz:
                 ld      a, $5A
                 call    mark
                 ld      a, (kind)
@@ -194,6 +253,11 @@ after:
                 ld      (sv_if+1), a
                 ld      a, $A5
                 call    mark
+                ld      a, (rg9org)     ; R#9 / RG9SAV back (kinds 3, 4; a no-op otherwise)
+                ld      (RG9SAV), a
+                out     ($99), a
+                ld      a, $89
+                out     ($99), a
                 ; registers into the record
                 ld      de, (ptr)
                 inc     de
@@ -221,6 +285,11 @@ after:
                 ld      de, 19
                 add     hl, de
                 call    psgdump
+                ld      hl, (ptr)
+                ld      de, 61
+                add     hl, de
+                in      a, ($AA)
+                ld      (hl), a         ; +61 port C at return
                 ; the tail
                 ei
                 ld      b, 10
@@ -266,6 +335,8 @@ tail:
                 inc     hl
                 in      a, ($AA)
                 ld      (hl), a         ; +18
+                and     $7F             ; port C bit 7 back to 0 for the next case
+                out     ($AA), a
                 ld      hl, (ptr)
                 ld      de, SLOT
                 add     hl, de
@@ -359,24 +430,33 @@ rtc_wr:
 psgset:
                 db      $A1, $02, $B3, $04, $C5, $06, $17, $B8, $09, $0A, $0B, $5C, $1D, $0E
 cases:
-                db      0, $00, $FF
-                db      0, $01, $FF
-                db      0, $02, $FF
-                db      0, $03, $FF
-                db      0, $04, $FF
-                db      0, $05, $FF
-                db      0, $06, $FF
-                db      0, $07, $FF
-                db      0, $08, $FF
-                db      0, $09, $FF
-                db      0, $0A, $FF
-                db      0, $0B, $FF
-                db      0, $0C, $FF
-                db      0, $0D, $FF
-                db      0, $0E, $FF
-                db      0, $0F, $FF
-                db      1, $0F, $FF     ; 16: the main ROM's BEEP, the same setting as case 15
-                db      2, $06, $07     ; 17: entered with EI; MODE := TE 0, AE 1, block 3
+                db      0, $00, $FF, $FF, 0
+                db      0, $01, $FF, $FF, 0
+                db      0, $02, $FF, $FF, 0
+                db      0, $03, $FF, $FF, 0
+                db      0, $04, $FF, $FF, 0
+                db      0, $05, $FF, $FF, 0
+                db      0, $06, $FF, $FF, 0
+                db      0, $07, $FF, $FF, 0
+                db      0, $08, $FF, $FF, 0
+                db      0, $09, $FF, $FF, 0
+                db      0, $0A, $FF, $FF, 0
+                db      0, $0B, $FF, $FF, 0
+                db      0, $0C, $FF, $FF, 0
+                db      0, $0D, $FF, $FF, 0
+                db      0, $0E, $FF, $FF, 0
+                db      0, $0F, $FF, $FF, 0
+                db      1, $0F, $FF, $FF, 0     ; 16: the main ROM's BEEP, the same setting as case 15
+                db      2, $06, $07, $FF, 0     ; 17: entered with EI; MODE := TE 0, AE 1, block 3
+                db      0, $00, $FF, $47, 0     ; 18: sound 00, R7 preset $47 (dirs 01, tones+noise on): R7 writes constant or kept
+                db      0, $04, $FF, $47, 0     ; 19: sound 01, the same
+                db      0, $08, $FF, $47, 0     ; 20: sound 10, the same
+                db      0, $0C, $FF, $47, 0     ; 21: sound 11, the same
+                db      0, $0F, $FF, $FF, 1     ; 22: port C bit 7 := 1 before the call (BP-6)
+                db      2, $06, $0B, $FF, 0     ; 23: entered with EI, MODE := $0B (block 3 / TE 1 / AE 0, as at boot) just before
+                db      2, $06, $FF, $FF, 0     ; 24: entered with EI, MODE left as found ($0B from 23, not written): EI alone
+                db      3, $04, $FF, $FF, 0     ; 25: sound 01, R#9 bit 1 flipped in the VDP only: frame-paced or not
+                db      4, $04, $FF, $FF, 0     ; 26: sound 01, R#9 bit 1 and RG9SAV flipped: paced by RG9SAV's setting or not
                 db      $EE
 
                 ds      $8000 - $, $FF

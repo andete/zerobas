@@ -12,7 +12,7 @@ and the PSG trace (R14 markers $5A / $A5 / $3C = call / return / tail end), time
 import re
 import sys
 
-KIND = {0: "sub DI", 1: "main $00C0 DI", 2: "sub EI"}
+KIND = {0: "sub DI", 1: "main $00C0 DI", 2: "sub EI", 3: "sub DI R#9^2", 4: "sub DI R#9^2+RG9SAV"}
 SLOT, BASE = 0x380, 0x8001
 
 
@@ -28,7 +28,7 @@ def caps(path):
 
 
 def decode(name, c, trace):
-    c = c + bytes(0x3F00 - len(c))
+    c = c + bytes(0x5F80 - len(c))
     if c[0] != 0xA5:
         print(f"## {name}: NOT FINISHED ({c[0]:02X})"); return
     n = c[1]
@@ -40,7 +40,8 @@ def decode(name, c, trace):
         ix, iy = r[10] | r[11] << 8, r[12] | r[13] << 8
         print(f"  case {k}: {KIND[r[0]]}, V={'none' if r[1] == 0xFF else f'{r[1]:X}'}: A={r[2]:02X} F={r[3]:02X} "
               f"BC={r[5]:02X}{r[4]:02X} DE={r[7]:02X}{r[6]:02X} HL={r[9]:02X}{r[8]:02X} IX={ix:04X} IY={iy:04X} "
-              f"SP={r[54] | r[55] << 8:04X} IFF={r[14]}/{r[15]} M={r[56]:02X} MODEbefore={r[57]:X} MODE={r[16]:X} reg10={r[17]:X} portC={r[18]:02X}")
+              f"SP={r[54] | r[55] << 8:04X} IFF={r[14]}/{r[15]} M={r[56]:02X} MODEbefore={r[57]:X} MODE={r[16]:X} reg10={r[17]:X} portC={r[18]:02X}"
+              f" R7pre={r[58]:02X} PC={r[60]} portC before={r[59]:02X} at return={r[61]:02X}")
         print(f"     PSG at return : {r[19:35].hex(' ')}")
         print(f"     PSG after tail: {r[35:51].hex(' ')}")
         end = r[52] | r[53] << 8
@@ -80,7 +81,7 @@ def compare(path):
     """--cmp: per case, are the three references' write sequences (register, byte) equal; segment lengths."""
     seqs = {}
     for name, c in caps(path):
-        c = c + bytes(0x3F00 - len(c))
+        c = c + bytes(0x5F80 - len(c))
         out = []
         for k in range(c[1]):
             r = c[0xFF + k * SLOT: 0xFF + (k + 1) * SLOT]
