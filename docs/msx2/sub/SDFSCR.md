@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SDFSCR` (sub-ROM $0185) — restore the screen settings from the clock chip (interface unpublished)
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscr.asm](../../probes/bios/spec/xsubscr.asm), [scratchpad/AE_xsubscr_msx2.out](../../scratchpad/AE_xsubscr_msx2.out), decoded by `scratchpad/xsubscr_decode.py`; run with `tools/agent_wt.py --fresh`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscr.asm](../../../probes/bios/spec/xsubscr.asm), [scratchpad/AE_xsubscr_msx2.out](../../../scratchpad/AE_xsubscr_msx2.out), decoded by `scratchpad/xsubscr_decode.py`; run with `tools/agent_wt.py --fresh`).
 
 ## Summary
 
@@ -79,7 +79,7 @@ which suggests the references' own start-up writes these values; that is [A].
 C-BIOS's MSX2 / MSX2+ builds (the subject): **SDFSCR is a no-op** — nothing applied (mode, width, colours, CLIKSW,
 CNSDFG, cursor, the printer and cassette cells all left as the probe set them), registers returned as entered,
 interrupts on in every case. Their start-up also leaves clock-chip block 2 unwritten ($F in every register, no ID)
-([scratchpad/AE_xsubscr_msx2.out](../../scratchpad/AE_xsubscr_msx2.out)).
+([scratchpad/AE_xsubscr_msx2.out](../../../scratchpad/AE_xsubscr_msx2.out)).
 
 ## Open (not measured)
 

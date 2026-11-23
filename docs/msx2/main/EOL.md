@@ -6,7 +6,7 @@ SPDX-License-Identifier: BSD-2-Clause
 # `EOL` ($0168) — clear to the end of a line
 
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (identical on all three;
-> [xeol.asm](../../probes/bios/spec/xeol.asm), [scratchpad/AE_xeol_msx2.out](../../scratchpad/AE_xeol_msx2.out),
+> [xeol.asm](../../../probes/bios/spec/xeol.asm), [scratchpad/AE_xeol_msx2.out](../../../scratchpad/AE_xeol_msx2.out),
 > decoded by `scratchpad/xeol_decode.py`).
 
 ## Summary

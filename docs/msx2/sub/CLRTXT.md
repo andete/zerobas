@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CLRTXT` (sub-ROM $0119) — clear the text screen (interface unpublished)
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubctx.asm](../../probes/bios/spec/xsubctx.asm), [scratchpad/AE_xsubctx_msx2.out](../../scratchpad/AE_xsubctx_msx2.out), decoded by `scratchpad/xsubctx_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubctx.asm](../../../probes/bios/spec/xsubctx.asm), [scratchpad/AE_xsubctx_msx2.out](../../../scratchpad/AE_xsubctx_msx2.out), decoded by `scratchpad/xsubctx_decode.py`).
 
 ## Summary
 
@@ -51,7 +51,7 @@ Case numbers `[M xsubctx n]` are the probe's case table.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds (the subject), [scratchpad/AE_xsubctx_msx2.out](../../scratchpad/AE_xsubctx_msx2.out):
+C-BIOS's MSX2 / MSX2+ builds (the subject), [scratchpad/AE_xsubctx_msx2.out](../../../scratchpad/AE_xsubctx_msx2.out):
 - text modes: the same clear, cursor home and LINTTB, but the key line is NOT redrawn (row 24 left as spaces with
   CNSDFG $FF), and interrupts are on on return also with the key line off; other registers (A $20, F $43, HL / IX
   kept) [M xsubctx 0-9];

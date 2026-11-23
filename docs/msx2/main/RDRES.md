@@ -6,11 +6,11 @@ SPDX-License-Identifier: BSD-2-Clause
 # `RDRES` ($017A) — read the reset-status register (MSX2+)
 
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the FS-A1WSX (the only reference with the entry), the port also on the
-> HB-F900 and NMS 8250 ([xrdres.asm](../../probes/bios/spec/xrdres.asm) on the FS-A1WSX row only,
-> [scratchpad/AE_xrdres_msx2p.out](../../scratchpad/AE_xrdres_msx2p.out); the port by hand on all three:
-> [xf4port.asm](../../probes/bios/spec/xf4port.asm), [scratchpad/AE_xf4port_msx2.out](../../scratchpad/AE_xf4port_msx2.out);
-> across a soft reset: [xf4reset.asm](../../probes/bios/spec/xf4reset.asm),
-> [scratchpad/AE_xf4reset_msx2.out](../../scratchpad/AE_xf4reset_msx2.out)).
+> HB-F900 and NMS 8250 ([xrdres.asm](../../../probes/bios/spec/xrdres.asm) on the FS-A1WSX row only,
+> [scratchpad/AE_xrdres_msx2p.out](../../../scratchpad/AE_xrdres_msx2p.out); the port by hand on all three:
+> [xf4port.asm](../../../probes/bios/spec/xf4port.asm), [scratchpad/AE_xf4port_msx2.out](../../../scratchpad/AE_xf4port_msx2.out);
+> across a soft reset: [xf4reset.asm](../../../probes/bios/spec/xf4reset.asm),
+> [scratchpad/AE_xf4reset_msx2.out](../../../scratchpad/AE_xf4reset_msx2.out)).
 
 ## Summary
 
@@ -34,12 +34,12 @@ I/O map lists $F4 as reserved [P A6].
 - **Round trip with WRRES:** WRRES v then RDRES gives v AND $80 (both complement; the port keeps bit 7 only) -- from
   the port readings after WRRES (xrdres cases 5-11, 13) and RDRES's rule above [M].
 
-**The port** [M] (by hand, no BIOS call; [AE_xf4port](../../scratchpad/AE_xf4port_msx2.out)):
+**The port** [M] (by hand, no BIOS call; [AE_xf4port](../../../scratchpad/AE_xf4port_msx2.out)):
 - **HB-F900, NMS 8250:** port $F4 reads $FF always -- after OUT $00, $FF, $A5, $5A, $80, $7F, $01, $FE alike: no
   register there [M].
 - **FS-A1WSX:** port $F4 keeps **bit 7 only**: IN gives $FF after an OUT with bit 7 set ($FF, $A5, $80, $FE) and $7F
   after one with bit 7 clear ($00, $5A, $7F, $01); bits 6-0 always read 1. At the cartridge's INIT it reads $7F [M].
-- **Across a soft reset** (JP $0000, [AE_xf4reset](../../scratchpad/AE_xf4reset_msx2.out)): on the FS-A1WSX the port
+- **Across a soft reset** (JP $0000, [AE_xf4reset](../../../scratchpad/AE_xf4reset_msx2.out)): on the FS-A1WSX the port
   reads $7F at INIT after a reset entered with $7F and also after one entered with $FF (OUT $80): the start-up sets
   bit 7 to 0 either way; the boot took 55, 52 and 57 JIFFY ticks to reach the cartridge in the three boots -- no
   difference that bit 7 made. The MSX2s read $FF at every boot [M].

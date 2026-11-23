@@ -6,7 +6,7 @@ SPDX-License-Identifier: BSD-2-Clause
 # `CHKNEW` ($0165) — is the screen in one of the MSX2's new modes?
 
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (identical on all three;
-> [xchknew.asm](../../probes/bios/spec/xchknew.asm), [scratchpad/AE_xchknew_msx2.out](../../scratchpad/AE_xchknew_msx2.out),
+> [xchknew.asm](../../../probes/bios/spec/xchknew.asm), [scratchpad/AE_xchknew_msx2.out](../../../scratchpad/AE_xchknew_msx2.out),
 > decoded by `scratchpad/xchknew_decode.py`).
 
 ## Summary

@@ -165,7 +165,7 @@ by hand, R#14 set explicitly), and the bytes at the case's marked addresses.
 | VA-16 | $1234 | VA-1, interrupts ON, a VDP interrupt made to arrive during the call (below) | the address is still right; whether the call disables interrupts across its port $99 writes | ? | ? | ? |
 
 **Measured (2026-11-23)** [M] -- the three references give the same address and the same port $99 writes in
-every case ([xva.asm](../../probes/bios/spec/xva.asm); [scratchpad/AE_xva_msx2.out](../../scratchpad/AE_xva_msx2.out),
+every case ([xva.asm](../../../probes/bios/spec/xva.asm); [scratchpad/AE_xva_msx2.out](../../../scratchpad/AE_xva_msx2.out),
 decoded by `scratchpad/xva_decode.py`): the address read back from the VDP after the call (R#14 x $4000 + the
 pointer's 14 bits), not from marked VRAM.
 - Every one of the four calls writes **R#14 := the bank, then the 14-bit address**: four port $99 writes, nothing
@@ -179,7 +179,7 @@ pointer's 14 bits), not from marked VRAM.
   AR-16K / AR-16K\* are out.
 - **SCREEN 0-4, ACPAGE not 0: HL is not used.** The address is **ACPAGE x $100 + E** -- VA-11 and its follow-ups
   (xva cases 18-24: ACPAGE 1 / 2 / 3, HL $C123 / $1234 / $0000, SCREEN 0 / 1 / 2 / 4) all land at $n5A with the
-  probe's E $5A, and at $n34 with E $34 (a diagnostic run, DE $1234: [scratchpad/AE_xva_de1234.out](../../scratchpad/AE_xva_de1234.out)). The same on all three references.
+  probe's E $5A, and at $n34 with E $34 (a diagnostic run, DE $1234: [scratchpad/AE_xva_de1234.out](../../../scratchpad/AE_xva_de1234.out)). The same on all three references.
 - **C-BIOS's MSX2 / MSX2+ builds** give every address above except the last: with ACPAGE not 0 in SCREEN 0-4 they
   address HL ($00123 for VA-11, five port writes) -- the one difference.
 

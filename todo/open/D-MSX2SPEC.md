@@ -24,7 +24,13 @@
       C-BIOS findings
       sent (inbox 2026-11-23-zerobas-msx2-subrom-findings.md). Since 11-23 the remaining pages are measured by PARALLEL
       agents, each in its own isolated instance (tools/agent_wt.py, --fresh clock-chip state): the disk BLT calls
-      BLTVD / BLTDV / BLTMD / BLTDM (xsubbltd.asm; raw files, BLTDV obeys ARG; C-BIOS has no disk -- stubs).
+      BLTVD / BLTDV / BLTMD / BLTDM (xsubbltd.asm; raw files, BLTDV obeys ARG; C-BIOS has no disk -- stubs); BEEP
+      (xsubbeep.asm: reads clock block 2 every call; C-BIOS's is a no-op), NEWPAD (xsubpad*.asm), KNJPRT (xsubknj.asm:
+      the NMS 8250, no kanji ROM, draws a solid block); SDFSCR / SETSCR / PROMPT / CLRTXT (xsubscr / xsubset / xsubpmt /
+      xsubctx.asm: block 2 / block 3 of the clock chip; C-BIOS's are no-ops); EXTROM / SUBROM (xextrom*.asm: IY and the
+      alternates preserved; side finding: GETPLT returns D = the palette number, C-BIOS leaves DE), CHKSLZ (xchkslzd.asm:
+      NOT a callable service -- the three references disagree and none returns normally), CHKNEW (flags of CP 5 on
+      SCRMOD), EOL, RDRES / WRRES (port $F4, complemented). Every MSX2 / MSX2+ page that exists is now DRAFT 1.
       🔴 FIVE ENTRIES HAVE NO PAGE AT ALL: docs/msx2/index.md links sub/DELLNO, INSLNO, PUTVRM, PUTCHR, KYKLOK.md and
       none exists (found 11-23 by a link scan) -- write and measure them. NEXT: those five, VA-13 / VA-14 / VA-16, a
       second goldfish pass over the MSX2 pages, then D-TRSPEC.

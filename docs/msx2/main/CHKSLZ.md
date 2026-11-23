@@ -7,8 +7,8 @@ SPDX-License-Identifier: BSD-2-Clause
 
 > **Spec:** DRAFT 1 (2026-11-23): observable effects MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the three
 > DISAGREE, and on two of them the call does not come back as a subroutine
-> ([xchkslzd.asm](../../probes/bios/spec/xchkslzd.asm), runs [scratchpad/AE_xchkslzd_msx2.out](../../scratchpad/AE_xchkslzd_msx2.out)
-> and the repeat [scratchpad/AE_xchkslzd_msx2b.out](../../scratchpad/AE_xchkslzd_msx2b.out), identical).
+> ([xchkslzd.asm](../../../probes/bios/spec/xchkslzd.asm), runs [scratchpad/AE_xchkslzd_msx2.out](../../../scratchpad/AE_xchkslzd_msx2.out)
+> and the repeat [scratchpad/AE_xchkslzd_msx2b.out](../../../scratchpad/AE_xchkslzd_msx2b.out), identical).
 
 ## Summary
 

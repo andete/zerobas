@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETSCR` (sub-ROM $0189) — start-up screen from the clock chip (interface unpublished)
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubset.asm](../../probes/bios/spec/xsubset.asm), [scratchpad/AE_xsubset_msx2.out](../../scratchpad/AE_xsubset_msx2.out), decoded by `scratchpad/xsubscr_decode.py --cases xsubset`; run with `tools/agent_wt.py --fresh`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubset.asm](../../../probes/bios/spec/xsubset.asm), [scratchpad/AE_xsubset_msx2.out](../../../scratchpad/AE_xsubset_msx2.out), decoded by `scratchpad/xsubscr_decode.py --cases xsubset`; run with `tools/agent_wt.py --fresh`).
 
 ## Summary
 
@@ -52,7 +52,7 @@ Case numbers `[M xsubset n]` are the probe's case table.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject): **SETSCR is a no-op** — no settings applied, no banner, no key line;
-registers returned as entered, interrupts on ([scratchpad/AE_xsubset_msx2.out](../../scratchpad/AE_xsubset_msx2.out)).
+registers returned as entered, interrupts on ([scratchpad/AE_xsubset_msx2.out](../../../scratchpad/AE_xsubset_msx2.out)).
 
 ## Open (not measured)
 

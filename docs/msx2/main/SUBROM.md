@@ -6,8 +6,8 @@ SPDX-License-Identifier: BSD-2-Clause
 # `SUBROM` ($015C) — call a sub-ROM routine, with IX on the stack
 
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (the same on all three;
-> [xextrom.asm](../../probes/bios/spec/xextrom.asm) cases 7-11 and 15,
-> [scratchpad/AE_xextrom_msx2.out](../../scratchpad/AE_xextrom_msx2.out), decoded by `scratchpad/xextrom_decode.py`).
+> [xextrom.asm](../../../probes/bios/spec/xextrom.asm) cases 7-11 and 15,
+> [scratchpad/AE_xextrom_msx2.out](../../../scratchpad/AE_xextrom_msx2.out), decoded by `scratchpad/xextrom_decode.py`).
 
 ## Summary
 

@@ -6,9 +6,9 @@ SPDX-License-Identifier: BSD-2-Clause
 # `EXTROM` ($015F) — call a sub-ROM routine
 
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (the same on all three;
-> [xextrom.asm](../../probes/bios/spec/xextrom.asm), [scratchpad/AE_xextrom_msx2.out](../../scratchpad/AE_xextrom_msx2.out),
-> decoded by `scratchpad/xextrom_decode.py`; EXBRSA $00: [xextrom0.asm](../../probes/bios/spec/xextrom0.asm),
-> [scratchpad/AE_xextrom0_msx2.out](../../scratchpad/AE_xextrom0_msx2.out)).
+> [xextrom.asm](../../../probes/bios/spec/xextrom.asm), [scratchpad/AE_xextrom_msx2.out](../../../scratchpad/AE_xextrom_msx2.out),
+> decoded by `scratchpad/xextrom_decode.py`; EXBRSA $00: [xextrom0.asm](../../../probes/bios/spec/xextrom0.asm),
+> [scratchpad/AE_xextrom0_msx2.out](../../../scratchpad/AE_xextrom0_msx2.out)).
 
 ## Summary
 
@@ -47,7 +47,7 @@ they were, and interrupts on if they were on at the call. The sub-ROM and EXBRSA
   stub again (case 14) [M 14]. EXTROM does not change EXBRSA [M 0-14].
 - **EXBRSA $00** (the "no sub-ROM" value) is not refused: with IX = RSLREG ($0138) the call runs the main ROM's RSLREG
   in slot 0 -- A comes back $F4, port $A8 with page 0 at slot 0 -- and BC, DE, HL, IY come back unchanged
-  ([xextrom0](../../scratchpad/AE_xextrom0_msx2.out)) [M].
+  ([xextrom0](../../../scratchpad/AE_xextrom0_msx2.out)) [M].
 - **From any page:** called from code in page 2 RAM (case 6) it behaves as from page 1 [M 6].
 - **Stack:** the routine's SP is 26 bytes below the caller's SP at the `CALL EXTROM` (the return address included); a
   routine that pushes nothing makes the lowest stack byte written 26 below it; SP after the return = SP before the

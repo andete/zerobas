@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `PROMPT` (sub-ROM $0181) — display the prompt
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubpmt.asm](../../probes/bios/spec/xsubpmt.asm), [scratchpad/AE_xsubpmt_msx2.out](../../scratchpad/AE_xsubpmt_msx2.out), decoded by `scratchpad/xsubpmt_decode.py`; run with `tools/agent_wt.py --fresh`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubpmt.asm](../../../probes/bios/spec/xsubpmt.asm), [scratchpad/AE_xsubpmt_msx2.out](../../../scratchpad/AE_xsubpmt_msx2.out), decoded by `scratchpad/xsubpmt_decode.py`; run with `tools/agent_wt.py --fresh`).
 
 ## Summary
 
@@ -52,7 +52,7 @@ Case numbers `[M xsubpmt n]` are the probe's case table. All three references ga
 
 C-BIOS's MSX2 / MSX2+ builds (the subject): **PROMPT is a no-op** — nothing printed (no CHPUT call, cursor not
 moved), registers returned as entered; their fresh clock-chip block 3 reads $F in every register
-([scratchpad/AE_xsubpmt_msx2.out](../../scratchpad/AE_xsubpmt_msx2.out)).
+([scratchpad/AE_xsubpmt_msx2.out](../../../scratchpad/AE_xsubpmt_msx2.out)).
 
 ## Open (not measured)
 
