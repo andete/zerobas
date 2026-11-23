@@ -56,6 +56,10 @@ import os
 import re
 import subprocess
 import sys
+# temp-root-check: every bare tempfile call here lands under the /tmp/zerobas root
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import probe_tmp  # noqa: E402,F401 -- sets tempfile.tempdir
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))

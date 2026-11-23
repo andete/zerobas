@@ -73,7 +73,10 @@ ROWLINE = re.compile(r"(?:\b(?:SAME|DIFF|NO-ORACLE)\s*$|vg8020=|cf3300=|"
 def open_items():
     """Yield (todo_line_no, [probe modules]) for each OPEN `- [ ]` item."""
     items, cur, start = [], [], None
-    for n, line in enumerate(open(TODO, errors="replace"), 1):
+    # the roadmap is one file per item since 2026-11-23: read the rebuilt single-file text (tools/todo_items.py)
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import todo_items
+    for n, line in enumerate(todo_items.full_text().splitlines(keepends=True), 1):
         if line.startswith("- ["):
             if start is not None:
                 items.append((start, cur))

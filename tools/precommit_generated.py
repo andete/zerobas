@@ -29,6 +29,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+# temp-root-check: every bare tempfile call here lands under the /tmp/zerobas root
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import probe_tmp  # noqa: E402,F401 -- sets tempfile.tempdir
+
 
 # (name, staged-path pattern that triggers it, the page, how to produce it)
 #   produce = ("stdout", argv): the page is the command's stdout;  ("write", argv): the command writes the page itself
