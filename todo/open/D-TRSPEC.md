@@ -18,3 +18,10 @@
       never return); R800 DRAM mode: the top 64 KB of the mapper refuse writes ONLY in DRAM mode (A1GT 512 KB, A1ST
       256 KB). A clean-room INCIDENT (page-1 source) was self-caught and contained: docs/clean-room-audit.md.
       Open: PCMREC with a real input needs a harness directive to feed openMSX's wavinput a file.
+      2026-11-23 (tr3): EVERY existing BIOS probe (206) re-run on both turbo Rs (scratchpad/trall_run.py / trall_cmp.py,
+      AE_trall/, docs/turbor/remeasured.md): 53 SAME, 74 as the FS-A1WSX, 18 NEW on the turbo R -- RDRES / WRRES the
+      other way round from the A1WSX, CHKSLZ never returns on the A1GT, NEWPAD / GTPAD 0-11 and GTPDL do nothing, the
+      cassette calls are stubs (carry set), DSKRST after SELDSK 1 returns DI on the A1GT only, INIT32 width 255 / 0.
+      Not run: xtap1 / xtap5 / b7tape (`@tape` kills the run on a machine with no cassette port -- biosl_run needs to
+      skip it). NEXT: carry each NEW finding onto its page (docs/turbor/remeasured.md lists them), the @tape skip, a
+      goldfish pass over docs/turbor/.
