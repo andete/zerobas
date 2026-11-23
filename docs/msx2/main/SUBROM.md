@@ -5,46 +5,47 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SUBROM` ($015C) — call a sub-ROM routine, with IX on the stack
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (the same on all three;
+> [xextrom.asm](../../probes/bios/spec/xextrom.asm) cases 7-11 and 15,
+> [scratchpad/AE_xextrom_msx2.out](../../scratchpad/AE_xextrom_msx2.out), decoded by `scratchpad/xextrom_decode.py`).
 
 ## Summary
 
 `SUBROM` calls the sub-ROM routine at IX, like [EXTROM](EXTROM.md), for a caller that has also pushed
-IX: the handbook's pattern is `PUSH IX` / `LD IX,routine` / `JP SUBROM`, so that the caller's IX comes
-back and the return goes to the caller's caller. The sub-ROM and EXBRSA are on the
+IX: the handbook's pattern is `PUSH IX` / `LD IX,routine` / `JP SUBROM`, inside a routine the program
+CALLs. The pushed word comes back in IX and SUBROM returns to the caller's caller, so the pattern
+leaves the stack balanced. Everything else is EXTROM's behaviour. The sub-ROM and EXBRSA are on the
 [region page](README.md#the-sub-rom).
 
 ## The specification
 
 **Interface.**
-- In: IX = the sub-ROM address, with IX also pushed on the stack [P A1]. The entry's wording leaves
-  open WHO pushes it; the worked example (INIPAL, in App. 1's notes) has the caller `PUSH IX` (its own
-  IX, before loading the target) and then `JP SUBROM` [P A1]. That the example's convention is the
-  rule [A].
-- Out: whatever the routine returns [P A1]. Registers: the alternate set and IY "reserved", as
-  EXTROM [P A1] (meaning unclear, see [EXTROM](EXTROM.md)).
-- On return IX holds the word pushed before the jump, and the stack is one word shallower than at
-  the jump [A] (what the pattern implies; not stated).
-- Interrupt state and slots: as [EXTROM](EXTROM.md) [A].
+- In: IX = the sub-ROM address, with IX also pushed on the stack [P A1]; the worked example (INIPAL, in
+  App. 1's notes) has the caller `PUSH IX` and then `JP SUBROM` [P A1].
+- Out: whatever the routine returns [P A1]. The alternate set and IY "reserved", as EXTROM [P A1].
+
+**Measured** [M] (the published pattern, from a routine the probe CALLs; identical on all three references):
+- **IX on return = the word pushed before the jump** -- $A5A5 in cases 7, 9-11, 15, $1234 in case 8 -- not the target
+  and not the routine's IX; the return lands in the code that CALLed the pattern, with SP back at its value before that
+  CALL [M 7-11, 15].
+- **Everything else as [EXTROM](EXTROM.md):** A, F, BC, DE, HL and IX (= the target) reach the routine, IY and the
+  alternates do not; AF, BC, DE, HL come back from the routine, IY and the alternates are the caller's; the routine
+  runs with interrupts off and only page 0 switched; on return interrupts are on if they were on at entry (case 9),
+  else the routine's state (off in case 7, on after the routine's EI in case 10); the slots as before [M 7-11].
+- With the real sub-ROM: GETPLT through SUBROM gives B $A3, C $06 (the palette set by SETPLT through EXTROM) and IX the
+  pushed $A5A5 [M 15]. From page 2 RAM the same (case 11) [M 11].
+- **Stack:** the routine's SP is 28 bytes below the SP at the `JP SUBROM` (the pushed IX already on it); EXTROM's is
+  26 below the SP at its `CALL` [M 7-11].
 
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) match every rule above. The only measured difference is the stack depth:
+C-BIOS's frame is 24 bytes (the references' 28), and GETPLT through it went 32 deep (the references' 40) [M 7-11, 15].
 
 ## Open (not measured)
 
-[EXTROM](EXTROM.md)'s cases EX-1 to EX-13, with its stub, run through SUBROM with the published
-pattern (`PUSH IX` of a marker / `LD IX,stub` / `JP SUBROM`, from a routine the probe CALLs), each
-read against EXTROM's result on the same machine. Records as there, plus the stack words around SP.
-
-| case | inputs | state | separates | F900 | 8250 | WSX |
-|---|---|---|---|---|---|---|
-| SB-1 | pushed marker $A5A5, then $1234 in a second run | clobber stub | IX on return = the pushed word (popped) vs the target vs the clobber value; the return lands in the probe | ? | ? | ? |
-| SB-2 | `LD IX,stub` / `CALL SUBROM`, no push, a safe return address planted under the call's return | marker words on the stack | which stack word SUBROM pops into IX and where it returns (documents misuse) | ? | ? | ? |
-| SB-3 | as SB-1 | the stub's dump and clobber, interrupts on / off, stub EI / DI | registers and interrupt state as EXTROM's EX-2 to EX-5, or different | ? | ? | ? |
-| SB-4 | as SB-1, from page 1 and page 2 RAM | EX-9's | SUBROM from any page | ? | ? | ? |
-| SB-5 | as SB-1 | EX-12's EXBRSA change between calls | EXBRSA read at each call | ? | ? | ? |
-| SB-6 | as SB-1 | — | stack depth and time (README methods) | ? | ? | ? |
+- SB-2: SUBROM entered without the pushed word (a CALL SUBROM, or JP with nothing pushed) -- documents misuse only.
+- The time it takes (the harness has no T-state counter).
 
 ## Related pages
 

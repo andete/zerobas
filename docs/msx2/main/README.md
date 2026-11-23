@@ -5,7 +5,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The MSX2 / MSX2+ main-ROM entries — shared facts
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the shared VRAM address matrix
+> ("Measured" below) and the sub-ROM call's register / interrupt / slot rules ([EXTROM](EXTROM.md)); the rest of this
+> page is the published interface.
 
 The concept page for the twelve entries the MSX2 and MSX2+ add to the main ROM's jump table. It
 holds what several of them share: the sub-ROM and its slot, the 128 KB VRAM addressing, the
@@ -74,6 +76,10 @@ a row's expected value is open per machine.
 - On the MSX2 an inter-slot call restores the interrupt state it found; on the MSX1 interrupts stay
   off [P 5§7.2]. CALSLT and CALLF destroy IX, IY and the alternate registers [P 5§7.2]. (The MSX1
   pages' measured CALSLT is on [CALSLT](../../bios/CALSLT.md).)
+- **Measured for EXTROM / SUBROM** [M] (the same on all three references; the rules and evidence are on
+  [EXTROM](EXTROM.md)): the routine runs with interrupts off and only page 0 switched; IY and the alternate set are
+  the caller's again on return (preserved, not destroyed); on return interrupts are on if they were on at the call,
+  else the routine's state; EXBRSA is read at every call.
 
 ## 128 KB VRAM
 

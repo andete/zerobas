@@ -1,0 +1,27 @@
+===== probes/bios/spec/xextrom0.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01f4a0f400c2b15f4e769838012b1af4a04040005a0000000000000000000000
+  CAP ours: 01f4a0f400c2b15f4e769838012b1af4a04040005a0000000000000000000000
+  SAME (0 allowlisted)
+===== probes/bios/spec/xextrom0.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01f450f400c2b15f4e769838012b1af4504040005a000000000000000000000000000000000000000000000000000000000000000000000000000000000000ff
+  CAP ours: 01f4a0f400c2b15f4e769838012b1af4a04040005a0000000000000000000000
+  DIFF (3 unexcused byte(s)):
+  CAP C003: ref=50 ours=A0
+  CAP C011: ref=50 ours=A0
+  CAP C040: ref=FF ours=00
+===== probes/bios/spec/xextrom0.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01f400f400c2b15f4e769838012b1af4004040005a0000000000000000000000
+  CAP ours: 01f4a0f400c2b15f4e769838012b1af4a04040005a0000000000000000000000
+  DIFF (2 unexcused byte(s)):
+  CAP C003: ref=00 ours=A0
+  CAP C011: ref=00 ours=A0
+===== biosl: DIVERGENCE =====
