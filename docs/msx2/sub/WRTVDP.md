@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `WRTVDP` (sub-ROM $012D) — write a VDP register
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
 
 ## Summary
 
@@ -37,9 +37,21 @@ Shared facts — the register set, the copies, the ports, the recording:
 - What the MSX1 call returns (A = B, B = 0, F from the port write, EI on return:
   [WRTVDP $0047](../../bios/WRTVDP.md)) carrying over is [A].
 
+**Measured** [M] (the same on all three references; C 0-27 and 32-46, B = the register's own value XOR $0F):
+- Every write is DIRECT: two port $99 writes, B then $80 | C -- never through R#17 / port $9B -- for every C up to 46.
+- The copy: C 0-7 -> $F3DF + C; C 8-23 -> $FFE7 + (C - 8); on the FS-A1WSX also C 25-27 -> $FFFA-$FFFC (its V9958's
+  registers). C 24 and 28-46 have no copy. (R#15 was written with its own value; R#16's copy not decided by this run.)
+- **C 0 writes R#9 too:** R#9 := $12 (NMS 8250, PAL) / $10 (HB-F900, FS-A1WSX: NTSC), with its copy $FFE8 -- four
+  port writes.
+- Out: A $00, F $44, B and C kept.
+- The VDP keeps only its own bits (R#0 $0F -> $0E, R#8 $07 -> $03, R#14 $0F -> $07 ...): the chip's, not the call's;
+  C 24-27 on the V9938 (HB-F900, NMS 8250) read back $00 -- the registers do not exist there.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) write every register directly with its copy, but: C 0 does not write R#9;
+the MSX2+ build keeps no copy for R#25-R#27; out A = B, F $A0 / $A8, B $00 (the references: A $00, F $44, B kept)
+([scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out)).
 
 ## Open (not measured)
 

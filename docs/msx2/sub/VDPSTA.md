@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `VDPSTA` (sub-ROM $0131) — read a VDP status register
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
 
 ## Summary
 
@@ -33,9 +33,13 @@ Shared facts — S#0-S#9, R#15, STATFL, the recording: [vdp-and-palette.md](../c
 - A from 10 to 15, and above 15, is [A]. S#1 carries a VDP identification that differs between the
   MSX2 and MSX2+ VDPs [A].
 
+**Measured** [M] (the same on all three references): A 0-9 returns S#0-S#9, equal to the status the debugger
+held just before the call (S#2's live bits aside); the FS-A1WSX's S#1 reads $04, the V9958's ID (2) in bits 5-1,
+where the V9938s read $00.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds return the same status registers ([scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out)).
 
 ## Open (not measured)
 
