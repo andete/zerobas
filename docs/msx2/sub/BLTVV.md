@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `BLTVV` (sub-ROM $0191) — copy a VRAM rectangle within VRAM
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
 
 ## Summary
 
@@ -33,9 +33,14 @@ The parameter block, coordinates, ARG, LOGOP and how every case is recorded:
 - Clipping at the screen edge or the VRAM end, the wait for the command's end, the block and the
   VDP command registers afterwards, and SCREEN 0-4 are [A].
 
+**Measured** [M] (the same on all three references; HL = $F562; SCREEN 8 and 5): the rectangle (SX, SY) NX x NY
+copied to (DX, DY) dot for dot -- in SCREEN 5 from an odd SX too ((9, 8) -> (40, 8): pixels 2 3 4 5 land as $23 $45);
+**LOGOP is applied** (3, EOR, over $FF: $10 -> $EF); **ARG's DIX (bit 2) runs BOTH the source and the destination
+leftwards** from SX / DX, as the VDP's command does. The block is left as given; A / F $90 / $94; interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds copy the same dots; F after $84 ([scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out)).
 
 ## Open (not measured)
 

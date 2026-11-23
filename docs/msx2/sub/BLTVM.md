@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `BLTVM` (sub-ROM $0195) — copy an array from RAM to VRAM
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
 
 ## Summary
 
@@ -33,9 +33,14 @@ The parameter block, the array format, ARG, LOGOP and the recording:
 - Whether NX / NY are copied into the block, dot packing, a mid-byte DX, and the direction bits are
   [A].
 
+**Measured** [M] (the same on all three references, SCREEN 8): the array at DPTR (NX 4, NY 2, 8 dots) lands at
+(DX, DY); **NX / NY in the block are WRITTEN from the array's header** ($F56A / $F56C := 4 / 2); the rest of the block
+as given; A $00, F $44, interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds draw the same dots and fill NX / NY the same, but also write CDUMMY ($F56E) := $A1 (the
+first dot) and return other A / F ([scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out)).
 
 ## Open (not measured)
 
