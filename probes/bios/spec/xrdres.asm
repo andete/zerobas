@@ -8,6 +8,9 @@
 ; The capture (CAP = C001): +0 case count, +1 $5A; records of 32 bytes from +16: +0 case, +1 kind (0 RDRES, 1 WRRES),
 ; +2 preset, +3 IN $F4 before the call, +4..+29 the dump (as xextrom.asm: [($FFFF) cpl, $A8], IFF 2nd, IFF 1st, HL',
 ; DE', BC', AF', IY, IX, HL, DE, BC, AF), +30 IN $F4 after, +31 $5A.
+; Cases 15-20 (goldfish pass 1, 2026-11-23): WRRES with the port preset to the OTHER bit-7 reading than the one the
+; call should leave (cases 5-11 and 13 all ended where they started), and kind 2 = WRRES then RDRES back to back (one
+; trampoline, `call WRRES / jp RDRES`; A from the table goes to WRRES, the dump is RDRES's).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xrdres.asm --row msx2p
 ;
 ; CLEAN-ROOM: 100% own code; the published-by-MAP entries, an I/O port. No ROM byte read.
@@ -70,6 +73,9 @@ c_next:
                 or      a
                 jr      z, c_k
                 ld      hl, WRRES
+                cp      1
+                jr      z, c_k
+                ld      hl, wr_rd
 c_k:
                 ld      (JVEC+1), hl
                 ld      de, (PTR)
@@ -169,10 +175,14 @@ finish:
 fin:
                 jr      fin
 
+wr_rd:
+                call    WRRES
+                jp      RDRES
+
 ent_src:
                 dw      $5A6B, $1A2B, $3C4D, $5E6F, $7081, $92A3, $A700, $B1C2, $4E5F, $9876
 
-; id, kind (0 RDRES, 1 WRRES), preset (OUT by hand), A, F, iff
+; id, kind (0 RDRES, 1 WRRES, 2 WRRES then RDRES), preset (OUT by hand), A, F, iff
 cases:
                 db      0, 0, $00, $A7, $00, 0
                 db      1, 0, $80, $A7, $00, 0
@@ -189,6 +199,12 @@ cases:
                 db      12, 0, $5A, $A7, $00, 0      ; after WRRES's cases: RDRES with the port as set by hand
                 db      13, 1, $00, $A5, $00, 0
                 db      14, 0, $FF, $27, $00, 0      ; preset overrides: OUT by hand; then RDRES
+                db      15, 1, $00, $00, $00, 0      ; port reads $7F before; NOT A = $FF must make it $FF
+                db      16, 1, $80, $80, $00, 0      ; port $FF before; NOT A = $7F must make it $7F
+                db      17, 1, $00, $7F, $FF, 0      ; port $7F before -> $FF
+                db      18, 1, $80, $FF, $FF, 0      ; port $FF before -> $7F
+                db      19, 2, $80, $80, $00, 0      ; port $FF; WRRES $80 -> port $7F; RDRES -> A $80
+                db      20, 2, $00, $00, $00, 0      ; port $7F; WRRES $00 -> port $FF; RDRES -> A $00
                 db      $EE
 
                 ds      $8000 - $, $FF
