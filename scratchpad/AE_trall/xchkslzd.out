@@ -1,0 +1,23 @@
+# rc=2
+===== probes/bios/spec/xchkslzd.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  NO READING: DONE never set on ref, ours (ref 65, ours 0)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=d5e5 typed=0 scncnt=ff newkey=d43cd1c1c92222224b6d4b hkeyi,htimi=c3875d7afe00c2a95d7b cpu=z80 t=30.001 fcb1=93 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=b803 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78b4940c9 cpu=r800 t=30.000 fcb1=128 s1990r6=0.1:60 0.6:40 1.9:60 17.9:00
+  VRAM0 ref : 42000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  VRAM0 ours: 0000000000000000000000000000000000000000000000000000000000000000498ef0f4498ef0f4000000000000000000000000000000000000000000000000
+  CAP ref : 42
+  CAP ours: 00
+  DIFF (10 unexcused byte(s)):
+  CAP E001: ref=42 ours=00
+  VRAM 3F00: ref=42 ours=00
+  VRAM 3F20: ref=00 ours=49
+  VRAM 3F21: ref=00 ours=8E
+  VRAM 3F22: ref=00 ours=F0
+  VRAM 3F23: ref=00 ours=F4
+  VRAM 3F24: ref=00 ours=49
+  VRAM 3F25: ref=00 ours=8E
+  VRAM 3F26: ref=00 ours=F0
+  VRAM 3F27: ref=00 ours=F4
+===== biosl: NO READING =====

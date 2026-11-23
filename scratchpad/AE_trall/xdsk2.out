@@ -1,0 +1,10 @@
+# rc=0
+===== probes/bios/spec/xdsk2.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=dd00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=32.601 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=db00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=31.801 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 0c8901000000a400010094e5e5000042003c0000a400016ad3ebe5000042003c005aa400016ad3ebe5000c5501000000a400010094e5e5000c5501000000a4000100000000000042003c0000a4000100ca00e5000c5501000001a4000100c977e5000042003c00a4a40001f702f900000c89010000fea400010094e5e5
+  CAP ours: 0c8901000000a400010094e5e5000042003c0000a400016ad3ebe5000042003c005aa400016ad3ebe5000c5501000000a400010094e5e5000c5501000000a4000100000000000042003c0000a4000100ca00e5000c5501000001a4000100c977e5000042003c00a4a40001f702f900000c89010000fea400010094e5e5
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

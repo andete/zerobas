@@ -1,0 +1,10 @@
+# rc=0
+===== probes/bios/spec/xenaslt.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : a5f48000008000000000008301fcac00fc00002c3d000f5aa50cf3ff0cf4a000f400002c3d000f414204f3550cfcac00fc00002c3d000f5aa50cf3ff0cd48400d400002c3d000f104010cf5530f4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000f414204f3550cf4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000fc66c30cfff30c3
+  CAP ours: a5f48000008000000000008301fcac00fc00002c3d000f5aa50cf3ff0cf4a000f400002c3d000f414204f3550cfcac00fc00002c3d000f5aa50cf3ff0cd48400d400002c3d000f104010cf5530f4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000f414204f3550cf4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000fc66c30cfff30f4a000f400002c3d000fc66c30cfff30c3
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

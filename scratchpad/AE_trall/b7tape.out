@@ -1,0 +1,6 @@
+# rc=NOT RUN
+# D-TRSPEC (trall_run.py): not run. The probe declares `; @tape`, so biosl_run.py starts each machine with
+# `cassetteplayer new`; the turbo R has no cassette interface, the Tcl script stops at that command, the poll that
+# writes the dump is never scheduled, and openMSX runs until biosl_run.py's 600 s subprocess timeout (seen on
+# xtap1, scratchpad/AE_trall/xtap1.out). A turbo R reading of a tape call needs a harness that skips @tape (or
+# records "no cassette") on a machine without a cassette port.

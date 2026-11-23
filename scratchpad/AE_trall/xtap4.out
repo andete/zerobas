@@ -1,0 +1,12 @@
+# rc=0
+===== probes/bios/spec/xtap4.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 030013579bdf24680040280013579bdf246800407f0013579bdf24680040400013579bdf24680040400013579bdf24680050000113571234246800e0a70113579bdf24680040000113575678246800a5a70113579bdf24680040
+  CAP ours: 030013579bdf24680040280013579bdf246800407f0013579bdf24680040400013579bdf24680040400013579bdf24680050000113571234246800e0a70113579bdf24680040000113575678246800a5a70113579bdf24680040
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var odata is never used on line 151 of file probes/bios/spec/xtap4.asm
+WARNING: Var pcrec is never used on line 202 of file probes/bios/spec/xtap4.asm

@@ -1,0 +1,11 @@
+# rc=2
+===== probes/bios/spec/xf4reset.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  NO READING: DONE never set on ref, ours (ref 255, ours 255)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=ffff typed=0 scncnt=ff newkey=ffffffffffffffffffffff hkeyi,htimi=ffffffffffffffffffff cpu=z80 t=120.002 fcb1=255 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=ffff typed=0 scncnt=ff newkey=ffffffffffffffffffffff hkeyi,htimi=ffffffffffffffffffff cpu=z80 t=120.003 fcb1=255 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  CAP ours: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  SAME (0 allowlisted)
+===== biosl: NO READING =====

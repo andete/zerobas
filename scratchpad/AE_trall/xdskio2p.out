@@ -1,0 +1,12 @@
+# rc=0
+===== probes/bios/spec/xdskio2p.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=ed00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=26.500 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=ea00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=25.700 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 0c5502000000a400010094e5e5000042003c0000a40001610cebf9000042003c0000800001f702f900000042003c0000a40101f702f900000c5501000000a4000100000000000042003c0000a400016ad3ebe5
+  CAP ours: 0c5502000000a400010094e5e5000042003c0000a40001610cebf9000042003c0000800001f702f900000042003c0000a40101f702f900000c5501000000a4000100000000000042003c0000a400016ad3ebe5
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var dskio is never used on line 204 of file probes/bios/spec/xdskio2p.asm
+WARNING: Var fill_pat is never used on line 183 of file probes/bios/spec/xdskio2p.asm

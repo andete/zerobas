@@ -1,0 +1,13 @@
+# rc=0
+===== probes/bios/spec/xdfmt3.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=b702 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=87.101 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=b002 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=86.301 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 0c872000008080000000420002020100027000a005f90300090002000000f9ffff00000000000042003c00548e000100420002020100027000d002f80200090001000000f8ffff00000000000042003c00548a100100420002020100027000d002f80200090001000000f8ffff
+  CAP ours: 0c872000008080000000420002020100027000a005f90300090002000000f9ffff00000000000042003c00548e000100420002020100027000d002f80200090001000000f8ffff00000000000042003c00548a100100420002020100027000d002f80200090001000000f8ffff
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var buf is never used on line 38 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file probes/bios/spec/xdfmt3.asm

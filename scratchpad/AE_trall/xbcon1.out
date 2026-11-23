@@ -1,0 +1,11 @@
+# rc=0
+===== probes/bios/spec/xbcon1.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=9e00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=11.700 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=9c00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=10.900 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 00423c000101f0f00aeeeeeeeeeeeeeeeeeeeeee20202020ffac3cff0101f1f10aeeeeeeeeeeeeeeeeeeeeee20202020580245580102f1f10aeeeeeeeeeeeeeeeeeeeeee58202020413b54410102f0f00aeeeeeeeeeeeeeeeeeeeeee58202020423b54420102f1f10aeeeeeeeeeeeeeeeeeeeeee58202020439a62430102f1f10aeeeeeeeeeeeeeeeeeeeeee5820202044024e440102f1f10aeeeeeeeeeeeeeeeeeeeeee582020200d02450d0101f1f10aeeeeeeeeeeeeeeeeeeeeee58202020019345010101f1f10aeeeeeeeeeeeeeeeeeeeeee582020200d9b000d0101f3f30a0248490deeeeeeeeeeeeee08492020450245450102f1f10aeeeeeeeeeeeeeeeeeeeeee4549202000000000000000ff
+  CAP ours: 00423c000101f0f00aeeeeeeeeeeeeeeeeeeeeee20202020ffac3cff0101f1f10aeeeeeeeeeeeeeeeeeeeeee20202020580245580102f1f10aeeeeeeeeeeeeeeeeeeeeee58202020413b54410102f0f00aeeeeeeeeeeeeeeeeeeeeee58202020423b54420102f1f10aeeeeeeeeeeeeeeeeeeeeee58202020439a62430102f1f10aeeeeeeeeeeeeeeeeeeeeee5820202044024e440102f1f10aeeeeeeeeeeeeeeeeeeeeee582020200d02450d0101f1f10aeeeeeeeeeeeeeeeeeeeeee58202020019345010101f1f10aeeeeeeeeeeeeeeeeeeeeee582020200d9b000d0101f3f30a0248490deeeeeeeeeeeeee08492020450245450102f1f10aeeeeeeeeeeeeeeeeeeeeee4549202000000000000000ff
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var CALSLT is never used on line 33 of file probes/bios/spec/xbcon1.asm

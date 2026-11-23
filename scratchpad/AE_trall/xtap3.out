@@ -1,0 +1,12 @@
+# rc=0
+===== probes/bios/spec/xtap3.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 800013579bdf24680040fe0013579bdf24680040810013579bdf24680040020013579bdf24680050030013579bdf24680050280013579bdf24680050010013579bdf2468005a000013579bdf2468004aff0013579bdf2468004500011357123424680040a70113579bdf24680040ff091357567824680045a70113579bdf24680040
+  CAP ours: 800013579bdf24680040fe0013579bdf24680040810013579bdf24680040020013579bdf24680050030013579bdf24680050280013579bdf24680050010013579bdf2468005a000013579bdf2468004aff0013579bdf2468004500011357123424680040a70113579bdf24680040ff091357567824680045a70113579bdf24680040
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var odata is never used on line 199 of file probes/bios/spec/xtap3.asm
+WARNING: Var pcrec is never used on line 250 of file probes/bios/spec/xtap3.asm

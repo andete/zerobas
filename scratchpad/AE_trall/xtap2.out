@@ -1,0 +1,12 @@
+# rc=0
+===== probes/bios/spec/xtap2.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=3600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=z80 t=5.000 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 000013579bdf246800a0010013579bdf246800a0ff0013579bdf246800a0ff0013579bdf246800e0000013579bdf246800f07f0013579bdf24680050fe0013579bdf24680050810013579bdf2468005000ff13579bdf24680140ffff13579bdf24680140ffff13579bdf246801503c0913579bdf246800e03c0913579bdf246800a0a70113579bdf24680050a70113579bdf246800703c0913579bdf246800e03c0913579bdf246800a0a70113579bdf24680050a70113579bdf24680070
+  CAP ours: 000013579bdf246800a0010013579bdf246800a0ff0013579bdf246800a0ff0013579bdf246800e0000013579bdf246800f07f0013579bdf24680050fe0013579bdf24680050810013579bdf2468005000ff13579bdf24680140ffff13579bdf24680140ffff13579bdf246801503c0913579bdf246800e03c0913579bdf246800a0a70113579bdf24680050a70113579bdf246800703c0913579bdf246800e03c0913579bdf246800a0a70113579bdf24680050a70113579bdf24680070
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var odata is never used on line 271 of file probes/bios/spec/xtap2.asm
+WARNING: Var pcrec is never used on line 322 of file probes/bios/spec/xtap2.asm
