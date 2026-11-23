@@ -210,8 +210,9 @@ def render(mod, results, uncovered, total):
     n_ok = sum(1 for _, _, rb, _ in results if not rb)
     n_unc = sum(len(f) for _, f in uncovered)
     dec = getattr(run, "declared", 0)
-    L.append(f"**{len(results)} rules; {n_ok} hold on the reference. Of the {total} recorded outputs (each "
-             f"case's cursor, cells, A, table entries ...): {total - n_unc - dec} read by a rule's check, {dec} "
+    what = getattr(mod, "OUTPUTS_DESC", "each case's cursor, cells, A, table entries ...")   # a keyword page names its own
+    L.append(f"**{len(results)} rules; {n_ok} hold on the reference. Of the {total} recorded outputs ({what}): "
+             f"{total - n_unc - dec} read by a rule's check, {dec} "
              f"declared NOT evidence (below), {n_unc} unread.**")
     sec = None
     order = {s_: i for i, s_ in enumerate(sorted({r.section for r, *_ in results},

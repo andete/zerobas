@@ -4557,6 +4557,14 @@ bios-spec-index:
 bios-spec-index-check:
 	python3 tools/bios_spec_index.py --check
 
+# D-KWSPEC (2026-11-23): docs/keywords/spec-index.md -- every keyword page, its region and its spec state
+# (docs/keywords/spec-plan.md). Generated; the check keeps it from drifting.
+kw-spec-index:
+	python3 tools/kw_spec_index.py --write
+
+kw-spec-index-check:
+	python3 tools/kw_spec_index.py --check
+
 # docs/spec-method.md §3a: every page's EXECUTABLE RULES hold on the reference's own measured
 # cases, and each page's rendered rule tables match their rules file. Reads committed evidence only.
 # docs/spec-method.md §8 step 2 (2026-11-18): every BIOS spec page AS a gate. Re-runs each page's
@@ -4567,7 +4575,7 @@ spec-live: repack-machine
 	python3 -u tools/spec_live.py
 
 spec-rules-check:
-	@set -e; for f in probes/bios/spec/*_rules.py; do python3 tools/spec_rules.py "$$f" --check > build/spec-rules.out || { cat build/spec-rules.out; exit 1; }; tail -1 build/spec-rules.out; done
+	@set -e; for f in probes/bios/spec/*_rules.py probes/basic/spec/*_rules.py; do python3 tools/spec_rules.py "$$f" --check > build/spec-rules.out || { cat build/spec-rules.out; exit 1; }; tail -1 build/spec-rules.out; done
 
 tiers-md-check:
 	@python3 tools/tier_table.py --keywords --markdown > build/tier-status.check.md

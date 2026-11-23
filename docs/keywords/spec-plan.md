@@ -1,0 +1,183 @@
+<!--
+Copyright (c) 2026 Joost Yervante Damad
+SPDX-License-Identifier: BSD-2-Clause
+-->
+
+# The keyword pages as a specification — the plan
+
+← [Keyword pages](README.md) · [the index](spec-index.md) · [the method](../spec-method.md)
+
+Developer documentation (D-KWSPEC, Joost 2026-11-23). The BIOS calls each have a page that is both the user
+documentation and the specification: measured on the reference, its rules executable, reviewed until they stop
+moving ([docs/spec-method.md](../spec-method.md), [docs/bios/index.md](../bios/index.md)). This plan applies the
+same method to the BASIC keywords. BASIC is meant to graduate into C-BIOS one day; these pages are what such a port
+is checked against, so "the page says it" has to mean "the reference was measured doing it".
+
+The method itself is not restated here. This page says only what is DIFFERENT for a keyword: the regions, the
+references, the harnesses, what a case and a rule are, and how a spec page differs from today's user page.
+
+## 1. What a keyword spec is
+
+- **A case** is BASIC typed on the machine: an expression or a statement inside a fixed program frame, with its
+  inputs chosen by the probe. It is run on the reference and on zerobas, never compared with a value written by
+  hand.
+- **Its outputs** are what the keyword can be seen to do: the error it raises (ERR, and ERL where the line
+  matters), the value it returns, the variables it should and should not change, the screen it leaves, the
+  work-area cells, VRAM, the PSG. Each case records ALL of the outputs its region declares (spec-method §3a,
+  "coverage is field-level").
+- **A rule** is a sentence and a check over the cases, exactly as for the BIOS: a rules module
+  `probes/basic/spec/<slug>_rules.py` (`<slug>`: the keyword in lower case, `$` as `_s`), checked by the unchanged
+  [tools/spec_rules.py](../../tools/spec_rules.py). Its tables are generated onto the page between
+  `<!-- RULES BEGIN -->` and `<!-- RULES END -->`; `make spec-rules-check` (in STATIC) runs these modules as well as
+  the BIOS ones.
+- **Clean room, unchanged:** the VG-8020's BASIC is a black box. Lines are typed; screen, RAM, VRAM, registers and
+  ports are read. No reference ROM byte is read, no hook target followed, nothing single-stepped into ROM.
+
+### The keyword-specific rules of a setup (in addition to spec-method §3a)
+
+- **The readout must not use the keyword under test, nor its family.** The pilot reads a string result through
+  `VARPTR` and `PEEK` (its descriptor, then its bytes), never through `LEN` / `MID$` / `ASC`.
+- **Every case starts with its output holding a sentinel** (the pilot: `R$=CHR$(250)`), so an error, which assigns
+  nothing, cannot read as a result; "nothing is assigned on an error" then becomes a rule with a check.
+- **Inputs are distinct per position:** a source string whose byte at position p is `CHR$(p)` separates "the first
+  n", "the last n", "n from p" and "n from p - 1" in every case.
+- **Numbers at the values where rival rules disagree:** truncation vs rounding (`.9`, `1.5`, `255.9`), truncation vs
+  `INT` (`-.9`), the overflow test before vs after truncation (`-32768.5`, `32767.9`), both ends of each range.
+- **A capture is ended by the program**, not by a timer: a done flag the harness waits for (omsx_repl's
+  sentinel capture) and an end byte after the last record. The decoder refuses a capture without both.
+- **The probe's own BASIC is apparatus.** The pilot found that a `FOR` whose start is past its limit runs its body
+  once, on both machines (§6): a probe frame that relied on an empty loop would have built the wrong input.
+
+## 2. The regions, in the loop's order
+
+The keyword pages are already grouped by [docs/keywords/README.md](README.md); the regions follow those groups. The
+order puts the cheapest, most self-contained regions first: pure functions, whose whole behaviour is a value and an
+error code, before statements with machine state, and the devices last. Disk comes last, as it did for the BIOS
+(Joost, 2026-11-19: the disk calls after every other call).
+
+| # | region | keywords | reference | harness (§3) |
+|---|---|---|---|---|
+| 1 | **strings** | LEN LEFT$ RIGHT$ MID$ ASC CHR$ INSTR SPACE$ STRING$ STR$ VAL HEX$ OCT$ BIN$ | VG-8020 | RAM record |
+| 2 | maths | ABS SGN INT FIX SQR EXP LOG SIN COS TAN ATN RND | VG-8020 | RAM record (the value's 8 BCD bytes) |
+| 3 | conversion | CINT CSNG CDBL MKI$ MKS$ MKD$ CVI CVS CVD | VG-8020 | RAM record |
+| 4 | operators | AND OR XOR EQV IMP NOT MOD LET SWAP | VG-8020 | RAM record |
+| 5 | flow | GOTO GOSUB RETURN IF FOR NEXT END STOP CONT RUN | VG-8020 | RAM record + screen |
+| 6 | errors | ERR ERL ERROR RESUME TRON TROFF REM DEFINT DEFSNG DEFDBL DEFSTR | VG-8020 | RAM record + screen |
+| 7 | program | NEW LIST LLIST DELETE RENUM AUTO DATA READ RESTORE DIM ERASE CLEAR | VG-8020 | screen + program text |
+| 8 | memory | PEEK POKE VARPTR FRE USR FN BASE INP OUT WAIT TIME | VG-8020 | RAM record + ports |
+| 9 | composite | ON DEF GET PUT | per statement | per statement |
+| 10 | text | PRINT LPRINT CLS LOCATE CSRLIN POS LPOS WIDTH SCREEN COLOR KEY | VG-8020 | screen + work area |
+| 11 | graphics | PSET PRESET LINE CIRCLE PAINT DRAW POINT SPRITE VDP VPEEK VPOKE | VG-8020 | VRAM + VDP registers |
+| 12 | sound-input | BEEP SOUND PLAY INKEY$ INPUT STICK STRIG PAD PDL MOTOR | VG-8020 | PSG registers, held keys, the rig |
+| 13 | files | OPEN CLOSE EOF LOAD SAVE MERGE BLOAD BSAVE CLOAD CSAVE | VG-8020 (`CAS:`), CF-3300 (disk) | tape image / disk image + screen |
+| 14 | disk | FILES LFILES KILL NAME COPY DSKF DSKI$ DSKO$ FIELD LSET RSET LOC LOF IPL CMD SET | CF-3300 | disk image + screen |
+
+- **Composite words** (`ON`, `DEF`, `GET`, `PUT`) come after the regions their statements belong to: `ON ERROR` is
+  the errors region's, `ON KEY GOSUB` the text region's, `DEF FN` the memory region's, `PUT SPRITE` graphics'.
+- **Within a region**, the loop takes a family that shares a contract together (the pilot: `LEFT$` / `RIGHT$` /
+  `MID$`), then the lowest 🎚️ tier of the open TODO items first, as for the BIOS.
+- **The reference.** The Philips VG-8020 for BASIC; the National CF-3300 for Disk BASIC (the pages' `<!-- example:
+  reference=... -->` line already says which). When the two differ on a non-disk keyword, the page records both; a
+  purely presentational split ships the VG-8020's value (Joost, 2026-09-04).
+- **Later generations** (spec-method §2.6): an MSX2's BASIC is a different ROM with more statements; each rule is
+  re-measured there before a page may claim it. Until then the page's "On later generations" section is one `[A]`.
+- **Question for Joost:** the BIOS loop's 2026-11-19 ruling kept BASIC's cassette STATEMENTS out of the fix pass.
+  Are `CLOAD` / `CSAVE` / `MOTOR` and the `CAS:` forms of region 13 in D-KWSPEC's spec work, with their differences
+  filed and not fixed?
+
+## 3. The harnesses
+
+All of them type BASIC through [probes/lib/omsx_repl.py](../../probes/lib/omsx_repl.py) (`run_cases`: KEYBUF
+injection, delivery verified, one boot per probe group), so a case is exactly what a person could type.
+
+| harness | reads | how | used by |
+|---|---|---|---|
+| **RAM record** | per case: ERR, the result, the source / bystander variables | the typed program evaluates every case of a matrix in a loop and POKEs a fixed-size record per case above `CLEAR`'s limit; values come from `VARPTR` + `PEEK` (a string's descriptor and bytes; a number's own 2 / 4 / 8 bytes); `capture=("mem_abs", ...)`, `sentinel_capture` on the done flag | strings, maths, conversion, operators, memory; flow and errors for their values |
+| **screen** | the text screen's rows | the SCREEN 0 name table (omsx_repl's default capture), as [kwdoc_examples.py](../../scratchpad/kwdoc_examples.py) reads an example | what a keyword PRINTS: LIST, PRINT, error messages, `INPUT`'s prompt |
+| **work area** | cursor and screen cells, the program text | `mem_abs` of the published cells (CSRX / CSRY, TXTTAB ...) | text, program |
+| **VRAM / VDP** | the pattern, colour and sprite tables; R0-R7 | `vram_segs`, `vdpregs` | graphics |
+| **PSG / devices** | PSG registers, held keys, the rig | `probes/lib/psgtrace.py`; `holds`, `@BREAK`; `rigfw.py` | sound-input |
+| **media** | the tape and disk images after the statement | `cas_encode` / `cas_decode`; a private copy of `disk/test720.dsk` | files, disk |
+
+The pilot's probe, [probes/basic/spec/kslice.py](../../probes/basic/spec/kslice.py), is the RAM-record harness's
+first instance. It boots the VG-8020 and zerobas's diskless machine (`C-BIOS_MSX1_EU_REPACK_NODISK`); a disk
+region's probe boots the CF-3300 and `C-BIOS_MSX1_EU_REPACK_DISK` instead, as the example check does.
+
+## 4. The page: today's user page, plus the specification
+
+Today's keyword page ([about.md](about.md)) has: status, summary, syntax, details, example, differences, "what we
+found, and how", where it lives, tests. A spec page KEEPS the user content and ADDS the contract sections of
+spec-method §2:
+
+| section | user page | spec page |
+|---|---|---|
+| title | `` `NAME` — what it does`` | the same |
+| **`> **Spec:** <state>`** | — | NEW, above the status line: `DRAFT n` / `REVIEWED n` / `FINAL`, the date, the reference and the probe. The index reads it |
+| status line (the tier ladder) | yes | kept: it says which GATES pass; the Spec line says how far the page is measured |
+| summary, syntax | yes | kept, plain prose |
+| details (with the "you write / you get" table) | yes | kept as the READER's version of the rules. Each statement in it must be backed by a rule below or listed under Open; a detail no case backs is a finding |
+| example | yes, run by `kwdoc_examples.py` | kept, still run |
+| **the specification** | — | NEW: the reference, the evidence tags (`[KS ...]` for the pilot's cases), the generated rule tables |
+| differences from the reference | yes | kept; each difference names the failing rule and its TODO item, which the index reads |
+| **on later generations** | — | NEW (spec-method §2.6) |
+| **open (not measured)** | — | NEW: every `[A]` |
+| what we found, and how | yes | **question for Joost** (below) |
+| where it lives, related, tests | yes | kept |
+
+**"What we found, and how" is history**, and spec-method §2 rules a spec page describes behaviour, not history
+(Joost, 2026-11-18). The proposal: keep the section while the page is a DRAFT (it names the past failures a reviewer
+should probe), and delete it when the page goes FINAL; the history stays in git, `docs/TODO-done.md` and the
+`docs/spec-basic-*.md` documents the section links to. [about.md](about.md) lists the section as required; it
+changes with this ruling.
+
+## 5. The index
+
+[docs/keywords/spec-index.md](spec-index.md) is generated like [docs/bios/index.md](../bios/index.md):
+[tools/kw_spec_index.py](../../tools/kw_spec_index.py) (`make kw-spec-index`; `make kw-spec-index-check` is in
+STATIC; the pre-commit hook regenerates it when a keyword page is staged). It lists every keyword page in loop order
+with its region, the region's harness, the reference, the page's spec state, its open count and its differences.
+Every page must have a region and every region entry a page, so neither can be lost quietly. A page without a Spec
+line is a "user page", not an error: the loop converts the pages region by region. The README stays the reader's
+index; the spec index is the loop's queue.
+
+## 6. The pilot (2026-11-23): the slice functions
+
+The first unit is the strings region's slice family, `LEFT$`, `RIGHT$` and `MID$` (the function form; the statement
+is open on MID$'s page). One probe, three rules modules, three pages at DRAFT 1:
+
+- [probes/basic/spec/kslice.py](../../probes/basic/spec/kslice.py): 1,224 cases on each machine. LEFT$ / RIGHT$:
+  5 source lengths x 28 counts; MID$: 4 lengths x 15 positions x 15 counts (one of them "no count"); 44 fixed
+  expressions (types, missing and extra arguments, spaces, nesting, the order of the checks). Run file
+  [scratchpad/KSL_run1.out](../../scratchpad/KSL_run1.out).
+- [kslice_model.py](../../probes/basic/spec/kslice_model.py) holds the model the rules check against;
+  `left_s_rules.py`, `right_s_rules.py`, `mid_s_rules.py` are the pages' modules.
+- Result: every rule holds on the VG-8020, every recorded output is read by a rule, and **zerobas agrees in every
+  case** (0 of 1,224 differ). Controls: the model with rounding in place of truncation makes 22 LEFT$ cases false;
+  MID$ with position 0 allowed, 104; LEFT$'s data judged by RIGHT$'s rules, 15.
+- Two user-page findings: MID$'s error table still said an extra argument is "2 on the reference, 13 here" after the
+  difference was fixed (zerobas raises 2, case KS FX 30); corrected on the page.
+
+**Found in passing (not a slice-function rule):** `FOR I=1 TO 0 ... NEXT` runs its body ONCE, on the VG-8020 and on
+zerobas alike (`10 S$="":FOR I=1 TO 0:S$=S$+"X":NEXT` leaves `LEN(S$)` 1 and I 2; `FOR J=5 TO 1` prints J = 5, then
+J is 6). [FOR.md](FOR.md) does not say so; it belongs on FOR's spec page when the flow region comes.
+
+## 7. Tooling: what exists, what is missing
+
+Exists and fits unchanged: `tools/spec_rules.py` (the checker is not BIOS-specific: a module, its cases, its rules,
+field-level coverage); `omsx_repl.run_cases` with `mem_abs` capture and the sentinel; `kwdoc_examples.py` (the
+example check); `tools/kwforms.py` and `tools/kwerrset.py` (the authored FORMS and the measured ERROR SET per
+keyword form, which say how many forms and errors a page's matrix must reach).
+
+Missing:
+1. **A keyword page as a gate** (spec-method §8). `tools/spec_live.py` re-runs a BIOS page's probes on zerobas only,
+   but it finds them through the `.asm` probe named in a run file's header and runs them with `biosl_run.py`. A
+   keyword probe needs a zerobas-only mode (`kslice.py` measures both machines today) and a run-file header that
+   names it; then spec_live can dispatch on the probe kind. Until then the pilot's pages are checked against their
+   committed run only (`spec-rules-check`), and a later zerobas change is not caught by them.
+2. **A shared RAM-record library**, when the second probe arrives: the program frame, the record subroutine, the
+   done flag and the decoder are kslice's own today.
+3. **Number readouts:** the maths region needs a record of a numeric result's own bytes (`VARPTR` of a single /
+   double / integer variable) and a decoder for the BCD format; not built.
+4. **A tie to the existing denominators:** a rules module could assert that its fixed expressions reach every
+   (form, error) pair `kwerrset.py` lists for the keyword, so a spec page cannot miss an error the T6 rung knows.
+5. **The review loop** (spec-method §6) has not run on a keyword page yet; the pilot pages are DRAFT 1.

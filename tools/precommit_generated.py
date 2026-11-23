@@ -43,6 +43,8 @@ GENERATORS = [
     ("bios-spec-index", re.compile(r"^(TODO\.md|" + ITEM + r"|docs/(bios|bdos|disk)/(?!index\.md$)[^/]+\.md"
                                    r"|tools/entry_table\.py)$"),
      "docs/bios/index.md", ("write", ["tools/bios_spec_index.py", "--write"])),
+    ("kw-spec-index", re.compile(r"^(docs/keywords/(?!spec-index\.md$)[^/]+\.md|tools/kw_spec_index\.py)$"),
+     "docs/keywords/spec-index.md", ("write", ["tools/kw_spec_index.py", "--write"])),
 ]
 
 
