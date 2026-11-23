@@ -1,0 +1,94 @@
+A1GT INIT: cases 15 | S1990 R#6 60 | $FCB1 02 | $A7 00 | ($FFFD) F054 | active cpu z80 at t = 4.911072 s
+A1ST INIT: cases 15 | S1990 R#6 60 | $FCB1 02 | $A7 00 | ($FFFD) F054 | active cpu z80 at t = 4.911056 s
+A1GT END: R#6 00 -> CHGCPU($82) -> R#6 00, $FCB1 80, GETCPU 02
+A1ST END: R#6 00 -> CHGCPU($82) -> R#6 00, $FCB1 80, GETCPU 02
+A1GT case  0 start 80 A 08 F 00 DI | R6 pre 60 A7 pre 00 -> AF 0800 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4290 bios 1946 rom 4290 (us: 16779 / 7611 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after 00FF
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  0 start 80 A 08 F 00 DI | R6 pre 60 A7 pre 00 -> AF 0800 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4290 bios 1946 rom 4290 (us: 16779 / 7611 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after 00FF
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  1 start 80 A 10 F 00 DI | R6 pre 60 A7 pre 00 -> AF 1000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1946 rom 4290 (us: 16783 / 7611 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after 01FE
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  1 start 80 A 10 F 00 DI | R6 pre 60 A7 pre 00 -> AF 1000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1946 rom 4290 (us: 16783 / 7611 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after 01FE
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  2 start 80 A 20 F 00 DI | R6 pre 60 A7 pre 00 -> AF 2000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4290 bios 1946 rom 4291 (us: 16779 / 7611 / 16783) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after 02FD
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  2 start 80 A 20 F 00 DI | R6 pre 60 A7 pre 00 -> AF 2000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4290 bios 1946 rom 4290 (us: 16779 / 7611 / 16779) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after 02FD
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  3 start 80 A 88 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8800 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1946 rom 4290 (us: 16783 / 7611 / 16779) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after 03FC
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  3 start 80 A 88 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8800 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1946 rom 4290 (us: 16783 / 7611 / 16779) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after 03FC
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  4 start 81 A 03 F 00 DI | R6 pre 40 A7 pre 00 -> AF 0300 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 924 rom 1707 (us: 1920 / 3614 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 04FB
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  4 start 81 A 03 F 00 DI | R6 pre 40 A7 pre 00 -> AF 0300 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 925 rom 1708 (us: 1920 / 3618 / 6680) | snap T0->T1 1938 us cpu 1,1 | ($FFFD) after 04FB
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  5 start 81 A 04 F 00 DI | R6 pre 40 A7 pre 00 -> AF 0400 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 925 rom 1707 (us: 1924 / 3618 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 05FA
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  5 start 81 A 04 F 00 DI | R6 pre 40 A7 pre 00 -> AF 0400 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 924 rom 1708 (us: 1920 / 3614 / 6680) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 05FA
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  6 start 81 A 41 F 00 DI | R6 pre 40 A7 pre 00 -> AF 4100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 924 rom 1708 (us: 1920 / 3614 / 6680) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 06F9
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1ST case  6 start 81 A 41 F 00 DI | R6 pre 40 A7 pre 00 -> AF 4100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0040,0040 -> DI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 926 rom 1707 (us: 1924 / 3622 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 06F9
+     OUT $A7 - (0) | $E4 - (0) | $E5 - (0) | WA changes 0: 
+A1GT case  7 start 02 A 00 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 0000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1946 rom 4290 (us: 16783 / 7611 / 16779) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after E7E8
+     OUT $A7 02 (1) | $E4 06 (1) | $E5 60 60 (2) | WA changes 6: F3F6:01>02 FC9E:3E>3F FCA2:C2>C1 FCB1:00>02 FFFD:F8>E8 FFFE:07>E7
+A1ST case  7 start 02 A 00 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 0000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4290 bios 1945 rom 4290 (us: 16779 / 7607 / 16779) | snap T0->T1 16812 us cpu 0,0 | ($FFFD) after E7E8
+     OUT $A7 02 (1) | $E4 06 (1) | $E5 60 60 (2) | WA changes 6: F3F6:01>02 FC9E:3E>3F FCA2:C2>C1 FCB1:00>02 FFFD:F8>E8 FFFE:07>E7
+A1GT case  8 start 02 A 01 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 0100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 924 rom 1706 (us: 1924 / 3614 / 6672) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 00 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 5: F3F6:01>02 FC9E:40>41 FCA2:C0>BF FFFD:F7>E8 FFFE:08>E7
+A1ST case  8 start 02 A 01 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 0100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 925 rom 1707 (us: 1924 / 3618 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 00 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 5: F3F6:01>02 FC9E:40>41 FCA2:C0>BF FFFD:F7>E8 FFFE:08>E7
+A1GT case  9 start 02 A 82 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 8200 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 00 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 02 | timer ram 492 bios 972 rom 1707 (us: 1924 / 3802 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 00 (1) | WA changes 3: FCB1:00>80 FFFD:F6>E8 FFFE:09>E7
+A1ST case  9 start 02 A 82 F 00 DI FCB1:=00 | R6 pre 00 A7 pre 00 -> AF 8200 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 00 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 02 | timer ram 492 bios 973 rom 1707 (us: 1924 / 3806 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 00 (1) | WA changes 3: FCB1:00>80 FFFD:F6>E8 FFFE:09>E7
+A1GT case 10 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 925 rom 1707 (us: 1924 / 3618 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after AFE8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:02>01 FC9E:43>44 FCA2:BD>BC FCB1:02>80 FFFD:F5>E8 FFFE:0A>AF
+A1ST case 10 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 924 rom 1707 (us: 1920 / 3614 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after AFE8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:02>01 FC9E:43>44 FCA2:BD>BC FCB1:02>80 FFFD:F5>E8 FFFE:0A>AF
+A1GT case 11 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 925 rom 1707 (us: 1924 / 3618 / 6676) | snap T0->T1 1938 us cpu 1,1 | ($FFFD) after 9FE8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:02>01 FC9E:45>46 FCA2:BB>BA FCB1:02>80 FFFD:F4>E8 FFFE:0B>9F
+A1ST case 11 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 0044,0044 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 925 rom 1707 (us: 1920 / 3618 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after 9FE8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:02>01 FC9E:45>46 FCA2:BB>BA FCB1:02>80 FFFD:F4>E8 FFFE:0B>9F
+A1GT case 12 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 3C04,3C04 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 491 bios 924 rom 1706 (us: 1920 / 3614 / 6672) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:01>02 FC9E:48>49 FCA2:B8>B7 FCB1:02>80 FFFD:F3>E8 FFFE:0C>E7
+A1ST case 12 start 80 A 81 F 00 DI | R6 pre 60 A7 pre 00 -> AF 8100 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 3C04,3C04 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 40 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 01 | timer ram 492 bios 925 rom 1707 (us: 1924 / 3618 / 6676) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 40 (1) | WA changes 6: F3F6:01>02 FC9E:48>49 FCA2:B8>B7 FCB1:02>80 FFFD:F3>E8 FFFE:0C>E7
+A1GT case 13 start 81 A 80 F 00 DI | R6 pre 40 A7 pre 00 -> AF 8000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) C384,C384 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1945 rom 4290 (us: 16783 / 7607 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after E7E8
+     OUT $A7 02 (1) | $E4 06 (1) | $E5 60 60 (2) | WA changes 3: FCB1:80>02 FFFD:F2>E8 FFFE:0D>E7
+A1ST case 13 start 81 A 80 F 00 DI | R6 pre 40 A7 pre 00 -> AF 8000 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) C384,C384 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 0 | S1990 ff ff ff ff ff 00 60 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 00 | timer ram 4291 bios 1945 rom 4290 (us: 16783 / 7607 / 16779) | snap T0->T1 16813 us cpu 0,0 | ($FFFD) after E7E8
+     OUT $A7 02 (1) | $E4 06 (1) | $E5 60 60 (2) | WA changes 3: FCB1:80>02 FFFD:F2>E8 FFFE:0D>E7
+A1GT case 14 start 81 A 82 F 00 DI | R6 pre 40 A7 pre 00 -> AF 8200 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 5A04,5A04 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 00 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 02 | timer ram 492 bios 971 rom 1706 (us: 1924 / 3798 / 6672) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 00 (1) | WA changes 2: FFFD:F1>E8 FFFE:0E>E7
+A1ST case 14 start 81 A 82 F 00 DI | R6 pre 40 A7 pre 00 -> AF 8200 BC 3A3B DE 3C3D HL 3E3F IX 1A1B IY 1C1D AF' 2829 BC' 2A2B DE' 2C2D HL' 2E2F iff(1st,2nd) 5A04,5A04 -> EI slot F400 | mark 5A sent 5A ram 5A
+     cpu@A 1 | S1990 ff ff ff ff ff 00 00 ff ff ff ff ff ff 03 2f 8b | A7 00 | GETCPU 02 | timer ram 491 bios 973 rom 1708 (us: 1920 / 3806 / 6680) | snap T0->T1 1937 us cpu 1,1 | ($FFFD) after E7E8
+     OUT $A7 80 (1) | $E4 06 (1) | $E5 00 (1) | WA changes 2: FFFD:F1>E8 FFFE:0E>E7

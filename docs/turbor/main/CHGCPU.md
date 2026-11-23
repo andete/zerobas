@@ -12,8 +12,11 @@ SPDX-License-Identifier: BSD-2-Clause
 > [xtrboot.asm](../../../probes/bios/spec/xtrboot.asm), [scratchpad/AE_xtrboot_tr.out](../../../scratchpad/AE_xtrboot_tr.out);
 > the memory side of DRAM mode: [xtrdram.asm](../../../probes/bios/spec/xtrdram.asm),
 > [scratchpad/AE_xtrdram_tr.out](../../../scratchpad/AE_xtrdram_tr.out), decoded by
-> [scratchpad/xtrdram_decode.py](../../../scratchpad/xtrdram_decode.py)).
-> No goldfish pass yet.
+> [scratchpad/xtrdram_decode.py](../../../scratchpad/xtrdram_decode.py); the goldfish pass's cases:
+> [xchgcpu2.asm](../../../probes/bios/spec/xchgcpu2.asm),
+> [scratchpad/AE_xchgcpu2_tr.out](../../../scratchpad/AE_xchgcpu2_tr.out)
+> ([decoded](../../../scratchpad/AE_xchgcpu2_tr_decoded.out), same decoder)).
+> Goldfish pass 1 (test writer) 2026-11-23: 11 findings, 5 measured, 2 moved to open.
 
 Main-ROM entry, turbo R only. Listed by MAP's "MSX turbo R BIOS Entries" ([index](../index.md)); C-BIOS has no
 turbo R build.
@@ -24,8 +27,9 @@ turbo R build.
 BIOS copied to DRAM; bit 7 asks for the turbo LED to follow the CPU. Any other A — mode 3, or any of bits 6-2 set —
 is ignored without a trace: no register, flag, port or RAM changes, and the interrupt state stays. An accepted call
 writes the mode to the S1990's register 6 (every time, even when the mode is already current), writes port $A7 from a
-RAM copy at $FCB1, keeps every register, and returns with interrupts ENABLED whatever the entry state was. The
-machine boots in the Z80 — a cartridge's INIT runs in it — and the boot ends in R800 DRAM mode with the LED on. In DRAM
+RAM copy at $FCB1, keeps every register — I included, carried from one CPU to the other — and returns with interrupts
+ENABLED whatever the entry state was. The machine boots in the Z80 — a cartridge's INIT runs in it — and the boot ends
+in R800 DRAM mode with $FCB1's bit 7 (the LED bit) set; the LED itself was not read. In DRAM
 mode the top 64 KB of the memory mapper refuse writes (segments 28-31 of the FS-A1GT's 512 KB, 12-15 of the
 FS-A1ST's 256 KB); in the other two modes they are ordinary RAM.
 
@@ -39,17 +43,20 @@ start mode, DI, every register loaded with a distinct value (A and F per case), 
 registers, the IFF (read twice), port $A7, the S1990's registers 0-15 (OUT $E4 / IN $E5), GETCPU, every work-area
 cell $F380-$FFFE that changed, the OUTs to $A7 / $E4 / $E5 during the call (openMSX watchpoints), the active CPU
 (`@cpusnap`), and three timed loops. `[XC INIT]` = the state at cartridge INIT before any call, `[XC END]` = a closing
-CHGCPU($82) from R800 DRAM. `[XB]` = xtrboot.
+CHGCPU($82) from R800 DRAM. `[XB]` = xtrboot. `[XC2 n]` = case n of xchgcpu2 (15 cases, the same code and record;
+cases 10-11 make the CALL with SP = $B000 / $A000, cases 12-14 load I before it).
 
 **Which A is accepted** [M]:
-- A = $00, $01, $02 and $80, $81, $82 switch the mode, from each of the three start modes (start with and without the
-  LED bit) [XC 0-17, 24-29, 33-36].
+- A = $00, $01, $02 and $80, $81, $82 switch the mode, from each of the three start modes with $FCB1's bit 7 set
+  [XC 0-17] and without it: the Z80 [XC 28], R800 ROM [XC 29], R800 DRAM [XC2 7-9].
 - **Everything else is ignored:** A = $03, $83 (mode 3), $04, $05, $06 (bit 2), $41 (bit 6), $7E, $FD, $FF [XC 18-23,
-  30-32, 37-39]. Then: no OUT to $A7, $E4 or $E5; no work-area cell changes ($FFFD / $FFFE included); the mode stays
-  (GETCPU and the S1990 unchanged); every register comes back as it went in, F included (F $00 → $00 [XC 18],
-  F $FF → $FF [XC 37]); the interrupt state is kept (DI stays DI [XC 18-23, 30-32, 37, 39], EI stays EI [XC 38]).
-  There is no error indication [M]. The measured accept set is exactly "A AND $7F is 0, 1 or 2" [M, the cases above];
-  A values not run [A].
+  30-32, 37-39], and $08, $10, $20 (bits 3, 4, 5 alone) and $88 [XC2 0-3] — from the Z80; $03, $04, $41 from R800 ROM
+  mode [XC2 4-6]; $83 from R800 DRAM [XC 39]. Then: no OUT to $A7, $E4 or $E5; no work-area cell changes ($FFFD /
+  $FFFE included); the mode stays (GETCPU and the S1990 unchanged); every register comes back as it went in, F included
+  (F $00 → $00 [XC 18], F $FF → $FF [XC 37]); the interrupt state is kept (DI stays DI [XC 18-23, 30-32, 37, 39,
+  XC2 0-6], EI stays EI [XC 38]). There is no error indication [M]. The accept set measured is exactly "A AND $7F is
+  0, 1 or 2" over 19 distinct A values [M, the cases above]; bits 3, 4 and 5 alone are rejected [XC2 0-2], which rules
+  out "reject only on bit 2, bit 6 or mode 3". The other A values were not run [A].
 
 **What an accepted call does** [M]:
 - **The S1990's register 6** := $60 (Z80), $40 (R800 ROM), $00 (R800 DRAM): one OUT $E4 = 6, then OUT $E5 = the value
@@ -65,13 +72,18 @@ CHGCPU($82) from R800 DRAM. `[XB]` = xtrboot.
   call gives OUT $A7 $82 [XC 33]. Port $A7 reads $00 in every case, before and after [XC 0-39]: the LED state cannot be
   read back from the port. That bit 7 of port $A7 is the turbo LED (and bit 0 the pause LED) is not from a source read
   here [A].
-- **$FFFD / $FFFE** (MAP: "temporary stack pointer for CHGCPU") := $E7E8 in every accepted case, from garbage that
-  differs per case [XC 0-17, 24-29, 33-36]. The probe's SP before the CALL was $E800 in every case, so the cell is
-  SP − $18, a stack address inside the call [M, one SP]; that it always tracks the caller's SP [A].
+- **$FFFD / $FFFE** (MAP: "temporary stack pointer for CHGCPU") := the caller's SP − $18, a stack address inside the
+  call, from garbage that differs per case: $E7E8 for SP $E800 [XC 0-17, 24-29, 33-36], $AFE8 for SP $B000, $9FE8 for
+  SP $A000 [XC2 10, 11] [M, three SPs, two of them in page 2]. Consistent with it: PCMPLY's internal switch, called
+  from the Z80 one call level deeper, leaves $E7D8 ([PCMPLY](PCMPLY.md)), and at INIT, before this probe calls
+  anything, the cell holds $F054 from the boot's own calls [XC INIT].
 - **Nothing else in $F380-$FFFE changes** but SCNCNT ($F3F6), JIFFY ($FC9E) and $FCA2, which the timer interrupt
   writes (they change only in cases where an interrupt was taken) [XC 0-39].
 - **Registers:** AF, BC, DE, HL, IX, IY and AF', BC', DE', HL' are all kept, F included (entry F $00 and $FF), the
   primary slot register ($A8 = $F4) and page 3's secondary register too [XC 0-39].
+- **I is carried to the new CPU** [M]: I := $3C on the Z80, then CHGCPU($81): the R800 reads $3C (its own I was $00);
+  I := $C3 on the R800, then CHGCPU($80): the Z80 reads $C3 (its own was $3C); I := $5A, R800 ROM → DRAM: $5A
+  [XC2 12-14] (I read with `ld a,i`). The interrupt mode was not tested (Open).
 - **Interrupts: an accepted call returns with interrupts ENABLED**, entered DI [XC 0-17, 24, 28, 29, 33-36] or EI
   [XC 25-27] — unlike a rejected one.
 
@@ -90,11 +102,11 @@ The R800 runs the RAM loop 8.7× faster than the Z80, and the external cartridge
 page-0 calls DRAM mode is NOT faster than ROM mode in openMSX (GETCPU 5 % slower; KILBUF the same, on
 [GETCPU](GETCPU.md)) [M]; why, and whether real hardware agrees [A].
 
-**The boot** [M]: at cartridge INIT (t ≈ 4.9 s) the CPU is the Z80: R#6 $60, $FCB1 $02, port $A7 $00, GETCPU 00
-[XC INIT] [XB]. The S1990's register 6 during the boot (polled each 0.1 s) goes $60 (from 0.1 s) → $40 (0.6-0.7 s) →
+**The boot** [M]: at cartridge INIT (t ≈ 4.9 s) the CPU is the Z80: R#6 $60, $FCB1 $02, port $A7 $00, ($FFFD) $F054
+[XC INIT]; GETCPU 00 [XB]. The S1990's register 6 during the boot (polled each 0.1 s) goes $60 (from 0.1 s) → $40 (0.6-0.7 s) →
 $60 (1.9 s) → $00 at 13.2 s (FS-A1GT) / 11.4 s (FS-A1ST); at 25 s the machine is in R800 DRAM mode with $FCB1 = $80
-[XB]. So the boot itself switches to the R800 and back before the cartridge INITs, and ends in R800 DRAM mode with the
-LED bit set and bit 1 clear.
+[XB]. So the boot itself switches to the R800 and back before the cartridge INITs, and ends in R800 DRAM mode with $FCB1's
+LED bit set and bit 1 clear (whether the LED is lit was not read).
 
 **The memory side of R800 DRAM mode** [M] (`[XD]` = xtrdram: in each mode, DRAM first, then R800 ROM, then the Z80,
 the slot registers and EXPTBL, what IN $FE reads back after OUT $FE,s for s = 0-63, and a write test per segment:
@@ -103,8 +115,8 @@ neither is never otherwise read, so nothing of what it holds is seen; then a tag
 shows which segment numbers are the same RAM):
 - **The memory mapper** (slot 3-0, port $FC-$FF): the FS-A1GT has 32 segments (512 KB), the FS-A1ST 16 (256 KB):
   segment s and s + 32 (A1GT) / s + 16 (A1ST) are the same RAM, and IN $FC-$FF reads the segment with the unused
-  upper bits set — $E0 + s (A1GT), $F0 + s (A1ST); at cartridge INIT the registers hold 3, 2, 1, 0 [XD], in every
-  mode.
+  upper bits set — $E0 + s (A1GT), $F0 + s (A1ST); after CHGCPU to each of the three modes the registers (pages 0-3)
+  read segments 3, 2, 1, 0 [XD]. They were not read at INIT before a call.
 - **In R800 DRAM mode the top four segments refuse writes**: segments 28-31 on the FS-A1GT, 12-15 on the FS-A1ST — the
   top 64 KB of the mapper; every other segment takes both bytes [XD]. In R800 ROM mode and in the Z80 every segment
   is writable, the top four included [XD]. So a program in DRAM mode has 64 KB less mapper RAM: 448 KB (A1GT) / 192
@@ -118,17 +130,21 @@ shows which segment numbers are the same RAM):
   [XD]. DRAM mode is not a different slot for page 0 as the slot registers show it [M]; how the R800 is then served
   from RAM [A].
 
-**What CHGCPU does that a register write does not** [M, mechanism A]: writing the S1990's register 6 directly
-(OUT $E4,6 / OUT $E5,$60) from the R800 hands control to a Z80 that does not continue after the OUT: in xgetcpu a later
-CHGCPU($82) resumed the R800 right after the OUT where the direct write had stopped it, and the probe ran its last
-case a second time ([GETCPU](GETCPU.md), the run-on record). The turbo R's two CPUs each keep their own registers;
-CHGCPU passes the stack pointer across (in $FFFD, by MAP's description) and the call returns normally on the new CPU
-[XC 0-17]. The exact hand-over is not observable without reading ROM [A].
+**CHGCPU and a direct register write** [M for the records, the rule A]: writing the S1990's register 6 directly
+(OUT $E4,6 / OUT $E5,value) switches the CPU too, but in xgetcpu a later CHGCPU($82) resumed the R800 right after the
+OUT where the direct write had stopped it, and the probe ran its last case a second time ([GETCPU](GETCPU.md), the
+run-on record). The turbo R's two CPUs each keep their own registers (the R800 that resumed there read its own I =
+$02, not the Z80's $00: [GETCPU](GETCPU.md), xgetcpu records 16 and 18); CHGCPU's call returns normally on the new CPU with the caller's registers and I
+[XC 0-17, XC2 12-14], and $FFFD holds a stack address inside the call. Two rules fit every record: (1) only CHGCPU
+hands the running program across; (2) each CPU resumes exactly where it last stopped, and CHGCPU works because both
+CPUs stop inside it. Rule (2) also explains xgetcpu's record 16 (a direct Z80 → R800 write that gave a normal record: the R800 had
+last stopped inside a CHGCPU); rule (1) does not. The separating case is in Open; the hand-over itself is not
+observable without reading ROM [A].
 
 ## Differences
 
 **FS-A1GT vs FS-A1ST:** the mapper size (512 KB vs 256 KB; the protected DRAM-mode segments are 28-31 vs 12-15,
-the top 64 KB on both) [XD]. Otherwise none in any measured output of the 40 cases — registers, flags, interrupt state, port writes,
+the top 64 KB on both) [XD]. Otherwise none in any measured output of the 40 + 15 cases [XC, XC2] — registers, flags, interrupt state, port writes,
 S1990 registers, $FCB1, $FFFD, work-area changes, GETCPU, active CPU — beyond interrupt-timing cells and ±2 timer ticks
 [XC 0-39]. The boot switches to R800 DRAM later on the FS-A1GT (13.2 s vs 11.4 s) [XB].
 
@@ -138,8 +154,13 @@ S1990 registers, $FCB1, $FFFD, work-area changes, GETCPU, active CPU — beyond 
 
 - The DRAM copy's content and timing: which ROM pages it holds, whether CHGCPU($82) copies again, whether page 0 in
   DRAM mode reads the protected segments (all forbidden or not observable without reading ROM bytes / the copy).
-- A values not run (the accept rule "A AND $7F in 0-2" is measured on the 17 values above only).
-- $FFFD with another caller SP; a stack in pages 0-2; CHGCPU called from code in page 0-2 or from another slot.
+- A values not run: 19 distinct values are measured (above); the remaining 237 are inferred from "A AND $7F in 0-2" [A].
+- A stack in pages 0-1; CHGCPU called from code in page 0-2 or from another slot.
+- The interrupt mode across the switch (IM 1 / IM 2 set on one CPU, tested on the other after CHGCPU: needs a probe
+  that takes an interrupt in IM 2 with a vector table of its own).
+- Direct R#6 write vs CHGCPU — rules (1) and (2) above. Separating case: switch by a direct write, then count passes
+  in RAM (a counter incremented right after the OUT, and a marker per pass) to see where each CPU resumes after a later
+  CHGCPU.
 - CHGCPU's own duration and stack depth; whether interrupts are taken during the switch; the pause key and port $A7
   bit 0.
 - The LED itself (openMSX's LED state was not read; only the OUT to $A7 and $FCB1).
