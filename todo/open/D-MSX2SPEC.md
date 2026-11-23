@@ -36,4 +36,12 @@
       (xsubpvr*.asm: byte C at NAMBAS + row / column + LINLEN's margin), KYKLOK (xsubkyk*.asm: the two JP machines toggle
       KANAST and PSG R15 bit 7; the NMS 8250 does nothing), PUTCHR (xsubpch*.asm: NOT a draw -- A into the key buffer on
       the two JP machines; the NMS 8250 does nothing). C-BIOS: RET at all five. docs/msx2/ has no broken link left.
-      NEXT: VA-13 / VA-14 / VA-16, a second goldfish pass over the MSX2 pages, then D-TRSPEC.
+      VA-13 / VA-14 / VA-16 measured (xva13 / xva14 / xva16.asm): SCRMOD 10 takes 32 KB pages (C-BIOS 64 KB); an
+      interrupt never lands between a call's four port $99 writes; 64 KB VRAM masks nothing (FS-A1WSX boots MODE 10,
+      the other two 01) -- the shared matrix is complete. GOLDFISH PASS 1 (test writer, one fresh reviewer per group)
+      over the 23 pages written 11-23, every finding acted on by an isolated agent: almost all measured, the rest moved
+      to open rows; notable corrections -- CLRTXT's HB-F900 interrupt state, SETSCR draws the key line BEFORE the
+      banner, WRRES's port write was never shown (now is), BLTVD drops the dots past the right edge itself, all four
+      disk BLTs write $F571-$F572. One DECISION is open on CHKSLZ: what the subject's acceptance test checks, since
+      the references disagree and none returns cleanly.
+      NEXT: goldfish pass 1 for the pages measured before 11-23 that never had one, then D-TRSPEC.
