@@ -8,7 +8,7 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / WRTVRM.
 ;
 ; @cap C000
-; @type-at 4 \rQ\rQ\rR\rQ\rQ\r
+; @type-ready \rQ\rQ\rR\rQ\rQ\r
 ; @timeout 60
 
 RDVRM   equ     $004A
@@ -50,6 +50,8 @@ init:
                 ld      a, 40
                 ld      (LINL40), a
                 call    INITXT
+                ld      a, 1                    ; KEYREADY: the harness types the burst now (@type-ready)
+                ld      ($C100), a
                 ld      hl, CAP
                 ld      (ptr), hl
                 ld      ix, calls

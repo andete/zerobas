@@ -16790,8 +16790,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       comparison applies.
       FIRST PASS DONE (2026-11-23): 137 probes run, triaged per byte into GEN / CONFIG / TIMING / APPARATUS /
       UNKNOWN -- scratchpad/m1on2-triage-{vdp,gfx,slots,disk}.md (their summaries are the index). NEXT, in order:
-      (a) APPARATUS, so every probe gives a reading on all three: xlin / xlin2a-c (`@type-at 4` fires before the
-          NMS 8250 / FS-A1WSX are ready -> a KEYREADY handshake); xinit3 / xinit4 (a garbage RG0SAV turns the line
+      (a) APPARATUS, so every probe gives a reading on all three: ✅ xlin / xlin2a-c DONE 2026-11-23 (`@type-ready`, a
+          KEYREADY handshake; VG-8020 captures byte-identical, now gen=0 on all three MSX2s); xinit3 / xinit4 (a garbage RG0SAV turns the line
           interrupt on, the MSX2 never acknowledges it, the stack overruns RAM); xvdpreg (R#14 / R#15 left at $A5);
           xsetw (no @caplen); xcalslt (copies its target into sub-slot 3-0, not the RAM slot); xenaslt2 / xrdslt2
           (assume RAM in 3-0); xdsk3 (no reading on two machines: dump CAP + a progress cell on timeout); disk

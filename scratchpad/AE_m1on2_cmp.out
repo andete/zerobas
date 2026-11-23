@@ -97,10 +97,10 @@ xinitio6    msx2eu: gen=10 cbios=10  msx2jp: gen=10 cbios=10  msx2p: gen=10 cbio
 xinitio7    msx2eu: gen=9 cbios=9  msx2jp: gen=8 cbios=9  msx2p: gen=10 cbios=9
 xinp1       msx2eu: gen=26 cbios=193  msx2jp: gen=26 cbios=193  msx2p: gen=124 cbios=288
 xkey        msx2eu: gen=0 cbios=0  msx2jp: gen=0 cbios=0  msx2p: gen=0 cbios=0
-xlin        msx2eu: gen=13+LEN cbios=14+LEN  msx2jp: gen=0 cbios=6  msx2p: gen=21+LEN cbios=26+LEN
-xlin2a      msx2eu: gen=2+LEN cbios=1+LEN  msx2jp: gen=0 cbios=6  msx2p: gen=4+LEN cbios=8+LEN
-xlin2b      msx2eu: gen=5+LEN cbios=8+LEN  msx2jp: gen=0 cbios=5  msx2p: gen=6+LEN cbios=10+LEN
-xlin2c      msx2eu: gen=31+LEN cbios=31+LEN  msx2jp: gen=0 cbios=2  msx2p: gen=31+LEN cbios=31+LEN
+xlin        msx2eu: gen=0 cbios=6  msx2jp: gen=0 cbios=6  msx2p: gen=0 cbios=6
+xlin2a      msx2eu: gen=0 cbios=6  msx2jp: gen=0 cbios=6  msx2p: gen=0 cbios=6
+xlin2b      msx2eu: gen=0 cbios=5  msx2jp: gen=0 cbios=5  msx2p: gen=0 cbios=5
+xlin2c      msx2eu: gen=0 cbios=2  msx2jp: gen=0 cbios=2  msx2p: gen=0 cbios=2
 xlin3       msx2eu: gen=0 cbios=1  msx2jp: gen=0 cbios=1  msx2p: gen=0 cbios=1
 xlin4       msx2eu: gen=0 cbios=9  msx2jp: gen=0 cbios=9  msx2p: gen=0 cbios=9
 xlin5       msx2eu: gen=0 cbios=12  msx2jp: gen=0 cbios=12  msx2p: gen=0 cbios=12

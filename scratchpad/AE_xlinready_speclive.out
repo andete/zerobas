@@ -1,0 +1,10 @@
+  live XLIN2C_fix1.out nodisk: xlin2c.asm 0.9 s, zerobas as committed
+  live XLIN2A_fix2.out nodisk: xlin2a.asm 0.9 s, zerobas as committed
+  live XLIN3_run5.out nodisk: xlin3.asm 0.9 s, zerobas as committed
+  live XLIN2B_fix1.out nodisk: xlin2b.asm 0.9 s, zerobas as committed
+  live XLIN4_run2.out nodisk: xlin4.asm 0.1 s, zerobas as committed
+  live XLIN5_run3.out nodisk: xlin5.asm 0.1 s, zerobas as committed
+  live XLIN6_run2.out nodisk: xlin6.asm 0.1 s, zerobas as committed
+  live XLIN_fix1.out nodisk: xlin.asm 0.1 s, zerobas as committed
+OK   docs/bios/PINLIN.md: 49 rules, 6 failing on zerobas (live, 8 run file(s))
+===== spec-live: ALL PAGES AGREE =====

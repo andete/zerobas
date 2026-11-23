@@ -29,6 +29,9 @@ Its header comment may carry the harness settings, one per line:
                         CAP's +$FF..+$101, inside a longer block, so LEN > FF refuses with
                         @keys / @matrix / @tape
                         -- a rung that lets the disk ROM start moves it below HIMEM
+    ; @type-ready TEXT  TEXT typed as @type-at types it ('\\r' = Enter), but once the program sets KEYREADY
+                        (as @keys): a machine that boots slower loses no key (D-MSX1ON2: the NMS 8250 /
+                        FS-A1WSX reached xlin's program after @type-at 4 had fired)
     ; @type-at S TEXT   TEXT typed at S emulated seconds ('\\r' = Enter) -- e.g. our
                         disk machine's date question, which the VG-8020 + NMS 1200
                         does not ask (a CF-3300 behaviour our disk target keeps)
@@ -116,7 +119,7 @@ ROWS = {
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
-         "vdpsnap": None, "keyset": None}
+         "vdpsnap": None, "keyset": None, "type_ready": None}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -135,6 +138,8 @@ def settings(asm_text: str) -> dict:
         elif k == "type-at":                # SECONDS TEXT: typed at that emulated time
             t, _, txt = v.partition(" ")
             s["type_at"] = (float(t), txt)
+        elif k == "type-ready":             # TEXT ('\\r' = Enter): typed once the program sets KEYREADY
+            s["type_ready"] = v
         elif k == "tape":                   # record from boot; play on TAPEREADY
             s["tape"] = True
         elif k == "printer":                # plug the printer logger; report what it received
@@ -156,7 +161,7 @@ def settings(asm_text: str) -> dict:
         elif k == "vram":
             a, n = v.split(":")
             s["vram"].append((int(a, 16), int(n, 16)))
-    if s["caplen"] > CAPLEN and (s["keys"] or s["matrix"] or s["tape"]):
+    if s["caplen"] > CAPLEN and (s["keys"] or s["type_ready"] or s["matrix"] or s["tape"]):
         sys.exit("FAIL: @caplen > FF overlaps KEYREADY / TAPEREADY (CAP's +$FF..+$101): a rung "
                  "with @keys / @matrix / @tape keeps the default capture length")
     return s
@@ -186,6 +191,9 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
     if st["keys"]:
         keys = (f"  if {{$::typed == 0 && [debug read memory {KEYREADY}] == 1}} "
                 f"{{ set ::typed 1; type {{{st['keys']}}} }}\n")
+    if st["type_ready"]:                    # @type-at's quoting (Tcl turns \r / \b into Enter / BS), @keys' timing
+        keys += (f"  if {{$::typed == 0 && [debug read memory {KEYREADY}] == 1}} "
+                 f"{{ set ::typed 1; type \"{st['type_ready']}\" }}\n")
     if st["matrix"]:
         down = "; ".join(f"keymatrixdown {r} {mk:#x}" for r, mk in st["matrix"])
         up = "; ".join(f"keymatrixup {r} {mk:#x}" for r, mk in st["matrix"])

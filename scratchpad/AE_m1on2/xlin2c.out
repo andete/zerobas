@@ -1,176 +1,29 @@
-# rc=2
+# rc=1
 ===== /Users/joost/projects/zerobas/probes/bios/spec/xlin2c.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
-  NO READING: DONE never set on ref, ours (ref 0, ours 0)
   VDP R#1 at the dump: ref 112, ours 112
-  ref : jiffy=3b0b typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
-  ours: jiffy=b70b typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
-  CAP ref : 0000000000000000000000000000000000000000000000000000000000000000
-  CAP ours: 015df5440106414245460020202020202020202020203f2041424546202020202020202020202020202020202020202020202020202020202020202020202020202020202020
-  DIFF (69 unexcused byte(s)):
-  CAP C001: ref=00 ours=01
-  CAP C002: ref=00 ours=5D
-  CAP C003: ref=00 ours=F5
-  CAP C004: ref=00 ours=44
-  CAP C005: ref=00 ours=01
-  CAP C006: ref=00 ours=06
-  CAP C007: ref=00 ours=41
-  CAP C008: ref=00 ours=42
-  CAP C009: ref=00 ours=45
-  CAP C00A: ref=00 ours=46
-  CAP C00C: ref=00 ours=20
-  CAP C00D: ref=00 ours=20
-  CAP C00E: ref=00 ours=20
-  CAP C00F: ref=00 ours=20
-  CAP C010: ref=00 ours=20
-  CAP C011: ref=00 ours=20
-  CAP C012: ref=00 ours=20
-  CAP C013: ref=00 ours=20
-  CAP C014: ref=00 ours=20
-  CAP C015: ref=00 ours=20
-  CAP C016: ref=00 ours=20
-  CAP C017: ref=00 ours=3F
-  CAP C018: ref=00 ours=20
-  CAP C019: ref=00 ours=41
-  CAP C01A: ref=00 ours=42
-  CAP C01B: ref=00 ours=45
-  CAP C01C: ref=00 ours=46
-  CAP C01D: ref=00 ours=20
-  CAP C01E: ref=00 ours=20
-  CAP C01F: ref=00 ours=20
-  CAP C020: ref=00 ours=20
-  CAP C021: ref=00 ours=20
-  CAP C022: ref=00 ours=20
-  CAP C023: ref=00 ours=20
-  CAP C024: ref=00 ours=20
-  CAP C025: ref=00 ours=20
-  CAP C026: ref=00 ours=20
-  CAP C027: ref=00 ours=20
-  CAP C028: ref=00 ours=20
-  CAP C029: ref=00 ours=20
-  CAP C02A: ref=00 ours=20
-  CAP C02B: ref=00 ours=20
-  CAP C02C: ref=00 ours=20
-  CAP C02D: ref=00 ours=20
-  CAP C02E: ref=00 ours=20
-  CAP C02F: ref=00 ours=20
-  CAP C030: ref=00 ours=20
-  CAP C031: ref=00 ours=20
-  CAP C032: ref=00 ours=20
-  CAP C033: ref=00 ours=20
-  CAP C034: ref=00 ours=20
-  CAP C035: ref=00 ours=20
-  CAP C036: ref=00 ours=20
-  CAP C037: ref=00 ours=20
-  CAP C038: ref=00 ours=20
-  CAP C039: ref=00 ours=20
-  CAP C03A: ref=00 ours=20
-  CAP C03B: ref=00 ours=20
-  CAP C03C: ref=00 ours=20
-  CAP C03D: ref=00 ours=20
-  CAP C03E: ref=00 ours=20
-  CAP C03F: ref=00 ours=20
-  CAP C040: ref=00 ours=20
-  CAP C041: ref=00 ours=20
-  CAP C042: ref=00 ours=20
-  CAP C043: ref=00 ours=20
-  CAP C044: ref=00 ours=20
-  CAP C045: ref=00 ours=20
-  CAP C046: ref=00 ours=20
+  ref : jiffy=b600 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=e600 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 015df5180106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5180118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
+  CAP ours: 015df5440106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5440118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
+  DIFF (2 unexcused byte(s)):
+  CAP C004: ref=18 ours=44
+  CAP C04A: ref=18 ours=44
 ===== /Users/joost/projects/zerobas/probes/bios/spec/xlin2c.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
   VDP R#1 at the dump: ref 112, ours 112
-  ref : jiffy=ab00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
-  ours: jiffy=f900 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ref : jiffy=c300 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f300 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
   CAP ref : 015df5180106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5180118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
   CAP ours: 015df5440106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5440118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
   DIFF (2 unexcused byte(s)):
   CAP C004: ref=18 ours=44
   CAP C04A: ref=18 ours=44
 ===== /Users/joost/projects/zerobas/probes/bios/spec/xlin2c.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
-  NO READING: DONE never set on ref (ref 85, ours 165)
   VDP R#1 at the dump: ref 112, ours 112
-  ref : jiffy=0b0d typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
-  ours: jiffy=f900 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
-  CAP ref : 0000000000000000000000000000000000000000000000000000000000000000
+  ref : jiffy=7900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f300 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 015df5180106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5180118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
   CAP ours: 015df5440106434445460020202020202020202020203f2043444546202020202020202020202020202020202020202020202020202020202020202020202020202020202020025df5440118414200202020202020202020202020202020202020202020202020203f2043444546202020202020414220202020202020202020202020202020202020202020c3
-  DIFF (139 unexcused byte(s)):
-  CAP C001: ref=00 ours=01
-  CAP C002: ref=00 ours=5D
-  CAP C003: ref=00 ours=F5
-  CAP C004: ref=00 ours=44
-  CAP C005: ref=00 ours=01
-  CAP C006: ref=00 ours=06
-  CAP C007: ref=00 ours=43
-  CAP C008: ref=00 ours=44
-  CAP C009: ref=00 ours=45
-  CAP C00A: ref=00 ours=46
-  CAP C00C: ref=00 ours=20
-  CAP C00D: ref=00 ours=20
-  CAP C00E: ref=00 ours=20
-  CAP C00F: ref=00 ours=20
-  CAP C010: ref=00 ours=20
-  CAP C011: ref=00 ours=20
-  CAP C012: ref=00 ours=20
-  CAP C013: ref=00 ours=20
-  CAP C014: ref=00 ours=20
-  CAP C015: ref=00 ours=20
-  CAP C016: ref=00 ours=20
-  CAP C017: ref=00 ours=3F
-  CAP C018: ref=00 ours=20
-  CAP C019: ref=00 ours=43
-  CAP C01A: ref=00 ours=44
-  CAP C01B: ref=00 ours=45
-  CAP C01C: ref=00 ours=46
-  CAP C01D: ref=00 ours=20
-  CAP C01E: ref=00 ours=20
-  CAP C01F: ref=00 ours=20
-  CAP C020: ref=00 ours=20
-  CAP C021: ref=00 ours=20
-  CAP C022: ref=00 ours=20
-  CAP C023: ref=00 ours=20
-  CAP C024: ref=00 ours=20
-  CAP C025: ref=00 ours=20
-  CAP C026: ref=00 ours=20
-  CAP C027: ref=00 ours=20
-  CAP C028: ref=00 ours=20
-  CAP C029: ref=00 ours=20
-  CAP C02A: ref=00 ours=20
-  CAP C02B: ref=00 ours=20
-  CAP C02C: ref=00 ours=20
-  CAP C02D: ref=00 ours=20
-  CAP C02E: ref=00 ours=20
-  CAP C02F: ref=00 ours=20
-  CAP C030: ref=00 ours=20
-  CAP C031: ref=00 ours=20
-  CAP C032: ref=00 ours=20
-  CAP C033: ref=00 ours=20
-  CAP C034: ref=00 ours=20
-  CAP C035: ref=00 ours=20
-  CAP C036: ref=00 ours=20
-  CAP C037: ref=00 ours=20
-  CAP C038: ref=00 ours=20
-  CAP C039: ref=00 ours=20
-  CAP C03A: ref=00 ours=20
-  CAP C03B: ref=00 ours=20
-  CAP C03C: ref=00 ours=20
-  CAP C03D: ref=00 ours=20
-  CAP C03E: ref=00 ours=20
-  CAP C03F: ref=00 ours=20
-  CAP C040: ref=00 ours=20
-  CAP C041: ref=00 ours=20
-  CAP C042: ref=00 ours=20
-  CAP C043: ref=00 ours=20
-  CAP C044: ref=00 ours=20
-  CAP C045: ref=00 ours=20
-  CAP C046: ref=00 ours=20
-  CAP C047: ref=00 ours=02
-  CAP C048: ref=00 ours=5D
-  CAP C049: ref=00 ours=F5
-  CAP C04A: ref=00 ours=44
-  CAP C04B: ref=00 ours=01
-  CAP C04C: ref=00 ours=18
-  CAP C04D: ref=00 ours=41
-  CAP C04E: ref=00 ours=42
-  CAP C050: ref=00 ours=20
-  CAP C051: ref=00 ours=20
-  CAP C052: ref=00 ours=20
-===== biosl: NO READING =====
+  DIFF (2 unexcused byte(s)):
+  CAP C004: ref=18 ours=44
+  CAP C04A: ref=18 ours=44
+===== biosl: DIVERGENCE =====

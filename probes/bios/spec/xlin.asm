@@ -2,7 +2,9 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; XLIN -- docs/bios/PINLIN.md round 1 (2026-11-17): the line-input calls PINLIN ($00AE), QINLIN ($00B4) and INLIN
-; ($00B1) on the VG-8020 against zerobas, fed by ONE typed burst (@type-at: Tcl turns \r / \b into Enter / BS) that
+; ($00B1) on the VG-8020 against zerobas, fed by ONE typed burst (@type-ready: Tcl turns \r / \b into Enter / BS; typed once
+; INITXT has returned and the probe sets KEYREADY -- D-MSX1ON2: a fixed @type-at 4 fired before the NMS 8250 /
+; FS-A1WSX reached the program) that
 ; waits in the key buffer; six calls in a row consume it, each on its own screen row:
 ;   1 PINLIN at (1, 3), an empty row             "AB" Enter
 ;   2 QINLIN at (1, 5), an empty row             "CD" Enter
@@ -18,7 +20,7 @@
 ; CLEAN-ROOM: 100% own code; only published BIOS entries and work-area cells; VRAM through RDVRM / WRTVRM.
 ;
 ; @cap C000
-; @type-at 4 AB\rCD\rQ\rQ\rAB\bC\r\r
+; @type-ready AB\rCD\rQ\rQ\rAB\bC\r\r
 ; @timeout 60
 
 RDVRM   equ     $004A
@@ -59,6 +61,8 @@ init:
                 ld      a, 40
                 ld      (LINL40), a
                 call    INITXT
+                ld      a, 1                    ; KEYREADY: the harness types the burst now (@type-ready)
+                ld      ($C100), a
                 ld      hl, CAP+1
                 ld      (ptr), hl
                 ld      ix, calls
