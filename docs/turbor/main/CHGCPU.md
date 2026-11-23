@@ -9,7 +9,10 @@ SPDX-License-Identifier: BSD-2-Clause
 > timing jitter; [xchgcpu.asm](../../../probes/bios/spec/xchgcpu.asm),
 > [scratchpad/AE_xchgcpu_tr.out](../../../scratchpad/AE_xchgcpu_tr.out), decoded by
 > [scratchpad/xchgcpu_decode.py](../../../scratchpad/xchgcpu_decode.py); the boot:
-> [xtrboot.asm](../../../probes/bios/spec/xtrboot.asm), [scratchpad/AE_xtrboot_tr.out](../../../scratchpad/AE_xtrboot_tr.out)).
+> [xtrboot.asm](../../../probes/bios/spec/xtrboot.asm), [scratchpad/AE_xtrboot_tr.out](../../../scratchpad/AE_xtrboot_tr.out);
+> the memory side of DRAM mode: [xtrdram.asm](../../../probes/bios/spec/xtrdram.asm),
+> [scratchpad/AE_xtrdram_tr.out](../../../scratchpad/AE_xtrdram_tr.out), decoded by
+> [scratchpad/xtrdram_decode.py](../../../scratchpad/xtrdram_decode.py)).
 > No goldfish pass yet.
 
 Main-ROM entry, turbo R only. Listed by MAP's "MSX turbo R BIOS Entries" ([index](../index.md)); C-BIOS has no
@@ -22,7 +25,9 @@ BIOS copied to DRAM; bit 7 asks for the turbo LED to follow the CPU. Any other A
 is ignored without a trace: no register, flag, port or RAM changes, and the interrupt state stays. An accepted call
 writes the mode to the S1990's register 6 (every time, even when the mode is already current), writes port $A7 from a
 RAM copy at $FCB1, keeps every register, and returns with interrupts ENABLED whatever the entry state was. The
-machine boots in the Z80 — a cartridge's INIT runs in it — and the boot ends in R800 DRAM mode with the LED on.
+machine boots in the Z80 — a cartridge's INIT runs in it — and the boot ends in R800 DRAM mode with the LED on. In DRAM
+mode the top 64 KB of the memory mapper refuse writes (segments 28-31 of the FS-A1GT's 512 KB, 12-15 of the
+FS-A1ST's 256 KB); in the other two modes they are ordinary RAM.
 
 ## The specification
 
@@ -91,6 +96,28 @@ $60 (1.9 s) → $00 at 13.2 s (FS-A1GT) / 11.4 s (FS-A1ST); at 25 s the machine 
 [XB]. So the boot itself switches to the R800 and back before the cartridge INITs, and ends in R800 DRAM mode with the
 LED bit set and bit 1 clear.
 
+**The memory side of R800 DRAM mode** [M] (`[XD]` = xtrdram: in each mode, DRAM first, then R800 ROM, then the Z80,
+the slot registers and EXPTBL, what IN $FE reads back after OUT $FE,s for s = 0-63, and a write test per segment:
+OUT $FE,s, write $5A then $A5 to $9F00 (page 2), and keep only whether each read back equal — a segment that keeps
+neither is never otherwise read, so nothing of what it holds is seen; then a tag pass over the writable segments
+shows which segment numbers are the same RAM):
+- **The memory mapper** (slot 3-0, port $FC-$FF): the FS-A1GT has 32 segments (512 KB), the FS-A1ST 16 (256 KB):
+  segment s and s + 32 (A1GT) / s + 16 (A1ST) are the same RAM, and IN $FC-$FF reads the segment with the unused
+  upper bits set — $E0 + s (A1GT), $F0 + s (A1ST); at cartridge INIT the registers hold 3, 2, 1, 0 [XD], in every
+  mode.
+- **In R800 DRAM mode the top four segments refuse writes**: segments 28-31 on the FS-A1GT, 12-15 on the FS-A1ST — the
+  top 64 KB of the mapper; every other segment takes both bytes [XD]. In R800 ROM mode and in the Z80 every segment
+  is writable, the top four included [XD]. So a program in DRAM mode has 64 KB less mapper RAM: 448 KB (A1GT) / 192
+  KB (A1ST) instead of 512 / 256, and those segments are write-protected only while DRAM mode is on.
+- That those 64 KB hold the ROM copy the R800 runs in DRAM mode follows from the name of the mode and from this
+  protection [A]: the clean room forbids comparing them with the ROM, and nothing else in this probe shows what they
+  hold. What is copied (which ROM, which pages) and when — the boot, or each CHGCPU($82) — is not measured. (After
+  the R800 ROM-mode test had written into the top four segments, the probe did not switch back to DRAM mode.)
+- **Slot state does not change with the mode**: $A8 = $F4 (page 0 slot 0, page 1 this cartridge, pages 2-3 slot 3),
+  page 3's secondary register 0 (slot 3-0), EXPTBL = $80, $00, $00, $80 (slots 0 and 3 expanded) in all three modes
+  [XD]. DRAM mode is not a different slot for page 0 as the slot registers show it [M]; how the R800 is then served
+  from RAM [A].
+
 **What CHGCPU does that a register write does not** [M, mechanism A]: writing the S1990's register 6 directly
 (OUT $E4,6 / OUT $E5,$60) from the R800 hands control to a Z80 that does not continue after the OUT: in xgetcpu a later
 CHGCPU($82) resumed the R800 right after the OUT where the direct write had stopped it, and the probe ran its last
@@ -100,7 +127,8 @@ CHGCPU passes the stack pointer across (in $FFFD, by MAP's description) and the 
 
 ## Differences
 
-**FS-A1GT vs FS-A1ST:** none in any measured output of the 40 cases — registers, flags, interrupt state, port writes,
+**FS-A1GT vs FS-A1ST:** the mapper size (512 KB vs 256 KB; the protected DRAM-mode segments are 28-31 vs 12-15,
+the top 64 KB on both) [XD]. Otherwise none in any measured output of the 40 cases — registers, flags, interrupt state, port writes,
 S1990 registers, $FCB1, $FFFD, work-area changes, GETCPU, active CPU — beyond interrupt-timing cells and ±2 timer ticks
 [XC 0-39]. The boot switches to R800 DRAM later on the FS-A1GT (13.2 s vs 11.4 s) [XB].
 
@@ -108,8 +136,8 @@ S1990 registers, $FCB1, $FFFD, work-area changes, GETCPU, active CPU — beyond 
 
 ## Open (not measured)
 
-- The memory side of DRAM mode: which RAM holds the ROM copy, what the memory mapper ($FC-$FF) shows, whether the
-  copy is write-protected, and how much RAM a program loses.
+- The DRAM copy's content and timing: which ROM pages it holds, whether CHGCPU($82) copies again, whether page 0 in
+  DRAM mode reads the protected segments (all forbidden or not observable without reading ROM bytes / the copy).
 - A values not run (the accept rule "A AND $7F in 0-2" is measured on the 17 values above only).
 - $FFFD with another caller SP; a stack in pages 0-2; CHGCPU called from code in page 0-2 or from another slot.
 - CHGCPU's own duration and stack depth; whether interrupts are taken during the switch; the pause key and port $A7
