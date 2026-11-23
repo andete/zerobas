@@ -4,7 +4,8 @@
 """D-MSX2SPEC: decode probes/bios/spec/xsubscr.asm (sub-ROM SDFSCR / SETSCR).
     python3 scratchpad/xsubscr_decode.py RUNFILE [--side ref|ours]
 Refuses a record whose sentinel ($5E at +511) is missing.
-    --cases xsubset  for probes/bios/spec/xsubset.asm (SETSCR)"""
+    --cases xsubset  for probes/bios/spec/xsubset.asm (SETSCR)
+    --cases xsubsc2  for probes/bios/spec/xsubsc2.asm (SDFSCR, goldfish pass 1: 1024-byte record, "AAA" searched)"""
 import re
 import sys
 
@@ -18,7 +19,11 @@ NAMES = {"xsubscr": ["0 SDFSCR found S0", "1 SDFSCR found S5", "2 SDFSCR set1", 
          "xsubset": ["0 SETSCR found S0 log", "1 set1 log", "2 set2 S5 log", "3 set2 EI", "4 set3 DI",
                      "5 set4(w100) S1 log", "6 SDFSCR set2 snap", "7 SETSCR set2 diff vs SDFSCR", "8 set2 title SXA",
                      "9 set2+tcol3 title SXA", "10 set2 title SXASXA", "11 set2 password SXA", "12 set2 prompt SXA",
-                     "13 set2 ID5 empty title"]}
+                     "13 set2 ID5 empty title"],
+         "xsubsc2": ["0 set6 (key+prn+cas) snap", "1 set12 (prn/cas 0) diff vs 0", "2 set2 w80 from TEXT2 DI fill",
+                     "3 set3 w37 key1 fill log", "4 set1 S1 w30 fill before/after diff", "5 set1 A=FF F=41 DI",
+                     "6 set13 S1 w36", "7 set14 S1 w50", "8 set15 S0 w0"]}
+SC2 = False
 CELLS = "SCRMOD OLDSCR LINL40 LINL32 LINLEN CRTCNT CLMLST CNSDFG CLIKSW FOR BAK BDR CSRY CSRX PUT GET".split()
 
 
@@ -49,23 +54,26 @@ def decode(b, k, NAMES):
     t = r[384:]
     ll = t[2] | t[3] << 8
     off = t[4] | t[5] << 8
-    out.append(f"  keys injected={t[1]} log len={ll} SXA at={'none' if off == 0xFFFF else off} "
+    out.append(f"  keys injected={t[1]} log len={ll} {'AAA' if SC2 else 'SXA'} at={'none' if off == 0xFFFF else off} "
                f"log[..32]=|{txt(t[8:40])}| {t[8:40].hex()}")
     if SET:
         off2 = t[6] | t[7] << 8
         out.append(f"  MSX at={'none' if off2 == 0xFFFF else off2} log[..32]=|{txt(t[40:72])}| {t[40:72].hex()}")
     if t[0]:
-        ds = [t[(72 if SET else 40) + 4 * i: (76 if SET else 44) + 4 * i] for i in range(min(t[0], 45 if SET else 21))]
+        lim = 45 if SET else 149 if SC2 else 21
+        ds = [t[(72 if SET else 40) + 4 * i: (76 if SET else 44) + 4 * i] for i in range(min(t[0], lim))]
         out.append(f"  wa diffs={t[0]}: " + " ".join(f"{d[1]:02X}{d[0]:02X}:{d[2]:02X}>{d[3]:02X}" for d in ds))
     return "\n".join(out)
 
 
 def main():
-    names = NAMES["xsubset" if "--cases" in sys.argv and sys.argv[sys.argv.index("--cases") + 1] == "xsubset"
-                  else "xsubscr"]
-    global REC, SET
-    if names is NAMES["xsubset"]:
+    which = sys.argv[sys.argv.index("--cases") + 1] if "--cases" in sys.argv else "xsubscr"
+    names = NAMES[which]
+    global REC, SET, SC2
+    if which == "xsubset":
         REC, SET = 640, True
+    if which == "xsubsc2":
+        REC, SC2 = 1024, True
     side = sys.argv[sys.argv.index("--side") + 1] if "--side" in sys.argv else "ref"
     for blk in re.split(r"^===== ", open(sys.argv[1]).read(), flags=re.M)[1:]:
         m = re.search(rf"CAP {'ref ' if side == 'ref' else 'ours'}: ([0-9a-f]+)", blk)
