@@ -31,6 +31,9 @@
       alternates preserved; side finding: GETPLT returns D = the palette number, C-BIOS leaves DE), CHKSLZ (xchkslzd.asm:
       NOT a callable service -- the three references disagree and none returns normally), CHKNEW (flags of CP 5 on
       SCRMOD), EOL, RDRES / WRRES (port $F4, complemented). Every MSX2 / MSX2+ page that exists is now DRAFT 1.
-      🔴 FIVE ENTRIES HAVE NO PAGE AT ALL: docs/msx2/index.md links sub/DELLNO, INSLNO, PUTVRM, PUTCHR, KYKLOK.md and
-      none exists (found 11-23 by a link scan) -- write and measure them. NEXT: those five, VA-13 / VA-14 / VA-16, a
-      second goldfish pass over the MSX2 pages, then D-TRSPEC.
+      The five entries that had NO PAGE (found 11-23 by a link scan) are written and measured: DELLNO / INSLNO
+      (xsubdln*.asm: rows L..last move; the FS-A1WSX leaves interrupts off where the other two turn them on), PUTVRM
+      (xsubpvr*.asm: byte C at NAMBAS + row / column + LINLEN's margin), KYKLOK (xsubkyk*.asm: the two JP machines toggle
+      KANAST and PSG R15 bit 7; the NMS 8250 does nothing), PUTCHR (xsubpch*.asm: NOT a draw -- A into the key buffer on
+      the two JP machines; the NMS 8250 does nothing). C-BIOS: RET at all five. docs/msx2/ has no broken link left.
+      NEXT: VA-13 / VA-14 / VA-16, a second goldfish pass over the MSX2 pages, then D-TRSPEC.
