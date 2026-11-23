@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GRPPRT` (sub-ROM $0089) — draw a character on a bitmap screen
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgpp.asm](../../probes/bios/spec/xsubgpp.asm), [scratchpad/AE_xsubgpp_msx2.out](../../scratchpad/AE_xsubgpp_msx2.out), decoded by `scratchpad/xsubgpp_decode.py`).
 
 ## Summary
 
@@ -35,9 +35,21 @@ moves on 8 pixels, and the measurement asks how much of that carries over.
   is [A].
 - Interrupts after: [A] (the MSX1 call leaves them on).
 
+**Measured** [M] (the same on all three references; FORCLR $05, ATRBYT $0A, BAKCLR $03 all different, the window
+preset $0F):
+- The glyph is drawn as an 8 x 8 cell at GRPACX / GRPACY: its 1 pixels in **FORCLR** (not ATRBYT), its 0 pixels in
+  **BAKCLR** -- the whole cell is written. **LOGOPR 8 (TIMP) does not make the 0 pixels transparent**: the same cell.
+  The same in SCREEN 5 (two pixels a byte).
+- GRPACX += 8 after a character; **CR ($0D): GRPACX := 0, GRPACY += 8**; a character at X 250 wraps: GRPACX := 0,
+  GRPACY += 8; at Y 207 GRPACY stays (no wrap, no scroll).
+- In SCREEN 2 the call still advances GRPACX (by 8) -- not "nothing".
+- Out: A kept, F $60, interrupts ON.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) draw the cell with their own font (ruled, D-BIOSINT) the same way, but CR is
+drawn as a character (GRPACX advances, no line feed) and nothing wraps at the right edge (GRPACX 258); A out $03
+([scratchpad/AE_xsubgpp_msx2.out](../../scratchpad/AE_xsubgpp_msx2.out)).
 
 ## Open (not measured)
 
