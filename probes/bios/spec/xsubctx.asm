@@ -14,13 +14,13 @@
 ;   +0 case, +1 A, +2 F, +3 IFF, +4..+13 C B E D L H IXl IXh IYl IYh, +14 IFF first read,
 ;   +16 CSRY CSRX CNSDFG SCRMOD LINLEN CRTCNT LINL40 LINL32, +24 LINTTB (24), +48 RG0SAV-RG7SAV,
 ;   +56 27 x (spaces, first, last), +140 row 0 (80), +220 row 23 (80), +300 three windows (3 x 16),
-;   +348 row length, +349 name base (2), +383 $5E (sentinel).
+;   +348 row length, +349 name base (2), +352 RG0SAV-RG7SAV before the call, +383 $5E (sentinel).
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubctx.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports.
 ;
 ; @cap C000
-; @caplen 1300
+; @caplen 1810
 ; @timeout 240
 
 CHGMOD  equ     $005F
@@ -49,7 +49,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $12FF
+                ld      bc, $1800
                 ld      (hl), 0
                 ldir
                 ld      hl, CAP+2
@@ -122,6 +122,13 @@ c_lt:
                 ld      ($F3DD), a              ; CSRX
                 ld      a, 24
                 ld      ($F3B1), a              ; CRTCNT
+                ld      hl, (ptr)               ; +352: RG0SAV-RG7SAV before the call
+                ld      bc, 352
+                add     hl, bc
+                ex      de, hl
+                ld      hl, $F3DF
+                ld      bc, 8
+                ldir
                 ; the call
                 ld      ix, $0119
                 ld      a, (cur+6)
@@ -447,6 +454,14 @@ cases:
                 dw      $2000, $0000, $1C00     ; 10 SCREEN 2
                 db      5, 32, $00, 12, 10, $00, $40, 0
                 dw      $6A00, $7000, $7600     ; 11 SCREEN 5 (bitmap rows from 0; past line 212)
+                db      2, 29, $00, 12, 10, $00, $40, 0
+                dw      $2000, $0000, $1C00     ; 12 SCREEN 2, LINL32 29 (row length 32 vs LINL32)
+                db      0, 40, $FF, 12, 10, $00, $40, 1
+                dw      $0800, $0438, $1000     ; 13 SCREEN 0 w40, key line on, EI
+                db      0, 40, $01, 12, 10, $00, $40, 0
+                dw      $0800, $0438, $1000     ; 14 SCREEN 0 w40, CNSDFG $01 (non-zero vs $FF)
+                db      2, 32, $FF, 12, 10, $00, $40, 0
+                dw      $2000, $0000, $1C00     ; 15 SCREEN 2, key line on
                 db      $EE
 
                 ds      $8000 - $, $FF

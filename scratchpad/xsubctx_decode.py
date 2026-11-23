@@ -10,9 +10,11 @@ import sys
 
 REC = 384
 NAMES = ["0 S0w40 Z A0", "1 S0w40 EI", "2 S0w40 NZ", "3 S0w40 Z A=FF", "4 S0w40 key on", "5 S0w37",
-         "6 S0w80", "7 S0w80 key on", "8 S1", "9 S1 key on", "10 S2", "11 S5"]
+         "6 S0w80", "7 S0w80 key on", "8 S1", "9 S1 key on", "10 S2", "11 S5",
+         "12 S2 LINL32 29", "13 S0w40 key on EI", "14 S0w40 CNSDFG 01", "15 S2 key on"]
 WIN = {0: (0x0800, 0x0438, 0x1000), 6: (0x0800, 0x0870, 0x1000), 8: (0x2000, 0x0000, 0x1C00),
-       10: (0x2000, 0x0000, 0x1C00), 11: (0x6A00, 0x7000, 0x7600)}
+       10: (0x2000, 0x0000, 0x1C00), 11: (0x6A00, 0x7000, 0x7600),
+       12: (0x2000, 0x0000, 0x1C00), 13: (0x0800, 0x0438, 0x1000), 15: (0x2000, 0x0000, 0x1C00)}
 
 
 def g(a):
@@ -33,7 +35,8 @@ def decode(b, k):
                f"HL={r[9]:02X}{r[8]:02X} IX={r[11]:02X}{r[10]:02X} IY={r[13]:02X}{r[12]:02X}")
     out.append(f"  CSRY={r[16]} CSRX={r[17]} CNSDFG={r[18]:02X} SCRMOD={r[19]} LINLEN={r[20]} CRTCNT={r[21]} "
                f"LINL40={r[22]} LINL32={r[23]}")
-    out.append("  LINTTB=" + r[24:48].hex(" ") + "  RG0-7SAV=" + r[48:56].hex(" "))
+    out.append("  LINTTB=" + r[24:48].hex(" ") + "  RG0-7SAV=" + r[48:56].hex(" ")
+               + "  before=" + r[352:360].hex(" ") + (" (same)" if r[352:360] == r[48:56] else " (CHANGED)"))
     rl, base = r[348], r[349] | r[350] << 8
     rows = []
     for i in range(27):
