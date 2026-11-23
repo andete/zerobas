@@ -67,8 +67,12 @@ version 4.1" on the A1GT, "4.0" on the A1ST).
    WRRES sets port bit 7 := A's bit 7 and keeps A / F (the A1WSX: bit 7 := NOT A's bit 7, A / F change). Both models.
 2. **A soft reset through $0000 never gets back to the cartridge** ([RDRES](../msx2/main/RDRES.md) RR-7,
    [WRRES](../msx2/main/WRRES.md) WR-3; [xf4reset.out](../../scratchpad/AE_trall/xf4reset.out)): no reading on either
-   model; the capture, JIFFY, SCNCNT and NEWKEY read $FF at the 120 s dump. What the machine does instead needs a probe
-   that logs to VRAM.
+   model; the capture, JIFFY, SCNCNT and NEWKEY read $FF at the 120 s dump. **Explained (tr6, a VRAM-log probe:
+   [xtrreset0](../../probes/bios/spec/xtrreset0.asm) / [xtrreset1](../../probes/bios/spec/xtrreset1.asm),
+   [AE_xtrreset0_tr.out](../../scratchpad/AE_xtrreset0_tr.out), [AE_xtrreset1_tr.out](../../scratchpad/AE_xtrreset1_tr.out)):
+   port $F4 bit 7 decides it.** With bit 7 = 1 JP $0000 boots again into the cartridge (51 frames), VRAM not cleared;
+   with bit 7 = 0 -- xf4reset's first step -- it never comes back: both models stop with interrupts off, the A1GT with
+   every page on slot 0-0 (hence the $FF reads), the A1ST at another PC. Both models alike.
 3. **CHKSLZ: the FS-A1GT never returns** ([CHKSLZ](../msx2/main/CHKSLZ.md);
    [xchkslz0.out](../../scratchpad/AE_trall/xchkslz0.out), [xchkslzd.out](../../scratchpad/AE_trall/xchkslzd.out),
    reproduced in [rerun/xchkslz0.out](../../scratchpad/AE_trall/rerun/xchkslz0.out)): its VRAM log holds only 'B'
@@ -114,8 +118,12 @@ version 4.1" on the A1GT, "4.0" on the A1ST).
    ([SYSTEM](../bdos/SYSTEM.md); [xbsys2.out](../../scratchpad/AE_trall/xbsys2.out) case 14, reproduced in
    [rerun/xbsys2.out](../../scratchpad/AE_trall/rerun/xbsys2.out) and a third time in
    [rerun/xbsys2_tr4.out](../../scratchpad/AE_trall/rerun/xbsys2_tr4.out)); with drive A current (xbsys1 case 12) all
-   three return with interrupts on. One case, model-dependent; not yet explained — and openMSX from an empty persistent
-   state is deterministic, so the repeats confirm the reading, not a cause.
+   three return with interrupts on. One case, model-dependent. **Narrowed down (tr6,
+   [AE_xtrdsk_decoded.out](../../scratchpad/AE_xtrdsk_decoded.out)): the DI is real at the return (the debugger's IFF
+   at the instruction after CALL BDOS, xbsys2's code byte for byte: [xtrdsk2e](../../probes/bios/spec/xtrdsk2e.asm)),
+   but nothing that moves the code reproduces it** -- the same calls in another frame, drive B / A / C, repeats, EI
+   entry, waits, the R800 modes, a 2400-step frame-phase sweep: EI on both models every time. A timing coincidence
+   of that run, not a rule; the disk-rotation phase is the untested candidate ([SYSTEM](../bdos/SYSTEM.md)).
 
 The turbo R's disk ROM matches the FS-A1WSX in every measured disk-ROM entry
 and BDOS call result, on both models — interrupts left on, IY $0314 after BDOS, MTOFF's A = 4, past-the-end answers
@@ -144,8 +152,8 @@ xva; the docs/msx2/concepts pages); b4input and b8save, which no page cites; INI
 NEWPAD (xsubpadg), whose pages already carry a turbo R section; xva13 (APPARATUS).
 
 Still to do:
-- **SYSTEM (DSKRST):** the A1GT-only interrupt state, once explained.
-- **xf4reset:** a probe that logs to VRAM, to say what the turbo R does after JP $0000.
+- ~~SYSTEM (DSKRST)~~ narrowed down and recorded on [SYSTEM](../bdos/SYSTEM.md) (tr6); ~~xf4reset~~ answered by
+  xtrreset0 / 1 on [RDRES](../msx2/main/RDRES.md) / [WRRES](../msx2/main/WRRES.md) (tr6).
 - **Machine facts** for the pages that print them (CONFIG rows): PSG R14 bit 7 = 0, slot 0 expanded with secondary
   register $00, TRGFLG $89 at boot, $FFFD-$FFFE = $F054 (CHGCPU's temporary SP), BUF's boot leftover.
 
