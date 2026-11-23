@@ -16778,7 +16778,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       4fbe92687). MEASURED: main/'s shared VRAM address matrix (NSETRD / NSETWR / NRDVRM / NWRVRM) -- probes/bios/spec/
       xva.asm, biosl_run's new @vdpfull (R#0-63, S#0-15, the VRAM pointer, the palette) and @portlog (port writes):
       identical on all three references; a carry-losing page rule in SCREEN 5 / 6, and in SCREEN 0-4 with ACPAGE != 0
-      the address is ACPAGE x $100 + E (HL unused) -- C-BIOS addresses HL there, its one difference. NEXT: BIGFIL, VA-13
+      the address is ACPAGE x $100 + E (HL unused) -- C-BIOS addresses HL there, its one difference. BIGFIL MEASURED too
+      (xbf.asm: the same rule; BC 0 = 64 KB; returns BC 0 and interrupts ON). NEXT: VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --
