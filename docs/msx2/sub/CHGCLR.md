@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGCLR` (sub-ROM $0111) — set the screen colours
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
 
 ## Summary
 
@@ -30,9 +30,15 @@ colours, TEXT 2's blink colour). Shared facts: [the screen-modes page](../concep
 - Which it reads for the mode, A or SCRMOD, [A]: the handbook names A [P App. 1], while the MSX1
   main-ROM CHGCLR measured reads SCRMOD ([CHGCLR](../../bios/CHGCLR.md)).
 
+**Measured** [M] (the same on all three references; FORCLR $3A, BAKCLR $C5, BDRCLR $F9): **FORCLR and BAKCLR are
+masked to 4 bits** ($0A / $05) in SCREEN 0, 1, 2 and 5 -- not in SCREEN 8, where they stay $3A / $C5; R#7 := FORCLR x
+16 + BAKCLR ($A5) in SCREEN 0, BDRCLR ($F9) in the others; in SCREEN 1 the colour table is filled with FORCLR x 16 +
+BAKCLR ($A5). Interrupts ON on return.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) do not mask FORCLR / BAKCLR: R#7 in SCREEN 0 and SCREEN 1's colour table
+read $E5 where the references give $A5; other A / F ([scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out)).
 
 ## Open (not measured)
 

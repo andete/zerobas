@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CLS` (sub-ROM $0115) — clear the screen
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
 
 ## Summary
 
@@ -30,9 +30,20 @@ Shared facts: [the screen-modes page](../concepts/screen-modes.md).
   (192, 212, or 256), whether by a VDP command (and what it leaves in R#32-R#46 and S#2), [A].
 - TEXT 2: blink table cleared or not [A].
 
+**Measured** [M] (the same on all three references; FORCLR $3A, BAKCLR $06 and $C5, BDRCLR $F9; each mode's
+cleared area's start, last 16 bytes, and the 16 just past it):
+- SCREEN 0 / 1: the name table := spaces ($20); interrupts kept (off).
+- SCREEN 2: the patterns := $00, the colour table := **BAKCLR, the whole byte** ($06 / $C5); the name table left.
+- SCREEN 3: the patterns := **(BAKCLR << 4) OR BAKCLR** ($66 / $D5 -- shifted, the high nibble not masked).
+- SCREEN 5 / 7: the bitmap := **(BAKCLR rotated by 4) OR BAKCLR** ($66 / $DD); SCREEN 6: that value OR itself
+  rotated by 2 -- $FF for both $06 and $C5 (right for BAKCLR 0-3 only); SCREEN 8: BAKCLR ($06 / $C5).
+- 212 lines in SCREEN 5-8 (the bytes after $69FF / $D3FF untouched); interrupts ON on return in SCREEN 2-8.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) clear the same areas, but: SCREEN 5 / 7 with BAKCLR $C5 fill $55 (the
+references $DD), SCREEN 6 fills $A2 / $51 (the references $FF); in SCREEN 0 / 1 they return with interrupts ON; other
+A / F ([scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out)).
 
 ## Open (not measured)
 
