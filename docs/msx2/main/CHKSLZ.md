@@ -8,15 +8,19 @@ SPDX-License-Identifier: BSD-2-Clause
 > **Spec:** DRAFT 1 (2026-11-23): observable effects MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the three
 > DISAGREE, and on two of them the call does not come back as a subroutine
 > ([xchkslzd.asm](../../../probes/bios/spec/xchkslzd.asm), runs [scratchpad/AE_xchkslzd_msx2.out](../../../scratchpad/AE_xchkslzd_msx2.out)
-> and the repeat [scratchpad/AE_xchkslzd_msx2b.out](../../../scratchpad/AE_xchkslzd_msx2b.out), identical).
+> and the repeat [scratchpad/AE_xchkslzd_msx2b.out](../../../scratchpad/AE_xchkslzd_msx2b.out), identical; EXBRSA
+> preset $00: [xchkslz0.asm](../../../probes/bios/spec/xchkslz0.asm),
+> [scratchpad/AE_xchkslz0_msx2.out](../../../scratchpad/AE_xchkslz0_msx2.out)).
+> Goldfish pass 1 (test writer) 2026-11-23: 3 findings, 1 measured (EXBRSA preset $00), 1 moved to open, 1 wording
+> corrected.
 
 ## Summary
 
 `CHKSLZ` is an MSX2 jump-table entry the handbook does not list; C-BIOS names it "search slots for the
-subrom". On the references it is **not a callable service**: called from a cartridge it runs for many
-seconds with interrupts enabled, leaves EXBRSA alone, and on the NMS 8250 and FS-A1WSX it does not
-return to the caller as a subroutine (the FS-A1WSX calls the cartridges' INIT again and goes on into
-its start-up). Only the observable effects are recorded here; what the routine is for is not
+subrom". On the references it is **not a callable service**: called from a cartridge it does not come
+back as a subroutine on the NMS 8250 and FS-A1WSX (the FS-A1WSX calls the cartridges' INIT again and
+goes on into its start-up), and on the HB-F900, the one that returns, it runs for about 20 seconds and
+leaves interrupts on; on none of them was EXBRSA seen written. Only the observable effects are recorded here; what the routine is for is not
 measured.
 
 ## The specification
@@ -36,6 +40,11 @@ the same bytes):
   return [M].
 - EXBRSA reads $A5 (the probe's preset) after the call on the HB-F900 and NMS 8250: not written; on the FS-A1WSX there
   is no reading [M].
+- **EXBRSA preset $00** (the "no sub-ROM" value, [xchkslz0](../../../scratchpad/AE_xchkslz0_msx2.out)): the HB-F900
+  returns as with $A5 (about 20.5 s, JIFFY $008A -> $0555; A $FA, the other registers as above) with EXBRSA **still
+  $00** -- CHKSLZ does not fill in a missing sub-ROM slot either [M]. The NMS 8250 now never reaches the code after the
+  CALL within the 30 s run (with $A5 it did, in the broken state above, in both runs): its outcome depends on EXBRSA
+  or on something the preset changes [M]. The FS-A1WSX as before (INIT called twice, no reading) [M].
 
 ## Differences from the reference
 
@@ -46,6 +55,9 @@ references provides through this entry.
 
 ## Open (not measured)
 
+- What the subject's acceptance test should check: the references disagree and two do not return, so none of them
+  gives a rule. Candidates: (a) "returns, EXBRSA untouched" (the HB-F900, with $A5 and $00 alike), (b) C-BIOS's own
+  "find the sub-ROM, write EXBRSA" (no reference does it). A decision, not a measurement.
 - What the routine is for; it reads as part of the start-up sequence. Its behaviour with the VDP interrupt DISABLED was
   tried during development (the NMS 8250 did not return) but that run is not on file.
 - The DRAFT 0 matrix CZ-1 .. CZ-11 (EXBRSA presets, a planted "CD" header, EXPTBL, configured machines): retired --
