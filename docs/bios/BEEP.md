@@ -96,6 +96,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | R-BP-EI | holds [M] | The interrupt state is kept: off after a call entered with interrupts off (xsnd1 case 73, xsnd1b 118-121) [M]. |
 | every other rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xsnd1.out](../../scratchpad/AE_trall/xsnd1.out), [AE_trall/xsnd1b.out](../../scratchpad/AE_trall/xsnd1b.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- The same PSG writes, A $0B, F $18, B $0E, E $04, D / HL / IX / IY and the interrupt state as on the FS-A1WSX, but **C := $29** (the A1WSX and the VG-8020: $D0) (XS 73-74, 118-121) [M]: R-BP-REGS and R-BP-EI read as the A1WSX's column except C. PSG R14 reads $7F (bit 7, the cassette input: the machine) [M].
+
 ## Open (not measured)
 
 - **[A]** The tone's length and envelope while it sounds (only the state after the call is recorded); R14 /

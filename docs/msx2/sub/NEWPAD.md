@@ -101,6 +101,13 @@ C-BIOS's MSX2 / MSX2+ builds (the subject), all three rows:
 - Registers and flags differ throughout (e.g. the reads return F $42, BC = function << 8 | $57, DE kept); A
   agrees for 8-19 [M PAD], [M PADM], [M PADB].
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row turbor`); overview: [turbor/remeasured.md](../../turbor/remeasured.md).
+
+- **Functions 0-11 do nothing** [M] ([AE_trall/xsubpad.out](../../../scratchpad/AE_trall/xsubpad.out), [AE_trall/xsubpadm.out](../../../scratchpad/AE_trall/xsubpadm.out), [AE_trall/xsubpadb.out](../../../scratchpad/AE_trall/xsubpadb.out), [AE_trall/xsubpadx.out](../../../scratchpad/AE_trall/xsubpadx.out), [AE_trall/xsubpads.out](../../../scratchpad/AE_trall/xsubpads.out)): A $00, F $44, BC / DE / HL as entered ($1357 / $2468 / $369C), through NEWPAD and through GTPAD alike, with nothing or a mouse plugged (PAD 0-3, 26-29; PADM the same; PADB 11, 12, 14, 16; PADX 0-7; PADS 0-11). The three references compute values there (e.g. 9 after a fetch: F $BB, BC $40FF, DE $240F, HL $20DF).
+- **Functions 12-255** [M] ([AE_trall/xsubpads.out](../../../scratchpad/AE_trall/xsubpads.out), [AE_trall/xsubpad.out](../../../scratchpad/AE_trall/xsubpad.out) 4-25, 30-37): A, F and the registers as on the FS-A1WSX; only which joystick port PSG R15 bit 6 is left selecting differs after some calls ($8F vs $CF, either way; also FS-A1GT vs FS-A1ST on 71 / 72).
+
 ## Open (not measured)
 
 openMSX's mouse and track ball take their motion and buttons from the host's mouse only: no console command moves

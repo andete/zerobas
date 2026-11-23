@@ -57,6 +57,14 @@ build [A, read in C-BIOS's `src/main.asm`, not run]. In the soft-reset chain C-B
 cartridge's magic in page 3 RAM did not survive, or INIT was not reached again after JP $0000) -- a reset question,
 not RDRES's.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row turbor`); overview: [turbor/remeasured.md](../../turbor/remeasured.md).
+
+- **Port $F4** [M] (by hand, [AE_trall/xf4port.out](../../../scratchpad/AE_trall/xf4port.out)): reads bit 7 = the bit last written, bit 5 = 1, bits 6 and 4-0 = 0 -- $A0 / $20 (the FS-A1WSX: $FF / $7F). At the cartridge's INIT it reads $A0 (bit 7 = 1; the A1WSX $7F).
+- **RDRES** [M] ([AE_trall/xrdres.out](../../../scratchpad/AE_trall/xrdres.out) cases 0-4, 12, 14): A := the port as read ($A0 / $20), not its complement, and F as entered ($00 stays $00, $FF stays $FF); the other registers as on the A1WSX. The round trip (cases 19, 20): WRRES $80 then RDRES gives $A0, WRRES $00 gives $20.
+- **Across a soft reset** [M] ([AE_trall/xf4reset.out](../../../scratchpad/AE_trall/xf4reset.out)): no reading on either model. The chain never reaches the cartridge again within 120 s; at the dump the capture, JIFFY, SCNCNT, NEWKEY and the hooks read $FF -- not even the first boot's record survived. What the machine does instead is not measured (it needs a probe that logs to VRAM).
+
 ## Open (not measured)
 
 - What bit 7 means to the firmware (the start-up screen): the reset chain showed no difference, and the start-up sets

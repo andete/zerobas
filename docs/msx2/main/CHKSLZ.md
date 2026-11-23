@@ -53,6 +53,15 @@ The references do not agree with each other, so there is no single reference beh
 and EXBRSA written with it**, F $41, BC $0103, DE $F444, HL $FCC4 [M] -- a "find the sub-ROM" service none of the three
 references provides through this entry.
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row turbor`); overview: [turbor/remeasured.md](../../turbor/remeasured.md).
+
+- **The two turbo R models disagree** [M] ([AE_trall/xchkslz0.out](../../../scratchpad/AE_trall/xchkslz0.out), [AE_trall/xchkslzd.out](../../../scratchpad/AE_trall/xchkslzd.out); reproduced in [rerun/xchkslz0.out](../../../scratchpad/AE_trall/rerun/xchkslz0.out) and [rerun/xchkslz0_tr4.out](../../../scratchpad/AE_trall/rerun/xchkslz0_tr4.out)):
+  - **FS-A1GT:** never returns within the 30 s run and never re-enters our INIT: the VRAM log holds 'B' (before the call) only. With EXBRSA $00 the CPU at the dump is the R800 and the work area reads sane (JIFFY $007D; the S1990's register 6 reads $00 from 6.1 s); with $A5 the work area is overwritten at the dump (JIFFY $E5D5, NEWKEY, H.KEYI / H.TIMI garbage).
+  - **FS-A1ST:** as the FS-A1WSX -- the VRAM log cleared and our INIT entered twice (the 'I' record, stack $F08E, port $A8 $F4, at $3F20); register 6 reads $00 from 17.9 s.
+  - The only model-dependent call behaviour found when every earlier generation's probe was re-run on the turbo R.
+
 ## Open (not measured)
 
 - What the subject's acceptance test should check: the references disagree and two do not return, so none of them

@@ -60,6 +60,13 @@ build [A, read in C-BIOS's `src/main.asm`, not run]. (The one byte that differs 
 slot readout, ($FFFF) -- the machines' slot layouts, not WRRES.) The soft-reset chain gave no C-BIOS reading (see
 [RDRES](RDRES.md)).
 
+## On the turbo R
+
+Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row turbor`); overview: [turbor/remeasured.md](../../turbor/remeasured.md).
+
+- **WRRES** [M] ([AE_trall/xrdres.out](../../../scratchpad/AE_trall/xrdres.out) cases 5-11, 13, 15-18): port bit 7 := A's bit 7, NOT its complement -- A $00, $7F, $5A give $20, A $80, $FF, $A5 give $A0 (cases 5-11 and 13 start from the other reading, so they show the write; on the turbo R cases 15-18 start from the reading the call leaves and pin only the value). A and F come back as entered (the A1WSX: A := NOT A, a CPL's F); the other registers as on the A1WSX.
+- **The port and a soft reset:** [RDRES](RDRES.md)'s turbo R section ($A0 / $20; no reading across JP $0000).
+
 ## Open (not measured)
 
 - WR-3 / WR-4: which value of bit 7 (if any) skips the start-up screen -- the reset chain (port set by hand, the same

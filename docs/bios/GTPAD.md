@@ -78,6 +78,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xinp1.out](../../scratchpad/AE_trall/xinp1.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- A as on the FS-A1WSX in every case: R-GP-A holds [M]. The working registers differ: DE $3500 / $2400 where the A1WSX leaves $3568 / $2468, HL $2400 where it leaves $FFFF, $2468, $0CEC or $03D3 (XI 54-59, 64, 65, 94) [M]; R-GP-KEEP fails as on the A1WSX (R14 $7F: the machine). A = 1 / 2 entered with interrupts off return with them ON (XI 55, 56): R-GP-EI fails there; the A1WSX and the VG-8020 keep them off [M]. The numbers 8 and up, and 0-7 through the sub-ROM: [NEWPAD](../msx2/sub/NEWPAD.md)'s turbo R section (0-11 do nothing).
+
 ## Open (not measured)
 
 - **[A]** A joystick, touch pad or paddle plugged in: every case had the ports empty.

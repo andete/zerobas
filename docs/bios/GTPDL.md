@@ -79,6 +79,11 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 |---|---|---|
 | every rule | holds [M] | holds [M] |
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xinp1.out](../../scratchpad/AE_trall/xinp1.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- GTPDL does nothing: A $00, F $44, BC / DE / HL as entered ($1357 / $9BDF / $2468), PSG R15 not written (the $CF preset stays), the interrupt state kept -- entered with interrupts off it returns with them off (XI 60-63) [M]. R-PD-A, R-PD-PORT and R-PD-EI fail; R-PD-KEEP holds except for R14, which reads $7F: bit 7, the cassette input, is 0 on a machine without a cassette port (the machine, not the call; the FS-A1WSX reads $FF) [M].
+
 ## Open (not measured)
 
 - **[A]** A joystick, touch pad or paddle plugged in: every case had the ports empty.

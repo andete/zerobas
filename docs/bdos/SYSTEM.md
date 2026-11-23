@@ -110,6 +110,11 @@ With a clock chip: GDATE after start-up answers the clock's date and A its weekd
 
 **[A]** R-BS-SLOT hard-codes IY per interface; it needs writing against DRVSLT: on all three IY's high byte $03 is DRVSLT's primary slot ($8B on the HB-F900 and FS-A1WSX, $8F on the NMS 8250); DE = IX after DSKRST holds.
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xbsys1.out](../../scratchpad/AE_trall/xbsys1.out), [AE_trall/xbsys2.out](../../scratchpad/AE_trall/xbsys2.out), [AE_trall/xbsys3.out](../../scratchpad/AE_trall/xbsys3.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- Every rule as in the FS-A1WSX's column above, on both models (interrupts on after every call, IY $0314, GDATE / GTIME / STIME from the clock chip) [M], except one case: **DSKRST after SELDSK 1 (XS2 14) returns with interrupts OFF on the FS-A1GT**, ON on the FS-A1ST and the A1WSX; with drive A current (XS 12) all return with them on [M]. Reproduced in three runs ([AE_trall/xbsys2.out](../../scratchpad/AE_trall/xbsys2.out), [rerun/xbsys2.out](../../scratchpad/AE_trall/rerun/xbsys2.out), [rerun/xbsys2_tr4.out](../../scratchpad/AE_trall/rerun/xbsys2_tr4.out)); openMSX from an empty persistent state is deterministic, so the repeats confirm the reading, not a cause: not explained. The A1GT's disk work area lies 5 bytes lower than the A1ST's / A1WSX's (IX after DSKRST $F195 vs $F19A, after ALLOC $F180 vs $F185) [M].
+
 ## Open (not measured)
 
 - **[A]** ALLOC with E 0 while drive B is current (E 0 = the current drive or drive A: drive B is the

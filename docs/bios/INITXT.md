@@ -174,6 +174,14 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 Machine differences, not the call's: the HB-F900 and FS-A1WSX carry the Japanese font (R-I-FONT's sum differs there; the NMS 8250 holds it); the HB-F900 and FS-A1WSX boot with BDRCLR 7 and LINL40 39 (the NMS 8250, like the VG-8020, 4 and 37) ([b1text](../../scratchpad/AE_m1on2/b1text.out)); the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM.
 
+
+**On the turbo R** (FS-A1GT and FS-A1ST, which agree; measured 2026-11-23, D-TRSPEC: [AE_trall/xinit.out](../../scratchpad/AE_trall/xinit.out), [AE_trall/xinit3.out](../../scratchpad/AE_trall/xinit3.out), [AE_trall/xinit4.out](../../scratchpad/AE_trall/xinit4.out); this page's rules run on that capture by [trnew_recheck.py](../../scratchpad/trnew_recheck.py): [AE_trnew_recheck.out](../../scratchpad/AE_trnew_recheck.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)):
+
+- Every rule's cells as in the FS-A1WSX's column above, except the function-key line at out-of-range widths with the key line on [M]:
+  - INIT32 at width 255: row 13 holds "key0" at column 18 but not "key1" at column 34, which every earlier machine writes; the name table's sum is $5849, the A1WSX's $6AD1 (XI 39, XJ4 20) [M].
+  - INITXT at width 255 (80-column text): the cells read agree, but the whole-VRAM sum is $2CF1, the A1WSX's $3F79 -- the same deficit, $1288, as INIT32's, so most likely the same missing labels; not separated (XJ4 18) [M] for the sum, [P] for the cause.
+  - Width 0: the name table's sum differs -- INITXT $6595 (A1WSX $6683), INIT32 $5290 ($59BC) -- while the rows read agree (XI 01, 23, XJ4 16, 19) [M]. The pattern-table sums agree everywhere [M].
+
 ## Open (not measured)
 
 - **[A]** The real VDP registers. They are write-only from the Z80, so only their RAM copies are
