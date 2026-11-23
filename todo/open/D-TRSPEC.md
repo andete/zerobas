@@ -25,3 +25,9 @@
       Not run: xtap1 / xtap5 / b7tape (`@tape` kills the run on a machine with no cassette port -- biosl_run needs to
       skip it). NEXT: carry each NEW finding onto its page (docs/turbor/remeasured.md lists them), the @tape skip, a
       goldfish pass over docs/turbor/.
+      DONE the same evening: `@tape` records "no cassette port" (tr4); the tape probes ran (every cassette call returns
+      carry set, nothing read / written); all 21 NEW findings re-checked and carried onto their MSX1 / BDOS / MSX2 pages
+      as "On the turbo R" bullets; goldfish pass 1 over docs/turbor/ (32 findings) acted on (fxtr: CHGCPU's accept rule
+      pinned against rivals, $FFFD = SP - $18 at three SPs, I carried across CPUs, PCMPLY's $00 code in every mode,
+      STOP from every mode). NEXT: a turbo R column on the SAME / AS-MSX2+ pages, the DSKRST-on-A1GT cause, a VRAM-log
+      probe for the soft reset, PCMREC with a real input (harness: feed openMSX's wavinput a file).
