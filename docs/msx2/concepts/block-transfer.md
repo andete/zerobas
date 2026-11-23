@@ -84,6 +84,12 @@ CDUMMY are "not required to be set". Whether a call ever WRITES a field (BLTVM /
   open (the file, the FCB) are [A].
 - The file's layout (a BSAVE-style header, or the 4-byte array header only) is not given [A].
   Calls made with no disk BASIC present (a diskless machine) are [A].
+- **Measured** (2026-11-23, the HB-F900, NMS 8250 and FS-A1WSX alike; the rules and citations are on the four
+  pages, [BLTDV](../sub/BLTDV.md) first): a BLTDV file is the array exactly (NX, NY, the dots, no $FE header) —
+  SCREEN 8 one byte a dot, SCREEN 5 two dots a byte packed over the whole array, not per row — and BLTVD draws
+  such a file whoever wrote it. BLTDM / BLTMD move raw bytes with no header of their own. A quoted name works, an
+  unquoted one gives error 13. Errors reach H.ERRO with E = the BASIC error number; a caller that abandons the
+  call there can call again at once.
 
 ## How every BLT case is recorded
 
