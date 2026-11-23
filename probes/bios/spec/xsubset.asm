@@ -9,19 +9,21 @@
 ; Record (CAP = C001; +0 $A5 when finished, +1 the case count; per case 640 bytes from +2): +0..+383 and +371..+383
 ; as xsubscr.asm; +384 work-area diff count, +385 keys injected, +386 port-$98 log length (2), +388 offset of "SXA"
 ; in the log (2, $FFFF none), +390 offset of "MSX" (2, $FFFF none), +392 32 log bytes from the "SXA" hit - 8 (or
-; from the log's start), +424 32 log bytes from the "MSX" hit - 8 (or from the start), +456 up to 45 work-area diffs
-; (addr lo, addr hi, old, new), +639 $5E (sentinel).
+; from the log's start), +424 32 log bytes from the "MSX" hit - 8 (or from the start), +456 up to 44 work-area diffs
+; (addr lo, addr hi, old, new), +632 the log offsets of the first and the last "AAA" that starts a run of 'A' (2 + 2,
+; $FFFF none: where key 1's label is written), +636 the number of such runs, +639 $5E (sentinel).
 ; Flags: b0 interrupts on at the call; b1 snapshot $F380-$FFFF after the call; b2 diff it against the last snapshot;
 ; b3 H.TIMI queues a key ('K') whenever KEYBUF is empty (at most 4: a key wait cannot hang the run; the record says
 ; whether keys were taken); b4 log every OUT to port $98 during the call (@portlog, from $8000: every byte written to
-; VRAM, so text shown and then erased is still seen).
+; VRAM, so text shown and then erased is still seen); b5 (goldfish pass 1) VRAM $0000-$077F and $1800-$1AFF := 'Z'
+; just before the call.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubset.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's and the clock chip's published
 ; ports, the VDP's state read by the debugger.
 ;
 ; @cap C000
-; @caplen 2600
+; @caplen 2810
 ; @vdpfull E8F0 E900
 ; @portlog 98 E948 E8F1
 ; @timeout 240
@@ -48,6 +50,10 @@ logend  equ     $E94A
 injc    equ     $E94C
 fpat    equ     $E950
 foff    equ     $E954
+lfst    equ     $E956                   ; first "AAA" run (2), last (2), count (1), the byte before (1)
+llst    equ     $E958
+lcnt    equ     $E95A
+lprev   equ     $E95B
 INJ     equ     $E960
 LOGB    equ     $8000
 SNAPA   equ     $B300
@@ -63,7 +69,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $25FF
+                ld      bc, $280F
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -147,6 +153,16 @@ c_next:
                 out     ($99), a
                 ld      a, $80+9
                 out     ($99), a
+                ld      a, (cur+7)
+                bit     5, a
+                jr      z, c_nofill
+                ld      hl, $0000
+                ld      bc, $0780
+                call    vfill
+                ld      hl, $1800
+                ld      bc, $0300
+                call    vfill
+c_nofill:
                 ; the call
                 ld      ix, (cur)
                 ld      a, (cur+6)
@@ -386,6 +402,88 @@ rd80l:
                 djnz    rd80l
                 ret
 
+; BC bytes of 'Z' to VRAM from HL (< $4000)
+vfill:
+                xor     a
+                out     ($99), a
+                ld      a, $8E
+                out     ($99), a
+                ld      a, l
+                out     ($99), a
+                ld      a, h
+                and     $3F
+                or      $40
+                out     ($99), a
+vf:
+                ld      a, 'Z'
+                out     ($98), a
+                dec     bc
+                ld      a, b
+                or      c
+                jr      nz, vf
+                ret
+
+; the log's "AAA" runs (a run = "AAA" not preceded by 'A'): first / last offset and count to the record's +632
+lscan:
+                ld      hl, $FFFF
+                ld      (lfst), hl
+                ld      (llst), hl
+                xor     a
+                ld      (lcnt), a
+                ld      (lprev), a
+                ld      hl, LOGB
+ls_l:
+                push    hl
+                ld      de, (logend)
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      nc, ls_x
+                ld      a, (hl)
+                cp      'A'
+                jr      nz, ls_n
+                ld      a, (lprev)
+                cp      'A'
+                jr      z, ls_n
+                inc     hl
+                ld      a, (hl)
+                inc     hl
+                ld      b, (hl)
+                dec     hl
+                dec     hl
+                cp      'A'
+                jr      nz, ls_n
+                ld      a, b
+                cp      'A'
+                jr      nz, ls_n
+                push    hl
+                ld      de, LOGB
+                or      a
+                sbc     hl, de
+                ld      (llst), hl
+                ld      a, (lcnt)
+                inc     a
+                ld      (lcnt), a
+                dec     a
+                jr      nz, ls_nf
+                ld      (lfst), hl
+ls_nf:
+                pop     hl
+ls_n:
+                ld      a, (hl)
+                ld      (lprev), a
+                inc     hl
+                jr      ls_l
+ls_x:
+                ld      hl, (ptr)
+                ld      de, 632
+                add     hl, de
+                ex      de, hl
+                ld      hl, lfst
+                ld      bc, 5
+                ldir
+                ret
+
 ; HL := table + 13 * A
 pick13:
                 or      a
@@ -505,6 +603,7 @@ t_nolog:
                 ld      a, 'X'
                 ld      de, 6
                 call    find
+                call    lscan
 t_snap:
                 ld      a, (cur+7)
                 bit     2, a
@@ -523,7 +622,7 @@ t_d:
                 jr      z, t_dn
                 ld      a, (ix+0)
                 inc     (ix+0)
-                cp      45
+                cp      44
                 jr      nc, t_dn
                 ld      a, l
                 ld      (de), a
@@ -680,6 +779,7 @@ sets:
                 db      $FF,  5,  0,  0,  4,  6,  2,  5,  4,$0E,$FF,  0,$FF   ;  4 SCREEN 0, width 100, 2/5/4, key 0 + b1-b3
                 db      $FF,  0,  0,  0,  0,  5,$0C,  3,  9,  1,$FF,  3,$FF   ;  5 set 2 + title colour 3
                 db        5,  0,  0,  0,  0,  5,$0C,  3,  9,  1,$FF,  0,$FF   ;  6 set 2 with ID 5
+                db      $0A,  0,  0,  1,  2,  1,  6,  7,  8,  1,$FF,  0,$FF   ;  7 SCREEN 1 width 18, key 1
 ; block 3, registers 0-12: ID, then 6 characters as low / high nibble
 sets3:
                 db      $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF   ; 0 as found
@@ -719,6 +819,10 @@ cases:
                 db      0, 2, 2, $00, $00, $18  ; 12 set 2, prompt "SXA"
                 dw      $0189
                 db      0, 6, 5, $00, $00, $18  ; 13 set 2 with ID 5, empty title
+                dw      $0189
+                db      0, 7, 0, $00, $00, $38  ; 14 set 7 (SCREEN 1 width 18, key 1): the banner longer than the window
+                dw      $0189
+                db      0, 1, 0, $00, $00, $38  ; 15 set 1 (SCREEN 1 width 30, key 0), name table 'Z' first
                 dw      0
 
                 ds      $8000 - $, $FF

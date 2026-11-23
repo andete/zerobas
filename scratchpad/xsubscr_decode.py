@@ -19,7 +19,7 @@ NAMES = {"xsubscr": ["0 SDFSCR found S0", "1 SDFSCR found S5", "2 SDFSCR set1", 
          "xsubset": ["0 SETSCR found S0 log", "1 set1 log", "2 set2 S5 log", "3 set2 EI", "4 set3 DI",
                      "5 set4(w100) S1 log", "6 SDFSCR set2 snap", "7 SETSCR set2 diff vs SDFSCR", "8 set2 title SXA",
                      "9 set2+tcol3 title SXA", "10 set2 title SXASXA", "11 set2 password SXA", "12 set2 prompt SXA",
-                     "13 set2 ID5 empty title"],
+                     "13 set2 ID5 empty title", "14 set7 S1 w18 key1 fill log", "15 set1 S1 w30 key0 fill log"],
          "xsubsc2": ["0 set6 (key+prn+cas) snap", "1 set12 (prn/cas 0) diff vs 0", "2 set2 w80 from TEXT2 DI fill",
                      "3 set3 w37 key1 fill log", "4 set1 S1 w30 fill before/after diff", "5 set1 A=FF F=41 DI",
                      "6 set13 S1 w36", "7 set14 S1 w50", "8 set15 S0 w0"]}
@@ -59,8 +59,11 @@ def decode(b, k, NAMES):
     if SET:
         off2 = t[6] | t[7] << 8
         out.append(f"  MSX at={'none' if off2 == 0xFFFF else off2} log[..32]=|{txt(t[40:72])}| {t[40:72].hex()}")
+        if ll:
+            f1, f2 = t[248] | t[249] << 8, t[250] | t[251] << 8
+            out.append(f"  AAA runs={t[252]} first={'none' if f1 == 0xFFFF else f1} last={'none' if f2 == 0xFFFF else f2}")
     if t[0]:
-        lim = 45 if SET else 149 if SC2 else 21
+        lim = 44 if SET else 149 if SC2 else 21
         ds = [t[(72 if SET else 40) + 4 * i: (76 if SET else 44) + 4 * i] for i in range(min(t[0], lim))]
         out.append(f"  wa diffs={t[0]}: " + " ".join(f"{d[1]:02X}{d[0]:02X}:{d[2]:02X}>{d[3]:02X}" for d in ds))
     return "\n".join(out)
