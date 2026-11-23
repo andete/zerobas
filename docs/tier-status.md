@@ -572,7 +572,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 6 | 🤖 | what an undefined read returns. | T-95A3F2 |
 | — | TIER 6 | 🤖 | every edge (each needs a program that changes CRTCNT, garbles RG0SAV or sets LINL40 above 40; | T-B661A0 |
 | — | TIER 6 | ⛔ | POSTPONED (Joost 2026-11-23): "since we don't do MSX2 and MSX2+ and turbor yet, those should be | T-9D0B9E |
-| — | TIER 6 | ? | doc debt, no behaviour. Measured 2026-11-23 with `python3 scratchpad/linkscan.py` (strips `:line` | T-18FA41 |
+| — | TIER 6 | 🤖 | doc debt, no behaviour. | T-18FA41 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-22). | T-1FAEDF |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-22). | T-9CE6A0 |
 | — | TIER 6 | 🤖 | every edge (filed 2026-11-22, from a C-BIOS 0.32 port measurement). | T-51A25E |
