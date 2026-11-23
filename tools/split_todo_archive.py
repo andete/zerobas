@@ -1,10 +1,26 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""Split TODO.md: closed work moves to docs/TODO-done.md, the pickup list stays.
+"""Archive closed roadmap items into docs/TODO-done.md; the pickup list stays.
 
-WHAT MOVES: a TOP-LEVEL `- [x]` block whose D-TODOSWEEP verdict is not LIVE.
-WHAT STAYS: every `- [ ]` block, every `- [x]` block whose verdict IS live, and
+📂 ONE FILE PER ITEM (2026-11-23, tools/todo_items.py). Closing an item is now
+`todo/open/X.md` -> `todo/done/X.md` with its box ticked, and its stub in the
+TODO.md skeleton stays. The TODO.md size cap that made this tool necessary is
+gone, but its PURPOSE is not: todo/done/ and the skeleton's `[x]` stubs would
+otherwise grow forever, and docs/TODO-done.md stays the long-term record. So a
+pass now ARCHIVES DONE ITEM FILES: the item's text is appended VERBATIM to
+docs/TODO-done.md under its section heading, its stub line leaves TODO.md and
+its file leaves todo/done/. Everything is computed on `todo_items.full_text()`
+-- the old single-file text, rebuilt exactly -- so the verdicts, the block ids,
+the lossless check and the citation map (`TODO.md:<n>` = line n of that text,
+as tools/check_todo_citations.py reads it) are the single-file tool's, unchanged.
+🔴 What moves is the ITEM FILE, not the inventory block: a block runs on to the
+next item or heading and can include skeleton prose below the item, which stays
+in the skeleton. A pass whose moved lines are not exactly whole done-item files
+(e.g. a WHOLE_SECTIONS heading not yet stubbed) is REFUSED, not approximated.
+
+WHAT MOVES: a TOP-LEVEL `- [x]` item whose D-TODOSWEEP verdict is not LIVE.
+WHAT STAYS: every `- [ ]` item, every `- [x]` item whose verdict IS live, and
 all section headings and prose.
 
 🔴 THE SWEEP IS WHAT MAKES THIS SAFE. Before 2026-08-26 a `- [x]` block could
@@ -28,8 +44,9 @@ repointed citation also gains the block's CONTENT-DERIVED id, which is what
 
 `--apply` also REPOINTS every citation, in this same process -- see `repoint()`.
 
-Usage:  python3 tools/split_todo_archive.py --dry-run
+Usage:  python3 tools/split_todo_archive.py [--dry-run]     (the default)
         python3 tools/split_todo_archive.py --apply
+        python3 tools/split_todo_archive.py --selftest
 """
 from __future__ import annotations
 
@@ -41,8 +58,9 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
-import probe_tmp                                                 # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import todo_inventory                                            # noqa: E402
+import todo_items                                                # noqa: E402
 SRC = os.path.join(ROOT, "TODO.md")
 DST = os.path.join(ROOT, "docs", "TODO-done.md")
 VERDICTS = os.path.join(ROOT, "scratchpad", "sweep_verdicts.json")
@@ -100,13 +118,57 @@ the phase narrative above still have somewhere to land.
 """
 
 
-def load_blocks():
-    out = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "todo_inventory.py"),
-                          "--json", probe_tmp.tmp("_split_inv.json")],
-                         capture_output=True, text=True)
-    if out.returncode != 0:
-        sys.exit(f"todo_inventory failed:\n{out.stdout}{out.stderr}")
-    return [b for b in json.load(open(probe_tmp.tmp("_split_inv.json"))) if b["depth"] == 0]
+def load_blocks(text=None):
+    """Top-level blocks of the rebuilt single text, ids as the sweep keyed them."""
+    return [b for b in todo_inventory.blocks(text=todo_items.full_text() if text is None else text)
+            if b["depth"] == 0]
+
+
+class Refused(Exception):
+    pass
+
+
+def expand(skel, texts):
+    """skeleton lines + {(state, id): item text} -> (the single text's lines,
+    {first line of an item: (state, id, last line)}). Exactly todo_items.full_text()."""
+    full, spans = [], {}
+    for line in skel:
+        m = todo_items.STUB.search(line)
+        if m:
+            key = (m.group(1), m.group(2))
+            t = texts[key]
+            t = (t[:-1] if t.endswith("\n") else t).split("\n")
+            spans[len(full) + 1] = key + (len(full) + len(t),)
+            full.extend(t)
+        else:
+            full.append(line)
+    return full, spans
+
+
+def plan_split(skel, texts, blocks, plan):
+    """The split, in the item layout. -> (full lines, new skeleton, src_out, dst_out, mapping, moved keys).
+
+    build() runs on the single text with each block CLIPPED to its item file, so
+    only item lines can move; the new skeleton is the old one minus the moved
+    stubs, and it must expand to exactly src_out or nothing is written."""
+    full, spans = expand(skel, texts)
+    iblocks, moved = [], set()
+    for b in blocks:
+        sp = spans.get(b["start"])
+        if plan[b["id"]][0] == "move":
+            if sp is None or sp[0] != "done":
+                raise Refused(f"block {b['id']} at line {b['start']} would move but is not a "
+                              f"todo/done/ item file ({sp and sp[0]})")
+            moved.add(sp[:2])
+        iblocks.append(dict(b, end=sp[2]) if sp else b)
+    src_out, dst_out, mapping = build(full, iblocks, plan)
+    new_skel = [l for l in skel if not ((m := todo_items.STUB.search(l))
+                                       and (m.group(1), m.group(2)) in moved)]
+    if expand(new_skel, texts)[0] != src_out:
+        raise Refused("the split would move lines that are not whole done-item files "
+                      "(a WHOLE_SECTIONS heading not yet stubbed?) -- the item layout "
+                      "cannot express that; do it by hand")
+    return full, new_skel, src_out, dst_out, mapping, moved
 
 
 def is_live(block, verdicts):
@@ -296,26 +358,40 @@ def repoint(mapping, blocks):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="the default")
     a = ap.parse_args()
-    lines = open(SRC).read().splitlines()
+    # line-for-line what the single-file tool read (`.splitlines()` of a file
+    # ending in a newline): no trailing empty element, and one written back
+    skel = todo_items.skeleton().split("\n")
+    if skel and skel[-1] == "":
+        skel.pop()
+    items = todo_items.items()
+    texts = {(it.state, it.id): it.text for it in items}
     blocks = load_blocks()
     verdicts = json.load(open(VERDICTS))
     plan = classify(blocks, verdicts)
-    src_out, dst_out, mapping = build(lines, blocks, plan)
+    try:
+        lines, new_skel, src_out, dst_out, mapping, moved = plan_split(skel, texts, blocks, plan)
+    except Refused as e:
+        sys.exit(f"REFUSED: {e}")
+    if "\n".join(lines) + "\n" != todo_items.full_text():
+        sys.exit("REFUSED: expand() is not todo_items.full_text() -- the instrument disagrees with itself")
 
-    moved = [b for b in blocks if plan[b["id"]][0] == "move"]
+    moved_b = [b for b in blocks if plan[b["id"]][0] == "move"]
     print(f"  whole sections moved: {len(WHOLE_SECTIONS)}")
     for h, why in WHOLE_SECTIONS.items():
         print(f"        {h[3:60]} -- {why[:44]}")
     stay = [b for b in blocks if plan[b["id"]][0] == "stay"]
     print(f"TODO.md {len(lines)} lines, {len(blocks)} top-level blocks")
-    print(f"  MOVE  {len(moved):4d} blocks  {sum(b['lines'] for b in moved):6d} lines "
+    print(f"  MOVE  {len(moved_b):4d} blocks  {sum(1 for w, _ in mapping.values() if w == 'dst'):6d} lines "
           f"-> docs/TODO-done.md")
     print(f"  STAY  {len(stay):4d} blocks  {sum(b['lines'] for b in stay):6d} lines")
     for b in stay:
         if b["state"] == "done":
             print(f"        kept closed block {b['id']}: {plan[b['id']][1]} "
                   f"-- {b['headline'][:60]}")
+    for st, ident in sorted(moved):
+        print(f"        archive todo/{st}/{ident}.md (file + its stub in TODO.md)")
     print(f"  result: TODO.md {len(src_out)} lines, archive {len(dst_out)} lines")
 
     if not verify(lines, src_out, dst_out, mapping):
@@ -342,10 +418,13 @@ def main():
     if len(out) < len(prior):
         sys.exit(f"REFUSED: the archive would SHRINK ({len(prior)} -> {len(out)} "
                  f"bytes). Nothing archived is ever removed by a split.")
-    open(SRC, "w").write("\n".join(src_out) + "\n")
     os.makedirs(os.path.dirname(DST), exist_ok=True)
     open(DST, "w").write(out)
-    print(f"\nwrote {SRC} and {how} {DST}")
+    open(SRC, "w").write("\n".join(new_skel) + "\n")
+    for st, ident in sorted(moved):
+        os.remove(os.path.join(todo_items.DIR, st, ident + ".md"))
+    print(f"\nwrote {SRC} ({len(moved)} stub(s) out), removed {len(moved)} todo/done/ "
+          f"file(s), and {how} {DST}")
     # 🔴 THE MAP COUNTS `dst_out`, NOT THE ARCHIVE AS WRITTEN (2026-10-23, the third
     # split). Appending shifts every moved line down by the prior archive, so the
     # repoint wrote `TODO-done.md:717` for a block at :11056 -- 30 citations, caught  NOT-A-CITATION
@@ -354,7 +433,11 @@ def main():
         off = _dst_offset(dst_out, out)
         mapping = {k: (w, n + off if w == "dst" else n) for k, (w, n) in mapping.items()}
     repoint(mapping, blocks)
-    return 0
+    bad = todo_items.check()
+    for b in bad:
+        print("  🔴", b)
+    print(f"  todo_items --check: {len(bad)} problem(s)")
+    return 1 if bad else 0
 
 
 def selftest() -> int:
@@ -439,6 +522,44 @@ def selftest() -> int:
     so, do, mp = build(raw_src, [], {})
     arm("S13 ...and an un-stubbed one still moves, leaving the stub (the control)",
         "some done prose" in do and any(l.startswith(STUB_MARK) for l in so))
+
+    # --- the item layout: an archived item leaves as its WHOLE FILE + stub ----
+    # A real fixture through the same plan_split() main() runs: a closed item
+    # with no verdict (moves), a closed item with a LIVE verdict (stays), an open
+    # item (stays), and skeleton prose directly below the moved item -- which
+    # the inventory block includes and the item file does not, so it must STAY.
+    sk = ["# TODO", "", "## Open", "",
+          "- [x] **gone** -> [A](todo/done/A.md) <!-- item:done/A -->",
+          "prose under A, part of the skeleton", "",
+          "- [x] **kept** -> [B](todo/done/B.md) <!-- item:done/B -->",
+          "- [ ] **open** -> [C](todo/open/C.md) <!-- item:open/C -->", ""]
+    tx = {("done", "A"): "- [x] **gone**\n      body of A\n",
+          ("done", "B"): "- [x] **kept**\n      body of B\n",
+          ("open", "C"): "- [ ] **open**\n      \U0001f916 AUTONOMOUS — x.\n"}
+    full, _ = expand(sk, tx)
+    bl = load_blocks("\n".join(full))
+    vd = {b["id"]: {"verdict": "LIVE"} for b in bl if "kept" in b["headline"]}
+    pl = classify(bl, vd)
+    fl, ns, so, do, mp, mv = plan_split(sk, tx, bl, pl)
+    arm("S14 a closed, not-LIVE item moves as its whole file: stub out of the "
+        "skeleton, text verbatim in the archive under its section",
+        mv == {("done", "A")} and "<!-- item:done/A -->" not in "\n".join(ns)
+        and do[-2:] == ["- [x] **gone**", "      body of A"]
+        and "## From `TODO.md` § Open" in do)
+    arm("S15 ...the skeleton prose below it, inside its inventory BLOCK, stays",
+        "prose under A, part of the skeleton" in ns
+        and not any("prose under A" in l for l in do))
+    arm("S16 ...a LIVE closed item and an open item stay, and the new skeleton "
+        "expands to exactly the split's source side",
+        any("item:done/B" in l for l in ns) and any("item:open/C" in l for l in ns)
+        and expand(ns, tx)[0] == so and verify(fl, so, do, mp))
+    bad_pl = dict(pl, **{b["id"]: ("move", "x") for b in bl if "open" in b["headline"]})
+    try:
+        plan_split(sk, tx, bl, bad_pl)
+        refused = False
+    except Refused:
+        refused = True
+    arm("S17 a plan that would move an OPEN item is REFUSED, not written", refused)
 
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1

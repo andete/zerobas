@@ -69,7 +69,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 STATIC = """basic-reloc kwidx-check deps-check subrom-abi-check diskrom-abi-check cbios-abi-check rom-parts-check subrom-closure-check unit-test deadcode
 wall-assertion-check ram-claim-check ram-map-check pin-check build-assert-check needle-case-check redundant-load-check stubinl-check rowshape-check injector-check
 dead-alias-check alias-order-check size-check hostkill-check session-path-check
-temp-root-check tracked-inputs-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check
+temp-root-check tracked-inputs-check todo-citation-check todo-marker-check todo-items-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check
 filed-pin-check disk-mount-check bios-spec-index-check spec-rules-check spec-live
 shared-body-check probe-reach-check battery-membership-check fixture-integrity-check
 hook-equate-check

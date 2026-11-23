@@ -4,7 +4,8 @@
 """todo_inventory.py — the DENOMINATOR instrument for a TODO.md sweep.
 
 A hand-listed denominator is a scope claim, so this one is mechanical and
-re-runnable. It parses `TODO.md` into checkbox BLOCKS and emits one record per
+re-runnable. It parses the roadmap -- `todo_items.full_text()`, the single text
+rebuilt from TODO.md's skeleton and its todo/<state>/<id>.md item files -- into checkbox BLOCKS and emits one record per
 block: id, line range, state, section, headline, and the markers the block
 carries. A sweep then attaches a VERDICT to every id, and §"audit" here proves
 the verdict set is complete and disjoint over the real file — not over a list
@@ -36,7 +37,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TODO = ROOT / "TODO.md"
+TODO = ROOT / "TODO.md"     # the skeleton since 2026-11-23; its items live in todo/<state>/<id>.md
+sys.path.insert(0, str(ROOT / "tools"))
+import todo_items           # noqa: E402
 
 BOX = re.compile(r"^(\s*)- \[([ x])\] ?(.*)$")
 H2 = re.compile(r"^## (.+)$")
@@ -74,8 +77,15 @@ KIND = [
 
 
 def blocks(path=None, text=None):
-    """`text` instead of a file: tools/tier_table.py parses a selftest's fake TODO."""
-    lines = (text if text is not None else (Path(path) if path else TODO).read_text()).split("\n")
+    """`text` instead of a file: tools/tier_table.py parses a selftest's fake TODO.
+    No path, or TODO.md itself, parses the rebuilt single text (`todo_items.full_text()`);
+    `start` / `end` are lines of THAT text -- `todo_items.locate` names the item file."""
+    if text is None:
+        if path is None or Path(path).resolve() == TODO.resolve():
+            text = todo_items.full_text()
+        else:
+            text = Path(path).read_text()
+    lines = text.split("\n")
     out, section, bold, cur = [], None, None, None
 
     def close(end):
@@ -124,7 +134,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
     ap.add_argument("--audit", help="a JSON file mapping id -> verdict")
-    ap.add_argument("--file", help="parse this file instead of TODO.md "
+    ap.add_argument("--file", help="parse this file instead of the roadmap "
                                    "(the archive is the same format)")
     a = ap.parse_args()
     bs = blocks(a.file)

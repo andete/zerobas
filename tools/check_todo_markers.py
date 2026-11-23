@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-r"""D-MARKGATE gate — every OPEN item in TODO.md carries exactly one pick-up marker.
+r"""D-MARKGATE gate — every OPEN roadmap item carries exactly one pick-up marker.
+
+ONE FILE PER ITEM (2026-11-23): the items live in todo/open/<id>.md and todo/done/<id>.md, TODO.md is the
+skeleton with one stub line each (tools/todo_items.py). The gate reads `todo_items.full_text()` -- the old
+single-file text, rebuilt exactly -- so its block splitter is unchanged, and `todo_items.locate()` turns a line of
+that text back into the ITEM FILE a finding is reported against (`todo/open/D-FOO.md:1`). Fixture runs (--selftest)
+still read the fixture file and report `line N`.
 
 TODO.md's own header states the invariant ("EVERY OPEN ITEM CARRIES A PICK-UP
 MARKER, AND THE MARKER SAYS WHO HAS TO BE IN THE ROOM") and, until this gate, the
@@ -69,6 +75,8 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import todo_items                                                # noqa: E402
 
 # The vocabulary. 🔁 STANDING is not a work bucket: it marks a RULING of Joost's
 # kept open so it stays visible (the oracle-split rule, the speed sequencing).
@@ -105,27 +113,32 @@ def blocks(text):
     return out
 
 
-def inventory_open_count(path):
+def inventory_open_count(text):
     """The OTHER denominator, so the two cannot drift apart unnoticed.
 
-    🔴 ONLY FOR THE REAL FILE. `todo_inventory.py` reads TODO.md whatever it is
-    handed, so on a fixture it answers about the tree instead -- and the first
-    run of this selftest had FOUR arms passing on that mismatch rather than on
-    their own subject [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    🔴 ONLY FOR THE REAL ROADMAP. On a fixture `todo_inventory.py` used to answer
+    about the tree instead -- and the first run of this selftest had FOUR arms
+    passing on that mismatch rather than on their own subject
+    [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. Called with
+    `todo_items.full_text()` only; its `blocks(text=)` splitter is the second
+    rule, run in-process on the SAME text so it cannot read the skeleton (whose
+    stub lines are `- [ ]` lines too, and would agree for the wrong reason).
     """
-    if os.path.abspath(path) != os.path.join(ROOT, "TODO.md"):
+    try:
+        import todo_inventory
+    except Exception:
         return None
-    tmp = os.path.join(tempfile.gettempdir(), "todo_markers_inv.json")
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "todo_inventory.py"),
-                        "--json", tmp], capture_output=True, cwd=os.path.dirname(path) or ".")
-    if r.returncode != 0 or not os.path.exists(tmp):
-        return None
-    return sum(1 for x in json.load(open(tmp))
+    return sum(1 for x in todo_inventory.blocks(text=text)
                if x["depth"] == 0 and x["state"] == "open")
 
 
-def check(path="TODO.md", quiet=False):
-    text = open(path, encoding="utf-8").read()
+def check(path=None, quiet=False):
+    """path=None: the real roadmap (todo_items.full_text()); a path: a fixture."""
+    real = path is None
+    text = todo_items.full_text() if real else open(path, encoding="utf-8").read()
+    # where a finding is: the item file (real) or the fixture's line
+    where = ((lambda n: "%s:%d" % todo_items.locate(n)) if real
+             else (lambda n: f"line {n:5d}"))
     bs = blocks(text)
     bad, tally, gap = [], {m: 0 for m in BUCKETS}, []
 
@@ -153,13 +166,20 @@ def check(path="TODO.md", quiet=False):
             seen.setdefault(idm.group(1), []).append(text.count("\n", 0, m.start()) + 1)
     for iid, lines in seen.items():
         if len(lines) > 1:
-            bad.append((lines[0], f"ITEM ID {iid} HEADS {len(lines)} BLOCKS (lines "
-                                  + ", ".join(map(str, lines)) + ")", ""))
+            bad.append((lines[0], f"ITEM ID {iid} HEADS {len(lines)} BLOCKS ("
+                                  + ", ".join(map(where, lines)) + ")", ""))
 
-    inv = inventory_open_count(path)
+    inv = inventory_open_count(text) if real else None
     if inv is not None and inv != len(bs):
         bad.append((0, f"DENOMINATORS DISAGREE: this splitter {len(bs)}, "
                        f"todo_inventory.py {inv}", ""))
+    if real:
+        # the THIRD count: the item files themselves. A stub/file mismatch is
+        # todo-items-check's to report in full; here it must not pass silently.
+        n_files = sum(1 for it in todo_items.items() if it.is_open)
+        if n_files != len(bs):
+            bad.append((0, f"DENOMINATORS DISAGREE: this splitter {len(bs)}, "
+                           f"todo/open/ stubs {n_files}", ""))
 
     if not quiet:
         print(f"{len(bs)} open blocks"
@@ -171,11 +191,11 @@ def check(path="TODO.md", quiet=False):
             print(f"\n{len(gap)} block(s) where a marker EMOJI appears without being a "
                   f"marker (informational -- prose may name a bucket):")
             for line, lo, ti, head in gap:
-                print(f"  line {line:5d}  emoji={lo:<10s} marker={ti:<10s} {head}")
+                print(f"  {where(line)}  emoji={lo:<10s} marker={ti:<10s} {head}")
     if bad:
         print("\n\U0001f534 UNCLASSIFIED OR AMBIGUOUS OPEN ITEM(S):")
         for line, why, head in bad:
-            print(f"  line {line:5d}  {why}" + (f"  {head}" if head else ""))
+            print(f"  {where(line) if line or not real else 'roadmap'}  {why}" + (f"  {head}" if head else ""))
         return 1
     return 0
 

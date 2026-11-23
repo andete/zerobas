@@ -8,7 +8,9 @@ r"""tier_table — the priority-tier table, compactly, whenever Joost asks.
     make tiers ARGS=--all      every open item incl. APPARATUS / BUDGET / OTHER
     python3 tools/tier_table.py --selftest
 
-WHAT IT READS. `TODO.md` § "Open — standing residuals": every open item carries
+WHAT IT READS. The roadmap's § "Open — standing residuals" -- one file per item
+since 2026-11-23 (todo/open/<id>.md, stubbed in TODO.md), read as the rebuilt
+single text `todo_items.full_text()`: every open item carries
 a `🎚️ TIER n — …` (or class) line (Joost's five tiers, 2026-09-10 — the legend
 at the top of that section is the rule; this prints it, it does not define it).
 The keyword denominator is `basic/kwtable.inc`, the SAME table the tokeniser
@@ -38,7 +40,32 @@ import sys
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TODO = os.path.join(ROOT, "TODO.md")
+TODO = os.path.join(ROOT, "TODO.md")   # the skeleton; the items are todo/<state>/<id>.md
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import todo_items                       # noqa: E402
+
+_LOCS = None
+
+
+def where(line):
+    """a line of todo_items.full_text() -> "todo/open/<id>.md:<n>" (or "TODO.md:<n>" for
+    skeleton prose): the file a human opens, now that the line number is no file's."""
+    global _LOCS
+    if _LOCS is None:
+        _LOCS, n = {}, 0
+        for sl, l in enumerate(todo_items.skeleton().split("\n"), 1):
+            m = todo_items.STUB.search(l)
+            if m:
+                rel = "todo/%s/%s.md" % (m.group(1), m.group(2))
+                with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+                    k = fh.read().rstrip("\n").count("\n") + 1
+                for j in range(1, k + 1):
+                    _LOCS[n + j] = (rel, j)
+                n += k
+            else:
+                n += 1
+                _LOCS[n] = ("TODO.md", sl)
+    return "%s:%d" % _LOCS.get(line, ("TODO.md", line))
 KWTABLE = os.path.join(ROOT, "basic", "kwtable.inc")
 
 # \U0001f3d7\ufe0f RULED BY JOOST 2026-09-22: a RAM-FIDELITY rung is inserted as TIER 5
@@ -74,7 +101,7 @@ _inv = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(_inv)
 
 
-_IDS = {}   # TODO.md line -> T-id, filled by items() for the text it last parsed
+_IDS = {}   # full_text() line -> T-id, filled by items() for the text it last parsed
 BOX = re.compile(r"^- \[ \] ")
 HEAD_END = re.compile(r"^(#{2,3} )|^- \[")
 # 🔴 A 🎚️ LINE THAT DOES NOT PARSE IS WORSE THAN A MISSING ONE, because the
@@ -187,13 +214,13 @@ def tag_faults(its):
     out = []
     for it in its:
         for ln, txt in it.get("badtags", ()):
-            out.append("TODO.md:%d: 🎚️ line does not parse (wants `TIER n —`, "
+            out.append("%s: 🎚️ line does not parse (wants `TIER n —`, "
                        "`APPARATUS —`, `BUDGET —`, `STANDING —` or `OTHER —`): %s"
-                       % (ln, txt))
+                       % (where(ln), txt))
         if it["tier"] == "UNTAGGED":
-            out.append("TODO.md:%d: open item carries no 🎚️ tag, so it is in no "
+            out.append("%s: open item carries no 🎚️ tag, so it is in no "
                        "tier list and bars no attainment: %s"
-                       % (it["line"], it["head"][:60]))
+                       % (where(it["line"]), it["head"][:60]))
     return out
 
 
@@ -567,7 +594,7 @@ def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
         # citations spanning tiers 2/2/4/6 read as four TIER 2 items.
         n = len(lines)
         bits.append("%s open, worst TIER %s (%s)"
-                    % (n, gap_tier, " ".join(_IDS.get(l) or "TODO.md line %d" % l
+                    % (n, gap_tier, " ".join(_IDS.get(l) or where(l)
                                              for l in sorted(lines))))
     return " · ".join(bits)
 
@@ -1216,7 +1243,7 @@ def fmt_items(its, kws, tiers_only=True, width=70):
         w = what_is_open(it)
         if len(w) > width:
             w = w[:width - 1] + "…"
-        out.append(f"  {kw:{kwcol}} {it['marker']} {it['line']:>6}  {w}")
+        out.append(f"  {kw:{kwcol}} {it['marker']} {where(it['line']).rsplit(':', 1)[0]}  {w}")
     return "\n".join(out)
 
 
@@ -1659,7 +1686,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
         w = what_is_open(it).replace("|", "\\|")
         bid = it.get("id")
         if bid is None:   # a block boundary the two parsers disagree on: say so loudly
-            sys.exit(f"tier_table: no todo_inventory block starts at TODO.md line {it['line']}")
+            sys.exit(f"tier_table: no todo_inventory block starts at {where(it['line'])}")
         out.append(f"| {kw} | {base_tier(it['tier'])} | {it['marker']} | {w} | {bid} |")
     return "\n".join(out) + "\n"
 
@@ -1687,7 +1714,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
-    its = items(open(TODO, encoding="utf-8").read())
+    its = items(todo_items.full_text())
     faults = tag_faults(its)
     if faults:
         print("\U0001f534 tier_table: %d open item(s) cannot be tiered" % len(faults))
@@ -1712,7 +1739,7 @@ def main(argv=None):
     print("PRIORITY TIERS — open items in TODO.md (recounted now, never quoted)\n")
     for t, n in summary(its):
         print(f"  {t:10} {n:3}")
-    nest = nested_open(open(TODO, encoding="utf-8").read())
+    nest = nested_open(todo_items.full_text())
     if nest:
         # 🔴 THE MESSAGE SAYS WHAT `nested_open` ACTUALLY CHECKS. It used to read
         # "carry no tier and no marker", and it never tested either: the function
@@ -1727,7 +1754,7 @@ def main(argv=None):
               "in full, never filtered. Read them: a keyword one of them names is "
               "NOT 'no known gap':")
         for ln, head in nest:
-            print(f"       {ln:>6}  {head}")
+            print(f"       {where(ln)}  {head}")
     print(f"  {'open':10} {len(its):3}    keywords: {len(kws)} "
           f"({len(kwtable_keywords())} in kwtable.inc + {len(kws) - len(kwtable_keywords())} filed as missing)")
     if a.keywords:

@@ -4,6 +4,14 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🗂️ THE ROADMAP IS ONE FILE PER ITEM — 2026-11-23 (Joost: "do the one-file-per-item switch")
+
+Every "the item's block in TODO.md" below now means **`todo/open/<id>.md`** (closed: `todo/done/`). `TODO.md` keeps
+the prose and one GENERATED stub line per item. Edit an item in its file; file one with
+`python3 tools/todo_items.py --new D-X --after D-Y < text`; close one with `--close D-X`; the pre-commit hook rewrites
+the stubs and refuses a stub / file mismatch. Tools read the rebuilt text through `tools/todo_items.py` (full_text()).
+`TODO.md:<n>` citations are line numbers of that rebuilt text; new citations name the item file.
+
 ## 🧭 THE SPEC LOOP — 2026-11-17 — READ FIRST (overrides every focus / tier row below)
 
 | ruling | Joost's words | consequence |
@@ -2413,7 +2421,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12305 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~todo/open/X-AN-UNNAMED-OUTCOME-READS-AS-NO.md:1 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

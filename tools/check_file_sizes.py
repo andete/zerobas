@@ -15,6 +15,11 @@ file staged and passed. Two layers now, one script:
   --selftest the check bites: a planted oversized entry is refused, an allowlisted one
              passes, and the real allowlist names only files that exist
 
+📂 ONE FILE PER ITEM (2026-11-23): TODO.md is now the roadmap's skeleton and keeps its
+allowlist entry; its items, todo/open/*.md and todo/done/*.md, are NOT allowlisted and
+sit under the plain 1 MiB limit like any other file (an allowlisted path exempts only
+itself, never a directory beside it).
+
 Sizes come from git's own objects (`git cat-file`), not the working tree: the commit
 carries what is staged, whatever the file on disk says now.
 """
@@ -94,13 +99,16 @@ def selftest():
         fails.append("an allowlisted file under its own cap is refused")
     if offenders({"TODO.md": 3 * LIMIT + 1}, {"TODO.md": 3 * LIMIT}) != [(3 * LIMIT + 1, "TODO.md")]:
         fails.append("an allowlisted file over its own cap is not refused")
+    if offenders({"todo/open/D-X.md": big, "todo/done/D-Y.md": small, "TODO.md": big},
+                 {"TODO.md": 3 * LIMIT}) != [(big, "todo/open/D-X.md")]:
+        fails.append("an item file over the plain limit is not refused (or TODO.md's cap leaks to todo/)")
     tracked = set(git("ls-files", "-z").split("\0"))
     gone = [p for p in allowlist() if p not in tracked]
     if gone:
         fails.append(f"the allowlist names untracked files: {gone}")
     for f in fails:
         print("SELFTEST FAIL:", f)
-    print("size-check selftest:", "FAIL" if fails else "PASS (6 arms)")
+    print("size-check selftest:", "FAIL" if fails else "PASS (7 arms)")
     return 1 if fails else 0
 
 

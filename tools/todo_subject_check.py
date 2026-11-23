@@ -82,7 +82,8 @@ def main():
     spec = importlib.util.spec_from_file_location("inv", ROOT / "tools" / "todo_inventory.py")
     inv = importlib.util.module_from_spec(spec); spec.loader.exec_module(inv)
     blocks = inv.blocks()
-    lines = (ROOT / "TODO.md").read_text().split("\n")
+    import todo_items                   # the roadmap: TODO.md's skeleton + todo/<state>/<id>.md
+    lines = todo_items.full_text().split("\n")
     text, tracked = tree_text()
     basenames = {f.rsplit('/', 1)[-1] for f in tracked}
 
@@ -119,7 +120,7 @@ def main():
           f"(the screen is silent on these -- not evidence of anything)")
     print(f"  name something that is GONE   : {len(dead)}  <- candidates for STALE")
     for r in dead:
-        print(f"\n  {r['id']} L{r['start']} [{r['state']}] {r['headline']}")
+        print(f"\n  {r['id']} {'%s:%d' % todo_items.locate(r['start'])} [{r['state']}] {r['headline']}")
         if r["gone_paths"]:
             print(f"      GONE paths  : {', '.join(r['gone_paths'])}")
         if r["gone_syms"]:

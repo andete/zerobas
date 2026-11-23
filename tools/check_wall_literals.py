@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
-"""A wall figure hardcoded OUTSIDE TODO.md is unpoliced by design. This polices it.
+"""A wall figure hardcoded OUTSIDE the roadmap is unpoliced by design. This polices it.
 
 D-DUPSPAN2 §5.2 found `LOW_CEILING = 0x3FE5` in tools/gen_resident_abi.py under a
 comment naming `__MEAS_LOW_END` -- a label the build MEASURES on every run. The
 literal had never tracked it and was 65 B stale, weakening the guard by exactly
 that much. `make wall-assertion-check` could not see it: that tool scopes itself
-to TODO.md's `- [ ]` items by design (its §SCOPE), because that is where a stale
+to the roadmap's open items by design (its §SCOPE; since 2026-11-23 one file each,
+todo/open/<id>.md -- this tool reads none of them), because that is where a stale
 figure misleads the next SLICE. A stale figure inside a GATE, a PROBE or a source
 comment misleads the GATE instead, and nobody reads it.
 
@@ -57,7 +58,7 @@ values are BOTH correct, and each is decided mechanically, not by name:
               (`FPERR_STROOM`/`FPERR_MISSOP` under `IF CLEARPOOL`).
   PUBLISHED   the probe means the PUBLISHED MSX work-area address while the ROM
               has an internal label of the same name. This is the two-namespaces
-              hazard filed separately in TODO.md; it is listed by name in
+              hazard filed separately in the roadmap; it is listed by name in
               tools/wall-literal-allow.txt with the reason, because no mechanical
               test separates it -- and D-WALLIT MEASURED both entries on a
               VG-8020 rather than accepting them (scratchpad/sysvar_addr_probe.py).

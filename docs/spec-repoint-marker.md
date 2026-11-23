@@ -44,7 +44,7 @@ the tracked tree for lines that carry the marker *and* match the repointer's own
 its own test fixtures.
 
 🔴 **AND ONE OF THE FIVE CORRUPTS SILENTLY.** S2 and S3 would have gone *red* —
-rewriting `TODO.md:2811` to a form carrying ` (T-…)` makes `CITE` stop matching <!-- NOT-A-CITATION -->
+rewriting `todo/open/D-P0CB.md:29` to a form carrying ` (T-…)` makes `CITE` stop matching <!-- NOT-A-CITATION -->
 it, so the assertions break loudly. But **S1's fixture asserts `== []`**, and a
 rewritten citation is still `[]`. Its meaning would be destroyed while the arm
 stayed green — which is precisely the failure mode the marker was invented to

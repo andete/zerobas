@@ -7,7 +7,7 @@ Joost, 2026-11-08: *"having the bios and such stable and on par is of higher
 priority then having basic stable"* (scratchpad/LOOP-RESTART.md, RULINGS
 2026-11-08). The keyword rows count BASIC; nothing counted the surface a machine-
 code program calls. This counts the MSX-DOS 1 BDOS ($00-$30) first; the disk-ROM
-entries and the main BIOS calls are the next two tables (D-ENTRYTIERS, TODO.md).
+entries and the main BIOS calls are the next two tables (D-ENTRYTIERS, the roadmap items in todo/).
 
 HOW A ROW IS FILLED -- MECHANICALLY, AND WHAT THAT DOES NOT PROVE:
   * every probe source under probes/ that calls the BDOS (`call BDOS` / `$0005` /

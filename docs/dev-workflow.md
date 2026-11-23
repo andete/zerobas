@@ -49,7 +49,9 @@ Each TODO item is largely independent — do one per session, and finish with:
 6. **Run the regression probes** (control flow / loops / data / statements) —
    confirm no existing behaviour broke.
 7. **Functional-test the new feature** in openMSX (see harness recipes).
-8. **Update `TODO.md`** (check the item, note divergences) and append a
+8. **Update the roadmap** -- since 2026-11-23 ONE FILE PER ITEM: edit `todo/open/<id>.md` (note divergences);
+   close it with `python3 tools/todo_items.py --close <id>`, file a new one with `--new <id> --after <id>`
+   ([`tools/todo_items.py`](../tools/todo_items.py); `TODO.md` holds the prose and generated stub lines) -- and append a
    `PROVENANCE.md` row. **If the work established something new about how the
    original behaves** (a quirk, an oracle-confirmed contract, a corrected finding),
    it owes **two distinct writes, not one** (see

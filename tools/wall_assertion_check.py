@@ -25,7 +25,11 @@ That converts an unanswerable question into a crisp one, and dating a figure
 makes its staleness self-evident to the next reader without any tool at all. A
 dated reading STANDS AS TAKEN -- this never second-guesses one.
 
-SCOPE, stated rather than implied: only `- [ ]` items in TODO.md. That is the
+SCOPE, stated rather than implied: only `- [ ]` items of the roadmap. Since
+2026-11-23 each lives in its own file (todo/open/<id>.md, tools/todo_items.py);
+this reads `todo_items.full_text()` -- the old single-file TODO.md, rebuilt
+exactly -- so the block rule below is unchanged, and reports each finding at
+its ITEM FILE and line (`todo_items.locate`). That is the
 pickup list, and it is where a stale figure actively misleads the next slice;
 every one of the four found was there. Historical figures in dated slice docs
 under docs/ are the house style and are none of this tool's business.
@@ -49,9 +53,12 @@ defeated by an adjacent date at all (K-WA2 proves it: a figure dated on its own
 line still flags if it says "is now"). Treat a clean run as evidence about
 present-tense claims, and only weak evidence about undated ones.
 """
-import re, subprocess, sys
+import os, re, subprocess, sys
 
-TODO = 'TODO.md'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import todo_items  # noqa: E402
+
+TODO = 'the roadmap (todo/open/*.md)'
 
 # "N B" within a few words of a region name -- the four real phrasings plus the
 # obvious neighbours. Deliberately WIDE: a false positive costs one date, a
@@ -124,7 +131,7 @@ def walls():
 
 
 def blocks():
-    lines = open(TODO, encoding='utf-8').read().split('\n')
+    lines = todo_items.full_text().split('\n')
     starts = [i for i, l in enumerate(lines) if l.startswith('- [ ]')]
     bounds = sorted({i for i, l in enumerate(lines)
                      if re.match(r'^- \[[ x]\]', l) or l.startswith('#')})
@@ -178,9 +185,14 @@ def main():
         print("   none — every open item that quotes a wall says WHEN it was read")
         return 0
     for ln, first, bad in flagged:
-        print(f"   TODO.md:{ln}  {first}")
+        rel, _ = todo_items.locate(ln)
+        print(f"   {rel}  {first}")
         for bl, fig, why, row in bad:
-            print(f"       :{bl}  [{why:13s}] {fig}  |  {row}")
+            # a block runs on to the next item or heading, so a figure can sit in
+            # skeleton prose BELOW the item file -- then name that file too
+            f, n = todo_items.locate(bl)
+            at = f":{n}" if f == rel else f"{f}:{n}"
+            print(f"       {at}  [{why:13s}] {fig}  |  {row}")
     n = sum(len(b) for _, _, b in flagged)
     print(f"\n   {len(flagged)} item(s), {n} figure(s).")
     print("   UNDATED       -> add the date it was taken (or `at <commit>`);")
@@ -190,4 +202,5 @@ def main():
     return 1
 
 
-sys.exit(main())
+if __name__ == '__main__':
+    sys.exit(main())

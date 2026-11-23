@@ -4609,6 +4609,15 @@ todo-marker-check:
 	python3 tools/check_todo_markers.py --selftest
 	python3 tools/check_todo_markers.py
 
+# ONE FILE PER ITEM (2026-11-23, tools/todo_items.py): every stub line in the
+# TODO.md skeleton names an item file that exists, every todo/open|done/*.md has
+# a stub, and each file's box matches its folder (`[ ]` in open/, `[x]` in done/).
+# A stub without a file loses an item silently; a file without a stub is an item
+# no tool reads. The pre-commit hook refuses the same on the STAGED tree
+# (tools/precommit_generated.py); this is the check of record. <1 s, read-only.
+todo-items-check:
+	python3 tools/todo_items.py --check
+
 # D-DEFERPIN. A DEFERRED row is measured, printed and never scored -- so its
 # stated REASON is the only thing saying why, and a reason is prose that nothing
 # checks. 🔴 Five times now a filed FACE rotted while the row went on diverging,
@@ -4756,7 +4765,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest probe-sides-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check tracked-inputs-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
+        omsx-diag-teeth temp-root-check tracked-inputs-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check todo-items-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
         chokepoint-check banner-acceptance wall-literal-check hook-equate-check \
         patch-freshness-check tiers-md tiers-md-check gates clean
 

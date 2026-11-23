@@ -12,7 +12,9 @@ says when they are due)
 (they run in FULL). A day can now carry a commit that only FULL would catch.
 
   change                              runs
-  docs / TODO / scratchpad only       STATIC  -- the static tier
+  docs / TODO / scratchpad only       STATIC  -- the static tier (TODO = the TODO.md
+                                                 skeleton AND its item files
+                                                 todo/open/*.md, todo/done/*.md)
   probe or tool, no ROM change        SCOPED  -- static + the emulator suites whose
                                                  scripts IMPORT a changed file
   ROM change (any handler, shared     SCOPED  -- static + suites that mention the
@@ -151,11 +153,13 @@ def changed_files():
 # planned SCOPED (~9 min of emulator suites for a comment). A diff whose removed
 # and added lines are equal once those numbers are normalised changes nothing a
 # suite runs.
-CITE_NUM = re.compile(r"(TODO(?:-done)?\.md):\d+")
+# 📂 2026-11-23 (one file per item): a citation of an item file, todo/open/<id>.md:<n>
+# or todo/done/<id>.md:<n>, is renumbered the same way and is normalised too.
+CITE_NUM = re.compile(r"((?:TODO(?:-done)?|todo/(?:open|done)/[A-Za-z0-9][A-Za-z0-9._-]*)\.md):\d+")
 
 
 def citation_only(diff_text):
-    """True iff a unified diff (-U0) only rewrites TODO(-done).md:<n> numbers."""
+    """True iff a unified diff (-U0) only rewrites TODO(-done).md:<n> (or item-file) numbers."""
     old, new = [], []
     for ln in diff_text.splitlines():
         if ln.startswith(("---", "+++", "@@", "diff ", "index ")):
@@ -483,6 +487,13 @@ def selftest():
     h_width = lambda f: {"WIDTH"}
     m, r, e, x = plan(["TODO.md", "docs/a.md"], files, h_width, 0, read=rd)
     arm("P1 docs-only -> STATIC, no emulator suite", m == "STATIC" and e == [])
+    m, r, e, x = plan(["TODO.md", "todo/open/D-X.md", "todo/done/D-Y.md"], files, h_width, 0, read=rd)
+    arm("P1b one-file-per-item: the skeleton + todo/open/*.md + todo/done/*.md -> STATIC, "
+        "no emulator suite, like TODO.md", m == "STATIC" and e == [] and x == [])
+    m, r, e, x = plan(["todo/open/D-X.md"], files, h_width, 99.0, read=rd)
+    arm("P1c an item file alone never triggers the daily FULL by itself", m == "STATIC")
+    arm("P-SPECLIVE an item-file change reads nothing spec-live reads",
+        spec_live_inputs(["todo/open/D-X.md", "todo/done/D-Y.md"]) == [])
     arm("P-SPECLIVE a TODO / concept-page change reads nothing spec-live reads",
         spec_live_inputs(["TODO.md", "docs/concepts/disk.md", "docs/tier-status.md"]) == [])
     arm("P-SPECLIVE NEGATIVE: a spec page, a rules module, a run file or its tool does",
@@ -637,6 +648,12 @@ def selftest():
         not citation_only(cite + "@@ -9 +9 @@\n-x = 1\n+x = 2\n"))
     arm("P17c NEGATIVE: an empty diff is not 'citation only' (nothing to drop)",
         not citation_only(""))
+    icite = ("--- a/x.py\n+++ b/x.py\n@@ -3 +3 @@\n-# see todo/open/D-X.md:12 (T-1)\n"
+             "+# see todo/open/D-X.md:14 (T-1)\n")
+    arm("P17d an item-file citation renumber (todo/open/<id>.md:<n>) is NOT a change",
+        citation_only(icite))
+    arm("P17e NEGATIVE: repointing a citation at a DIFFERENT item file IS a change",
+        not citation_only(icite.replace("+# see todo/open/D-X.md", "+# see todo/done/D-Z.md")))
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 

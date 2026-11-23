@@ -20,6 +20,13 @@ all a bare line number can support. Those are counted and named in the summary
 rather than passed over silently, because a check that reports 100 % while a
 third of its subject is uncheckable is the 0/0-ALL-CONVERGED shape.
 
+📂 ONE FILE PER ITEM (2026-11-23). TODO.md is a skeleton of stub lines and each
+item lives in todo/open/<id>.md or todo/done/<id>.md (tools/todo_items.py). As a
+TARGET, `TODO.md:<n>` still means line n of the rebuilt single file
+(todo_items.full_text()); as a SOURCE, TODO.md is scanned as that rebuilt text and
+every finding is reported -- and every --fix / --annotate written -- at the item
+file (or skeleton line) that holds it. Nothing writes a rebuilt TODO.md back.
+
 Usage:  python3 tools/check_todo_citations.py            (gate; rc 1 = RED)
         python3 tools/check_todo_citations.py --fix
         python3 tools/check_todo_citations.py --selftest  (rc 2 = instrument fault)
@@ -36,6 +43,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import todo_inventory                                            # noqa: E402
+import todo_items                                                # noqa: E402
 import probe_tmp                                                 # noqa: E402
 
 # Matches `../TODO.md:<n> (T-4AC4B2)` and the `TODO-done.md:<n>` spelling; the
@@ -70,8 +78,48 @@ def tracked():
                          text=True)
     if out.returncode != 0:
         sys.exit(2)
+    # the item files are scanned through TODO.md (todo_full), never on their own
     return [f for f in out.stdout.split()
-            if f.endswith(SCAN_EXT) or os.path.basename(f) == "Makefile"]
+            if (f.endswith(SCAN_EXT) or os.path.basename(f) == "Makefile")
+            and not f.startswith(("todo/open/", "todo/done/"))]
+
+
+def todo_full(root=ROOT):
+    """-> (text, where): TODO.md rebuilt as the single file it was -- each stub
+    line replaced by its item file, exactly todo_items.full_text() but at `root`
+    -- and where[i] = (file, line) holding line i+1 of that text. A TODO.md with
+    no stubs (the old layout) comes back as itself."""
+    sk = open(os.path.join(root, "TODO.md"), encoding="utf-8").read()
+    parts, where = [], []
+    for sl, line in enumerate(sk.split("\n"), 1):
+        m = todo_items.STUB.search(line)
+        if m:
+            rel = f"todo/{m.group(1)}/{m.group(2)}.md"
+            t = open(os.path.join(root, rel), encoding="utf-8").read()
+            t = t[:-1] if t.endswith("\n") else t
+            parts.append(t)
+            where += [(rel, k) for k in range(1, t.count("\n") + 2)]
+        else:
+            parts.append(line)
+            where.append(("TODO.md", sl))
+    return "\n".join(parts), where
+
+
+def target_text(tgt, root=ROOT):
+    """The text a citation's line number counts in (TODO.md: the rebuilt file)."""
+    key = f"__text__:{root}:{tgt}"
+    if key not in _CACHE:
+        _CACHE[key] = (todo_full(root)[0] if tgt == "TODO.md"
+                       else open(os.path.join(root, tgt)).read())
+    return _CACHE[key]
+
+
+def where_in_items(line, root=ROOT):
+    """` (= todo/open/X.md:k)` for a line of the rebuilt TODO.md, for messages."""
+    w = todo_full(root)[1]
+    if 1 <= line <= len(w) and w[line - 1][0] != "TODO.md":
+        return f" (= {w[line - 1][0]}:{w[line - 1][1]})"
+    return ""
 
 
 def resolve(citing_rel: str, spelled: str, root=ROOT) -> str | None:
@@ -94,7 +142,9 @@ _CACHE: dict[str, list] = {}
 
 def blocks_of(rel: str):
     if rel not in _CACHE:
-        _CACHE[rel] = todo_inventory.blocks(os.path.join(ROOT, rel))
+        _CACHE[rel] = (todo_inventory.blocks(text=todo_full(ROOT)[0])
+                       if rel == "TODO.md" else
+                       todo_inventory.blocks(os.path.join(ROOT, rel)))
     return _CACHE[rel]
 
 
@@ -114,27 +164,35 @@ def block_by_id(rel, bid):
 
 
 def scan(files, root=ROOT):
-    """-> list of findings (rel, lineno, spelled, line, bid, verdict, detail)."""
+    """-> list of findings (rel, lineno, spelled, line, bid, verdict, detail).
+
+    TODO.md is scanned as the rebuilt single file, and each of its findings
+    carries the (item file or skeleton, line) that holds it, not TODO.md:n."""
     out = []
-    for rel in files:
-        path = os.path.join(root, rel)
+    for crel in files:
+        path = os.path.join(root, crel)
+        where = None
         try:
-            text = open(path).read()
+            if crel == "TODO.md":
+                text, where = todo_full(root)
+            else:
+                text = open(path).read()
         except (OSError, UnicodeDecodeError):
             continue
         if "TODO" not in text:
             continue
-        for n, src in enumerate(text.splitlines(), 1):
+        for cn, src in enumerate(text.splitlines(), 1):
             if NOCITE in src:       # a synthetic vector, not a reference
                 continue
+            rel, n = where[cn - 1] if where else (crel, cn)
             for m in CITE.finditer(src):
                 spelled, line, bid = m.group(1), int(m.group(2)), m.group(3)
-                tgt = resolve(rel, spelled)
+                tgt = resolve(crel, spelled)
                 if tgt is None:
                     out.append((rel, n, spelled, line, bid, "RED",
                                 f"names {spelled}, which does not exist"))
                     continue
-                nlines = len(open(os.path.join(root, tgt)).read().splitlines())
+                nlines = len(target_text(tgt, root).splitlines())
                 href = src[:m.start()].endswith("](")
                 if line < 1 or line > nlines:
                     out.append((rel, n, spelled, line, bid, "RED",
@@ -183,7 +241,8 @@ def scan(files, root=ROOT):
                                 f"(headline edited, or moved to the other file?)"))
                 else:
                     out.append((rel, n, spelled, line, bid, "RED",
-                                f"{bid} is at {tgt}:{want['start']}, not :{line}"))
+                                f"{bid} is at {tgt}:{want['start']}, not :{line}"
+                                + (where_in_items(want["start"]) if tgt == "TODO.md" else "")))
     return out
 
 
@@ -330,6 +389,9 @@ def selftest():
     # back at exit (`make temp-root-check`), so a failed run leaves nothing.
     tmp = probe_tmp.tmp("todocite-selftest")
     os.makedirs(tmp, exist_ok=True)
+    if os.path.isdir(os.path.join(ROOT, "todo")):     # the item files TODO.md's stubs name
+        shutil.copytree(os.path.join(ROOT, "todo"), os.path.join(tmp, "todo"),
+                        dirs_exist_ok=True)
     for rel in {"TODO.md", "docs/TODO-done.md", ok[0][0]}:
         d = os.path.join(tmp, os.path.dirname(rel))
         os.makedirs(d, exist_ok=True)
@@ -467,6 +529,10 @@ def main():
         return 0
     print(f"todo-citations: {len(f)} citation(s) into TODO.md / docs/TODO-done.md "
           f"across {len({x[0] for x in f})} file(s)")
+    if todo_full()[1] and any(w[0] != "TODO.md" for w in todo_full()[1]):
+        nt = sum(1 for x in f if resolve(x[0], x[2]) == "TODO.md")
+        print(f"  ({nt} of them cite TODO.md:<n> -- read as a line of the rebuilt single file, "
+              f"tools/todo_items.py full_text(), until they are repointed at item files)")
     print(f"  {len(ok):3d} verified against the block id")
     print(f"  {len(pair):3d} link targets agreeing with their label")
     print(f"  {len(weak):3d} id-less (line existence only -- NOT verified):")
