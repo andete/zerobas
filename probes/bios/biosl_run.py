@@ -19,6 +19,13 @@ Its header comment may carry the harness settings, one per line:
     ;                   writes VDP registers R#0-R#7 (as last written: hardware state, no ROM byte) at the
     ;                   address held in the word at PTR, and adds 8 to that word -- the probe's capture
     ;                   pointer, so the snapshot lands inline in its record
+    ; @vdpfull ADDR PTR as @vdpsnap, but the whole VDP state: R#0-R#63 (as last written), S#0-S#15, the VRAM
+    ;                   pointer (2 bytes) and the palette (32) -- 114 bytes, PTR += 114; a debuggable the machine
+    ;                   lacks reads 0 (D-MSX2SPEC)
+    ; @portlog PORT PTR ARM  every OUT to PORT (hex, e.g. 99) appends its byte at the address held in the word at
+    ;                   PTR and adds 1 to it; a PTR word of 0 logs nothing (the probe arms / disarms it per case).
+    ;                   The watch starts only once the CPU reaches ARM (the probe's own code, after it has written
+    ;                   the PTR word): before that the word is whatever boot left there
     ; @keyset ADDR LIST when the CPU reaches ADDR (hex, the probe's own RAM code, e.g. a `ret`), the debugger
     ;                   sets the keyboard matrix from the 11 bytes at LIST (hex): row r's byte, bit set = key
     ;                   pressed (keymatrixup / keymatrixdown) -- one matrix per case, set by the probe
@@ -119,7 +126,7 @@ ROWS = {
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
-         "vdpsnap": None, "keyset": None, "type_ready": None}
+         "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": []}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -148,6 +155,16 @@ def settings(asm_text: str) -> dict:
             s["disk"] = v
         elif k == "timeout":
             s[k] = float(v)
+        elif k == "vdpfull":                # ADDR PTR (hex): the whole VDP state, 114 bytes (D-MSX2SPEC)
+            f = v.split()
+            if len(f) != 2:
+                sys.exit(f"FAIL: @vdpfull wants ADDR PTR, got {v!r}")
+            s["vdpfull"] = (int(f[0], 16), int(f[1], 16))
+        elif k == "portlog":                # PORT PTR ARM (hex): every OUT to PORT appended at (PTR) (D-MSX2SPEC)
+            f = v.split()
+            if len(f) != 3:
+                sys.exit(f"FAIL: @portlog wants PORT PTR ARM, got {v!r}")
+            s["portlog"].append((int(f[0], 16), int(f[1], 16), int(f[2], 16)))
         elif k == "vdpsnap":                # ADDR PTR (hex)
             f = v.split()
             if len(f) != 2:
@@ -226,6 +243,40 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
                 f"  debug write memory {sp} [expr {{$p & 255}}]\n"
                 f"  debug write memory {sp + 1} [expr {{$p >> 8}}]\n}}\n"
                 f"debug set_bp {sa} {{}} biosl_vdpsnap\n")
+    if st["vdpfull"]:
+        # R#0-R#63 (as last written), S#0-S#15, the VRAM pointer (2), the palette (32) = 114 bytes; a debuggable
+        # the machine lacks (a TMS9918 has no palette and one status register) reads 0. Debugger reads: no side effect
+        fa, fp = st["vdpfull"]
+        snap += ("proc biosl_vdpget {d i} {\n"
+                 "  if {[lsearch -exact [debug list] $d] < 0 || $i >= [debug size $d]} { return 0 }\n"
+                 "  return [debug read $d $i]\n}\n"
+                 "proc biosl_vdpfull {} {\n"
+                 f"  set p [expr {{[debug read memory {fp}] | ([debug read memory {fp + 1}] << 8)}}]\n"
+                 "  set k 0\n"
+                 "  foreach {d n} {{VDP regs} 64 {VDP status regs} 16 {VRAM pointer} 2 {VDP palette} 32} {\n"
+                 "    for {set i 0} {$i < $n} {incr i} {\n"
+                 "      debug write memory [expr {($p + $k) & 0xFFFF}] [biosl_vdpget $d $i]; incr k\n    }\n  }\n"
+                 "  set p [expr {($p + $k) & 0xFFFF}]\n"
+                 f"  debug write memory {fp} [expr {{$p & 255}}]\n"
+                 f"  debug write memory {fp + 1} [expr {{$p >> 8}}]\n}}\n"
+                 f"debug set_bp {fa} {{}} biosl_vdpfull\n")
+    for port, lp, arm in st["portlog"]:
+        # every OUT to the port: its byte at (lp) and lp += 1 -- the probe owns the buffer and resets lp per case
+        snap += (f"proc biosl_plog_{port:02x} {{}} {{\n"
+                 f"  set p [expr {{[debug read memory {lp}] | ([debug read memory {lp + 1}] << 8)}}]\n"
+                 "  if {$p == 0} { return }\n"
+                 "  debug write memory $p $::wp_last_value\n"
+                 "  set p [expr {($p + 1) & 0xFFFF}]\n"
+                 f"  debug write memory {lp} [expr {{$p & 255}}]\n"
+                 f"  debug write memory {lp + 1} [expr {{$p >> 8}}]\n}}\n"
+                 # created only when the probe first reaches ARM: before it, the PTR word is whatever boot left
+                 # (the NMS 8250's start-up VDP writes were logged into random RAM over the capture)
+                 f"set ::plog_armed_{port:02x} 0\n"
+                 f"proc biosl_plogarm_{port:02x} {{}} {{\n"
+                 f"  if {{$::plog_armed_{port:02x}}} {{ return }}\n"
+                 f"  set ::plog_armed_{port:02x} 1\n"
+                 f"  debug watchpoint create -type write_io -address 0x{port:02x} -command biosl_plog_{port:02x}\n}}\n"
+                 f"debug set_bp {arm} {{}} biosl_plogarm_{port:02x}\n")
     if st["keyset"]:
         ka, kl = st["keyset"]
         snap += ("proc biosl_keyset {} {\n"

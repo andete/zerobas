@@ -5,7 +5,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NRDVRM` ($0174) — read a VRAM byte (128 KB)
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): the shared VRAM address matrix MEASURED on the HB-F900, NMS 8250 and FS-A1WSX
+> (identical on all three) -- the address rule, the R#14 / $FFED writes and the SCREEN 0-4 ACPAGE quirk are in
+> [README.md](README.md#the-shared-vram-address-matrix) "Measured"; this page's own cases beyond it are not measured yet.
 
 ## Summary
 

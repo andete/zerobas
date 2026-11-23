@@ -141,22 +141,41 @@ by hand, R#14 set explicitly), and the bytes at the case's marked addresses.
 
 | case | HL | state (from S-BASE) | predictions / separates | F900 | 8250 | WSX |
 |---|---|---|---|---|---|---|
-| VA-1 | $1234 | — | AR-64 / AR-PG / AR-SV $01234; AR-R14 $11234; AR-R14\* $19234; AR-SV\* $05234 — R#14 written or kept, VDP vs save cell | ? | ? | ? |
-| VA-2 | $C123 | — | AR-64 / AR-PG / AR-SV $0C123; AR-16K in SCREEN 5 $00123; AR-R14 $1C123; AR-R14\* $18123; AR-SV\* $04123 | ? | ? | ? |
-| VA-3 | $C123 | AC 2, R14 $02, SV $05 | AR-64 $0C123; AR-PG+ / AR-PG\| $1C123; AR-PG& $14123; AR-R14 $0C123; AR-R14\* $08123; AR-SV $1C123; AR-SV\* $14123 | ? | ? | ? |
-| VA-4 | $C123 | AC 2, R14 $05, SV $02 | AR-64 $0C123; AR-PG+ / \| $1C123; AR-PG& $14123; AR-R14 $1C123; AR-R14\* $14123; AR-SV $0C123; AR-SV\* $08123. VA-3 + VA-4 give each of the seven groups (AR-64, AR-PG+ with \|, AR-PG&, AR-R14, AR-R14\*, AR-SV, AR-SV\*) a different PAIR | ? | ? | ? |
-| VA-5 | $C123 | AC 3, R14 $00, SV $00 | AR-PG+ wraps to $04123; AR-PG\| / AR-PG& $1C123 (VA-3 parts \| from &); AR-64 $0C123 | ? | ? | ? |
-| VA-6 | $C123 | AC 0, DP 2, R14 $02, SV $01 | ACPAGE rules $0C123; AR-DP + / \| $1C123; AR-DP& $14123; AR-R14\* $08123; AR-SV\* $04123 | ? | ? | ? |
-| VA-7 | $1234 | SCREEN 8 (and 7), AC 1, R14 $03, SV $01 | page size 64 KB $11234 vs 32 KB $09234; AR-64 $01234; AR-R14\* $0D234; AR-SV\* $05234 | ? | ? | ? |
-| VA-8 | $C123 | SCREEN 1, R14 $00, SV $00 | masked (AR-16K / \*) $00123 vs not (AR-64, AR-R14) $0C123 | ? | ? | ? |
-| VA-9 | $C123 | SCREEN 1, R14 $05, SV $02 | AR-16K $00123; AR-16K\* $14123; mask keeping the save cell's bank $08123; AR-64 / AR-SV $0C123; AR-R14 $1C123 | ? | ? | ? |
-| VA-10 | $C123 | as VA-9 in SCREEN 0 (width 40), 0 (width 80), 2, 3, 4 | which modes mask: the 16 KB boundary at 3 / 4, and TEXT2 | ? | ? | ? |
-| VA-11 | $C123 | SCREEN 1, AC 1, R14 $00, SV $00 | ACPAGE ignored ($00123 / $0C123) vs AR-PG32 $14123 | ? | ? | ? |
-| VA-12 | $1234 | AC 2, R14 $00, SV $00, MODE bits 2-1 := 01 (64 KB) | only where AR-PG holds (VA-3/4): MODE masks A16 ($01234) vs not ($11234) | ? | ? | ? |
+| VA-1 | $1234 | — | AR-64 / AR-PG / AR-SV $01234; AR-R14 $11234; AR-R14\* $19234; AR-SV\* $05234 — R#14 written or kept, VDP vs save cell | $01234 [M] | $01234 [M] | $01234 [M] |
+| VA-2 | $C123 | — | AR-64 / AR-PG / AR-SV $0C123; AR-16K in SCREEN 5 $00123; AR-R14 $1C123; AR-R14\* $18123; AR-SV\* $04123 | $0C123 [M] | $0C123 [M] | $0C123 [M] |
+| VA-3 | $C123 | AC 2, R14 $02, SV $05 | AR-64 $0C123; AR-PG+ / AR-PG\| $1C123; AR-PG& $14123; AR-R14 $0C123; AR-R14\* $08123; AR-SV $1C123; AR-SV\* $14123 | $1C123 [M] | $1C123 [M] | $1C123 [M] |
+| VA-4 | $C123 | AC 2, R14 $05, SV $02 | AR-64 $0C123; AR-PG+ / \| $1C123; AR-PG& $14123; AR-R14 $1C123; AR-R14\* $14123; AR-SV $0C123; AR-SV\* $08123. VA-3 + VA-4 give each of the seven groups (AR-64, AR-PG+ with \|, AR-PG&, AR-R14, AR-R14\*, AR-SV, AR-SV\*) a different PAIR | $1C123 [M] | $1C123 [M] | $1C123 [M] |
+| VA-5 | $C123 | AC 3, R14 $00, SV $00 | AR-PG+ wraps to $04123; AR-PG\| / AR-PG& $1C123 (VA-3 parts \| from &); AR-64 $0C123 | **$14123** [M] | **$14123** [M] | **$14123** [M] |
+| VA-6 | $C123 | AC 0, DP 2, R14 $02, SV $01 | ACPAGE rules $0C123; AR-DP + / \| $1C123; AR-DP& $14123; AR-R14\* $08123; AR-SV\* $04123 | $0C123 [M] | $0C123 [M] | $0C123 [M] |
+| VA-7 | $1234 | SCREEN 8 (and 7), AC 1, R14 $03, SV $01 | page size 64 KB $11234 vs 32 KB $09234; AR-64 $01234; AR-R14\* $0D234; AR-SV\* $05234 | $11234 (S8 and S7) [M] | $11234 (S8 and S7) [M] | $11234 (S8 and S7) [M] |
+| VA-8 | $C123 | SCREEN 1, R14 $00, SV $00 | masked (AR-16K / \*) $00123 vs not (AR-64, AR-R14) $0C123 | $0C123 [M] | $0C123 [M] | $0C123 [M] |
+| VA-9 | $C123 | SCREEN 1, R14 $05, SV $02 | AR-16K $00123; AR-16K\* $14123; mask keeping the save cell's bank $08123; AR-64 / AR-SV $0C123; AR-R14 $1C123 | $0C123 [M] | $0C123 [M] | $0C123 [M] |
+| VA-10 | $C123 | as VA-9 in SCREEN 0 (width 40), 0 (width 80), 2, 3, 4 | which modes mask: the 16 KB boundary at 3 / 4, and TEXT2 | $0C123 in all five [M] | $0C123 in all five [M] | $0C123 in all five [M] |
+| VA-11 | $C123 | SCREEN 1, AC 1, R14 $00, SV $00 | ACPAGE ignored ($00123 / $0C123) vs AR-PG32 $14123 | **$0015A** [M] | **$0015A** [M] | **$0015A** [M] |
+| VA-12 | $1234 | AC 2, R14 $00, SV $00, MODE bits 2-1 := 01 (64 KB) | only where AR-PG holds (VA-3/4): MODE masks A16 ($01234) vs not ($11234) | $11234 [M] | $11234 [M] | $11234 [M] |
 | VA-13 | $C123 | AC 1, R14 $00, SV $00, on a reference CONFIGURED with 64 KB of VRAM (a different machine, said so) | what the bank becomes where the VRAM has no A16; MODE 01 at boot | ? | ? | ? |
 | VA-14 | $1234 | SCREEN 12, 11, 10; AC 1, R14 $03, SV $01 | as VA-7 in the MSX2+ modes: page size, bank rule, open on the WSX | — (no SCREEN 10-12 on an MSX2) | — (same) | ? |
-| VA-15 | $C123 | AC 2 (entry R14 $06: a bank only AR-R14\* yields, and it writes nothing) | after the call R#14 = $06 with a write of R#14 in the log: put back; = the call's bank: left; no write: never written | ? | ? | ? |
+| VA-15 | $C123 | AC 2 (entry R14 $06: a bank only AR-R14\* yields, and it writes nothing) | after the call R#14 = $06 with a write of R#14 in the log: put back; = the call's bank: left; no write: never written | $1C123; R#14 left $07 [M] | $1C123; R#14 left $07 [M] | $1C123; R#14 left $07 [M] |
 | VA-16 | $1234 | VA-1, interrupts ON, a VDP interrupt made to arrive during the call (below) | the address is still right; whether the call disables interrupts across its port $99 writes | ? | ? | ? |
+
+**Measured (2026-11-23)** [M] -- the three references give the same address and the same port $99 writes in
+every case ([xva.asm](../../probes/bios/spec/xva.asm); [scratchpad/AE_xva_msx2.out](../../scratchpad/AE_xva_msx2.out),
+decoded by `scratchpad/xva_decode.py`): the address read back from the VDP after the call (R#14 x $4000 + the
+pointer's 14 bits), not from marked VRAM.
+- Every one of the four calls writes **R#14 := the bank, then the 14-bit address**: four port $99 writes, nothing
+  else. **$FFED is never written** (it keeps each case's preset), and R#14 is **left** at the call's bank (VA-15).
+  So AR-R14 / AR-R14\* / AR-SV / AR-SV\* are out: the bank is computed.
+- **SCREEN 5 / 6:** address = ((ACPAGE AND 1) x $8000 + HL) AND $FFFF, + (ACPAGE AND 2) x $8000 -- the 16-bit sum
+  loses its carry. VA-3 ($1C123) and VA-5 separate it from every rival above: ACPAGE 3 + $C123 gives **$14123**,
+  where AR-PG+ wraps to $04123 and AR-PG\| / AR-PG& give $1C123. **DPPAGE is not used** (VA-6).
+- **SCREEN 7 / 8:** address = ACPAGE x $10000 + HL (VA-7: $11234). **MODE's VRAM-size bits are ignored** (VA-12).
+- **SCREEN 0-4, ACPAGE 0:** address = HL, **no 16 KB mask** in any of SCREEN 0 (40 and 80), 1, 2, 3, 4 (VA-8 - VA-10):
+  AR-16K / AR-16K\* are out.
+- **SCREEN 0-4, ACPAGE not 0: HL is not used.** The address is **ACPAGE x $100 + E** -- VA-11 and its follow-ups
+  (xva cases 18-24: ACPAGE 1 / 2 / 3, HL $C123 / $1234 / $0000, SCREEN 0 / 1 / 2 / 4) all land at $n5A with the
+  probe's E $5A, and at $n34 with E $34 (a diagnostic run, DE $1234: [scratchpad/AE_xva_de1234.out](../../scratchpad/AE_xva_de1234.out)). The same on all three references.
+- **C-BIOS's MSX2 / MSX2+ builds** give every address above except the last: with ACPAGE not 0 in SCREEN 0-4 they
+  address HL ($00123 for VA-11, five port writes) -- the one difference.
 
 **VDP-model rows (not BIOS rules).** Where the counter goes after HL $FFFF (SCREEN 5) or $3FFF
 (SCREEN 1) is decided by the VDP's auto-increment, which carries into R#14 as the BIOS would; the

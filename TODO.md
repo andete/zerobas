@@ -16774,6 +16774,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — References: Sony HB-F900 (msx2, JP), Philips NMS 8250 (msx2_eu), Panasonic FS-A1WSX (msx2plus)
       -- openMSX's generic machines, Joost's ruling 2026-11-23. The HB-F900 needs its Kanji ROM (Joost is getting it).
       The subject is C-BIOS's MSX2 / MSX2+ builds (zerobas is MSX1): pages per call, docs/spec-method.md's cycle.
+      PROGRESS 2026-11-23: docs/msx2/ drafted (104-call inventory, ~80 pages, one goldfish round folded in, commit
+      4fbe92687). MEASURED: main/'s shared VRAM address matrix (NSETRD / NSETWR / NRDVRM / NWRVRM) -- probes/bios/spec/
+      xva.asm, biosl_run's new @vdpfull (R#0-63, S#0-15, the VRAM pointer, the palette) and @portlog (port writes):
+      identical on all three references; a carry-losing page rule in SCREEN 5 / 6, and in SCREEN 0-4 with ACPAGE != 0
+      the address is ACPAGE x $100 + E (HL unused) -- C-BIOS addresses HL there, its one difference. NEXT: BIGFIL, VA-13
+      / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --
       MSX1 on MSX2 / MSX2+ / turbo R, MSX2 on MSX2+ / turbo R, MSX2+ on turbo R. An MSX2 page's MSX2+ row is a
