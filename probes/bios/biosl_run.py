@@ -58,7 +58,12 @@ Its header comment may carry the harness settings, one per line:
                         does not ask (a CF-3300 behaviour our disk target keeps)
     ; @tape             a fresh recording from boot (cassetteplayer new); when the
                         program sets TAPEREADY (+$101) to 1 the harness rewinds, plays
-                        and acknowledges with 1 at +$102
+                        and acknowledges with 1 at +$102. On a machine WITHOUT a cassette
+                        port (the turbo R: openMSX has no `cassetteplayer` there, or it
+                        fails) the run goes on: nothing is recorded or played, TAPEREADY
+                        is acknowledged with 2 at +$102 (a probe waiting for non-zero
+                        runs its cases on), and the output says `TAPE ref/ours: no
+                        cassette port (...)` (D-TRSPEC; a machine with a port: unchanged)
     ; @printer          openMSX's printer logger is plugged into the printer port; the bytes the
                         printer received are reported as `PRN ref:` / `PRN ours:` (hex) and compared
     ; @disk empty       the disk row gets drive A = a fresh copy of disk/empty720.dsk
@@ -268,11 +273,15 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: 
     tape = ""
     if st["tape"]:
         wav = os.path.join(td, machine + ".wav")
-        tape = (f"cassetteplayer new {{{wav}}}\n"
+        # D-TRSPEC: a machine without a cassette port (the turbo R) has no working `cassetteplayer`; an uncaught
+        # error stopped the whole script there and the run hung into the 600 s timeout. Caught, it is recorded
+        # (::notape, the error text) and TAPEREADY is acknowledged with 2 instead of rewinding / playing
+        tape = (f"set ::notape [catch {{cassetteplayer new {{{wav}}}}} ::tapeerr]\n"
                 "set ::taped 0\n")
-        keys += (f"  if {{$::taped == 0 && [debug read memory {DONE + 0x101}] == 1}} "
-                 f"{{ set ::taped 1; cassetteplayer rewind; cassetteplayer play; "
-                 f"debug write memory {DONE + 0x102} 1 }}\n")
+        keys += (f"  if {{$::taped == 0 && [debug read memory {DONE + 0x101}] == 1}} {{\n"
+                 f"    set ::taped 1\n"
+                 f"    if {{$::notape}} {{ debug write memory {DONE + 0x102} 2 }} else {{\n"
+                 f"      cassetteplayer rewind; cassetteplayer play; debug write memory {DONE + 0x102} 1 }}\n  }}\n")
     at = ""
     if st["type_at"]:
         t, txt = st["type_at"]
@@ -383,6 +392,8 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: 
            '    binary scan [debug read_block memory 0xF3F6 1] H* sc\n'
            '    binary scan [debug read_block memory 0xFBE5 11] H* nk\n'
            '    binary scan [debug read_block memory 0xFD9A 10] H* hk\n'
+           + ('    if {$::notape} { puts $f "TAPE no cassette port ([join [split $::tapeerr \\n] { }])" }\n'
+              if st["tape"] else "") +
            '    puts $f "SYS jiffy=$j typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk' +
            (' cpu=[get_active_cpu] t=[format %.3f [machine_info time]] fcb1=[debug read memory 0xFCB1]'
             ' s1990r6=[string trim $::r6hist]' if cpuinfo else '') + '"\n' + vram +
@@ -477,6 +488,9 @@ def one(rung: str, rows: str) -> int:
             # openMSX refuses -diska there, which left the side with NO READING (D-MSX2SPEC, the BLT disk calls)
             zb = run(zb_m, rom, st, td, disk=(row != "nodisk" and not row.startswith("msx2")), cpuinfo=tr)
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
+            for n, g in (("ref ", ref), ("ours", zb)):     # @tape on a machine without a cassette port (D-TRSPEC)
+                if g and g.get("TAPE"):
+                    print(f"  TAPE {n}: {g['TAPE']} -- nothing recorded or played; TAPEREADY acknowledged with 2")
             if tr:
                 print("  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)")
             bad = [n for n, g in (("ref", ref), ("ours", zb))
