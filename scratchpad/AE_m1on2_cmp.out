@@ -63,7 +63,7 @@ xdfmt3      msx2eu: gen=16+LEN cbios=NOREAD  msx2jp: gen=17+LEN cbios=NOREAD  ms
 xdrvtbl     msx2eu: gen=2+LEN cbios=NOREAD  msx2jp: gen=2+LEN cbios=NOREAD  msx2p: gen=2+LEN cbios=NOREAD
 xdsk1       msx2eu: gen=40+LEN cbios=NOREAD  msx2jp: gen=19+LEN cbios=NOREAD  msx2p: gen=25+LEN cbios=NOREAD
 xdsk2       msx2eu: gen=32+LEN cbios=NOREAD  msx2jp: gen=13+LEN cbios=NOREAD  msx2p: gen=19+LEN cbios=NOREAD
-xdsk3       msx2eu: gen=NOREF cbios=NOREAD  msx2jp: gen=NOREF cbios=NOREAD  msx2p: gen=36+LEN cbios=NOREAD
+xdsk3       msx2eu: gen=49+LEN cbios=NOREAD  msx2jp: gen=21+LEN cbios=NOREAD  msx2p: gen=36+LEN cbios=NOREAD
 xdsk4       msx2eu: gen=55+LEN cbios=NOREAD  msx2jp: gen=31+LEN cbios=NOREAD  msx2p: gen=35+LEN cbios=NOREAD
 xdsk5       msx2eu: gen=62+LEN cbios=NOREAD  msx2jp: gen=28+LEN cbios=NOREAD  msx2p: gen=33+LEN cbios=NOREAD
 xdsk6       msx2eu: gen=21+LEN cbios=NOREAD  msx2jp: gen=7+LEN cbios=NOREAD  msx2p: gen=16+LEN cbios=NOREAD

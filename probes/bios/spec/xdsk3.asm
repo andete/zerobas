@@ -43,7 +43,9 @@
 ; @disk empty
 ; @type-at 20 \r
 ; @cap A000
-; @timeout 60
+; (D-MSX1ON2: 60 emulated seconds ran out on the NMS 8250 / HB-F900, whose drives take longer over the error
+; cases; the run ends at DONE, so a longer bound changes no capture)
+; @timeout 300
 
 PHYDIO  equ     $0144
 EXPTBL  equ     $FCC1

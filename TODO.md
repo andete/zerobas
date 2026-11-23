@@ -16799,7 +16799,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           ✅ xsetw DONE 2026-11-23 (@caplen 19; gen=0 on all three); ✅ xcalslt DONE 2026-11-23 (the copy selects RAM's sub-slot,
           the preset is RAM's + 1; VG-8020 and CF-3300 byte-identical; every target now runs on all three, and the
           triage's "interrupts on in the target" (U1) was the copy bug, not the BIOS); xenaslt2 / xrdslt2
-          (assume RAM in 3-0); xdsk3 (no reading on two machines: dump CAP + a progress cell on timeout); disk
+          stay CF-3300-only BY DESIGN (fixed IDs $83 / $87; reading 3-1's header is ruled for the CF-3300's ROM only --
+          ENASLT / RDSLT on the MSX2s are covered by xenaslt / xrdslt, CONFIG only); ✅ xdsk3 DONE 2026-11-23 (@timeout
+          60 emulated s ran out on the NMS 8250 / HB-F900 -- not a hang; 300 now, all three read); disk
           R-BS-SLOT's per-row IY constant. A probe edit changes the MSX1 runs too: re-measure the VG-8020 rows.
       (b) the GEN findings onto the MSX1 pages: a rule that names its generation, [M] on the three machines,
           MSX2 and MSX2+ separately (e.g. INIT* clear RG1SAV bit 7; SETTXT no longer computes RG3/5/6SAV; WRTPSG
