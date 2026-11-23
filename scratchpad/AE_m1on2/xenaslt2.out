@@ -1,0 +1,75 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt2.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f4a0a0fcacfc808043440cf3ff0c00fcacfca4a4ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfca1a143440cf3ff0c00fcacfca5a5ffff0cf3ff0c00fcacfca1a143440cf3ff0c00fcacfc9595ffff0cf3ff0c00fcacfca4a4ffff0cf3ff0c00c3
+  CAP ours: a5f4a0a0fcacfc8080ffff0cf3ff0c00fcacfca4a4ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfca5a5ffff0cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfc9595ffff0cf3ff0c00fcacfca4a4ffff0cf3ff0c00c3
+  DIFF (6 unexcused byte(s)):
+  CAP C00A: ref=43 ours=FF
+  CAP C00B: ref=44 ours=FF
+  CAP C03A: ref=43 ours=FF
+  CAP C03B: ref=44 ours=FF
+  CAP C052: ref=43 ours=FF
+  CAP C053: ref=44 ours=FF
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt2.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f45050fcacfc4040ffff0cf3ff0c00fcacfc5454ffff0cf3ff0c00fcacfc4444ffff0cf3ff0c00fcacfc4444ffff0cf3ff0c00fcacfc6161ffff0cf3ff0c00fcacfc6565ffff0cf3ff0c00fcacfc6161ffff0cf3ff0c00fcacfc5555ffff0cf3ff0c00fcacfc5454ffff0cf3ff0c00c3
+  CAP ours: a5f4a0a0fcacfc8080ffff0cf3ff0c00fcacfca4a4ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfc8484ffff0cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfca5a5ffff0cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfc9595ffff0cf3ff0c00fcacfca4a4ffff0cf3ff0c00c3
+  DIFF (20 unexcused byte(s)):
+  CAP C003: ref=50 ours=A0
+  CAP C004: ref=50 ours=A0
+  CAP C008: ref=40 ours=80
+  CAP C009: ref=40 ours=80
+  CAP C014: ref=54 ours=A4
+  CAP C015: ref=54 ours=A4
+  CAP C020: ref=44 ours=84
+  CAP C021: ref=44 ours=84
+  CAP C02C: ref=44 ours=84
+  CAP C02D: ref=44 ours=84
+  CAP C038: ref=61 ours=A1
+  CAP C039: ref=61 ours=A1
+  CAP C044: ref=65 ours=A5
+  CAP C045: ref=65 ours=A5
+  CAP C050: ref=61 ours=A1
+  CAP C051: ref=61 ours=A1
+  CAP C05C: ref=55 ours=95
+  CAP C05D: ref=55 ours=95
+  CAP C068: ref=54 ours=A4
+  CAP C069: ref=54 ours=A4
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt2.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f40000fcacfc00005aa50cf3ff0c00fcacfc040441420cf3ff0c00fcacfc040441420cf3ff0c00fcacfc040441420cf3ff0c00fcacfc21215aa50cf3ff0c00fcacfc252541420cf3ff0c00fcacfc21215aa50cf3ff0c00fcacfc151541420cf3ff0c00fcacfc040441420cf3ff0c00c3
+  CAP ours: a5f4a0a0fcacfc8080ffff0cf3ff0c00fcacfca4a441420cf3ff0c00fcacfc848441420cf3ff0c00fcacfc848441420cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfca5a541420cf3ff0c00fcacfca1a1ffff0cf3ff0c00fcacfc959541420cf3ff0c00fcacfca4a441420cf3ff0c00c3
+  DIFF (26 unexcused byte(s)):
+  CAP C003: ref=00 ours=A0
+  CAP C004: ref=00 ours=A0
+  CAP C008: ref=00 ours=80
+  CAP C009: ref=00 ours=80
+  CAP C00A: ref=5A ours=FF
+  CAP C00B: ref=A5 ours=FF
+  CAP C014: ref=04 ours=A4
+  CAP C015: ref=04 ours=A4
+  CAP C020: ref=04 ours=84
+  CAP C021: ref=04 ours=84
+  CAP C02C: ref=04 ours=84
+  CAP C02D: ref=04 ours=84
+  CAP C038: ref=21 ours=A1
+  CAP C039: ref=21 ours=A1
+  CAP C03A: ref=5A ours=FF
+  CAP C03B: ref=A5 ours=FF
+  CAP C044: ref=25 ours=A5
+  CAP C045: ref=25 ours=A5
+  CAP C050: ref=21 ours=A1
+  CAP C051: ref=21 ours=A1
+  CAP C052: ref=5A ours=FF
+  CAP C053: ref=A5 ours=FF
+  CAP C05C: ref=15 ours=95
+  CAP C05D: ref=15 ours=95
+  CAP C068: ref=04 ours=A4
+  CAP C069: ref=04 ours=A4
+===== biosl: DIVERGENCE =====

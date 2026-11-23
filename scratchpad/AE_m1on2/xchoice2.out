@@ -1,0 +1,14 @@
+# rc=2
+===== /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+  CAP ref : 5ad7f800123479aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000f9000079aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e503d712345678c00000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50042003c400aa80001ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9030000000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e500000000000079aa00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000000000000000
+===== /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+  CAP ref : 0111f800123479ba00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5011000f9000079ba00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e503d712345678c00000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5004200010000a80001ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9030000000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e501100000000079ba00e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000000000000000
+===== /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+  CAP ref : 5ad7f8001234785200e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000f90000785200e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e504d712345678c00000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e50042003c0000a80001ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9040000000000a40000e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000000000785200e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5000000000000000000
+===== biosl: NO READING =====
+WARNING: Var buf is never used on line 40 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cb is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm
+WARNING: Var cc is never used on line 31 of file /Users/joost/projects/zerobas/probes/bios/spec/xchoice2.asm

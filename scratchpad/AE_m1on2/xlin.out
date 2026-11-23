@@ -1,0 +1,166 @@
+# rc=2
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlin.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  NO READING: DONE never set on ref (ref 0, ours 165)
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=3b0b typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=fa00 typed=0 scncnt=01 newkey=ffffffffffffff7fffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 035df51801040020202020202020202020202020202020202020202020205df51801064143002020202020202020203f20414320202020202020205df518010858595a00202020202020202058595a202020202020202020
+  CAP ours: 065df54401044200202020202020202020204220202020202020202020205df54401064344002020202020202020203f20434420202020202020205df544010858595a51002020202020202058595a5120202020202020205df544010a51002020202020202020202058595a5120202020202020205df544010c4143002020202020202020204143202020202020202020205df544010e58595a00202020202020202058595a202020202020202020c3
+  DIFF (99 unexcused byte(s)):
+  CAP C001: ref=03 ours=06
+  CAP C004: ref=18 ours=44
+  CAP C007: ref=00 ours=42
+  CAP C008: ref=20 ours=00
+  CAP C013: ref=20 ours=42
+  CAP C021: ref=18 ours=44
+  CAP C024: ref=41 ours=43
+  CAP C025: ref=43 ours=44
+  CAP C032: ref=41 ours=43
+  CAP C033: ref=43 ours=44
+  CAP C03E: ref=18 ours=44
+  CAP C044: ref=00 ours=51
+  CAP C045: ref=20 ours=00
+  CAP C050: ref=20 ours=51
+  CAP C059: ref=00 ours=5D
+  CAP C05A: ref=00 ours=F5
+  CAP C05B: ref=00 ours=44
+  CAP C05C: ref=00 ours=01
+  CAP C05D: ref=00 ours=0A
+  CAP C05E: ref=00 ours=51
+  CAP C060: ref=00 ours=20
+  CAP C061: ref=00 ours=20
+  CAP C062: ref=00 ours=20
+  CAP C063: ref=00 ours=20
+  CAP C064: ref=00 ours=20
+  CAP C065: ref=00 ours=20
+  CAP C066: ref=00 ours=20
+  CAP C067: ref=00 ours=20
+  CAP C068: ref=00 ours=20
+  CAP C069: ref=00 ours=20
+  CAP C06A: ref=00 ours=58
+  CAP C06B: ref=00 ours=59
+  CAP C06C: ref=00 ours=5A
+  CAP C06D: ref=00 ours=51
+  CAP C06E: ref=00 ours=20
+  CAP C06F: ref=00 ours=20
+  CAP C070: ref=00 ours=20
+  CAP C071: ref=00 ours=20
+  CAP C072: ref=00 ours=20
+  CAP C073: ref=00 ours=20
+  CAP C074: ref=00 ours=20
+  CAP C075: ref=00 ours=20
+  CAP C076: ref=00 ours=5D
+  CAP C077: ref=00 ours=F5
+  CAP C078: ref=00 ours=44
+  CAP C079: ref=00 ours=01
+  CAP C07A: ref=00 ours=0C
+  CAP C07B: ref=00 ours=41
+  CAP C07C: ref=00 ours=43
+  CAP C07E: ref=00 ours=20
+  CAP C07F: ref=00 ours=20
+  CAP C080: ref=00 ours=20
+  CAP C081: ref=00 ours=20
+  CAP C082: ref=00 ours=20
+  CAP C083: ref=00 ours=20
+  CAP C084: ref=00 ours=20
+  CAP C085: ref=00 ours=20
+  CAP C086: ref=00 ours=20
+  CAP C087: ref=00 ours=41
+  CAP C088: ref=00 ours=43
+  CAP C089: ref=00 ours=20
+  CAP C08A: ref=00 ours=20
+  CAP C08B: ref=00 ours=20
+  CAP C08C: ref=00 ours=20
+  CAP C08D: ref=00 ours=20
+  CAP C08E: ref=00 ours=20
+  CAP C08F: ref=00 ours=20
+  CAP C090: ref=00 ours=20
+  CAP C091: ref=00 ours=20
+  CAP C092: ref=00 ours=20
+  CAP C093: ref=00 ours=5D
+  CAP C094: ref=00 ours=F5
+  CAP C095: ref=00 ours=44
+  CAP C096: ref=00 ours=01
+  CAP C097: ref=00 ours=0E
+  CAP C098: ref=00 ours=58
+  CAP C099: ref=00 ours=59
+  CAP C09A: ref=00 ours=5A
+  CAP C09C: ref=00 ours=20
+  CAP C09D: ref=00 ours=20
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlin.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=b100 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=2901 typed=0 scncnt=02 newkey=ffffffffffffff7fffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 065df51801044142002020202020202020204142202020202020202020205df51801064344002020202020202020203f20434420202020202020205df518010858595a51002020202020202058595a5120202020202020205df518010a51002020202020202020202058595a5120202020202020205df518010c4143002020202020202020204143202020202020202020205df518010e58595a00202020202020202058595a202020202020202020c3
+  CAP ours: 065df54401044142002020202020202020204142202020202020202020205df54401064344002020202020202020203f20434420202020202020205df544010858595a51002020202020202058595a5120202020202020205df544010a51002020202020202020202058595a5120202020202020205df544010c4143002020202020202020204143202020202020202020205df544010e58595a00202020202020202058595a202020202020202020c3
+  DIFF (6 unexcused byte(s)):
+  CAP C004: ref=18 ours=44
+  CAP C021: ref=18 ours=44
+  CAP C03E: ref=18 ours=44
+  CAP C05B: ref=18 ours=44
+  CAP C078: ref=18 ours=44
+  CAP C095: ref=18 ours=44
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlin.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  NO READING: DONE never set on ref (ref 85, ours 165)
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=0b0d typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=2901 typed=0 scncnt=02 newkey=ffffffffffffff7fffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 055df51801044400202020202020202020204420202020202020202020205df51801065100202020202020202020203f20512020202020202020205df518010858595a51002020202020202058595a5120202020202020205df518010a41430020202020202020202058595a4143202020202020205df518010c002020202020202020202020202020202020202020202020
+  CAP ours: 065df54401044142002020202020202020204142202020202020202020205df54401064344002020202020202020203f20434420202020202020205df544010858595a51002020202020202058595a5120202020202020205df544010a51002020202020202020202058595a5120202020202020205df544010c4143002020202020202020204143202020202020202020205df544010e58595a00202020202020202058595a202020202020202020c3
+  DIFF (55 unexcused byte(s)):
+  CAP C001: ref=05 ours=06
+  CAP C004: ref=18 ours=44
+  CAP C007: ref=44 ours=41
+  CAP C008: ref=00 ours=42
+  CAP C009: ref=20 ours=00
+  CAP C013: ref=44 ours=41
+  CAP C014: ref=20 ours=42
+  CAP C021: ref=18 ours=44
+  CAP C024: ref=51 ours=43
+  CAP C025: ref=00 ours=44
+  CAP C026: ref=20 ours=00
+  CAP C032: ref=51 ours=43
+  CAP C033: ref=20 ours=44
+  CAP C03E: ref=18 ours=44
+  CAP C05B: ref=18 ours=44
+  CAP C05E: ref=41 ours=51
+  CAP C05F: ref=43 ours=00
+  CAP C060: ref=00 ours=20
+  CAP C06D: ref=41 ours=51
+  CAP C06E: ref=43 ours=20
+  CAP C078: ref=18 ours=44
+  CAP C07B: ref=00 ours=41
+  CAP C07C: ref=20 ours=43
+  CAP C07D: ref=20 ours=00
+  CAP C087: ref=20 ours=41
+  CAP C088: ref=20 ours=43
+  CAP C093: ref=00 ours=5D
+  CAP C094: ref=00 ours=F5
+  CAP C095: ref=00 ours=44
+  CAP C096: ref=00 ours=01
+  CAP C097: ref=00 ours=0E
+  CAP C098: ref=00 ours=58
+  CAP C099: ref=00 ours=59
+  CAP C09A: ref=00 ours=5A
+  CAP C09C: ref=00 ours=20
+  CAP C09D: ref=00 ours=20
+  CAP C09E: ref=00 ours=20
+  CAP C09F: ref=00 ours=20
+  CAP C0A0: ref=00 ours=20
+  CAP C0A1: ref=00 ours=20
+  CAP C0A2: ref=00 ours=20
+  CAP C0A3: ref=00 ours=20
+  CAP C0A4: ref=00 ours=58
+  CAP C0A5: ref=00 ours=59
+  CAP C0A6: ref=00 ours=5A
+  CAP C0A7: ref=00 ours=20
+  CAP C0A8: ref=00 ours=20
+  CAP C0A9: ref=00 ours=20
+  CAP C0AA: ref=00 ours=20
+  CAP C0AB: ref=00 ours=20
+  CAP C0AC: ref=00 ours=20
+  CAP C0AD: ref=00 ours=20
+  CAP C0AE: ref=00 ours=20
+  CAP C0AF: ref=00 ours=20
+  CAP C0B0: ref=00 ours=C3
+===== biosl: NO READING =====

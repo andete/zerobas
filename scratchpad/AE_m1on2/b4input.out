@@ -1,0 +1,23 @@
+# rc=0
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b4input.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=ad00 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f500 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  CAP ours: 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b4input.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=b200 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  CAP ours: 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b4input.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=5c00 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  CAP ours: 0000000000000000ffffffffffffffffffffff4000000000000000000000000003ff7e00000000000000ff00200040
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====

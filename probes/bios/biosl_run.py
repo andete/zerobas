@@ -323,7 +323,12 @@ def one(rung: str, rows: str) -> int:
                 print(f"  NO READING: DONE never set on {', '.join(bad)} "
                       f"(ref {ref and ref.get('DONE')}, ours {zb and zb.get('DONE')})")
                 rc = max(rc, 2)
+                # the side that DID finish still prints its capture: D-MSX1ON2 compares an MSX2 reference's
+                # reading against the VG-8020's even where C-BIOS's MSX2 build has no disk ROM to finish with
                 if not (ref and zb):
+                    for n, g in (("ref ", ref), ("ours", zb)):
+                        if g and g.get("DONE") == "165" and g.get("CAP"):
+                            print(f"  CAP {n}: {g['CAP']}")
                     continue
             d = diff("CAP", bytes.fromhex(ref["CAP"]), bytes.fromhex(zb["CAP"]), st["cap"] + 1)
             for i, (va, _) in enumerate(st["vram"]):

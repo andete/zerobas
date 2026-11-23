@@ -1,0 +1,25 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b6slots.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 41425aa500c30100000080000000000000000000000000000000000000000000
+  CAP ours: 41425aa500c30100000080000000000000000000000000000000000000000000
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b6slots.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 41425aa500c30100000080000000000000000000000000000000000000000000
+  CAP ours: 41425aa500c30100000080000000000000000000000000000000000000000000
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b6slots.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 41425aa500c30100008080000000000000000000000000000000000000000000
+  CAP ours: 41425aa500c30100000080000000000000000000000000000000000000000000
+  DIFF (1 unexcused byte(s)):
+  CAP E00A: ref=80 ours=00
+===== biosl: DIVERGENCE =====
+WARNING: Var SLTTBL is never used on line 27 of file /Users/joost/projects/zerobas/probes/bios/biosl/b6slots.asm

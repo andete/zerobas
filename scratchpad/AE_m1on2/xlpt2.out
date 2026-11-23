@@ -1,0 +1,24 @@
+# rc=0
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlpt2.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004200004200c3000000000000000000000000000000000000000000000000
+  CAP ours: a5004200004200c3000000000000000000000000000000000000000000000000
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlpt2.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004200004200c3000000000000000000000000000000000000000000000000
+  CAP ours: a5004200004200c3000000000000000000000000000000000000000000000000
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xlpt2.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004200004200c3000000000000000000000000000000000000000000000000
+  CAP ours: a5004200004200c3000000000000000000000000000000000000000000000000
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
+WARNING: Var cc is never used on line 20 of file /Users/joost/projects/zerobas/probes/bios/spec/xlpt2.asm

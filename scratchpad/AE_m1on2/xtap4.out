@@ -1,0 +1,57 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap4.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8c00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d600 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf24680040101000001234000000c7a70013579bdf2468015a10100000567800000087a70013579bdf2468015a
+  CAP ours: 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf246800401d0c003412342f2e00c7a70013579bdf2468015a1d0c003456782f2e0087a70013579bdf2468015a
+  DIFF (10 unexcused byte(s)):
+  CAP E033: ref=10 ours=1D
+  CAP E034: ref=10 ours=0C
+  CAP E036: ref=00 ours=34
+  CAP E039: ref=00 ours=2F
+  CAP E03A: ref=00 ours=2E
+  CAP E047: ref=10 ours=1D
+  CAP E048: ref=10 ours=0C
+  CAP E04A: ref=00 ours=34
+  CAP E04D: ref=00 ours=2F
+  CAP E04E: ref=00 ours=2E
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap4.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=9000 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d800 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf24680040101000001234000000c7a70013579bdf2468015a10100000567800000087a70013579bdf24680150
+  CAP ours: 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf246800401d0c003412342f2e00c7a70013579bdf2468015a1d0c003456782f2e0087a70013579bdf24680150
+  DIFF (10 unexcused byte(s)):
+  CAP E033: ref=10 ours=1D
+  CAP E034: ref=10 ours=0C
+  CAP E036: ref=00 ours=34
+  CAP E039: ref=00 ours=2F
+  CAP E03A: ref=00 ours=2E
+  CAP E047: ref=10 ours=1D
+  CAP E048: ref=10 ours=0C
+  CAP E04A: ref=00 ours=34
+  CAP E04D: ref=00 ours=2F
+  CAP E04E: ref=00 ours=2E
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap4.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d800 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf24680040101000001234000000c7a70013579bdf2468015010100000567800000087a70013579bdf2468015a
+  CAP ours: 081413579bdf24680040083c13579bdf24680040083813579bdf24680040081013579bdf24680040081013579bdf246800401d0c003412342f2e00c7a70013579bdf2468015a1d0c003456782f2e0087a70013579bdf24680150
+  DIFF (12 unexcused byte(s)):
+  CAP E033: ref=10 ours=1D
+  CAP E034: ref=10 ours=0C
+  CAP E036: ref=00 ours=34
+  CAP E039: ref=00 ours=2F
+  CAP E03A: ref=00 ours=2E
+  CAP E046: ref=50 ours=5A
+  CAP E047: ref=10 ours=1D
+  CAP E048: ref=10 ours=0C
+  CAP E04A: ref=00 ours=34
+  CAP E04D: ref=00 ours=2F
+  CAP E04E: ref=00 ours=2E
+  CAP E05A: ref=5A ours=50
+===== biosl: DIVERGENCE =====
+WARNING: Var odata is never used on line 151 of file /Users/joost/projects/zerobas/probes/bios/spec/xtap4.asm
+WARNING: Var pcrec is never used on line 202 of file /Users/joost/projects/zerobas/probes/bios/spec/xtap4.asm

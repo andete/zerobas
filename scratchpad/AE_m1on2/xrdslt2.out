@@ -1,0 +1,41 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/spec/xrdslt2.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f480a0fffff4acf4a0f4c00000ffacf4a0f4c00000ffacf4a0f4c0000043acf4a0f4c0000043acf4a4f4c00000ffacf4a8f4c00000c3
+  CAP ours: a5f480a0fffff4acf4a0f4c00000ffacf4a0f4c00000ffacf4a0f4c00000ffacf4a0f4c00000ffacf4a4f4c00000ffacf4a8f4c00000c3
+  DIFF (2 unexcused byte(s)):
+  CAP C01F: ref=43 ours=FF
+  CAP C027: ref=43 ours=FF
+===== /Users/joost/projects/zerobas/probes/bios/spec/xrdslt2.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f48050fffff4acf450f4c00000ffacf450f4c00000ffacf450f4c00000ffacf450f4c00000ffacf454f4c00000ffacf458f4c00000c3
+  CAP ours: a5f480a0fffff4acf4a0f4c00000ffacf4a0f4c00000ffacf4a0f4c00000ffacf4a0f4c00000ffacf4a4f4c00000ffacf4a8f4c00000c3
+  DIFF (7 unexcused byte(s)):
+  CAP C004: ref=50 ours=A0
+  CAP C00A: ref=50 ours=A0
+  CAP C012: ref=50 ours=A0
+  CAP C01A: ref=50 ours=A0
+  CAP C022: ref=50 ours=A0
+  CAP C02A: ref=54 ours=A4
+  CAP C032: ref=58 ours=A8
+===== /Users/joost/projects/zerobas/probes/bios/spec/xrdslt2.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f480004142f4acf400f4c0000041acf400f4c0000042acf400f4c0000018acf400f4c0000018acf404f4c0000041acf408f4c00000c3
+  CAP ours: a5f480a04142f4acf4a0f4c0000041acf4a0f4c0000042acf4a0f4c00000ffacf4a0f4c00000ffacf4a4f4c0000041acf4a8f4c00000c3
+  DIFF (9 unexcused byte(s)):
+  CAP C004: ref=00 ours=A0
+  CAP C00A: ref=00 ours=A0
+  CAP C012: ref=00 ours=A0
+  CAP C01A: ref=00 ours=A0
+  CAP C01F: ref=18 ours=FF
+  CAP C022: ref=00 ours=A0
+  CAP C027: ref=18 ours=FF
+  CAP C02A: ref=04 ours=A4
+  CAP C032: ref=08 ours=A8
+===== biosl: DIVERGENCE =====

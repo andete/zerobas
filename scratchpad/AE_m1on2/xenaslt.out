@@ -1,0 +1,76 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d200 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f400000080000000a0a08b01fcac00fca81b2c3da80f5aa50cf3ff0cf4a000f4a01b2c3da00f414204f3550cfcac00fca81b2c3da80f5aa50cf3ff0cd48400d4a01b2c3da00f104010cf5530f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00f414204f3550cf4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30c3
+  CAP ours: a5f400000080000000a0a08b01fcac00fca81b2c3da80f5aa50cf3ff0cf4a000f4a01b2c3da00f414204f3550cfcac00fca81b2c3da80f5aa50cf3ff0cd48400d4a01b2c3da00f104010cf5530f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00f414204f3550cf4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30c3
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8b00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f40000008000000050508701fcac00fc541b2c3d540f5aa50cf3ff0cf4a000f4501b2c3d500f414204f3550cfcac00fc541b2c3d540f5aa50cf3ff0cd48400d4501b2c3d500f104010cf5530f4a000f4501b2c3d500fc66c30cfff30f4a000f4501b2c3d500f414204f3550cf4a000f4501b2c3d500fc66c30cfff30f4a000f4501b2c3d500fc66c30cfff30f4a000f4501b2c3d500fc66c30cfff30c3
+  CAP ours: a5f400000080000000a0a08b01fcac00fca81b2c3da80f5aa50cf3ff0cf4a000f4a01b2c3da00f414204f3550cfcac00fca81b2c3da80f5aa50cf3ff0cd48400d4a01b2c3da00f104010cf5530f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00f414204f3550cf4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30c3
+  DIFF (21 unexcused byte(s)):
+  CAP C00A: ref=50 ours=A0
+  CAP C00B: ref=50 ours=A0
+  CAP C00C: ref=87 ours=8B
+  CAP C012: ref=54 ours=A8
+  CAP C016: ref=54 ours=A8
+  CAP C022: ref=50 ours=A0
+  CAP C026: ref=50 ours=A0
+  CAP C032: ref=54 ours=A8
+  CAP C036: ref=54 ours=A8
+  CAP C042: ref=50 ours=A0
+  CAP C046: ref=50 ours=A0
+  CAP C052: ref=50 ours=A0
+  CAP C056: ref=50 ours=A0
+  CAP C062: ref=50 ours=A0
+  CAP C066: ref=50 ours=A0
+  CAP C072: ref=50 ours=A0
+  CAP C076: ref=50 ours=A0
+  CAP C082: ref=50 ours=A0
+  CAP C086: ref=50 ours=A0
+  CAP C092: ref=50 ours=A0
+  CAP C096: ref=50 ours=A0
+===== /Users/joost/projects/zerobas/probes/bios/spec/xenaslt.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3800 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d500 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5f480000080f0000000008301fcac00fc00f02c3d000f5aa50cf3ff0cf4a000f400f02c3d000f414204f3550cfcac00fc00f02c3d000f5aa50cf3ff0cd48400d400f02c3d000f104010cf5530f4a000f400f02c3d000fc66c30cfff30f4a000f400f02c3d000f414204f3550cf4a000f400f02c3d000fc66c30cfff30f4a000f400f02c3d000fc66c30cfff30f4a000f400f02c3d000fc66c30cfff30c3
+  CAP ours: a5f400000080000000a0a08b01fcac00fca81b2c3da80f5aa50cf3ff0cf4a000f4a01b2c3da00f414204f3550cfcac00fca81b2c3da80f5aa50cf3ff0cd48400d4a01b2c3da00f104010cf5530f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00f414204f3550cf4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30f4a000f4a01b2c3da00fc66c30cfff30c3
+  DIFF (32 unexcused byte(s)):
+  CAP C003: ref=80 ours=00
+  CAP C007: ref=F0 ours=00
+  CAP C00A: ref=00 ours=A0
+  CAP C00B: ref=00 ours=A0
+  CAP C00C: ref=83 ours=8B
+  CAP C012: ref=00 ours=A8
+  CAP C013: ref=F0 ours=1B
+  CAP C016: ref=00 ours=A8
+  CAP C022: ref=00 ours=A0
+  CAP C023: ref=F0 ours=1B
+  CAP C026: ref=00 ours=A0
+  CAP C032: ref=00 ours=A8
+  CAP C033: ref=F0 ours=1B
+  CAP C036: ref=00 ours=A8
+  CAP C042: ref=00 ours=A0
+  CAP C043: ref=F0 ours=1B
+  CAP C046: ref=00 ours=A0
+  CAP C052: ref=00 ours=A0
+  CAP C053: ref=F0 ours=1B
+  CAP C056: ref=00 ours=A0
+  CAP C062: ref=00 ours=A0
+  CAP C063: ref=F0 ours=1B
+  CAP C066: ref=00 ours=A0
+  CAP C072: ref=00 ours=A0
+  CAP C073: ref=F0 ours=1B
+  CAP C076: ref=00 ours=A0
+  CAP C082: ref=00 ours=A0
+  CAP C083: ref=F0 ours=1B
+  CAP C086: ref=00 ours=A0
+  CAP C092: ref=00 ours=A0
+  CAP C093: ref=F0 ours=1B
+  CAP C096: ref=00 ours=A0
+===== biosl: DIVERGENCE =====

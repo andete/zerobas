@@ -1,0 +1,100 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap5.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8e00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=da00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081013579bdf246800a0081013579bdf246800e0095413579bdf2468005810100000123400000047101010101010101047a70013579bdf2468015a222425ae3700492600e700105510aa10ff10e7a70013579bdf246801fa
+  CAP ours: 081013579bdf246800a0081013579bdf246800e0095413579bdf246800581d0c003412342f2e00471f081f081f081f0847a70013579bdf2468015a80421100000ffca400e700445504aaacfface7a70013579bdf246801fa
+  DIFF (25 unexcused byte(s)):
+  CAP E01F: ref=10 ours=1D
+  CAP E020: ref=10 ours=0C
+  CAP E022: ref=00 ours=34
+  CAP E025: ref=00 ours=2F
+  CAP E026: ref=00 ours=2E
+  CAP E029: ref=10 ours=1F
+  CAP E02A: ref=10 ours=08
+  CAP E02B: ref=10 ours=1F
+  CAP E02C: ref=10 ours=08
+  CAP E02D: ref=10 ours=1F
+  CAP E02E: ref=10 ours=08
+  CAP E02F: ref=10 ours=1F
+  CAP E030: ref=10 ours=08
+  CAP E03C: ref=22 ours=80
+  CAP E03D: ref=24 ours=42
+  CAP E03E: ref=25 ours=11
+  CAP E03F: ref=AE ours=00
+  CAP E040: ref=37 ours=00
+  CAP E041: ref=00 ours=0F
+  CAP E042: ref=49 ours=FC
+  CAP E043: ref=26 ours=A4
+  CAP E047: ref=10 ours=44
+  CAP E049: ref=10 ours=04
+  CAP E04B: ref=10 ours=AC
+  CAP E04D: ref=10 ours=AC
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap5.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=9400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=de00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081013579bdf246800a0081013579bdf246800e0095413579bdf2468005810100000123400000047101010101010101047a70013579bdf2468015a222425ae3700492600e700105510aa10ff10e7a70013579bdf246801f7
+  CAP ours: 081013579bdf246800a0081013579bdf246800e0095413579bdf246800581d0c003412342f2e00471f081f081f081f0847a70013579bdf2468015a80421100000ffca400e700445504aaacfface7a70013579bdf246801f7
+  DIFF (25 unexcused byte(s)):
+  CAP E01F: ref=10 ours=1D
+  CAP E020: ref=10 ours=0C
+  CAP E022: ref=00 ours=34
+  CAP E025: ref=00 ours=2F
+  CAP E026: ref=00 ours=2E
+  CAP E029: ref=10 ours=1F
+  CAP E02A: ref=10 ours=08
+  CAP E02B: ref=10 ours=1F
+  CAP E02C: ref=10 ours=08
+  CAP E02D: ref=10 ours=1F
+  CAP E02E: ref=10 ours=08
+  CAP E02F: ref=10 ours=1F
+  CAP E030: ref=10 ours=08
+  CAP E03C: ref=22 ours=80
+  CAP E03D: ref=24 ours=42
+  CAP E03E: ref=25 ours=11
+  CAP E03F: ref=AE ours=00
+  CAP E040: ref=37 ours=00
+  CAP E041: ref=00 ours=0F
+  CAP E042: ref=49 ours=FC
+  CAP E043: ref=26 ours=A4
+  CAP E047: ref=10 ours=44
+  CAP E049: ref=10 ours=04
+  CAP E04B: ref=10 ours=AC
+  CAP E04D: ref=10 ours=AC
+===== /Users/joost/projects/zerobas/probes/bios/spec/xtap5.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=4300 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=de00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 081013579bdf246800a0081013579bdf246800e0095413579bdf2468005810100000123400000047101010101010101047a70013579bdf24680157222425ae3700492600e700105510aa10ff10e7a70013579bdf246801fa
+  CAP ours: 081013579bdf246800a0081013579bdf246800e0095413579bdf246800581d0c003412342f2e00471f081f081f081f0847a70013579bdf2468015a80421100000ffca400e700445504aaacfface7a70013579bdf246801f7
+  DIFF (27 unexcused byte(s)):
+  CAP E01F: ref=10 ours=1D
+  CAP E020: ref=10 ours=0C
+  CAP E022: ref=00 ours=34
+  CAP E025: ref=00 ours=2F
+  CAP E026: ref=00 ours=2E
+  CAP E029: ref=10 ours=1F
+  CAP E02A: ref=10 ours=08
+  CAP E02B: ref=10 ours=1F
+  CAP E02C: ref=10 ours=08
+  CAP E02D: ref=10 ours=1F
+  CAP E02E: ref=10 ours=08
+  CAP E02F: ref=10 ours=1F
+  CAP E030: ref=10 ours=08
+  CAP E03B: ref=57 ours=5A
+  CAP E03C: ref=22 ours=80
+  CAP E03D: ref=24 ours=42
+  CAP E03E: ref=25 ours=11
+  CAP E03F: ref=AE ours=00
+  CAP E040: ref=37 ours=00
+  CAP E041: ref=00 ours=0F
+  CAP E042: ref=49 ours=FC
+  CAP E043: ref=26 ours=A4
+  CAP E047: ref=10 ours=44
+  CAP E049: ref=10 ours=04
+  CAP E04B: ref=10 ours=AC
+  CAP E04D: ref=10 ours=AC
+  CAP E058: ref=FA ours=F7
+===== biosl: DIVERGENCE =====

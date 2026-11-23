@@ -1,0 +1,11 @@
+# rc=2
+===== /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  NO READING: DONE never set on ours (ref 165, ours None)
+===== biosl: NO READING =====
+WARNING: Var buf is never used on line 38 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var cc is never used on line 30 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm
+WARNING: Var entry is never used on line 28 of file /Users/joost/projects/zerobas/probes/bios/spec/xdfmt3.asm

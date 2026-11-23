@@ -1,0 +1,28 @@
+# rc=1
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b1text.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=c000 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f000 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01011d25180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP E002: ref=01 ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  SAME (1 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b1text.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=c900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01011d27180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP E002: ref=01 ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  DIFF (1 unexcused byte(s)):
+  CAP E004: ref=27 ours=25
+===== /Users/joost/projects/zerobas/probes/bios/biosl/b1text.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 112, ours 112
+  ref : jiffy=8500 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=f900 typed=1 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 01011d27180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP ours: 010a1d25180001040d0505090b0a02010018ff18614237020103180000000060701d
+  CAP E002: ref=01 ours=0A  (excused: CSRY at INIT: where the boot banner left the cursor (VG-8020 row 15, ours 10) -- presentational, a cartridge's CLS hides it)
+  DIFF (1 unexcused byte(s)):
+  CAP E004: ref=27 ours=25
+===== biosl: DIVERGENCE =====

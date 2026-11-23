@@ -1,0 +1,29 @@
+# rc=0
+===== /Users/joost/projects/zerobas/probes/bios/spec/xoutdo.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  CAP ours: a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  PRN ref : 50202020202020205a01410d0a4b
+  PRN ours: 50202020202020205a01410d0a4b
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xoutdo.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8e00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=db00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  CAP ours: a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  PRN ref : 50202020202020205a01410d0a4b
+  PRN ours: 50202020202020205a01410d0a4b
+  SAME (0 allowlisted)
+===== /Users/joost/projects/zerobas/probes/bios/spec/xoutdo.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3e00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=db00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  CAP ours: a5004400010000010000808000ffac00050305047e00000150140008090000095a1c00090110000a411400000d1800000a1c00014b1c000c0a0c0b7cff00068400016b0101c3
+  PRN ref : 50202020202020205a01410d0a4b
+  PRN ours: 50202020202020205a01410d0a4b
+  SAME (0 allowlisted)
+===== biosl: ALL SAME (allowlisted bytes excused) =====
