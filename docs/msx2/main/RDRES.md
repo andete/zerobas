@@ -63,12 +63,15 @@ Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row t
 
 - **Port $F4** [M] (by hand, [AE_trall/xf4port.out](../../../scratchpad/AE_trall/xf4port.out)): reads bit 7 = the bit last written, bit 5 = 1, bits 6 and 4-0 = 0 -- $A0 / $20 (the FS-A1WSX: $FF / $7F). At the cartridge's INIT it reads $A0 (bit 7 = 1; the A1WSX $7F).
 - **RDRES** [M] ([AE_trall/xrdres.out](../../../scratchpad/AE_trall/xrdres.out) cases 0-4, 12, 14): A := the port as read ($A0 / $20), not its complement, and F as entered ($00 stays $00, $FF stays $FF); the other registers as on the A1WSX. The round trip (cases 19, 20): WRRES $80 then RDRES gives $A0, WRRES $00 gives $20.
-- **Across a soft reset** [M] ([AE_trall/xf4reset.out](../../../scratchpad/AE_trall/xf4reset.out)): no reading on either model. The chain never reaches the cartridge again within 120 s; at the dump the capture, JIFFY, SCNCNT, NEWKEY and the hooks read $FF -- not even the first boot's record survived. What the machine does instead is not measured (it needs a probe that logs to VRAM).
+- **Across a soft reset** [M] ([AE_trall/xf4reset.out](../../../scratchpad/AE_trall/xf4reset.out)): xf4reset's chain (kept in page 3 RAM) gives no reading on either model -- its first step writes bit 7 = 0. **Bit 7 decides whether JP $0000 comes back** (2026-11-23, tr6: [xtrreset0](../../../probes/bios/spec/xtrreset0.asm) / [xtrreset1](../../../probes/bios/spec/xtrreset1.asm), frame [xtrreset.inc](../../../probes/bios/spec/xtrreset.inc): the evidence is kept in VRAM, read by the harness at the end; [AE_xtrreset0_tr.out](../../../scratchpad/AE_xtrreset0_tr.out), [AE_xtrreset1_tr.out](../../../scratchpad/AE_xtrreset1_tr.out)), both models alike:
+  - **Bit 7 = 1** (OUT ($F4), $80 -- the value INIT finds -- then JP $0000 under DI from INIT, Z80): the machine boots again and enters the cartridge's INIT a second time, 51 frames into the new boot (JIFFY $0033; the first boot: $0036), port $F4 still $A0, GETCPU 0 (Z80) both times. The boot does **not clear VRAM**: both magics ($0F000 and $1F000) and the first boot's record are found intact.
+  - **Bit 7 = 0** (OUT ($F4), $00, then JP $0000): the cartridge is never entered again within 60 s. At the dump both machines sit with interrupts off (`reg IFF` 0) -- the FS-A1GT at PC $1A70, SP $D1E6 with **every page on slot 0-0** (so page 3 is not RAM: that is why xf4reset read $FF for its capture, JIFFY and the hooks), the FS-A1ST at PC $0C40, SP $9659 with pages 0-3 on slots 0-0 / 1 / 3-0 / 3-2; VRAM untouched (the magics and the first record intact; $1800-$1AFF all spaces, $0000-$07FF the same bytes as after the bit-7 = 1 run). So bit 7 = 0 sends a JP $0000 down a path that does not finish without a hardware reset -- whether that path is the cold start (the start-up screen) is [P]: nothing it does reached VRAM or the cartridge.
+  - Only JP $0000 was measured; a hardware reset / power cycle is not available inside one run (below).
 
 ## Open (not measured)
 
-- What bit 7 means to the firmware (the start-up screen): the reset chain showed no difference, and the start-up sets
-  the bit back to 0 itself.
+- What bit 7 means to the firmware (the start-up screen) on the MSX2+: the reset chain showed no difference, and the
+  start-up sets the bit back to 0 itself. (On the turbo R it decides whether JP $0000 comes back at all: above.)
 - The power-on value before the boot touches the port (INIT already sees the boot's value).
 - Stack depth and time.
 - What a HARDWARE reset (the reset button) and a power cycle leave in bit 7 -- the events a reset-status register

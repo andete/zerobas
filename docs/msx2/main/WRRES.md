@@ -65,7 +65,7 @@ slot readout, ($FFFF) -- the machines' slot layouts, not WRRES.) The soft-reset 
 Measured 2026-11-23 (D-TRSPEC) on the FS-A1GT and FS-A1ST (`biosl_run.py --row turbor`); overview: [turbor/remeasured.md](../../turbor/remeasured.md).
 
 - **WRRES** [M] ([AE_trall/xrdres.out](../../../scratchpad/AE_trall/xrdres.out) cases 5-11, 13, 15-18): port bit 7 := A's bit 7, NOT its complement -- A $00, $7F, $5A give $20, A $80, $FF, $A5 give $A0 (cases 5-11 and 13 start from the other reading, so they show the write; on the turbo R cases 15-18 start from the reading the call leaves and pin only the value). A and F come back as entered (the A1WSX: A := NOT A, a CPL's F); the other registers as on the A1WSX.
-- **The port and a soft reset:** [RDRES](RDRES.md)'s turbo R section ($A0 / $20; no reading across JP $0000).
+- **The port and a soft reset** [M]: [RDRES](RDRES.md)'s turbo R section -- with bit 7 = 1 (WRRES A $80 .. $FF) a JP $0000 boots again into the cartridge in 51 frames, VRAM kept; with bit 7 = 0 (WRRES A $00 .. $7F) it never comes back (both machines stop with interrupts off) ([AE_xtrreset1_tr.out](../../../scratchpad/AE_xtrreset1_tr.out), [AE_xtrreset0_tr.out](../../../scratchpad/AE_xtrreset0_tr.out); the port written by hand, as WRRES writes it).
 
 ## Open (not measured)
 

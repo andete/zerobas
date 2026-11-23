@@ -50,6 +50,10 @@ Its header comment may carry the harness settings, one per line:
     ;                   cooperation (an unchanged probe's timing is kept: a breakpoint takes no emulated time).
     ;                   Repeatable. ADDR is a CPU address: code of ANOTHER slot run at it (the disk ROM in page 1, the
     ;                   boot) hits it too and takes a slot -- put it in page 2 / 3 RAM or read the hits by their time
+    ; @dumpstate        (D-TRSPEC) the dump adds a `STATE ref/ours:` line: PC, SP, the IFF register (`reg IFF`), the
+    ;                   slot selected in each page (openMSX's get_selected_slot: port $A8 and the subslot register,
+    ;                   as PS-SS, SS `X` = not expanded) and the emulated time -- where a machine that never set DONE
+    ;                   is (registers and slot state only: no ROM byte)
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
     ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
     ; @caplen LEN       the capture block's length (hex, default FF). D-SPECMETHOD (2026-11-17):
@@ -168,7 +172,7 @@ def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
          "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": [],
-         "psglog": None, "plug": [], "cpusnap": [], "iffsnap": []}
+         "psglog": None, "plug": [], "cpusnap": [], "iffsnap": [], "dumpstate": False}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -193,6 +197,8 @@ def settings(asm_text: str) -> dict:
             s["tape"] = True
         elif k == "printer":                # plug the printer logger; report what it received
             s["printer"] = True
+        elif k == "dumpstate":              # a STATE line at the dump: PC, SP, IFF, slots (D-TRSPEC)
+            s["dumpstate"] = True
         elif k == "disk":                   # empty: a copy of disk/empty720.dsk
             s["disk"] = v
         elif k == "timeout":
@@ -418,6 +424,9 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: 
            '    binary scan [debug read_block memory 0xFD9A 10] H* hk\n'
            + ('    if {$::notape} { puts $f "TAPE no cassette port ([join [split $::tapeerr \\n] { }])" }\n'
               if st["tape"] else "") +
+           ('    set sl {}\n    for {set pg 0} {$pg < 4} {incr pg} { lappend sl [join [get_selected_slot $pg] -] }\n'
+            '    puts $f "STATE pc=[format %04X [reg pc]] sp=[format %04X [reg sp]] iff=[reg IFF] slots=[join $sl ,]'
+            ' t=[format %.3f [machine_info time]]"\n' if st["dumpstate"] else "") +
            '    puts $f "SYS jiffy=$j typed=$::typed scncnt=$sc newkey=$nk hkeyi,htimi=$hk' +
            (' cpu=[get_active_cpu] t=[format %.3f [machine_info time]] fcb1=[debug read memory 0xFCB1]'
             ' s1990r6=[string trim $::r6hist]' if cpuinfo else '') + '"\n' + vram +
@@ -512,6 +521,9 @@ def one(rung: str, rows: str) -> int:
             # openMSX refuses -diska there, which left the side with NO READING (D-MSX2SPEC, the BLT disk calls)
             zb = run(zb_m, rom, st, td, disk=(row != "nodisk" and not row.startswith("msx2")), cpuinfo=tr)
             print(f"===== {a.rung} {row}: {ref_m} vs {zb_m} =====")
+            if st["dumpstate"]:              # D-TRSPEC: where each machine is at the dump
+                for n, g in (("ref ", ref), ("ours", zb)):
+                    print(f"  STATE {n}: {g and g.get('STATE')}")
             for n, g in (("ref ", ref), ("ours", zb)):     # @tape on a machine without a cassette port (D-TRSPEC)
                 if g and g.get("TAPE"):
                     print(f"  TAPE {n}: {g['TAPE']} -- nothing recorded or played; TAPEREADY acknowledged with 2")
