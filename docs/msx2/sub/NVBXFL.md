@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NVBXFL` (sub-ROM $00CD) — draw a filled box
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -27,9 +27,13 @@ measurement has to show, together with the same open points as [NVBXLN](NVBXLN.m
   §6.5.4 for the command]. LMMV with DIX / DIY from the corner order, or the corners sorted first [A].
 - The modes, the page, clipping and the cells left: as open as [NVBXLN](NVBXLN.md)'s [A].
 
+**Measured** [M] (the same pixels on all three references; SCREEN 8 and SCREEN 5): the box (BC, DE)-(GXPOS,
+GYPOS) filled, both corners inclusive, in either corner order. **The colour is ATRBYT at $F3F2**, not the handbook's $F3F3: with $F3F2 $05 and $F3F3 $0A every drawn pixel is $05. GXPOS / GYPOS kept. The FS-A1WSX leaves other
+A / F (A $0C / $0E, F $88) and R#44 / R#45 ($05 / $00 ...) than the MSX2s (A $00, F $54, $80 / $04) -- the same pixels.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds fill the same pixels; A / F and R#44 / R#45 after differ ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 

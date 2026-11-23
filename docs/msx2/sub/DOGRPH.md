@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `DOGRPH` (sub-ROM $0085) — draw a line (assumed)
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -27,9 +27,13 @@ whether the entry exists, which two points it joins, and what it leaves behind.
   calls [A].
 - After: GRPACX / GRPACY := the end point [A]; registers all changed [A].
 
+**Measured** [M] (the same on all three references, SCREEN 8): with BC / DE (20, 15), GXPOS / GYPOS (23, 9) and
+GRPACX / GRPACY (10, 10) all different, the line drawn is **(BC, DE) -> (GXPOS, GYPOS)** -- (20, 15) to (23, 9); the
+"last point" GRPACX / GRPACY is neither used nor updated, GXPOS / GYPOS kept. **The colour is ATRBYT at $F3F2**, not the handbook's $F3F3: with $F3F2 $05 and $F3F3 $0A every drawn pixel is $05.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds draw NOTHING for the same inputs ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 

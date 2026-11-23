@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NVBXLN` (sub-ROM $00C9) — draw a box
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -34,9 +34,17 @@ active page, and what it leaves in the cursor cells.
   points off the screen [A].
 - The cells: GRPACX / GRPACY, CLOC / CMASK, GXPOS / GYPOS kept or changed [A].
 
+**Measured** [M] (the same on all three references; SCREEN 8, the window X 8-23 x Y 9-16 read back): the
+outline of (BC, DE)-(GXPOS, GYPOS), both corners INCLUSIVE ((10, 10)-(20, 15): rows 10 and 15 from X 10 to 20, columns
+10 and 20 between), the same with the corners in either order. **The colour is ATRBYT at $F3F2**, not the handbook's $F3F3: with $F3F2 $05 and $F3F3 $0A every drawn pixel is $05. With LOGOPR 3 (XOR) over $0F every outline pixel
+reads $0A -- the corners too: each pixel is drawn once. After: GXPOS / GYPOS = (10, 14), the last side's start; A $70,
+F $20.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) draw a different figure: the sides run past the corners (pixels at Y 9
+and 16) and a horizontal edge continues past X 20; under XOR the top and bottom edges stop short of the corners; GXPOS
+/ GYPOS are left at the end point ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 
