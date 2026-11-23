@@ -16796,7 +16796,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           FINDING: RG0SAV $1A hangs the NMS 8250 (IE1 reaches R#0, the line interrupt is never acknowledged; $4A does
           not), C-BIOS MSX2 the same; ✅ xvdpreg DONE 2026-11-23 (R#8-R#23 + copies put back per case, MSX2 only;
           all three references read; C-BIOS's MSX2 JP / MSX2+ builds overrun RAM there, the EU build does not);
-          xsetw (no @caplen); xcalslt (copies its target into sub-slot 3-0, not the RAM slot); xenaslt2 / xrdslt2
+          ✅ xsetw DONE 2026-11-23 (@caplen 19; gen=0 on all three); xcalslt (copies its target into sub-slot 3-0, not the RAM slot); xenaslt2 / xrdslt2
           (assume RAM in 3-0); xdsk3 (no reading on two machines: dump CAP + a progress cell on timeout); disk
           R-BS-SLOT's per-row IY constant. A probe edit changes the MSX1 runs too: re-measure the VG-8020 rows.
       (b) the GEN findings onto the MSX1 pages: a rule that names its generation, [M] on the three machines,

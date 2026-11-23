@@ -15,6 +15,8 @@
 ; CLEAN-ROOM: 100% own code; published BIOS entries and the VDP's published data port.
 ;
 ; @cap C000
+; (D-MSX1ON2: the capture is 25 bytes; the default caplen FF compared power-on RAM past the sentinel)
+; @caplen 19
 
 RDVRM   equ     $004A
 FILVRM  equ     $0056
