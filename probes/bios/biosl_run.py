@@ -26,6 +26,14 @@ Its header comment may carry the harness settings, one per line:
     ;                   PTR and adds 1 to it; a PTR word of 0 logs nothing (the probe arms / disarms it per case).
     ;                   The watch starts only once the CPU reaches ARM (the probe's own code, after it has written
     ;                   the PTR word): before that the word is whatever boot left there
+    ; @psglog PTR ARM [SKIP]  (D-MSX2SPEC, sub-ROM BEEP) every OUT to $A1 (the PSG's data port) appends 5 bytes at the
+    ;                   address held in the word at PTR, PTR += 5: the register last selected through $A0, the
+    ;                   byte, and the emulated time in microseconds (24-bit, little-endian, wraps at ~16.7 s) --
+    ;                   a timed trace of PSG writes. PTR word 0 logs nothing; armed at ARM as @portlog. SKIP
+    ;                   (hex, optional): a 16-bit mask of registers whose writes are not logged (8000 = R15,
+    ;                   which the timer interrupt's trigger read writes every frame)
+    ; @plug CONN DEVICE (D-MSX2SPEC, sub-ROM NEWPAD) `plug CONN DEVICE` on BOTH machines before boot, e.g.
+    ;                   `@plug joyporta mouse`; repeatable. The device is idle (no host input reaches it)
     ; @keyset ADDR LIST when the CPU reaches ADDR (hex, the probe's own RAM code, e.g. a `ret`), the debugger
     ;                   sets the keyboard matrix from the 11 bytes at LIST (hex): row r's byte, bit set = key
     ;                   pressed (keymatrixup / keymatrixdown) -- one matrix per case, set by the probe
@@ -131,7 +139,8 @@ ROWS = {
 def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
-         "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": []}
+         "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": [],
+         "psglog": None, "plug": []}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -170,6 +179,16 @@ def settings(asm_text: str) -> dict:
             if len(f) != 3:
                 sys.exit(f"FAIL: @portlog wants PORT PTR ARM, got {v!r}")
             s["portlog"].append((int(f[0], 16), int(f[1], 16), int(f[2], 16)))
+        elif k == "psglog":                 # PTR ARM (hex): a timed trace of PSG writes (D-MSX2SPEC)
+            f = v.split()
+            if len(f) not in (2, 3):
+                sys.exit(f"FAIL: @psglog wants PTR ARM [SKIP], got {v!r}")
+            s["psglog"] = (int(f[0], 16), int(f[1], 16), int(f[2], 16) if len(f) == 3 else 0)
+        elif k == "plug":                   # CONN DEVICE: plugged before boot (D-MSX2SPEC)
+            f = v.split()
+            if len(f) != 2:
+                sys.exit(f"FAIL: @plug wants CONN DEVICE, got {v!r}")
+            s["plug"].append((f[0], f[1]))
         elif k == "vdpsnap":                # ADDR PTR (hex)
             f = v.split()
             if len(f) != 2:
@@ -282,6 +301,27 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
                  f"  set ::plog_armed_{port:02x} 1\n"
                  f"  debug watchpoint create -type write_io -address 0x{port:02x} -command biosl_plog_{port:02x}\n}}\n"
                  f"debug set_bp {arm} {{}} biosl_plogarm_{port:02x}\n")
+    if st["psglog"]:
+        # $A0's last byte latched; every OUT $A1: (reg, byte, time in us as 3 bytes) at (lp), lp += 5
+        lp, arm, skip = st["psglog"]
+        snap += ("set ::psgl_reg 0\nset ::psgl_armed 0\n"
+                 "proc biosl_psgsel {} { set ::psgl_reg $::wp_last_value }\n"
+                 "proc biosl_psglog {} {\n"
+                 f"  set p [expr {{[debug read memory {lp}] | ([debug read memory {lp + 1}] << 8)}}]\n"
+                 f"  if {{$p == 0 || ({skip} >> ($::psgl_reg & 15)) & 1}} {{ return }}\n"
+                 "  set t [expr {wide([machine_info time] * 1000000) & 0xFFFFFF}]\n"
+                 "  set k 0\n"
+                 "  foreach b [list $::psgl_reg $::wp_last_value [expr {$t & 255}] [expr {($t >> 8) & 255}] "
+                 "[expr {$t >> 16}]] {\n"
+                 "    debug write memory [expr {($p + $k) & 0xFFFF}] $b; incr k\n  }\n"
+                 "  set p [expr {($p + 5) & 0xFFFF}]\n"
+                 f"  debug write memory {lp} [expr {{$p & 255}}]\n"
+                 f"  debug write memory {lp + 1} [expr {{$p >> 8}}]\n}}\n"
+                 "proc biosl_psgarm {} {\n"
+                 "  if {$::psgl_armed} { return }\n  set ::psgl_armed 1\n"
+                 "  debug watchpoint create -type write_io -address 0xa0 -command biosl_psgsel\n"
+                 "  debug watchpoint create -type write_io -address 0xa1 -command biosl_psglog\n}\n"
+                 f"debug set_bp {arm} {{}} biosl_psgarm\n")
     if st["keyset"]:
         ka, kl = st["keyset"]
         snap += ("proc biosl_keyset {} {\n"
@@ -326,6 +366,8 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False):
         if os.path.exists(prn):
             os.remove(prn)
         plug = f"; set printerlogfilename {{{prn}}}; plug printerport logger"
+    for conn, dev in st["plug"]:            # @plug: a device in a connector from boot (D-MSX2SPEC)
+        plug += f"; plug {conn} {dev}"
     subprocess.run(omsx_preflight.guarded(
         [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
         ["-command", "set renderer none; set sound_driver null" + plug, "-script", script]),
