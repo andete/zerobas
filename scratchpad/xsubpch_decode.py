@@ -6,6 +6,7 @@ as runs (xeol_decode.py's layout, 176-byte records, GRPACX / GRPACY / ESCCNT at 
 
     python3 scratchpad/xsubpch_decode.py [scratchpad/AE_xsubpch_msx2.out]
     python3 scratchpad/xsubpch_decode.py --r2 scratchpad/AE_xsubpch2_msx2.out   (round 2, xsubpch2.asm: the key buffer)
+    python3 scratchpad/xsubpch_decode.py --r3 scratchpad/AE_xsubpch3_msx2.out   (round 3, xsubpch3.asm: BC / DE, pointers outside the buffer)
 
 A run is printed as start+length=first-value, plus the text cell it starts at (row, column, 0-based) where the case
 is a text mode (name-table base and width known).
@@ -64,10 +65,17 @@ CASES2 = ["A 51, PUT FBF0 GET FBF0", "A 52, PUT FC05 GET FBF0", "A 53, PUT FC17 
           "A 57, PUT=GET=FC10"]
 
 
-def main2(path):
+CASES3 = ["A 58, PUT FBF3 GET FBF0, BC 0000 DE FFFF", "A 59, PUT FBF5 GET FBF6 (full), BC 1234 DE 5678",
+          "A 5A, PUT FC18 GET FB19 (8- or 16-bit full test)", "A 5B, PUT FB17 GET FC00 (wrap at FC18 or at low 18)"]
+
+
+def main2(path, names=CASES2):
     cs = caps(path)
-    for i, name in enumerate(CASES2):
-        print(f"\n== case {i}: {name} (KEYBUF[i] = 80+i, FC18.. = E1 E2 E3; F C5 BC B1C2 DE 4E5F HL 140C IY 1A2B)")
+    r3 = names is CASES3
+    for i, name in enumerate(names):
+        regs = "" if r3 else " BC B1C2 DE 4E5F"
+        print(f"\n== case {i}: {name} (KEYBUF[i] = 80+i, FC18.. = E1 E2 E3"
+              + (", FB17.. = D7 D8 D9" if r3 else "") + f"; F C5{regs} HL 140C IY 1A2B)")
         groups = {}
         for k, lab in zip(ORDER, LABEL):
             r = cs[k][2 + 80 * i: 2 + 80 * (i + 1)]
@@ -83,12 +91,16 @@ def main2(path):
                 sg = (f"A {r[1]:02X} F {r[2]:02X} BC {w(4):04X} DE {w(6):04X} HL {w(8):04X} IX {w(10):04X} "
                       f"IY {w(12):04X} IFF {r[3]}/{r[14]} | PUTPNT {w(16):04X} GETPNT {w(18):04X} CSRX {r[20]} "
                       f"CSRY {r[21]} | KEYBUF changed [{kd}] [{ex}] | {chg}")
+                if r3:
+                    sg += " | FB17.. " + " ".join(f"{v:02X}" for v in r[71:74])
             groups.setdefault(sg, []).append(lab)
         for sg, labs in groups.items():
             print(f"  {','.join(labs)}: {sg}")
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--r3":
+        return main2(sys.argv[2] if len(sys.argv) > 2 else "scratchpad/AE_xsubpch3_msx2.out", CASES3)
     if len(sys.argv) > 1 and sys.argv[1] == "--r2":
         return main2(sys.argv[2] if len(sys.argv) > 2 else "scratchpad/AE_xsubpch2_msx2.out")
     cs = caps(sys.argv[1] if len(sys.argv) > 1 else "scratchpad/AE_xsubpch_msx2.out")
