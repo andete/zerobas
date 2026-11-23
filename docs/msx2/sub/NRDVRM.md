@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NRDVRM` (sub-ROM $010D) — read a VRAM byte, 64 KB address
 
-> **Spec:** DRAFT 1 (2026-11-23): the VRAM address MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xva2.asm](../../probes/bios/spec/xva2.asm), [scratchpad/AE_xva2_msx2.out](../../scratchpad/AE_xva2_msx2.out), decoded by `scratchpad/xva_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): the VRAM address MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xva2.asm](../../../probes/bios/spec/xva2.asm), [scratchpad/AE_xva2_msx2.out](../../../scratchpad/AE_xva2_msx2.out), decoded by `scratchpad/xva_decode.py`).
 
 ## Summary
 
@@ -40,7 +40,7 @@ main ROM's 17-bit rule (ACPAGE 3, $C123 -> $14123; SCREEN 7 / 8: ACPAGE x $10000
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) give every measured address but the SCREEN 0-4, ACPAGE-not-0 ones
-([scratchpad/AE_xva2_msx2.out](../../scratchpad/AE_xva2_msx2.out)).
+([scratchpad/AE_xva2_msx2.out](../../../scratchpad/AE_xva2_msx2.out)).
 
 ## Open (not measured)
 

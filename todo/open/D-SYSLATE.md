@@ -3,12 +3,12 @@
       call` HERE (D-SYSLATE, found 2026-10-09 by D-CALLSYSTEM).**
       🎚️ TIER 6 — `CALL SYSTEM` after a disk swap
       🤖 **AUTONOMOUS** — the reference settles it.
-      [`callsystem_swap.out`](scratchpad/callsystem_swap.out) `late` (CF-3300),
-      [`callsystem_swap_zb.out`](scratchpad/callsystem_swap_zb.out) `late`
+      [`callsystem_swap.out`](../../scratchpad/callsystem_swap.out) `late` (CF-3300),
+      [`callsystem_swap_zb.out`](../../scratchpad/callsystem_swap_zb.out) `late`
       (zerobas). The CF-3300's mark is not `&HF340`
-      ([`callsystem_peek.out`](scratchpad/callsystem_peek.out)); find its rule
+      ([`callsystem_peek.out`](../../scratchpad/callsystem_peek.out)); find its rule
       (work-area cells after each boot) before changing ours.
-      📏 **RE-MEASURED 2026-11-07** ([`syslate_cf.out`](scratchpad/syslate_cf.out); the 10-09 dump of this row had caught
+      📏 **RE-MEASURED 2026-11-07** ([`syslate_cf.out`](../../scratchpad/syslate_cf.out); the 10-09 dump of this row had caught
       the CF-3300 mid-restart and decoded as garbage): after `CALL SYSTEM` the CF-3300 is at
       a COLD Disk BASIC -- `MSX BASIC version 1.0` banner, 23430 Bytes free, `Disk BASIC
       version 1.0`, SCREEN 1 -- and does NOT load MSX-DOS, though the disk in the drive now

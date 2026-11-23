@@ -1,6 +1,6 @@
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
-      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §2.1.
+      [`docs/spec-basic-dupspan.md`](../../docs/spec-basic-dupspan.md) §2.1.
       `scratchpad/dupspan_sweep.py` ranks it fourth (six copies, 15 B nominal),
       but **five of the six are entered by FALLTHROUGH from a different
       `ld a,N`** — `ee_raise` (A=5), `sid_raise`/`exf_raise`/`gp_raise` (61),

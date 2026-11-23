@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `MAPXYC` (sub-ROM $0091) — turn coordinates into a graphics position
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -40,7 +40,7 @@ masks, not bit masks. F $44 / $00 (SCREEN 2), $42 (5), $02 (6-8).
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds give the same CLOC / CMASK ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds give the same CLOC / CMASK ([scratchpad/AE_xsubgc_msx2.out](../../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 

@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `TDOWNC` (sub-ROM $00B1) — move the graphics position down, checking the edge
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -50,7 +50,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds differ in 1 of the 16 cases -- in SCREEN 2 at line 191 they move on ($072F -> $0828) where the references stop with carry set ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds differ in 1 of the 16 cases -- in SCREEN 2 at line 191 they move on ($072F -> $0828) where the references stop with carry set ([scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 

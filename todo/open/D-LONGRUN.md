@@ -40,7 +40,7 @@
       lost one to `IF !G8_RESIDENT`. 🎯 **AND THE TOP ROW OF THE NEW SCAN IS
       PRE-REFUSED IN THE SOURCE**: `push de`+`call push_lhs_frame`+`call
       set_factyp_int_ret` (6 sites, net 14) is declined at
-      [basic/float-arith.asm:1550](basic/float-arith.asm:1550) because the run
+      [basic/float-arith.asm:1550](../../basic/float-arith.asm:1550) because the run
       is a FIXED-SIZE FRAME PROTOCOL and a helper's return address lands INSIDE
       the frame — a comment that ends *"the sweep will keep ranking it, and the
       answer will keep being no"*, and it was right. **Reading it also found

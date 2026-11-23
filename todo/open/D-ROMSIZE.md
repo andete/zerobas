@@ -3,7 +3,7 @@
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
       🤖 **AUTONOMOUS** — in Joost's order, AFTER the tape fixes (D-TAPELOAD: external
       testers are waiting on those).
-      📏 [`romsize_report.md`](scratchpad/romsize_report.md) (a read-only
+      📏 [`romsize_report.md`](../../scratchpad/romsize_report.md) (a read-only
       measurement of our own ROMs, symbols and sources; no reference byte read):
       75 KB of content in 112 KB of ROM images; BIOS side 0.9x the reference,
       BASIC side ~2.2x, a diskless machine ~1.8x, with disk ~1.6x. No padding,
@@ -89,17 +89,17 @@
       (D-ALIASWCELL) is gone by construction: the sector crosses in BC.
       📏 dskio-acceptance 5/5, nodisk-acceptance PASS, unit tests green,
       D-ALIASWCELL's write probe re-run
-      ([`dsklocal_aliaswrite.out`](scratchpad/dsklocal_aliaswrite.out)): DSKI$ /
+      ([`dsklocal_aliaswrite.out`](../../scratchpad/dsklocal_aliaswrite.out)): DSKI$ /
       DSKO$ with an OUTPUT file open CLEAN, as before. 🔪
-      [`dsklocal_knife.py`](scratchpad/dsklocal_knife.py) ->
-      [`dsklocal_knife.out`](scratchpad/dsklocal_knife.out): K-DL1 (hk_dsk's read
+      [`dsklocal_knife.py`](../../scratchpad/dsklocal_knife.py) ->
+      [`dsklocal_knife.out`](../../scratchpad/dsklocal_knife.out): K-DL1 (hk_dsk's read
       cut, byte-neutral) -> dir, boot AND dsko diverge (🔮 "dir, boot": partial
       MISS -- `dsko` reads the sector with DSKI$ before writing it back, so it
       witnesses the read too). Keyword pages DSKI$ / DSKO$ and
       docs/spec-basic-dskio.md updated; examples re-run.
       📏 **S10.D's FIRST MEASUREMENT (2026-10-15): GET / PUT CROSS H.DGET, PER
-      RECORD** ([`getputhook_probe.py`](scratchpad/getputhook_probe.py) ->
-      [`getputhook_run.out`](scratchpad/getputhook_run.out); the D-CHANHOOK
+      RECORD** ([`getputhook_probe.py`](../../scratchpad/getputhook_probe.py) ->
+      [`getputhook_run.out`](../../scratchpad/getputhook_run.out); the D-CHANHOOK
       entry counter on every published hook slot, CF-3300, 1 record against 40):
       GET and PUT enter the SAME three cells once per record -- `$FE80` H.DGET
       (CLAIMED by the reference's disk ROM: the dedicated GET/PUT hook), `$FE4E`
@@ -111,9 +111,9 @@
       they share H.DGET, alongside H.GETP and the bare $FE53. zerobas claims none
       of $FE4E / $FE80.
       📏 **S10.D's SECOND MEASUREMENT (2026-10-15): WHAT H.DGET RECEIVES -- THE
-      RECORD NUMBER IS NOT EVALUATED YET** ([`dget_probe.py`](scratchpad/dget_probe.py)
-      -> [`dget_run.out`](scratchpad/dget_run.out), [`dget_run2.out`](scratchpad/dget_run2.out),
-      [`dget_run3.out`](scratchpad/dget_run3.out); a breakpoint on the RAM hook
+      RECORD NUMBER IS NOT EVALUATED YET** ([`dget_probe.py`](../../scratchpad/dget_probe.py)
+      -> [`dget_run.out`](../../scratchpad/dget_run.out), [`dget_run2.out`](../../scratchpad/dget_run2.out),
+      [`dget_run3.out`](../../scratchpad/dget_run3.out); a breakpoint on the RAM hook
       cells $FE80 / $FE4E / $FE53 on the CF-3300, logging registers, 8 stack
       words, PTRFIL, VALTYP, DAC, the BASIC FCB header and the disk FCB it points
       at -- every read guarded to >= $8000, no ROM byte, no target followed).
@@ -196,8 +196,8 @@
       vestigial veneers and orphan `ret`s (bytes move: bdos-acceptance), the
       tool's pin classes; (b) BSAVE-to-disk, measured on the CF-3300 first (~130 B of
       disk.rom for ~312 B of sub page 1, estimated) -- 📏 its hook MEASURED
-      2026-10-15 ([`bsave_hook_probe.py`](scratchpad/bsave_hook_probe.py) ->
-      [`bsave_hook_run.out`](scratchpad/bsave_hook_run.out), CF-3300, entry
+      2026-10-15 ([`bsave_hook_probe.py`](../../scratchpad/bsave_hook_probe.py) ->
+      [`bsave_hook_run.out`](../../scratchpad/bsave_hook_run.out), CF-3300, entry
       counts on every hook slot + a guarded register log): BSAVE enters $FE5D
       exactly once (HIT), never $FE71 (HIT), no claimed cell per byte (HIT), the
       exec / `,S` forms like the plain one (HIT); a bad drive is 62 BEFORE $FE5D,
@@ -211,8 +211,8 @@
       (c) S10.C into the pooled
       corridor; (d) S10.E. Also found: the sub tenant `t_fia_walked` (148 B, sub
       page 1) has no sender since S10.B moved APPEND.
-      📏 **S10.C STEP C0 MEASURED (2026-10-15)** ([`s10c_hook_probe.py`](scratchpad/s10c_hook_probe.py)
-      -> [`s10c_hook_run.out`](scratchpad/s10c_hook_run.out), CF-3300, entry
+      📏 **S10.C STEP C0 MEASURED (2026-10-15)** ([`s10c_hook_probe.py`](../../scratchpad/s10c_hook_probe.py)
+      -> [`s10c_hook_run.out`](../../scratchpad/s10c_hook_run.out), CF-3300, entry
       counts per hook slot, deltas against a quiet baseline): OPEN FOR INPUT
       enters $FE4E $FE58 $FE5D $FEB2 $FEB7 (and $FE62 at its CLOSE); a missing
       file raises 53 AFTER $FE5D (no $FE4E). `LINE INPUT#` over "AB" CR LF
@@ -249,10 +249,10 @@
       + ctl_put at the first, ex_new / end_line_end + diskslot_test at the
       second, eval_addr into $3297's old 2 B pad, each original kept as the ELSE
       arm): `make pin-check` waste 6 -> 4 B, and its budget tightened to 4.
-      ⏱ SPEED, MEASURED ([`seqin_speed_probe.py`](scratchpad/seqin_speed_probe.py):
+      ⏱ SPEED, MEASURED ([`seqin_speed_probe.py`](../../scratchpad/seqin_speed_probe.py):
       LINE INPUT # over a 16 400 B file, TIME in frames): CF-3300 1694, C1 1677
-      ([`seqin_speed_c1.out`](scratchpad/seqin_speed_c1.out)), the build before
-      it 960 ([`seqin_speed_head.out`](scratchpad/seqin_speed_head.out)) -- the
+      ([`seqin_speed_c1.out`](../../scratchpad/seqin_speed_c1.out)), the build before
+      it 960 ([`seqin_speed_head.out`](../../scratchpad/seqin_speed_head.out)) -- the
       256 B refill reads each sector twice, so C1 is 1.75x slower than zerobas was
       and now ON PAR with the reference (0.99x). 🔮 "slower than before, inside
       10x": HIT. Kept: faithful speed is the charter; a sector-reuse cache would
@@ -286,9 +286,9 @@
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
           📏 **MEASURED 2026-10-21: THE VG-8020's COLLECTOR IS QUADRATIC, OURS IS
-          ~FLAT.** [`gctime_probe.py`](scratchpad/gctime_probe.py) times one
+          ~FLAT.** [`gctime_probe.py`](../../scratchpad/gctime_probe.py) times one
           `FRE("")` (it compacts first) in TIME ticks over N live 8-byte strings
-          ([`gctime_run.out`](scratchpad/gctime_run.out)):
+          ([`gctime_run.out`](../../scratchpad/gctime_run.out)):
           | N | VG-8020, garbage between | VG-8020, none | zerobas |
           |---|---|---|---|
           | 25 | 5 | 5 | 1-2 |

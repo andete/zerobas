@@ -1,7 +1,7 @@
 - [x] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
       STATEMENT IS `Syntax error` HERE AND SILENT ON BOTH REFERENCES.** Filed
       2026-08-26 by D-MISSOP3. `KEY1,"X"` reads **0 / 0 / 2**: both references
-      complete it, zerobas refuses it. [`basic/screen.asm`](basic/screen.asm):294
+      complete it, zerobas refuses it. [`basic/screen.asm`](../../basic/screen.asm):294
       is `jp stmt_error` with the comment *"KEY <n>,\"str\" / KEY LIST
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
@@ -19,7 +19,7 @@
       24) is a SYMPTOM of the whole form being absent, and "fix the error code"
       would have been the wrong repair. Under the charter the reference wins.
       📏 **SCOUTED 2026-08-26 — D-KEYSTR,
-      [`docs/spec-basic-keystr-scout.md`](docs/spec-basic-keystr-scout.md)**
+      [`docs/spec-basic-keystr-scout.md`](../../docs/spec-basic-keystr-scout.md)**
       (`scratchpad/keystr_probe.py`, 6 rows x 3 machines, measurement only).
       The storage is MEASURED, not assumed: a distinctive plant (`KEY n,"ZQX"`)
       reads back at **base `$F87F`, stride 16, NUL-terminated**, with two
@@ -37,8 +37,8 @@
       absent"*; this scout's `k.none` turns that into *"the storage is empty
       too"*.
       ✅ **MEASURED AND PRICED 2026-09-04 — D-KEYSCOUT2**
-      ([`docs/spec-basic-keystr-scout.md`](docs/spec-basic-keystr-scout.md),
-      [`scratchpad/keylist_probe.py`](scratchpad/keylist_probe.py), 11 rows x 3
+      ([`docs/spec-basic-keystr-scout.md`](../../docs/spec-basic-keystr-scout.md),
+      [`scratchpad/keylist_probe.py`](../../scratchpad/keylist_probe.py), 11 rows x 3
       machines). All three unmeasured things are now read off machines:
       • **the `n` domain is 1..10**, and `KEY 0,` / `KEY 11,` / `KEY -1,` are
         **ERR 5**; the empty string is legal. zerobas answers **ERR 2 to every
@@ -82,11 +82,11 @@
       🎯 **RULED (Joost, 2026-09-10): *"missing keywords obviously need to be implemented."*** TIER 1.
       ✅ **SHIPPED 2026-09-10 (D-KEYSTR) — BOTH FORMS WORK AND THE DEFAULTS ARE
       PRESENT AT COLD BOOT; 11 rows on all three machines agree
-      (`make keystr-acceptance`, [`probes/basic/basic_probe_keystr.py`](probes/basic/basic_probe_keystr.py)).**
-      The ten defaults are a MEASUREMENT ([`scratchpad/keydef_probe.py`](scratchpad/keydef_probe.py),
+      (`make keystr-acceptance`, [`probes/basic/basic_probe_keystr.py`](../../probes/basic/basic_probe_keystr.py)).**
+      The ten defaults are a MEASUREMENT ([`scratchpad/keydef_probe.py`](../../scratchpad/keydef_probe.py),
       all 160 bytes on both references; they differ only at F6, and the VG-8020
       value ships on both targets by the standing style ruling). Shape: a page-0
-      tenant, `SUBROM_IDX_KEYSTR` = 18 ([`sub/keystr.asm`](sub/keystr.asm)) —
+      tenant, `SUBROM_IDX_KEYSTR` = 18 ([`sub/keystr.asm`](../../sub/keystr.asm)) —
       the image, the store (cleared slot, truncated to the measured 15) and LIST
       rendered into `DETOKBUF` for the resident drain (the D-PUEMIT shape); the
       resident half is the parse. Cost from a clean tree: **main page 1 89 → 13 B

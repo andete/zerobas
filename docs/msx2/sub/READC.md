@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `READC` (sub-ROM $0095) — read the colour of the current pixel
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgc.asm](../../../probes/bios/spec/xsubgc.asm), [scratchpad/AE_xsubgc_msx2.out](../../../scratchpad/AE_xsubgc_msx2.out), decoded by `scratchpad/xsubgc_decode.py`).
 
 ## Summary
 
@@ -29,7 +29,7 @@ SCREEN 2, 5, 7, 8; $03 in SCREEN 6 (the 2-bit field).
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds return the same ([scratchpad/AE_xsubgc_msx2.out](../../scratchpad/AE_xsubgc_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds return the same ([scratchpad/AE_xsubgc_msx2.out](../../../scratchpad/AE_xsubgc_msx2.out)).
 
 ## Open (not measured)
 

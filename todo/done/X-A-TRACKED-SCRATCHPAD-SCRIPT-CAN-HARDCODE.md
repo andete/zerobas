@@ -32,7 +32,7 @@
       reads. (My first pass skipped 9 of them by testing `^import pathlib$`
       against files that say `import hashlib, os, pathlib, re, subprocess, sys`.)
       ✅ **CHECKER SHIPPED 2026-08-26 as rule ROOT of `make chokepoint-check`**
-      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)).
+      ([`docs/spec-chokepoint-gate.md`](../../docs/spec-chokepoint-gate.md)).
       Denominator **495 files**.
       🔴 **AND IT IMMEDIATELY FOUND ONE THE FIX HAD MISSED.** The sweep above
       reported *zero remaining*; `scratchpad/runline_knives.py` still hardcoded

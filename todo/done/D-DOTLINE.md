@@ -2,8 +2,8 @@
       (D-DOTLINE). Four pins RETIRED, none added; `lnblank-say-acceptance`
       108 -> 181 rows with 6 -> 2 pins; `lnblank-acceptance` 530 -> 536,
       allowlist still EMPTY. 16 corpus targets green, six knives scored.** Spec
-      [`docs/spec-basic-dotline.md`](docs/spec-basic-dotline.md), measurement
-      [`docs/dotline-msx1-characterization.md`](docs/dotline-msx1-characterization.md).
+      [`docs/spec-basic-dotline.md`](../../docs/spec-basic-dotline.md), measurement
+      [`docs/dotline-msx1-characterization.md`](../../docs/dotline-msx1-characterization.md).
       Filed by D-DELETE, confirmed on a second verb by D-LSTRNG, both of which
       measured `.` and DECLINED it rather than ship a rule one verb wide.
       🔴 **THEY WERE RIGHT, AND FOR A BIGGER REASON THAN EITHER GAVE.** The four

@@ -11,8 +11,8 @@
       went 1.94× → 8.66× between two runs with zerobas's `fieldkw` identical to
       0.01 ms (2128.9) and the CF-3300's row moving 4012 → 3821 ms, because the second
       run re-measured the reference instead of replaying its cache
-      ([`noasto_kwtime.out`](scratchpad/noasto_kwtime.out) against
-      [`copywild_kwtime.out`](scratchpad/copywild_kwtime.out)). The twin subtraction
+      ([`noasto_kwtime.out`](../../scratchpad/noasto_kwtime.out) against
+      [`copywild_kwtime.out`](../../scratchpad/copywild_kwtime.out)). The twin subtraction
       makes a ~5% reference wobble a 4.5× swing in the cell. Four other disk keywords
       moved the same run (BLOAD, DSKO$, KILL, LSET). So the fix is not RUN-specific:
       a T5 cell whose REFERENCE side is a disk row needs either several reference

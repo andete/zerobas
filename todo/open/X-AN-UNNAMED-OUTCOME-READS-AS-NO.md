@@ -10,10 +10,10 @@
       no name for — and when you add one name, what is the next one?** No gate
       covers it; `scratchpad/circmiss_sib2.py` carries the widened list.
       📏 **THE STANDING QUESTION NOW HAS A NUMBER — SWEPT 2026-08-26**
-      ([`scratchpad/unnamed_outcome_sweep.py`](scratchpad/unnamed_outcome_sweep.py),
-      [`scratchpad/unnamed_outcome_sweep.out`](scratchpad/unnamed_outcome_sweep.out)).
+      ([`scratchpad/unnamed_outcome_sweep.py`](../../scratchpad/unnamed_outcome_sweep.py),
+      [`scratchpad/unnamed_outcome_sweep.out`](../../scratchpad/unnamed_outcome_sweep.out)).
       Denominator is the ROM's OWN table — every `db "…",0 ; ERR n` in
-      [`sub/errmsg.asm`](sub/errmsg.asm), **30 messages** — so it cannot drift
+      [`sub/errmsg.asm`](../../sub/errmsg.asm), **30 messages** — so it cannot drift
       from what the machine can print.
       ```
       probes with a <NO OUTPUT> bucket            53
@@ -73,7 +73,7 @@
       +21 were added today** (`errmsg_alphabet.py`, now excluded, and
       `ntwall_sep.py`), measured with `git log --diff-filter=A`, not assumed.
       🔴 **AND THE SWEEP WAS COUNTING THE CANON ITSELF.**
-      [`probes/lib/errmsg_alphabet.py`](probes/lib/errmsg_alphabet.py) **IS** the
+      [`probes/lib/errmsg_alphabet.py`](../../probes/lib/errmsg_alphabet.py) **IS** the
       30-message table this sweep measures coverage against; its `<NO OUTPUT>`
       sits in a docstring explaining the very class, and it scored **5/30** as
       though it were a probe with a narrow alphabet. Excluded — a sweep that

@@ -7,16 +7,16 @@
       window ($7F7F-$7FD0), which code cannot use; the pads D-FATRES used were filled since
       (D-COPYALL, D-LOADRUN, D-LOADFAT). The main ROM's carve tools (jr_mapper, dupspan_indep,
       carve_scout) read only the main image.
-      ✅ **FIRST CUT (2026-11-07): 23 B for D-SDSBOOT's bridge.** [`jr_mapper_disk.py`](scratchpad/jr_mapper_disk.py) (the main
-      mapper pointed at disk.rom: [`diskcarve_jr.out`](scratchpad/diskcarve_jr.out), 9 sites, 1 in the region needed) and the
+      ✅ **FIRST CUT (2026-11-07): 23 B for D-SDSBOOT's bridge.** [`jr_mapper_disk.py`](../../scratchpad/jr_mapper_disk.py) (the main
+      mapper pointed at disk.rom: [`diskcarve_jr.out`](../../scratchpad/diskcarve_jr.out), 9 sites, 1 in the region needed) and the
       pad roster (57 pads, 478 B, the largest 15): cpmver / stime / gtime (15 B) into the
       $4ECF pad and verify (2 B) into the $55F4 pad, both empty and never entered
-      ([`padwatch_4ede.out`](scratchpad/padwatch_4ede.out), the ten DOS suites, positive control $4775 caught); the dirin /
+      ([`padwatch_4ede.out`](../../scratchpad/padwatch_4ede.out), the ten DOS suites, positive control $4775 caught); the dirin /
       dskrst `jp` veneers removed (their one caller each jumps to the target). The $782B..$7F7C
       region took the bridge fix with 1 B to spare (2026-11-07).
       ✅ **SECOND CUT (2026-11-07, after Joost: "if we still need more room in the disk rom, that
-      might be worth spending time on?"): 57 B from duplicate spans.** [`dupspan_disk.py`](scratchpad/dupspan_disk.py) (the main
-      tool pointed at disk.rom: [`diskcarve_dupspan.out`](scratchpad/diskcarve_dupspan.out), 30 byte-identical groups, a measured safe
+      might be worth spending time on?"): 57 B from duplicate spans.** [`dupspan_disk.py`](../../scratchpad/dupspan_disk.py) (the main
+      tool pointed at disk.rom: [`diskcarve_dupspan.out`](../../scratchpad/diskcarve_dupspan.out), 30 byte-identical groups, a measured safe
       net of 96 B on 2026-11-07, all page 1). (1) disk/kernel.asm's wroe_have_valid was a 47-byte PARALLEL
       COPY of the shared body's sector computation (basic/fat-prim-body.inc, now labelled
       frs_sector; SECTOR_BUF = FAT_DBUF in the disk build) -- now `jp frs_sector`: the $75A5
@@ -24,7 +24,7 @@
       callers jump there (fdel's three `jr` became `jp`): $4E4B pad 5 -> 13, $7F7C pad 1 -> 6.
       The FAT / WRBLK unit tests are green (2026-11-07).
       ✅ **THIRD CUT (2026-11-07): 124 B more, from copies the label scan cannot see.** A plain
-      repeated-byte scan over disk.rom ([`diskcarve_ngram.out`](scratchpad/diskcarve_ngram.out), sequences of 12 B or more, label
+      repeated-byte scan over disk.rom ([`diskcarve_ngram.out`](../../scratchpad/diskcarve_ngram.out), sequences of 12 B or more, label
       boundaries ignored) found what dupspan_disk could not: (1) pg0_mainrom_in was a 66-byte
       copy of the bridge template's own page-0 switch (br_mainin_tmpl: EXPTBL into C, then
       br_p0in_tmpl -- the EXPTBL read before rather than after saving $A8, the same registers
@@ -40,7 +40,7 @@
       (the fdc_read_phys / fdc_write_phys prefix 34 B, the getalloc / fat_have_free_cluster
       scan bodies 60 B, rename / delete tails).
       📏 Verified on the FULL battery (250/250) + the excluded five; the disk collection
-      ([`diskcorpus_dc5.out`](scratchpad/diskcorpus_dc5.out)) moved two rows, both explained: ss-final (the known interrupt-
+      ([`diskcorpus_dc5.out`](../../scratchpad/diskcorpus_dc5.out)) moved two rows, both explained: ss-final (the known interrupt-
       timing row, D-DISKRUN) and GAUNT -- bisected to the pg0_mainrom_in change, where the
       screen is IDENTICAL on both builds and only the classifier's one PC sample differed
       (scratchpad/gaunt_trans_good.out / _bad.out: the same transfers into disk.rom; a 10 T

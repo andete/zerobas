@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GETPLT` (sub-ROM $0149) — read a palette entry
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
 
 ## Summary
 
@@ -35,7 +35,7 @@ RSTPLT. Entry n is bytes 2n (B: red x 16 + blue) and 2n + 1 (C: green), unmasked
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) match the palette, the table and GETPLT's source; they differ only in
-the registers on return ([scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out)).
+the registers on return ([scratchpad/AE_xplt_msx2.out](../../../scratchpad/AE_xplt_msx2.out)).
 
 ## Open (not measured)
 

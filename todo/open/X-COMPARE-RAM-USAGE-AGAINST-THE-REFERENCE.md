@@ -123,7 +123,7 @@
       has no equivalent of must be WRITTEN, which costs ROM against the 13 B).
       ⚠️ A format mismatch (e.g. zerobas's FAC vs the BCD `DAC`) or a collision
       at the target is not decided here — those come back as priced choices.
-      📋 **STEP (1) DONE — [`docs/spec-basic-addr29.md`](docs/spec-basic-addr29.md)**
+      📋 **STEP (1) DONE — [`docs/spec-basic-addr29.md`](../../docs/spec-basic-addr29.md)**
       (2026-09-24): every variable classified E (equate, 0 B) / W (write) /
       N (new state) / ✋ (Joost's choice). **No target collides with a zerobas
       cell.** Tally: 1 plain E (`FBUFFR`), the pointer chain (moves TOGETHER —
@@ -497,7 +497,7 @@
       buys 1 byte per active GOSUB. The ruling was asked as a simple shrink; this
       is the price it did not show.
       🔬 **THE REFERENCE'S MECHANISM, MEASURED THE SAME DAY at Joost's request**
-      ([`docs/reference-stack-frames.md`](docs/reference-stack-frames.md), RAM
+      ([`docs/reference-stack-frames.md`](../../docs/reference-stack-frames.md), RAM
       and registers only): frames live on the Z80 stack below `STKTOP`, each
       starting with a TYPE TOKEN and with NO chain words — GOSUB =
       `[8D][trap entry 2][caller line 2][resume ptr 2]` (7 B; the trap pointer
@@ -599,7 +599,7 @@
       stays 🤖 for the D-ADDR29 arc below it):~~
       🏗️ **RULED BY JOOST, 2026-09-25: *"Drop DETOKBUF"*** (lever 1, as
       recommended) — render LIST/ASCII-SAVE a token at a time; +1280 B on both
-      builds. **Spec: [`docs/spec-detokbuf-drop.md`](docs/spec-detokbuf-drop.md)**
+      builds. **Spec: [`docs/spec-detokbuf-drop.md`](../../docs/spec-detokbuf-drop.md)**
       — the buffer has FIVE users (LIST, KEY LIST, two PRINT USING tenants, the
       GC's sort array), because a sub-ROM tenant cannot print directly.
       🟢 **S1 SHIPPED (2026-09-25): every renderer writes a 96 B WINDOW
@@ -678,13 +678,13 @@
       each with its ceiling proved.
       📏 **LEVER (3) MEASURED AGAINST THE REFERENCE, 2026-10-12 (Joost: *"our own
       buffers, test what buffers the reference uses, and see if we can meet the
-      same"*).** [`refwork_probe.py`](scratchpad/refwork_probe.py) ->
-      [`refwork_probe.out`](scratchpad/refwork_probe.out): a write watchpoint over
+      same"*).** [`refwork_probe.py`](../../scratchpad/refwork_probe.py) ->
+      [`refwork_probe.out`](../../scratchpad/refwork_probe.out): a write watchpoint over
       the work area's DATA span ($F39A..$FD99 -- the RAM-resident code below and
       the hooks above are excluded, and only ADDRESSES are recorded), armed
       after boot, each case minus a control. Its first run armed at power-on and
       saw the BIOS clear all 2560 addresses in every case
-      ([`refwork_probe_firstrun.out`](scratchpad/refwork_probe_firstrun.out)); it
+      ([`refwork_probe_firstrun.out`](../../scratchpad/refwork_probe_firstrun.out)); it
       now refuses such a control.
       | job | VG-8020 (measured) | zerobas | its size |
       |---|---|---|---|
@@ -707,8 +707,8 @@
       what sits below the hole moves up into it.
       ➡️ Next: confirm DEF FN's footprint; price (i)-(iii); then the moves, one
       buffer per commit, each with `fremem_probe.py` and ram-map-check.
-      📏 **TRPTBL'S LAYOUT, MEASURED 2026-10-12** ([`trptbl_probe.py`](scratchpad/trptbl_probe.py)
-      -> [`trptbl_probe.out`](scratchpad/trptbl_probe.out), VG-8020, the 78
+      📏 **TRPTBL'S LAYOUT, MEASURED 2026-10-12** ([`trptbl_probe.py`](../../scratchpad/trptbl_probe.py)
+      -> [`trptbl_probe.out`](../../scratchpad/trptbl_probe.out), VG-8020, the 78
       data bytes PEEKed): 3-byte entries **KEY 1-10, STOP, SPRITE, STRIG 0-4,
       INTERVAL** ($FC7F), 24 B reserved, all zeroed by RUN; byte 0 = `01` ON /
       `02` STOP / `00` OFF (OFF KEEPS the pointer); bytes 1-2 = the handler
@@ -725,7 +725,7 @@
       And its 54 B raise FRE(0) only after the workspace is packed (iii).
       ➡️ The move that pays is LINEBUF + TOKBUF (832 B, contiguous at $EB00)
       into BUF + KBUF, then the packing; price those first.
-      📏 **THE GAP, RE-MEASURED 2026-10-12** ([`fremem_1012.out`](scratchpad/fremem_1012.out),
+      📏 **THE GAP, RE-MEASURED 2026-10-12** ([`fremem_1012.out`](../../scratchpad/fremem_1012.out),
       NODISK vs the VG-8020): **−4978 B in all eight states** (28815 vs 23837
       at boot); every economy delta still matches to the byte. 🔮 Predicted
       the 09-26 figure, −4750: **MISS by 228 B -- zerobas's fixed RAM GREW
@@ -734,8 +734,8 @@
       reference has one too -- in which case the reference's FRE already pays
       for it and it should not widen the gap. ➡️ Attribute it first (`git log`
       of TXTMAX / the pool / HIMEM-side claims since 09-26, `ramlayout_probe.py`).
-      ✅ **ATTRIBUTED THE SAME DAY** ([`ramlayout_1012.out`](scratchpad/ramlayout_1012.out)
-      against 09-26's [`ramlayout_run.out`](scratchpad/ramlayout_run.out)): NODISK
+      ✅ **ATTRIBUTED THE SAME DAY** ([`ramlayout_1012.out`](../../scratchpad/ramlayout_1012.out)
+      against 09-26's [`ramlayout_run.out`](../../scratchpad/ramlayout_run.out)): NODISK
       CTLTOP $D906 -> $DD22, FRE(0) 22763 -> 23815 (+1052, where DETOKBUF's drop
       gave +1280). The 228 B are the CHANNEL BLOCKS: on 09-26 zerobas's table
       was 306 B, 230 B SMALLER than the reference's 536; D-FCBSHAPE (09-30 /
@@ -778,7 +778,7 @@
       DEF FN's parameter area ran "up to LINEBUF" (FN_AREA), so it would have
       grown into the freed page -- pinned to FN_PAREA_CEIL = $EB00, FN_MAXP stays
       9. Suites: input / linemax / inputdn / inputary / screditor / diskascii /
-      cas-ascii all green. Knives ([`rambuf_knife.out`](scratchpad/rambuf_knife.out)):
+      cas-ascii all green. Knives ([`rambuf_knife.out`](../../scratchpad/rambuf_knife.out)):
       K-R1 (the cap back to `jr nc`) -> exactly diskascii + cas-ascii RED; K-R2
       (a cursor that never advances) -> exactly input RED; restored green. 🔮 Both
       HIT. No FRE change, by design: $EB00..$EBFF is a hole mid-workspace.
@@ -796,15 +796,15 @@
       SCORED PASS, knife included: the `corrupt` reader turned a missing span
       into the STRING "<none>", which agrees with itself. It is None now (refused
       by compare()); the whole linemax gate is still 62/62
-      ([`ramkbuf_linemax.out`](scratchpad/ramkbuf_linemax.out)). (b) With a real
+      ([`ramkbuf_linemax.out`](../../scratchpad/ramkbuf_linemax.out)). (b) With a real
       readout the knife K-T1 (bound cut) STILL read green
-      ([`ramkbuf_knife.out`](scratchpad/ramkbuf_knife.out)): in this layout the
+      ([`ramkbuf_knife.out`](../../scratchpad/ramkbuf_knife.out)): in this layout the
       unbounded crunch overruns into BUF -- its own source -- AHEAD of the read
       cursor, and the `0#` literals' $00 bytes end the line early, so nothing
       past BUF is touched. The bound's absence is invisible on the machine for
       this input; its witness moved to the HOST: tests/test_tokenise.py crunches
       into TOKBUF from a source elsewhere over a sentinel and reads the reach --
-      321 live, 831 with the bound cut ([`ramkbuf_hostknife.out`](scratchpad/ramkbuf_hostknife.out)).
+      321 live, 831 with the bound cut ([`ramkbuf_hostknife.out`](../../scratchpad/ramkbuf_hostknife.out)).
       🔮 Predicted the rows `32769 10` (MISS: the wrapped anchor), the knife red
       (MISS twice), the host reach ~829 cut (HIT, 831).
       ✅ **(3) DONE 2026-10-13 (D-RAMSHIFT): THE FIRST FRE GAIN, +618 B ON BOTH
@@ -814,13 +814,13 @@
       its own address ($E26A; every FRETOP access is a 16-bit load/store by
       name, no adjacency assumed). Block $E000..$E269 -> $EB00..$ED69 (+$0B00,
       a whole number of pages: every low byte kept); TXTMAX $E000 -> $E26A.
-      [`tools/ws_shift.py`](tools/ws_shift.py) rewrote 195 literal equates and
+      [`tools/ws_shift.py`](../../tools/ws_shift.py) rewrote 195 literal equates and
       VERIFIED from the resolved maps of both components (no .sym) that 229
       names moved exactly as claimed and nothing else did, the 70 disk mirrors
-      through their basic originals ([`ramshift_apply.out`](scratchpad/ramshift_apply.out)).
-      📏 [`fremem_shift.out`](scratchpad/fremem_shift.out): diskless **-4360 in
+      through their basic originals ([`ramshift_apply.out`](../../scratchpad/ramshift_apply.out)).
+      📏 [`fremem_shift.out`](../../scratchpad/fremem_shift.out): diskless **-4360 in
       all eight states** (was -4978), every economy delta still equal;
-      [`ramshift_disk.out`](scratchpad/ramshift_disk.out): the disk build 23705
+      [`ramshift_disk.out`](../../scratchpad/ramshift_disk.out): the disk build 23705
       against the CF-3300's 23430 -- **275 AHEAD** (was 343 short). 🔮 Both
       predicted exactly: HIT, HIT.
       ⚠️ $E000 IS PROGRAM RAM NOW: kwram / kwtime / castail / probe_signal POKE
@@ -841,8 +841,8 @@
       name only, so all three passed it. ✅ The four claims shifted (each keeps
       its old span in a note); ramfree / txtceil / prgend_init read the moving
       cells from build/basic-reloc.sym. Green after:
-      [`ramshift_ramfree.out`](scratchpad/ramshift_ramfree.out),
-      [`ramshift_txtceil.out`](scratchpad/ramshift_txtceil.out).
+      [`ramshift_ramfree.out`](../../scratchpad/ramshift_ramfree.out),
+      [`ramshift_txtceil.out`](../../scratchpad/ramshift_txtceil.out).
       ➡️ FOR THE NEXT SHIFTS: ws_shift.py should rewrite the FREE-RAM claims
       too, and the checker's blind forms (tuples, renamed copies) want a sweep
       -- grep the probes for the shifted range's literals before the battery.
@@ -884,8 +884,8 @@
       before clear_vars, which is byte-for-byte what that reset always computed.
       Walls: page 1 111 -> 90 B, low 49 -> 48, sub page 0 71 -> 70 (clean build).
       Unchanged on all four machines, as predicted
-      ([`ramceil_fremem.out`](scratchpad/ramceil_fremem.out),
-      [`ramceil_disk.out`](scratchpad/ramceil_disk.out)). ⚠️ NO KNIFE YET: with
+      ([`ramceil_fremem.out`](../../scratchpad/ramceil_fremem.out),
+      [`ramceil_disk.out`](../../scratchpad/ramceil_disk.out)). ⚠️ NO KNIFE YET: with
       the two ceilings equal, the boot DECISION cannot be witnessed -- step (b)
       owes the knife (cut the branch: the diskless FRE must fall back).
       ⚠️ For (b): a SHIFT boot leaves a disk ROM RECORDED (DISKSLOT_OK) but
@@ -898,17 +898,17 @@
       disk ROM lowers HIMEM exactly when it installs). (b) should ASSERT the
       two agree, or test DISKSLOT_OK directly.
       📏 **(b) MEASURED FIRST, 2026-10-13: WHAT DOES THE DISKLESS BUILD WRITE?**
-      [`nodiskuse_probe.py`](scratchpad/nodiskuse_probe.py) -- a write watch over
+      [`nodiskuse_probe.py`](../../scratchpad/nodiskuse_probe.py) -- a write watch over
       $E26A..$F37F on NODISK, armed after boot, 20 cases (line entry, INPUT,
       DEF FN, traps, USING, strings, arrays, FOR/GOSUB, ON ERROR, math, SCREEN 2
       graphics, PLAY, RENUM/DELETE, KEY, CLEAR/MAXFILES ...). 🔮 Predicted
       ~1.4 KB never written: MISS, 3528 B
-      ([`nodiskuse_firstrun.out`](scratchpad/nodiskuse_firstrun.out)) -- "never
+      ([`nodiskuse_firstrun.out`](../../scratchpad/nodiskuse_firstrun.out)) -- "never
       written by these cases" is a LOWER BOUND ON USE, not free space: a
       buffer's tail stays unwritten unless a case fills it (STRSCR 13 of 256),
       and boot-only cells (the trampoline copy, the slot scan) are written
       before the watch arms and only read after. Its use is COUNTER-EVIDENCE
-      ([`nodiskuse_probe.out`](scratchpad/nodiskuse_probe.out)): 6 statically
+      ([`nodiskuse_probe.out`](../../scratchpad/nodiskuse_probe.out)): 6 statically
       disk-only cells the diskless build DID write. Four are cross-ROM overlays
       (a disk cell parked in a basic cell's bytes -- WA_SEG = FN_PAREA, the BDOS
       pair at $E542, RES_STUBS_END in the stack's reach): they move WITH their
@@ -924,8 +924,8 @@
       order checked (a write after init_filechan builds the channel blocks is
       as bad); (b3) a permanent stress row: strings and channel blocks pushed
       up to the diskless ceiling, against the VG-8020; then (b4) the move.
-      📏 **(b1) THE WRITER CENSUS, 2026-10-13** ([`dowrite_probe.py`](scratchpad/dowrite_probe.py)
-      -> [`dowrite_probe.out`](scratchpad/dowrite_probe.out)): the disk-only
+      📏 **(b1) THE WRITER CENSUS, 2026-10-13** ([`dowrite_probe.py`](../../scratchpad/dowrite_probe.py)
+      -> [`dowrite_probe.out`](../../scratchpad/dowrite_probe.out)): the disk-only
       set (1085 B) watched on NODISK from POWER-ON, with the writer's PC, over
       the same 20 cases. Main / sub code: ONLY `fldi_lp` (fld_init) -- 🔮
       predicted fld_init + fld_clear_chan (CLOSE: no case closes a channel) +
@@ -952,21 +952,21 @@
       drops the widths of cells that overlap (disputed / overrun), so two cells
       moved onto each other vanished from the check as they collided. Widths now
       come from the BEFORE map, applied at the after addresses; the control
-      refuses with six NEW OVERLAPs ([`ramfld_apply.out`](scratchpad/ramfld_apply.out)
+      refuses with six NEW OVERLAPs ([`ramfld_apply.out`](../../scratchpad/ramfld_apply.out)
       is the real run: 9 names). And a boot-order sequel: clear_vars'
       heap_reset ran against the seed (the disk ceiling), leaving the heap's
       top 256 B below the diskless ceiling -- boot now re-runs heap_reset once
       the ceiling is chosen (the disk build had the mild form all along).
-      📏 [`ramfld_fremem.out`](scratchpad/ramfld_fremem.out): diskless **-4104
+      📏 [`ramfld_fremem.out`](../../scratchpad/ramfld_fremem.out): diskless **-4104
       in all eight states** (was -4360), deltas equal;
-      [`ramfld_disk.out`](scratchpad/ramfld_disk.out): disk build unchanged,
+      [`ramfld_disk.out`](../../scratchpad/ramfld_disk.out): disk build unchanged,
       23705. 🔮 Both exact: HIT.
-      🔒 **New gate `make ceiling-acceptance`** ([`basic_probe_ceiling.py`](probes/basic/basic_probe_ceiling.py)):
+      🔒 **New gate `make ceiling-acceptance`** ([`basic_probe_ceiling.py`](../../probes/basic/basic_probe_ceiling.py)):
       the boot's choice read back (TXTCEIL / HIMEM against the sym) -- the
       knife D-RAMCEIL owed: K-C1 (the diskless branch cut) -> exactly the
-      nodisk row red, restored green ([`ramfld_knife.out`](scratchpad/ramfld_knife.out)).
+      nodisk row red, restored green ([`ramfld_knife.out`](../../scratchpad/ramfld_knife.out)).
       Its first two runs read INSTRUMENT FAULT on every row
-      ([`ramfld_knife_firstrun.out`](scratchpad/ramfld_knife_firstrun.out)):
+      ([`ramfld_knife_firstrun.out`](../../scratchpad/ramfld_knife_firstrun.out)):
       the readout line wrapped -- at 41 characters, then at 37: the boot width
       is 37 (D-BOOTWIDTH), not 40.
       ⚠️ (b3) NOT ADDED, and why: FLD_DESC's new bytes are, on the diskless
@@ -978,8 +978,8 @@
       ➡️ NEXT in (b): the FAT buffers need the cassette pair out of them first
       (step c); the remaining disk-only cells are small and mostly overlays.
       📏 **THE WORKSPACE'S UNATTRIBUTED RUNS, CHECKED ON BOTH BUILDS, 2026-10-13**
-      ([`holecheck_probe.py`](scratchpad/holecheck_probe.py) ->
-      [`holecheck_probe.out`](scratchpad/holecheck_probe.out)): 14 runs of >= 16 B
+      ([`holecheck_probe.py`](../../scratchpad/holecheck_probe.py) ->
+      [`holecheck_probe.out`](../../scratchpad/holecheck_probe.out)): 14 runs of >= 16 B
       that neither map covers (747 B, the disk interrupt stack and $F200..$F37F
       excluded), watched from power-on with the writer's PC over the 20 cases.
       446 B never written, identical on both builds. 🔮 "most never written"
@@ -1007,8 +1007,8 @@
       comment ranges stale by a shift delta found only ZTRAP (the rest are
       historical notes). ⚠️ tools/ws_shift.py rewrites equates, not comment
       ranges: the next shift must update them too (FOR_CUR and ZTRAP).
-      📏 Re-run against the corrected map ([`holecheck_probe.out`](scratchpad/holecheck_probe.out);
-      the first: [`holecheck_firstrun.out`](scratchpad/holecheck_firstrun.out)):
+      📏 Re-run against the corrected map ([`holecheck_probe.out`](../../scratchpad/holecheck_probe.out);
+      the first: [`holecheck_firstrun.out`](../../scratchpad/holecheck_firstrun.out)):
       9 candidates, 477 B, written by NOTHING of ours on either build (only
       C-BIOS's power-on page probe at $EE00). 🔮 Predicted ~477 B and only
       that writer: HIT.
@@ -1026,8 +1026,8 @@
       keep, the reason in its own comment; (c) a zerobas mechanism (the
       sub-ROM bridge) -> keep, minimise; (4) one table, one TODO item per (a)
       group.
-      📏 **(1) DONE, 2026-10-13** ([`officialram_inventory.py`](scratchpad/officialram_inventory.py)
-      -> [`officialram_inventory.out`](scratchpad/officialram_inventory.out)):
+      📏 **(1) DONE, 2026-10-13** ([`officialram_inventory.py`](../../scratchpad/officialram_inventory.py)
+      -> [`officialram_inventory.out`](../../scratchpad/officialram_inventory.out)):
       3283 B of declared cells in $E26A..$F37F -- files / channels / disk
       1857, cassette 542, graphics 472, string engine 300, sub-ROM bridge /
       boot 209, PRINT USING 154, traps 70, math 64, control pool 54,
@@ -1039,8 +1039,8 @@
       different number FORMAT, so priced, not assumed). Small in bytes; each
       also makes a PEEK of the official cell answer as on the reference.
       ✅ **(2), FIRST GROUP, 2026-10-13 (D-OFFICIAL): TRCFLG AND MAXFIL.**
-      [`officialcell_probe.py`](scratchpad/officialcell_probe.py) ->
-      [`officialcell_before.out`](scratchpad/officialcell_before.out): the
+      [`officialcell_probe.py`](../../scratchpad/officialcell_probe.py) ->
+      [`officialcell_before.out`](../../scratchpad/officialcell_before.out): the
       VG-8020 keeps TRON in TRCFLG $F7C4 (175 under TRON in every context
       measured -- direct, program, TRON twice -- 0 under TROFF), MAXFILES in
       MAXFIL $F85F (1 at boot, 3 after MAXFILES=3), the READ position in
@@ -1048,21 +1048,21 @@
       every row. 🔮 Predicted exactly that: HIT. TRACEFLAG and MAXF now ARE
       those cells (equates; TRON stores 175 -- same size as `ld a,1`; the
       trace test only asks nonzero), both rows SAME after
-      ([`officialcell_probe.out`](scratchpad/officialcell_probe.out)). The
+      ([`officialcell_probe.out`](../../scratchpad/officialcell_probe.out)). The
       CF-3300's own disk ROM READS MAXFIL during LOAD / SAVE
       (disk/docs/spec-diskcode-eviction.md) -- the official cell is where a
       disk ROM looks. 🔒 New gate `make officialcell-acceptance`
-      ([`basic_probe_officialcell.py`](probes/basic/basic_probe_officialcell.py)):
+      ([`basic_probe_officialcell.py`](../../probes/basic/basic_probe_officialcell.py)):
       the four rows gated, DATPTR reported; knives K-O1 (TRACEFLAG back) ->
       exactly trcflg red, K-O2 (MAXF back) -> exactly maxfil + maxfil-ctl
-      red, restored green ([`official_knife.out`](scratchpad/official_knife.out)).
+      red, restored green ([`official_knife.out`](../../scratchpad/official_knife.out)).
       ➡️ NEXT: DATPTR -- zerobas's DATAPTR + DATASTATE (0 = unpositioned)
       against the reference's single pointer ($8000 = TXTTAB-1 when
       unpositioned): measure where the reference's pointer points after a
       READ, a RESTORE n and an exhausted DATA list first. Then LPTPOS /
       PRTFLG (LPRINT needs a printer plugged in the probe).
-      📏 DATPTR MEASURED, 2026-10-13 ([`datptr_probe.py`](scratchpad/datptr_probe.py)
-      -> [`datptr_probe.out`](scratchpad/datptr_probe.out)): ONE pointer on the
+      📏 DATPTR MEASURED, 2026-10-13 ([`datptr_probe.py`](../../scratchpad/datptr_probe.py)
+      -> [`datptr_probe.out`](../../scratchpad/datptr_probe.out)): ONE pointer on the
       VG-8020, no state byte -- TXTTAB-1 when unpositioned (RUN, RESTORE), the
       `,` after an item with more to come, the line's 0 after its last item,
       `RESTORE n` -> the byte before line n (the $0D convention), and after
@@ -1074,14 +1074,14 @@
       DATA` + RESUME NEXT the VG-8020's next READ starts over (C = 5, the
       handler runs ONCE; after RESTORE 60 it rereads line 60's 7); zerobas
       stayed exhausted (C = 0, the handler ran twice)
-      ([`datareset_probe.py`](scratchpad/datareset_probe.py), before values in
-      its docstring; after: [`datareset_probe.out`](scratchpad/datareset_probe.out)).
+      ([`datareset_probe.py`](../../scratchpad/datareset_probe.py), before values in
+      its docstring; after: [`datareset_probe.out`](../../scratchpad/datareset_probe.out)).
       ✅ readdata-body.inc rov_none sets DATASTATE 0 ("unpositioned, from
       RESTORE_LINE") as it reports out-of-data -- the error is still raised
       on that READ; +3 B sub page 0 (70 -> 67). 🔒 Three rows in
       `make readerl-acceptance` (oodrewind / oodcount / oodrestore), 10/10;
       knife K-D1 (the store cut) -> exactly those three red, restored green
-      ([`datareset_knife.out`](scratchpad/datareset_knife.out)). 🔮 HIT.
+      ([`datareset_knife.out`](../../scratchpad/datareset_knife.out)). 🔮 HIT.
       🏗️ **ORDER CONFIRMED BY JOOST, 2026-10-13:** asked *"we should probably fix
       the bigest own invented ram regions first?"*, he confirmed the proposed
       order: *"go ahead with that order"*. BIGGEST FIRST, each step MEASURED
@@ -1097,16 +1097,16 @@
       (4) FLD_DESC (256 B), then PRINT USING's scratch -> FBUFFR.
       The small official-cell moves (DATPTR, LPTPOS / PRTFLG, the D-REHOME
       re-judgements) come after: they buy correctness more than bytes.
-      📏 **(1) MEASURED, 2026-10-13.** [`casbuf_probe.py`](scratchpad/casbuf_probe.py)
-      -> [`casbuf_probe.out`](scratchpad/casbuf_probe.out): the VG-8020 does
+      📏 **(1) MEASURED, 2026-10-13.** [`casbuf_probe.py`](../../scratchpad/casbuf_probe.py)
+      -> [`casbuf_probe.out`](../../scratchpad/casbuf_probe.out): the VG-8020 does
       ALL cassette I/O through the CHANNEL's own 256 B buffer (block + 9):
       SAVE / LOAD "CAS:" through #0's ($F177..$F276, VARPTR(#0) $F16E),
       OPEN ... AS #1 for output or input through #1's ($F280..$F37F) --
       no other buffer of size. zerobas wrote CAL_BUF ($E600..$E6FF) in every
       case, its own channel blocks ($E090 / $E199, the same 265 B shape)
       untouched. 🔮 HIT.
-      [`casmotor_probe.py`](scratchpad/casmotor_probe.py) ->
-      [`casmotor_probe.out`](scratchpad/casmotor_probe.out): an 8-block
+      [`casmotor_probe.py`](../../scratchpad/casmotor_probe.py) ->
+      [`casmotor_probe.out`](../../scratchpad/casmotor_probe.out): an 8-block
       ASCII LOAD with the motor line (PPI port C bit 4) sampled -- the
       VG-8020 stops the motor between blocks (~0.1 s gaps), and so does
       zerobas (~0.2-0.3 s; D-CAS4BLK). 🔮 "zerobas keeps it running": MISS.
@@ -1131,7 +1131,7 @@
       run read 13/14: casbin bty / bbare (PEEK 0) -- BLOAD's tenant calls the
       SUB-side cas_open_match, never main's stub, so its skip read through an
       unset pointer; BLOAD's resident stub sets it now (+4 B). All 14 green
-      after. Knives ([`casfcb_knife.out`](scratchpad/casfcb_knife.out)): K-F1
+      after. Knives ([`casfcb_knife.out`](../../scratchpad/casfcb_knife.out)): K-F1
       (BLOAD's set) -> exactly casbin bty + bbare red; K-F2 (the search stub's
       set) -> casbin lbin + cas-ascii red; restored green. 🔮 Both HIT.
       tools/ram_map.py's selftest arms A13 / A14 used the cassette buffers as
@@ -1143,14 +1143,14 @@
       tools/ws_shift.py: FSECTOR_BUF / FWBUF (and disk.rom's SECTOR_BUF / WBUF,
       the same bytes) to $E36A / $E56A, everything that sat above them +$400;
       TXTMAX_NODISK $E36A -> $E76A, TXTMAX unchanged. 158 names moved, each
-      verified ([`fatfloor_wsshift_apply.out`](scratchpad/fatfloor_wsshift_apply.out)).
-      📏 [`fatfloor_fremem.out`](scratchpad/fatfloor_fremem.out): diskless boot
+      verified ([`fatfloor_wsshift_apply.out`](../../scratchpad/fatfloor_wsshift_apply.out)).
+      📏 [`fatfloor_fremem.out`](../../scratchpad/fatfloor_fremem.out): diskless boot
       FRE(0) 24711 -> **25735**, the gap to the VG-8020 -4104 -> **-3080**, every
       state's delta identical to the reference's; the disk build unchanged at
-      23705, 275 ahead of the CF-3300 ([`fatfloor_disk.out`](scratchpad/fatfloor_disk.out)).
+      23705, 275 ahead of the CF-3300 ([`fatfloor_disk.out`](../../scratchpad/fatfloor_disk.out)).
       🔮 Predicted 25735 / 23705: HIT, both. `CLEAR 25000` now fits on both
       machines; 26000 is the first size refused here and the VG-8020 still takes
-      28000 ([`fatfloor_clear_probe.out`](scratchpad/fatfloor_clear_probe.out),
+      28000 ([`fatfloor_clear_probe.out`](../../scratchpad/fatfloor_clear_probe.out),
       🔮 HIT 6/6) -- the memory-map page's example was stale and is rewritten.
       🔴 **WHAT THE MOVE BROKE, AND WHAT THAT FIXED IN THE INSTRUMENTS:**
       (a) three asserts tested the literal `$E560` disk-cell wall -> they test
@@ -1167,8 +1167,8 @@
       REFUSED on CALSLT_HL carrying FWBUF's 512 B. Fixed (built before the
       rewrite, without the ABI); negative control (STRSCR onto FLD_DESC) still
       REFUSED; a reverse-apply + forward-apply round trip reproduced the
-      committed diff file for file ([`fatfloor_wsshift_reverse.out`](scratchpad/fatfloor_wsshift_reverse.out),
-      [`fatfloor_wsshift_negctl.out`](scratchpad/fatfloor_wsshift_negctl.out));
+      committed diff file for file ([`fatfloor_wsshift_reverse.out`](../../scratchpad/fatfloor_wsshift_reverse.out),
+      [`fatfloor_wsshift_negctl.out`](../../scratchpad/fatfloor_wsshift_negctl.out));
       (d) ram_map selftest arms A4 / A6 and wall-literal's rule-B plant pinned
       addresses the move changed -> they read the declarations now.
       🆕 **A STANDING GATE FOR THE DISKLESS FLOOR.** Nothing checked, after a
@@ -1180,11 +1180,11 @@
       `DISK-ONLY` (bare aliases of a tagged name pass); FLD_DESC, FSECTOR_BUF and
       FWBUF carry it, and ws_shift takes the tag as --disk-only. Selftest A17
       (real tree green, a planted untagged cell RED, the alias shape accepted).
-      Knife K-FF1 ([`fatfloor_knife.out`](scratchpad/fatfloor_knife.out)):
+      Knife K-FF1 ([`fatfloor_knife.out`](../../scratchpad/fatfloor_knife.out)):
       TXTMAX_NODISK +$100, into live cells -> ram-map-check RED naming 31 of
       them, ceiling-acceptance green; restored green. 🔮 HIT (run 1 NOT SCORED:
       its restore went red on a drifted docs/ram-map.md).
-      The census ([`dowrite_probe.out`](scratchpad/dowrite_probe.out)) now leaves
+      The census ([`dowrite_probe.out`](../../scratchpad/dowrite_probe.out)) now leaves
       the floor out -- it is program RAM, where the string heap's writes are
       correct; the buffers are reached by symbol, so the pre-move census (written
       by nothing but C-BIOS's power-on RAM probe) still answers who writes them.
@@ -1198,8 +1198,8 @@
       can reuse the temp pool a DRAW argument lives in), the X-frame stack
       GFX_DFSTK (32 B) and ~60 B of parse state; sprites (GFX_VBUF, 32 B) and
       CIRCLE (8 B) are the smaller tenants.
-      [`drawbuf_probe.py`](scratchpad/drawbuf_probe.py) ->
-      [`drawbuf_probe.out`](scratchpad/drawbuf_probe.out), write watch, each
+      [`drawbuf_probe.py`](../../scratchpad/drawbuf_probe.py) ->
+      [`drawbuf_probe.out`](../../scratchpad/drawbuf_probe.out), write watch, each
       case minus a control that assigns the same strings: the **VG-8020 has no
       DRAW buffer** -- a 3-level `X` nest writes 18 B and a 200-character string
       12 B, all just under STKTOP (the Z80 stack), plus documented work-area
@@ -1226,8 +1226,8 @@
       is gone and GFX_DBUF can go entirely instead of moving below SP: measure
       that first, then do D-DRAWSUBVAR and this together.
       ✅ **(2a) DONE 2026-10-13 (D-DRAWINPLACE): DRAW reads its strings IN PLACE.**
-      📏 First the claim: [`drawalloc_probe.py`](scratchpad/drawalloc_probe.py) ->
-      [`drawalloc_probe.out`](scratchpad/drawalloc_probe.out) -- a write watch
+      📏 First the claim: [`drawalloc_probe.py`](../../scratchpad/drawalloc_probe.py) ->
+      [`drawalloc_probe.out`](../../scratchpad/drawalloc_probe.out) -- a write watch
       bracketed by marks, `DRAW"XA$;R=A;XB$;"` against the same figure with no
       substitution, writers named by PC (our ROM): the substitution-only writers
       touch the ARY parameter block, str_eval's cursor and vlf_found -- NOTHING
@@ -1237,10 +1237,10 @@
       own ERR 5 are gone; the nesting cap (8) stays. **Sub page 0 43 -> 76 B**
       (the copy was code too). 📏 The buffer's limit was a real divergence:
       two 132-character splices (272 B) drew on the VG-8020 and raised ERR 5 here
-      ([`drawinplace_before.out`](scratchpad/drawinplace_before.out)), and now
-      draw ([`drawinplace_after.out`](scratchpad/drawinplace_after.out)). 🔮 Both
+      ([`drawinplace_before.out`](../../scratchpad/drawinplace_before.out)), and now
+      draw ([`drawinplace_after.out`](../../scratchpad/drawinplace_after.out)). 🔮 Both
       HIT. Row `draw_long_splice` in graphics-acceptance phase B; knife K-DI1
-      ([`drawinplace_knife.out`](scratchpad/drawinplace_knife.out)): the copying
+      ([`drawinplace_knife.out`](../../scratchpad/drawinplace_knife.out)): the copying
       tenant put back -> exactly that row fails; restored 13/13. HIT. The whole
       graphics-acceptance green (403 rows).
       ✅ **(2b) DONE 2026-10-13: the layout -- diskless FRE(0) +288.** 🔴 The plan
@@ -1261,21 +1261,21 @@
       under main's TXTMAX_NODISK (exported by gen_resident_abi.py now). GFX_DANGLE
       declared its width mid-comment (the ARY_CUR trap) and was pinned as an
       "overruns"; declared, unpinned.
-      📏 [`drawcompact_fremem.out`](scratchpad/drawcompact_fremem.out): diskless
+      📏 [`drawcompact_fremem.out`](../../scratchpad/drawcompact_fremem.out): diskless
       boot FRE(0) 25735 -> **26023**, gap to the VG-8020 **-2792**; disk build
-      23705 unchanged ([`drawcompact_disk.out`](scratchpad/drawcompact_disk.out)).
+      23705 unchanged ([`drawcompact_disk.out`](../../scratchpad/drawcompact_disk.out)).
       🔮 Both HIT. `CLEAR 26000` now fits here, 27000 is refused
-      ([`drawcompact_clear_probe.out`](scratchpad/drawcompact_clear_probe.out);
+      ([`drawcompact_clear_probe.out`](../../scratchpad/drawcompact_clear_probe.out);
       predicted 26000 refused: MISS).
       📏 **(3) MEASURED 2026-10-14 -- STRSCR IS MOSTLY ALREADY RETIRED.**
-      [`strscr_probe.py`](scratchpad/strscr_probe.py) ->
-      [`strscr_probe.out`](scratchpad/strscr_probe.out) (write watch, case minus
+      [`strscr_probe.py`](../../scratchpad/strscr_probe.py) ->
+      [`strscr_probe.out`](../../scratchpad/strscr_probe.out) (write watch, case minus
       a numeric control): concatenation, STR$, MID$ and STRING$ build their
       results straight in the string space on BOTH machines (the VG-8020 also
       writes FBUFFR for STR$) -- zerobas writes NOTHING in STRSCR for them.
       🔮 "zerobas stages them in STRSCR": MISS (arrays slice-4a moved the engine
-      to the heap). [`strscr_census.py`](scratchpad/strscr_census.py) ->
-      [`strscr_census.out`](scratchpad/strscr_census.out), writers by PC: only
+      to the heap). [`strscr_census.py`](../../scratchpad/strscr_census.py) ->
+      [`strscr_census.out`](../../scratchpad/strscr_census.out), writers by PC: only
       READ of string DATA (`rovs_put`), INPUT / LINE INPUT / INPUT$
       (`read_into_strscr`, `sidr_lp`), and KEY (`fname_expr`, the shared
       file-name evaluator, and `key_store`); string functions and PRINT USING
@@ -1303,16 +1303,16 @@
       so an item staged at BUF+0.. never overwrites the text still to be read.
       Then the one-page shift `ws_shift.py --move E26A EF00 100` freed
       STRSCR's old page (TXTMAX $E36A, diskless ceiling $E98A).
-      📏 [`strscrbuf_fremem.out`](scratchpad/strscrbuf_fremem.out): diskless
+      📏 [`strscrbuf_fremem.out`](../../scratchpad/strscrbuf_fremem.out): diskless
       boot FRE(0) 26279, VG-8020 28815, gap -2536 (was -2792); 🔮 -2536 HIT.
-      [`strscrbuf_disk.out`](scratchpad/strscrbuf_disk.out): disk build 23961,
+      [`strscrbuf_disk.out`](../../scratchpad/strscrbuf_disk.out): disk build 23961,
       CF-3300 23430 (531 ahead); 🔮 23961 HIT.
-      🔪 K-SB1 ([`strscrbuf_knife.py`](scratchpad/strscrbuf_knife.py) ->
-      [`strscrbuf_knife.out`](scratchpad/strscrbuf_knife.out)): the one-byte
+      🔪 K-SB1 ([`strscrbuf_knife.py`](../../scratchpad/strscrbuf_knife.py) ->
+      [`strscrbuf_knife.out`](../../scratchpad/strscrbuf_knife.out)): the one-byte
       shift undone -> `input-acceptance` RED on the console INPUT rows only,
       restored green; 🔮 HIT. `tests/test_input.py` gained the same negative
       control (a line at LINEBUF+0 must misread).
-      📏 **RE-MEASURED 2026-11-03 ([`fremem_20261103.out`](scratchpad/fremem_20261103.out)):
+      📏 **RE-MEASURED 2026-11-03 ([`fremem_20261103.out`](../../scratchpad/fremem_20261103.out)):
       the diskless gap is 0 in all eight states** -- boot 28815 on both, every delta and
       every `FRE("")` identical (D-WSZERO moved the diskless ceiling to `$F380`). Goal (a)
       holds on the diskless build; (b) / (c) moves stay Joost's, per the rung.

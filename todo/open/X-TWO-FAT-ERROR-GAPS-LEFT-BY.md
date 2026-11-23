@@ -5,7 +5,7 @@
       lean on a SECOND verb (`SAVE",A"`, OPEN/OUTPUT+INPUT, FILES), so a break
       elsewhere can mark their row NOT MEASURED — loud, but not their own verb.
       Detail:
-      [`docs/spec-fat-error-verb-control.md`](docs/spec-fat-error-verb-control.md) §8.6.
+      [`docs/spec-fat-error-verb-control.md`](../../docs/spec-fat-error-verb-control.md) §8.6.
       *(Item (3), `run-missing`'s second message, is CLOSED — see D-RUNTAIL
       below.)*
       ✅ **GAP (1) CLOSED and GAP (2) DEMONSTRATED, 2026-09-05 (D-FATVERB,

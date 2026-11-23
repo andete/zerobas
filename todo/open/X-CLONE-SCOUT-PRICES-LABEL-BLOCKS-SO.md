@@ -1,6 +1,6 @@
 - [ ] ⚠️ **`clone_scout` prices LABEL-BLOCKS, so a routine split by an interior
       label is priced at a fraction of its collapse.** Filed 2026-08-23 by
-      D-DEFFNLAND, [`docs/spec-basic-deffnland.md`](docs/spec-basic-deffnland.md)
+      D-DEFFNLAND, [`docs/spec-basic-deffnland.md`](../../docs/spec-basic-deffnland.md)
       §4.3. `arga_pack_fac`/`arga_pack_single` were ranked at **14 B** and
       measured at **27 B**: the tool compared only their 22-byte header spans,
       because `apf_lp`/`aps_lp` are separate symbols, so the two identical

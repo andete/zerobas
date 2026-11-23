@@ -1,6 +1,6 @@
 - [ ] **A `--say` row with no brackets cannot have a reading.**
       Found 2026-08-01 in D-NAMBLANK. `result_span_after_echo`
-      ([`probes/lib/omsx_repl.py:1212`](probes/lib/omsx_repl.py:1212)) returns the
+      ([`probes/lib/omsx_repl.py:1212`](../../probes/lib/omsx_repl.py:1212)) returns the
       text between the last `[` and its `]`, so a `SAY_ONLY` payload that prints
       no brackets reads `<none>` on **every** side — and sides that all failed
       compare EQUAL and report *agrees*. `basic_probe_lnblank.py`'s `dir-print`
@@ -26,7 +26,7 @@
       out-parameter idiom `run_cases` already has for `settle_out` and the same
       cure as `_why_missing`. **Additive: every existing caller passes no `why`
       and is untouched**, which a dedicated arm pins.
-      🔬 Gated by [`tests/test_span_reader.py`](tests/test_span_reader.py), 8
+      🔬 Gated by [`tests/test_span_reader.py`](../../tests/test_span_reader.py), 8
       arms under `make unit-test` — including the one that matters, that a
       bracketless payload and an abort give DIFFERENT reasons. ⚠️ Deliberately
       NOT in `omsx_repl --selftest`: that entry takes a MACHINE and boots an
@@ -46,13 +46,13 @@
       THROUGH A SECOND SENTINEL:** the TAIL_ONLY reader's `<NO ECHO>` was
       commented "(fatal)" but was not in `BAD`, so three sides that all lost
       the echo row would have AGREED. It is in `BAD` now.
-      [`tests/test_lnblank_blind.py`](tests/test_lnblank_blind.py), 11 arms under
+      [`tests/test_lnblank_blind.py`](../../tests/test_lnblank_blind.py), 11 arms under
       `make unit-test`, NEGATIVE arms included (all-sides no-reading refused;
       one side only is NOT refused); it caught my first cut, which keyed on
       "aborted" — a word the no-`[` reason also contains. `make
       lnblank-say-acceptance` after: **208/208**, 0 BLIND (predicted — hit).
       ➡️ **STILL OPEN:** the other 35 files that reach the span reader pass no
-      `why`; converting them stays opportunistic. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
+      `why`; converting them stays opportunistic. Same shape as [`chancost` NOREAD](../../docs/chancost-cf3300-characterization.md):
       a sentinel that also means "no reading" is not a measurement.
       🎚️ APPARATUS — --say readout
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).

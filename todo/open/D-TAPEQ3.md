@@ -17,20 +17,20 @@
         ✅ **FIXED 2026-11-05 (to ~20x; the rest is W3b).** Measured first: the PUT issued 451
         FDC commands -- per new cluster a FAT read and both copies written for the mark, again
         for the link, plus a seek before nearly each -- and the CF-3300 NONE before CLOSE
-        ([`recslow_fdc_probe.py`](scratchpad/recslow_fdc_probe.py) -> [`recslow_fdc.out`](scratchpad/recslow_fdc.out)).
+        ([`recslow_fdc_probe.py`](../../scratchpad/recslow_fdc_probe.py) -> [`recslow_fdc.out`](../../scratchpad/recslow_fdc.out)).
         frnd_locate now extends the chain with the FAT sector HELD (frl_ext, disk/kernel.asm):
         FAT_DEFER became two bits (bit 0 "this write may wait", bit 1 "FAT_MBUF dirty"),
         fat_alloc_cluster scans a dirty buffer as cached and writes it out before replacing it
         (fac_cacheinit / fac_flushdirty, disk/fat.asm), and the sector goes to both copies once
         at the end, or on failure. No state outlives the call. 16 commands
-        ([`recslow_fdc_after.out`](scratchpad/recslow_fdc_after.out), 🔮 "~10" close); frames
-        ([`recslow_time_probe.py`](scratchpad/recslow_time_probe.py) -> [`recslow_time.out`](scratchpad/recslow_time.out))
+        ([`recslow_fdc_after.out`](../../scratchpad/recslow_fdc_after.out), 🔮 "~10" close); frames
+        ([`recslow_time_probe.py`](../../scratchpad/recslow_time_probe.py) -> [`recslow_time.out`](../../scratchpad/recslow_time.out))
         32767: 54 vs the CF-3300's 2, 65535: 57 vs 3, LOF and the record read back identical
         (🔮 "30-60" HIT). 🔴 MY FIRST BUILD CORRUPTED THE DISK: frl_defer loaded HL with the
         flag's address between the link's `ex de,hl` and its call, so the link went to a
         garbage cluster and the "FAT sector" was written over data sectors 51 / 54. The
         emulator count only looked odd (data R/W per cluster); the HOST rig
-        ([`recslow_host.py`](scratchpad/recslow_host.py), nothing trapped but sector I/O, its
+        ([`recslow_host.py`](../../scratchpad/recslow_host.py), nothing trapped but sector I/O, its
         own FAT decode) showed the 1-cluster chain at once, and then proved the fix on a
         32-cluster chain, a chain across the FAT sector straddle at 341 (PREUSED=334) and a
         disk filling mid-extension (TOT=14: 12 clusters, 66, both copies equal). frl_alloc /

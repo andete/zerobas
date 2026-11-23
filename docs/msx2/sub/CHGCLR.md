@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGCLR` (sub-ROM $0111) — set the screen colours
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
 
 ## Summary
 
@@ -38,7 +38,7 @@ BAKCLR ($A5). Interrupts ON on return.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) do not mask FORCLR / BAKCLR: R#7 in SCREEN 0 and SCREEN 1's colour table
-read $E5 where the references give $A5; other A / F ([scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out)).
+read $E5 where the references give $A5; other A / F ([scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out)).
 
 ## Open (not measured)
 

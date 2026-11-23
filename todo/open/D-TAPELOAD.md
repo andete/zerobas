@@ -4,7 +4,7 @@
       tapecorpus_run.py tallies RUNS? (both running, screens far apart): per title, a timing / phase
       difference or a real divergence -- fix ours, file the rest with their evidence. Queued right
       after D-DEFERRSTUDY's current families.
-      ✅ **TRIAGED 2026-10-28** ([`runsq_triage.py`](scratchpad/runsq_triage.py) -> [`runsq_triage.out`](scratchpad/runsq_triage.out): both machines every
+      ✅ **TRIAGED 2026-10-28** ([`runsq_triage.py`](../../scratchpad/runsq_triage.py) -> [`runsq_triage.out`](../../scratchpad/runsq_triage.out): both machines every
       2 s T400..T420, bytes apart per VDP table, the BEST ref x zb frame pair, the bytes apart in
       EVERY pair; then side-by-side tile renders, kept in session scratch -- third-party screens):
       | class | titles | reading |
@@ -24,28 +24,28 @@
       📼 **THE TAPE RUN, REBUILT AND TRACKED (2026-10-22):** the one-off harness and its
       pick_martos (51) lived in a lost session scratchpad, and the standing rule below (re-run
       ALL the tapes after a page-0 / page-1 layout change) was overdue -- D-DISKREST, D-P0CB
-      A-C2 and D-COLOREQ all moved main. [`tapecorpus_run.py`](scratchpad/tapecorpus_run.py) +
-      [`tapecorpus_pick.list`](scratchpad/tapecorpus_pick.list) (every collection title TODO.md
+      A-C2 and D-COLOREQ all moved main. [`tapecorpus_run.py`](../../scratchpad/tapecorpus_run.py) +
+      [`tapecorpus_pick.list`](../../scratchpad/tapecorpus_pick.list) (every collection title TODO.md
       names: 42, derived so it can be rebuilt; the collection's location is TAPECORPUS_DIR,
       never written here). openMSX's own autorun types the load command (omsx_preflight
       un-arms it on every launch -- the tool drops that trace first, as basic_probe_autorun.py
-      does). [`tapecorpus_run1.out`](scratchpad/tapecorpus_run1.out), VG-8020 vs zerobas
+      does). [`tapecorpus_run1.out`](../../scratchpad/tapecorpus_run1.out), VG-8020 vs zerobas
       diskless, the screen at T420: **SAME 9, NEAR 11, RUNS? 21, ZB-PROMPT 1, RESET 0.** 🔮
       "few or no RESET" HIT; "a quarter SAME / NEAR" MISSED low (20 of 42). Most RUNS? rows sit
       at the SAME program line on both (animation phase). Known: BMX Simulator (D-SLOT3EXP, 🙋).
       🔧 **2026-10-27: a still-LOADING machine read as RESET.** `state()` called a direct-
       mode screen with the boot banner on it BANNER, and the banner stays on screen above
       `Found:` while a tape loads -- so Space, sampled at T300, read RESET
-      ([`tapeload_space_t300.out`](scratchpad/tapeload_space_t300.out) after the fix). New states ZB-LOADING /
+      ([`tapeload_space_t300.out`](../../scratchpad/tapeload_space_t300.out) after the fix). New states ZB-LOADING /
       REF-LOADING (scratchpad/tapecorpus_run.py), checked before the banner. The finding
       behind it is D-ASCTAPESPD (TIER 5).
       🆕 **Blocker** (no history before -- it entered the pick on a stray word): zerobas stops
       with `Undefined line number in 88` (`GOSUB 217`) where the VG-8020 runs on to line 132's
       `HIT SPACE KEY`. A CLOAD tape; loaded, NOT run, zerobas's program is intact (lines 135-140
-      and 200-230 list as they should, [`blocker_list.out`](scratchpad/blocker_list.out)); after
+      and 200-230 list as they should, [`blocker_list.out`](../../scratchpad/blocker_list.out)); after
       the run line 139 ends in garbage tokens and nothing past 140 is left -- the program text
       is overwritten WHILE IT RUNS. Its setup lines VPOKE the colour table and use
-      STOP ON / INTERVAL ON / PLAY ([`blocker_cload.out`](scratchpad/blocker_cload.out), the
+      STOP ON / INTERVAL ON / PLAY ([`blocker_cload.out`](../../scratchpad/blocker_cload.out), the
       VG-8020's half; zerobas's half of that run lost its timing).
       📏 **NARROWED (2026-10-22, work-area cells and a hash of $8001..VARTAB -- an equality
       check, nothing interpreted):** the game REWRITES ITS OWN PROGRAM TEXT on the VG-8020 too
@@ -53,7 +53,7 @@
       2nd file, `DEF USR=&HE000`) runs from line 260. On zerobas the first change comes at the
       same lines (65-68) and USR is never reached: the WRITES land somewhere else. Ruled out:
       PLAY changing a literal-assigned string in place (own program,
-      [`playlit_probe.out`](scratchpad/playlit_probe.out): intact on both -- 🔮 MISSED); CLOAD's
+      [`playlit_probe.out`](../../scratchpad/playlit_probe.out): intact on both -- 🔮 MISSED); CLOAD's
       VARTAB (zerobas $B2CE, the VG-8020 $B2CF -- the reference counts one more zero past the end
       link; POKEd to $B2CF before RUN, zerobas still fails in line 88 -- 🔮 MISSED, unless RUN
       re-derives VARTAB). STANDING DIFFERENCE: the simple-variable area (VARTAB..ARYTAB) is 185 B
@@ -71,26 +71,26 @@
       see which address it computes.
       ✅ **FOUND AND FIXED the same night -> D-PLAYIY (below): NOT the DEF FN layout.** Lines
       60-90 hold no POKE (🔮 MISSED). A pointer trace
-      ([`blocker_trace.out`](scratchpad/blocker_trace.out),
-      [`tapetrace_probe.py`](scratchpad/tapetrace_probe.py)) showed VARTAB fixed and the
+      ([`blocker_trace.out`](../../scratchpad/blocker_trace.out),
+      [`tapetrace_probe.py`](../../scratchpad/tapetrace_probe.py)) showed VARTAB fixed and the
       line chain cut at line 140's link ($8B03) between lines 25 and 65 -- the reference's
       546 lines stay whole. A write watchpoint on zerobas
-      ([`blocker_watch.out`](scratchpad/blocker_watch.out)) caught `pl_voice` storing a
+      ([`blocker_watch.out`](../../scratchpad/blocker_watch.out)) caught `pl_voice` storing a
       voice descriptor there from line 62 on (`PLAY "...",A1$,A3$`). After the fix
-      ([`blocker_trace_fixed.out`](scratchpad/blocker_trace_fixed.out)) the chain stays 546
+      ([`blocker_trace_fixed.out`](../../scratchpad/blocker_trace_fixed.out)) the chain stays 546
       lines and the game runs the lines the reference ran (132, 217-237, 336/338).
       📼 **RE-RUN after D-PLAYIY (2026-10-22, the low region changed):**
-      [`tapecorpus_playiy.out`](scratchpad/tapecorpus_playiy.out) -- **SAME 9, NEAR 12, RUNS? 21,
+      [`tapecorpus_playiy.out`](../../scratchpad/tapecorpus_playiy.out) -- **SAME 9, NEAR 12, RUNS? 21,
       ZB-PROMPT 0, RESET 0.** Two classes moved, both up: Blocker ZB-PROMPT -> RUNS? (both at
       line 132; it seeds RND from TIME, so the playfields differ), Elite RUNS? -> NEAR. No title
       lost a class; the rest is the VRAM distance of animated screens. 🔮 "Blocker leaves
       ZB-PROMPT, nothing regresses" HIT.
       📼 **RE-RUN after D-LOADBASE / D-HSTKE (2026-10-22):**
-      [`tapecorpus_loadbase.out`](scratchpad/tapecorpus_loadbase.out) -- SAME 9, NEAR 10, RUNS?
+      [`tapecorpus_loadbase.out`](../../scratchpad/tapecorpus_loadbase.out) -- SAME 9, NEAR 10, RUNS?
       22, RESET 1. Boulder Dash and Elite flipped NEAR -> RUNS? on the 128-byte line (129, 198:
       animated screens). 🔴 **Demonia RUNS? -> RESET, reproducible** -- 🔮 "nothing regresses"
-      MISSED. Bisected ([`demonia_reset.out`](scratchpad/demonia_reset.out),
-      [`demonia_timing.out`](scratchpad/demonia_timing.out)): hstke off -> RUNS?; only the RUN
+      MISSED. Bisected ([`demonia_reset.out`](../../scratchpad/demonia_reset.out),
+      [`demonia_timing.out`](../../scratchpad/demonia_timing.out)): hstke off -> RUNS?; only the RUN
       site off -> RUNS?; hstke's pushes WITHOUT the hook call -> RUNS?; and with NO hook at all,
       20 nops at that site -> RESET, 40 / 80 -> RUNS?. So D-HSTKE is not the cause: the
       attract demo crashes on some timings whatever the RUN site does -- at T281 the CPU
@@ -101,32 +101,32 @@
       addresses only) -- likely a BASIC / BIOS internal entry it calls (D-BASICINT /
       D-BIOSINT class) on a path the reference survives.
       📏 2026-10-23 (after D-STEP7DATE / D-KEYREP / D-TPAPTAIL (c) / D-F346): Demonia alone
-      reads **RUNS?**, both at line 50 ([`demonia_rerun.out`](scratchpad/demonia_rerun.out)) --
+      reads **RUNS?**, both at line 50 ([`demonia_rerun.out`](../../scratchpad/demonia_rerun.out)) --
       🔮 "still RESET" MISSED: the timing moved again. The latent crash is unchanged in kind;
       today's layout no longer lands on it, and 2026-10-22's 20-nop reproduction was against
       another layout. Not chased further without a reproduction on the current build.
       📼 **RE-RUN after D-DEFFNVAR / D-BLOADSTK (2026-10-24, two page-1 layout shifts):**
-      [`tapecorpus_bloadstk.out`](scratchpad/tapecorpus_bloadstk.out) -- **SAME 9, NEAR 12,
+      [`tapecorpus_bloadstk.out`](../../scratchpad/tapecorpus_bloadstk.out) -- **SAME 9, NEAR 12,
       RUNS? 21, RESET 0** (42 titles). Three moved, all up: Boulder Dash RUNS? -> NEAR, Hustler
       RUNS? -> NEAR, Demonia RESET -> RUNS?; none lost a class. 🔮 "RESET 0, nothing
       regresses" HIT.
       📼 **Demonia RESET AGAIN (2026-11-13, after D-INITIO) -- AND NOW REPRODUCED ON THE CURRENT
-      BUILD, SO CHASED** ([`tapecorpus_initio.out`](scratchpad/tapecorpus_initio.out): SAME 10, NEAR 11, RUNS? 20, RESET 1; 🔮 "no class
-      worse" MISSED; Elite RUNS? -> SAME). Deterministic ([`demonia_run1.out`](scratchpad/demonia_run1.out)); reverting
-      initio.patch -> RUNS? ([`demonia_run2.out`](scratchpad/demonia_run2.out)), but so does NOT the value: variant A (reg 15
+      BUILD, SO CHASED** ([`tapecorpus_initio.out`](../../scratchpad/tapecorpus_initio.out): SAME 10, NEAR 11, RUNS? 20, RESET 1; 🔮 "no class
+      worse" MISSED; Elite RUNS? -> SAME). Deterministic ([`demonia_run1.out`](../../scratchpad/demonia_run1.out)); reverting
+      initio.patch -> RUNS? ([`demonia_run2.out`](../../scratchpad/demonia_run2.out)), but so does NOT the value: variant A (reg 15
       only), B (reg 11 only) and **C (no PSG change at all -- 7 NOPs, the same layout)** all
-      RESET ([`demonia_A.out`](scratchpad/demonia_A.out), [`demonia_B.out`](scratchpad/demonia_B.out), [`demonia_C.out`](scratchpad/demonia_C.out)). And INITIO runs at boot, so every
+      RESET ([`demonia_A.out`](../../scratchpad/demonia_A.out), [`demonia_B.out`](../../scratchpad/demonia_B.out), [`demonia_C.out`](../../scratchpad/demonia_C.out)). And INITIO runs at boot, so every
       timing after it moves: the game's own INITIO calls (it calls it, from $A747, during its
-      load) already arrive 0.09 s apart from the pre-patch run ([`demonia_trace3_head.out`](scratchpad/demonia_trace3_head.out) /
-      [`demonia_trace3_pre.out`](scratchpad/demonia_trace3_pre.out)). 📏 **The crash, traced (scratchpad/demonia_probe.py, registers / RAM
+      load) already arrive 0.09 s apart from the pre-patch run ([`demonia_trace3_head.out`](../../scratchpad/demonia_trace3_head.out) /
+      [`demonia_trace3_pre.out`](../../scratchpad/demonia_trace3_pre.out)). 📏 **The crash, traced (scratchpad/demonia_probe.py, registers / RAM
       only):** at 279.0973 s the game's OWN RAM code moves SP to $E1AC -- RAM it never wrote,
-      $FF -- and returns to $FFFF; executing there pushes $0000 and the machine resets ([`demonia_trace5.out`](scratchpad/demonia_trace5.out),
-      [`demonia_trace6.out`](scratchpad/demonia_trace6.out): the only writes to $E1A8.. are that push). The SP value is in no work-area
-      cell ([`demonia_trace7.out`](scratchpad/demonia_trace7.out)); no data read of the moved ROM bytes ([`demonia_trace2.out`](scratchpad/demonia_trace2.out)). 🔴 A
+      $FF -- and returns to $FFFF; executing there pushes $0000 and the machine resets ([`demonia_trace5.out`](../../scratchpad/demonia_trace5.out),
+      [`demonia_trace6.out`](../../scratchpad/demonia_trace6.out): the only writes to $E1A8.. are that push). The SP value is in no work-area
+      cell ([`demonia_trace7.out`](../../scratchpad/demonia_trace7.out)); no data read of the moved ROM bytes ([`demonia_trace2.out`](../../scratchpad/demonia_trace2.out)). 🔴 A
       hypothesis RULED OUT: a BIOS call returning with interrupts enabled where the reference
       leaves them off (a game borrowing SP under DI) -- 14 entries the game calls in its last
-      60 ms, called under DI, return with the SAME IFF on the VG-8020 and here ([`bioseif_probe.py`](scratchpad/bioseif_probe.py)
-      -> [`bioseif_run1.out`](scratchpad/bioseif_run1.out)). Standing: a timing-selected path in the game's own code; the input that
+      60 ms, called under DI, return with the SAME IFF on the VG-8020 and here ([`bioseif_probe.py`](../../scratchpad/bioseif_probe.py)
+      -> [`bioseif_run1.out`](../../scratchpad/bioseif_run1.out)). Standing: a timing-selected path in the game's own code; the input that
       selects it is not found. D-INITIO stays (two references agree on it). ➡️ Which value the
       game's code turns into SP $E1AC -- a PC ring over its RAM code in the last 0.1 ms before
       279.0973 (the transitions log shows only BIOS crossings), then where that value came from.
@@ -163,15 +163,15 @@
       T60..T420): on the **Toshiba HX-10** and the **Canon V-20** (European MSX1s) Buzz Off,
       Shark Hunter, Harry Fox and Punch & Judy end in the SAME states as on the VG-8020
       (the HX-10 even at the same distances) -- they RUN
-      ([`tapes_xmachine_Toshiba_HX-10.out`](scratchpad/tapes_xmachine_Toshiba_HX-10.out),
-      [`tapes_xmachine_Canon_V-20.out`](scratchpad/tapes_xmachine_Canon_V-20.out)). On the
+      ([`tapes_xmachine_Toshiba_HX-10.out`](../../scratchpad/tapes_xmachine_Toshiba_HX-10.out),
+      [`tapes_xmachine_Canon_V-20.out`](../../scratchpad/tapes_xmachine_Canon_V-20.out)). On the
       **Philips NMS 8250** (MSX2) Buzz Off, Shark Hunter and Harry Fox RESET after loading
       (`Disk BASIC version 1.0` / `Ok` by T180), and Punch & Judy stops at `Disk offline in
       10` (the disk drive's default device, not MSX2 as such)
-      ([`tapes_xmachine_Philips_NMS_8250.out`](scratchpad/tapes_xmachine_Philips_NMS_8250.out)).
+      ([`tapes_xmachine_Philips_NMS_8250.out`](../../scratchpad/tapes_xmachine_Philips_NMS_8250.out)).
       The **Sony HB-75P** run is NOT a reading: all four rows sit at `S2 L0`, the machine's
       built-in firmware rather than BASIC, so the tape never loaded
-      ([`tapes_xmachine_Sony_HB-75P.out`](scratchpad/tapes_xmachine_Sony_HB-75P.out)).
+      ([`tapes_xmachine_Sony_HB-75P.out`](../../scratchpad/tapes_xmachine_Sony_HB-75P.out)).
       Loopy Laundry is not in the tape pick list (not run). 🔮 HIT both ways ("MSX1s run
       them, the MSX2 does not"). ➡️ So these internals are STABLE ACROSS THE MSX1 BASIC 1.0
       FAMILY and broke with MSX2 -- input for Joost's scope ruling, not a ruling.
@@ -179,7 +179,7 @@
       which address, no further investigation needed now) but we can't already be compatible
       with all of them yet. We still have completeness and correctness and size constraints
       already as big challenges."* -> RECORDED in
-      [`docs/game-internal-addresses.md`](docs/game-internal-addresses.md) (supported, recorded,
+      [`docs/game-internal-addresses.md`](../../docs/game-internal-addresses.md) (supported, recorded,
       other models); no further investigation, no new entries. $2010 (the font) stays PARKED
       (Joost, same day: "keep it parked").
       (A2) **Loopy Laundry (pick_martos's copy) calls ~25 BASIC-ROM internals**
@@ -330,10 +330,10 @@
       VG-8020 and $36B2 on zerobas at line 50, against the SAME $AD06 on both for
       the first (direct) BLOAD, the control. So the program BUILDS a different
       name here; the search is not at fault: OUR tapes
-      ([`casname_probe.py`](scratchpad/casname_probe.py) ->
-      [`casname_run.out`](scratchpad/casname_run.out),
-      [`casname_run2.out`](scratchpad/casname_run2.out),
-      [`casname_run3.out`](scratchpad/casname_run3.out)) match alike on BOTH
+      ([`casname_probe.py`](../../scratchpad/casname_probe.py) ->
+      [`casname_run.out`](../../scratchpad/casname_run.out),
+      [`casname_run2.out`](../../scratchpad/casname_run2.out),
+      [`casname_run3.out`](../../scratchpad/casname_run3.out)) match alike on BOTH
       machines for `CAS:` / `cas:` / `Cas:`, trailing spaces, a kana name, a
       name built by an expression, a name longer than six, and skip alike for a
       space after the colon, a lowercase name, $00 padding and a short prefix.
@@ -375,11 +375,11 @@
       unless the code moved VARTAB, so a VARTAB stale from another path cannot
       leak in. Page 1 46 -> 20 B (2026-10-15). Gate row rvt64 in
       basicint-acceptance (-64 on both); knife K-VA1 (the adoption store cut)
-      -> ZB 0, DIVERGES: HIT ([`vartab_knife.out`](scratchpad/vartab_knife.out)).
+      -> ZB 0, DIVERGES: HIT ([`vartab_knife.out`](../../scratchpad/vartab_knife.out)).
       With it, Harry Fox's program text stays intact ($088F / 1302 B on both)
       -- 🔮 "and line 50 then matches file 2": MISS, the name still differs
       ($36B2); bare `BLOAD"AB"` / `BLOAD"AB",R` match alike too
-      ([`casname_run4.out`](scratchpad/casname_run4.out)). Parked: the input of
+      ([`casname_run4.out`](../../scratchpad/casname_run4.out)). Parked: the input of
       that name is still unlocated.
       ✅ **LOCATED AND FIXED 2026-10-17 (D-CASDOT): THE NAME HAS A DOT.** The
       published pointer cells at lines 40-50 (a CURLIN write-watch, addresses
@@ -493,8 +493,8 @@
       📏 Gate `tapionlead-acceptance` (our own two-file tape + our own routine:
       TAPION, A's header, TAPION, K bytes of A's 206-byte data, TAPION AGAIN,
       one TAPIN = B's header byte $D0): k190 / k200 / k204 / end SAME. 🔪
-      [`taplead_knife.py`](scratchpad/taplead_knife.py) ->
-      [`taplead_knife.out`](scratchpad/taplead_knife.out): K-TL1 (the loop cut,
+      [`taplead_knife.py`](../../scratchpad/taplead_knife.py) ->
+      [`taplead_knife.out`](../../scratchpad/taplead_knife.out): K-TL1 (the loop cut,
       byte-neutral -- the first cut added 2 B and overflowed the tape block's
       1-byte margin, NOT SCORED) -> k190 diverges, HIT.
       ⚠️ **RESIDUAL, PINNED:** 🎚️ TIER 1 since 2026-10-15 -- Punch & Judy stops on
@@ -502,7 +502,7 @@
       (K = 8, a TAPION deep inside the data) still
       diverges: it measured a run of LONG halves (zero bits) as its short --
       LOWLIM 41 against a leader's 21
-      ([`taplead_lowlim.out`](scratchpad/taplead_lowlim.out)) -- so every half
+      ([`taplead_lowlim.out`](../../scratchpad/taplead_lowlim.out)) -- so every half
       classifies short and the verify passes on data. A lower bound would catch
       it, but at these counts (~3 per half at 1200 baud, ~1.5 at 2400) one would
       also reject real 2400-baud leaders: a redesign of the measurement, not a
@@ -519,10 +519,10 @@
       (1) a per-HALF lower bound (B > LOWLIM >> 4, taken free from 7*sum's high
       byte) passed the simulator and refused EVERY real leader -- the first
       verify half read B = 1 on 290 of 347 locks
-      ([`taplead_bvals.out`](scratchpad/taplead_bvals.out)): the LOWLIM
+      ([`taplead_bvals.out`](../../scratchpad/taplead_bvals.out)): the LOWLIM
       arithmetic eats most of the half in progress. (2) Full cycles with ONE
       settle half: the first verified cycle still read 4-5 against the leader's
-      steady 6 ([`taplead_cycles.out`](scratchpad/taplead_cycles.out), the lower
+      steady 6 ([`taplead_cycles.out`](../../scratchpad/taplead_cycles.out), the lower
       bound disabled for the measurement). (3) A settle CYCLE: 5/5.
       🐛 Found on the way: tapion_haveavg copied the sum through DE and CLOBBERED
       D -- cas_half's current level -- so the first verify half was measured
@@ -541,8 +541,8 @@
       mains have content up to $09ED. Cost: main page 1 118 -> 72 B (2026-10-15).
       🔮 Scored: per-half bound "mid SAME, the rest stay": MISS (all five
       diverged); one-settle-half cycles: MISS (all five); settle cycle: HIT.
-      🔪 Knives ([`taplead_knife.py`](scratchpad/taplead_knife.py) ->
-      [`taplead_knife2.out`](scratchpad/taplead_knife2.out)): K-TL1 (the whole
+      🔪 Knives ([`taplead_knife.py`](../../scratchpad/taplead_knife.py) ->
+      [`taplead_knife2.out`](../../scratchpad/taplead_knife2.out)): K-TL1 (the whole
       verify cut) -> mid + k190 diverge, end SAME: HIT; K-TL2 (ONLY the lower
       bound cut, byte-neutral) -> ONLY `mid` diverges: HIT -- the gate sees the
       new bound and nothing else depends on it.
@@ -589,17 +589,17 @@
       happened to return harmlessly; the $73AC pin shifted `lrset_rhs+6` under
       it. **The pins did not break a feature: they ended a coincidence.**
       📏 **CHARACTERISED (2026-10-15): $73E5 IS THE PLAY STATEMENT'S BODY**
-      ([`basicint_73e5_probe.py`](scratchpad/basicint_73e5_probe.py): OUR code,
+      ([`basicint_73e5_probe.py`](../../scratchpad/basicint_73e5_probe.py): OUR code,
       run by USR, calls $73E5 with HL at a tokenised text it POKEd; outputs on the
       screen, under ON ERROR). With a garbage buffer at HL: ERR 13 and our code
-      after the `call` never runs ([`basicint_73e5.out`](scratchpad/basicint_73e5.out)).
-      With TEXT at HL ([`basicint_73e5_t.out`](scratchpad/basicint_73e5_t.out),
-      [`basicint_73e5_s.out`](scratchpad/basicint_73e5_s.out),
-      [`basicint_73e5_len.out`](scratchpad/basicint_73e5_len.out)): `""`, `"A"`,
+      after the `call` never runs ([`basicint_73e5.out`](../../scratchpad/basicint_73e5.out)).
+      With TEXT at HL ([`basicint_73e5_t.out`](../../scratchpad/basicint_73e5_t.out),
+      [`basicint_73e5_s.out`](../../scratchpad/basicint_73e5_s.out),
+      [`basicint_73e5_len.out`](../../scratchpad/basicint_73e5_len.out)): `""`, `"A"`,
       `"AB"`, `"ABC"` RETURN (HL past the argument, at the line's end); `7` and `A`
       -> 13; `"HELLO"` and A$ = "XYZ" -> 5 -- the rule is the CHARACTERS (H, X, Y
       are not music-macro commands), not the length. And right after, PLAY(1)
-      reads -1 ([`basicint_73e5_play.out`](scratchpad/basicint_73e5_play.out)):
+      reads -1 ([`basicint_73e5_play.out`](../../scratchpad/basicint_73e5_play.out)):
       the string was QUEUED as music. So the game plays its tunes by CALLING
       BASIC's PLAY handler, HL at its own `"..."` arguments, and it RETURNS.
       🔮 Scored: "it returns": HIT (for valid MML); "it moves or compares memory
@@ -624,8 +624,8 @@
       📏 Gate rows play_ok ("ABC": [OK + PLAY(0..3)] and the HL returned),
       play_e5 ("HELLO"), play_e13 (7): 3/3 SAME, `make basicint-acceptance` 10/10.
       🔪 K-AV1 (basicint_play's call cut, byte-neutral) -> play_ok DIVERGES: HIT
-      ([`avtak_knife.out`](scratchpad/avtak_knife.out)). The probe on the pinned
-      ROM ([`basicint_73e5_pinned.out`](scratchpad/basicint_73e5_pinned.out)):
+      ([`avtak_knife.out`](../../scratchpad/avtak_knife.out)). The probe on the pinned
+      ROM ([`basicint_73e5_pinned.out`](../../scratchpad/basicint_73e5_pinned.out)):
       HL and the error codes match on every row; two leftovers, both NOT the
       entry's: (a) "AB" leaves the reference reporting voice 2 busy after a
       DIRECT call, which a plain `PLAY "AB"` does not (same PLAY(0..3) on both
@@ -639,7 +639,7 @@
       function call` there, nothing here. X is MML's execute-substring and Y is
       not a command; which character the reference refuses is unmeasured.
       ✅ **NO LONGER REPRODUCES (re-measured 2026-11-04,
-      [`playxyz_20261104.out`](scratchpad/playxyz_20261104.out)).** 18 rows, VG-8020 and zerobas
+      [`playxyz_20261104.out`](../../scratchpad/playxyz_20261104.out)).** 18 rows, VG-8020 and zerobas
       NODISK agree on every one: `"XYZ"`, `"X"`, `"Y"`, `"Z"`, `"W"`, `"Q"`, `"H"`, `"CY"`, `"C XYZ"`
       -> `Illegal function call`; `"XYZ;"` -> `Type mismatch`; `"XA$;"` plays; and the variable /
       concatenated forms (`A$="XY"+"Z":PLAY A$`, `PLAY A$+"Y"`) -> 5 on both. 🔮 "the VG-8020

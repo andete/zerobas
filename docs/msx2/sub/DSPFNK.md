@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `DSPFNK` (sub-ROM $011D) — show the function-key line
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubfnk.asm](../../probes/bios/spec/xsubfnk.asm), [scratchpad/AE_xsubfnk_msx2.out](../../scratchpad/AE_xsubfnk_msx2.out)).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubfnk.asm](../../../probes/bios/spec/xsubfnk.asm), [scratchpad/AE_xsubfnk_msx2.out](../../../scratchpad/AE_xsubfnk_msx2.out)).
 
 ## Summary
 
@@ -32,7 +32,7 @@ drawn on the bitmap (line 204 unchanged). Interrupts ON on return.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: no labels, CNSDFG left 0, interrupts left off ([scratchpad/AE_xsubfnk_msx2.out](../../scratchpad/AE_xsubfnk_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: no labels, CNSDFG left 0, interrupts left off ([scratchpad/AE_xsubfnk_msx2.out](../../../scratchpad/AE_xsubfnk_msx2.out)).
 
 ## Open (not measured)
 

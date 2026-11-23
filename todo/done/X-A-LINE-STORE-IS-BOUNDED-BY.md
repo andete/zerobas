@@ -3,7 +3,7 @@
       `CLEAR 300,TXTTAB+1000` both references have **148** free bytes and refuse
       a 32-byte line with `Out of memory`; zerobas has **646**, stores it, and
       prints nothing — `CLEAR`'s HIMEM argument does not reach the store check
-      at [`sub/lineedit.asm:139`](sub/lineedit.asm:139), which compares
+      at [`sub/lineedit.asm:139`](../../sub/lineedit.asm:139), which compares
       `PRGEND + size` against a fixed `$BB00`.
       💰 **SCOUTED 2026-08-20 (not priced, not opened).** The right ceiling
       already exists and is already reachable — the obstacle is neither the
@@ -11,7 +11,7 @@
       tenants.
       * The bound wanted is the VARIABLE-region ceiling, `min(HIMEM,TXTMAX) −
         POOLSIZE − MAXF×FCH_CTXSZ`, which is exactly
-        [`strheap_varceil`](sub/strheap.asm) — derived, never stored, so it is
+        [`strheap_varceil`](../../sub/strheap.asm) — derived, never stored, so it is
         current by construction and `CLEAR ,himem` falls out for free.
       * 🎯 **NO NEW SUB-ROM OP IS NEEDED.** `sh_chan_addr` (op 18) answers
         `strheap_varceil() + (ch−1)×FCH_CTXSZ`, so **channel 1 IS the varceil**;
@@ -92,7 +92,7 @@
         `min(HIMEM,TXTMAX) − POOLSIZE − MAXF×FCH_CTXSZ` (HIMEM read 33769,
         TXTMAX is `$DB00`). And the sub-side arm IS assembled — K-ARM planted a
         bogus token inside the `IF CLEARPOOL` branch of
-        [`sub/lineedit.asm`](sub/lineedit.asm) and the assembler saw it on line
+        [`sub/lineedit.asm`](../../sub/lineedit.asm) and the assembler saw it on line
         170 — so this is not a branch that was compiled out.
         🟢 **READ THEM — AND THE ANSWER IS THAT `SL_CEIL equ $E038` ALIASES
         `CURLINE`.** Two readings on the **UNMODIFIED** ROM settle it, no build
@@ -120,7 +120,7 @@
         THIS ENTRY SPECIFIES IS THE THING THAT IS WRONG.** `$E058` (the head of
         the retired `GOSUB_STK` window `sysvars.inc` marks `; FREE-RAM`) was
         **measured** rather than trusted:
-        [`scratchpad/ramfree_e058.py`](scratchpad/ramfree_e058.py) fills
+        [`scratchpad/ramfree_e058.py`](../../scratchpad/ramfree_e058.py) fills
         `$E058..$E07F` with `$AA`, works a line store, `GOSUB`/`RETURN` (this IS
         the retired GOSUB stack), `FOR`/`NEXT`, string ops, `DEF FN` and `CLEAR`,
         and reads **0 of 40 bytes changed**. With that cell the 11 B build is
@@ -132,7 +132,7 @@
         whole fix moves the headroom by **four bytes**.
         🎯 **AND THE ~500 B IS NOW A FORMULA, NOT A GUESS — AND IT REFRAMES THE
         WHOLE ITEM** (D-HIMEMRES,
-        [`scratchpad/himem_reserve.py`](scratchpad/himem_reserve.py)). Sweeping
+        [`scratchpad/himem_reserve.py`](../../scratchpad/himem_reserve.py)). Sweeping
         `CLEAR <pool>,TXTTAB+<gap>` over three knobs and reading `FRE(0)`:
 
             reserve R = gap − pool − FRE(0)
@@ -164,7 +164,7 @@
         that do not exist here. That is a faithfulness call about a measured
         architectural difference, not a bug.
         🟢 **THE ROW EXISTS AND THE FIX SHIPPED (2026-09-05, D-TXTCEIL)**
-        ([`scratchpad/prgend_overrun.py`](scratchpad/prgend_overrun.py)). After
+        ([`scratchpad/prgend_overrun.py`](../../scratchpad/prgend_overrun.py)). After
         `CLEAR 300,TXTTAB+1000`, 25 typed `REM` lines cross a pool floor 700 B
         above the text base:
 
@@ -194,7 +194,7 @@
         means **the unit rows still do not cover the live ceiling**; the emulator
         row above is what does.
         🟢 **AND IT IS A COLLECTED GATE NOW: `make txtceil-acceptance`**
-        ([`probes/basic/basic_probe_txtceil.py`](probes/basic/basic_probe_txtceil.py)),
+        ([`probes/basic/basic_probe_txtceil.py`](../../probes/basic/basic_probe_txtceil.py)),
         in the EMULATOR tier, named by both membership lists. Four rows:
 
             c.fits   3 lines, room to spare   stored=111  head=589   🟢
@@ -218,7 +218,7 @@
         `make ramfree-acceptance` already fills EVERY declared window and fills
         that one across 11 workload rows on every battery run, so the cell's
         freedom is **gated**, not measured once.
-        [`scratchpad/ramfree_e058.py`](scratchpad/ramfree_e058.py) is kept as the
+        [`scratchpad/ramfree_e058.py`](../../scratchpad/ramfree_e058.py) is kept as the
         pre-flight it was — it ran before the claim was shrunk — and is not the
         standing check.
         🙋 **Still his**: whether `FRE(0)` should AGREE with the references, which
@@ -235,8 +235,8 @@
         says **SHIPPED** in its middle and **"Nothing is shipped"** at its
         bottom; a reader who scrolls to the end concludes the opposite of the
         truth [[two-sections-of-one-doc-disagreed]]. The ROM settles it, not the
-        prose: [`sub/lineedit.asm:170`](sub/lineedit.asm:170) reads
-        `ld de,(SL_CEIL)`, [`basic/program.asm:163`](basic/program.asm:163)
+        prose: [`sub/lineedit.asm:170`](../../sub/lineedit.asm:170) reads
+        `ld de,(SL_CEIL)`, [`basic/program.asm:163`](../../basic/program.asm:163)
         publishes it, commit `0731a3e0` is titled *D-TXTCEIL SHIPS*, and
         `make txtceil-acceptance` is collected in the emulator tier and ran green
         in 19 s in today's battery.
@@ -263,14 +263,14 @@
         ✅ **DECIDED BY JOOST 2026-09-07: DO NOT RESERVE BUFFERS WE DO NOT USE
         — with the caveat that we must be SURE we do not need them if the
         references do.** That caveat is now measured
-        ([`scratchpad/twochan_probe.py`](scratchpad/twochan_probe.py)):
+        ([`scratchpad/twochan_probe.py`](../../scratchpad/twochan_probe.py)):
         | row | case | CF-3300 | zerobas |
         |---|---|---|---|
         | `t.solo` | one channel, three reads | `AAA,AAA,AAA` | `AAA,AAA,AAA` |
         | `t.two` | **two channels, interleaved** | `AAA,BBB,AAA` | `AAA,BBB,AAA` |
         🔴 **REFUTED THE NEXT HOUR (2026-09-07, D-FIELDALIAS) — THE HAZARD DOES
         FIRE, AND THE SEQUENTIAL ROW WAS THE WRONG SHAPE TO SEE IT.**
-        [`scratchpad/fieldalias_probe.py`](scratchpad/fieldalias_probe.py):
+        [`scratchpad/fieldalias_probe.py`](../../scratchpad/fieldalias_probe.py):
         | field | CF-3300 | zerobas | |
         |---|---|---|---|
         | `P$` = `F$` after its own `GET #1,1` | `AAAAAAAA` | `AAAAAAAA` | SAME |
@@ -297,7 +297,7 @@
         the fix shape is not obvious — per-channel record backing, or refreshing
         the field descriptors at `fch_select`.
         🔴 **AND THE WRITE HALF CORRUPTS THE DISK (2026-09-07, D-FIELDWRITE,
-        [`scratchpad/fieldwrite_probe.py`](scratchpad/fieldwrite_probe.py)).**
+        [`scratchpad/fieldwrite_probe.py`](../../scratchpad/fieldwrite_probe.py)).**
         | row | | CF-3300 | zerobas | |
         |---|---|---|---|---|
         | `w.two` | two channels open, both FIELDed, both written | `11111111/22222222` | **`22222222/22222222`** | 🔴 DIFF |
@@ -313,7 +313,7 @@
         the fault is specifically two channels sharing one record buffer.
         🎯 **ROOT CAUSE LOCATED 2026-09-07 (D-FIELDFIX), AND IT IS A PREMISE THAT
         WAS WITHDRAWN WITHOUT ITS DEPENDANT BEING TOLD.**
-        [`basic/field.asm`](basic/field.asm:21)'s header states the design its
+        [`basic/field.asm`](../../basic/field.asm:21)'s header states the design its
         code rests on — *"the record buffer is the channel's `FSECTOR_BUF` … so a
         field's bytes live in the channel's context and **travel with it**"* —
         and the repack then set `FCH_CTXSZ equ FCH_STATESZ` with the comment
@@ -321,7 +321,7 @@
         stayed in the source after the mechanism left
         [[a-fix-falsifies-the-justification-beside-it]].
         🔴 **AND THE WRITE-BACK CACHE DOES NOT COVER THE GAP.**
-        `fat_restage_channel` ([`basic/fat-prim-body.inc:467`](basic/fat-prim-body.inc:467))
+        `fat_restage_channel` ([`basic/fat-prim-body.inc:467`](../../basic/fat-prim-body.inc:467))
         dispatches on mode — `1 = INPUT`, `2 = OUTPUT`, **everything else returns
         with "device channels own no sector"** — and `fat_detach_channel` flushes
         only mode 2. A RANDOM channel is outside BOTH, so its record is neither
@@ -352,7 +352,7 @@
         THE RESERVATION EVIDENCE. BOTH DEFECTS CLOSED, 114/114 GREEN.**
         `FCH_CTXSZ` 50 → 306 (`FCH_STATESZ + FCH_RECMAX`), plus one `ldir` in
         each of `fch_save_active` / `fch_load_ctx` so the record travels with its
-        channel — which is what [`basic/field.asm`](basic/field.asm:21)'s header
+        channel — which is what [`basic/field.asm`](../../basic/field.asm:21)'s header
         always claimed. **16 B of main page 1** (23 → 7 B free, 2026-09-07).
         | probe | before | after |
         |---|---|---|
@@ -388,7 +388,7 @@
         to `<empty>` on zerobas while the ONE-channel control `w.seq` stayed
         green, so the switch itself is what the arms break.
         🎯 **THE LIKELY REASON IS WRITTEN IN THE BODY I CALLED.**
-        `basic/randio-body.inc:267` (deleted by c577b59c; now [`hk_dget`](disk/kernel.asm)) says the rand
+        `basic/randio-body.inc:267` (deleted by c577b59c; now [`hk_dget`](../../disk/kernel.asm)) says the rand
         primitives assume *"the channel is already live (GET/PUT call
         `fch_select` first, setting `FCH_ACTIVE`)"* — and these arms call them
         from INSIDE `fch_select`, when it is not. `fdet_rand` also fires a full
@@ -397,7 +397,7 @@
         the switch machinery itself uses. ⚠️ **Not established** — the arms were
         reverted rather than instrumented [[a-mechanism-inferred-from-one-observation]].
         ✅ **AND JOOST'S QUESTION IS ANSWERED (2026-09-07, D-RESERVE,
-        [`scratchpad/reserve_probe.py`](scratchpad/reserve_probe.py)): THE
+        [`scratchpad/reserve_probe.py`](../../scratchpad/reserve_probe.py)): THE
         REFERENCE RESERVES UP FRONT FOR `MAXFILES`, NOT AS CHANNELS ARE OPENED,
         AND THE BLOCK IS NOT SIZED BY `LEN=`.**
         | case | base | +open #1 | +open #2 | closed |
@@ -414,7 +414,7 @@
         the reference uses (267 × MAXFILES); it is not waste peculiar to us, and
         "allocate only what is opened" is not what the reference does either.
         ✅ **AND IT TRACKS `MAXFILES` EXACTLY (2026-09-07, D-MAXFRE,
-        [`scratchpad/maxfiles_probe.py`](scratchpad/maxfiles_probe.py))** — one
+        [`scratchpad/maxfiles_probe.py`](../../scratchpad/maxfiles_probe.py))** — one
         program, stepping `MAXFILES` 0→4 and printing `FRE(0)` after each change
         (it must be PRINTED, not held in a variable: `MAXFILES` clears them):
         | MAXFILES | VG-8020 | CF-3300 | zerobas |
@@ -509,7 +509,7 @@
         these rows drive.
       ✅ **RE-MEASURED 2026-08-20 AT `ef50f4c` — STILL LIVE, BYTE FOR BYTE**, all
       three rows and all three sides unchanged from the 2026-08-09 reading
-      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      ([`docs/todo-staleness-sweep-2026-08.md`](../../docs/todo-staleness-sweep-2026-08.md)
       §4.8 and its §7 addendum): ` 148 ` / ` 148 ` / ` 646 ` free, the 32-byte
       line refused by both references and stored here, `99 REM Z` green on all
       three as the control. **Pinned** as `crf-oomsay` /
@@ -518,10 +518,10 @@
       can reach the OOM path on this side, so `crf-oom` agrees at ` 20  0 ` for
       the wrong reason (a *successful* store writing the same number the
       references write on a *refusal*), and R-DOT3a′ is gated by
-      [`tests/test_program.py`](tests/test_program.py) alone. Fixing this bound
+      [`tests/test_program.py`](../../tests/test_program.py) alone. Fixing this bound
       would give that rule a real row.
       ✅ **RE-MEASURED 2026-08-09 — STILL LIVE, both numbers exactly as filed**
-      ([`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
+      ([`docs/todo-staleness-sweep-2026-08.md`](../../docs/todo-staleness-sweep-2026-08.md)
       §4.8): after `CLEAR 300,TXTTAB+1000`, `FRE(0)` reads ` 148 ` on both
       references and ` 646 ` here, and the 32-byte line the references refuse is
       LISTED here beside the `99 REM Z` that fits.

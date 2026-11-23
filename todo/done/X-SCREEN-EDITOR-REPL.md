@@ -4,7 +4,7 @@
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
       📏 **SCOUTED 2026-08-26 (D-EDITSCOUT)**,
-      [`docs/spec-basic-editscout.md`](docs/spec-basic-editscout.md) — placement
+      [`docs/spec-basic-editscout.md`](../../docs/spec-basic-editscout.md) — placement
       only, nothing priced. **The feature is measured, not inferred**: the
       reference's counter payload reads **1 → 2 → 3** as re-entries accumulate,
       and entering from EITHER row of a wrapped line re-executes the whole
@@ -31,7 +31,7 @@
       the only row that saw anything, and it had been written to rule out a
       different hypothesis.
       🟢 **TWO OF THE SCOUT'S UNPRICED BULLETS ARE NOW MEASURED (2026-09-07,
-      D-EDITLINE, [`scratchpad/editline_probe.py`](scratchpad/editline_probe.py)) —
+      D-EDITLINE, [`scratchpad/editline_probe.py`](../../scratchpad/editline_probe.py)) —
       AND THE BOUNDARY ONE WENT THE EXPENSIVE WAY.**
       | row | | vg8020 | cf3300 | zb |
       |---|---|---|---|---|
@@ -79,7 +79,7 @@
       ⚠️ **STILL UNPRICED, UNCHANGED BY THIS:** the byte cost of the VRAM reader,
       `INS`/`HOME`/`CTRL`+key and the r23 function-key row, and whether a tenant may
       read VRAM from inside. The 0.6–0.9 KB figure remains the 2026-07-11 estimate.
-      ✅ **THE HAPPY PATH SHIPPED 2026-09-11 (D-SCREDIT, [`docs/spec-basic-screditor.md`](docs/spec-basic-screditor.md),
+      ✅ **THE HAPPY PATH SHIPPED 2026-09-11 (D-SCREDIT, [`docs/spec-basic-screditor.md`](../../docs/spec-basic-screditor.md),
       `make screditor-acceptance`, 10 rows, three sides).** The scout's one
       "not zero" cost measured ZERO: the reference's per-row continuation
       bookkeeping is the published `LINTTB` table ($FBB2: zero = the row

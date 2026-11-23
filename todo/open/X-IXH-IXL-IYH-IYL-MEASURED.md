@@ -2,7 +2,7 @@
       Asked by Joost 2026-08-28, who confirmed every official MSX machine
       supports them (and `pasmo` encodes them correctly), so availability is
       SETTLED and is not the question.
-      [`docs/spec-halfindex.md`](docs/spec-halfindex.md),
+      [`docs/spec-halfindex.md`](../../docs/spec-halfindex.md),
       `scratchpad/halfindex_sweep.py --selftest`.
       🎯 **THE PREFIX BYTE DECIDES THE SIZE AXIS**: a half-index access is 2 B
       against 1 B for a register and 1 B each for `push`/`pop`, so it NEVER beats

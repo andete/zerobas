@@ -1,7 +1,7 @@
 - [x] 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, AND THE PROBE
       ✅ **CLOSED 2026-09-05.** Re-verified after the fix: `make locarg-acceptance ONLY=t.zero` reads ` 0  0  0 ` on all three and the row is armed by K-LA5, the knife that found the blindness.
       CLAIMS OTHERWISE.** Filed 2026-08-09 by D-LOCARG
-      ([`docs/spec-basic-locarg.md`](docs/spec-basic-locarg.md) §8.3), found by
+      ([`docs/spec-basic-locarg.md`](../../docs/spec-basic-locarg.md) §8.3), found by
       knife K-LA5. Every `t.*` program in `basic_probe_locarg.py` opens with
       `CLS:LOCATE 7,4` so that "the cursor did not move" reads ` 4  7 ` and is
       distinguishable from the CLS home position ` 0  0 ` — the probe's `SEED`

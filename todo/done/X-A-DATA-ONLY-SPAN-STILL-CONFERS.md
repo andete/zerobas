@@ -13,7 +13,7 @@
       table). Each needs a seed or an allowlist entry with a reason before the
       gate could be believed. That triage is the slice, not the edge rule.
       ✅ **TRIAGED AND SHIPPED 2026-08-28 (D-DATASPAN),**
-      [`docs/spec-dataspan.md`](docs/spec-dataspan.md) — and the numbers above moved
+      [`docs/spec-dataspan.md`](../../docs/spec-dataspan.md) — and the numbers above moved
       in BOTH directions.
       🔴 **THE TRACKED SCRIPT REPRODUCED §12.1'S CATASTROPHE, NOT THIS
       MEASUREMENT** — `main 1195 findings / 28820 B in a 22510 B ROM`. One line:

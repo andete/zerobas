@@ -1,6 +1,6 @@
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
       EXIT-2 PATH PRINTS A DIFFERENT TABLE ENTIRELY.** Found 2026-08-07 by
-      D-ROWSHAPE's walk ([`docs/spec-probe-rowshape.md`](docs/spec-probe-rowshape.md)
+      D-ROWSHAPE's walk ([`docs/spec-probe-rowshape.md`](../../docs/spec-probe-rowshape.md)
       §2.4) — the hand-list in the residual above did not have it, and the walk
       did. `kwsweep`'s scored rows print `{state:5}  {key:9} {body}` with the
       body **undelimited**: no `repr()`, so a value containing a space cannot be

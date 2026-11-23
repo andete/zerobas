@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GETPAT` (sub-ROM $0105) — fetch a character's pattern
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -35,7 +35,7 @@ $00.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds copy their own font's bytes (C-BIOS's own font, ruled -- D-BIOSINT) and return other
-flags ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
+flags ([scratchpad/AE_xspr2_msx2.out](../../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

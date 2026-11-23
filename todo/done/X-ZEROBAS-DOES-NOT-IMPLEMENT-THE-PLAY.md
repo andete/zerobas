@@ -7,7 +7,7 @@
       own probe (is `PLAY(n)` in the kwsweep denominator? it is a one-token
       function like `USR`). A real MSX1 BASIC function gap, not apparatus.
       ✅ **MEASURED IN FULL, IMPLEMENTED, AND PRICED (2026-08-28, D-PLAYFN),**
-      [`docs/spec-basic-playfn.md`](docs/spec-basic-playfn.md). Claim re-ran true.
+      [`docs/spec-basic-playfn.md`](../../docs/spec-basic-playfn.md). Claim re-ran true.
       🎯 **THE ITEM'S OWN DESCRIPTION OF THE SEMANTICS WAS INCOMPLETE**, and TWO
       RULES fit every row of the first round: `n=0` = "ANY voice" vs a 0-BASED
       numbering. A single `PLAY"…"` plays voice 1, so both predict

@@ -1,6 +1,6 @@
 - [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
       04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
-      D-NOSLEEP2, [`docs/spec-nosleep2.md`](docs/spec-nosleep2.md).
+      D-NOSLEEP2, [`docs/spec-nosleep2.md`](../../docs/spec-nosleep2.md).
       `caffeinate -i` asserts `PreventUserIdleSystemSleep` and does NOT block
       macOS's scheduled **'Maintenance Sleep'**, which fired on AC power at 100%
       charge: 15 minutes asleep, 45 seconds awake, repeatedly. A battery walled

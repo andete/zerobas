@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NVBXLN` (sub-ROM $00C9) — draw a box
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -44,7 +44,7 @@ F $20.
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) draw a different figure: the sides run past the corners (pixels at Y 9
 and 16) and a horizontal edge continues past X 20; under XOR the top and bottom edges stop short of the corners; GXPOS
-/ GYPOS are left at the end point ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
+/ GYPOS are left at the end point ([scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 

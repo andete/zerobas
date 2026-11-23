@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CALPAT` (sub-ROM $00F9) — the address of a sprite pattern
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xspr2.asm](../../../probes/bios/spec/xspr2.asm), [scratchpad/AE_xspr2_msx2.out](../../../scratchpad/AE_xspr2_msx2.out), decoded by `scratchpad/xspr2_decode.py`).
 
 ## Summary
 
@@ -35,7 +35,7 @@ SCREEN 1 ($3800 + $1FE0), $97E0 in SCREEN 5. Out: A = the pattern's size in byte
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds give the same HL and A ([scratchpad/AE_xspr2_msx2.out](../../scratchpad/AE_xspr2_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds give the same HL and A ([scratchpad/AE_xspr2_msx2.out](../../../scratchpad/AE_xspr2_msx2.out)).
 
 ## Open (not measured)
 

@@ -22,7 +22,7 @@
       the entry was that the old text misleads a reader, and showing what it said
       is what stops the next reader wondering whether it was ever true.      2026-07-29 by S3 of the lean-cart retirement, which deliberately did not fix it
       (out of scope; S3 was a byte-identical mechanical edit plus its own doc sweep).
-      [`README.md:291`](README.md:291) describes an early game-loader-scoped slice, not
+      [`README.md:291`](../../README.md:291) describes an early game-loader-scoped slice, not
       today's BASIC. Measured false claims: it lists **`ON … GOTO` as "still out"**
       (it is implemented — `ON_TOKEN` → `ex_on` in `stmt_table`, gated by
       `tests/test_stmt_dispatch.py`, and `tests/test_control_flow.py` exercises the

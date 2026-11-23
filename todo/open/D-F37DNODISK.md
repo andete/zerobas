@@ -9,7 +9,7 @@
             on-par speed. Each record re-reads and writes its sector (the CF-3300 writes a
             sector once). The lever: hold the partial sector as DIRTY with an owner tag and
             flush it when anyone else reads into the shared buffer (dskio / read_sector) --
-            the W4 audit's tag ([`dbuf_audit2.md`](scratchpad/dbuf_audit2.md)) with a dirty bit; the reads that bypass
+            the W4 audit's tag ([`dbuf_audit2.md`](../../scratchpad/dbuf_audit2.md)) with a dirty bit; the reads that bypass
             read_sector are why it must sit in dskio.
             🏗️ RULED (Joost 2026-11-14): *"leave at tier 5"*.
 
@@ -24,7 +24,7 @@
       so on a full machine that reached over the live stack (it worked with ~28 KB free
       only). Now STREND .. SP - 256 (fmt_basic, both paths). With 4214 B free the format
       refuses (DSKFMT's 14 -> main's load error) and BASIC is untouched -- FRE(0) the same
-      after ([`callfmt_lowmem.out`](scratchpad/callfmt_lowmem.out)). The CF-3300's own answer there is unmeasured (TIER 6).
+      after ([`callfmt_lowmem.out`](../../scratchpad/callfmt_lowmem.out)). The CF-3300's own answer there is unmeasured (TIER 6).
       ✂️ **DEFRAG STEP 1 (2026-11-09):** the build needs ~350-400 B in ONE place (the menu text,
       a geometry table, the Write Track loop, our boot sector, FATs, root). Ten small
       routines (calbak, hkn_up, fill_rec, wrblk_full, wrblk_set_wrfirst, rnd_rec, rh_init,

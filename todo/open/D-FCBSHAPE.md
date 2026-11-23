@@ -84,12 +84,12 @@
       still reports the FLUSH's status (Cy, A, HL carried across the copies),
       because `chan_gate`'s claimed-status logic reads it that way.
       **Main page 1 0 → 41 B; sub page 1 699 → 648 B** — both predicted (~41, ~648)
-      from the instruction count ([`fcbs0_walls.out`](scratchpad/fcbs0_walls.out)).
+      from the instruction count ([`fcbs0_walls.out`](../../scratchpad/fcbs0_walls.out)).
       `diskbasic-acceptance` 34/34 converged; knife BLIND unchanged
-      ([`fcbs0_knife_all.out`](scratchpad/fcbs0_knife_all.out),
-      [`fcbs0_knife_fn.out`](scratchpad/fcbs0_knife_fn.out)), kwsweep SUPPORTED 952
-      ([`fcbs0_kwsweep.out`](scratchpad/fcbs0_kwsweep.out)), kwtime OK 838
-      ([`fcbs0_kwtime.out`](scratchpad/fcbs0_kwtime.out)). ⚠️ **Spec §6 now records a
+      ([`fcbs0_knife_all.out`](../../scratchpad/fcbs0_knife_all.out),
+      [`fcbs0_knife_fn.out`](../../scratchpad/fcbs0_knife_fn.out)), kwsweep SUPPORTED 952
+      ([`fcbs0_kwsweep.out`](../../scratchpad/fcbs0_kwsweep.out)), kwtime OK 838
+      ([`fcbs0_kwtime.out`](../../scratchpad/fcbs0_kwtime.out)). ⚠️ **Spec §6 now records a
       constraint the slices had not faced:** the DISK and NODISK machines run the
       SAME main and sub images, so the layout cannot differ per build at assembly
       time. S1 and S2 are ONE runtime design, not "diskless first".
@@ -99,7 +99,7 @@
       pointer. VARPTR(#n) needs main bytes, and 41 now exist.
       📐 **DESIGNED 2026-09-29 (spec §7), from a measurement:** every machine
       accepts `CLEAR 200,&HF380`, the CF-3300 included, whose boot `HIMEM` is
-      `$DE77`, below its own disk work area ([`clearmax_run.out`](scratchpad/clearmax_run.out)).
+      `$DE77`, below its own disk work area ([`clearmax_run.out`](../../scratchpad/clearmax_run.out)).
       The reference reserves that area by LOWERING `HIMEM` AT BOOT and does not
       protect it afterwards. So the disk-engine table takes the same shape for 0
       main bytes: disk.rom init lowers `HIMEM` by 800, and the table sits at the
@@ -119,34 +119,34 @@
       - **disk.rom:** `hkk_open_check` reads a saved channel's dir position from
         the table, with no call back into main.
       - **Walls, 2026-09-30:** main page 1 12 → 3 B, sub page 1 524 → 474 B,
-        disk 6522 → 6517 B ([`fcbs12_walls.out`](scratchpad/fcbs12_walls.out)).
+        disk 6522 → 6517 B ([`fcbs12_walls.out`](../../scratchpad/fcbs12_walls.out)).
       📏 **Measured:**
       - `chancost-characterize` reads **267 B a channel on BOTH machines**, ceiling
-        15, 53 cases, 0 filed divergences ([`fcbs12_chancost.out`](scratchpad/fcbs12_chancost.out)).
+        15, 53 cases, 0 filed divergences ([`fcbs12_chancost.out`](../../scratchpad/fcbs12_chancost.out)).
         🔮 Predicted it would report a stale allowlist entry: MISS — it gates the
         mechanism, not the constant.
       - The disk machine boots with `HIMEM` `$DCE0`, and its FRE(0) is exactly 800 B
         under the diskless build's; with that program it trails the CF-3300 by
-        126 B, where it used to lead by ~635 ([`fcbs12_bootfre.out`](scratchpad/fcbs12_bootfre.out)).
+        126 B, where it used to lead by ~635 ([`fcbs12_bootfre.out`](../../scratchpad/fcbs12_bootfre.out)).
       - Channel switching, in and out of FOR/GOSUB, and the open-file refusals
         (54/64/65, KILL of a NON-active open file included) all agree
-        ([`fcbs12_chanloop.out`](scratchpad/fcbs12_chanloop.out),
-        [`fcbs12_killopen.out`](scratchpad/fcbs12_killopen.out)).
+        ([`fcbs12_chanloop.out`](../../scratchpad/fcbs12_chanloop.out),
+        [`fcbs12_killopen.out`](../../scratchpad/fcbs12_killopen.out)).
       - Whole sweep SUPPORTED 958, kwtime OK 844, knife BLIND unchanged
-        ([`fcbs12_kwsweep_full.out`](scratchpad/fcbs12_kwsweep_full.out),
-        [`fcbs12_kwtime.out`](scratchpad/fcbs12_kwtime.out),
-        [`fcbs12_knife_all.out`](scratchpad/fcbs12_knife_all.out),
-        [`fcbs12_knife_fn.out`](scratchpad/fcbs12_knife_fn.out)).
+        ([`fcbs12_kwsweep_full.out`](../../scratchpad/fcbs12_kwsweep_full.out),
+        [`fcbs12_kwtime.out`](../../scratchpad/fcbs12_kwtime.out),
+        [`fcbs12_knife_all.out`](../../scratchpad/fcbs12_knife_all.out),
+        [`fcbs12_knife_fn.out`](../../scratchpad/fcbs12_knife_fn.out)).
       ➡️ **LEFT:** ~~`VARPTR(#n)`~~ SHIPPED as D-VARPTRCH (below, 23 B after the
       D-ONTRAPMERGE carve). Still open, all three MEASURED on 2026-09-30:
       - ~~the FCB header FIELDS (mode +0, device +4, position +6): nothing writes
         them. `PEEK(VARPTR(#1))` after `OPEN"CRT:"` reads 2 on both references
         and 255 here.~~ ✅ **D-FCBHDR (2026-10-08): OPEN writes them.**
-        [`basic_probe_fcbhdr.py`](probes/basic/basic_probe_fcbhdr.py), gate
+        [`basic_probe_fcbhdr.py`](../../probes/basic/basic_probe_fcbhdr.py), gate
         `fcbhdr-acceptance`, mode / device / position after OPEN, each device on
-        the reference that owns it ([`fcbhdr_before.out`](scratchpad/fcbhdr_before.out)
-        0/8, [`fcbhdr_after.out`](scratchpad/fcbhdr_after.out) 8/8,
-        [`fcbhdr_dina.out`](scratchpad/fcbhdr_dina.out)):
+        the reference that owns it ([`fcbhdr_before.out`](../../scratchpad/fcbhdr_before.out)
+        0/8, [`fcbhdr_after.out`](../../scratchpad/fcbhdr_after.out) 8/8,
+        [`fcbhdr_dina.out`](../../scratchpad/fcbhdr_dina.out)):
         | channel | the reference | ours before |
         |---|---|---|
         | CRT: / LPT: | 2 / $FD, 2 / $FE | 255 / 255 |
@@ -167,7 +167,7 @@
         +6 zeroed except disk OUTPUT / APPEND, whose position disk.rom keeps. The
         parser's drive default is 0 now (`basic/pdfcb-body.inc`; nothing else reads
         it). Main page 1 112 -> 101 B, sub page 1 236 -> 177 B (2026-10-08).
-        🔪 Knives ([`fcbhdr_knives.out`](scratchpad/fcbhdr_knives.out)): K-FH1 (no
+        🔪 Knives ([`fcbhdr_knives.out`](../../scratchpad/fcbhdr_knives.out)): K-FH1 (no
         stamp) -> all 9, K-FH2 (drive default 1) -> dout/din/dapp/drnd, K-FH3 (no
         disk-OUTPUT exemption) -> dapp -- each exactly.
         ➡️ **LEFT:** the MOVING position of an INPUT channel and of a tape channel.
@@ -194,7 +194,7 @@
       - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,
         so `VARPTR(#1)` shifts 265 per MAXFILES step there and 267 here.
       ✅ **FCB #0 AND THE GEOMETRY BUILT 2026-10-10.** Measured first
-      ([`fcb0_probe.py`](scratchpad/fcb0_probe.py) → [`fcb0_run.out`](scratchpad/fcb0_run.out)):
+      ([`fcb0_probe.py`](../../scratchpad/fcb0_probe.py) → [`fcb0_run.out`](../../scratchpad/fcb0_run.out)):
       both references answer `VARPTR(#0)` at EVERY MAXFILES, 0 included (VG-8020
       −3465 at MAXFILES=0); the top block stays put as MAXFILES grows; #0 is the
       lowest block — all predicted. Built: `strheap_chantab` reserves MAXFILES + 1
@@ -204,32 +204,32 @@
       and `VARPTR(#n)` lets #0 past the 52 range test (+3 B). Main page 1 44 → 42 B,
       sub page 0 151 → 143 B. After: `FRE(0)` −267 at every MAXFILES on both
       builds (nodisk now 4978 under the VG-8020, disk 343 under the CF-3300 —
-      [`fcb0_after.out`](scratchpad/fcb0_after.out), [`fcb0_disk.out`](scratchpad/fcb0_disk.out)).
+      [`fcb0_after.out`](../../scratchpad/fcb0_after.out), [`fcb0_disk.out`](../../scratchpad/fcb0_disk.out)).
       txtceil-acceptance's fixture went red as RULED (stored=0: its 700 B under
       the floor no longer held the channel area) and was re-pinned +267 to the
-      same geometry ([`fcb0_txtceil.out`](scratchpad/fcb0_txtceil.out)). Gate
-      `fcb0-acceptance` ([`basic_probe_fcb0.py`](probes/basic/basic_probe_fcb0.py),
-      [`fcb0_gate.out`](scratchpad/fcb0_gate.out)): v0 / stride / geom / fre, all
+      same geometry ([`fcb0_txtceil.out`](../../scratchpad/fcb0_txtceil.out)). Gate
+      `fcb0-acceptance` ([`basic_probe_fcb0.py`](../../probes/basic/basic_probe_fcb0.py),
+      [`fcb0_gate.out`](../../scratchpad/fcb0_gate.out)): v0 / stride / geom / fre, all
       relations (bases differ by machine) — MAXFILES clears variables on BOTH
       references, so the two-step rows print both readings. 🔪
-      [`fcb0_knives.out`](scratchpad/fcb0_knives.out): K-FC1 (#0 refused) → v0
+      [`fcb0_knives.out`](../../scratchpad/fcb0_knives.out): K-FC1 (#0 refused) → v0
       stride; K-FC2 (no table offset) → geom; K-FC3 (no #0 reserved, the old
       guard) → nothing here, BY DESIGN — the reservation is absolute free memory;
       its first cut (`inc a` removed) left MAXFILES=0 to a 256-turn djnz
-      ([`fcb0_knives_r1.out`](scratchpad/fcb0_knives_r1.out)).
+      ([`fcb0_knives_r1.out`](../../scratchpad/fcb0_knives_r1.out)).
       🔁 **THE FULL BATTERY'S RE-PINS (as ruled), each read before believed:**
       array-acceptance's `scalar.str.chain.oom` / `scalar.input.chain.oom`
       (zerobas-only edge fixtures: at `DIM Z(1813)` the DIM itself no longer fit,
-      so the chain never ran out — [`fcb0_full_arrays.out`](scratchpad/fcb0_full_arrays.out))
+      so the chain never ran out — [`fcb0_full_arrays.out`](../../scratchpad/fcb0_full_arrays.out))
       → `DIM Z(1780)`, 3 B LESS room than before, 146/146
-      ([`fcb0_arrays_after.out`](scratchpad/fcb0_arrays_after.out)) — these two
+      ([`fcb0_arrays_after.out`](../../scratchpad/fcb0_arrays_after.out)) — these two
       rows are K-FC3's absolute-memory witness. And lnblank-say-acceptance's
       `crf-oom*` rows **changed sides**: at `CLEAR 300,A+1000` both references keep
       ~148 B and store `99 REM Z`; zerobas, now counting #0 as they do, has room
       for nothing (the line refused, the PRINT aborted —
-      [`fcb0_full_lnblank.out`](scratchpad/fcb0_full_lnblank.out)). Before, the
+      [`fcb0_full_lnblank.out`](../../scratchpad/fcb0_full_lnblank.out)). Before, the
       missing 267 B hid zerobas's extra reserve and it had MORE room than the
       references. Pinned (`crf-oomctl`, `crf-oom`, `crf-oomlst`), `crf-oomsay`
-      retired (now agrees); 208/208 ([`fcb0_lnblank_after.out`](scratchpad/fcb0_lnblank_after.out)).
+      retired (now agrees); 208/208 ([`fcb0_lnblank_after.out`](../../scratchpad/fcb0_lnblank_after.out)).
       The reserve is D-DIMRESERVE's 256 B stack margin (noted there).
-      ([`varptrch_run.out`](scratchpad/varptrch_run.out))
+      ([`varptrch_run.out`](../../scratchpad/varptrch_run.out))

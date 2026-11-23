@@ -6,7 +6,7 @@
       Re-open by walking preflight's own rule over its subject's life first.
       Detail: `docs/spec-probe-injjudge.md` §3.6.
       🟢 **WALKED 2026-09-05 (D-PREWIDEN,
-      [`scratchpad/preflight_widen.py`](scratchpad/preflight_widen.py)), IN
+      [`scratchpad/preflight_widen.py`](../../scratchpad/preflight_widen.py)), IN
       PREFLIGHT'S OWN TERMS** — `scan_file()` imported and applied verbatim to
       every tracked `.py` outside `SCAN_DIRS`, so the verdicts are the checker's
       and not a heuristic's:

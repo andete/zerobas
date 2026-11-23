@@ -86,7 +86,7 @@
       Run on closing the do-nothing-keyword item — which is exactly when this
       section says to run it — it reported one orphan, `casfch_probe`. Re-measured
       by hand with `--input-only`
-      ([`scratchpad/casfch_orphan_recheck.out`](scratchpad/casfch_orphan_recheck.out)):
+      ([`scratchpad/casfch_orphan_recheck.out`](../../scratchpad/casfch_orphan_recheck.out)):
       the whole CAS-input set reads **SAME**, `i.inp` 0/0 and `i.byte` 72/72, where
       the pin said `INPUT$` on a `CAS:` channel opened FOR INPUT *"reads on the
       reference and raises ERR 55 here"*. The divergence was fixed and **the pin
@@ -113,7 +113,7 @@
       wall"*. The carve landed hours later and `ecf0c859` shipped the shadow
       (`clr_prep` / `clr_commit`) with *"4 DIFF -> 0"* in its subject — and
       nothing came back to the pin file. Re-measured from a clean tree
-      ([`scratchpad/partial_pincheck.out`](scratchpad/partial_pincheck.out)):
+      ([`scratchpad/partial_pincheck.out`](../../scratchpad/partial_pincheck.out)):
       **12 rows, `0 divergence(s)`**, the four pinned ones and the `col.type`
       `BAKCLR = 0` reading the pin called unexplained. Retired; **26 pins → 25**,
       `--check-orphans` clean.

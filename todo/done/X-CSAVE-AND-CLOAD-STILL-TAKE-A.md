@@ -4,12 +4,12 @@
       2026-08-21 by D-FNEXPR2. Every OTHER filename verb — `OPEN`, `KILL`,
       `NAME`, `SAVE`, `BSAVE`, `LOAD`, `BLOAD`, `FILES` — takes a string
       EXPRESSION as of `cffb34d` + this slice; `do_cload`
-      ([`basic/cload.asm`](basic/cload.asm)) and `do_csave`
-      ([`basic/save.asm`](basic/save.asm)) keep their `cp '"'` gates, and
+      ([`basic/cload.asm`](../../basic/cload.asm)) and `do_csave`
+      ([`basic/save.asm`](../../basic/save.asm)) keep their `cp '"'` gates, and
       `basic/PROVENANCE.md` now says so explicitly instead of describing both
       halves with one sentence.
       ✅ **MEASURED 2026-09-04 — D-CSAVEEXPR
-      ([`scratchpad/csaveexpr_probe.py`](scratchpad/csaveexpr_probe.py)), on a
+      ([`scratchpad/csaveexpr_probe.py`](../../scratchpad/csaveexpr_probe.py)), on a
       fresh recording tape per row (the `basic_probe_cassave.py` fixture). Both
       references agree on every row; **SEVEN divergences, not one**:
 
@@ -83,7 +83,7 @@
       `<NO READING>`. `CLOAD 5` errors in the PARSE, before any tape access, and
       says the reference EVALUATES the operand. The verb is changed on that face
       plus the eight already on `fname_expr`, and
-      [`basic/cload.asm`](basic/cload.asm) says so at the site.
+      [`basic/cload.asm`](../../basic/cload.asm) says so at the site.
       💰 **MAIN PAGE 1: 6 B → 15 B FREE** (`make basic-reloc`, before and after —
       re-run it, never quote this). Each hand-rolled gate was longer than the
       `call fname_expr` replacing it, exactly as the price note above predicted.
@@ -94,7 +94,7 @@
       tape that actually contains the right bytes.
       🔧 One stale review entry retired with the site it described:
       `tape_parse_name` in
-      [`tools/redundant-load-reviewed.txt`](tools/redundant-load-reviewed.txt),
+      [`tools/redundant-load-reviewed.txt`](../../tools/redundant-load-reviewed.txt),
       caught by `redundant-load-check` going red — an entry that asserts nothing
       is how that control goes blind, and the gate says so itself.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).

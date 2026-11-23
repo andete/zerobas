@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `BLTMV` (sub-ROM $0199) — copy a VRAM rectangle to an array in RAM
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
 
 ## Summary
 
@@ -37,7 +37,7 @@ given; A $00, F $44, interrupts ON.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds write the header and **only 31 of the 32 dots** -- the last one ($47) is missing, the
-byte after the 4 + 31 left as it was ([scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out)).
+byte after the 4 + 31 left as it was ([scratchpad/AE_xsubblt_msx2.out](../../../scratchpad/AE_xsubblt_msx2.out)).
 
 ## Open (not measured)
 

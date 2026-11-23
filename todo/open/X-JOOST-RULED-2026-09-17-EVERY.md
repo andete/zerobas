@@ -97,7 +97,7 @@
       verb's business.
       📋 **AND THE WHOLE DIRECTION NOW HAS A SPEC, RULED BY JOOST 2026-09-17**
       (*"there should probably be hardly any disk code left in the main Rom"*):
-      [`disk/docs/spec-diskcode-eviction.md`](disk/docs/spec-diskcode-eviction.md).
+      [`disk/docs/spec-diskcode-eviction.md`](../../disk/docs/spec-diskcode-eviction.md).
       **Measured 2026-09-17: 2394 B left page 1** if the six disk-only files
       move — 250 B
       of that is INTERFACE that must stay (the parse, the raise, the channel

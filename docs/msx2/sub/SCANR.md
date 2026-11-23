@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SCANR` (sub-ROM $00C1) — scan right for the PAINT border
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscan.asm](../../probes/bios/spec/xsubscan.asm), [scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubscan.asm](../../../probes/bios/spec/xsubscan.asm), [scratchpad/AE_xsubscan_msx2.out](../../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Summary
 
@@ -36,7 +36,7 @@ likewise, DE coming back 0. Interrupts ON.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds (the subject) do nothing here (HL garbage, no paint, CLOC unchanged) ([scratchpad/AE_xsubscan_msx2.out](../../scratchpad/AE_xsubscan_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds (the subject) do nothing here (HL garbage, no paint, CLOC unchanged) ([scratchpad/AE_xsubscan_msx2.out](../../../scratchpad/AE_xsubscan_msx2.out)).
 
 ## Open (not measured)
 

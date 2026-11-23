@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGMDP` (sub-ROM $01B5) — change the screen mode and reset the palette
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -30,7 +30,7 @@ pointer) moved -- the palette is written; out A $07, F $10, interrupts ON.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds set the same mode; their R#16 and F on return differ ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds set the same mode; their R#16 and F on return differ ([scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

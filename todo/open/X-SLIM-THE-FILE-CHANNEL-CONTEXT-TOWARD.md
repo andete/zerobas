@@ -1,7 +1,7 @@
 - [ ] **SLIM THE FILE-CHANNEL CONTEXT toward the reference** — ✅ **MEASURED
       2026-07-29; awaiting spec sign-off.**
-      [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md),
-      probe [`probes/disk/diskbasic_probe_chancost.py`](probes/disk/diskbasic_probe_chancost.py)
+      [`docs/chancost-cf3300-characterization.md`](../../docs/chancost-cf3300-characterization.md),
+      probe [`probes/disk/diskbasic_probe_chancost.py`](../../probes/disk/diskbasic_probe_chancost.py)
       (boot-per-case, both machines, reference answers self-checked for drift).
       🔴 **THE ITEM'S OWN CAVEAT IS REFUTED.** It said 267 "cannot be the goal
       for a channel doing FAT12 I/O" because it came from a diskless VG-8020.
@@ -20,7 +20,7 @@
       AND 2 — **it does not move at all**, because `FCH_CTX $EA00..$EE63` is
       reserved statically whether or not a channel is open. Its 512 B per
       channel is **purely a save copy** of the single global `FSECTOR_BUF`
-      (`fch_save_active`/`fch_load_ctx`, [`basic/files.asm:914`](basic/files.asm:914));
+      (`fch_save_active`/`fch_load_ctx`, [`basic/files.asm:914`](../../basic/files.asm:914));
       the reference gets the same effect by treating the shared buffer as a
       **cache** — flush on switch away, re-read on switch back.
       **Sizing:** drop the save copy → at `FCH_CEIL=2` the table falls 1124 B →
@@ -36,7 +36,7 @@
       so this is not a decline the wall can lift in either direction — and note
       the LOW region went the other way (9 B → **5 B**), which is where a
       `files.asm` change is most likely to land.
-      [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
+      [`docs/repricing-page1-2026-08-19.md`](../../docs/repricing-page1-2026-08-19.md)
       §4.
       ⚠️ **FREEING PAGE 3 DOES NOT BY ITSELF RETURN PROGRAM SPACE.** `TXTMAX`
       rises only if a page-2 buffer MOVES into the freed window: `TOKBUF`
@@ -46,7 +46,7 @@
       **FORK RESOLVED (user, 2026-07-29): the fully faithful DYNAMIC mechanism**
       — carve channel blocks out of the pool at `MAXFILES` time, ceiling 15,
       nothing charged for channels a program never asks for, `FRE(0)` moves.
-      Spec written: [`docs/spec-basic-filechan-alloc.md`](docs/spec-basic-filechan-alloc.md)
+      Spec written: [`docs/spec-basic-filechan-alloc.md`](../../docs/spec-basic-filechan-alloc.md)
       (**D-FCH**), ⚠️ **awaiting sign-off — no code written.**
       Semantics + error codes now MEASURED too (characterization §9/§10):
       `MAXFILES` **CLEARs variables UNCONDITIONALLY**, even when the value does
@@ -60,7 +60,7 @@
       ⚠️ **`Bad file number` is NOT trappable on the reference** — with a
       handler installed the other two trap cleanly but this one prints
       `Bad file number in 30` and never reaches it. Pin it, don't "fix" it.
-      ⚠️ [`basic/files.asm:332`](basic/files.asm:332) **already comments
+      ⚠️ [`basic/files.asm:332`](../../basic/files.asm:332) **already comments
       `bad file number`** and jumps to `stmt_error`; six sites do the same.
       ⚠️ **`err_msgtab` stops at 25** — reaching 59 densely is ~100 B against
       9 B/6 B free. S-FCH-2 offers a sparse side-table instead.

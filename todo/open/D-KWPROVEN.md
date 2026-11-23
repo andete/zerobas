@@ -11,8 +11,8 @@
       RESUME, RUN, TAN, WIDTH, PRINT, ERROR, CIRCLE, LOAD, OPEN, EOF, INPUT, CLOAD,
       BSAVE, SAVE, LPRINT, LFILES, AUTO: one `PROVES-T3:` row each, every one
       SUPPORTED against the reference AND checked to show the intended error on both
-      sides, not blank-equals-blank ([`kwt3b6.out`](scratchpad/kwt3b6.out),
-      [`kwt3b7.out`](scratchpad/kwt3b7.out), [`kwt3auto.out`](scratchpad/kwt3auto.out)).
+      sides, not blank-equals-blank ([`kwt3b6.out`](../../scratchpad/kwt3b6.out),
+      [`kwt3b7.out`](../../scratchpad/kwt3b7.out), [`kwt3auto.out`](../../scratchpad/kwt3auto.out)).
       No divergence found. Level 3 **121 → 140**, level 2 **24 → 5**; kwsweep 933 → 952.
       🙋 **THE LAST FIVE HAVE NO NATURAL COMMON ERROR:** REM cannot raise one at all;
       END, STOP and CLS only error with junk after the word (and CLS/END's junk case
@@ -51,7 +51,7 @@
       SUPPORTED row that is PASS on (a) FRE(0)/FRE("") delta AND (b). S36e was flipped
       DELIBERATELY for T4 (T5 stays barred); arms S36zf–zi, three NEGATIVE.
       📏 **FIRST READING 2026-09-30 — T4 0 of 159, economy measured for 123**
-      ([`kwram_full.out`](scratchpad/kwram_full.out), 298 happy-path rows):
+      ([`kwram_full.out`](../../scratchpad/kwram_full.out), 298 happy-path rows):
       - **(b) FAILS on all 246 rated rows** — predicted. Always the same cells:
         the reference writes `$F678–$F67A` / `$F698–$F69A` / `$F416` / `$F864–$F865`
         on every statement (and `$F7FE`, `$F7D4–$F7D5` on most); zerobas writes
@@ -82,7 +82,7 @@
       once both machines' interrupt signatures are subtracted from both sides
       (zerobas's handler writes the keyboard rows only on SOME ticks).
       `--negative` (a documented cell planted on zerobas's side) FAILs (b) on
-      every row ([`kwram_negative.out`](scratchpad/kwram_negative.out)).
+      every row ([`kwram_negative.out`](../../scratchpad/kwram_negative.out)).
       ➡️ `make kwram` is in the battery beside `kwtime`. 💰 **Its cost there: 1917 s
       (32 min) in the pool on 2026-09-30, the battery's longest unit.** The emulator
       tier runs with `ZEROBAS_REFCACHE=0` by design, so the reference side is
@@ -103,7 +103,7 @@
       same program, with a completion watchdog. T2 passes at ≤ 10×; T5
       displays it. One row type, built once, serves both rungs.
       ✅ **T2/T5's ROW TYPE IS BUILT (D-KWTIME, 2026-09-24):**
-      [`probes/basic/basic_probe_kwtime.py`](probes/basic/basic_probe_kwtime.py),
+      [`probes/basic/basic_probe_kwtime.py`](../../probes/basic/basic_probe_kwtime.py),
       `make kwtime`, in the battery's static tier beside `kwsweep` (~30 s).
       Each plain kwsweep row that declares a FORM is re-typed with EXPLICIT line
       numbers (kwsweep's `RESPOND:` shape, so every `GOTO 40` still lands),

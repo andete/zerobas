@@ -44,14 +44,14 @@
       ✅ **MEASURED 2026-09-05 (D-PEEPINC), AND THE MAIN REGION YIELDS EXACTLY
       3 B — WHICH WERE TAKEN.** Main page 1 read **0 → 3 B free** (and sub page 1
       917 → 920). The census's own *"MAIN p1 12 B ceiling"* is 0 in practice:
-      all four sites it attributes there — [`basic/screen.asm`](basic/screen.asm:134)
-      and [`basic/traps.asm`](basic/traps.asm:272) ×3 — were ALREADY read and
+      all four sites it attributes there — [`basic/screen.asm`](../../basic/screen.asm:134)
+      and [`basic/traps.asm`](../../basic/traps.asm:272) ×3 — were ALREADY read and
       rejected, each carrying a 🔴 comment saying HL is live (the parse cursor in
       one, the entry byte `ss_write` stores to in the others).
       🔴 **AND THE CENSUS MIS-ATTRIBUTED THE ONE SITE THAT PAID.** A direct scan
       finds **17** sites in the main tree, not 4: twelve are in `.inc` bodies
       included ONLY into sub tenants (not a carve), and one —
-      [`basic/sv-tne.inc`](basic/sv-tne.inc:36) — is a SHARED body included into
+      [`basic/sv-tne.inc`](../../basic/sv-tne.inc:36) — is a SHARED body included into
       `sub/save.asm` **and** `basic/save.asm`, so its bytes are in main page 1
       too. The by-region table saw the sub include and filed it there. **The
       region of an `.inc` is its INCLUDE SITE, and a body can have two** — the
@@ -78,5 +78,5 @@
       sites, all page 1 (`save.asm` sv_tenant; `files.asm` oo_hdr_tail, oo_fail_e,
       oo_fail_syn, oo_fail_bfname ×2) — converted, page 1 **8 → 14 B** (predicted
       +6: hit); a re-run finds 0, so the route is spent until code moves again
-      ([`carve_jrmap.out`](scratchpad/carve_jrmap.out) →
-      [`carve_jrmap2.out`](scratchpad/carve_jrmap2.out)).
+      ([`carve_jrmap.out`](../../scratchpad/carve_jrmap.out) →
+      [`carve_jrmap2.out`](../../scratchpad/carve_jrmap2.out)).

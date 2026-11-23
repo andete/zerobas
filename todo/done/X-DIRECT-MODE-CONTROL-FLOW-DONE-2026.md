@@ -1,7 +1,7 @@
 - [x] **Direct-mode control flow — ✅ DONE 2026-07-26**, spec + as-built
-      [`docs/spec-basic-direct-ctrl.md`](docs/spec-basic-direct-ctrl.md), gate
-      [`make direct-ctrl-acceptance`](Makefile) **40/40** vs the VG-8020
-      (probe [`probes/basic/basic_probe_direct_ctrl.py`](probes/basic/basic_probe_direct_ctrl.py),
+      [`docs/spec-basic-direct-ctrl.md`](../../docs/spec-basic-direct-ctrl.md), gate
+      [`make direct-ctrl-acceptance`](../../Makefile) **40/40** vs the VG-8020
+      (probe [`probes/basic/basic_probe_direct_ctrl.py`](../../probes/basic/basic_probe_direct_ctrl.py),
       boot-per-case, 6 groups). `FOR`/`NEXT`, `GOSUB`/`RETURN`, `GOTO`,
       `IF..THEN <line>` and `ON..GOTO` **typed at the prompt** — an execution
       MODE that had **zero** coverage: every earlier loop/trap/graphics gate runs

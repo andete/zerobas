@@ -6,17 +6,17 @@
       row is a one-off check (run without `CLS`, assert the header text is on
       screen); it is NOT a gate. Making it one is cheap and unclaimed.
       ✅ **GATED 2026-08-26 — `make banner-acceptance`, a unit of `make gates`**
-      ([`probes/basic/basic_probe_banner.py`](probes/basic/basic_probe_banner.py)).
+      ([`probes/basic/basic_probe_banner.py`](../../probes/basic/basic_probe_banner.py)).
       No `CLS` anywhere; asserts both header lines are above the prompt.
       🎯 **THE EXPECTATION IS READ OUT OF THE SOURCE**, not pinned in the probe
-      ([`basic/title-body.inc`](basic/title-body.inc)) — a copy would rot the day
+      ([`basic/title-body.inc`](../../basic/title-body.inc)) — a copy would rot the day
       the banner changes, and the gate would then be "fixed" by editing the
       expectation to match whatever it now prints, which asserts nothing.
       🎯 **AND THE PROGRAM'S OWN MARKER IS THE CONTROL.** Header absent + marker
       absent is a machine that never booted, not a banner that stopped printing;
       that case is **rc 2, an instrument fault, never a verdict**
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      🔬 **K-BANNER** ([`scratchpad/banner_knife.py`](scratchpad/banner_knife.py)):
+      🔬 **K-BANNER** ([`scratchpad/banner_knife.py`](../../scratchpad/banner_knife.py)):
       marker `' 7  0 '` printed, **both header lines GONE**, gate RED. Restored
       byte-identically, mtime deliberately NOT preserved (D-KNIFEGUARD).
       🔴 **THE FIRST KNIFE WAS THE WRONG CUT AND THE GATE'S OWN CONTROL CAUGHT

@@ -2,12 +2,12 @@
       complex` ON THE VG-8020 AND ANSWER HERE (found 2026-11-05 by the D-FNALIAS plan)**
       🎚️ TIER 6 — which of an error and a value a deep string expression gets.
       🤖 **AUTONOMOUS** — measured.
-      📏 [`fnstrtemp_run.out`](scratchpad/fnstrtemp_run.out) `ctl` row: `X$=MID$("Z",1)+(` x k
+      📏 [`fnstrtemp_run.out`](../../scratchpad/fnstrtemp_run.out) `ctl` row: `X$=MID$("Z",1)+(` x k
       around `"19"` -- both answer k=0..9; at k=10 the VG-8020 is ERR 16 and zerobas prints
       `ZZZZZZZZZZ19`. D-ADDR29 TEMPST measured "10 pending, the 11th errs" with a different
       expression shape; this one errs one level earlier there. Read which temporaries the
       reference counts before moving zerobas's limit.
-      📏 **MECHANISM MEASURED 2026-11-05** ([`tempd10_run.out`](scratchpad/tempd10_run.out),
+      📏 **MECHANISM MEASURED 2026-11-05** ([`tempd10_run.out`](../../scratchpad/tempd10_run.out),
       fnstrtemp_probe.py --inner, k = 9 / 10 nested around three innermost operands):
       VG-8020 `"19"` 9 ok / 10 ERR 16, `B$` 9 / 10 both ok, `B$+""` 9 ok / 10 ERR 16;
       zerobas `"19"` both ok, `B$` both ok, `B$+""` 9 ok / 10 ERR 16. 🔮 "a literal costs

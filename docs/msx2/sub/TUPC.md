@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `TUPC` (sub-ROM $00B9) — move the graphics position up, checking the edge
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -52,7 +52,7 @@ looks at the byte's position in a line.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds give the same positions ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds give the same positions ([scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 

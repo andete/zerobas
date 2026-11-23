@@ -7,11 +7,11 @@
       mechanical; this one reads a whole routine, writes its contract (registers
       and flags at every exit, callers, fall-through, internal labels reached from
       elsewhere) and rewrites it.
-      ✅ **SAMPLE, 10 routines** ([`reread_sample.md`](scratchpad/reread_sample.md)):
+      ✅ **SAMPLE, 10 routines** ([`reread_sample.md`](../../scratchpad/reread_sample.md)):
       measured 2026-10-30: +23 B low region, +59 B main page 1; every premise checked in the source,
       layout facts pinned by assembly-time guards; no common path slower.
       ➡️ **THE ROUTE:** batches of ~10, largest first
-      ([`reread_spans.out`](scratchpad/reread_spans.out) ranks them -- re-derive it,
+      ([`reread_spans.out`](../../scratchpad/reread_spans.out) ranks them -- re-derive it,
       the ranking rots with every carve); `gates-fast`, then the full battery, one
       commit per routine; record the yield per batch and STOP when it falls below
       ~2 B a routine. A rewrite that changes behaviour is filed and measured, never
@@ -36,7 +36,7 @@
       taking the shift in A (an interface change), ev_ff_ckdone's 3 B (they only
       grow the $4EF8 pad). tests/test_fpdiv_fast.py counts WIDIG as dead scratch
       now; the `ela_abort_fp` alias went with ex_let_arr's change. Write-up:
-      [`reread_sample.md`](scratchpad/reread_sample.md).
+      [`reread_sample.md`](../../scratchpad/reread_sample.md).
       ✅ **BATCH 3 (2026-10-31), measured 2026-10-31: low region free 83 -> 158 B plus
       3 B of its pad, main page-1 pads +24 B and its tail 345 -> 356 B -- ~113 B
       from ten routines** (cmul_int 26: the sign in C, one borrow for the bound;
@@ -122,7 +122,7 @@
       stk_guard moved above ev_f_defer and unary `+` falls into ev_f (8); EXP / the math
       tenants share one overflow raise (6); VARPTR's `(` test (3); ON ERROR GOTO trusts rst
       $10's Z (6). `make contract-diff BASE=27d01d05`: 0 broken, xor_sign changes HL instead
-      of B ([`b7_contract.out`](scratchpad/b7_contract.out)). Knife pins unchanged; tapes:
+      of B ([`b7_contract.out`](../../scratchpad/b7_contract.out)). Knife pins unchanged; tapes:
       every title's class as on HEAD, Boulder Dash II on line 3341. HELD BACK: the
       ON GOTO/GOSUB list scan as one loop (41-50 B page 1, reviewer's count 2026-10-31 -- it drops `rst $10` on trailing
       entries, so a hooked H.CHRG sees fewer calls: the dl_cmd fold's question); SQR/LOG's
@@ -137,7 +137,7 @@
       8-bit count and E = $FF for the 2-argument form (15), str_min_bc deleted (7),
       shx_finish an `equ` of sst_op's identical tail (16). `make contract-diff BASE=HEAD`:
       0 broken; str_lr_count changes fewer registers (BC, HL) and no longer reads D
-      ([`b7b_contract.out`](scratchpad/b7b_contract.out)). Knife pins unchanged; tapes:
+      ([`b7b_contract.out`](../../scratchpad/b7b_contract.out)). Knife pins unchanged; tapes:
       every class as on HEAD, Boulder Dash II on line 3341. STILL QUEUED (reviewer's counts,
       2026-10-31): INKEY$ through the FILL op with a shared shx_fill entry (~23 B; it moves
       the stk_room depth for INKEY$ -- run the deepexpr rows), STRING$'s first byte via
@@ -157,7 +157,7 @@
       BASE=HEAD`: 0 broken, ONE `wider_in` -- ex_clear now reads B on entry: on a REJECTED CLEAR
       the dispatcher's B reaches raise_error where the old POOLSIZE load sat; only a user H.ERRO
       hook can see it (the reviewers' "registers unspecified at a raise" class), accepted
-      ([`b8_contract.out`](scratchpad/b8_contract.out)). 🧰 z80flow lists the DATA label
+      ([`b8_contract.out`](../../scratchpad/b8_contract.out)). 🧰 z80flow lists the DATA label
       `err_syntax` (`db "Syntax error",0`) as a routine and decodes its text -- a tool finding.
       Knife pins unchanged; tapes: every class as before, Boulder Dash II on line 3341.
       🔍 **TWO REVIEWER FINDINGS TO MEASURE (2026-11-01; (a) measured and FIXED the same day,
@@ -165,8 +165,8 @@
       adds PRGEND + size + 680 in 16 bits with no carry test, so `CLEAR 32100` .. `CLEAR 32767`
       may be ACCEPTED where both references say Out of memory (D-CLEARFIT's hang class);
       (b) chan_gate_bare's return has no `ei`, so FIELD / LSET / RSET / CALL FORMAT may come
-      back with interrupts OFF. ❌ **(b) REFUTED 2026-11-01** ([`fieldei_probe.py`](scratchpad/fieldei_probe.py)
-      -> [`fieldei_run.out`](scratchpad/fieldei_run.out)): TIME advances across a fixed loop right
+      back with interrupts OFF. ❌ **(b) REFUTED 2026-11-01** ([`fieldei_probe.py`](../../scratchpad/fieldei_probe.py)
+      -> [`fieldei_run.out`](../../scratchpad/fieldei_run.out)): TIME advances across a fixed loop right
       after FIELD / LSET / RSET exactly as after a plain assignment, on the CF-3300 (58-59) and
       zerobas (68-70) alike -- interrupts are ON (something on the way back re-enables them; the
       reviewer read one return path). The 58 vs 70 is speed (tier 5). A first control row used
@@ -183,9 +183,9 @@
       gfx_eval_colour for PSET / LINE / PAINT (3 B); OUT's trampoline moved into vdpio.asm
       (3 B). `make contract-diff BASE=HEAD`: 0 broken; ex_preset now reads A (the token the
       dispatcher supplies, asserted per token by test_stmt_dispatch) and no longer DE
-      ([`b9_contract.out`](scratchpad/b9_contract.out)). Knife pins unchanged; tapes: every
-      class as before. 🧰 The ranking is now [`reread_rank.py`](scratchpad/reread_rank.py) with
-      the reviewed names in [`reread_reviewed.md`](scratchpad/reread_reviewed.md).
+      ([`b9_contract.out`](../../scratchpad/b9_contract.out)). Knife pins unchanged; tapes: every
+      class as before. 🧰 The ranking is now [`reread_rank.py`](../../scratchpad/reread_rank.py) with
+      the reviewed names in [`reread_reviewed.md`](../../scratchpad/reread_reviewed.md).
       HELD BACK (reviewers' counts, 2026-11-01): the merged DIM / ERASE loop (27 B low -- a
       one-item ERASE gets 20 T slower: needs a ruling against "no common path slower"), DIM
       alone reading VARTYPE (6 B low, counted 2026-11-01, faster), ary_parse_call keeping the cursor on the stack
@@ -211,7 +211,7 @@
       operand type from VARTYPE (2 B); ON's counter is `dec e` (4 B). `make contract-diff
       BASE=HEAD`: 0 broken; the wider_in rows are the formatter's new inputs (flo_emit_fixed A B,
       flo_write_digits B, flo_write_digits_range DE), every caller rewritten in the same batch
-      ([`b10_contract.out`](scratchpad/b10_contract.out)). 🧰 z80flow's data-label noise has a
+      ([`b10_contract.out`](../../scratchpad/b10_contract.out)). 🧰 z80flow's data-label noise has a
       third case: cl_leaf (a `dw` table) shows `exits` changes when its addresses move; iv_seq
       (a `db` string) too. Knife pins unchanged; tapes: every class as before.
       HELD BACK (reviewers' counts, 2026-11-01): ON's one list walker (20 B; removes K-OL3 / K-OL4's
@@ -236,7 +236,7 @@
       detok_emit enters through de_fromstart (5 B); VDP / BASE assignment trusts rst $10's Z and
       skips a GFX_OP reload (8 B); CONT clears GOTOFLAG + ENDFLAG with one word store, guarded
       (1 B). `make contract-diff BASE=HEAD`: no rows at all
-      ([`b11_contract.out`](scratchpad/b11_contract.out)). Knife pins unchanged; tapes: every
+      ([`b11_contract.out`](../../scratchpad/b11_contract.out)). Knife pins unchanged; tapes: every
       class as before. NOT TAKEN: 25 B in OPEN's LEN= parse and the channel close -- all of it
       would only grow the $72D4 pin pad (520 B already), a hole, not usable space.
       ➡️ **WHAT IS LEFT FOR D-REREAD** is the held-back lists of batches 7-11 (rulings, tool
@@ -250,8 +250,8 @@
       tenants' callees, published BASIC entries, the low-region forced set). 🔴 z80flow is
       blind to stack depth and an edge change is where it bites (batch 10's dimedge, batch
       11's DIM crash): a cluster change runs the FULL battery. Feeds D-SUB2RETIRE.
-      🧰 **THE RANKING TOOL EXISTS (2026-11-01):** [`edges_rank.py`](scratchpad/edges_rank.py)
-      -> [`edges_rank.out`](scratchpad/edges_rank.out) -- every ROM context through z80flow's
+      🧰 **THE RANKING TOOL EXISTS (2026-11-01):** [`edges_rank.py`](../../scratchpad/edges_rank.py)
+      -> [`edges_rank.out`](../../scratchpad/edges_rank.out) -- every ROM context through z80flow's
       loader; per call target the PRELUDE / POSTLUDE that k of its n call sites share (a
       prelude folds behind a new entry label at 0 B cost; a postlude needs the callee's exits
       read). 📏 UPPER BOUNDS, overlapping, before ABI exclusions: main 674 B, sub 205 B
@@ -273,9 +273,9 @@
       ✅ **`vaof_oom` SHIPPED (2026-11-01):** basic/vars.asm `vaof_oom` (call var_alloc_or_find
       / ret c / jp fp_runtime_error, 7 B) replaces the pair at all six sites (deffn, fat,
       missing, interp x2, program). 📏 Page 1 380 -> 383 B free and its pin pads 2176 ->
-      2181 B -- ~8 B ([`vaof_reloc.out`](scratchpad/vaof_reloc.out)); the low region
+      2181 B -- ~8 B ([`vaof_reloc.out`](../../scratchpad/vaof_reloc.out)); the low region
       unchanged. 🔮 ~11 B: MISS by ~3. `make contract-diff BASE=HEAD`: no rows
-      ([`vaof_contract.out`](scratchpad/vaof_contract.out)); knife pins unchanged; tapes: all
+      ([`vaof_contract.out`](../../scratchpad/vaof_contract.out)); knife pins unchanged; tapes: all
       42 classes as before.
       ✅ **BATCH 2 SHIPPED (2026-11-01): seven folds, 52 B** -- designed and applied by a
       read-only-then-scoped agent, every anchor unique, reviewed: `close_paren` (a label in
@@ -285,9 +285,9 @@
       `seterr_rec` (set_errflg -> record_errline), `fch_select_e` (A := E -> fch_select); and
       the helper `vnk_paren` (var_name_key / skip_spaces / cp '('). 📏 Low 539 -> 543, page 1
       383 -> 395 free, its pin pads 2181 -> 2217 B -- +52 B
-      ([`edges_b2_reloc.out`](scratchpad/edges_b2_reloc.out)); 🔮 the agent's -52 B: HIT.
+      ([`edges_b2_reloc.out`](../../scratchpad/edges_b2_reloc.out)); 🔮 the agent's -52 B: HIT.
       Contract-diff: no breaks; its only row is `ary_errmap`, a db table decoded as code that
-      vnk_paren now follows ([`edges_b2_contract.out`](scratchpad/edges_b2_contract.out)).
+      vnk_paren now follows ([`edges_b2_contract.out`](../../scratchpad/edges_b2_contract.out)).
       redundant-load-check clean; knife pins unchanged; tapes: all 42 classes as before.
       REJECTED (and why) in the agent's report: evsp_close (its error path drops its own return
       address), every `ret c / ret z` run (a conditional ret returns to the SITE), vars_reset

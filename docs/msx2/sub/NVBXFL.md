@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NVBXFL` (sub-ROM $00CD) — draw a filled box
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -33,7 +33,7 @@ A / F (A $0C / $0E, F $88) and R#44 / R#45 ($05 / $00 ...) than the MSX2s (A $00
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds fill the same pixels; A / F and R#44 / R#45 after differ ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds fill the same pixels; A / F and R#44 / R#45 after differ ([scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 

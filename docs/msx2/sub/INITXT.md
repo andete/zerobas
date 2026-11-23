@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `INITXT` (sub-ROM $00D5) — set up the text screen (SCREEN 0)
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -39,7 +39,7 @@ same VDP registers and table cells as [CHGMOD](CHGMOD.md) with A 0 -- see its ta
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds set the same, but return with interrupts ON ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds set the same, but return with interrupts ON ([scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

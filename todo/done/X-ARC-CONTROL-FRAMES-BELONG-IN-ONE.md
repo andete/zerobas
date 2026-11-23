@@ -13,7 +13,7 @@
       ⚠️ **STILL NOT COVERED:** that no THIRD growth path exists. That would need
       the derivation back, not a cache. Opened 2026-09-04 (Joost) out of D-TRAPSVC, after D-TRAPDEPTH and
       D-STACKPOOL measured what the references actually do
-      ([`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §10–§11).
+      ([`docs/spec-basic-trapsvc.md`](../../docs/spec-basic-trapsvc.md) §10–§11).
 
       **THE MODEL, MEASURED — not inferred.** `CLEAR n` resizes the string space
       and `CLEAR n,addr` sets HIMEM:
@@ -57,8 +57,8 @@
          variable / string area" — **one check replacing three**.
       3. `CLEAR` resets the pool; that is what makes depth respond to `CLEAR` and
          HIMEM at all, which is rows 2–4 above.
-      4. Callers: [`basic/program.asm`](basic/program.asm),
-         [`basic/traps.asm`](basic/traps.asm), [`basic/vars.asm`](basic/vars.asm),
+      4. Callers: [`basic/program.asm`](../../basic/program.asm),
+         [`basic/traps.asm`](../../basic/traps.asm), [`basic/vars.asm`](../../basic/vars.asm),
          plus the FOR/NEXT path.
       🟢 It also RECOVERS the 154 B and deletes two of the three overflow paths.
 
@@ -125,7 +125,7 @@
       ✅ **STEP 1 LANDED 2026-09-04 — THE ACCEPTANCE IS GATED.** All three probes
       are promoted, collected in `tools/run_gates.py`, pinned BY FACE
       (D-NAMEGATE) and **falsified by planting**
-      ([`scratchpad/ctlpool_knives.py`](scratchpad/ctlpool_knives.py), 9 cells,
+      ([`scratchpad/ctlpool_knives.py`](../../scratchpad/ctlpool_knives.py), 9 cells,
       9 as predicted):
 
           make stackpool-acceptance   probes/basic/basic_probe_stackpool.py   29 s
@@ -144,7 +144,7 @@
       §11's tables reproduce exactly, and `d.selfarm` reads `9 0` on all three.
 
       🔴 **AND A NEW DIVERGENCE CAME OUT OF DESIGNING IT — D-CTLCROSS
-      ([`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §12).** Three
+      ([`docs/spec-basic-trapsvc.md`](../../docs/spec-basic-trapsvc.md) §12).** Three
       fixed arrays make a whole class of question INVISIBLE: a `NEXT` can always
       reach its `FOR` frame, because no GOSUB frame can ever be between them.
       Both references raise **`NEXT without FOR`** whenever it is:

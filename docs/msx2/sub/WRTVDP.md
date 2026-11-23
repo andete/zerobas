@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `WRTVDP` (sub-ROM $012D) — write a VDP register
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
 
 ## Summary
 
@@ -51,7 +51,7 @@ Shared facts — the register set, the copies, the ports, the recording:
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) write every register directly with its copy, but: C 0 does not write R#9;
 the MSX2+ build keeps no copy for R#25-R#27; out A = B, F $A0 / $A8, B $00 (the references: A $00, F $44, B kept)
-([scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out)).
+([scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out)).
 
 ## Open (not measured)
 

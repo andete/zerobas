@@ -1,6 +1,6 @@
 - [x] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened
-      2026-08-24 by D-SWAP3, [`docs/spec-basic-swap3.md`](docs/spec-basic-swap3.md)
+      2026-08-24 by D-SWAP3, [`docs/spec-basic-swap3.md`](../../docs/spec-basic-swap3.md)
       §6, on the user's observation that SWAP is one instance of a class. **Two
       generic layers get reimplemented per-verb:**
       * **Trailing-token → ERR 2**: `exec_stmt`'s `es_noentry`
@@ -41,7 +41,7 @@
         📏 **D-PUSING is still the one to read before pricing anything else**:
         the filed item named TWO rows and the verb had **THIRTEEN**, and the
         rows that found that were the ones added to keep the fix NARROW. 🟢 **THE `ev_f_err` SEVEN-SITES MEMBER IS SHIPPED**
-        (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](docs/spec-basic-evferr.md)):
+        (D-EVFERR 2026-08-26, [`docs/spec-basic-evferr.md`](../../docs/spec-basic-evferr.md)):
         five live sites split by MEANING onto `ev_f_empty` (2) and `ev_f_ifc`
         (5) at **ZERO bytes**, 11 DIFF → 1, and `ev_f_err` now has **no
         incoming jumps at all**. 🔴 Its lesson is the seam's own: **four of the
@@ -85,7 +85,7 @@
         (D-SPRITE5, −8 B).** Refs PLACE then raise (`2 30`, sprite-0 Y attr), zb
         raised before placing (`2 209`); `pspr_go` guards the cursor like `ep_draw`
         (and has no overflow check, so even cleaner). 8 rows, 3 DIFF → 0, knives
-        2/2 EXACT. [`docs/spec-basic-sprite5.md`](docs/spec-basic-sprite5.md).
+        2/2 EXACT. [`docs/spec-basic-sprite5.md`](../../docs/spec-basic-sprite5.md).
         The `:1203`/`:1210` incomplete-arg sites KEEP their gfx_syntax (raise
         before place, agree — sp.incomp/sp.barep).
       * **CIRCLE trailing comma → classified RESTRUCTURE, but SHIPPED AS A CLEAN

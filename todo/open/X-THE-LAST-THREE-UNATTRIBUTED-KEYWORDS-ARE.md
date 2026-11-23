@@ -8,7 +8,7 @@
       | word | what it needs | what already exists |
       |---|---|---|
       | `CLOAD` | 🟢 **NOTHING — THE ORACLE EXISTS.** The VG-8020 reads a clean-room `.cas` (`Found:ZQ`) in DIRECT mode; the earlier "no oracle" was a fixture that was itself the tape-write defect. A `NEEDS-TAPE:` rig is now a small job | the rig, `cas_encode.build_cas_basic`, `run_cases(cassette=…)` added this slice, and a screen-visible readback needing no capture |
-      | `CSAVE` | a WAV-DECODE capture in kwsweep — its only output is the recording. 🔴 **AND ITS SUBJECT IS NOW A FILED TIER 1 DEFECT**, so the row should be written WITH that fix, not before it | the decode, in [`basic_probe_cassave.py`](probes/basic/basic_probe_cassave.py); `NEEDS-LOG:` is the precedent for a per-rig capture |
+      | `CSAVE` | a WAV-DECODE capture in kwsweep — its only output is the recording. 🔴 **AND ITS SUBJECT IS NOW A FILED TIER 1 DEFECT**, so the row should be written WITH that fix, not before it | the decode, in [`basic_probe_cassave.py`](../../probes/basic/basic_probe_cassave.py); `NEEDS-LOG:` is the precedent for a per-rig capture |
       | `INKEY$` | the key injector's TIMING exposed to a row — a HARNESS change | `omsx_repl.key_proc()`, race-immune and measured, driven by two trap probes |
       ⚠️ **THE `INKEY$` ONE IS THE ONE TO BE CAREFUL WITH**: the timing lives inside
       `run_cases` (`boot` + per-line `step`), a row cannot see it, and D-LATCH /

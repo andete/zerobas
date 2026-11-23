@@ -2,9 +2,9 @@
       REFERENCE SPLITS, AND ZEROBAS FOLLOWS A DIFFERENT REFERENCE ON DIFFERENT
       ROWS — CLOSED 2026-09-09 (D-PUDOLLAR): THE VERB HAS ONE ORACLE, AND ALL
       THREE SPLITS ARE NOW GATED — 14 rows × 3 machines, 0 DIFF but 3 REFS-SPLIT**
-      ([`scratchpad/using_probe.py`](scratchpad/using_probe.py),
-      [`.out`](scratchpad/using_run.out),
-      [codes](scratchpad/using_err.out)).
+      ([`scratchpad/using_probe.py`](../../scratchpad/using_probe.py),
+      [`.out`](../../scratchpad/using_run.out),
+      [codes](../../scratchpad/using_err.out)).
       `ex_print_using` is the largest thinly-commented handler in the tree — 251
       lines at 0.49 comments per line — which is what the density ranking picked it
       out for. The vocabulary is a DENOMINATOR, so the rows enumerate it rather than
@@ -67,10 +67,10 @@
       `$$ 42`, matching the CF-3300's gap rather than choosing a style. The work
       is a real renderer change (reserve two, emit one, float it), not a constant,
       so it is NOT inside the 20 B standing budget until it is priced.
-      ✅ **BUILT 2026-09-09 — D-PUDOLLAR, [`docs/spec-basic-pudollar.md`](docs/spec-basic-pudollar.md).
+      ✅ **BUILT 2026-09-09 — D-PUDOLLAR, [`docs/spec-basic-pudollar.md`](../../docs/spec-basic-pudollar.md).
       8 of 8 in-scope rows now read the VG-8020's answer exactly**
-      ([`scratchpad/dollar_probe.py`](scratchpad/dollar_probe.py),
-      [before](scratchpad/dollar_run.out), [after](scratchpad/dollar_after.out)).
+      ([`scratchpad/dollar_probe.py`](../../scratchpad/dollar_probe.py),
+      [before](../../scratchpad/dollar_run.out), [after](../../scratchpad/dollar_after.out)).
       💰 **PRICED AND IT DISSOLVED: main page 1 130 → 129 B — ONE byte**, well
       inside the standing 20 B budget. The whole specifier is a sub-ROM change
       (1313 → 1184 B, 129 B) because `basic/pu-render.inc` is a page-0 tenant and
@@ -96,8 +96,8 @@
       the `$` prefix too. **This is why the witness is bracketed text and not a
       code** [[an-unnamed-outcome-reads-as-no-outcome]].
       🔬 **KNIVES 3/3 EXACT, FIRST ROUND**
-      ([`scratchpad/pudollar_knives.py`](scratchpad/pudollar_knives.py),
-      [`.out`](scratchpad/pudollar_knives.out)) — and the asymmetry is what makes
+      ([`scratchpad/pudollar_knives.py`](../../scratchpad/pudollar_knives.py),
+      [`.out`](../../scratchpad/pudollar_knives.out)) — and the asymmetry is what makes
       the three claims separable. K-PD1 (the pair stops counting toward the
       width) moves 7 rows and **NOT `s.full`, NOT `s.ovf`**; K-PD2 (the emitted
       character becomes a space) moves 9, **including both of them**; K-PD3 (the

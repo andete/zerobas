@@ -3,7 +3,7 @@
       🎚️ TIER 5 — on-par speed of loading an ASCII program from tape (within T2's 10×)
       🤖 **AUTONOMOUS** — black-box timing settles it; ⏸️ speed is PAUSED (Joost 10-20:
       ROM space first), so this is filed, not chased.
-      📏 [`tapeload_space_timing.out`](scratchpad/tapeload_space_timing.out): the collection's "Space"
+      📏 [`tapeload_space_timing.out`](../../scratchpad/tapeload_space_timing.out): the collection's "Space"
       (`RUN"CAS:"` of an ASCII program), sampled every 30 s: the VG-8020 starts the
       program between T210 and T240, zerobas between T300 and T330 -- ~90 s later,
       reproduced exactly on a second run. The tape's data rate is the same on both, so
@@ -12,47 +12,47 @@
       up: the same ASCII program loaded from DISK (LOAD"A:...") on both, and the time
       against the program's line count -- per-line cost vs per-block cost.
       📏 **MEASURED 2026-11-06 -- AND IT FOUND A BIGGER GAP NEXT TO IT.** A 150-line program
-      of realistic statements ([`asctok_end.bas`](scratchpad/asctok_end.bas)) loaded by the
+      of realistic statements ([`asctok_end.bas`](../../scratchpad/asctok_end.bas)) loaded by the
       program harness's own ASCII tape: **CF-3300 114.1 s, zerobas 173.9 s (1.5x)**
-      ([`asctok_end.out`](scratchpad/asctok_end.out)); the same program with `SAVE "T.BAS",A`
-      at line 10 ([`asctok_save.bas`](scratchpad/asctok_save.bas)): the SAVE ,A alone **~1.5 s
-      there, ~44.5 s here (~30x)** ([`asctok_time.out`](scratchpad/asctok_time.out)). The FDC
-      log of that SAVE ([`asave_fdc.out`](scratchpad/asave_fdc.out)) holds only 100 commands;
-      1 ms PC samples ([`asave_pc.out`](scratchpad/asave_pc.out)) put ~65 % of it in the
+      ([`asctok_end.out`](../../scratchpad/asctok_end.out)); the same program with `SAVE "T.BAS",A`
+      at line 10 ([`asctok_save.bas`](../../scratchpad/asctok_save.bas)): the SAVE ,A alone **~1.5 s
+      there, ~44.5 s here (~30x)** ([`asctok_time.out`](../../scratchpad/asctok_time.out)). The FDC
+      log of that SAVE ([`asave_fdc.out`](../../scratchpad/asave_fdc.out)) holds only 100 commands;
+      1 ms PC samples ([`asave_pc.out`](../../scratchpad/asave_pc.out)) put ~65 % of it in the
       detokeniser's keyword search (dk_entry / dk_next, sub ROM): every token walks the
       whole kwtable, ~150 entries at ~260 T.
       ✅ **(a) THE WALK, 2026-11-06 (D-ASAVESPD):** detok_kw (basic/detok.inc) walks in HL, not
       IX / IY (~140 T an entry, no larger); LIST gets it too. The 150-line run 218.4 -> 203.5 s
-      (🔮 ~-16 -> -14.9 HIT; [`asavespd_after.out`](scratchpad/asavespd_after.out)), the
+      (🔮 ~-16 -> -14.9 HIT; [`asavespd_after.out`](../../scratchpad/asavespd_after.out)), the
       SAVE ,A ~44.5 -> ~29.6 s. tests/test_list.py (the round trip) green. ➡️ NEXT: the search
-      is still ~half of it ([`asave_pc2.out`](scratchpad/asave_pc2.out)) -- a token -> entry
+      is still ~half of it ([`asave_pc2.out`](../../scratchpad/asave_pc2.out)) -- a token -> entry
       index (~256 B of sub ROM: page 0 had 170 B free and page 1 ~90 B on 2026-11-06, so a carve first); then the tape
       load's own 1.5x (the tokeniser between blocks).
-      ✅ **(b) THE TAPE LOAD, 2026-11-06:** PC samples over the load ([`asctape_pc.out`](scratchpad/asctape_pc.out),
+      ✅ **(b) THE TAPE LOAD, 2026-11-06:** PC samples over the load ([`asctape_pc.out`](../../scratchpad/asctape_pc.out),
       direct mode) found two costs besides the BIOS's tape reading: the tokeniser's match_kw
       (~30 s) and the line store's relink (~22 s). (1) match_kw (basic/tokenise.inc) rejects a
       kwtable entry on its FIRST char before any setup (C = the source's first char, upcased
       once; the table is in longest-match order, so the walk cannot stop early): 173.9 ->
-      162.8 s (🔮 ~-14 -> -11.1, a near miss; [`tokfast_after.out`](scratchpad/tokfast_after.out)).
+      162.8 s (🔮 ~-14 -> -11.1, a near miss; [`tokfast_after.out`](../../scratchpad/tokfast_after.out)).
       (2) le_store (sub/lineedit.asm) relinks FROM SL_SLOT, not from TXTTAB: nothing before the
       slot moved and the line before it already points at the slot, so every earlier link is
       valid -- the token-aware relink per stored line made a load QUADRATIC: 162.8 -> 138.8 s
-      (🔮 ~-22 -> -24 HIT; [`relinkslot_after.out`](scratchpad/relinkslot_after.out)). Out-of-order
+      (🔮 ~-22 -> -24 HIT; [`relinkslot_after.out`](../../scratchpad/relinkslot_after.out)). Out-of-order
       lines (inserts in the middle, a replace, a delete, a line before all) list identically
-      on the VG-8020 ([`relinkslot_measure.out`](scratchpad/relinkslot_measure.out)).
+      on the VG-8020 ([`relinkslot_measure.out`](../../scratchpad/relinkslot_measure.out)).
       tests/test_tokenise.py / test_list.py / test_program.py green. **The tape load: CF-3300
       114.1 s, zerobas 138.8 s (1.22x), from 173.9.**
-      ✅ **(c) ROUND 2, 2026-11-06:** re-sampled ([`asctape_pc2.out`](scratchpad/asctape_pc2.out)): the
+      ✅ **(c) ROUND 2, 2026-11-06:** re-sampled ([`asctape_pc2.out`](../../scratchpad/asctape_pc2.out)): the
       BIOS's own tape reading ~95 s of the 138.8, match_kw still ~24 s. Every kwtable keyword
       starts with a LETTER (161 of 161 -- tests/test_tokenise.py now asserts it), so match_kw
       returns "no keyword" at once for a source char outside A..Z (a space, an operator, a
       quote: the same NC the whole walk reached), and the walk is in HL instead of IX/IY.
       **138.8 -> 119.6 s against the CF-3300's 114.1 (1.05x)** (🔮 ~123: HIT, 3 s better;
-      [`asctape_pc3.out`](scratchpad/asctape_pc3.out)); what is left is the BIOS reading the
+      [`asctape_pc3.out`](../../scratchpad/asctape_pc3.out)); what is left is the BIOS reading the
       tape. tests/test_tokenise.py / test_list.py / test_program.py / test_statements.py
       green. ➡️ What stays open here: SAVE ,A's detokeniser search (the token -> entry index,
       a sub-ROM carve first).
-      🔴 **RE-MEASURED 2026-11-11 ([`asave_1111.out`](scratchpad/asave_1111.out)) -- SAVE ,A IS STILL ~19.5x:** the 150-line
+      🔴 **RE-MEASURED 2026-11-11 ([`asave_1111.out`](../../scratchpad/asave_1111.out)) -- SAVE ,A IS STILL ~19.5x:** the 150-line
       program with and without `SAVE "T.BAS",A`: CF-3300 114.1 / 115.6 s (the SAVE 1.5 s),
       zerobas 119.3 / 148.6 s (the SAVE **29.3 s**). That is past T2's 10x -- a TIER 2 gap
       ("reasonable time") filed inside this TIER 5 item; the tape load itself is 1.05x.
@@ -83,7 +83,7 @@
       search is ~half of the 29.3 s, so even a perfect index leaves ~15 s -- still ~10x the
       CF-3300's 1.5 s. ➡️ Profile the OTHER half first (asave_pc2.out's non-search samples)
       and price both halves together before carving.
-      📏 **PROFILED (2026-11-11, [`asave_pc3.out`](scratchpad/asave_pc3.out); 1 ms PC samples on line 10, 28.9 s):** the
+      📏 **PROFILED (2026-11-11, [`asave_pc3.out`](../../scratchpad/asave_pc3.out); 1 ms PC samples on line 10, 28.9 s):** the
       keyword walk (dk_entry and its 16-byte neighbour bucket) ~14.5k samples, **~50 %**; disk
       ~5.7k, **~20 %** -- fdq_win (the write's first-DRQ waits, a revolution each), frdw_poll /
       fwd_wait, fat_rootsecs: alone ~4x the CF-3300's WHOLE SAVE, D-BLKIOPERCALL's
@@ -115,11 +115,11 @@
       output against the ASSEMBLED table (0 mismatches), tests/test_kwidx.py running detok_kw
       on the host for all 256 byte values against the walk's answer (113 keywords, 0
       mismatches), and `make kwidx-check` (static battery) regenerating and diffing. Knife
-      ([`kwidx_knife.out`](scratchpad/kwidx_knife.out)): $81's ordinal off by one -> test_kwidx prints STOP for END and
-      kwidx-check is RED. 📏 [`asave_kwidx.out`](scratchpad/asave_kwidx.out) (🔮 ~15 s: HIT). Sub page 0: 196 -> 22 B free.
+      ([`kwidx_knife.out`](../../scratchpad/kwidx_knife.out)): $81's ordinal off by one -> test_kwidx prints STOP for END and
+      kwidx-check is RED. 📏 [`asave_kwidx.out`](../../scratchpad/asave_kwidx.out) (🔮 ~15 s: HIT). Sub page 0: 196 -> 22 B free.
       LIST gets it too. ➡️ Left of the 9.3x: the disk side (~20 %, D-BLKIOPERCALL's write
       cache) and the per-character channel output (~30 %).
-      📏 **THE DISK SIDE, COUNTED (2026-11-11, [`asave_fdc2.out`](scratchpad/asave_fdc2.out)):** the SAVE line's FDC commands --
+      📏 **THE DISK SIDE, COUNTED (2026-11-11, [`asave_fdc2.out`](../../scratchpad/asave_fdc2.out)):** the SAVE line's FDC commands --
       CF-3300 **11** in 0.85 s (6 reads `82`, ONE multi-sector write `A2`, 4 `D0`); zerobas
       **100** (49 seeks, 12 reads, **39 single-sector writes** `A0`) for a ~5 KB file of ~10
       data sectors. Each sector is written several times: the ASCII channel moves 256 B
@@ -140,7 +140,7 @@
       FAT_DBUF writer: fat_read_file_sector / frs_to, rd_dbuf, the RANDOM engine, BDOS reads,
       LOAD's first sector, FILES / KILL / NAME's directory reads); a missed one LOSES DATA,
       so the audit is a list with a gate row per writer, and the knife is "drop one flush".
-      📋 **AUDIT LIST BUILT (2026-11-11, [`dbuf_audit.out`](scratchpad/dbuf_audit.out)):** 66 code references to the shared
+      📋 **AUDIT LIST BUILT (2026-11-11, [`dbuf_audit.out`](../../scratchpad/dbuf_audit.out)):** 66 code references to the shared
       buffer (FAT_DBUF = SECTOR_BUF = FSECTOR_BUF) in ~45 routines -- fat_mount 6, getdpb /
       fdl_marked / dsm_p1_pre / bb_mark 3 each, then the channel (dout_write, close_read,
       cr_chkdir, hkn_stamp), the FAT walkers (fm_fatacc, fnc_straddle, fcf_*), LOAD (hd_rest,
@@ -181,7 +181,7 @@
       regions that matter (2026-11-11): $75A5 45 B, $5E10 20 B, $553C 19 B. test_fat_write_fat_entry
       (all four packing cases, every FAT copy), unit tests, wcache (the straddle rows fat-x /
       content-x) / diskbasic / copy / bdos acceptance green. The cache's room is there now.
-      🔴 **THE DIAGNOSIS WAS WRONG FOR SAVE ,A (2026-11-12, [`wcache_asave_trace.out`](scratchpad/wcache_asave_trace.out)).** A validated
+      🔴 **THE DIAGNOSIS WAS WRONG FOR SAVE ,A (2026-11-12, [`wcache_asave_trace.out`](../../scratchpad/wcache_asave_trace.out)).** A validated
       skip of dout_write's second-half re-read (DBUF_HSEC at $EDBF -- measured free,
       scratchpad/ramfree_edbf.out --, cleared by read_sector / fat_read_file_sector /
       fat_flush_data_sector) was built and measured: SAVE ,A unchanged (133.1 s, 100 FDC
@@ -199,16 +199,16 @@
       1.5 s: 6.7x).** The hold already existed: tokenised SAVE's D-SAVEFAT (FAT_DEFER bit 2,
       fdh_rehold in ffds_alloc, sdw_end = frl_flush + fat_io_close at the end). SAVE ,A
       never turned it on. Now hk_asav sets it after fat_io_create and hk_chclose_e's
-      no-channel close goes through sdw_end (+5 B, $5E10). 📏 [`asavefat_time.out`](scratchpad/asavefat_time.out): the SAVE
+      no-channel close goes through sdw_end (+5 B, $5E10). 📏 [`asavefat_time.out`](../../scratchpad/asavefat_time.out): the SAVE
       line's FDC commands 100 -> 56 (writes 39 -> 23, reads 12 -> 5) -- 🔮 "~20 writes,
-      several s": HIT. Knives ([`asavefat_knives.out`](scratchpad/asavefat_knives.out)): K1 (the close writes no held FAT)
+      several s": HIT. Knives ([`asavefat_knives.out`](../../scratchpad/asavefat_knives.out)): K1 (the close writes no held FAT)
       -> asavedev RED; K2 (no flush on the disk-full exit) moved NOTHING, and the code says
       why -- that exit is reached only through ffds_alloc's failure, whose ffds_undefer ->
       frl_xfail already flushed -- so that flush was redundant and is gone. asavedev /
       asavechan / diskfull / wcache / diskbasic / programs acceptance green. ➡️ Left of the
       6.7x: the per-character output (~30 % of the old profile) and 23 writes against the
       CF-3300's one multi-sector write.
-      📏 **RE-PROFILED AFTER IT (2026-11-12, [`asave_pc4.out`](scratchpad/asave_pc4.out), 10.1 k samples on the SAVE line):** the
+      📏 **RE-PROFILED AFTER IT (2026-11-12, [`asave_pc4.out`](../../scratchpad/asave_pc4.out), 10.1 k samples on the SAVE line):** the
       cost is SPREAD now -- disk waits ~20 % (fdq_win, the write's first-DRQ wait, 1334;
       fwd_wait, frdw_poll, fat_rootsecs); detok_kw2 ~6 % (the two-byte $FF-prefixed function
       tokens -- SQR, CHR$ ... -- still WALK kwtable: D-KWIDX indexed single-byte tokens only);
@@ -224,11 +224,11 @@
       $81..$B0, 48 B); detok_kw2 takes it for $FF + an in-range byte and walks for anything
       else (the ':'-prefixed pair); detok_kw's locate is now dk_ordent, shared. test_kwidx now
       also runs detok_kw2 for every first byte any two-byte entry uses x every second byte
-      (512 pairs, 0 mismatches); knife ([`kwidx2_knife.out`](scratchpad/kwidx2_knife.out)) -> RIGHT$ printed as MID$, RED.
-      📏 [`asave_kwidx2.out`](scratchpad/asave_kwidx2.out): 9.9 s (🔮 ~9.5: MISSED, smaller -- the 6 % was a 16-byte sampling
+      (512 pairs, 0 mismatches); knife ([`kwidx2_knife.out`](../../scratchpad/kwidx2_knife.out)) -> RIGHT$ printed as MID$, RED.
+      📏 [`asave_kwidx2.out`](../../scratchpad/asave_kwidx2.out): 9.9 s (🔮 ~9.5: MISSED, smaller -- the 6 % was a 16-byte sampling
       bucket shared with neighbours, and this program has few function tokens). Sub page 0
       15 B free after it (2026-11-12). LOF / unit tests green.
-      🔴 **LEVER (2) WITHDRAWN (2026-11-12, [`asave_writegaps.out`](scratchpad/asave_writegaps.out)):** the data writes ARE consecutive sectors
+      🔴 **LEVER (2) WITHDRAWN (2026-11-12, [`asave_writegaps.out`](../../scratchpad/asave_writegaps.out)):** the data writes ARE consecutive sectors
       -- but ~0.48 s apart, and a sector write takes milliseconds. The producer sets the pace:
       ~1 ms per output byte, so a multi-sector write would save ~nothing. ➡️ **The real lever:
       ONE INTER-SLOT CROSSING PER LINE, NOT PER CHARACTER.** Every byte of the listing leaves
@@ -253,30 +253,30 @@
       0-terminated buffer at HL" (hco_blk), each byte through the old one-byte path (hco_byte) so a
       66 / DSKIO fault raises exactly as before. Safe only for SAVE ,A: a listing never holds a $00,
       a channel's $00 is a real PRINT# byte -- hence FCH_ACTIVE in the test. Room: disk.rom $5E10
-      15 -> 0 B; main page-1 pad at $6CF3 1093 -> 1073 B (2026-11-12). 📏 [`asave_line.out`](scratchpad/asave_line.out):
+      15 -> 0 B; main page-1 pad at $6CF3 1093 -> 1073 B (2026-11-12). 📏 [`asave_line.out`](../../scratchpad/asave_line.out):
       6.1 s (🔮 ~7.3: MISSED, bigger -- the per-byte path also paid pchar's push/dispatch and RST 18h's
       H_OUTD call, not only the CALLF). Gates: asavedev, asavechan, diskfull, wcache, diskascii,
       cas-ascii green. Knives: K1 (`inc hl` -> `dec hl` in hco_blk) -> asavedev 0/3 RED
-      ([`AL_k1.out`](scratchpad/AL_k1.out)); K2 (FCH_ACTIVE dropped from the test) -> sessions S16_diskprog
-      DIFF after RUN, its PRINT #2,USING ([`AL_k2.out`](scratchpad/AL_k2.out)). H_OUTD is no longer called per byte of
+      ([`AL_k1.out`](../../scratchpad/AL_k1.out)); K2 (FCH_ACTIVE dropped from the test) -> sessions S16_diskprog
+      DIFF after RUN, its PRINT #2,USING ([`AL_k2.out`](../../scratchpad/AL_k2.out)). H_OUTD is no longer called per byte of
       a disk listing; on the published machine the disk ROM is that hook's tenant during one.
       ✅ **D-ASAVEEND (2026-11-12): THE CLOSE IN THE RIGHT ORDER -- SAVE ,A 6.1 -> 5.7 s (~3.8x).** Re-profiled
-      after D-ASAVELINE ([`asave_prof_line.out`](scratchpad/asave_prof_line.out)): disk waits ~34 % of the SAVE line (fdq_win, fwd_wait,
-      frdw_poll), the disk-side byte path ~12 %, detok the rest. The FDC log ([`asave_fdc_line.out`](scratchpad/asave_fdc_line.out))
+      after D-ASAVELINE ([`asave_prof_line.out`](../../scratchpad/asave_prof_line.out)): disk waits ~34 % of the SAVE line (fdq_win, fwd_wait,
+      frdw_poll), the disk-side byte path ~12 %, detok the rest. The FDC log ([`asave_fdc_line.out`](../../scratchpad/asave_fdc_line.out))
       showed the FAT written TWICE at the end: sdw_end flushed the held FAT sector, then
       fat_io_close's last partial sector started a new cluster and re-read the FAT and wrote
       both copies again (R2 W2 W5). sdw_end (moved from pageenv.asm to the $75A5 region: 45 ->
       27 B, $4217 4 -> 11 B, 2026-11-12) now writes the buffered last sector FIRST, still under
       the hold, then frl_flush, then fat_dir_update; a failing data write still sends the held
-      sector out (frl_xfail keeps the CF). SAVE (sv-diskwr.inc) gets it too. 📏 [`asave_end.out`](scratchpad/asave_end.out)
-      5.7 s (🔮 ~5.7: HIT); [`asave_fdc_end.out`](scratchpad/asave_fdc_end.out): the SAVE line 23 W / 5 R -> 21 W / 4 R (the last
+      sector out (frl_xfail keeps the CF). SAVE (sv-diskwr.inc) gets it too. 📏 [`asave_end.out`](../../scratchpad/asave_end.out)
+      5.7 s (🔮 ~5.7: HIT); [`asave_fdc_end.out`](../../scratchpad/asave_fdc_end.out): the SAVE line 23 W / 5 R -> 21 W / 4 R (the last
       `A0` from fwd_chk is a lost-data retry of the directory write, D-FDCDI's class). Gates:
       asavedev, asavechan, diskfull, wcache, diskascii, savedev, savedate, savetail, fullclash,
       bsavevar, bdos, wrblkalt, diskbasic, programs green. No knife: the old order passes every
       row too -- the FDC count is the witness. ➡️ Left: the per-sector rotational wait (each
       data sector written alone, ~0.25 s apart -- the CF-3300 issues one multi-sector write) and
       the per-byte disk path (fip_store / fat_io_putbyte / fwr_bytes_inc, ~12 %).
-      📏 **RE-MEASURED 2026-11-14 ([`asave_1114.out`](scratchpad/asave_1114.out), after the day's interpreter work --
+      📏 **RE-MEASURED 2026-11-14 ([`asave_1114.out`](../../scratchpad/asave_1114.out), after the day's interpreter work --
       D-SEPONCE / D-ESIDXAL / D-ESINLINE):** the 150-line program 119.2 s, with SAVE ,A 125.1 --
       **the SAVE 5.9 s** (5.7 on 11-12; CF-3300 1.5): unchanged within a run's spread, as
       expected -- the statement dispatch is not SAVE ,A's path. The levers above stand.

@@ -12,7 +12,7 @@
       machine did with it, and a payload whose delivery cannot be verified may not
       gate. Resolving the cell needs a delivery path that bypasses the line editor
       — an ASCII `LOAD"CAS:`, the way `basic_probe_floatlit.py` reaches literals.
-      Detail: [`docs/decblank-msx1-characterization.md`](docs/decblank-msx1-characterization.md) §5.
+      Detail: [`docs/decblank-msx1-characterization.md`](../../docs/decblank-msx1-characterization.md) §5.
       ✅ **THE GROUND TRUTH IS MEASURED, 2026-09-05 (D-TRAILBLANK,
       `scratchpad/trailblank_probe.py`) — the entry's own suggested path, built.**
       An `$EA` ASCII program on tape, `LOAD"CAS:"`, and the readout is the

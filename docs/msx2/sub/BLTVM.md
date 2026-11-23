@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `BLTVM` (sub-ROM $0195) — copy an array from RAM to VRAM
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubblt.asm](../../../probes/bios/spec/xsubblt.asm), [scratchpad/AE_xsubblt_msx2.out](../../../scratchpad/AE_xsubblt_msx2.out), decoded by `scratchpad/xsubblt_decode.py`).
 
 ## Summary
 
@@ -40,7 +40,7 @@ as given; A $00, F $44, interrupts ON.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds draw the same dots and fill NX / NY the same, but also write CDUMMY ($F56E) := $A1 (the
-first dot) and return other A / F ([scratchpad/AE_xsubblt_msx2.out](../../scratchpad/AE_xsubblt_msx2.out)).
+first dot) and return other A / F ([scratchpad/AE_xsubblt_msx2.out](../../../scratchpad/AE_xsubblt_msx2.out)).
 
 ## Open (not measured)
 

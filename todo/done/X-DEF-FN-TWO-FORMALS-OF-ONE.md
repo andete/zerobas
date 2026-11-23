@@ -1,6 +1,6 @@
 - [x] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
       it.** Filed 2026-08-22 by D-DEFFN,
-      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
+      [`docs/deffn-impl-2026-08-22.md`](../../docs/deffn-impl-2026-08-22.md) §8. The
       draft binds in place: `FNA(P,Q)` called as `FNA(X, X*2)` from inside an FN
       whose own formal is `X` writes slot 0 before the second actual reads it.
       The reference's behaviour is UNMEASURED — the 82-row design set has no
@@ -9,7 +9,7 @@
       alternative (evaluate every actual into a stack temp first) is ~30 B in a
       region that has none.
       ✅ **THE REFERENCE READING IS TAKEN (2026-08-27, D-FNALIAS),**
-      [`docs/spec-deffn-alias.md`](docs/spec-deffn-alias.md). Premise re-run on the
+      [`docs/spec-deffn-alias.md`](../../docs/spec-deffn-alias.md). Premise re-run on the
       SHIPPED code, not the draft it was filed against. **Both references agree, so
       there is an oracle: every actual is evaluated in the CALLER's scope.**
       `DEF FNA(P,Q)=P*100+Q : P=3 : FNA(5,P)` → ref **503**, zb **505**;
@@ -46,9 +46,9 @@
           o.aliasnest.ctl      907      907         907   -?.?????????????E+62
 
       **Both CONTROLS go red**, which is what says this is not a partial fix but a
-      broken verb ([before](scratchpad/alias_before_2026-09-09.out),
-      [after](scratchpad/alias_after_2026-09-09.out),
-      [reverted](scratchpad/alias_revert_2026-09-09.out) — the baseline returns
+      broken verb ([before](../../scratchpad/alias_before_2026-09-09.out),
+      [after](../../scratchpad/alias_after_2026-09-09.out),
+      [reverted](../../scratchpad/alias_revert_2026-09-09.out) — the baseline returns
       byte-for-byte). Reverted; nothing shipped.
       🎯 **AND THE TREE CONTRADICTED ITSELF IN WRITING, WITH THE COMMENT RIGHT.**
       `sub/deffn.asm`'s `fn_enter` says the slot walk *"grows FN_FEND without ever
@@ -82,8 +82,8 @@
       battery). They go in as the fix lands, not before.
       🔴 **AND THE FIRST THING THE AUTHORISATION BOUGHT WAS A REFUTATION OF ITS
       OWN NUMBER (2026-09-09, D-FNNESTDEPTH,
-      [`scratchpad/deffn_nestdepth_probe.py`](scratchpad/deffn_nestdepth_probe.py),
-      [`.out`](scratchpad/deffn_nestdepth.out)).** *"Match the reference"* makes
+      [`scratchpad/deffn_nestdepth_probe.py`](../../scratchpad/deffn_nestdepth_probe.py),
+      [`.out`](../../scratchpad/deffn_nestdepth.out)).** *"Match the reference"* makes
       the reference's own ceiling the first question, and the ~198 B figure came
       from ONE row at depth 2. Nine formals at the innermost level, depth 1..4:
 
@@ -133,7 +133,7 @@
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE POOL ROUTE.** Evaluate every actual into the control
       pool before binding (`docs/spec-deffn-alias.md`). ⚠️ The 503-vs-505 reading
       quoted to him is 2026-08-27's; re-run it on today's ROM before building.
-      📏 **RE-RUN 2026-11-05 on today's ROM** ([`fnalias_today.out`](scratchpad/fnalias_today.out),
+      📏 **RE-RUN 2026-11-05 on today's ROM** ([`fnalias_today.out`](../../scratchpad/fnalias_today.out),
       scratchpad/deffn_alias_probe.py): `o.alias` VG-8020 503 / CF-3300 503 / zerobas 505,
       `o.aliasnest` 903 / 903 / 909, both controls equal (507, 907). 🔮 "unchanged since
       08-27" HIT. The divergence stands; the pool-route build is next.
@@ -145,26 +145,26 @@
       the temp-descriptor stack (route (a), the reference's own 10-deep shape); pass 2
       (dfn_body) binds the formals from the entries, a repeated formal taking the LAST
       actual as both references do (o.dupformal 2, o.dupformal3 32, o.dupstr b --
-      [`fnalias2_scout.out`](scratchpad/fnalias2_scout.out)); a call releases its parked temps at its end (q.tend 111 on both
+      [`fnalias2_scout.out`](../../scratchpad/fnalias2_scout.out)); a call releases its parked temps at its end (q.tend 111 on both
       references, ERR 16 here before). 🔴 **ONE DEVIATION FROM THE RULED SHAPE, STATED:** the
       parked entries live on the main servicer's own Z80 stack, not in a ctl_alloc pool
       block. Measured both: the pool block slid the whole live stack per entry (D-SPMERGE)
       -- `DEF FNA(X)=FNA(X)` reached ERR 7 in 1010 jiffies against HEAD's 718 and b.recurse
       ran past its capture -- while the stack (the same merged free space under the frontier,
       under stk_guard, unwound by an error's SP reset) took 723
-      ([`fnalias2_time_head.out`](scratchpad/fnalias2_time_head.out), [`fnalias2_time_pool.out`](scratchpad/fnalias2_time_pool.out), [`fnalias2_time_stack.out`](scratchpad/fnalias2_time_stack.out)). Since D-SPMERGE (ruled
+      ([`fnalias2_time_head.out`](../../scratchpad/fnalias2_time_head.out), [`fnalias2_time_pool.out`](../../scratchpad/fnalias2_time_pool.out), [`fnalias2_time_stack.out`](../../scratchpad/fnalias2_time_stack.out)). Since D-SPMERGE (ruled
       09-11) the Z80 stack and the control pool are one region, so this keeps "evaluate
       every actual into the control pool before binding"; flagged for Joost all the same.
-      📏 After: o.alias 503 / o.aliasnest 903 on all three ([`fnalias2_aliasprobe_after.out`](scratchpad/fnalias2_aliasprobe_after.out)); 11
-      new deffn-probe rows agree on all three sides ([`fnalias2_newrows.out`](scratchpad/fnalias2_newrows.out)); the whole probe
-      0/91 divergent on zerobas ([`fnalias2_deffn_zb2.out`](scratchpad/fnalias2_deffn_zb2.out)). Knife: HEAD's two asm files -> the new
-      rows red (505 / 909 / ERR 16 / ERR 16, [`fnalias2_knife_rows.out`](scratchpad/fnalias2_knife_rows.out)); K-PARK (the parked actual
-      unrooted) turns o.gcpark / o.gcroot / o.str9 red ([`fnalias2_kpark_rows.out`](scratchpad/fnalias2_kpark_rows.out)). Bytes: main's
+      📏 After: o.alias 503 / o.aliasnest 903 on all three ([`fnalias2_aliasprobe_after.out`](../../scratchpad/fnalias2_aliasprobe_after.out)); 11
+      new deffn-probe rows agree on all three sides ([`fnalias2_newrows.out`](../../scratchpad/fnalias2_newrows.out)); the whole probe
+      0/91 divergent on zerobas ([`fnalias2_deffn_zb2.out`](../../scratchpad/fnalias2_deffn_zb2.out)). Knife: HEAD's two asm files -> the new
+      rows red (505 / 909 / ERR 16 / ERR 16, [`fnalias2_knife_rows.out`](../../scratchpad/fnalias2_knife_rows.out)); K-PARK (the parked actual
+      unrooted) turns o.gcpark / o.gcroot / o.str9 red ([`fnalias2_kpark_rows.out`](../../scratchpad/fnalias2_kpark_rows.out)). Bytes: main's
       $6CF3 pin pad +65, sub page 0 +39 (124 -> 85). tests/test_deffn_alias.py (9 rows; the
       host bridge gained an OPT-IN `bridge_keeps_tenant_sp` -- no FN call could run on the
       host before, and the default broke test_ramad). 🟢 **AND d.n4 CLOSED TOO:** the nesting
       cap of three (ERR 7 at depth 4, D-FNSTK) is gone -- depth 4 answers 9 on all three
-      ([`fnalias_pin_nest.out`](scratchpad/fnalias_pin_nest.out), refcache off); both probes' pins left tools/filed-row-known.txt
-      after a by-hand re-run with the refcache OFF ([`fnalias_pin_alias.out`](scratchpad/fnalias_pin_alias.out): all four rows
+      ([`fnalias_pin_nest.out`](../../scratchpad/fnalias_pin_nest.out), refcache off); both probes' pins left tools/filed-row-known.txt
+      after a by-hand re-run with the refcache OFF ([`fnalias_pin_alias.out`](../../scratchpad/fnalias_pin_alias.out): all four rows
       agree). 🆕 q.frelit stays divergent: a literal
       string actual costs 4 B here and 0 on both references (the D-LITREF / D-TEMPD10 class).

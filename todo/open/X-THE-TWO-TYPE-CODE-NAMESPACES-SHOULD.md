@@ -1,7 +1,7 @@
 - [ ] **THE TWO TYPE-CODE NAMESPACES SHOULD PROBABLY BECOME ONE.** Filed
       2026-08-01 by D-DEFSTR. The references use `3` for **both** the DEFtbl code
       and the variable-chain type byte, which makes `elsize == type` an identity
-      and [`elsize_from_type`](sub/arrays.asm:943) — plus ~7 call sites —
+      and [`elsize_from_type`](../../sub/arrays.asm:943) — plus ~7 call sites —
       deletable. zerobas uses `1` in the chain with a `1 → 3` map.
       ⚠️ The chain's stored type byte is **RAM-observable**, so this needs its own
       oracle-lock on that byte before anything moves; D-REHOME measured only that

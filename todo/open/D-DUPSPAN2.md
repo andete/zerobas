@@ -1,5 +1,5 @@
 - [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
-      2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
+      2026-08-22, [`docs/spec-basic-dupspan2.md`](../../docs/spec-basic-dupspan2.md)
       §5.1. Eleven emulator batteries say the collapse broke nothing; none of
       them can say it was OBSERVABLE — a site nothing exercises stays green
       through any mistake made to it, which is why D-DUPSPAN built
@@ -9,7 +9,7 @@
       aliased site, and a knife per canonical whose predicted set is that
       canonical's aliases and nothing else.
       📏 **THE PER-SITE DENOMINATOR EXISTS NOW, TAKEN FROM THE SOURCE**
-      ([`scratchpad/dupspan2_roster.py`](scratchpad/dupspan2_roster.py)): **27
+      ([`scratchpad/dupspan2_roster.py`](../../scratchpad/dupspan2_roster.py)): **27
       aliases in 16 files, 21 distinct canonicals**, each named with its
       canonical and its file:line. A per-site row set needs a per-site list, and
       the list was a sentence in a spec.
@@ -29,7 +29,7 @@
       score — roughly 21 × 7 min.~~ 🔴 **THE PRICE ASSUMED THE BATTERY IS THE
       ONLY SCORER, AND IT IS NOT (D-DUPOBS, 2026-09-06).**
       ✅ **ALL 21 ARMS RUN, HOST-SIDE, IN ~13 MINUTES**
-      ([`scratchpad/dupobs_knives.py`](scratchpad/dupobs_knives.py)): each
+      ([`scratchpad/dupobs_knives.py`](../../scratchpad/dupobs_knives.py)): each
       canonical cut to a bare `ret` — one uniform mutation, so a green arm cannot
       be "my cut was too gentle here" — and scored with `make unit-test`, ~31 s
       per arm and no emulator anywhere.
@@ -68,8 +68,8 @@
       reports `INERT (ROM unchanged)` as its own outcome now.
       ✅ **D-DUPOBS2 (2026-09-10): THE EMULATOR HALF IS STARTED, AND THE SCORER
       IS CHEAPER THAN THE ENTRY ASSUMED**
-      ([`scratchpad/dupobs_emu.py`](scratchpad/dupobs_emu.py),
-      [`.out`](scratchpad/dupobs_emu.out)).
+      ([`scratchpad/dupobs_emu.py`](../../scratchpad/dupobs_emu.py),
+      [`.out`](../../scratchpad/dupobs_emu.out)).
       🎯 **A RED IS CONCLUSIVE AND A GREEN IS NOT — so the suites are tried
       CHEAPEST FIRST and the ladder STOPS at the first red.** The entry priced
       this at "~7 min each" assuming the whole battery is the scorer; measured
@@ -110,8 +110,8 @@
       [[a-readout-blind-to-its-own-subject]]. Fixed to name the ladder it
       actually ran.
       ✅ **CLOSED 2026-09-10 — ALL 21 SCORED TO THE CEILING THAT EXISTS:
-      17 OBSERVED, 4 NOT** ([`scratchpad/dupobs_emu.py --battery`](scratchpad/dupobs_emu.py),
-      [`.out`](scratchpad/dupobs_emu_battery.out)). The two `ctp_*` subject
+      17 OBSERVED, 4 NOT** ([`scratchpad/dupobs_emu.py --battery`](../../scratchpad/dupobs_emu.py),
+      [`.out`](../../scratchpad/dupobs_emu_battery.out)). The two `ctp_*` subject
       ladders ran first and both stayed green (`clearpool` 87 s + `ctllim` 391 s
       each), so all seven survivors went to the battery pass.
 

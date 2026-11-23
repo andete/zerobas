@@ -7,8 +7,8 @@
       🤖 **AUTONOMOUS** — 🏗️ Joost 2026-10-17: disk.rom owns the FIELD table (diskless
       it is ERR 5), and *"if reference has a location inside the non-disk region it
       uses, we should also use that"*.
-      📏 **MEASURED FIRST** ([`fieldram_probe.py`](scratchpad/fieldram_probe.py) ->
-      [`fieldram_run.out`](scratchpad/fieldram_run.out); BASIC VARPTR / PEEK / FRE
+      📏 **MEASURED FIRST** ([`fieldram_probe.py`](../../scratchpad/fieldram_probe.py) ->
+      [`fieldram_run.out`](../../scratchpad/fieldram_run.out); BASIC VARPTR / PEEK / FRE
       only; VARPTR is signed, so the readings show +65536): after
       `FIELD #1,2 AS A$,3 AS B$` on the CF-3300, A$'s descriptor is [2][VARPTR(#1)+9]
       and B$'s [3][VARPTR(#1)+11]; FIELD spends 0 B of FRE(0) and FRE(""); LSET keeps
@@ -30,8 +30,8 @@
       ⚠️ Also seen: the channel block sits 265 B below HIMEM on the CF-3300 and 665 B
       on zerobas (MAXFILES=1) -- a TIER-4 RAM reading for the FCH block layout, not
       this item's.
-      📏 **ROUND 2, THE ROWS THE TWO MODELS READ DIFFERENTLY** ([`flddesc_probe.py`](scratchpad/flddesc_probe.py)
-      -> [`flddesc_run.out`](scratchpad/flddesc_run.out), LEN=8, A$ 2 B and B$ 3 B
+      📏 **ROUND 2, THE ROWS THE TWO MODELS READ DIFFERENTLY** ([`flddesc_probe.py`](../../scratchpad/flddesc_probe.py)
+      -> [`flddesc_run.out`](../../scratchpad/flddesc_run.out), LEN=8, A$ 2 B and B$ 3 B
       fielded): the CF-3300 reads r1 `XY  Z` (LSET / RSET), r2 `QY` (MID$ writes the
       record), r3 `XY` (GET re-reads it), r4 `XYMN` (a copy taken before LSET is its
       own), r5 `XYMN` and r6 `XYXY` (SWAP exchanges the DESCRIPTORS: C$ is fielded
@@ -43,7 +43,7 @@
       gate. ⚠️ r8 also says hk_frnd's space-fill of the record at OPEN is not the
       reference's on a RE-open; what a FRESH block holds is unmeasured.
       📏 **ROUND 3, A FRESH BLOCK** (`FLDDESC_PROG=fresh` ->
-      [`fldfresh_run.out`](scratchpad/fldfresh_run.out)): the CF-3300 NEVER fills the
+      [`fldfresh_run.out`](../../scratchpad/fldfresh_run.out)): the CF-3300 NEVER fills the
       record -- #1 reads 159 146 and #2 255 255 right after MAXFILES (leftover RAM),
       and after CLEAR + MAXFILES an old `QQ` is still there (81 81). 🔮 "spaces": MISS.
       So hk_frnd's OPEN fill went too; f1 / f2 are leftover RAM on both machines and
@@ -64,10 +64,10 @@
         moved code (lrset_finish / lrset_store, GET / PUT's head, ex_delete, exf_comma,
         derive_directf, dir_line / run_kw, relink, trace_line); 6/6, waste 4 of 4;
         `make switch-build-check` 7/7.
-      Witness: [`flddesc_run_after.out`](scratchpad/flddesc_run_after.out) r1-r9 SAME
+      Witness: [`flddesc_run_after.out`](../../scratchpad/flddesc_run_after.out) r1-r9 SAME
       on both machines (r2 was `Illegal function call`);
-      [`fieldram_run_after.out`](scratchpad/fieldram_run_after.out) [a] / [b] / [l]
-      byte-identical offsets and lengths; [`fldfresh_run_after.out`](scratchpad/fldfresh_run_after.out)
+      [`fieldram_run_after.out`](../../scratchpad/fieldram_run_after.out) [a] / [b] / [l]
+      byte-identical offsets and lengths; [`fldfresh_run_after.out`](../../scratchpad/fldfresh_run_after.out)
       f3 SAME. 🔮 "r1-r7 + r9 match, r8 differs while the fill stays": HIT; after
       the fill went, r8 SAME. Knife connectedness unchanged: HIT.
       🏗️ **Joost 2026-10-17 reversed his 2026-09-27 "keep ours"** on a fielded variable

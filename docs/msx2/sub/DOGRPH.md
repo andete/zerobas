@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `DOGRPH` (sub-ROM $0085) — draw a line (assumed)
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubbox.asm](../../../probes/bios/spec/xsubbox.asm), [scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out), decoded by `scratchpad/xsubbox_decode.py`).
 
 ## Summary
 
@@ -33,7 +33,7 @@ GRPACX / GRPACY (10, 10) all different, the line drawn is **(BC, DE) -> (GXPOS, 
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds draw NOTHING for the same inputs ([scratchpad/AE_xsubbox_msx2.out](../../scratchpad/AE_xsubbox_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds draw NOTHING for the same inputs ([scratchpad/AE_xsubbox_msx2.out](../../../scratchpad/AE_xsubbox_msx2.out)).
 
 ## Open (not measured)
 

@@ -1,6 +1,6 @@
 - [x] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
       GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
-      ([`docs/spec-probe-machxml.md`](docs/spec-probe-machxml.md)), which fixed
+      ([`docs/spec-probe-machxml.md`](../../docs/spec-probe-machxml.md)), which fixed
       the one that FIRED. `tools/install-openmsx-machine.py`:379/392/401/440/455
       all publish with `open(out, "w").write(...)` into
       `~/.openMSX/share/{machines,extensions}` — the same truncate-then-write
@@ -30,7 +30,7 @@
       `openmsx_paths.py`, any `open(..., "w")` outside `publish()` itself is the
       finding. That denominator is small, complete and statable.
       ✅ **CHECKER SHIPPED 2026-08-26 as rule PUBLISH of `make chokepoint-check`**
-      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)) — one gate
+      ([`docs/spec-chokepoint-gate.md`](../../docs/spec-chokepoint-gate.md)) — one gate
       for three items, because they were one property. Denominator **3 files**.
       🔴 Its first cut reddened `openmsx_paths.py` **twice, on the COMMENT that
       explains why the raw call is forbidden** — a regex cannot tell code from

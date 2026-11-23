@@ -1,7 +1,7 @@
 - [x] 🟢 **A DEAD REFERENCE MACHINE WAS CACHED AS A READING — FIXED 2026-09-02
       (D-SCRAPEMODE), AND THE HARNESS HAD DIAGNOSED IT THREE TIMES ALREADY.**
       Filed and closed the same day,
-      [`docs/spec-scrapemode.md`](docs/spec-scrapemode.md).
+      [`docs/spec-scrapemode.md`](../../docs/spec-scrapemode.md).
       🔴 **THE DIAGNOSIS EXISTED AND WAS DISCARDED.** Re-running the exact call
       that wrote seven ghost entries prints
       `verdicts: ['BLIND/mode', 'BLIND/mode', 'BLIND/mode']`,

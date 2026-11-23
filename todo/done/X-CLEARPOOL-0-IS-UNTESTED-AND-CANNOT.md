@@ -17,7 +17,7 @@
       The `ELSE` arm builds — **both ROMs** — and in each arm the dense table's
       slot holds **24**, so the equate and the table have not drifted. The
       feared silent off-by-one does not exist today
-      ([`scratchpad/clearpool_off.py`](scratchpad/clearpool_off.py)).
+      ([`scratchpad/clearpool_off.py`](../../scratchpad/clearpool_off.py)).
       🎯 **THE SCOPE CLAIM WAS THE PROBLEM, SO THE SCOPE IS NOW PER-SWITCH.**
       `SWITCHES` is a dict of *switch → trees it is read from*, and `assemble()`
       builds every tree the switch declares. **A global claim of "no switch is

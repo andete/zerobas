@@ -5,6 +5,6 @@
       🤖 **AUTONOMOUS** — but priced against the binding wall: main page 1
       has 4 B (2026-10-11), and the fix is a path flag CLOAD sets and
       `repl` tests before `call H_READ`.
-      📏 [`autorun_seq_probe.out`](scratchpad/autorun_seq_probe.out): the
+      📏 [`autorun_seq_probe.out`](../../scratchpad/autorun_seq_probe.out): the
       VG-8020's log ends `2RMM` -- the prompt after the marker line, then
       CLOAD's lone M. Unmeasured: LOAD (no `,R`), MERGE and BLOAD's returns.

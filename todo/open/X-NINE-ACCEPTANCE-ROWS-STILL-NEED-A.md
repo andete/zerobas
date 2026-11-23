@@ -49,10 +49,10 @@
       them.** 2 to be re-filed under the arc mask.
       🔬 **M-PLOTCLIP, 2026-09-10: THE ONE ARM 35 MUTATIONS NEVER TRIED — CUT
       THE CLIP SO IT STOPS CLIPPING**
-      ([`scratchpad/plotclip_knife.py`](scratchpad/plotclip_knife.py),
-      [`.out`](scratchpad/plotclip_knife.out)). `gfx_plot_cur`'s three bare `ret`s
+      ([`scratchpad/plotclip_knife.py`](../../scratchpad/plotclip_knife.py),
+      [`.out`](../../scratchpad/plotclip_knife.out)). `gfx_plot_cur`'s three bare `ret`s
       become `nop`s, so an off-screen coordinate is plotted instead of dropped.
-      Of the 35 arms in [`scratchpad/gate_blindness.json`](scratchpad/gate_blindness.json)
+      Of the 35 arms in [`scratchpad/gate_blindness.json`](../../scratchpad/gate_blindness.json)
       only `M-YBOUND` touches that routine, and it NARROWS the bound (`cp 192` →
       `cp 191`) — narrowing keeps off-screen plots clipped, so a row asserting
       "off-screen draws nothing" correctly never moved. `M-CLAMPX`/`M-CLAMPY`
@@ -69,7 +69,7 @@
       pixel plane and assert an off-screen plot changes nothing. They did not.
       **So they are not about `gfx_plot_cur` at all**: their coordinates are
       refused earlier, by the RESIDENT's own off-screen decision
-      ([`basic/graphics.asm:101`](basic/graphics.asm:101)), and never reach the
+      ([`basic/graphics.asm:101`](../../basic/graphics.asm:101)), and never reach the
       tenant. ➡️ Their arm is a cut that makes an off-screen PSET **plot** — not
       one that makes it raise, which is why `M-PSETOFF` left them quiet too
       [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
@@ -81,8 +81,8 @@
       that ground. 13 further rows moved (`circ_ovf_*`, `ell_ovf_*`, `clampS_*`),
       so the arm is emphatically not inert; ROM restored byte-identical.
       🟢 **M-PSETPLOT, SAME DAY — EXACT, AND IT ARMS THREE MORE NEVER-REDDENED
-      ROWS** ([`scratchpad/psetplot_knife.py`](scratchpad/psetplot_knife.py),
-      [`.out`](scratchpad/psetplot_knife.out)). M-PLOTCLIP's failed prediction
+      ROWS** ([`scratchpad/psetplot_knife.py`](../../scratchpad/psetplot_knife.py),
+      [`.out`](../../scratchpad/psetplot_knife.out)). M-PLOTCLIP's failed prediction
       said where to look, and `basic/graphics.asm`'s own comment said it outright:
       the resident's `jp nc,exec_stmt` *"IS WHAT MAKES GFX_OP=1'S ALIASED
       MARSHALLING SAFE"* — the tenant's op-1 arm reads `GXPOS`/`GYPOS` **LOW
@@ -120,7 +120,7 @@
       🟢 **AND ITS LIVE TWIN IS ALREADY COVERED FOUR TIMES OVER.**
       `clampL_corner` is the SAME statement (`LINE(300,300)-(400,400),15`) with
       the RIGHT band (232..255 × 168..191), and
-      [`scratchpad/gate_blindness.json`](scratchpad/gate_blindness.json) records
+      [`scratchpad/gate_blindness.json`](../../scratchpad/gate_blindness.json) records
       it reddened by **M-CLAMPX, M-CLAMPY, M-COLOUR and M-YBOUND**. So the
       statement's behaviour is gated; only the blind band is not, and it cannot be.
       ⚠️ **NO SINGLE-SITE MUTATION CAN MOVE `clip_alloff`, BY CONSTRUCTION**:

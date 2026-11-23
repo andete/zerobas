@@ -53,7 +53,7 @@
       shipped; recorded in the tool so it is not re-derived.
       ✅ **WHAT SHIPPED INSTEAD IS STRUCTURAL AND READS 0 FALSE POSITIVES:
       `subject_conflicts()` in
-      [`tools/check_todo_citations.py`](tools/check_todo_citations.py).** THREE
+      [`tools/check_todo_citations.py`](../../tools/check_todo_citations.py).** THREE
       of the four were the SAME sentence in three sibling docs (`RETIRE THE LEAN
       16 KB CART`) resolving to THREE DIFFERENT blocks — a contradiction inside
       the tree, at most one of which can be right, detectable with no guess about
@@ -104,13 +104,13 @@
       token, 10 FLAGGED of which 2 were REAL.** 20% precision — too noisy to
       collect into `make gates`, where a red that is wrong four times in five
       teaches people to ignore reds, and productive as a one-off sweep.
-      [`scratchpad/citehead_audit.py`](scratchpad/citehead_audit.py) ships as an
+      [`scratchpad/citehead_audit.py`](../../scratchpad/citehead_audit.py) ships as an
       AUDIT with `rc 0` on purpose. Its eight remaining flags are all one shape:
       a document's own title or `§0` heading, which names the DOC and not the
       cited item. **Not tuned away — that would be fitting a rule to two data
       points.**
       🟢 **THE LONE-CITATION RESIDUAL IS NO LONGER UNCOVERED, 2026-09-06
-      (D-CITENAME)** — [`scratchpad/citename_audit.py`](scratchpad/citename_audit.py).
+      (D-CITENAME)** — [`scratchpad/citename_audit.py`](../../scratchpad/citename_audit.py).
       🎯 **AND THE SIGNAL WAS ALREADY IN THE RECORD, MIS-STATED.** Instances six
       and seven are written up above as headings that *disagree* with the cited
       block — a similarity, which is what made the semantic route look like the

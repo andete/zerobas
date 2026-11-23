@@ -6,7 +6,7 @@
       nothing where the reference says Input past end.
       🤖 **AUTONOMOUS** — every row is measured; split off an item per shape
       as each is fixed.
-      📏 [`scratchpad/t6enum_b8_zb.out`](scratchpad/t6enum_b8_zb.out): every case
+      📏 [`scratchpad/t6enum_b8_zb.out`](../../scratchpad/t6enum_b8_zb.out): every case
       booted ALONE on both machines (a private disk image each). 94 agree; of
       the 32 that do not, two are `RUN 99` / `RUN 1,2`, which the reference
       cannot report to an ON ERROR handler (RUN disarms it). The rest,
@@ -20,17 +20,17 @@
         RETURNS from inside the parser, so the caller went on with drive A: and
         `OPEN "Q:F.TXT"` made the file on A:. It goes to `pdf_baddrive` (62,
         page 1, bound per build like D-FSPEC's `pdf_badname`; the BLOAD tenant
-        keeps its unmeasured answer). [`scratchpad/drvname_probe.py`](scratchpad/drvname_probe.py):
-        before [`drvname_run.out`](scratchpad/drvname_run.out), after
-        [`drvname_after_run.out`](scratchpad/drvname_after_run.out) — C: .. H:
+        keeps its unmeasured answer). [`scratchpad/drvname_probe.py`](../../scratchpad/drvname_probe.py):
+        before [`drvname_run.out`](../../scratchpad/drvname_run.out), after
+        [`drvname_after_run.out`](../../scratchpad/drvname_after_run.out) — C: .. H:
         and Q: agree at 62. ⚠️ **B: still differs, and it is not an error:**
         the CF-3300 treats B: as its PHANTOM drive and waits for a disk; zerobas
         uses A:. A prompt, not a code — noted, not chased.
         ✅ **D-NAMEEXIST (2026-09-28):** `hk_name` (disk.rom) looks the NEW name
         up first and refuses with 65, saving and restoring FWR_DIRSEC/DIROFF
         around that lookup because they are exactly where the rename stamps.
-        [`scratchpad/nameexist_probe.py`](scratchpad/nameexist_probe.py) →
-        [`nameexist_run.out`](scratchpad/nameexist_run.out): exists 65, the
+        [`scratchpad/nameexist_probe.py`](../../scratchpad/nameexist_probe.py) →
+        [`nameexist_run.out`](../../scratchpad/nameexist_run.out): exists 65, the
         ordinary rename still reads `HI` from the new name with the old one
         gone, and not-found 53 — all agree. Its message had never been needed:
         `Unprintable error in 40` until sub/errmsg.asm gained ERR 65's row.
@@ -42,10 +42,10 @@
         is OPEN with 64 before deleting anything — every disk mode (OUTPUT,
         INPUT, APPEND, RANDOM), the live channel or a saved one, and through a
         wildcard, all measured against the CF-3300:
-        [`scratchpad/killopen_probe.py`](scratchpad/killopen_probe.py) → before
-        [`killopen_run.out`](scratchpad/killopen_run.out) /
-        [`killopen_run2.out`](scratchpad/killopen_run2.out), after
-        [`killopen_after_run.out`](scratchpad/killopen_after_run.out). Zero main
+        [`scratchpad/killopen_probe.py`](../../scratchpad/killopen_probe.py) → before
+        [`killopen_run.out`](../../scratchpad/killopen_run.out) /
+        [`killopen_run2.out`](../../scratchpad/killopen_run2.out), after
+        [`killopen_after_run.out`](../../scratchpad/killopen_after_run.out). Zero main
         bytes. Row `t8killdeletefile64`; **KILL reaches T6 → 105.**
         🔴 **THE FIRST BUILD REFUSED CORRECTLY AND STILL READ `ERR 0 ERL 0`**
         (D-ERRKEEP): with a file open, `chan_gate`'s restore re-stages the live
@@ -76,15 +76,15 @@
         hole needs a READ failure inside the file being loaded while the open file's
         own sector still reads. openMSX reads every in-range sector of an intact
         image, and an ejected disk fails the channel's re-stage too. A crafted image
-        with a first cluster PAST THE VOLUME ([`errkeep3_probe.py`](scratchpad/errkeep3_probe.py)
-        → [`errkeep3_run.out`](scratchpad/errkeep3_run.out)) does not reach it either:
+        with a first cluster PAST THE VOLUME ([`errkeep3_probe.py`](../../scratchpad/errkeep3_probe.py)
+        → [`errkeep3_run.out`](../../scratchpad/errkeep3_run.out)) does not reach it either:
         zerobas's FAT walk ends the chain there and never reads (filed as D-BADCLUSTER).
         So these three stay on their own ending until a witness exists — routing them
         through `hk_claim_status` blind is a change no row could check.
         ✅ **D-NOASTO (2026-09-29): `NAME "A.TXT"` 53 → 2 AND `COPY "A.TXT"` 53 → 5 ARE
         ONE ORDER, AND BOTH AGREE NOW.** With no `AS` / `TO` the CF-3300 looks the
         SOURCE up first: missing is 53, present is the verb's own refusal — NAME 2,
-        COPY 5 ([`noasto_run.out`](scratchpad/noasto_run.out); the present-file NAME
+        COPY 5 ([`noasto_run.out`](../../scratchpad/noasto_run.out); the present-file NAME
         case was unmeasured until then and predicted 2, hit). `hk_name` / `hk_copy`
         (disk.rom) now mount and look the source up on that path. 🔴 **THE DISK
         ROM'S TAIL WAS FULL:** the first build came out EMPTY — the region after
@@ -92,11 +92,11 @@
         into the `$5602..$5FE4` fill (above `ds $5FE5 - $`, which shifts nothing),
         and `check_disk_walls` now reads the largest hole 2399 B there. **The disk
         ROM's free space is INTERIOR holes; anything new in the tail must displace
-        into one.** After ([`noasto_after.out`](scratchpad/noasto_after.out)): the four
+        into one.** After ([`noasto_after.out`](../../scratchpad/noasto_after.out)): the four
         cases and the wildcard COPY cases all agree. Guard rows `t8namenoasmiss` /
         `t8copynotomiss` (kwsweep, SUPPORTED); knife = HEAD's kernel.asm (disk ROM
         `cf40cbbb` → `6af04b37`, restored) turns both DIVERGENT
-        ([`noasto_knife.out`](scratchpad/noasto_knife.out)).
+        ([`noasto_knife.out`](../../scratchpad/noasto_knife.out)).
       ✅ **D-OPENBUSY (2026-09-29): re-`OPEN` of a busy channel is 54 now.**
       `oo_parse_as_chan` — the "AS [#]n" clause every OPEN form shares (disk,
       LPT:/CRT:, CAS:) — checks `FCH_MODES[ch]` after the number is validated and
@@ -105,10 +105,10 @@
       D-DSKFLOCAL's 13 and D-DSKFRANGE's 4 (page 1 was 1 B after, 2026-09-29).
       Rows `t8openoutput54` (PROVES-T6:54) and the control `t8openreuse` (CLOSE,
       then the same channel opens again) SUPPORTED against the CF-3300
-      ([`openbusy_kwsweep.out`](scratchpad/openbusy_kwsweep.out)); knife = HEAD's
+      ([`openbusy_kwsweep.out`](../../scratchpad/openbusy_kwsweep.out)); knife = HEAD's
       files.asm (main ROM `bd9e17c1` → `745ef2f8`, restored) turns the 54 row
       DIVERGENT — `File already open in 20` there, nothing here — while the
-      control stays green ([`openbusy_knife.out`](scratchpad/openbusy_knife.out)).
+      control stays green ([`openbusy_knife.out`](../../scratchpad/openbusy_knife.out)).
       ~~➡️ **Still open from this line:** the SAME FILE on a second channel (54 on
       the CF-3300 even FOR INPUT, `o_same2` / `o_samein2`) — that needs a name
       compare against the open channels, which `hkk_open_check` already does in
@@ -119,7 +119,7 @@
         both. OPEN is main code, and main was 3 B free on 2026-09-28.~~
       ✅ **D-OPENSAME (2026-09-29): the same file on a second channel is 54 now.**
       Unblocked by D-FCBSHAPE S0's 41 B of main page 1. Measured first, round 5 of
-      `killopen_probe.py` ([`opensame_before.out`](scratchpad/opensame_before.out)):
+      `killopen_probe.py` ([`opensame_before.out`](../../scratchpad/opensame_before.out)):
       the CF-3300 refuses in EVERY mode — OUTPUT, INPUT, RANDOM, APPEND-then-INPUT
       — accepts a different file and the same file after CLOSE, and the refused
       OPEN leaves #1 writing (`Q1Q2 54`). All 7 predicted, all hit. OPEN now asks
@@ -128,17 +128,17 @@
       3), through the full gate because it reads directory sectors into the live
       channel's buffer. It shares OPEN-BUSY's `ld e,54` tail (`oo_fail_54`). Main
       page 1 41 → 29 B, disk.rom 6542 → 6522 B
-      ([`opensame_walls.out`](scratchpad/opensame_walls.out)). After: 7/7 agree
-      ([`opensame_after.out`](scratchpad/opensame_after.out)). Guard row
+      ([`opensame_walls.out`](../../scratchpad/opensame_walls.out)). After: 7/7 agree
+      ([`opensame_after.out`](../../scratchpad/opensame_after.out)). Guard row
       `t8opensame54` (trapped, `[S 54 ]` on both; it restores MAXFILES=1 after its
-      PRINT) SUPPORTED ([`opensame_kwsweep.out`](scratchpad/opensame_kwsweep.out));
+      PRINT) SUPPORTED ([`opensame_kwsweep.out`](../../scratchpad/opensame_kwsweep.out));
       knife = HEAD's files.asm + kernel.asm (ROM hashes checked both ways) turns it
       DIVERGENT while `t8openreuse` stays green
-      ([`opensame_knife.out`](scratchpad/opensame_knife.out)). Whole sweep SUPPORTED
-      953 ([`opensame_kwsweep_full.out`](scratchpad/opensame_kwsweep_full.out)),
-      kwtime OK 839, the new row 0.42× ([`opensame_kwtime.out`](scratchpad/opensame_kwtime.out)),
-      knife BLIND unchanged ([`opensame_knife_all.out`](scratchpad/opensame_knife_all.out),
-      [`opensame_knife_fn.out`](scratchpad/opensame_knife_fn.out)). 🔴 Its first cut said
+      ([`opensame_knife.out`](../../scratchpad/opensame_knife.out)). Whole sweep SUPPORTED
+      953 ([`opensame_kwsweep_full.out`](../../scratchpad/opensame_kwsweep_full.out)),
+      kwtime OK 839, the new row 0.42× ([`opensame_kwtime.out`](../../scratchpad/opensame_kwtime.out)),
+      knife BLIND unchanged ([`opensame_knife_all.out`](../../scratchpad/opensame_knife_all.out),
+      [`opensame_knife_fn.out`](../../scratchpad/opensame_knife_fn.out)). 🔴 Its first cut said
       `ON ERROR GOTO 60` and BOTH machines read `Undefined line number` — SUPPORTED
       for the wrong reason; `as_stored` packs statements into ≤34-char lines, so
       the handler is line 40.
@@ -147,7 +147,7 @@
       wildcard BEFORE this check and answers 56; the CF-3300's order is unmeasured.
       ✅ **D-EOFMODE (2026-09-30): `EOF` on a channel opened the other way is 61 now**
       (OUTPUT, APPEND and RANDOM alike); batch 8 re-measured the same day leaves 12
-      real rows, listed below ([`t6enum_b8_0930.out`](scratchpad/t6enum_b8_0930.out)).
+      real rows, listed below ([`t6enum_b8_0930.out`](../../scratchpad/t6enum_b8_0930.out)).
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
         (55 → ok) — ➡️ **now its own TIER 1 item, D-SEQEOF (below): it is not
         just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the
@@ -166,7 +166,7 @@
       `tools/kwerrset.py` still holds them, so OPEN, KILL, NAME, FILES, EOF,
       LOAD, SAVE, BSAVE, GET #, PUT #, INPUT # and INPUT$ stay T6-.
       📏 **RE-MEASURED 2026-10-06 — 15 DIVERGE, NOT 32**
-      ([`t6enum_b8_zb_1006.out`](scratchpad/t6enum_b8_zb_1006.out), every case
+      ([`t6enum_b8_zb_1006.out`](../../scratchpad/t6enum_b8_zb_1006.out), every case
       booted alone on both machines; the list above is 09-27's). 🎯 Predicted
       ~12 -- near, a miss by 3. Reference → ours:
       • ✅ **channel direction (2) -- FIXED THE SAME DAY as D-CHDIR (below):**
@@ -184,7 +184,7 @@
       • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
         `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
       ✅ **CLOSED 2026-10-07 ON A WHOLE RE-MEASURE**
-      ([`t6enum_b8_zb_1007.out`](scratchpad/t6enum_b8_zb_1007.out), every case
+      ([`t6enum_b8_zb_1007.out`](../../scratchpad/t6enum_b8_zb_1007.out), every case
       booted alone): 4 of 116 diverge. `RUN 99` / `RUN 1,2` are the two the
       reference cannot report (RUN disarms ON ERROR); `BLOAD "X.BIN",Q` is a
       missing FEATURE, filed as D-BLOADOFS; and `A$=INPUT$("A")` 13 → 5 was a

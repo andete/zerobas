@@ -1,7 +1,7 @@
 - [ ] 🔴 **A RULE WITNESSED ONLY BY A *DEFERRED* ERROR IS WITNESSED BY NOTHING —
       and one shipped guard was in exactly that state.** Filed 2026-08-23 by
       D-DEFFNKNIFE,
-      [`docs/spec-basic-deffnknife.md`](docs/spec-basic-deffnknife.md) §4.
+      [`docs/spec-basic-deffnknife.md`](../../docs/spec-basic-deffnknife.md) §4.
       `raise_error`'s `FN_FEND` reset had a comment in TWO files
       (`basic/interp.asm`, `sub/arrays.asm`) naming `o.errrestore` as *"the row
       that says so"*. Knife K-FE1 disabled the reset and `deffn-strict` stayed
@@ -13,7 +13,7 @@
       `2 18` / `2 13` under the knife), added to the row set (`deffn-strict` is
       now **0 of 71**), and both comments corrected.
       📏 **SCOUTED 2026-08-23**,
-      [`docs/deferblind-scout-2026-08-23.md`](docs/deferblind-scout-2026-08-23.md),
+      [`docs/deferblind-scout-2026-08-23.md`](../../docs/deferblind-scout-2026-08-23.md),
       no ROM byte moved. **21 `penderr_set` sites; exactly ONE raises on the
       spot** (`str_heap_oom_error`), the other 20 return — so ERR 6/11/5/2/9/7/
       10/13 can EACH arrive deferred or immediate depending on the SITE, and
@@ -42,8 +42,8 @@
       replaced it, and nothing but a knife could tell.
       🔴 **`TRAPSVC` MEASURED 2026-08-26 — AND IT IS A LIVE DIVERGENCE WITH A
       CEILING OF SIX.**
-      ([`scratchpad/trapsvc_depth.py`](scratchpad/trapsvc_depth.py),
-      [`scratchpad/trapsvc_depth_screen.py`](scratchpad/trapsvc_depth_screen.py)).
+      ([`scratchpad/trapsvc_depth.py`](../../scratchpad/trapsvc_depth.py),
+      [`scratchpad/trapsvc_depth_screen.py`](../../scratchpad/trapsvc_depth_screen.py)).
       Same program on both machines: an `ON INTERVAL` handler that re-arms and
       leaves by `GOTO` — the leak form, which needs no fault at all.
       ```

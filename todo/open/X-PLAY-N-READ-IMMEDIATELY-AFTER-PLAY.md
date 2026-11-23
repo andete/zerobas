@@ -1,6 +1,6 @@
 - [ ] ⚠️ **`PLAY(n)` READ IMMEDIATELY AFTER `PLAY` SEES A REFERENCE TRANSIENT THAT
       zerobas DOES NOT REPRODUCE.** Filed 2026-08-28 by D-PLAYFN,
-      [`docs/spec-basic-playfn.md`](docs/spec-basic-playfn.md).
+      [`docs/spec-basic-playfn.md`](../../docs/spec-basic-playfn.md).
       `10 PLAY"L1CDEFGAB" : 20 PRINT PLAY(0);PLAY(1);PLAY(2);PLAY(3)` with NO delay
       between the two lines gives **vg8020 `-1 -1 -1 0`** — voice 2 reading active
       although only one MML string was supplied — against zerobas's `-1 -1 0 0`.
@@ -9,7 +9,7 @@
       🎯 So the reference marks something active during PLAY's own start-up window
       and zerobas settles instantly. **Unmeasured: what exactly, and for how long.**
       Reproducer varies ONLY the delay and prints both columns:
-      [`scratchpad/playfn_fixture_probe.py`](scratchpad/playfn_fixture_probe.py).
+      [`scratchpad/playfn_fixture_probe.py`](../../scratchpad/playfn_fixture_probe.py).
       ⚠️ Whether it is worth reproducing is a real question — a BASIC program cannot
       easily observe a window a `CLS` closes — but it is a measured difference and
       the gate rows are written AROUND it (`SETTLE`), which is the kind of
@@ -44,7 +44,7 @@
       🟢 `no PLAY at all` reads `0 0 0 0` on both — the resting state is shared,
       so every row above is read against a real zero.
       🔬 **THE RULE, NAMED AT LAST (D-PLAYBACK, 2026-09-24,
-      [`scratchpad/playmusicf_probe.py`](scratchpad/playmusicf_probe.py), two
+      [`scratchpad/playmusicf_probe.py`](../../scratchpad/playmusicf_probe.py), two
       byte-identical runs, refcache OFF).** Read MUSICF (`PEEK(&HFB3F)`, a
       documented work-area cell) on the statement right after `PLAY`:
       | program | vg8020 `MUSICF PLAY(0)` | zerobas |

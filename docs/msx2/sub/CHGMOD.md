@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CHGMOD` (sub-ROM $00D1) — change the screen mode
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -58,7 +58,7 @@ Machine values, not the call's: R#7 (the border: JP $07, EU $04), R#9 (PAL $02 o
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) set the same registers and cells, but return with interrupts ON for A 0-8
 (the references keep them off), A = R#1's value and F $A0; for A 3 they write R#3 := $00 where the references leave
-it ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
+it ([scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

@@ -14,11 +14,11 @@
          above; the VG-8020 is diskless so can't exercise it functionally.
       Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
       DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
-      ✅ **SHIPPED 2026-09-11 (D-DSKIO, [`docs/spec-basic-dskio.md`](docs/spec-basic-dskio.md),
+      ✅ **SHIPPED 2026-09-11 (D-DSKIO, [`docs/spec-basic-dskio.md`](../../docs/spec-basic-dskio.md),
       `make dskio-acceptance`, 5 rows, both machines).** The three counts above
       were all wrong in the same way — they read a black box that was never
       opened. Measured on the CF-3300 with a Tcl write-watchpoint RAM dump
-      ([`scratchpad/dskio_scout.py`](scratchpad/dskio_scout.py)): `DSKI$(d,s)`
+      ([`scratchpad/dskio_scout.py`](../../scratchpad/dskio_scout.py)): `DSKI$(d,s)`
       evaluates to the EMPTY string (its descriptor points at a ROM constant,
       $6B4F) and puts the sector in the disk ROM's buffer at **$EB95**, whose
       address is the word at **$F351** — the MSX idiom `PEEK(&HF351)+256*PEEK(&HF352)`,

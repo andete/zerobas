@@ -22,5 +22,9 @@
       cell, CR and the X wrap; C-BIOS has neither); BLTVV / BLTVM / BLTMV (xsubblt.asm: C-BIOS's BLTMV
       drops the last dot); DSPFNK (xsubfnk.asm: label width / 5 - 1; C-BIOS's is a no-op); SCANR / SCANL (xsubscan.asm: callable, SCANR needs DE 1; C-BIOS's are no-ops).
       C-BIOS findings
-      sent (inbox 2026-11-23-zerobas-msx2-subrom-findings.md). NEXT: the disk BLT calls, VA-13
-      / VA-14 / VA-16, then the sub-ROM pages region by region.
+      sent (inbox 2026-11-23-zerobas-msx2-subrom-findings.md). Since 11-23 the remaining pages are measured by PARALLEL
+      agents, each in its own isolated instance (tools/agent_wt.py, --fresh clock-chip state): the disk BLT calls
+      BLTVD / BLTDV / BLTMD / BLTDM (xsubbltd.asm; raw files, BLTDV obeys ARG; C-BIOS has no disk -- stubs).
+      🔴 FIVE ENTRIES HAVE NO PAGE AT ALL: docs/msx2/index.md links sub/DELLNO, INSLNO, PUTVRM, PUTCHR, KYKLOK.md and
+      none exists (found 11-23 by a link scan) -- write and measure them. NEXT: those five, VA-13 / VA-14 / VA-16, a
+      second goldfish pass over the MSX2 pages, then D-TRSPEC.

@@ -1,6 +1,6 @@
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
       Opened 2026-08-27 by D-WALLIT,
-      [`docs/spec-wall-literals.md`](docs/spec-wall-literals.md) §3.1.
+      [`docs/spec-wall-literals.md`](../../docs/spec-wall-literals.md) §3.1.
       `basic_probe_cas_verbs.py` had **two failing cases for an unknown number of
       months** — it returns a correct `rc=1`, it is listed in `README.md:360`, and
       nothing ever ran it. The new `wall-literal-check` covers the CAUSE of that
@@ -12,7 +12,7 @@
       RUNTIME-BUDGET call: `cas_verbs` alone is a ~4 min tape probe against a 426 s
       battery, so adding the tape corpus could roughly double it.
       ✅ **(a) MEASURED 2026-08-31 (D-PROBEREACH,
-      [`docs/spec-probe-reach.md`](docs/spec-probe-reach.md)): 204 probes — 89
+      [`docs/spec-probe-reach.md`](../../docs/spec-probe-reach.md)): 204 probes — 89
       invoked by a `make` recipe, 11 imported by an invoked one, **104
       unreached**.** `make probe-reach-check`, static tier, 49/49.
       🔴 **THREE STATES, NOT TWO.** `basic_probe_deffn` is the expression harness
@@ -86,7 +86,7 @@
       "pass --machine, there is no default" rule WORKING, not rot. Re-run with
       `ZEROBAS_BASIC_MACHINE` supplied. *A 0-second refusal is not contention.*
       ✅ **AND THE LAST TWO GROUPS RAN (D-CASINSETTLE,
-      [`docs/spec-casin-settle.md`](docs/spec-casin-settle.md)): `probes/tape/`
+      [`docs/spec-casin-settle.md`](../../docs/spec-casin-settle.md)): `probes/tape/`
       (12) and `probes/lib/` (1) are VERIFIED.** Seven documented cassette facts
       were RE-PROVED END TO END on the Philips VG-8020 — `STMOTR` (`$5A`→`$4A`,
       delta `$10`), `TAPOON` (motor bit cleared), `TAPIOF`/`TAPOOF` (PPI-C

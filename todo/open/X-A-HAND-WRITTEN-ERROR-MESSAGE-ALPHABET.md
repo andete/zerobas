@@ -1,6 +1,6 @@
 - [ ] 🔬 **A HAND-WRITTEN ERROR-MESSAGE ALPHABET IS A BLIND SPOT, AND 19 PROBES
       CARRY ONE.** Found 2026-09-02 by D-LSETTM
-      ([`docs/spec-basic-lsettm.md`](docs/spec-basic-lsettm.md) §5).
+      ([`docs/spec-basic-lsettm.md`](../../docs/spec-basic-lsettm.md) §5).
       `basic_probe_lrvar.bracket()` classifies a screen against a literal list of
       error strings; anything absent reads `<NO OUTPUT>`, which routes to
       *"without a reference"* — **a sentence about the MACHINE, for a fault in
@@ -40,10 +40,10 @@
       subtracts the directory lines first, or every `FILES` row would read
       unreadable.
       ➡️ **ONE SHARED, DERIVED ALPHABET EXISTS**:
-      [`probes/lib/errmsg_alphabet.py`](probes/lib/errmsg_alphabet.py) reads the
+      [`probes/lib/errmsg_alphabet.py`](../../probes/lib/errmsg_alphabet.py) reads the
       messages out of `sub/errmsg.asm` **and** the escape-encoded main-ROM
       strings, expanding `MSGESC_*` from the `equ` comments in
-      [`basic/sysvars.inc`](basic/sysvars.inc) rather than restating them — 39
+      [`basic/sysvars.inc`](../../basic/sysvars.inc) rather than restating them — 39
       messages, with known-answer arms including a NEGATIVE one for the
       `Field overflow`/`FIELD overflow` casing that started this.
       🟢 **AND THE CASING CLASS MEASURES EMPTY TODAY — a negative result this

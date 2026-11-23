@@ -1,6 +1,6 @@
 - [x] ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FOR A
       NON-STRING FILENAME (`OPEN 5 AS #1`) WAS UNMEASURED.**
-      [`docs/spec-basic-fnexpr2.md`](docs/spec-basic-fnexpr2.md) §2. Measured at
+      [`docs/spec-basic-fnexpr2.md`](../../docs/spec-basic-fnexpr2.md) §2. Measured at
       SIX verbs, not the three this item named: `OPEN 5 AS #1` / `KILL 5` /
       `SAVE 5` / `LOAD 5` / `BLOAD 5` / `FILES 5` are **`Type mismatch`** on the
       CF-3300. 🎯 So the hunch recorded below — *"if `OPEN` agrees with `PLAY`
@@ -15,7 +15,7 @@
       rule at the filename position, and a blanket ERR 13 would have matched six
       rows and been wrong on two.
       💰 **The item priced 0–3 B and it cost ZERO**: `els_tc_common`
-      ([`basic/missing.asm`](basic/missing.asm)) already IS that whole tail
+      ([`basic/missing.asm`](../../basic/missing.asm)) already IS that whole tail
       (clear ERRMARK → `eval` → `check_expr_errors` → `Syntax error` if nothing
       parsed, else `type_mismatch_error`) and already had two entry points that
       each pop their own saved word before falling in. `fname_expr` has none to
@@ -28,7 +28,7 @@
       returns CF clear on a numeric operand and `fname_expr` jumps to the same
       `stmt_error`). **No row drives it on either reference.**
       🎯 The reason to doubt it is inside this tree: `ex_play`
-      ([`basic/play.asm`](basic/play.asm)) answers `Type mismatch` for exactly
+      ([`basic/play.asm`](../../basic/play.asm)) answers `Type mismatch` for exactly
       this shape — a numeric expression where a string operand is required — and
       that face was measured against the reference. If `OPEN` agrees with `PLAY`
       on the reference, the fix is one instruction at one site.

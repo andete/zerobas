@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `CLS` (sub-ROM $0115) — clear the screen
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubcls.asm](../../../probes/bios/spec/xsubcls.asm), [scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out), decoded by `scratchpad/xsubcls_decode.py`).
 
 ## Summary
 
@@ -43,7 +43,7 @@ cleared area's start, last 16 bytes, and the 16 just past it):
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) clear the same areas, but: SCREEN 5 / 7 with BAKCLR $C5 fill $55 (the
 references $DD), SCREEN 6 fills $A2 / $51 (the references $FF); in SCREEN 0 / 1 they return with interrupts ON; other
-A / F ([scratchpad/AE_xsubcls_msx2.out](../../scratchpad/AE_xsubcls_msx2.out)).
+A / F ([scratchpad/AE_xsubcls_msx2.out](../../../scratchpad/AE_xsubcls_msx2.out)).
 
 ## Open (not measured)
 

@@ -21,6 +21,10 @@ proof: scratchpad/todo_split.py). locate(n) maps a line number of that text to (
     python3 tools/todo_items.py --full      # print the rebuilt single-file text
     python3 tools/todo_items.py --new D-X --after D-Y < item.md   # file a new open item, its stub after D-Y's
     python3 tools/todo_items.py --close D-X # [x], todo/open/D-X.md -> todo/done/, its stub updated
+    python3 tools/todo_items.py --fix-links # links written from the repo root -> relative to the item file
+
+LINKS in an item file are relative to THE FILE (`../../scratchpad/x.out`), like every docs page; --check refuses one
+written from the repo root (the form it had in the single-file TODO.md), --new and --fix-links rewrite them.
 
 EDITING: an item is edited in its file (todo/open/<id>.md); the prose and the order of the stubs in TODO.md by hand;
 the stub lines themselves are generated (--index, and the pre-commit hook does it on any staged todo/**.md).
@@ -110,6 +114,37 @@ def locate(lineno):
     return "TODO.md", lineno
 
 
+LINK = re.compile(r"(\]\(<?)([^)>#\s]+)")
+
+
+def _link_path(t):
+    return re.sub(r":\d+(?:-\d+)?$", "", t)
+
+
+def root_links(text):
+    """links in an item that resolve from the REPO ROOT but not from todo/<state>/ -- the form an item had while it
+    lived in the root TODO.md (the split moved ~1,400 of them two directories down, 2026-11-23)"""
+    out = []
+    for m in LINK.finditer(re.sub(r"`[^`\n]*`", "", re.sub(r"```.*?```", "", text, flags=re.S))):
+        t = m.group(2)
+        if re.match(r"[a-z]+:", t) or t.startswith(("/", "../")):
+            continue
+        if os.path.exists(os.path.join(ROOT, _link_path(t))) and not os.path.exists(os.path.join(DIR, "open", _link_path(t))):
+            out.append(t)
+    return out
+
+
+def fix_links(text):
+    """prefix `../../` to every root-relative link (root_links) outside code spans"""
+    bad = set(root_links(text))
+    if not bad:
+        return text
+    parts = re.split(r"(```.*?```|`[^`\n]*`)", text, flags=re.S)
+    for i in range(0, len(parts), 2):
+        parts[i] = LINK.sub(lambda m: m.group(1) + ("../../" + m.group(2) if m.group(2) in bad else m.group(2)), parts[i])
+    return "".join(parts)
+
+
 def write_item(item, text):
     with open(item.path, "w", encoding="utf-8") as fh:
         fh.write(text if text.endswith("\n") else text + "\n")
@@ -163,6 +198,10 @@ def check():
                     bad.append(f"{rel}: does not start with an item line `- [ ] ` / `- [x] `")
                 elif (m.group(1) == " ") != (st == "open"):
                     bad.append(f"{rel}: its box `[{m.group(1)}]` does not match its folder {st}/")
+                rl = root_links(_read(os.path.join(d, f)))
+                if rl:
+                    bad.append(f"{rel}: {len(rl)} link(s) written from the repo root ({rl[0]} ...) -- an item file lives "
+                               f"in todo/{st}/: `python3 tools/todo_items.py --fix-links`")
     return bad
 
 
@@ -184,6 +223,7 @@ def new_item(ident, after, text):
     i, _ = _stub_index(lines, after)
     if i is None:
         sys.exit(f"todo_items --new: no stub for {after} to file it after")
+    text = fix_links(text)
     it = Item("open", ident, text)
     write_item(it, text)
     lines.insert(i + 1, stub_line(it))
@@ -220,6 +260,15 @@ def main(argv):
         return 0
     if "--close" in argv:
         close_item(argv[argv.index("--close") + 1])
+        return 0
+    if "--fix-links" in argv:
+        n = 0
+        for it in items():
+            new = fix_links(it.text)
+            if new != it.text:
+                write_item(it, new)
+                n += 1
+        print(f"todo_items: links fixed in {n} item file(s)")
         return 0
     if "--index" in argv:
         print("TODO.md: stubs rewritten" if write_index() else "TODO.md: stubs current")

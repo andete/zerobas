@@ -26,7 +26,7 @@
       * **MISSED:** `sweep_tranche2`, `sweep_tranche3` and `sweep_paintflood`
         each carry their own `spans()` and were not listed.
       🎯 **AND THE EXPOSURE IS VISIBLE, NOT SILENT — MEASURED, NOT ARGUED.**
-      [`scratchpad/spanreader_diff.py`](scratchpad/spanreader_diff.py) separates
+      [`scratchpad/spanreader_diff.py`](../../scratchpad/spanreader_diff.py) separates
       the two readers on **4 of 4** cases: the hand-rolled one returns a LIST
       whose **first element is always the echo's bracket fragment**
       (`'";1+1;"'`), where `result_span_after_echo` returns the value. But
@@ -48,7 +48,7 @@
       own echo**, at rc 0.
       ✅ **THE DURABLE FIX SHIPPED 2026-08-26 as rule READER of
       `make chokepoint-check`**
-      ([`docs/spec-chokepoint-gate.md`](docs/spec-chokepoint-gate.md)). The 8 are
+      ([`docs/spec-chokepoint-gate.md`](../../docs/spec-chokepoint-gate.md)). The 8 are
       PINNED with that reason in `tools/chokepoint-allow.txt`; a NEW unfenced
       reader is RED. Pins may shrink, never grow, and a stale pin is itself RED.
       🔴 **THIS ITEM'S SCOPE CLAIM IS FALSIFIED.** *"None of the nine is a

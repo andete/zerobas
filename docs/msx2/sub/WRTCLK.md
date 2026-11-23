@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `WRTCLK` (sub-ROM $01F9) — write a clock-IC register
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xclk.asm](../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out), decoded by `scratchpad/xclk_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xclk.asm](../../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out), decoded by `scratchpad/xclk_decode.py`).
 
 ## Summary
 
@@ -40,7 +40,7 @@ MODE left at the block written. (The probe writes the original back after each c
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds write and leave MODE the same ([scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds write and leave MODE the same ([scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out)).
 
 ## Open (not measured)
 

@@ -2,7 +2,7 @@
       REWRITES THE DIRECTORY: 3.1× (read) AND 8.7× (write) THE CF-3300 ON 32 KB
       (filed 2026-10-01 with D-WRBLKSEEK)**
       🎚️ TIER 5 — on-par speed: inside T2's 10×, so this is the ratio, not the rung.
-      📏 **RE-MEASURED 2026-11-08** ([`blkio_1108.out`](scratchpad/blkio_1108.out), wrblkalt-acceptance's own command line): the
+      📏 **RE-MEASURED 2026-11-08** ([`blkio_1108.out`](../../scratchpad/blkio_1108.out), wrblkalt-acceptance's own command line): the
       32 KB WSEEK write **193.60 s against the CF-3300's 30.95 (6.3x)**, the SEEK read 46.00
       against 14.65 (3.1x). 🔮 Predicted "write ~unchanged (D-PUTCACHE holds PUT's sectors
       only), read better (D-KEYSKIP)": the write HIT (6.6x -> 6.3x), the read MISSED (3.1x
@@ -15,7 +15,7 @@
       Dropping wrblk_body's per-call fat_dir_update and writing the entry in close_read from
       the FCB (wrblk_fcbstate + fat_dir_update): **WSEEK 193.6 -> 106.3 s (6.3x -> 3.4x)**, the
       ALT write phase 7.35 s against the CF-3300's 9.65; every FCB snapshot still byte-
-      identical ([`blkio_wrblkdir.out`](scratchpad/blkio_wrblkdir.out)). 🔮 Predicted 110-130 s: hit. **BUT ALT1.BIN NOT WRITTEN --
+      identical ([`blkio_wrblkdir.out`](../../scratchpad/blkio_wrblkdir.out)). 🔮 Predicted 110-130 s: hit. **BUT ALT1.BIN NOT WRITTEN --
       wrblkalt-acceptance RED, and it is a real bug the per-call update was hiding:** the
       exerciser FMAKEs ALT1 and ALT2 and alternates WRBLKs; FMAKE sets the GLOBAL
       BDOS_WRMODE, so the FIRST FCLOSE takes bdos_close_write, which writes the entry from
@@ -26,7 +26,7 @@
       writer (WRSEQ keeping +16 as WRBLK / WRRND already do), then ONE close rule -- write
       the closed FCB's entry from the FCB. Witnesses: wrblkalt-acceptance (two FCBs),
       bdos-acceptance, the roundtrip probe, tests/test_wrseq_position.py.
-      🅿️ **PARKED ON 17 B (2026-11-08), [`wrblkdir_wip.patch`](scratchpad/wrblkdir_wip.patch).** Built further: (1) the per-call
+      🅿️ **PARKED ON 17 B (2026-11-08), [`wrblkdir_wip.patch`](../../scratchpad/wrblkdir_wip.patch).** Built further: (1) the per-call
       update dropped and `cr_dir` (close_read: wrblk_fcbstate + fat_dir_update from the FCB);
       (2) `bdos_close_wm` -- with BDOS_WRMODE set but NOTHING written sequentially
       (BDOS_WRCLUS = 0) the close goes the FCB way, so a WRSEQ file keeps its globals path.
@@ -42,17 +42,17 @@
       BDOS_WRFIRST, 9 B, the $5FD6 hole before the $5FE5 pin) jumps to `cr_copy2` (FAT_FILESIZE
       -> BDOS_WRBYTES, then `jp fat_dir_update`, 14 B, the runtime hole's last 14 B); cr_dir
       calls cr_copy1 where it called fat_dir_update. 🔮 Predicted every file AS EXPECTED and
-      WSEEK ~106 s: **HIT** ([`blkio_wrblkdir3.out`](scratchpad/blkio_wrblkdir3.out)) -- ALT1 [372], ALT2 [373], OUT, OUT2, BIGW
+      WSEEK ~106 s: **HIT** ([`blkio_wrblkdir3.out`](../../scratchpad/blkio_wrblkdir3.out)) -- ALT1 [372], ALT2 [373], OUT, OUT2, BIGW
       all as written on both machines, FCB snapshots byte-identical, **WSEEK 193.6 -> 107.7 s
       (6.3x -> 3.5x the CF-3300)**, the ALT write phase 7.75 s against its 9.65.
       (blkio_wrblkdir.out was overwritten by the second run; the first experiment's
       106.3 s / ALT1 NOT WRITTEN reading is in commit ad6f298a.)
       🎯 For the C-BIOS port goal ([[disk-core-portable-to-cbios]]): a written file's entry is
       now written from ITS OWN FCB at close, not from the last-used file's globals.
-      📏 **WHAT IS LEFT, LOGGED (2026-11-08, after D-WRBLKDIR):** [`fdccount_1108.out`](scratchpad/fdccount_1108.out): the 32 KB
+      📏 **WHAT IS LEFT, LOGGED (2026-11-08, after D-WRBLKDIR):** [`fdccount_1108.out`](../../scratchpad/fdccount_1108.out): the 32 KB
       phase now issues **257 writes / 292 reads** here against the CF-3300's 72 / 78 (🔮 ~256 / ~355:
-      writes HIT, reads MISSED low). [`fdclog7_probe.py`](scratchpad/fdclog7_probe.py) logs each command's track / sector
-      registers ([`fdclog7_1108.out`](scratchpad/fdclog7_1108.out)). Per 1 KB cluster (4 calls of 256 B): the **CF-3300** writes
+      writes HIT, reads MISSED low). [`fdclog7_probe.py`](../../scratchpad/fdclog7_probe.py) logs each command's track / sector
+      registers ([`fdclog7_1108.out`](../../scratchpad/fdclog7_1108.out)). Per 1 KB cluster (4 calls of 256 B): the **CF-3300** writes
       each data sector once and reads it once (2 W + 2 R), and touches NO FAT sector during the
       run; **ours** reads-modifies-writes the data sector EVERY call (4 R + 4 W) and, per
       allocation, ~6 FAT reads (the free scan re-reads s3 / s2 / s3 -- the buffer is "clean", so
@@ -76,15 +76,15 @@
       $4436 hole) defers the new cluster's EOC mark AND the link (frl_defer ->
       fat_write_fat_entry_hot), then writes the sector to both FATs once (frl_flush); a failure
       ends through frl_xfail. Nothing outlives the call. wroe_need_extend (disk/kernel.asm) keeps
-      only the first-cluster bookkeeping (19 B back before $75A5). 📏 [`fdccount_wfat.out`](scratchpad/fdccount_wfat.out): phase 7
-      **257 W / 292 R -> 195 / 261** (🔮 ~193 / ~260: HIT); [`blkio_wfat.out`](scratchpad/blkio_wfat.out): every file AS
+      only the first-cluster bookkeeping (19 B back before $75A5). 📏 [`fdccount_wfat.out`](../../scratchpad/fdccount_wfat.out): phase 7
+      **257 W / 292 R -> 195 / 261** (🔮 ~193 / ~260: HIT); [`blkio_wfat.out`](../../scratchpad/blkio_wfat.out): every file AS
       EXPECTED on both machines, FCB snapshots byte-identical, **WSEEK 107.7 -> 93.45 s (3.0x
       the CF-3300)**. ➡️ Left: the free scan's ~4 FAT reads an allocation (the hint is reset per
       call, M30, and a clean FAT_MBUF is not trusted -- WRBLK's multiply scratch WRBLK_MUL* is
       WBUF+500..511, INSIDE FAT_MBUF, so nothing FAT-shaped survives a call), and (a) the data
       sector's read-modify-write every call.
-      📏 **THE READ SIDE, LOGGED (2026-11-08):** `FDCLOG_PHASE=5` [`fdclog7_probe.py`](scratchpad/fdclog7_probe.py) ->
-      [`fdclog5_1108.out`](scratchpad/fdclog5_1108.out) (the 32 KB SEEK read, 256 B RDBLKs): the **CF-3300 reads each data
+      📏 **THE READ SIDE, LOGGED (2026-11-08):** `FDCLOG_PHASE=5` [`fdclog7_probe.py`](../../scratchpad/fdclog7_probe.py) ->
+      [`fdclog5_1108.out`](../../scratchpad/fdclog5_1108.out) (the 32 KB SEEK read, 256 B RDBLKs): the **CF-3300 reads each data
       sector ONCE** and no FAT sector; **ours reads every data sector TWICE** -- a call starting
       mid-sector goes through `k47b2_mid` (disk/kernel.asm), whose fat_read_file_sector re-reads
       what the previous call left in SECTOR_BUF -- plus one FAT sector each cluster
@@ -99,7 +99,7 @@
       lines; spec-diskwcache.md's W4 calls it "the widest audit, and it comes last"). ➡️ Picked
       up only with that audit; the FAT-per-cluster read waits on the same kind of tag for
       FAT_MBUF.
-      📋 **THE W4 AUDIT, ROUND 2 (2026-11-14, [`dbuf_audit2.md`](scratchpad/dbuf_audit2.md)):** 11 sites change the buffer's
+      📋 **THE W4 AUDIT, ROUND 2 (2026-11-14, [`dbuf_audit2.md`](../../scratchpad/dbuf_audit2.md)):** 11 sites change the buffer's
       bytes, a missed alias (BD_LINE, the boot date prompt), and the reads that bypass
       read_sector (the page-1 bounce, a direct dskio_rd overlapping the buffer). 🧩 **THE DESIGN
       IT POINTS TO -- the tag CLEARED IN dskio, not at read_sector:** every writer whose path did
@@ -143,8 +143,8 @@
       both), the entry from +25 (close_read's arithmetic). 32 KB in 256 B blocks:
       **271.9 -> 202.8 emulated s** against the CF-3300's 30.95; every FCB snapshot
       still byte-identical, all six files as written
-      ([`blkio_before.out`](scratchpad/blkio_before.out),
-      [`blkio_after.out`](scratchpad/blkio_after.out)). 🔮 Predicted ~5x: PARTLY
+      ([`blkio_before.out`](../../scratchpad/blkio_before.out),
+      [`blkio_after.out`](../../scratchpad/blkio_after.out)). 🔮 Predicted ~5x: PARTLY
       MISSED. ⚠️ No knife: the gate asserts "within 10x" only, so the old code
       passes it too -- the ratio reading is the witness, not a row that flips.
       ➡️ **What is left per call:** the data sector's read-modify-write and
@@ -153,10 +153,10 @@
       deferring it -- through the FDC's I/O registers or the image between calls,
       not by stepping its ROM. The read side (3.1x) is unchanged.
       📏 **MEASURED THE SAME NIGHT -- THE REFERENCE WRITES EACH SECTOR ONCE AND
-      DEFERS THE REST.** [`fdccount_probe.py`](scratchpad/fdccount_probe.py)
+      DEFERS THE REST.** [`fdccount_probe.py`](../../scratchpad/fdccount_probe.py)
       counts WD2793 sector COMMANDS (a write watchpoint on the command register,
       `$7FB8` on both machines -- an I/O register, the permitted side) binned by
-      the exerciser's phase byte ([`fdccount_run.out`](scratchpad/fdccount_run.out)).
+      the exerciser's phase byte ([`fdccount_run.out`](../../scratchpad/fdccount_run.out)).
       The 32 KB write (128 WRBLKs of 256 B = 64 data sectors, phase 7):
       | | write commands | read commands |
       |---|---|---|
@@ -175,10 +175,10 @@
       calls -- a program that never closes loses the size on the reference too,
       which is the faithful face, but bdos-acceptance and the roundtrip probe
       must be re-read for any mid-sequence image comparison before building.
-      📐 **DESIGNED 2026-10-10 — [`docs/spec-diskwcache.md`](docs/spec-diskwcache.md),
-      for BASIC's sequential writer first.** [`fdcseq_probe.py`](scratchpad/fdcseq_probe.py)
+      📐 **DESIGNED 2026-10-10 — [`docs/spec-diskwcache.md`](../../docs/spec-diskwcache.md),
+      for BASIC's sequential writer first.** [`fdcseq_probe.py`](../../scratchpad/fdcseq_probe.py)
       logs each WD2793 command with its track / sector registers (I/O, both
-      machines; [`fdcseq_run.out`](scratchpad/fdcseq_run.out)) on D-FDCDI's
+      machines; [`fdcseq_run.out`](../../scratchpad/fdcseq_run.out)) on D-FDCDI's
       PRINT# + CLOSE workload. The CF-3300 writes each data sector ONCE (+ a
       verify read) and touches the FAT and directory only at CLOSE; ours, per
       cluster, re-reads the BOOT sector (`fat_total_clusters`), reads the FAT
@@ -191,34 +191,34 @@
       `FAT_ROOTSECS`'s cell (root sectors = FIRSTDATA − FIRSTROOT, computed by
       `fat_rootsecs`) — no new RAM, −4 B sub p1, −20 B disk.rom. 28 → 23 READs on
       the workload, every per-cluster `R0/1` gone (predicted exactly,
-      [`fdcseq_w1.out`](scratchpad/fdcseq_w1.out)). Gate `wcache-acceptance`
-      ([`disk_probe_wcache.py`](probes/disk/disk_probe_wcache.py),
-      [`wcache_gate_w1.out`](scratchpad/wcache_gate_w1.out)): the file reads back
+      [`fdcseq_w1.out`](../../scratchpad/fdcseq_w1.out)). Gate `wcache-acceptance`
+      ([`disk_probe_wcache.py`](../../probes/disk/disk_probe_wcache.py),
+      [`wcache_gate_w1.out`](../../scratchpad/wcache_gate_w1.out)): the file reads back
       whole on both, zerobas within 23 READs / 36 WRITEs; 🔪 K-WC1 (the boot read
-      restored) → exactly `zb-reads` ([`wcache_knives.out`](scratchpad/wcache_knives.out)).
+      restored) → exactly `zb-reads` ([`wcache_knives.out`](../../scratchpad/wcache_knives.out)).
       ✅ **W2 SHIPPED 2026-10-10, narrower than designed — no audit needed:** the
       two re-reads are WITHIN one allocation (scan → mark → link), where nothing
       else touches `FAT_MBUF` and every FAT routine keeps `(FAT_FATSEC)` naming
       what it holds. `fat_write_fat_entry_hot` skips the read when the entry's
       sector is that one; used by `fac_found` and `ffds_alloc`'s link only. 23 →
       14 READs (predicted 13: MISSED by one, the first cluster has no link),
-      [`fdcseq_w2.out`](scratchpad/fdcseq_w2.out), [`wcache_gate_w2.out`](scratchpad/wcache_gate_w2.out)
+      [`fdcseq_w2.out`](../../scratchpad/fdcseq_w2.out), [`wcache_gate_w2.out`](../../scratchpad/wcache_gate_w2.out)
       — fewer READs than the CF-3300's 16 (its verify reads). disk.rom's
       body region (pinned at `$75A5`) had no room even for a 4-byte split, so the
       hot entry carries its own sector arithmetic in disk/fat.asm's `$47C1` fill;
       the sub-ROM's copy costs 62 B of sub page 1. 🔪 K-WC2 → exactly `zb-reads`
-      ([`wcache_knives_w2.out`](scratchpad/wcache_knives_w2.out)).
+      ([`wcache_knives_w2.out`](../../scratchpad/wcache_knives_w2.out)).
       ✅ **W3a SHIPPED 2026-10-11 — one FAT write per chain extension:** the mark
       waits (`FAT_DEFER`, `$E5AC` in both maps, measured free —
-      [`ramfree_e5ac.out`](scratchpad/ramfree_e5ac.out)), and the link writes the
+      [`ramfree_e5ac.out`](../../scratchpad/ramfree_e5ac.out)), and the link writes the
       sector once with both entries; a link in ANOTHER sector writes the held one
       out first. 36 → 28 WRITEs (predicted exactly,
-      [`fdcseq_w3a.out`](scratchpad/fdcseq_w3a.out)). New gate rows on a disk
+      [`fdcseq_w3a.out`](../../scratchpad/fdcseq_w3a.out)). New gate rows on a disk
       whose clusters 9..339 are pre-marked used, so a 3-cluster file takes 340,
       341, 342 across FAT sectors 0/1: `content-x` (read back) and `fat-x` (the
       chain read from the IMAGE: `340>341>342 EOC` on both,
-      [`wcache_gate_w3a.out`](scratchpad/wcache_gate_w3a.out)). Knives
-      ([`wcache_knives_w3a.out`](scratchpad/wcache_knives_w3a.out)): K-WC3 (no
+      [`wcache_gate_w3a.out`](../../scratchpad/wcache_gate_w3a.out)). Knives
+      ([`wcache_knives_w3a.out`](../../scratchpad/wcache_knives_w3a.out)): K-WC3 (no
       deferral) → `zb-writes`; K-WC4 (no flush before the other sector loads) →
       `fat-x`; K-WC2 now moves `zb-writes` too (its always-read path also flushes
       the held sector). 🔴 **K-WC4's FIRST RUN MOVED NOTHING, AND THAT WAS THE
@@ -228,13 +228,13 @@
       ends on the deferred cluster. Sub page 1 125 → 88 B. D-FDCDI's typed keys re-read after W2:
       9–10 of 22 at 3/5/8 s, unchanged (predicted a small rise: MISSED — the
       masked time is in the writes), and the workload's time now matches the
-      CF-3300's ([`fdcdi_typeahead_w2_d3.out`](scratchpad/fdcdi_typeahead_w2_d3.out)).
+      CF-3300's ([`fdcdi_typeahead_w2_d3.out`](../../scratchpad/fdcdi_typeahead_w2_d3.out)).
       📏 **RE-READ AFTER W3a (2026-10-11):** the workload runs 10.8–11.2 s here
       against the CF-3300's 11.8, and typed keys kept rose to 10 / 10 / 13 of 22
       at 3 / 5 / 8 s (predicted 11–13: partly hit;
-      [`_d3`](scratchpad/fdcdi_typeahead_w3a_d3.out),
-      [`_d5`](scratchpad/fdcdi_typeahead_w3a_d5.out),
-      [`_d8`](scratchpad/fdcdi_typeahead_w3a_d8.out)). 42 data/FAT commands
+      [`_d3`](../../scratchpad/fdcdi_typeahead_w3a_d3.out),
+      [`_d5`](../../scratchpad/fdcdi_typeahead_w3a_d5.out),
+      [`_d8`](../../scratchpad/fdcdi_typeahead_w3a_d8.out)). 42 data/FAT commands
       against the CF-3300's 32: what still separates the key rates is the
       driver's masked DRQ wait per command, not the count.
       ⏸ **W3b / W4 PARKED** (spec §3: each needs a cross-call cache and a

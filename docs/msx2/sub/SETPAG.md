@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETPAG` (sub-ROM $013D) — switch the display and active pages
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xmode.asm](../../../probes/bios/spec/xmode.asm), [scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out), decoded by `scratchpad/xmode_decode.py`).
 
 ## Summary
 
@@ -37,7 +37,7 @@ interrupts ON.
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds set R#2 the same but leave R#6 at $0F and do not rewrite R#1 / R#3 / R#7 from the
-copies; other A / F ([scratchpad/AE_xmode_msx2.out](../../scratchpad/AE_xmode_msx2.out)).
+copies; other A / F ([scratchpad/AE_xmode_msx2.out](../../../scratchpad/AE_xmode_msx2.out)).
 
 ## Open (not measured)
 

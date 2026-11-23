@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `REDCLK` (sub-ROM $01F5) — read a clock-IC register
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xclk.asm](../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out), decoded by `scratchpad/xclk_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xclk.asm](../../../probes/bios/spec/xclk.asm), [scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out), decoded by `scratchpad/xclk_decode.py`).
 
 ## Summary
 
@@ -44,7 +44,7 @@ block** (its bits 3-2 kept), not put back.
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) do not select the block reliably: 25 of the 64 reads differ from the
 port -- nearly all of blocks 0 and 1 (the time) -- and MODE after shows a wrong block (entered with block 1 for a
-block-0 read it stays at 1; entered with 2 for a block-1 read it ends at 3) ([scratchpad/AE_xclk_msx2.out](../../scratchpad/AE_xclk_msx2.out)).
+block-0 read it stays at 1; entered with 2 for a block-1 read it ends at 3) ([scratchpad/AE_xclk_msx2.out](../../../scratchpad/AE_xclk_msx2.out)).
 
 ## Open (not measured)
 

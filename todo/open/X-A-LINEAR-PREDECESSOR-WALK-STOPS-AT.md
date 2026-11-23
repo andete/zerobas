@@ -1,6 +1,6 @@
 - [ ] ⚠️ **A linear predecessor walk stops at `ENDIF` and calls it an
       instruction.** Filed 2026-08-22 by D-DUPSPAN,
-      [`docs/spec-basic-dupspan.md`](docs/spec-basic-dupspan.md) §2.1.
+      [`docs/spec-basic-dupspan.md`](../../docs/spec-basic-dupspan.md) §2.1.
       D-DUPSPAN's fallthrough survey reported `gfx_syntax` as a fallthrough
       target because the line above it is `ENDIF`, which
       `check_tenant_closure._is_terminator` correctly says is not a terminator —
@@ -13,7 +13,7 @@
       nothing. The same walk under-reports whenever the ENDIF's arms do NOT both
       terminate**, and that direction is silent.
       📏 **MEASURED 2026-08-28 (D-ENDIFWALK),**
-      [`docs/spec-endifwalk.md`](docs/spec-endifwalk.md). **The class is 68 span
+      [`docs/spec-endifwalk.md`](../../docs/spec-endifwalk.md). **The class is 68 span
       pairs, and `ENDIF` is under half of it**: `endif` 32, **`if` 22**,
       **`include` 13**, `else` 1, over 1476 main + 1485 sub pairs. The other 36
       are the same defect unnamed — and `include` is the one that mattered.
@@ -65,9 +65,9 @@
       lines** (0 before, 0 after). So the decidable half hides no bytes today;
       the file-level walk is worth building only for the 24 undecidable spans,
       with an expected yield measured at zero for their decidable siblings.
-      Scouts: [`scratchpad/endif_walk_sweep.py`](scratchpad/endif_walk_sweep.py),
-      [`scratchpad/endif_walk_verdict.py`](scratchpad/endif_walk_verdict.py),
-      [`scratchpad/endif_walk_impact.py`](scratchpad/endif_walk_impact.py).
+      Scouts: [`scratchpad/endif_walk_sweep.py`](../../scratchpad/endif_walk_sweep.py),
+      [`scratchpad/endif_walk_verdict.py`](../../scratchpad/endif_walk_verdict.py),
+      [`scratchpad/endif_walk_impact.py`](../../scratchpad/endif_walk_impact.py).
       🎚️ APPARATUS — predecessor walk
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended
       (include half SHIPPED 2026-08-28 with 16 B recovered; what remains is the

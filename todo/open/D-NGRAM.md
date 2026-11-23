@@ -1,5 +1,5 @@
 - [ ] 💰 **D-NGRAM: EXACT REPEATED INSTRUCTION SEQUENCES — `req_letter` SHIPPED
-      (−50 B), THREE CANDIDATES LEFT.** [`docs/spec-ngram.md`](docs/spec-ngram.md),
+      (−50 B), THREE CANDIDATES LEFT.** [`docs/spec-ngram.md`](../../docs/spec-ngram.md),
       `scratchpad/ngram_sweep.py --main`. Built because `clone_scout` masks two
       operands BY DESIGN and so cannot see EXACT repeats collapsible into a
       shared body — the shape that paid in D-BAREEND (+45 B) and D-POPRAISE.
@@ -14,7 +14,7 @@
       jump is not a terminator**, so the top candidate was first mispriced as a
       shared tail it can never be.
       ✅ **SHIPPED 2026-08-28: `req_operand`** (D-NGRAM2,
-      [`docs/spec-basic-ngram2.md`](docs/spec-basic-ngram2.md)) — `call
+      [`docs/spec-basic-ngram2.md`](../../docs/spec-basic-ngram2.md)) — `call
       skip_spaces / or a / jp z,loc_missing / cp COLON / jp z,loc_missing`, the
       top-ranked exact repeat in the SCARCE regions. 6 sites x 12 B -> one 13 B
       body + six 3 B calls. **Page 1 read 185 -> 226 B free on 2026-08-28** (a
@@ -24,7 +24,7 @@
       an INTERIOR LABEL (none), which is what would make the span byte-identical
       without being ENTERED the same way.
       ✅ **ALSO SHIPPED 2026-08-28: `le_call` / `le_call_op`** (D-NGRAM3,
-      [`docs/spec-basic-ngram3.md`](docs/spec-basic-ngram3.md)) — the
+      [`docs/spec-basic-ngram3.md`](../../docs/spec-basic-ngram3.md)) — the
       `subrom_call` + LE_STATUS sequence at LIST / line-STORE / DELETE / RENUM /
       AUTO. Filed at 40 B; **it is 49 B**, because four of the five set `LE_OP`
       immediately before, so a 3 B second ENTRY drops four `ld (LE_OP),a`.
@@ -40,7 +40,7 @@
       callers see, and `cload.asm` has two plain `call relink` sites whose flag
       dependence is unverified.
       ✅ **ALSO SHIPPED 2026-08-28: `shx_tail` / `shx_op_tail`** (D-NGRAM4,
-      [`docs/spec-basic-ngram4.md`](docs/spec-basic-ngram4.md)) — the sub-ROM
+      [`docs/spec-basic-ngram4.md`](../../docs/spec-basic-ngram4.md)) — the sub-ROM
       string-op RESULT tail at CHR$ / HEX$-OCT$-BIN$ / SPACE$ / STRING$. **Low
       region read 70 -> 94 B free on 2026-08-28** (a READING; run
       `make basic-reloc`). 13 rows, DIFF 0/13.
@@ -50,7 +50,7 @@
       because its prediction named WHICH rows should move. **Name a site from
       its ENCLOSING LABEL.**
       ✅ **ALSO SHIPPED 2026-08-30: `load_commit_prog`** (D-NGRAM12,
-      [`docs/spec-basic-ngram12.md`](docs/spec-basic-ngram12.md)) — the
+      [`docs/spec-basic-ngram12.md`](../../docs/spec-basic-ngram12.md)) — the
       ten-instruction completion tail that the TAPE loader (`do_tape_prog`,
       CLOAD) and the DISK loader (`disk_prog_load`, `LOAD"file"`) each carried
       verbatim. `dpl_done`'s WHOLE BODY was the run, so it is a free `equ`
@@ -72,7 +72,7 @@
       the loader must terminate a real line away) — 11/11 agree with the
       CF-3300, and it moves under the knife.
       ✅ **ALSO SHIPPED 2026-08-31: `str_eval_ix`** (D-NGRAM15,
-      [`docs/spec-basic-ngram15.md`](docs/spec-basic-ngram15.md)) — `push ix /
+      [`docs/spec-basic-ngram15.md`](../../docs/spec-basic-ngram15.md)) — `push ix /
       pop hl / call str_eval` at SEVEN sites (relational LHS and RHS, CVI, FRE,
       the shared string-arg parse, INSTR, the string relational's RHS). **Low
       region read 112 -> 121 B free and page 1 361 -> 367 on 2026-08-31**
@@ -91,7 +91,7 @@
       on the rows agreeing with both references plus K-N15B's asserted zero, and
       the spec says so rather than papering over it.
       ✅ **ALSO SHIPPED 2026-08-31: `fname_dev`** (D-NGRAM16,
-      [`docs/spec-basic-runarg.md`](docs/spec-basic-runarg.md)) — `call
+      [`docs/spec-basic-runarg.md`](../../docs/spec-basic-runarg.md)) — `call
       fname_expr / ld de,dev_cas / call dev_cmp` at LOAD, RUN"name", SAVE and
       BSAVE, 9 B each. **+15 B**, spent again by the D-RUNARG fix the same row
       set found (net −6 B, page 1 355 -> 349).
@@ -101,7 +101,7 @@
       never return, so it cannot bite — and three `n.*` rows drive a non-string
       filename through three of the four verbs to say so.
       ✅ **ALSO SHIPPED 2026-08-31: `req_comma`** (D-NGRAM17,
-      [`docs/spec-basic-reqcomma.md`](docs/spec-basic-reqcomma.md)) — the
+      [`docs/spec-basic-reqcomma.md`](../../docs/spec-basic-reqcomma.md)) — the
       MANDATORY-comma run at FIELD, INPUT#, SWAP and SOUND. **Low region read
       121 -> 127 B free and page 1 349 -> 357 on 2026-08-31** (a READING; run
       `make basic-reloc`). 12 rows, 2 knives + S1, 48/48.
@@ -117,7 +117,7 @@
       crunch folds `A B` into the variable `AB` — measured by `x.spacename`, not
       guessed.
       ✅ **ALSO SHIPPED 2026-08-31: `req_gosub`** (D-NGRAM18,
-      [`docs/spec-basic-reqgosub.md`](docs/spec-basic-reqgosub.md)) — the GOSUB
+      [`docs/spec-basic-reqgosub.md`](../../docs/spec-basic-reqgosub.md)) — the GOSUB
       keyword the four TRAP statements require (ON STOP / ON INTERVAL= / ON
       STRIG / ON KEY). **Page 1 read 357 -> 371 B free on 2026-08-31** (a
       READING; run `make basic-reloc`). 12 rows on three machines, DIFF 0;
@@ -149,7 +149,7 @@
       ⚠️ **"No fixture exists" is a claim about the tree and deserved a
       `ls probes/` before it was written down.**
       ✅ **ALSO SHIPPED 2026-08-31: `evmc_arg_int`** (D-NGRAM19,
-      [`docs/spec-basic-argint.md`](docs/spec-basic-argint.md)) — the argument
+      [`docs/spec-basic-argint.md`](../../docs/spec-basic-argint.md)) — the argument
       gate + "is it already an int16?" that ABS, SGN, INT and FIX each opened
       with. **Page 1 read 371 -> 378 B free on 2026-08-31** (a READING; run
       `make basic-reloc`). 16 rows on three machines, DIFF 0; 2 knives + S1.
@@ -171,7 +171,7 @@
       req_letter variant (**31 B**, 6 sites) that **OVERLAPS what shipped and
       must be RE-RUN, not inherited**.
       ✅ **ALSO SHIPPED 2026-08-30: `dpl_get_store`** (D-NGRAM13,
-      [`docs/spec-basic-ngram13.md`](docs/spec-basic-ngram13.md)) — the disk
+      [`docs/spec-basic-ngram13.md`](../../docs/spec-basic-ngram13.md)) — the disk
       loader's `fat_io_getbyte` + store-at-CLPTR run, open-coded 3x at 14 B.
       **Page 1 read 344 -> 355 B free on 2026-08-30** (a READING; run
       `make basic-reloc`). 9 rows, 3 DIFF (all pre-existing, see below);
@@ -207,8 +207,8 @@
       🟢 **A PAGE-1 CARVE OUT OF THIS SEAM, 2026-09-06 (D-PENDTAIL) — 8 B IN MAIN
       PAGE 1 AND 4 B IN THE LOW REGION, FOR ZERO NEW BYTES.** `--main` ranked
       `call penderr_set | ld de,0 | ret` at **4 sites, 12 B**: `evmc_sqr_err` and
-      `evmc_exp_overflow` ([`basic/expr.asm`](basic/expr.asm), page 1) and two in
-      [`basic/float-arith.asm`](basic/float-arith.asm) (low region). The canonical
+      `evmc_exp_overflow` ([`basic/expr.asm`](../../basic/expr.asm), page 1) and two in
+      [`basic/float-arith.asm`](../../basic/float-arith.asm) (low region). The canonical
       is an EXISTING tail given a name — `penderr_de0` at `cpow_frac`'s — so the
       shared body costs nothing and the other three become a 3 B `jp` in place of
       7 B. Page 1 **0 → 8 B free**, low region **2 → 6 B** (2026-09-06).
@@ -230,8 +230,8 @@
       8 B RECOVERED IN PAGE 1 AND 8 B IN THE LOW REGION ON THAT DATE, AGAIN FOR
       ZERO NEW BYTES.**
       `ld (STRPTR),hl | pop hl | jp str_eval_ok` at **five** sites — three in
-      [`basic/str-engine.asm`](basic/str-engine.asm) (low) and two in
-      [`basic/strvar.asm`](basic/strvar.asm) (page 1). Canonical `str_pub_ok` is
+      [`basic/str-engine.asm`](../../basic/str-engine.asm) (low) and two in
+      [`basic/strvar.asm`](../../basic/strvar.asm) (page 1). Canonical `str_pub_ok` is
       the existing tail at `sel_close`; the other four became a 3 B `jp`.
       **Page 1 8 → 16 B free, low region 6 → 14 B (2026-09-06).**
       ⚠️ **THIS TAIL CARRIES A STACK PROTOCOL AND THE `penderr` ONE DID NOT.**
@@ -282,7 +282,7 @@
       set, the carve pressure that justified D-NGRAM2..19 is not there today.
       Re-read this when a slice is actually blocked on bytes.
       ✂️ **2026-10-10 (loop): the top re-ranked candidate (9 B by the sweep,
-      [`carve_ngram.out`](scratchpad/carve_ngram.out)) WAS AN EXISTING ROUTINE,
+      [`carve_ngram.out`](../../scratchpad/carve_ngram.out)) WAS AN EXISTING ROUTINE,
       worth 30 B.** `ld (ARY_KEY),bc / ld a,1 / ld (ARY_TYPE),a / ld a,5 / ld
       (ARY_OP),a / call ary_engine_call` at `tgt_store_desc` and `str_set_key` is
       `var_alloc_or_find`'s body with A = 1, and both sites then reloaded
@@ -293,10 +293,10 @@
       `fn_st_x`). 🔴 **THE FAILURE BRANCH HAS NO BEHAVIOURAL WITNESS:** knife K-NG1
       (`jr nc,ssk_target_oom` cut) moved nothing in array-acceptance (its OOM
       rows assign LITERALS, stored by reference —
-      [`carve2_knife_arrays.out`](scratchpad/carve2_knife_arrays.out)) nor in a
-      new string-scalar OOM probe ([`sskoom_probe.py`](scratchpad/sskoom_probe.py),
-      [`sskoom_run.out`](scratchpad/sskoom_run.out): zerobas `ERR 7 N 0` uncut and
-      cut, [`carve2_knife.out`](scratchpad/carve2_knife.out)) — FPERR raises the
+      [`carve2_knife_arrays.out`](../../scratchpad/carve2_knife_arrays.out)) nor in a
+      new string-scalar OOM probe ([`sskoom_probe.py`](../../scratchpad/sskoom_probe.py),
+      [`sskoom_run.out`](../../scratchpad/sskoom_run.out): zerobas `ERR 7 N 0` uncut and
+      cut, [`carve2_knife.out`](../../scratchpad/carve2_knife.out)) — FPERR raises the
       error either way; the branch only keeps a descriptor from being written
       through the entry pointer. The deferred-error class
       ([[a-guard-witnessed-only-by-a-deferred-error]]). The probe's VG-8020 side

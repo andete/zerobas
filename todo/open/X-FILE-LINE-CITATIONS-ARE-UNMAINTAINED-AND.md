@@ -73,7 +73,7 @@
       them has to be re-read by whoever knows what replaced that code. The 7
       generic ones have no unique target, and a guess is worse than a stale
       number. Both lists reproduce from
-      [`scratchpad/anchor_audit.py`](scratchpad/anchor_audit.py).
+      [`scratchpad/anchor_audit.py`](../../scratchpad/anchor_audit.py).
       🔴 **A SYMBOL GREP CANNOT FIND ONE.** D-DEFTYPEDOC's `ex_def_type`/
       `ex_defint` grep was exhaustive and still missed
       `docs/spec-basic-deftbl-strcode.md`'s anchor, because a drifted line number

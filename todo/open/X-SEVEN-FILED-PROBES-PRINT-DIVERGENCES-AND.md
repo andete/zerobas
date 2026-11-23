@@ -1,6 +1,6 @@
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
-      [`docs/spec-filed-row-rot.md`](docs/spec-filed-row-rot.md), instrument
+      [`docs/spec-filed-row-rot.md`](../../docs/spec-filed-row-rot.md), instrument
       `scratchpad/filed_row_sweep.py` — every open TODO item's cited row set,
       re-run serially with the refcache OFF. **THE DENOMINATOR: 18 probes — 14
       diverge, 7 of those INVISIBLE to any rc-only collector, 2 clean, 2 with no
@@ -135,14 +135,14 @@
         longer diverge"*. The probe has since left the corpus with its citing
         item, so a re-run would not have found them either.
       • `ramfree_probe`'s 1 — **measured today**
-        ([`scratchpad/filedrow_ramfree.out`](scratchpad/filedrow_ramfree.out)):
+        ([`scratchpad/filedrow_ramfree.out`](../../scratchpad/filedrow_ramfree.out)):
         `clean: 14 parsed line(s), no divergence marker`. Gone.
       ⚠️ **The corpus has grown 20 → 53 probes since that list was written**, so
       "the next thing to read" had rotted the way a ranked candidate does
       [[a-ranked-candidate-rots-like-a-wall]]. Re-run before acting on any list
       in this block.
       🟢 **AND THE ENTRY'S OWN NAMED DEBT IS PAID — D-PINGATE, `make
-      filed-pin-check`** ([`tools/check_filed_pins.py`](tools/check_filed_pins.py)).
+      filed-pin-check`** ([`tools/check_filed_pins.py`](../../tools/check_filed_pins.py)).
       This block's verdict was *"the rule is not carried by anything that runs:
       closing an item does not touch `tools/filed-row-known.txt`, and only
       `--check-orphans` notices, and only when someone runs it."* There is now a
@@ -170,8 +170,8 @@
       committed file is judged by the same code that judges the plants.
       ✅ **RUN IN FULL 2026-09-10 (D-FILEDSLICE) — ALL 53 PROBES, SERIAL,
       REFCACHE OFF, IN FOUR SLICES**
-      ([1](scratchpad/filedrow_slice1.out), [2](scratchpad/filedrow_slice2.out),
-      [3](scratchpad/filedrow_slice3.out), [4](scratchpad/filedrow_slice4.out)).
+      ([1](../../scratchpad/filedrow_slice1.out), [2](../../scratchpad/filedrow_slice2.out),
+      [3](../../scratchpad/filedrow_slice3.out), [4](../../scratchpad/filedrow_slice4.out)).
       ⏱️ **AND THE ESTIMATE ABOVE WAS WRONG BY AN ORDER OF MAGNITUDE — it is
       ~20 MINUTES, not hours.** The 900 s per-probe timeout is a ceiling nothing
       reaches; the slowest probe in the corpus is 94 s and the median is under
@@ -183,7 +183,7 @@
       rule. ⚠️ **Confirmed TWICE before removal** — these are PLAY *timing* rows
       and pulling a pin on a flake is worse than leaving it; two independent runs
       give an identical divergence set
-      ([`.out`](scratchpad/playfn_recheck.out), [2](scratchpad/playfn_recheck2.out)).
+      ([`.out`](../../scratchpad/playfn_recheck.out), [2](../../scratchpad/playfn_recheck2.out)).
       🔴 **NO CAUSE IS CLAIMED**; the other three transient rows still differ, so
       the class is not closed, only this member
       [[a-mechanism-inferred-from-one-observation]].
@@ -191,7 +191,7 @@
       SLICES**, which is this entry's standing shape, *"the debt a new probe
       leaves"*, recurring inside a single night. All adjudicated from the RUN:
       `asciidigit_probe` (2), `putdomain_probe` (8), `dskibytes_probe` (3) and
-      [`bareform_probe`](scratchpad/bareform_probe.py) (1, apparatus-bounded: both references read `<none>`
+      [`bareform_probe`](../../scratchpad/bareform_probe.py) (1, apparatus-bounded: both references read `<none>`
       because `CLOAD` waits for tape). Two more had no verdict channel and are
       now declared NO-VERDICT with their kind established from the probe rather
       than the family name: `deffn_nestdepth_probe`, `dskilow_probe`.
@@ -337,22 +337,22 @@
       checked. **`playnote_probe` likewise** (`scratchpad/playnote_run.out`,
       `DIFF: 0/10`; `n00` unscored — its own header says a rest's register
       reading is not a pitch verdict). **`playmml_probe` and `playpsg_probe`
-      ([`scratchpad/playmml_probe.py`](scratchpad/playmml_probe.py),
-      [`scratchpad/playpsg_probe.py`](scratchpad/playpsg_probe.py)) are
+      ([`scratchpad/playmml_probe.py`](../../scratchpad/playmml_probe.py),
+      [`scratchpad/playpsg_probe.py`](../../scratchpad/playpsg_probe.py)) are
       DECLARED NO-VERDICT** (`tools/filed-row-known.txt`): both are
       D-KWPLAY scouts whose questions are answered, and the verdicts they
       scouted for are kwsweep's TIME-synced `playkw_*` rows — `playpsg`'s own
       reads are unsynced (D-PSGLATCH's race), so a channel there would score a
       racy instrument. **Then four more DECLARED** (2026-09-25):
-      [`scratchpad/cf3300_files_probe.py`](scratchpad/cf3300_files_probe.py)
+      [`scratchpad/cf3300_files_probe.py`](../../scratchpad/cf3300_files_probe.py)
       (a refresh tool for a frozen constant),
-      [`scratchpad/loadrun_probe.py`](scratchpad/loadrun_probe.py) (a timing
+      [`scratchpad/loadrun_probe.py`](../../scratchpad/loadrun_probe.py) (a timing
       instrument),
-      [`scratchpad/mergeshape_probe.py`](scratchpad/mergeshape_probe.py)
+      [`scratchpad/mergeshape_probe.py`](../../scratchpad/mergeshape_probe.py)
       (characterises the reference's MERGE), and
-      [`scratchpad/mergewin_probe.py`](scratchpad/mergewin_probe.py) (its
+      [`scratchpad/mergewin_probe.py`](../../scratchpad/mergewin_probe.py) (its
       window question was retired by D-BUFMERGE). **1 left:**
-      [`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py)
+      [`scratchpad/clrtrapstk_stop_probe.py`](../../scratchpad/clrtrapstk_stop_probe.py)
       already HAS a channel, but it refused its own run: its two-tap positive
       control read VG-8020 **2**, zerobas **11**, which it took for a tap that
       did not land. It was not the instrument — it was D-STOPTAP. **After

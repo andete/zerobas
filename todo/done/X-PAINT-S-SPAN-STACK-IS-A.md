@@ -9,8 +9,8 @@
       interrupt entry 18 B; `GFX_PAINT_MARGIN` = 128. 🔴 The first cut used the
       general `CTL_STACK_MARGIN` (256) and a simple fill with ~266 B free raised
       ERR 7 where the VG-8020 completes — the probe caught it.
-      📏 [`scratchpad/paintsp_probe.py`](scratchpad/paintsp_probe.py) →
-      [`scratchpad/paintsp_run.out`](scratchpad/paintsp_run.out): combs at the
+      📏 [`scratchpad/paintsp_probe.py`](../../scratchpad/paintsp_probe.py) →
+      [`scratchpad/paintsp_run.out`](../../scratchpad/paintsp_run.out): combs at the
       default ceiling and under `CLEAR 200,&H8500`/`&H8800`, and simple fills with
       1200/600/300 B free — ERR 0 on BOTH machines in every row.
       ⚠️ **NO ROW YET DISCRIMINATES OLD FROM NEW, AND WHY IS MEASURED:** (1)

@@ -30,7 +30,7 @@
       handler-local ROM change schedules all three, a docs-only plan schedules no
       emulator unit, a probe-only change does not drag them in. 📏 `make
       gates-fast`: **127 s wall, 45/45 green**, the pin note printed
-      ([`staticemu_fast.out`](scratchpad/staticemu_fast.out)); the day's runs before
+      ([`staticemu_fast.out`](../../scratchpad/staticemu_fast.out)); the day's runs before
       it took 3300-3600 s. 🔮 Predicted 3-5 min: HIT.
       ⚠️ The loop's `make tiers-md` after gates-fast now renders from the LAST
       FULL's pin, not a fresh one; the next FULL re-checks the sheet against a

@@ -1,7 +1,7 @@
 - [x] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
       ✅ **CLOSED 2026-09-05 — the helper exists, is SHARED, and the "where should
       it live" question is answered by the gate that already collects it.**
-      [`scratchpad/knife_guard.py`](scratchpad/knife_guard.py) `cut(text, anchor,
+      [`scratchpad/knife_guard.py`](../../scratchpad/knife_guard.py) `cut(text, anchor,
       repl, *, routine=None)`: `_region()` scopes to a routine's span, the
       occurrence count must be exactly 1, and `CutError` is raised otherwise —
       the mechanical remedy this entry specified, verbatim.
@@ -19,7 +19,7 @@
       it names as rebuilding-but-not-cutting rather than passing them silently).
       Two knives have already used it: K-SE5 (D-SPRCOVER) and K-LA5 (D-ZEROSEED).
       ROUTINE.** Filed 2026-08-11 by D-PAINTSEED
-      ([`docs/spec-basic-lineerr.md`](docs/spec-basic-lineerr.md) §9.6). K-PS1's
+      ([`docs/spec-basic-lineerr.md`](../../docs/spec-basic-lineerr.md) §9.6). K-PS1's
       first runner did `src.replace("call gfx_point_gate  ; BC/DE/HL preserved",
       …, 1)` — a line that occurs THREE times in `basic/graphics.asm` — and cut
       `gfx_plot_stmt`'s copy, i.e. the probe's own `PSET(7,4)` seed. It was

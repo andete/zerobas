@@ -11,7 +11,7 @@
       exist because the CF-3300 has **Disk BASIC** — those are capability
       differences and each target still follows its own oracle. Measured examples
       of the distinction, all in
-      [`probes/basic/basic_probe_pusing.py`](probes/basic/basic_probe_pusing.py):
+      [`probes/basic/basic_probe_pusing.py`](../../probes/basic/basic_probe_pusing.py):
       `PRINT USING"&";…` and `"\ \"` print on the VG-8020 and are ERR 5 on the
       CF-3300 — Disk BASIC, **not covered**. And `PRINT USING"$$#";5` reads
       `  $5` vs `$$ 5`, which is formatting rather than colour or screen —

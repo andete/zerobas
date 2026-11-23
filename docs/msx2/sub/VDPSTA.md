@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `VDPSTA` (sub-ROM $0131) — read a VDP status register
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xwv.asm](../../../probes/bios/spec/xwv.asm), [scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out), decoded by `scratchpad/xwv_decode.py`).
 
 ## Summary
 
@@ -39,7 +39,7 @@ where the V9938s read $00.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds return the same status registers ([scratchpad/AE_xwv_msx2.out](../../scratchpad/AE_xwv_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds return the same status registers ([scratchpad/AE_xwv_msx2.out](../../../scratchpad/AE_xwv_msx2.out)).
 
 ## Open (not measured)
 

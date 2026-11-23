@@ -6,7 +6,7 @@ SPDX-License-Identifier: BSD-2-Clause
 # `BIGFIL` ($016B) — fill VRAM with a byte, without the 16 KB limit
 
 > **Spec:** DRAFT 1 (2026-11-23): BF-1 - BF-6 and five VA states MEASURED on the HB-F900, NMS 8250 and FS-A1WSX
-> (identical on all three; [xbf.asm](../../probes/bios/spec/xbf.asm), [scratchpad/AE_xbf_msx2.out](../../scratchpad/AE_xbf_msx2.out), decoded by `scratchpad/xbf_decode.py`).
+> (identical on all three; [xbf.asm](../../../probes/bios/spec/xbf.asm), [scratchpad/AE_xbf_msx2.out](../../../scratchpad/AE_xbf_msx2.out), decoded by `scratchpad/xbf_decode.py`).
 
 ## Summary
 

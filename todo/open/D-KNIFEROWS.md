@@ -7,8 +7,8 @@
       printed with the baseline, so a probe that dies part-way reports its
       missing rows as unmoved. K-CS4 said "moved nothing" that way and a
       load-bearing store was removed on the strength of it
-      ([`callsystem_knives_r1.out`](scratchpad/callsystem_knives_r1.out)).
-      [`callsystem_knives.py`](scratchpad/callsystem_knives.py) now refuses an
+      ([`callsystem_knives_r1.out`](../../scratchpad/callsystem_knives_r1.out)).
+      [`callsystem_knives.py`](../../scratchpad/callsystem_knives.py) now refuses an
       incomplete run; give the other harnesses the same check (a FAIL can only
       hide an over-move there, never fake a PASS, but that is still blindness).
 

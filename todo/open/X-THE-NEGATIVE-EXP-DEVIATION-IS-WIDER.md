@@ -1,8 +1,8 @@
 - [ ] 📌 **THE NEGATIVE-EXP DEVIATION IS WIDER THAN §12.9 RECORDED — and it is
       DELIBERATE, not a defect.** Re-measured 2026-08-31 by D-NGRAM14,
-      [`docs/spec-basic-ngram14.md`](docs/spec-basic-ngram14.md) §5, rows in
+      [`docs/spec-basic-ngram14.md`](../../docs/spec-basic-ngram14.md) §5, rows in
       `scratchpad/ngram14_probe.py`.
-      [`docs/spec-basic-mathpack-slice2.md`](docs/spec-basic-mathpack-slice2.md)
+      [`docs/spec-basic-mathpack-slice2.md`](../../docs/spec-basic-mathpack-slice2.md)
       §12.9 recorded ONE argument (`EXP(-200)`) as a disposition BUG in the
       reference, with zerobas correctly returning the true 0. These rows show
       the whole negative tail behaves that way — `EXP(-150)`, `-175`, `-180`,

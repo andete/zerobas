@@ -22,13 +22,13 @@
       that were previously only printed, and a row that starts being scored is a
       claim about it.
       ✅ **FIXED AND PROVEN WITH THE FOUNDING KNIFE 2026-08-28 (D-CASTAILCTL),**
-      [`docs/spec-castail-control.md`](docs/spec-castail-control.md). 0 ROM bytes.
+      [`docs/spec-castail-control.md`](../../docs/spec-castail-control.md). 0 ROM bytes.
       `control_faults()` skips `zb`, exactly namspc's rule.
       **Falsified twice.** `--selftest` plants readings and checks WHICH SIDE
       decides (zb-only miss → 0 faults; reference miss → 1; both → 1, only the
       reference listed) with no machine booted. Then K-FR3 itself — **not tracked
       anywhere, so re-created** as
-      [`scratchpad/castail_knife.py`](scratchpad/castail_knife.py) — with the cut
+      [`scratchpad/castail_knife.py`](../../scratchpad/castail_knife.py) — with the cut
       in: `32 printed, 31 scored — 29 agree, 2 diverge`, exit **1**, naming
       `cas-run-hit` and `cas-run-hit-res`. Was `33 printed, 0 scored — NOT
       MEASURED`. Clean tree 31/31, unchanged, so no row starts being scored today.

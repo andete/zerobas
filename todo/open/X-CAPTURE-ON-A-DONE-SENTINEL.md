@@ -52,15 +52,15 @@
       scratchpad experiments — so nothing has been replaced and nothing is at
       risk today. 🔴 **AND THE MODEL GATE THIS ITEM NAMES DOES NOT EXIST:**
       `savestate-check` was **WITHDRAWN 2026-08-24** and the code reverted
-      ([`docs/spec-probe-savestate.md`](docs/spec-probe-savestate.md)). The
+      ([`docs/spec-probe-savestate.md`](../../docs/spec-probe-savestate.md)). The
       PATTERN it stands for survives; the target to copy does not.
       ✅ **THE GRAPHICS HALF WAS ALREADY DIFFERENTIALLED** —
-      [`scratchpad/sentinel_screen_diff.py`](scratchpad/sentinel_screen_diff.py),
+      [`scratchpad/sentinel_screen_diff.py`](../../scratchpad/sentinel_screen_diff.py),
       re-run today: 3 cases × 2 sides, raw **differs** (the prompt, so the
       sentinel demonstrably fired), answers **identical**, teeth fire. But every
       answer there is a VRAM point sample, and it never drove the second oracle.
       ✅ **THE TEXT HALF IS NOW MEASURED TOO —
-      [`scratchpad/sentinel_text_diff.py`](scratchpad/sentinel_text_diff.py),
+      [`scratchpad/sentinel_text_diff.py`](../../scratchpad/sentinel_text_diff.py),
       12/12 SPANS IDENTICAL ON ALL THREE MACHINES** (value / string / FOR-loop /
       error × vg8020, cf3300, zb), with `' 42 '` vs `'ZB'` as teeth.
       🎯 **AND `screen_tail` BREAKS EXACTLY WHERE THE CODE SAID IT WOULD — BUT

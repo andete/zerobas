@@ -4,8 +4,8 @@
       🤖 **AUTONOMOUS** — the OUTPUT is a LIST for Joost to rule on (drop / merge / move to a
       daily sweep, as kwtime / kwram were); nothing is removed automatically.
       📏 **STEP 1, THE CENSUS (2026-11-01, zero emulator time):**
-      [`suite_census.py`](scratchpad/suite_census.py) ->
-      [`suite_census.out`](scratchpad/suite_census.out). Of 252 suites with >= 20 logged gate
+      [`suite_census.py`](../../scratchpad/suite_census.py) ->
+      [`suite_census.out`](../../scratchpad/suite_census.out). Of 252 suites with >= 20 logged gate
       runs (1777 logs), 157 never went red in one (a red that came back green on its serial
       retry counts as a flake) -- 48% of the summed suite seconds. 27 of the most expensive
       never went red ANYWHERE recorded, knife and iteration logs included: kwram (already
@@ -14,8 +14,8 @@
       saved logs are the runs someone kept; some knife scripts print their own red rows
       instead of failing through make; never red can mean "guards something nobody broke".
       📏 **STEP 2a, DONE 2026-11-01 -- EVERY MEASURED SUITE CATCHES A KNIFE IN ITS OWN
-      SUBJECT: 18 / 18** ([`suitesweep_knives.py`](scratchpad/suitesweep_knives.py) ->
-      [`suitesweep_knives.out`](scratchpad/suitesweep_knives.out); one same-length instruction
+      SUBJECT: 18 / 18** ([`suitesweep_knives.py`](../../scratchpad/suitesweep_knives.py) ->
+      [`suitesweep_knives.out`](../../scratchpad/suitesweep_knives.out); one same-length instruction
       per suite, designed by a read-only study, every anchor unique, every plant moved the
       ROM hashes, base restored byte-identical): math, ifsem, width, lineerr, arrdim, nodisk,
       dout, intarg, pulong, catterm, basicint, inputary, string, binfre, instr128, loaddi,
@@ -69,7 +69,7 @@
         code behind it walked to stay in page 1; a page-1 direct `p0_*` call only when main's
         code stays below $4000. Selftest W1-W7 / A1-A5 / B1-B9 / C1-C6 / D1-D4 / L2 green; each rule
         broken in a temp copy reddens its arm. Real tree: page 0 18 tenants, page 1 34, NO
-        escape ([`p1closure.out`](scratchpad/p1closure.out)).
+        escape ([`p1closure.out`](../../scratchpad/p1closure.out)).
       - [x] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
         🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
         `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
@@ -83,8 +83,8 @@
         saturates BEFORE the multiply (DE > 999 -> 9999; +8 B sub page 0). Gate `make
         expwrap-acceptance` (probes/basic/basic_probe_expwrap.py: a control, 5 wrap rows, 4
         edges; VG-8020, zerobas DISK and NODISK): 10/10 after
-        ([`expwrap_after.out`](scratchpad/expwrap_after.out)); knifed back to HEAD's loop, the 5
-        wrap rows RED and the edges green ([`expwrap_knife.out`](scratchpad/expwrap_knife.out)).
+        ([`expwrap_after.out`](../../scratchpad/expwrap_after.out)); knifed back to HEAD's loop, the 5
+        wrap rows RED and the edges green ([`expwrap_knife.out`](../../scratchpad/expwrap_knife.out)).
         Docs: docs/concepts/numbers.md. (The CF-3300 needs a boot disk; not run -- the VG-8020
         is the preferred reference.)
       - [x] ✅ **D-MULHANG (2026-11-03): NOT A HANG -- lvfix's disk rows were read 2.5 s after
@@ -98,8 +98,8 @@
         a floppy take ~3 s, and a few cycles anywhere can move a sector request past the head
         and cost a revolution. Fix: the probe's disk rows take `run_gap=8.0`
         (probes/basic/basic_probe_lvfix.py); lvfix 22/22 with the reorder back in, sub page 0
-        722 -> 729 B free ([`mulhang_reloc.out`](scratchpad/mulhang_reloc.out)). Contract-diff
-        ([`mulhang_contract.out`](scratchpad/mulhang_contract.out)): one `broken` row,
+        722 -> 729 B free ([`mulhang_reloc.out`](../../scratchpad/mulhang_reloc.out)). Contract-diff
+        ([`mulhang_contract.out`](../../scratchpad/mulhang_contract.out)): one `broken` row,
         `pu_to_field [main]`, against a main ROM that is BYTE-IDENTICAL to HEAD (sha 54cc8a2e
         both) -- the analyser's view of that routine follows the sub ROM's layout (it was the
         "inferred unknown" `wider_in` row one commit earlier). 🔭 The CLASS is open: any probe

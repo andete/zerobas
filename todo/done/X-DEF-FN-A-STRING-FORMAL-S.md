@@ -1,6 +1,6 @@
 - [x] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
-      [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
+      [`docs/deffn-impl-2026-08-22.md`](../../docs/deffn-impl-2026-08-22.md) §8. The
       slot holds a `[len][ptr]` descriptor and `strheap_gc`'s walk enumerates
       the variable chain and the temp-descriptor stack, not this area. No
       measured row provokes a collection inside an FN call (all three string
@@ -8,7 +8,7 @@
       in the code — the fix is either a `sg_walk_fnframe` or a snapshot at bind
       time, and the ROW that would catch it does not exist yet.
       ✅ **THE ROW EXISTS, IT WENT RED, AND THE LIVE FRAME IS FIXED (2026-08-27,
-      D-FNGCROOT),** [`docs/spec-deffn-gcroot.md`](docs/spec-deffn-gcroot.md).
+      D-FNGCROOT),** [`docs/spec-deffn-gcroot.md`](../../docs/spec-deffn-gcroot.md).
       Both halves of the premise re-ran true on the SHIPPED code. `sg_walk_fnframe`
       walks `[FN_PAREA, FN_FEND)` — **30 B of sub page 0** (2464 → 2434); main ROM
       does not move (low 39 B, page 1 89 B, identical). `o.gcroot` **`376A` →
@@ -30,15 +30,15 @@
       want frames that coexist in the shadow area, which needs page-3 RAM.
       🔭 **SCOUTED 2026-09-11 (D-FNGCNEST) — IT BITES ON TODAY'S TREE, AND THE
       SHAPE THAT NEEDS NO SHADOW AREA IS BELOW.** `n.outer` re-run
-      ([`scratchpad/deffn_gcnest_probe.py`](scratchpad/deffn_gcnest_probe.py),
-      [`.out`](scratchpad/gcnest_now.out)): zb **`qLMNO`** vs `qABCD` on BOTH
+      ([`scratchpad/deffn_gcnest_probe.py`](../../scratchpad/deffn_gcnest_probe.py),
+      [`.out`](../../scratchpad/gcnest_now.out)): zb **`qLMNO`** vs `qABCD` on BOTH
       references, `n.outer.ctl` (same nesting, no collection) `qABCD` on all
       three. So a string `FN` whose body calls another string `FN` that collects
       returns the wrong text — `S$` was read from a slot whose descriptor was
       saved on the Z80 stack and pointed at a body the collection moved. A happy
       path (nested string functions plus ordinary string traffic), not an edge.
       🎯 **THE MECHANISM IS THE SAVE, NOT THE WALK.** `fn_call`
-      ([`basic/deffn.asm`](basic/deffn.asm)) reserves a block BELOW `SP` and
+      ([`basic/deffn.asm`](../../basic/deffn.asm)) reserves a block BELOW `SP` and
       `ldir`s the whole `FN_BASE` prefix into it; `fn_leave` copies it back.
       `sg_walk_fnframe` walks `[FN_PAREA, FN_FEND)` — the live frame — and can
       never address a block under `SP`. The filed cure ("frames that coexist in
@@ -75,7 +75,7 @@
       `FNSP` must be unwound there (one cell, or re-derived from `CSP`) or a frame
       leaks until the next `RUN`/`CLEAR`.
       🤖 AUTONOMOUS — the shape is ruled (Joost, 2026-09-11: the control-frame pool) and the measurements are done.
-      🟢 **SHIPPED 2026-09-11 (D-FNPOOL, [`docs/spec-basic-fnpool.md`](docs/spec-basic-fnpool.md)) —
+      🟢 **SHIPPED 2026-09-11 (D-FNPOOL, [`docs/spec-basic-fnpool.md`](../../docs/spec-basic-fnpool.md)) —
       `n.outer` READS `qABCD` ON ALL THREE MACHINES.** Joost ruled the shape the
       same day (*"go for 2 control-frame pool"*): the frame is
       `[prevFNSP:2][size:1][the saved prefix]` taken from the control pool, so one
@@ -106,5 +106,5 @@
       ✅ **THE RESIDUAL'S 🙋 IS ANSWERED (Joost, 2026-09-11): the pool, not the
       page-3 band** — so "page-3 RAM below LINEBUF, shared with D-FNALIAS" is no
       longer what this needs; `FNSP` is 2 B and the frames come from `ctl_alloc`
-      (see the ruling above and [`docs/spec-basic-fnpool.md`](docs/spec-basic-fnpool.md)).
+      (see the ruling above and [`docs/spec-basic-fnpool.md`](../../docs/spec-basic-fnpool.md)).
       The live-frame half has been shipped and gated since 2026-08-27.

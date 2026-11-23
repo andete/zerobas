@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RIGHTC` (sub-ROM $00A5) — move the graphics position one pixel right
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -52,7 +52,7 @@ whole byte, so the step depends on the mode and on how CLOC / CMASK hold the pos
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds differ in 4 of the 16 cases -- in SCREEN 2 they use the SCREEN 2 bit masks ($78, $E1 ...) where the references use multicolour nibbles ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds differ in 4 of the 16 cases -- in SCREEN 2 they use the SCREEN 2 bit masks ($78, $E1 ...) where the references use multicolour nibbles ([scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 

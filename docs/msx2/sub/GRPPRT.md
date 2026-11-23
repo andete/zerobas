@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GRPPRT` (sub-ROM $0089) — draw a character on a bitmap screen
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgpp.asm](../../probes/bios/spec/xsubgpp.asm), [scratchpad/AE_xsubgpp_msx2.out](../../scratchpad/AE_xsubgpp_msx2.out), decoded by `scratchpad/xsubgpp_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubgpp.asm](../../../probes/bios/spec/xsubgpp.asm), [scratchpad/AE_xsubgpp_msx2.out](../../../scratchpad/AE_xsubgpp_msx2.out), decoded by `scratchpad/xsubgpp_decode.py`).
 
 ## Summary
 
@@ -49,7 +49,7 @@ preset $0F):
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) draw the cell with their own font (ruled, D-BIOSINT) the same way, but CR is
 drawn as a character (GRPACX advances, no line feed) and nothing wraps at the right edge (GRPACX 258); A out $03
-([scratchpad/AE_xsubgpp_msx2.out](../../scratchpad/AE_xsubgpp_msx2.out)).
+([scratchpad/AE_xsubgpp_msx2.out](../../../scratchpad/AE_xsubgpp_msx2.out)).
 
 ## Open (not measured)
 

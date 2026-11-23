@@ -58,7 +58,7 @@
       not touch the 54 pinned divergent rows. **The item stays open for that.**
       💰 **PRICED AT LAST, 2026-09-10 (D-FACEPRICE) — the entry's own "Not
       priced" is now a number.** Counted from
-      [`tools/filed-row-known.txt`](tools/filed-row-known.txt), excluding the
+      [`tools/filed-row-known.txt`](../../tools/filed-row-known.txt), excluding the
       declared NO-VERDICT probes:
 
           probes with SCORED pinned divergent rows        13   (60 rows)
@@ -80,10 +80,10 @@
       the pin file alone reads 2 rows worse than the tree is.
       🟢 **AND THE BACKLOG IS LATENT, NOT BURNING — SPOT-CHECKED 14 OF THE 50
       TODAY, ALL FACES INTACT** (`open2` 1, `deffn_alias` 2, `keystr` 5,
-      `keylist` 6; [`.out`](scratchpad/open2_recheck.out),
-      [`.out`](scratchpad/deffnalias_recheck.out),
-      [`.out`](scratchpad/keystr_recheck.out),
-      [`.out`](scratchpad/keylist_recheck.out)):
+      `keylist` 6; [`.out`](../../scratchpad/open2_recheck.out),
+      [`.out`](../../scratchpad/deffnalias_recheck.out),
+      [`.out`](../../scratchpad/keystr_recheck.out),
+      [`.out`](../../scratchpad/keylist_recheck.out)):
       • `e.same2` — `<File already open>` on the CF-3300, `OK` here: matches
         *"accepted here and refused on the CF-3300"*.
       • `o.alias` 505 vs 503, `o.aliasnest` 909 vs 903, **both controls agreeing**.
@@ -108,8 +108,8 @@
       no exit path at all — it is one of the "prints divergences and exits 0"
       family the sweep flags. A drifted face now reaches an rc the sweep already
       prints.
-      🔬 **KNIFE 4/4** ([`scratchpad/facepin_knife.py`](scratchpad/facepin_knife.py),
-      [`.out`](scratchpad/facepin_knife.out)): one pinned face corrupted per
+      🔬 **KNIFE 4/4** ([`scratchpad/facepin_knife.py`](../../scratchpad/facepin_knife.py),
+      [`.out`](../../scratchpad/facepin_knife.out)): one pinned face corrupted per
       probe → **rc=2 and the row named**, every time; and each probe RE-RUN after
       restore returns to rc=0, so the red is the pin biting and not the probe
       breaking. A pin that cannot redden reads exactly like a correct one on a
@@ -123,7 +123,7 @@
       has no `DSKI$`, so the window it never fills reads zeros, and `w.half2`'s 1s
       are pre-existing contents rather than a partial transfer. Pinning `has` is
       what would notice `DSKI$` starting to write something.
-      🔬 **KNIFE NOW 6/6** ([`.out`](scratchpad/facepin_knife.out)), and two
+      🔬 **KNIFE NOW 6/6** ([`.out`](../../scratchpad/facepin_knife.out)), and two
       things in it were wrong first:
       • **It asserted `rc != 0`, which would have passed `dskibytes` for free** —
         that probe ALREADY exits 1 on its own DIFF verdict (3/3 rows differ by
@@ -180,7 +180,7 @@
         (−1/0 per voice), deterministic, and **byte-identical across the two
         independent runs taken earlier today** before anything was pinned.
       • **2 DECLINED** — the two `width: TIME` rows.
-        [`tools/filed-row-known.txt`](tools/filed-row-known.txt) already records
+        [`tools/filed-row-known.txt`](../../tools/filed-row-known.txt) already records
         them as *"TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour"* and warns
         that 4-vs-14 sits above the filed interpreter-speed band *"even allowing
         TIME's ±1 quantisation on small integers"*. A face pinned on a quantised
@@ -195,8 +195,8 @@
       📏 **FINAL TALLY**: 60 scored pinned rows → 10 already covered
       (`basic_probe_nodisk` 8, `asciidigit` via its gate twin 2) + **44 newly
       face-pinned across 9 probes** + **6 declined with a written reason**.
-      🔬 **KNIFE 10/10** ([`scratchpad/facepin_knife.py`](scratchpad/facepin_knife.py),
-      [`.out`](scratchpad/facepin_knife.out)) — one arm per probe, each requiring
+      🔬 **KNIFE 10/10** ([`scratchpad/facepin_knife.py`](../../scratchpad/facepin_knife.py),
+      [`.out`](../../scratchpad/facepin_knife.out)) — one arm per probe, each requiring
       **exactly rc=2** and the row NAMED, each followed by a restore control that
       requires the drift report to be GONE. The design question this entry opened
       on 2026-09-04 is closed.

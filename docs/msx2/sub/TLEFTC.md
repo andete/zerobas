@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `TLEFTC` (sub-ROM $00A9) — move the graphics position left, checking the edge
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -50,7 +50,7 @@ the mirror of [TRIGHT](TRIGHT.md).
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: CLOC / CMASK unchanged and A as the caller left it, in every mode, carry never set ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
+C-BIOS's MSX2 / MSX2+ builds (the subject) do NOTHING here: CLOC / CMASK unchanged and A as the caller left it, in every mode, carry never set ([scratchpad/AE_xsubmv_msx2.out](../../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 

@@ -1,7 +1,7 @@
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
-      [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md), probe
-      [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py),
+      [`docs/kwsweep-msx1-coverage.md`](../../docs/kwsweep-msx1-coverage.md), probe
+      [`probes/basic/basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py),
       `make kwsweep`).
       🔴 **THE HEADLINE THAT STOOD HERE — *"of 162 MSX1 reserved words, 124
       tokenise and 34 are genuinely absent"* — IS A 2026-07-27 SNAPSHOT, AND THIS
@@ -23,7 +23,7 @@
       an ordinary variable, nothing errors, the program computes the wrong
       answer. `TAB(` was worse: it had been written down as *"Already faithful
       (NO work)"* in
-      [`docs/spec-basic-df2-2-intarg-coercion.md`](docs/spec-basic-df2-2-intarg-coercion.md)
+      [`docs/spec-basic-df2-2-intarg-coercion.md`](../../docs/spec-basic-df2-2-intarg-coercion.md)
       §1.2 because `PRINT TAB(99999)` raises ERR 6 on **both** sides — for
       structurally different reasons (absent `TAB(` ⇒ `TAB` is an *array*, and
       the subscript bound-check yields the same code). **The differential passed
@@ -78,7 +78,7 @@
       (`SCREEN 3`, `KEY LIST`, argument forms of words that *are* present) are
       not covered — a word can be present and still wrong in its third argument.
       **✅ SLICED + COSTED 2026-07-27** —
-      [`docs/decision-kwgaps-slicing.md`](docs/decision-kwgaps-slicing.md),
+      [`docs/decision-kwgaps-slicing.md`](../../docs/decision-kwgaps-slicing.md),
       **awaiting sign-off** (D-KW-1..3). The sweep was **re-pinned** against a
       clean-built HEAD first (`git=e9843c4`,
       `zerobas-main-eu.rom=05f43b…`→`4ea7a2…`): **every tally unchanged**, so the
@@ -111,7 +111,7 @@
         (163/163 as recorded, 20 expected-divergent, every marker carrying a
         reason). Spec, as-built costs and the two places the spec turned out to
         be WRONG:
-        [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md).
+        [`docs/spec-basic-missing-class.md`](../../docs/spec-basic-missing-class.md).
         ✅ **`SWAP` LANDED 2026-07-28** — 183 B (re-measured from clean; the
         split had recorded 186 B), funded by two repack-only clone collapses and
         leaving 44 B banked (SWAP + its dispatch arm + the two operand guards =
@@ -125,11 +125,11 @@
         `is_letter` guard at the *handler's own depth*, because sw_operand is
         `call`ed and the abort chain returns into its caller (D-CUR-D).
         ✅ **CHARACTERISED 2026-07-27**,
-        [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md),
-        probe [`probes/basic/basic_probe_missing.py`](probes/basic/basic_probe_missing.py),
+        [`docs/missing-vg8020-characterization.md`](../../docs/missing-vg8020-characterization.md),
+        probe [`probes/basic/basic_probe_missing.py`](../../probes/basic/basic_probe_missing.py),
         `make missing-characterize` (`BOOTPC=1` for the confirmation run) —
         175 cases, 8 batteries, every number boot-per-case. **SLICED + COSTED**,
-        [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md),
+        [`docs/decision-missing-class-slicing.md`](../../docs/decision-missing-class-slicing.md),
         **awaiting sign-off (D-MC-1..4)**.
         ✅ **D-MC-2 SIGNED OFF 2026-07-27**: D-MISS-1 folds into this slice,
         D-MISS-2 gets its own. ✅ **D-MC-4 O-1 CLOSED** before any clamp was
@@ -143,7 +143,7 @@
         the five tokens are pinned from the reference's own crunch
         (`LOCATE $D8`, `SWAP $A4`, `TRON $A2`, `TROFF $A3`, `MOTOR $CE`).
         📋 **SPEC WRITTEN, awaiting sign-off (S-MC-1..5)**:
-        [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md)
+        [`docs/spec-basic-missing-class.md`](../../docs/spec-basic-missing-class.md)
         — 300–420 B against 420 B free, proposed **repack-only** so the lean
         cart stays byte-identical, ordered cheapest-first
         (`MOTOR` → `TRON`/`TROFF` → D-MISS-1 → `LOCATE` → `SWAP`).
@@ -151,7 +151,7 @@
         dispatch table replaced the 69-entry `cp`/`jp z` chain, **page-1 free
         311 B → 420 B (+109 B)**, dispatch block 377 B → 268 B, and the
         per-token cost is now 3 B instead of 5 B. Gated by
-        [`tests/test_stmt_dispatch.py`](tests/test_stmt_dispatch.py) in
+        [`tests/test_stmt_dispatch.py`](../../tests/test_stmt_dispatch.py) in
         `make unit-test`: **all 121 entries** (52 lean + 69 repack) reach the
         handler the pre-refactor chain sent them to, plus the fallthrough paths.
         ⚠️ It moves the **LEAN** cart too (shared code) — `LEAN_SHA256` updated
@@ -177,12 +177,12 @@
         already exist while the first may be created; `TRON` traces per **LINE**,
         never in direct mode, survives `RUN` but not `NEW`; `MOTOR` is three
         forms and everything else is `Syntax error` — and
-        [`tape/tape.asm:175`](tape/tape.asm:175) **already implements `STMOTR`
+        [`tape/tape.asm:175`](../../tape/tape.asm:175) **already implements `STMOTR`
         (`$00F3`)** with the matching convention, so its body is a parse and a
         `call`.
       - **`DEF FN`/`FN`** — ⚠️ **THE FILED PRICE IS PART MEASURED AND PART
         REFUTED, 2026-08-22**, by
-        [`docs/deffn-scout-2026-08-22.md`](docs/deffn-scout-2026-08-22.md)
+        [`docs/deffn-scout-2026-08-22.md`](../../docs/deffn-scout-2026-08-22.md)
         (`scratchpad/deffn_scout.py` + `.out`, four rounds, both references
         agreeing on every row). It read *"an arc, not a slice (200–400 B): a
         definition table, argument binding, re-entrant evaluation"*.
@@ -213,7 +213,7 @@
         tenant can reach main page 1. **Read both walls from `make basic-reloc`
         at the time.**
         ⚠️ **AND THE SCOUT'S OWN HEADLINE IS NOW REFUTED, 2026-08-22**, by
-        [`docs/deffn-design-2026-08-22.md`](docs/deffn-design-2026-08-22.md)
+        [`docs/deffn-design-2026-08-22.md`](../../docs/deffn-design-2026-08-22.md)
         (rounds 5–10, `scratchpad/deffn_round5.out` … `deffn_round10.out`,
         **82 rows, both references agreeing on every scored one**).
         ❌ **THERE IS NO SAVE AND NO RESTORE.** The scout read *"the formal is
@@ -280,9 +280,9 @@
         zerobas had ONE free gap where the reference has TWO pools, and
         `CLEAR`'s string-space argument was evaluated and discarded. The six
         recorded-not-gated `FRE` rows are back in a gate.
-        [`docs/spec-basic-clearpool.md`](docs/spec-basic-clearpool.md),
-        [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md),
-        [`docs/decision-clearpool-funding.md`](docs/decision-clearpool-funding.md),
+        [`docs/spec-basic-clearpool.md`](../../docs/spec-basic-clearpool.md),
+        [`docs/clearpool-vg8020-characterization.md`](../../docs/clearpool-vg8020-characterization.md),
+        [`docs/decision-clearpool-funding.md`](../../docs/decision-clearpool-funding.md),
         `make clearpool-acceptance` (57 rows, twelve batteries). Baseline 6/51.
         FUNDED by promoting `fld_lookup` to a page-0 sub-ROM tenant
         (`sub/fldlook.asm`, index 12 — **the last page-0 index that fits before
@@ -358,7 +358,7 @@
       `GETPNT`/`PUTPNT` cursors, empty when equal — so the program stuffs one
       character, sets the cursors one apart, and `INKEY$` returns a REAL keystroke
       with no injector timing anywhere. Measured `[A 1 ]` on both machines
-      ([`scratchpad/kwdrain_inkeypoke.py`](scratchpad/kwdrain_inkeypoke.py)),
+      ([`scratchpad/kwdrain_inkeypoke.py`](../../scratchpad/kwdrain_inkeypoke.py)),
       against the `[ 0 ]` an unstuffed buffer and a stub both give.
       ⚠️ **STORED, AND THAT IS LOAD-BEARING**: in direct mode the harness delivers
       the next line through that very buffer and would overwrite the stuffed
@@ -487,7 +487,7 @@
       UNREADABLE — LOAD-BEARING. ⚪ UNPROVEN is now **empty**.
 
       📏 **RE-RUN 2026-11-13 (after the day's BIOS / disk ROM changes):** `make kwsweep` --
-      SUMMARY SUPPORTED 987, DIVERGENT 1, WEAK (excluded) 3 ([`kwsweep_1113.out`](scratchpad/kwsweep_1113.out)); the one
+      SUMMARY SUPPORTED 987, DIVERGENT 1, WEAK (excluded) 3 ([`kwsweep_1113.out`](../../scratchpad/kwsweep_1113.out)); the one
       DIVERGENT row, `chanfor`, had the REFERENCE's screen garbled (a column of `|`, the key
       row) where zerobas printed `1 2 3 10 20 30`, and alone reads SUPPORTED
-      ([`kwsweep_chanfor1.out`](scratchpad/kwsweep_chanfor1.out)) -- a capture fault of the long run, not a keyword gap. No MISSING.
+      ([`kwsweep_chanfor1.out`](../../scratchpad/kwsweep_chanfor1.out)) -- a capture fault of the long run, not a keyword gap. No MISSING.

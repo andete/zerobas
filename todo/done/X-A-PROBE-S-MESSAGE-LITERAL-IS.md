@@ -11,7 +11,7 @@
       ~~Worth a lint: a capitalised message literal reaching a case-folded
       comparison, across module boundaries. Until then the vocabularies carry
       explicit "MUST STAY LOWERCASE" comments
-      ([`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) has the
+      ([`basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py) has the
       worked one).~~
       ✅ **BUILT AND GATED 2026-09-05 (D-NEEDLECASE) — `make needle-case-check`,
       collected in the battery (33/33 static).**

@@ -4,19 +4,19 @@
       🎚️ TIER 5 — on-par speed, on `LOAD`. ⏱ **RE-TAGGED 2026-10-10 FROM TIER 2:
       REASONABLE TIME ON `LOAD` IS MEASURED MET.** A 14 KB `LOAD"x",R`, timed
       OUTSIDE the guest (emulated time between two `CURLIN` writes,
-      [`loadclock_probe.py`](scratchpad/loadclock_probe.py)): **8.3 s here
+      [`loadclock_probe.py`](../../scratchpad/loadclock_probe.py)): **8.3 s here
       against the CF-3300's 2.7 s, 3.0×** after D-LOADDI (6.9 s, 2.5× before it,
-      [`loadclock_run.out`](scratchpad/loadclock_run.out) /
-      [`loadclock_after.out`](scratchpad/loadclock_after.out)) — inside T2's 10×.
+      [`loadclock_run.out`](../../scratchpad/loadclock_run.out) /
+      [`loadclock_after.out`](../../scratchpad/loadclock_after.out)) — inside T2's 10×.
       What is left here is S10.C (OPEN's channels into disk.rom), ruled *"defer
       to later"* on 2026-10-09, and the speed.
-      📏 **RE-MEASURED 2026-11-06** ([`loadclock_1106.out`](scratchpad/loadclock_1106.out)): 14 KB
+      📏 **RE-MEASURED 2026-11-06** ([`loadclock_1106.out`](../../scratchpad/loadclock_1106.out)): 14 KB
       **8.94 s here against the CF-3300's 2.94 s** (1 KB: 0.75 against 1.36 -- the fixed cost
       is LOWER here; ~310 ms an extra sector against ~60). **WHERE IT GOES** -- every FDC
-      command stamped in emulated time ([`fdccmd_probe.py`](scratchpad/fdccmd_probe.py) ->
-      [`fdccmd_run.out`](scratchpad/fdccmd_run.out), a 14 KB program SAVEd then LOADed,
-      [`loadspeed_prog.bas`](scratchpad/loadspeed_prog.bas); and 1 ms PC samples,
-      [`loadspeed_pc.out`](scratchpad/loadspeed_pc.out): the time is in fdq_win /
+      command stamped in emulated time ([`fdccmd_probe.py`](../../scratchpad/fdccmd_probe.py) ->
+      [`fdccmd_run.out`](../../scratchpad/fdccmd_run.out), a 14 KB program SAVEd then LOADed,
+      [`loadspeed_prog.bas`](../../scratchpad/loadspeed_prog.bas); and 1 ms PC samples,
+      [`loadspeed_pc.out`](../../scratchpad/loadspeed_pc.out): the time is in fdq_win /
       frdw_poll, WAITING for sectors): (1) **LOAD re-reads FAT sector 2 before every
       cluster** -- fat_next_cluster (basic/fat-prim-body.inc) reads the FAT sector into
       FAT_DBUF on EVERY call, there is no read cache; 47 reads for a 29-sector file, ~20 of
@@ -37,11 +37,11 @@
       build does the same: load on mount, chains from RAM, both copies written back on flush,
       dropped on a media change. (1) is unblocked.
       ⏸️ **RE-DONE, MEASURED, AND PARKED AGAIN (2026-11-07) -- THE GAIN IS GONE.** Built in
-      D-DISKCARVE's room ([`fatres_wip2.patch`](scratchpad/fatres_wip2.patch): the gate's bit 7, one DSKIO per sector with
+      D-DISKCARVE's room ([`fatres_wip2.patch`](../../scratchpad/fatres_wip2.patch): the gate's bit 7, one DSKIO per sector with
       interrupts open between, a write / FAT-entry write dropping bit 0; tests/test_fat_next_cluster.py
       green with the per-sector and forbidden-bit rows). **LOAD with it: 1 KB 0.63 s, 7 KB 2.59,
-      14 KB 4.73** ([`loadclock_fatres2.out`](scratchpad/loadclock_fatres2.out)) -- **but today's HEAD WITHOUT it is already 0.62 / 2.59 /
-      4.92** ([`loadclock_head1107.out`](scratchpad/loadclock_head1107.out)): the 11-06 HEAD's 8.94 s has halved through other work since
+      14 KB 4.73** ([`loadclock_fatres2.out`](../../scratchpad/loadclock_fatres2.out)) -- **but today's HEAD WITHOUT it is already 0.62 / 2.59 /
+      4.92** ([`loadclock_head1107.out`](../../scratchpad/loadclock_head1107.out)): the 11-06 HEAD's 8.94 s has halved through other work since
       (the 11-06 notes' (2) and (3) and the carves), and the resident FAT now buys -4 % on 14 KB and
       nothing on 7 KB or 1 KB. Not worth ~140 B of disk.rom and a RAM-ownership gate around
       MSX-DOS and every boot code; Joost's ruling ALLOWED the buffer, it did not require it.
@@ -49,14 +49,14 @@
       was stale -- measure HEAD before re-doing a parked speed slice. What is left of the gap to
       the CF-3300 (4.92 vs 2.94 s on 14 KB, 1.67x; 7 KB 2.59 vs 2.39) is per-sector CPU work and
       lost-data retries (the 11-06 FDC log), not FAT re-reads.
-      📏 **TODAY'S SHAPE (2026-11-07, [`fdccmd_1107.out`](scratchpad/fdccmd_1107.out), the 14 KB LOAD's FDC commands in emulated
+      📏 **TODAY'S SHAPE (2026-11-07, [`fdccmd_1107.out`](../../scratchpad/fdccmd_1107.out), the 14 KB LOAD's FDC commands in emulated
       time):** consecutive sector reads land either ~30 ms apart (the next sector caught) or
       ~230 ms apart (missed by a hair: one revolution, 200 ms at 300 rpm, lost), and one sector
       (S 04) took two lost-data retries -- ~0.63 s by itself. The work between two reads (the
       512-byte copy alone is ~3 ms) is longer than the inter-sector gap, so roughly every other
       sector costs a revolution; the CF-3300 averages ~100 ms a sector, ours ~170.
       📏 **HOW THE CF-3300 DOES IT (2026-11-07, Joost: "I guess we need to discover how the
-      references do this?"; [`fdccmd_cf1107.out`](scratchpad/fdccmd_cf1107.out) -- fdccmd_probe.py's FDC_MACH: the same WD2793,
+      references do this?"; [`fdccmd_cf1107.out`](../../scratchpad/fdccmd_cf1107.out) -- fdccmd_probe.py's FDC_MACH: the same WD2793,
       "National" layout, slot 3-1, per openMSX's machine config; command register writes
       with BC / DE / HL, registers and I/O only):** the FAT sectors into its own buffer
       ($E795 / $E995); the FIRST data sector into a sector buffer ($ED95) -- it carries the
@@ -94,9 +94,9 @@
       file up to 2 B longer (its $0000 end link was never stored); the direct read must not
       write past TXTMAX, the workspace floor, during the read. What the CF-3300 does with a
       file that does not fit is NOT measured (filed below).
-      🎯 PREDICTED 14 KB 3.0-3.3 s: **3.28 s -- hit** ([`loadclock_direct.out`](scratchpad/loadclock_direct.out)): **1 KB 0.62 -> 0.57 s
+      🎯 PREDICTED 14 KB 3.0-3.3 s: **3.28 s -- hit** ([`loadclock_direct.out`](../../scratchpad/loadclock_direct.out)): **1 KB 0.62 -> 0.57 s
       (CF 1.36), 7 KB 2.59 -> 2.26 (CF 2.39, now FASTER), 14 KB 4.92 -> 3.28 (CF 2.94: 1.67x ->
-      1.11x).** FDC log ([`fdccmd_direct.out`](scratchpad/fdccmd_direct.out)): the in-place run is 29 reads in 3.02 s with 11
+      1.11x).** FDC log ([`fdccmd_direct.out`](../../scratchpad/fdccmd_direct.out)): the in-place run is 29 reads in 3.02 s with 11
       revolutions missed, ~~the CF-3300's 27 in 2.99 s with 12 -- on par in the data phase~~
       🔴 **WRONG (corrected 2026-11-08): those 27 were the CF-3300's SAVE writes. Its LOAD
       reads miss 4 of 26 (1.32 s) -- it catches more sectors than we do; the totals are near
@@ -109,7 +109,7 @@
       ➡️ **ALSO FILED (TIER 6): LOAD of a file too big for memory on the CF-3300** -- the
       message, whether the old program survives, whether it reads first.
       📏 **MEASURED (2026-11-07, fdccmd_probe.py FDC_DRQ=1: a D row at each command's first
-      data-register read, a J row at each JIFFY write; [`fdcdrq_cf.out`](scratchpad/fdcdrq_cf.out) / [`fdcdrq_zb.out`](scratchpad/fdcdrq_zb.out)).** 🎯 Predicted
+      data-register read, a J row at each JIFFY write; [`fdcdrq_cf.out`](../../scratchpad/fdcdrq_cf.out) / [`fdcdrq_zb.out`](../../scratchpad/fdcdrq_zb.out)).** 🎯 Predicted
       "the CF-3300 waits masked": **hit -- 0 interrupts in 77 read waits** (its one ISR per
       sector runs in the gap between commands); ours took interrupts in 34 of 49 waits, one
       0.1 ms before the data start -- the lost-data source. **AND THE BIGGER LEVER:** our
@@ -118,10 +118,10 @@
       path); the CF-3300 issues the next 0.6-2.6 ms after every transfer, from ONE DSKIO
       (B = $1B) with no FAT work between sectors.
       ~~➡️ NEXT (D-LOADRUNS): ... ONE multi-sector DSKIO~~ **BUILT, MEASURED, REVERTED (2026-11-07).**
-      🎯 Predicted 14 KB 1.5-2.2 s: **4.66 s -- a miss, the wrong way** ([`loadclock_runs.out`](scratchpad/loadclock_runs.out)). The driver's own
-      loop gaps alternated 2.6 / 5.7 ms after a transfer ([`fdcdrq_runs.out`](scratchpad/fdcdrq_runs.out)), and the ISR sat at
+      🎯 Predicted 14 KB 1.5-2.2 s: **4.66 s -- a miss, the wrong way** ([`loadclock_runs.out`](../../scratchpad/loadclock_runs.out)). The driver's own
+      loop gaps alternated 2.6 / 5.7 ms after a transfer ([`fdcdrq_runs.out`](../../scratchpad/fdcdrq_runs.out)), and the ISR sat at
       +0.2 ms in BOTH, so the FAT walk was never the cause. PC samples on OUR ROM
-      ([`isrprof_probe.py`](scratchpad/isrprof_probe.py) -> [`isrprof_runs.out`](scratchpad/isrprof_runs.out)) put **~3 ms of a scan interrupt in C-BIOS's
+      ([`isrprof_probe.py`](../../scratchpad/isrprof_probe.py) -> [`isrprof_runs.out`](../../scratchpad/isrprof_runs.out)) put **~3 ms of a scan interrupt in C-BIOS's
       key_cmp bit walk** (all 88 bits, twice a scan -- the repeat path runs it again on an
       empty buffer; C-BIOS's own `TODO: Optimise scanning if no keys are pressed`).
       ✅ **D-KEYSKIP (cbios-repack patch #14, [`keyscan-skip.patch`](cbios-repack/keyscan-skip.patch)):** a row with no newly
@@ -132,12 +132,12 @@
       (biosregs-acceptance) -- "nothing else changes" was the claim, and a register
       was the exception. Fixed with `ld b,0` in the skip. dimedge-acceptance's two
       REFUSED rows went to NO READING: the faster interrupt let the ERR 7 handler loop
-      scroll `RUN` off the screen ([`dimedge_keyskip_screen.out`](scratchpad/dimedge_keyskip_screen.out)) -- an instrument fault;
+      scroll `RUN` off the screen ([`dimedge_keyskip_screen.out`](../../scratchpad/dimedge_keyskip_screen.out)) -- an instrument fault;
       its reader now takes the loop's own `[ 7` output as the refusal.
-      🎯 Predicted runs + D-KEYSKIP 1.5-2.2 s: **3.45 s -- a miss** ([`loadclock_keyskip.out`](scratchpad/loadclock_keyskip.out); scan gaps now
-      4.3 ms, plain 2.3-2.6, [`fdcdrq_keyskip.out`](scratchpad/fdcdrq_keyskip.out)). **A/B, D-KEYSKIP with ONE DSKIO A SECTOR:
+      🎯 Predicted runs + D-KEYSKIP 1.5-2.2 s: **3.45 s -- a miss** ([`loadclock_keyskip.out`](../../scratchpad/loadclock_keyskip.out); scan gaps now
+      4.3 ms, plain 2.3-2.6, [`fdcdrq_keyskip.out`](../../scratchpad/fdcdrq_keyskip.out)). **A/B, D-KEYSKIP with ONE DSKIO A SECTOR:
       1 KB 0.57 s (CF 1.36), 7 KB 1.65 (CF 2.39), 14 KB 3.07 (CF 2.94: 1.04x)**
-      ([`loadclock_ab_persec.out`](scratchpad/loadclock_ab_persec.out)) -- so the runs went back out; frs_head stays (6 B shorter).
+      ([`loadclock_ab_persec.out`](../../scratchpad/loadclock_ab_persec.out)) -- so the runs went back out; frs_head stays (6 B shorter).
       ➡️ **WHAT IS LEFT (TIER 5):** (a) lost-data retries under D-FDCDI's windows -- 3 in the
       14 KB run, a revolution each; the CF-3300 waits masked (0 ISRs in 77 waits). Idea, not
       measured: mask only the first few ms after a read command (a run's next sector arrives
@@ -146,8 +146,8 @@
       next command leaves 2.3 ms after a transfer, the CF-3300's 1.1.
       📏 **(b) BUILT, MEASURED, REVERTED (2026-11-07, D-SEEKSKIP):** the read path skipped the seek
       when the track register already held the target (the `1C` vanished between same-track
-      reads, [`fdccmd_seekskip.out`](scratchpad/fdccmd_seekskip.out)). 🎯 Predicted 14 KB 2.5-2.8 s: **3.070 s, unchanged to the
-      millisecond** ([`loadclock_seekskip.out`](scratchpad/loadclock_seekskip.out); re-run with ZEROBAS_REFCACHE=0: the same) -- a miss. The
+      reads, [`fdccmd_seekskip.out`](../../scratchpad/fdccmd_seekskip.out)). 🎯 Predicted 14 KB 2.5-2.8 s: **3.070 s, unchanged to the
+      millisecond** ([`loadclock_seekskip.out`](../../scratchpad/loadclock_seekskip.out); re-run with ZEROBAS_REFCACHE=0: the same) -- a miss. The
       millisecond is not what decides which sector is caught; nothing shipped.
       🟢 **LOAD IS ON PAR (2026-11-07):** 1 KB 0.57 s (CF 1.36), 7 KB 1.65 (CF 2.39), 14 KB 3.07
       (CF 2.94, 1.04x). What is left is (a) above, and two things seen on the way, FILED, not
@@ -177,7 +177,7 @@
           fres_same + fres_cmp, the mount hook), each pad padwatch-checked before filling;
       (e) LOAD timing (loadclock_probe.py) against the 11-06 numbers.
       ⏸️ **(1) BUILT AND PARKED 2026-11-06 (D-FATRES slice 1) -- THE FULL BATTERY WENT RED 236/245,
-      NOT SHIPPED. The ROM work is saved as [`fatres_wip.patch`](scratchpad/fatres_wip.patch).** Three blockers, each
+      NOT SHIPPED. The ROM work is saved as [`fatres_wip.patch`](../../scratchpad/fatres_wip.patch).** Three blockers, each
       a red gate: (i) **DI gaps** -- programs-acceptance: frame-interrupt gaps up to 0.34 s in five
       ladder programs; the reload is a multi-sector DSKIO with interrupts masked, and after any
       write it waits ~a revolution for sector 1 -- the load must take the D-FDCDI windows (or
@@ -192,7 +192,7 @@
       Measured first where the CF-3300
       keeps it (RAM only): the whole 1536 B FAT resident in BOTH boot modes -- drive A at $E595
       ($E5AA on a CTRL boot), the phantom B: at $DF94 -- kept current after a SAVE
-      ([`fatres_probe.py`](scratchpad/fatres_probe.py) -> [`fatres_probe.out`](scratchpad/fatres_probe.out), [`fatres_b_probe.out`](scratchpad/fatres_b_probe.out)): a normal boot's
+      ([`fatres_probe.py`](../../scratchpad/fatres_probe.py) -> [`fatres_probe.out`](../../scratchpad/fatres_probe.out), [`fatres_b_probe.out`](../../scratchpad/fatres_b_probe.out)): a normal boot's
       extra 1558 B is drive B's FAT space (Joost: CTRL boot drops a drive). Joost 2026-11-06:
       build it in that gap for a NORMAL boot; a CTRL boot keeps the sector path for now.
       FATRES $DE8D (1536 B, the gap), FATRES_OK $EDBA (disk-owned, every boot mode). A mount
@@ -205,11 +205,11 @@
       every mount: LOAD 14 KB 8.94 -> 6.34 s, but small operations doubled (re-reading sector 1
       waits a revolution); keeping it fixed that. 🔴 Two driver ideas tried on the way (skip the
       seek-verify on the same track; settle only after a seek) measured NOTHING and were
-      reverted: the FDC log ([`fdccmd_sectmiss.out`](scratchpad/fdccmd_sectmiss.out)) shows the per-sector gap is LOAD's CPU work
+      reverted: the FDC log ([`fdccmd_sectmiss.out`](../../scratchpad/fdccmd_sectmiss.out)) shows the per-sector gap is LOAD's CPU work
       (~93 ms a sector, byte by byte) plus a lost-data retry every ~4th sector -- see below.
-      **After ([`loadclock_keep.out`](scratchpad/loadclock_keep.out)): LOAD 1 KB 0.75 -> 0.56 s (CF 1.36), 7 KB 4.69 -> 3.28 (2.39),
+      **After ([`loadclock_keep.out`](../../scratchpad/loadclock_keep.out)): LOAD 1 KB 0.75 -> 0.56 s (CF 1.36), 7 KB 4.69 -> 3.28 (2.39),
       14 KB 8.94 -> 5.54 (2.94).** 🔮 ~6.5 s for the first cut: HIT; the keep version better.
-      Small operations ([`fatres_ops.bas`](scratchpad/fatres_ops.bas), jiffies @50 Hz; [`fatres_ops_head.out`](scratchpad/fatres_ops_head.out) -> [`fatres_ops2.out`](scratchpad/fatres_ops2.out)):
+      Small operations ([`fatres_ops.bas`](../../scratchpad/fatres_ops.bas), jiffies @50 Hz; [`fatres_ops_head.out`](../../scratchpad/fatres_ops_head.out) -> [`fatres_ops2.out`](../../scratchpad/fatres_ops2.out)):
       20 x OPEN/CLOSE 371 -> 396, 10 x FILES 123 -> 167 (+36 %, unexplained -- FILES does not
       write), 10 x OPEN/INPUT#/CLOSE 283 -> 298; the CF-3300 32 / 10 / 33 at 60 Hz.
       tests/test_fat_next_cluster.py 33 checks (keep / reload / gating / write-drop / sector
@@ -230,8 +230,8 @@
       `ldir`, when the run fits the file (FREAD_LEFT) and stays below TXTMAX; anything else
       returns untouched and the byte path meets the edge as before. 78 B: the $7F7C region
       took it after `innoe_body`, `wrseq_body` and `install_f365` moved into holes
-      ($75A5 / $44F4 / $5552; wrseq's `jr` out became a `jp`). 📏 ([`loadrun_clock.out`](scratchpad/loadrun_clock.out)
-      against [`loadclock_1106.out`](scratchpad/loadclock_1106.out)): LOAD 1 KB 0.75 -> 0.62 s,
+      ($75A5 / $44F4 / $5552; wrseq's `jr` out became a `jp`). 📏 ([`loadrun_clock.out`](../../scratchpad/loadrun_clock.out)
+      against [`loadclock_1106.out`](../../scratchpad/loadclock_1106.out)): LOAD 1 KB 0.75 -> 0.62 s,
       7 KB 4.69 -> 3.80, **14 KB 8.94 -> 6.76** (CF-3300 2.94). 🔮 Predicted ~5 s for 14 KB:
       MISSED -- the per-cluster FAT re-read (blocker (1), the resident FAT) is the rest.
       tests/test_loadrun.py: the as-built LOAD against the byte path (hdl_run trapped) on a
@@ -253,24 +253,24 @@
       WAS NEVER PINNED.** The first placement put install_hook in the $476A..$477C zero pad,
       and p1dta went red with the cache forced off too; moving install_hook alone did it, and
       to another hole it passed. Logging our ROM's PC inside that pad under MSX-DOS
-      ([`hole477_probe.py`](scratchpad/hole477_probe.py) -> [`hole477_probe.out`](scratchpad/hole477_probe.out)): MSX-DOS calls
+      ([`hole477_probe.py`](../../scratchpad/hole477_probe.py) -> [`hole477_probe.out`](../../scratchpad/hole477_probe.out)): MSX-DOS calls
       `$4775` (return `$D88A`, its RAM kernel) and the $00 pad ran as NOPs into k_477D's `jp
       wrseq_body`. Pinned now (`k_4775: jp wrseq_body`, fat.asm -- the slide's own effect);
-      after, one instruction at $4775 ([`hole477_after.out`](scratchpad/hole477_after.out)). The pad below and between
+      after, one instruction at $4775 ([`hole477_after.out`](../../scratchpad/hole477_after.out)). The pad below and between
       the pins stays empty. ➡️ the class is filed as D-PADSLIDE below. 📏
-      ([`loadfat_clock.out`](scratchpad/loadfat_clock.out)): LOAD 7 KB 3.80 -> **2.59 s**,
+      ([`loadfat_clock.out`](../../scratchpad/loadfat_clock.out)): LOAD 7 KB 3.80 -> **2.59 s**,
       14 KB 6.76 -> **4.92** (CF-3300 2.39 / 2.94); 🔮 ~4.5 for 14 KB: near, a miss by 0.4.
       tests/test_loadrun.py: a 13-cluster program from cluster 2 and from cluster 338 (its
       chain crosses the straddling entry 341 and FAT sector 2) loads to the exact bytes with
       the cache off after, in exactly mount + one-per-FAT-sector (+ the straddle) FAT reads
-      ([`loadfat_reads.out`](scratchpad/loadfat_reads.out): each read with its caller) where
+      ([`loadfat_reads.out`](../../scratchpad/loadfat_reads.out): each read with its caller) where
       it read 12. tests/test_fat_next_cluster.py (the cache off) unchanged and green.
-      📏 **WHAT IS LEFT OF LOAD'S 1.7x, MEASURED 2026-11-06** ([`fdccmd_loadfat.out`](scratchpad/fdccmd_loadfat.out),
-      [`fdccmd_loadseek_gaps.out`](scratchpad/fdccmd_loadseek_gaps.out)): sectors now chain ~30-33 ms apart -- but after EVERY
+      📏 **WHAT IS LEFT OF LOAD'S 1.7x, MEASURED 2026-11-06** ([`fdccmd_loadfat.out`](../../scratchpad/fdccmd_loadfat.out),
+      [`fdccmd_loadseek_gaps.out`](../../scratchpad/fdccmd_loadseek_gaps.out)): sectors now chain ~30-33 ms apart -- but after EVERY
       track change two consecutive reads miss their sector by a whole revolution (~229 ms):
       9 misses in 32 reads, on S02/S03 or S03/S04, shifting by one per track (2-sector
       clusters on 9-sector tracks). NOT the seek's verify: issuing the read seek without it
-      ($18, an experiment, reverted) changed nothing ([`loadseek_clock.out`](scratchpad/loadseek_clock.out)), and NOT a
+      ($18, an experiment, reverted) changed nothing ([`loadseek_clock.out`](../../scratchpad/loadseek_clock.out)), and NOT a
       retry (no restore command in the log). ➡️ next: what the chain does differently there
       (a cluster boundary next to the track step?) -- disk.rom has no usable room left (82 B,
       all FDC window), so the fix needs a carve too.
@@ -290,7 +290,7 @@
       plain 77 -> 38 sector commands, FAT writes 28 -> 2; the chain across FAT sectors 1 / 2;
       a full disk (status 3, copies equal). Knife (no flush before the close): the file
       comes back with a 1-cluster chain. Machine: the 14 KB SAVE 168 FDC commands / 13.0 s
-      -> 85 / 7.8 s ([`fdccmd_after.out`](scratchpad/fdccmd_after.out)). Docs: concepts/disk.md.
+      -> 85 / 7.8 s ([`fdccmd_after.out`](../../scratchpad/fdccmd_after.out)). Docs: concepts/disk.md.
       📏 **(2) MEASURED, NOT BUILT (2026-11-06): what the LOAD does between sectors.** The whole
       tokenised LOAD runs in hk_dpload's line loop (disk/kernel.asm), one fat_io_getbyte per
       program byte: the TXTMAX check, a call, a 32-bit FREAD_LEFT test and decrement, the
@@ -617,8 +617,8 @@
       - zerobas claims one of the eight (`$FE5D`).
       - So step 10 is the byte I/O behind `$FE85`/`$FE8A`, with the channel's
         sector state on the disk side, not only the OPEN arm.
-      ([`chanhook_run.out`](scratchpad/chanhook_run.out),
-      [`hookclaim_run.out`](scratchpad/hookclaim_run.out))
+      ([`chanhook_run.out`](../../scratchpad/chanhook_run.out),
+      [`hookclaim_run.out`](../../scratchpad/hookclaim_run.out))
       ✅ **S10.B INCREMENT 1 SHIPPED (2026-10-06): A DISK FILE OPEN FOR OUTPUT IS
       DISK.ROM'S.** OUTPUT is mode 3 (`DOUT_MODE`; APPEND stays 2 on main's
       engine), its channel an MSX-DOS FCB in the channel's engine row: OPEN
@@ -633,21 +633,21 @@
       hkk_open_check matches a mode-3 channel by its FCB name. D-CLEARCLOSE
       (9b8c0291) settled the one design risk first: no channel survives the
       `CLEAR` that would move its block.
-      📏 ([`s10b_ship_measure.out`](scratchpad/s10b_ship_measure.out)) LOF/LOC
+      📏 ([`s10b_ship_measure.out`](../../scratchpad/s10b_ship_measure.out)) LOF/LOC
       read `0 0 0 0 256 256 512 512 601`, the CF-3300's (was 0 throughout); a
       full disk fails PRINT# at **I = 12**, the CF-3300's (diskfull's pin, 24,
       moved as it was written to); gate **`dout-acceptance`**
-      ([`probes/disk/disk_probe_dout.py`](probes/disk/disk_probe_dout.py)) 8/8
+      ([`probes/disk/disk_probe_dout.py`](../../probes/disk/disk_probe_dout.py)) 8/8
       against the CF-3300 -- two OUTPUT channels alternating, OUTPUT beside
       APPEND and INPUT, OPEN/KILL/NAME of an open file (54/64/64), empty, exactly
-      256 B, truncation. Knives ([`dout_knives.py`](scratchpad/dout_knives.py)):
+      256 B, truncation. Knives ([`dout_knives.py`](../../scratchpad/dout_knives.py)):
       K-DO1 (no step-back after a first half) moves exactly twochan/append/input,
       K-DO2 (no directory stamp) all eight.
       ⏱ 4200 B of PRINT# + CLOSE: **14.2 emulated s against the CF-3300's 11.8
       (1.2×)**; main's engine took 7.9 (0.67×) -- a CALLF a byte, and a record
       in a sector's second half re-reads the first. T2 met; T5 tracks it.
       🔴 **THE FIRST BUILD WROTE RECORDS WITH `wrblk_body` AND WAS PARKED**
-      ([`s10b_wip_measure.out`](scratchpad/s10b_wip_measure.out)): the canonical
+      ([`s10b_wip_measure.out`](../../scratchpad/s10b_wip_measure.out)): the canonical
       BDOS block write re-mounts, re-finds and rewrites the directory on EVERY
       record -- 17 DSKIO calls for a one-record OPEN/PRINT#/CLOSE against the
       old engine's 7 (the record writer: 12) -- and with the driver holding DI
@@ -665,7 +665,7 @@
       settling, it read the parked build at "27.1 s vs 13.4" -- a silent loop
       never moves the row, and JIFFY/TIME stop while a sector op holds DI, so
       neither is a clock here. Re-timed marker to marker
-      ([`s10b_stopwatch.py`](scratchpad/s10b_stopwatch.py)).
+      ([`s10b_stopwatch.py`](../../scratchpad/s10b_stopwatch.py)).
       🎯 Predictions: loflive parity -- hit; diskfull's pin to 12 -- hit; the
       two `ei` fixes -- MISSED twice; the record writer at ~10 DSKIO calls --
       12, near; it beating the CF-3300's time -- **MISSED** (1.2×); dout 7-8/8 --
@@ -681,7 +681,7 @@
       DOUT_RFULL) -- and a trailing Ctrl-Z is stepped back onto. Records go to
       the random record now, not the size: LOF is the FCB's size and LOC its
       random record, and **they DIFFER on APPEND**
-      ([`applof_run.out`](scratchpad/applof_run.out), the CF-3300): a 6 B file
+      ([`applof_run.out`](../../scratchpad/applof_run.out), the CF-3300): a 6 B file
       reads 6/0 after the OPEN, 6/0 after 10 B, 256/256 after 300; a 256 B one
       256/0, then 256/256 (the first byte overwrote its Ctrl-Z and completed
       the record), 512/512. Ours read LOF = LOC = the open size throughout --
@@ -689,7 +689,7 @@
       keeps at the random record (`dout_mirror`; t_fch_load re-reads it).
       Main's `fat_io_append` is gone (page 1 113 → 202 B; its fatprim row 18
       keeps its numbered slot). dout-acceptance gains `app6`/`app256`, 10/10;
-      knives ([`dout_knives2.py`](scratchpad/dout_knives2.py)) K-AP1 (no
+      knives ([`dout_knives2.py`](../../scratchpad/dout_knives2.py)) K-AP1 (no
       Ctrl-Z step-back) moves exactly app6/app256/append, K-AP2 (LOC = LOF) app6/app256.
       🔴 **A CALL-BACK RETURNS DI, AND IT MASKED THE WHOLE OPEN.** Increment 2's
       shared `dout_open` calls `fch_ctx_addr` back in main BEFORE the mount;
@@ -738,14 +738,14 @@
       the `sv-diskwr.inc` copy, and the `fat_flush_data_sector` /
       `fat_io_create` / `fat_io_close` stubs; the fatprim rows 11/23/24 they
       sent to answer `fp_stash_ok` (sub page 1 +27 B). disk.rom 4558 -> 4509 B.
-      📏 ([`disk_probe_asavedev.py`](probes/disk/disk_probe_asavedev.py), gate
+      📏 ([`disk_probe_asavedev.py`](../../probes/disk/disk_probe_asavedev.py), gate
       `asavedev-acceptance`, the image read back against the CF-3300): a
       one-line program 15 B, ~2 KB over two clusters 2064 B, both byte for
       byte before AND after the move.
       🔴 **D-ASAVEDEV, FOUND BY ITS SEPARATING ROW AND FIXED WITH IT:** after
       `OPEN"CRT:"FOR OUTPUT AS#1 : PRINT#1,"X" : CLOSE#1`, `SAVE"Q.BAS",A`
       listed to the SCREEN and left Q.BAS **0 B** -- the CF-3300 writes its
-      15 B ([`asavedev_before.out`](scratchpad/asavedev_before.out)). `PRDEV`
+      15 B ([`asavedev_before.out`](../../scratchpad/asavedev_before.out)). `PRDEV`
       is the PRINT# device selector and the save never set it; now one
       `ld (PRDEST),hl` sets both (`PRDEV` is the next byte, asserted at
       build time). `LLIST` and `LPRINT` set `PRDEV` = 1 and nothing resets
@@ -768,8 +768,8 @@
       CF-3300 at **0 B** twice. I blamed the typed line length and reshaped
       the row; it was the session ending before the reference's 2 KB write
       had committed -- two trailing lines and it reads 2064, ours' size.
-      🔪 Knives ([`asavedout_knives.py`](scratchpad/asavedout_knives.py),
-      [`asavedout_knives.out`](scratchpad/asavedout_knives.out)): K-AD1 (no
+      🔪 Knives ([`asavedout_knives.py`](../../scratchpad/asavedout_knives.py),
+      [`asavedout_knives.out`](../../scratchpad/asavedout_knives.out)): K-AD1 (no
       `PRDEV` store) -> crt, K-AD2 (no partial stamp) -> astamp, K-AD3 (no
       `fat_io_close` at the end) -> plain/big/crt -- each moved EXACTLY those rows (3/3 predicted).
       ➡️ **Still left:** BSAVE to disk runs the SUB-ROM tenant's copy of the

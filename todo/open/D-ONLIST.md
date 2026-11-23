@@ -19,8 +19,8 @@
       shared entry with the exit selected somehow, which is likely to cost more
       than it saves. Filed for the SWEEP, not for the carve.
       🟢 **THE SWEEP IS BUILT, 2026-09-09 (D-NGRAMCARVE,
-      [](scratchpad/pair_carve_scout.py),
-      [](scratchpad/ngram_carve.out)) — AND THIS ITEM WAS RIGHT THAT THE
+      [](../../scratchpad/pair_carve_scout.py),
+      [](../../scratchpad/ngram_carve.out)) — AND THIS ITEM WAS RIGHT THAT THE
       TOOLING QUESTION WAS WORTH MORE THAN THE FOUR BYTES.** The pair scout was
       2-instruction-only, so a THREE-instruction shared run was invisible to it
       exactly as it was to , for a different reason. Widened to

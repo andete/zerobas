@@ -18,7 +18,7 @@
 
       🟢 **D-KWT6 S1 SHIPPED (2026-09-27): THE ROW TYPE AND THE RUNG RULE — 0
       KEYWORDS MEASURED YET, ON PURPOSE.**
-      * **The denominator** is [`tools/kwerrset.py`](tools/kwerrset.py): keyword
+      * **The denominator** is [`tools/kwerrset.py`](../../tools/kwerrset.py): keyword
         → form → the error codes the REFERENCE raised, each entry written from a
         probe run with its provenance. EMPTY today; absence is UNRATED, never an
         empty set.
@@ -38,10 +38,10 @@
       DISTINCT codes into `kwerrset.py`, then write the rows. Start with one
       keyword that is already T1–T3 so the first T6 tick is real evidence.~~
       🟢 **D-KWT6 S2 — BATCH 1 SHIPPED (2026-09-27): T6 PROVEN FOR 10 OF 159.**
-      [`scratchpad/t6enum_probe.py`](scratchpad/t6enum_probe.py) traps each fault
+      [`scratchpad/t6enum_probe.py`](../../scratchpad/t6enum_probe.py) traps each fault
       with `ON ERROR` and reads the reference's own `ERR`/`ERL` (no message table)
-      → [`scratchpad/t6enum_run.out`](scratchpad/t6enum_run.out),
-      [`scratchpad/t6enum_exp.out`](scratchpad/t6enum_exp.out). Ten one-form
+      → [`scratchpad/t6enum_run.out`](../../scratchpad/t6enum_run.out),
+      [`scratchpad/t6enum_exp.out`](../../scratchpad/t6enum_exp.out). Ten one-form
       functions already at level 3; zerobas matched the VG-8020 on all 48 cases.
       | set | keywords |
       |---|---|
@@ -64,7 +64,7 @@
       own faults and statements add illegal-direct.~~
       🟢 **BATCH 2 SHIPPED (2026-09-27): 126 cases, 22 keywords, every argument
       faulted in turn** (`t6enum_probe.py --batch=2` →
-      [`scratchpad/t6enum_b2.out`](scratchpad/t6enum_b2.out)). 60 more
+      [`scratchpad/t6enum_b2.out`](../../scratchpad/t6enum_b2.out)). 60 more
       `PROVES-T6:` rows, 60/60 SUPPORTED; sets for 20 keywords in `kwerrset.py`.
       🔴 **THE BATTERY FOUND TWO REAL DIVERGENCES** — filed below as their own
       TIER 6 items: `STRING$(2,"")` (ref 5, zb 2) and `TAN(1E38)` (ref 6, zb OK).
@@ -80,7 +80,7 @@
       the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must name each
       form.~~
       🟢 **BATCH 3 SHIPPED (2026-09-27): the Disk BASIC functions ON THE CF-3300**
-      (`t6enum_probe.py --batch=3` → [`scratchpad/t6enum_b3.out`](scratchpad/t6enum_b3.out);
+      (`t6enum_probe.py --batch=3` → [`scratchpad/t6enum_b3.out`](../../scratchpad/t6enum_b3.out);
       zerobas's DISK build, the pairing kwsweep's `NEEDS-DISK:` rows use). 32 cases,
       7 sets, 18 `NEEDS-DISK: PROVES-T6:` rows, 18/18 SUPPORTED. CVI, CVS, CVD,
       MKS$ and MKD$ reach T6; MKI$ and DSKF do not — their missing code's only
@@ -93,7 +93,7 @@
       ~~➡️ **NEXT:** the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must
       name each form; then statements with channel/line arguments.~~
       🟢 **BATCH 4 SHIPPED (2026-09-27): statements and multi-form keywords**
-      (`t6enum_probe.py --batch=4` → [`scratchpad/t6enum_b4.out`](scratchpad/t6enum_b4.out)).
+      (`t6enum_probe.py --batch=4` → [`scratchpad/t6enum_b4.out`](../../scratchpad/t6enum_b4.out)).
       Their errors are SCENARIOS, so each (keyword, form) has hand-written ONE-LINE
       cases (set-up on the same line); `RETURN`'s line form reaches its own 8 by
       recursing into its line (`IF X=0 THEN X=1:GOSUB 20 ELSE RETURN 99`). 80
@@ -109,7 +109,7 @@
       🔮 Misses: `DIM A(10000)` is 9 Subscript out of range, not 7; `RESTORE,` is
       8 on both.
       🟢 **BATCH 5 SHIPPED (2026-09-27): 25 one-form operators, bare statements
-      and readers** (`--batch=5` → [`scratchpad/t6enum_b5.out`](scratchpad/t6enum_b5.out)),
+      and readers** (`--batch=5` → [`scratchpad/t6enum_b5.out`](../../scratchpad/t6enum_b5.out)),
       87 cases, 46 rows 46/46 SUPPORTED. 🔴 **FIVE DIVERGENCES**, filed above the
       MID$ item: D-LETNUM (`LET 5=1` CORRUPTS the screen — TIER 3), D-ERRORARG,
       D-BAREEXTRA (`CLS 1` clears first, `END 1` ends silently), D-POSDUMMY.
@@ -120,7 +120,7 @@
       2; `POS("A")` is accepted on the reference.
       🟢 **BATCH 6 SHIPPED (2026-09-27): multi-form STATEMENTS** — FOR, IF, CLEAR,
       COLOR, SCREEN, LOCATE, TIME, DEFINT/SNG/DBL/STR (`--batch=6` →
-      [`scratchpad/t6enum_b6.out`](scratchpad/t6enum_b6.out)), 107 cases, 56 rows,
+      [`scratchpad/t6enum_b6.out`](../../scratchpad/t6enum_b6.out)), 107 cases, 56 rows,
       56/56 SUPPORTED. 🔴 **IT FOUND THE WORST BUG OF THE DAY — `CLEAR 30000`
       HUNG ZEROBAS** (D-CLEARFIT, FIXED above, funded by the D-CARVEFO carve),
       plus D-IFGOTOBARE and D-CLEAR3ARG (filed). T6 64 → **75** — predicted
@@ -138,7 +138,7 @@
       (NEGATIVE half: undeclared, it is NEVER guessed as NEXT; a mutation back to
       `stmt_keyword` turns S36z RED). Re-read: **T6 42 of 159**.
       🟢 **BATCH 7 SHIPPED (2026-09-27): graphics statements, device functions,
-      ON/KEY/FN, PLAY and SET** (`--batch=7` → [`scratchpad/t6enum_b7.out`](scratchpad/t6enum_b7.out)),
+      ON/KEY/FN, PLAY and SET** (`--batch=7` → [`scratchpad/t6enum_b7.out`](../../scratchpad/t6enum_b7.out)),
       226 cases over 22 keywords; 125 rows for the 20 whose every form read
       whole. **120 SUPPORTED, 5 EXTRA** (zerobas accepts what the reference
       refuses): D-DEFUSRRANGE, D-DEFFNPARAM and `STOP 1` (D-BAREEXTRA), filed
@@ -156,15 +156,15 @@
       `NOECHO:` itself (the shared prefix parser does not, on purpose).
       📊 **T6 75 → 90 of 159** (tier sheet, knife re-pinned on the final ROM).
       🟢 **7b (same night): CIRCLE and PAINT, once their three unread cases were
-      read ALONE** ([`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out)):
+      read ALONE** ([`scratchpad/t6enum_b7_rerun.out`](../../scratchpad/t6enum_b7_rerun.out)):
       `PAINT(1,1),1,16` is a slow fill that completes and `CIRCLE(99,99),-5` a
       huge circle that completes after MINUTES — neither an error — while
       `PAINT(1,1),1,1,1` is 2, which the batch window had missed. 18 rows, 17
       SUPPORTED; **T6 90 → 91** (PAINT). CIRCLE stays T6- on a real divergence,
       D-CIRCANGLE, and zerobas's negative-radius refusal is D-CIRCNEGR.
       🟢 **BATCH 8 SHIPPED (2026-09-28): Disk BASIC statements, on the CF-3300**
-      (`--batch=8` → [`scratchpad/t6enum_b8.out`](scratchpad/t6enum_b8.out); per
-      case on both machines → [`scratchpad/t6enum_b8_zb.out`](scratchpad/t6enum_b8_zb.out)),
+      (`--batch=8` → [`scratchpad/t6enum_b8.out`](../../scratchpad/t6enum_b8.out); per
+      case on both machines → [`scratchpad/t6enum_b8_zb.out`](../../scratchpad/t6enum_b8_zb.out)),
       126 cases over 27 keywords; RUN left out (its line form's errors are
       untrappable to the probe). **94 agree; the other 32 are D-DISKERRS**, whose
       pairs stay in the denominator, so those keywords stay T6-. **80 rows** for

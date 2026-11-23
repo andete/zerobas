@@ -1,6 +1,6 @@
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
       two `pop de` ARE PROVABLY UNNECESSARY.** Filed 2026-08-26 by D-MIDOP
-      ([`docs/spec-basic-midop.md`](docs/spec-basic-midop.md) §4). They were
+      ([`docs/spec-basic-midop.md`](../../docs/spec-basic-midop.md) §4). They were
       written to be correct under a DISAGREEMENT between two records about
       whether `raise_error` resets SP — and **knife K-MD2 deleted both and moved
       0 rows of 9**, so it does: the trap arm at `basic/interp.asm`:1022, the
@@ -15,7 +15,7 @@
       worth more than the bytes**: `scratchpad/` has no sweep for "a pop that
       only exists to satisfy a raise that unwinds anyway". ~~Unpriced.~~
       ✅ **SWEPT AND PRICED 2026-08-28 (D-POPRAISE,
-      [`docs/spec-popraise.md`](docs/spec-popraise.md),
+      [`docs/spec-popraise.md`](../../docs/spec-popraise.md),
       `scratchpad/popraise_sweep.py --selftest`)**, and the class splits into
       THREE questions the filing above runs together. **16 tails**, never-return
       set derived as a fixed point from `raise_error` (120 routines), not
@@ -46,7 +46,7 @@
       `ee_synerr_pop` (2 `jr`) nets **+2 B**, `ex_let_err` (2 `jr`) nets **+1 B**,
       `ems_err_pop2` (2 `jr`) is the canonical; only `ela_err` is reached solely
       by `jp` (arrays.asm:849) and only it could move. Witnessed alone by K-EL1
-      ([`scratchpad/elaerr_knife.py`](scratchpad/elaerr_knife.py), row `s.ary`).
+      ([`scratchpad/elaerr_knife.py`](../../scratchpad/elaerr_knife.py), row `s.ary`).
       ➡️ **STILL OPEN, measured, not shipped:**
       `gosub_stk_over` (**4 B, measured 2026-08-28**, adjacent, page 1, but
       **UNWITNESSED** — no probe row fills a control stack or over-nests a

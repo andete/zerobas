@@ -2,9 +2,9 @@
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
       calibration: PLAY was picked at RANDOM for review and yielded D-MUSICF (a
       stuck-voice bug both references separate,
-      [`docs/spec-basic-musicf.md`](docs/spec-basic-musicf.md)) plus
+      [`docs/spec-basic-musicf.md`](../../docs/spec-basic-musicf.md)) plus
       D-PLAYCORNER (four wrap divergences + `M0`,
-      [`docs/spec-basic-playcorner.md`](docs/spec-basic-playcorner.md)) — two
+      [`docs/spec-basic-playcorner.md`](../../docs/spec-basic-playcorner.md)) — two
       commits from one verb nobody suspected. Method that worked: read all
       layers of the implementation first, code-review for suspicious mechanism,
       THEN write the differential rows for what the review flags, fix against
@@ -12,7 +12,7 @@
       store that is only wrong across TWO statements, a wrap that only shows
       at 65536+.
       📋 **WORKLIST DRAFTED (2026-08-31, while a battery ran):**
-      [`docs/review-tier-worklist.md`](docs/review-tier-worklist.md) — 133
+      [`docs/review-tier-worklist.md`](../../docs/review-tier-worklist.md) — 133
       handlers, 48 with a same-named spec, 85 without, grouped into likely-THIN
       (the `OUT`/`POKE`/`VPOKE` raw-I/O trio first: the coercion SURFACE is
       gated, the port/address MECHANISM never reviewed, and the D-PLAYCORNER
@@ -34,14 +34,14 @@
       and converting one either yields a tiered defect or retires honestly.
       🔴 **CORRECTION 2026-09-12 (D-KWDRAIN batch 4): ONE OF THE TWO LEVERS BELOW
       DOES NOT EXIST.** The sentence "both levers exist" was filed without checking
-      the first one. [`tools/tier_table.py`](tools/tier_table.py)'s own docstring calls
+      the first one. [`tools/tier_table.py`](../../tools/tier_table.py)'s own docstring calls
       the per-gate-row `subject:` tag *"the `subject:` tag per gate row that step (c)
       WILL add"*, and a sweep of `probes/` finds **zero** such tags — every hit for
-      "subject:" is the English word in prose ([measured](scratchpad/kwdrain_levers.out)).
+      "subject:" is the English word in prose ([measured](../../scratchpad/kwdrain_levers.out)).
       So `kwsweep` rows are the ONLY working attribution path today
       [[a-justification-parenthesis-is-an-unrun-claim]].
       🎯 **AND THAT CEILING IS REAL, NOT COSMETIC.** `WIDTH` has an entire dedicated
-      suite ([`probes/basic/basic_probe_width.py`](probes/basic/basic_probe_width.py))
+      suite ([`probes/basic/basic_probe_width.py`](../../probes/basic/basic_probe_width.py))
       and still reads as "no known gap", because nothing connects a suite that SCORES
       a keyword to the keyword it scores. Same for the graphics verbs and the input
       devices, which have suites of their own.
@@ -62,19 +62,19 @@
       ➡️ **THE LEVER THAT DOES EXIST is the runtime keyword-coverage capture**
       — ~~`subject:` tags on gate rows~~ (step (c), NOT BUILT, see the correction
       above), and the runtime keyword-coverage capture (`ZEROBAS_KWCOVER` in
-      [`probes/lib/omsx_repl.py`](probes/lib/omsx_repl.py) +
-      [`tools/kwcover.py`](tools/kwcover.py), `make kwcover`), which says which
+      [`probes/lib/omsx_repl.py`](../../probes/lib/omsx_repl.py) +
+      [`tools/kwcover.py`](../../tools/kwcover.py), `make kwcover`), which says which
       suites TYPE each keyword. 🔴 **EXERCISED IS NOT VERIFIED** — a keyword a suite
       merely types is not one any row SCORES, so the capture picks the suites and a
       mutation sweep per keyword is what actually converts the row. Never quote the
       remaining count from here: `make tiers ARGS=--keywords`.
       🟢 **BATCH 1 DRAINED 2026-09-12 (D-KWDRAIN): "no known gap" 114 -> 88**, with
       kwsweep evidence 33 -> 59 keyword(s)
-      ([readings](scratchpad/kwdrain_batch1.out)). Twenty-six converted from
+      ([readings](../../scratchpad/kwdrain_batch1.out)). Twenty-six converted from
       unattributed to SCORED-against-the-reference — `ASC CINT CDBL CSNG FIX SGN SIN
       COS TAN ATN EXP LOG MOD NOT AND OR XOR OCT$ LEFT$ RIGHT$ STR$ STRING$ SPACE$
       LET REM CSRLIN` — as rows in
-      [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py),
+      [`probes/basic/basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py),
       each printing a value the reference must match. 🔴 **THEY ARE DELIBERATELY NOT
       "control" ROWS**: a control that comes back unsupported means the APPARATUS is
       lying and voids the whole run, so a word under test has to read as a FINDING
@@ -82,7 +82,7 @@
       🎯 **THE DRAIN RE-FOUND TWO ADJUDICATED CORNERS ON ITS FIRST RUN**, which is the
       apparatus working: raw `ATN(1)` and `EXP(1)` rows came back DIVERGENT, and both
       are already CLOSED by D-MATHACC
-      ([`docs/spec-basic-mathacc.md`](docs/spec-basic-mathacc.md)) as last-digit ulp
+      ([`docs/spec-basic-mathacc.md`](../../docs/spec-basic-mathacc.md)) as last-digit ulp
       differences in which **zerobas is the MORE accurate side** (`EXP(1)` at −0.5 ulp
       against the reference's −2.5). Left raw they would have planted two permanently
       red rows in a summary people are meant to read, so both now score
@@ -91,7 +91,7 @@
       🔴 **AND ONE REAL ATTRIBUTION HOLE, WORTH MORE THAN THE COUNT: `CSRLIN` HAD A
       MEASURED DIVERGENCE THAT THE TABLE COUNTED AS NOTHING.** Its kwsweep row reads
       `DIVERGENT ref '[ 4 ]' vs zb '[ 3 ]'`, but the row is scored WEAK and
-      [`tools/tier_table.py`](tools/tier_table.py)'s `kwsweep_evidence` EXCLUDES weak
+      [`tools/tier_table.py`](../../tools/tier_table.py)'s `kwsweep_evidence` EXCLUDES weak
       rows — so the keyword sat in "no known gap" with a divergence already on the
       record [[an-unnamed-outcome-reads-as-no-outcome]]. The divergence is an artifact
       of absolute cursor geometry against the echoed prompt, not a defect (the weak
@@ -103,7 +103,7 @@
       today is `time`, SUPPORTED, nothing owed.
       🟢 **BATCH 2, 2026-09-12: 88 -> 76**, kwsweep evidence 59 -> 71, twelve more
       converted — `RND CVI USING THEN ELSE TO STEP OFF IF NEXT CLEAR DIM`
-      ([readings](scratchpad/kwdrain_batch2.out)). Battery 128/128 after.
+      ([readings](../../scratchpad/kwdrain_batch2.out)). Battery 128/128 after.
       🔴 **THE SYNTAX PARTICLES COULD NEVER HAVE BEEN ATTRIBUTED ON THE OBVIOUS
       SPELLING.** `tools/tier_table.py` credits a row to the FIRST keyword token in
       its CRUNCH body, and `THEN` `ELSE` `TO` `STEP` `OFF` `USING` can never be first
@@ -115,7 +115,7 @@
       🔴 **AND `CVI` WALKED STRAIGHT INTO THE PROBE'S OWN DOCUMENTED TRAP.** Written
       untagged it came back `EXTRA` — ref `Illegal function call` vs zb `[ 7 ]` —
       which is precisely the mis-attribution
-      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py)'s header
+      [`basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py)'s header
       describes: a DISKLESS VG-8020 measured against zerobas's disk-equipped build,
       with the difference blamed on zerobas. The rest of the MK/CV family was already
       tagged `NEEDS-DISK:`; that row simply had not been. Tagged, it matches.
@@ -125,7 +125,7 @@
       new `cvi` all return real verdicts [[a-fix-falsifies-the-justification-beside-it]].
       🟢 **BATCH 3, 2026-09-12: 76 -> 68**, evidence 71 -> 79, eight converted —
       `BEEP SOUND VPEEK VPOKE VDP INP OUT POKE`
-      ([readings](scratchpad/kwdrain_batch3.out)). Battery 128/128 after. Every write
+      ([readings](../../scratchpad/kwdrain_batch3.out)). Battery 128/128 after. Every write
       aims at a harmless target (VRAM 0 is character 0's glyph, `OUT &HA0` selects a
       PSG register without writing one, `SOUND 7,255` is the mixer with all channels
       OFF, the POKE goes to $E000 inside zerobas's own RAM) and reads back what it
@@ -148,11 +148,11 @@
       and batch 4 repeated it as a structural ceiling. Both were wrong: the `arrays`
       and `deffn` suites have ALWAYS run `CLS:PRINT"[";…` and read the bracketed
       marker straight off the screen. `marker_tail` in
-      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) now captures
+      [`basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py) now captures
       from a unique per-row marker (note prefix `NOECHO:<tag>`; a stale screen reads
       `?nomarker`, a REFUSAL rather than a pass), and **`CLS` `WIDTH` `COLOR` are
       attributed: 68 -> 65**, evidence 79 -> 82
-      ([readings](scratchpad/kwdrain_step4a.out)). Battery 128/128.
+      ([readings](../../scratchpad/kwdrain_step4a.out)). Battery 128/128.
       🔴 **TWO THINGS COST A ROW EACH TO GET RIGHT.** (1) FIRST-MATCH WAS WRONG: the
       exec line PRINTS the marker, so the marker text also sits in the ECHOED
       COMMAND — on the side whose echo survives (`WIDTH 37` reformats but does not
@@ -173,20 +173,20 @@
       🔴 **STEP 4b, AND ITS RESULT IS A ROW I DELETED.** A `keykw` row reading
       `CRTCNT` after `KEY OFF` came back **SUPPORTED / match on BOTH machines and was
       BLIND**: measured directly
-      ([`scratchpad/kwdrain_keyblind.py`](scratchpad/kwdrain_keyblind.py),
-      [readings](scratchpad/kwdrain_keyblind.out)), `CRTCNT` reads **24 with `KEY OFF`
+      ([`scratchpad/kwdrain_keyblind.py`](../../scratchpad/kwdrain_keyblind.py),
+      [readings](../../scratchpad/kwdrain_keyblind.out)), `CRTCNT` reads **24 with `KEY OFF`
       and 24 without**, on zerobas and the VG-8020 alike — so a `KEY` that parsed and
       did nothing would have passed it identically. **A GREEN VERDICT IS NOT EVIDENCE
       THAT THE READBACK MOVES.** The row is removed, the measurement filed in its
       place, and `KEY` stays unattributed until `FNKSTR` is settled.
       🎯 **SO THE CHECK BECAME THE STANDARD, AND IT IMMEDIATELY CAUGHT A SECOND ROW.**
       Every readback is now proved to move before the row is kept
-      ([`scratchpad/kwdrain_discrim.py`](scratchpad/kwdrain_discrim.py)): `WIDTH`'s
+      ([`scratchpad/kwdrain_discrim.py`](../../scratchpad/kwdrain_discrim.py)): `WIDTH`'s
       `LINLEN` 39 -> 37, `COLOR`'s `FORCLR` 15 -> 7, `CLS`'s `CSRLIN` 6 -> 0 — those
       three stand. But batch 3's `INP` row asked `INP(&HA8)>=0`, **which an ABSENT
       `INP` passes too**: the word parses as an undefined array, the call becomes
       element 0, and `0>=0` is TRUE. Measured
-      ([`scratchpad/kwdrain_boolcheck.py`](scratchpad/kwdrain_boolcheck.py)):
+      ([`scratchpad/kwdrain_boolcheck.py`](../../scratchpad/kwdrain_boolcheck.py)):
       `INP(&HA8)` reads 240 and the stub shape reads **-1, identical to the real
       answer**. Changed to `>0`, which the stub fails at 0. `VDP` was checked the same
       way and is sound as written (240 against the stub's 0).
@@ -200,8 +200,8 @@
       all — so each row draws, reads `POINT` into a variable, returns to `SCREEN 0`
       and only then prints its marker.
       🎯 **READBACK MEASURED FIRST, as the standard now requires**
-      ([`scratchpad/kwdrain_gfxcheck.py`](scratchpad/kwdrain_gfxcheck.py),
-      [readings](scratchpad/kwdrain_gfxcheck.out), both machines agreeing): `POINT`
+      ([`scratchpad/kwdrain_gfxcheck.py`](../../scratchpad/kwdrain_gfxcheck.py),
+      [readings](../../scratchpad/kwdrain_gfxcheck.out), both machines agreeing): `POINT`
       reads **4** on a blank SCREEN 2, **15** after `PSET ,15`, and **4** again after
       `PRESET`; `LINE`'s row reads a pixel in the MIDDLE of the span and gets 15, so
       an endpoint-only LINE would fail it too. Each row moves when its own verb stops
@@ -210,14 +210,14 @@
       what something drew, so `pointkw` moves if EITHER breaks. It still earns a row —
       a `POINT` that parses as an array reads 0, which neither 4 nor 15 can be.
       🟢 **STEP 4d: 61 -> 58**, evidence 86 -> 89 — `CIRCLE DRAW BASE SPRITE`
-      ([readings](scratchpad/kwdrain_gfx2.out)). Measuring each readback BEFORE
+      ([readings](../../scratchpad/kwdrain_gfx2.out)). Measuring each readback BEFORE
       writing the row changed two of them, which is the whole point of the standard:
       🔴 **`BASE(0)` READS 0 — EXACTLY WHAT A STUB RETURNS**, so the obvious argument
       would have produced a blind row; the row uses `BASE(2)` (2048, and `BASE(10)`
       is 6144). And `CIRCLE`'s row reads the RIM at 15 while the CENTRE reads 4, so it
       sees a real circle rather than a filled blob.
       🟢 **`SPRITE`'s NO-OUTPUT WAS DIAGNOSED, NOT GUESSED AT**
-      ([`scratchpad/kwdrain_spritechk.py`](scratchpad/kwdrain_spritechk.py)):
+      ([`scratchpad/kwdrain_spritechk.py`](../../scratchpad/kwdrain_spritechk.py)):
       `SPRITE$(0)=…` raises **Illegal function call in SCREEN 0** — sprites need a
       graphics screen — which is why the first form printed nothing on BOTH machines
       and looked like a broken probe. In SCREEN 2 the round-trip works (`ASC` 255,
@@ -225,7 +225,7 @@
       either half breaks.
       🔴 **AND A THIRD SILENT-FAILURE MODE: A ROW CAN REPORT `SUPPORTED` AND CREDIT
       NOTHING.** The `SPRITE` row's crunch was `sprite$(0)="x"`, and
-      [`tools/tier_table.py`](tools/tier_table.py)'s `WORD` regex KEEPS a trailing `$`
+      [`tools/tier_table.py`](../../tools/tier_table.py)'s `WORD` regex KEEPS a trailing `$`
       (so `STR$`/`MID$` match) — which tokenises it to `SPRITE$`, while the kwtable
       keyword is `SPRITE`. The row went green, the keyword stayed in "no known gap",
       and **the only signal was the evidence count rising by three when four rows went
@@ -242,8 +242,8 @@
       already a multi-line program, and these words needed the line numbers worked
       out rather than a new mechanism. Verified by printing the packing BEFORE writing
       a row and then running it
-      ([`scratchpad/kwdrain_multiline.py`](scratchpad/kwdrain_multiline.py),
-      [readings](scratchpad/kwdrain_multiline.out), both machines):
+      ([`scratchpad/kwdrain_multiline.py`](../../scratchpad/kwdrain_multiline.py),
+      [readings](../../scratchpad/kwdrain_multiline.out), both machines):
       `A=0:GOSUB 20:…:END:A=7:RETURN` packs to `10 A=0:GOSUB 20:PRINT…:END` /
       `20 A=7:RETURN` and answers 7.
       🎯 **A CONTROL IS WHAT MAKES THE `RESTORE` ROW MEAN ANYTHING**: a single `READ Q`
@@ -257,8 +257,8 @@
       🟢 **STEP 4f: 52 -> 46**, evidence 95 -> 101 — `ON ERROR ERR ERL RESUME DEFINT`.
       Four of them come off ONE program: line 10 arms the handler and raises, line 20
       reports, and **`ERR` reads 7 while `ERL` reads 10**
-      ([`scratchpad/kwdrain_errhand.py`](scratchpad/kwdrain_errhand.py),
-      [readings](scratchpad/kwdrain_errhand.out), both machines) — so the row carries
+      ([`scratchpad/kwdrain_errhand.py`](../../scratchpad/kwdrain_errhand.py),
+      [readings](../../scratchpad/kwdrain_errhand.out), both machines) — so the row carries
       the CODE and the LINE, not merely "something was trapped".
       🎯 **`RESUME` NEEDED ITS OWN PROGRAM AND THE PACKER CHOSE ITS SHAPE**: the greedy
       split leaves the handler alone on line 30 as `RESUME NEXT`, which resumes at the
@@ -277,8 +277,8 @@
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       🟢 **STEP 4g: 46 -> 44**, evidence 101 -> 103 — `MAX` and `STRIG`, **both of
       which separate through an ERROR**, which is still a differential
-      ([`scratchpad/kwdrain_misc1.py`](scratchpad/kwdrain_misc1.py),
-      [readings](scratchpad/kwdrain_misc1.out), both machines): bare `MAX` is a
+      ([`scratchpad/kwdrain_misc1.py`](../../scratchpad/kwdrain_misc1.py),
+      [readings](../../scratchpad/kwdrain_misc1.out), both machines): bare `MAX` is a
       Syntax error on a real machine and prints `0` on a stub, so the row proves the
       word is TOKENISED rather than parsed as a name; `STRIG(5)` is out of the 0..4
       range and raises Illegal function call, while an undefined array `STRIG(5)`
@@ -309,7 +309,7 @@
       without leaving a row behind quietly gives the keyword back to the unattributed
       pile [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
       🎯 **AND THE PROGRAM-VERB SWEEP FOUND D-NEWSTMT WAS NOT A CLASS**
-      ([readings](scratchpad/kwdrain_progverbs.out)): `LIST` in a program lists
+      ([readings](../../scratchpad/kwdrain_progverbs.out)): `LIST` in a program lists
       identically, `DELETE 99` raises `Illegal function call in 10` on both,
       `RENUM`/`AUTO` behave alike — every other program verb already had its
       `stmt_table` entry. `NEW` was the only one reachable solely from
@@ -336,7 +336,7 @@
       `PDL(0)` is out of range and raises Illegal function call while a stub answers
       0, which WOULD separate, but `PDL(1)` reads **255 on both machines** against a
       stub's 0, and a value differential says more than an error one
-      ([`scratchpad/kwdrain_pdlchk.py`](scratchpad/kwdrain_pdlchk.py)).
+      ([`scratchpad/kwdrain_pdlchk.py`](../../scratchpad/kwdrain_pdlchk.py)).
       🔴 **AND `INKEY$` / `INPUT` / `GET` ARE NOT BLOCKED BY THE MACHINE — THEY ARE
       BLOCKED BY THE ROW FORMAT.** The harness HAS a race-immune key injector
       (`omsx_repl.key_proc()`, which writes at `GETPNT` and never moves it,
@@ -352,8 +352,8 @@
       🎯 **WHERE THE DRAIN NOW STANDS, AND WHY IT SLOWS: 114 -> 36 (2026-09-12), and
       EVERY REMAINING WORD IS BLOCKED BY A NAMED PIECE OF APPARATUS, not by a missing
       idea.** The read-only disk verbs were measured this tick
-      ([`scratchpad/kwdrain_diskchk.py`](scratchpad/kwdrain_diskchk.py),
-      [readings](scratchpad/kwdrain_diskchk.out)) and none separate as written:
+      ([`scratchpad/kwdrain_diskchk.py`](../../scratchpad/kwdrain_diskchk.py),
+      [readings](../../scratchpad/kwdrain_diskchk.out)) and none separate as written:
       **`DSKF(0)` reads 0 — exactly what a stub reads** (no disk is inserted, so the
       honest answer coincides with the blind one), `LOF`/`LOC`/`EOF` produce nothing
       without an open file, and `CLOSE` prints whether or not it does anything.
@@ -372,7 +372,7 @@
       Two things kill that estimate. (1) `run_cases`'s `prologue` is documented as
       *"raw Tcl run ONCE, IMMEDIATELY, before the timeline is scheduled"* — it is the
       seam for `plug joyporta paddle`, NOT for timed input. (2)
-      [`basic_probe_key_trap.py`](probes/basic/basic_probe_key_trap.py) does not use
+      [`basic_probe_key_trap.py`](../../probes/basic/basic_probe_key_trap.py) does not use
       `run_cases` AT ALL: it builds its own complete Tcl schedule, enters the program
       by injection, and times events at `run_done + dt`. A key has to arrive AFTER the
       machine has consumed `RUN` and BEFORE the statement reads it, and that moment is
@@ -410,7 +410,7 @@
       reports `mki` `mks` `mkd` `cvs` `cvd` — and the `cvi` row added this session —
       all **SUPPORTED** against that very machine. (2) **The disk fixture EXISTS and
       is wired**: `DISK_TEST_DSK := disk/test720.dsk`, generated by
-      [`tools/make_test_dsk.py`](tools/make_test_dsk.py), mounted through
+      [`tools/make_test_dsk.py`](../../tools/make_test_dsk.py), mounted through
       `probe_sides.diska()` (which returns None for a driveless side rather than
       raising), already used by `ramfree-acceptance`, and guarded by
       `diskdep-check`. Its contents are purpose-built: `TEST.BIN` is exactly two
@@ -423,9 +423,9 @@
       🟢 **D-KWDISK, 2026-09-12: 36 -> 16, evidence 110 -> 130 — TWENTY WORDS, AND
       THE WHOLE SLICE WAS MOUNTING A FIXTURE THAT WAS ALREADY THERE.**
       `DSKF BLOAD BSAVE CLOSE CMD COPY DSKI$ DSKO$ EOF FILES IPL KILL LOC LOF LSET
-      MERGE RSET RUN SAVE SET` ([readings](scratchpad/kwdisk_full.out), full sweep;
-      [the new rows alone](scratchpad/kwdisk_only.out)).
-      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) now mounts a
+      MERGE RSET RUN SAVE SET` ([readings](../../scratchpad/kwdisk_full.out), full sweep;
+      [the new rows alone](../../scratchpad/kwdisk_only.out)).
+      [`basic_probe_kwsweep.py`](../../probes/basic/basic_probe_kwsweep.py) now mounts a
       WRITABLE PRIVATE COPY of `disk/test720.dsk` on BOTH sides for the NEEDS-DISK
       group, and `make kwsweep` declares `$(DISK_TEST_DSK)` (`diskdep-check` green,
       74/74).
@@ -447,7 +447,7 @@
       are pure apparatus. A real FAT write simply takes longer than the capture
       waited. Measured: 8 still blanks all five, 12/3.5 answers, 20/5 is what shipped,
       and the cost is EMULATED time, not wall time
-      ([readings](scratchpad/kwdrain_diskslow.out)) [[apparatus-is-part-of-the-measurement]].
+      ([readings](../../scratchpad/kwdrain_diskslow.out)) [[apparatus-is-part-of-the-measurement]].
       🎯 **TWO CANDIDATE ROWS WERE THROWN AWAY FOR BEING BLIND, which is the standard
       working rather than a near miss.** A `CLOSE` row that reopened channel 1 passed
       WITHOUT the close (zerobas lets #1 be reopened, so the readback never moved); it
@@ -480,8 +480,8 @@
       that is already built.
       🟢 **D-KWRIG, 2026-09-12: 16 -> 10, evidence 130 -> 136 — `USR` `SCREEN` `KEY`
       `WAIT` `LPOS` `LPRINT`, and every one of the six had a FILED blocker that was
-      stale** ([readings](scratchpad/kwrig_full.out), full sweep;
-      [the new rows](scratchpad/kwrig_only.out)).
+      stale** ([readings](../../scratchpad/kwrig_full.out), full sweep;
+      [the new rows](../../scratchpad/kwrig_only.out)).
       🔴 **`SCREEN`: *"its only discriminating value is a MODE CHANGE, and SCREEN 1 is
       32 columns while this capture parses a 40-column screen — the row would break
       the reader it depends on."* True, and beside the point: nothing makes the row
@@ -500,8 +500,8 @@
       `WAIT p,m` returns when `INP(p) AND m` is non-zero, so the mask comes from a
       MEASURED port — `INP(&HA8)` reads 240 on zerobas AND the VG-8020 — and the row
       was PROVED to return before it existed
-      ([`scratchpad/kwdrain_waitchk.py`](scratchpad/kwdrain_waitchk.py),
-      [readings](scratchpad/kwdrain_waitchk.out)). Batch 3's `mask 0` form is the
+      ([`scratchpad/kwdrain_waitchk.py`](../../scratchpad/kwdrain_waitchk.py),
+      [readings](../../scratchpad/kwdrain_waitchk.out)). Batch 3's `mask 0` form is the
       control in that same run and still returns NOTHING, which is what says the
       machine really blocks.
       ⚠️ **AND WHAT THE `WAIT` ROW CANNOT SEE IS SAID IN THE ROW**: a WAIT that parsed
@@ -515,8 +515,8 @@
       `LPOS(0)` returns to the screen. Batch 4g measured bare `LPOS(0)` as 0 against a
       stub's 0 and stopped there; the readback simply had to be MOVED first, and
       `LPRINT"ABC";` moves it to 3 on both machines
-      ([`scratchpad/kwdrain_lptchk.py`](scratchpad/kwdrain_lptchk.py),
-      [readings](scratchpad/kwdrain_lptchk.out)).
+      ([`scratchpad/kwdrain_lptchk.py`](../../scratchpad/kwdrain_lptchk.py),
+      [readings](../../scratchpad/kwdrain_lptchk.out)).
       🔴 **THE PRINTER IS A RIG, AND ITS ABSENCE IS A HANG, NOT A BLANK** — measured in
       the same run with the plug removed: both rows produce NO OUTPUT AT ALL on both
       machines. So `NEEDS-PRINTER:` joins `NEEDS-DISK:` as a row tag, the two capture
@@ -526,7 +526,7 @@
       row needs.
       ⚠️ **`LLIST` AND `LFILES` ARE NOT IN THIS BATCH and the reason is specific**:
       their subject IS the printed text, so they need the `screen_printer` capture
-      ([`probes/basic/basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py)
+      ([`probes/basic/basic_probe_lptverb.py`](../../probes/basic/basic_probe_lptverb.py)
       already has it) plus boot-per-case, because the log ACCUMULATES and a batched
       row reads its predecessors' output as its own. That is the slice that should
       generalise `_row_rig` to a row needing BOTH tags, which `lfiles` will be the
@@ -534,7 +534,7 @@
       ➡️ **TEN LEFT: `AUTO` `CALL` `CLOAD` `CSAVE` `GET` `INKEY$` `INPUT` `LFILES`
       `LLIST` `RENUM`.** Three clusters, each with named apparatus: the printer LOG
       (`LLIST` `LFILES`), the TAPE rig (`CLOAD` `CSAVE` — and it EXISTS:
-      `cassetteplayer new` + [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py),
+      `cassetteplayer new` + [`probes/lib/cas_decode.py`](../../probes/lib/cas_decode.py),
       driven by nine `basic_probe_cas*` suites, so re-verify that blocker too), and
       the key INJECTOR timing (`INKEY$` `INPUT` `GET`). `AUTO` and `RENUM` are the
       two that need a row FORMAT rather than a rig, and `CALL` needs an extension
@@ -548,7 +548,7 @@
       **RETRACTED 2026-09-13 — see the correction below; it plays, and the encoder
       exists.** The paragraph is kept because its OTHER half (the `TIME` finding)
       stands.**
-      `cassetteplayer new` + [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py)
+      `cassetteplayer new` + [`probes/lib/cas_decode.py`](../../probes/lib/cas_decode.py)
       is a RECORDER — a grep for `cassetteplayer insert` across `probes/` finds
       nothing — so `CSAVE` can write a tape kwsweep cannot read, and `CLOAD` has no
       tape to read at all. A playable fixture (the cassette equivalent of
@@ -558,8 +558,8 @@
       DURING A CASSETTE SAVE.** A save takes seconds of tape, so the obvious
       screen-visible readback is the JIFFY delta — measured, the delta is **4** for a
       recording of 269 280 WAV bytes (~6 s), because the tape write runs with
-      INTERRUPTS OFF ([`scratchpad/kwdrain_tapechk.py`](scratchpad/kwdrain_tapechk.py),
-      [readings](scratchpad/kwdrain_tapechk.out)). The control — the same row with no
+      INTERRUPTS OFF ([`scratchpad/kwdrain_tapechk.py`](../../scratchpad/kwdrain_tapechk.py),
+      [readings](../../scratchpad/kwdrain_tapechk.out)). The control — the same row with no
       `CSAVE` — reads the same 0, so the row would have AGREED on both machines while
       seeing nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
       🔴 **`LLIST`: THE PROGRAM STOPS, so the statement after it never runs** — on
@@ -576,22 +576,22 @@
       machine instead.
       ➡️ **SO THE HONEST SHAPE OF WHAT IS LEFT** is: one capture (`screen_printer`,
       already written in
-      [`probes/basic/basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py))
+      [`probes/basic/basic_probe_lptverb.py`](../../probes/basic/basic_probe_lptverb.py))
       unlocks `LLIST` and `LFILES`; one ENCODER (bytes→WAV) plus a fixture unlocks
       `CLOAD`, and `CSAVE` needs the WAV read back; the key injector's timing unlocks
       `INKEY$` `INPUT` `GET`; `AUTO` and `RENUM` need a row FORMAT; `CALL` needs an
       extension that is safe to invoke. None of these is hidden any more.
       🟢 **D-KWLOG, 2026-09-13: `LLIST` ATTRIBUTED — and the blocker was a CAPTURE,
-      not the hazard it was filed under** ([readings](scratchpad/kwlog_full.out),
-      full sweep; [the row alone](scratchpad/kwlog_only.out)).
+      not the hazard it was filed under** ([readings](../../scratchpad/kwlog_full.out),
+      full sweep; [the row alone](../../scratchpad/kwlog_only.out)).
       🔴 **THE FILED REASON WAS "printer-bound with the known unplugged-`LSTOUT`
       hang hazard", AND THAT HAZARD IS REAL AND WAS NEVER THE BLOCKER.** The plug
       answers it (D-KWRIG). What kept `LLIST` unscored is that its ONLY output is
       the printer: the program STOPS at it on BOTH machines so nothing reaches the
       screen, and in direct mode there is no program to list — an empty log, for
       the opposite reason. Its printed bytes were IDENTICAL on both all along
-      ([`scratchpad/kwdrain_llistchk.py`](scratchpad/kwdrain_llistchk.py),
-      [readings](scratchpad/kwdrain_llistchk.out)).
+      ([`scratchpad/kwdrain_llistchk.py`](../../scratchpad/kwdrain_llistchk.py),
+      [readings](../../scratchpad/kwdrain_llistchk.out)).
       🟢 **`NEEDS-LOG:` IS THE THIRD RIG, and it is a CAPTURE rather than a
       device**: it implies the printer plug and then READS the log. `_row_rigs`
       was already a tuple (D-DFEND) and `lfiles` already proved the two-tag path,
@@ -600,7 +600,7 @@
       the log open and never truncates it, so batched, every case captures the
       WHOLE log and each row reads its predecessors' output as its own — D-BATCH2
       measured exactly that on
-      [`basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py) and **both
+      [`basic_probe_lptverb.py`](../../probes/basic/basic_probe_lptverb.py) and **both
       modes still exited 0**, so no exit status can catch it.
       🔴 **THE CLASS COMES FROM THE SCREEN AND ONLY THE TEXT FROM THE LOG**, and a
       row that scored the screen half would compare two blank screens and call it
@@ -629,7 +629,7 @@
       timing), and `AUTO`/`RENUM`/`CALL`, which need a row FORMAT or a safe
       extension rather than a rig. Recount with `make tiers ARGS=--keywords`.
       🟢 **D-KWGET, 2026-09-13: `GET` and `CALL` attributed — 8 → 6, and neither
-      needed apparatus** ([readings](scratchpad/kwget_full.out), full sweep).
+      needed apparatus** ([readings](../../scratchpad/kwget_full.out), full sweep).
       🔴 **`GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat in
       this list.** MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`).
       `PUT` already ships and the disk rig has been mounted since D-KWDISK, so the
@@ -638,8 +638,8 @@
       `PUT` and the `GET`, and both values are printed. `90` then `66` is a real
       re-read; `90` then `90` is what a `GET` that parsed and did nothing gives,
       measured on both machines with the GET removed
-      ([`scratchpad/kwdrain_getcall.py`](scratchpad/kwdrain_getcall.py),
-      [readings](scratchpad/kwdrain_getcall.out)).
+      ([`scratchpad/kwdrain_getcall.py`](../../scratchpad/kwdrain_getcall.py),
+      [readings](../../scratchpad/kwdrain_getcall.out)).
       ⚠️ **THREE OF THE SIX WORDS LEFT ARE IN THAT LIST FOR A NAME, NOT A GAP** —
       `INKEY$` and `INPUT` really are keyboard-blocked, but `GET` never was, and
       nothing in the filing said which kind it was. Worth a glance at the other
@@ -651,8 +651,8 @@
       machine that HAS the verb from one that does not. What separates them is
       D-DONOTHING3's trick — a reserved word cannot be a variable: `CALL=1` is a
       Syntax error on all three while the stub shape `ZZQQ=1` assigns and prints
-      ([`scratchpad/kwdrain_callres.py`](scratchpad/kwdrain_callres.py),
-      [readings](scratchpad/kwdrain_callres.out)).
+      ([`scratchpad/kwdrain_callres.py`](../../scratchpad/kwdrain_callres.py),
+      [readings](../../scratchpad/kwdrain_callres.out)).
       ⚠️ **SO THE ROW CANNOT SEE WHETHER ANY EXTENSION WORKS**, and it says so in
       its own comment. The two that exist on this hardware are `CALL SYSTEM` and
       `CALL FORMAT` — one exits to DOS, one formats the disk — so neither is
@@ -669,13 +669,13 @@
       statement after it runs and an `LLIST` after it never executes either).
       🟢 **D-KWINP, 2026-09-13: `INPUT` and `RENUM` attributed — 6 → 4** — and
       `INPUT` is the SECOND word found to be in this list for its NAME rather than
-      a gap ([readings](scratchpad/kwinp_full.out), full sweep).
+      a gap ([readings](../../scratchpad/kwinp_full.out), full sweep).
       🔴 **`INPUT` SAT WITH `INKEY$` AS THOUGH IT SHARED THE KEYBOARD BLOCKER.**
       `INPUT #n, var` reads a FILE and needs no keystroke at all. The fixture's own
       `HI.TXT` holds `Hello from zerobas-disk!` + CRLF, so the length is **24** on
       both machines and the same row with the `INPUT#` removed reads **0**
-      ([`scratchpad/kwdrain_inputauto2.py`](scratchpad/kwdrain_inputauto2.py),
-      [readings](scratchpad/kwdrain_inputauto2.out)).
+      ([`scratchpad/kwdrain_inputauto2.py`](../../scratchpad/kwdrain_inputauto2.py),
+      [readings](../../scratchpad/kwdrain_inputauto2.out)).
       ⚠️ **THE KEYBOARD FORM IS STILL UNSCORED and the row does not pretend
       otherwise** — `INPUT "prompt";A$` blocks, and that stays with `INKEY$` in the
       injector-timing group.
@@ -693,7 +693,7 @@
       input", and that is solvable: put it LAST and there are no neighbours to
       poison. Proved by sacrificing two rows to it — the harness flagged BOTH as
       MIS-DELIVERED and then REFUSED on the CF-3300 rather than reporting garbage,
-      which is the apparatus working ([readings](scratchpad/kwdrain_inputauto.out)).
+      which is the apparatus working ([readings](../../scratchpad/kwdrain_inputauto.out)).
       With nothing behind it the verb SCORES: both machines print the `100`
       line-entry prompt.
       ⚠️ **WHAT ACTUALLY BLOCKS IT IS THAT LINE-ENTRY MODE LEAVES NO PROMPT.**
@@ -708,7 +708,7 @@
       the tape pair (nothing plays a tape), and one genuine keyboard block.
       🟢 **D-KWAUTO, 2026-09-13: `AUTO` attributed — 4 → 3, and the row that taught
       "read the WHOLE sweep summary" is the one that proves the rule held**
-      ([readings](scratchpad/kwauto_full.out), full sweep: **zero** DIVERGENT and
+      ([readings](../../scratchpad/kwauto_full.out), full sweep: **zero** DIVERGENT and
       **zero** apparatus warnings, where the first `AUTO` attempt produced
       DIVERGENT=22 + UNREADABLE=1).
       🔴 **THE FILED BLOCKER AND THE REAL ONE WERE DIFFERENT PROBLEMS.** The filing
@@ -717,7 +717,7 @@
       LAST in `SWEEP` and there is nothing behind it to eat. Proved before it was
       believed, by sacrificing two rows to it: the harness flagged both
       MIS-DELIVERED and then REFUSED on the CF-3300 rather than reporting garbage
-      ([readings](scratchpad/kwdrain_inputauto.out)).
+      ([readings](../../scratchpad/kwdrain_inputauto.out)).
       🔴 **WHAT ACTUALLY STOOD IN THE WAY: LINE-ENTRY MODE PRINTS NO CLOSING
       PROMPT.** `screen_tail` runs to the prompt, so with none it runs to the
       bottom of the screen and collects the CF-3300's **function-key display**,
@@ -728,7 +728,7 @@
       PURPOSE.** `omsx_repl.screen_tail` is a shared leaf; one row does not justify
       changing what every other probe reads. The echo anchor is still the harness's
       own `_echo_idx`, so the two differ in the ROW SET and in nothing else, and
-      [`basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py)'s
+      [`basic_probe_lptverb.py`](../../probes/basic/basic_probe_lptverb.py)'s
       `screen_rows` already does the same `[:-1]` with the same justification.
       ⚠️ **POSITION, NEVER CONTENT.** The obvious rule — drop a row reading
       `color auto goto list run` — is wrong in this very file: the `keykw` row
@@ -751,13 +751,13 @@
       blocker; the measurement was a grep for `cassetteplayer insert` under
       `probes/`, which is not how this tree mounts a tape. It mounts one as an
       openMSX COMMAND-LINE flag — `-cassetteplayer <file>` — in
-      [`basic_probe_cas_options.py`](probes/basic/basic_probe_cas_options.py),
-      [`basic_probe_cas_ascii.py`](probes/basic/basic_probe_cas_ascii.py) and
-      [`basic_probe_cas_verbs.py`](probes/basic/basic_probe_cas_verbs.py), all of
+      [`basic_probe_cas_options.py`](../../probes/basic/basic_probe_cas_options.py),
+      [`basic_probe_cas_ascii.py`](../../probes/basic/basic_probe_cas_ascii.py) and
+      [`basic_probe_cas_verbs.py`](../../probes/basic/basic_probe_cas_verbs.py), all of
       which LOAD programs off tape today.
       🔴 **AND THE ENCODER EXISTS TOO.** The same filing said *"`cas_decode` is
       WAV→bytes only, so a playable fixture would need an encoder this tree does
-      not have"*. [`probes/lib/cas_encode.py`](probes/lib/cas_encode.py) is that
+      not have"*. [`probes/lib/cas_encode.py`](../../probes/lib/cas_encode.py) is that
       encoder — `build_cas_basic(name, program)` synthesises a playable `.cas` from
       a tokenised program, clean-room, with every constant traced.
       ⚠️ **THIS IS THE ELEVENTH-OF-THIRTEEN PATTERN WITH MY OWN NAME ON IT.** Every
@@ -784,18 +784,18 @@
       `Found:<name>` while it searches a tape, so `CLOAD"ZQ"` against a mounted
       fixture is screen-visible on the subject side — the `NEEDS-LOG:`-style capture
       this was going to need is not needed
-      ([`scratchpad/kwdrain_cloadchk.py`](scratchpad/kwdrain_cloadchk.py),
-      [readings](scratchpad/kwdrain_cloadchk.out)).
+      ([`scratchpad/kwdrain_cloadchk.py`](../../scratchpad/kwdrain_cloadchk.py),
+      [readings](../../scratchpad/kwdrain_cloadchk.out)).
       🔴 **AND THE TAPE POSITION IS STATE THAT SURVIVES A CASE** — the `AUTO` lesson
       in another costume. Batched, the second `CLOAD` answered `load error` because
       the first had already consumed the tape, and the first VG-8020 run was
       unusable with ALL THREE cases showing one stale screen **including the
       control**, which is the tell that the run and not the verb had failed. Boot
       per case, one fresh tape each
-      ([readings](scratchpad/kwdrain_cloadchk2.out)).
+      ([readings](../../scratchpad/kwdrain_cloadchk2.out)).
       ⚠️ **THE REFERENCE SIDE IS NOT A TIMING PROBLEM AND NOT A MISSING PORT**, both
       checked because both are the cheap explanations: at `cap_gap` 60 **and** 150
-      the VG-8020 screen is unchanged ([readings](scratchpad/kwdrain_cloadchk3.out)),
+      the VG-8020 screen is unchanged ([readings](../../scratchpad/kwdrain_cloadchk3.out)),
       and its openMSX config carries `<CassettePort/>` exactly as the repack machine
       does. ⚠️ Note that EVERY cassette probe in this tree runs on the repack
       machine only — its header says so — so whether the VG-8020 can read a tape
@@ -818,20 +818,20 @@
       | VG-8020 `CLOAD"ZQ"` / `LOAD"CAS:ZQ"` on the SAME tape | nothing, no prompt — BOTH verbs |
       | CF-3300 `CLOAD"ZQ"` / `LOAD"CAS:ZQ"` on the SAME tape | nothing, no prompt — BOTH verbs |
       🟢 **THE FIXTURE AND THE ENCODER ARE EXONERATED THREE WAYS**: a `.cas` built
-      clean-room by [`probes/lib/cas_encode.py`](probes/lib/cas_encode.py) from the
+      clean-room by [`probes/lib/cas_encode.py`](../../probes/lib/cas_encode.py) from the
       published format fails on the reference, a WAV **zerobas itself recorded**
       fails there too, and zerobas reads both. A format that only zerobas accepts
       would not explain the spec-built one
-      ([`scratchpad/kwdrain_casoracle.py`](scratchpad/kwdrain_casoracle.py),
-      [readings](scratchpad/kwdrain_casoracle.out)).
+      ([`scratchpad/kwdrain_casoracle.py`](../../scratchpad/kwdrain_casoracle.py),
+      [readings](../../scratchpad/kwdrain_casoracle.out)).
       🟢 **AND IT IS NOT `CLOAD`-SPECIFIC**: `LOAD"CAS:"` fails identically on both
       references and works on zerobas
-      ([readings](scratchpad/kwdrain_casoracle2.out)), so the verb is not the
+      ([readings](../../scratchpad/kwdrain_casoracle2.out)), so the verb is not the
       variable — the machine's tape READ path is.
       🎯 **THE CF-3300 WAS TRIED BECAUSE D-KWORACLE IS THE PRECEDENT** — that
       machine turned out to read a screen everyone had written off — and it carries
       `<CassettePort/>` exactly as the VG-8020 and the repack machine do. It reads
-      nothing either ([readings](scratchpad/kwdrain_casoracle3.out)). Two
+      nothing either ([readings](../../scratchpad/kwdrain_casoracle3.out)). Two
       references, two verbs, one tape: the same silence.
       ⚠️ **ONE UNTESTED DIFFERENCE, NAMED RATHER THAN CHASED**: every cassette probe
       in this tree passes `-cassetteplayer <file>` on the openMSX COMMAND LINE and

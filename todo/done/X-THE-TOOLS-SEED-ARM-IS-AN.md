@@ -35,7 +35,7 @@
       describes.** Nothing was owed but the tick: `make deadcode` is green today
       (main 0 dead, sub 0 dead + 2 allowlisted, both still verified dead), the
       weight-comparison guard is live in
-      [`tools/check_dead_code.py:622`](tools/check_dead_code.py:622), and the
+      [`tools/check_dead_code.py:622`](../../tools/check_dead_code.py:622), and the
       only remaining scope is CONDITIONAL — the per-tool lookup model is owed
       *when the arm starts carrying weight*, and that gate is precisely what
       announces the moment. A residual whose trigger is gated is not an open

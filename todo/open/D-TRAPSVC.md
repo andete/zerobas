@@ -1,13 +1,13 @@
 - [ ] ⚠️ **KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows.**
-      2026-08-23, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7.
+      2026-08-23, [`docs/spec-basic-trapsvc.md`](../../docs/spec-basic-trapsvc.md) §7.
       `ON INTERVAL` is the only self-firing MSX1 trap, so the other four are
       covered by a **code** argument (they share `check_traps`, `ct_find`,
       `set_state` and `trap_return_check` verbatim; the index is a parameter),
       not by a measurement. The device-driven harnesses exist
       (`basic_probe_key_trap.py`, T2/T4 probes) if the argument is ever attacked.
       ✅ **THE CODE ARGUMENT IS NOW A MEASUREMENT — ON `SPRITE`, 2026-08-26**
-      ([`scratchpad/clrtrapstk_sprite_probe.py`](scratchpad/clrtrapstk_sprite_probe.py),
-      [`scratchpad/clrtrapstk_sprite.out`](scratchpad/clrtrapstk_sprite.out)).
+      ([`scratchpad/clrtrapstk_sprite_probe.py`](../../scratchpad/clrtrapstk_sprite_probe.py),
+      [`scratchpad/clrtrapstk_sprite.out`](../../scratchpad/clrtrapstk_sprite.out)).
       🎯 **THE `CLEAR`/`TRAPSTK` DEFECT MEASURED THE SAME DAY IS A DISCRIMINATOR
       FOR EXACTLY THIS CLAIM**: it lives in `trap_return_check`, the routine the
       argument says all five traps share verbatim. Replaying that 2×2 with
@@ -47,8 +47,8 @@
       `SPRITE` was taken first because a sprite collision is reachable from pure
       BASIC, so it needed no device at all. ~~**1 of 4 converted.**~~
       🟢 **`STOP` CONVERTED 2026-09-05 — 2 of 4 — AND IT DOES NOT REPRODUCE**
-      ([`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py),
-      [`.out`](scratchpad/clrtrapstk_stop.out)). Same 2×2, driven through
+      ([`scratchpad/clrtrapstk_stop_probe.py`](../../scratchpad/clrtrapstk_stop_probe.py),
+      [`.out`](../../scratchpad/clrtrapstk_stop.out)). Same 2×2, driven through
       `basic_probe_stop_trap.run()` (imported, not copied — a second copy would
       sit outside `make latch-check` and re-open the delivery race that gate
       exists for), with its tap length and `run_gap` inherited for its reasons:
@@ -78,8 +78,8 @@
       that *"the index is a parameter, so all five behave alike"* is too strong:
       two verbs through the same routine gave different answers.
       🟢 **`STRIG` CONVERTED THE SAME DAY — 3 of 4 — AND IT AGREES TOO**
-      ([`scratchpad/clrtrapstk_strig_probe.py`](scratchpad/clrtrapstk_strig_probe.py),
-      [`.out`](scratchpad/clrtrapstk_strig.out)). Same 2×2 plus the same positive
+      ([`scratchpad/clrtrapstk_strig_probe.py`](../../scratchpad/clrtrapstk_strig_probe.py),
+      [`.out`](../../scratchpad/clrtrapstk_strig.out)). Same 2×2 plus the same positive
       control, through `basic_probe_strig_trap.run()` (imported; trigger 0 IS the
       SPACE key, matrix row 8 bit 0). All four cells **1/1**, `c.twofire` **2/2**.
       📏 **SO THE SHAPE IS: SPRITE DIVERGES, STOP AND STRIG DO NOT.** The code
@@ -95,8 +95,8 @@
       the SPRITE divergence is still NOT established and is deliberately not
       guessed at** [[a-mechanism-inferred-from-one-observation]].
       🟢 **`KEY` CONVERTED THE SAME DAY — 4 of 4, THE CONVERSION IS COMPLETE, AND
-      IT AGREES** ([`scratchpad/clrtrapstk_key_probe.py`](scratchpad/clrtrapstk_key_probe.py),
-      [`.out`](scratchpad/clrtrapstk_key.out)). Same 2×2, same positive control,
+      IT AGREES** ([`scratchpad/clrtrapstk_key_probe.py`](../../scratchpad/clrtrapstk_key_probe.py),
+      [`.out`](../../scratchpad/clrtrapstk_key.out)). Same 2×2, same positive control,
       through `basic_probe_key_trap.run()` (imported; F1 is matrix row 6 bit 5).
       All four cells **1/1**, `c.twofire` **2/2**. The windows are
       ITERATION-bounded, never timed — `TIME` does not exist on zerobas and the
@@ -120,7 +120,7 @@
       event source cannot show. A discriminating instrument for that would have
       to observe the trap STATE, not the fire count.
       ✅ **BUILT AND RUN 2026-09-06 (D-TRAPSTATE) —
-      [`scratchpad/trapstate_probe.py`](scratchpad/trapstate_probe.py). THE
+      [`scratchpad/trapstate_probe.py`](../../scratchpad/trapstate_probe.py). THE
       ANSWER IS THAT `KEY` AND `STRIG` ARE CLEAN AT THE STATE LEVEL, NOT MERELY
       QUIET AT THE COUNT LEVEL.** Reading `ZTRAP`'s per-entry state byte plus
       `TRAPENA`/`TRAPSVC` right after the `CLEAR`, against a no-`CLEAR` control
@@ -165,16 +165,16 @@
       🔴 **A THIRD FINDING, IN THE SOURCE**: this run flagged `KEY(1) ON` arming
       **entry 17** as unexpected. The entry was RIGHT — the KEY band is laid out
       REVERSED, KEY 10 at `ZTI_KEY1` and KEY 1 at `ZTI_KEY1+9`
-      ([`basic/keytrap.asm:121`](basic/keytrap.asm:121),
-      [`basic/program.asm:2924`](basic/program.asm:2924), three `ld a,ZTI_KEY1+9`
-      sites) — and [`basic/sysvars.inc`](basic/sysvars.inc:1200)'s *"KEY n → 7+n,
+      ([`basic/keytrap.asm:121`](../../basic/keytrap.asm:121),
+      [`basic/program.asm:2924`](../../basic/program.asm:2924), three `ld a,ZTI_KEY1+9`
+      sites) — and [`basic/sysvars.inc`](../../basic/sysvars.inc:1200)'s *"KEY n → 7+n,
       n=1..10"* was the wrong half of a two-file disagreement
       [[two-sections-of-one-doc-disagreed]]. Corrected in place beside the
       original, 0 bytes.
       ✅ **THE SPRITE STATE IS READ AT LAST — D-SPRSTATE, 2026-09-10 — AND IT
       REFUTES THIS ENTRY'S OWN INFERENCE**
-      ([`scratchpad/spritestate_probe.py`](scratchpad/spritestate_probe.py),
-      [`.out`](scratchpad/spritestate.out)).
+      ([`scratchpad/spritestate_probe.py`](../../scratchpad/spritestate_probe.py),
+      [`.out`](../../scratchpad/spritestate.out)).
       🎯 **STOP ASKING THE GUEST.** D-TRAPSTATE read `ZTRAP` with BASIC `PEEK`s,
       which needs the program to reach a reporting line — exactly what the
       starvation prevents, and exactly why this was left unmeasured. openMSX's
@@ -221,7 +221,7 @@
       beside the state showed **fires = 1 in ALL THREE cases**, never advancing —
       so the run whose state I had just tabulated was a run in which the defect
       did not occur. Re-running the ORIGINAL 2×2 settles it
-      ([`scratchpad/clrtrapstk_sprite_recheck.out`](scratchpad/clrtrapstk_sprite_recheck.out)):
+      ([`scratchpad/clrtrapstk_sprite_recheck.out`](../../scratchpad/clrtrapstk_sprite_recheck.out)):
       **`CLEAR, still SERVICING` reads 1 vs 1, and the whole 2×2 reports 0
       divergences**, where 2026-08-26 read **1 vs 250 (SATURATED)**.
       🎯 **SO THE STATE TABLE WAS RIGHT AND MY FRAMING OF IT WAS WRONG.** I wrote
@@ -254,7 +254,7 @@
       `basic_probe_sprite_trap.py`). **Sweep corpus 53 → 57**;
       `check_citation_paths` reads 611 cited paths, all resolving.
       🟢 **AND THE SWEEP THEN ADJUDICATED THEM: all four `clean`, 0 UNFILED, 0 NO
-      LONGER DIVERGING** ([`.out`](scratchpad/filedrow_clrtrapstk.out)) — which is
+      LONGER DIVERGING** ([`.out`](../../scratchpad/filedrow_clrtrapstk.out)) — which is
       the point of the rename and not a formality: SPRITE's closure is now
       something an instrument reports, rather than something a person has to
       remember to re-run.

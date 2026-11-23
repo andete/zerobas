@@ -15,7 +15,7 @@
       across the build wipe with the pins, and a run that would skip the sweeps
       RUNS them when the built ROM differs or no stamp is on record
       (`sweeps_needed`, four selftest arms incl. a NEGATIVE). 📏 Measured end to
-      end ([`pinstale_fast1.out`](scratchpad/pinstale_fast1.out),
-      [`pinstale_fast2.out`](scratchpad/pinstale_fast2.out)): the first gates-fast
+      end ([`pinstale_fast1.out`](../../scratchpad/pinstale_fast1.out),
+      [`pinstale_fast2.out`](../../scratchpad/pinstale_fast2.out)): the first gates-fast
       found no stamp and ran the sweeps (1833 s, 48/48 green) and wrote it; the
       second, same ROM, skipped them (129 s, 45/45). 🔮 Predicted both: HIT.

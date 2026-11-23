@@ -8,7 +8,7 @@
       stack collision (docs/TODO-done.md). Measure first: where SP runs during the
       load on both builds against the region the game loads into, and which cells in
       $FC00-$FDFF zerobas writes after the load that the reference does not.
-      📏 **FIRST MEASUREMENTS (2026-10-31, [`bd2_probe.py`](scratchpad/bd2_probe.py);
+      📏 **FIRST MEASUREMENTS (2026-10-31, [`bd2_probe.py`](../../scratchpad/bd2_probe.py);
       zerobas HEAD vs HEAD + batch 6's fp_trunc, the same tape; RAM images kept OUTSIDE
       the repo, only addresses compared):**
       (1) **Not a wrong value**: 800 INT / FIX cases identical in value and RAM.
@@ -41,10 +41,10 @@
       zerobas's TAPION locks on a block the VG-8020's would skip, or the game's
       loader asks at a different tape position, is the split.
       📏 **SECOND MEASUREMENTS (2026-10-31, the cassette position instead of the call log:
-      [`bd2_probe.py`](scratchpad/bd2_probe.py) `--plain` samples openMSX's own `cassetteplayer
+      [`bd2_probe.py`](../../scratchpad/bd2_probe.py) `--plain` samples openMSX's own `cassetteplayer
       getpos` -- emulator state -- with PC / SP / CURLIN every 0.25 s; `tapepos A B` compares
-      two runs, [`bd2_tapepos.out`](scratchpad/bd2_tapepos.out),
-      [`bd2_tapepos_bad.out`](scratchpad/bd2_tapepos_bad.out)):**
+      two runs, [`bd2_tapepos.out`](../../scratchpad/bd2_tapepos.out),
+      [`bd2_tapepos_bad.out`](../../scratchpad/bd2_tapepos_bad.out)):**
       (7) **The game's own loader starts at the SAME tape position on both machines**:
       first PC in RAM with SP >= $FF00 at tape 88.5749 s on the VG-8020 (T99.00) and on
       zerobas (T101.75) -- it waits for its own header, which re-aligns them.
@@ -67,6 +67,6 @@
       as a wrong value.
       📏 **facdemo3.di2 WAS FILED HERE (2026-11-13) AND IS NOT THIS CLASS** -- withdrawn the
       same day: its line 15 loops over **PEEK(&HFB21)** (the only PEEK it makes there,
-      [`facusr_run7.out`](scratchpad/facusr_run7.out)), and DRVINF read **3 on zerobas, 2 on the CF-3300** ([`facusr_run8.out`](scratchpad/facusr_run8.out)).
+      [`facusr_run7.out`](../../scratchpad/facusr_run7.out)), and DRVINF read **3 on zerobas, 2 on the CF-3300** ([`facusr_run8.out`](../../scratchpad/facusr_run8.out)).
       The 8-byte usr.asm shift only changed HOW the extra drive went wrong; FILES-SAME before
       was agreement for the wrong reason. Fixed as D-DRVCOUNT (below the D-DISKRUN corpus note).

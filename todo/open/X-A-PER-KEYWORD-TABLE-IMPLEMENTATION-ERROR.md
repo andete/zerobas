@@ -1,7 +1,7 @@
 - [ ] 🙋 **A PER-KEYWORD TABLE (implementation · error handling · performance) —
       PARKED BY JOOST 2026-09-10, WITH THE FEASIBILITY MEASURED.** Asked for as
       three columns over every BASIC keyword. The row denominator is solid —
-      **155 entries in [`basic/kwtable.inc`](basic/kwtable.inc)** plus the ~8 the
+      **155 entries in [`basic/kwtable.inc`](../../basic/kwtable.inc)** plus the ~8 the
       reference tokenises and zerobas does not — but the three columns are not
       remotely equal, and a three-column table invites reading them as if they
       were [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
@@ -73,7 +73,7 @@
       measurement with a small answer
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       🟢 **STEP (c) HAS ITS DENOMINATOR AT LAST — MEASURED, NOT SCANNED (D-KWCOVER,
-      2026-09-11, [`docs/spec-basic-kwcover.md`](docs/spec-basic-kwcover.md),
+      2026-09-11, [`docs/spec-basic-kwcover.md`](../../docs/spec-basic-kwcover.md),
       `make kwcover`).** Joost: *"given that we have so many keywords still at 'no
       known gap' shouldn't we identify their status first before picking up new
       work?"* The capture rides on a normal battery run — `omsx_repl.run_cases`,

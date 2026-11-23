@@ -1,6 +1,6 @@
 - [ ] ⚠️ **DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a
       verdict.** Filed 2026-08-23 by D-DEFFNKNIFE,
-      [`docs/spec-basic-deffnknife.md`](docs/spec-basic-deffnknife.md) §9.
+      [`docs/spec-basic-deffnknife.md`](../../docs/spec-basic-deffnknife.md) §9.
       `scratchpad/deffn_knives.py` (+ `scratchpad/deffn_de_knife.py`'s K-DE1)
       now cut the ceiling in BOTH directions, `fn_leave`'s DE, PRINT's item
       classification, the result-type coercion, the frame reset and the stack
@@ -14,7 +14,7 @@
       — but "wide" is a guess until it is measured
       [[a-hand-listed-denominator-is-a-scope-claim]].
       ✅ **THREE OF THE FIVE KNIFED 2026-08-26 — ROSTER 9 → 12, ALL EXACT**
-      ([`scratchpad/deffn_knives.py`](scratchpad/deffn_knives.py)). *"Wide" was
+      ([`scratchpad/deffn_knives.py`](../../scratchpad/deffn_knives.py)). *"Wide" was
       a guess until measured; it is now three different numbers.*
       ```
       K-IR1  dfn_is_result `inc a` -> `or a`        42 of 71 rows
