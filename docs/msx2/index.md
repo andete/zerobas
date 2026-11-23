@@ -43,10 +43,10 @@ INSLNO, PUTVRM, KYKLOK, PUTCHR); the 20 BASIC internals and RESVI are missing to
 | $0177 | NWRVRM | main | MSX2 | implemented | TH App. 1 | [main/NWRVRM.md](main/NWRVRM.md) |  |
 | $017A | RDRES | main | MSX2+ | implemented (MSX2+ build only) | MAP only | [main/RDRES.md](main/RDRES.md) | reads I/O port $F4 |
 | $017D | WRRES | main | MSX2+ | implemented (MSX2+ build only) | MAP only | [main/WRRES.md](main/WRRES.md) | writes I/O port $F4 |
-| $0180 | CHGCPU | main | turbo R | missing | MAP only | — out of scope (turbo R) | |
-| $0183 | GETCPU | main | turbo R | missing | MAP only | — out of scope (turbo R) | |
-| $0186 | PCMPLY | main | turbo R | missing | MAP only | — out of scope (turbo R) | |
-| $0189 | PCMREC | main | turbo R | missing | MAP only | — out of scope (turbo R) | |
+| $0180 | CHGCPU | main | turbo R | missing | MAP only | [../turbor/main/CHGCPU.md](../turbor/main/CHGCPU.md) | the turbo R pages: [../turbor/index.md](../turbor/index.md) |
+| $0183 | GETCPU | main | turbo R | missing | MAP only | [../turbor/main/GETCPU.md](../turbor/main/GETCPU.md) | the turbo R pages: [../turbor/index.md](../turbor/index.md) |
+| $0186 | PCMPLY | main | turbo R | missing | MAP only | [../turbor/main/PCMPLY.md](../turbor/main/PCMPLY.md) | the turbo R pages: [../turbor/index.md](../turbor/index.md) |
+| $0189 | PCMREC | main | turbo R | missing | MAP only | [../turbor/main/PCMREC.md](../turbor/main/PCMREC.md) | the turbo R pages: [../turbor/index.md](../turbor/index.md) |
 | $0069 | PAINT | sub | MSX2 | missing | MAP only | — BASIC statement internal, not a BIOS call | HL = BASIC text pointer |
 | $006D | PSET | sub | MSX2 | missing | MAP only | — BASIC statement internal, not a BIOS call | HL = BASIC text pointer |
 | $0071 | ATRSCN | sub | MSX2 | missing | MAP only | — BASIC statement internal, not a BIOS call | HL = BASIC text pointer |
