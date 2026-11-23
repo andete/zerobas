@@ -1,0 +1,11 @@
+biosregs-acceptance=0
+outdlp-acceptance=0
+initio-acceptance=0
+grphed-acceptance=0
+speclive=0
+knife=0
+knifefn=0
+tape=0
+TALLY {"NEAR": 11, "RUNS?": 22, "SAME": 9}
+unit=0
+ALL 100 TEST FILE(S) PASSED

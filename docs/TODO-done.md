@@ -41365,3 +41365,19 @@ the section headings they were written beneath.
       22 bytes, nothing moves; zerobas's own NAMBAS readers (the line editor, the key row) are
       text-mode only. After: **12 / 12 SAME** ([`biosmode_run2.out`](scratchpad/biosmode_run2.out)); CLS in SCREEN 2 still clears as
       the VG-8020's ([`grpbase_cls.out`](scratchpad/grpbase_cls.out)).
+- [x] **D-CBIOSC0C0 — REBASE THE REPACK ONTO C-BIOS c0c0b31: DROP init-slot-a, grphed-keyline AND regs-leftovers**
+      🎚️ TIER 1 — keeps the repack on C-BIOS's own code (the D-CBIOS032 sequence; C-BIOS took all four offers,
+      2026-11-23).
+      🤖 **AUTONOMOUS** — C-BIOS prepare-0.33 = c0c0b31 (fast-forward on fff98e8, 8 bytes): 6bc4c1d A = the slot at a
+      ROM's INIT (drop init-slot-a.patch); dcd3ccf DSPFNK clears GRPHED in SCREEN 0 / 1 ONLY -- after the text path's
+      SETWRT, as the VG-8020 and NMS 8250 do (C-BIOS measured GRPHED = 1 kept by DSPFNK / ERAFNK in SCREEN 2 on both);
+      our grphed-keyline.patch cleared it at the entry, in every mode: drop it, ADD a SCREEN 2 row to the GRPHED
+      suite; 4290065 INLIN / PINLIN / QINLIN A = $0D after Enter (their F stays $44, the references' $18 -- R-L-F,
+      declined by C-BIOS); c0c0b31 DSPFNK / ERAFNK in SCREEN 2+ keep HL (drop regs-leftovers.patch). Then pin
+      fff98e8 -> c0c0b31 in tools/build_repacked_cbios.py, new PRISTINE / REPACKED sha1s, cbios-repack/README.md,
+      gen_cbios_abi, full gate + knives + tape corpus.
+      ✅ CLOSED 2026-11-23: pinned c0c0b31 (stock e21fc321..., repacked c918e86e...), the three patches deleted;
+      cbios-abi.inc unchanged (C-BIOS's addresses did not move), walls as before. grphed-acceptance gained dspfnk2 /
+      erafnk2 (/off): VG-8020 1, zerobas 1 -- the retired patch's clear-at-entry would read 0 (not run against the
+      old build). Battery green: biosregs / outdlp / initio / grphed acceptance, spec-live, kwknife --all / --allfn,
+      the tape corpus (TALLY unchanged: SAME 9, NEAR 11, RUNS? 22), unit tests (scratchpad/AE_c0c0_battery.out).

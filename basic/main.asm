@@ -38,7 +38,7 @@
 ; Defined BEFORE sysvars.inc, which sites the string-engine RAM layout (STRMAX /
 ; STRSCR / the temp ring — see sysvars.inc "string-variable store" and
 ; docs/spec-basic-string-engine.md §5).
-BASIC_ORG:      equ     $2BB1   ; D-CBIOS032: the end of C-BIOS fff98e8's page 0 + the 5 repack patches
+BASIC_ORG:      equ     $2BB1   ; D-CBIOS032 / D-CBIOSC0C0: the end of C-BIOS c0c0b31's page 0 + the 3 repack patches
 
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).

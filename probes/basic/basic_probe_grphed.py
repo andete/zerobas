@@ -30,11 +30,16 @@ ROWS = {"initxt": (0x006C, None), "init32": (0x006F, None), "inigrp": (0x0072, N
         "inimlt": (0x0075, None), "chgmod0": (0x005F, 0), "chgmod1": (0x005F, 1),
         "totext": (0x00D2, None), "settxt": (0x0078, None), "sett32": (0x007B, None),
         "cls": (0x00C3, "z"), "erafnk": (0x00CC, None), "kilbuf": (0x0156, None),
-        "dspfnk": (0x00CF, None)}
+        "dspfnk": (0x00CF, None),
+        # D-CBIOSC0C0: the key-line calls entered in SCREEN 2 (CHGMOD 2 first). C-BIOS measured GRPHED KEPT there by
+        # DSPFNK and ERAFNK on the VG-8020 and the NMS 8250 -- the clear is the text path's; the retired
+        # grphed-keyline.patch cleared it at the entry, in every mode, and no row could see it
+        "dspfnk2": (0x00CF, None, 2), "erafnk2": (0x00CC, None, 2)}
 
 
-def code(entry, arg):
-    c = [0x3E, 1, 0x32, GRPHED & 255, GRPHED >> 8]          # GRPHED := 1
+def code(entry, arg, mode=None):
+    c = [0x3E, mode, 0xCD, 0x5F, 0x00] if mode is not None else []   # CHGMOD first
+    c += [0x3E, 1, 0x32, GRPHED & 255, GRPHED >> 8]         # GRPHED := 1
     if arg == "z":
         c += [0xAF]                                          # xor a: Z set
     elif arg is not None:

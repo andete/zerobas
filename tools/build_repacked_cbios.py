@@ -46,25 +46,18 @@ PATCHES = [
     # 173 B after the font, so BASIC starts that much lower.
     os.path.join(REPO, "cbios-repack", "eu-drop-dead-strings.patch"),
     # (D-KEYTRAPREF's key-trap-bios.patch is RETIRED: C-BIOS took the function-key trap as fff98e8, the base.)
+    # (D-CBIOSC0C0, 2026-11-23: grphed-keyline, regs-leftovers and init-slot-a are RETIRED -- C-BIOS took all three
+    # as c0c0b31, the base: 6bc4c1d the slot in A at INIT, dcd3ccf DSPFNK clears GRPHED in SCREEN 0 / 1 (only, as the
+    # VG-8020 and NMS 8250), 4290065 INLIN A = $0D, c0c0b31 DSPFNK / ERAFNK keep HL in SCREEN 2.)
     # D-CBIOSDEAD on d23d87b: the bodies zerobas overlays (SYNCHR / CHRGTR / GETYPR / OUTDO, ISCNTC / CKCNTC,
     # ISFLIO, CALBAS) and dead data (the US GRAPH / CODE scan tables nothing reads, the debug hex printers):
     # 200 B after the font, ~130 B more in the pads the islands use (scratchpad/cbios_reach.py).
     os.path.join(REPO, "cbios-repack", "dead-bodies-main.patch"),
-    # D-GRPHEDCLS2: drawing the function-key line ends a pending graphic header (GRPHED := 0), as the VG-8020:
-    # 4 B at DSPFNK's entry, which the text-mode calls reach when they redraw the line.
-    os.path.join(REPO, "cbios-repack", "grphed-keyline.patch"),
-    # Register leftovers the VG-8020 keeps (biosregs-acceptance): INLIN / PINLIN / QINLIN return A = $0D after
-    # Enter (+2 B), and DSPFNK / ERAFNK in SCREEN 2 and up keep HL (fnk_span drops its return with `inc sp` x2, +1 B).
-    os.path.join(REPO, "cbios-repack", "regs-leftovers.patch"),
-    # D-DISKNOBASIC (2026-11-22): a ROM's INIT gets its slot in A, as on the reference (the CF-3300's BIOS calls the
-    # disk INIT with A = C = $87); C-BIOS's VDP wait left the status there, so zerobas's disk ROM, read on C-BIOS
-    # without zerobas's BASIC, hooked the wrong slot and every BDOS call came back empty. +1 B, offered to C-BIOS.
-    os.path.join(REPO, "cbios-repack", "init-slot-a.patch"),
 ]
 
-PINNED_TAG = "fff98e8"   # C-BIOS prepare-0.33 (not master; kept fast-forward only): d23d87b + the KEY(n) ON trap
-PRISTINE_SHA1 = "3fc2c7ec71648cba490f7bd7d01a795c6890f270"
-REPACKED_SHA1 = "dda945e89ffedbeccd9d20464e665a105ada66d6"   # fff98e8 + 6 patches (D-CBIOS032, D-DISKNOBASIC), 2026-11-22
+PINNED_TAG = "c0c0b31"   # C-BIOS prepare-0.33 (not master; kept fast-forward only): fff98e8 + the four zerobas fixes
+PRISTINE_SHA1 = "e21fc321623187ee101feaa57b9dd5206b9e1f44"
+REPACKED_SHA1 = "c918e86e98aa0ce3b2477c110bcf25934b631adf"   # c0c0b31 + 3 patches (D-CBIOSC0C0), 2026-11-23
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
