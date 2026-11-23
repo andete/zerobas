@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `LEFTC` (sub-ROM $00AD) — move the graphics position one pixel left
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,30 @@ question of how a bitmap position is held.
 - VDP registers and VRAM: none touched [A] (the MSX1 moves touch none, measured there). Registers
   other than A / F, and the interrupt state, kept [A, as MSX1].
 
+**Measured** [M] (the same on all three references; the start set by MAPXYC): In SCREEN 5-8 it does NOT move by a pixel: the MULTICOLOUR cell step, keyed on CMASK's bit 7: clear -> CMASK := $F0 in place; set -> CLOC - 8, CMASK := $0F ($14 stays, $D3 moves back).
+
+| SCREEN | (X, Y) | CLOC / CMASK before | after | carry |
+|---|---|---|---|---|
+| 2 | (10, 20) | $022C / $F0 | $0224 / $0F | 0 |
+| 2 | (0, 0) | $0000 / $F0 | $FFF8 / $0F | 0 |
+| 2 | (255, 20) | $02FC / $0F | $02FC / $F0 | 0 |
+| 2 | (10, 191) | $072F / $F0 | $0727 / $0F | 0 |
+| 5 | (10, 20) | $000A / $14 | $000A / $F0 | 0 |
+| 5 | (0, 0) | $0000 / $00 | $0000 / $F0 | 0 |
+| 5 | (255, 20) | $00FF / $14 | $00FF / $F0 | 0 |
+| 5 | (10, 211) | $000A / $D3 | $0002 / $0F | 0 |
+| 6 | (10, 20) | $000A / $14 | $000A / $F0 | 0 |
+| 6 | (0, 0) | $0000 / $00 | $0000 / $F0 | 0 |
+| 6 | (255, 20) | $01FF / $14 | $01FF / $F0 | 0 |
+| 6 | (10, 211) | $000A / $D3 | $0002 / $0F | 0 |
+| 8 | (10, 20) | $000A / $14 | $000A / $F0 | 0 |
+| 8 | (0, 0) | $0000 / $00 | $0000 / $F0 | 0 |
+| 8 | (255, 20) | $00FF / $14 | $00FF / $F0 | 0 |
+| 8 | (10, 211) | $000A / $D3 | $0002 / $0F | 0 |
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds differ in 4 of the 16 cases -- in SCREEN 2 they use the SCREEN 2 bit masks ($78, $E1 ...) where the references use multicolour nibbles ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 

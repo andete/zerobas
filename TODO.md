@@ -16786,7 +16786,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       select the block reliably); the screen-mode calls (xmode.asm: CHGMOD, INIT*, SET*, SETPAG,
       CHGMDP; CHGMOD 10-12 are invalid even on the MSX2+); CHGCLR / CLS (xsubcls.asm: CLS's fill byte
       unmasked, per-mode); the graphics-cursor core (xsubgc.asm: MAPXYC / SETC / READC /
-      SETATR / SCALXY; SCREEN 2 behaves as MULTICOLOUR in the sub-ROM). NEXT: VA-13
+      SETATR / SCALXY; SCREEN 2 behaves as MULTICOLOUR in the sub-ROM); the cursor moves (xsubmv.asm: the plain moves
+      use multicolour cell steps even in SCREEN 5-8; C-BIOS's TRIGHT / TLEFTC do nothing). NEXT: VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --

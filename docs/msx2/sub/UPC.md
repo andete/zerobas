@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `UPC` (sub-ROM $00BD) — move the graphics position one pixel up
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xsubmv.asm](../../probes/bios/spec/xsubmv.asm), [scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out), decoded by `scratchpad/xsubmv_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,30 @@ question.
 - VDP registers and VRAM: none touched [A] (the MSX1 moves touch none, measured there). Registers
   other than A / F, and the interrupt state, kept [A, as MSX1].
 
+**Measured** [M] (the same on all three references; the start set by MAPXYC): It steps CLOC by -1 within an 8-byte cell (SCREEN 2 / multicolour arithmetic: CLOC AND 7 = 0 moves up a row, $0000 -> $FF07) in every mode; CMASK kept. In SCREEN 5-8, where CLOC holds X, that is X - 1.
+
+| SCREEN | (X, Y) | CLOC / CMASK before | after | carry |
+|---|---|---|---|---|
+| 2 | (10, 20) | $022C / $F0 | $022B / $F0 | 0 |
+| 2 | (0, 0) | $0000 / $F0 | $FF07 / $F0 | 0 |
+| 2 | (255, 20) | $02FC / $0F | $02FB / $0F | 0 |
+| 2 | (10, 191) | $072F / $F0 | $072E / $F0 | 0 |
+| 5 | (10, 20) | $000A / $14 | $0009 / $14 | 0 |
+| 5 | (0, 0) | $0000 / $00 | $FF07 / $00 | 0 |
+| 5 | (255, 20) | $00FF / $14 | $00FE / $14 | 0 |
+| 5 | (10, 211) | $000A / $D3 | $0009 / $D3 | 0 |
+| 6 | (10, 20) | $000A / $14 | $0009 / $14 | 0 |
+| 6 | (0, 0) | $0000 / $00 | $FF07 / $00 | 0 |
+| 6 | (255, 20) | $01FF / $14 | $01FE / $14 | 0 |
+| 6 | (10, 211) | $000A / $D3 | $0009 / $D3 | 0 |
+| 8 | (10, 20) | $000A / $14 | $0009 / $14 | 0 |
+| 8 | (0, 0) | $0000 / $00 | $FF07 / $00 | 0 |
+| 8 | (255, 20) | $00FF / $14 | $00FE / $14 | 0 |
+| 8 | (10, 211) | $000A / $D3 | $0009 / $D3 | 0 |
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds give the same positions ([scratchpad/AE_xsubmv_msx2.out](../../scratchpad/AE_xsubmv_msx2.out)).
 
 ## Open (not measured)
 
