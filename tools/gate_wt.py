@@ -48,6 +48,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -86,6 +87,7 @@ def knife_key(wt: str) -> str:
     return h.hexdigest()
 LOCK = os.path.join(OUTDIR, "running.pid")
 STATE = ("scratchpad/gate_last_green.json", "scratchpad/gate_pins")
+SWEEP_PINS = ("build/sweeps-rom.txt", "build/kwsweep-verdicts.json", "build/kwtime.json", "build/kwram.json")
 REWRITE_DIRS = ("machines", "extensions")
 ROM_TREES = ("basic/", "sub/", "disk/", "tape/", "cbios-repack/")   # = pick_gates.ROM_TREES (D-TAPEPLAN)
 EXCLUDED5 = ("bdos-acceptance", "bdos-cfhost-acceptance", "diskbasic-acceptance", "fat-error-acceptance",
@@ -140,6 +142,14 @@ def stamp_only(old: str, new: str) -> bool:
         a.pop("written", None)
         b.pop("written", None)
     return a == b
+
+
+def _pin_written(raw):
+    """a sweep pin's own `written` stamp ("YYYY-MM-DD HH:MM:SS", sortable), or None"""
+    if not raw:
+        return None
+    m = re.search(rb'"written"\s*:\s*"([^"]+)"', raw)
+    return m.group(1) if m else None
 
 
 def copy_state(src_root: str, dst_root: str) -> None:
@@ -209,6 +219,24 @@ def run(a) -> int:
     share = os.path.join(WT, ".omsx-share")
     seed_share(share)
     copy_state(ROOT, WT)
+    # The slow sweeps' pins, from THIS checkout when they are newer than the worktree's own (kept across its clean,
+    # above): `make gates-sweeps` runs in the checkout, and a worktree that rendered docs/tier-status.md from its
+    # older kwtime / kwram reds tiers-md-check on the very commit that stages the fresh render (2026-11-23).
+    # The pin's own ROM record goes with it, so D-PINSTALE still re-measures when the built ROM is another.
+    # NOT by mtime: run_gates restores the pins it kept across its own wipe with a plain write, so a STALE pin in
+    # the worktree carries a recent mtime (the first version of this compared mtimes and copied nothing). The
+    # sweeps run in the checkout, so its pin wins whenever the two differ -- unless both record when they were
+    # written and the worktree's is the later.
+    for rel in SWEEP_PINS:
+        s_, d_ = os.path.join(ROOT, rel), os.path.join(WT, rel)
+        if not os.path.isfile(s_):
+            continue
+        sb = open(s_, "rb").read()
+        db = open(d_, "rb").read() if os.path.isfile(d_) else None
+        if sb == db or (_pin_written(db) and _pin_written(sb) and _pin_written(db) > _pin_written(sb)):
+            continue
+        os.makedirs(os.path.dirname(d_), exist_ok=True)
+        open(d_, "wb").write(sb)
     # ZEROBAS_TMP: the probes' shared temp root (probe_tmp) is the worktree's own, so a
     # probe run in the main checkout meanwhile cannot meet the gate's files there
     # OUTSIDE every checkout: refcache-check's arms tell a repo-built ROM from a
