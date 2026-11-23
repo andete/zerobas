@@ -16780,7 +16780,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       identical on all three references; a carry-losing page rule in SCREEN 5 / 6, and in SCREEN 0-4 with ACPAGE != 0
       the address is ACPAGE x $100 + E (HL unused) -- C-BIOS addresses HL there, its one difference. BIGFIL MEASURED too
       (xbf.asm: the same rule; BC 0 = 64 KB; returns BC 0 and interrupts ON); the PALETTE calls too (xplt.asm: the table is 16 x 2
-      bytes in the VDP's layout, GETPLT reads it, INIPLT and SETPLT write it; same power-on palette on all three). NEXT: VA-13
+      bytes in the VDP's layout, GETPLT reads it, INIPLT and SETPLT write it; same power-on palette on all three); the sub-ROM NRDVRM / NWRVRM (xva2.asm: the main rule
+      in SCREEN 5-8, but (HL + ACPAGE x $4000 / $1000) AND $FFFF in SCREEN 0-4). NEXT: VA-13
       / VA-14 / VA-16, then the sub-ROM pages region by region.
 - [ ] **D-MSX1ON2 — THE MSX1 BIOS CALLS ON THE MSX2 / MSX2+ REFERENCES: SAME CASES, NOT ASSUMED THE SAME ANSWERS**
       🔁 THE RULE IS GENERAL (Joost 2026-11-23): every generation's calls are re-measured on EVERY later one --

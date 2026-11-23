@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `NRDVRM` (sub-ROM $010D) — read a VRAM byte, 64 KB address
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): the VRAM address MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xva2.asm](../../probes/bios/spec/xva2.asm), [scratchpad/AE_xva2_msx2.out](../../scratchpad/AE_xva2_msx2.out), decoded by `scratchpad/xva_decode.py`).
 
 ## Summary
 
@@ -29,9 +29,18 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md).
 - Which 64 KB of the 128 KB HL addresses, whether MODE's $3FFF mask applies, R#14 and the address
   counter afterwards, and the interrupt state are [A] — the same questions as [NWRVRM](NWRVRM.md).
 
+**Measured** [M] over the [main ROM's VRAM address matrix](../main/README.md#the-shared-vram-address-matrix)
+(the same on all three references): R#14 := the bank and the 14-bit address, four port $99 writes, $FFED not
+written -- and the address is the main ROM's in every case **except SCREEN 0-4 with ACPAGE not 0**. There the main
+ROM uses ACPAGE x $100 + E; this sub-ROM entry PAGES WITHIN 64 KB: **(HL + ACPAGE x page size) AND $FFFF**, the
+page size $4000 in SCREEN 1, 2 and 4 (ACPAGE 1: $C123 -> $00123, $1234 -> $05234, $0000 -> $04000; ACPAGE 2 / 3:
+$C123 -> $04123 / $08123) and $1000 in SCREEN 0 at width 40 (ACPAGE 1: $C123 -> $0D123). In SCREEN 5-8 it is the
+main ROM's 17-bit rule (ACPAGE 3, $C123 -> $14123; SCREEN 7 / 8: ACPAGE x $10000 + HL).
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) give every measured address but the SCREEN 0-4, ACPAGE-not-0 ones
+([scratchpad/AE_xva2_msx2.out](../../scratchpad/AE_xva2_msx2.out)).
 
 ## Open (not measured)
 
