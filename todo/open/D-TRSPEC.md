@@ -29,5 +29,12 @@
       carry set, nothing read / written); all 21 NEW findings re-checked and carried onto their MSX1 / BDOS / MSX2 pages
       as "On the turbo R" bullets; goldfish pass 1 over docs/turbor/ (32 findings) acted on (fxtr: CHGCPU's accept rule
       pinned against rivals, $FFFD = SP - $18 at three SPs, I carried across CPUs, PCMPLY's $00 code in every mode,
-      STOP from every mode). NEXT: a turbo R column on the SAME / AS-MSX2+ pages, the DSKRST-on-A1GT cause, a VRAM-log
-      probe for the soft reset, PCMREC with a real input (harness: feed openMSX's wavinput a file).
+      STOP from every mode).
+      Late 11-23 (tr5, tr6): a turbo R line on 171 more call pages (every remeasured verdict is now on its page);
+      biosl_run `@iffsnap` / `@dumpstate` / `@wavin`; port $F4 bit 7 decides whether JP $0000 comes back (1: re-boots
+      into the cartridge, VRAM kept; 0: never returns within 60 s); PCMREC with a known WAV input: offset binary
+      (128 + input / 256, $00 stored as $01), threshold = wait for |sample - $80| >= 8t, compression `$00 n` for runs of
+      exactly $80; the A1GT-only DSKRST DI is a timing coincidence of xbsys2's run (2400-step phase sweep: 0 DI),
+      cause not found (candidate: disk rotation phase).
+      OPEN (all small): the DSKRST cause; PCMREC's comparator bits / the unstored conversion / rounding / VRAM
+      compression; a second goldfish pass over docs/turbor/ when the pages next change.
