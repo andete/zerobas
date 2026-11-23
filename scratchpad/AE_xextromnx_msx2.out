@@ -1,0 +1,33 @@
+WARNING: Var SVSP is never used on line 32 of file probes/bios/spec/xextromnx.asm
+===== probes/bios/spec/xextromnx.asm msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8700 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d100 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0101004142f4a05af5a0c2b15f4e7698d30000a7ece7245713f4a001405a0000
+  CAP ours: 0101004142f4a05af5a0c2b15f4e7698d30000a7e8e7245713f4a001405a0000
+  DIFF (1 unexcused byte(s)):
+  CAP C015: ref=EC ours=E8
+===== probes/bios/spec/xextromnx.asm msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=8a00 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0101004142f4505af550c2b15f4e7698d30000a7ece7245713f45001405a000000000000000000000000000000000000000000000000000000000000000000ff
+  CAP ours: 0101004142f4a05af5a0c2b15f4e7698d30000a7e8e7245713f4a001405a0000
+  DIFF (5 unexcused byte(s)):
+  CAP C007: ref=50 ours=A0
+  CAP C00A: ref=50 ours=A0
+  CAP C015: ref=EC ours=E8
+  CAP C01B: ref=50 ours=A0
+  CAP C040: ref=FF ours=00
+===== probes/bios/spec/xextromnx.asm msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP =====
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=3700 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=d400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : 0101004142f4005af500c2b15f4e7698d30000a7ece7245713f40001405a0000
+  CAP ours: 0101004142f4a05af5a0c2b15f4e7698d30000a7e8e7245713f4a001405a0000
+  DIFF (4 unexcused byte(s)):
+  CAP C007: ref=00 ours=A0
+  CAP C00A: ref=00 ours=A0
+  CAP C015: ref=EC ours=E8
+  CAP C01B: ref=00 ours=A0
+===== biosl: DIVERGENCE =====

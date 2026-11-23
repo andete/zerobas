@@ -8,7 +8,10 @@ SPDX-License-Identifier: BSD-2-Clause
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (the same on all three;
 > [xextrom.asm](../../../probes/bios/spec/xextrom.asm), [scratchpad/AE_xextrom_msx2.out](../../../scratchpad/AE_xextrom_msx2.out),
 > decoded by `scratchpad/xextrom_decode.py`; EXBRSA $00: [xextrom0.asm](../../../probes/bios/spec/xextrom0.asm),
-> [scratchpad/AE_xextrom0_msx2.out](../../../scratchpad/AE_xextrom0_msx2.out)).
+> [scratchpad/AE_xextrom0_msx2.out](../../../scratchpad/AE_xextrom0_msx2.out); a non-expanded EXBRSA slot:
+> [xextromnx.asm](../../../probes/bios/spec/xextromnx.asm), [scratchpad/AE_xextromnx_msx2.out](../../../scratchpad/AE_xextromnx_msx2.out)).
+> Goldfish pass 1 (test writer) 2026-11-23: 4 findings, 1 measured (EXBRSA a non-expanded slot), 1 rival pair shown
+> unobservable (EXBRSA $00), 1 wording corrected (the stack count), 1 open-list gap closed by the measurement.
 
 ## Summary
 
@@ -41,24 +44,37 @@ they were, and interrupts on if they were on at the call. The sub-ROM and EXBRSA
   interrupts off (cases 0, 5), ON when it did EI (case 2) or is a real sub-ROM routine that enables them (SETPLT /
   GETPLT, cases 12, 13) [M 0, 2, 5, 12, 13].
 - **Slots.** During the routine only page 0 is switched, to EXBRSA's slot (port $A8 bits 1-0 and, for an expanded
-  slot, the secondary register's page-0 bits); pages 1-3 are as at the call [M 0-11]. After the return port $A8 and
-  page 3's secondary register are exactly as before the call [M 0-14].
+  slot, the secondary register's page-0 bits); pages 1-3 are as at the call [M 0-11]. The secondary switch is seen
+  directly on the HB-F900 (RAM 3-1: ($FFFF) cpl $50 -> $51) and the NMS 8250 (3-2: $A0 -> $A2); on the FS-A1WSX the
+  RAM is 3-0, whose page-0 bits are 0 already, so the stub cases cannot show it there -- the real sub-ROM in 3-1
+  answering SETPLT / GETPLT (cases 12, 13) does [M 0-13]. After the return port $A8 and page 3's secondary register are
+  exactly as before the call [M 0-14].
+- **A non-expanded EXBRSA slot** (bit 7 clear: our cartridge's slot 1, not expanded on any of the three, with the
+  routine at its page-0 mirror, [xextromnx](../../../scratchpad/AE_xextromnx_msx2.out)): port $A8's page-0 bits become 01
+  during the routine ($F4 -> $F5) and page 3's secondary register is left as it was ($50 / $A0 / $00); A, F, BC, DE,
+  HL and IX (= the target) arrive as set, A $24 / HL $1357 come back from the routine, the slots and EXBRSA are as
+  before, interrupts off as entered [M].
 - **EXBRSA is read at every call**, not cached: EXBRSA back to the RAM slot after two calls to the real sub-ROM runs the
   stub again (case 14) [M 14]. EXTROM does not change EXBRSA [M 0-14].
 - **EXBRSA $00** (the "no sub-ROM" value) is not refused: with IX = RSLREG ($0138) the call runs the main ROM's RSLREG
-  in slot 0 -- A comes back $F4, port $A8 with page 0 at slot 0 -- and BC, DE, HL, IY come back unchanged
-  ([xextrom0](../../../scratchpad/AE_xextrom0_msx2.out)) [M].
+  -- A comes back $F4, port $A8 with page 0 at slot 0 -- and BC, DE, HL, IY come back unchanged
+  ([xextrom0](../../../scratchpad/AE_xextrom0_msx2.out)) [M]. Whether EXTROM switched page 0 to slot 0 or left page 0
+  alone cannot be told, and no caller can tell it: EXTROM itself runs from page 0 of the main ROM, so page 0 is in the
+  main ROM's slot at every call -- both rules give the same routine the same view [A].
 - **From any page:** called from code in page 2 RAM (case 6) it behaves as from page 1 [M 6].
-- **Stack:** the routine's SP is 26 bytes below the caller's SP at the `CALL EXTROM` (the return address included); a
-  routine that pushes nothing makes the lowest stack byte written 26 below it; SP after the return = SP before the
-  CALL [M 0-14]. With the real SETPLT / GETPLT the stack went 42 / 38 bytes deep (44 / 38 on the FS-A1WSX) [M 12, 13].
+- **Stack** (counted from the SP at the `CALL EXTROM` instruction, before the CALL pushes its return address): the
+  routine's SP is 28 bytes below it for an expanded EXBRSA slot (26 below the pushed return address) [M 0-14], and 20
+  bytes below it for a non-expanded one (xextromnx: SP $E800 at the CALL, the routine's $E7EC) [M]; a routine that
+  pushes nothing makes the lowest stack byte written 28 below; SP after the return = SP before the CALL [M 0-14]. With
+  the real SETPLT / GETPLT the stack went 44 / 40 bytes deep (46 / 40 on the FS-A1WSX) [M 12, 13].
 
 ## Differences from the reference
 
 C-BIOS's MSX2 / MSX2+ builds (the subject) match every rule above: registers in and out, IY / alternates preserved,
-the interrupt rule, the slots, EXBRSA per call, EXBRSA $00. The only measured difference is the stack: C-BIOS's
-EXTROM frame is 22 bytes (the references' 26), and SETPLT / GETPLT went 34 / 30 deep [M 0-14]. Not a contract a
-caller can see unless it measures the stack.
+the interrupt rule, the slots, EXBRSA per call, EXBRSA $00, the non-expanded slot. The only measured difference is
+the stack: C-BIOS's routine runs 24 bytes below the SP at the CALL whether EXBRSA's slot is expanded or not (the
+references' 28 / 20), and SETPLT / GETPLT went 36 / 32 deep [M 0-14; xextromnx]. Not a contract a caller can see unless
+it measures the stack.
 
 (Seen on the way, not EXTROM's: the references' sub-ROM GETPLT returns D = the palette number, C-BIOS's leaves DE
 alone [M 13] -- [GETPLT](../sub/GETPLT.md)'s page.)
