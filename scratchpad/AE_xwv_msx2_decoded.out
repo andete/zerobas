@@ -1,0 +1,306 @@
+# msx2eu: Philips_NMS_8250 vs CBIOS2_CUR_MSX2_EU ref
+  C= 0 B=0F reg=0E A=00 F=44 B'=0F C'=00 w99=4 [12 89 0F 80] w9B=0 copies: $F3DF=0F $FFE8=12
+  C= 1 B=6F reg=6F A=00 F=44 B'=6F C'=01 w99=2 [6F 81] w9B=0 copies: $F3E0=6F
+  C= 2 B=09 reg=09 A=00 F=44 B'=09 C'=02 w99=2 [09 82] w9B=0 copies: $F3E1=09
+  C= 3 B=8F reg=8F A=00 F=44 B'=8F C'=03 w99=2 [8F 83] w9B=0 copies: $F3E2=8F
+  C= 4 B=0F reg=0F A=00 F=44 B'=0F C'=04 w99=2 [0F 84] w9B=0 copies: $F3E3=0F
+  C= 5 B=39 reg=39 A=00 F=44 B'=39 C'=05 w99=2 [39 85] w9B=0 copies: $F3E4=39
+  C= 6 B=08 reg=08 A=00 F=44 B'=08 C'=06 w99=2 [08 86] w9B=0 copies: $F3E5=08
+  C= 7 B=0B reg=0B A=00 F=44 B'=0B C'=07 w99=2 [0B 87] w9B=0 copies: $F3E6=0B
+  C= 8 B=07 reg=03 A=00 F=44 B'=07 C'=08 w99=2 [07 88] w9B=0 copies: $FFE7=07
+  C= 9 B=0D reg=0D A=00 F=44 B'=0D C'=09 w99=2 [0D 89] w9B=0 copies: $FFE8=0D
+  C=10 B=0F reg=07 A=00 F=44 B'=0F C'=0A w99=2 [0F 8A] w9B=0 copies: $FFE9=0F
+  C=11 B=0F reg=03 A=00 F=44 B'=0F C'=0B w99=2 [0F 8B] w9B=0 copies: $FFEA=0F
+  C=12 B=0F reg=0F A=00 F=44 B'=0F C'=0C w99=2 [0F 8C] w9B=0 copies: $FFEB=0F
+  C=13 B=0F reg=0F A=00 F=44 B'=0F C'=0D w99=2 [0F 8D] w9B=0 copies: $FFEC=0F
+  C=14 B=0F reg=07 A=00 F=44 B'=0F C'=0E w99=2 [0F 8E] w9B=0 copies: $FFED=0F
+  C=15 B=00 reg=00 A=00 F=44 B'=00 C'=0F w99=2 [00 8F] w9B=0 copies: -
+  C=16 B=0F reg=0F A=00 F=44 B'=0F C'=10 w99=2 [0F 90] w9B=0 copies: -
+  C=17 B=17 reg=17 A=00 F=44 B'=17 C'=11 w99=2 [17 91] w9B=0 copies: $FFF0=17
+  C=18 B=0F reg=0F A=00 F=44 B'=0F C'=12 w99=2 [0F 92] w9B=0 copies: $FFF1=0F
+  C=19 B=0F reg=0F A=00 F=44 B'=0F C'=13 w99=2 [0F 93] w9B=0 copies: $FFF2=0F
+  C=20 B=0F reg=0F A=00 F=44 B'=0F C'=14 w99=2 [0F 94] w9B=0 copies: $FFF3=0F
+  C=21 B=34 reg=34 A=00 F=44 B'=34 C'=15 w99=2 [34 95] w9B=0 copies: $FFF4=34
+  C=22 B=0A reg=0A A=00 F=44 B'=0A C'=16 w99=2 [0A 96] w9B=0 copies: $FFF5=0A
+  C=23 B=0F reg=0F A=00 F=44 B'=0F C'=17 w99=2 [0F 97] w9B=0 copies: $FFF6=0F
+  C=24 B=0F reg=00 A=00 F=44 B'=0F C'=18 w99=2 [0F 98] w9B=0 copies: -
+  C=25 B=0F reg=00 A=00 F=44 B'=0F C'=19 w99=2 [0F 99] w9B=0 copies: -
+  C=26 B=0F reg=00 A=00 F=44 B'=0F C'=1A w99=2 [0F 9A] w9B=0 copies: -
+  C=27 B=0F reg=00 A=00 F=44 B'=0F C'=1B w99=2 [0F 9B] w9B=0 copies: -
+  C=32 B=0F reg=0F A=00 F=44 B'=0F C'=20 w99=2 [0F A0] w9B=0 copies: -
+  C=33 B=0F reg=01 A=00 F=44 B'=0F C'=21 w99=2 [0F A1] w9B=0 copies: -
+  C=34 B=0F reg=0F A=00 F=44 B'=0F C'=22 w99=2 [0F A2] w9B=0 copies: -
+  C=35 B=0F reg=03 A=00 F=44 B'=0F C'=23 w99=2 [0F A3] w9B=0 copies: -
+  C=36 B=87 reg=87 A=00 F=44 B'=87 C'=24 w99=2 [87 A4] w9B=0 copies: -
+  C=37 B=0E reg=00 A=00 F=44 B'=0E C'=25 w99=2 [0E A5] w9B=0 copies: -
+  C=38 B=C9 reg=C9 A=00 F=44 B'=C9 C'=26 w99=2 [C9 A6] w9B=0 copies: -
+  C=39 B=0F reg=03 A=00 F=44 B'=0F C'=27 w99=2 [0F A7] w9B=0 copies: -
+  C=40 B=1F reg=1F A=00 F=44 B'=1F C'=28 w99=2 [1F A8] w9B=0 copies: -
+  C=41 B=0F reg=03 A=00 F=44 B'=0F C'=29 w99=2 [0F A9] w9B=0 copies: -
+  C=42 B=0F reg=0F A=00 F=44 B'=0F C'=2A w99=2 [0F AA] w9B=0 copies: -
+  C=43 B=0F reg=03 A=00 F=44 B'=0F C'=2B w99=2 [0F AB] w9B=0 copies: -
+  C=44 B=0E reg=0E A=00 F=44 B'=0E C'=2C w99=2 [0E AC] w9B=0 copies: -
+  C=45 B=0F reg=0F A=00 F=44 B'=0F C'=2D w99=2 [0F AD] w9B=0 copies: -
+  C=46 B=00 reg=00 A=00 F=44 B'=00 C'=2E w99=2 [00 AE] w9B=0 copies: -
+  VDPSTA: S#0:A=1F/dbg=1F S#1:A=00/dbg=00 S#2:A=0E/dbg=0E S#3:A=00/dbg=00 S#4:A=FE/dbg=FE S#5:A=00/dbg=00 S#6:A=FC/dbg=FC S#7:A=01/dbg=01 S#8:A=D2/dbg=D2 S#9:A=FE/dbg=FE
+  PHASE 3 (53 cases; whole $F380-$FFFE diff; SP=$F08C):
+    C= 0 B=0F reg=0E w99=4 [12 89 0F 80] w9B=0 diffs=5: $F3DF=0F $F3F7=01 $FC9E=8D $FCA2=73 $FFE8=12
+    C= 1 B=6F reg=6F w99=2 [6F 81] w9B=0 diffs=5: $F3E0=6F $F3E7=C8 $F3F7=01 $FC9E=8D $FCA2=73
+    C= 2 B=09 reg=09 w99=2 [09 82] w9B=0 diffs=4: $F3E1=09 $F3F7=01 $FC9E=8D $FCA2=73
+    C= 3 B=8F reg=8F w99=2 [8F 83] w9B=0 diffs=4: $F3E2=8F $F3F7=01 $FC9E=8D $FCA2=73
+    C= 4 B=0F reg=0F w99=2 [0F 84] w9B=0 diffs=4: $F3E3=0F $F3F7=01 $FC9E=8D $FCA2=73
+    C= 5 B=39 reg=39 w99=2 [39 85] w9B=0 diffs=4: $F3E4=39 $F3F7=01 $FC9E=8D $FCA2=73
+    C= 6 B=08 reg=08 w99=2 [08 86] w9B=0 diffs=5: $F3E5=08 $F3E7=C4 $F3F7=01 $FC9E=8D $FCA2=73
+    C= 7 B=0B reg=0B w99=2 [0B 87] w9B=0 diffs=4: $F3E6=0B $F3F7=01 $FC9E=8D $FCA2=73
+    C= 8 B=07 reg=03 w99=2 [07 88] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFE7=07
+    C= 9 B=0D reg=0D w99=2 [0D 89] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFE8=0D
+    C=10 B=0F reg=07 w99=2 [0F 8A] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFE9=0F
+    C=11 B=0F reg=03 w99=2 [0F 8B] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFEA=0F
+    C=12 B=0F reg=0F w99=2 [0F 8C] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFEB=0F
+    C=13 B=0F reg=0F w99=2 [0F 8D] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFEC=0F
+    C=14 B=0F reg=07 w99=2 [0F 8E] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFED=0F
+    C=15 B=00 reg=00 w99=2 [00 8F] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=16 B=0F reg=0F w99=2 [0F 90] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=17 B=17 reg=17 w99=2 [17 91] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF0=17
+    C=18 B=0F reg=0F w99=2 [0F 92] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF1=0F
+    C=19 B=0F reg=0F w99=2 [0F 93] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF2=0F
+    C=20 B=0F reg=0F w99=2 [0F 94] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF3=0F
+    C=21 B=34 reg=34 w99=2 [34 95] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF4=34
+    C=22 B=0A reg=0A w99=2 [0A 96] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF5=0A
+    C=23 B=0F reg=0F w99=2 [0F 97] w9B=0 diffs=4: $F3F7=01 $FC9E=8D $FCA2=73 $FFF6=0F
+    C=24 B=0F reg=00 w99=2 [0F 98] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=25 B=0F reg=00 w99=2 [0F 99] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=26 B=0F reg=00 w99=2 [0F 9A] w9B=0 diffs=2: $FC9E=8E $FCA2=72
+    C=27 B=0F reg=00 w99=2 [0F 9B] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=28 B=0F reg=00 w99=2 [0F 9C] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=29 B=0F reg=00 w99=2 [0F 9D] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=30 B=0F reg=00 w99=2 [0F 9E] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=31 B=0F reg=00 w99=2 [0F 9F] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=32 B=0F reg=0F w99=2 [0F A0] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=33 B=0F reg=01 w99=2 [0F A1] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=34 B=0F reg=0F w99=2 [0F A2] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=35 B=0F reg=03 w99=2 [0F A3] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=36 B=87 reg=87 w99=2 [87 A4] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=37 B=0E reg=00 w99=2 [0E A5] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=38 B=C9 reg=C9 w99=2 [C9 A6] w9B=0 diffs=2: $FC9E=8E $FCA2=72
+    C=39 B=0F reg=03 w99=2 [0F A7] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=40 B=1F reg=1F w99=2 [1F A8] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=41 B=0F reg=03 w99=2 [0F A9] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=42 B=0F reg=0F w99=2 [0F AA] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=43 B=0F reg=03 w99=2 [0F AB] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=44 B=0E reg=0E w99=2 [0E AC] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C=45 B=0F reg=0F w99=2 [0F AD] w9B=0 diffs=2: $FC9E=8E $FCA2=72
+    C=46 B=00 reg=00 w99=2 [00 AE] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C= 0 B=00 reg=00 w99=2 [00 80] w9B=0 diffs=3: $F3F7=01 $FC9E=8D $FCA2=73
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=4: $F3DF=0E $F3F7=01 $FC9E=8D $FCA2=73
+    C= 0 B=0F reg=0E w99=4 [90 89 0F 80] w9B=0 diffs=6: $F3DF=0F $F3E7=C8 $F3F7=01 $FC9E=8D $FCA2=73 $FFE8=90
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=3: $F3DF=0E $FC9E=8E $FCA2=72
+    C= 0 B=01 reg=00 w99=4 [12 89 01 80] w9B=0 diffs=6: $F3DF=01 $F3E7=C8 $F3F7=01 $FC9E=8D $FCA2=73 $FFE8=12
+    C= 0 B=0D reg=0C w99=4 [12 89 0D 80] w9B=0 diffs=5: $F3DF=0D $F3F7=01 $FC9E=8D $FCA2=73 $FFE8=12
+    VDPSTA STATFL $5A, F pending, A 0: A=1F F=44 S#before=9F STATFL after=9F w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $A5, at once, A 0: A=1F F=44 S#before=1F STATFL after=A5 w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $5A, A 1: A=00 F=40 S#before=00 STATFL after=5A w99=4 [01 8F 00 8F] IFF=0
+# msx2jp: Sony_HB-F900 vs CBIOS2_CUR_MSX2_JP ref
+  C= 0 B=0F reg=0E A=00 F=44 B'=0F C'=00 w99=4 [10 89 0F 80] w9B=0 copies: $F3DF=0F $FFE8=10
+  C= 1 B=6F reg=6F A=00 F=44 B'=6F C'=01 w99=2 [6F 81] w9B=0 copies: $F3E0=6F
+  C= 2 B=09 reg=09 A=00 F=44 B'=09 C'=02 w99=2 [09 82] w9B=0 copies: $F3E1=09
+  C= 3 B=8F reg=8F A=00 F=44 B'=8F C'=03 w99=2 [8F 83] w9B=0 copies: $F3E2=8F
+  C= 4 B=0F reg=0F A=00 F=44 B'=0F C'=04 w99=2 [0F 84] w9B=0 copies: $F3E3=0F
+  C= 5 B=39 reg=39 A=00 F=44 B'=39 C'=05 w99=2 [39 85] w9B=0 copies: $F3E4=39
+  C= 6 B=08 reg=08 A=00 F=44 B'=08 C'=06 w99=2 [08 86] w9B=0 copies: $F3E5=08
+  C= 7 B=08 reg=08 A=00 F=44 B'=08 C'=07 w99=2 [08 87] w9B=0 copies: $F3E6=08
+  C= 8 B=07 reg=03 A=00 F=44 B'=07 C'=08 w99=2 [07 88] w9B=0 copies: $FFE7=07
+  C= 9 B=0F reg=0F A=00 F=44 B'=0F C'=09 w99=2 [0F 89] w9B=0 copies: $FFE8=0F
+  C=10 B=0F reg=07 A=00 F=44 B'=0F C'=0A w99=2 [0F 8A] w9B=0 copies: $FFE9=0F
+  C=11 B=0F reg=03 A=00 F=44 B'=0F C'=0B w99=2 [0F 8B] w9B=0 copies: $FFEA=0F
+  C=12 B=0F reg=0F A=00 F=44 B'=0F C'=0C w99=2 [0F 8C] w9B=0 copies: $FFEB=0F
+  C=13 B=0F reg=0F A=00 F=44 B'=0F C'=0D w99=2 [0F 8D] w9B=0 copies: $FFEC=0F
+  C=14 B=0F reg=07 A=00 F=44 B'=0F C'=0E w99=2 [0F 8E] w9B=0 copies: $FFED=0F
+  C=15 B=00 reg=00 A=00 F=44 B'=00 C'=0F w99=2 [00 8F] w9B=0 copies: -
+  C=16 B=0F reg=0F A=00 F=44 B'=0F C'=10 w99=2 [0F 90] w9B=0 copies: -
+  C=17 B=17 reg=17 A=00 F=44 B'=17 C'=11 w99=2 [17 91] w9B=0 copies: $FFF0=17
+  C=18 B=0F reg=0F A=00 F=44 B'=0F C'=12 w99=2 [0F 92] w9B=0 copies: $FFF1=0F
+  C=19 B=0F reg=0F A=00 F=44 B'=0F C'=13 w99=2 [0F 93] w9B=0 copies: $FFF2=0F
+  C=20 B=0F reg=0F A=00 F=44 B'=0F C'=14 w99=2 [0F 94] w9B=0 copies: $FFF3=0F
+  C=21 B=34 reg=34 A=00 F=44 B'=34 C'=15 w99=2 [34 95] w9B=0 copies: $FFF4=34
+  C=22 B=0A reg=0A A=00 F=44 B'=0A C'=16 w99=2 [0A 96] w9B=0 copies: $FFF5=0A
+  C=23 B=0F reg=0F A=00 F=44 B'=0F C'=17 w99=2 [0F 97] w9B=0 copies: $FFF6=0F
+  C=24 B=0F reg=00 A=00 F=44 B'=0F C'=18 w99=2 [0F 98] w9B=0 copies: -
+  C=25 B=0F reg=00 A=00 F=44 B'=0F C'=19 w99=2 [0F 99] w9B=0 copies: -
+  C=26 B=0F reg=00 A=00 F=44 B'=0F C'=1A w99=2 [0F 9A] w9B=0 copies: -
+  C=27 B=0F reg=00 A=00 F=44 B'=0F C'=1B w99=2 [0F 9B] w9B=0 copies: -
+  C=32 B=0F reg=0F A=00 F=44 B'=0F C'=20 w99=2 [0F A0] w9B=0 copies: -
+  C=33 B=0F reg=01 A=00 F=44 B'=0F C'=21 w99=2 [0F A1] w9B=0 copies: -
+  C=34 B=0F reg=0F A=00 F=44 B'=0F C'=22 w99=2 [0F A2] w9B=0 copies: -
+  C=35 B=0F reg=03 A=00 F=44 B'=0F C'=23 w99=2 [0F A3] w9B=0 copies: -
+  C=36 B=6F reg=6F A=00 F=44 B'=6F C'=24 w99=2 [6F A4] w9B=0 copies: -
+  C=37 B=0E reg=00 A=00 F=44 B'=0E C'=25 w99=2 [0E A5] w9B=0 copies: -
+  C=38 B=B3 reg=B3 A=00 F=44 B'=B3 C'=26 w99=2 [B3 A6] w9B=0 copies: -
+  C=39 B=0F reg=03 A=00 F=44 B'=0F C'=27 w99=2 [0F A7] w9B=0 copies: -
+  C=40 B=1F reg=1F A=00 F=44 B'=1F C'=28 w99=2 [1F A8] w9B=0 copies: -
+  C=41 B=0F reg=03 A=00 F=44 B'=0F C'=29 w99=2 [0F A9] w9B=0 copies: -
+  C=42 B=0F reg=0F A=00 F=44 B'=0F C'=2A w99=2 [0F AA] w9B=0 copies: -
+  C=43 B=0F reg=03 A=00 F=44 B'=0F C'=2B w99=2 [0F AB] w9B=0 copies: -
+  C=44 B=0E reg=0E A=00 F=44 B'=0E C'=2C w99=2 [0E AC] w9B=0 copies: -
+  C=45 B=0F reg=0F A=00 F=44 B'=0F C'=2D w99=2 [0F AD] w9B=0 copies: -
+  C=46 B=00 reg=00 A=00 F=44 B'=00 C'=2E w99=2 [00 AE] w9B=0 copies: -
+  VDPSTA: S#0:A=1F/dbg=1F S#1:A=00/dbg=00 S#2:A=0E/dbg=0E S#3:A=00/dbg=00 S#4:A=FE/dbg=FE S#5:A=00/dbg=00 S#6:A=FC/dbg=FC S#7:A=01/dbg=01 S#8:A=D2/dbg=D2 S#9:A=FE/dbg=FE
+  PHASE 3 (53 cases; whole $F380-$FFFE diff; SP=$F08C):
+    C= 0 B=0F reg=0E w99=4 [10 89 0F 80] w9B=0 diffs=5: $F3DF=0F $F3F6=02 $FC9E=91 $FCA2=6F $FFE8=10
+    C= 1 B=6F reg=6F w99=2 [6F 81] w9B=0 diffs=4: $F3E0=6F $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 2 B=09 reg=09 w99=2 [09 82] w9B=0 diffs=4: $F3E1=09 $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 3 B=8F reg=8F w99=2 [8F 83] w9B=0 diffs=4: $F3E2=8F $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 4 B=0F reg=0F w99=2 [0F 84] w9B=0 diffs=4: $F3E3=0F $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 5 B=39 reg=39 w99=2 [39 85] w9B=0 diffs=4: $F3E4=39 $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 6 B=08 reg=08 w99=2 [08 86] w9B=0 diffs=4: $F3E5=08 $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 7 B=08 reg=08 w99=2 [08 87] w9B=0 diffs=4: $F3E6=08 $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 8 B=07 reg=03 w99=2 [07 88] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFE7=07
+    C= 9 B=0F reg=0F w99=2 [0F 89] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFE8=0F
+    C=10 B=0F reg=07 w99=2 [0F 8A] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFE9=0F
+    C=11 B=0F reg=03 w99=2 [0F 8B] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFEA=0F
+    C=12 B=0F reg=0F w99=2 [0F 8C] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFEB=0F
+    C=13 B=0F reg=0F w99=2 [0F 8D] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFEC=0F
+    C=14 B=0F reg=07 w99=2 [0F 8E] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFED=0F
+    C=15 B=00 reg=00 w99=2 [00 8F] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=16 B=0F reg=0F w99=2 [0F 90] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=17 B=17 reg=17 w99=2 [17 91] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF0=17
+    C=18 B=0F reg=0F w99=2 [0F 92] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF1=0F
+    C=19 B=0F reg=0F w99=2 [0F 93] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF2=0F
+    C=20 B=0F reg=0F w99=2 [0F 94] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF3=0F
+    C=21 B=34 reg=34 w99=2 [34 95] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF4=34
+    C=22 B=0A reg=0A w99=2 [0A 96] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF5=0A
+    C=23 B=0F reg=0F w99=2 [0F 97] w9B=0 diffs=4: $F3F6=02 $FC9E=91 $FCA2=6F $FFF6=0F
+    C=24 B=0F reg=00 w99=2 [0F 98] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=25 B=0F reg=00 w99=2 [0F 99] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=26 B=0F reg=00 w99=2 [0F 9A] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=27 B=0F reg=00 w99=2 [0F 9B] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=28 B=0F reg=00 w99=2 [0F 9C] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=29 B=0F reg=00 w99=2 [0F 9D] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=30 B=0F reg=00 w99=2 [0F 9E] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=31 B=0F reg=00 w99=2 [0F 9F] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=32 B=0F reg=0F w99=2 [0F A0] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=33 B=0F reg=01 w99=2 [0F A1] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=34 B=0F reg=0F w99=2 [0F A2] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=35 B=0F reg=03 w99=2 [0F A3] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=36 B=6F reg=6F w99=2 [6F A4] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=37 B=0E reg=00 w99=2 [0E A5] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=38 B=B3 reg=B3 w99=2 [B3 A6] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=39 B=0F reg=03 w99=2 [0F A7] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=40 B=1F reg=1F w99=2 [1F A8] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=41 B=0F reg=03 w99=2 [0F A9] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=42 B=0F reg=0F w99=2 [0F AA] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=43 B=0F reg=03 w99=2 [0F AB] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=44 B=0E reg=0E w99=2 [0E AC] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=45 B=0F reg=0F w99=2 [0F AD] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C=46 B=00 reg=00 w99=2 [00 AE] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 0 B=00 reg=00 w99=2 [00 80] w9B=0 diffs=3: $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=3: $F3DF=0E $FC9E=92 $FCA2=6E
+    C= 0 B=0F reg=0E w99=4 [90 89 0F 80] w9B=0 diffs=6: $F3DF=0F $F3E7=C8 $F3F6=02 $FC9E=91 $FCA2=6F $FFE8=90
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=4: $F3DF=0E $F3F6=02 $FC9E=91 $FCA2=6F
+    C= 0 B=01 reg=00 w99=4 [10 89 01 80] w9B=0 diffs=6: $F3DF=01 $F3E7=C8 $F3F6=02 $FC9E=91 $FCA2=6F $FFE8=10
+    C= 0 B=0D reg=0C w99=4 [10 89 0D 80] w9B=0 diffs=5: $F3DF=0D $F3F6=02 $FC9E=91 $FCA2=6F $FFE8=10
+    VDPSTA STATFL $5A, F pending, A 0: A=1F F=44 S#before=9F STATFL after=9F w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $A5, at once, A 0: A=1F F=44 S#before=1F STATFL after=A5 w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $5A, A 1: A=00 F=60 S#before=00 STATFL after=5A w99=4 [01 8F 00 8F] IFF=0
+# msx2p: Panasonic_FS-A1WSX vs CBIOS2_CUR_MSX2P_JP ref
+  C= 0 B=0F reg=0E A=00 F=44 B'=0F C'=00 w99=4 [10 89 0F 80] w9B=0 copies: $F3DF=0F $FFE8=10
+  C= 1 B=6F reg=6F A=00 F=44 B'=6F C'=01 w99=2 [6F 81] w9B=0 copies: $F3E0=6F
+  C= 2 B=09 reg=09 A=00 F=44 B'=09 C'=02 w99=2 [09 82] w9B=0 copies: $F3E1=09
+  C= 3 B=8F reg=8F A=00 F=44 B'=8F C'=03 w99=2 [8F 83] w9B=0 copies: $F3E2=8F
+  C= 4 B=0F reg=0F A=00 F=44 B'=0F C'=04 w99=2 [0F 84] w9B=0 copies: $F3E3=0F
+  C= 5 B=39 reg=39 A=00 F=44 B'=39 C'=05 w99=2 [39 85] w9B=0 copies: $F3E4=39
+  C= 6 B=08 reg=08 A=00 F=44 B'=08 C'=06 w99=2 [08 86] w9B=0 copies: $F3E5=08
+  C= 7 B=08 reg=08 A=00 F=44 B'=08 C'=07 w99=2 [08 87] w9B=0 copies: $F3E6=08
+  C= 8 B=07 reg=03 A=00 F=44 B'=07 C'=08 w99=2 [07 88] w9B=0 copies: $FFE7=07
+  C= 9 B=0F reg=0F A=00 F=44 B'=0F C'=09 w99=2 [0F 89] w9B=0 copies: $FFE8=0F
+  C=10 B=0F reg=07 A=00 F=44 B'=0F C'=0A w99=2 [0F 8A] w9B=0 copies: $FFE9=0F
+  C=11 B=0F reg=03 A=00 F=44 B'=0F C'=0B w99=2 [0F 8B] w9B=0 copies: $FFEA=0F
+  C=12 B=0F reg=0F A=00 F=44 B'=0F C'=0C w99=2 [0F 8C] w9B=0 copies: $FFEB=0F
+  C=13 B=0F reg=0F A=00 F=44 B'=0F C'=0D w99=2 [0F 8D] w9B=0 copies: $FFEC=0F
+  C=14 B=0F reg=07 A=00 F=44 B'=0F C'=0E w99=2 [0F 8E] w9B=0 copies: $FFED=0F
+  C=15 B=00 reg=00 A=00 F=44 B'=00 C'=0F w99=2 [00 8F] w9B=0 copies: -
+  C=16 B=0F reg=0F A=00 F=44 B'=0F C'=10 w99=2 [0F 90] w9B=0 copies: -
+  C=17 B=13 reg=13 A=00 F=44 B'=13 C'=11 w99=2 [13 91] w9B=0 copies: $FFF0=13
+  C=18 B=0F reg=0F A=00 F=44 B'=0F C'=12 w99=2 [0F 92] w9B=0 copies: $FFF1=0F
+  C=19 B=0F reg=0F A=00 F=44 B'=0F C'=13 w99=2 [0F 93] w9B=0 copies: $FFF2=0F
+  C=20 B=0F reg=0F A=00 F=44 B'=0F C'=14 w99=2 [0F 94] w9B=0 copies: $FFF3=0F
+  C=21 B=34 reg=34 A=00 F=44 B'=34 C'=15 w99=2 [34 95] w9B=0 copies: $FFF4=34
+  C=22 B=0A reg=0A A=00 F=44 B'=0A C'=16 w99=2 [0A 96] w9B=0 copies: $FFF5=0A
+  C=23 B=0F reg=0F A=00 F=44 B'=0F C'=17 w99=2 [0F 97] w9B=0 copies: $FFF6=0F
+  C=24 B=0F reg=00 A=00 F=44 B'=0F C'=18 w99=2 [0F 98] w9B=0 copies: -
+  C=25 B=0F reg=0F A=00 F=44 B'=0F C'=19 w99=2 [0F 99] w9B=0 copies: $FFFA=0F
+  C=26 B=0F reg=0F A=00 F=44 B'=0F C'=1A w99=2 [0F 9A] w9B=0 copies: $FFFB=0F
+  C=27 B=0F reg=07 A=00 F=44 B'=0F C'=1B w99=2 [0F 9B] w9B=0 copies: $FFFC=0F
+  C=32 B=0F reg=0F A=00 F=44 B'=0F C'=20 w99=2 [0F A0] w9B=0 copies: -
+  C=33 B=0F reg=01 A=00 F=44 B'=0F C'=21 w99=2 [0F A1] w9B=0 copies: -
+  C=34 B=0F reg=0F A=00 F=44 B'=0F C'=22 w99=2 [0F A2] w9B=0 copies: -
+  C=35 B=0F reg=03 A=00 F=44 B'=0F C'=23 w99=2 [0F A3] w9B=0 copies: -
+  C=36 B=7F reg=7F A=00 F=44 B'=7F C'=24 w99=2 [7F A4] w9B=0 copies: -
+  C=37 B=0E reg=00 A=00 F=44 B'=0E C'=25 w99=2 [0E A5] w9B=0 copies: -
+  C=38 B=73 reg=73 A=00 F=44 B'=73 C'=26 w99=2 [73 A6] w9B=0 copies: -
+  C=39 B=0F reg=03 A=00 F=44 B'=0F C'=27 w99=2 [0F A7] w9B=0 copies: -
+  C=40 B=1F reg=1F A=00 F=44 B'=1F C'=28 w99=2 [1F A8] w9B=0 copies: -
+  C=41 B=0F reg=03 A=00 F=44 B'=0F C'=29 w99=2 [0F A9] w9B=0 copies: -
+  C=42 B=0F reg=0F A=00 F=44 B'=0F C'=2A w99=2 [0F AA] w9B=0 copies: -
+  C=43 B=0F reg=03 A=00 F=44 B'=0F C'=2B w99=2 [0F AB] w9B=0 copies: -
+  C=44 B=0E reg=0E A=00 F=44 B'=0E C'=2C w99=2 [0E AC] w9B=0 copies: -
+  C=45 B=0F reg=0F A=00 F=44 B'=0F C'=2D w99=2 [0F AD] w9B=0 copies: -
+  C=46 B=00 reg=00 A=00 F=44 B'=00 C'=2E w99=2 [00 AE] w9B=0 copies: -
+  VDPSTA: S#0:A=1F/dbg=1F S#1:A=04/dbg=04 S#2:A=2C/dbg=4C S#3:A=F4/dbg=F4 S#4:A=FE/dbg=FE S#5:A=24/dbg=24 S#6:A=FC/dbg=FC S#7:A=01/dbg=01 S#8:A=D2/dbg=D2 S#9:A=FE/dbg=FE
+  PHASE 3 (53 cases; whole $F380-$FFFE diff; SP=$F08C):
+    C= 0 B=0F reg=0E w99=4 [10 89 0F 80] w9B=0 diffs=5: $F3DF=0F $F3F6=02 $FC9E=3D $FCA2=C3 $FFE8=10
+    C= 1 B=6F reg=6F w99=2 [6F 81] w9B=0 diffs=4: $F3E0=6F $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 2 B=09 reg=09 w99=2 [09 82] w9B=0 diffs=4: $F3E1=09 $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 3 B=8F reg=8F w99=2 [8F 83] w9B=0 diffs=4: $F3E2=8F $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 4 B=0F reg=0F w99=2 [0F 84] w9B=0 diffs=4: $F3E3=0F $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 5 B=39 reg=39 w99=2 [39 85] w9B=0 diffs=4: $F3E4=39 $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 6 B=08 reg=08 w99=2 [08 86] w9B=0 diffs=4: $F3E5=08 $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 7 B=08 reg=08 w99=2 [08 87] w9B=0 diffs=4: $F3E6=08 $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 8 B=07 reg=03 w99=2 [07 88] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFE7=07
+    C= 9 B=0F reg=0F w99=2 [0F 89] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFE8=0F
+    C=10 B=0F reg=07 w99=2 [0F 8A] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFE9=0F
+    C=11 B=0F reg=03 w99=2 [0F 8B] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFEA=0F
+    C=12 B=0F reg=0F w99=2 [0F 8C] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFEB=0F
+    C=13 B=0F reg=0F w99=2 [0F 8D] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFEC=0F
+    C=14 B=0F reg=07 w99=2 [0F 8E] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFED=0F
+    C=15 B=00 reg=00 w99=2 [00 8F] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=16 B=0F reg=0F w99=2 [0F 90] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=17 B=13 reg=13 w99=2 [13 91] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF0=13
+    C=18 B=0F reg=0F w99=2 [0F 92] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF1=0F
+    C=19 B=0F reg=0F w99=2 [0F 93] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF2=0F
+    C=20 B=0F reg=0F w99=2 [0F 94] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF3=0F
+    C=21 B=34 reg=34 w99=2 [34 95] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF4=34
+    C=22 B=0A reg=0A w99=2 [0A 96] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF5=0A
+    C=23 B=0F reg=0F w99=2 [0F 97] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFF6=0F
+    C=24 B=0F reg=00 w99=2 [0F 98] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=25 B=0F reg=0F w99=2 [0F 99] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFFA=0F
+    C=26 B=0F reg=0F w99=2 [0F 9A] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFFB=0F
+    C=27 B=0F reg=07 w99=2 [0F 9B] w9B=0 diffs=4: $F3F6=02 $FC9E=3D $FCA2=C3 $FFFC=0F
+    C=28 B=0F reg=00 w99=2 [0F 9C] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=29 B=0F reg=00 w99=2 [0F 9D] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=30 B=0F reg=00 w99=2 [0F 9E] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=31 B=0F reg=00 w99=2 [0F 9F] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=32 B=0F reg=0F w99=2 [0F A0] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=33 B=0F reg=01 w99=2 [0F A1] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=34 B=0F reg=0F w99=2 [0F A2] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=35 B=0F reg=03 w99=2 [0F A3] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=36 B=7F reg=7F w99=2 [7F A4] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=37 B=0E reg=00 w99=2 [0E A5] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=38 B=73 reg=73 w99=2 [73 A6] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=39 B=0F reg=03 w99=2 [0F A7] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=40 B=1F reg=1F w99=2 [1F A8] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=41 B=0F reg=03 w99=2 [0F A9] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=42 B=0F reg=0F w99=2 [0F AA] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=43 B=0F reg=03 w99=2 [0F AB] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=44 B=0E reg=0E w99=2 [0E AC] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=45 B=0F reg=0F w99=2 [0F AD] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C=46 B=00 reg=00 w99=2 [00 AE] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 0 B=00 reg=00 w99=2 [00 80] w9B=0 diffs=3: $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=4: $F3DF=0E $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 0 B=0F reg=0E w99=4 [90 89 0F 80] w9B=0 diffs=6: $F3DF=0F $F3E7=C8 $F3F6=02 $FC9E=3D $FCA2=C3 $FFE8=90
+    C= 0 B=0E reg=0E w99=2 [0E 80] w9B=0 diffs=4: $F3DF=0E $F3F6=02 $FC9E=3D $FCA2=C3
+    C= 0 B=01 reg=00 w99=4 [10 89 01 80] w9B=0 diffs=6: $F3DF=01 $F3E7=C8 $F3F6=02 $FC9E=3D $FCA2=C3 $FFE8=10
+    C= 0 B=0D reg=0C w99=4 [10 89 0D 80] w9B=0 diffs=5: $F3DF=0D $F3F6=02 $FC9E=3D $FCA2=C3 $FFE8=10
+    VDPSTA STATFL $5A, F pending, A 0: A=1F F=44 S#before=9F STATFL after=9F w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $A5, at once, A 0: A=1F F=44 S#before=1F STATFL after=A5 w99=4 [00 8F 00 8F] IFF=0
+    VDPSTA STATFL $5A, A 1: A=04 F=60 S#before=04 STATFL after=5A w99=4 [01 8F 00 8F] IFF=0

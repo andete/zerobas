@@ -28,6 +28,22 @@ def main():
                   f"w99={r[7]} [{log}] w9B={r[14]} copies: {' '.join(ch) or '-'}")
         v = b[2 + 48 * 43: 2 + 48 * 43 + 40]
         print("  VDPSTA: " + " ".join(f"S#{v[4 * k + 3]}:A={v[4 * k]:02X}/dbg={v[4 * k + 2]:02X}" for k in range(10)))
+        if not any(b[0x0840: 0x0840 + 38]):
+            continue                            # a run from before phases 3 / 4 (2026-11-23 goldfish pass 1)
+        p4 = 0x1020
+        sp = b[p4] | b[p4 + 1] << 8
+        n3 = b[p4 + 2]
+        print(f"  PHASE 3 ({n3} cases; whole $F380-$FFFE diff; SP=${sp:04X}):")
+        for k in range(n3):
+            r = b[0x0840 + 38 * k: 0x0840 + 38 * (k + 1)]
+            log = " ".join(f"{r[4 + j]:02X}" for j in range(min(r[3], 8)))
+            d = " ".join(f"${r[14 + 3 * j] | r[15 + 3 * j] << 8:04X}={r[16 + 3 * j]:02X}" for j in range(min(r[13], 8)))
+            print(f"    C={r[0]:2} B={r[1]:02X} reg={r[2]:02X} w99={r[3]} [{log}] w9B={r[12]} diffs={r[13]}: {d or '-'}")
+        for k, what in enumerate(("STATFL $5A, F pending, A 0", "STATFL $A5, at once, A 0", "STATFL $5A, A 1")):
+            r = b[p4 + 3 + 12 * k: p4 + 15 + 12 * k]
+            log = " ".join(f"{r[5 + j]:02X}" for j in range(min(r[4], 6)))
+            print(f"    VDPSTA {what}: A={r[0]:02X} F={r[1]:02X} S#before={r[2]:02X} STATFL after={r[3]:02X} "
+                  f"w99={r[4]} [{log}] IFF={r[11]}")
 
 
 if __name__ == "__main__":
