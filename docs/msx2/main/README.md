@@ -5,8 +5,8 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The MSX2 / MSX2+ main-ROM entries — shared facts
 
-> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the shared VRAM address matrix
-> ("Measured" below) and the sub-ROM call's register / interrupt / slot rules ([EXTROM](EXTROM.md)); the rest of this
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the shared VRAM address matrix,
+> all sixteen VA cases ("Measured" below) and the sub-ROM call's register / interrupt / slot rules ([EXTROM](EXTROM.md)); the rest of this
 > page is the published interface.
 
 The concept page for the twelve entries the MSX2 and MSX2+ add to the main ROM's jump table. It
@@ -159,10 +159,10 @@ by hand, R#14 set explicitly), and the bytes at the case's marked addresses.
 | VA-10 | $C123 | as VA-9 in SCREEN 0 (width 40), 0 (width 80), 2, 3, 4 | which modes mask: the 16 KB boundary at 3 / 4, and TEXT2 | $0C123 in all five [M] | $0C123 in all five [M] | $0C123 in all five [M] |
 | VA-11 | $C123 | SCREEN 1, AC 1, R14 $00, SV $00 | ACPAGE ignored ($00123 / $0C123) vs AR-PG32 $14123 | **$0015A** [M] | **$0015A** [M] | **$0015A** [M] |
 | VA-12 | $1234 | AC 2, R14 $00, SV $00, MODE bits 2-1 := 01 (64 KB) | only where AR-PG holds (VA-3/4): MODE masks A16 ($01234) vs not ($11234) | $11234 [M] | $11234 [M] | $11234 [M] |
-| VA-13 | $C123 | AC 1, R14 $00, SV $00, on a reference CONFIGURED with 64 KB of VRAM (a different machine, said so) | what the bank becomes where the VRAM has no A16; MODE 01 at boot | ? | ? | ? |
-| VA-14 | $1234 | SCREEN 12, 11, 10; AC 1, R14 $03, SV $01 | as VA-7 in the MSX2+ modes: page size, bank rule, open on the WSX | — (no SCREEN 10-12 on an MSX2) | — (same) | ? |
+| VA-13 | $C123 | AC 1, R14 $00, SV $00, on a reference CONFIGURED with 64 KB of VRAM (a different machine, said so) | what the bank becomes where the VRAM has no A16; MODE 01 at boot | $04123, as with 128 KB; AC 2 / 3 $1C123 / $14123 (R#14 := $07 / $05); MODE 01 at boot [M] | $04123, as with 128 KB; AC 2 / 3 $1C123 / $14123 (R#14 := $07 / $05); MODE 01 at boot [M] | $04123, as with 128 KB; AC 2 / 3 $1C123 / $14123 (R#14 := $07 / $05); **MODE 10 (128 KB) at boot** [M] |
+| VA-14 | $1234 | SCREEN 12, 11, 10; AC 1, R14 $03, SV $01 | as VA-7 in the MSX2+ modes: page size, bank rule, open on the WSX | — (no SCREEN 10-12 on an MSX2) | — (same) | $11234 (64 KB page) with R#25 YJK / YAE set and SCRMOD 8, 11 or 12; **SCRMOD 10: $09234**, SCREEN 5's 32 KB-page rule [M] |
 | VA-15 | $C123 | AC 2 (entry R14 $06: a bank only AR-R14\* yields, and it writes nothing) | after the call R#14 = $06 with a write of R#14 in the log: put back; = the call's bank: left; no write: never written | $1C123; R#14 left $07 [M] | $1C123; R#14 left $07 [M] | $1C123; R#14 left $07 [M] |
-| VA-16 | $1234 | VA-1, interrupts ON, a VDP interrupt made to arrive during the call (below) | the address is still right; whether the call disables interrupts across its port $99 writes | ? | ? | ? |
+| VA-16 | $1234 | VA-1, interrupts ON, a VDP interrupt made to arrive during the call (below) | the address is still right; whether the call disables interrupts across its port $99 writes | $01234 at every step; no interrupt taken between the 1st and the 4th port $99 write -- one arriving there waits until after the 4th; IFF on at return [M] | $01234 at every step; no interrupt taken between the 1st and the 4th port $99 write -- one arriving there waits until after the 4th; IFF on at return [M] | $01234 at every step; no interrupt taken between the 1st and the 4th port $99 write -- one arriving there waits until after the 4th; IFF on at return [M] |
 
 **Measured (2026-11-23)** [M] -- the three references give the same address and the same port $99 writes in
 every case ([xva.asm](../../../probes/bios/spec/xva.asm); [scratchpad/AE_xva_msx2.out](../../../scratchpad/AE_xva_msx2.out),
@@ -180,8 +180,41 @@ pointer's 14 bits), not from marked VRAM.
 - **SCREEN 0-4, ACPAGE not 0: HL is not used.** The address is **ACPAGE x $100 + E** -- VA-11 and its follow-ups
   (xva cases 18-24: ACPAGE 1 / 2 / 3, HL $C123 / $1234 / $0000, SCREEN 0 / 1 / 2 / 4) all land at $n5A with the
   probe's E $5A, and at $n34 with E $34 (a diagnostic run, DE $1234: [scratchpad/AE_xva_de1234.out](../../../scratchpad/AE_xva_de1234.out)). The same on all three references.
-- **C-BIOS's MSX2 / MSX2+ builds** give every address above except the last: with ACPAGE not 0 in SCREEN 0-4 they
-  address HL ($00123 for VA-11, five port writes) -- the one difference.
+- **SCREEN 10-12 (VA-14, the FS-A1WSX; [xva14.asm](../../../probes/bios/spec/xva14.asm),
+  [scratchpad/AE_xva14_msx2.out](../../../scratchpad/AE_xva14_msx2.out), decoded by `scratchpad/xva14_decode.py`).**
+  The rule follows **SCRMOD, not the VDP's mode**: R#25's YJK / YAE bits change nothing. SCRMOD 8, 11 and 12 take
+  SCREEN 7 / 8's 64 KB page (ACPAGE 1 + $1234 = $11234; + $C123 = $1C123); **SCRMOD 10 takes SCREEN 5 / 6's whole
+  32 KB-page rule** -- $09234, and ACPAGE 1 / 3 + $C123 = $04123 / $14123, ACPAGE 2 + $1234 = $11234 -- with R#25 $18,
+  $08 or 0 alike. Main CHGMOD does not enter SCREEN 10-12 (A = 12 left the previous case's SCRMOD 8 and R#25 0; the
+  sub-ROM's [CHGMOD](../sub/CHGMOD.md): 10-12 change nothing), so the probe sets R#25 (and $FFFA) and SCRMOD by hand
+  after CHGMOD 8. Which SCRMOD BASIC's SCREEN 10 / 11 / 12 leave is NOT measured here [A]: if SCREEN 10 leaves 10,
+  these calls address it in 32 KB pages although its VDP layout is SCREEN 8's.
+- **64 KB of VRAM (VA-13; [xva13.asm](../../../probes/bios/spec/xva13.asm), run by `scratchpad/xva13_run.py`,
+  [scratchpad/AE_xva13_msx2.out](../../../scratchpad/AE_xva13_msx2.out)).** DIFFERENT MACHINES: each reference's
+  openMSX config (and C-BIOS's) with the VDP's `<vram>` set to 64 -- none of the three was sold so; the variants
+  answer what these BIOSes do on a VDP without A16. **Every case VA-1 - VA-15 gives the same address as with
+  128 KB**, and VA-13's own: ACPAGE 1 / 2 / 3 + $C123 in SCREEN 5 = $04123 / $1C123 / $14123, SCREEN 8 ACPAGE 1 +
+  $C123 = $1C123 -- R#14 := $07 / $05 written, an A16 the VRAM does not have. Neither MODE nor the VRAM size masks
+  the bank (as VA-12). MODE at boot: **01 (64 KB) on the HB-F900 and NMS 8250, 10 (128 KB) on the FS-A1WSX** -- the
+  WSX's boot does not report the smaller VRAM -- the one reference-vs-reference difference in the matrix.
+- **An interrupt during the call (VA-16; [xva16.asm](../../../probes/bios/spec/xva16.asm),
+  [scratchpad/AE_xva16_msx2.out](../../../scratchpad/AE_xva16_msx2.out), decoded by `scratchpad/xva16_decode.py`).**
+  VA-1 with interrupts on, BIGFIL with BC 1 as a fifth call; per call 96 steps, the frame interrupt moved 5
+  T-states a step from after the return, through the call, to before it (a delay calibrated on the VBLANK flag).
+  An H.TIMI handler records whether the call had begun and how many port $99 writes it had made. On all three
+  references and for all five calls, the interrupt landed **inside the call before its first write** (41-59 steps
+  of 96) or **after its fourth** (4-32 steps), never between the first and the fourth: one arriving during the
+  writes is held until after them. The address is right at every step; interrupts are on at the return.
+  **Positive control** (the probe's own four port writes, interrupts on): the same sweep lands the interrupt after
+  write 1, 2 or 3 in 9-11 steps on each machine, and after write 1 or 3 -- inside a register / address byte pair --
+  the address is wrong ($1B48F, $00A88, ...: the interrupt routine's status read resets the VDP's byte latch);
+  after write 2 it is right. So the timing was forced, and the calls' protection is what kept them right.
+- **C-BIOS's MSX2 / MSX2+ builds** give every address above except two: with ACPAGE not 0 in SCREEN 0-4 they
+  address HL ($00123 for VA-11, five port writes), and with SCRMOD 10 (VA-14, MSX2+ build) they take the 64 KB page
+  -- ACPAGE 1 + $1234 = $11234, ACPAGE 1 / 3 + $C123 = $1C123 / $1C123, ACPAGE 2 + $1234 = $01234 (the 17-bit sum
+  wraps) -- where the FS-A1WSX gives $09234, $04123 / $14123, $11234. With 64 KB of VRAM (VA-13) C-BIOS sets MODE 01
+  at boot on all three variants, the FS-A1WSX 10. VA-16: the same protection as the references, address right,
+  interrupts on at the return.
 
 **VDP-model rows (not BIOS rules).** Where the counter goes after HL $FFFF (SCREEN 5) or $3FFF
 (SCREEN 1) is decided by the VDP's auto-increment, which carries into R#14 as the BIOS would; the
@@ -190,10 +223,8 @@ R14 $00) check the emulator's VDP and that the call leaves the counter at its ad
 more.
 
 **Methods for the open items.**
-- *An interrupt during the call:* with R#1's interrupt bit set and an H.TIMI handler that reads S#0
-  and counts, the probe repeats the case at delays stepped by 8 T-states after the previous VDP
-  interrupt, so one repetition's call spans the next interrupt (the handler's count shows which);
-  that repetition's address read-back is compared with the others.
+- *An interrupt during the call:* done for VA-16 ([xva16.asm](../../../probes/bios/spec/xva16.asm) above), BIGFIL's
+  long fill across a frame (BF-8) still open on its page.
 - *The time it takes:* the emulator's machine time, read by debugger breakpoints at the call and at
   the return, per machine.
 - *The stack it uses:* the 128 bytes below SP set to marker words before the call; the lowest one

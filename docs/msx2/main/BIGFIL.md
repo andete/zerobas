@@ -6,7 +6,8 @@ SPDX-License-Identifier: BSD-2-Clause
 # `BIGFIL` ($016B) — fill VRAM with a byte, without the 16 KB limit
 
 > **Spec:** DRAFT 1 (2026-11-23): BF-1 - BF-6 and five VA states MEASURED on the HB-F900, NMS 8250 and FS-A1WSX
-> (identical on all three; [xbf.asm](../../../probes/bios/spec/xbf.asm), [scratchpad/AE_xbf_msx2.out](../../../scratchpad/AE_xbf_msx2.out), decoded by `scratchpad/xbf_decode.py`).
+> (identical on all three; [xbf.asm](../../../probes/bios/spec/xbf.asm), [scratchpad/AE_xbf_msx2.out](../../../scratchpad/AE_xbf_msx2.out), decoded by `scratchpad/xbf_decode.py`);
+> VA-13, VA-14 (FS-A1WSX only) and VA-16 with the other four calls ([README.md](README.md#the-shared-vram-address-matrix) "Measured").
 
 ## Summary
 
@@ -33,14 +34,20 @@ takes its parameters as given in every mode. Where A16 comes from is not publish
   - The length is exact: BC 1 fills one byte, $100 fills $08000-$080FF; **BC 0 fills 64 KB** ($08000-$17FFF, BF-4).
   - On return: A kept ($C7), F $42, **BC $0000**, DE / HL / IX / IY kept; **interrupts ON**, entered with them
     off or on (BF-6).
-- Still open [A]: the stack depth and time (BF-9), a fill across a frame with VDP interrupts enabled (BF-8), BF-7's
+  - An interrupt during the call (VA-16, BC 1; [xva16.asm](../../../probes/bios/spec/xva16.asm), [scratchpad/AE_xva16_msx2.out](../../../scratchpad/AE_xva16_msx2.out)): never taken between its first and fourth port
+    $99 write -- held until after the fourth -- and the address right at every step; interrupts on at the return.
+  - SCREEN 10-12 (VA-14, the FS-A1WSX; [xva14.asm](../../../probes/bios/spec/xva14.asm), [scratchpad/AE_xva14_msx2.out](../../../scratchpad/AE_xva14_msx2.out)) and 64 KB of VRAM (VA-13): the start address follows
+    the shared matrix exactly as NSETWR's -- SCRMOD 10 a 32 KB page, SCRMOD 8 / 11 / 12 a 64 KB one.
+- Still open [A]: the stack depth and time (BF-9), a long fill across a frame with VDP interrupts enabled (BF-8), BF-7's
   other save cells, the display off.
 
 ## Differences from the reference
 
-C-BIOS's MSX2 / MSX2+ builds (the subject) give every measured case but one: with ACPAGE not 0 in SCREEN 0-4 they
-fill from HL AND $3FFF ($00120 for VA-11), where the references fill from ACPAGE x $100 + E -- the shared matrix's
-one difference, and five port $99 writes there instead of four.
+C-BIOS's MSX2 / MSX2+ builds (the subject) give every measured case but two: with ACPAGE not 0 in SCREEN 0-4 they
+fill from HL AND $3FFF ($00120 for VA-11), where the references fill from ACPAGE x $100 + E, with five port $99
+writes there instead of four; and with SCRMOD 10 (VA-14, the MSX2+ build) they start in SCREEN 8's 64 KB page
+($11235 after one byte from ACPAGE 1 + $1234) where the FS-A1WSX starts in SCREEN 5's 32 KB page ($09235) -- the
+shared matrix's two differences.
 
 ## Open (not measured)
 
