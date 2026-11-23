@@ -5,8 +5,12 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Bit block transfer — shared facts for the BLT sub-ROM calls
 
-> **Concept page, DRAFT 0 (2026-11-23),** from the published interface only; nothing measured yet.
+> **Concept page, DRAFT 1 (2026-11-23),** from the published interface [P], plus the disk calls' measured shared
+> facts ([M], in "The disk forms", each cited to the call page that measured it). The [A]s elsewhere on this page
+> are the published interface's open questions; where a call page has measured one, the answer is on that page.
 > Tags and references as in [vdp-and-palette.md](vdp-and-palette.md#sources-and-tags).
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 4 findings, 1 measured, 0 moved to open, 3 corrected in wording.
 
 The seven calls [BLTVV](../sub/BLTVV.md), [BLTVM](../sub/BLTVM.md), [BLTMV](../sub/BLTMV.md),
 [BLTVD](../sub/BLTVD.md), [BLTDV](../sub/BLTDV.md), [BLTMD](../sub/BLTMD.md) and
@@ -30,10 +34,11 @@ set [A].
 | $F56A | 2 | NX | (from the data) | NX | (from the file) | NX | — | — |
 | $F56C | 2 | NY | (from the data) | NY | (from the file) | NY | — | — |
 | $F56E | 1 | CDUMMY | CDUMMY | CDUMMY | CDUMMY | CDUMMY | — | — |
-| $F56F | 1 | ARG | ARG | ARG | ARG | — | — | — |
+| $F56F | 1 | ARG | ARG | ARG | ARG | — (but read) | — | — |
 | $F570 | 1 | LOGOP | LOGOP | — | LOGOP | — | — | — |
 
-All from [P A3 §1-§3]; "—" means the handbook names no field there for that call. "dummy" and
+All from [P A3 §1-§3]; "—" means the handbook names no field there for that call. BLTDV reads ARG all the
+same, its direction and expansion-RAM bits included [M, [BLTDV](../sub/BLTDV.md)]. "dummy" and
 CDUMMY are "not required to be set". Whether a call ever WRITES a field (BLTVM / BLTVD filling NX
 / NY from the data, a coordinate left advanced as the VDP leaves it) is [A].
 
@@ -87,18 +92,25 @@ CDUMMY are "not required to be set". Whether a call ever WRITES a field (BLTVM /
 - **Measured** (2026-11-23, the HB-F900, NMS 8250 and FS-A1WSX alike; the rules and citations are on the four
   pages, [BLTDV](../sub/BLTDV.md) first): a BLTDV file is the array exactly (NX, NY, the dots, no $FE header) —
   SCREEN 8 one byte a dot, SCREEN 5 two dots a byte packed over the whole array, not per row — and BLTVD draws
-  such a file whoever wrote it. BLTDM / BLTMD move raw bytes with no header of their own. A quoted name works, an
-  unquoted one gives error 13. Errors reach H.ERRO with E = the BASIC error number; a caller that abandons the
-  call there can call again at once.
+  such a file whoever wrote it [M]. BLTDM / BLTMD move raw bytes with no header of their own [M]. A quoted name
+  works; the same name unquoted gives error 13 (Type mismatch) in all four calls [M: BLTDM, BLTDV, BLTVD, BLTMD
+  each]. A missing file gives error 53 (BLTVD, BLTMD) [M]; a disk error (full, write-protected, no disk) was not
+  tried [A]. Errors reach H.ERRO with E = the BASIC error number; a caller that abandons the call there can call
+  again at once [M]. All four write the two bytes after the block, $F571-$F572: SPTR after BLTDM / BLTMD moved
+  data, $8003 after BLTVD / BLTDV [M]; and none uses or writes LOGOPR [M].
 
 ## How every BLT case is recorded
+
+This is the **target**: what a case must record before the claims below can be called checked. The probes do
+not all record all of it yet; what a probe actually records is stated per probe (for the disk calls, in the next
+section), and each page's open list names what is still missing. A claim a probe did not record is not measured,
+whatever this list says.
 
 The probes run under openMSX; the emulator's debugger may read the VDP's registers, which the
 CPU cannot (registers are readable state; ROM bytes are not, [allowed-sources](../../allowed-sources.md)).
 Every case runs on all three references, one record column per machine; the FS-A1WSX's result is
 its own reading, never assumed from the MSX2 machines (see
-[vdp-and-palette.md](vdp-and-palette.md#sources-and-tags)). Unless a row says otherwise, every
-case of every BLT page:
+[vdp-and-palette.md](vdp-and-palette.md#sources-and-tags)). The target, for every case of every BLT page:
 - presets ALL of VRAM (and the expansion RAM where the machine has it) with address-dependent
   garbage distinct per page, and records it whole after the call by debugger read — so "does not
   touch VRAM" is checked, not assumed;
@@ -113,6 +125,25 @@ case of every BLT page:
   effect (GSPSIZ) — so the interrupt state the path leaves is told from the call's own;
 - for the disk calls, uses a disk image the probe made, reads the resulting file back byte for
   byte, and hooks H.ERRO to record E and return.
+
+## How the disk cases are recorded
+
+What [xsubbltd.asm](../../../probes/bios/spec/xsubbltd.asm) records for each case of
+[BLTVD](../sub/BLTVD.md), [BLTDV](../sub/BLTDV.md), [BLTMD](../sub/BLTMD.md) and [BLTDM](../sub/BLTDM.md),
+on all three references and C-BIOS's three MSX2 builds:
+- every register and F after the return (or at H.ERRO), the interrupt state (read twice), and whether H.ERRO
+  was reached with which E;
+- the block $F562-$F570, preset with the case's fields and garbage elsewhere; its neighbours $F55E-$F561 and
+  $F571-$F572, preset $A0-$A5; LOGOPR ($FB02), preset $0E (a no-op code);
+- S#2 at the first read after the return, before the probe waits for CE = 0; then, after that wait, R#0-R#63,
+  S#0-S#15 and the palette by debugger snapshot;
+- a 16 x 6 VRAM window (preset for BLTVD, read only over BLTDV's source) or 96 bytes of RAM (preset $EE round
+  BLTMD's SPTR; BLTDM's source; BLTDM's block at HL);
+- the files on drive A after the run, read back from the image by `scratchpad/xsubbltd.py decode`.
+
+It does **not** record: the whole VRAM, ACPAGE / DPPAGE (never preset), R#46 (it reads $00 once a command has
+ended, so the command the call issued is not seen), the emulated time of the call, a control call through the
+same path, or any call made with interrupts off. Each of those is an open row on the pages.
 
 ## States the measurements must desync (shared)
 

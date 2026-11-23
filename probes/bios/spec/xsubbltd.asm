@@ -10,15 +10,17 @@
 ; Drive A = scratchpad/xsubbltd.py's image (host-made RAWDATA.BIN, BSAVED.BIN, ARR.PIC, LONG.BIN); the files the calls
 ; write are read back from the image after the run (BIOSL_KEEP_DSK; `xsubbltd.py decode`).
 ; Per case (the generated table `cases`: entry, HL, SCRMOD, the 15-byte block, the window's preset, wx, wy, ram
-; (0 a VRAM window, 1 RAM, 2 a VRAM window read only), raddr): R#45 := 0; CHGMOD, interrupts off; the VRAM source rectangle (8, 8) 8 x 4 := distinct bytes ($10 + row x 16 + column;
+; (0 a VRAM window, 1 RAM, 2 a VRAM window read only, 3 RAM read only), raddr): R#45 := 0; CHGMOD, interrupts off; the VRAM source rectangle (8, 8) 8 x 4 := distinct bytes ($10 + row x 16 + column;
 ; SCREEN 5: $12 $34 $56 $78 per row); RAM $9000-$90FF := (i x 7 + $11) & $FF; the window (6 VRAM lines x 16 bytes
 ; from (wx, wy), or 96 RAM bytes from raddr := $EE) preset; the block -> $F562 (and the second block -> $9F00);
 ; BC $BC0C, DE $DE0E, A $5A, F $01 (carry set); EI; the call; the engine waited for; the record.
 ; The capture (CAP = A001): +0 $A5 when finished, +1 the case count; per case a 256-byte record from +2:
 ;   +0 the case, +1 1 = H.ERRO was reached, +2 E there, +3 IFF after (read twice), +4..+15 AF BC DE HL IX IY
-;   (little-endian words; at H.ERRO when it was reached), +16..+30 the block $F562-$F570 after, +31 0,
+;   (little-endian words; at H.ERRO when it was reached), +16..+30 the block $F562-$F570 after, +31 S#2 as first
+;   read after the return (before the probe's own wait for CE = 0),
 ;   +32..+127 the window after, +128..+241 the VDP state right after the call (@vdpfull: R#0-R#63 as last written,
-;   S#0-S#15, the VRAM pointer, the palette), then R#45 := 0 before the window is read.
+;   S#0-S#15, the VRAM pointer, the palette), then R#45 := 0 before the window is read; +242..+247 $F55E-$F561 and
+;   $F571-$F572 (the block's neighbours, preset $A0-$A5 before the call), +248 LOGOPR ($FB02, preset $0E: a no-op code).
 ; Run (python3 scratchpad/xsubbltd.py mkdsk $ZEROBAS_TMP/xsubbltd.dsk first):
 ;   BIOSL_KEEP_DSK=$ZEROBAS_TMP/xsubbltd-out python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubbltd.asm --row msx2all
 ;
@@ -26,9 +28,9 @@
 ;
 ; @disk $ZEROBAS_TMP/xsubbltd.dsk
 ; @cap A000
-; @caplen 1680
+; @caplen 2310
 ; @vdpfull 9F7F 9F98
-; @timeout 120
+; @timeout 240
 
 CHGMOD  equ     $005F
 EXTROM  equ     $015F
@@ -57,6 +59,8 @@ erre    equ     $9F94
 savesp  equ     $9F96
 vptr    equ     $9F98                   ; @vdpfull's pointer: the record's +128
 vdpbp   equ     $9F7F                   ; a RET in RAM: @vdpfull's breakpoint
+s2pre   equ     $9F9A                   ; S#2 as first read after the call
+LOGOPR  equ     $FB02
 cur     equ     $9FA0                   ; entry (2), HL (2), SCRMOD, block (15), preset, wx (2), wy, ram, raddr (2) = 27
 c_hl    equ     cur+2
 c_scr   equ     cur+4
@@ -117,7 +121,7 @@ stke:
                 ld      sp, $8FF0
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $167E
+                ld      bc, $2400
                 ld      (hl), 0
                 ldir
                 ld      hl, names_rom
@@ -183,6 +187,19 @@ c_src:
                 ld      de, BLK
                 ld      bc, 15
                 ldir
+                ld      hl, BLK - 4         ; the block's neighbours := $A0-$A3, $A4 $A5; LOGOPR := $0E
+                ld      a, $A0
+                ld      b, 4
+c_nb:
+                ld      (hl), a
+                inc     hl
+                inc     a
+                djnz    c_nb
+                ld      ($F571), a
+                inc     a
+                ld      ($F572), a
+                ld      a, $0E
+                ld      (LOGOPR), a
                 xor     a
                 ld      (errf), a
                 ld      (erre), a
@@ -254,13 +271,18 @@ i_on:
                 ld      hl, BLK
                 ld      bc, 15
                 ldir
+                ld      a, (s2pre)
+                ld      (de), a
                 ld      hl, (ptr)
                 ld      bc, 32
                 add     hl, bc
                 ld      (ptr), hl
                 ld      a, (c_ram)
                 cp      1
+                jr      z, c_rr
+                cp      3
                 jr      nz, c_vr
+c_rr:
                 ld      hl, (c_ra)
                 ld      de, (ptr)
                 ld      bc, 96
@@ -270,6 +292,18 @@ c_vr:
                 ld      c, $00
                 call    win
 c_rec:
+                ld      hl, (ptr)           ; +242: the neighbours and LOGOPR
+                ld      bc, 210
+                add     hl, bc
+                ex      de, hl
+                ld      hl, BLK - 4
+                ld      bc, 4
+                ldir
+                ld      hl, $F571
+                ld      bc, 2
+                ldir
+                ld      a, (LOGOPR)
+                ld      (de), a
                 ld      hl, (ptr)
                 ld      bc, 96 + 128
                 add     hl, bc
@@ -300,6 +334,8 @@ cewait:
                 out     ($99), a
                 ld      a, $8F
                 out     ($99), a
+                in      a, ($99)
+                ld      (s2pre), a
 cw_lp:
                 in      a, ($99)
                 rrca
@@ -401,6 +437,8 @@ win:
                 ld      a, (c_ram)
                 cp      1
                 ret     z
+                cp      3
+                ret     z
                 cp      2                   ; 2: a read-only window (the source itself)
                 jr      nz, w_go
                 ld      a, c
@@ -454,8 +492,12 @@ names_rom:
                 db      $22, $4C, $4F, $4E, $47, $2E, $42, $49, $4E, $22, 0   ; long "LONG.BIN"
                 db      $22, $44, $56, $58, $2E, $50, $49, $43, $22, 0   ; dvx "DVX.PIC"
                 db      $22, $44, $56, $47, $2E, $50, $49, $43, $22, 0   ; dvg "DVG.PIC"
+                db      $22, $44, $56, $36, $2E, $50, $49, $43, $22, 0   ; dv6 "DV6.PIC"
+                db      $22, $4C, $4F, $4E, $47, $4E, $41, $4D, $45, $2E, $50, $49, $43, $22, 0   ; lng "LONGNAME.PIC"
+                db      $22, $44, $56, $50, $2E, $50, $49, $43, $22, 0   ; dvp "DVP.PIC"
+                db      $22, $41, $3A, $44, $56, $41, $2E, $50, $49, $43, $22, 0   ; dva "A:DVA.PIC"
 names_end:
-alt_rom:        db      $00, $90, $09, $90, $6C, $9E, $57, $58, $59, $5A, $5B, $5C, $5D, $5E, $5F
+alt_rom:        db      $20, $90, $29, $90, $6C, $9E, $A1, $A2, $A3, $A4, $A5, $A6, $A7, $A8, $A9
 cases:
                 dw      $01A9, $F562   ; 0 BLTDM $9000-$903F -> "DM1.BIN"
                 db      8, $00, $90, $3F, $90, $00, $9E, $57, $58, $59, $5A, $5B, $5C, $5D, $5E, $5F, $00
@@ -537,11 +579,11 @@ cases:
                 dw      36
                 db      7, 0
                 dw      $0000
-                dw      $01A9, $9F00   ; 16 BLTDM HL=$9F00 ("HLB.BIN" $9000-$9009); $F562: "FIX.BIN" $9000-$903F
+                dw      $01A9, $9F00   ; 16 BLTDM HL=$9F00 ("HLB.BIN" $9020-$9029, +6..+14 $A1..); $F562: "FIX.BIN" $9000-$903F
                 db      8, $00, $90, $3F, $90, $62, $9E, $57, $58, $59, $5A, $5B, $5C, $5D, $5E, $5F, $00
                 dw      0
-                db      0, 1
-                dw      $9000
+                db      0, 3
+                dw      $9F00
                 dw      $01A9, $F562   ; 17 BLTDM $9000-$900F -> "LONG.BIN" (exists, 300 B)
                 db      8, $00, $90, $0F, $90, $76, $9E, $57, $58, $59, $5A, $5B, $5C, $5D, $5E, $5F, $00
                 dw      0
@@ -567,6 +609,71 @@ cases:
                 dw      8
                 db      7, 2
                 dw      $0000
+                dw      $01A1, $F562   ; 22 BLTDV SCREEN 5 (8,8) 7x3 -> "DV6.PIC" (right after DVG's 32 x $FF)
+                db      5, $08, $00, $08, $00, $95, $9E, $57, $58, $07, $00, $03, $00, $5D, $00, $5F, $00
+                dw      8
+                db      7, 2
+                dw      $0000
+                dw      $019D, $F562   ; 23 BLTVD "DV1.PIC" -> (252,8), the window at x 0-15 over $99
+                db      8, $44, $9E, $53, $54, $FC, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $00, $00, $99
+                dw      0
+                db      7, 0
+                dw      $0000
+                dw      $019D, $F562   ; 24 BLTVD "DV1.PIC" -> (40,8) LOGOP 0 over $55, dummy $0123
+                db      8, $44, $9E, $23, $01, $28, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $00, $00, $55
+                dw      36
+                db      7, 0
+                dw      $0000
+                dw      $019D, $F562   ; 25 BLTVD "DV1.PIC" -> (40,100) LOGOP 3 over $55
+                db      8, $44, $9E, $53, $54, $28, $00, $64, $00, $59, $5A, $5B, $5C, $5D, $00, $03, $55
+                dw      36
+                db      99, 0
+                dw      $0000
+                dw      $019D, $F562   ; 26 BLTVD "DV1.PIC" -> (47,8) ARG $04 (DIX)
+                db      8, $44, $9E, $53, $54, $2F, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $04, $00, $00
+                dw      36
+                db      7, 0
+                dw      $0000
+                dw      $019D, $F562   ; 27 BLTVD "DV5.PIC" -> SCREEN 5 (40,8) over $99
+                db      5, $4E, $9E, $53, $54, $28, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $00, $00, $99
+                dw      32
+                db      7, 0
+                dw      $0000
+                dw      $019D, $F562   ; 28 BLTVD "LONGNAME.PIC" (14-byte name) -> (40,8)
+                db      8, $9F, $9E, $53, $54, $28, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $00, $00, $00
+                dw      36
+                db      7, 0
+                dw      $0000
+                dw      $01A1, $F562   ; 29 BLTDV SCREEN 8 (9,9) 4x2 LOGOP $03, dummy $0123 -> "DVP.PIC"
+                db      8, $09, $00, $09, $00, $AE, $9E, $23, $01, $04, $00, $02, $00, $5D, $00, $03, $00
+                dw      8
+                db      7, 2
+                dw      $0000
+                dw      $01A1, $F562   ; 30 BLTDV SCREEN 8 (8,8) 8x4 -> "A:DVA.PIC" (drive prefix)
+                db      8, $08, $00, $08, $00, $B8, $9E, $57, $58, $08, $00, $04, $00, $5D, $00, $5F, $00
+                dw      8
+                db      7, 2
+                dw      $0000
+                dw      $01A1, $F562   ; 31 BLTDV SCREEN 8 (8,8) 8x4 -> DM3.BIN unquoted
+                db      8, $08, $00, $08, $00, $14, $9E, $57, $58, $08, $00, $04, $00, $5D, $00, $5F, $00
+                dw      8
+                db      7, 2
+                dw      $0000
+                dw      $019D, $F562   ; 32 BLTVD DM3.BIN unquoted -> (40,8)
+                db      8, $14, $9E, $53, $54, $28, $00, $08, $00, $59, $5A, $5B, $5C, $5D, $00, $00, $00
+                dw      36
+                db      7, 0
+                dw      $0000
+                dw      $01A5, $F562   ; 33 BLTMD DM3.BIN unquoted -> $9800-$98FF
+                db      8, $14, $9E, $53, $54, $00, $98, $FF, $98, $59, $5A, $5B, $5C, $5D, $5E, $5F, $00
+                dw      0
+                db      0, 1
+                dw      $97F8
+                dw      $01A5, $F562   ; 34 BLTMD "DM1.BIN" -> $9702-$9700 (EPTR = SPTR - 2)
+                db      8, $00, $9E, $53, $54, $02, $97, $00, $97, $59, $5A, $5B, $5C, $5D, $5E, $5F, $00
+                dw      0
+                db      0, 1
+                dw      $96F8
                 dw      0
 ; ---- CASES END ----
 

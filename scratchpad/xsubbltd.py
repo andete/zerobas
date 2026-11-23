@@ -26,7 +26,8 @@ ALT = 0x9F00            # the second block, for HL != $F562
 NAMELIST = [("dm1", b'"DM1.BIN"'), ("dm2", b'"DM2.BIN"'), ("dm3", b"DM3.BIN"), ("nof", b'"NOFILE.BIN"'),
             ("bsv", b'"BSAVED.BIN"'), ("raw", b'"RAWDATA.BIN"'), ("dv1", b'"DV1.PIC"'), ("dv5", b'"DV5.PIC"'),
             ("arr", b'"ARR.PIC"'), ("fix", b'"FIX.BIN"'), ("hlb", b'"HLB.BIN"'), ("long", b'"LONG.BIN"'),
-            ("dvx", b'"DVX.PIC"'), ("dvg", b'"DVG.PIC"')]
+            ("dvx", b'"DVX.PIC"'), ("dvg", b'"DVG.PIC"'), ("dv6", b'"DV6.PIC"'), ("lng", b'"LONGNAME.PIC"'),
+            ("dvp", b'"DVP.PIC"'), ("dva", b'"A:DVA.PIC"')]
 NADDR = {}
 _a = NAMES
 for _k, _v in NAMELIST:
@@ -40,6 +41,7 @@ HOSTFILES = {
     "BSAVED.BIN": struct.pack("<BHHH", 0xFE, BSV_START, BSV_END, BSV_START) + bytes(0xD0 + i for i in range(16)),
     "ARR.PIC": struct.pack("<HH", 4, 2) + bytes(range(0xA1, 0xA9)),          # a RAM array (BLTVM's form), no $FE
     "LONG.BIN": bytes([0x33]) * 300,
+    "LONGNAME.PIC": struct.pack("<HH", 4, 2) + bytes(range(0xB1, 0xB9)),     # an array under a 14-byte quoted name
 }
 
 
@@ -71,17 +73,27 @@ def md(fn, sp, ep):     # BLTMD: FNPTR, dummy, SPTR, EPTR
     return block(w0=NADDR[fn], w4=sp, w6=ep)
 
 
-def dv(sx, sy, fn, nx, ny, arg=0):     # BLTDV: SX, SY, FNPTR, dummy, NX, NY (ARG not listed, but see case 20)
-    return block(w0=sx, w2=sy, w4=NADDR[fn], w8=nx, w10=ny, arg=arg)
+def dv(sx, sy, fn, nx, ny, arg=0, log=None, dummy=None):     # BLTDV: SX, SY, FNPTR, dummy, NX, NY (ARG: case 20)
+    w = dict(w0=sx, w2=sy, w4=NADDR[fn], w8=nx, w10=ny, arg=arg)
+    if log is not None:
+        w["log"] = log
+    if dummy is not None:
+        w["w6"] = dummy
+    return block(**w)
 
 
-def vd(fn, dx, dy, log, arg=0):     # BLTVD: FNPTR, dummy, DX, DY, (NX, NY from the file), CDUMMY, ARG, LOGOP
-    return block(w0=NADDR[fn], w4=dx, w6=dy, arg=arg, log=log)
+def vd(fn, dx, dy, log, arg=0, dummy=None):     # BLTVD: FNPTR, dummy, DX, DY, (NX, NY from the file), CDUMMY, ARG, LOGOP
+    w = dict(w0=NADDR[fn], w4=dx, w6=dy, arg=arg, log=log)
+    if dummy is not None:
+        w["w2"] = dummy
+    return block(**w)
 
 
 # (label, entry, HL, SCRMOD, block, preset, wx, wy, ram, raddr)
 #   ram 1: the window is 96 bytes of RAM from raddr, preset $EE; ram 0: 6 VRAM lines x 16 bytes from (wx, wy), preset;
-#   ram 2: the same VRAM window, read only (the source rectangle itself, set by the probe)
+#   ram 2: the same VRAM window, read only (the source rectangle itself, set by the probe);
+#   ram 3: 96 bytes of RAM from raddr, read only (not preset: case 16 reads the second block at $9F00 back)
+# Cases 22-34 and case 16's second block were added by the goldfish pass of 2026-11-23 (docs/msx2/sub/BLT*D*.md).
 CASES = [
     ("BLTDM $9000-$903F -> \"DM1.BIN\"", BLTDM, BLK, 8, dm(0x9000, 0x903F, "dm1"), 0, 0, 0, 1, 0x9000),
     ("BLTDM $9010-$9010 -> \"DM2.BIN\"", BLTDM, BLK, 8, dm(0x9010, 0x9010, "dm2"), 0, 0, 0, 1, 0x9000),
@@ -101,8 +113,8 @@ CASES = [
     ("BLTDV SCREEN 5 (8,8) 7x3 -> \"DV5.PIC\"", BLTDV, BLK, 5, dv(8, 8, "dv5", 7, 3), 0, 8, 7, 2, 0),
     ("BLTVD \"DV5.PIC\" -> SCREEN 5 (40,8)", BLTVD, BLK, 5, vd("dv5", 40, 8, 0), 0, 32, 7, 0, 0),
     ("BLTVD \"NOFILE.BIN\" (missing) -> (40,8)", BLTVD, BLK, 8, vd("nof", 40, 8, 0), 0, 36, 7, 0, 0),
-    ("BLTDM HL=$9F00 (\"HLB.BIN\" $9000-$9009); $F562: \"FIX.BIN\" $9000-$903F", BLTDM, ALT, 8,
-     dm(0x9000, 0x903F, "fix"), 0, 0, 0, 1, 0x9000),
+    ("BLTDM HL=$9F00 (\"HLB.BIN\" $9020-$9029, +6..+14 $A1..); $F562: \"FIX.BIN\" $9000-$903F", BLTDM, ALT, 8,
+     dm(0x9000, 0x903F, "fix"), 0, 0, 0, 3, 0x9F00),
     ("BLTDM $9000-$900F -> \"LONG.BIN\" (exists, 300 B)", BLTDM, BLK, 8, dm(0x9000, 0x900F, "long"), 0, 0, 0, 1,
      0x9000),
     ("BLTMD \"DM1.BIN\" -> $9700-$96FF (EPTR < SPTR)", BLTMD, BLK, 8, md("dm1", 0x9700, 0x96FF), 0, 0, 0, 1, 0x96F8),
@@ -111,8 +123,27 @@ CASES = [
      7, 2, 0),
     ("BLTDV SCREEN 8 (8,8) 8x4 ARG $5E (MXC MXS DIY DIX EQ) -> \"DVG.PIC\"", BLTDV, BLK, 8,
      dv(8, 8, "dvg", 8, 4, arg=0x5E), 0, 8, 7, 2, 0),
+    ("BLTDV SCREEN 5 (8,8) 7x3 -> \"DV6.PIC\" (right after DVG's 32 x $FF)", BLTDV, BLK, 5, dv(8, 8, "dv6", 7, 3), 0, 8,
+     7, 2, 0),
+    ("BLTVD \"DV1.PIC\" -> (252,8), the window at x 0-15 over $99", BLTVD, BLK, 8, vd("dv1", 252, 8, 0), 0x99, 0, 7, 0,
+     0),
+    ("BLTVD \"DV1.PIC\" -> (40,8) LOGOP 0 over $55, dummy $0123", BLTVD, BLK, 8, vd("dv1", 40, 8, 0, dummy=0x0123), 0x55,
+     36, 7, 0, 0),
+    ("BLTVD \"DV1.PIC\" -> (40,100) LOGOP 3 over $55", BLTVD, BLK, 8, vd("dv1", 40, 100, 3), 0x55, 36, 99, 0, 0),
+    ("BLTVD \"DV1.PIC\" -> (47,8) ARG $04 (DIX)", BLTVD, BLK, 8, vd("dv1", 47, 8, 0, arg=0x04), 0, 36, 7, 0, 0),
+    ("BLTVD \"DV5.PIC\" -> SCREEN 5 (40,8) over $99", BLTVD, BLK, 5, vd("dv5", 40, 8, 0), 0x99, 32, 7, 0, 0),
+    ("BLTVD \"LONGNAME.PIC\" (14-byte name) -> (40,8)", BLTVD, BLK, 8, vd("lng", 40, 8, 0), 0, 36, 7, 0, 0),
+    ("BLTDV SCREEN 8 (9,9) 4x2 LOGOP $03, dummy $0123 -> \"DVP.PIC\"", BLTDV, BLK, 8,
+     dv(9, 9, "dvp", 4, 2, log=0x03, dummy=0x0123), 0, 8, 7, 2, 0),
+    ("BLTDV SCREEN 8 (8,8) 8x4 -> \"A:DVA.PIC\" (drive prefix)", BLTDV, BLK, 8, dv(8, 8, "dva", 8, 4), 0, 8, 7, 2, 0),
+    ("BLTDV SCREEN 8 (8,8) 8x4 -> DM3.BIN unquoted", BLTDV, BLK, 8, dv(8, 8, "dm3", 8, 4), 0, 8, 7, 2, 0),
+    ("BLTVD DM3.BIN unquoted -> (40,8)", BLTVD, BLK, 8, vd("dm3", 40, 8, 0), 0, 36, 7, 0, 0),
+    ("BLTMD DM3.BIN unquoted -> $9800-$98FF", BLTMD, BLK, 8, md("dm3", 0x9800, 0x98FF), 0, 0, 0, 1, 0x97F8),
+    ("BLTMD \"DM1.BIN\" -> $9702-$9700 (EPTR = SPTR - 2)", BLTMD, BLK, 8, md("dm1", 0x9702, 0x9700), 0, 0, 0, 1,
+     0x96F8),
 ]
-ALTBLOCK = dm(0x9000, 0x9009, "hlb")
+# the second block (case 16): every word's low byte and every garbage byte differ from the $F562 block's
+ALTBLOCK = dm(0x9020, 0x9029, "hlb")[:6] + bytes(0xA1 + i for i in range(9))
 
 
 def table():
@@ -168,7 +199,11 @@ def files(dsk):
             data += d[s:s + m.CLUSTER_BYTES]
             c, guard = nxt(c), guard + 1
         out[name] = data[:size]
+        SLOT[name] = (k, struct.unpack_from("<H", e, 26)[0])
     return out
+
+
+SLOT = {}               # NAME.EXT -> (root-directory slot, first cluster), filled by files()
 
 
 def decode(runfile, dskdir):
@@ -199,9 +234,13 @@ def decode(runfile, dskdir):
                 chg = [f"+{i}:{blkin[i]:02X}->{after[i]:02X}" for i in range(15) if after[i] != blkin[i]]
                 print(f"     block after: {after.hex()}  changed: {' '.join(chg) or 'none'}")
                 v = r[128:242]
-                print(f"     VDP after: R#32-46 {v[32:47].hex()} S#2 {v[66]:02X} R#14 {v[14]:02X}")
+                print(f"     VDP after: R#32-46 {v[32:47].hex()} S#2 {v[66]:02X} R#14 {v[14]:02X}"
+                      f"  (S#2 at return, before the probe's wait: {r[31]:02X})")
+                nb = r[242:249]
+                print(f"     $F55E-$F561 {nb[:4].hex()} (preset a0a1a2a3), $F571-$F572 {nb[4:6].hex()} (preset a4a5), "
+                      f"LOGOPR {nb[6]:02X} (preset 0E)")
                 w = r[32:128]
-                if ram == 1:
+                if ram in (1, 3):
                     print(f"     RAM ${ra:04X}: " + " ".join(f"{v:02X}" for v in w[:48]))
                     print(f"     RAM ${ra + 48:04X}: " + " ".join(f"{v:02X}" for v in w[48:]))
                 else:
@@ -214,7 +253,9 @@ def decode(runfile, dskdir):
                 print(f"  files on {machines[side]}'s drive A after the run (host-side read of the image):")
                 for n, data in fs.items():
                     tag = " (host-made)" if n in HOSTFILES and HOSTFILES[n] == data else ""
-                    print(f"     {n:13s} {len(data):4d} B{tag}: {data[:80].hex()}{'..' if len(data) > 80 else ''}")
+                    sl, cl = SLOT[n]
+                    print(f"     {n:13s} {len(data):4d} B{tag} [dir slot {sl}, cluster {cl}]: "
+                          f"{data[:80].hex()}{'..' if len(data) > 80 else ''}")
             else:
                 print(f"  (no image kept for {machines[side]})")
 
