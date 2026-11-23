@@ -8,13 +8,16 @@
 ; The windows: the cleared area's start, its last 16 bytes, the 16 just past it (or the colour table).
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the case count; per case a 64-byte record from +2:
 ;   +0 the case, +1 A, +2 F, +3 IFF, +4 R#7, +5..+7 FORCLR BAKCLR BDRCLR after, +8..+15 0, +16..+63 the windows.
+; Added 2026-11-23 (goldfish pass 1), cases 21-36 after the old ones (unchanged): SCRMOD's byte in `cases` carries
+; flags above the mode -- bit 7: EI just before the call (else DI); bit 6: SCRMOD ($FCAF) := 0 after CHGMOD; bit 5:
+; SCRMOD := 5 after CHGMOD (the VDP and the register copies stay in CHGMOD's mode). Record +8 = SCRMOD after.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xsubcls.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports, the VDP's
 ; registers read by the debugger.
 ;
 ; @cap C000
-; @caplen 0600
+; @caplen 0A00
 ; @vdpfull E8F0 E900
 ; @timeout 180
 
@@ -41,7 +44,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $05FF
+                ld      bc, $09FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -64,8 +67,21 @@ c_next:
                 ldir
                 ld      (tp), hl
                 ld      a, (cur+2)
+                and     $0F
                 call    CHGMOD
                 di
+                ld      a, (cur+2)
+                bit     6, a
+                jr      z, c_f5
+                xor     a
+                ld      ($FCAF), a              ; SCRMOD := 0
+c_f5:
+                ld      a, (cur+2)
+                bit     5, a
+                jr      z, c_f0
+                ld      a, 5
+                ld      ($FCAF), a              ; SCRMOD := 5
+c_f0:
                 ld      hl, cur+3
                 ld      de, FORCLR
                 ld      bc, 3
@@ -88,7 +104,15 @@ c_wb:
                 pop     bc
                 djnz    c_w
                 ld      ix, (cur)
+                ld      a, (cur+2)
+                bit     7, a
+                jr      z, c_di
                 xor     a                       ; A 0, Z set
+                ei
+                jr      c_go
+c_di:
+                xor     a                       ; A 0, Z set
+c_go:
                 call    EXTROM
                 push    af
                 ld      a, i
@@ -124,6 +148,8 @@ c_wb:
                 ld      hl, FORCLR
                 ld      bc, 3
                 ldir
+                ld      a, ($FCAF)
+                ld      (de), a                 ; +8 SCRMOD after
                 ld      hl, (ptr)
                 ld      bc, 16
                 add     hl, bc
@@ -249,6 +275,54 @@ cases:
                 dw      $0115
                 db      8, $3A, $C5, $F9
                 dw      $0000, $D3F0, $D400   ; 20 CLS SCREEN 8 BAKCLR $C5
+                dw      $0115
+                db      2, $3A, $06, $F9
+                dw      $17F0, $37F0, $3800   ; 21 CLS SCREEN 2: the last 16 of the patterns, of the colours, past
+                dw      $0115
+                db      3, $3A, $06, $F9
+                dw      $05F0, $0600, $07F0   ; 22 CLS SCREEN 3: the last 16 of the patterns, past, $07F0
+                dw      $0115
+                db      6, $3A, $00, $F9
+                dw      $0000, $69F0, $6A00   ; 23 CLS SCREEN 6 BAKCLR $00
+                dw      $0115
+                db      6, $3A, $01, $F9
+                dw      $0000, $69F0, $6A00   ; 24 CLS SCREEN 6 BAKCLR $01
+                dw      $0115
+                db      6, $3A, $02, $F9
+                dw      $0000, $69F0, $6A00   ; 25 CLS SCREEN 6 BAKCLR $02
+                dw      $0115
+                db      6, $3A, $03, $F9
+                dw      $0000, $69F0, $6A00   ; 26 CLS SCREEN 6 BAKCLR $03
+                dw      $0111
+                db      1, $3A, $C5, $F9
+                dw      $2000, $2010, $2020   ; 27 CHGCLR SCREEN 1: the colour table's 32-byte extent
+                dw      $0111
+                db      3, $3A, $C5, $F9
+                dw      $0000, $0800, $2000   ; 28 CHGCLR SCREEN 3
+                dw      $0111
+                db      4, $3A, $C5, $F9
+                dw      $1800, $0000, $2000   ; 29 CHGCLR SCREEN 4
+                dw      $0111
+                db      6, $3A, $C5, $F9
+                dw      $0000, $69F0, $6A00   ; 30 CHGCLR SCREEN 6
+                dw      $0111
+                db      7, $3A, $C5, $F9
+                dw      $0000, $D3F0, $D400   ; 31 CHGCLR SCREEN 7
+                dw      $0111
+                db      $80, $3A, $C5, $F9
+                dw      $0000, $03B0, $03C0   ; 32 CHGCLR SCREEN 0, EI entry
+                dw      $0115
+                db      $80, $3A, $C5, $F9
+                dw      $0000, $03B0, $03C0   ; 33 CLS SCREEN 0, EI entry
+                dw      $0111
+                db      $45, $3A, $C5, $F9
+                dw      $0000, $03B0, $03C0   ; 34 CHGCLR: VDP / copies SCREEN 5, SCRMOD 0
+                dw      $0111
+                db      $20, $3A, $C5, $F9
+                dw      $0000, $03B0, $03C0   ; 35 CHGCLR: VDP / copies SCREEN 0, SCRMOD 5
+                dw      $0115
+                db      $45, $3A, $C5, $F9
+                dw      $0000, $03B0, $69F0   ; 36 CLS: VDP / copies SCREEN 5, SCRMOD 0
                 dw      0
 
                 ds      $8000 - $, $FF

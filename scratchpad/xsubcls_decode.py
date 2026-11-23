@@ -7,6 +7,11 @@ import re
 import sys
 
 CASES = [("CHGCLR", m, 0xC5) for m in (0, 1, 2, 5, 8)] + [("CLS", m, bk) for m in (0, 1, 2, 3, 5, 6, 7, 8) for bk in (6, 0xC5)]
+# goldfish pass 1 (2026-11-23): cases 21-36
+CASES += [("CLS", "2 ends", 6), ("CLS", "3 ends", 6)] + [("CLS", 6, bk) for bk in (0, 1, 2, 3)] + [
+    ("CHGCLR", "1 extent", 0xC5)] + [("CHGCLR", m, 0xC5) for m in (3, 4, 6, 7)] + [
+    ("CHGCLR", "0 EI", 0xC5), ("CLS", "0 EI", 0xC5), ("CHGCLR", "VDP5/SCRMOD0", 0xC5),
+    ("CHGCLR", "VDP0/SCRMOD5", 0xC5), ("CLS", "VDP5/SCRMOD0", 0xC5)]
 
 
 def summ(w):
@@ -28,7 +33,7 @@ def main():
             op, md, bk = CASES[r[0]]
             ws = " | ".join(summ(r[16 + 16 * i: 32 + 16 * i]) for i in range(3))
             print(f"  {op:6} S{md} BAK=${bk:02X}: A={r[1]:02X} F={r[2]:02X} IFF={r[3]} R7={r[4]:02X} "
-                  f"FOR/BAK/BDR={r[5]:02X}/{r[6]:02X}/{r[7]:02X}  {ws}")
+                  f"FOR/BAK/BDR={r[5]:02X}/{r[6]:02X}/{r[7]:02X}{f' SCRMOD={r[8]:02X}' if r[0] >= 21 else ''}  {ws}")
 
 
 if __name__ == "__main__":
