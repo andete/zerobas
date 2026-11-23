@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `INIPLT` (sub-ROM $0141) — set the power-on palette
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
 
 ## Summary
 
@@ -32,9 +32,17 @@ Shared facts — the palette, the port, the power-on table, the six VRAM palette
   and in SCREEN 5-8 with ACPAGE ≠ 0), the 48-byte layout, and whether SCREEN 8 is skipped are [A].
 - R#16 afterwards, VDP registers, and the interrupt state are [A].
 
+**Measured** [M] (the same on all three references): INIPLT writes the power-on palette to the VDP AND to the
+mode's VRAM table, 32 bytes -- 16 entries x 2 (byte 0: red x 16 + blue, byte 1: green), the VDP's own layout:
+`0000 0000 1106 3307 1701 2703 5101 2706 7101 7303 6106 6406 1104 6502 5505 7707`. The other 16 bytes of the
+48-byte area are not written. **The power-on palette is the same on the HB-F900, NMS 8250 and FS-A1WSX.** The
+table is the mode's: $7680 (SCREEN 5), $2020 (1), $0400 (0, width 40), $0F00 (0, width 80), $FA80 (8). Out: A $07,
+F $11, B $00, C kept, D $10, E $07.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) match the palette, the table and GETPLT's source; they differ only in
+the registers on return ([scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out)).
 
 ## Open (not measured)
 

@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `RSTPLT` (sub-ROM $0145) — load the palette from VRAM
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
 
 ## Summary
 
@@ -28,9 +28,14 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md#the-palette).
   of each value that reach the VDP, and SCREEN 8 are [A].
 - Whether a RAM copy of the palette (one GETPLT could read) is updated too is [A].
 
+**Measured** [M] (the same on all three references): RSTPLT loads the VDP's 16 palette registers from the
+mode's VRAM table, entry n from bytes 2n / 2n + 1 (a pattern written into the table by hand came out in the VDP's
+palette, masked to the VDP's 3-bit fields). Out: F $44, B $00, C $10, D $00, E $00.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) match the palette, the table and GETPLT's source; they differ only in
+the registers on return ([scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out)).
 
 ## Open (not measured)
 

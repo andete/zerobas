@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `SETPLT` (sub-ROM $014D) — set a palette entry
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
 
 ## Summary
 
@@ -30,9 +30,14 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md#the-palette).
 - The VRAM table or a RAM copy updated too, D above 15, the nibbles' bit 3, E's high nibble, SCREEN
   8 (BASIC's `COLOR=` does nothing there [P 2§2.2]), and R#16 afterwards are [A].
 
+**Measured** [M] (the same on all three references): SETPLT writes the VDP's palette register AND the
+VRAM table's entry (D 5, A $73, E $04: bytes 10 / 11 := $73 / $04), in SCREEN 8 too (which shows no palette).
+Out: A = E, F $03, B $5A and C kept (our inputs), D, E kept.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) match the palette, the table and GETPLT's source; they differ only in
+the registers on return ([scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out)).
 
 ## Open (not measured)
 

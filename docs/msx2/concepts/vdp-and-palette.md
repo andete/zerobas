@@ -125,6 +125,10 @@ VDP effect (GSPSIZ), made through the same EXTROM path — tells the path's effe
   | 5, 6 | $7680-$76AF |
   | 7, 8 | $FA80-$FAAF |
 
+  **Measured** [M] on all three references ([xplt.asm](../../probes/bios/spec/xplt.asm)): the five places
+  above hold for SCREEN 0 (40 and 80), 1, 5 and 8; the calls use the FIRST 32 bytes, 16 entries x 2 (red x 16 +
+  blue, green), the VDP's own layout; bytes 32-47 are never written; GETPLT reads this table, not the VDP.
+  The rest of this note was written before that measurement:
   48 bytes each. The handbook does not give the layout inside the 48 bytes (16 entries x 2 bytes
   would fill 32), nor whether in SCREEN 5-8 the table moves with ACPAGE / DPPAGE, nor what decides
   between the two SCREEN 0 places (LINLEN? LINL40? the VDP mode copies? SCRMOD alone?) [A].

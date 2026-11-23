@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `GETPLT` (sub-ROM $0149) — read a palette entry
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX ([xplt.asm](../../probes/bios/spec/xplt.asm), [scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out), decoded by `scratchpad/xplt_decode.py`).
 
 ## Summary
 
@@ -28,9 +28,14 @@ Shared facts: [vdp-and-palette.md](../concepts/vdp-and-palette.md#the-palette).
 - The source is a copy, since port #2 is write-only [P 4§1.3]; which copy is [A].
 - C's high nibble, bit 3 of each nibble, and A above 15 are [A].
 
+**Measured** [M] (the same on all three references): **GETPLT reads the VRAM table, not the VDP**: after the
+table was overwritten by hand, GETPLT 5 returned the table's bytes 10 / 11 (B $35, C $3A) -- and the same after
+RSTPLT. Entry n is bytes 2n (B: red x 16 + blue) and 2n + 1 (C: green), unmasked. Out: A = C, F $34, D kept, E $00.
+
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject) match the palette, the table and GETPLT's source; they differ only in
+the registers on return ([scratchpad/AE_xplt_msx2.out](../../scratchpad/AE_xplt_msx2.out)).
 
 ## Open (not measured)
 
