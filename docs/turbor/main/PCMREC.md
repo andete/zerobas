@@ -15,6 +15,11 @@ SPDX-License-Identifier: BSD-2-Clause
 > [xpcmrec2.asm](../../../probes/bios/spec/xpcmrec2.asm), [scratchpad/AE_xpcmrec2_tr.out](../../../scratchpad/AE_xpcmrec2_tr.out)
 > ([decoded](../../../scratchpad/AE_xpcmrec2_tr_decoded.out) with `--entryf`). All timing is openMSX's model.
 > Goldfish pass 1 (test writer) 2026-11-23: 8 findings, 3 measured, 2 moved to open.
+> **With a known input** (2026-11-23, tr6): WAV files fed into the PCM input through openMSX's `wavinput`
+> (biosl_run's `@wavin`; the files built by [scratchpad/xpcmwav_mk.py](../../../scratchpad/xpcmwav_mk.py), never
+> committed): probes [xpcmwav.inc](../../../probes/bios/spec/xpcmwav.inc) + xpcmwavsq / st / bu / ru / rd / gp / ll,
+> all decoded in [scratchpad/AE_xpcmwav_decoded.out](../../../scratchpad/AE_xpcmwav_decoded.out) by
+> [xpcmwav_decode.py](../../../scratchpad/xpcmwav_decode.py) — the section "With a known input" below.
 
 Main-ROM entry, turbo R only. Listed by MAP's "MSX turbo R BIOS Entries" ([index](../index.md)); C-BIOS has no
 turbo R build.
@@ -27,7 +32,9 @@ a recording fills the area with $80. Rate code 0 (A bits 1-0 = 0) is accepted on
 mode, and from the Z80 (which the call switches to R800 ROM mode), it is refused with A = 1 and carry set, nothing
 written. STOP (with or without CTRL) ends it with A = 2 and carry set, in every CPU mode, into RAM or VRAM. With a threshold (A bits 6-3) or the compression bit (A bit 2) and
 this silent input, the call never returns unless STOP is pressed. Every register is changed; it returns with
-interrupts enabled.
+interrupts enabled. With a real input (below): a sample is stored as offset binary (input / 256 + $80), $00 stored as $01; a
+threshold t starts the recording at the first sample with |sample − $80| ≥ 8t; compression stores a run of n
+samples of exactly $80 as the two bytes $00, n ($00, $00 = 256), a single one as $80.
 
 ## The specification
 
@@ -101,14 +108,50 @@ from R800 DRAM mode and from the Z80 [XR2 4, 5]. From the Z80 the call still swi
 CTRL alone changes nothing (a full recording) [XR 20]. STOP pressed in the middle of a recording was not run (the
 harness's `@matrix` presses once per run; PCMPLY's run used it — [xpcmmid.asm](../../../probes/bios/spec/xpcmmid.asm)).
 
+## With a known input (openMSX `wavinput`)
+
+**Set-up** [M]: biosl_run's `@wavin PATH` plugs openMSX's `wavinput` into the turbo R's `pcminput` connector with
+`audio-inputfilename` = PATH on both machines before boot; openMSX plays the file once from that moment. Every file:
+mono, 16-bit, 44.1 kHz, 60 s. All cases in R800 DRAM mode (so every rate code records), entered DI with D = E = 0, F
+$00; `[W? n]` = case n of xpcmwav?: sq = a 1 kHz square at ±16384, st = a staircase of 32 levels 2048 apart (10 ms
+each), bu = 5 ms bursts of the square every 500 ms in silence, ru / rd = a ramp up / down from 0 by 256 per 2 ms,
+gp = 1 ms marks at distinct levels separated by silences of 0.1 .. 130 ms, ll = small levels ($82 .. $70) between
+marks. Both models give the same bytes in every case (up to where in the input a call starts) [M].
+
+- **Return**: as with the silent input — A = 0, F = $44, HL = HL + BC, BC = 0, DE = 0, interrupts enabled — in every
+  case that returns [W* all].
+- **The value stored** [M]: 128 + input / 256, i.e. 8-bit offset binary: +16384 → $C0, −16384 → $40 [Wsq 0-3];
+  the staircase gives $00 (−32768), $08, $10, ... $F8 (+30720), one plateau per level — except that **$00 is stored
+  as $01** [Wst 0]. (Only multiples of 256 were fed: the rounding of the low byte is not measured.)
+- **The sample period** [M] (from the square's level changes, every 500 µs): rate code 3 63.5 µs, 2 111.3 / 111.6,
+  1 95.6 / 95.2, 0 111.6 µs (FS-A1GT / FS-A1ST) [Wsq 0-3]; the staircase: 157 samples per 10 ms (63.7 µs) at rate
+  code 3 [Wst 0]. So with an input too the rate code does not give PCMPLY's four rates; the figures match the silent
+  input's (above) [M].
+- **Threshold** [M]: A bits 6-3 = t ≠ 0 waits, storing nothing, until a sample lies **8t or more from $80, either
+  way**, and stores from that sample on: rising ramp t = 1, 2, 3, 4, 8, 15 → first byte $88, $90, $98, $A0, $C0,
+  $F8 [Wru 0-5]; falling ramp → $78, $70, $68, $60, $40, $08 [Wrd 0-5]; after the start every sample is stored, also
+  silence ($80) [Wbu 3]. A square of ±64 never reaches t = 15 (8 × 15 = 120): the call did not return in 40 s [Wsq
+  6] — so a threshold the input never reaches is the "never returns" of the silent case.
+- **Compression** (A bit 2) [M]: only samples of exactly **$80** count as silence: $82, $86, $87, $7A ... are stored
+  as they are, with threshold 1 as well as without — the threshold does not widen what is compressed [Wll 0-3]. A run
+  of n ≥ 2 such samples is stored as **two bytes $00, n** — n = 3, 8, 16, 31, 63, 126, 128, 134, 251 for silences
+  the plain recording counts as 3, 8, 15-16, 31-32, 63, 125, 129, 134, 251 samples [Wgp 0, 1] — a run of 256 as $00,
+  $00, and a longer run as several pairs: 258 samples → $00 $00 $00 $03 (A1ST) or $00 $00 then a raw $80 (A1GT), a 65 ms
+  silence (~1020 samples) → $00 $00 $00 $00 $00 $00 $00 $F8 (3 × 256 + 248), ~0.82 s → 49 × ($00 $00) + $00 $EB [Wgp 1, 3]. **A single
+  $80 is stored as $80** [Wgp 1, 2]. Since a stored $00 is always a code ($00 samples are stored as $01), the stream
+  can be decoded unambiguously [A]. Rate code 1 compresses the same way (n counted in its own samples) [Wgp 2].
+  **After a compressed run, the first 3-4 samples of the sound are not stored**: a 1 ms mark (15-16 samples plain)
+  is stored as 11-13, a burst starting with eight $C0 as four [Wgp 1-3, Wbu 1, 2]; why [A]. With compression and
+  no threshold a recording starts at once, with the silence it finds [Wbu 1, Wgp 3, Wll 3].
+- **The area** is filled exactly: the byte after it keeps its $5A where no later case wrote there [Wsq 5, Wst 0,
+  Wru 5, Wll 3].
+
 ## What cannot be measured here
 
-Everything that needs a real input signal: the bytes a sound records, when a threshold starts the recording, the
-format of a compressed recording (c = 1 never ends on silence), which comparator results keep a bit of the
-approximation. openMSX does have a pluggable wave-file input for the turbo R PCM (`wavinput` and the
-`audio-inputfilename` setting, by the openMSX binary's own strings), but
-[biosl_run.py](../../../probes/bios/biosl_run.py) has no directive to feed it a file; a later unit can add one
-(`@plug` plugs a device but cannot name the file). Also not run: D / E with VRAM, VRAM lengths above 64 KB,
+A real input is now fed through `@wavin` (above). Still open with it: which comparator results keep a bit of the
+approximation (the port log was not armed in the xpcmwav runs), which of the n + 1 storing conversions is not
+stored (the input's timing against the call's start is not known to the sample), the rounding of inputs that are not
+multiples of 256, compression into VRAM, a run longer than the area, and STOP during a compressed run. Also not run: D / E with VRAM, VRAM lengths above 64 KB,
 lengths 0 and > 48, the work-area cells (not compared in this probe), real-hardware timing, and the MSX
 Turbo-R Technical Handbook's text (not read; the interface line is MAP's).
 
@@ -124,8 +167,8 @@ what reading the D/A port returns is not known [A], so it is not counted as an o
 ## Open (not measured)
 
 See "What cannot be measured here" above, plus: STOP pressed during a recording; why rate code 0 needs DRAM mode
-(only that it does, in openMSX); which of the n + 1 storing conversions is not stored (needs a real input); what IN
-$A4 reads; the Z80's time per sample (two lengths at one rate code).
+(only that it does, in openMSX); which of the n + 1 storing conversions is not stored; what IN $A4 reads; the Z80's
+time per sample (two lengths at one rate code); why the first samples after a compressed run are lost.
 
 ## Related pages
 

@@ -34,6 +34,11 @@ Its header comment may carry the harness settings, one per line:
     ;                   which the timer interrupt's trigger read writes every frame)
     ; @plug CONN DEVICE (D-MSX2SPEC, sub-ROM NEWPAD) `plug CONN DEVICE` on BOTH machines before boot, e.g.
     ;                   `@plug joyporta mouse`; repeatable. The device is idle (no host input reaches it)
+    ; @wavin PATH       (D-TRSPEC, PCMREC) openMSX's `wavinput` pluggable in the turbo R's `pcminput` connector,
+    ;                   reading the WAV file PATH ($VARS expanded, e.g. $ZEROBAS_TMP/x.wav; relative = to the repo),
+    ;                   on BOTH machines before boot (`set audio-inputfilename PATH; plug pcminput wavinput`). openMSX
+    ;                   plays it from the moment it is plugged, at the file's own rate, once. Media are never committed:
+    ;                   the probe's own script builds the file
     ; @keyset ADDR LIST when the CPU reaches ADDR (hex, the probe's own RAM code, e.g. a `ret`), the debugger
     ;                   sets the keyboard matrix from the 11 bytes at LIST (hex): row r's byte, bit set = key
     ;                   pressed (keymatrixup / keymatrixdown) -- one matrix per case, set by the probe
@@ -172,7 +177,7 @@ def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
          "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": [],
-         "psglog": None, "plug": [], "cpusnap": [], "iffsnap": [], "dumpstate": False}
+         "psglog": None, "plug": [], "cpusnap": [], "iffsnap": [], "dumpstate": False, "wavin": None}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -197,6 +202,8 @@ def settings(asm_text: str) -> dict:
             s["tape"] = True
         elif k == "printer":                # plug the printer logger; report what it received
             s["printer"] = True
+        elif k == "wavin":                  # PATH: a WAV into the PCM input (D-TRSPEC)
+            s["wavin"] = v
         elif k == "dumpstate":              # a STATE line at the dump: PC, SP, IFF, slots (D-TRSPEC)
             s["dumpstate"] = True
         elif k == "disk":                   # empty: a copy of disk/empty720.dsk
@@ -455,6 +462,11 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: 
         plug = f"; set printerlogfilename {{{prn}}}; plug printerport logger"
     for conn, dev in st["plug"]:            # @plug: a device in a connector from boot (D-MSX2SPEC)
         plug += f"; plug {conn} {dev}"
+    if st["wavin"]:                         # @wavin: a WAV file into the turbo R's PCM input (D-TRSPEC)
+        wav = os.path.join(REPO, os.path.expandvars(st["wavin"]))
+        if not os.path.isfile(wav):
+            sys.exit(f"@wavin {st['wavin']}: {wav} is missing -- the probe's own script builds it")
+        plug += f"; set audio-inputfilename {{{wav}}}; plug pcminput wavinput"
     subprocess.run(omsx_preflight.guarded(
         [openmsx_paths.find_openmsx_binary(), "-machine", machine, "-cart", rom] + media +
         ["-command", "set renderer none; set sound_driver null" + plug, "-script", script]),
