@@ -1,0 +1,11 @@
+===== probes/bios/spec/xpcmmid2.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 64, ours 64
+  ref : jiffy=3600 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=r800 t=5.100 fcb1=128 s1990r6=0.1:60 0.7:40 1.9:60 5.0:00
+  ours: jiffy=3600 typed=1 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9 cpu=r800 t=5.100 fcb1=128 s1990r6=0.1:60 0.6:40 1.9:60 5.0:00
+  CAP ref : 019df84a0001e6f64c0045023c00000004800000000000000000000000000000
+  CAP ours: 018df84a0001e8f64c0045023c00000004800000000000000000000000000000
+  DIFF (2 unexcused byte(s)):
+  CAP C002: ref=9D ours=8D
+  CAP C007: ref=E6 ours=E8
+===== biosl: DIVERGENCE =====
