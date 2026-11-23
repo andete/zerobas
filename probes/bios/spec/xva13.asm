@@ -16,7 +16,8 @@
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the case count; per case x call a 32-byte record from +2:
 ;   +0 A after, +1 F after, +2 R#14 after, +3 / +4 the VRAM pointer after (low, high), +5 the number of port $99
 ;   writes during the call, +6..+12 the first seven of them, +13 $FFED after, +14 the case, +15 the call
-;   (0 NSETRD .. 3 NWRVRM, 4 BIGFIL with BC 1), +16 SCRMOD ($FCAF) right after CHGMOD, +17 R#25, +18 R#0, +19 R#1, +20 MODE after,
+;   (0 NSETRD, 1 NSETWR, 2 NRDVRM, 3 BIGFIL with BC 1, 4 NWRVRM -- the dispatch's order; this line said "3 NWRVRM,
+;   4 BIGFIL" until goldfish pass 1, 2026-11-23), +16 SCRMOD ($FCAF) right after CHGMOD, +17 R#25, +18 R#0, +19 R#1, +20 MODE after,
 ;   +21 ACPAGE after, +22 SCRMOD after the call, +23..+31 0.
 ; Run (in an isolated instance): python3 tools/agent_wt.py NAME --fresh -- python3 -u scratchpad/xva13_run.py
 ;   probes/bios/spec/xva13.asm

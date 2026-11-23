@@ -8,6 +8,7 @@ SPDX-License-Identifier: BSD-2-Clause
 > **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX -- the shared VRAM address matrix,
 > all sixteen VA cases ("Measured" below) and the sub-ROM call's register / interrupt / slot rules ([EXTROM](EXTROM.md)); the rest of this
 > page is the published interface.
+> Goldfish pass 1 (test writer) 2026-11-23: 22 findings, 15 measured, 1 moved to open.
 
 The concept page for the twelve entries the MSX2 and MSX2+ add to the main ROM's jump table. It
 holds what several of them share: the sub-ROM and its slot, the 128 KB VRAM addressing, the
@@ -166,22 +167,49 @@ by hand, R#14 set explicitly), and the bytes at the case's marked addresses.
 
 **Measured (2026-11-23)** [M] -- the three references give the same address and the same port $99 writes in
 every case ([xva.asm](../../../probes/bios/spec/xva.asm); [scratchpad/AE_xva_msx2.out](../../../scratchpad/AE_xva_msx2.out),
-decoded by `scratchpad/xva_decode.py`): the address read back from the VDP after the call (R#14 x $4000 + the
+decoded by [xva_decode.py](../../../scratchpad/xva_decode.py)): the address read back from the VDP after the call (R#14 x $4000 + the
 pointer's 14 bits), not from marked VRAM.
 - Every one of the four calls writes **R#14 := the bank, then the 14-bit address**: four port $99 writes, nothing
   else. **$FFED is never written** (it keeps each case's preset), and R#14 is **left** at the call's bank (VA-15).
   So AR-R14 / AR-R14\* / AR-SV / AR-SV\* are out: the bank is computed.
-- **SCREEN 5 / 6:** address = ((ACPAGE AND 1) x $8000 + HL) AND $FFFF, + (ACPAGE AND 2) x $8000 -- the 16-bit sum
-  loses its carry. VA-3 ($1C123) and VA-5 separate it from every rival above: ACPAGE 3 + $C123 gives **$14123**,
-  where AR-PG+ wraps to $04123 and AR-PG\| / AR-PG& give $1C123. **DPPAGE is not used** (VA-6).
-- **SCREEN 7 / 8:** address = ACPAGE x $10000 + HL (VA-7: $11234). **MODE's VRAM-size bits are ignored** (VA-12).
+- **SCREEN 5 / 6:** address = (HL + (ACPAGE AND 1) x $8000 + (ACPAGE >> 2) x $100) AND $FFFF, + ((ACPAGE >> 1) AND 1)
+  x $10000 -- bit 0 of ACPAGE adds $8000, bit 1 is A16, bits 7-2 are ADDED to the high byte, and the 16-bit sum loses
+  its carry. For ACPAGE 0-3 this is ((ACPAGE AND 1) x $8000 + HL) AND $FFFF, + (ACPAGE AND 2) x $8000. VA-3 ($1C123)
+  and VA-5 separate it from every rival above: ACPAGE 3 + $C123 gives **$14123**, where AR-PG+ wraps to $04123 and
+  AR-PG\| / AR-PG& give $1C123. **DPPAGE is not used** (VA-6). **SCREEN 6** gives SCREEN 5's address in VA-1, VA-3,
+  VA-5 and ACPAGE 1 + $C123 ($01234, $1C123, $14123, $04123), and SCREEN 5 ACPAGE 1 + $C123 is $04123 with 128 KB
+  too ([xva3.asm](../../../probes/bios/spec/xva3.asm), [scratchpad/AE_xva3_msx2.out](../../../scratchpad/AE_xva3_msx2.out),
+  decoded by [xva3_decode.py](../../../scratchpad/xva3_decode.py); the same on all three references). **ACPAGE above 3**
+  (xva3), HL $C123: ACPAGE 4 **$0C223**, 5 **$04223**, $40 **$0D123**, $FF **$18023**; ACPAGE 4 + $FF23 = **$00023**.
+  ACPAGE is not masked to the four pages, its high bits are added (ACPAGE 4 / 5 / $FF part ADD from OR), and the carry
+  out of the high byte is lost, not put in A16.
+- **SCREEN 7 / 8:** address = (HL + (ACPAGE >> 1) x $100) AND $FFFF, + (ACPAGE AND 1) x $10000 -- bit 0 of ACPAGE is
+  A16, the higher bits are added to the high byte, the carry lost. VA-7: ACPAGE 1 + $1234 = $11234; xva3: ACPAGE 2 +
+  $1234 = **$01334** and 3 + $1234 = **$11334** in SCREEN 8, ACPAGE 2 the same in SCREEN 7, ACPAGE 2 + $FF34 =
+  **$00034** (ADD, not OR). "ACPAGE x $10000 + HL" holds for ACPAGE 0 / 1 only.
+- **MODE's VRAM-size bits are ignored**, all four values: 01 (VA-12), 10 (as booted), 00 and 11 (VA-3 in xva3: $1C123
+  each).
 - **SCREEN 0-4, ACPAGE 0:** address = HL, **no 16 KB mask** in any of SCREEN 0 (40 and 80), 1, 2, 3, 4 (VA-8 - VA-10):
   AR-16K / AR-16K\* are out.
 - **SCREEN 0-4, ACPAGE not 0: HL is not used.** The address is **ACPAGE x $100 + E** -- VA-11 and its follow-ups
   (xva cases 18-24: ACPAGE 1 / 2 / 3, HL $C123 / $1234 / $0000, SCREEN 0 / 1 / 2 / 4) all land at $n5A with the
   probe's E $5A, and at $n34 with E $34 (a diagnostic run, DE $1234: [scratchpad/AE_xva_de1234.out](../../../scratchpad/AE_xva_de1234.out)). The same on all three references.
+  ACPAGE above 3 (xva3, SCREEN 1): 4 **$0045A**, $40 **$0405A**, $80 **$0805A**, $FF **$0FF5A** -- the 16-bit ACPAGE
+  x $100 + E with its A15-A14 in R#14 (:= 1 for $40, 2 for $80, 3 for $FF), so ACPAGE $40 does not set the write
+  flag: NSETRD still writes a read setting. DPPAGE 2 with ACPAGE 1 changes nothing ($0015A).
+- **The rest of the call** (xva3, the same on all three references; entered with interrupts OFF, S-REGS): every call
+  returns with **interrupts ON** (IFF2 1 on both reads) -- as BIGFIL does entered on or off (BF-6). BC, DE, HL, IX,
+  IY, BC', DE', HL' and AF' are kept (BIGFIL: BC := 0). The calls write no port $9A / $9B, port $98 only NWRVRM's and
+  BIGFIL's one byte, and no save cell $FFE7-$FFF6 ($FFED included). The whole 128 KB of VRAM, summed before and after
+  (VA-1, VA-3 and VA-11, the address preset to $5A): NSETRD, NSETWR and NRDVRM change nothing; NWRVRM and BIGFIL (BC 1)
+  change only the byte at the address. A probe write of R#7 right after the call takes effect (R#7 := $5A, the
+  pointer unchanged): no byte is left in the port $99 latch. AF: on each call's page.
+- **The counter past the end (VC-1, VC-2; xva3):** HL $FFFF in SCREEN 5 -- NSETRD's pre-fetch leaves the pointer at
+  $10000 (R#14 3 -> 4, the VDP's carry), NRDVRM at $10001, NWRVRM at $10000, NSETWR at $0FFFF; HL $3FFF in SCREEN 1 --
+  NSETRD $00000, NRDVRM $00001, NWRVRM $00000 (that mode's 14-bit counter, R#14 kept 0). The calls' own port writes
+  are the usual four.
 - **SCREEN 10-12 (VA-14, the FS-A1WSX; [xva14.asm](../../../probes/bios/spec/xva14.asm),
-  [scratchpad/AE_xva14_msx2.out](../../../scratchpad/AE_xva14_msx2.out), decoded by `scratchpad/xva14_decode.py`).**
+  [scratchpad/AE_xva14_msx2.out](../../../scratchpad/AE_xva14_msx2.out), decoded by [xva14_decode.py](../../../scratchpad/xva14_decode.py)).**
   The rule follows **SCRMOD, not the VDP's mode**: R#25's YJK / YAE bits change nothing. SCRMOD 8, 11 and 12 take
   SCREEN 7 / 8's 64 KB page (ACPAGE 1 + $1234 = $11234; + $C123 = $1C123); **SCRMOD 10 takes SCREEN 5 / 6's whole
   32 KB-page rule** -- $09234, and ACPAGE 1 / 3 + $C123 = $04123 / $14123, ACPAGE 2 + $1234 = $11234 -- with R#25 $18,
@@ -189,38 +217,69 @@ pointer's 14 bits), not from marked VRAM.
   sub-ROM's [CHGMOD](../sub/CHGMOD.md): 10-12 change nothing), so the probe sets R#25 (and $FFFA) and SCRMOD by hand
   after CHGMOD 8. Which SCRMOD BASIC's SCREEN 10 / 11 / 12 leave is NOT measured here [A]: if SCREEN 10 leaves 10,
   these calls address it in 32 KB pages although its VDP layout is SCREEN 8's.
-- **64 KB of VRAM (VA-13; [xva13.asm](../../../probes/bios/spec/xva13.asm), run by `scratchpad/xva13_run.py`,
+- **64 KB of VRAM (VA-13; [xva13.asm](../../../probes/bios/spec/xva13.asm), run by [xva13_run.py](../../../scratchpad/xva13_run.py),
   [scratchpad/AE_xva13_msx2.out](../../../scratchpad/AE_xva13_msx2.out)).** DIFFERENT MACHINES: each reference's
   openMSX config (and C-BIOS's) with the VDP's `<vram>` set to 64 -- none of the three was sold so; the variants
   answer what these BIOSes do on a VDP without A16. **Every case VA-1 - VA-15 gives the same address as with
-  128 KB**, and VA-13's own: ACPAGE 1 / 2 / 3 + $C123 in SCREEN 5 = $04123 / $1C123 / $14123, SCREEN 8 ACPAGE 1 +
+  128 KB**, and VA-13's own: ACPAGE 1 / 2 / 3 + $C123 in SCREEN 5 = $04123 / $1C123 / $14123 (the 128 KB readings:
+  xva3 case 3, VA-3, VA-5), SCREEN 8 ACPAGE 1 +
   $C123 = $1C123 -- R#14 := $07 / $05 written, an A16 the VRAM does not have. Neither MODE nor the VRAM size masks
   the bank (as VA-12). MODE at boot: **01 (64 KB) on the HB-F900 and NMS 8250, 10 (128 KB) on the FS-A1WSX** -- the
   WSX's boot does not report the smaller VRAM -- the one reference-vs-reference difference in the matrix.
+- **The later cases did not start from the boot MODE** (xva.asm and xva13.asm alike): VA-12 (case 16) sets MODE bits
+  2-1 := 01 and no case puts it back, so xva cases 17-24 ran with MODE bits 01, and on the FS-A1WSX xva13 cases 17-21
+  with MODE $42, not its boot $44. MODE changes no address (above), so no reading moves; xva3 puts MODE back to the
+  boot value before every case. In xva13.asm / xva14.asm the record's call byte (+15) is 3 for BIGFIL and 4 for NWRVRM
+  (the dispatch's order; their headers said the reverse until 2026-11-23, no address claim depended on it).
 - **An interrupt during the call (VA-16; [xva16.asm](../../../probes/bios/spec/xva16.asm),
-  [scratchpad/AE_xva16_msx2.out](../../../scratchpad/AE_xva16_msx2.out), decoded by `scratchpad/xva16_decode.py`).**
+  [scratchpad/AE_xva16_msx2.out](../../../scratchpad/AE_xva16_msx2.out), decoded by [xva16_decode.py](../../../scratchpad/xva16_decode.py)).**
   VA-1 with interrupts on, BIGFIL with BC 1 as a fifth call; per call 96 steps, the frame interrupt moved 5
   T-states a step from after the return, through the call, to before it (a delay calibrated on the VBLANK flag).
   An H.TIMI handler records whether the call had begun and how many port $99 writes it had made. On all three
   references and for all five calls, the interrupt landed **inside the call before its first write** (41-59 steps
   of 96) or **after its fourth** (4-32 steps), never between the first and the fourth: one arriving during the
   writes is held until after them. The address is right at every step; interrupts are on at the return.
+  **Where the window ends** (rerun 2026-11-23; the handler also records SP, and a port $98 log runs; the added
+  instructions moved every step, so the step counts above are the first run's): SP below the probe's own level parts
+  an interrupt taken in the probe's instructions round the call (the base depth, 24 on all three) from one inside the
+  call (26-38). On all three references every interrupt after the fourth write came **inside** the call (depth
+  NSETRD / NSETWR 32, NRDVRM 34, NWRVRM / BIGFIL 36; a few NSETRD / NRDVRM steps 28-30), none after its RET: the call
+  re-enables interrupts itself after the fourth write, not by an EI just before its RET -- and NWRVRM and BIGFIL do so
+  **before their port $98 write** (no $98 write logged at any of those interrupts), so the data byte is outside the
+  protected window. NRDVRM's port $98 read: not measured (the log sees OUTs only). "Interrupts on at the return"
+  rests on the second of the two `ld a, i`: in the first run three NMS 8250 NSETRD steps (k = 0-2) read IFF2 0 on the
+  first -- an interrupt accepted during that instruction (the Z80's LD A,I quirk); in the rerun every call step reads
+  1 twice, only the control shows 01 / 10.
   **Positive control** (the probe's own four port writes, interrupts on): the same sweep lands the interrupt after
   write 1, 2 or 3 in 9-11 steps on each machine, and after write 1 or 3 -- inside a register / address byte pair --
   the address is wrong ($1B48F, $00A88, ...: the interrupt routine's status read resets the VDP's byte latch);
   after write 2 it is right. So the timing was forced, and the calls' protection is what kept them right.
-- **C-BIOS's MSX2 / MSX2+ builds** give every address above except two: with ACPAGE not 0 in SCREEN 0-4 they
-  address HL ($00123 for VA-11, five port writes), and with SCRMOD 10 (VA-14, MSX2+ build) they take the 64 KB page
+- **C-BIOS's MSX2 / MSX2+ builds** give every address above except these. With ACPAGE not 0 in SCREEN 0-4 they
+  address **HL AND $3FFF with R#14 := 0** ($00123 for VA-11, whatever the ACPAGE), in five port $99 writes: R#14, the
+  low byte, the high byte OR $40 -- a WRITE setting, from NSETRD and NRDVRM too (no pre-fetch: NSETRD leaves the
+  pointer at $0123) -- then the high byte again ($01 from NSETRD / NRDVRM, $41 from NSETWR / NWRVRM / BIGFIL), a lone
+  byte left in the port $99 latch. After NSETRD / NSETWR it pairs with the caller's next port $99 byte: the probe's
+  R#7 := $5A became an address setting ($01A01 / $01A41) and R#7 was not written; after NRDVRM / NWRVRM / BIGFIL the
+  port $98 access had reset the latch (the emulated VDP's rule) and R#7 was written (xva3). With ACPAGE above 3 in
+  SCREEN 5 / 6 they take ACPAGE AND 3 (4 / 5 / $40 / $FF + $C123 = $0C123 / $04123 / $0C123 / $14123); with ACPAGE 2 /
+  3 in SCREEN 7 / 8, (ACPAGE AND 1) x $10000 + HL ($01234 / $11234); and $FF23 / $FF34 stay $0FF23 / $0FF34 where the
+  references lose the carry ($00023 / $00034). With SCRMOD 10 (VA-14, MSX2+ build) they take the 64 KB page
   -- ACPAGE 1 + $1234 = $11234, ACPAGE 1 / 3 + $C123 = $1C123 / $1C123, ACPAGE 2 + $1234 = $01234 (the 17-bit sum
   wraps) -- where the FS-A1WSX gives $09234, $04123 / $14123, $11234. With 64 KB of VRAM (VA-13) C-BIOS sets MODE 01
   at boot on all three variants, the FS-A1WSX 10. VA-16: the same protection as the references, address right,
-  interrupts on at the return.
+  interrupts on at the return; NSETRD / NSETWR take an interrupt after the fourth write only after their RET (depth
+  24), NRDVRM / NWRVRM / BIGFIL inside (26 / 28), NWRVRM / BIGFIL before their port $98 write. xva3's interrupt state,
+  registers, save cells and VRAM sums: as the references. Boot MODE with 128 KB: $04 on C-BIOS's three builds and on
+  the HB-F900 / NMS 8250, **$44** on the FS-A1WSX (bit 6 set; outside these calls, not looked into).
 
 **VDP-model rows (not BIOS rules).** Where the counter goes after HL $FFFF (SCREEN 5) or $3FFF
 (SCREEN 1) is decided by the VDP's auto-increment, which carries into R#14 as the BIOS would; the
 two cannot be told apart from outside. These rows (VC-1 HL $FFFF, S-BASE; VC-2 HL $3FFF, SCREEN 1,
 R14 $00) check the emulator's VDP and that the call leaves the counter at its address + 1, nothing
-more.
+more. Both ran in xva3 ("Measured" above).
+
+**Open** [A]: NRDVRM's port $98 read before or after its interrupts come back on (VA-16 logs OUTs only; a handler
+that reads VRAM would show it); the stack depth and time of each call (methods below).
 
 **Methods for the open items.**
 - *An interrupt during the call:* done for VA-16 ([xva16.asm](../../../probes/bios/spec/xva16.asm) above), BIGFIL's

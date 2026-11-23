@@ -3,9 +3,13 @@
 # SPDX-License-Identifier: BSD-2-Clause
 """D-MSX2SPEC: decode probes/bios/spec/xva16.asm's capture (VA-16: a frame interrupt swept through NSETRD / NSETWR /
 NRDVRM / NWRVRM / BIGFIL and the probe's own four port writes).  Per row and side: the calibration, then per call each step k
--- where the interrupt landed (`-` none before the snapshot, `pre` before the call's log was armed, `in@n` while
-INCALL was set with n port $99 writes logged, `post@n` after the return), the address after (R#14 x $4000 + the
-pointer's 14 bits, `!` = not the no-interrupt address), IFF2 after the return (twice), the writes logged in all.
+-- where the interrupt landed (`-` none before the snapshot, `pre` before the call's log was armed, `armed` after
+the arming but before INCALL was set (still before the call), `in@n` while INCALL was set with n port $99 writes
+logged, `post@n` after INCALL was cleared), the address after (R#14 x $4000 + the
+pointer's 14 bits, `!` = not the no-interrupt address), IFF2 after the return (twice), the writes logged in all, and
+(goldfish pass 1, a capture that has it) the depth `d`: SP0 - SP at the handler -- the smallest depth seen in a step is
+the probe's own stack level (`pre`, and an interrupt after the call's RET), a deeper one is inside the call; and for
+NWRVRM / BIGFIL `w98`, the port $98 writes logged when the interrupt came.
     python3 scratchpad/xva16_decode.py RUNFILE [--side ref|ours] [--all]   (--all: every step, else a summary)"""
 import re
 import sys
@@ -25,6 +29,8 @@ def where(mark, at):
         return "-"
     if at == 0xFF:
         return "pre"
+    if not mark & 1 and at == 0:
+        return "armed"      # the log armed, INCALL not yet set: still before the call (not after its return)
     return f"{'in' if mark & 1 else 'post'}@{at}"
 
 
@@ -46,21 +52,24 @@ def main():
             for k in range(96):
                 rec = b[4 + 16 * (c * 96 + k): 20 + 16 * (c * 96 + k)]
                 kk, cc, mark, at, n, r14, plo, phi, f1, f2 = rec[:10]
+                dep = b[4 + 0x2400 + c * 96 + k]
+                w98 = b[4 + 0x2400 + 576 + c * 96 + k] if dep else 0
                 assert kk == k and cc == c, (c, k, kk, cc)
                 addr = r14 * 0x4000 + ((phi << 8 | plo) & 0x3FFF)
                 w = where(mark, at)
                 ok = addr == EXPECT[c]
                 cat = w.split("@")[0] + ("@" + w.split("@")[1] if "@" in w and w.startswith("in") else "")
-                cnt[(cat, ok, f"IFF {f1 >> 2 & 1}{f2 >> 2 & 1}", n)] += 1
+                cnt[(cat, ok, f"IFF {f1 >> 2 & 1}{f2 >> 2 & 1}", n) + ((f"d={dep}" + (f" w98={w98}" if c in (3, 5) and w98 != 0xFF else ""),) if dep else ())] += 1
                 lg = portlog(rec[10:10 + min(n, 4)])
                 logs[lg] += 1
                 if "--all" in sys.argv:
                     print(f"    k={k:2} irq={w:7} addr=${addr:05X}{' ' if ok else '!'} IFF2={f1 >> 2 & 1}{f2 >> 2 & 1} "
-                          f"writes={n} {lg}")
+                          f"writes={n} d={dep} {lg}")
                 if not ok:
                     wrong.append((k, w, f"${addr:05X}", lg))
             for key, v in sorted(cnt.items(), key=lambda kv: str(kv[0])):
-                print(f"    {v:3} x irq {key[0]:5} addr {'right' if key[1] else 'WRONG'}, {key[2]}, {key[3]} writes")
+                print(f"    {v:3} x irq {key[0]:5} addr {'right' if key[1] else 'WRONG'}, {key[2]}, {key[3]} writes"
+                      f"{', ' + key[4] if len(key) > 4 else ''}")
             for k, w, a, lg in wrong:
                 print(f"    WRONG k={k} irq={w} addr={a} log={lg}")
             print(f"    logs: {dict(logs)}")

@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from xva_decode import portlog  # noqa: E402
 
-CALLS = ("NSETRD", "NSETWR", "NRDVRM", "NWRVRM", "BIGFIL")
+CALLS = ("NSETRD", "NSETWR", "NRDVRM", "BIGFIL", "NWRVRM")  # the probes' dispatch order: call 3 is BIGFIL
 
 NAMES = {
     "xva14": ["S8 control", "CHGMOD 12", "S12 (R25 08)", "S10/11 (R25 18)", "S12 +SCRMOD12", "S11 +SCRMOD11",

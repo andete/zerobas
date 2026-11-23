@@ -23,15 +23,23 @@
 ;   the snapshot: the call's and an interrupt routine's), +5 R#14 after, +6 / +7 the VRAM pointer after (low, high),
 ;   +8 / +9 F from `ld a, i` twice right after the return (bit 2 = IFF2), +10..+13 the first four logged writes,
 ;   +14 / +15 this call's calibration (loop iterations per frame).
+; Added in goldfish pass 1 (2026-11-23), AFTER the records (the records are unchanged): from +$2404 one byte per call x
+; step, SP0 - SP at the H.TIMI entry of the step's first interrupt (0 = none). SP0 is the stack level of the sled, of
+; the probe's own instructions round the call and of the code after its return; an interrupt taken at that level
+; gives the BASE depth (the interrupt routine's own pushes), one taken inside the call (its return address on the
+; stack) at least 2 more. This parts INCALL-at-probe-level (before `call` or after the RET) from inside the call.
+; From +$2644 one byte per call x step: the port $98 writes (@portlog 98) logged when that interrupt came ($FF = the
+; log not armed yet): NWRVRM's and BIGFIL's byte before or after the interrupt.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xva16.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries, hooks and work-area cells, the VDP's published ports, the VDP's
 ; registers and pointer read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap A000
-; @caplen 2500
+; @caplen 2900
 ; @vdpfull E8F0 E900
 ; @portlog 99 E902 E8F4
+; @portlog 98 E91F E8F4
 ; @timeout 120
 
 CHGMOD  equ     $005F
@@ -58,6 +66,14 @@ h_lp    equ     $E911                   ; LOGP when the handler fired (2)
 iff1    equ     $E913
 iff2    equ     $E914
 logend  equ     $E915                   ; (2)
+sp0     equ     $E917                   ; SP at the step (2)
+h_spt   equ     $E919                   ; SP at every H.TIMI entry (2)
+h_sp    equ     $E91B                   ; SP at the step's first interrupt (2)
+depp    equ     $E91D                   ; the depth array's pointer (2)
+LOGP98  equ     $E91F                   ; the port $98 log's pointer word (2)
+h_lp98  equ     $E921                   ; LOGP98 when the handler fired (2)
+LOGB98  equ     $E0E0                   ; the port $98 log, 16 bytes
+DEPB    equ     CAP+4+$2400             ; per call x step: SP0 - SP at H.TIMI (0 = none)
 HANDRAM equ     $E980                   ; the H.TIMI handler, copied to RAM
 SNAPB   equ     $E000                   ; 114 bytes
 LOGB    equ     $E080                   ; the port log, up to 96 bytes
@@ -72,7 +88,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $24FF
+                ld      bc, $28FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -80,6 +96,7 @@ init:
                 ld      (ARMFN), a
                 ld      hl, 0
                 ld      (LOGP), hl
+                ld      (LOGP98), hl
                 call    ARMFN
                 xor     a
                 ld      (armed), a
@@ -95,6 +112,8 @@ init:
                 ld      (HTIMI+1), hl
                 ld      hl, CAP+3
                 ld      (ptr), hl
+                ld      hl, DEPB
+                ld      (depp), hl
                 xor     a
                 ld      (cc), a
 c_next:
@@ -140,6 +159,7 @@ k_next:
                 ld      (h_mark), a
                 ld      hl, 0
                 ld      (h_lp), hl
+                ld      (h_lp98), hl
                 ld      a, 1
                 ld      (armed), a
                 ; the frame: sync on the VBLANK flag, delay, EI, k NOPs, the call
@@ -148,6 +168,7 @@ k_next:
                 ld      h, 0
                 ld      de, (dlyN)
                 call    wloop
+                ld      (sp0), sp               ; the stack level of the sled, the call and the code after its return
                 ei
                 ld      hl, (sledp)
                 jp      (hl)
@@ -156,6 +177,8 @@ sled:
 sled_end:
                 ld      hl, LOGB
                 ld      (LOGP), hl              ; the log is armed
+                ld      hl, LOGB98
+                ld      (LOGP98), hl
                 ld      hl, incall
                 ld      (hl), 1
                 ld      hl, $1234
@@ -181,6 +204,7 @@ sled_end:
                 ld      (logend), hl
                 ld      hl, 0
                 ld      (LOGP), hl              ; disarm
+                ld      (LOGP98), hl
                 ld      hl, SNAPB
                 ld      (SNAPP), hl
                 call    SNAPFN
@@ -239,6 +263,37 @@ r_na:
                 inc     hl
                 ld      (hl), d
                 ld      (ptr), hl
+                ; the depth: SP0 - SP at the handler (0 if no interrupt was recorded)
+                ld      a, (h_mark)
+                or      a
+                jr      z, r_nod
+                ld      hl, (sp0)
+                ld      de, (h_sp)
+                or      a
+                sbc     hl, de
+                ld      a, l
+r_nod:
+                ld      hl, (depp)
+                ld      (hl), a
+                ; the port $98 writes logged when the handler fired ($FF: the log was not armed)
+                ld      de, 576
+                add     hl, de
+                push    hl
+                ld      hl, (h_lp98)
+                ld      a, h
+                or      l
+                ld      a, $FF
+                jr      z, r_n98
+                ld      de, LOGB98
+                or      a
+                sbc     hl, de
+                ld      a, l
+r_n98:
+                pop     hl
+                ld      (hl), a
+                ld      hl, (depp)
+                inc     hl
+                ld      (depp), hl
                 ; clear the log buffer
                 ld      hl, LOGB
                 ld      de, LOGB+1
@@ -331,6 +386,7 @@ calib:
 
 ; H.TIMI (copied to HANDRAM): the first interrupt of a step records itself
 hand:
+                ld      (h_spt), sp
                 push    af
                 push    hl
                 ld      a, (armed)
@@ -343,6 +399,10 @@ hand:
                 ld      (h_mark), a
                 ld      hl, (LOGP)
                 ld      (h_lp), hl
+                ld      hl, (h_spt)
+                ld      (h_sp), hl
+                ld      hl, (LOGP98)
+                ld      (h_lp98), hl
 h_out:
                 pop     hl
                 pop     af
