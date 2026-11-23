@@ -12,13 +12,18 @@
 ; the table's place in SCREEN 1, 0 (40 / 80) and 8.
 ; The capture (CAP = C001): +0 $A5 when finished, +1 the step count; per step a 96-byte record from +2:
 ;   +0 A, +1 F, +2 B, +3 C, +4 D, +5 E after; +6..+37 the palette; +38..+85 the table; +86..+95 0.
+; Added 2026-11-23 (goldfish pass 1), steps 17-59 after the old ones (unchanged): +86 R#16 and +87 / +88 the VDP's
+; VRAM pointer (openMSX's 14-bit counter, low byte first) as the debugger held them right after the step -- so
+; after RSTPLT / GETPLT the pointer says how far the call read; op 6 fills the 48-byte table with A's value; op 7
+; does nothing (it records the table at its address: the other places, after INIPLT / SETPLT). D / E enter as
+; $C3 / $3C in the new RSTPLT / GETPLT steps.
 ; Run: python3 -u probes/bios/biosl_run.py probes/bios/spec/xplt.asm --row msx2all
 ;
 ; CLEAN-ROOM: 100% own code; published BIOS entries and work-area cells, the VDP's published ports, the VDP's
 ; palette read by the debugger (hardware state, not a ROM byte).
 ;
 ; @cap C000
-; @caplen 0680
+; @caplen 1700
 ; @vdpfull E8F0 E900
 ; @timeout 120
 
@@ -45,7 +50,7 @@ init:
                 di
                 ld      hl, CAP
                 ld      de, CAP+1
-                ld      bc, $067F
+                ld      bc, $16FF
                 ld      (hl), 0
                 ldir
                 ld      a, $C9
@@ -74,6 +79,18 @@ s_next:
                 call    CHGMOD
                 jr      s_done
 s_n0:
+                cp      7
+                jr      z, s_done               ; 7: nothing (record the table at the step's address)
+                cp      6
+                jr      nz, s_n5
+                call    tbl_wr                  ; 6: the table := A's value, 48 bytes
+                ld      b, 48
+                ld      a, (cur+1)
+s_fill:
+                out     ($98), a
+                djnz    s_fill
+                jr      s_done
+s_n5:
                 cp      5
                 jr      nz, s_call
                 call    tbl_wr                  ; 5: the pattern, by hand
@@ -146,6 +163,14 @@ s_rd:
                 ld      (de), a
                 inc     de
                 djnz    s_rd
+                ld      a, (SNAPB+16)           ; +86 R#16
+                ld      (de), a
+                inc     de
+                ld      a, (SNAPB+80)           ; +87 / +88 the VRAM pointer
+                ld      (de), a
+                inc     de
+                ld      a, (SNAPB+81)
+                ld      (de), a
                 ld      hl, (ptr)
                 ld      bc, 96
                 add     hl, bc
@@ -225,6 +250,92 @@ steps:
                 dw      $FA80                   ; 15 INIPLT
                 db      4, $73, 5, $04, 8, 40
                 dw      $FA80                   ; 16 SETPLT 5 in SCREEN 8
+                db      0, $00, $00, $00, 1, 40
+                dw      $2020                   ; 17 SCREEN 1
+                db      5, $00, $00, $00, 1, 40
+                dw      $2020                   ; 18 the table := the pattern
+                db      2, $00, $C3, $3C, 1, 40
+                dw      $2020                   ; 19 RSTPLT, D $C3 E $3C
+                db      3, $05, $C3, $3C, 1, 40
+                dw      $2020                   ; 20 GETPLT 5, D $C3 E $3C
+                db      4, $73, $05, $04, 1, 40
+                dw      $2020                   ; 21 SETPLT 5 := R 7, B 3, G 4
+                db      0, $00, $00, $00, 0, 40
+                dw      $0400                   ; 22 SCREEN 0, width 40
+                db      5, $00, $00, $00, 0, 40
+                dw      $0400                   ; 23 the table := the pattern
+                db      2, $00, $C3, $3C, 0, 40
+                dw      $0400                   ; 24 RSTPLT, D $C3 E $3C
+                db      3, $05, $C3, $3C, 0, 40
+                dw      $0400                   ; 25 GETPLT 5, D $C3 E $3C
+                db      4, $73, $05, $04, 0, 40
+                dw      $0400                   ; 26 SETPLT 5 := R 7, B 3, G 4
+                db      0, $00, $00, $00, 0, 80
+                dw      $0F00                   ; 27 SCREEN 0, width 80
+                db      5, $00, $00, $00, 0, 80
+                dw      $0F00                   ; 28 the table := the pattern
+                db      2, $00, $C3, $3C, 0, 80
+                dw      $0F00                   ; 29 RSTPLT, D $C3 E $3C
+                db      3, $05, $C3, $3C, 0, 80
+                dw      $0F00                   ; 30 GETPLT 5, D $C3 E $3C
+                db      0, $00, $00, $00, 8, 40
+                dw      $FA80                   ; 31 SCREEN 8
+                db      5, $00, $00, $00, 8, 40
+                dw      $FA80                   ; 32 the table := the pattern
+                db      2, $00, $C3, $3C, 8, 40
+                dw      $FA80                   ; 33 RSTPLT, D $C3 E $3C
+                db      3, $05, $C3, $3C, 8, 40
+                dw      $FA80                   ; 34 GETPLT 5, D $C3 E $3C
+                db      0, $00, $00, $00, 5, 40
+                dw      $7680                   ; 35 SCREEN 5
+                db      6, $FF, $00, $00, 5, 40
+                dw      $7680                   ; 36 the table := $FF
+                db      3, $05, $C3, $3C, 5, 40
+                dw      $7680                   ; 37 GETPLT 5: bits 3 / 7
+                db      2, $00, $C3, $3C, 5, 40
+                dw      $7680                   ; 38 RSTPLT from $FF
+                db      6, $88, $00, $00, 5, 40
+                dw      $7680                   ; 39 the table := $88
+                db      3, $05, $C3, $3C, 5, 40
+                dw      $7680                   ; 40 GETPLT 5
+                db      5, $00, $00, $00, 5, 40
+                dw      $0400                   ; 41 the pattern at $0400
+                db      5, $00, $00, $00, 5, 40
+                dw      $0F00                   ; 42 the pattern at $0F00
+                db      5, $00, $00, $00, 5, 40
+                dw      $2020                   ; 43 the pattern at $2020
+                db      5, $00, $00, $00, 5, 40
+                dw      $1B80                   ; 44 the pattern at $1B80
+                db      5, $00, $00, $00, 5, 40
+                dw      $7680                   ; 45 the pattern at $7680
+                db      5, $00, $00, $00, 5, 40
+                dw      $FA80                   ; 46 the pattern at $FA80
+                db      1, $00, $00, $00, 5, 40
+                dw      $7680                   ; 47 INIPLT (SCREEN 5)
+                db      7, $00, $00, $00, 5, 40
+                dw      $0400                   ; 48 read $0400
+                db      7, $00, $00, $00, 5, 40
+                dw      $0F00                   ; 49 read $0F00
+                db      7, $00, $00, $00, 5, 40
+                dw      $2020                   ; 50 read $2020
+                db      7, $00, $00, $00, 5, 40
+                dw      $1B80                   ; 51 read $1B80
+                db      7, $00, $00, $00, 5, 40
+                dw      $FA80                   ; 52 read $FA80
+                db      5, $00, $00, $00, 5, 40
+                dw      $7680                   ; 53 the pattern at $7680
+                db      4, $73, $05, $04, 5, 40
+                dw      $7680                   ; 54 SETPLT 5 (SCREEN 5)
+                db      7, $00, $00, $00, 5, 40
+                dw      $0400                   ; 55 read $0400
+                db      7, $00, $00, $00, 5, 40
+                dw      $0F00                   ; 56 read $0F00
+                db      7, $00, $00, $00, 5, 40
+                dw      $2020                   ; 57 read $2020
+                db      7, $00, $00, $00, 5, 40
+                dw      $1B80                   ; 58 read $1B80
+                db      7, $00, $00, $00, 5, 40
+                dw      $FA80                   ; 59 read $FA80
                 db      $EE
 
                 ds      $8000 - $, $FF

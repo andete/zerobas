@@ -5,9 +5,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # The MSX2 VDP, sprites and the palette — shared facts for the sub-ROM calls
 
-> **Concept page, DRAFT 0 (2026-11-23),** from the published interface only; nothing measured yet.
-> It holds the facts several sub-ROM pages share, so each call page links here instead of
+> **Concept page, DRAFT 0 (2026-11-23),** from the published interface, except the paragraphs marked
+> **Measured** [M] (the palette table, from [xplt.asm](../../../probes/bios/spec/xplt.asm)). It holds the facts several sub-ROM pages share, so each call page links here instead of
 > restating them ([spec-method §1](../../spec-method.md)). Per-call state never goes here.
+>
+> Goldfish pass 1 (test writer) 2026-11-23: 4 findings, 2 measured, 0 moved to open, 2 corrected in wording.
 
 Pages that rely on it: [CLRSPR](../sub/CLRSPR.md), [CALPAT](../sub/CALPAT.md),
 [CALATR](../sub/CALATR.md), [GSPSIZ](../sub/GSPSIZ.md), [GETPAT](../sub/GETPAT.md),
@@ -110,7 +112,9 @@ VDP effect (GSPSIZ), made through the same EXTROM path — tells the path's effe
   green in the low nibble of a second byte [P A1 GETPLT, SETPLT]. Which bit of each nibble is
   ignored, and by whom (the call, or the VDP), is [A].
 - The power-on palette is Table 2.5 of [P 2§2.2] (red / blue / green brightness 0-7 per entry;
-  entry 0 transparent, 1 black, 15 white 7/7/7).
+  entry 0 transparent, 1 black, 15 white 7/7/7). **Measured** [M]: INIPLT's palette on all three references equals
+  Table 2.5 except entry 11, which is red 6 / **blue 4** / green 6 where the table prints blue 3
+  ([INIPLT](../sub/INIPLT.md)).
 - Colour 0 is transparent unless R#8 bit 5 is set [P 4§4 "colour code 0", 2§2.2]. SCREEN 8 has no
   palette: BASIC's `COLOR=(...)` does nothing there [P 2§2.2].
 - **The VRAM save area ("palette table"):** BASIC's `COLOR=RESTORE` loads the palette from it
@@ -125,9 +129,14 @@ VDP effect (GSPSIZ), made through the same EXTROM path — tells the path's effe
   | 5, 6 | $7680-$76AF |
   | 7, 8 | $FA80-$FAAF |
 
-  **Measured** [M] on all three references ([xplt.asm](../../../probes/bios/spec/xplt.asm)): the five places
-  above hold for SCREEN 0 (40 and 80), 1, 5 and 8; the calls use the FIRST 32 bytes, 16 entries x 2 (red x 16 +
-  blue, green), the VDP's own layout; bytes 32-47 are never written; GETPLT reads this table, not the VDP.
+  **Measured** [M] on all three references ([xplt.asm](../../../probes/bios/spec/xplt.asm),
+  [scratchpad/AE_xplt_msx2.out](../../../scratchpad/AE_xplt_msx2.out)): the places above hold for SCREEN 0 (40 and
+  80), 1, 5 and 8 (SCREEN 2, 3, 4, 6, 7 not run); the entry layout is the VDP's own, 16 entries x 2 bytes (red x 16
+  + blue, green) in the FIRST 32 bytes. INIPLT and SETPLT write only bytes 0-31 of the mode's table (bytes 32-47 and
+  the other five places, preset to a pattern, left); RSTPLT reads exactly 32 bytes and GETPLT 2 -- the VDP's VRAM
+  pointer after the call is the table + 33 / + 2n + 3, i.e. the bytes read plus the VDP's one-byte read-ahead;
+  GETPLT reads this table live, not the VDP and not a RAM copy. Details on [INIPLT](../sub/INIPLT.md),
+  [RSTPLT](../sub/RSTPLT.md), [GETPLT](../sub/GETPLT.md), [SETPLT](../sub/SETPLT.md).
   The rest of this note was written before that measurement:
   48 bytes each. The handbook does not give the layout inside the 48 bytes (16 entries x 2 bytes
   would fill 32), nor whether in SCREEN 5-8 the table moves with ACPAGE / DPPAGE, nor what decides
@@ -147,6 +156,14 @@ The probes run under openMSX. Registers, RAM, VRAM and I/O are readable state; R
   discipline, and "the call masks a value" vs "the VDP ignores the bits");
 - records VRAM by block sums plus windows round every table touched, or whole where the page says;
 - reads the interrupt state twice after the call, and runs the control call.
+
+**What the 2026-11-23 runs actually used** (the rules above are the target, not yet the practice): `xplt.asm` -- no
+RAM read, no port log, BC $5AA5 and D / E $00 or $C3 / $3C, the palette and R#16 and the VRAM pointer by snapshot, the
+mode's 48-byte table (and in steps 41-59 the other five places); `xsubcls.asm` -- no port log, no RAM beyond the
+colour cells and SCRMOD, three 16-byte VRAM windows per case; `xwv.asm` -- phase 1 two RAM windows, phase 3 a diff
+of the whole work area $F380-$FFFE and the port $99 / $9B log, phase 4 STATFL and the port $99 log. No run presets the
+alternate registers or IX / IY, and none runs the control call. The [M] claims rest on that apparatus; a claim
+needing more stays in its page's Open table.
 
 ## States the measurements must desync
 
