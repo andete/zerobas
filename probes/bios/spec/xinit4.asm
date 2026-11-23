@@ -61,6 +61,25 @@ rec0    equ     $EF10                   ; the record's start
                 ds      6, 0
 
 init:
+                ; D-MSX1ON2: an H.KEYI guard (our own code, copied to RAM at $EF40 so it runs whatever page 1 holds).
+                ; An MSX2 INIT* carries a garbage RG0SAV's bit 4 (IE1, the line interrupt) into R#0 and nothing
+                ; acknowledges it: the interrupt storm overran all of RAM (measured on the NMS 8250, RG0SAV $1A
+                ; hangs, $4A does not). While the copy has bit 4 set the guard writes R#0 := RG0SAV AND $EF straight
+                ; to the VDP -- the copy, which the record reads, is not touched. Installed ONLY where EXBRSA ($FAF8,
+                ; the sub-ROM's slot, RAM) is non-zero: on the VG-8020 an always-on guard rewrote R#0 while the probe's
+                ; garbage copy sat in RG0SAV and moved 6 (xinit3) / 324 (xinit4) bytes of its capture.
+                ld      a, ($FAF8)
+                or      a
+                jr      z, kg_skip
+                ld      hl, kguard
+                ld      de, $EF40
+                ld      bc, kguard_end - kguard
+                ldir
+                ld      a, $C3
+                ld      ($FD9A), a
+                ld      hl, $EF40
+                ld      ($FD9B), hl
+kg_skip:
                 ld      hl, CAP
                 ld      de, CAP+1
                 ld      bc, CAPLEN - 1
@@ -402,6 +421,20 @@ cb_lp:
                 ld      a, $C3                  ; the record's sentinel: a decoder refuses without it
                 call    emit
                 jp      next
+
+kguard:
+                push    af
+                ld      a, (RG0SAV)
+                bit     4, a
+                jr      z, kg_out
+                and     $EF
+                out     ($99), a
+                ld      a, $80
+                out     ($99), a
+kg_out:
+                pop     af
+                ret
+kguard_end:
 
 finish:
                 ld      a, $A5

@@ -86,8 +86,8 @@ xgfx5b      msx2eu: gen=20 cbios=10  msx2jp: gen=30 cbios=10  msx2p: gen=30 cbio
 xgfx6       msx2eu: gen=89 cbios=350  msx2jp: gen=178 cbios=350  msx2p: gen=179 cbios=351
 xinig       msx2eu: gen=832 cbios=510  msx2jp: gen=866 cbios=520  msx2p: gen=866 cbios=520
 xinit       msx2eu: gen=1004 cbios=183  msx2jp: gen=1128 cbios=183  msx2p: gen=1128 cbios=183
-xinit3      msx2eu: gen=5639 cbios=5557  msx2jp: gen=5639 cbios=5554  msx2p: gen=5640 cbios=5598
-xinit4      msx2eu: gen=9189 cbios=9053+LEN  msx2jp: gen=9189 cbios=9117+LEN  msx2p: gen=9189 cbios=9174+LEN
+xinit3      msx2eu: gen=561 cbios=211  msx2jp: gen=657 cbios=239  msx2p: gen=657 cbios=239
+xinit4      msx2eu: gen=1251 cbios=310  msx2jp: gen=1403 cbios=319  msx2p: gen=1404 cbios=320
 xinitio     msx2eu: gen=0 cbios=0  msx2jp: gen=20 cbios=20  msx2p: gen=30 cbios=30
 xinitio2    msx2eu: gen=0 cbios=0  msx2jp: gen=20 cbios=20  msx2p: gen=30 cbios=30
 xinitio3    msx2eu: gen=0 cbios=0  msx2jp: gen=25 cbios=25  msx2p: gen=37 cbios=37

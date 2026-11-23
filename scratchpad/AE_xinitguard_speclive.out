@@ -1,0 +1,14 @@
+WARNING: Var cbd is never used on line 46 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+WARNING: Var cbg is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+WARNING: Var rec0 is never used on line 51 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit3.asm
+WARNING: Var cbd is never used on line 45 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+WARNING: Var cbg is never used on line 44 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+WARNING: Var rec0 is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit.asm
+WARNING: Var cbd is never used on line 48 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+WARNING: Var cbg is never used on line 47 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+WARNING: Var rec0 is never used on line 56 of file /Users/joost/projects/zerobas/probes/bios/spec/xinit4.asm
+  live XINIT_fix1.out nodisk: xinit.asm 1.1 s, zerobas as committed
+  live XINIT3_fix1.out nodisk: xinit3.asm 1.2 s, zerobas as committed
+  live XINIT4_fix2.out nodisk: xinit4.asm 1.4 s, zerobas as committed
+OK   docs/bios/INITXT.md: 24 rules, 5 failing on zerobas (live, 3 run file(s))
+===== spec-live: ALL PAGES AGREE =====
