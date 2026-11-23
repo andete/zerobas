@@ -1,0 +1,34 @@
+===== probes/bios/spec/xtrdsk2b.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=b000 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=12.300 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=b000 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=11.500 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 1b0200020002c902c9f180010089cbb9001b0200020002c902c9f1800100ed1abb000e0202d50e0001d50256d30100e41ebb00190100c4190000c40156d30100d122bb000d00429f0df1959f00f19501006d2bbb00190000c4190000c40056d30100592fbb0018034400180000000356d301005533bb
+  CAP ours: 1b0200020002c902c9f1850100ce91ad001b0200020002c902c9f1850100bde0ae000e0202d50e0001d50256d30100b4e4ae00190100c4190000c40156d30100a0e8ae000d00429f0df19a9f00f19a010025f1ae00190000c4190000c40056d3010011f5ae0018034400180000000356d301000df9ae
+  DIFF (25 unexcused byte(s)):
+  CAP A00B: ref=80 ours=85
+  CAP A00E: ref=89 ours=CE
+  CAP A00F: ref=CB ours=91
+  CAP A010: ref=B9 ours=AD
+  CAP A01C: ref=80 ours=85
+  CAP A01F: ref=ED ours=BD
+  CAP A020: ref=1A ours=E0
+  CAP A021: ref=BB ours=AE
+  CAP A030: ref=E4 ours=B4
+  CAP A031: ref=1E ours=E4
+  CAP A032: ref=BB ours=AE
+  CAP A041: ref=D1 ours=A0
+  CAP A042: ref=22 ours=E8
+  CAP A043: ref=BB ours=AE
+  CAP A04B: ref=95 ours=9A
+  CAP A04F: ref=95 ours=9A
+  CAP A052: ref=6D ours=25
+  CAP A053: ref=2B ours=F1
+  CAP A054: ref=BB ours=AE
+  CAP A063: ref=59 ours=11
+  CAP A064: ref=2F ours=F5
+  CAP A065: ref=BB ours=AE
+  CAP A074: ref=55 ours=0D
+  CAP A075: ref=33 ours=F9
+  CAP A076: ref=BB ours=AE
+===== biosl: DIVERGENCE =====

@@ -1,0 +1,64 @@
+===== probes/bios/spec/xtrdsk2a.asm turbor: Panasonic_FS-A1GT vs Panasonic_FS-A1ST =====
+  (turbor: two REFERENCES -- 'ref' = FS-A1GT, 'ours' = FS-A1ST; a DIFF is where they disagree)
+  VDP R#1 at the dump: ref 96, ours 96
+  ref : jiffy=b000 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=12.300 fcb1=2 s1990r6=0.1:60 0.7:40 1.9:60
+  ours: jiffy=af00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9f78bd47fc9 cpu=z80 t=11.500 fcb1=2 s1990r6=0.1:60 0.6:40 1.9:60
+  CAP ref : 2b0044098f0007090056d301003a16b1002a0144163a0b1707ea56d30100af20b1002bff4af8440d01f8ff56d30100d224b1002a0144163a0b1707ea56d30100472fb1002bff44f8440001f8ff56d301006533b1002bff42f8440100f8ff56d301005940b1002bffa3f8440120f8ff56d301009144b1002dff4a1800000018ff56d301008648b1002dffbb003c000000ff56d30100814cb1002dffbb00003c0000ff56d301007f50b1001b0200020002c902c9f1800100a910ba001b0200020002c902c9f1800100465bbb000e0202d50e0001d50256d301003d5fbb00190100c4190000c40156d301002a63bb000d00429f0df1959f00f19501008d70bb00190000c4190000c40056d301007974bb0018034400180000000356d301007578bb
+  CAP ours: 2b0044098f0007090056d3010008dda4002a0144163a0b1707ea56d301007de7a4002bff4af8440d01f8ff56d30100a0eba4002a0144163a0b1707ea56d3010015f6a4002bff44f8440001f8ff56d3010033faa4002bff42f8440100f8ff56d301004902a5002bffa3f8440120f8ff56d301008106a5002dff4a1800000018ff56d30100760aa5002dffbb003c000000ff56d30100710ea5002dffbb00003c0000ff56d301007012a5001b0200020002c902c9f185010005d2ad001b0200020002c902c9f1850100f420af000e0202d50e0001d50256d30100eb24af00190100c4190000c40156d30100d828af000d00429f0df19a9f00f19a01005c31af00190000c4190000c40056d301004935af0018034400180000000356d301004439af
+  DIFF (55 unexcused byte(s)):
+  CAP A00E: ref=3A ours=08
+  CAP A00F: ref=16 ours=DD
+  CAP A010: ref=B1 ours=A4
+  CAP A01F: ref=AF ours=7D
+  CAP A020: ref=20 ours=E7
+  CAP A021: ref=B1 ours=A4
+  CAP A030: ref=D2 ours=A0
+  CAP A031: ref=24 ours=EB
+  CAP A032: ref=B1 ours=A4
+  CAP A041: ref=47 ours=15
+  CAP A042: ref=2F ours=F6
+  CAP A043: ref=B1 ours=A4
+  CAP A052: ref=65 ours=33
+  CAP A053: ref=33 ours=FA
+  CAP A054: ref=B1 ours=A4
+  CAP A063: ref=59 ours=49
+  CAP A064: ref=40 ours=02
+  CAP A065: ref=B1 ours=A5
+  CAP A074: ref=91 ours=81
+  CAP A075: ref=44 ours=06
+  CAP A076: ref=B1 ours=A5
+  CAP A085: ref=86 ours=76
+  CAP A086: ref=48 ours=0A
+  CAP A087: ref=B1 ours=A5
+  CAP A096: ref=81 ours=71
+  CAP A097: ref=4C ours=0E
+  CAP A098: ref=B1 ours=A5
+  CAP A0A7: ref=7F ours=70
+  CAP A0A8: ref=50 ours=12
+  CAP A0A9: ref=B1 ours=A5
+  CAP A0B5: ref=80 ours=85
+  CAP A0B8: ref=A9 ours=05
+  CAP A0B9: ref=10 ours=D2
+  CAP A0BA: ref=BA ours=AD
+  CAP A0C6: ref=80 ours=85
+  CAP A0C9: ref=46 ours=F4
+  CAP A0CA: ref=5B ours=20
+  CAP A0CB: ref=BB ours=AF
+  CAP A0DA: ref=3D ours=EB
+  CAP A0DB: ref=5F ours=24
+  CAP A0DC: ref=BB ours=AF
+  CAP A0EB: ref=2A ours=D8
+  CAP A0EC: ref=63 ours=28
+  CAP A0ED: ref=BB ours=AF
+  CAP A0F5: ref=95 ours=9A
+  CAP A0F9: ref=95 ours=9A
+  CAP A0FC: ref=8D ours=5C
+  CAP A0FD: ref=70 ours=31
+  CAP A0FE: ref=BB ours=AF
+  CAP A10D: ref=79 ours=49
+  CAP A10E: ref=74 ours=35
+  CAP A10F: ref=BB ours=AF
+  CAP A11E: ref=75 ours=44
+  CAP A11F: ref=78 ours=39
+  CAP A120: ref=BB ours=AF
+===== biosl: DIVERGENCE =====

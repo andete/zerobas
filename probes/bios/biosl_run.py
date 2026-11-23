@@ -43,6 +43,13 @@ Its header comment may carry the harness settings, one per line:
     ;                   a machine without an S1990) and the emulated time in microseconds (32-bit, little-endian,
     ;                   wraps at ~71 min). Repeatable (one breakpoint each, PTRs may be shared): two snapshots
     ;                   around a fixed loop time it
+    ; @iffsnap ADDR BUF (D-TRSPEC) when the CPU reaches ADDR (hex, the probe's own code), the debugger writes 5
+    ;                   bytes at BUF + 5 x (this directive's hits so far): the CPU's interrupt flip-flops (openMSX's
+    ;                   `reg IFF`, read without an instruction, so without LD A,I's quirk: 0 with interrupts off, $07
+    ;                   on, measured on the turbo R) and the emulated time in microseconds (32-bit LE). Needs no probe
+    ;                   cooperation (an unchanged probe's timing is kept: a breakpoint takes no emulated time).
+    ;                   Repeatable. ADDR is a CPU address: code of ANOTHER slot run at it (the disk ROM in page 1, the
+    ;                   boot) hits it too and takes a slot -- put it in page 2 / 3 RAM or read the hits by their time
     ; @timeout SECONDS  emulated seconds to wait for DONE (default 30)
     ; @cap ADDR         DONE's address (hex, default E000): CAP = +1, KEYREADY = +$100
     ; @caplen LEN       the capture block's length (hex, default FF). D-SPECMETHOD (2026-11-17):
@@ -161,7 +168,7 @@ def settings(asm_text: str) -> dict:
     s = {"keys": None, "matrix": None, "vram": [], "timeout": 30.0, "disk": None,
          "cap": DONE, "type_at": None, "tape": False, "caplen": CAPLEN, "printer": False,
          "vdpsnap": None, "keyset": None, "type_ready": None, "vdpfull": None, "portlog": [],
-         "psglog": None, "plug": [], "cpusnap": []}
+         "psglog": None, "plug": [], "cpusnap": [], "iffsnap": []}
     # one directive per line: `[ \t]` never crosses a newline (an argument-less @printer / @tape would
     # otherwise take the next line as its value)
     for m in re.finditer(r"^;[ \t]*@([\w-]+)(?:[ \t]+(.*?))?[ \t]*$", asm_text, re.M):
@@ -215,6 +222,11 @@ def settings(asm_text: str) -> dict:
             if len(f) != 2:
                 sys.exit(f"FAIL: @cpusnap wants ADDR PTR, got {v!r}")
             s["cpusnap"].append((int(f[0], 16), int(f[1], 16)))
+        elif k == "iffsnap":                # ADDR BUF (hex): IFF + emulated time, 5 bytes per hit (D-TRSPEC)
+            f = v.split()
+            if len(f) != 2:
+                sys.exit(f"FAIL: @iffsnap wants ADDR BUF, got {v!r}")
+            s["iffsnap"].append((int(f[0], 16), int(f[1], 16)))
         elif k == "vdpsnap":                # ADDR PTR (hex)
             f = v.split()
             if len(f) != 2:
@@ -366,6 +378,18 @@ def run(machine: str, rom: str, st: dict, td: str, disk: bool = False, cpuinfo: 
                  f"  debug write memory {cp} [expr {{$p & 255}}]\n"
                  f"  debug write memory {cp + 1} [expr {{$p >> 8}}]\n}}\n"
                  f"debug set_bp {ca} {{}} biosl_cpusnap{ci}\n")
+    for ii, (ia, ib) in enumerate(st["iffsnap"]):
+        # the CPU's IFF register as the debugger sees it (no instruction executed); the hit count is the script's
+        snap += (f"set ::iffn{ii} 0\n"
+                 f"proc biosl_iffsnap{ii} {{}} {{\n"
+                 f"  set p [expr {{({ib} + 5 * $::iffn{ii}) & 0xFFFF}}]\n"
+                 f"  incr ::iffn{ii}\n"
+                 "  set t [expr {wide([machine_info time] * 1000000) & 0xFFFFFFFF}]\n"
+                 "  set k 0\n"
+                 "  foreach b [list [reg IFF] [expr {$t & 255}] [expr {($t >> 8) & 255}] [expr {($t >> 16) & 255}] "
+                 "[expr {$t >> 24}]] {\n"
+                 "    debug write memory [expr {($p + $k) & 0xFFFF}] $b; incr k\n  }\n}\n"
+                 f"debug set_bp {ia} {{}} biosl_iffsnap{ii}\n")
     if st["keyset"]:
         ka, kl = st["keyset"]
         snap += ("proc biosl_keyset {} {\n"
