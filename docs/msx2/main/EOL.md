@@ -5,54 +5,64 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `EOL` ($0168) — clear to the end of a line
 
-> **Spec:** DRAFT 0 (2026-11-23), from the published interface only; nothing measured yet. References to measure: HB-F900, NMS 8250, FS-A1WSX.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the HB-F900, NMS 8250 and FS-A1WSX (identical on all three;
+> [xeol.asm](../../probes/bios/spec/xeol.asm), [scratchpad/AE_xeol_msx2.out](../../scratchpad/AE_xeol_msx2.out),
+> decoded by `scratchpad/xeol_decode.py`).
 
 ## Summary
 
-`EOL` clears the text screen from a given position to the end of the line. The position comes in
-HL, H the column and L the row, the same coordinates as the cursor's. Whether the cursor moves, and
-whether "the line" is one screen row or the whole logical line, is not published.
+`EOL` clears one screen row of the text screen from a given position to the row's end, writing spaces
+into the name table. The position comes in HL, H the column and L the row, counted from 1 like CSRX /
+CSRY. The cursor does not move, a continued logical line's next rows are not cleared, and the row's
+LINTTB entry is rewritten. It ends with interrupts enabled.
 
 ## The specification
 
 **Interface.**
-- In: H = the cursor's X coordinate, L = its Y coordinate [P A1]. Out: none [P A1]. Changes: all
-  registers [P A1].
-- It clears from (H, L) to the end of the line [P A1]; with spaces, in the name table, like CHPUT's
-  `ESC K` [A].
-- The coordinates count from 1, as CSRX / CSRY [A]. CSRX / CSRY afterwards (moved to H, L or
-  kept) [A]. Whether a continued logical line's next rows are cleared too [A]. LINTTB, the key line,
-  and the interrupt state [A].
+- In: H = the X coordinate, L = the Y coordinate [P A1]. Out: none [P A1]. Changes: all registers [P A1].
+
+**Measured** [M] (case numbers are the decoder's; every case fills the span it reads with an address-dependent
+pattern, puts the cursor at (20, 10), CRTCNT 24, LINTTB[i] := $C0 + i; identical on all three references):
+- **What is cleared:** the name-table cells of screen row L - 1 (0-based), from column H - 1 to the row's last
+  column LINLEN - 1, each := $20; nothing else in the name table (27 rows checked) [M 0-2, 20]: SCREEN 1 H 5 L 3 -> 28
+  cells from row 2 column 4 (case 0); SCREEN 0 width 40 H 1 L 1 -> the whole first row (case 1); width 80 H 30 L 3 ->
+  51 cells from column 29 of row 2 (case 2).
+- **LINLEN below the screen width** (LINL40 30 on the 40-column screen, case 3): from column 4 + the centring margin 5
+  = 9, 26 cells -- the clear covers the text window, not the screen row [M 3].
+- **H at the last column** (40 at width 40, 80 at width 80, 32 in SCREEN 1): exactly one cell [M 8, 9, 18].
+- **H past the end** (41 at width 40): one cell, the FIRST cell of the next row (row 3 column 0) [M 7].
+  **H 0:** 41 cells from name-table offset $014F -- column H - 1 taken as 255 [M 6].
+- **One screen row only:** with row 2's or row 3's LINTTB entry 0 (a continued logical line either way) the clear is
+  the same 36 cells of row 2 [M 4, 5, 19, 20].
+- **LINTTB:** the entry of row L - 1 becomes $AF; every other entry is left as found (a 0 stays 0) [M 0-11, 14-20].
+  Row L 0 and L 25 leave LINTTB[0-23] alone [M 12, 13].
+- **The cursor and the key line:** CSRX / CSRY stay (20, 10); CNSDFG is not changed [M 0-20]. L 24 clears row 23 with
+  the key line off or on (CNSDFG $00 / $FF), nothing scrolls [M 10, 11].
+- **Out-of-range rows:** L 25 clears row 24 (name table offset $03C4, past the 24-row screen) [M 13]; L 0 changes
+  nothing in rows 0-26 -- DE comes back $27DC = 255 x 40 + 4, row L - 1 taken as 255, past the checked span [M 12].
+- **Bitmap and graphic modes:** in SCREEN 5 and 8 it writes 36 bytes of $20 at VRAM $00C0, in SCREEN 2 at $18C0 (the
+  name table + $C0), for H 5 L 3 -- the text-mode cells of a different offset ($C0, where width 40 gives $54); LINTTB's
+  row-2 entry := $AF as in text mode [M 14-16]. One position only: how the offset follows H / L there is open.
+- **Registers:** IX, IY and the alternate set are kept [M 0-20]. The rest come back with: A = LINLEN, H = LINLEN + 1,
+  L = the entry L, DE = the first cleared cell's offset from the name-table base, BC kept [M 0-20] (published as "all
+  change").
+- **Interrupts are ON on return**, entered with interrupts off or on [M 0-20].
 
 ## Differences from the reference
 
-Not measured yet.
+C-BIOS's MSX2 / MSX2+ builds (the subject):
+- **H past the row's end** (H 41 at width 40): C-BIOS clears the whole checked span -- all 1080 cells of rows 0-26 --
+  where the references clear one cell [M 7].
+- Registers on return differ (A $20, F $43, BC $0000, DE = CSRX / CSRY, HL = the first cell's address), which the
+  published "all registers change" allows [M 0-20].
+- Everything else above matches, including the graphic-mode writes at $00C0 / $18C0 [M 0-20].
 
 ## Open (not measured)
 
-Every case fills the name table with an address-dependent, non-space pattern and puts the cursor
-(CSRX / CSRY) somewhere other than (H, L). Records: the whole name table (or its sums plus windows
-on rows L-1, L, L+1, L+2), CSRX, CSRY, LINTTB, CRTCNT, CNSDFG, the key line's row, every register,
-the interrupt state (twice), and the colour / pattern tables' sums.
-
-| case | inputs | state | separates | F900 | 8250 | WSX |
-|---|---|---|---|---|---|---|
-| EL-1 | H 5, L 3 | SCREEN 1, width 32, cursor at (20, 10) | uses HL vs the cursor; 1-based (clears from column 5) vs 0-based (from 6) | ? | ? | ? |
-| EL-2 | H 1, L 1 | SCREEN 0 width 40 | the whole first row; the left edge | ? | ? | ? |
-| EL-3 | H 30, L 3 | SCREEN 0 width 80 (TEXT2) | the MSX2 80-column layout (name table stride) | ? | ? | ? |
-| EL-4 | H 5, L 3 | SCREEN 0, LINLEN 30 < screen width 40 | the name-table column the clear starts at (recorded, not assumed): from column 4, or 4 + a centring margin; and where it ends: LINLEN, the screen width, or the margin's end | ? | ? | ? |
-| EL-5 | H 5, L 3 | row 3 continued into row 4 (LINTTB) | one screen row vs the whole logical line; LINTTB rewritten | ? | ? | ? |
-| EL-6 | H 0, L 3 / H 41, L 3 | SCREEN 0 width 40 | out-of-range columns: nothing, the whole row, or past the row | ? | ? | ? |
-| EL-7 | H 40, L 3 / H 80, L 3 (TEXT2) | SCREEN 0 | H at the last column: exactly one cell cleared | ? | ? | ? |
-| EL-8 | H 5, L 24 | CRTCNT 24, key line OFF | the last row cleared, nothing scrolled | ? | ? | ? |
-| EL-9 | H 5, L 0 / L 24 / L 25 | CRTCNT 24, key line ON | the key line's row and beyond the screen | ? | ? | ? |
-| EL-10 | H 5, L 3 | after the call | CSRX / CSRY: kept at (20, 10) vs moved to (5, 3) | ? | ? | ? |
-| EL-11 | H 5, L 3 | SCREEN 5 (a bitmap mode) | what it does in graphics modes (nothing / VRAM change / something else) | ? | ? | ? |
-| EL-12 | H 5, L 3 | S-REGS, interrupts on / off | registers out (all may change: record which do); the interrupt state | ? | ? | ? |
-| EL-13 | H 5, L 3 | cursor shown (CSRSW) at the cleared position | the cursor's drawn character restored or cleared | ? | ? | ? |
-| EL-14 | H 5, L 3 | — | stack depth and time ([README](README.md#the-shared-vram-address-matrix) methods) | ? | ? | ? |
-
-Also open: SCREEN 2-4.
+- The graphic-mode offset's rule (one H / L measured), SCREEN 3, 4, 6, 7.
+- EL-13: the cursor shown (CSRSW) at the cleared position.
+- Whether L 0 really writes at offset $27DC (only DE says so); the byte past LINTTB that L 25 might write ($FBCA).
+- Stack depth and time.
 
 ## Related pages
 
