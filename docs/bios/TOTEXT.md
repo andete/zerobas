@@ -82,6 +82,19 @@ Declared NOT evidence (4 cases: XT 16, XT 17, XT 22, XT 23): linlen — garbage-
 | ruled font (D-BIOSINT) | R-T-OLD0, R-T-OLD1, R-T-VRAM2 |
 | **D-INITEDGES** (CRTCNT 13: zerobas's key line on row 24 and CRTCNT := 24) | R-T-VRAM2 (its two CRTCNT 13 cases) |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xtot.out](../../scratchpad/AE_m1on2/xtot.out), [scratchpad/AE_m1on2/xtot2.out](../../scratchpad/AE_m1on2/xtot2.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-T-OLDX**, **R-T-DISPATCH** | OLDSCR 0-3 dispatch as stated; OLDSCR $5A, $7F, $80, $81 and $FF do nothing: SCRMOD, OLDSCR, the register copies, LINLEN, the cursor and VRAM stay as found [M] | the same [M] |
+| **R-T-TEXT**, **R-T-OLD0**, **R-T-OLD1**, **R-T-SCRMOD**, **R-T-THRU**, **R-T-REGS2** | the outcomes hold; the register copies are the later machines' own INITXT / INIT32 / INIGRP / INIMLT values (RG1SAV bit 7 clear, INITXT leaving R3 / R5 / R6): [INITXT](INITXT.md), [INIGRP](INIGRP.md), [INIMLT](INIMLT.md) [M] | the same [M] |
+| **R-T-VRAM2** | not decided: every whole-VRAM sum after a screen is set up from SCREEN 2 / 3 differs -- on the NMS 8250, whose font is the VG-8020's, by the same $0721 each time -- not separated from the SCREEN 2 / 3 setup's own differences [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the HB-F900 and FS-A1WSX carry the Japanese font; the HB-F900 and FS-A1WSX boot with BDRCLR 7 and LINL40 39 (the NMS 8250, like the VG-8020, 4 and 37) (R7 $07 through INIT32); the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM.
+
 ## Open (not measured)
 
 - **[A]** OLDSCR values not measured ($04-$59, $5B-$7E, $82-$FE): the sweep is 0, 1, 2, 3, $5A, $7F,

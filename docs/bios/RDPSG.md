@@ -80,6 +80,16 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xsnd1.out](../../scratchpad/AE_m1on2/xsnd1.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: PSG R14 (port A, an input) reads $FF on the FS-A1WSX, $BF on the two MSX2s as on the VG-8020 [M] -- what is wired to port A.
+
 ## Open (not measured)
 
 - **[A]** Entry values other than those measured; the alternate registers and SP; the time it takes.

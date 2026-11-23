@@ -83,6 +83,14 @@ Run 1 is discarded: it left CONTXT at $5A5A, inside the ROM, so token $10 read f
 | **D-CHRGTRSKIP** (zerobas skips only the space: a TAB or an LF comes back as a plain character, HL + 1; at 00 its F is $42, Z and N, not $44 -- Z, the published flag, agrees) | R-C-SKIP, R-C-END |
 | **D-CHRGTRTOK** (zerobas treats $0B-$1F as plain characters: A the token, HL + 1, a plain character's F, and $F666-$F671 not written; a caller going on reads the constant's own bytes as text) | R-C-NUM, R-C-CONST, R-C-10, R-C-1E, R-C-CHAIN |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xchrgtr.out](../../scratchpad/AE_m1on2/xchrgtr.out), [scratchpad/AE_m1on2/xchrgtr2.out](../../scratchpad/AE_m1on2/xchrgtr2.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** More than one byte to skip in a row, and a skip in front of a token or 00.

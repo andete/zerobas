@@ -16803,7 +16803,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           ENASLT / RDSLT on the MSX2s are covered by xenaslt / xrdslt, CONFIG only); ✅ xdsk3 DONE 2026-11-23 (@timeout
           60 emulated s ran out on the NMS 8250 / HB-F900 -- not a hang; 300 now, all three read); disk
           R-BS-SLOT's per-row IY constant. A probe edit changes the MSX1 runs too: re-measure the VG-8020 rows.
-      (b) the GEN findings onto the MSX1 pages: a rule that names its generation, [M] on the three machines,
+      (b) ✅ DONE 2026-11-23: every MSX1 page (docs/bios, docs/bdos, docs/disk) has "On later generations (MSX2,
+          MSX2+)" (docs/spec-method.md §2 item 6, §4), its rules evaluated on the three machines' captures. LEFT: b3int's
+          50 / 60 Hz blindness has no call page; CALSLT's Open [A] (a sub-slot other than 3-0) is partly measured now.
+          WAS: a rule that names its generation, [M] on the three machines,
           MSX2 and MSX2+ separately (e.g. INIT* clear RG1SAV bit 7; SETTXT no longer computes RG3/5/6SAV; WRTPSG
           forces R7 bit 7; the BDOS / disk entries return with interrupts ON on all three MSX2s).
       (c) the C-BIOS MSX2 findings (where it keeps MSX1 behaviour the MSX2 changed, or matches neither) to the

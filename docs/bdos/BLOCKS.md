@@ -212,6 +212,16 @@ Declared UNSTABLE on the reference itself (2 cases: XKB D14, XKB C14): fcb, dta 
 | **D-FSIZERS** (FSIZE leaves +14; the references clear it) | R-BK-FSIZE, R-BK-RDABS, R-BK-ROUND4, R-BK-ROUND5, R-BK-ROUND7 |
 | **D-F37DREGS** (other working F and HL) | R-BK-WORK |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbblk1.out](../../scratchpad/AE_m1on2/xbblk1.out), [scratchpad/AE_m1on2/xbblk2.out](../../scratchpad/AE_m1on2/xbblk2.out), [scratchpad/AE_m1on2/xbblk3.out](../../scratchpad/AE_m1on2/xbblk3.out), [scratchpad/AE_m1on2/xbblk4.out](../../scratchpad/AE_m1on2/xbblk4.out), [scratchpad/AE_m1on2/xbblk5.out](../../scratchpad/AE_m1on2/xbblk5.out), [scratchpad/AE_m1on2/xbblk6.out](../../scratchpad/AE_m1on2/xbblk6.out), [scratchpad/AE_m1on2/xbblk7.out](../../scratchpad/AE_m1on2/xbblk7.out), [scratchpad/AE_m1on2/xbblk8.out](../../scratchpad/AE_m1on2/xbblk8.out), [scratchpad/AE_m1on2/xbblk9.out](../../scratchpad/AE_m1on2/xbblk9.out), [scratchpad/AE_m1on2/xbblk10.out](../../scratchpad/AE_m1on2/xbblk10.out), [scratchpad/AE_m1on2/xbblk11.out](../../scratchpad/AE_m1on2/xbblk11.out), [scratchpad/AE_m1on2/xrrnd1.out](../../scratchpad/AE_m1on2/xrrnd1.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| every rule not named below | holds [M] | holds [M] | holds [M] |
+
+With a clock chip: every FCB's date and time words are the clock's (that day, $5D77, and the time of day), not $0821 (1984-01-01) and 0, on all three [M]; with the stamps set aside these rules hold, and as written they do not: R-BK-WRBLK, R-BK-RDBLK, R-BK-WRZER, R-BK-ROUND2, R-BK-FOPENRS, R-BK-ROUND4, R-BK-ROUND5, R-BK-ROUND6, R-BK-ROUND7, R-BK-ROUND8, R-BK-ROUND9, R-BK-ROUND10, R-BK-ROUND11, R-BK-PAST255FCB.
+
 ## Open (not measured)
 
 - **[A]** What WRZER leaves past its record in a NEWLY allocated cluster: the references split (XKB 11:

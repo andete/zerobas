@@ -73,6 +73,17 @@ Declared NOT evidence (2 cases: XC C08, XC C09): a8in, iffin, secin, sp, afin, b
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xcalslt.out](../../scratchpad/AE_m1on2/xcalslt.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-CB-REGS | holds [M] | IY comes back $8000, not $0000: the main ROM's slot ID, 0-0 (slot 0 is expanded); IX $0138 as stated [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
+
 ## Open (not measured)
 
 - **[A]** A target in page 1 or 2 of the main ROM (BASIC, CALBAS's real use), where the call must

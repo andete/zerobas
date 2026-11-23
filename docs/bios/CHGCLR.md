@@ -82,6 +82,18 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 |---|---|
 | **D-CLRREGS** (zerobas returns another DE everywhere -- D = SCRMOD - 1, E the colour byte; another F on the SCREEN 0 / 1 paths and, in the other modes, where the entry carry is set; and outside SCREEN 0 / 1 A = BDRCLR and HL $F3EB) | R-CC-REGS |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xclr.out](../../scratchpad/AE_m1on2/xclr.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-CC-REGS** | the SCREEN 1 path returns F $42; A, BC, HL as stated [M] | the same; and the SCREEN 0 path returns F $00, not $A4 [M] |
+| **R-CC-VRAM** | holds, but T32COL $FFFF is not decided: after it the probe's 16 KB reads see none of its own fill [M] | the same [M] |
+| every other rule | holds [M] -- colours over 15 used as they are ($1A / $25 give $A5) | holds [M] |
+
+Machine differences, not the call's: the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM (R-CC-R7's R#1 reads without bit 7).
+
 ## Open (not measured)
 
 - **[A]** A call made with R#1's interrupt bit set (the probe's preset has it clear; CHGCLR does not

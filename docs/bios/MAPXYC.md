@@ -74,6 +74,19 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx1.out](../../scratchpad/AE_m1on2/xgfx1.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-MX-MLT | The test is not SCRMOD = 2: only SCREEN 3 uses the multicolour mapping [M]. SCREEN 0, 1 and 4 use R-MX-GRP's SCREEN 2 mapping (X 100 / Y 50: CLOC $2662, CMASK $08; cases 30 31 56) [M]. SCRMOD 6, $0A, $42, $82 and $FF use a bitmap one: CLOC := X ($0064), CMASK := Y ($32) (cases 57 59 60 75 76) [M]. | as MSX2 [M] |
+| R-MX-AF | SCREEN 0, 1, 4: as in SCREEN 2 (A $62, F $20) [M]. The bitmap modes: A := Y ($32); F $82 (case 57), $02 (59, 75), $16 (60), $12 (76), not decoded [M]. | as MSX2 [M] |
+| R-MX-REGS | In SCREEN 3, a call entered with interrupts off returns with them ON (14 cases) [M]. SCREEN 0, 1, 4: D := X's low byte, as in SCREEN 2 [M]. HL := the CLOC above [M]. | as MSX2 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Not a rule: in SCREEN 2 with X above 255 (cases 20 22 79 80) CMASK reads $FB / $4B on all three, $D5 / $C5 on the VG-8020 [M]; how it is formed is [A] -- a sweep of X $0100-$0107 under two CMASK presets would tell.
+
 ## Open (not measured)
 
 - **[A]** In SCREEN 2 with X above 255 the reference's CMASK is not $80 >> (X AND 7) ($D5 for X

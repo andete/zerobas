@@ -127,6 +127,16 @@ Declared NOT evidence (5 cases: XS 36, XS 37, XS 43, XS 47 … (+1)): linlen —
 |---|---|
 | **D-TEXTAF** (A / F on return) | R-CP-AF |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xcls.out](../../scratchpad/AE_m1on2/xcls.out), [scratchpad/AE_m1on2/xscr.out](../../scratchpad/AE_m1on2/xscr.out), [scratchpad/AE_m1on2/xscr3.out](../../scratchpad/AE_m1on2/xscr3.out), [scratchpad/AE_m1on2/xscr4.out](../../scratchpad/AE_m1on2/xscr4.out), [scratchpad/AE_m1on2/xscr5.out](../../scratchpad/AE_m1on2/xscr5.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-C-SEVERAL** | in SCREEN 2 the colour table's bytes read BAKCLR AND 15 ($16 gives 06, $C5 05) [M] | the same [M] |
+| **R-CP-AF** | CLS that draws the key line returns A = the last label character drawn ($41, $43, $59 measured), not 00; F $42 in SCREEN 2 and 3 [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** CLS with the cursor display on (CSRSW); POSIT with it on (is the cursor redrawn?).

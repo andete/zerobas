@@ -70,6 +70,14 @@ Declared NOT evidence (258 cases: XS2 000, XS2 001, XS2 002, XS2 003 … (+254))
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xsynchr.out](../../scratchpad/AE_m1on2/xsynchr.out), [scratchpad/AE_m1on2/xsynchr2.out](../../scratchpad/AE_m1on2/xsynchr2.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** A mismatch in a bit other than bit 0 alone (c against c XOR 2^k, k = 1-7: a compare that

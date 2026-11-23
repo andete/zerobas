@@ -69,6 +69,17 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xinig.out](../../scratchpad/AE_m1on2/xinig.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-CM-MODE** | A 0-3: what the same machine's INITXT / INIT32 / INIGRP / INIMLT do (those pages); A 4 sets up SCREEN 4 (SCRMOD 4); A $7F, $80, $81, $FE, $FF do nothing -- SCRMOD, the copies and VRAM stay, A / BC / DE / HL come back as they went in [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the HB-F900 and FS-A1WSX carry the Japanese font; the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM.
+
 ## Open (not measured)
 
 - **[A]** An interrupt arriving during the call once it has set R#1's interrupt bit (the status is

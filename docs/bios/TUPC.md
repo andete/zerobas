@@ -80,6 +80,16 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx2.out](../../scratchpad/AE_m1on2/xgfx2.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-TU-EDGE | SCREEN 2 holds [M]. In SCREEN 3 the top edge is MLTCGP-relative, as SCREEN 2's is GRPCGP-relative: it stops when CLOC AND 7 is 0 and CLOC is below MLTCGP + $100 -- a form that fits every measured case [M]: $1000, $1008, $10F8 (MLTCGP $1000) and $0820 ($0800) now stop (cases 74-78 162 171 180); $0020 under MLTCGP $1000 / $0800 stops; $1100, $0920, and $2020 / $8020 / $0120 under $0000 move on. A, F and CLOC are then as R-TU-AF / R-TU-POS give them for a stop or a move [M]. | as MSX2 [M] |
+| R-TU-KEEP | In SCREEN 3, a call entered with interrupts off returns with them ON (every such case) [M]; the registers and the work area are kept as the rule says [M]. | as MSX2 [M] |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** In SCREEN 2, GRPCGP + $100 past $FFFF (GRPCGP $FF00 and up); GRPCGP low bytes other than

@@ -108,6 +108,19 @@ Declared NOT evidence (10 cases: XR N08, XR N09, XR N20, XR N26 â€¦ (+6)): sec â
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xrdslt.out](../../scratchpad/AE_m1on2/xrdslt.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-RD-SUB, R-RD-F6 | not run, by design (RDSLT there: see xrdslt) | the same |
+| every other rule | holds [M] -- R-RD-SEC, R-RD-SEC2 and R-RD-BCX (B the slot register before the call, C $C0) for the RAM's own sub-slot | holds [M] |
+
+**[A]** On the HB-F900 the probe's secondary preset, 3-1, IS the RAM: R-RD-SEC's switch and put-back is read on the NMS 8250 and the FS-A1WSX only.
+
+Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
+
 ## Open (not measured)
 
 - **[A]** Sub-slots 3-2 and 3-3 as the target; a target sub-slot in pages 0, 2 and 3 (round 6 reads

@@ -111,6 +111,19 @@ it alone.
 | **D-FCBEXTENT** (WRSEQ writes at its own position, record 0, ignoring the extent and the current record; FOPEN opens any extent; sizes and clusters follow from that) | R-BF-EXTENT, R-BF-SEQ3, R-BF-OPEN3, R-BF-OPEN4, R-BF-CLOSE4 |
 | **D-F37DREGS** (other working A / F: SETDTA's A and F, F after FCLOSE / FDEL) | R-BF-WORK, R-BF-SETDTA2, R-BF-SETDTA4 |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbfile1.out](../../scratchpad/AE_m1on2/xbfile1.out), [scratchpad/AE_m1on2/xbfile2.out](../../scratchpad/AE_m1on2/xbfile2.out), [scratchpad/AE_m1on2/xbfile3.out](../../scratchpad/AE_m1on2/xbfile3.out), [scratchpad/AE_m1on2/xbfile4.out](../../scratchpad/AE_m1on2/xbfile4.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-BF-MAKE2, R-BF-EXTENT | after SDATE 2025-06-15 FMAKE stamps $5A8F, 2025-**04**-15 (XB2 03-06); after SDATE 2026-11-22 the date is right (XB2 07, 14) [M] | the same [M] | the same [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
+With a clock chip: every FCB's date and time words are the clock's (that day, $5D77, and the time of day; after SDATE the set date, with the clock's time), not $0821 (1984-01-01) and 0, on all three [M]; with the stamps set aside these rules hold, and as written they do not: R-BF-MAKE, R-BF-MAKE2 (its time words), R-BF-SEQ3, R-BF-OPEN3, R-BF-OPEN4, R-BF-INDEX, R-BF-CLOSE4.
+
+**[A]** Whether the month is lost by SDATE or by the stamp: SDATE y-m-15, then GDATE, for m = 1 .. 12 with no FMAKE between, on each machine. (SYSTEM.md's SDATE / GDATE round trips -- 2026-11-22, 2026-12-01, 2026-01-01 -- hold on all three.)
+
 ## Open (not measured)
 
 - **[A]** FOPEN / FSIZE / FREN / FDEL / SFIRST over a PRE-FILLED FCB (only FMAKE and FSIZE's +33 .. +36

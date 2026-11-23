@@ -68,6 +68,18 @@ first 4 bytes -- never the boot code, which comes from the disk ROM.
 | **D-DSKFMTHIGH** (choice $81 returns A 0, the carry clear -- a success -- and formats nothing; the reference refuses it, A 12) | R-DF-BAD, R-DF-BADF |
 | **D-PHYDIOREGS** (the read-back's F $44: PHYDIO's own difference) | R-DF-READBACK |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xdfmt1.out](../../scratchpad/AE_m1on2/xdfmt1.out), [scratchpad/AE_m1on2/xdfmt2.out](../../scratchpad/AE_m1on2/xdfmt2.out), [scratchpad/AE_m1on2/xdfmt3.out](../../scratchpad/AE_m1on2/xdfmt3.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md); the VG-8020 + NMS 1200's own reading of xdfmt2 / xdfmt3: [scratchpad/AE_m1on2_vgdisk_xdfmt.out](../../scratchpad/AE_m1on2_vgdisk_xdfmt.out). Each rule's check was run on each machine's capture in the CF-3300's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-DF-FORMAT | two choices: 1 formats $F8 (1 x 9 x 80), 2 $F9 (2 x 9 x 80); 3 and 4 refused -- as the VG-8020's NMS 1200 does: the choice list is the interface's [M] | the same [M] | the same [M] |
+| R-DF-OKREGS | A **7**, F $54, C $01, DE $0040 / $0044, HL $F1C0; interrupts ON [M] | A 0, F $42, B $0B / $0D, C $3C, DE $000A / $410A, HL = the entry HL + $22; interrupts ON [M] | A 0, F $42, B 0, C $3C, E $54, HL = the entry HL + $0A00; interrupts ON [M] |
+| R-DF-BAD | choice **0 is accepted**: formats $F8, A 7, the carry clear (XF 0, XF2 1); a refusal leaves E 0, not the choice - 1 [M] | refusals leave BC $0022 and HL = the entry HL + $22, interrupts ON; choice 5 with BC $1234, HL $8800 answers A $0E (as the NMS 1200) [M] | holds -- the format kept is the $F8 choice 1 wrote [M] |
+| R-DF-BADF | F $09, $0D, $49, $89 [M] | F $BB, $01, $41, $29, $A9, $A1, $05 [M] | holds [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** Whether a format writes the sides and tracks it declares: openMSX's .dsk image is a plain

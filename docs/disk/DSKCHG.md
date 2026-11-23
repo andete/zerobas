@@ -78,6 +78,18 @@ five GETDPB calls.
 | **D-DSKCHGTIME** (B 1 at 96 interrupts, a read only by 144 -- its limit is 97-144: XE3 3 / XE3 4 the other way round; and a FAILED read restarts its count) | R-DC-RECENT, R-DC-READ, R-DC-NOTREADY, R-DC-NRREGS |
 | **D-GETDPBMEDIA** (its GETDPB reads the disk -- with no disk, fails -- and either restarts the count: XE1 6, XE3 7, XE5 1 answer B 1) | R-DC-READ, R-DC-NOTREADY, R-DC-NRREGS |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xdent1.out](../../scratchpad/AE_m1on2/xdent1.out), [scratchpad/AE_m1on2/xdent2.out](../../scratchpad/AE_m1on2/xdent2.out), [scratchpad/AE_m1on2/xdent3.out](../../scratchpad/AE_m1on2/xdent3.out), [scratchpad/AE_m1on2/xdent4.out](../../scratchpad/AE_m1on2/xdent4.out), [scratchpad/AE_m1on2/xdent5.out](../../scratchpad/AE_m1on2/xdent5.out), [scratchpad/AE_m1on2/xdent6.out](../../scratchpad/AE_m1on2/xdent6.out), [scratchpad/AE_m1on2/xdent7.out](../../scratchpad/AE_m1on2/xdent7.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture: the NMS 8250's in row N (its own interface's row, which it reproduces), the others' in the VG-8020 + NMS 1200's.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-DC-RECENT | never answers B 1: every call reads the disk -- at once, at ~1 s, after MTOFF, after 3.5 s with interrupts off (B 0; B $FF in XE4 1, C $F8) [M] | holds (row N) [M] | holds as row N states it: interrupts ON, F $2A / $0A [M] |
+| R-DC-READ, R-DC-NOTREADY | interrupts ON, as row N's [M] | holds (row N) [M] | interrupts ON, as row N's [M] |
+| R-DC-NRREGS | F $81, HL $EF96 [M] | holds (row N) [M] | F $45, HL $EF85 [M] |
+| R-DC-F | HL $74EE (GETDPB's $F9 block on this ROM) [M] | holds (row N) [M] | holds (HL $7429) [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** WHICH on-disk byte it compares and fills from -- the boot sector's media byte or the FAT ID,

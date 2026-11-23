@@ -90,6 +90,18 @@ tables and the 128-byte record:
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx5.out](../../scratchpad/AE_m1on2/xgfx5.out), [scratchpad/AE_m1on2/xgfx5b.out](../../scratchpad/AE_m1on2/xgfx5b.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-GP-VRAM, R-GP-POS | In SCREEN 3 the glyph follows TDOWNC's MSX2 edge ([TDOWNC](TDOWNC.md), R-TD-EDGE): with MLTCGP $1000 (xgfx5 case 22) it is not cut at the block row -- CLOC $1264 (VG-8020 $1167), VRAM block 4's sum $29B7 ($22AA) [M]. Every other case holds [M]. | as MSX2 [M] |
+| R-GP-KEEP | F := $93 on return, whatever F was, in every case, control codes included [M]; A, BC, DE, HL, IX, IY, RG0SAV-RG7SAV and SCRMOD are kept [M]. | as MSX2 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 / V9958 has no R#1 bit 7, so the probe's R#1 preset $80 reads back $00 after every case [M]; the rule's "VDP registers kept" holds for the bits the VDP has.
+
 ## Open (not measured)
 
 - **[A]** SCRMOD other than 2 and 3 (SCREEN 0 / 1); FORCLR over 15 only as $1A, $13, $1E (in SCREEN 3

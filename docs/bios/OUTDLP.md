@@ -61,6 +61,19 @@ pass `P`; **[XP r]** what the printer received on row `r`.
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xoutdlp.out](../../scratchpad/AE_m1on2/xoutdlp.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-OD-PRN | NMS 8250: holds [M]. HB-F900: on a printer that is not an MSX one (NTMSXP $FF, pass 1), $85 goes out as $20 and $FF as $DF [M]; the rest holds [M]. | as the HB-F900 [M] |
+| R-OD-A | NMS 8250: holds [M]. HB-F900: A $20 after that $85, $DF after that $FF [M]. | as the HB-F900 [M] |
+| R-OD-F | NMS 8250: holds [M]. HB-F900: F $30 after that $85, $98 after that $FF [M]. | as the HB-F900 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the conversion of $85 / $FF follows the machine's character set -- the two Japanese machines convert, the EU NMS 8250 does not [M]; that a Japanese MSX1 does the same is [A], and a Japanese MSX1 reference would tell.
+
 ## Open (not measured)
 
 - **[A]** A busy printer, and CTRL + STOP while OUTDLP waits (LPTOUT's abort: [LPTOUT](LPTOUT.md)).

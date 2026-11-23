@@ -98,6 +98,17 @@ values.
 | **D-PHYDIOB0** (B 0 transfers nothing; the references read one sector, then B $FF) | R-DI-SAME |
 | **D-PHYDIOREGS** (other working F, C, DE and HL) | R-DI-REGS, R-DI-HL |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xdskio1.out](../../scratchpad/AE_m1on2/xdskio1.out), [scratchpad/AE_m1on2/xdskio2.out](../../scratchpad/AE_m1on2/xdskio2.out), [scratchpad/AE_m1on2/xdskio2p.out](../../scratchpad/AE_m1on2/xdskio2p.out), [scratchpad/AE_m1on2/xdsk1.out](../../scratchpad/AE_m1on2/xdsk1.out), [scratchpad/AE_m1on2/xdrvtbl.out](../../scratchpad/AE_m1on2/xdrvtbl.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture: the NMS 8250's in row N (its own interface's row, which it reproduces), the others' in the VG-8020 + NMS 1200's.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-DI-SAME | on the past-end error paths (XI 03, 04, 10; XI2 00, 04) DSKIO leaves interrupts OFF where its PHYDIO leaves them ON [M] | holds (row N) [M] | holds -- DSKIO answers PHYDIO's error $0C past the end too [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
+The slot map, not the call: DRVTBL's slot byte and H.PHYD's are $8B on the HB-F900 and FS-A1WSX, $8F on the NMS 8250; 2 drives on all three [M].
+
 ## Open (not measured)
 
 - **[A]** A read that fails in the MIDDLE of the disk (a bad CRC, a missing sector -- every failure here

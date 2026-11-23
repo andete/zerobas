@@ -62,6 +62,17 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx6.out](../../scratchpad/AE_m1on2/xgfx6.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-PI-AF | holds [M] | Other modes: F bit 5 is clear even when A's bit 5 is set: SCREEN 3, A $FF gives $89 (case 6; VG-8020 $A9) [M]. SCREEN 2 as the rule says [M]. |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 / V9958 has no R#1 bit 7, so the probe's R#1 preset $80 reads back $00 after every case [M]; the rule's "VDP registers kept" holds for the bits the VDP has.
+
 ## Open (not measured)
 
 - **[A]** ATRBYT of $20 and up in SCREEN 2 (only $00-$1A: whether the whole byte is taken); B, DE and

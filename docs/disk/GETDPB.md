@@ -64,6 +64,16 @@ $A400, interrupts off; B and C as the probe lists.
 |---|---|
 | **D-GETDPBMEDIA** (the block is the disk's format, $F9, whatever the media byte in B; the disk is read) | R-GD-DPB, R-GD-REGS |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xdent1.out](../../scratchpad/AE_m1on2/xdent1.out), [scratchpad/AE_m1on2/xdent2.out](../../scratchpad/AE_m1on2/xdent2.out), [scratchpad/AE_m1on2/xdent3.out](../../scratchpad/AE_m1on2/xdent3.out), [scratchpad/AE_m1on2/xdent5.out](../../scratchpad/AE_m1on2/xdent5.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture: the NMS 8250's in row N (its own interface's row, which it reproduces), the others' in the VG-8020 + NMS 1200's.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-GD-DPB | $FF, $FE, $FC, $FD (XE1 3, XE2 5-7): carry clear, A 7 / 6 / 4 / 5, and bytes at HL + 1 on that are not a DPB (no media byte at HL + 1) [M] | holds (row N: refused, R-GD-REFUSE) [M] | holds [M] |
+| R-GD-REGS | A = B - $F8 (row N's index); HL $74CA + 18 x (B - $F7) [M] | holds (row N) [M] | A = B - $F8; interrupts ON; HL the NMS 1200's [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** Media bytes other than $F8, $F9, $FA, $FC, $FD, $FE, $FF ($FB -- A and HL's pattern predicts

@@ -58,6 +58,14 @@ disk build on `D` and `C`.
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xrslreg.out](../../scratchpad/AE_m1on2/xrslreg.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** Bits 0-1 and 6-7 with other values, so "the whole byte" against "bits 2-5": page 0 holds

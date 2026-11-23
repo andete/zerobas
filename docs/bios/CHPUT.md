@@ -216,6 +216,16 @@ Declared NOT evidence (1 cases: XCH 333): cells — ESC M pulls up the NEXT row,
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xchput.out](../../scratchpad/AE_m1on2/xchput.out), [scratchpad/AE_m1on2/xchput2.out](../../scratchpad/AE_m1on2/xchput2.out), [scratchpad/AE_m1on2/xchput3.out](../../scratchpad/AE_m1on2/xchput3.out), [scratchpad/AE_m1on2/xchput4.out](../../scratchpad/AE_m1on2/xchput4.out), [scratchpad/AE_m1on2/xchput5.out](../../scratchpad/AE_m1on2/xchput5.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
+**[A]** The probes read name-table codes and cursor cells, not glyph patterns: the JP / EU character sets, which differ between these machines, are out of their view.
+
 ## Open (not measured)
 
 - **[A]** CSRX / CSRY out of range ON ENTRY (0, past LINLEN, past row 24): a program can poke them;

@@ -95,6 +95,14 @@ every byte of every record.
 | **D-F37DCONHOLD** (no hold: CONST leaves the key in the BIOS buffer, CONOUT takes none, DIRIO has no held key to return; R-BC-RAW's and R-BC-ECHO's cases differ only in the screen, which shows CONIN's echo of the waiting 'A' where the references echoed the held 'X') | R-BC-CONST, R-BC-HOLD, R-BC-RAW, R-BC-ECHO, R-BC-HOLD2, R-BC-HOLD3 |
 | **D-F37DREGS** (other working F and HL) | R-BC-WORK |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbcon1.out](../../scratchpad/AE_m1on2/xbcon1.out), [scratchpad/AE_m1on2/xbcon2.out](../../scratchpad/AE_m1on2/xbcon2.out), [scratchpad/AE_m1on2/xbcon3.out](../../scratchpad/AE_m1on2/xbcon3.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| every rule | holds [M] | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** The calls with NO key waiting (CONIN, $07, $08, BUFIN wait: their waiting, and what arrives

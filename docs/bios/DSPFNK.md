@@ -141,6 +141,17 @@ Declared NOT evidence (9 cases: XK 10, XK 12, XK 23, XK 25 … (+5)): linlen —
 |---|---|
 | **D-TEXTAF** (A / F on return; ERAFNK's A is not LINLEN on zerobas) | R-K-AF |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xkey.out](../../scratchpad/AE_m1on2/xkey.out), [scratchpad/AE_m1on2/xfsw.out](../../scratchpad/AE_m1on2/xfsw.out), [scratchpad/AE_m1on2/xscr.out](../../scratchpad/AE_m1on2/xscr.out), [scratchpad/AE_m1on2/xscr3.out](../../scratchpad/AE_m1on2/xscr3.out), [scratchpad/AE_m1on2/xscr4.out](../../scratchpad/AE_m1on2/xscr4.out), [scratchpad/AE_m1on2/xscr5.out](../../scratchpad/AE_m1on2/xscr5.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md), [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-K-AF** | DSPFNK and FNKSB return A = the last label character drawn, not 00, and F $40 at three widths (XS 13, XS 16, XS5 10) [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+**[A]** The probes read name-table codes and cursor cells, not glyph patterns: the JP / EU character sets, which differ between these machines, are out of their view.
+
 ## Open (not measured)
 
 - **[A]** HL on return in SCREEN 2: the cases do not capture it. The VG-8020's ERAFNK keeps it (biosregs-acceptance row era2, which caught C-BIOS's HL = a return address during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.

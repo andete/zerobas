@@ -80,6 +80,20 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 |---|---|
 | **D-INIREGS** (zerobas returns DE $88D1 and HL $F3E7 where the VG-8020 returns $7F03 and $F3D1) | R-IG-REGS |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xinig.out](../../scratchpad/AE_m1on2/xinig.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-IG-VDP** | RG0SAV := (RG0SAV AND $F1) OR 2 ($A5 gives A3, not A7); RG1SAV's bit 7 cleared ($E0 becomes 60) [M] | the same [M] |
+| **R-IG-CELLS** | FORCLR and BAKCLR are stored AND 15 ($1A becomes 0A, $25 05, $F4 04); BDRCLR is not ($3C kept) [M] | the same [M] |
+| **R-IG-VRAM** | the colour table gets BAKCLR AND 15 and the sprites' colour FORCLR AND 15; the cells are not taken AND $3FFF and do not wrap (every cell $3FFF, every cell $FFFF): the probe's 16 KB differs, where those bytes went is not read [M] | the same [M] |
+| **R-IG-REGS** | A $00, F $40, BC = RG1SAV·256 + 1, DE = FORCLR, HL = GRPATR + $80 [M] | the same [M] |
+| **R-IG-EI** | the interrupt state is the entry's: off stays off [M] | the same [M] |
+
+Machine differences, not the call's: the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM.
+
 ## Open (not measured)
 
 - **[A]** An interrupt arriving during the call once it has set R#1's interrupt bit (the status is

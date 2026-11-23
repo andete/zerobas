@@ -96,6 +96,20 @@ state, IX, IY, the DTA cell. Every case enters with IX $1111, IY $2222, interrup
 | **D-F37DDTA** (the DTA cell is $0080 before any SETDTA; DSKRST leaves it) | R-BS-DTA |
 | **D-F37DREGS** (other working A / F / BC / DE / HL values, IX / IY as entered) | R-BS-WORK, R-BS-SLOT |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbsys1.out](../../scratchpad/AE_m1on2/xbsys1.out), [scratchpad/AE_m1on2/xbsys2.out](../../scratchpad/AE_m1on2/xbsys2.out), [scratchpad/AE_m1on2/xbsys3.out](../../scratchpad/AE_m1on2/xbsys3.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-BS-DI | interrupts ON after every call [M] | interrupts ON after every call [M] | interrupts ON after every call [M] |
+| R-BS-SLOT | IY $0314 after every call [M] | IY $0314 [M] | IY $0314 [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
+With a clock chip: GDATE after start-up answers the clock's date and A its weekday (not 1984-01-01, A 0); GTIME answers the time of day, and after STIME 12:34:56 reads 12:34:56 back; GDATE leaves F $44 and BC the clock's hour and minute, STIME E 6 -- on all three [M]. The rules this breaks: R-BS-DATE, R-BS-TIME, R-BS-WORK (its GDATE / GTIME / STIME cases only).
+
+**[A]** R-BS-SLOT hard-codes IY per interface; it needs writing against DRVSLT: on all three IY's high byte $03 is DRVSLT's primary slot ($8B on the HB-F900 and FS-A1WSX, $8F on the NMS 8250); DE = IX after DSKRST holds.
+
 ## Open (not measured)
 
 - **[A]** ALLOC with E 0 while drive B is current (E 0 = the current drive or drive A: drive B is the

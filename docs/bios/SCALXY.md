@@ -61,6 +61,16 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx4.out](../../scratchpad/AE_m1on2/xgfx4.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-SX-CLIP | The clip holds; only SCREEN 3 then divides by 4 [M]. SCREEN 0 and 1 keep the clipped values: X 100 / Y 50 stay $64 / $32, clipped ones $FF / $BF (cases 28-31 59-64) [M]. | as MSX2 [M] |
+| R-SX-AF | The carry and A hold [M]. F := $81 when nothing was clipped, $80 when something was, in SCREEN 2, 0 and 1 (cases 0-13 28-31 59-66) [M]; SCREEN 3 as the rule says [M]. | as MSX2 [M] |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** SCRMOD 4 and above (whether "not 2" or another split of the modes divides); entry values other than those measured; the alternate registers and

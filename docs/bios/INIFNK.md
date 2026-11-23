@@ -81,6 +81,18 @@ already held the defaults, so it is evidence only for the boot state.
 |---|---|
 | **D-TEXTAF** (registers on return; interrupts enabled on return; work-area cells it changes: the interrupt's $F3F6 / $F3F7 / $FC9E, and $F5F5 / $F856, whose source is not shown) | R-F-AF, R-F-REGS |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xfnk.out](../../scratchpad/AE_m1on2/xfnk.out), [scratchpad/AE_m1on2/xfnk2.out](../../scratchpad/AE_m1on2/xfnk2.out), [scratchpad/AE_m1on2/xfnk3.out](../../scratchpad/AE_m1on2/xfnk3.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-F-DEFAULTS**, **R-F-ALL** | FNKSTR's last byte ($F91E) is not written: from garbage it keeps $5A [M] | the same [M] |
+| **R-F-AF**, **R-F-REGS** | A $00, F $6C, BC $000A, DE $140B, HL $F91F, whatever went in [M] | the same, but DE $140A [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: key 6 is 'color 15,4,7' on the HB-F900 and FS-A1WSX (their BDRCLR 7); key 7 is 'load"' on the FS-A1WSX, the others 'cload"' -- MSX2+ or that machine, not separated (one MSX2+ reference).
+
 ## Open (not measured)
 
 - **[A]** The alternate registers on return; F's bits 5 / 3 for other entry values.

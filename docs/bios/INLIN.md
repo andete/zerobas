@@ -10,3 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause
 ## Differences from the reference
 
 As PINLIN's page states for INLIN: **D-TEXTAF** (D-EDITSTOPHELD closed with the rebase on C-BIOS d23d87b, 2026-11-22).
+
+## On later generations (MSX2, MSX2+)
+
+As [PINLIN's page](PINLIN.md#on-later-generations-msx2-msx2) states for INLIN: every rule holds on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+) [M].

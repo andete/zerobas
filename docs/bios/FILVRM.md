@@ -74,6 +74,15 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 None measured: every rule holds on zerobas.
 
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xvram.out](../../scratchpad/AE_m1on2/xvram.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-FV-F** | F is not kept: $43 on return, whatever went in ($42 in one case, HL $5234) [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** A read of port $98 after the call (the probe writes); more HL values. Case 22's next write

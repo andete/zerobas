@@ -83,6 +83,20 @@ record:
 | **D-SETREGSCBIOS** (the leftover registers: since the rebase on C-BIOS d23d87b (2026-11-22) zerobas runs C-BIOS's SETTXT, which returns DE / HL the other way round and a different F; C-BIOS declined the fix -- Joost: "skip", no program reads them -- and zerobas no longer carries setregs-order.patch) | R-TX-REGS |
 
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xset.out](../../scratchpad/AE_m1on2/xset.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-TX-SHADOW | only RG2SAV and RG4SAV are computed from the cells; RG3SAV, RG5SAV and RG6SAV keep what they held ($A5, or $5A) [M] | the same [M] |
+| R-TX-R01 | RG0SAV := RG0SAV AND $F1: only M3-M5 (bits 3-1) cleared ($FF gives $F1, $5A $50, $FE $F0); RG1SAV as stated [M] | the same [M] |
+| R-TX-VDP | R#7 is written: R#7 := RG7SAV ($A5, $00, $FF, $5A); R#0-R#6 := the new RG0SAV-RG6SAV, in the VDP's own widths (below) [M] | the same [M] |
+| R-TX-REGS | A $00 (not the new RG6SAV), F a logical result's flags on the new RG2SAV ($44, $0C, $2C, $00, $20), BC $0010, DE as entered, HL the new RG2SAV in its high byte ($0000, $0F00, $3F00, $1000, $2000); IX and IY kept [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 / V9958 holds more bits of R#2-R#6 than the MSX1's VDP (read back: R#2 $3F, R#4 $1F, R#5 $A5 / $FF whole, R#6 $25 from $A5), and drops R#0's bits 7 and 0 and R#1's bit 7.
+
 ## Open (not measured)
 
 - **[A]** Cells and RG0SAV / RG1SAV values other than the measured sets: cell bits that always move

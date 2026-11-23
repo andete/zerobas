@@ -206,6 +206,14 @@ documents it.
 |---|---|
 | **D-TEXTAF** (the unpublished bits of F: 18 against 00) | R-L-F, R-L-F2, R-L-F3, R-L-F4, R-L-F5, R-L-F6 |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xlin.out](../../scratchpad/AE_m1on2/xlin.out), [scratchpad/AE_m1on2/xlin2a.out](../../scratchpad/AE_m1on2/xlin2a.out), [scratchpad/AE_m1on2/xlin2b.out](../../scratchpad/AE_m1on2/xlin2b.out), [scratchpad/AE_m1on2/xlin2c.out](../../scratchpad/AE_m1on2/xlin2c.out), [scratchpad/AE_m1on2/xlin3.out](../../scratchpad/AE_m1on2/xlin3.out), [scratchpad/AE_m1on2/xlin4.out](../../scratchpad/AE_m1on2/xlin4.out), [scratchpad/AE_m1on2/xlin5.out](../../scratchpad/AE_m1on2/xlin5.out), [scratchpad/AE_m1on2/xlin6.out](../../scratchpad/AE_m1on2/xlin6.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** A on return after Enter: the cases do not capture it. The VG-8020 returns A = $0D (biosregs-acceptance rows pinlin / inlin / qinlin, which caught C-BIOS's A = 0 during the D-CBIOS032 rebase; fixed by cbios-repack/regs-leftovers.patch). biosregs pins it, not this page.

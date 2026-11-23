@@ -69,6 +69,17 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xvdpreg.out](../../scratchpad/AE_m1on2/xvdpreg.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md) (xvdpreg was read after it).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-DS-REGS** | holds [M] | F $44 or $0C on return, not $A4 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM (R-DS-R1's R#1 reads without bit 7).
+
 ## Open (not measured)
 
 - **[A]** RG1SAV values other than the eight measured.

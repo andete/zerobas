@@ -84,6 +84,18 @@ Declared NOT evidence (18 cases: XE N0, XE N1, XE N2, XE N3 … (+14)): sec — 
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xenaslt.out](../../scratchpad/AE_m1on2/xenaslt.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-EN-SLT | naming the RAM for page 1 (cases 0 and 2), page 1's field of slot 3's secondary register and SLTTBL+3 both become the RAM's sub-slot ($A0 to $A8 on the NMS 8250, $50 to $54 on the HB-F900), as R-EN-SUB says of the CF-3300; the junk in the other SLTTBL entries is kept [M] | holds [M] |
+| R-EN-SUB, R-EN-SUB2 | not run, by design (ENASLT there: see xenaslt) | the same |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
+
 ## Open (not measured)
 
 - **[A]** Pages 0 and 3 (the BIOS and the probe's code live there); page 2 to a sub-slot; the

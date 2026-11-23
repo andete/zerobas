@@ -75,6 +75,20 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 None measured: every rule holds on zerobas.
 
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xvdpreg.out](../../scratchpad/AE_m1on2/xvdpreg.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md) (xvdpreg was read after it, R#8-R#23 restored after each case on the MSX2s).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-WV-REG** | C 0-7 holds, at the V9938's widths (below); C 8-15, $10, $28 and $FF write none of R#0-R#7; C $80 writes R#0 [M] | the same [M] |
+| **R-WV-SAV** | C 8 and above do not store B at RG0SAV + C: $F3E7-$F3EE keep their bytes, and $F3EF / $F407 / $F45F / $F4DE do not read B [M] | the same [M] |
+| **R-WV-ABC** | C 8 and above, and C 0 with B $FF / $A5: A $00, B kept [M] | the same [M] |
+| **R-WV-F** | the same cases return F $44 [M] | F $00, $0C or $44 in every case, never $A0 / $A4 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM, so R#0-R#7 read back masked to those bits; the HB-F900's and FS-A1WSX's BDRCLR ($F3EB) is 7.
+
 ## Open (not measured)
 
 - **[A]** C above 15 other than $10, $28, $80, $FF, and with more than one B each.

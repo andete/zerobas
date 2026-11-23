@@ -65,6 +65,15 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probe through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xgfx1.out](../../scratchpad/AE_m1on2/xgfx1.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-SA-F | holds [M] | F bit 5 is clear even when A's bit 5 is set: A $FF gives $89 (case 9), A $20 gives $01 (case 45) [M]; the rest of F as the rule says [M]. |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** ATRBYT other than $77 before a refused colour.

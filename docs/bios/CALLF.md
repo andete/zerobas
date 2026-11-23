@@ -82,6 +82,16 @@ Declared NOT evidence (6 cases: XC N02, XC N03, XC N05, XC D02 … (+2)): secin,
 | **D-CALSLTSTACK** (the target runs 10 bytes below the caller's SP on zerobas, 6 on the references -- 14 into the CF-3300's expanded RAM) | R-CF-SP |
 | **D-CALSLTIY** (in the target zerobas's IY holds the slot ID over $55, not over the entry F; in the expanded RAM $8388, where the CF-3300's is $0314) | R-CF-IY |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xcalslt.out](../../scratchpad/AE_m1on2/xcalslt.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] -- R-CF-SEC, R-CF-IY ($0314) and R-CF-SP (14 bytes) for the RAM's own sub-slot (3-1 / 3-2), from a selection of the next sub-slot set by hand | holds [M] (RAM 3-0, as on the CF-3300) |
+
+Machine differences, not the call's: RAM is the expanded slot 3-1 on the HB-F900 ($87), 3-2 on the NMS 8250 ($8B) and 3-0 on the FS-A1WSX ($83); the FS-A1WSX's slot 0 is expanded too (the main ROM is 0-0, ID $80).
+
 ## Open (not measured)
 
 - **[A]** A target that is not the probe's own: another ROM's routine (clean room), and, for

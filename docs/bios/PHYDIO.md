@@ -113,6 +113,20 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 | **D-PHYDIOWRAP16** (a transfer past sector $FFFF goes on at sector 0: 2 from $FFFF reads $FFFF and the boot sector; the reference refuses it up front, A 2, B 2) | R-PD-PAST |
 | **D-PHYDIOMEDIA** (media bytes $00, $32, $80, $F0, $F7 are taken -- sector 0 read -- the reference refuses them with error 12, before the sector check) | R-PD-MEDIA |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xdsk1.out](../../scratchpad/AE_m1on2/xdsk1.out), [scratchpad/AE_m1on2/xdsk2.out](../../scratchpad/AE_m1on2/xdsk2.out), [scratchpad/AE_m1on2/xdsk3.out](../../scratchpad/AE_m1on2/xdsk3.out), [scratchpad/AE_m1on2/xdsk4.out](../../scratchpad/AE_m1on2/xdsk4.out), [scratchpad/AE_m1on2/xdsk5.out](../../scratchpad/AE_m1on2/xdsk5.out), [scratchpad/AE_m1on2/xdsk6.out](../../scratchpad/AE_m1on2/xdsk6.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture: the NMS 8250's in row E (its own interface's row, which it reproduces), the others' in the VG-8020 + NMS 1200's.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-PD-READ, R-PD-WRITE, R-PD-FFFF | C $01, the interface's working value [M] | holds (row E) [M] | C $3C, as row E's [M] |
+| R-PD-PAST | media $FF sector 700 (case 49) is READ: A 0, a zero sector [M] | holds (row E) [M] | error **$0C**, F $55, for every read past the end (cases 03, 04, 10, 14, 15, 21, 22, 27, 31, 51, 68, 71); case 49 read, A 0; 2 from $FFFF (case 73) A 0, B 0, 1 KB of zeros [M] |
+| R-PD-WPAST | holds [M] | holds (row E) [M] | error $0C, F $55; B the whole count (2 in case 23, 3 in case 64) [M] |
+| R-PD-DI | interrupts ON after every call [M] | holds (row E: ON) [M] | interrupts ON after every call [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
+R-PD-FIRSTE reproduces on the NMS 8250 (xdsk3 case 20 reads the boot sector again; its 17 records are byte for byte XDSK3_nms8250.out's); the HB-F900 and FS-A1WSX read track 1 there [M].
+
 ## Open (not measured)
 
 - **[A]** Drives other than A (not tried: the probe's interface has one drive, and drive B would be the

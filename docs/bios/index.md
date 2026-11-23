@@ -14,9 +14,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 |---|---|---|---|---|---|---|
 | $0000 | CHKRAM | [system](../concepts/interrupts-and-traps.md) | L1 · ruled indirect | — | — | — |
 | $0008 | SYNCHR | [interpreter](../concepts/interpreter-entries.md) | L4 | [FINAL](SYNCHR.md) | 9 | — |
-| $000C | RDSLT | [slots](../concepts/slots.md) | L3 | [FINAL](RDSLT.md) | 12 | — |
+| $000C | RDSLT | [slots](../concepts/slots.md) | L3 | [FINAL](RDSLT.md) | 13 | — |
 | $0010 | CHRGTR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](CHRGTR.md) | 11 | D-CHRGTRSKIP, D-CHRGTRTOK |
-| $0014 | WRSLT | [slots](../concepts/slots.md) | L3 | [FINAL](WRSLT.md) | 13 | — |
+| $0014 | WRSLT | [slots](../concepts/slots.md) | L3 | [FINAL](WRSLT.md) | 14 | — |
 | $0018 | OUTDO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](OUTDO.md) | 4 | — |
 | $001C | CALSLT | [slots](../concepts/slots.md) | L3 | [FINAL](CALSLT.md) | 5 | D-CALSLTSTACK, D-CALSLTIY |
 | $0020 | DCOMPR | [interpreter](../concepts/interpreter-entries.md) | L3 | [FINAL](DCOMPR.md) | 8 | — |
@@ -53,14 +53,14 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
 | $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | — |
 | $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | — |
-| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 4 | — |
+| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 5 | — |
 | $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](RDPSG.md) | 3 | — |
 | $0099 | STRTMS | [sound](../concepts/sound-calls.md) | L3 | [FINAL](STRTMS.md) | 4 | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
 | $009F | CHGET | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHGET.md) | 8 | — |
-| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 7 | — |
-| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 4 | — |
-| $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 4 | — |
+| $00A2 | CHPUT | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHPUT.md) | 8 | — |
+| $00A5 | LPTOUT | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](LPTOUT.md) | 5 | — |
+| $00A8 | LPTSTT | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](LPTSTT.md) | 5 | — |
 | $00AB | CNVCHR | [text](../concepts/screen-editor.md) | L3 | [FINAL](CNVCHR.md) | 5 | — |
 | $00AE | PINLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](PINLIN.md) | 10 | D-TEXTAF |
 | $00B1 | INLIN | [text](../concepts/screen-editor.md) | L4 | [FINAL](INLIN.md) | 0 | D-TEXTAF, D-EDITSTOPHELD |
@@ -68,12 +68,12 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $00B7 | BREAKX | [input](../concepts/input-calls.md) | L3 | [FINAL](BREAKX.md) | 4 | — |
 | $00BA | ISCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](ISCNTC.md) | 5 | — |
 | $00BD | CKCNTC | [input](../concepts/input-calls.md) | L3 | [FINAL](CKCNTC.md) | 5 | — |
-| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 4 | — |
+| $00C0 | BEEP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](BEEP.md) | 5 | — |
 | $00C3 | CLS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CLS.md) | 10 | D-TEXTAF |
 | $00C6 | POSIT | [text](../concepts/screen-editor.md) | L3 | [FINAL](POSIT.md) | 0 | D-TEXTAF |
 | $00C9 | FNKSB | [text](../concepts/screen-editor.md) | L3 | [FINAL](FNKSB.md) | 0 | D-TEXTAF, D-KEYGRAPH, D-INITEDGES |
 | $00CC | ERAFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](ERAFNK.md) | 0 | D-INITEDGES, D-TEXTAF |
-| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 15 | D-TEXTAF |
+| $00CF | DSPFNK | [text](../concepts/screen-editor.md) | L3 | [FINAL](DSPFNK.md) | 16 | D-TEXTAF |
 | $00D2 | TOTEXT | [text](../concepts/screen-editor.md) | L3 | [FINAL](TOTEXT.md) | 5 | D-BIOSINT, D-INITEDGES |
 | $00D5 | GTSTCK | [input](../concepts/input-calls.md) | L3 | [FINAL](GTSTCK.md) | 6 | — |
 | $00D8 | GTTRIG | [input](../concepts/input-calls.md) | L3 | [FINAL](GTTRIG.md) | 6 | — |
@@ -93,9 +93,9 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0102 | UPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](UPC.md) | 6 | — |
 | $0105 | TUPC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TUPC.md) | 6 | — |
 | $0108 | DOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](DOWNC.md) | 6 | — |
-| $010B | TDOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TDOWNC.md) | 6 | — |
+| $010B | TDOWNC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](TDOWNC.md) | 7 | — |
 | $010E | SCALXY | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SCALXY.md) | 3 | — |
-| $0111 | MAPXYC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](MAPXYC.md) | 5 | — |
+| $0111 | MAPXYC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](MAPXYC.md) | 6 | — |
 | $0114 | FETCHC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](FETCHC.md) | 3 | — |
 | $0117 | STOREC | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](STOREC.md) | 3 | — |
 | $011A | SETATR | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](SETATR.md) | 4 | — |
@@ -115,7 +115,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | [FINAL](PHYDIO.md) | 9 | D-PHYDIOREGS, D-PHYDIOPAST, D-PHYDIOB0, D-PHYDIOGEOM, D-PHYDIOWRAP16, D-PHYDIOMEDIA |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
-| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | — |
+| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 7 | — |
 | $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | — |
 | $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | — |
 | $0156 | KILBUF | [input](../concepts/input-calls.md) | L3 | [FINAL](KILBUF.md) | 4 | — |

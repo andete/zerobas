@@ -154,6 +154,26 @@ Declared UNSTABLE on the reference itself (1 cases: XJ4 19): vsum, colsum, col â
 | **D-INITEDGES** (the key line's row and CRTCNT, the odd widths) | R-I-KEYS (CRTCNT 30), R-I-KEYEDGE, R-I-EDGE4, R-I-W0 |
 | ruled, not a TODO: C-BIOS's own font (D-BIOSINT, Joost 2026-11-05) | R-I-FONT |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xinit.out](../../scratchpad/AE_m1on2/xinit.out), [scratchpad/AE_m1on2/xinit3.out](../../scratchpad/AE_m1on2/xinit3.out), [scratchpad/AE_m1on2/xinit4.out](../../scratchpad/AE_m1on2/xinit4.out), [scratchpad/AE_m1on2/b1text.out](../../scratchpad/AE_m1on2/b1text.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md) (xinit3 and xinit4 were read after it, with an H.KEYI guard in the probe: see R-I-R0).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-I-R0** | R0 = the copy AND $F1 -- bits 7-4 and 0 kept ($A5 gives A1, $5A 50, $FE F0, $20 20); a copy with bit 4 set turns the line interrupt on and nothing acknowledges it: RG0SAV $1A hangs the NMS 8250, $4A does not [M] | the same [M] |
+| **R-I-REGS-TXT** | R1 = (the copy AND $07) OR $70 -- bit 7 cleared, bit 5 set ($A5 gives 75, $5A 72); R3, R5 and R6 are not written (the copies stay as found); R2 / R4 as stated; R7 from FORCLR AND 15 and BAKCLR AND 15 ($3A / $C5 give A5) [M] | the same [M] |
+| **R-I-REGS-32** | R1 = (the copy AND $07) OR $60 ($A5 gives 65, $5A 62); R2-R7 as stated [M] | the same [M] |
+| **R-I-COL32** | the colour bytes are (FORCLR AND 15)Â·16 OR (BAKCLR AND 15): $3A / $C5 give $A5, not $E5 [M] | the same [M] |
+| **R-I-READBACK** | INITXT writes TXTCOL := $0800 (from $0000 and from $2000); INIT32 stores FORCLR AND 15 ($CA becomes $0A) [M] | the same [M] |
+| **R-I-CLEAR**, **R-I-KEYEDGE**, **R-I-EDGE4** | INITXT with LINL40 41, 80 or 255 sets up 80-column text (R0 bit 2 set, R2 $03, R3 $27, R4 $02), so the 40-column rows and sums read differ; INIT32 at width 255: row 13 as stated, the name table's sum $6820, not $5F05 [M] | the same [M] |
+| **R-I-W0** | width 0 with the key line on: the two rows read are spaces, not 0 / $FF pairs, and the name-table sums differ (INITXT $6552, INIT32 $57BB) [M] | the same [M] |
+| **R-I-KEYS** | the key line's cells hold; INITXT's colour / attribute sums are R-I-NOCOL-TXT's reading, INIT32's with FORCLR $3A R-I-COL32's, width 41 R-I-CLEAR's [M] | the same [M] |
+| **R-I-ATR-TXT**, **R-I-NOCOL-TXT** | not decided: the probe reads at R3's / R5's base, which this INITXT does not write [M] | the same [M] |
+| **R-I-VRAM** | holds, except with the copies $5A (XJ 00-01): the whole-VRAM sum is 7521 lower; not separated [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the HB-F900 and FS-A1WSX carry the Japanese font (R-I-FONT's sum differs there; the NMS 8250 holds it); the HB-F900 and FS-A1WSX boot with BDRCLR 7 and LINL40 39 (the NMS 8250, like the VG-8020, 4 and 37) ([b1text](../../scratchpad/AE_m1on2/b1text.out)); the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM.
+
 ## Open (not measured)
 
 - **[A]** The real VDP registers. They are write-only from the Z80, so only their RAM copies are

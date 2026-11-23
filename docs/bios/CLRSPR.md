@@ -81,6 +81,18 @@ References: the Philips VG-8020's main BIOS, alone (row `N`) and with an NMS 120
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xclr.out](../../scratchpad/AE_m1on2/xclr.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-CS-VRAM** | SCRMOD 4, $77, $81: the tables are written for sprite mode 2 (BC $0000, HL = ATRBAS − $200 on return); the bases are not taken AND $3FFF and do not wrap (ATRBAS $5B00 / $9B00, PATBAS $B800; ATRBAS $3FC0 with PATBAS $3C00) [M] | the same; and in SCREEN 0 nothing is written: BC = RG1SAV·256 + 1, DE and HL as they went in [M] |
+| **R-CS-REGS** | A $40, F $00; BC, DE, HL as stated (SCRMOD 0-3) [M] | the same [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the V9938 holds other register bits than the TMS9918 (R#1 has no bit 7, the 4 / 16 KB bit: the preset $C0 reads $40; R#0 keeps $7E, R#2 $7F, R#4 and R#6 $3F, R#5 all 8) and has 128 KB of VRAM (R-CS-R1's register reads without bit 7).
+
 ## Open (not measured)
 
 - **[A]** An interrupt arriving during the call once it has set R#1's interrupt bit (the status is

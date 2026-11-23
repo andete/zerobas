@@ -78,6 +78,19 @@ Declared UNSTABLE on the reference itself (40 cases: XA D00, XA D01, XA D02, XA 
 | **D-F37DREGS** (other working F and HL; here SETDTA's) | R-BA-WORK |
 | **D-PHYDIOREGS** (PHYDIO's working F and HL: the references F $42, HL the buffer) | R-BA-WORK |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbabs1.out](../../scratchpad/AE_m1on2/xbabs1.out), [scratchpad/AE_m1on2/xbabs2.out](../../scratchpad/AE_m1on2/xbabs2.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-BA-BACK | holds [M] | RDABS of sector 20 after the FIRST WRABS (which answered A 0) reads zeros (XA 02) [M] | holds [M] |
+| R-BA-MEDIUM | holds [M] | PHYDIO reads sector 20 as zeros (XA2 02) [M] | holds [M] |
+| R-BA-ONLY | holds [M] | sector 20 reads zeros again (XA2 08); sectors 21-22 and 1439 hold their writes [M] | holds [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
+**[A]** Whether the NMS 8250 loses the first WRABS after start-up or sector 20 itself (sector 20 is on track 1, as PHYDIO.md's R-PD-FIRSTE first read): measure with WRABS 21 before 20, 20 written twice, and an RDABS before the first write.
+
 ## Open (not measured)
 
 - **[A]** WRABS past the disk's last sector: the VG-8020 + NMS 1200 does not return within 60 s (an

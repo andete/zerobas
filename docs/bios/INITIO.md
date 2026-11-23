@@ -226,6 +226,17 @@ Declared UNSTABLE on the reference itself (4 cases: XI7 1, XI7 2, XI7 3, XI7 4):
 | TODO item | rules zerobas fails |
 |---|---|
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xinitio.out](../../scratchpad/AE_m1on2/xinitio.out), [scratchpad/AE_m1on2/xinitio2.out](../../scratchpad/AE_m1on2/xinitio2.out), [scratchpad/AE_m1on2/xinitio3.out](../../scratchpad/AE_m1on2/xinitio3.out), [scratchpad/AE_m1on2/xinitio4.out](../../scratchpad/AE_m1on2/xinitio4.out), [scratchpad/AE_m1on2/xinitio5.out](../../scratchpad/AE_m1on2/xinitio5.out), [scratchpad/AE_m1on2/xinitio6.out](../../scratchpad/AE_m1on2/xinitio6.out), [scratchpad/AE_m1on2/xinitio7.out](../../scratchpad/AE_m1on2/xinitio7.out); triage: [scratchpad/m1on2-triage-vdp.md](../../scratchpad/m1on2-triage-vdp.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| **R-IO-REGS**, **R-IO-REGS2**, **R-IO-REGS3**, **R-IO-REGS4**, **R-IO-REGS5** | holds [M] | F = $10 on return, not $54 [M] |
+| every other rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the HB-F900's and FS-A1WSX's PSG reads R1, R3, R5 and R13 back in 4 bits and R6 in 5 (the registers left as found read masked); the FS-A1WSX's port A (R14) reads $FF, not $BF.
+
 ## Open (not measured)
 
 - **[A]** INITIO's duration: it decides how often an interrupt lands in a probe's window. The rules

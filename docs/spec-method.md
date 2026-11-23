@@ -50,8 +50,14 @@ sections the specification needs:
    sentence carrying an evidence tag (§3).
 5. **Differences from the reference** — zerobas against the reference, with the TODO item that
    fixes each.
-6. **Open (not measured)** — every `[A]`.
-7. **Related pages, Tests that cover it.**
+6. **On later generations (MSX2, MSX2+)** — the same cases measured on the MSX2 / MSX2+ references
+   (§4): per rule, whether it still holds, and the later machines' reading where it does not, each
+   with its run file. A rule that holds on one generation only NAMES that generation; nothing is
+   inherited (Joost, 2026-11-23: "we cannot assume that e.g. msx1 bios calls behave exactly the same
+   on an msx2"). A machine difference that is not the call's behaviour (slot map, RAM size, keyboard,
+   the VDP's own register widths) is said once, as such, not as a rule.
+7. **Open (not measured)** — every `[A]`.
+8. **Related pages, Tests that cover it.**
 
 **The page describes behaviour, not history (Joost, 2026-11-18).** A spec page states what the
 reference does, and lists what zerobas does differently NOW. It never says what zerobas used to do:
@@ -177,6 +183,13 @@ that was measured (the wraps, the scroll, the edges).
 - **The BDOS:** the CF-3300 (the disk system's reference).
 - **When the references differ,** the page records both. A purely presentational split ships
   the VG-8020's value (Joost, 2026-09-04).
+- **Later generations (Joost, 2026-11-23):** the MSX2 / MSX2+ references are openMSX's generic
+  machines -- Sony HB-F900 (MSX2, JP), Philips NMS 8250 (MSX2, EU), Panasonic FS-A1WSX (MSX2+, JP);
+  the turbo R's is the Panasonic FS-A1GT. Every generation's calls are re-measured on EVERY later
+  one, each machine its own reading: an MSX1 page's cases run there through
+  `probes/bios/biosl_run.py --row msx2all` (scratchpad/m1on2_run.py runs them all,
+  scratchpad/m1on2_cmp.py sets them against the VG-8020). zerobas is an MSX1; these readings shape
+  the page and C-BIOS's MSX2 builds, not zerobas's Differences.
 
 ## 5. The loop for one call
 

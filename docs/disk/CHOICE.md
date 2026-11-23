@@ -84,6 +84,16 @@ Declared UNSTABLE on the reference itself (1 cases: XH2 N03): b, c, de, hl, iff 
 |---|---|
 | **D-PHYDIOREGS** (the set-up read's working F and HL; B and DE agree) | R-CH-READ |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xchoice1.out](../../scratchpad/AE_m1on2/xchoice1.out), [scratchpad/AE_m1on2/xchoice2.out](../../scratchpad/AE_m1on2/xchoice2.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture: the NMS 8250's in row N (its own interface's row, which it reproduces), the others' in the VG-8020 + NMS 1200's.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| R-CH-CHOICE | AF not kept: A 1, F $10 ($11 for $5AD7 in) (XH 00-02, XH2 00, 01, 05); HL $79BA [M] | holds (row N) [M] | holds; HL $7852 [M] |
+| R-CH-READ | interrupts ON after the set-up read, as row N's; C $01 [M] | holds (row N) [M] | interrupts ON, as row N's; C $3C [M] |
+| every other rule | holds [M] | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** The text CHOICE points to (the ROM's own bytes: not readable in the clean room); whether HL 0

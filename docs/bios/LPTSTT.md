@@ -57,6 +57,16 @@ bytes, 1 after).
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` -- [scratchpad/AE_m1on2/xlpt.out](../../scratchpad/AE_m1on2/xlpt.out), [scratchpad/AE_m1on2/xlpt2.out](../../scratchpad/AE_m1on2/xlpt2.out); triage: [scratchpad/m1on2-triage-slots.md](../../scratchpad/m1on2-triage-slots.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| every rule | holds [M] | holds [M] |
+
+**[A]** xlpt2's reading is a few bytes -- the not-ready answer, no printer attached: a printer-port difference beyond it is out of its view.
+
 ## Open (not measured)
 
 - **[A]** A printer plugged in but busy (the logger is always ready; nothing plugged reads as not

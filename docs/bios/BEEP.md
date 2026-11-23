@@ -86,6 +86,16 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 | TODO item | rules zerobas fails |
 |---|---|
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xsnd1.out](../../scratchpad/AE_m1on2/xsnd1.out), [scratchpad/AE_m1on2/xsnd1b.out](../../scratchpad/AE_m1on2/xsnd1b.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-BP-REGS | A := $0B, F := $18, BC := $0ED0 [M]; E := $04 on the HB-F900, $07 on the NMS 8250 [M] -- model or locale is [A]: BEEP on a second EU MSX2 would tell. D, HL, IX and IY are kept [M]. | A := $0B, F := $18, BC := $0ED0, E := $04 [M]; D, HL, IX, IY kept [M]. |
+| R-BP-EI | holds [M] | The interrupt state is kept: off after a call entered with interrupts off (xsnd1 case 73, xsnd1b 118-121) [M]. |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** The tone's length and envelope while it sounds (only the state after the call is recorded); R14 /

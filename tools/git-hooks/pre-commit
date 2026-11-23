@@ -1,9 +1,9 @@
 #!/bin/sh
 # tools/git-hooks/pre-commit -- (1) refuse a commit that adds or changes a file over 1 MiB
-# (tools/check_file_sizes.py; exceptions in tools/large-files-allow.txt); (2) when TODO.md or
-# basic/kwtable.inc is staged, regenerate and stage docs/tier-status.md (tools/precommit_tiers.py),
-# so the gate's tiers-md-check no longer goes red on a forgotten `make tiers-md`.
+# (tools/check_file_sizes.py; exceptions in tools/large-files-allow.txt); (2) regenerate and stage the
+# generated docs pages whose inputs are staged -- docs/tier-status.md, docs/bios/index.md
+# (tools/precommit_generated.py), so the gate's *-check no longer goes red on a forgotten generator.
 # Enable once per clone:  git config core.hooksPath tools/git-hooks
 top="$(git rev-parse --show-toplevel)"
 python3 "$top/tools/check_file_sizes.py" --staged || exit 1
-exec python3 "$top/tools/precommit_tiers.py"
+exec python3 "$top/tools/precommit_generated.py"

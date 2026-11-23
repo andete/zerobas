@@ -83,6 +83,15 @@ apart from what the timer interrupt sets while interrupts are on: port C's keybo
 
 None measured: every rule holds on zerobas.
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+): this page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xsnd1.out](../../scratchpad/AE_m1on2/xsnd1.out), [scratchpad/AE_m1on2/b5sound.out](../../scratchpad/AE_m1on2/b5sound.out)); every byte that differs from the VG-8020 is triaged in [scratchpad/m1on2-triage-gfx.md](../../scratchpad/m1on2-triage-gfx.md).
+
+| rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
+|---|---|---|
+| R-WP-REG | R7 is not written whole: bit 7 reads back 1 -- E $3E gives $BE (b5sound), $3F gives $BF (xsnd1 case 104) [M]. The other registers and R7's other bits hold [M]. Whether WRTPSG sets bit 7 or the PSG keeps it is [A]: R7 := $3F written through ports $A0 / $A1 and read back through $A2 would tell ($3F: the call; $BF: the chip). | as MSX2 [M] |
+| every other rule | holds [M] | holds [M] |
+
 ## Open (not measured)
 
 - **[A]** What R14 / R15 hold after the call: interrupts are on, and the timer interrupt writes R15

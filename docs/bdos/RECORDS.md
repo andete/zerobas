@@ -87,6 +87,16 @@ Declared UNSTABLE on the reference itself (2 cases: XR2 D11, XR2 C11): dta — R
 | **D-F37DREGS** (other working F: FCLOSE, RDSEQ's end, SETRND, RDRND past the end; SETDTA's A and F) | R-BR-WORK, R-BR-SIZE2 |
 | **D-SETRNDR36** (SETRND clears +36; the references leave it) | R-BR-SETRND3 |
 
+## On later generations (MSX2, MSX2+)
+
+Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+), each with its own built-in drive and disk ROM: the page's probes through `probes/bios/biosl_run.py --row msx2all` ([scratchpad/AE_m1on2/xbrec1.out](../../scratchpad/AE_m1on2/xbrec1.out), [scratchpad/AE_m1on2/xbrec2.out](../../scratchpad/AE_m1on2/xbrec2.out), [scratchpad/AE_m1on2/xbrec3.out](../../scratchpad/AE_m1on2/xbrec3.out)); triage [scratchpad/m1on2-triage-disk.md](../../scratchpad/m1on2-triage-disk.md). Each rule's check was run on each machine's capture in the reference's place.
+
+| rule | HB-F900 | NMS 8250 | FS-A1WSX |
+|---|---|---|---|
+| every rule not named below | holds [M] | holds [M] | holds [M] |
+
+With a clock chip: every FCB's date and time words are the clock's (that day, $5D77, and the time of day), not $0821 (1984-01-01) and 0, on all three [M]; with the stamps set aside these rules hold, and as written they do not: R-BR-WSEQ, R-BR-RSEQ, R-BR-SETRND, R-BR-RND, R-BR-SETRND2, R-BR-SEQ2, R-BR-RND2, R-BR-SETRND3.
+
 ## Open (not measured)
 
 - **[A]** Records past the first extent (CR past 127, the extent byte: FILES.md R-BF-SEQ3 measured the
