@@ -43,6 +43,8 @@ Rows (Joost 2026-11-10: ROM cartridges only, a NODISK row per rung):
     nodisk  Philips_VG_8020         vs  C-BIOS_MSX1_EU_REPACK_NODISK
     disk    Philips_VG_8020_NMS1200 vs  C-BIOS_MSX1_EU_REPACK_DISK
     cf3300  National_CF-3300        vs  C-BIOS_MSX1_EU_REPACK_DISK   (only on request: --row cf3300)
+    msx2eu / msx2jp / msx2p   Philips NMS 8250 / Sony HB-F900 / Panasonic FS-A1WSX vs C-BIOS's own MSX2 EU / MSX2
+            JP / MSX2+ JP builds (tools/install_cbios_msx2.py); --row msx2all runs the three (D-MSX2SPEC)
 The reference is the VG-8020 on both default rows (presentational splits go to it, 2026-09-04;
 the CF-3300 is a Japanese MSX1, whose BIOS differs from both for reasons of its own). The
 cf3300 row (Joost 2026-11-18) is for the SLOT calls: its RAM is the expanded slot 3-0, as on
@@ -103,6 +105,11 @@ ROWS = {
     # Philips-style FDC) -- for the disk pages' black-box rules. MSX2: a run here answers "does the rule hold on
     # another interface", not "is zerobas an MSX2"; zerobas's side is the same disk machine as the other rows.
     "nms8250": ("Philips_NMS_8250", "C-BIOS_MSX1_EU_REPACK_DISK"),
+    # D-MSX2SPEC (Joost 2026-11-23): the MSX2 / MSX2+ references -- openMSX's generic machines -- against C-BIOS's
+    # OWN MSX2 / MSX2+ builds from the checkout under review (tools/install_cbios_msx2.py, tag CUR). Only on request.
+    "msx2eu": ("Philips_NMS_8250", "CBIOS2_CUR_MSX2_EU"),
+    "msx2jp": ("Sony_HB-F900", "CBIOS2_CUR_MSX2_JP"),
+    "msx2p": ("Panasonic_FS-A1WSX", "CBIOS2_CUR_MSX2P_JP"),
 }
 
 
@@ -278,7 +285,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rung", nargs="?")
     ap.add_argument("--all", action="store_true", help="every rung in probes/bios/biosl")
-    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300", "nms8250"), default="both")
+    ap.add_argument("--row", choices=("nodisk", "disk", "both", "cf3300", "nms8250", "msx2eu", "msx2jp", "msx2p", "msx2all"),
+                    default="both")
     a = ap.parse_args()
     if a.all:
         rungs = sorted(f[:-4] for f in os.listdir(HERE) if f.endswith(".asm"))
@@ -304,7 +312,7 @@ def one(rung: str, rows: str) -> int:
     td = tempfile.mkdtemp(prefix="biosl_")
     try:
         rom = build(a.rung, td)
-        for row in (("nodisk", "disk") if a.row == "both" else (a.row,)):
+        for row in ({"both": ("nodisk", "disk"), "msx2all": ("msx2eu", "msx2jp", "msx2p")}.get(a.row) or (a.row,)):
             ref_m, zb_m = ROWS[row]
             ref = run(ref_m, rom, st, td, disk=(row != "nodisk"))
             zb = run(zb_m, rom, st, td, disk=(row != "nodisk"))

@@ -16751,15 +16751,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R-T-DISPATCH and R-T-REGS2 hold on zerobas, R-T-THRU 4 -> 2 cases failing, R-T-VRAM2 16 -> 11 (the ruled font, and the two
       CRTCNT 13 cases). **What is left of D-INITEDGES is the key row / CRTCNT and the margins: PARKED** (Joost, 2026-11-18).
 
-- [x] **D-DISKNOBASIC — ZEROBAS'S DISK ROM ON C-BIOS WITHOUT ZEROBAS'S BASIC: EVERY BDOS CALL CAME BACK EMPTY**
-      🎚️ TIER 1 — Joost 2026-11-22's order: after the rebase, "the disk ROM working without zerobas BASIC".
-      ✅ **DONE 2026-11-22.** On the review machine (C-BIOS fff98e8 + zerobas's disk ROM, no zerobas BASIC) 41 disk /
-      BDOS rules failed that pass on zerobas; every BDOS call returned A 0, F $54, nothing done. CAUSE: the disk ROM
-      reads its own slot from A at INIT (as the CF-3300's BIOS passes it: A = C = $87, measured), and C-BIOS's boot
-      waited for the VDP with `in a,($99)` right before the CALSLT, so A held the VDP status and the hooks / $F37D stub
-      pointed at a wrong slot. FIX in C-BIOS's boot (cbios-repack/init-slot-a.patch, `ld a,c`, +1 B; offered to
-      C-BIOS): every disk / BDOS page now fails EXACTLY the rules zerobas itself fails, module for module
-      (tools/cbios_review.py spec on 14 modules, scratchpad/AE_slota_review.out).
+- [ ] **D-DOSSESSION — MSX-DOS COMMANDS AS TYPED SESSIONS ON THE CF-3300 AND ZEROBAS: THE SCREEN AFTER EACH COMMAND, THE DISK AFTER THE SESSION**
+      🎚️ TIER 1 — Joost 2026-11-23, the order "3, 2, 1": this first, then D-MSX2SPEC, then D-KWSPEC.
+      🤖 **AUTONOMOUS** — Not spec pages per command: COMMAND.COM / MSXDOS.SYS are Microsoft's, loaded from the user's
+      disk (docs/concepts/msx-dos.md); zerobas supplies the disk ROM, the BDOS and the boot. An integration suite instead:
+      the reference DOS disk (test.dsk, MSX-DOS 1.03 / COMMAND 1.08) + a known text file, typed commands at A> (DIR,
+      DIR /W, TYPE, COPY, REN, DEL, VERIFY, DATE, MODE, ...), the text screen compared after each, the disk's directory
+      and file bytes compared after the session -- the National CF-3300 against zerobas's disk machine. Template:
+      probes/disk/disk_probe_dosmode.py. The commands that reach zerobas's OWN code (BASIC, FORMAT's H.FORM, the boot)
+      get rules on the disk pages.
+- [ ] **D-COPYDATE — A FILE COPIED UNDER MSX-DOS GETS THE CURRENT DATE ON ZEROBAS; THE CF-3300 KEEPS THE SOURCE'S**
+      🎚️ TIER 3 — common errors (every COPY at A> dates its copy wrong; filed 2026-11-23 by D-DOSSESSION).
+      🤖 **AUTONOMOUS** — probes/disk/disk_probe_dossession.py, HELLO.TXT dated 1990-05-05: after `COPY HELLO.TXT COPY1.TXT`
+      the CF-3300's DIR shows COPY1 TXT 90-05-05, zerobas's 84-01-01 (scratchpad/AE_dossession_copydate.out). Predicted
+      before the run: COMMAND.COM carries the source's date in the FCB and the reference's FCLOSE writes the FCB's date
+      as it is, where zerobas's FCLOSE re-stamps the current date. docs/bdos/FILES.md lists "whether FCLOSE re-stamps
+      the date" as unmeasured -- measure it there first (FCLOSE with an FCB date set by the program), then fix disk/.
+      Every later D-DOSSESSION row diverged only through this line on screen; the disk after the session agreed.
+- [ ] **D-MSX2SPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE MSX2 AND MSX2+ BIOS CALLS (THE SUB-ROM AND THE NEW MAIN-ROM ENTRIES)**
+      🎚️ TIER 1 — Joost 2026-11-23, second of "3, 2, 1"; feeds C-BIOS's next step ("fix all msx2 and msx2+ bios
+      calls").
+      🤖 **AUTONOMOUS** — References: Sony HB-F900 (msx2, JP), Philips NMS 8250 (msx2_eu), Panasonic FS-A1WSX (msx2plus)
+      -- openMSX's generic machines, Joost's ruling 2026-11-23. The HB-F900 needs its Kanji ROM (Joost is getting it).
+      The subject is C-BIOS's MSX2 / MSX2+ builds (zerobas is MSX1): pages per call, docs/spec-method.md's cycle.
+- [ ] **D-KWSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE BASIC KEYWORDS**
+      🎚️ TIER 1 — Joost 2026-11-23, third of "3, 2, 1".
+      🤖 **AUTONOMOUS** — docs/keywords/*.md exist as user pages; make them specs with executable rules, region by
+      region (as the BIOS), the VG-8020 the reference. BASIC graduates to C-BIOS eventually: these pages are what a
+      port is checked against.
 - [ ] **D-SETREGSCBIOS — SETTXT / SETT32 / SETGRP / SETMLT RETURN C-BIOS'S LEFTOVER REGISTERS SINCE THE REBASE**
       🎚️ TIER 6 — every edge (filed 2026-11-22).
       🤖 **AUTONOMOUS** — d23d87b's bodies return DE / HL the other way round and another F (R-TX-REGS / R-T3-REGS /
@@ -16773,112 +16792,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       parser keeps volume 0..15 at 18, $80 | shape at 19 and M at 13 (sub/playparse.asm VCX_*). Only PEEK sees it;
       since the rebase C-BIOS's GICINI writes the reference's defaults, which the parser detects ($FF at 19) and
       re-seeds. Move the parser to the reference layout when sub page 1 has the room.
-- [x] **D-CBIOS032 — REBASE THE REPACK ON C-BIOS 0.32 (TAPE UPSTREAM; 36 OF OUR 39 PATCHES CONFLICT) AND LEARN FROM ITS FIXES**
-      🎚️ TIER 1 — the base every C-BIOS-side fix builds on (filed 2026-11-22, Joost: "cbios 0.32 was released and it
-      shipped with tape, so our tape patch is obsolete"; "have a look at each of c-bios 0.32's fixes to see if we can
-      learn something from it (e.g. space fixes)").
-      🤖 **AUTONOMOUS** — tools/build_repacked_cbios.py pins v0.31; v0.32 (12a8e43, "Release 0.32") is 102 commits on:
-      tape (reading, writing, the power-on timing tables), the function-key line (INIFNK / DSPFNK / ERAFNK / FNKSB,
-      SHIFT+F1-F5), the graphics-cursor calls in SCREEN 0 / 1, GICINI and the PLAY queues, a background music player,
-      STMOTR, CALBAS, CALSLT, CHRGTR, SYNCHR, GETYPR, GTSTCK, GTTRIG, LFTQ, CLS ... Against v0.32 (applied in PATCHES
-      order, `git apply --check`): 3 still apply (eu-drop-statements, chkram-move, scan-from-basic), 36 CONFLICT, and
-      NONE reverses cleanly -- upstream rewrote what it took, it did not merge our bytes. Steps:
-      (1) per patch: does 0.32 now answer as the reference? -- by the SPEC PAGES, not the diff: build 0.32 with the
-          remaining patches, spec-live + the battery name where it still differs; re-port only those.
-      (2) tape: retire tape/tape.asm and its IPS / BPS for 0.32's cassette code; the tape corpus, the cassette pages
-          and suites decide; what 0.32 does otherwise is a TODO item or a small patch.
-      (3) 🔴 ROM SPACE FIRST: BASIC is relocated into the C-BIOS main ROM from $2765 -- 0.32's music player,
-          function-key line and tape grow C-BIOS; re-measure the placement before anything else (dropping our tape
-          gives some back).
-      (4) LEARN FROM ITS FIXES: for every entry where 0.32 and a patch of ours both changed the code, compare the two
-          (size, technique: shared tails, tables, folded paths) -- adopt the smaller, and carry a technique that
-          applies to basic/ or disk/ over as a carve item. Each 0.32 commit body states its bytes and usually the
-          technique (Joost: "each commit also mentions the bytes added or saved") -- 116 such lines extracted to
-          scratchpad/AE_cbios032_bytes.out, e.g. LPTSTT "ccf / sbc a,a gives directly: 4 bytes smaller", CNVCHR
-          "tests the range with the subtraction itself: 6 bytes smaller", CHSNS 8 smaller, CLS "a djnz loop ... drops
-          the ldir set-up: 5 bytes", CHPUT ESC l "reusing the restore at the end of ESC J". Entries where a patch of
-          ours and 0.32 both changed the code (LPTSTT, CNVCHR, CHSNS, CHGET, POSIT, GTTRIG, LFTQ, CHPUT DEL ...):
-          ours against theirs, byte for byte.
-      (5) re-pin REPACKED_SHA1 / PRISTINE_SHA1, full battery + the excluded five, the tape corpus, HANDOFF gate.
-      The biosregs audit (D-TESTAUDIT, scratchpad/biosregs_audit.py) is re-run on the rebased patch set after this.
-      🏗️ RULED 2026-11-22 (Joost, after the patch-or-coexist discussion: zerobas is C-BIOS's STAGING AREA; BASIC
-      graduates too, gradually, the port a refinement for size and placement; docs and spec pages stay in zerobas;
-      one disk ROM with core + Disk BASIC; one FDC interface, National; relicensed BSD-2-Clause): "yes to all three,
-      go with that order" -- (1) rebase onto 0.32 as a THIN patch set tracking C-BIOS's latest commits, (2) RETIRE
-      zerobas's own BIOS bodies where stock 0.32 passes the pages (keep ours only where BASIC is entangled, saying
-      why), (3) SEND upstream what 0.32 lacks instead of carrying it. Order: this rebase, then the disk ROM working
-      without zerobas BASIC, then the test cleanup against the rebased build. The hosting variant is not now.
-      🔀 SEQUENCE (Joost 2026-11-22, "yes, go that way"; bugs are fixed in zerobas FIRST): the C-BIOS side lands
-      the fixes note's A-C (CLRSPR / PUTQ / SETC / TUPC-TDOWNC / GRPPRT / SET* registers, H_ZKEY, the SCNCNT option,
-      the GRPHED clear) on C-BIOS master; zerobas rebases onto THAT commit with layout patches only and retires
-      those six bodies too. ✅ Meanwhile D-CBIOSSYM: the repacked build keeps C-BIOS's symbol table
-      (build/cbios_main_msx1_eu-repacked.sym); BASIC's CBIOS_* addresses are generated from it (basic/cbios-abi.inc,
-      tools/gen_cbios_abi.py, `make cbios-abi-check` in the static tier) and tools/build_mainrom.py's overlay guards
-      are C-BIOS labels (PATCH_SPEC) -- ROMs byte-identical. ISLAND_RANGES is still by hand (re-derived in the rebase).
-      📏 STAGE 0 (2) 2026-11-22 -- every BIOS spec page on STOCK v0.32 (tools/cbios_review.py all --tag v032,
-      scratchpad/AE_cbios032_vs_zerobas.out): on the BIOS pages 0.32 fails 15 rules zerobas passes (TUPC / TDOWNC
-      edge + position -- our tdownc-ge; GRPPRT position + VRAM; the SET* / CLRSPR / PUTQ / SETC registers or AF),
-      and PASSES 40 that zerobas fails, on 12 pages where zerobas runs its OWN body (CHRGTR, CLS, CNVCHR, the
-      function-key pages, GICINI, GTPDL, INIT, INITIO, the key line, INLIN, LPTOUT, TOTEXT); 30 fail on both.
-      PLAY trace SAME, initslot PASS. The disk / BDOS pages fail 41 more there -- zerobas's disk.rom on a machine
-      WITHOUT zerobas BASIC (probably its private ABI with BASIC; not yet separated).
-      🔧 **REBASED 2026-11-22 (Joost: "do the key trap properly first, then rebase"; C-BIOS named d23d87b,
-      prepare-0.33).** tools/build_repacked_cbios.py pins d23d87b with FIVE patches (eu-drop-statements,
-      eu-drop-dead-strings and key-trap-bios re-ported; dead-bodies-main new: the bodies zerobas overlays + the
-      US GRAPH / CODE scan tables nothing reads + the debug hex printers; grphed-keyline new: DSPFNK clears
-      GRPHED). The 35 v0.31 behaviour patches are retired: d23d87b passes their pages
-      (scratchpad/AE_cbios_review_d23.out; per rule scratchpad/AE_cbiosd23_vs_zerobas.out). The tape overlay
-      (tape/tape.asm) is dropped: C-BIOS's cassette BIOS passes every tape page; tape corpus NEAR 11 / RUNS? 22 /
-      SAME 9 (Ballblazer's usual noise). zerobas keeps only the RSTs (CHRGTR / SYNCHR / OUTDO / GETYPR), ISCNTC
-      / CKCNTC, ISFLIO, CALBAS, SETC and CHPUT's TTYPOS; 42 bodies + its music player retired (C-BIOS's plays the
-      queues; the PLAY parser re-seeds its own voice-block layout when GICINI left the reference's: $FF at
-      offset 19 -- D-VCBLAYOUT). BASIC from $2BAF (was $2781): BASIC_ORG read from basic/main.asm by
-      split_islands / build_mainrom; the $3297 pin moved into basic/float.asm (9 B pad), the $3283 pin dropped
-      (only crtcnt-bound.patch called it; the sub ROM reaches crt_rows / crt_cp through the resident ABI);
-      island 3 at $0B18 holds edscreen.asm + varfind.asm too. Walls on 2026-11-22: low region 50 B, page 1 51 B. Spec pages:
-      94 run files refreshed (spec_live --refresh), tables regenerated, Differences trimmed (closed:
-      D-GICINIVCB, D-GTPDLPORT, D-INITIOVCB, D-LPTOUTF, D-KEYGRAPH, D-EDITSTOPHELD); SETTXT / SETT32 / SETGRP /
-      SETMLT's leftover registers listed (D-SETREGSCBIOS). LEFT: the disk ROM without zerobas BASIC; the test
-      cleanup (D-TESTAUDIT); stale prose naming retired patches in older docs.
-      ✅ **CLOSED 2026-11-23.** All three of Joost's steps are done: the rebase (cac1876a3, on C-BIOS fff98e8 with six
-      small patches), the disk ROM working without zerobas BASIC (D-DISKNOBASIC, 8b5b1e6cd: init-slot-a.patch), and
-      the test cleanup (D-TESTAUDIT, closed for the BIOS suites: biosregs kept). The offers to C-BIOS (grphed-keyline,
-      regs-leftovers, init-slot-a) are in the inbox; each retires its patch when C-BIOS takes it. Older docs that name
-      the retired v0.31 patches keep them as history.
-- [x] **D-TESTAUDIT — THE TEXT REGION'S TEST AUDIT, STEPS 3-4: RETIRE THE OLDER ROWS THE PAGE MATRICES MAKE REDUNDANT**
-      🎚️ TIER 2 — reasonable time (the gate battery's wall time; filed 2026-11-18).
-      🤖 **AUTONOMOUS** — docs/spec-method.md §8. Steps 1-2 and 5 landed 2026-11-18: `make spec-live` (tools/spec_live.py, in the
-      fast tier, ~8 s, [`SPECLIVE_all.out`](scratchpad/SPECLIVE_all.out)) pins every rule of the 16 text-region pages with
-      the page's own cases, live on zerobas. Controls: a deleted Differences row gave REGRESSION, the VG-8020 as zerobas
-      gave STALE PAGE. Left: the older rows that call these entries (`tools/entry_table.py --bios`: biosl b1text,
-      biosregs, biostext, biosclr, biosmode, biosvdp, biosflags, grphed ...). For each: which page rule it pins, then
-      break that rule in OUR ROM and confirm spec-live (and the remaining rows) go red without it
-      (scratchpad/gate_blindness_sweep.py). Retire only the proven-redundant rows, in a commit of their own naming each
-      row, its rule, its mutation and the row that now catches it. Rows that pin something no page measures (e.g. a
-      work-area answer outside the matrices) stay, and become an [A] on the page.
-      ⏸️ **DEFERRED 2026-11-18: MEASURED NOT WORTH IT FOR THIS REGION** (NO POINTLESS TESTS). From the ba91a26d gate log: the
-      candidate suites are small (biostext 14 s, biosflags 20 s, biosmode 12 s, biosclr 8 s, grphed 7 s, biosl 6 s;
-      biosregs 129 s covers every BIOS call, the text ones a share). Retiring every redundant text row saves at most
-      ~1 min of a ~4800 s serial battery, against a rebuild + suite + spec-live run per mutation. The audit's main
-      payoff, every rule pinned by a separating case, landed with spec-live. Re-open for a region whose old suites are
-      expensive.
-      🔁 REOPENED 2026-11-22 for the BIOS suites (Joost: "at some point we were going to clean up tests now we also
-      have the spec checks"). biosregs-acceptance (261 s in f6ad987d's FULL battery): 140 of its 143 rows call an
-      entry whose page is FINAL (the 3 others are $0D12, the reference BIOS's internal key scan). Phase 1, a
-      patch-drop knife per cbios-repack patch (scratchpad/biosregs_audit.py -> biosregs_audit.jsonl, each patch
-      REVERSED on the patched tree with -C1, the ROM required to move, restored + clean rebuild = baseline): 1 BOTH
-      (tdownc-ge: 3 rows, 7 spec-live lines), 17 that redden NO biosregs row, 21 SKIP (11 do not reverse -- later
-      patches rewrote their lines; 10 reverse but break tools/build_mainrom.py's hard-coded overlays). So biosregs
-      barely watches what our patches carry; its rows guard behaviour already in C-BIOS. Row retirement waits for
-      D-CBIOS032: the per-rule comparison of the pages and the suite against stock 0.32 decides redundancy there.
-
-      ✅ **CLOSED 2026-11-23 for the BIOS suites -- Joost: "Keep biosregs".** After the rebase on C-BIOS fff98e8
-      biosregs-acceptance (143 rows; ~38 s per FULL gate since D-SUITEWIN's pooling) caught TWO real register
-      leftovers no spec page covers -- INLIN / PINLIN / QINLIN's A after Enter and ERAFNK's HL in SCREEN 2
-      (cbios-repack/regs-leftovers.patch) -- because the pages' cases do not capture those registers on those paths.
-      A generic mutation cannot prove a row redundant (redundancy is per input path), and folding the suite into the
-      pages means extending each probe and re-measuring the VG-8020, for ~38 s of gate time. So biosregs stays as the
-      register-leftover net; the two gaps are [A] items on docs/bios/PINLIN.md and docs/bios/DSPFNK.md.
 - [ ] **D-INITIORACE — A FRAME INTERRUPT PENDING AT INITIO'S ENTRY PLAYS A STALE QUEUED NOTE ON THE REFERENCES; ZEROBAS'S GICINI-FIRST DOES NOT**
       🎚️ TIER 6 — every edge (filed 2026-11-22, from a C-BIOS 0.32 port measurement).
       🤖 **AUTONOMOUS** — reported, not yet measured here: with interrupts off, a frame interrupt pending (a ~30 ms DI
@@ -17344,198 +17257,6 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       D-DISKVE in bdos-acceptance's BDOSXE allowlist (RDABS 1440's C, ours 8). (1) FORMAT -- its body is the DISK ROM's (H.FORM): only the main-BIOS
       side is in focus.
 
-- [x] 🔭 **D-ENTRYTIERS — EVERY BIOS CALL, DISK-ROM ENTRY AND BDOS FUNCTION ITS OWN ROW IN THE
-      TIER SHEET (asked by Joost 2026-11-08)**
-      🎚️ TIER 1 — ⬆️ RE-TAGGED THE SAME DAY: Joost, *"having the bios and such stable and on par is
-      of higher priority then having basic stable"* -- the entry-point surface outranks BASIC
-      (scratchpad/LOOP-RESTART.md, RULINGS 2026-11-08), and this table is how that surface is
-      counted, so it is the FIRST item. (Was: APPARATUS, a denominator like kwsweep's rows.)
-      Serves the disk core's port to C-BIOS ([[disk-core-portable-to-cbios]]).
-      🤖 **AUTONOMOUS** — Joost: *"I wonder if it would be useful to have each bios call and
-      indirect (e.g.) disk bios call or bdos call have its own place in the tier list ?"*
-      Answered yes, with this shape.
-      📐 Three tables in docs/tier-status.md, each row = name, address / function number, status
-      (same / differs / missing / NOT MEASURED), the gate row that witnesses it, and the tier tag
-      of any open TODO item naming it: (1) **BDOS** $00-$30 (MSX-DOS 1, ~40 functions) FIRST --
-      the disk core's surface; (2) **disk-ROM entries** (DSKIO, DSKCHG, GETDPB, CHOICE, DSKFMT,
-      MTOFF and the pinned kernel entries); (3) **main BIOS calls** (C-BIOS's, patched by
-      cbios-repack where a row differs). The entry lists come from the published references
-      (clean room). First pass is a MAPPING of existing gates onto rows -- no emulator time; a row
-      nothing witnesses says NOT MEASURED out loud (kwsweep's MISSING lesson). Then a gate keeps
-      the table from drifting (tier_table.py renders it; tiers-md-check fails on a stale one).
-      ✅ **STEP 1 SHIPPED (2026-11-08): THE BDOS TABLE.** `tools/entry_table.py` maps every probe
-      source that calls the BDOS (the last `ld c, N` before the call: a number, the file's `equ`
-      or the published name) to the `*-acceptance` targets that reach it -- through scripts that
-      name it IN CODE, to a fixed point (bdos-acceptance is two hops away from bdosx.asm).
-      tier_table.py renders it as docs/tier-status.md's FIRST section, so tiers-md-check keeps it
-      current. tests/test_entry_table.py pins the parser and the reach rule. 🔴 Two faults of
-      the first prototype, both caught by reading its table before believing it: `lstoutx`
-      loads `LSTOUT` by name (read NOT MEASURED), and two runners' DOCSTRINGS named
-      disk_bdos_acceptance.py, crediting diskbasic-acceptance / callsystem-acceptance with every
-      bdosx probe. **Reading: 32 of 42 functions EXERCISED, 10 NOT MEASURED** -- CONOUT, AUXIN,
-      AUXOUT, LSTOUT (lstoutx.asm exists; no gate runs it), BUFIN, SELDSK, SNEXT, CURDRV, ALLOC,
-      WRZER -- and the 7 unused numbers ($1C-$20, $25, $29) have no row checking that they
-      answer as the reference does. setrnd_char.asm and verifyx.asm run in no gate either.
-      ⚠️ The open-item column matches a function's NAME in an item's headline only:
-      D-BLKIOPERCALL lands on WRBLK, not RDBLK, whose name its headline does not carry.
-      ✅ **STEP 2, LSTOUT (2026-11-08):** disk_probe_lstout_cbios.py (MSX-DOS on the repack machine,
-      LSTOUTX.COM from AUTOEXEC, 5 x BDOS $05, an openMSX printer logger) was ARCHIVED in the
-      reach allowlist, which is why the table counted LSTOUT "NOT MEASURED". Re-run green
-      ([`lstout_1108.out`](scratchpad/lstout_1108.out): the printer got exactly 'LP!\r\n'), now `lstout-acceptance` (Makefile,
-      run_gates' list). setrnd_char / verifyx stay characterisations, not gates: SETRND and
-      VERIFY are exercised by the bdosx probes in bdos-acceptance. Left of step 2: BUFIN ($0A,
-      typed keys) and AUXIN ($03, may wait for a device).
-      ✅ **BUFIN (2026-11-08):** `probes/disk/bufinx.asm` (+ build_bufinx_disk.py): BUFIN with a
-      10-character buffer, "AB" + Return typed by the harness (--keys2 at 30 s). On both
-      machines ([`bufinx_both1.out`](scratchpad/bufinx_both1.out)) the BUFFER is byte-identical (max, count 2, "AB"); the
-      exit registers differ (the CF-3300 leaves A = $0D, the CR; ours $02) -- outside the
-      published contract. In bdos-acceptance as BUFINX, capturing the buffer only
-      ([`bufinx_gate.out`](scratchpad/bufinx_gate.out): PASS, 0-byte-diff). 🔮 "count 2, AB; the registers the likeliest
-      split": HIT. AUXIN: D-AUXIN (fixed). **Step 2 is DONE**: every MSX-DOS 1
-      function the table counted NOT MEASURED now has a reading.
-      ✅ **STEP 4 SHIPPED (2026-11-08): THE DISK-ROM TABLE**, second section of docs/tier-status.md:
-      the six published entries ($4010 DSKIO .. $401F MTOFF; exercised = a gate-reached script
-      names the address or the routine) and every PINNED address in disk/*.asm (61) -- the
-      reference's canonical entries the MSX-DOS kernel calls, each tied to the BDOS function its
-      own comment numbers (`BDOS $NN`, in the window from the previous pin's entry to its own
-      instruction) or its own label names (getalloc -> ALLOC), and given that function's status.
-      **34 of 61 tie to a function; 27 do not** (kernel-internal veneers: $402D, $4558, $47B2,
-      $4E4B ...). **Published: DSKIO, CHOICE exercised; DSKCHG, GETDPB, DSKFMT, MTOFF NOT
-      MEASURED.** 🔴 Three attribution faults of the first cuts, each caught by reading the table
-      against the hand list: a +-8-line window credited a pin with the function of the pin in
-      front of it (fdc_write_phys "FREN"); a window ending at a bare label missed the comment on
-      its instruction line (every function shifted one pin down); a name merely MENTIONED in a
-      comment tied fdc_di_save to WRZER (dropped: labels only). tests/test_entry_table.py (d)
-      pins all three.
-      ✅ **STEP 3, THE PARKED PROBES INTO THE GATE (2026-11-09):** auxinx / dskent / dskchg -- measured
-      on 11-08 but parked in tools/probe-reach-allow.txt -- now record their entry's CONTRACT
-      ONLY (AUXIN's A; MTOFF nothing; DSKCHG's B and Cy; GETDPB's Cy and DPB; DSKCHG's
-      refreshed DPB), since the other registers differ outside it, and are bdos-acceptance
-      exercisers: **3/3 converged byte for byte** ([`bdosacc_ent.out`](scratchpad/bdosacc_ent.out)). tools/entry_table.py's disk
-      table read only Python scripts (DSKCHG matched by name alone, GETDPB / MTOFF stayed NOT
-      MEASURED though dskent.asm calls them); it shares bios_rows' probe-.asm rule now
-      (_probe_asms / _witnesses). **The tables now: BDOS 0 NOT MEASURED; disk ROM only DSKFMT
-      (it formats -- a scratch image); BIOS 76 of 108 witnessed.**
-      ➡️ NEXT, in order: (2) the 10 NOT MEASURED functions and the unused numbers -- one
-      differential against the CF-3300 each, registers + FCB / RAM out (bdosx's shape), into
-      bdos-acceptance; lstoutx / setrnd_char / verifyx wired into a gate; (3) EXERCISED -> SAME:
-      read which of those gates compare the function's result, and say so per row; (4) the
-      disk-ROM entry table; (5) the main BIOS table.
-      📏 **STEP 2, FIRST HALF RUN (2026-11-08): `probes/disk/bdosx9.asm`** (+ build_bdosx9_disk.py):
-      CURDRV, SELDSK, ALLOC, SFIRST / SNEXT, CONOUT, FMAKE / WRZER / FCLOSE, AUXOUT and the
-      seven unused numbers, registers + both search DTAs + the written FCB captured at `done`
-      on both machines ([`bdosx9_run1.out`](scratchpad/bdosx9_run1.out); the CF-3300's full block one-sided,
-      [`bdosx9_stock.out`](scratchpad/bdosx9_stock.out)). Cut short and re-run
-      ([`bdosx9_bisect.py`](scratchpad/bdosx9_bisect.py) -> [`bdosx9_bisect1.out`](scratchpad/bdosx9_bisect1.out) ..
-      [`bdosx9_bisect3.out`](scratchpad/bdosx9_bisect3.out)): **records 0-7 BYTE-IDENTICAL** --
-      CURDRV, SELDSK, ALLOC, SFIRST, SNEXT, CONOUT, FMAKE (ALLOC reached ~1.4 s later here:
-      speed, not contract) -- and **WRZER BREAKS OURS: D-WRZER below.** 🔮 SELDSK's drive count
-      the likeliest split: MISSED, it is identical; "WRZER a likely gap": HIT. Not in
-      bdos-acceptance yet: it would be red on D-WRZER; it joins when that lands, then the
-      unused numbers and AUXOUT get read (they ran after the fault here).
-      📼 **D-TAPEBIOS, THE SIX CASSETTE ENTRIES (2026-11-13; Joost: *"the tape ones we should
-      definitely cover indeed with tests"* -- context: he finishes C-BIOS's remaining MSX1 BIOS
-      calls upstream next, zerobas's gaps first).** New **`make tapebios-acceptance`**
-      ([`bios_probe_tapdiff.py`](probes/tape/bios_probe_tapdiff.py), our own machine code, VG-8020 vs zerobas, five rows): **write**
-      (TAPOON / 64 x TAPOUT / TAPOOF, the recording decoded) and **read** (the VG-8020's recording,
-      TAPION / 64 x TAPIN / TAPIOF) were SAME at once ([`tapdiff_run1.out`](scratchpad/tapdiff_run1.out); 🔮 HIT). **Ctrl-STOP
-      DIVERGED in all three waiting entries**: the VG-8020's TAPION, TAPIN and TAPOUT return with
-      Cy set WHILE THE KEY IS STILL DOWN (SNSMAT row 7 read the moment they return); ours waited
-      for the release first ([`tapdiff_break3.out`](scratchpad/tapdiff_break3.out), [`tapdiff_lbreak1.out`](scratchpad/tapdiff_lbreak1.out); the first reading, `Break in
-      40` on the VG-8020 only, [`tapdiff_break1.out`](scratchpad/tapdiff_break1.out), was that same held key reaching BASIC). The
-      wait was D-CASWBRK's, put in the BIOS so an ON ERROR handler is not broken by the held key
-      -- a BASIC rule. Fixed: tape/tape.asm's cas_stop is gone (the entries call BREAKX and
-      return); **set_errflg** waits for the release on error 19 and drops a key repeat latched
-      during the hold (brk_release; set_errflg moved to basic/catalias.asm with it -- raise_error's
-      span had no room before the $475A pin). 🔴 Two cuts that failed first, each caught by the
-      BASIC break gates: the wait in raise_error (the deferred raises record through set_errflg
-      without passing it) and a wait without the INTFLG drop (C-BIOS's auto-repeat latched the
-      held key once interrupts ran): `Break in 90` on 6-9 rows. After: tapdiff **5 / 5 SAME**
-      ([`tapdiff_run2.out`](scratchpad/tapdiff_run2.out)); caswbrk 8/8, casrbrk 15/15, casbrk 7/7 ([`tapebios_caswbrk.out`](scratchpad/tapebios_caswbrk.out),
-      [`tapebios_casrbrk.out`](scratchpad/tapebios_casrbrk.out), [`tapebios_casbrk.out`](scratchpad/tapebios_casbrk.out)). The BIOS table: **104 of 108** witnessed. ➡️ Joost's
-      rulings for the other four: KEYINT covered INDIRECTLY (mark it so), NMI not used on MSX
-      (out of scope), **WSLREG a direct test**, **INITIO: measure what it does first**.
-      📼 **THE 3744-BAUD ROW (2026-11-13, Joost: *"a test reading a .cas as openmsx encodes that
-      to a wav that is at the maximum speed reference can decode so timing is critical"*):**
-      tapebios-acceptance's `cas` row builds a BSAVE-shaped .cas of our own (every byte value,
-      runs of 0- and 1-bits, alternating ones; openMSX plays a .cas at 3744 baud) and reads it
-      as BLOAD does -- TAPION, 16 x TAPIN, TAPION again, 518 x TAPIN, TAPIOF -- on both, checked
-      against the file itself, not only each other: **both read all 534 bytes exactly**
-      ([`tapdiff_cas3.out`](scratchpad/tapdiff_cas3.out); 🔮 HIT). Two probe faults on the way, both mine: a garbage count
-      looping 65535 times when unguarded, and `-&H9000` -- a SIGNED -28672 in MSX BASIC
-      ([`tapdiff_cas2.out`](scratchpad/tapdiff_cas2.out)). All six rows SAME ([`tapdiff_run3.out`](scratchpad/tapdiff_run3.out)).
-      ✅ **THE RULINGS IN THE TABLE + WSLREG (2026-11-13):** tools/entry_table.py's BIOS_RULED
-      prints KEYINT "covered INDIRECTLY" and NMI "out of scope" (a direct witness would still
-      read "exercised"; a stub outranks both). **WSLREG**: two rows in slotregs-acceptance
-      (`wsl2`: page 3's slot into page 2; `wslsame`), our code restoring $A8 itself -- A kept,
-      $A8 = the value, BC / DE / HL / F kept, **identical on the CF-3300** ([`wslreg_run4.out`](scratchpad/wslreg_run4.out);
-      slotregs 12/12, [`wslreg_gate.out`](scratchpad/wslreg_gate.out)). Two probe faults first: F compared as BASIC's USR
-      left it ($44 / $42, the entry state, [`wslreg_run3.out`](scratchpad/wslreg_run3.out)) -- now loaded as $A5; and a
-      `P\64` that stopped the CF-3300 run with Tcl's "missing close-brace" (two runs). The table:
-      **105 of 108 witnessed, 2 ruled, 1 NOT MEASURED (INITIO)**. ➡️ INITIO: measure first.
-      (lifted to a top-level item on 2026-11-23: **omsx_repl: a typed line whose CHUNK ends on `\` breaks the Tcl** -- 🎚️ APPARATUS — ...)
-      ✅ **D-INITIO -- THE LAST ROW (2026-11-13; Joost: *"INITIO is a strange one"*):**
-      measured before deciding ([`basic_probe_initio.py`](probes/basic/basic_probe_initio.py): SOUND sets every PSG register to our
-      own values, then INITIO from our code; the 16 registers via RDPSG and port $AA after).
-      Neither machine resets regs 0-6, 12, 13 or $AA; both write mixer 7 := $B8 and amplitudes
-      8-10 := 0 (GICINI's). **The VG-8020 also writes reg 11 := $0B, and reg 15 := $CF where
-      C-BIOS writes $8F (bit 6)** ([`initio_run1.out`](scratchpad/initio_run1.out) .. [`initio_run3.out`](scratchpad/initio_run3.out); 🔮 "C-BIOS differs in at
-      least one register": HIT). GICINI called directly touches neither (the control), and
-      **the CF-3300 agrees with the VG-8020 byte for byte** ([`initio_cf.out`](scratchpad/initio_cf.out)). Fixed in
-      **cbios-repack/initio.patch** (#21): two writes, 7 B, paid by C-BIOS's INIFNK stub behind
-      it (dead under our $003E; build_mainrom.py's guard for that vector updated). After:
-      PSG / $AA identical in all three runs ([`initio_run4.out`](scratchpad/initio_run4.out)); **`make initio-acceptance`** gates
-      it ([`initio_gate.out`](scratchpad/initio_gate.out)). The exit registers still differ (both references F $54, A $FF,
-      E $0B; ours otherwise) -- no documented contract, printed only. 🔴 My own mistakes on the
-      way: a 5-byte count for a 7-byte insertion (2561 bytes of the ROM moved, caught by a
-      byte diff before it went anywhere), and editing tracked files while a static run was
-      going (that run was discarded and re-run). **THE MAIN-BIOS TABLE: 106 of 108 directly
-      witnessed, 2 ruled (KEYINT, NMI), 0 NOT MEASURED, 0 stubs.** ➡️ Step (3), EXERCISED ->
-      SAME: per row, does its gate COMPARE the entry's result with a reference.
-      📏 **STEP (3), FIRST PASS (2026-11-13):** docs/tier-status.md's BIOS table gains a "vs
-      reference" column (tools/entry_table.py: a witness counts when the probe naming the entry
-      -- or one it imports / runs, by file name or module stem -- boots the VG-8020 / CF-3300).
-      **106 of 106 witnessed rows: yes.** A first cut said 101 (STRTMS, PUTQ, PNTINI / SCANR /
-      SCANL "no"): it matched `x.py`, and those probes `import basic_probe_biosregs as B` -- the
-      stem. 🔴 The rule is generous by construction (a probe that CAN compare), so the biggest
-      group was checked by hand: **70 rows rest on basic_probe_biosregs.py alone, and every one
-      of those 70 entries is CALLED by a biosregs row** (its `CD lo hi` targets), whose reading
-      the probe compares VG-8020 == zerobas ([`bios_vsref_witnesses.out`](scratchpad/bios_vsref_witnesses.out), [`bios_vsref_called.out`](scratchpad/bios_vsref_called.out)).
-      Not proven by this pass: WHICH registers a row compares (biosregs leaves F out where
-      neither machine documents it). ➡️ Per-row: the compared outputs against each entry's
-      published contract.
-      🎯 **D-SCALXYF -- FLAG-ANSWERING ENTRIES (2026-11-13):** biosregs compares A / BC / DE / HL
-      and leaves F out, so an entry whose published OUTPUT is a flag had no row reading its
-      answer. New **`make biosflags-acceptance`** ([`basic_probe_biosflags.py`](probes/basic/basic_probe_biosflags.py), 20 rows: DCOMPR
-      x4, CHRGTR x5, GETYPR x4, CHSNS, BREAKX, LPTSTT, SCALXY x4 -- F masked to the documented
-      bits). **SCALXY DIVERGED** ([`biosflags_run1.out`](scratchpad/biosflags_run1.out); 🔮 "SCALXY or LPTSTT": HIT on SCALXY):
-      clipped, the VG-8020 answers Cy clear, ours set -- full F ([`biosflags_scal.out`](scratchpad/biosflags_scal.out)): VG $41 in
-      range / $40 clipped, ours $93 always. graphics-cursor.patch's rewrite (ours, D-BIOSRUNG)
-      had dropped C-BIOS's final `rrca`. **cbios-repack/scalxy-flags.patch** (#22): `ld a,h /
-      cp a / rlca / ld a,h`, +3 B -- into island 3, whose fperr_to_err table moved to main
-      page 1 (basic/catalias.asm); the $0129 overlay guard follows C-BIOS's `ret`s 3 B on.
-      After: **20 / 20 SAME** ([`biosflags_run2.out`](scratchpad/biosflags_run2.out); the GETYPR string row needed VALTYP put
-      back before `Q=USR(0)`, a probe fault).
-      📏 **The other two tables (2026-11-13):** the same "vs reference" reading for the BDOS
-      table (a summary line: **42 of 42** exercised functions are called by a probe a
-      reference-booting script runs) and the six published disk-ROM entries (a column: **6 of 6**
-      yes). Tape corpus after D-SCALXYF: SAME 10 / NEAR 11 / RUNS? 20 / RESET 1, **no title
-      moved** ([`tapecorpus_scalxy.out`](scratchpad/tapecorpus_scalxy.out); 🔮 "no class worse": HIT). ➡️ Left of D-ENTRYTIERS:
-      per row, the COMPARED outputs against each entry's published contract (the flag-answering
-      group is done; RAM / VRAM-answering entries next), and the 27 pinned kernel addresses no
-      function names.
-      🎯 **D-GRPBASE -- THE SCREEN-MODE ENTRIES' WORK AREA (2026-11-13):** new **`make
-      biosmode-acceptance`** ([`basic_probe_biosmode.py`](probes/basic/basic_probe_biosmode.py)): INITXT .. INIMLT, SETTXT .. SETMLT,
-      CHGMOD 0..3 called from SCREEN 0; $F3B0..$F3E6, NAMBAS..ATRBAS and SCRMOD / OLDSCR copied
-      BEFORE and AFTER the call, and a row compares only what either machine's call changed
-      (a first cut compared absolute values and called the starting state the entries' fault,
-      [`biosmode_run0.out`](scratchpad/biosmode_run0.out)). **INIGRP / INIMLT (and CHGMOD 2 / 3) DIVERGED**: C-BIOS set NAMBAS /
-      CGPBAS to the graphics tables, the VG-8020 leaves them at the SCREEN 0 values
-      ([`biosmode_run1.out`](scratchpad/biosmode_run1.out)). **cbios-repack/grpbase.patch** (#23): those stores padded in place,
-      C-BIOS's SCREEN 2 / 3 CLS (the one reader that leaned on them) from GRPCGP / MLTCGP --
-      22 bytes, nothing moves; zerobas's own NAMBAS readers (the line editor, the key row) are
-      text-mode only. After: **12 / 12 SAME** ([`biosmode_run2.out`](scratchpad/biosmode_run2.out)); CLS in SCREEN 2 still clears as
-      the VG-8020's ([`grpbase_cls.out`](scratchpad/grpbase_cls.out)).
       - [x] **Two power-on work-area defaults differ: CLIKSW and CLMLST** -- 🎚️ TIER 3 —
             at the prompt after boot the VG-8020 has CLIKSW ($F3DB) = 1 (key click on) and
             CLMLST ($F3B2) = 14; zerobas 0 and 0 ([`biosmode_run2.out`](scratchpad/biosmode_run2.out), "already apart" on every

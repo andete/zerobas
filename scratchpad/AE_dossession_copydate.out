@@ -1,0 +1,523 @@
+ROW boot      '(wait)'                                 SAME
+ROW date      ''                                       SAME
+ROW dir       'DIR'                                    SAME
+ROW dirw      'DIR /W'                                 SAME
+ROW type      'TYPE HELLO.TXT'                         SAME
+ROW copy      'COPY HELLO.TXT COPY1.TXT'               SAME
+ROW dircopy   'DIR COPY1.TXT'                          DIVERGES
+   CF W=32 CSR=3,24
+   CF |  SPRITES1 BAS    SPRITES2 BAS
+   CF |  SCROLL   BAS    SDR      COM
+   CF |  SDR      TXT    SPLIT1   ASM
+   CF |  SCORES   HIG    SPLIT1   COM
+   CF |  SPLIT2   ASM    SPLIT2   COM
+   CF |  SPLIT3   ASM    SPLIT3   COM
+   CF |  SPLIT4   ASM    SPLIT4   COM
+   CF |  HELLO    TXT    README   TXT
+   CF |  TEST     BAS    MOD      BAS
+   CF |  MUS      BAS    SCR0     BAS
+   CF |  RYTHM    BAS    SIMPLE   BAS
+   CF |        42 files
+   CF |    374784 bytes free
+   CF |  A>TYPE HELLO.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  SPRITES1 BAS    SPRITES2 BAS
+   ZB |  SCROLL   BAS    SDR      COM
+   ZB |  SDR      TXT    SPLIT1   ASM
+   ZB |  SCORES   HIG    SPLIT1   COM
+   ZB |  SPLIT2   ASM    SPLIT2   COM
+   ZB |  SPLIT3   ASM    SPLIT3   COM
+   ZB |  SPLIT4   ASM    SPLIT4   COM
+   ZB |  HELLO    TXT    README   TXT
+   ZB |  TEST     BAS    MOD      BAS
+   ZB |  MUS      BAS    SCR0     BAS
+   ZB |  RYTHM    BAS    SIMPLE   BAS
+   ZB |        42 files
+   ZB |    374784 bytes free
+   ZB |  A>TYPE HELLO.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>
+ROW ren       'REN COPY1.TXT COPY2.TXT'                DIVERGES
+   CF W=32 CSR=3,24
+   CF |  SDR      TXT    SPLIT1   ASM
+   CF |  SCORES   HIG    SPLIT1   COM
+   CF |  SPLIT2   ASM    SPLIT2   COM
+   CF |  SPLIT3   ASM    SPLIT3   COM
+   CF |  SPLIT4   ASM    SPLIT4   COM
+   CF |  HELLO    TXT    README   TXT
+   CF |  TEST     BAS    MOD      BAS
+   CF |  MUS      BAS    SCR0     BAS
+   CF |  RYTHM    BAS    SIMPLE   BAS
+   CF |        42 files
+   CF |    374784 bytes free
+   CF |  A>TYPE HELLO.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  SDR      TXT    SPLIT1   ASM
+   ZB |  SCORES   HIG    SPLIT1   COM
+   ZB |  SPLIT2   ASM    SPLIT2   COM
+   ZB |  SPLIT3   ASM    SPLIT3   COM
+   ZB |  SPLIT4   ASM    SPLIT4   COM
+   ZB |  HELLO    TXT    README   TXT
+   ZB |  TEST     BAS    MOD      BAS
+   ZB |  MUS      BAS    SCR0     BAS
+   ZB |  RYTHM    BAS    SIMPLE   BAS
+   ZB |        42 files
+   ZB |    374784 bytes free
+   ZB |  A>TYPE HELLO.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>
+ROW dirren    'DIR COPY?.TXT'                          DIVERGES
+   CF W=32 CSR=3,24
+   CF |  SPLIT4   ASM    SPLIT4   COM
+   CF |  HELLO    TXT    README   TXT
+   CF |  TEST     BAS    MOD      BAS
+   CF |  MUS      BAS    SCR0     BAS
+   CF |  RYTHM    BAS    SIMPLE   BAS
+   CF |        42 files
+   CF |    374784 bytes free
+   CF |  A>TYPE HELLO.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  SPLIT4   ASM    SPLIT4   COM
+   ZB |  HELLO    TXT    README   TXT
+   ZB |  TEST     BAS    MOD      BAS
+   ZB |  MUS      BAS    SCR0     BAS
+   ZB |  RYTHM    BAS    SIMPLE   BAS
+   ZB |        42 files
+   ZB |    374784 bytes free
+   ZB |  A>TYPE HELLO.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>
+ROW concat    'COPY HELLO.TXT+HELLO.TXT CAT.TXT'       DIVERGES
+   CF W=32 CSR=3,24
+   CF |  MUS      BAS    SCR0     BAS
+   CF |  RYTHM    BAS    SIMPLE   BAS
+   CF |        42 files
+   CF |    374784 bytes free
+   CF |  A>TYPE HELLO.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  MUS      BAS    SCR0     BAS
+   ZB |  RYTHM    BAS    SIMPLE   BAS
+   ZB |        42 files
+   ZB |    374784 bytes free
+   ZB |  A>TYPE HELLO.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>
+ROW typecat   'TYPE CAT.TXT'                           DIVERGES
+   CF W=32 CSR=3,24
+   CF |  SECOND LINE
+   CF |
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>
+ROW del       'DEL COPY2.TXT'                          DIVERGES
+   CF W=32 CSR=3,24
+   CF |  A>COPY HELLO.TXT COPY1.TXT
+   CF |         1 file copied
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>DEL COPY2.TXT
+   CF |
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  A>COPY HELLO.TXT COPY1.TXT
+   ZB |         1 file copied
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>DEL COPY2.TXT
+   ZB |
+   ZB |  A>
+ROW dirdel    'DIR COPY?.TXT'                          DIVERGES
+   CF W=32 CSR=3,24
+   CF |  A>DIR COPY1.TXT
+   CF |  COPY1    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>DEL COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  File not found
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  A>DIR COPY1.TXT
+   ZB |  COPY1    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>DEL COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  File not found
+   ZB |  A>
+ROW delnone   'DEL NOSUCH.TXT'                         DIVERGES
+   CF W=32 CSR=3,24
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>DEL COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  File not found
+   CF |  A>DEL NOSUCH.TXT
+   CF |  File not found
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>DEL COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  File not found
+   ZB |  A>DEL NOSUCH.TXT
+   ZB |  File not found
+   ZB |  A>
+ROW typenone  'TYPE NOSUCH.TXT'                        DIVERGES
+   CF W=32 CSR=3,24
+   CF |  A>REN COPY1.TXT COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>DEL COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  File not found
+   CF |  A>DEL NOSUCH.TXT
+   CF |  File not found
+   CF |  A>TYPE NOSUCH.TXT
+   CF |  File not found
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  A>REN COPY1.TXT COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>DEL COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  File not found
+   ZB |  A>DEL NOSUCH.TXT
+   ZB |  File not found
+   ZB |  A>TYPE NOSUCH.TXT
+   ZB |  File not found
+   ZB |  A>
+ROW verify    'VERIFY ON'                              DIVERGES
+   CF W=32 CSR=3,24
+   CF |  A>DIR COPY?.TXT
+   CF |  COPY2    TXT      38 90-05-05
+   CF |         1 file
+   CF |    373760 bytes free
+   CF |  A>COPY HELLO.TXT+HELLO.TXT CA
+   CF |  T.TXT
+   CF |         1 file copied
+   CF |  A>TYPE CAT.TXT
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |  HELLO FROM THE SESSION
+   CF |  SECOND LINE
+   CF |
+   CF |  A>DEL COPY2.TXT
+   CF |
+   CF |  A>DIR COPY?.TXT
+   CF |  File not found
+   CF |  A>DEL NOSUCH.TXT
+   CF |  File not found
+   CF |  A>TYPE NOSUCH.TXT
+   CF |  File not found
+   CF |  A>VERIFY ON
+   CF |
+   CF |  A>
+   ZB W=32 CSR=3,24
+   ZB |  A>DIR COPY?.TXT
+   ZB |  COPY2    TXT      38 84-01-01
+   ZB |         1 file
+   ZB |    373760 bytes free
+   ZB |  A>COPY HELLO.TXT+HELLO.TXT CA
+   ZB |  T.TXT
+   ZB |         1 file copied
+   ZB |  A>TYPE CAT.TXT
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |  HELLO FROM THE SESSION
+   ZB |  SECOND LINE
+   ZB |
+   ZB |  A>DEL COPY2.TXT
+   ZB |
+   ZB |  A>DIR COPY?.TXT
+   ZB |  File not found
+   ZB |  A>DEL NOSUCH.TXT
+   ZB |  File not found
+   ZB |  A>TYPE NOSUCH.TXT
+   ZB |  File not found
+   ZB |  A>VERIFY ON
+   ZB |
+   ZB |  A>
+ROW datecmd   'DATE'                                   SAME
+ROW dateset   '11-23-87'                               SAME
+ROW rem       'REM A REMARK'                           SAME
+ROW bad       'NOSUCHCMD'                              SAME
+ROW disk      (the directory and file bytes after)     SAME
+
+FAIL: MSX-DOS commands typed at A> (11/21)
