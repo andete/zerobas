@@ -5,48 +5,140 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # `PCMPLY` ($0186) — play a memory area through the PCM
 
-> **Spec:** DRAFT 0 (2026-11-23): not measured. References: Panasonic FS-A1GT and FS-A1ST
-> ([`--row turbor`](../../../probes/bios/biosl_run.py)). Only the published interface below.
+> **Spec:** DRAFT 1 (2026-11-23): MEASURED on the Panasonic FS-A1GT and FS-A1ST (identical in every output but
+> timing jitter). Probes and runs: [xpcmply.asm](../../../probes/bios/spec/xpcmply.asm),
+> [scratchpad/AE_xpcmply_tr.out](../../../scratchpad/AE_xpcmply_tr.out) (decoded by
+> [scratchpad/xpcmply_decode.py](../../../scratchpad/xpcmply_decode.py):
+> [scratchpad/AE_xpcmply_tr_decoded.out](../../../scratchpad/AE_xpcmply_tr_decoded.out)); the `$00` code:
+> [xpcmcmp.asm](../../../probes/bios/spec/xpcmcmp.asm), [scratchpad/AE_xpcmcmp_tr.out](../../../scratchpad/AE_xpcmcmp_tr.out)
+> (decoded by [scratchpad/xpcmcmp_decode.py](../../../scratchpad/xpcmcmp_decode.py)); STOP held and the inputs that
+> do not return: [xpcmstop.asm](../../../probes/bios/spec/xpcmstop.asm),
+> [scratchpad/AE_xpcmstop_tr.out](../../../scratchpad/AE_xpcmstop_tr.out) (decoded by
+> [scratchpad/xpcmrec_decode.py](../../../scratchpad/xpcmrec_decode.py):
+> [scratchpad/AE_xpcmstop_tr_decoded.out](../../../scratchpad/AE_xpcmstop_tr_decoded.out)); CTRL+STOP pressed during the
+> sound: [xpcmmid.asm](../../../probes/bios/spec/xpcmmid.asm), [scratchpad/AE_xpcmmid_tr.out](../../../scratchpad/AE_xpcmmid_tr.out).
+> All timing is openMSX's model. No goldfish pass yet.
 
 Main-ROM entry, turbo R only. Listed by MAP's "MSX turbo R BIOS Entries" ([index](../index.md)); C-BIOS has no
 turbo R build.
 
 ## Summary
 
-Not measured yet.
+`PCMPLY` writes a block of bytes from RAM or VRAM to the PCM's D/A port $A4, one byte per sample, at the rate A bits
+1-0 select: about 15.7, 7.85, 5.23 or 3.92 kHz. A data byte `$00` is a code: `$00 n` plays n samples of `$80`
+(silence; n = 0 means 256). The sound is always played by the R800 — called from the Z80 it switches to R800 ROM
+mode and back. STOP (with or without CTRL) ends it with carry set and A = 2, HL / BC / D / E left where it stopped; a
+normal end returns A = 0, carry clear. Every register is changed, and it returns with interrupts enabled. With
+A = $08 and no key pressed the call plays one sample and never returns.
 
 ## The specification
 
 **Interface** [P MAP]: input `A = v 0 0 0 0 0 x x` (v = the data is in VRAM; xx = "quality parameter (speed: 0 = fast)"), HL = start address in RAM or VRAM, BC = length, D bit 0 = bit 17 of the length and E bit 0 = bit 17 of the start address when in VRAM. Output: carry set when aborted with CTRL-STOP. Registers: all.
 
-Everything else is [A] until measured.
+**Evidence.** `[XP n]` = case n of xpcmply (37 cases): per case CHGCPU to the start mode, every register loaded
+(the inputs per case, the rest distinct garbage), the VDP interrupt off, CALL $0186; then every register, the
+interrupt state, the S1990's register 6, GETCPU, ports $A4 / $A5 / $A7, $FCB1, the work-area cells that changed,
+every OUT to $A4, $A5, $E4, $E5 and $A7 during the call (openMSX watchpoints), and the emulated time between two
+breakpoints around the call. The data: P1 = $10, $11, ... (no $00) in RAM and VRAM; the rest of VRAM is $55.
+`[XK n]` = xpcmcmp case n (short patterns with $00). `[XS n]` = xpcmstop case n (keys held from before the call to
+after it, through `@keyset`). `[XM]` = xpcmmid (CTRL+STOP pressed while it plays, `@matrix`).
 
-## Cases to measure (a later unit)
+**What it plays** [M]:
+- One OUT $A4 per sample, the data byte as it is, preceded by OUT $A4,$80 and followed by OUT $A4,$80: 64 bytes give
+  66 OUTs, `80 10 11 ... 4F 80` [XP 0-7, 9-13, 19-30, 32-36]. Length 1: `80 10 80` [XP 16]; length 2: `80 10 11 80`
+  [XP 14, 15].
+- Port $A5: OUT $A5,$03 twice, at the start and at the end [XP, every logged case]. IN $A5 reads $83 before and after
+  (bits 1-0 as written, bit 7 set) [XP]. What the $A5 bits mean is not from a source read here [A].
+- **The `$00` code** [XK 0-17]: a `$00` byte and the byte after it are a pair: `$00 n` plays n samples of $80, and the
+  pair counts 2 bytes of the length: `10 00 05 20` → `10 80 80 80 80 80 20` (inside the framing $80s). n = 1, 2, 3,
+  $10, $7F, $80, $81, $FF give 1, 2, 3, 16, 127, 128, 129, 255 samples; **n = 0 gives 256** [XK 17]. It plays $80,
+  not the previous sample [XK 0]. Two pairs both count [XK 8]; a leading `$00` works the same [XK 7]; a `$00` as the
+  LAST byte of the length plays nothing (the byte after the block is not taken as its count) [XK 10, 11]. `$01`,
+  `$80`, `$FF` are plain samples [XK 4-6]. Cross-check: xpcmply's P2 table, 64 bytes holding 17 such pairs, plays
+  2938 samples (187.4 ms) [XP 8], exactly what the rule predicts. MAP's interface line does not mention this code.
+- **RAM** (A bit 7 = 0): HL = the address, BC = the length (1-128 logged; 0 and > 128 not run in RAM); D and E are
+  not used — D = E = $FE plays 64 bytes and returns DE = $FEFE [XP 30]. Sources in page 2 and page 3 play as written
+  [XP 0, 13]. **Page 1 is not the caller's slot during the call:** a first run (not kept) played this cartridge's
+  $6000 and a span crossing $7FFF / $8000, and the bytes sent to $A4 were not the cartridge's. What page 1 holds then
+  is another slot's content (a ROM, by every indication), which the clean room does not read: that log was discarded
+  and the cases removed. So "the cartridge's page 1 is not what is played" is [M]; what a page-0 / page-1 source
+  plays is not specified here.
+- **VRAM** (A bit 7 = 1): the address is E:HL — E = 0 plays $04000 [XP 9], E = 1 plays $14000 [XP 10]. The address
+  runs on across $03FFF / $04000 [XP 32] and across $0FFFF / $10000 (17 bits: $A0... at $0FFE0, then $E0... at
+  $10000) [XP 18]. E = $FE does NOT play $04000 (it played $55s), so E's bits above bit 0 are not ignored [XP 33];
+  exactly how they count [A]. The length is D:BC — D = 1 plays 65600 samples (4.179 s) [XP 17], and **D = 2 plays
+  131136 (8.353 s)** [XP 31], so D is more than "bit 0". D = $FF: with CTRL+STOP held it aborts at once [XS 13];
+  without a key it did not return within about 115 s in a first run (not kept) — $FF0040 samples would take about
+  18 minutes [A].
+- Length 0 (VRAM): with CTRL+STOP held it aborts like any other [XS 12]; without a key not run in a kept run.
 
-- Every A bit separately and together, in each CPU mode (Z80, R800 ROM, R800 DRAM: the call may switch the CPU or
-  depend on it -- record GETCPU and the S1990's register 6 before and after, as
-  [CHGCPU](CHGCPU.md)'s probe does).
-- The quality / speed values 0-3: the time per sample (the S1990 timer, ports $E6 / $E7) and the number of PCM port
-  writes (an `@portlog` on the PCM ports; which ports, from a published I/O map, to be named first).
-- RAM vs VRAM (bit 7), the 17-bit VRAM address and length in D / E, a length of 0, an area that crosses $8000 / $C000
-  or the end of VRAM.
-- CTRL-STOP during the call (`@matrix`): carry, A, where it stopped; and a run to the end: carry clear?
-- Every register, flag and the interrupt state on return (the registers loaded with distinct garbage); the work-area
-  cells that change; the slot registers.
+**The rate, A bits 1-0** [M]: the time per sample = (128 − 64 samples) / 64, both machines; R800 DRAM [XP 0-7],
+from the Z80 [XP 21-25, 34-36]; R800 ROM rate code 0: 63.8-63.9 µs [XP 26, 28]:
 
-- FS-A1GT vs FS-A1ST, per case.
+| A bits 1-0 | µs per sample (R800 DRAM) | rate | from the Z80 |
+|---|---|---|---|
+| 0 | 63.6-63.9 | ≈ 15.7 kHz | 63.4 |
+| 1 | 127.4 | ≈ 7.85 kHz | 126.5-127.6 |
+| 2 | 191.1 | ≈ 5.23 kHz | 190.9 |
+| 3 | 254.8 | ≈ 3.92 kHz | 254.0-254.9 |
+
+So 1, 2, 3, 4 periods of one ≈ 63.6 µs clock; that this clock is the 15.75 kHz line rate is [A]. The fixed cost of a
+call is 190-240 µs in the R800 and 850-960 µs from the Z80 [same cases]. Over 65600 samples: 63.70 µs per sample
+[XP 17]. VRAM as the source: the same [XP 9, 12].
+
+**A bits 6-2** [M]: bit 2 changes nothing (A = $04 plays exactly like A = $00) [XP 11]. **A = $08 never returns**: a
+first run logged OUT $A4,$80, the first sample, then nothing for 140 s; in the kept run the call is entered and does
+not come back within 115 s [XS 14]. With CTRL+STOP held, A = $08, $10, $20, $40 and $7C all abort at once like A = $00
+[XS 7-11]; whether $10, $20, $40, $7C also hang without a key was not run ($7C did, in a first run not kept).
+
+**The CPU** [M]:
+- In R800 ROM and DRAM mode the call stays in the mode: one OUT $E4,6 (selecting the S1990's register 6, read), no
+  OUT to $E5 or $A7; GETCPU and R#6 unchanged after [XP 0-20, 26-28, 30-33].
+- **Called from the Z80 it plays in R800 ROM mode:** OUT $E4,6 three times, OUT $E5 = $40, $60, $60 (R800 ROM, then
+  the Z80 as [CHGCPU](CHGCPU.md) writes it), OUT $A7 = $00 then $02, and $FFFD / $FFFE (MAP: CHGCPU's stack pointer)
+  changes from $E7E8 to $E7D8 [XP 21-25, 29, 34-36]. It returns in the Z80 (cpusnap, GETCPU 0, R#6 $60), $FCB1 back
+  at $02. The Z80 never plays the sound; port $A7's bit 7 (the LED bit on [CHGCPU](CHGCPU.md)) is 0 meanwhile [M].
+
+**Return state** [M]:
+- Played to the end: A = 0, carry clear; F = $44 (Z and P/V) for entry F $00, $6C for entry F $FF (bits 5 and 3 as
+  well) [XP 0, 20]. HL = the address after the last byte read (RAM: HL + BC; VRAM: the low 16 bits), BC = 0; VRAM:
+  D = 0 and E = bits 16 and up of the end address (E = 1 after $0FFE0 + 64, E = 2 after $04000 + $20040)
+  [XP 17, 18, 31]; RAM: DE kept [XP 30]. Every other register is changed, to the same values in every case on both
+  machines: IX = $71DB, IY = $0054, AF' = $0044, BC' = $F400, DE' = $F300, HL' = $FCC5 [XP 0-36].
+- **Interrupts enabled** on return, entered DI or EI [XP 0-36; 19 entered EI].
+- No work-area cell in $F380-$FFFE changes in the R800 modes (VDP interrupt off) [XP]; from the Z80 only $FFFD
+  [XP 21-25, 29, 34-36]. Slots: $A8 and page 3's secondary register as on entry ($F4 / $00) [XP].
+
+**STOP** [M]:
+- STOP held at entry, with or without CTRL: nothing is played (OUT $A4 $80, $80 only), A = 2, F = $45 (carry set),
+  HL, BC and DE as on entry, interrupts enabled — in the Z80, R800 ROM and DRAM, RAM and VRAM [XS 1, 2, 4-6]. CTRL
+  alone changes nothing [XS 3].
+- CTRL+STOP pressed during the sound (65600 samples at rate code 3 from VRAM $04000): the call returned 87.4 ms later
+  with A = 2, carry set, HL = $4156 and E = 0 (the next address), D:BC = $00:$FEEA = the samples left (65600 − 342)
+  [XM]. So an abort leaves HL / E / D:BC where the sound stopped, and a second call with them would continue [M for
+  the registers; the continuation A].
 
 ## Differences
 
-Not measured.
+**FS-A1GT vs FS-A1ST:** none in any output of any case — registers, flags, interrupt state, port writes, S1990,
+$FCB1, $FFFD, work-area changes — beyond up to 100 µs of timing jitter per call (the start phase) [XP, XK, XS, XM].
+
+**C-BIOS / zerobas:** no turbo R build; nothing to compare.
 
 ## Open (not measured)
 
-Everything above.
+- A source in page 0 or page 1 (the clean room forbids reading what the call would play there).
+- RAM lengths above 128 and length 0 in RAM; a RAM area crossing $BFFF / $C000 (the probe's capture sits there) or
+  $FFFF (it would run into page 0); VRAM length 0 without a key.
+- Exactly how E's bits above bit 0 and D's bits form the VRAM address and length (E = $FE, D = 2 measured only).
+- Whether A = $10, $20, $40 hang without a key as $08 does (each needs a run of its own).
+- What the sound is: openMSX's audio output was not recorded, only the OUTs; the meaning of the $A5 bits.
+- Real-hardware timing; stack depth.
+- The MSX Turbo-R Technical Handbook's text for PCMPLY (not read; the interface line is MAP's).
 
 ## Related pages
 
-[turbo R index](../index.md); [CHGCPU](CHGCPU.md); [GETCPU](GETCPU.md).
+[turbo R index](../index.md); [PCMREC](PCMREC.md); [CHGCPU](CHGCPU.md); [GETCPU](GETCPU.md).
 
 ## Tests that cover it
 
