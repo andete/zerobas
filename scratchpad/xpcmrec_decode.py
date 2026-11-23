@@ -4,6 +4,7 @@
 """Decode the run file of probes/bios/spec/xpcmrec.asm or xpcmstop.asm (same record; --row turbor), both machines.
 
     python3 scratchpad/xpcmrec_decode.py scratchpad/AE_xpcmrec_tr.out
+    python3 scratchpad/xpcmrec_decode.py --entryf scratchpad/AE_xpcmrec2_tr.out   # xpcmrec2.asm: entry F at +210
 """
 import re
 import sys
@@ -27,7 +28,10 @@ def w(b, i):
 
 
 def main():
-    c = caps(sys.argv[1])
+    args = sys.argv[1:]
+    entryf = "--entryf" in args
+    args = [a for a in args if a != "--entryf"]
+    c = caps(args[0])
     for m in c:
         print(f"{m}: cases done {c[m][0]}")
     for k in range(max(x[0] for x in c.values()) + 1):
@@ -47,7 +51,7 @@ def main():
             R = dict(zip(NAMES, (w(d, i) for i in range(0, 26, 2))))
             n4, n5, ne4, ne5, na7 = w(b, 48), w(b, 50), b[55], b[56], b[57]
             print(f"  {m}: start={b[1]:02X} A={b[2]:02X} keys={KEYS[b[3]]} HL={w(b, 4):04X} BC={w(b, 6):04X} "
-                  f"D={b[8]:02X} E={b[9]:02X} | R6 {b[10]:02X}->{b[52]:02X} cpu {b[12]}->{b[17]} dt={t1 - t0}us "
+                  f"D={b[8]:02X} E={b[9]:02X}" + (f" F={b[210]:02X}" if entryf else "") + f" | R6 {b[10]:02X}->{b[52]:02X} cpu {b[12]}->{b[17]} dt={t1 - t0}us "
                   f"A4in={b[53]:02X} A5in={b[54]:02X}")
             print("     out: " + " ".join(f"{x}={R[x]:04X}" for x in NAMES[3:]) +
                   f" iff={'EI' if R['iff1'] & 4 else 'DI'} slot={R['slot']:04X}")

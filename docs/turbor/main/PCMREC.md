@@ -11,8 +11,10 @@ SPDX-License-Identifier: BSD-2-Clause
 > [scratchpad/AE_xpcmrec_tr.out](../../../scratchpad/AE_xpcmrec_tr.out); a threshold with no key:
 > [xpcmthr.asm](../../../probes/bios/spec/xpcmthr.asm), [scratchpad/AE_xpcmthr_tr.out](../../../scratchpad/AE_xpcmthr_tr.out);
 > both decoded by [scratchpad/xpcmrec_decode.py](../../../scratchpad/xpcmrec_decode.py)
-> ([scratchpad/AE_xpcmrec_tr_decoded.out](../../../scratchpad/AE_xpcmrec_tr_decoded.out)). All timing is openMSX's model.
-> No goldfish pass yet.
+> ([scratchpad/AE_xpcmrec_tr_decoded.out](../../../scratchpad/AE_xpcmrec_tr_decoded.out)); the goldfish pass's cases:
+> [xpcmrec2.asm](../../../probes/bios/spec/xpcmrec2.asm), [scratchpad/AE_xpcmrec2_tr.out](../../../scratchpad/AE_xpcmrec2_tr.out)
+> ([decoded](../../../scratchpad/AE_xpcmrec2_tr_decoded.out) with `--entryf`). All timing is openMSX's model.
+> Goldfish pass 1 (test writer) 2026-11-23: 8 findings, 3 measured, 2 moved to open.
 
 Main-ROM entry, turbo R only. Listed by MAP's "MSX turbo R BIOS Entries" ([index](../index.md)); C-BIOS has no
 turbo R build.
@@ -23,7 +25,7 @@ turbo R build.
 approximation — and stores one byte per sample from HL on, in RAM or VRAM. With no input, every sample reads $80, so
 a recording fills the area with $80. Rate code 0 (A bits 1-0 = 0) is accepted only in R800 DRAM mode: in R800 ROM
 mode, and from the Z80 (which the call switches to R800 ROM mode), it is refused with A = 1 and carry set, nothing
-written. STOP ends it with A = 2 and carry set. With a threshold (A bits 6-3) or the compression bit (A bit 2) and
+written. STOP (with or without CTRL) ends it with A = 2 and carry set, in every CPU mode, into RAM or VRAM. With a threshold (A bits 6-3) or the compression bit (A bit 2) and
 this silent input, the call never returns unless STOP is pressed. Every register is changed; it returns with
 interrupts enabled.
 
@@ -36,28 +38,37 @@ interrupts enabled.
 before the call to after it), every register loaded (A, HL, BC, D, E per case, F $00, the rest distinct garbage),
 CALL $0189; then every register, the interrupt state, R#6, IN $A4 / $A5, the buffer's first 48 bytes, VRAM
 $04000-$0403F (the `@vram` span), every OUT to $A4, $A5, $E4, $E5, $A7 during the call (counts; the first 64 / 16 /
-8 bytes), the emulated time across the call. `[XT 1]` = xpcmthr case 1. D = E = 0 in every case.
+8 bytes), the emulated time across the call. `[XT n]` = xpcmthr case n (case 0 a control, case 1 a threshold).
+D = E = 0 and F = $00 on entry in every case of xpcmrec. `[XR2 n]` = case n of xpcmrec2 (13 cases, the same code and
+record plus the entry F per case: STOP from the Z80, R800 ROM mode and into VRAM; entry F $FF / $28 / $44; D = E =
+$FE).
 
 **What a recording does** (R800 DRAM mode, A = 0-3) [M]:
 - **Per sample, eight OUTs to $A4**: `C0 A0 90 88 84 82 81 80` — a successive approximation, one bit per write from
   bit 6 down, ending on the result [XR 0-8]. With nothing plugged in, no tested bit is kept and the result is $80 for
-  every sample. That the comparator is read on port $A5 bit 7 (IN $A5 reads $83 before and after) is [A].
+  every sample. That the comparator is read on port $A5 bit 7 is [A] (IN $A5 reads $83 after the call [XR]; before
+  a call only xpcmply read it, also $83 — [PCMPLY](PCMPLY.md)).
 - **Port $A5**: OUT $A5,$0C first, then two OUTs per conversion — `18 08` for the first four, `1C 0C` after — and
   OUT $A5,$03 last [XR 0-8, 12]. What the bits mean [A].
-- **Five extra conversions**: a length of n makes n + 5 conversions (OUT $A4: 2 + 8 × (n + 5) — 50 for n = 1, 170
-  for 16, 426 for 48) and stores n bytes [XR 0-8, 12]. Whether the first five are discarded or the last [A]; the
-  stored bytes are all $80 either way.
+- **Five extra conversions, split 4 + 1**: a length of n makes n + 5 conversions (OUT $A4: 2 + 8 × (n + 5) — 50 for
+  n = 1, 170 for 16, 426 for 48) and stores n bytes [XR 0-8, 12]. The $A5 log splits them: four conversions with
+  `18 08`, then n + 1 with `1C 0C` (n = 1: 4 + 2 [XR 12]; n = 16: 4 + 17 [XR 0]), and a STOP held at entry ends after
+  exactly the four `18 08` ones [XR 18]. So four conversions come before any storing kind, and one of the n + 1 is not
+  stored [M]; which one (the first or the last) needs a real input [A] — the stored bytes are all $80 either way.
 - **Stored**: n bytes of $80 from HL; the byte after the area keeps its $5A [XR 0-7, 12]. VRAM (A bit 7 = 1, HL =
-  $4000, E = 0): VRAM $04000-$0400F := $80, $04010 on keeps its $5A [XR 8]. D and E as in [PCMPLY](PCMPLY.md) were
-  not run.
-- **Return**: A = 0, F = $44 (Z, P/V; carry clear) for entry F $00; HL = HL + BC (VRAM: $4010), BC = 0, DE = 0;
+  $4000, E = 0): VRAM $04000-$0400F := $80, $04010 on keeps its $5A [XR 8]. D = E = $FE in RAM records the same 16
+  bytes [XR2 11]; D and E with VRAM were not run.
+- **Return**: A = 0, F = $44 (Z, P/V; carry clear) plus **bits 5 and 3 of the entry F**: entry F $00, $44 → $44,
+  $28, $FF → $6C [XR 0-8, XR2 6-8, 12]; HL = HL + BC (VRAM: $4010), BC = 0; **D = 0, E kept** (D = E = $FE in RAM
+  returns DE = $00FE [XR2 11]; with D = E = 0 that read as DE = 0 [XR 0-8]);
   IX = $7000, IY = $0000 (A = 0-3) / $0100 (A = $80); AF' = $0044, BC' = $F400, DE' = $F300, HL' = $FCC5 (as PCMPLY);
   **interrupts enabled** [XR 0-8, 11-17]. Slots as on entry ($A8 $F4, page 3's secondary $00) [XR].
 
 **The rate code and the CPU** [M]:
 - **Rate code 0 is refused outside R800 DRAM mode**: in R800 ROM mode and from the Z80, A = $00 returns at once with
   A = 1, F = $01 (carry set), HL and BC as on entry, nothing stored (the buffer keeps its $5A), IX = $7042; the only
-  OUTs are $A4 $80, $80 and $A5 $0C, $03 [XR 9, 10]. Z80 with A = $04 (rate code 0, c = 1): the same [XR 24]. In
+  OUTs are $A4 $80, $80 and $A5 $0C, $03 [XR 9, 10]. Z80 with A = $04 (rate code 0, c = 1) and CTRL+STOP held: the
+  same refusal, A = 1 — so the rate-code refusal comes before STOP's A = 2 [XR 24]. In
   DRAM mode rate code 0 records [XR 0, 4]. Rate codes 1-3 record in R800 ROM mode [XR 13-15] and from the Z80 [XR 11,
   16, 17].
 - **From the Z80 the call records in R800 ROM mode**, as PCMPLY plays: OUT $E5 = $40, $60, $60, OUT $A7 = $00, $02
@@ -67,7 +78,10 @@ $04000-$0403F (the `@vram` span), every OUT to $A4, $A5, $E4, $E5, $A7 during th
 - **Time per sample** (R800 DRAM, (48 − 16 samples) / 32, FS-A1GT / FS-A1ST): rate code 0 111.9 / 111.5 µs, 1 95.8 /
   95.5, 2 105.6 / 111.4, 3 58.2 / 58.5 [XR 0-7]; a first run (not kept) gave 69 µs for rate code 3. So with this idle
   input the rate code does NOT set the recording rate the way it sets PCMPLY's (63.6 × 1-4 µs), and the figures move
-  between runs [M]; why [A]. 16 samples in R800 ROM mode: rate code 1 3437 / 3435 µs, 2 3850 / 3537, 3 4004 / 3499
+  between runs [M]; why [A]. The control case of xpcmthr (R800 DRAM, rate code 0, 16) records like [XR 0]: 2682 / 2702
+  µs, 16 × $80, the same OUTs [XT 0]. From the Z80 there is one length per rate code, so no per-sample figure: rate
+  code 1, 16 bytes 3752 / 3881 µs [XR 16]; 2, 16 bytes 4470 / 4174 [XR 17]; 3, 48 bytes 10078 / 8873 [XR 11]. 16
+  samples in R800 ROM mode: rate code 1 3437 / 3435 µs, 2 3850 / 3537, 3 4004 / 3499
   [XR 13-15]; in DRAM mode 2447 / 2449, 2706 / 2706, 1949 / 1948 [XR 1-3].
 
 **Threshold and compression with a silent input** [M]:
@@ -79,7 +93,11 @@ $04000-$0403F (the `@vram` span), every OUT to $A4, $A5, $E4, $E5, $A7 during th
   recording (below); IY = $0008 / $0078 then.
 
 **STOP** [M]: STOP held at entry, with or without CTRL: four conversions (OUT $A4: 2 + 4 × 8 = 34), nothing stored
-(the buffer keeps its $5A), A = 2, F = $45 (carry set), HL and BC as on entry, interrupts enabled [XR 18, 19, 21-23].
+(the buffer keeps its $5A), A = 2, F = $45 (carry set; $6D for entry F $FF and $28 — bits 5 and 3 as on a normal
+return [XR2 9, 10]), HL and BC as on entry, interrupts enabled — in R800 DRAM mode [XR 18, 19, 21-23], from the Z80
+and from R800 ROM mode at rate code 1, CTRL+STOP and STOP alone each [XR2 0-3], and into VRAM ($04000 keeps its $5A)
+from R800 DRAM mode and from the Z80 [XR2 4, 5]. From the Z80 the call still switches to R800 ROM mode and back
+(OUT $E5 $40, $60, $60; OUT $A7 $00, $02) [XR2 0, 1, 5].
 CTRL alone changes nothing (a full recording) [XR 20]. STOP pressed in the middle of a recording was not run (the
 harness's `@matrix` presses once per run; PCMPLY's run used it — [xpcmmid.asm](../../../probes/bios/spec/xpcmmid.asm)).
 
@@ -90,21 +108,24 @@ format of a compressed recording (c = 1 never ends on silence), which comparator
 approximation. openMSX does have a pluggable wave-file input for the turbo R PCM (`wavinput` and the
 `audio-inputfilename` setting, by the openMSX binary's own strings), but
 [biosl_run.py](../../../probes/bios/biosl_run.py) has no directive to feed it a file; a later unit can add one
-(`@plug` plugs a device but cannot name the file). Also not run: D / E in RAM and VRAM, VRAM lengths above 64 KB,
-lengths 0 and > 48, entry F $FF, the work-area cells (not compared in this probe), real-hardware timing, and the MSX
+(`@plug` plugs a device but cannot name the file). Also not run: D / E with VRAM, VRAM lengths above 64 KB,
+lengths 0 and > 48, the work-area cells (not compared in this probe), real-hardware timing, and the MSX
 Turbo-R Technical Handbook's text (not read; the interface line is MAP's).
 
 ## Differences
 
 **FS-A1GT vs FS-A1ST:** none in any output of any case — registers, flags, interrupt state, port writes, stored bytes
-— beyond timing (up to 500 µs per call in R800 ROM mode) [XR, XT].
+— beyond timing (up to 500 µs per call in R800 ROM mode; 1.2 ms on [XR 11]) [XR, XT, XR2], and IN $A4 after the call,
+which reads $00 or $03 on one model and the other in [XR 14] (and in two cases of a first xpcmrec2 run, not kept):
+what reading the D/A port returns is not known [A], so it is not counted as an output.
 
 **C-BIOS / zerobas:** no turbo R build; nothing to compare.
 
 ## Open (not measured)
 
 See "What cannot be measured here" above, plus: STOP pressed during a recording; why rate code 0 needs DRAM mode
-(only that it does, in openMSX).
+(only that it does, in openMSX); which of the n + 1 storing conversions is not stored (needs a real input); what IN
+$A4 reads; the Z80's time per sample (two lengths at one rate code).
 
 ## Related pages
 
