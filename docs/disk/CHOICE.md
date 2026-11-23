@@ -94,6 +94,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 | R-CH-READ | interrupts ON after the set-up read, as row N's; C $01 [M] | holds (row N) [M] | interrupts ON, as row N's; C $3C [M] |
 | every other rule | holds [M] | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models, except CHOICE's HL: $782A (the A1WSX $7852), a pointer into the turbo R's own disk ROM; A / F kept, MTOFF's A = 4 and DSKIO's C / interrupt state as on the A1WSX [M] ([AE_trall/xchoice1.out](../../scratchpad/AE_trall/xchoice1.out), [AE_trall/xchoice2.out](../../scratchpad/AE_trall/xchoice2.out), [AE_trall/xdrvtbl.out](../../scratchpad/AE_trall/xdrvtbl.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** The text CHOICE points to (the ROM's own bytes: not readable in the clean room); whether HL 0

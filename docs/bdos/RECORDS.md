@@ -97,6 +97,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 
 With a clock chip: every FCB's date and time words are the clock's (that day, $5D77, and the time of day), not $0821 (1984-01-01) and 0, on all three [M]; with the stamps set aside these rules hold, and as written they do not: R-BR-WSEQ, R-BR-RSEQ, R-BR-SETRND, R-BR-RND, R-BR-SETRND2, R-BR-SEQ2, R-BR-RND2, R-BR-SETRND3.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every call result (A, F, HL, the FCB fields, the DTA bytes a call reads or writes) is the FS-A1WSX's, on both models: the FS-A1WSX column above holds. The bytes that differ are not the calls': each FCB's time word (the clock chip's time of day, which follows the host clock), power-on RAM in fields no case writes, and the never-written record's bytes already declared UNSTABLE above (XR 13, XR2 11) [M] ([AE_trall/xbrec1.out](../../scratchpad/AE_trall/xbrec1.out), [AE_trall/xbrec2.out](../../scratchpad/AE_trall/xbrec2.out), [AE_trall/xbrec3.out](../../scratchpad/AE_trall/xbrec3.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Records past the first extent (CR past 127, the extent byte: FILES.md R-BF-SEQ3 measured the

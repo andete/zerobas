@@ -109,6 +109,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 
 The slot map, not the call: DRVTBL's slot byte and H.PHYD's are $8B on the HB-F900 and FS-A1WSX, $8F on the NMS 8250; 2 drives on all three [M].
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds (DRVTBL / H.PHYD slot $8B, 2 drives) [M] ([AE_trall/xdsk1.out](../../scratchpad/AE_trall/xdsk1.out), [AE_trall/xdskio1.out](../../scratchpad/AE_trall/xdskio1.out), [AE_trall/xdskio2.out](../../scratchpad/AE_trall/xdskio2.out), [AE_trall/xdskio2p.out](../../scratchpad/AE_trall/xdskio2p.out), [AE_trall/xdrvtbl.out](../../scratchpad/AE_trall/xdrvtbl.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** A read that fails in the MIDDLE of the disk (a bad CRC, a missing sector -- every failure here

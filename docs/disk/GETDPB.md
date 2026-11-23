@@ -74,6 +74,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 | R-GD-REGS | A = B - $F8 (row N's index); HL $74CA + 18 x (B - $F7) [M] | holds (row N) [M] | A = B - $F8; interrupts ON; HL the NMS 1200's [M] |
 | every other rule | holds [M] | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds; xdent5's one other byte is DSKCHG's HL (a disk work-area pointer, [DSKCHG](DSKCHG.md)), not GETDPB's [M] ([AE_trall/xdent1.out](../../scratchpad/AE_trall/xdent1.out), [AE_trall/xdent2.out](../../scratchpad/AE_trall/xdent2.out), [AE_trall/xdent3.out](../../scratchpad/AE_trall/xdent3.out), [AE_trall/xdent5.out](../../scratchpad/AE_trall/xdent5.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Media bytes other than $F8, $F9, $FA, $FC, $FD, $FE, $FF ($FB -- A and HL's pattern predicts

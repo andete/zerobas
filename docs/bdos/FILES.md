@@ -124,6 +124,8 @@ With a clock chip: every FCB's date and time words are the clock's (that day, $5
 
 **[A]** Whether the month is lost by SDATE or by the stamp: SDATE y-m-15, then GDATE, for m = 1 .. 12 with no FMAKE between, on each machine. (SYSTEM.md's SDATE / GDATE round trips -- 2026-11-22, 2026-12-01, 2026-01-01 -- hold on all three.)
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every call result (A, F, HL, the FCB fields, the DTA bytes a call reads or writes) is the FS-A1WSX's, on both models: the FS-A1WSX column above holds, FMAKE's $5A8F after SDATE 2025-06-15 included. The bytes that differ are not the calls': each FCB's time word (the clock chip's time of day, which follows the host clock) and power-on RAM in fields no case writes [M] ([AE_trall/xbfile1.out](../../scratchpad/AE_trall/xbfile1.out), [AE_trall/xbfile2.out](../../scratchpad/AE_trall/xbfile2.out), [AE_trall/xbfile3.out](../../scratchpad/AE_trall/xbfile3.out), [AE_trall/xbfile4.out](../../scratchpad/AE_trall/xbfile4.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** FOPEN / FSIZE / FREN / FDEL / SFIRST over a PRE-FILLED FCB (only FMAKE and FSIZE's +33 .. +36

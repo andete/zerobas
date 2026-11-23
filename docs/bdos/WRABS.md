@@ -91,6 +91,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 
 **[A]** Whether the NMS 8250 loses the first WRABS after start-up or sector 20 itself (sector 20 is on track 1, as PHYDIO.md's R-PD-FIRSTE first read): measure with WRABS 21 before 20, 20 written twice, and an RDABS before the first write.
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every call result (A, F, HL, the FCB fields, the DTA bytes a call reads or writes) is the FS-A1WSX's, on both models: the FS-A1WSX column above holds; RDABS reads sector 20 back as written (the NMS 8250's lost first WRABS does not occur). The bytes that differ are the case FCBs' unused bytes, which no case writes (power-on RAM) [M] ([AE_trall/xbabs1.out](../../scratchpad/AE_trall/xbabs1.out), [AE_trall/xbabs2.out](../../scratchpad/AE_trall/xbabs2.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** WRABS past the disk's last sector: the VG-8020 + NMS 1200 does not return within 60 s (an

@@ -90,6 +90,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 | R-DC-F | HL $74EE (GETDPB's $F9 block on this ROM) [M] | holds (row N) [M] | holds (HL $7429) [M] |
 | every other rule | holds [M] | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds except HL after DSKCHG on the empty drive (xdent5 / xdent6, R-DC-NRREGS): $EF80 on the FS-A1GT, $EF85 on the FS-A1ST as on the A1WSX -- a work-area pointer, and the A1GT's disk work area sits 5 bytes lower [M] ([AE_trall/xdent1.out](../../scratchpad/AE_trall/xdent1.out), [AE_trall/xdent2.out](../../scratchpad/AE_trall/xdent2.out), [AE_trall/xdent3.out](../../scratchpad/AE_trall/xdent3.out), [AE_trall/xdent4.out](../../scratchpad/AE_trall/xdent4.out), [AE_trall/xdent5.out](../../scratchpad/AE_trall/xdent5.out), [AE_trall/xdent6.out](../../scratchpad/AE_trall/xdent6.out), [AE_trall/xdent7.out](../../scratchpad/AE_trall/xdent7.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** WHICH on-disk byte it compares and fills from -- the boot sector's media byte or the FAT ID,

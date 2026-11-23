@@ -80,6 +80,8 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+),
 | R-DF-BADF | F $09, $0D, $49, $89 [M] | F $BB, $01, $41, $29, $A9, $A1, $05 [M] | holds [M] |
 | every other rule | holds [M] | holds [M] | holds [M] |
 
+**On the turbo R** (FS-A1GT / FS-A1ST, measured 2026-11-23, D-TRSPEC): every case gives the same bytes as on the FS-A1WSX, on both models: the FS-A1WSX column above holds; xdfmt2 / xdfmt3 have readings on both models [M] ([AE_trall/xdfmt1.out](../../scratchpad/AE_trall/xdfmt1.out), [AE_trall/xdfmt2.out](../../scratchpad/AE_trall/xdfmt2.out), [AE_trall/xdfmt3.out](../../scratchpad/AE_trall/xdfmt3.out); overview: [turbor/remeasured.md](../turbor/remeasured.md)).
+
 ## Open (not measured)
 
 - **[A]** Whether a format writes the sides and tracks it declares: openMSX's .dsk image is a plain
