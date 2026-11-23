@@ -72,7 +72,7 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 | R-OD-F | NMS 8250: holds [M]. HB-F900: F $30 after that $85, $98 after that $FF [M]. | as the HB-F900 [M] |
 | every other rule | holds [M] | holds [M] |
 
-Machine differences, not the call's: the conversion of $85 / $FF follows the machine's character set -- the two Japanese machines convert, the EU NMS 8250 does not [M]; that a Japanese MSX1 does the same is [A], and a Japanese MSX1 reference would tell.
+Machine differences, not the call's: the conversion of $85 / $FF follows the machine's character set -- the two Japanese machines convert, the EU NMS 8250 does not [M]; and the Japanese MSX1 does the same: the CF-3300 gives exactly the HB-F900's four bytes ($85 -> $20 with A $20 / F $30, $FF -> $DF with A $DF / F $98) [M] ([scratchpad/AE_xoutdlp_cf3300.out](../../scratchpad/AE_xoutdlp_cf3300.out)). So the three rows above are the Japanese machines', not the MSX2's: on an EU MSX2 every rule holds.
 
 ## Open (not measured)
 

@@ -89,8 +89,9 @@ Measured 2026-11-23 on the HB-F900 and NMS 8250 (MSX2) and the FS-A1WSX (MSX2+):
 
 | rule | MSX2 (HB-F900, NMS 8250) | MSX2+ (FS-A1WSX) |
 |---|---|---|
-| R-WP-REG | R7 is not written whole: bit 7 reads back 1 -- E $3E gives $BE (b5sound), $3F gives $BF (xsnd1 case 104) [M]. The other registers and R7's other bits hold [M]. Whether WRTPSG sets bit 7 or the PSG keeps it is [A]: R7 := $3F written through ports $A0 / $A1 and read back through $A2 would tell ($3F: the call; $BF: the chip). | as MSX2 [M] |
-| every other rule | holds [M] | holds [M] |
+| every rule | holds [M] | holds [M] |
+
+Machine differences, not the call's: the MSX2s' PSG reads R7's bits 7 / 6 back as 1 / 0 whatever was written -- E $3E reads $BE (b5sound), $3F reads $BF (xsnd1 case 104) -- and it is the PSG, not WRTPSG: R7 := $3F / $7F / $BF / $FF written straight through ports $A0 / $A1 reads back $BF through port $A2 on all three, as it does through WRTPSG and RDPSG; the VG-8020 reads back each value as written [M] ([scratchpad/AE_xpsgr7.out](../../scratchpad/AE_xpsgr7.out), [scratchpad/AE_xpsgr7_msx2.out](../../scratchpad/AE_xpsgr7_msx2.out); probe [xpsgr7.asm](../../probes/bios/spec/xpsgr7.asm)). So R-WP-REG holds: WRTPSG writes R7 whole; the chip keeps those two bits.
 
 ## Open (not measured)
 

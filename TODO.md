@@ -16809,9 +16809,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
           WAS: a rule that names its generation, [M] on the three machines,
           MSX2 and MSX2+ separately (e.g. INIT* clear RG1SAV bit 7; SETTXT no longer computes RG3/5/6SAV; WRTPSG
           forces R7 bit 7; the BDOS / disk entries return with interrupts ON on all three MSX2s).
-      (c) the C-BIOS MSX2 findings (where it keeps MSX1 behaviour the MSX2 changed, or matches neither) to the
+      (c) ✅ DONE 2026-11-23: sent to the C-BIOS session with the c0c0b31 rebase reply (inbox,
+          2026-11-23-zerobas-rebased-on-c0c0b31.md). WAS: the C-BIOS MSX2 findings (where it keeps MSX1 behaviour the MSX2 changed, or matches neither) to the
           C-BIOS session -- after (a), so no finding rests on a probe that cannot run there.
-      (d) the UNKNOWNs listed in each triage file.
+      (d) the UNKNOWNs listed in each triage file. ✅ 2026-11-23: OUTDLP's $85 / $FF conversion is the JAPANESE
+          machines' (the CF-3300, a Japanese MSX1, converts as the HB-F900), not the MSX2's; WRTPSG's R7 bit 7 is the
+          MSX2s' PSG (bits 7 / 6 read 1 / 0 through the ports too -- probes/bios/spec/xpsgr7.asm), R-WP-REG holds.
 - [ ] **D-TRSPEC — ELEPHANT / GOLDFISH SPEC PAGES FOR THE MSX TURBO R BIOS CALLS**
       🎚️ TIER 1 — Joost 2026-11-23: "if we're finished with the msx2 and msx2+ specs we could also spec the turbor
       bios calls" -- AFTER D-MSX2SPEC / D-MSX1ON2, before D-KWSPEC unless Joost reorders.

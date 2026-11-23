@@ -8,7 +8,7 @@ generic machines -- Sony HB-F900, Philips NMS 8250, Panasonic FS-A1WSX). openMSX
 installs machines that run the C-BIOS built from a checkout instead, so a page measures the code under review.
 
 For each variant the bundled openMSX config is copied, its ROMs' <sha1> pins dropped and their <filename>s
-pointed at copies of the checkout's derived/bin ROMs (build/cbios_msx2/<tag>/), under the name
+pointed at copies of the checkout's derived/bin ROMs (~/.openMSX/share/zerobas-cbios2/<tag>/), under the name
 CBIOS2_<TAG>_<VARIANT> in ~/.openMSX/share/machines. probes/bios/biosl_run.py's msx2* rows use TAG CUR.
 
     python3 tools/install_cbios_msx2.py --cbios <built C-BIOS checkout> [--tag CUR]
@@ -30,7 +30,9 @@ def install(cbios, tag):
     binp = os.path.join(cbios, "derived", "bin")
     if not os.path.isdir(binp):
         sys.exit(f"install_cbios_msx2: {binp} missing -- run `make` in the checkout first")
-    dest = os.path.join(ROOT, "build", "cbios_msx2", tag.lower())
+    # outside the repo's build/: `make clean` (routine before a ROM build) wiped the copies there once (2026-11-23)
+    # and every msx2* row refused until they were reinstalled
+    dest = os.path.join(os.path.dirname(USER), "zerobas-cbios2", tag.lower())
     os.makedirs(dest, exist_ok=True)
     for f in os.listdir(binp):
         if f.endswith(".rom"):
@@ -49,7 +51,7 @@ def install(cbios, tag):
         name = f"CBIOS2_{tag.upper()}_{var}"
         open(os.path.join(USER, name + ".xml"), "w").write(xml)
         names.append(name)
-    print("installed: " + ", ".join(names) + f"  (ROMs in {os.path.relpath(dest, ROOT)})")
+    print("installed: " + ", ".join(names) + f"  (ROMs in {dest})")
 
 
 def main():

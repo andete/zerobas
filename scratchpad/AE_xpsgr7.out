@@ -1,0 +1,32 @@
+===== probes/bios/spec/xpsgr7.asm nodisk: Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK =====
+  VDP R#1 at the dump: ref 224, ours 224
+  ref : jiffy=bf00 typed=0 scncnt=02 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  ours: jiffy=8400 typed=0 scncnt=01 newkey=ffffffffffffffffffffff hkeyi,htimi=c9c9c9c9c9c9c9c9c9c9
+  CAP ref : a53f3f3f7f7f7fbfbfbfffffffc300ff
+  CAP ours: a53f3f3f7f7f7fbfbfbfffffffc3ffff
+  DIFF (1 unexcused byte(s)):
+  CAP C00F: ref=00 ours=FF
+===== biosl: DIVERGENCE =====
+
+==========================================================================
+APPARATUS FAILURE -- openMSX preflight: NOTHING WAS MEASURED
+==========================================================================
+  machine : CBIOS2_CUR_MSX2_EU
+  config  : /Users/joost/.openMSX/share/machines/CBIOS2_CUR_MSX2_EU.xml
+
+  MISSING     build/cbios_msx2/cur/cbios_main_msx2_eu.rom
+              the machine points at a file that does not exist
+  MISSING     build/cbios_msx2/cur/cbios_logo_msx2.rom
+              the machine points at a file that does not exist
+  MISSING     build/cbios_msx2/cur/cbios_sub.rom
+              the machine points at a file that does not exist
+
+  FIX: make repack-machine        (rebuilds the ROMs AND reinstalls the
+                                   machine config that points at them)
+
+  A probe booted against this machine would report the absence of the
+  ROM as the absence of the FEATURE -- a whole class of cases failing
+  identically, which reads exactly like a catastrophic regression.
+  Refused instead of measured.  (docs/spec-probe-preflight.md)
+==========================================================================
+

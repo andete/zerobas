@@ -53,7 +53,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $008A | GSPSIZ | [vdp](../concepts/screen-modes.md) | L3 | [FINAL](GSPSIZ.md) | 7 | — |
 | $008D | GRPPRT | [graphics](../concepts/graphics-calls.md) | L3 | [FINAL](GRPPRT.md) | 10 | — |
 | $0090 | GICINI | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GICINI.md) | 5 | — |
-| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 5 | — |
+| $0093 | WRTPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](WRTPSG.md) | 4 | — |
 | $0096 | RDPSG | [sound](../concepts/sound-calls.md) | L3 | [FINAL](RDPSG.md) | 3 | — |
 | $0099 | STRTMS | [sound](../concepts/sound-calls.md) | L3 | [FINAL](STRTMS.md) | 4 | — |
 | $009C | CHSNS | [text](../concepts/screen-editor.md) | L3 | [FINAL](CHSNS.md) | 0 | — |
@@ -115,7 +115,7 @@ One page per BIOS call: what it does, its contract as measured against the refer
 | $0144 | PHYDIO | [disk](../concepts/disk.md) | L3 | [FINAL](PHYDIO.md) | 9 | D-PHYDIOREGS, D-PHYDIOPAST, D-PHYDIOB0, D-PHYDIOGEOM, D-PHYDIOWRAP16, D-PHYDIOMEDIA |
 | $0147 | FORMAT | [disk](../concepts/disk.md) | L1 · ruled indirect | — | — | — |
 | $014A | ISFLIO | [devices](../concepts/files-and-devices.md) | L3 | [FINAL](ISFLIO.md) | 1 | — |
-| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 7 | — |
+| $014D | OUTDLP | [devices](../concepts/files-and-devices.md) | L4 | [FINAL](OUTDLP.md) | 6 | — |
 | $0150 | GETVCP | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVCP.md) | 4 | — |
 | $0153 | GETVC2 | [sound](../concepts/sound-calls.md) | L3 | [FINAL](GETVC2.md) | 4 | — |
 | $0156 | KILBUF | [input](../concepts/input-calls.md) | L3 | [FINAL](KILBUF.md) | 4 | — |
